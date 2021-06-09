@@ -4,9 +4,9 @@
             <import addon="xbmc.addon" version="12.0.0"/>
         </requires>
         <extension point="xbmc.addon.repository" name="Bee Queen">
-            <info compressed="false">https://github.com/audiosistem/Bee-Queen/raw/master/_repo/addons.xml</info>
-            <checksum>https://github.com/audiosistem/Bee-Queen/raw/master/_repo/addons.xml.md5</checksum>
-            <datadir zip="true">https://github.com/audiosistem/Bee-Queen/raw/master/_repo/</datadir>
+            <info compressed="false">https://github.com/audiosistem/Bee-Queen/raw/Leia/_repo/addons.xml</info>
+            <checksum>https://github.com/audiosistem/Bee-Queen/raw/Leia/_repo/addons.xml.md5</checksum>
+            <datadir zip="true">https://github.com/audiosistem/Bee-Queen/raw/Leia/_repo/</datadir>
             <hashes>false</hashes>
         </extension>
         <extension point="xbmc.addon.metadata">
