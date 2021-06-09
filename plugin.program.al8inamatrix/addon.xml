@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.program.al8inamatrix" name="[COLOR orangered]Al8inA [/COLOR] [COLOR chocolate]Matrix Wizard[/COLOR]" version="1.2.0" provider-name="AudioSistem">
+<addon id="plugin.program.al8inamatrix" name="[COLOR orangered]Al8inA [/COLOR] [COLOR chocolate]Matrix Wizard[/COLOR]" version="1.1.9" provider-name="AudioSistem">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />
