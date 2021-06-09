@@ -1,0 +1,6 @@
+name="Example Theme"
+url="http://"
+icon="http://" 
+fanart="http://" 
+adult="no" 
+description="A short description of the theme"

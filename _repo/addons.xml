@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addons>
+<addon id="plugin.program.al8inamatrix" name="[COLOR orangered]Al8inA [/COLOR] [COLOR chocolate]Matrix Wizard[/COLOR]" version="1.2.0" provider-name="AudioSistem">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.six" />
+        <import addon="script.kodi.android.update" optional="true" version="1.3.2" />
+    </requires>
+
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>executable</provides>
+    </extension>
+
+    <extension point="xbmc.service" library="startup.py" start="startup" />
+
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">[COLOR chocolate]Open Wizard[/COLOR]</summary>
+        <description lang="en"> Offers many maintenance features, selective add-on data saving, and automated build installs.</description>
+        <platform>all</platform>
+        <reuselanguageinvoker>false</reuselanguageinvoker>
+        <source>https://www.github.com/a4k-openproject/plugin.program.openwizard/</source>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.png</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="plugin.program.al8inawizard" name="[COLOR darkorange]Al8inA Wizard[/COLOR]" version="1.1.1" provider-name="[COLORorange]ASistem[/COLOR]">
+    <requires>
+        <import addon="xbmc.python" version="2.1.0" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.six" />
+    </requires>
+
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>executable</provides>
+    </extension>
+
+    <extension point="xbmc.service" library="startup.py" start="startup" />
+
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">[COLOR gold]Open Wizard[/COLOR]</summary>
+        <description lang="en">Wizard offers many maintenance features, selective add-on data saving, and automated build installs.For kodi 17(krypton)and 18(leia).</description>
+        <platform>all</platform>
+        <reuselanguageinvoker>false</reuselanguageinvoker>
+        <source>https://www.github.com/drinfernoo/plugin.program.openwizard/</source>
+        <news>
+ - Credit's to drinfernoo
+        </news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.png</fanart>
+        </assets>
+    </extension>
+</addon>
+
+    <addon id="repository.al8ina" name="Bee Queen" version="1.0.1" provider-name="ASistem">
+        <requires>
+            <import addon="xbmc.addon" version="12.0.0"/>
+        </requires>
+        <extension point="xbmc.addon.repository" name="Bee Queen">
+            <info compressed="false">https://github.com/audiosistem/Bee-Queen/raw/master/_repo/addons.xml</info>
+            <checksum>https://github.com/audiosistem/Bee-Queen/raw/master/_repo/addons.xml.md5</checksum>
+            <datadir zip="true">https://github.com/audiosistem/Bee-Queen/raw/master/_repo/</datadir>
+            <hashes>false</hashes>
+        </extension>
+        <extension point="xbmc.addon.metadata">
+            <summary>4my comunity</summary>
+            <description>4install build Al8inA</description>
+            <platform>all</platform>
+    </extension>
+</addon>
+</addons>
