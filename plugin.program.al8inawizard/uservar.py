@@ -25,7 +25,7 @@ UPDATECHECK = 0
 APKFILE = 'https://'
 # Text File with Youtube Videos urls.  Leave as 'http://' to ignore
 YOUTUBETITLE = '[COLOR orangered]YoutubeInfo[/COLOR]'
-YOUTUBEFILE = 'https://archive.org/download/buildfille/youtube.txt'
+YOUTUBEFILE = 'https://archive.org/download/buildfile18/youtube.txt'
 # Text File for addon installer.  Leave as 'http://' to ignore
 ADDONFILE = 'http://'
 # Text File for advanced settings.  Leave as 'http://' to ignore
@@ -109,7 +109,7 @@ REPOZIPURL = 'https://raw.githubusercontent.com/drinfernoo/repository.openwizard
 # Enable Notification screen Yes or No
 ENABLE = 'Yes'
 # Url to notification file
-NOTIFICATION = 'https://archive.org/download/buildfille/notify.txt'
+NOTIFICATION = 'https://archive.org/download/buildfile18/notify.txt'
 # Use either 'Text' or 'Image'
 HEADERTYPE = 'Text'
 # Font size of header
