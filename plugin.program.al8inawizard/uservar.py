@@ -17,7 +17,7 @@ ADDONTITLE = '[COLOR darkorange]Al8inA Wizard[/COLOR]'
 BUILDERNAME = 'Al8inA'
 EXCLUDES = [ADDON_ID, 'plugin.program.al8inawizard']
 # Text File with build info in it.
-BUILDFILE = 'https://archive.org/download/buildfille/BUILDFILE.xml'
+BUILDFILE = 'https://archive.org/download/buildfile18/buildfile18.txt'
 # How often you would like it to check for build updates in days
 # 0 being every startup of kodi
 UPDATECHECK = 0
