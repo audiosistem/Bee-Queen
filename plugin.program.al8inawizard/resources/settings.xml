@@ -58,7 +58,7 @@
         <setting id="includescrubs" type="bool" label="Include Scrubs v2 Cache DB: " default="" enable="eq(-4,false)" visible="System.HasAddon(plugin.video.scrubsv2)"/>
         <setting id="includeasgard" type="bool" label="Include Asgard Cache DB: " default="" enable="eq(-5,false)" visible="System.HasAddon(plugin.video.asgard)"/>
         <setting id="includethecrew" type="bool" label="Include The Crew Cache DB: " default="" enable="eq(-6,false)" visible="System.HasAddon(plugin.video.thecrew)"/>
-        <setting id="includealvin" type="bool" label="Include Alvin Cache DB: " default="" enable="eq(-7,false)" visible="System.HasAddon(plugin.video.alvin)"/>
+        <setting id="includealvin" type="bool" label="Include alvin Cache DB: " default="" enable="eq(-7,false)" visible="System.HasAddon(plugin.video.alvin)"/>
 
         <!-- Default settings for Save Data entries -->
         <setting id="theoath" type="text" default="" visible="false"/>
@@ -160,7 +160,7 @@
         <setting type="action" label="Open Kodi Android Updater Settings" action="RunPlugin(plugin://plugin.program.openwizard/?mode=fmchoose)" option="close" />
         <setting id="apk_path" type="folder" label="Choose Download Location" default="/storage/emulated/0/Download/"/>
         <setting type="lsep" label="Save Data When Installing Build:"/>
-        <setting id="keeptrakt" type="bool" label="Keep My Trakt Data" default="false"/>
+        <setting id="keeptrakt" type="bool" label="Keep My Trakt Data" default="true"/>
         <setting id="traktnextsave" type="text" label="Last Time Trakt Data Saved:" visible="!eq(-1, false)" enable="false" default="2019-01-01 00:00:00"/>
         <setting id="keepdebrid" type="bool" label="Keep My Debrid Data" default="false"/>
         <setting id="debridnextsave" type="text" label="Last Time Debrid Data Saved:" visible="!eq(-1, false)" enable="false" default="2019-01-01 00:00:00"/>

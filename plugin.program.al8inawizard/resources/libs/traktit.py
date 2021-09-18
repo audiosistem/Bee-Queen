@@ -30,7 +30,7 @@ from resources.libs.common import logging
 from resources.libs.common import tools
 
 ORDER = ['tempest', 'fen', 'gaia', 'romanianpack', 'openmeta', 'premiumizer',
-         'realizer', 'theoath', 'seren', 'shadow', 'thecrew', 'trakt', 'alvin']
+         'realizer', 'theoath', 'seren', 'shadow', 'thecrew', 'trakt', 'venom']
 
 TRAKTID = {
     'gaia': {
@@ -117,18 +117,18 @@ TRAKTID = {
         'default'  : 'trakt.user',
         'data'     : ['trakt.token', 'trakt.refresh', 'trakt.user'],
         'activate' : 'RunPlugin(plugin://plugin.video.yoda/?action=authTrakt)'},
-    'alvin': {
-        'name'     : 'Alvin',
-        'plugin'   : 'plugin.video.alvin',
-        'saved'    : 'alvin',
-        'path'     : os.path.join(CONFIG.ADDONS, 'plugin.video.alvin'),
-        'icon'     : os.path.join(CONFIG.ADDONS, 'plugin.video.alvin', 'icon.png'),
-        'fanart'   : os.path.join(CONFIG.ADDONS, 'plugin.video.alvin', 'fanart.jpg'),
-        'file'     : os.path.join(CONFIG.TRAKTFOLD, 'alvin_trakt'),
-        'settings' : os.path.join(CONFIG.ADDON_DATA, 'plugin.video.alvin', 'settings.xml'),
+    'venom': {
+        'name'     : 'Venom',
+        'plugin'   : 'plugin.video.venom',
+        'saved'    : 'venom',
+        'path'     : os.path.join(CONFIG.ADDONS, 'plugin.video.venom'),
+        'icon'     : os.path.join(CONFIG.ADDONS, 'plugin.video.venom', 'icon.png'),
+        'fanart'   : os.path.join(CONFIG.ADDONS, 'plugin.video.venom', 'fanart.jpg'),
+        'file'     : os.path.join(CONFIG.TRAKTFOLD, 'venom_trakt'),
+        'settings' : os.path.join(CONFIG.ADDON_DATA, 'plugin.video.venom', 'settings.xml'),
         'default'  : 'trakt.user',
         'data'     : ['trakt.token', 'trakt.refresh', 'trakt.user'],
-        'activate' : 'RunPlugin(plugin://plugin.video.alvin/?action=authTrakt&opensettings=tru&query=10.2)'},
+        'activate' : 'RunPlugin(plugin://plugin.video.venom/?action=authTrakt&opensettings=tru&query=10.2)'},
     'thecrew': {
         'name'     : 'THE CREW',
         'plugin'   : 'plugin.video.thecrew',
