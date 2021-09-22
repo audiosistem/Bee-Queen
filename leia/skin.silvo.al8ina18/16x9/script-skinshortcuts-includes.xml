@@ -1,0 +1,3653 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<includes>
+	<include name="skinshortcuts-mainmenu">
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<label>Favourites</label>
+			<label2>Custom item</label2>
+			<icon>special://skin/extras/icons/Favorites.png</icon>
+			<thumb />
+			<property name="widgetName">[COLORorange]Favourites[/COLOR]</property>
+			<property name="widgetType">favourite</property>
+			<property name="widgetStyle">Extended Compact Panel</property>
+			<property name="widgetCase">Glass</property>
+			<property name="widgetPanelInfo">true</property>
+			<property name="widgetName.2">[COLORorange]MTV[/COLOR]</property>
+			<property name="widgetType.2">videos</property>
+			<property name="widgetStyle.2">Extended Compact Panel</property>
+			<property name="widgetCase.2">Glass</property>
+			<property name="widgetPanelInfo.2">true</property>
+			<onclick condition="String.IsEqual(ListItem.Property(path),ActivateWindow(1129))">SetProperty(CustomSelectSearch,True,Home)</onclick>
+			<onclick>ActivateWindow(Favourites)</onclick>
+			<property name="path">ActivateWindow(Favourites)</property>
+			<visible>String.IsEqual(System.ProfileName,Master user)</visible>
+			<property name="submenuVisibility">favourites</property>
+			<property name="hasSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<label>LiveTV</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://%2fstorage%2femulated%2f0%2fAndroid%2fdata%2forg.xbmc.kodi%2ffiles%2f.kodi%2faddons%2fscript.tempest.artwork%2fresources%2fmedia%2ftempest%2fchannels.png/</thumb>
+			<property name="widgetName">[COLORorange]Live TV[/COLOR]</property>
+			<property name="widgetType">videos</property>
+			<property name="widgetStyle">Extended Compact Panel</property>
+			<property name="widgetCase">Glass</property>
+			<property name="widgetPanelInfo">true</property>
+			<property name="widgetName.2">[COLORorange]Romy TV[/COLOR]</property>
+			<property name="widgetType.2">videos</property>
+			<property name="widgetStyle.2">Extended Compact Panel</property>
+			<property name="widgetCase.2">Glass</property>
+			<property name="widgetPanelInfo.2">true</property>
+			<onclick condition="String.IsEqual(ListItem.Property(path),ActivateWindow(1129))">SetProperty(CustomSelectSearch,True,Home)</onclick>
+			<onclick condition="System.HasPVRAddon">ActivateWindow(TVChannels)</onclick>
+			<property name="path">ActivateWindow(TVChannels)</property>
+			<onclick condition="![System.HasPVRAddon]">ActivateWindow(addonbrowser,addons://repository.xbmc.org/xbmc.pvrclient,return)</onclick>
+			<visible>String.IsEqual(System.ProfileName,Master user)</visible>
+			<property name="submenuVisibility">livetv</property>
+			<property name="hasSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<label>Videos</label>
+			<label2>Custom item</label2>
+			<icon>special://skin/extras/icons/DefaultVideo.png</icon>
+			<thumb />
+			<property name="widgetName">[COLOR orange]Recente MRSP[/COLOR]</property>
+			<property name="widgetType">videos</property>
+			<property name="widgetStyle">Extended Compact Panel</property>
+			<property name="widgetCase">Glass</property>
+			<property name="widgetPanelInfo">true</property>
+			<property name="widgetName.2">[COLOR orange]Upcoming[/COLOR]</property>
+			<property name="widgetType.2">movies</property>
+			<property name="widgetStyle.2">Extended Compact Panel</property>
+			<property name="widgetCase.2">Glass</property>
+			<property name="widgetPanelInfo.2">true</property>
+			<onclick condition="String.IsEqual(ListItem.Property(path),ActivateWindow(1129))">SetProperty(CustomSelectSearch,True,Home)</onclick>
+			<onclick>ActivateWindow(Videos,Addons,return)</onclick>
+			<property name="path">ActivateWindow(Videos,Addons,return)</property>
+			<visible>String.IsEqual(System.ProfileName,Master user)</visible>
+			<property name="submenuVisibility">videos</property>
+			<property name="hasSubmenu">True</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<label>Movies</label>
+			<label2>Custom item</label2>
+			<icon>special://skin/extras/icons/DefaultMovies.png</icon>
+			<thumb />
+			<property name="widgetName">[COLORorange]FSOnline[/COLOR]</property>
+			<property name="widgetType">videos</property>
+			<property name="widgetStyle">Extended Compact Panel</property>
+			<property name="widgetCase">Glass</property>
+			<property name="widgetPanelInfo">true</property>
+			<property name="widgetName.2">[COLOR goldenrod]Asgard[/COLOR]</property>
+			<property name="widgetType.2">videos</property>
+			<property name="widgetStyle.2">Extended Compact Panel</property>
+			<property name="widgetCase.2">Glass</property>
+			<property name="widgetPanelInfo.2">true</property>
+			<onclick condition="String.IsEqual(ListItem.Property(path),ActivateWindow(1129))">SetProperty(CustomSelectSearch,True,Home)</onclick>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.themoviedb.helper/?info=now_playing&amp;widget=True&amp;type=movie",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.themoviedb.helper/?info=now_playing&amp;widget=True&amp;type=movie",return)</property>
+			<visible>String.IsEqual(System.ProfileName,Master user)</visible>
+			<property name="submenuVisibility">movies</property>
+			<property name="hasSubmenu">True</property>
+		</item>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
+			<label>TV shows</label>
+			<label2>Custom item</label2>
+			<icon>special://skin/extras/icons/DefaultTVShows.png</icon>
+			<thumb />
+			<property name="widgetName">[COLORorange]FSOnline[/COLOR]</property>
+			<property name="widgetType">videos</property>
+			<property name="widgetStyle">Extended Compact Panel</property>
+			<property name="widgetCase">Glass</property>
+			<property name="widgetPanelInfo">true</property>
+			<property name="widgetName.2">[COLOR goldenrod]Asgard[/COLOR]</property>
+			<property name="widgetType.2">videos</property>
+			<property name="widgetStyle.2">Extended Compact Panel</property>
+			<property name="widgetCase.2">Glass</property>
+			<property name="widgetPanelInfo.2">true</property>
+			<onclick condition="String.IsEqual(ListItem.Property(path),ActivateWindow(1129))">SetProperty(CustomSelectSearch,True,Home)</onclick>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.themoviedb.helper/?info=trakt_trending&amp;widget=True&amp;type=tv",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.themoviedb.helper/?info=trakt_trending&amp;widget=True&amp;type=tv",return)</property>
+			<visible>String.IsEqual(System.ProfileName,Master user)</visible>
+			<property name="submenuVisibility">tvshows</property>
+			<property name="hasSubmenu">True</property>
+		</item>
+		<item id="6">
+			<property name="id">$NUMBER[6]</property>
+			<label>Music</label>
+			<label2>Custom item</label2>
+			<icon>special://skin/extras/icons/DefaultAudio.png</icon>
+			<thumb />
+			<property name="widgetName">[COLOR orange]Radio RO[/COLOR]</property>
+			<property name="widgetType">songs</property>
+			<property name="widgetStyle">Extended Compact Panel</property>
+			<property name="widgetCase">Glass</property>
+			<property name="widgetPanelInfo">true</property>
+			<property name="widgetName.2">[COLORdarkorange]Music TV[/COLOR]</property>
+			<property name="widgetType.2">videos</property>
+			<property name="widgetStyle.2">Extended Compact Panel</property>
+			<property name="widgetCase.2">Glass</property>
+			<property name="widgetPanelInfo.2">true</property>
+			<onclick condition="String.IsEqual(ListItem.Property(path),ActivateWindow(1129))">SetProperty(CustomSelectSearch,True,Home)</onclick>
+			<onclick>ActivateWindow(Music,Addons,return)</onclick>
+			<property name="path">ActivateWindow(Music,Addons,return)</property>
+			<visible>String.IsEqual(System.ProfileName,Master user)</visible>
+			<property name="submenuVisibility">music</property>
+			<property name="hasSubmenu">True</property>
+		</item>
+		<item id="7">
+			<property name="id">$NUMBER[7]</property>
+			<label>Kids</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://https%3a%2f%2fi.pinimg.com%2f564x%2f71%2fa5%2f50%2f71a5501408ad177209b328d3cde6bd8f.jpg/</thumb>
+			<property name="widgetName">[COLOR orange]Animatie FSOnline[/COLOR]</property>
+			<property name="widgetType">videos</property>
+			<property name="widgetStyle">Extended Compact Panel</property>
+			<property name="widgetCase">Glass</property>
+			<property name="widgetPanelInfo">true</property>
+			<property name="widgetName.2">[COLOR orange]Animatie MRSP[/COLOR]</property>
+			<property name="widgetType.2">videos</property>
+			<property name="widgetStyle.2">Extended Compact Panel</property>
+			<property name="widgetCase.2">Glass</property>
+			<property name="widgetPanelInfo.2">true</property>
+			<onclick condition="String.IsEqual(ListItem.Property(path),ActivateWindow(1129))">SetProperty(CustomSelectSearch,True,Home)</onclick>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.themoviedb.helper/?info=discover&amp;with_genres=16&amp;widget=true&amp;tmdb_type=movie&amp;with_id=True",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.themoviedb.helper/?info=discover&amp;with_genres=16&amp;widget=true&amp;tmdb_type=movie&amp;with_id=True",return)</property>
+			<visible>String.IsEqual(System.ProfileName,Master user)</visible>
+			<property name="submenuVisibility">kids</property>
+			<property name="hasSubmenu">True</property>
+		</item>
+		<item id="8">
+			<property name="id">$NUMBER[8]</property>
+			<label>PLAY DISC</label>
+			<label2 />
+			<icon>special://skin/extras/icons/Disc.png</icon>
+			<thumb />
+			<visible>System.HasMediaDVD</visible>
+			<onclick condition="String.IsEqual(ListItem.Property(path),ActivateWindow(1129))">SetProperty(CustomSelectSearch,True,Home)</onclick>
+			<onclick>PlayDisc</onclick>
+			<property name="path">PlayDisc</property>
+			<visible>String.IsEqual(System.ProfileName,Master user)</visible>
+			<property name="submenuVisibility">num-31958</property>
+			<property name="hasSubmenu">True</property>
+		</item>
+		<item id="9">
+			<property name="id">$NUMBER[9]</property>
+			<label>Weather</label>
+			<label2>Custom item</label2>
+			<icon>special://skin/extras/icons/DefaultAddonWeather.png</icon>
+			<thumb />
+			<property name="widgetName">[COLOR orange]Weather forecast[/COLOR]</property>
+			<property name="widgetType">weather</property>
+			<property name="widgetStyle">Extended Compact Panel</property>
+			<property name="widgetCase">Glass</property>
+			<property name="widgetPanelInfo">true</property>
+			<property name="widgetName.2">[COLOR orange]Tomorrow[/COLOR]</property>
+			<property name="widgetType.2">weather</property>
+			<property name="widgetStyle.2">Extended Compact Panel</property>
+			<property name="widgetCase.2">Glass</property>
+			<property name="widgetPanelInfo.2">true</property>
+			<onclick condition="String.IsEqual(ListItem.Property(path),ActivateWindow(1129))">SetProperty(CustomSelectSearch,True,Home)</onclick>
+			<onclick condition="!String.IsEmpty(Weather.Plugin)">ActivateWindow(Weather)</onclick>
+			<property name="path">ActivateWindow(Weather)</property>
+			<onclick condition="![!String.IsEmpty(Weather.Plugin)]">ActivateWindow(servicesettings,weather)</onclick>
+			<visible>String.IsEqual(System.ProfileName,Master user)</visible>
+			<property name="submenuVisibility">weather</property>
+			<property name="hasSubmenu">False</property>
+		</item>
+		<item id="10">
+			<property name="id">$NUMBER[10]</property>
+			<label>System</label>
+			<label2>Custom item</label2>
+			<icon>special://skin/extras/icons/DefaultAddonService.png</icon>
+			<thumb />
+			<property name="widgetName">[COLOR orange]System info[/COLOR]</property>
+			<property name="widgetType">system</property>
+			<property name="widgetStyle">Extended Compact Panel</property>
+			<property name="widgetCase">Glass</property>
+			<property name="widgetPanelInfo">true</property>
+			<property name="widgetName.2">[COLOR orange]Programs[/COLOR]</property>
+			<property name="widgetType.2">addon</property>
+			<property name="widgetStyle.2">Extended Compact Panel</property>
+			<property name="widgetCase.2">Glass</property>
+			<property name="widgetPanelInfo.2">true</property>
+			<onclick condition="String.IsEqual(ListItem.Property(path),ActivateWindow(1129))">SetProperty(CustomSelectSearch,True,Home)</onclick>
+			<onclick>ActivateWindow(Settings)</onclick>
+			<property name="path">ActivateWindow(Settings)</property>
+			<visible>String.IsEqual(System.ProfileName,Master user)</visible>
+			<property name="submenuVisibility">system</property>
+			<property name="hasSubmenu">True</property>
+		</item>
+		<item id="11">
+			<property name="id">$NUMBER[11]</property>
+			<label>Power</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="widgetName">[COLORorange]Q Continuum[/COLOR]</property>
+			<property name="widgetType">videos</property>
+			<property name="widgetStyle">Extended Compact Panel</property>
+			<property name="widgetCase">Glass</property>
+			<property name="widgetPanelInfo">true</property>
+			<property name="widgetName.2">[COLORorange]Q Continuum[/COLOR]</property>
+			<property name="widgetType.2">videos</property>
+			<property name="widgetStyle.2">Extended Compact Panel</property>
+			<property name="widgetCase.2">Glass</property>
+			<property name="widgetPanelInfo.2">true</property>
+			<onclick condition="String.IsEqual(ListItem.Property(path),ActivateWindow(1129))">SetProperty(CustomSelectSearch,True,Home)</onclick>
+			<onclick>PlayMedia("plugin://plugin.program.al8inawizard/?mode=forceclose")</onclick>
+			<property name="path">PlayMedia("plugin://plugin.program.al8inawizard/?mode=forceclose")</property>
+			<visible>String.IsEqual(System.ProfileName,Master user)</visible>
+			<property name="submenuVisibility">power</property>
+			<property name="hasSubmenu">True</property>
+		</item>
+	</include>
+	<include />
+	<include name="skinshortcuts-submenu">
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">1</property>
+			<label>Căutare MRSP</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://special://home/addons%5cplugin.video.romanianpack%5cresources%5cmedia%5csearch.png/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.romanianpack/?action=searchSites&amp;action=searchSites&amp;searchSites=noua",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.romanianpack/?action=searchSites&amp;action=searchSites&amp;searchSites=noua",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),favourites)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">1</property>
+			<label>Search MoviesDB</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://special://home/addons%5cplugin.video.themoviedb.helper%2fresources%2ficons%2ftmdb%2fsearch.png/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.themoviedb.helper/?info=search&amp;widget=True&amp;type=movie",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.themoviedb.helper/?info=search&amp;widget=True&amp;type=movie",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),favourites)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">1</property>
+			<label>Search TV ShowsDB</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://special://home/addons%5cplugin.video.themoviedb.helper%2fresources%2ficons%2ftmdb%2fsearch.png/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.themoviedb.helper/?info=search&amp;widget=True&amp;type=tv",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.themoviedb.helper/?info=search&amp;widget=True&amp;type=tv",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),favourites)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">2</property>
+			<label>[COLORyellow]Ger[/COLOR][COLORred]many[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://https%3a%2f%2fflagcdn.com%2fh240%2fde.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=de&amp;group=_",return)</property>
+			<onclick>ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=de&amp;group=_",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=de&amp;group=_",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),livetv)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">2</property>
+			<label>[COLORgreen]Ita[/COLOR][COLORred]ly[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://https%3a%2f%2fflagcdn.com%2fh240%2fit.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=it&amp;group=_",return)</property>
+			<onclick>ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=it&amp;group=_",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=it&amp;group=_",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),livetv)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">2</property>
+			<label>[COLORred]Fran[/COLOR][COLORnavy]ce[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://https%3a%2f%2fflagcdn.com%2fh240%2ffr.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=fr&amp;group=_",return)</property>
+			<onclick>ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=fr&amp;group=_",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=fr&amp;group=_",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),livetv)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<property name="mainmenuid">2</property>
+			<label>[COLORyellow]Spain[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://https%3a%2f%2fflagcdn.com%2fh240%2fes.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=es&amp;group=_",return)</property>
+			<onclick>ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=es&amp;group=_",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=es&amp;group=_",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),livetv)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
+			<property name="mainmenuid">2</property>
+			<label>[COLORred]U[/COLOR][COLORnavy]K[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://https%3a%2f%2fflagcdn.com%2fh240%2fgb.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=gb&amp;group=_",return)</property>
+			<onclick>ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=gb&amp;group=_",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=gb&amp;group=_",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),livetv)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">3</property>
+			<label>Click Sud</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser1%5cAppData%5cRoaming%5cKodi%5caddons%5cplugin.video.romanianpack%5cresources%5cmedia%5ctopfilmeonline.jpg/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.romanianpack/?action=OpenSite&amp;switch=recente&amp;link=http%3A%2F%2Fwww.clicksud.org&amp;site=clicksudorg",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.romanianpack/?action=OpenSite&amp;switch=recente&amp;link=http%3A%2F%2Fwww.clicksud.org&amp;site=clicksudorg",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),videos)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">3</property>
+			<label>FILME ONLINE</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://special://home/addons%5cplugin.video.romanianpack%5cresources%5cmedia%5cfilmeonlineto.jpg/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.romanianpack/?action=OpenSite&amp;switch=recente&amp;link=https%3A%2F%2Ffilme-online.to%2Facasa&amp;site=filmeonlineto",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.romanianpack/?action=OpenSite&amp;switch=recente&amp;link=https%3A%2F%2Ffilme-online.to%2Facasa&amp;site=filmeonlineto",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),videos)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">3</property>
+			<label>Vox</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser1%5cAppData%5cRoaming%5cKodi%5caddons%5cplugin.video.romanianpack%5cresources%5cmedia%5cvoxfilmeonline.jpg/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.romanianpack/?action=OpenSite&amp;switch=recente&amp;link=https%3A%2F%2Fvoxfilmeonline.biz&amp;site=voxfilmeonline",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.romanianpack/?action=OpenSite&amp;switch=recente&amp;link=https%3A%2F%2Fvoxfilmeonline.biz&amp;site=voxfilmeonline",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),videos)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<property name="mainmenuid">3</property>
+			<label>DivX</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://special://home/addons%5cplugin.video.romanianpack%5cresources%5cmedia%5cdivxfilmeonline.png/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.romanianpack/?action=OpenSite&amp;switch=recente&amp;link=https%3A%2F%2Fdivxfilmeonline.org%2Ffilme-online%2Fpage%2F1%2F&amp;site=divxfilmeonline",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.romanianpack/?action=OpenSite&amp;switch=recente&amp;link=https%3A%2F%2Fdivxfilmeonline.org%2Ffilme-online%2Fpage%2F1%2F&amp;site=divxfilmeonline",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),videos)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
+			<property name="mainmenuid">3</property>
+			<label>Filme HD</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser%5cAppData%5cRoaming%5cKodi%5caddons%5cplugin.video.romanianpack%5cresources%5cmedia%5cfilmehdnet.jpg/</thumb>
+			<property name="translatedPath">ActivateWindow(Videos,"plugin://plugin.video.romanianpack/?action=OpenSite&amp;switch=recente&amp;link=https%3A%2F%2Ffilmehd.se%2Fpage%2F1&amp;site=filmehdnet",return)</property>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.romanianpack/?action=OpenSite&amp;switch=recente&amp;link=https%3A%2F%2Ffilmehd.se%2Fpage%2F1&amp;site=filmehdnet",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.romanianpack/?action=OpenSite&amp;switch=recente&amp;link=https%3A%2F%2Ffilmehd.se%2Fpage%2F1&amp;site=filmehdnet",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),videos)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">4</property>
+			<label>[COLOR aqua]Alvin[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser%5cAppData%5cRoaming%5cKodi%5caddons%5cscript.alvin.artwork%5cresources%5cmedia%5cexuary%5cpeople-watching.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Videos,"plugin://plugin.video.alvin/?action=movies&amp;url=trending",return)</property>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.alvin/?action=movies&amp;url=trending",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.alvin/?action=movies&amp;url=trending",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">4</property>
+			<label>[COLOR orangered]The Oath[/COLOR]</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://special://home/addons%5cscript.exodusredux.artwork%5cresources%5cmedia%5cexodus%5cin-theaters.png/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.theoath/?action=movies&amp;url=theaters",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.theoath/?action=movies&amp;url=theaters",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">4</property>
+			<label>[COLOR orchid]THE CREW[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://special://home/addons%5cscript.thecrew.artwork%5cresources%5cmedia%5cthecrew%5cin-theaters.png/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.thecrew/?action=movies&amp;url=theaters",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.thecrew/?action=movies&amp;url=theaters",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<property name="mainmenuid">4</property>
+			<label>[COLORred]Revolution[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser%5cAppData%5cRoaming%5cKodi%5caddons%5cscript.revolution.artwork%5cresources%5cmedia%5cexuary%5cpeople-watching.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Videos,"plugin://plugin.video.revolution/?action=movies&amp;url=trending",return)</property>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.revolution/?action=movies&amp;url=trending",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.revolution/?action=movies&amp;url=trending",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
+			<property name="mainmenuid">4</property>
+			<label>[COLORblue]TEMPEST[/COLOR]</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://special://home/addons%5cscript.tempest.artwork%5cresources%5cmedia%5ctempest%5cin-theaters.png/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.tempest/?action=movies&amp;url=theatersOld",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.tempest/?action=movies&amp;url=theatersOld",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">5</property>
+			<label>$LOCALIZE[4]</label>
+			<label2 />
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<visible>[System.HasAddon(script.tv.show.next.aired)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<onclick>RunAddon(script.tv.show.next.aired,return)</onclick>
+			<property name="path">RunAddon(script.tv.show.next.aired,return)</property>
+			<visible>String.IsEqual(System.ProfileName,Master user)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">5</property>
+			<label>[COLOR aqua]Alvin[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser%5cAppData%5cRoaming%5cKodi%5caddons%5cscript.alvin.artwork%5cresources%5cmedia%5cexuary%5cpeople-watching.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Videos,"plugin://plugin.video.alvin/?action=tvshows&amp;url=trending",return)</property>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.alvin/?action=tvshows&amp;url=trending",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.alvin/?action=tvshows&amp;url=trending",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">5</property>
+			<label>[COLOR orangered]The Oath[/COLOR]</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://special://home/addons%5cscript.exodusredux.artwork%5cresources%5cmedia%5cexodus%5cpeople-watching.png/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.theoath/?action=tvshows&amp;url=trending",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.theoath/?action=tvshows&amp;url=trending",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<property name="mainmenuid">5</property>
+			<label>[COLOR orchid]THE CREW[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://special://home/addons%5cscript.thecrew.artwork%5cresources%5cmedia%5cthecrew%5cpeople-watching2.png/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.thecrew/?action=tvshows&amp;url=trending",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.thecrew/?action=tvshows&amp;url=trending",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
+			<property name="mainmenuid">5</property>
+			<label>[COLORred]Revolution[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser%5cAppData%5cRoaming%5cKodi%5caddons%5cscript.revolution.artwork%5cresources%5cmedia%5cexuary%5cpeople-watching.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Videos,"plugin://plugin.video.revolution/?action=tvshows&amp;url=trending",return)</property>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.revolution/?action=tvshows&amp;url=trending",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.revolution/?action=tvshows&amp;url=trending",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="6">
+			<property name="id">$NUMBER[6]</property>
+			<property name="mainmenuid">5</property>
+			<label>[COLORblue]TEMPEST[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://special://home/addons%5cscript.tempest.artwork%5cresources%5cmedia%5ctempest%5cpeople-watching.png/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.tempest/?action=tvshows&amp;url=trending",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.tempest/?action=tvshows&amp;url=trending",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">6</property>
+			<label>[COLORyellow]Ger[/COLOR][COLORred]many[/COLOR]</label>
+			<label2>Music Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser1%5cAppData%5cRoaming%5cKodi%5caddons%5cplugin.audio.radio_de%5cicon.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/Germany/1",return)</property>
+			<onclick>ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/Germany/1",return)</onclick>
+			<property name="path">ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/Germany/1",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),music)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">6</property>
+			<label>[COLORgreen]Ita[/COLOR][COLORred]ly[/COLOR]</label>
+			<label2>Music Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser1%5cAppData%5cRoaming%5cKodi%5caddons%5cplugin.audio.radio_de%5cicon.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/Italy/1",return)</property>
+			<onclick>ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/Italy/1",return)</onclick>
+			<property name="path">ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/Italy/1",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),music)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">6</property>
+			<label>[COLORred]Fran[/COLOR][COLORnavy]ce[/COLOR]</label>
+			<label2>Music Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser1%5cAppData%5cRoaming%5cKodi%5caddons%5cplugin.audio.radio_de%5cicon.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/France/1",return)</property>
+			<onclick>ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/France/1",return)</onclick>
+			<property name="path">ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/France/1",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),music)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<property name="mainmenuid">6</property>
+			<label>[COLORyellow]Spain[/COLOR]</label>
+			<label2>Music Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser1%5cAppData%5cRoaming%5cKodi%5caddons%5cplugin.audio.radio_de%5cicon.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/Spain/1",return)</property>
+			<onclick>ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/Spain/1",return)</onclick>
+			<property name="path">ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/Spain/1",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),music)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
+			<property name="mainmenuid">6</property>
+			<label>[COLORnavy]U[/COLOR][COLORred]K[/COLOR]</label>
+			<label2>Music Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser1%5cAppData%5cRoaming%5cKodi%5caddons%5cplugin.audio.radio_de%5cicon.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/United+Kingdom/1",return)</property>
+			<onclick>ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/United+Kingdom/1",return)</onclick>
+			<property name="path">ActivateWindow(Music,"plugin://plugin.audio.radio_de/stations/popular/countries/United+Kingdom/1",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),music)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">7</property>
+			<label>[COLOR aqua]Alvin[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser%5cAppData%5cRoaming%5cKodi%5caddons%5cscript.alvin.artwork%5cresources%5cmedia%5cexuary%5cgenres.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Videos,"plugin://plugin.video.alvin/?action=movies&amp;url=https%3A%2F%2Fwww.imdb.com%2Fsearch%2Ftitle%3Ftitle_type%3Dfeature%2Ctv_movie%2Cdocumentary%26num_votes%3D100%2C%26release_date%3D%2Cdate%5B0%5D%26genres%3Danimation%26sort%3Dmoviemeter%2Casc%26count%3D40%26start%3D1",return)</property>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.alvin/?action=movies&amp;url=https%3A%2F%2Fwww.imdb.com%2Fsearch%2Ftitle%3Ftitle_type%3Dfeature%2Ctv_movie%2Cdocumentary%26num_votes%3D100%2C%26release_date%3D%2Cdate%5B0%5D%26genres%3Danimation%26sort%3Dmoviemeter%2Casc%26count%3D40%26start%3D1",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.alvin/?action=movies&amp;url=https%3A%2F%2Fwww.imdb.com%2Fsearch%2Ftitle%3Ftitle_type%3Dfeature%2Ctv_movie%2Cdocumentary%26num_votes%3D100%2C%26release_date%3D%2Cdate%5B0%5D%26genres%3Danimation%26sort%3Dmoviemeter%2Casc%26count%3D40%26start%3D1",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),kids)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">7</property>
+			<label>[COLOR orangered]The Oath[/COLOR]</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://special://home/addons%5cscript.exodusredux.artwork%5cresources%5cmedia%5cexodus%5cgenres.png/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.theoath/?action=movies&amp;url=https%3A%2F%2Fwww.imdb.com%2Fsearch%2Ftitle%3Ftitle_type%3Dfeature%2Ctv_movie%2Cdocumentary%26num_votes%3D100%2C%26release_date%3D%2Cdate%5B0%5D%26genres%3Danimation%26sort%3Dmoviemeter%2Casc%26count%3D40%26start%3D1",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.theoath/?action=movies&amp;url=https%3A%2F%2Fwww.imdb.com%2Fsearch%2Ftitle%3Ftitle_type%3Dfeature%2Ctv_movie%2Cdocumentary%26num_votes%3D100%2C%26release_date%3D%2Cdate%5B0%5D%26genres%3Danimation%26sort%3Dmoviemeter%2Casc%26count%3D40%26start%3D1",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),kids)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">7</property>
+			<label>[COLOR orchid]THE CREW[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://special://home/addons%5cscript.thecrew.artwork%5cresources%5cmedia%5cthecrew%5cgenres.png/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.thecrew/?action=movies&amp;url=https%3A%2F%2Fwww.imdb.com%2Fsearch%2Ftitle%3Ftitle_type%3Dfeature%2Ctv_movie%2Cdocumentary%26num_votes%3D100%2C%26release_date%3D%2Cdate%5B0%5D%26genres%3Danimation%26sort%3Dmoviemeter%2Casc%26count%3D25%26start%3D1",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.thecrew/?action=movies&amp;url=https%3A%2F%2Fwww.imdb.com%2Fsearch%2Ftitle%3Ftitle_type%3Dfeature%2Ctv_movie%2Cdocumentary%26num_votes%3D100%2C%26release_date%3D%2Cdate%5B0%5D%26genres%3Danimation%26sort%3Dmoviemeter%2Casc%26count%3D25%26start%3D1",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),kids)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<property name="mainmenuid">7</property>
+			<label>[COLORred]Revolution[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser%5cAppData%5cRoaming%5cKodi%5caddons%5cscript.revolution.artwork%5cresources%5cmedia%5cexuary%5cgenres.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Videos,"plugin://plugin.video.revolution/?action=movies&amp;url=https%3A%2F%2Fwww.imdb.com%2Fsearch%2Ftitle%3Ftitle_type%3Dfeature%2Ctv_movie%2Cdocumentary%26num_votes%3D100%2C%26release_date%3D%2Cdate%5B0%5D%26genres%3Danimation%26sort%3Dmoviemeter%2Casc%26count%3D40%26start%3D1",return)</property>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.revolution/?action=movies&amp;url=https%3A%2F%2Fwww.imdb.com%2Fsearch%2Ftitle%3Ftitle_type%3Dfeature%2Ctv_movie%2Cdocumentary%26num_votes%3D100%2C%26release_date%3D%2Cdate%5B0%5D%26genres%3Danimation%26sort%3Dmoviemeter%2Casc%26count%3D40%26start%3D1",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.revolution/?action=movies&amp;url=https%3A%2F%2Fwww.imdb.com%2Fsearch%2Ftitle%3Ftitle_type%3Dfeature%2Ctv_movie%2Cdocumentary%26num_votes%3D100%2C%26release_date%3D%2Cdate%5B0%5D%26genres%3Danimation%26sort%3Dmoviemeter%2Casc%26count%3D40%26start%3D1",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),kids)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
+			<property name="mainmenuid">7</property>
+			<label>[COLORblue]TEMPEST[/COLOR]</label>
+			<label2>Video Add-On</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://special://home/addons%5cscript.tempest.artwork%5cresources%5cmedia%5ctempest%5cgenres.png/</thumb>
+			<onclick>ActivateWindow(Videos,"plugin://plugin.video.tempest/?action=movies&amp;url=https%3A%2F%2Fwww.imdb.com%2Fsearch%2Ftitle%3Ftitle_type%3Dfeature%2Ctv_movie%2Cdocumentary%26num_votes%3D100%2C%26release_date%3D%2Cdate%5B0%5D%26genres%3Danimation%26sort%3Dmoviemeter%2Casc%26count%3D40%26start%3D1",return)</onclick>
+			<property name="path">ActivateWindow(Videos,"plugin://plugin.video.tempest/?action=movies&amp;url=https%3A%2F%2Fwww.imdb.com%2Fsearch%2Ftitle%3Ftitle_type%3Dfeature%2Ctv_movie%2Cdocumentary%26num_votes%3D100%2C%26release_date%3D%2Cdate%5B0%5D%26genres%3Danimation%26sort%3Dmoviemeter%2Casc%26count%3D40%26start%3D1",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),kids)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">8</property>
+			<label>$LOCALIZE[31485]</label>
+			<label2 />
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<onclick>EjectTray()</onclick>
+			<property name="path">EjectTray()</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),num-31958)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">8</property>
+			<label>$LOCALIZE[600]</label>
+			<label2 />
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<visible>[System.HasMediaAudioCD] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),num-31958)</visible>
+			<onclick>RipCD</onclick>
+			<property name="path">RipCD</property>
+			<visible>String.IsEqual(System.ProfileName,Master user)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">10</property>
+			<label>Maintenance</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb>image://C%3a%5cUsers%5cuser%5cAppData%5cRoaming%5cKodi%5caddons%5cplugin.program.al8ina%5cicon.png/</thumb>
+			<property name="translatedPath">ActivateWindow(Programs,"plugin://plugin.program.al8ina",return)</property>
+			<onclick>ActivateWindow(Programs,"plugin://plugin.program.al8inawizard/?mode=maint",return)</onclick>
+			<property name="path">ActivateWindow(Programs,"plugin://plugin.program.al8inawizard/?mode=maint",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),system)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">10</property>
+			<label>FILE MANAGER</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<onclick>ActivateWindow(FileManager)</onclick>
+			<property name="path">ActivateWindow(FileManager)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),system)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">10</property>
+			<label>SKIN SETTINGS</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<onclick>ActivateWindow(SkinSettings)</onclick>
+			<property name="path">ActivateWindow(SkinSettings)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),system)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<property name="mainmenuid">10</property>
+			<label>Speed Tester</label>
+			<label2>Program</label2>
+			<icon>DefaultAddon.png</icon>
+			<thumb>image://%2fstorage%2femulated%2f0%2fAndroid%2fdata%2forg.xbmc.kodi%2ffiles%2f.kodi%2faddons%2fscript.speedtestnet%2ficon.png/</thumb>
+			<onclick>RunAddOn(script.speedtestnet)</onclick>
+			<property name="path">RunAddOn(script.speedtestnet)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),system)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
+			<property name="mainmenuid">10</property>
+			<label>Builds</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<onclick>ActivateWindow(Programs,"plugin://plugin.program.al8inawizard/?mode=builds",return)</onclick>
+			<property name="path">ActivateWindow(Programs,"plugin://plugin.program.al8inawizard/?mode=builds",return)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),system)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">11</property>
+			<label>Reboot</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<visible>[System.CanReboot] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),power)</visible>
+			<onclick>Reset()</onclick>
+			<property name="path">Reset()</property>
+			<visible>String.IsEqual(System.ProfileName,Master user)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">11</property>
+			<label>Timer</label>
+			<label2>Kodi Command</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<onclick>AlarmClock(shutdowntimer,XBMC.Shutdown())</onclick>
+			<property name="path">AlarmClock(shutdowntimer,XBMC.Shutdown())</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),power)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">11</property>
+			<label>Clean Library</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<onclick>CleanLibrary(video,true)</onclick>
+			<property name="path">CleanLibrary(video,true)</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),power)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<property name="mainmenuid">11</property>
+			<label>Minimize</label>
+			<label2>Custom item</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<onclick>Minimize</onclick>
+			<property name="path">Minimize</property>
+			<visible>[String.IsEqual(System.ProfileName,Master user)] + String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),power)</visible>
+			<property name="isSubmenu">True</property>
+		</item>
+	</include>
+	<include />
+	<include name="skinshortcuts-submenu-1" />
+	<include />
+	<include name="skinshortcuts-submenu-2" />
+	<include name="skinshortcuts-template-widget1">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-widget1-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-widget1-Master user">
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),favourites)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80111).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80111)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,677">Conditional</animation>
+					<top>90</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>453</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80111</param>
+						<param name="Label">[COLORorange]Favourites[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">260</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>453</top>
+				<control id="80111" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation1</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="">favourites://</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),livetv)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80112).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80112)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,677">Conditional</animation>
+					<top>90</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>453</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80112</param>
+						<param name="Label">[COLORorange]Live TV[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">260</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>453</top>
+				<control id="80112" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation1</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="videos">plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;reload=$INFO[Window(Home).Property(widgetreload)]$INFO[Window(Home).Property(widgetreload2)]</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),videos)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80113).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80113)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,677">Conditional</animation>
+					<top>90</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>453</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80113</param>
+						<param name="Label">[COLOR orange]Recente MRSP[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">260</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>453</top>
+				<control id="80113" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation1</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="videos">plugin://plugin.video.romanianpack/?action=OpenSite&amp;switch=recente&amp;link=https%3A%2F%2Ffilmeonline.st&amp;site=filmeonline2016biz&amp;reload=$INFO[Window(Home).Property(widgetreload)]$INFO[Window(Home).Property(widgetreload2)]</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),movies)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80114).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80114)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,677">Conditional</animation>
+					<top>90</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>453</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80114</param>
+						<param name="Label">[COLORorange]FSOnline[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">260</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>453</top>
+				<control id="80114" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation1</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="videos">plugin://plugin.video.romanianpack/?action=OpenSite&amp;switch=recente&amp;link=http%3A%2F%2Fwww.filmeserialeonline.org%2Ffilme-online%2F&amp;site=fsonlineorg&amp;reload=$INFO[Window(Home).Property(widgetreload)]$INFO[Window(Home).Property(widgetreload2)]</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80115).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80115)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,677">Conditional</animation>
+					<top>90</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>453</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80115</param>
+						<param name="Label">[COLORorange]FSOnline[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">260</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>453</top>
+				<control id="80115" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation1</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="videos">plugin://plugin.video.romanianpack/?action=OpenSite&amp;switch=recente&amp;link=http%3A%2F%2Fwww.filmeserialeonline.org%2Fseriale%2F&amp;site=fsonlineorg&amp;reload=$INFO[Window(Home).Property(widgetreload)]$INFO[Window(Home).Property(widgetreload2)]</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),music)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80116).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80116)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,677">Conditional</animation>
+					<top>90</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!true">InfoPosterContent</include>
+							<include condition="!true" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="true">InfoSquareContent</include>
+							<include condition="true" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>504</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>242</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>242</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>242</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80116</param>
+						<param name="Label">[COLOR orange]Radio RO[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">223</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>504</top>
+				<control id="80116" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation1</include>
+					<include content="SquareArt">
+						<param name="containerWidth">205</param>
+						<param name="containerHeight">200</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">192</param>
+						<param name="heightArt">192</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">200</param>
+						<param name="heightCase">200</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">scale</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/square.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="music">plugin://plugin.audio.radio_de/stations/popular/countries/Romania/1?reload=$INFO[Window(Home).Property(widgetreload)]$INFO[Window(Home).Property(widgetreload2)]</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),kids)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80117).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80117)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,677">Conditional</animation>
+					<top>90</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>453</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80117</param>
+						<param name="Label">[COLOR orange]Animatie FSOnline[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">260</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>453</top>
+				<control id="80117" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation1</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="videos">plugin://plugin.video.romanianpack/?action=OpenSite&amp;favorite=check&amp;site=fsonlineorg&amp;nume=Anima%C3%A5%C2%A3ie&amp;switch=recente&amp;link=http%3A%2F%2Fwww.filmeserialeonline.org%2Ffilme%2Fanimatie%2F&amp;watched=check&amp;reload=$INFO[Window(Home).Property(widgetreload)]$INFO[Window(Home).Property(widgetreload2)]</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),weather)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80119).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80119)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,677">Conditional</animation>
+					<top>90</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!true">InfoPosterContent</include>
+							<include condition="!true" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="true">InfoSquareContent</include>
+							<include condition="true" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>504</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>242</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>242</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>242</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80119</param>
+						<param name="Label">[COLOR orange]Weather forecast[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">223</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>504</top>
+				<control id="80119" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation1</include>
+					<include content="SquareArt">
+						<param name="containerWidth">205</param>
+						<param name="containerHeight">200</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">192</param>
+						<param name="heightArt">192</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">200</param>
+						<param name="heightCase">200</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">scale</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/square.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">true</param>
+						<param name="weatherTop">39</param>
+						<param name="weatherHeight">96</param>
+						<param name="weatherTop1">0</param>
+						<param name="weatherTop2">135</param>
+						<param name="weatherTop3">166</param>
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="">
+						<include>skinshortcuts-template-WeatherForecastContent</include>
+					</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),system)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(801110).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(801110)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,677">Conditional</animation>
+					<top>90</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!true">InfoPosterContent</include>
+							<include condition="!true" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="true">InfoSquareContent</include>
+							<include condition="true" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>504</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>242</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>242</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>242</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">801110</param>
+						<param name="Label">[COLOR orange]System info[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">223</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>504</top>
+				<control id="801110" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation1</include>
+					<include content="SquareArt">
+						<param name="containerWidth">205</param>
+						<param name="containerHeight">200</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">192</param>
+						<param name="heightArt">192</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">200</param>
+						<param name="heightCase">200</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">scale</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/square.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">true</param>
+						<param name="weatherTop">39</param>
+						<param name="weatherHeight">96</param>
+						<param name="weatherTop1">0</param>
+						<param name="weatherTop2">135</param>
+						<param name="weatherTop3">166</param>
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="">
+						<include>skinshortcuts-template-SystemContent</include>
+					</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),power)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(801111).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(801111)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,677">Conditional</animation>
+					<top>90</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>453</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">801111</param>
+						<param name="Label">[COLORorange]Q Continuum[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">260</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>453</top>
+				<control id="801111" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation1</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="videos">plugin://plugin.video.qcontinuum/?mode=189&amp;search_db=&amp;dates=+&amp;episode=+&amp;description=+&amp;all_w=%7B%7D&amp;show_original_year=+&amp;fanart=https%3A%2F%2Fi.imgur.com%2FLC72IdN.jpg&amp;heb_name=+&amp;iconimage=https%3A%2F%2Fi.imgur.com%2Fr6nMlcQ.png&amp;original_title=%5BCOLORlime%5D%3E%3E%3E%3E+Next+Page+%3E%3E%3E%3E%3E%5B%2FCOLOR%5D&amp;eng_name=+&amp;data=&amp;url=https%3A%2F%2Fbitbucket.org%2FMad-Eric%2Ftextfiles%2Fraw%2Fmaster%2FNewMav%2FFreeMovies2.xml&amp;fav_status=false&amp;tmdbid=+&amp;season=+&amp;isr=0&amp;last_id=&amp;image_master=&amp;id=+&amp;name=%5BCOLORlime%5D%3E%3E%3E%3E+Next+Page+%3E%3E%3E%3E%3E%5B%2FCOLOR%5D&amp;video_data=%7B%22rating%22%3A+%220%22%2C+%22episode%22%3A+0%2C+%22title%22%3A+%22%5BCOLORlime%5D%3E%3E%3E%3E+Next+Page+%3E%3E%3E%3E%3E%5B%2FCOLOR%5D%22%2C+%22season%22%3A+0%2C+%22TVshowtitle%22%3A+%22%22%2C+%22mediatype%22%3A+%22movie%22%2C+%22plot%22%3A+%22+%22%2C+%22OriginalTitle%22%3A+%22%5BCOLORlime%5D%3E%3E%3E%3E+Next+Page+%3E%3E%3E%3E%3E%5B%2FCOLOR%5D%22%2C+%22Tag%22%3A+%22189%22%2C+%22year%22%3A+%22%22%2C+%22id%22%3A+%22+%22%7D&amp;reload=$INFO[Window(Home).Property(widgetreload-movies)]</content>
+				</control>
+			</control>
+		</control>
+	</include>
+	<include name="skinshortcuts-template-widget2">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-widget2-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-widget2-Master user">
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),favourites)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80211).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80211)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,-950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,-697">Conditional</animation>
+					<top>449</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>99</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80211</param>
+						<param name="Label">[COLORorange]MTV[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">261</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>99</top>
+				<control id="80211" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation2</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="videos">plugin://slyguy.pluto.tv.provider/?_=live_tv&amp;code=_&amp;group=MTV+en+Pluto+TV&amp;reload=$INFO[Window(Home).Property(widgetreload)]$INFO[Window(Home).Property(widgetreload2)]</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),livetv)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80212).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80212)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,-950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,-697">Conditional</animation>
+					<top>449</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>99</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80212</param>
+						<param name="Label">[COLORorange]Romy TV[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">261</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>99</top>
+				<control id="80212" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation2</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="videos">plugin://plugin.video.live.streamspro/?mode=1&amp;url=https://documentarys.do.am/plugin2020/main/tv_channels_stbemu_plus.m3u&amp;reload=$INFO[Window(Home).Property(widgetreload)]$INFO[Window(Home).Property(widgetreload2)]</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),videos)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80213).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80213)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,-950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,-697">Conditional</animation>
+					<top>449</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>99</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80213</param>
+						<param name="Label">[COLOR orange]Upcoming[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">261</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>99</top>
+				<control id="80213" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation2</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="videos">plugin://plugin.video.themoviedb.helper/?info=upcoming&amp;widget=true&amp;tmdb_type=movie&amp;reload=$INFO[Window(Home).Property(widgetreload-movies)]</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),movies)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80214).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80214)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,-950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,-697">Conditional</animation>
+					<top>449</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>99</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80214</param>
+						<param name="Label">[COLOR goldenrod]Asgard[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">261</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>99</top>
+				<control id="80214" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation2</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="videos">plugin://plugin.video.asgard/?mode=189&amp;search_db=&amp;dates=+&amp;episode=+&amp;description=+&amp;all_w=%7B%7D&amp;show_original_year=+&amp;fanart=http%3A%2F%2Fnarcacist.com%2Fimages%2Fasg%2Ffanart.jpg&amp;heb_name=+&amp;iconimage=http%3A%2F%2Fnarcacist.com%2Fimages%2Fasg%2Ficon.png&amp;original_title=%5BCOLOR%3Dwhite%5D2021+Movies%5B%2FCOLOR%5D&amp;eng_name=+&amp;data=&amp;url=https%3A%2F%2Fnarcacist.com%2FAddon%2Ftext%2Frd%2Ffree%2Ffree2021.xml&amp;fav_status=false&amp;tmdbid=+&amp;season=+&amp;isr=0&amp;last_id=&amp;image_master=&amp;id=+&amp;name=%5BCOLOR%3Dwhite%5D2021+Movies%5B%2FCOLOR%5D&amp;video_data=%7B%22rating%22%3A+%220%22%2C+%22episode%22%3A+0%2C+%22title%22%3A+%22%5BCOLOR%3Dwhite%5D2021+Movies%5B%2FCOLOR%5D%22%2C+%22season%22%3A+0%2C+%22TVshowtitle%22%3A+%22%22%2C+%22mediatype%22%3A+%22movie%22%2C+%22plot%22%3A+%22+%22%2C+%22OriginalTitle%22%3A+%22%5BCOLOR%3Dwhite%5D2021+Movies%5B%2FCOLOR%5D%22%2C+%22Tag%22%3A+%22189%22%2C+%22year%22%3A+%22%22%2C+%22id%22%3A+%22+%22%7D&amp;reload=$INFO[Window(Home).Property(widgetreload-movies)]</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80215).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80215)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,-950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,-697">Conditional</animation>
+					<top>449</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>99</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80215</param>
+						<param name="Label">[COLOR goldenrod]Asgard[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">261</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>99</top>
+				<control id="80215" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation2</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="videos">plugin://plugin.video.asgard/?mode=189&amp;search_db=&amp;dates=+&amp;episode=+&amp;description=+&amp;all_w=%7B%7D&amp;show_original_year=+&amp;fanart=http%3A%2F%2Fnarcacist.com%2Fimages%2Fasg%2Ffanart.jpg&amp;heb_name=+&amp;iconimage=http%3A%2F%2Fnarcacist.com%2Fimages%2Fasg%2Ficon.png&amp;original_title=%5BCOLOR%3Dwhite%5DTV+Shows%5B%2FCOLOR%5D&amp;eng_name=+&amp;data=&amp;url=https%3A%2F%2Fnarcacist.com%2FAddon%2Ftext%2Frd%2Ffree%2Ffree+tvshows.xml&amp;fav_status=false&amp;tmdbid=+&amp;season=+&amp;isr=0&amp;last_id=&amp;image_master=&amp;id=+&amp;name=%5BCOLOR%3Dwhite%5DTV+Shows%5B%2FCOLOR%5D&amp;video_data=%7B%22rating%22%3A+%220%22%2C+%22episode%22%3A+0%2C+%22title%22%3A+%22%5BCOLOR%3Dwhite%5DTV+Shows%5B%2FCOLOR%5D%22%2C+%22season%22%3A+0%2C+%22TVshowtitle%22%3A+%22%22%2C+%22mediatype%22%3A+%22movie%22%2C+%22plot%22%3A+%22+%22%2C+%22OriginalTitle%22%3A+%22%5BCOLOR%3Dwhite%5DTV+Shows%5B%2FCOLOR%5D%22%2C+%22Tag%22%3A+%22189%22%2C+%22year%22%3A+%22%22%2C+%22id%22%3A+%22+%22%7D&amp;reload=$INFO[Window(Home).Property(widgetreload-movies)]</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),music)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80216).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80216)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,-950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,-697">Conditional</animation>
+					<top>449</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>99</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80216</param>
+						<param name="Label">[COLORdarkorange]Music TV[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">261</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>99</top>
+				<control id="80216" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation2</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="videos">plugin://slyguy.samsung.tv.plus/?_=live_tv&amp;code=_&amp;group=Music&amp;reload=$INFO[Window(Home).Property(widgetreload)]$INFO[Window(Home).Property(widgetreload2)]</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),kids)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80217).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80217)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,-950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,-697">Conditional</animation>
+					<top>449</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>99</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80217</param>
+						<param name="Label">[COLOR orange]Animatie MRSP[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">261</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>99</top>
+				<control id="80217" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation2</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="videos">plugin://plugin.video.romanianpack/?action=OpenSite&amp;favorite=check&amp;site=filmeonline2016biz&amp;nume=Anima%C5%A3ie&amp;switch=recente&amp;link=https%3A%2F%2Ffilmeonline.st%2Fanimatie%2F&amp;watched=check&amp;reload=$INFO[Window(Home).Property(widgetreload)]$INFO[Window(Home).Property(widgetreload2)]</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),weather)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(80219).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(80219)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,-950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,-697">Conditional</animation>
+					<top>449</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!true">InfoPosterContent</include>
+							<include condition="!true" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="true">InfoSquareContent</include>
+							<include condition="true" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>145</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>242</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>242</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>242</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">80219</param>
+						<param name="Label">[COLOR orange]Tomorrow[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">223</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>145</top>
+				<control id="80219" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation2</include>
+					<include content="SquareArt">
+						<param name="containerWidth">205</param>
+						<param name="containerHeight">200</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">192</param>
+						<param name="heightArt">192</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">200</param>
+						<param name="heightCase">200</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">scale</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/square.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">true</param>
+						<param name="weatherTop">39</param>
+						<param name="weatherHeight">96</param>
+						<param name="weatherTop1">0</param>
+						<param name="weatherTop2">135</param>
+						<param name="weatherTop3">166</param>
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="">
+						<include>skinshortcuts-template-WeatherTomorrowContent</include>
+					</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),system)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(802110).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(802110)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,-950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,-697">Conditional</animation>
+					<top>449</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>99</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">802110</param>
+						<param name="Label">[COLOR orange]Programs[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">261</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>99</top>
+				<control id="802110" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation2</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="programs">addons://sources/executable</content>
+				</control>
+			</control>
+		</control>
+		<control type="group">
+			<visible>String.IsEqual(Container(9000).ListItem.Property(submenuVisibility),power)</visible>
+			<control type="group">
+				<visible>Integer.IsGreater(Container(802111).NumItems,0)</visible>
+				<control type="group">
+					<visible>Control.HasFocus(802111)</visible>
+					<animation condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)" effect="slide" end="0,-950">Conditional</animation>
+					<animation condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)" effect="slide" end="0,-697">Conditional</animation>
+					<top>449</top>
+					<left>40</left>
+					<control type="group">
+						<animation effect="fade" end="0">WindowClose</animation>
+						<control type="image">
+							<top>-40</top>
+							<width>1890</width>
+							<height>391</height>
+							<texture colordiffuse="BFFFFFFF">homewidgets/list_shadow.png</texture>
+						</control>
+						<control type="group">
+							<include condition="!false">InfoPosterContent</include>
+							<include condition="!false" content="InfoTextContent">
+								<param name="left">225</param>
+								<param name="width">1605</param>
+							</include>
+						</control>
+						<control type="group">
+							<include condition="false">InfoSquareContent</include>
+							<include condition="false" content="InfoTextContent">
+								<param name="left">330</param>
+								<param name="width">1500</param>
+							</include>
+						</control>
+					</control>
+				</control>
+				<control type="group">
+					<top>99</top>
+					<control type="group">
+						<include condition="!String.IsEmpty(Skin.String(Widget.Trans))">HomeWidgetFade</include>
+						<centerleft>50%</centerleft>
+						<top>-21</top>
+						<width>1882.5</width>
+						<height>285</height>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="$VAR[HomeWidgetBackColor]">$VAR[HomeWidgetBackgroundVar]</texture>
+							<visible>Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+						<control type="image">
+							<width>1882.5</width>
+							<height>285</height>
+							<texture border="40" colordiffuse="FF0B0B0B">homewidgets/bg_default.png</texture>
+							<visible>!Skin.HasSetting(Enable.GlobalWidgetBack)</visible>
+						</control>
+					</control>
+					<include content="PanelLabel">
+						<param name="id">802111</param>
+						<param name="Label">[COLORorange]Q Continuum[/COLOR]</param>
+						<param name="Title">$VAR[HomeWidgetInfoTitleVar]</param>
+						<param name="labelFont">font13_title</param>
+						<param name="labelBottom">261</param>
+						<param name="labelWidth">922</param>
+						<param name="labelLeft">38</param>
+						<param name="labelRight">959</param>
+						<param name="labelTitle">false</param>
+					</include>
+				</control>
+			</control>
+			<control type="group">
+				<top>99</top>
+				<control id="802111" type="panel">
+					<left>37.5</left>
+					<width>1845</width>
+					<height>243</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime easing="out" tween="quadratic">300</scrolltime>
+					<include>skinshortcuts-template-HorizontalNavigation2</include>
+					<include content="PortraitArt">
+						<param name="containerWidth">167.7</param>
+						<param name="containerHeight">243</param>
+						<param name="Texture">$VAR[PosterThumbVar]</param>
+						<param name="leftArt">6.5</param>
+						<param name="topArt">4</param>
+						<param name="widthArt">154.7</param>
+						<param name="heightArt">235</param>
+						<param name="topFakeDiscArt">4</param>
+						<param name="leftCase">2.5</param>
+						<param name="topCase">0</param>
+						<param name="widthCase">162.7</param>
+						<param name="heightCase">243</param>
+						<param name="labelHeight">-29</param>
+						<param name="labelFont">font11</param>
+						<param name="fallbackFont">fontCDalbum</param>
+						<param name="fallbackVisible">false</param>
+						<param name="Aspect">stretch</param>
+						<param name="Aligny">top</param>
+						<param name="Diffuse" />
+						<param name="Case">homewidgets/cases/glass/portrait.png</param>
+						<param name="labelVisible">false</param>
+						<param name="labelFocusVisible">false</param>
+						<param name="isWeather">false</param>
+						<param name="weatherTop" />
+						<param name="weatherHeight" />
+						<param name="weatherTop1" />
+						<param name="weatherTop2" />
+						<param name="weatherTop3" />
+						<param name="weatherFont">font12</param>
+					</include>
+					<content limit="" sortby="" sortorder="" target="videos">plugin://plugin.video.qcontinuum/?mode=189&amp;search_db=&amp;dates=+&amp;episode=+&amp;description=Sports&amp;all_w=%7B%7D&amp;show_original_year=+&amp;fanart=http%3A%2F%2Fwww.ezzer-mac.com%2Fx%2Fimg%2Ffanart.jpg&amp;heb_name=+&amp;iconimage=http%3A%2F%2Fwww.ezzer-mac.com%2Fx%2Fimg%2Ficon.png&amp;original_title=+&amp;eng_name=+&amp;data=+&amp;url=https%3A%2F%2Fbitbucket.org%2FMad-Eric%2Ftextfiles%2Fraw%2Fmaster%2FNewMav%2FTVShows.xml&amp;fav_status=false&amp;tmdbid=+&amp;season=+&amp;isr=0&amp;last_id=&amp;image_master=&amp;id=+&amp;name=%5BCOLOR+white%5DTV+Shows%5B%2FCOLOR%5D&amp;video_data=%7B%22rating%22%3A+%220%22%2C+%22episode%22%3A+0%2C+%22title%22%3A+%22%5BCOLOR+white%5DTV+Shows%5B%2FCOLOR%5D%22%2C+%22season%22%3A+0%2C+%22TVshowtitle%22%3A+%22%22%2C+%22mediatype%22%3A+%22movie%22%2C+%22plot%22%3A+%22Sports%22%2C+%22OriginalTitle%22%3A+%22+%22%2C+%22Tag%22%3A+%22101%22%2C+%22id%22%3A+%22+%22%7D&amp;reload=$INFO[Window(Home).Property(widgetreload-movies)]</content>
+				</control>
+			</control>
+		</control>
+	</include>
+	<include name="skinshortcuts-template-HorizontalNavigation1">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-HorizontalNavigation1-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-HorizontalNavigation1-Master user">
+		<onup condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Control.IsVisible(90020) + !Skin.HasSetting(centermainmenu)">90020</onup>
+		<onup condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical) + [Control.IsVisible(9027) | System.HasMediaDVD]">9020</onup>
+		<onup condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical) + ![Control.IsVisible(9027) | System.HasMediaDVD]">9000</onup>
+		<ondown condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + ![System.HasMediaDVD | Control.IsVisible(9027)]">9000</ondown>
+		<ondown condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + [System.HasMediaDVD | Control.IsVisible(9027)]">9020</ondown>
+		<ondown condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Control.IsVisible(90020)">90020</ondown>
+		<ondown condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical) + !Control.IsVisible(90020) + [Control.IsVisible(9027) | System.HasMediaDVD]">9020</ondown>
+		<ondown condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical) + !Control.IsVisible(90020) + ![Control.IsVisible(9027) | System.HasMediaDVD]">9000</ondown>
+		<onleft condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)">9000</onleft>
+		<onback>9000</onback>
+	</include>
+	<include name="skinshortcuts-template-HorizontalNavigation2">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-HorizontalNavigation2-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-HorizontalNavigation2-Master user">
+		<onup condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Skin.HasSetting(centermainmenu)">9000</onup>
+		<onup condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Control.IsVisible(90010)">90010</onup>
+		<onup condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical) + !Control.IsVisible(90010) + [Control.IsVisible(9027) | System.HasMediaDVD]">9020</onup>
+		<onup condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical) + !Control.IsVisible(90010) + ![Control.IsVisible(9027) | System.HasMediaDVD]">9000</onup>
+		<ondown condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Control.IsVisible(90020) + Skin.HasSetting(centermainmenu)">90020</ondown>
+		<ondown condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + Control.IsVisible(90010) + !Skin.HasSetting(centermainmenu)">90010</ondown>
+		<ondown condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + !Control.IsVisible(90010) + [System.HasMediaDVD | Control.IsVisible(9027)] + !Skin.HasSetting(centermainmenu)">9020</ondown>
+		<ondown condition="!String.IsEqual(Skin.String(MainMenu.Layout),vertical) + !Control.IsVisible(90010) + ![System.HasMediaDVD | Control.IsVisible(9027)] + !Skin.HasSetting(centermainmenu)">9000</ondown>
+		<ondown condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical) + [Control.IsVisible(9027) | System.HasMediaDVD]">9020</ondown>
+		<ondown condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical) + ![Control.IsVisible(9027) | System.HasMediaDVD]">9000</ondown>
+		<onleft condition="String.IsEqual(Skin.String(MainMenu.Layout),vertical)">9000</onleft>
+		<onback>9000</onback>
+	</include>
+	<include name="skinshortcuts-template-WeatherForecastContent">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-WeatherForecastContent-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-WeatherForecastContent-Master user">
+		<item>
+			<label>$LOCALIZE[31909]</label>
+			<icon />
+			<visible>!Weather.IsFetched</visible>
+		</item>
+		<item>
+			<label>$INFO[Window(weather).Property(Day0.Title)]</label>
+			<label2>$INFO[Window(weather).Property(Day0.Outlook)]</label2>
+			<icon>$VAR[WeatherIconsPathVar]$INFO[Window(weather).Property(Day0.FanartCode)]$VAR[WeatherIconsExtVar]</icon>
+			<property name="Label3">[COLOR red]$INFO[Window(weather).Property(Day0.HighTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Label4">[COLOR blue]$INFO[Window(weather).Property(Day0.LowTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Fanart">$INFO[Skin.String(weatherfanart.path)]$INFO[Window(weather).Property(Day0.FanartCode)]$VAR[WeatherBackgroundTypeVar]</property>
+			<onclick>ActivateWindow(weather)</onclick>
+			<visible>!String.IsEmpty(Window(Weather).Property(Day0.Title))</visible>
+		</item>
+		<item>
+			<label>$INFO[Window(weather).Property(Day1.Title)]</label>
+			<label2>$INFO[Window(weather).Property(Day1.Outlook)]</label2>
+			<icon>$VAR[WeatherIconsPathVar]$INFO[Window(weather).Property(Day1.FanartCode)]$VAR[WeatherIconsExtVar]</icon>
+			<property name="Label3">[COLOR red]$INFO[Window(weather).Property(Day1.HighTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Label4">[COLOR blue]$INFO[Window(weather).Property(Day1.LowTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Fanart">$INFO[Skin.String(weatherfanart.path)]$INFO[Window(weather).Property(Day1.FanartCode)]$VAR[WeatherBackgroundTypeVar]</property>
+			<onclick>ActivateWindow(weather)</onclick>
+			<visible>!String.IsEmpty(Window(Weather).Property(Day1.Title))</visible>
+		</item>
+		<item>
+			<label>$INFO[Window(weather).Property(Day2.Title)]</label>
+			<label2>$INFO[Window(weather).Property(Day2.Outlook)]</label2>
+			<icon>$VAR[WeatherIconsPathVar]$INFO[Window(weather).Property(Day2.FanartCode)]$VAR[WeatherIconsExtVar]</icon>
+			<property name="Label3">[COLOR red]$INFO[Window(weather).Property(Day2.HighTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Label4">[COLOR blue]$INFO[Window(weather).Property(Day2.LowTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Fanart">$INFO[Skin.String(weatherfanart.path)]$INFO[Window(weather).Property(Day2.FanartCode)]$VAR[WeatherBackgroundTypeVar]</property>
+			<onclick>ActivateWindow(weather)</onclick>
+			<visible>!String.IsEmpty(Window(Weather).Property(Day2.Title))</visible>
+		</item>
+		<item>
+			<label>$INFO[Window(weather).Property(Day3.Title)]</label>
+			<label2>$INFO[Window(weather).Property(Day3.Outlook)]</label2>
+			<icon>$VAR[WeatherIconsPathVar]$INFO[Window(weather).Property(Day3.FanartCode)]$VAR[WeatherIconsExtVar]</icon>
+			<property name="Label3">[COLOR red]$INFO[Window(weather).Property(Day3.HighTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Label4">[COLOR blue]$INFO[Window(weather).Property(Day3.LowTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Fanart">$INFO[Skin.String(weatherfanart.path)]$INFO[Window(weather).Property(Day3.FanartCode)]$VAR[WeatherBackgroundTypeVar]</property>
+			<onclick>ActivateWindow(weather)</onclick>
+			<visible>!String.IsEmpty(Window(Weather).Property(Day3.Title))</visible>
+		</item>
+		<item>
+			<label>$INFO[Window(weather).Property(Day4.Title)]</label>
+			<label2>$INFO[Window(weather).Property(Day4.Outlook)]</label2>
+			<icon>$VAR[WeatherIconsPathVar]$INFO[Window(weather).Property(Day4.FanartCode)]$VAR[WeatherIconsExtVar]</icon>
+			<property name="Label3">[COLOR red]$INFO[Window(weather).Property(Day4.HighTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Label4">[COLOR blue]$INFO[Window(weather).Property(Day4.LowTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Fanart">$INFO[Skin.String(weatherfanart.path)]$INFO[Window(weather).Property(Day4.FanartCode)]$VAR[WeatherBackgroundTypeVar]</property>
+			<onclick>ActivateWindow(weather)</onclick>
+			<visible>!String.IsEmpty(Window(Weather).Property(Day4.Title))</visible>
+		</item>
+		<item>
+			<label>$INFO[Window(weather).Property(Day5.Title)]</label>
+			<label2>$INFO[Window(weather).Property(Day5.Outlook)]</label2>
+			<icon>$VAR[WeatherIconsPathVar]$INFO[Window(weather).Property(Day5.FanartCode)]$VAR[WeatherIconsExtVar]</icon>
+			<property name="Label3">[COLOR red]$INFO[Window(weather).Property(Day5.HighTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Label4">[COLOR blue]$INFO[Window(weather).Property(Day5.LowTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Fanart">$INFO[Skin.String(weatherfanart.path)]$INFO[Window(weather).Property(Day5.FanartCode)]$VAR[WeatherBackgroundTypeVar]</property>
+			<onclick>ActivateWindow(weather)</onclick>
+			<visible>!String.IsEmpty(Window(Weather).Property(Day5.Title))</visible>
+		</item>
+		<item>
+			<label>$INFO[Window(weather).Property(Day6.Title)]</label>
+			<label2>$INFO[Window(weather).Property(Day6.Outlook)]</label2>
+			<icon>$VAR[WeatherIconsPathVar]$INFO[Window(weather).Property(Day6.FanartCode)]$VAR[WeatherIconsExtVar]</icon>
+			<property name="Label3">[COLOR red]$INFO[Window(weather).Property(Day6.HighTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Label4">[COLOR blue]$INFO[Window(weather).Property(Day6.LowTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Fanart">$INFO[Skin.String(weatherfanart.path)]$INFO[Window(weather).Property(Day6.FanartCode)]$VAR[WeatherBackgroundTypeVar]</property>
+			<onclick>ActivateWindow(weather)</onclick>
+			<visible>!String.IsEmpty(Window(Weather).Property(Day6.Title))</visible>
+		</item>
+	</include>
+	<include name="skinshortcuts-template-WeatherTodayContent">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-WeatherTodayContent-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-WeatherTodayContent-Master user">
+		<item>
+			<label>$LOCALIZE[31909]</label>
+			<icon />
+			<visible>!Weather.IsFetched</visible>
+		</item>
+		<item>
+			<label>33006</label>
+			<label2>$INFO[Window(weather).Property(Day0.Outlook)]</label2>
+			<icon>$VAR[WeatherIconsPathVar]$INFO[Window(weather).Property(Day0.FanartCode)]$VAR[WeatherIconsExtVar]</icon>
+			<property name="Label3">[COLOR red]$INFO[Window(weather).Property(Day0.HighTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Label4">[COLOR blue]$INFO[Window(weather).Property(Day0.LowTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Fanart">$INFO[Skin.String(weatherfanart.path)]$INFO[Window(weather).Property(Day0.FanartCode)]$VAR[WeatherBackgroundTypeVar]</property>
+			<onclick>ActivateWindow(weather)</onclick>
+			<visible>!String.IsEmpty(Window(Weather).Property(Day0.Title))</visible>
+		</item>
+	</include>
+	<include name="skinshortcuts-template-WeatherTomorrowContent">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-WeatherTomorrowContent-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-WeatherTomorrowContent-Master user">
+		<item>
+			<label>$LOCALIZE[31909]</label>
+			<icon />
+			<visible>!Weather.IsFetched</visible>
+		</item>
+		<item>
+			<label>33007</label>
+			<label2>$INFO[Window(weather).Property(Day1.Outlook)]</label2>
+			<icon>$VAR[WeatherIconsPathVar]$INFO[Window(weather).Property(Day1.FanartCode)]$VAR[WeatherIconsExtVar]</icon>
+			<property name="Label3">[COLOR red]$INFO[Window(weather).Property(Day1.HighTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Label4">[COLOR blue]$INFO[Window(weather).Property(Day1.LowTemp)]$INFO[System.TemperatureUnits][/COLOR]</property>
+			<property name="Fanart">$INFO[Skin.String(weatherfanart.path)]$INFO[Window(weather).Property(Day1.FanartCode)]$VAR[WeatherBackgroundTypeVar]</property>
+			<onclick>ActivateWindow(weather)</onclick>
+			<visible>!String.IsEmpty(Window(Weather).Property(Day1.Title))</visible>
+		</item>
+	</include>
+	<include name="skinshortcuts-template-SystemContent">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-SystemContent-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-SystemContent-Master user">
+		<item>
+			<label>12395</label>
+			<label2>$INFO[System.BatteryLevel]</label2>
+			<icon>homewidgets/systeminfo/square/battery_100.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/battery_100.jpg</property>
+			<property name="Label3">Remaining</property>
+			<property name="isSystemInfo">true</property>
+			<visible>Integer.IsGreater(System.BatteryLevel,60)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>12395</label>
+			<label2>$INFO[System.BatteryLevel]</label2>
+			<icon>homewidgets/systeminfo/square/battery_50.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/battery_50.jpg</property>
+			<property name="Label3">Remaining</property>
+			<property name="isSystemInfo">true</property>
+			<visible>Integer.IsGreater(System.BatteryLevel,20) + !Integer.IsGreater(System.BatteryLevel,60)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>12395</label>
+			<label2>$INFO[System.BatteryLevel]</label2>
+			<icon>homewidgets/systeminfo/square/battery_10.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/battery_10.jpg</property>
+			<property name="Label3">Remaining</property>
+			<property name="isSystemInfo">true</property>
+			<visible>Integer.IsGreater(System.BatteryLevel,5) + !Integer.IsGreater(System.BatteryLevel,20)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>12395</label>
+			<label2>$INFO[System.BatteryLevel]</label2>
+			<icon>homewidgets/systeminfo/square/battery_critical.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/battery_critical.jpg</property>
+			<property name="Label3">Remaining</property>
+			<property name="isSystemInfo">true</property>
+			<visible>Integer.IsGreater(System.BatteryLevel,0) + !Integer.IsGreater(System.BatteryLevel,5)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>705</label>
+			<label2>$INFO[Network.LinkState]</label2>
+			<icon>homewidgets/systeminfo/square/connected.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/connected.jpg</property>
+			<property name="Label3">$INFO[Network.IPAddress,IP: ]</property>
+			<property name="isSystemInfo">true</property>
+			<visible>!String.IsEmpty(Network.IPAddress)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>705</label>
+			<label2>$INFO[Network.LinkState]</label2>
+			<icon>homewidgets/systeminfo/square/disconnected.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/disconnected.jpg</property>
+			<property name="Label3">$INFO[Network.IPAddress,IP: ]</property>
+			<property name="isSystemInfo">true</property>
+			<visible>String.IsEmpty(Network.IPAddress)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>13280</label>
+			<label2>$INFO[System.ScreenWidth]x$INFO[System.ScreenHeight]</label2>
+			<icon>homewidgets/systeminfo/square/video.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/video.jpg</property>
+			<property name="Label3">$INFO[System.fps,, FPS]</property>
+			<property name="isSystemInfo">true</property>
+			<visible>!Integer.IsGreater(System.GPUTemperature,0)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>13280</label>
+			<label2>$INFO[System.ScreenWidth]x$INFO[System.ScreenHeight]</label2>
+			<icon>homewidgets/systeminfo/square/video.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/video.jpg</property>
+			<property name="Label3">$INFO[System.fps] FPS $INFO[System.GPUTemperature]</property>
+			<property name="isSystemInfo">true</property>
+			<visible>Integer.IsGreater(System.GPUTemperature,0)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>CPU</label>
+			<label2>$INFO[System.CPUUsage(used.percent)]</label2>
+			<icon>homewidgets/systeminfo/square/cpu.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/cpu.jpg</property>
+			<property name="Label3">$INFO[System.CpuFrequency] $INFO[System.CPUTemperature]</property>
+			<property name="isSystemInfo">true</property>
+			<visible>Integer.IsGreater(System.CPUTemperature,0)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>CPU</label>
+			<label2>$INFO[System.CPUUsage(used.percent)]</label2>
+			<icon>homewidgets/systeminfo/square/cpu.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/cpu.jpg</property>
+			<property name="Label3">$INFO[System.CpuFrequency]</property>
+			<property name="isSystemInfo">true</property>
+			<visible>!Integer.IsGreater(System.CPUTemperature,0)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>$LOCALIZE[31309]</label>
+			<label2>$INFO[System.Memory(free.percent)] $LOCALIZE[156]</label2>
+			<icon>homewidgets/systeminfo/square/memory.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/memory.jpg</property>
+			<property name="Label3">$INFO[System.Memory(total)] $LOCALIZE[20161]</property>
+			<property name="isSystemInfo">true</property>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>154</label>
+			<label2>$INFO[System.FreeSpacePercent]</label2>
+			<icon>homewidgets/systeminfo/square/storage.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/storage.jpg</property>
+			<property name="Label3">$INFO[System.TotalSpace]</property>
+			<property name="isSystemInfo">true</property>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>19020</label>
+			<label2>$INFO[Pvr.BackendName]</label2>
+			<icon>homewidgets/systeminfo/square/pvr.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/pvr.jpg</property>
+			<property name="Label3">$INFO[Pvr.BackendChannels] $LOCALIZE[19019]</property>
+			<property name="isSystemInfo">true</property>
+			<visible>PVR.HasTVChannels</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>19114</label>
+			<label2>$INFO[System.BuildVersion]</label2>
+			<icon>homewidgets/systeminfo/square/system.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/system.jpg</property>
+			<property name="Label3">$INFO[System.BuildDate]</property>
+			<property name="isSystemInfo">true</property>
+			<visible>!PVR.HasTVChannels</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>12390</label>
+			<label2>$INFO[System.Uptime]</label2>
+			<icon>homewidgets/systeminfo/square/uptime.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/uptime.jpg</property>
+			<property name="Label3">$LOCALIZE[20161]: $INFO[System.TotalUptime]</property>
+			<property name="isSystemInfo">true</property>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+	</include>
+	<include name="skinshortcuts-template-SystemUptime">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-SystemUptime-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-SystemUptime-Master user">
+		<item>
+			<label>12390</label>
+			<label2>$INFO[System.Uptime]</label2>
+			<icon>homewidgets/systeminfo/square/uptime.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/uptime.jpg</property>
+			<property name="Label3">$LOCALIZE[20161]: $INFO[System.TotalUptime]</property>
+			<property name="isSystemInfo">true</property>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+	</include>
+	<include name="skinshortcuts-template-SystemBattery">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-SystemBattery-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-SystemBattery-Master user">
+		<item>
+			<label>12395</label>
+			<label2>$INFO[System.BatteryLevel]</label2>
+			<icon>homewidgets/systeminfo/square/battery_100.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/battery_100.jpg</property>
+			<property name="Label3">Remains</property>
+			<property name="isSystemInfo">true</property>
+			<visible>Integer.IsGreater(System.BatteryLevel,60)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>12395</label>
+			<label2>$INFO[System.BatteryLevel]</label2>
+			<icon>homewidgets/systeminfo/square/battery_50.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/battery_50.jpg</property>
+			<property name="Label3">Remains</property>
+			<property name="isSystemInfo">true</property>
+			<visible>Integer.IsGreater(System.BatteryLevel,20) + !Integer.IsGreater(System.BatteryLevel,60)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>12395</label>
+			<label2>$INFO[System.BatteryLevel]</label2>
+			<icon>homewidgets/systeminfo/square/battery_10.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/battery_10.jpg</property>
+			<property name="Label3">Remains</property>
+			<property name="isSystemInfo">true</property>
+			<visible>Integer.IsGreater(System.BatteryLevel,5) + !Integer.IsGreater(System.BatteryLevel,20)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>12395</label>
+			<label2>$INFO[System.BatteryLevel]</label2>
+			<icon>homewidgets/systeminfo/square/battery_critical.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/battery_critical.jpg</property>
+			<property name="Label3">Remains</property>
+			<property name="isSystemInfo">true</property>
+			<visible>Integer.IsGreater(System.BatteryLevel,0) + !Integer.IsGreater(System.BatteryLevel,5)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+	</include>
+	<include name="skinshortcuts-template-SystemNetwork">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-SystemNetwork-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-SystemNetwork-Master user">
+		<item>
+			<label>705</label>
+			<label2>$INFO[Network.LinkState]</label2>
+			<icon>homewidgets/systeminfo/square/connected.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/connected.jpg</property>
+			<property name="Label3">$INFO[Network.IPAddress,IP: ]</property>
+			<property name="isSystemInfo">true</property>
+			<visible>!String.IsEmpty(Network.IPAddress)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>705</label>
+			<label2>$INFO[Network.LinkState]</label2>
+			<icon>homewidgets/systeminfo/square/disconnected.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/disconnected.jpg</property>
+			<property name="Label3">$INFO[Network.IPAddress,IP: ]</property>
+			<property name="isSystemInfo">true</property>
+			<visible>String.IsEmpty(Network.IPAddress)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+	</include>
+	<include name="skinshortcuts-template-SystemVideo">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-SystemVideo-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-SystemVideo-Master user">
+		<item>
+			<label>13280</label>
+			<label2>$INFO[System.ScreenWidth]x$INFO[System.ScreenHeight]</label2>
+			<icon>homewidgets/systeminfo/square/video.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/video.jpg</property>
+			<property name="Label3">$INFO[System.fps] FPS</property>
+			<property name="isSystemInfo">true</property>
+			<visible>!Integer.IsGreater(System.GPUTemperature,0)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>13280</label>
+			<label2>$INFO[System.ScreenWidth]x$INFO[System.ScreenHeight]</label2>
+			<icon>homewidgets/systeminfo/square/video.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/video.jpg</property>
+			<property name="Label3">$INFO[System.fps] FPS $INFO[System.GPUTemperature]</property>
+			<property name="isSystemInfo">true</property>
+			<visible>Integer.IsGreater(System.GPUTemperature,0)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+	</include>
+	<include name="skinshortcuts-template-SystemCPU">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-SystemCPU-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-SystemCPU-Master user">
+		<item>
+			<label>$LOCALIZE[140]</label>
+			<label2>$INFO[System.CPUUsage(used.percent)]</label2>
+			<icon>homewidgets/systeminfo/square/cpu.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/cpu.jpg</property>
+			<property name="Label3">$INFO[System.CpuFrequency] $INFO[System.CPUTemperature]</property>
+			<property name="isSystemInfo">true</property>
+			<visible>Integer.IsGreater(System.CPUTemperature,0)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+		<item>
+			<label>$LOCALIZE[140]</label>
+			<label2>$INFO[System.CPUUsage(used.percent)]</label2>
+			<icon>homewidgets/systeminfo/square/cpu.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/cpu.jpg</property>
+			<property name="Label3">$INFO[System.CpuFrequency]</property>
+			<property name="isSystemInfo">true</property>
+			<visible>!Integer.IsGreater(System.CPUTemperature,0)</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+	</include>
+	<include name="skinshortcuts-template-SystemMemory">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-SystemMemory-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-SystemMemory-Master user">
+		<item>
+			<label>158</label>
+			<label2>$INFO[System.Memory(free.percent)] $LOCALIZE[156]</label2>
+			<icon>homewidgets/systeminfo/square/memory.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/memory.jpg</property>
+			<property name="Label3">$INFO[System.Memory(total)] $LOCALIZE[20161]</property>
+			<property name="isSystemInfo">true</property>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+	</include>
+	<include name="skinshortcuts-template-SystemStorage">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-SystemStorage-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-SystemStorage-Master user">
+		<item>
+			<label>154</label>
+			<label2>$INFO[System.FreeSpacePercent]</label2>
+			<icon>homewidgets/systeminfo/square/storage.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/storage.jpg</property>
+			<property name="Label3">$INFO[System.TotalSpace]</property>
+			<property name="isSystemInfo">true</property>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+	</include>
+	<include name="skinshortcuts-template-SystemPVR">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-SystemPVR-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-SystemPVR-Master user">
+		<item>
+			<label>19020</label>
+			<label2>$INFO[Pvr.BackendName]</label2>
+			<icon>homewidgets/systeminfo/square/pvr.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/pvr.jpg</property>
+			<property name="Label3">$INFO[Pvr.BackendChannels] $LOCALIZE[19019]</property>
+			<property name="isSystemInfo">true</property>
+			<visible>PVR.HasTVChannels</visible>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+	</include>
+	<include name="skinshortcuts-template-SystemVersion">
+		<include condition="String.IsEqual(System.ProfileName,Master user)">skinshortcuts-template-SystemVersion-Master user</include>
+	</include>
+	<include name="skinshortcuts-template-SystemVersion-Master user">
+		<item>
+			<label>19114</label>
+			<label2>$INFO[System.BuildVersion]</label2>
+			<icon>homewidgets/systeminfo/square/system.png</icon>
+			<property name="Fanart">special://skin/backgrounds/widgets/systeminfo/fanart/system.jpg</property>
+			<property name="Label3">$INFO[System.BuildDate]</property>
+			<property name="isSystemInfo">true</property>
+			<onclick>ActivateWindow(systeminfo)</onclick>
+		</item>
+	</include>
+	<include name="skinshortcuts-template-WidgetPoster">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetPoster.2">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetFanArt">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetFanArt.2">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetLandscape">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetLandscape.2">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetClearArt">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetClearArt.2">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetClearLogo">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetClearLogo.2">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetThumb">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetThumb.2">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetCharacterArt">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetCharacterArt.2">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetBanner">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetBanner.2">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetTitle">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetTitle.2">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetTitle2">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-WidgetTitle2.2">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+	<include name="skinshortcuts-template-NextAiredWidgetContent">
+		<description>This include was built automatically as the template didn't match any menu items</description>
+	</include>
+</includes>

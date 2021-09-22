@@ -1,0 +1,58 @@
+v 0.3.3
+  1. Add api epg 
+
+v 0.3.2
+  1. Android play fix for api mode
+
+v 0.3.1
+  1. Retry if device gets unregistered and we get error 304 ("Pentru acces la acest continut trebuie sa aveti abonament la acest serviciu. (304)")
+     and register as a new device by relogin
+  2. Display login error messages
+
+v 0.3.0
+  1. add api support to enable user an password login
+
+v 0.2.2
+  1. add setup action to be able to setup from json rpc
+
+v 0.2.1
+  1. removed username / password login method from settings and replaced them with cookies that need to be extracted from browser after a successful
+     login to www.digionline.ro (needed because digi introduced recaptcha limitation to login so normal login method can not be used anymore)
+
+v 0.2.0
+  1. migrate to python 3 for kodi 19
+
+v 0.1.3
+  1. Fix play on android os
+  2. remove quality selection since is no longer needed. kodi can select program bitrate from the m3u8 file
+
+v 0.1.2
+  1. Added Play and HBOGo.
+  2. Added subtitles
+  3. Added pagination option
+  4. Fixed channel name detection
+
+v 0.1.1
+  1. remove html entities from epg
+  2. fix streams urls (stop adding protocol as prefix)
+
+v 0.1.0
+  1. fix subscription error messages
+
+v 0.0.6
+  1. reset login if cookie is not valid anymore (can lead to to many devices linked into your account)
+
+v 0.0.4
+  1. detect abr quality
+  2. add setting to choose quality before play
+
+v 0.0.3
+  1. add setting to reset login data
+     If the username and password is changed this setting must be enabled to clear the cookie information and register again as new device.
+  2. error message in case of invalid login
+
+v 0.0.2
+  1. fix "requests" module dependency
+
+v 0.0.1
+  1. first release

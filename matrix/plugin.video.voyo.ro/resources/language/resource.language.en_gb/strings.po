@@ -1,0 +1,45 @@
+# Kodi Media Center language file
+# Addon Name: Nova Plus
+# Addon id: plugin.video.novaplus.cz
+# Addon Provider: wombat
+msgid ""
+msgstr ""
+
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgctxt "#30001"
+msgid "Recent Episodes"
+msgstr ""
+
+msgctxt "#30002"
+msgid "TOP Shows"
+msgstr ""
+
+msgctxt "#30003"
+msgid "Shows"
+msgstr ""
+
+msgctxt "#30004"
+msgid "Next videos"
+msgstr ""
+
+msgctxt "#30005"
+msgid "Go to show"
+msgstr ""
+
+msgctxt "#30006"
+msgid "No stream found"
+msgstr ""
+
+msgctxt "#30007"
+msgid "Categories"
+msgstr ""
+
+msgctxt "#31001"
+msgid "General"
+msgstr ""
+
+msgctxt "#31002"
+msgid "Source"
+msgstr ""
