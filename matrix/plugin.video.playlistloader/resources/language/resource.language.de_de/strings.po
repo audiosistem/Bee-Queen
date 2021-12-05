@@ -192,6 +192,22 @@ msgctxt "#30044"
 msgid "Delete directory and move contents to root"
 msgstr "Ordner löschen und Inhalt ins Hauptverzeichnis verschieben"
 
+msgctxt "#30045"
+msgid "Change / Remove EPG source"
+msgstr "EPG Quelle ändern / entfernen"
+
+msgctxt "#30046"
+msgid "Select EPG source"
+msgstr "EPG Quelle wählen"
+
+msgctxt "#30047"
+msgid "EPG URL"
+msgstr "EPG (URL)"
+
+msgctxt "#30048"
+msgid "Local EPG"
+msgstr "EPG (Datei)"
+
 msgctxt "#30101"
 msgid "Delete Playlists file"
 msgstr "Wiedergabelistendatei löschen"
