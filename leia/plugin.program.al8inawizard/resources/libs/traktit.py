@@ -29,8 +29,8 @@ from resources.libs.common.config import CONFIG
 from resources.libs.common import logging
 from resources.libs.common import tools
 
-ORDER = ['tempest', 'fen', 'gaia', 'romanianpack', 'openmeta', 'premiumizer',
-         'realizer', 'theoath', 'seren', 'shadow', 'thecrew', 'trakt', 'alvin']
+ORDER = ['scrubsv2', 'fen', 'gaia', 'romanianpack', 'openmeta', 'premiumizer',
+         'realizer', 'theoath', 'seren', 'shadow', 'thepromise', 'trakt', 'alvin']
 
 TRAKTID = {
     'gaia': {
@@ -81,18 +81,18 @@ TRAKTID = {
         'default'  : 'user',
         'data'     : ['authorization', 'user'],
         'activate' : 'RunScript(script.trakt, action=auth_info)'},
-    'tempest': {
-        'name'     : 'Tempest',
-        'plugin'   : 'plugin.video.tempest',
-        'saved'    : 'tempest',
-        'path'     : os.path.join(CONFIG.ADDONS, 'plugin.video.tempest'),
-        'icon'     : os.path.join(CONFIG.ADDONS, 'plugin.video.tempest', 'icon.png'),
-        'fanart'   : os.path.join(CONFIG.ADDONS, 'plugin.video.tempest', 'fanart.jpg'),
-        'file'     : os.path.join(CONFIG.TRAKTFOLD, 'tempest_trakt'),
-        'settings' : os.path.join(CONFIG.ADDON_DATA, 'plugin.video.tempest', 'settings.xml'),
+    'scrubsv2': {
+        'name'     : 'SCRUBSV2',
+        'plugin'   : 'plugin.video.scrubsv2',
+        'saved'    : 'scrubsv2',
+        'path'     : os.path.join(CONFIG.ADDONS, 'plugin.video.scrubsv2'),
+        'icon'     : os.path.join(CONFIG.ADDONS, 'plugin.video.scrubsv2', 'icon.png'),
+        'fanart'   : os.path.join(CONFIG.ADDONS, 'plugin.video.scrubsv2', 'fanart.jpg'),
+        'file'     : os.path.join(CONFIG.TRAKTFOLD, 'scrubsv2_trakt'),
+        'settings' : os.path.join(CONFIG.ADDON_DATA, 'plugin.video.scrubsv2', 'settings.xml'),
         'default'  : 'trakt.user',
         'data'     : ['trakt.user', 'trakt.refresh', 'trakt.token'],
-        'activate' : 'RunPlugin(plugin://plugin.video.tempest/?action=authTrakt)'},
+        'activate' : 'RunPlugin(plugin://plugin.video.scrubsv2/?action=authTrakt)'},
     'openmeta': {
         'name'     : 'OpenMeta',
         'plugin'   : 'plugin.video.openmeta',
@@ -129,20 +129,20 @@ TRAKTID = {
         'default'  : 'trakt.user',
         'data'     : ['trakt.token', 'trakt.refresh', 'trakt.user'],
         'activate' : 'RunPlugin(plugin://plugin.video.alvin/?action=authTrakt&opensettings=tru&query=10.2)'},
-    'thecrew': {
-        'name'     : 'THE CREW',
-        'plugin'   : 'plugin.video.thecrew',
-        'saved'    : 'thecrew',
-        'path'     : os.path.join(CONFIG.ADDONS, 'plugin.video.thecrew'),
-        'icon'     : os.path.join(CONFIG.ADDONS, 'plugin.video.thecrew', 'icon.png'),
-        'fanart'   : os.path.join(CONFIG.ADDONS, 'plugin.video.thecrew', 'fanart.jpg'),
-        'file'     : os.path.join(CONFIG.TRAKTFOLD, 'thecrew_trakt'),
-        'settings' : os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thecrew', 'settings.xml'),
+    'thepromise': {
+        'name'     : 'THE PROMISE',
+        'plugin'   : 'plugin.video.thepromise',
+        'saved'    : 'thepromise',
+        'path'     : os.path.join(CONFIG.ADDONS, 'plugin.video.thepromise'),
+        'icon'     : os.path.join(CONFIG.ADDONS, 'plugin.video.thepromise', 'icon.png'),
+        'fanart'   : os.path.join(CONFIG.ADDONS, 'plugin.video.thepromise', 'fanart.jpg'),
+        'file'     : os.path.join(CONFIG.TRAKTFOLD, 'thepromise_trakt'),
+        'settings' : os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thepromise', 'settings.xml'),
         'default'  : 'trakt.user',
         'data'     : ['trakt.token', 'trakt.refresh', 'trakt.user'],
-        'activate' : 'RunPlugin(plugin://plugin.video.thecrew/?action=authTrakt)'},
+        'activate' : 'RunPlugin(plugin://plugin.video.thepromise/?action=authTrakt)'},
     'theoath': {
-        'name'     : 'TheOath',
+        'name'     : 'THE OATH',
         'plugin'   : 'plugin.video.theoath',
         'saved'    : 'theoath',
         'path'     : os.path.join(CONFIG.ADDONS, 'plugin.video.theoath'),

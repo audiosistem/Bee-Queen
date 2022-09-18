@@ -57,7 +57,7 @@
         <setting id="includemrsp" type="bool" label="Include MRSP Cache DB: " default="" enable="eq(-3,false)" visible="System.HasAddon(plugin.video.romanianpack)"/>
         <setting id="includescrubs" type="bool" label="Include Scrubs v2 Cache DB: " default="" enable="eq(-4,false)" visible="System.HasAddon(plugin.video.scrubsv2)"/>
         <setting id="includeasgard" type="bool" label="Include Asgard Cache DB: " default="" enable="eq(-5,false)" visible="System.HasAddon(plugin.video.asgard)"/>
-        <setting id="includethecrew" type="bool" label="Include The Crew Cache DB: " default="" enable="eq(-6,false)" visible="System.HasAddon(plugin.video.thecrew)"/>
+        <setting id="includethepromise" type="bool" label="Include The Promise Cache DB: " default="" enable="eq(-6,false)" visible="System.HasAddon(plugin.video.thepromise)"/>
         <setting id="includealvin" type="bool" label="Include Alvin Cache DB: " default="" enable="eq(-7,false)" visible="System.HasAddon(plugin.video.alvin)"/>
 
         <!-- Default settings for Save Data entries -->
@@ -70,7 +70,7 @@
         <setting id="asgard" type="text" default="" visible="false"/>
         <setting id="scrubs" type="text" default="" visible="false"/>
         <setting id="shadow" type="text" default="" visible="false"/>
-        <setting id="thecrew" type="text" default="" visible="false"/>
+        <setting id="thepromise" type="text" default="" visible="false"/>
         <setting id="tmdbhelper" type="text" default="" visible="false"/>
         <setting id="trakt" type="text" default="" visible="false"/>
         <setting id="alvin" type="text" default="" visible="false"/>
@@ -101,7 +101,7 @@
         <setting id="fanart-tempest" type="text" default="" visible="false"/>
         <setting id="fanart-theoath" type="text" default="" visible="false"/>
         <setting id="fanart-mrsp" type="text" default="" visible="false"/>
-        <setting id="fanart-thecrew" type="text" default="" visible="false"/>
+        <setting id="fanart-thepromise" type="text" default="" visible="false"/>
         <setting id="fanart-metadatautils" type="text" default="" visible="false"/>
         <setting id="fanart-premiumizer" type="text" default="" visible="false"/>
         <setting id="fanart-asgard" type="text" default="" visible="false"/>
@@ -112,7 +112,7 @@
         <setting id="imdb-tempest" type="text" default="" visible="false"/>
         <setting id="imdb-theoath" type="text" default="" visible="false"/>
         <setting id="imdb-mrsp" type="text" default="" visible="false"/>
-        <setting id="imdb-thecrew" type="text" default="" visible="false"/>
+        <setting id="imdb-thepromise" type="text" default="" visible="false"/>
         <setting id="imdb-premiumizer" type="text" default="" visible="false"/>
         <setting id="imdb-asgard" type="text" default="" visible="false"/>
         <setting id="imdb-scrubs" type="text" default="" visible="false"/>
@@ -135,7 +135,7 @@
         <setting id="tmdb-metadatautils" type="text" default="" visible="false"/>
         <setting id="tmdb-eis" type="text" default="" visible="false"/>
         <setting id="tmdb-openmeta" type="text" default="" visible="false"/>
-        <setting id="tmdb-thecrew" type="text" default="" visible="false"/>
+        <setting id="tmdb-thepromise" type="text" default="" visible="false"/>
         <setting id="tmdb-premiumizer" type="text" default="" visible="false"/>
         <setting id="tmdb-asgard" type="text" default="" visible="false"/>
         <setting id="tmdb-scrubs" type="text" default="" visible="false"/>

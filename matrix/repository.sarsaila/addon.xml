@@ -12,5 +12,9 @@
         <description>Download and install addons for Kodi.</description>
         <disclaimer>Sarsailă</disclaimer>
         <platform>all</platform>
+		<assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
     </extension>
 </addon>

@@ -15,6 +15,7 @@ except ImportError:
 import re
 import xbmc
 import xbmcgui
+import xbmcvfs
 import xbmcaddon
 import xbmcplugin
 import plugintools
@@ -28,7 +29,10 @@ import six
 import random
 from datetime import date
 from datetime import datetime
-from resolveurl.plugins.lib import jsunpack 
+try:
+    from resolveurl.lib import jsunpack 
+except ImportError:
+    from resolveurl.plugins.lib import jsunpack 
 from resources.modules import control
 
 if six.PY3:
@@ -51,25 +55,21 @@ thmb_cambio_servidor='https://archive.org/download/bee-1/server.png'
 thmb_cambio_mac='https://archive.org/download/bee-1/MAC.png'
 thmb_carga_servidores='https://archive.org/download/bee-1/arrow.png'
 thmb_guarda_servidores='https://archive.org/download/bee-1/rack-server_icon-icons.com_52830.png'
-thmb_nuevo_servidor='https://archive.org/download/bee-1/office.png'
-thmb_guia='https://archive.org/download/bee-1/vector%20tv.png'
+thmb_nuevo_servidor='https://icons.iconarchive.com/icons/custom-icon-design/pretty-office-9/256/new-file-icon.png'
+thmb_guia='https://static.vecteezy.com/system/resources/previews/000/567/906/non_2x/vector-tv-icon.jpg'
 fanny="https://i.ytimg.com/vi/_7bFXWNfXTY/maxresdefault.jpg"
-fanart_guia="https://archive.org/download/bee-1/watch%20tv.png"
-backgr="https://archive.org/download/bee-1/watch%20tv.png"
+fanart_guia="http://www.panoramaaudiovisual.com/wp-content/uploads/2012/01/EPG-Toshiba-Smart-Tv-web.png"
+backgr="https://freeiptvstb.com/wp-content/uploads/2021/06/UZ4VHKEdhTkviRzJSEfFZC.jpg"
 thmb_ver_set='https://archive.org/download/bee-1/settings.png'
-fnrt_ver_set='https://archive.org/download/bee-1/setting.png'
 thmb_ver_xc='https://archive.org/download/bee-1/xtream%20codes.png'
 thmb_ver_stb='https://archive.org/download/bee-1/mac-iptv.png'
 thmb_ver_m3u='https://archive.org/download/bee-1/live-iptv.png'
 thmb_about='https://archive.org/download/bee-1/about.png'
 thmb_radio='https://archive.org/download/bee-1/radio.png'
-fnrt_radio='https://archive.org/download/bee-1/radio1.png'
+fnrt_radio='http://www.elzulianorajao.com/images/site/radio-g.jpg'
 thmb_help='https://archive.org/download/bee-1/help.png'
-fnrt_help='https://archive.org/download/bee-1/Help1.png'
 thmb_ace='https://archive.org/download/bee-1/Ace%20Stream.png'
-fnrt_ace='https://archive.org/download/bee-1/Ace.png'
-thmb_tube='https://archive.org/download/bee-1/Youtube.png'
-fnrt_tube='https://archive.org/download/bee-1/You.png'
+thmb_tube='https://archive.org/download/bee-1/Tube.png'
 
 portal = control.setting('portal')
 mac = control.setting('mac')
@@ -77,6 +77,46 @@ userp = control.setting('userp')
 portalxc = control.setting('portalxc')
 usernamexc = control.setting('usernamexc')
 passxc = control.setting('passxc')
+f4mproxy = control.setting("f4mproxy")
+
+
+### yt code
+
+mislogos = xbmc.translatePath(os.path.join('special://home/addons/plugin.video.pontenforma/jpg/'))
+logo_transparente = xbmc.translatePath(os.path.join(mislogos , 'transparente.png'))
+
+setting = xbmcaddon.Addon().getSetting
+if setting('youtube_usar') == "0":  ##Tiene escogido el plugin Youtube
+    usa_duffyou = False
+else:  ##Ha escogido usar Duff You
+    usa_duffyou = True
+
+
+##Canales de las Play-List
+aLista =    ([
+            [ "Roberta's Gym Español",  "UCIjiWiNemxUg0YAQA-7C8rQ", "RobertaGym.jpg", "Roberta es, para que nos hagamos una idea, un asistente virtual que, al más puro estilo Alexa, ha sido creada para ayudarte. A través de los vídeos de su canal de Youtube, donde cuenta con casi 400.000 suscriptores, se pueden realizar retos, perder peso, tonificar cada parte del cuerpo y, en definitiva, lograr los mismos resultados que yendo al gimnasio pero en la intimidad de tu casa."],
+            [ "LumoWell - Fitness",  "UCFoe1jpBJZB9sPUDoLMykGA", "Lumowell.jpg", "Programa de entrenamiento para adelgazar, bajar de peso y tonificar todo el cuerpo en casa sin pesas. Ejercicios diarios para ponerse en forma en casa, entrenamiento para hombres y mujeres para hacer un cuerpo delgado y tonificado. entrenador personal gratis para para bajar la panza rapido."],
+            [ "Cardio Abdomen",  "UCa9YCltTS7Hr23XevEwHkdw", "CardioAbdomen.jpg", "Cardio Abdomen: Es un sistema creado, desde hace algunos años, por el joven preparador físico caraqueño Antonio Pimentel. Cuenta con una rutina bastante amplia en Youtube, y quienes deseen seguir los programas pueden elegir que partes del cuerpo desean trabajar, pues, Pimentel desglosa sus entrenamientos según las áreas del cuerpo a fortalecer. Resulta un método cómodo y práctico para quienes desean ejercitarse en casa."],
+            [ "Cardio-Dance con Clau & Paty",  "UC4jbUUExSpxviNThUUbSWFQ", "Clau_y_Paty.jpg", "El cardio dance es una alternativa que se está poniendo de moda entre quienes buscan armonizar la salud física y emocional. Además, se trata de una modalidad de ejercicio que presenta beneficios en el plano estético. CLAU & PATY te proponen todo esto y más... "],
+            [ "BoomBox, Baila Conmigo",  "UCfAmPlsHw3E4alyeEoU66CQ", "BoomBox.jpg", "Clases de Zumba, Rumba, Aerobox, Pasos de baile, clases hechas con el corazon para tu corazon, pensamos en la salud de tu cuerpo, mente y espiritu. Disfruta cada una de las rutinas.\n Seguimos restando calorias y sumando alegrias."],
+            [ "Chuy Almada Boxeador",  "UC6Z3joUwYfM-Zr1U3bZLztQ", "ChuyAlmada.jpeg", "Bienvenido a las rutinas más adictivas y más efectivas de todo YouTube, Yo soy Chuy ALMADA y voy a ser tu couch virtual. Repite conmigo  ¡¡ Yo Puedo Yo Quiero y Lo Lograré !!"],
+            [ "Orux",  "UCqCBgry7SZX-HLfn1qxFbmA", "Orux.jpg", "Ejercicio. Nutrición. Mindfulness. Suplementación. • Bienestar para cuerpo y mente •"],
+            [ "ATHLEAN-X Español",  "UCAR76PvwLHcHqnbqFIos_Xg", "AthleanX.jpg", "ATHLEAN-X es el único programa de entrenamiento diseñado específicamente para hacerte lucir y mover como un atleta profesional…sin necesitar un contrato de deportista profesional para poder pagar por la atención personalizada de un entrenador para conseguir este tipo de resultados! ATHLEAN-X fue creado por Jeff Cavaliere, fisioterapeuta de deportes y uno de los entrenadores más buscados por las celebridades y los deportistas profesionales. ATHLEAN-X consta exactamente los mismos principios y técnicas de entrenamiento forjados en los salones de pesas de campeonato y probados en los campos, canchas y octágonos de los deportes profesionales actuales."],
+            [ "Fausto Murillo",  "UCbVNBFaRkgL-6kg92q1fsYw", "faustomurillo.jpg", "Generalmente yo digo que soy un motivador. Yo me dedico a motivar a las personas a adoptar un estilo de vida saludable, que hagan ejercicios al menos cinco veces a la semana y que se alimenten saludable. Que además mantengan una actitud positiva, es decir que la gente sea maravilla. Prácticamente es como yo me defino, como un motivador, una persona que ayuda a muchas personas a mantenerse bien, a mantenerse saludable. Hago esto a través de YouTube. Creo contenido para YouTube, que es donde comparto mis videos de ejercicios, alimentación y la actitud para que la gente se ponga guapa."],
+            [ "Entrena con Sergio Peinado",  "UC9l7xbkF_n-WP61f74AjKvw", "SergioPeinado.jpg", "Ponte en forma de una vez por todas. Aquí podrás perder grasa, bajar de peso, adelgazar, aumentar masa muscular,  mejorar la salud, etc. En definitiva, conseguir un cuerpo con el que te sientas a gusto. Te enseñaré todo lo que necesitas saber sobre ejercicio y alimentación, en este canal.  Tendrás multitud de videos para hacer ejercicio en casa, rutinas de entrenamiento de todo tipo: ejercicios para abdominales, glúteos y piernas, pecho, pectorales, brazos, espalda, etc. Te vas a convertir en un gran FUERTACO, y te vas a poner ¡MÁS FUERTE QUE EL VINAGRE!"],
+            [ "Entrena con Rosa Fitness",  "UCNRg71qbmRIO01v8OWymSWA", "RosaFitness.png", "Ponte en Forma y Diviértete desde casa (ZUMBA, AEROBOX, GAP, TONIFICACIÓN, PILATES...)\n Soy Rosa, instructora de clases colectivas, entrenadora personal y mami de un bebe maravilloso.\n El FITNESS es una parte enorme de mí, un estilo de vida que me ha dado muchas cosas buenas y al que yo he dado lo mejor de mi.\n Es el momento de compartir con vosotros todo lo que he aprendido y animaros a hacer deporte desde cualquier sitio. Para ello os he preparado una serie de clases que podréis seguir libremente o a través del Calendario que cada mes publicaré."],
+            [ "Zumba con Lore Excelente",  "UC3FawvV3p5h8JDW2e86yDUQ", "ZumbaLore.jpeg", "Terapeuta Ocupacional de la Universidad del Valle, Instructora certificada de Zumba® Fitness con intereses profesionales en los campos de Integración sensorial, problemas de aprendizaje, y las áreas terapéuticas sociales como son: salud física y mental, Atención Social Comunitaria, discapacidad psicosocial, Rehabilitación Basada en Comunidad."],
+            [ "Aerobic 4K",  "UCBE4lOM8RDDqqbxF27LmFZA", "Aerobic4k.jpg", "¡Bienvenido al canal Aerobic 4K!... Me encantan los aeróbicos, la zumba y el baile fitness. Estaré actualizando los últimos videos sobre aerobic, zumba, fitness dance en este canal de youtube. Deseando que la gente vea el video en el canal para practicar todos los días, tendrá un cuerpo hermoso, saludable..."],
+            [ "Saludable y Fuerte con Natalia Vanq",  "UCgATKVWOu7FfYpCKI__fWRA", "NataliaVanq.jpg", "Soy Natalia, bailarina y Entrenadora fitness certificada. Bienvenid@s a mi canal donde encontrarán mucho baile, mucho ejercicio y una dosis enorme de ENERGÍA para motivarlos a que sean la mejor versión de ustedes mismos. Mi objetivo es enseñarles que el ejercicio NO TIENE porque ser aburrido, y que podemos sentirnos lo mejor del mundo cuando nos movemos juntos. En este canal nos ponemos MÁS SALUDABLES, MÁS FUERTES Y MÁS FELICES!"],
+            [ "María Carvajal Zumba",  "UCMsQWzISGZu8f2ZXWqiN_uQ", "MariaCarvajal.jpg", "Gracias por compartir conmigo esta gran pasión que es el baile!! Quédate en mi canal  y disfruta de cada coreografía diseñada con la mayor ilusión para ti!! Baila y diviértete con las últimas novedades musicales y siente los diferentes ritmos que pueden envolverte! "],
+            [ "Cuerpos10 en Casa",  "UC22lfr0TB0USGUgDu0CaTUQ", "Cuerpos10.jpg", "Queremos motivar a muchas chicas y chicos a cuidarse físicamente. El Propósito es compartir todo el conocimiento que se ha recopilado en nuestros propios procesos y compartirlos con todo el mundo. "],
+            [ "Sientete Joven",  "UCDoVqEfsRy76Rs59oa1zltw", "SienteteJoven.jpg", "Disfruta y ponte en forma haciendo ejercicio en casa. Rutinas de cardio y tonificación hechas con cariño"],
+            [ "Lucia Liencres - TheClassYOGA",  "UCY7LGzf6lwWn44yb5soqg4w", "LuciaLiencres.jpg", "Lucia Liencres es practicante y enamorada del Ashtanga yoga. Cree firmemente en la transformación del cuerpo-mente a través de la práctica constante y humilde.\n Enseña Ashtanga, Rocket, Vinyasa y Yin yoga. Sus clases son exigentes y dinámicas.\n Certificada por la Yoga Alliance en Hatha, Rocket y yoga para niños.\n Ha practicado en EEUU, India y Bali con profesores como Kino Mc Gregor, Mark Robberds, Deepika Metha, Petri Reisanen, Saraswathi, Peter Sanson, Meghan Currie, Simon Park, David Williams, Yogeswari y Nancy Gilgoff. Sus maestros en España son sus compañeros de The Class."],
+            [ "Xuan Lan Yoga",  "UCKQgiVPqEPU0tImAjFG5lNA", "xuan-lan-yoga.jpg", "Soy Xuan Lan, profesora de yoga certificada en vinyasa yoga. Aunque mi práctica más habitual ha sido el ashtanga yoga, practico varios estilos de yoga dinámico derivados del vinyasa yoga. Tras 10 años en marketing y banca, decidí dedicarme a la enseñanza del yoga; actualmente, imparto clases en la academia de OT. El yoga cambió mi vida, espero que cambie la tuya también :)\n En mis clases de yoga encontrarás tanto posiciones de yoga para principiantes como para niveles más avanzados, de distintas modalidades. Y es que además de disfrutar de todos los beneficios del yoga, los ejercicios de relajación y meditación te permitirán alcanzar el perfecto equilibrio interior. Te invito a que te suscribas a mi canal y descubras la mejor manera de practicar yoga en casa. ¡Juntos lo haremos!"],
+            [ "MalovaElena Yoga",  "UCb-ODDTys9PeeSyreyh___w", "MalovaElena.jpg", "Ejercita tu cuerpo en casa practicando yoga, cardio, estiramiento, meditaciones y relajación a través de los videos de Elena Malova, instructora de Vinyasa Yoga. Desde niveles básicos hasta intensos, cada lunes encontrarás un nuevo entrenamiento. Además, Elena sube videos complementarios a sus prácticas que abordan temas como la adaptación, liberar el estrés y ansiedad, miedo y perdón."],
+            [ "Fisioterapia Querétaro",  "PLfH1hOBZdAJ5YhZEWbTYjcttB6WLtnAkP", "Queretaro.jpg", "¡Hola! Soy Mariana Quevedo y soy fisioterapeuta. ¡Bienvenido a mi página! Aquí encontrarás información acerca de este proyecto: Fisioterapia Querétaro.\n En mi página podrás encontrar todo el contenido dirigido a adultos mayores, tanto activos como con alguna situación de dependencia funcional."]])
+
+######  end yt code
 
 def keyboard_input(default_text="", title="", hidden=False):
 
@@ -129,7 +169,7 @@ def run():
 
 def cambia_fondo():
 
-    foto = xbmc.translatePath('special://home/addons/plugin.video.macvod/fondo.png')    
+    foto = xbmc.translatePath('special://home/addons/plugin.video.macvod/fondo.jpg')    
     if not xbmc.getCondVisibility('Skin.String(CustomBackgroundPath)'):      
         xbmc.executebuiltin('Skin.Reset(CustomBackgroundPath)')
         xbmc.executebuiltin('Skin.SetBool(UseCustomBackground,True)')   
@@ -156,27 +196,27 @@ def main_list(params):
 	
     plugintools.add_item(title='[COLOR gray]-======== SUPORT =========-[/COLOR]',folder=False, isPlayable=False)   
 	
-    plugintools.add_item(title='[COLOR dodgerblue]KodiRomania[/COLOR]',folder=False, isPlayable=False)
+    plugintools.add_item(title='[COLOR blue]KodiRomania[/COLOR]',folder=False, isPlayable=False)
 	
-    plugintools.add_item(title='[COLOR dodgerblue]https://t.me/kodiromania[/COLOR]',folder=False, isPlayable=False)
+    plugintools.add_item(title='[COLOR blue]https://t.me/kodiromania[/COLOR]',folder=False, isPlayable=False)
 		
     plugintools.add_item(title='[COLOR gray]-=========================-[/COLOR]',folder=False, isPlayable=False) 
 	
     plugintools.add_item( action="mac", title="[COLOR orange]STB / MAC[/COLOR]", thumbnail = thmb_ver_stb, fanart= backgr,page="",url="",folder=True )
 		
-    plugintools.add_item( action="ipkoditv_enigmax", title="[COLOR orange]Xtream Codes[/COLOR]", thumbnail = thmb_ver_xc, fanart= backgr,page="",url="",folder=True )
+    plugintools.add_item( action="xtreamcodes", title="[COLOR orange]Xtream Codes[/COLOR]", thumbnail = thmb_ver_xc, fanart= backgr,page="",url="",folder=True )
 	
     plugintools.add_item( action="m3u", title="[COLOR orange]Liste M3U[/COLOR]", thumbnail = thmb_ver_m3u, fanart= backgr,page="",url="",folder=True )
     
     plugintools.add_item( action = "radio_pais" , title = "[COLOR orange]Radio[/COLOR]", thumbnail=thmb_radio, fanart= fnrt_radio,  folder = True ) 
     
-    plugintools.add_item( action = "acemenu" , title = "[COLOR orange]Acestream[/COLOR]", thumbnail=thmb_ace, fanart= fnrt_ace,  folder = True ) 
+    plugintools.add_item( action = "acemenu" , title = "[COLOR orange]Acestream[/COLOR]", thumbnail=thmb_ace, fanart= fnrt_radio,  folder = True ) 
     
-    plugintools.add_item( action = "youtube" , title = "[COLOR red]Youtube[/COLOR]", thumbnail=thmb_tube, fanart= fnrt_tube,  folder = True ) 
+    plugintools.add_item( action = "youtube" , title = "[COLOR orange]Youtube[/COLOR]", thumbnail=thmb_tube, fanart= fnrt_radio,  folder = True ) 
     
-    plugintools.add_item( action="help", title="[COLOR orange]Help[/COLOR]", thumbnail = thmb_help, fanart= fnrt_help,page="",url="",folder=True )
+    plugintools.add_item( action="help", title="[COLOR orange]Help[/COLOR]", thumbnail = thmb_help, fanart= backgr,page="",url="",folder=True )
 	
-    plugintools.add_item( action="settings", title="[COLOR orange]Setari[/COLOR]", thumbnail = thmb_ver_set, fanart= fnrt_ver_set,page="",url="",folder=False )
+    plugintools.add_item( action="settings", title="[COLOR orange]Setari[/COLOR]", thumbnail = thmb_ver_set, fanart= backgr,page="",url="",folder=False )
 
     plugintools.add_item( action="", title="Multumiri: [COLOR red]RED[/COLOR], Cicero Aristotel, iNKuBo ", thumbnail = thmb_about, fanart= backgr,page="",url="",folder=False )
 
@@ -195,9 +235,13 @@ def settings(params):
 
 def mac(params):
     nat=myaddon.getSetting('nat')
-    plugintools.add_item(action="tulista", title="[COLOR orange]STB / MAC - Random Server[/COLOR]  [COLOR white]("+nat+" incercari/zi)[/COLOR]",thumbnail=thmb_ver_stb, fanart="https://archive.org/download/bee-1/earth%20varicolor.png",  url= "https://pastebin.com/raw/ktiz5e2M",folder= True )    
+    plugintools.add_item(action="tulista", title="[COLOR orange]STB / MAC - Random Server[/COLOR]  [COLOR white]("+nat+" incercari/zi)[/COLOR]",thumbnail=thmb_ver_stb, fanart="https://e00-elmundo.uecdn.es/assets/multimedia/imagenes/2017/05/23/14955340432162.jpg",  url= "https://pastebin.com/raw/ktiz5e2M",folder= True )    
     plugintools.add_item( action="macpastebinx", title="[COLOR orange]STB / MAC - Pastebin Server[/COLOR]", thumbnail = thmb_ver_stb, fanart= backgr,page="",url="",folder=True )
     plugintools.add_item( action="macx", title="[COLOR orange]STB / MAC - Your Server[/COLOR]", thumbnail = thmb_ver_stb, fanart= backgr,page="",url="",folder=True )
+
+def xtreamcodes(params):
+    plugintools.add_item( action="xtreamocodespastebin", title="[COLOR orange]Xtream Codes[/COLOR]", thumbnail = thmb_ver_xc, fanart= backgr,page="",url="https://pastebin.com/raw/FtBrwjY9",folder=True )
+    plugintools.add_item( action="ipkoditv_enigmax", title="[COLOR orange]Xtream Codes - Your Server[/COLOR]", thumbnail = thmb_ver_xc, fanart= backgr,page="",url="",folder=True )
 
 
 def macpastebinx(params):
@@ -238,10 +282,10 @@ def macpastebin(params):
 
 
     plugintools.log("macvod.macpastebin")    
-    plugintools.add_item(action="ver_canales",    title="LISTA CANALE IPTV",thumbnail=thmb_ver_canales,fanart="https://archive.org/download/bee-1/earth%20varicolor.png",folder= True )            
+    plugintools.add_item(action="ver_canales",    title="LISTA CANALE IPTV",thumbnail=thmb_ver_canales,fanart="https://i.ytimg.com/vi/_7bFXWNfXTY/maxresdefault.jpg",folder= True )            
     plugintools.add_item(action="", thumbnail=thmb_nada,title="[COLOR gray]Configuratie actuala--------------------------------------------------------------------------[/COLOR]",folder= False )
-    plugintools.add_item(action="cambio_servidor",    title="SERVER Actual:   "+escogido,thumbnail=thmb_cambio_servidor,fanart="https://archive.org/download/bee-1/world%20yellow.png",folder= True )               
-    plugintools.add_item(action="cambio_mac",         title="MAC Actual:   "+mac,thumbnail=thmb_cambio_mac,fanart="https://archive.org/download/bee-1/world%20blue.png",folder= True )
+    plugintools.add_item(action="cambio_servidor",    title="SERVER Actual:   "+escogido,thumbnail=thmb_cambio_servidor,fanart="https://www.zooplus.es/magazine/wp-content/uploads/2018/04/fotolia_169457098.jpg",folder= True )               
+    plugintools.add_item(action="cambio_mac",         title="MAC Actual:   "+mac,thumbnail=thmb_cambio_mac,fanart="https://www.miwuki.com/wp-content/uploads/2016/11/gatito-830x623-300x225.jpg",folder= True )
 
 
 def macx(params):
@@ -534,6 +578,56 @@ def passxtream():
         return text
     else:
         return False
+        
+def xtreamocodespastebin (params):
+    plugintools.log("koditv.ipkoditv")
+    url = params . get ( "url" )
+    thumbnail = params.get("thumbnail")    
+    header = [ ]
+    header . append ( [ "User-Agent" , "Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0" ] )
+    read_url , read_header = plugintools . read_body_and_headers ( url , headers = header )
+    url=read_url.strip().decode('utf-8')
+ 
+    matches =  plugintools.find_multiple_matches(url,'(htt.+?\/get.php\?username\=.+?\&password\=.+?\&type)')
+    for generos in matches:
+        url=plugintools.find_single_match(generos,'(htt.+?)\/get.php')
+        username=plugintools.find_single_match(generos,'username\=(.+?)\&')
+        password=plugintools.find_single_match(generos,'password\=(.+?)\&')
+        url3 = url+'/enigma2.php?username='+username+'&password='+password        
+        plugintools.add_item(action="ipkoditv_enigmapb", page=url3, episode=password, extra=username, url=url,title="[LOWERCASE][COLOR orange]"+url+"[/LOWERCASE][/COLOR]",thumbnail=thumbnail,fanart=thumbnail,folder=True )
+        
+def ipkoditv_enigmapb(params): 
+    plugintools.log("koditv.ipkoditv")
+    thumbnail = params.get("thumbnail")    
+    url1=params.get("url")
+    username=params.get("extra")
+    password=params.get("episode")   
+    url3 = params.get("page") 
+    page='&type=get_live_categories'
+    url=url3+page
+    request_headers=[]
+    request_headers.append(["User-Agent","Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0"])
+    body,response_headers = plugintools.read_body_and_headers( url, headers=request_headers)
+    url = body.strip().decode('utf-8')
+    matches = plugintools.find_multiple_matches(url,'((?s)<title>.*?</title>.*?<description.*?>.*?<.*?CDATA.*?&cat_id=.*?>.*?)')
+    for generos in matches:
+
+        url=plugintools.find_single_match(generos,'(&cat_id=.*?)..>.*?')
+        description=plugintools.find_single_match(generos,'<description.*?>(.*?)<.*?')
+        
+        import base64
+
+        description= base64.b64decode(description)
+        description = description.decode('utf-8')
+        titulo=plugintools.find_single_match(generos,'<title>(.*?)</title>')
+
+        message_bytes = base64.b64decode(titulo)
+        titulo = message_bytes.decode('utf-8')
+        url=url3+'&type=get_live_streams'+url
+        
+        
+        plugintools.add_item(action="ipkoditv_enigma2", url=url,title="[LOWERCASE][CAPITALIZE][COLOR orange]"+titulo+"[/CAPITALIZE][/LOWERCASE][/COLOR]",thumbnail=thumbnail,fanart=thumbnail,folder=True )
+   
 
 def ipkoditv_enigma(params): 
     plugintools.log("koditv.ipkoditv")
@@ -598,9 +692,23 @@ def ipkoditv_enigma2(params):
         data=patron[2]
         url = url
         
-        plugintools.add_item(action="linkdirecto", url=url,title="[LOWERCASE][CAPITALIZE][COLOR orange]"+titulo+" [COLOR orange]" +hora+" [COLOR lime]"+emision+"[/CAPITALIZE][/LOWERCASE][/COLOR]",thumbnail=thumbnail,fanart=thumbnail,folder=False,  isPlayable = True)
+        plugintools.add_item(action="linkdirectoxc", url=url,title="[LOWERCASE][CAPITALIZE][COLOR orange]"+titulo+" [COLOR orange]" +hora+" [COLOR lime]"+emision+"[/CAPITALIZE][/LOWERCASE][/COLOR]",thumbnail=thumbnail,fanart=thumbnail,folder=False,  isPlayable = True)
   
-		
+def linkdirectoxc(params):
+    url = params.get("url")  
+    if f4mproxy == 'true':
+        if '.m3u8' in url:
+            finalurl=url
+            finalurl = "plugin://plugin.video.f4mTester/?streamtype=HLSRETRY&amp;name={}&amp;iconImage={}&amp;url={}".format(params.get('title'),params.get('thumbnail'),finalurl) 
+            plugintools.play_resolved_url(finalurl)
+        elif '.ts' in url:
+            finalurl=url
+            finalurl = "plugin://plugin.video.f4mTester/?streamtype=TSDOWNLOADER&amp;name={}&amp;iconImage={}&amp;url={}".format(params.get('title'),params.get('thumbnail'),finalurl)                   
+            plugintools.play_resolved_url(finalurl)
+    else:
+        url = params.get("url")    
+        plugintools.play_resolved_url(url)   
+			
 		
 def linkdirecto(params):
     url = params.get("url")    
@@ -616,16 +724,19 @@ def m3u(params):
     listam3u=myaddon.getSetting('listam3u')
 	
     plugintools.add_item( action="listam3u1", title="[B][COLOR yellow]Lista mea M3U[/COLOR][/B]", thumbnail = thmb_ver_m3u, fanart= backgr,page="",url=listam3u,folder=True )
-    plugintools.add_item( action="multilistas", title="Liste Romania",thumbnail="https://archive.org/download/bee-1/romania1.png", fanart="https://archive.org/download/bee-1/national.png",page="",url= "https://www.gratisiptv.com/lists-iptv/",folder= True )
-    plugintools.add_item( action="multilistas_mundo", title="Liste pe tari",thumbnail="https://archive.org/download/bee-1/countries.png", fanart="https://archive.org/download/bee-1/earth%20varicolor.png",page="",url= "https://www.gratisiptv.com/lists-iptv/",folder=True ) 	
-    plugintools.add_item( action="mundotv", title="GitHub IPTV lists",thumbnail="https://archive.org/download/bee-1/xc%20world%203.png", fanart="https://archive.org/download/bee-1/world%20yellow.png",page="",url="https://github.com/bitsbb01/ez-iptvcat-scraper/tree/master/data/countries",folder=True )
-    plugintools.add_item( action="github", title="GitHub IPTV org",thumbnail="https://archive.org/download/bee-1/glob%20green.png", fanart="https://archive.org/download/bee-1/world%20green.png",page="",url="https://github.com/iptv-org/iptv",folder=True )
+    plugintools.add_item( action="edem", title="Edem (ILook)",thumbnail="https://archive.org/download/bee-1/romanian.png", fanart="https://previews.123rf.com/images/reamolko/reamolko1605/reamolko160500022/56476783-espa%C3%B1a-pinceladas-de-colores-pinta-icono-nacional-de-bandera-de-pa%C3%ADs-textura-pintada-.jpg",page="",url= "http://tvshare.xyz/settings_iptv/DownloadCountry2.php",folder= True )
+    plugintools.add_item( action="listamd", title="[COLOR orange]Lista MD-RO[/COLOR]", thumbnail = thmb_ver_m3u, fanart= backgr,page="",url="https://pastebin.com/raw/JGTsG7B1",folder=True )
+    plugintools.add_item( action="multilistas", title="Liste Romania",thumbnail="https://archive.org/download/bee-1/romanian.png", fanart="https://previews.123rf.com/images/reamolko/reamolko1605/reamolko160500022/56476783-espa%C3%B1a-pinceladas-de-colores-pinta-icono-nacional-de-bandera-de-pa%C3%ADs-textura-pintada-.jpg",page="",url= "https://www.gratisiptv.com/lists-iptv/",folder= True )
+    plugintools.add_item( action="multilistas_mundo", title="Liste pe tari",thumbnail="https://archive.org/download/bee-1/countries.png", fanart="https://www.gndiario.com/sites/default/files/styles/noticia_detalle_noticia_2_1/public/noticias/paz-mundial.jpg?h=f27025cf&itok=tfCe8KKi",page="",url= "https://www.gratisiptv.com/lists-iptv/",folder=True ) 	
+    plugintools.add_item( action="mundotv", title="GitHub IPTV lists", thumbnail = thmb_ver_m3u, fanart= backgr,page="",url="https://github.com/bitsbb01/ez-iptvcat-scraper/tree/master/data/countries",folder=True )
+    plugintools.add_item( action="github", title="GitHub IPTV org", thumbnail = thmb_ver_m3u, fanart= backgr,page="",url="https://github.com/iptv-org/iptv",folder=True )
     plugintools.add_item( action="fluxus", title="Fluxus", thumbnail="https://i.imgur.com/N2r6pj6.jpg", fanart="https://i.imgur.com/N2r6pj6.jpg", page="", url= "https://fluxustvespanol.blogspot.com/p/fluxus-iptv.html", folder=True )    
-    plugintools.add_item( action="super_iptv", title="Liste XC World",thumbnail="https://archive.org/download/bee-1/xc%20world.png", fanart="https://archive.org/download/bee-1/world%20red.png",page="",url= "https://usalinksiptv.blogspot.com",folder= True )
-    plugintools.add_item( action="super_iptv2", title="Liste XC World2",thumbnail="https://archive.org/download/bee-1/xc%20world%202.png", fanart="https://archive.org/download/bee-1/world%20blue.png",page="",url= "https://telegra.ph/IPTV-playlist-m3u-daily-update-10-31",folder= True )
+    plugintools.add_item( action="sphinx", title="Sphinx TV", thumbnail="https://i.imgur.com/N2r6pj6.jpg", fanart="https://i.imgur.com/N2r6pj6.jpg", page="", url= "https://raw.githubusercontent.com/Sphinxroot/plugin.video.IPTV.Matele.Direct/master/Menu", folder=True )    
+    plugintools.add_item( action="super_iptv", title="Liste XC World",thumbnail="https://archive.org/download/bee-1/xc%20world.png", fanart="https://i.pinimg.com/originals/62/01/93/620193dbfc63e3510093489aaa8fb37a.jpg",page="",url= "https://usalinksiptv.blogspot.com",folder= True )
+    plugintools.add_item( action="super_iptv2", title="Liste XC World2",thumbnail="https://archive.org/download/bee-1/xc%20world%202.png", fanart="https://i.pinimg.com/originals/62/01/93/620193dbfc63e3510093489aaa8fb37a.jpg",page="",url= "https://telegra.ph/IPTV-playlist-m3u-daily-update-10-31",folder= True )
+    #plugintools.add_item( action="tvonline", title="[COLOR orange]TVOnline RO[/COLOR]", thumbnail = thmb_ver_m3u, fanart= backgr,page="",url="https://tvonline.biz/",folder=True )
     plugintools.add_item( action="listam3u1", title="[COLOR orange]M3U List 1[/COLOR]", thumbnail = thmb_ver_m3u, fanart= backgr,page="",url="https://raw.githubusercontent.com/ParrotDevelopers/Parrot-TV-M3U/main/Assets/Channels/RO%20Channels.m3u",folder=True )
-    #plugintools.add_item( action="listam3u2", title="[COLOR orange]Radio M3U List[/COLOR]", thumbnail = thmb_ver_m3u, fanart= backgr,page="",url="https://pastebin.com/raw/kDRHz4DB",folder=True )
-
+    
 
 def mundotv(params): 
     plugintools.log("macvod.mundotv")
@@ -688,6 +799,79 @@ def multilistas_mundo(params):
         url=plugintools.find_single_match(url,'(?s)archive-title">Category.*? itemprop="headline"><a href="(.*?)"')        
         plugintools . add_item ( action = "multilistas_mundo2" , title = "[LOWERCASE][CAPITALIZE][COLOR lime]"+pais+" [COLOR orange]"+titulo+"[/CAPITALIZE][/LOWERCASE][/COLOR]", url = url, thumbnail =  thumbnail , fanart=thumbnail, folder=True)
 
+
+def edem(params): 
+    plugintools.log("macvod.edem")
+    thumbnail = params.get("thumbnail")    
+    url = params.get("url")
+    
+    request_headers=[]
+    request_headers.append(["User-Agent","Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0"])
+    body,response_headers = plugintools.read_body_and_headers( url, headers=request_headers)
+    url = body.strip().decode('utf-8')
+    matches = plugintools.find_multiple_matches(url,'(?s)(<a href="DownloadCountry2\.php\?login\=\&group_title\=.+?">.+?</a>)')
+    for generos in matches:
+
+        url=plugintools.find_single_match(generos,'(?s)<a href="DownloadCountry2\.php\?login\=\&group_title\=.+?">(.+?)</a>')
+        url=url.replace('\u0103','a')
+        titulo=plugintools.find_single_match(generos,'(?s)<a href="DownloadCountry2\.php\?login\=\&group_title\=.+?">(.+?)</a>')
+        titulo=titulo.replace('azərbaycan','Azerbaijan').replace('беларускія','Belarusian').replace('взрослые','adults').replace('детские','child').replace('другие','other').replace('кино','movie').replace('қазақстан','kazakhstan').replace('музыка','music').replace('познавательные','educational').replace('развлекательные','entertaining').replace('спорт','sport').replace('точик','point').replace('українські','Ukrainian').replace('ქართული','Georgian').replace('Հայկական','Armenian')
+        plugintools . add_item ( action = "edem2" , title = "[LOWERCASE][CAPITALIZE] [COLOR orange]"+titulo+"[/CAPITALIZE][/LOWERCASE][/COLOR]", url = url, thumbnail =  thumbnail , fanart=thumbnail, folder=True )
+ 
+def edem2(params): 
+    plugintools.log("macvod.edem2")
+    thumbnail = params.get("thumbnail")    
+    edem = control.setting("edem")
+    url2 = params.get("url")
+    url3 = "http://tvshare.xyz/settings_iptv/get_Server2.php?login="+edem+"&server=2&group="+url2
+ 
+    request_headers=[]
+    request_headers.append(["User-Agent","Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0"])
+    body,response_headers = plugintools.read_body_and_headers( url3, headers=request_headers)
+    url = body.strip().decode('utf-8')
+
+    matches = plugintools.find_multiple_matches(url,'(#EXTINF:.+?,.*?[\n\r]+.+?\/\d+)')
+    for generos in matches:  
+        patron=plugintools.find_single_match(generos,'(?s)#EXTINF:.+?,(.*?)[\n\r]+.+?\/(\d+)')    
+        url=patron[1]
+        url="http://tvshare.ottrast.com/iptv/"+edem+"/"+url+"/index.m3u8"
+        titulo=patron[0]     
+        plugintools . add_item ( action = "inpstr" , title = "[LOWERCASE][CAPITALIZE] [COLOR orange]"+titulo+"[/CAPITALIZE][/LOWERCASE][/COLOR]", url = url, thumbnail =  thumbnail , fanart=thumbnail, folder=False,  isPlayable = True )
+        #plugintools.add_item(action="", url="plugin://plugin.video.f4mTester/?streamtype=HLSRETRY&amp;name="+titulo+"&amp;iconImage="+thumbnail+"&amp;url="+url, title="[LOWERCASE][CAPITALIZE][COLOR orange]"+titulo+" [/CAPITALIZE][/LOWERCASE][/COLOR]",thumbnail=thumbnail,fanart=thumbnail,folder=False,  isPlayable = True )
+
+
+def inpstr(params):
+    plugin = xbmcvfs.translatePath('special://home/addons/inputstream.ffmpegdirect')
+    if os.path.exists(plugin)==False:
+        try:
+            xbmc.executebuiltin('InstallAddon(inputstream.ffmpegdirect)', wait=True)
+        except:
+            pass
+    url = params.get("url")
+    request_headers=[]
+    request_headers.append(["User-Agent","Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0"])
+    name = params.get("title")
+    iconimage = params.get("thumbnail") 
+    liz = xbmcgui.ListItem(name)
+    liz.setArt({'thumb': iconimage, 'icon': iconimage})
+    liz.setInfo(type='Video', infoLabels={'Title': name, 'mediatype': 'video'})
+    liz.setProperty("IsPlayable", "true")
+    liz.setProperty('inputstream', 'inputstream.adaptive')
+    liz.setProperty('inputstream.adaptive.manifest_type', 'hls')
+    liz.setMimeType('application/vnd.apple.mpegstream_url')
+    liz.setContentLookup(False)
+    liz.setPath(url)
+    xbmc.Player().play(url)   
+    
+
+def edemf4m(params):
+    url = params.get("url")  
+    finalurl=url
+    finalurl = "plugin://plugin.video.f4mTester/?streamtype=HLSRETRY&amp;name={}&amp;iconImage={}&amp;url={}".format(params.get('title'),params.get('thumbnail'),finalurl) 
+    builtin = 'RunPlugin(%s)' %finalurl 
+    xbmc.executebuiltin(builtin)
+ 
+ 
 
 def multilistas_mundo2(params): 
     plugintools.log("macvod.multilistas_mundo")
@@ -868,6 +1052,57 @@ def github(params):
         icn=patron[0]
         plugintools.add_item(action="listam3u1", url=url,title="[LOWERCASE][CAPITALIZE][COLOR orange]"+title+"[/CAPITALIZE][/LOWERCASE][/COLOR]",thumbnail=icn,fanart=thumbnail,folder=True )
 
+def tvonline(params): 
+    plugintools.log("macvod.tvonline")
+    thumbnail = params.get("thumbnail")    
+    url = params.get("url")
+    
+    request_headers=[]
+    request_headers.append(["User-Agent","Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0"])
+    body,response_headers = plugintools.read_body_and_headers( url, headers=request_headers)
+    url = body.strip().decode('utf-8')
+    matches = plugintools.find_multiple_matches(url,'(?s)(class=jgifhover.+?data-bg-hover=".+?">\n<a href=".+?" title=".+?")')
+    for generos in matches:
+
+        patron=plugintools.find_single_match(generos,'(?s)class=jgifhover.+?data-bg-hover="(.+?)">\n<a href="(.+?)" title="(.+?)"')
+        url=patron[1]
+        titulo=patron[2]
+        titulo=titulo.replace('Online','')
+        thumbnail=patron[0]
+        plugintools . add_item ( action = "tvonline2" , title = "[LOWERCASE][CAPITALIZE] [COLOR orange]"+titulo+"[/CAPITALIZE][/LOWERCASE][/COLOR]", url = url, thumbnail =  thumbnail , fanart=thumbnail, folder=True )
+ 
+def tvonline2(params): 
+    plugintools.log("macvod.tvonline2")
+    thumbnail = params.get("thumbnail") 
+    title = params.get("title")    
+    url2 = params.get("url")
+    url3 = "https://tvonline.biz"+url2
+ 
+    request_headers=[]
+    request_headers.append(["User-Agent","Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0"])
+    request_headers.append(["Referer","https://tvonline.biz/"])
+    body,response_headers = plugintools.read_body_and_headers( url3, headers=request_headers)
+    url = body.strip().decode('utf-8')
+
+    matches = plugintools.find_multiple_matches(url,'(?s)(mplayer.src\(\'.+?\'\))')
+    for generos in matches:  
+        url=plugintools.find_single_match(generos,'(?s)mplayer.src\(\'(.+?)\'\)')
+        url=url+"|referer=https://tvonline.biz/"
+        titulo=title
+        #plugintools . add_item ( action = "inpstr" , title = title, url = url, thumbnail =  thumbnail , fanart=thumbnail, folder=False,  isPlayable = True )
+        plugintools.add_item(action="", url="plugin://plugin.video.f4mTester/?streamtype=HLSRETRY&amp;name="+titulo+"&amp;iconImage="+thumbnail+"&amp;url="+url, title="[LOWERCASE][CAPITALIZE][COLOR orange]"+titulo+" [/CAPITALIZE][/LOWERCASE][/COLOR]",thumbnail=thumbnail,fanart=thumbnail,folder=False,  isPlayable = True )
+
+def radio_playtv(params):            
+    url3 = params.get("url")
+    request_headers=[]
+    request_headers.append(["User-Agent","Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0"])
+    request_headers.append(["Referer","https://tvonline.biz/"])
+    body,response_headers = plugintools.read_body_and_headers( url3, headers=request_headers)
+    url = body.strip().decode('utf-8')
+    try:
+        plugintools.play_resolved_url( url )    
+    except:
+        pass
 
 def listam3u1(params): 
     plugintools.log("macvod.listam3u1")
@@ -949,6 +1184,73 @@ def fluxus1 (params):
 
     for thumb, title, url in matches:
         plugintools . add_item ( action = "resolve_without_resolveurl" , title = title , url = url , thumbnail = thumb, fanart="", folder = False , isPlayable = True )  
+
+def sphinx (params):
+    thumbnail = params.get("thumbnail")    
+    plugintools.log("macvod.sphinx")
+    
+    url3 = params.get("url")
+ 
+    request_headers=[]
+    request_headers.append(["User-Agent","Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0"])
+    body,response_headers = plugintools.read_body_and_headers( url3, headers=request_headers)
+    url = body.strip().decode('utf-8')
+ 
+    matches =  re.findall(r'(?s)"url": "(.+?)".+?"image": "(.+?)".+?name": "(.+?)"', url, re.DOTALL)
+
+    for url, thumb, title in matches:
+        plugintools . add_item ( action = "sphinxm3u" , title = title, url = url , thumbnail = thumb, fanart="", folder = True )  
+
+def sphinxm3u(params): 
+    plugintools.log("macvod.sphinxm3u")
+    thumbnail = params.get("thumbnail")    
+
+    
+    url3 = params.get("url")
+ 
+    request_headers=[]
+    request_headers.append(["User-Agent","Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0"])
+    body,response_headers = plugintools.read_body_and_headers( url3, headers=request_headers)
+    url = body.strip().decode('utf-8')
+
+    matches = plugintools.find_multiple_matches(url,'(#EXTINF:.+?,.*?[\n\r]+[^\n]+)')
+    for generos in matches:  
+        patron=plugintools.find_single_match(generos,'(?s)#EXTINF:.+?,(.*?)[\n\r]+([^\n]+)')    
+        url=patron[1]
+        titulo=patron[0]     
+     
+        plugintools.add_item(action="resolve_without_resolveurl", url=url,title="[LOWERCASE][CAPITALIZE][COLOR orange]"+titulo+" [/CAPITALIZE][/LOWERCASE][/COLOR]",thumbnail=thumbnail,fanart=thumbnail,folder=False,  isPlayable = True )
+
+def listamd(params): 
+    plugintools.log("macvod.listamd")
+    thumbnail = params.get("thumbnail")    
+
+    
+    url3 = params.get("url")
+ 
+    request_headers=[]
+    request_headers.append(["User-Agent","Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0"])
+    body,response_headers = plugintools.read_body_and_headers( url3, headers=request_headers)
+    url = body.strip().decode('utf-8')
+    
+    url4 = "https://token.stb.md/api/Flussonic/stream/NICKELODEON_H264/metadata.json"
+    
+    request_headers=[]
+    request_headers.append(["User-Agent","Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0"])
+    body,response_headers = plugintools.read_body_and_headers( url4, headers=request_headers)
+    url5 = body.strip().decode('utf-8')
+
+    token = plugintools.find_single_match(url5,'(?s)token\=(.+?)"')
+
+    matches = plugintools.find_multiple_matches(url,'(logo=".+?".+?\,.+?\nhttp.+?token\=)')
+    for generos in matches:  
+        patron=plugintools.find_single_match(generos,'(?s)logo="(.+?)".+?\,(.+?)\n(http.+?token\=)')    
+        url=patron[2]
+        url=url+token
+        titulo=patron[1]     
+        thumb=patron[0]
+        plugintools.add_item(action="resolve_without_resolveurl", url=url,title="[LOWERCASE][CAPITALIZE][COLOR orange]"+titulo+" [/CAPITALIZE][/LOWERCASE][/COLOR]",thumbnail=thumb,fanart=thumbnail,folder=False,  isPlayable = True )
+
 
 def resolve_without_resolveurl ( params ) :
     import resolveurl 
@@ -1190,7 +1492,7 @@ def tulista(params):
         mac=myaddon.getSetting('cam')      
         server=myaddon.getSetting('revres')
         portal=myaddon.getSetting('latrop')
-        userp='AudioSistem'
+        userp=myaddon.getSetting('userp')
         nat=int(myaddon.getSetting('nat'))
         fec_texto=myaddon.getSetting('fec')
         fec=int(fec_texto)
@@ -1431,7 +1733,8 @@ def acemenu(params):
     plugintools.add_item(title='[COLOR gray]-=========================-[/COLOR]',folder=False, isPlayable=False) 
     plugintools.add_item(action="listaace", title="AceStream Romania",thumbnail=thmb_ver_stb, fanart="",  url= "https://raw.githubusercontent.com/viorel013/acestream/Iptv/CANALE%20ROMANIA%20ace.m3u", folder= True )    
     plugintools.add_item(action="listaace2", title="AceStream World",thumbnail=thmb_ver_stb, fanart="",  url= "http://acetv.org/js/data.json", folder= True )    
-    plugintools.add_item(action="playace", title="Play Acestream ID",thumbnail=thmb_ver_stb, fanart="",  url= "", folder= False, isPlayable = True )    
+    plugintools.add_item(action="playace", title="Play Acestream ID",thumbnail=thmb_ver_stb, fanart="",  url= "", folder= False, isPlayable = True )
+    plugintools.add_item(action="cautaace", title="AceStream Search",thumbnail=thmb_ver_stb, fanart="",  url= "http://api.acestream.me/?method=search&api_version=1.0&api_key=test_api_key&query=", folder= True )    
 
 def listaace(params): 
     plugintools.log("macvod.listaace")
@@ -1473,6 +1776,22 @@ def listaace2(params):
      
         plugintools.add_item(action="resolve_acestream",url=url,title=titulo,thumbnail=thumbnail,fanart=thumbnail,folder=False,  isPlayable = True )
 
+def cautaace (params): 
+    thumbnail = params.get("thumbnail") 
+    url = params . get ( "url" ) + keyboard_input("", "Cauta Acestream:", False).replace(" ", "%20")
+    header = [ ]
+    header . append ( [ "User-Agent" , "Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0" ] )
+    read_url , read_header = plugintools . read_body_and_headers ( url , headers = header )
+    url=read_url.strip().decode('utf-8')
+ 
+    matches =  re.findall(r'(?s)\"infohash\"\:\"(.+?)\"\,\"name\"\:\"(.+?)\"', url, re.DOTALL)
+    log(matches)
+    for url, title in matches:
+        url2 = url.replace('\u00e7', 'c').replace('\u00e3','a').replace('\u00e9','e').replace('\u00ea','e' )
+        plugintools . add_item ( action = "resolve_acestream" , title = title, url = url2 , thumbnail = thumbnail, fanart="", folder = False , isPlayable = True ) 
+
+
+
 def playace(params):
     import resolveurl
     url=keyboard_input("", "Play Acestream ID:", False)
@@ -1498,12 +1817,14 @@ def youtube(params):
     plugintools.add_item(action="Buscar_search",title="[COLOR gold]Cauta YouTube[/COLOR]",thumbnail="https://i.imgur.com/V4gm6sn.jpg",url= "https://www.youtube.com/results?search_query=",fanart="",folder=True )         
     #plugintools.add_item(action="Emisiones_en_Directo_Recientes",title="[COLOR gold]Emisiones en Directo Recientes[/COLOR]",thumbnail="https://i.imgur.com/qE9UeYX.jpg",url= "https://www.youtube.com/watch?v=8nox3KEe6KI&list=PLU12uITxBEPEFpYLxV4XlCnR13q8nwVsv",fanart="",folder=True )    
     #plugintools.add_item(action="Proximas_en_Directo",title="[COLOR gold]Proximas Emisiones en Directo[/COLOR]",thumbnail="https://i.imgur.com/qE9UeYX.jpg",url= "https://www.youtube.com/watch?v=n93zCuT_0ZE&list=PLU12uITxBEPHMNFc5X1tQDy79xL29aV1E",fanart="",folder=True )  
-    #plugintools.add_item(action="En_Directo",title="[COLOR gold]En Directo[/COLOR]",thumbnail="https://i.imgur.com/E8eFVJy.jpg",url= "https://www.youtube.com/playlist?list=PLU12uITxBEPFT10z9aLSQpg0YD4su7JDp",fanart="",folder=True )             
+    #plugintools.add_item(action="En_Directo",title="[COLOR gold]En Directo[/COLOR]",thumbnail="https://i.imgur.com/E8eFVJy.jpg",url= "https://www.youtube.com/playlist?list=PL39z-AAkkatusz2cbNJ5TQCUxVzGhSxKR",fanart="",folder=True )             
     #plugintools.add_item(action="GameYoutube_live",title="[COLOR gold]GameYoutube Live[/COLOR]",thumbnail="https://i.imgur.com/xJCLAyq.jpg",url= "https://www.youtube.com/gaming/games",fanart="",folder=True )   
     #plugintools.add_item(action="Noticias_directos",title="[COLOR gold]YouTube Live[/COLOR]",thumbnail="https://i.imgur.com/4Cw0fuc.jpg",url= "https://www.youtube.com/playlist?list=PLU12uITxBEPFy1nVJaDM-nGeB2q66Z4nP",fanart="",folder=True )     
     plugintools.add_item(action="Deportes_directos",title="[COLOR gold]YouTube Live[/COLOR]",thumbnail="https://i.imgur.com/E8eFVJy.jpg",url= "https://www.youtube.com/watch?v=ogkBwQGvoAs&list=PLU12uITxBEPFy1nVJaDM-nGeB2q66Z4nP",fanart="",folder=True )            
+    plugintools.add_item( action="ytfilme", title="[COLOR gold]Filme Romanesti Youtube[/COLOR]", thumbnail="https://i.imgur.com/qE9UeYX.jpg", fanart="https://i.imgur.com/N2r6pj6.jpg", page="", url= "https://raw.githubusercontent.com/vb6rocod/hddlinks/master/filme_yt.m3u", folder=True )    
     plugintools.add_item(action="playyt",title="[COLOR gold]Play YouTube Video[/COLOR]",thumbnail="https://i.imgur.com/qE9UeYX.jpg",url= "",fanart="",folder= False, isPlayable = True )               
-
+    plugintools.add_item(action="yt_main_list",title="[COLOR gold]YT channels[/COLOR]",thumbnail="https://i.imgur.com/qE9UeYX.jpg",url= "",fanart="",folder= True )
+    
 def trendig_you (params):
     url = params . get ( "url" )
     header = [ ]
@@ -1598,7 +1919,7 @@ def Buscar_search (params):
     for thumb, title, url in matches:
         plugintools . add_item ( action = "resolve_resolveurl_youtube" , title = title, url = url , thumbnail = thumb, fanart="", folder = False , isPlayable = True ) 
 
-def En_Directo (params):
+def En_Directo2 (params):
     url = params . get ( "url" )
     header = [ ]
     header . append ( [ "User-Agent" , "Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0" ] )
@@ -1610,6 +1931,83 @@ def En_Directo (params):
     for thumb, title, url in matches:
         plugintools . add_item ( action = "resolve_resolveurl_youtube" , title = title, url = url , thumbnail = thumb, fanart="", folder = False , isPlayable = True ) 
 
+def En_Directo(params): 
+    plugintools.log("macvod.directo")
+    thumbnail = params.get("thumbnail")    
+
+    
+    url3 = params.get("url")
+ 
+    request_headers=[]
+    request_headers.append(["User-Agent","Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0"])
+    body,response_headers = plugintools.read_body_and_headers( url3, headers=request_headers)
+    url = body.strip().decode('utf-8')
+
+    matches = plugintools.find_multiple_matches(url,'(height":138},{"url":"https://i.ytimg.*?\?sqp.*?"text":".*?".*?videoId":".*?")')
+    for generos in matches:  
+        patron=plugintools.find_single_match(generos,'(?s)height":138},{"url":"(https://i.ytimg.*?)\?sqp.*?"text":"(.*?)".*?videoId":"(.*?)"')    
+        url=patron[2]
+        titulo=patron[1]
+        thmb=patron[0]
+     
+        plugintools.add_item(action="resolve_resolveurl_youtube", url=url,title="[LOWERCASE][CAPITALIZE][COLOR orange]"+titulo+" [/CAPITALIZE][/LOWERCASE][/COLOR]",thumbnail=thmb,fanart=thumbnail,folder=False,  isPlayable = True )
+
+
+
+def ytfilme(params): 
+    plugintools.log("macvod.ytfilme")
+    thumbnail = params.get("thumbnail")    
+
+    
+    url3 = params.get("url")
+ 
+    request_headers=[]
+    request_headers.append(["User-Agent","Mozilla/5.0 (Windows NT 10.0; rv:75.0) Gecko/20100101 Firefox/75.0"])
+    body,response_headers = plugintools.read_body_and_headers( url3, headers=request_headers)
+    url = body.strip().decode('utf-8')
+
+    matches = plugintools.find_multiple_matches(url,'(#EXTINF:\d+,tvg-name\=".+?" tvg-logo\=".+?"\nhttps\:\/\/www\.youtube\.com\/watch\?v\=.+?\n)')
+    for generos in matches:  
+        patron=plugintools.find_single_match(generos,'(?s)#EXTINF:\d+,tvg-name\="(.+?)" tvg-logo\="(.+?)"\nhttps\:\/\/www\.youtube\.com/watch\?v\=(.+?)\n')    
+        url=patron[2]
+        titulo=patron[0]
+        thmb=patron[1]
+     
+        plugintools.add_item(action="resolve_resolveurl_youtube", url=url,title="[LOWERCASE][CAPITALIZE][COLOR orange]"+titulo+" [/CAPITALIZE][/LOWERCASE][/COLOR]",thumbnail=thmb,fanart=thumbnail,folder=False,  isPlayable = True )
+
+#### yt code
+def yt_main_list(params):
+    youtube = "plugin://plugin.video.youtube/channel/MI-ID-CANAL/playlists/"
+    duffyou = "{'action': 'io1i1I1', 'fanart': '', 'icon': '', 'id': 'MI-ID-CANAL', 'label': '', 'page': 1, 'plot': "", 'query': "", 'thumb': '', 'tipo': 'playlist'}"
+
+    xbmcplugin.setContent( int(sys.argv[1]) ,"tvshows" )
+
+    #plugintools.log("*****************Filas: "+str(len(aLista))+"********************")
+    for i in range(len(aLista)):
+        titu = aLista[i][0]
+        id_canal = aLista[i][1]
+        logo = xbmc.translatePath(os.path.join(mislogos , aLista[i][2]))
+        descrip = aLista[i][3]
+        if usa_duffyou:  ##Usamos plugin Duff You
+            reemplaza = duffyou.replace("MI-ID-CANAL" , id_canal)
+            videos = "plugin://plugin.video.duffyou/?" + base64.b64encode(reemplaza.encode('utf-8')).decode('utf-8')
+        else:  ##Usamos pluin YouTube
+            videos = youtube.replace("MI-ID-CANAL" , id_canal)
+
+        datamovie = {}
+        datamovie["Plot"] = descrip
+        titulo = '[COLOR white]' + titu + '[/COLOR]'
+        plugintools.add_item(action="lanza", url=videos, title=titulo, thumbnail=logo, fanart=backgr, info_labels = datamovie, folder=True, isPlayable=False)
+
+
+
+
+def lanza(params):
+    lasListas = params.get("url")
+    
+    xbmc.Player().play(lasListas)
+
+#### yt code
 
 def playyt(params):
     import resolveurl

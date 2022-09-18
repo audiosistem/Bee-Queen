@@ -40,15 +40,15 @@ def get_cache_size():
     PROFILEADDONDATA = os.path.join(CONFIG.PROFILE, 'addon_data')
 
     dbfiles = [
-        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.tempest', 'cache.db')),
-        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.tempest', 'cache.meta.5.db')),
-        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.tempest', 'cache.providers.13.db')),
+        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.scrubsv2', 'cache.db')),
+        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.scrubsv2', 'cache.meta.5.db')),
+        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.scrubsv2', 'cache.providers.13.db')),
         (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.theoath', 'cache.db')),
         (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.theoath', 'cache.meta.5.db')),
         (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.theoath', 'cache.providers.13.db')),
-        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thecrew', 'cache.db')),
-        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thecrew', 'cache.meta.5.db')),
-        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thecrew', 'cache.providers.13.db')),
+        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thepromise', 'cache.db')),
+        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thepromise', 'cache.meta.5.db')),
+        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thepromise', 'cache.providers.13.db')),
         (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.alvin', 'cache.db')),
         (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.alvin', 'cache.meta.5.db')),
         (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.alvin', 'cache.providers.13.db')),
@@ -101,10 +101,10 @@ def get_cache_size():
         if CONFIG.INCLUDEALL == 'true':
             files = dbfiles
         else:
-            if CONFIG.INCLUDETEMPEST == 'true':
-                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.tempest', 'cache.db'))
-                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.tempest', 'meta.5.db'))
-                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.tempest', 'providers.13.db'))
+            if CONFIG.INCLUDESCRUBSV2 == 'true':
+                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.scrubsv2', 'cache.db'))
+                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.scrubsv2', 'meta.5.db'))
+                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.scrubsv2', 'providers.13.db'))
             if CONFIG.INCLUDEALVIN == 'true':
                 files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.alvin', 'cache.db'))
                 files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.alvin', 'meta.5.db'))
@@ -121,10 +121,10 @@ def get_cache_size():
             if CONFIG.INCLUDESEREN == 'true':
                 files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.seren', 'cache.db'))
                 files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.seren', 'torrentScrape.db'))
-            if CONFIG.INCLUDETHECREW == 'true':
-                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thecrew', 'cache.db'))
-                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thecrew', 'meta.5.db'))
-                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thecrew', 'providers.13.db'))
+            if CONFIG.INCLUDETHEPROMISE == 'true':
+                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thepromise', 'cache.db'))
+                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thepromise', 'meta.5.db'))
+                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thepromise', 'providers.13.db'))
         if len(files) > 0:
             for item in files:
                 if not os.path.exists(item):
@@ -253,12 +253,12 @@ def clear_cache(over=None):
     dbfiles = [
         (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.gaia', 'cache.db')),
         (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.gaia', 'meta.db')),
-        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.tempest', 'cache.db')),
-        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.tempest', 'meta.5.db')),
-        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.tempest', 'cache.providers.13.db')),
-        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thecrew', 'cache.db')),
-        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thecrew', 'meta.5.db')),
-        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thecrew', 'cache.providers.13.db')),
+        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.scrubsv2', 'cache.db')),
+        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.scrubsv2', 'meta.5.db')),
+        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.scrubsv2', 'cache.providers.13.db')),
+        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thepromise', 'cache.db')),
+        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thepromise', 'meta.5.db')),
+        (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thepromise', 'cache.providers.13.db')),
         (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.alvin', 'cache.db')),
         (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.alvin', 'meta.5.db')),
         (os.path.join(CONFIG.ADDON_DATA, 'plugin.video.alvin', 'cache.providers.13.db')),
@@ -335,10 +335,10 @@ def clear_cache(over=None):
         if CONFIG.INCLUDEALL == 'true':
             files = dbfiles
         else:
-            if CONFIG.INCLUDETEMPEST == 'true':
-                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.tempest', 'cache.db'))
-                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.tempest', 'meta.5.db'))
-                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.tempest', 'providers.13.db'))
+            if CONFIG.INCLUDESCRUBSV2 == 'true':
+                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.scrubsv2', 'cache.db'))
+                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.scrubsv2', 'meta.5.db'))
+                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.scrubsv2', 'providers.13.db'))
             if CONFIG.INCLUDEALVIN == 'true':
                 files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.alvin', 'cache.db'))
                 files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.alvin', 'meta.5.db'))
@@ -349,10 +349,10 @@ def clear_cache(over=None):
                 files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.theoath', 'cache.db'))
                 files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.theoath', 'meta.5.db'))
                 files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.theoath', 'providers.13.db'))
-            if CONFIG.INCLUDETHECREW == 'true':
-                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thecrew', 'cache.db'))
-                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thecrew', 'meta.5.db'))
-                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thecrew', 'providers.13.db'))
+            if CONFIG.INCLUDETHEPROMISE == 'true':
+                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thepromise', 'cache.db'))
+                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thepromise', 'meta.5.db'))
+                files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.thepromise', 'providers.13.db'))
             if CONFIG.INCLUDEGAIA == 'true':
                 files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.gaia', 'cache.db'))
                 files.append(os.path.join(CONFIG.ADDON_DATA, 'plugin.video.gaia', 'meta.db'))
@@ -482,8 +482,8 @@ def force_text():
 
 
 def toggle_cache(state):
-    cachelist = ['includevideo', 'includeall', 'includetempest', 'includegaia', 'includenumbers', 'includescrubs', 'includeseren', 'includethecrew', 'includealvin']
-    titlelist = ['Include Video Addons', 'Include All Addons', 'Include Exodus Redux', 'Include Gaia', 'Include NuMb3r5', 'Include Scrubs v2', 'Include Seren', 'Include THE CREW', 'Include Alvin']
+    cachelist = ['includevideo', 'includeall', 'includescrubsv2', 'includeromanianpack',  'includetheoath', 'includethepromise', 'includealvin']
+    titlelist = ['Include Video Addons', 'Include All Addons', 'Include Scrubs v2', 'Include MRSP', 'Include THEOATH',  'Include THEPROMISE', 'Include Alvin']
     if state in ['true', 'false']:
         for item in cachelist:
             CONFIG.set_setting(item, state)

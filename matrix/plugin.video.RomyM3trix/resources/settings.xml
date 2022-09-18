@@ -1,0 +1,42 @@
+<settings>
+<category label="Proxy">
+		<setting label="[COLOR lightblue]Opções do Proxy:[/COLOR]" type="lsep"/>
+		<setting label="Ativar Proxy" id="proxy" type="bool"  default="false" />
+		<setting label="Número de Tentativas" id="proxy_try" type="enum" values="1 Vez|2 Vezes|3 Vezes|4 Vezes|5 Vezes|6 Vezes|6 Vezes|7 Vezes|8 Vezes|9 Vezes|10 Vezes" default="4" />
+		<setting label="[COLOR yellow][B]Utilize apenas se a operadora estiver bloqueando o servidor[/B][/COLOR]" type="bool"/>
+		<setting label="[COLOR yellow][B]do basematrix[/B][/COLOR]" type="bool"/>
+		<setting label="[COLOR yellow][B]Aviso: Pode demorar a carregar[/B][/COLOR]" type="bool"/>
+		<setting label="[COLOR yellow][B]Não se aplica a servidores de IPTV como o VIP esses tem[/B][/COLOR]" type="bool"/>
+		<setting label="[COLOR yellow][B]conexão direta.[/B][/COLOR]" type="bool"/>
+		<setting label="[COLOR yellow][B]Utilize VPN se a operadora bloqueia o IPTV.[/B][/COLOR]" type="bool"/>
+</category>
+<category label="Canais">
+		<setting label="[COLOR lightblue]Configurações dos Canais:[/COLOR]" type="lsep"/>
+		<setting label="Exibir Canais 4K (Lista M3U)" id="uhdtv" type="bool" default="true" />
+		<setting label="Exibir Canais FHD (Lista M3U)" id="fhdtv" type="bool" default="true" />
+		<setting label="Exibir Canais HD (Lista M3U)" id="hdtv" type="bool" default="true" />
+		<setting label="Exibir Canais SD (Lista M3U)" id="sdtv" type="bool" default="true" />
+		<setting label="(Lista M3U) Exibir Apenas Canais de" id="filtrar" type="enum" values="Desativado|Futebol|Esportes|Filmes e Series|Infantil|Documentario|Aberto|Reality show|Noticias" default="0" />
+</category>
+<category label="Controle dos Pais">
+		<setting label="[COLOR lightblue]Controle dos Pais:[/COLOR]" type="lsep"/>
+		<setting label="Exibir Menu Adultos" id="adult" type="bool" default="false" />
+		<setting label="Exibir Canais Adultos (Lista M3U)" id="adult2" type="bool" default="false" />
+		<setting label="Tipo de Teclado (OK para trocar)" id="keyboard" type="enum" values="Númerico|Alfanúmerico" default="0" />
+		<setting label="Entre aqui para alterar senha" type="action" action="RunScript(plugin.video.freeddons.matrix), SetPassword)"/>
+		<setting label="[COLOR yellow][B]Senha padrão 0069[/B][/COLOR]" type="bool"/>
+</category>
+<category label="Complementos">
+	<setting label="[COLOR lightblue]Configurações de Complemento:[/COLOR]" type="lsep"/>
+	<setting label="Verificar Complementos" id="check_addon" type="bool" default="true" />
+	<setting label="Baixar e Instalar Elementum" id="elementum" type="bool" default="false" />
+	<setting label="Baixar e Instalar Youtube" id="youtube" type="bool" default="false" />
+</category>
+<category label="Outros">
+	<setting label="[COLOR lightblue]Configurações Gerais:[/COLOR]" type="lsep"/>
+	<setting label="Exibir Favoritos" id="favoritos" type="bool" default="false" />
+    <setting label="Entre aqui para limpar os favoritos" type="action" action="RunScript(plugin.video.freeddons.matrix), limparFavoritos)"/>	
+	<setting label="Executar Youtube" id="ytbmode" type="enum" values="Interno 1|Interno 2|Externo" default="1" />	
+    <setting label="Use Miniaturas como Fanart" id="use_thumb" type="bool" default="false" />
+</category>
+</settings>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addon
-	id="plugin.video.macvod" version="1.5" name="[COLOR white]XC MAC M3U[/COLOR]" provider-name="1x|iNKuBo">
+	id="plugin.video.macvod" version="1.81" name="[COLORgold]XC MAC M3U[/COLOR]" provider-name="1x|iNKuBo|AS">
 <requires>    		
     	<import addon="script.module.resolveurl"/>
 	    <import addon="script.module.requests"/>	
@@ -21,7 +21,7 @@
 		<platform>all</platform>
 		<disclaimer lang="es">The author of this addon makes not responsible for the use of it</disclaimer>
 	<assets>
-        <icon>icon.png</icon>  
+        <icon>icon.gif</icon>  
         <fanart>fanart.png</fanart>
     </assets>        
 		<language>es</language>
