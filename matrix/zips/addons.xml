@@ -107,63 +107,6 @@
 
 </addon>
 
-<addon id="plugin.video.RomyM3trix" name="[B][COLOR aqua]Romy[/COLOR] [COLOR red]M3trix[/COLOR][/B]" version="3.0.0+matrix" provider-name="RomyTVplace">
-<requires>
-      <!-- <import addon="xbmc.python" version="2.1.0"/> -->
-    <import addon="script.module.resolveurl" version="5.0.06"/>
-	<import addon="script.module.resolveurl" />
-        <!--<import addon="script.module.urlresolver" />-->
-    <import addon="script.module.requests"/>
-    <import addon="script.module.simplejson"/>
-	<import addon="script.module.kodi-six" />
-</requires>
-<extension point="xbmc.python.pluginsource" library="default.py">
-	<provides>video</provides>
-</extension>
-<extension point="xbmc.addon.metadata">
-	 <summary lang="en">TOT CONȚINUTUL ACESTUI ADDON A FOST EXTRAS DIN DOMENIUL GOOGLE. NU SUNT RESPONSABIL PENTRU SCOPURILE PROFITABILE ALE PĂRȚILOR TERȚE.</summary>
-    <description lang="en">LA INCEPUT DE DRUM!</description>
-    <disclaimer lang="en"></disclaimer>
-	<platform>all</platform>
-	<assets>
-       <icon>icon.png</icon>
-       <fanart>fanart.jpg</fanart>
-<screenshot>resources/screenshots/home.png</screenshot>
-<screenshot>resources/screenshots/movies.png</screenshot>
-<screenshot>resources/screenshots/series.png</screenshot>
-</assets>
-	<news>news
-	</news>
-</extension>
-</addon>
-
-<addon id="plugin.video.RomYOU19" name="[COLOR white]Rom[/COLOR][COLOR red][B]YOU19[/B][/COLOR]" version="3.3.7" provider-name="Romy">
-  <requires>
-    <import addon="xbmc.python" version="3.0.0" />
-    <import addon="script.module.requests" />
-    <import addon="script.module.routing"/>
-    <import addon="script.module.unidecode" />
-    <import addon="script.module.inputstreamhelper" />
-    <import addon="script.module.resolveurl"/>
-    <import addon="script.module.microjenscrapers" />
-    <import addon="script.module.grs"/>
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en_GB">[COLOR white]Colectie de canale si playlist-uri de pe[/COLOR] [COLOR red][B]YOUTUBE[/B][/COLOR][COLOR white].[/COLOR]</summary>
-	<description lang="en">[COLOR white][B]Nu este nevoie de configurare plugin[/B][/COLOR] [COLOR red][B]YOUTUBE[/B][/COLOR] [COLOR white][B]cu[/B][/COLOR] [COLOR red][B]API Keys[/B][/COLOR] [COLOR white][B]pentru vizionare! [/B][/COLOR]</description>
-    <platform>all</platform>
-    <language>en</language>
-    <license>GPL-2.0-or-later</license>
-    <assets>
-        <icon>icon.png</icon>
-        <fanart>fanart.jpg</fanart>
-  </assets>
-  </extension>
-</addon>
-
 
 <!--
 #
