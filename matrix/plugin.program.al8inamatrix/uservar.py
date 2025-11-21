@@ -17,7 +17,7 @@ ADDONTITLE = '[COLOR orangered]Al8inA [/COLOR] [COLOR chocolate]Matrix Wizard[/C
 BUILDERNAME = '[COLOR darkorange]Al8inA[/COLOR] '
 EXCLUDES = [ADDON_ID, '']
 # Text File with build info in it.
-BUILDFILE = 'https://archive.org/download/builds19/buildfile.txt'
+BUILDFILE = 'https://mia.nl.tab.digital/public.php/dav/files/ZfDw5wNmiiHxxfd'
 # How often you would like it to check for build updates in days
 # 0 being every startup of kodi
 UPDATECHECK = 0
@@ -79,8 +79,8 @@ HIDECONTACT = 'Yes'
 # You can add \n to do line breaks
 CONTACT = 'Keep Calm and Carry On!Thank you for choosing Al8inA Matrix Wizard.'
 # Images used for the contact window.  http:// for default icon and fanart
-CONTACTICON = 'https://archive.org/download/al8ina/albina%2050%2050%20transparent.png'
-CONTACTFANART = 'https://archive.org/download/al8ina/bee%20queen.jpg'
+CONTACTICON = 'https://i.postimg.cc/XqnrdK17/icon.png'
+CONTACTFANART = 'https://i.postimg.cc/448fWTmj/fanart.jpg'
 #########################################################
 
 #########################################################
@@ -98,7 +98,7 @@ AUTOINSTALL = 'No'
 # Addon ID for the repository
 REPOID = ''
 # Url to Addons.xml file in your repo folder(this is so we can get the latest version)
-REPOADDONXML = 'https://raw.githubusercontent.com/a4k-openproject/repository.openwizard/master/zips/addons.xml'
+REPOADDONXML = 'https://github.com/audiosistem/Bee-Queen/blob/main/matrix/repository.al8ina/addon.xml'
 # Url to folder zip is located in
 REPOZIPURL = 'https://'
 #########################################################
@@ -109,7 +109,7 @@ REPOZIPURL = 'https://'
 # Enable Notification screen Yes or No
 ENABLE = 'Yes'
 # Url to notification file
-NOTIFICATION = 'https://archive.org/download/builds19/notify.txt'
+NOTIFICATION = 'https://mia.nl.tab.digital/public.php/dav/files/dEpNF3AekXx6pNq'
 # Use either 'Text' or 'Image'
 HEADERTYPE = 'Text'
 # Font size of header
