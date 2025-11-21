@@ -17,7 +17,7 @@ ADDONTITLE = '[COLOR orangered]Al8inA [/COLOR] [COLOR chocolate]Matrix Wizard[/C
 BUILDERNAME = '[COLOR darkorange]Al8inA[/COLOR] '
 EXCLUDES = [ADDON_ID, '']
 # Text File with build info in it.
-BUILDFILE = 'https://mia.nl.tab.digital/public.php/dav/files/ZfDw5wNmiiHxxfd'
+BUILDFILE = 'https://archive.org/download/builds19/buildfile.txt'
 # How often you would like it to check for build updates in days
 # 0 being every startup of kodi
 UPDATECHECK = 0
@@ -79,8 +79,8 @@ HIDECONTACT = 'Yes'
 # You can add \n to do line breaks
 CONTACT = 'Keep Calm and Carry On!Thank you for choosing Al8inA Matrix Wizard.'
 # Images used for the contact window.  http:// for default icon and fanart
-CONTACTICON = 'https://i.postimg.cc/XqnrdK17/icon.png'
-CONTACTFANART = 'https://i.postimg.cc/448fWTmj/fanart.jpg'
+CONTACTICON = 'https://archive.org/download/al8ina/albina%2050%2050%20transparent.png'
+CONTACTFANART = 'https://archive.org/download/al8ina/bee%20queen.jpg'
 #########################################################
 
 #########################################################
@@ -109,7 +109,7 @@ REPOZIPURL = 'https://'
 # Enable Notification screen Yes or No
 ENABLE = 'Yes'
 # Url to notification file
-NOTIFICATION = 'https://mia.nl.tab.digital/public.php/dav/files/dEpNF3AekXx6pNq'
+NOTIFICATION = 'https://archive.org/download/builds19/notify.txt'
 # Use either 'Text' or 'Image'
 HEADERTYPE = 'Text'
 # Font size of header
