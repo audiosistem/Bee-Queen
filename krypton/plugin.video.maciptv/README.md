@@ -1,2 +1,0 @@
-# kepaiptv
-Repositorio de KepaIPTV
