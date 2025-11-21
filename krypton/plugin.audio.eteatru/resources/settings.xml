@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+  <category label="30002">
+    <setting type="sep" />
+    <setting id="debug" type="bool" label="30003" default="false"/>
+    <setting type="sep" />
+    <setting label="30004" type="folder" id="download_path" source="auto" option="writeable"/>
+    <setting type="sep" />
+  </category>
+</settings>

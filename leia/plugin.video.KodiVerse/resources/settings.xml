@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+	<category label="[COLOR lime][B]KodiVerse General[/B][/COLOR]">
+		
+		
+		<setting id="theme" type="enum" label="32205" values="KodiVerse"  default="0" />
+		
+		<setting id="num_p"  type="number"  label="32206" visible="true" default="1"/>
+		<setting id="order_networks" type="enum" label="32207" lvalues="32208|32209|32210"  default="0" />
+		<setting id="dp" label="32211" type="bool" default="true" />
+	
+		<setting id="size_limit"  type="number"  label="32212"  default="40"/>
+		<setting id="save_time"  type="number"  label="32213" visible="true" default="72"/>
+
+		<setting id="better_look" label="32215" type="bool"  default="true" />
+		<setting id="show_collection" label="32303" type="bool"  default="true" />
+		
+		<setting id="display_lock" label="32216" type="bool"  default="false" />
+		
+		<setting id="adults" label="32217" type="bool"  default="true" />
+		
+		
+		<setting label="[COLOR lime][I]$ADDON[plugin.video.KodiVerse 32220][/I][/COLOR]" option="close" type="action" action="RunPlugin(plugin://plugin.video.KodiVerse?mode=163&url=www)" />
+		
+		
+		<setting id="rd.auth" type="text" default="" visible="hidden" />
+		<setting id="rd.refresh" type="text" default="" visible="hidden" />
+		<setting id="rd.client_id" type="text" default="" visible="hidden" />
+		<setting id="rd.expiry" type="text" default="0" visible="hidden"/>
+		<setting id="rd.secret" type="text" default="" visible="hidden" />
+		<setting id="ghaddr" type="text" default="" visible="hidden" />
+		<setting id="premiumize.token" type="text" default="" visible="false" />
+		<setting id="alldebrid.token" type="text" default="" visible="false" />
+		<setting id="alldebrid.username" type="text" default="" visible="false" />
+		
+
+	</category>
+	
+	<category label="$ADDON[plugin.video.KodiVerse 32027]">
+		<setting id="s_traker_style" label="32311" type="bool"  default="false" />
+		<setting id="show_over" label="32312" type="bool"  default="false" />
+		<setting id="time_to_save" label="32214" type="number" default="75" />
+		<setting label="32218" option="close" type="action" action="RunPlugin(plugin://plugin.video.KodiVerse?mode=147&url=www)" />
+		<setting label="32219" option="close" type="action"   action="RunPlugin(plugin://plugin.video.KodiVerse?mode=157&url=False)"/>
+		<setting label="[COLOR lime]trakt access token[/COLOR]" id="trakt_access_token" type="text" visible="false" />
+		<setting label="[COLOR lime]trakt refresh token[/COLOR]" id="trakt_refresh_token" type="text" visible="false" />
+		<setting label="[COLOR lime]trakt refresh token[/COLOR]" id="trakt_expires_at" type="text" visible="false" />
+		
+	</category>
+	<category label="32221">
+		<setting label="[COLOR lime][I]$ADDON[plugin.video.KodiVerse 32124][/I][/COLOR]" type="lsep"/>
+		<setting id="garbage" type="text" default="" visible="false" />
+		<setting label="32222" type="lsep"/>
+		<setting id="max_q" type="enum" label="32223" values="720|1080|2160"  default="2" />
+		<setting id="min_q" type="enum" label="32224" values="all|720|1080|2160"  default="0" />
+		
+		<setting label="32225" type="lsep"/>
+		<setting id="encoding_filter" type="bool" label="32226" default="false" />
+		<setting id="3d" type="bool" label="32227" default="false" visible="eq(-1,true)"/>
+		<setting id="hdvc" type="bool" label="32228" default="true" visible="eq(-2,true)"/>
+		<setting id="low_q" type="bool" label="32229" default="false" visible="eq(-3,true)"/>
+		
+		<setting label="[COLOR lime][I]$ADDON[plugin.video.KodiVerse 32099][/I][/COLOR]" type="lsep"/>
+		<setting id="garbage2" type="text" default="" visible="false" />
+		<setting label="32222" type="lsep"/>
+		<setting id="max_q_tv" type="enum" label="32223" values="720|1080|2160"  default="2" />
+		<setting id="min_q_tv" type="enum" label="32224" values="all|720|1080|2160"  default="0" />
+		
+		<setting label="32225" type="lsep"/>
+		<setting id="encoding_filter_tv" type="bool" label="32226" default="false" />
+		<setting id="3d_tv" type="bool" label="32227" default="false" visible="eq(-1,true)"/>
+		<setting id="hdvc_tv" type="bool" label="32228" default="true" visible="eq(-2,true)"/>
+		<setting id="low_q_tv" type="bool" label="32229" default="false" visible="eq(-3,true)"/>
+		<setting id="filter_non_e" type="bool" label="32230" default="true" />
+		
+	</category>
+	
+	<category label="32231">
+		<setting id="debrid_use" label="32232" type="bool"  default="true" />
+		<setting id="debrid_select" type="enum" label="32233" values="Real-Debrid|Premiumize|ALL-Debrid"  default="0" />
+		<setting label="32234" option="close" type="action" action="RunPlugin(plugin://plugin.video.KodiVerse?mode=137&url=www)" visible="eq(-1,0)"/>
+		<setting label="32235" option="close" type="action" action="RunPlugin(plugin://plugin.video.KodiVerse?mode=138&url=www)" visible="eq(-2,0)"/>
+		
+		<setting label="32236" option="close" type="action" action="RunPlugin(plugin://plugin.video.KodiVerse?mode=139&url=www)" visible="eq(-3,1)"/>
+		<setting label="32237" option="close" type="action" action="RunPlugin(plugin://plugin.video.KodiVerse?mode=140&url=www)" visible="eq(-4,1)"/>
+		
+		<setting id="premiumize.addToCloud" type="bool" subsetting="true" label="[COLOR lime]Store resolved items in cloud[/COLOR]" default="false" visible="eq(-5,1)" />
+		<setting id="premiumize.transcoded" type="bool" subsetting="true" label="[COLOR lime]Prefer Transcoded Files[/COLOR]" default="false" visible="eq(-6,1)" />
+		
+		<setting label="32239" option="close" type="action" action="RunPlugin(plugin://plugin.video.KodiVerse?mode=141&url=www)" visible="eq(-7,2)"/>
+		<setting label="32240" option="close" type="action" action="RunPlugin(plugin://plugin.video.KodiVerse?mode=142&url=www)" visible="eq(-8,2)"/>
+		
+	</category>
+	
+	
+	<category label="32241">
+		<setting id="nextup_episode" label="32241" type="bool"  default="true" />
+		<setting id="play_nextup_wait" label="32242" type="bool"  default="false" visible="eq(-1,true)"/>
+		<setting id="window" label="32243" type="number" default="30" visible="eq(-2,true)"/>
+	
+		<setting id="before_end2" label="32244" type="number"  default="3" visible="eq(-3,true)"/>
+		<setting id="nextup_movie" label="32245" type="bool"  default="true" />
+		<setting id="movie_window" label="32246" type="number" default="300" visible="eq(-1,true)"/>
+	</category>
+	
+	<category label="32247">
+		<setting id="cast" label="32248" type="bool"  default="true" />
+		<setting id="s3d_scrape" label="32178" type="bool"  default="true" />
+		<setting id="play_trailer" label="32167" type="bool"  default="true" />
+		<setting id="settings_content" label="32168" type="bool"  default="true" />
+		<setting id="queue_item" label="32169" type="bool"  default="true" />
+		<setting id="trakt_manager" label="32304" type="bool"  default="true" />
+		<setting id="trakt_watched" label="32164" type="bool"  default="true" />
+		<setting id="trakt_unwatched" label="32165" type="bool"  default="true" />
+		<setting id="openinfo" label="[COLOR lime][B]KodiVerse Openinfo[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="remove_resume_time" label="32173" type="bool"  default="true" />
+		<setting id="browse_series" label="32174" type="bool"  default="true" />
+		<setting id="remove_resume_point" label="32175" type="bool"  default="true" />
+		<setting id="clear_Cache" label="32176" type="bool"  default="true" />
+		<setting id="set_view_type" label="32177" type="bool"  default="true" />
+		<setting id="Release_Date_item" label="[COLOR lime][B]KodiVerse Release Date[/B][/COLOR]" type="bool"  default="true" />
+		
+	</category>
+	
+	<category label="32249">
+		<setting label="32124" type="lsep"/>
+		<setting id="one_click" label="32249" type="bool"  default="false" />
+		
+		<setting id="max_quality" type="enum" label="32223" values="2160|1080|720|any"  default="3" visible="eq(-1,true)"/>
+		<setting id="min_quality" type="enum" label="32224" values="2160|1080|720|any"  default="2" visible="eq(-2,true)"/>
+		
+		<setting label="32099" type="lsep"/>
+		<setting id="one_click_tv" label="32249" type="bool"  default="false" />
+		
+		<setting id="max_quality_tv" type="enum" label="32223" values="2160|1080|720|any"  default="3" visible="eq(-1,true)"/>
+		<setting id="min_quality_tv" type="enum" label="32224" values="2160|1080|720|any"  default="2" visible="eq(-2,true)"/>
+
+
+	</category>
+	<category label="32251">
+		<setting id="time_s"  type="number"  label="32252" visible="true" default="10"/>
+		<setting label="32301" type="lsep"/>
+		
+		<setting label="32253"  type="action" option="close" action="RunPlugin(plugin://plugin.video.KodiVerse?mode=173&url=movie&name=enable)" />
+		<setting label="32254"  type="action" option="close" action="RunPlugin(plugin://plugin.video.KodiVerse?mode=173&url=movie&name=disable)" />
+		<setting id="fav_movie" type="text" label="32255" default="" />
+		
+		<!--Movie Sources-->
+
+		<setting id="1337x" label="[COLOR lime][B]1337x[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="api" label="[COLOR lime][B]api[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="bay" label="[COLOR lime][B]bay[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="bitcq" label="[COLOR lime][B]bitcq[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="bitlord" label="[COLOR lime][B]bitlord[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="btscene" label="[COLOR lime][B]btscene[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="corn" label="[COLOR lime][B]corn[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="dl" label="[COLOR lime][B]dl[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="easynews" label="[COLOR lime][B]easynews [/B][/COLOR][COLOR lime](Paid)[/COLOR]" type="bool"  default="true" />
+		<setting id="extra" label="[COLOR lime][B]extra[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="ez" label="[COLOR lime][B]ez[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="ezio" label="[COLOR lime][B]ezio[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="furk" label="[COLOR lime][B]furk [COLOR lime](Paid)[/COLOR]" type="bool"  default="true" />
+		<setting id="glorls" label="[COLOR lime][B]glorls[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="goo" label="[COLOR lime][B]goo [/B][/COLOR][COLOR limegreen](Free)[/COLOR]" type="bool"  default="true" />
+		<setting id="kass" label="[COLOR lime][B]kass[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="magno" label="[COLOR lime][B]magno[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="mags" label="[COLOR lime][B]mags[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="monk" label="[COLOR lime][B]monk[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="para" label="[COLOR lime][B]para[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="qaz" label="[COLOR lime][B]qaz [/B][/COLOR][COLOR limegreen](Free)[/COLOR]" type="bool"  default="true" />
+		<setting id="shrss" label="[COLOR lime][B]shrss[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="sky" label="[COLOR lime][B]sky[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="snow" label="[COLOR lime][B]snow[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="sol" label="[COLOR lime][B]sol[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="solid" label="[COLOR lime][B]solid[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="stbay" label="[COLOR lime][B]stbay[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="thd" label="[COLOR lime][B]thd[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="torio" label="[COLOR lime][B]torio[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="torrz" label="[COLOR lime][B]torrz[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="trpar" label="[COLOR lime][B]trpar[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="tsdl" label="[COLOR lime][B]tsdl[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="tse" label="[COLOR lime][B]tse[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="wshd" label="[COLOR lime][B]wshd [/B][/COLOR][COLOR limegreen](Free)[/COLOR]" type="bool"  default="true" />
+		<setting id="yts" label="[COLOR lime][B]yts[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="zg" label="[COLOR lime][B]zg[/B][/COLOR]" type="bool"  default="true" />
+
+<!--End Movie Sources-->
+	</category>
+	<category label="[COLOR lime][B]KodiVerse [COLOR lime]Tv [COLOR lime]sources[/B][/COLOR]">
+		<setting label="32299" type="lsep"/>
+		<setting label="32253" type="action" option="close" action="RunPlugin(plugin://plugin.video.KodiVerse?mode=173&url=tv&name=enable)" />
+		<setting label="32254" type="action" option="close" action="RunPlugin(plugin://plugin.video.KodiVerse?mode=173&url=tv&name=disable)" />
+		<setting id="fav_tv" type="text" label="32255" default="" />
+		
+		<!--TV Sources-->
+
+		<setting id="1337x_tv" label="[COLOR lime][B]1337x[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="api_tv" label="[COLOR lime][B]api[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="bay_tv" label="[COLOR lime][B]bay[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="bitcq_tv" label="[COLOR lime][B]bitcq[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="bitlord_tv" label="[COLOR lime][B]bitlord[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="btscene_tv" label="[COLOR lime][B]btscene[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="corn_tv" label="[COLOR lime][B]corn[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="dl_tv" label="[COLOR lime][B]dl[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="easynews_tv" label="[COLOR lime][B]easynews [/B][/COLOR][COLOR lime](Paid)[/COLOR]" type="bool"  default="true" />
+		<setting id="extra_tv" label="[COLOR lime][B]extra[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="ez_tv" label="[COLOR lime][B]ez[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="ezio_tv" label="[COLOR lime][B]ezio[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="furk_tv" label="[COLOR lime][B]furk [/B][/COLOR][COLOR lime](Paid)[/COLOR]" type="bool"  default="true" />
+		<setting id="glorls_tv" label="[COLOR lime][B]glorls[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="goo_tv" label="[COLOR lime][B]goo [/B][/COLOR][COLOR limegreen](Free)[/COLOR]" type="bool"  default="true" />
+		<setting id="kass_tv" label="[COLOR lime][B]kass[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="magno_tv" label="[COLOR lime][B]magno[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="mags_tv" label="[COLOR lime][B]mags[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="monk_tv" label="[COLOR lime][B]monk[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="para_tv" label="[COLOR lime][B]para[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="qaz_tv" label="[COLOR lime][B]qaz [/B][/COLOR][COLOR limegreen](Free)[/COLOR]" type="bool"  default="true" />
+		<setting id="shrss_tv" label="[COLOR lime][B]shrss[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="sky_tv" label="[COLOR lime][B]sky[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="snow_tv" label="[COLOR lime][B]snow[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="sol_tv" label="[COLOR lime][B]sol[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="solid_tv" label="[COLOR lime][B]solid[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="stbay_tv" label="[COLOR lime][B]stbay[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="thd_tv" label="[COLOR lime][B]thd[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="torio_tv" label="[COLOR lime][B]torio[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="torrz_tv" label="[COLOR lime][B]torrz[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="trpar_tv" label="[COLOR lime][B]trpar[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="tsdl_tv" label="[COLOR lime][B]tsdl[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="tse_tv" label="[COLOR lime][B]tse[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="wshd_tv" label="[COLOR lime][B]wshd [/B][/COLOR][COLOR limegreen](Free)[/COLOR]" type="bool"  default="true" />
+		<setting id="yts_tv" label="[COLOR lime][B]yts[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="zg_tv" label="[COLOR lime][B]zg[/B][/COLOR]" type="bool"  default="true" />
+
+<!--End TV Sources-->
+	</category>
+	<category label="32256">
+		<setting label="[COLOR lime][B]KodiVerse Furk[/B][/COLOR]" type="lsep" />
+		<setting id="provider.furk" type="bool" label="32257" default="false" />
+		
+        <setting id="furk_login" type="text" label="32258" default="" />
+        <setting id="furk_password" type="text" label="32259" default="" />
+        <setting id="furk_api_key" type="text" label="32260" default="" />
+        <setting id="furk.mod.level" label="32261" type="labelenum" default="No" lvalues="32262|32263|32264"  subsetting="true" />
+        <setting label="[COLOR lime][B]KodiVerse Easynews[/B][/COLOR]" type="lsep" />
+		<setting id="provider.easy" type="bool" label="32265" default="false" />
+        <setting id="easynews.user" type="text" label="32258" default="" />
+        <setting id="easynews.password" type="text" label="32259" default="" />
+        <setting id="easynews_moderation" label="[COLOR lime][B]KodiVerse easynews Exclude Adult Results[/B][/COLOR]" type="bool" default="true" subsetting="true" />
+		
+	</category>
+	<category label="[COLOR lime][B]KodiVerse [COLOR lime]Extrenal [COLOR lime]Addons[/B][/COLOR]">
+		<setting type="lsep" label="[COLOR lime]KodiVerse Open-scrapers [COLOR lime](if grayed out you [COLOR lime]will need to install it)[/COLOR]" />
+		
+		<setting id="openscrapers" label="[COLOR lime][B]KodiVerse Open-scrapers[/B][/COLOR]" type="bool"  default="false" enable="System.HasAddon(script.module.openscrapers)"/>
+		<setting id="open.settings" type="action" label="[COLOR lime][B]KodiVerse Open-scrapers Settings[/B][/COLOR]" option="close" action="RunPlugin(plugin://script.module.openscrapers/?action=OpenscrapersSettings&amp;opensettings=true&amp;query=4.1)" visible="eq(-1,true)" />
+		<setting id="open.settings_resolveurl" type="action" label="[COLOR lime][B]KodiVerse Resolveurl Settings[/B][/COLOR]" option="close" action="RunPlugin(plugin://plugin.video.KodiVerse?mode=180&url=tv&name=disable)" />
+
+		<setting type="lsep" label="[COLOR lime][B]KodiVerse Universal-scrapers [COLOR lime](if grayed out you [COLOR lime]will need to install it)[/B][/COLOR]" />
+		<setting id="universal" label="[COLOR lime]KodiVerse Universal-scrapers[/COLOR]" type="bool"  default="false"  enable="System.HasAddon(script.module.universalscrapers)"/>
+		<setting id="universal.settings" type="action" label="[COLOR lime]KodiVerse Universal-scrapers Settings[/COLOR]" option="close" action="RunPlugin(plugin://script.module.universalscrapers/?action=universalscrapersSettings&amp;opensettings=true&amp;query=4.1)" visible="eq(-1,true)" />
+		
+		<setting type="lsep" label="[COLOR lime]KodiVerse The Crew [COLOR lime](if grayed out you [COLOR lime]will need to install it)[/COLOR]" />
+		
+		<setting id="the_crew" label="[COLOR lime]KodiVerse The Crew[/COLOR]" type="bool"  default="false" enable="System.HasAddon(script.module.thecrew)"/>
+		<setting id="the_crew.settings" type="action" label="[COLOR lime]KodiVerse the_crew Settings[/COLOR]" option="close" action="RunPlugin(plugin://plugin.video.thecrew/?action=openSettings)" visible="eq(-1,true)" />
+		
+		<setting type="lsep" label="[COLOR lime]KodiVerse Fen [COLOR lime](if grayed out you [COLOR lime]will need to install it)[/COLOR]" />
+		
+		<setting id="fen" label="[COLOR lime]KodiVerse Fen[/COLOR]" type="bool"  default="false" enable="System.HasAddon(script.module.fenomscrapers)"/>
+		<setting id="fen.settings" type="action" label="[COLOR lime]KodiVerse Fen Settings[/COLOR]" option="close" action="RunPlugin(plugin://plugin.video.KodiVerse?mode=186&url=tv&name=disable)" visible="eq(-1,true)" />
+		
+		
+	</category>
+	<category label="32266">
+		<setting id="po_watch" label="32267" type="bool"  default="false" />
+		<setting id="simple_info" label="32268" type="bool"  default="false" />
+		<setting id="trakt_info" label="32306" type="bool"  default="true" />
+		
+		<setting id="new_play_window" label="[COLOR lime][B]KodiVerse new_[COLOR lime]play_[COLOR lime]window[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="clean_video_title" label="[COLOR lime][B]KodiVerse clean [COLOR lime]video [COLOR lime]title[/B][/COLOR]" type="bool"  default="false" />
+		
+		<setting type="lsep" label="[COLOR lime][B]KodiVerse EYE CANDY [COLOR lime]display [COLOR lime]feature[/B][/COLOR]" />
+		<setting id="fancy_scrape" label="[COLOR lime][B]KodiVerse Eye candy [COLOR lime]display feature [COLOR lime](trailers while you wait for results)[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="eye_candy_style" type="enum" label="[COLOR lime][B]KodiVerse Eye [COLOR lime]candy [COLOR lime]style[/B][/COLOR]" values="Fancy|Clean"  default="1" visible="eq(-1,true)"/>
+		<setting id="video_in_sources_tv" label="[COLOR lime][B]KodiVerse Show [COLOR lime] trailer for [COLOR lime]tv shows[/B][/COLOR]" type="bool"  default="false"  visible="eq(-2,true)"/>
+		<setting id="video_in_sources" label="[COLOR lime][B]KodiVerse Show [COLOR lime] trailer for [COLOR lime]movies[/B][/COLOR]" type="bool"  default="false"  visible="eq(-3,true)"/>
+		<setting id="video_in_s_wait" label="[COLOR lime][B]KodiVerse Wait for [COLOR lime]trailer to end [COLOR lime]before you see results[/B][/COLOR]" type="bool"  default="false"  visible="eq(-4,true)"/>
+		<setting id="video_type_in_s" type="enum" label="[COLOR lime][B]KodiVerse Trailer [COLOR lime]content[/B][/COLOR]"  values="Recommended|Current Movie" default="1"  visible="eq(-5,true)"/>
+		<setting id="fanart_scraping" label="[COLOR lime][B]KodiVerse Show [COLOR lime]fanart in [COLOR lime]scraping[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="sources_window_n" type="enum" label="[COLOR lime][B]KodiVerse Sources [COLOR lime]window [COLOR lime]style[/B][/COLOR]" values="Fancy|Clean|Panel"  default="1" />
+		<setting id="fanart_sources" label="[COLOR lime][B]KodiVerse Show [COLOR lime]fanart in [COLOR lime]sources[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="add_colors" label="[COLOR lime][B]KodiVerse Add [COLOR lime]colors to [COLOR lime]results[/B][/COLOR]" type="bool"  default="true" />
+		<setting id="show_actors" label="[COLOR lime][B]KodiVerse Show actor [COLOR lime]in clean view[COLOR lime](when no trailer)[/B][/COLOR]" type="bool"  default="true" />
+		
+	</category>
+	<category label="32269">
+		<setting id="s_traker" label="32023" type="bool"  default="true" />
+		<setting id="movie_world" label="32024" type="bool"  default="true" />
+		<setting id="tv_world" label="32025" type="bool"  default="true" />
+		<setting id="trakt_world" label="32026" type="bool"  default="true" />
+		<setting id="trakt" label="32027" type="bool"  default="true" />
+		<setting id="search" label="32020" type="bool"  default="true" />
+		<setting id="search_history" label="32021" type="bool"  default="true" />
+		<setting id="last_link_played" label="32022" type="bool"  default="true" />
+		<setting id="whats_new" label="32028" type="bool"  default="true" />
+		<setting id="resume_watching" label="32030" type="bool"  default="true" />
+		<setting id="my_rd_history" label="32031" type="bool"  default="false" />
+		<setting id="rd_Torrents" label="32032" type="bool"  default="false" />
+		<setting id="actor" label="32033" type="bool"  default="true" />
+		<setting id="scraper_check" label="32034" type="bool"  default="false" />
+		<setting id="settings" label="32029" type="bool"  default="true" />		
+		
+	</category>
+	<category label="[COLOR lime][B]KodiVerse [COLOR lime]Debug[/B][/COLOR]">
+		<setting id="debug" label="[COLOR lime][B]KodiVerse debug[/B][/COLOR]" type="bool"  default="false" />
+		<setting id="show_debug" type="bool" label="[COLOR lime][B]KodiVerse show_[COLOR lime]debug[/B][/COLOR]" default="false" />
+		<setting id="check_time" label="[COLOR lime][B]check_[COLOR lime]KodiVerse time[/B][/COLOR]" type="bool"  default="false" />
+		<setting id="stop_where" type="enum" label="[COLOR lime][B]KodiVerse stop_[COLOR lime]where[/B][/COLOR]" values="0|1|2|3|4|5|6|7|8|9"  default="0" />
+		<setting id="unfilter_test" type="text" label="[COLOR lime][B]KodiVerse Test[/B][/COLOR]" default="" />
+		<setting id="one_by_one" label="[COLOR lime][B]KodiVerse check servers [COLOR lime]one [COLOR lime]by one[/B][/COLOR]" type="bool"  default="false" />
+		<setting id="full_db" label="[COLOR lime][B]KodiVerse full_[COLOR lime]db[/B][/COLOR]" type="bool"  default="false" />
+	</category>
+
+	<category label="[COLOR lime][B]KodiVerse [COLOR lime]Subtitles[/B][/COLOR]">
+		
+        
+        <setting id="subtitles" type="bool" label="[COLOR lime][B]KodiVerse Enable [COLOR lime]subtitles[/B][/COLOR]" default="false" />
+        <setting type="sep" />
+        <setting id="subtitles.utf" type="bool" label="[COLOR lime][B]KodiVerse Convert [COLOR lime]subtitles [COLOR lime]to UTF-8[/B][/COLOR]" enable="!eq(-2,false)" default="false" />
+        <setting type="sep" />
+        <setting id="subtitles.lang.1" type="select" label="[COLOR lime][B]KodiVerse Primary [COLOR lime]Language[/B][/COLOR]" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" enable="!eq(-4,false)" default="English" />
+        <setting id="subtitles.lang.2" type="select" label="[COLOR lime][B]KodiVerse Secondary [COLOR lime]Language[/B][/COLOR]" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" enable="!eq(-5,false)" default="English" />
+       
+		<setting id="auto_subtitles" type="bool" label="[COLOR lime][B]KodiVerse Auto [COLOR lime]download first [COLOR lime]subtitles[/B][/COLOR]" default="true" enable="!eq(-6,false)"/>
+		<setting id="subs_window" label="[COLOR lime][B]KodiVerse Time to display [COLOR lime]the window [COLOR lime](in secs)[/B][/COLOR]" type="number" default="30" enable="!eq(-7,false)"/>
+		<setting id="subs_width" label="[COLOR lime][B]KodiVerse Window [COLOR lime]width[/B][/COLOR]" type="number" default="400" enable="!eq(-8,false)"/>
+		<setting id="subs_hight" label="[COLOR lime][B]KodiVerse Window [COLOR lime]hight[/B][/COLOR]" type="number" default="700" enable="!eq(-9,false)"/>
+		<setting id="subs_px" label="[COLOR lime][B]KodiVerse Location [COLOR lime]X[/B][/COLOR]" type="number" default="10" enable="!eq(-10,false)"/>
+		<setting id="subs_py" label="[COLOR lime][B]KodiVerse Location [COLOR lime]Y[/B][/COLOR]" type="number" default="10" enable="!eq(-11,false)"/>
+    </category>
+	<category label="[COLOR lime][B]KodiVerse [COLOR lime]IMDB[/B][/COLOR]">
+		<setting type="lsep" label="[COLOR lime]KodiVerse Enter User id without the ur[/COLOR]" />
+		<setting id="imdb_user_0" type="text" label="[COLOR lime][B]User [COLOR lime]1[/B][/COLOR]" default="" />
+		<setting id="imdb_user_1" type="text" label="[COLOR lime][B]User [COLOR lime]2[/B][/COLOR]" default="" />
+		<setting id="imdb_user_2" type="text" label="[COLOR lime][B]User [COLOR lime]3[/B][/COLOR]" default="" />
+		<setting id="imdb_user_3" type="text" label="[COLOR lime][B]User [COLOR lime]4[/B][/COLOR]" default="" />
+		<setting id="imdb_user_4" type="text" label="[COLOR lime][B]User [COLOR lime]5[/B][/COLOR]" default="" />
+		<setting id="imdb_user_5" type="text" label="[COLOR lime][B]User [COLOR lime]6[/B][/COLOR]" default="" />
+		<setting id="imdb_user_6" type="text" label="[COLOR lime][B]User [COLOR lime]7[/B][/COLOR]" default="" />
+		<setting id="imdb_user_7" type="text" label="[COLOR lime][B]User [COLOR lime]8[/B][/COLOR]" default="" />
+		<setting id="imdb_user_8" type="text" label="[COLOR lime][B]User [COLOR lime]9[/B][/COLOR]" default="" />
+		<setting id="imdb_user_9" type="text" label="[COLOR lime][B]User [COLOR lime]10[/B][/COLOR]" default="" />
+		
+	</category>
+	
+</settings>
