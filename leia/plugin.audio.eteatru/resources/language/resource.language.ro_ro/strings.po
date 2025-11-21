@@ -1,0 +1,63 @@
+# Kodi Media Center language file
+# Addon Name: Estuary
+# Addon id: skin.estuary
+# Addon Provider: phil65, Piers
+msgid ""
+msgstr ""
+"Project-Id-Version: KODI Main\n"
+"Report-Msgid-Bugs-To: http://trac.kodi.tv/\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Kodi Translation Team\n"
+"Language-Team: Romanian (Romania) (http://www.transifex.com/projects/p/kodi-main/language/ro_RO/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ro_RO\n"
+"Plural-Forms: nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));\n"
+
+#strings 30000 thru 30999 reserved for plugins and plugin settings
+
+msgctxt "#30000"
+msgid "Download current item"
+msgstr "descaraca piesa curenta"
+
+msgctxt "#30001"
+msgid "eteatru.ro"
+msgstr "eteatru.ro"
+
+msgctxt "#30002"
+msgid "General"
+msgstr "Generic"
+
+msgctxt "#30003"
+msgid "Debug"
+msgstr "Depanare"
+
+msgctxt "#30004"
+msgid "Download path"
+msgstr "Calea pentru descarcare"
+
+msgctxt "#30005"
+msgid "Playing now"
+msgstr "Ruleaza acum"
+
+msgctxt "#30006"
+msgid "Program"
+msgstr "Program"
+
+msgctxt "#30007"
+msgid "Download program guide"
+msgstr "Descarca program"
+
+msgctxt "#30008"
+msgid "Downloads"
+msgstr "Salvate"
+
+msgctxt "#30009"
+msgid "Set download path from addon setting in order to be able to download!"
+msgstr "Alegeti din setarile addon-ului calea pentru a salva fisierele!"
+
+msgctxt "#30010"
+msgid "Download"
+msgstr "Salveaza"

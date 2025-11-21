@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+#
+#
+#    Copyright (C) 2020  Alin Cretu
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#
+-->
+
+<addon id="plugin.video.DigiOnline.ro" provider-name="cralin" name="DigiOnline.ro" version="18.2.1">
+  <requires>
+    <import addon="xbmc.python" version="2.25.0"/>
+    <import addon="script.module.requests" version="2.12.4"/>
+    <import addon="script.module.inputstreamhelper" version="0.3.3"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="main.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.service" library="service.py"/>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">Watch live TV channels from DigiOnline.ro</summary>
+    <description lang="en_GB">
+Kodi addon for accessing DigiOnline.ro live TV channels.
+
+User registration and login credentials are required in order to access DigiOnline.ro media content. 
+
+Visit https://www.digiromania.ro for more details.
+
+    </description>
+    <disclaimer lang="en_GB">
+The author is not connected to or in any other way affiliated with Kodi, Team Kodi, the XBMC foundation, RCS RDS SA, digi24.ro or digionline.ro.
+    </disclaimer>
+    <assets>
+      <icon>resources/media/icon.png</icon>
+      <fanart>resources/media/fanart.jpg</fanart>
+      <screenshot></screenshot>
+    </assets>
+    <news>
+Starting with Kodi 19 (Matrix), Python 2.x was replaced with Python 3.x.
+
+When installing the add-on, please make sure you're downloading and using the add-on version matching the Kodi release installed on your device.
+
+Matching repository and package versions are listed below.
+
+  * 19.x.y.z addon version(s) ===> Kodi 19 (Matrix)
+  * 18.x.y.z addon version(s) ===> Kodi 18 (Leia)
+  
+Visit https://github.com/cralin/plugin.video.DigiOnline.ro/wiki for more details.
+    </news>
+  </extension>
+</addon>
+

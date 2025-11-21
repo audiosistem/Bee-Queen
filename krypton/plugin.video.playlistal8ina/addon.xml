@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.playlistal8ina" name="Playlist Al8inA" version="1.2.2" provider-name="Avigdor and Nux007,AS">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.requests" version="2.9.1"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">Playlist Loader</summary>
+    <summary lang="he">Playlist Loader</summary>
+    <description lang="en">Playlist Loader</description>
+    <description lang="he">Playlist Loader</description>
+    <platform>all</platform>
+	<news>
+	
+1.2.2
+- Fixed logo error grouping items.
+
+1.2.1.1
+- Fixed missing import
+
+1.2.1
+- Taking ownership of the addon, see : https://github.com/avigdork/xbmc-avigdork/pull/8#issuecomment-416955692
+- Fixed regex => grouping issue when tvg-logo was empty.
+- Added icon image also when items are grouped.
+- Regex fix for title containing comas.
+- Added TheTvDb scan for each lists in contextual menu ( beta ).
+
+1.2.0
+- (fix) support strings.xml (old Kodi versions).
+
+1.1.9
+- Added an option to show groups in channels lists.
+	</news>
+  </extension>
+</addon>

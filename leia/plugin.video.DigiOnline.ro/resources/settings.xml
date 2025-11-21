@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+
+<!--
+#
+#
+#    Copyright (C) 2020  Alin Cretu
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#
+-->
+
+<settings>
+  <category label="DigiOnline.ro">
+    <setting label="Authentication" type="lsep"/>
+    <setting label="Authentication User" id="AccountUser" type="text" default="__DEFAULT_USER__"/>
+    <setting label="Authentication Password" id="AccountPassword" type="text" default="__DEFAULT_PASSWORD__" option="hidden" />
+    <setting id="DeviceManufacturer" label="Device Maufacturer" type="text" default="__DEFAULT_DEVICE_MAUFACTURER__" />
+    <setting id="DeviceModel" label="Device Model" type="text" default="__DEFAULT_DEVICE_MODEL__" />
+    <setting id="AndroidVersion" label="Android Version" type="text" default="__DEFAULT_ANDROID_VERSION__" />
+
+  </category>
+  <category label="General settings">
+    <setting label="Display" type="lsep"/>
+    <setting label="Show program title in channel list" id="ShowTitleInChannelList" type="bool" default="false" />
+    <setting label="Enable debug logging" id="DebugEnabled" type="bool" default="false" />
+  </category>
+  <category label="Cached data">
+    <setting label="Retention interval (days)" type="lsep"/>
+    <setting label="Refresh list of categories every" id="categoriesCachedDataRetentionInterval" type="slider" default="90" range="1,1,365" option="int" />
+    <setting label="Refresh list of channels every" id="channelsCachedDataRetentionInterval" type="slider" default="30" range="1,1,365" option="int" />
+    <setting type="sep"/>
+    <setting label="Retention interval (minutes)" type="lsep"/>
+    <setting label="Refresh channel EPG data every" id="EPGDataCachedDataRetentionInterval" type="slider" default="10" range="5,1,365" option="int" />
+    <setting type="sep"/>
+  </category>
+  <category label="Simple PVR integration">
+    <setting label="Data file(s)" type="lsep"/>
+    <setting label="Update m3u file, daily at" id="PVRIPTVSimpleClientIntegration_m3u_FileRefreshTime" type="time" default="01:00" />
+    <setting label="Update XML file, daily at" id="PVRIPTVSimpleClientIntegration_EPG_FileRefreshTime" type="time" default="01:10" />
+  </category>
+</settings>
+

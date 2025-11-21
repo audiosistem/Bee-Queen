@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+  <category label="30002">
+    <setting id="epg_details" type="bool" label="30004" default="false"/>
+    <setting id="days"  type="slider"   label="Extract EPG for how many days" default="3" range="1,1,7" option="int"/>
+    <setting id="progress"  type="bool" label="Show extracting EPG progress" default="false"/>
+    <setting id="notify"  type="bool" label="Notify when EPG extracted for selected channels" default="true"/>
+    <setting action="RunScript(service.cinemagia)" label="Choose Channels" option="close" type="action"/>
+    <setting action="RunScript(service.cinemagia,force_update)" label="Force EPG update" option="close" type="action"/>
+    <setting id="web_server" type="bool" label="Server to host epg at http://<localhost or ip>:<Port>/epg" default="true"/>
+    <setting label="Port" type="number"   id="web_port" 	visible="true" default="8063"/>
+    <setting type="text" label="- If web server is stopped, you can find tvxml.xml in" enable="false" visible="true" />
+    <setting type="text" label="  .kodi -> userdata -> addon_data -> service.cinemagia" enable="false" visible="true" />
+  </category>
+</settings>
