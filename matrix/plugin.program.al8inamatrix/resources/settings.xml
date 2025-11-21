@@ -9,12 +9,10 @@
         <setting id="nextbuildcheck" type="text" label="Next check for build update: " enable="false" default="2019-01-01 00:00:00" />
         <setting id="disableupdate" type="bool" label="Disable Update Notification" default="false"/>
         <setting type="lsep" label="Show Builds:"/>
-        <setting id="show17" type="bool" label="Show Krypton (v17.0) Builds" default="true"/>
-        <setting id="show18" type="bool" label="Show Leia (v18.0) Builds" default="true"/>
+        <setting id="show17" type="bool" label="Show Krypton (v17.0) Builds" default=""/>
+        <setting id="show18" type="bool" label="Show Leia (v18.0) Builds" default=""/>
         <setting id="show19" type="bool" label="Show Matrix (v19.0) Builds" default="true"/>
-		<setting id="show20" type="bool" label="Show Nexus (v20.0) Builds" default="true"/>
-		<setting id="show20" type="bool" label="Show Omega (v21.0) Builds" default="true"/>
-        <setting id="separate" type="bool" label="Do not separate based off version" default="true"/>
+        <setting id="separate" type="bool" label="Do not separate based off version" default="false"/>
         
         <!-- Hidden Settings -->
         <setting id="first_install" type="bool" label="First Install" visible="false" default="true" />
@@ -49,98 +47,116 @@
         <setting id="clearcache" type="bool" label="Clear Cache on Startup" default="true" enable="!eq(-1,false)"/>
         <setting id="clearpackages" type="bool" label="Clear Packages on Startup" default="true" enable="!eq(-2,false)"/>
         <setting id="clearthumbs" type="bool" label="Clear Week Old Thumbnails on Startup" default="true" enable="!eq(-3,false)"/>
-        <setting id="autocleanfreq" type="enum" label="How often would you like to Auto Clean on Startup?" values="Always|Daily|3 Days|Weekly|Monthly" default="0" enable="!eq(-4,false)"/>
+        <setting id="autocleanfreq" type="enum" label="How often would you like to Auto Clean on Startup?" values="Always|Daily|3 Days|Weekly|Monthly" default="1" enable="!eq(-4,false)"/>
         <setting id="nextautocleanup" type="text" label="Next Auto Clean Up: " enable="true" visible="false" default="2019-01-01 00:00:00" />
         <setting type="lsep" label="Clearing Video Cache:"/>
         <setting id="includevideo" type="bool" label="Include Video Addons in Clear Cache: " default="true"/>
         <setting id="includeall" type="bool" label="Include All Addons: " default="true" enable="!eq(-1,false)"/>
-        <setting id="includeumbrella" type="bool" label="Include Umbrella Cache DB: " default="true" enable="eq(-1,false)" visible="System.HasAddon(plugin.video.umbrella)"/>
+        <setting id="includealvin" type="bool" label="Include Alvin Cache DB: " default="true" enable="eq(-1,false)" visible="System.HasAddon(plugin.video.alvin)"/>
         <setting id="includeromanianpack" type="bool" label="Include MRSP Cache DB: " default="true" enable="eq(-2,false)" visible="System.HasAddon(plugin.video.romanianpack)"/>
-        <setting id="includescrubsv2" type="bool" label="Include Scrubs V2 Cache DB: " default="true" enable="eq(-3,false)" visible="System.HasAddon(plugin.video.scrubsv2)"/>
+        <setting id="includeScrubs V2" type="bool" label="Include Scrubs V2 Cache DB: " default="true" enable="eq(-3,false)" visible="System.HasAddon(plugin.video.scrubsv2)"/>
          <setting id="includeelementum" type="bool" label="Include Elementum Cache DB: " default="true" enable="eq(-4,false)" visible="System.HasAddon(plugin.video.elementum)"/>
-        <setting id="includeasgard" type="bool" label="Include Asgard Cache DB: " default="true" enable="eq(-5,false)" visible="System.HasAddon(plugin.video.asgard)"/>
-        <setting id="includefen" type="bool" label="Include Fen Cache DB: " default="true" enable="eq(-6,false)" visible="System.HasAddon(plugin.video.fen)"/>
-     
+        <setting id="includethecrew" type="bool" label="Include ThePromise Cache DB: " default="true" enable="eq(-5,false)" visible="System.HasAddon(plugin.video.thepromise)"/>
+        <setting id="includetheoath" type="bool" label="Include TheOath Cache DB: " default="true" enable="eq(-6,false)" visible="System.HasAddon(plugin.video.theoath)"/>
+       
 
         <!-- Default settings for Save Data entries -->
-        <setting id="umbrella" type="text" default="" visible="false"/>
+        <setting id="alvin" type="text" default="" visible="false"/>
         <setting id="romanianpack" type="text" default="" visible="false"/>
-        <setting id="scrubsv2" type="text" default="" visible="false"/>
+        <setting id="openmeta" type="text" default="" visible="false"/>
+        <setting id="premiumizer" type="text" default="" visible="false"/>
+        <setting id="realizer" type="text" default="" visible="false"/>
+        <setting id="Scrubs V2" type="text" default="" visible="false"/>
         <setting id="elementum" type="text" default="" visible="false"/>
-        <setting id="asgard" type="text" default="" visible="false"/>
+        <setting id="shadow" type="text" default="" visible="false"/>
+        <setting id="thepromise" type="text" default="" visible="false"/>
         <setting id="tmdbhelper" type="text" default="" visible="false"/>
         <setting id="trakt" type="text" default="" visible="false"/>
-        <setting id="fen" type="text" default="" visible="false"/>
-        <setting id="asgard" type="text" default="" visible="false"/>		
-		<setting id="umbrellaad" type="text" default="" visible="false"/>
-        <setting id="umbrellapm" type="text" default="" visible="false"/>
-        <setting id="umbrellard" type="text" default="" visible="false"/>
-        <setting id="elementumad" type="text" default="" visible="false"/>
-        <setting id="elementumpm" type="text" default="" visible="false"/>
-        <setting id="elementumrd" type="text" default="" visible="false"/>
+        <setting id="theoath" type="text" default="" visible="false"/>
+		
+
+        <setting id="fenad" type="text" default="" visible="false"/>
+        <setting id="fenpm" type="text" default="" visible="false"/>
+        <setting id="fenrd" type="text" default="" visible="false"/>
+        <setting id="alvinad" type="text" default="" visible="false"/>
+        <setting id="alvinpm" type="text" default="" visible="false"/>
+        <setting id="alvinrd" type="text" default="" visible="false"/>
+        <setting id="pmzer" type="text" default="" visible="false"/>
+        <setting id="qcontinuumad" type="text" default="" visible="false"/>
+        <setting id="qcontinuumpm" type="text" default="" visible="false"/>
+        <setting id="qcontinuumpm-oauth" type="text" default="" visible="false"/>
+        <setting id="qcontinuumrd" type="text" default="" visible="false"/>
         <setting id="rurlad" type="text" default="" visible="false"/>
         <setting id="rurlpm" type="text" default="" visible="false"/>
         <setting id="rurlrd" type="text" default="" visible="false"/>
         <setting id="urlad" type="text" default="" visible="false"/>
         <setting id="urlpm" type="text" default="" visible="false"/>
         <setting id="urlrd" type="text" default="" visible="false"/>
-        <setting id="fenad" type="text" default="" visible="false"/>
-        <setting id="fenpm" type="text" default="" visible="false"/>
-        <setting id="fenrd" type="text" default="" visible="false"/>
-		<setting id="asgardad" type="text" default="" visible="false"/>
-        <setting id="asgardpm" type="text" default="" visible="false"/>
-        <setting id="asgardrd" type="text" default="" visible="false"/>
-		<setting id="scrubsv2ad" type="text" default="" visible="false"/>
-        <setting id="scrubsv2pm" type="text" default="" visible="false"/>
-        <setting id="scrubsv2rd" type="text" default="" visible="false"/>
-        <setting id="fanart-umbrella" type="text" default="" visible="false"/>
-        <setting id="fanart-romanianpack" type="text" default="" visible="false"/>
+        <setting id="shadowad" type="text" default="" visible="false"/>
+        <setting id="shadowpm" type="text" default="" visible="false"/>
+        <setting id="shadowrd" type="text" default="" visible="false"/>
+
+        <setting id="easynews-fen" type="text" default="" visible="false"/>
+        <setting id="furk-fen" type="text" default="" visible="false"/>
         <setting id="fanart-asgard" type="text" default="" visible="false"/>
+        <setting id="fanart-alvin" type="text" default="" visible="false"/>
+        <setting id="fanart-romanianpack" type="text" default="" visible="false"/>
+        <setting id="fanart-thepromise" type="text" default="" visible="false"/>
         <setting id="fanart-metadatautils" type="text" default="" visible="false"/>
-        <setting id="fanart-scrubsv2" type="text" default="" visible="false"/>
-        <setting id="fanart-fen" type="text" default="" visible="false"/>
-        <setting id="fanart-elementum" type="text" default="" visible="false"/>
+        <setting id="fanart-premiumizer" type="text" default="" visible="false"/>
+        <setting id="fanart-realizer" type="text" default="" visible="false"/>
+        <setting id="fanart-Scrubs V2" type="text" default="" visible="false"/>
+        <setting id="fanart-theoath" type="text" default="" visible="false"/>
+        <setting id="fanart-qcontinuum" type="text" default="" visible="false"/>
         <setting id="fanart-tmdbhelper" type="text" default="" visible="false"/>
-        <setting id="imdb-umbrella" type="text" default="" visible="false"/>
-        <setting id="imdb-romanianpack" type="text" default="" visible="false"/>
         <setting id="imdb-asgard" type="text" default="" visible="false"/>
-        <setting id="imdb-scrubsv2" type="text" default="" visible="false"/>
-        <setting id="imdb-fen" type="text" default="" visible="false"/>
+        <setting id="imdb-alvin" type="text" default="" visible="false"/>
+        <setting id="imdb-romanianpack" type="text" default="" visible="false"/>
+        <setting id="imdb-thepromise" type="text" default="" visible="false"/>
+        <setting id="imdb-premiumizer" type="text" default="" visible="false"/>
+        <setting id="imdb-realizer" type="text" default="" visible="false"/>
+        <setting id="imdb-Scrubs V2" type="text" default="" visible="false"/>
+        <setting id="imdb-theoath" type="text" default="" visible="false"/>
+        <setting id="kitsu-wonderfulsubs" type="text" default="" visible="false"/>
+        <setting id="login-iagl" type="text" default="" visible="false"/>
+        <setting id="login-netflix" type="text" default="" visible="false"/>
+        <setting id="mal-wonderfulsubs" type="text" default="" visible="false"/>
         <setting id="omdb-metadatautils" type="text" default="" visible="false"/>
         <setting id="omdb-metahandler" type="text" default="" visible="false"/>
         <setting id="omdb-tmdbhelper" type="text" default="" visible="false"/>
         <setting id="login-opensubtitles" type="text" default="" visible="false"/>
         <setting id="login-opensubsbyopensubs" type="text" default="" visible="false"/>
-        <setting id="tmdb-umbrella" type="text" default="" visible="false"/>
+        <setting id="login-orion" type="text" default="" visible="false"/>
+        <setting id="tmdb-asgard" type="text" default="" visible="false"/>
+        <setting id="tmdb-fen" type="text" default="" visible="false"/>
+        <setting id="login-eis" type="text" default="" visible="false"/>
+        <setting id="tmdb-alvin" type="text" default="" visible="false"/>
         <setting id="tmdb-romanianpack" type="text" default="" visible="false"/>
         <setting id="tmdb-metadatautils" type="text" default="" visible="false"/>
+        <setting id="tmdb-eis" type="text" default="" visible="false"/>
         <setting id="tmdb-openmeta" type="text" default="" visible="false"/>
-        <setting id="tmdb-asgard" type="text" default="" visible="false"/>
+        <setting id="tmdb-thepromise" type="text" default="" visible="false"/>
+        <setting id="tmdb-premiumizer" type="text" default="" visible="false"/>
         <setting id="tmdb-realizer" type="text" default="" visible="false"/>
-        <setting id="tmdb-scrubsv2" type="text" default="" visible="false"/>
-        <setting id="tmdb-elementum" type="text" default="" visible="false"/>
+        <setting id="tmdb-Scrubs V2" type="text" default="" visible="false"/>
+        <setting id="tmdb-qcontinuum" type="text" default="" visible="false"/>
         <setting id="tmdb-tmdbhelper" type="text" default="" visible="false"/>
-        <setting id="tmdb-fen" type="text" default="" visible="false"/>
+        <setting id="tmdb-theoath" type="text" default="" visible="false"/>
         <setting id="trakt-openmeta" type="text" default="" visible="false"/>
-        <setting id="trakt-elementum" type="text" default="" visible="false"/>
-		<setting id="trakt-tmdbhelper" type="text" default="" visible="false"/>
-        <setting id="trakt-fen" type="text" default="" visible="false"/>
-        <setting id="trakt-asgard" type="text" default="" visible="false"/>
-		<setting id="trakt-umbrella" type="text" default="" visible="false"/>
-	    <setting id="trakt-scrubsv2" type="text" default="" visible="false"/>
-		<setting id="trakt-romanianpack" type="text" default="" visible="false"/>
+        <setting id="trakt-qcontinuum" type="text" default="" visible="false"/>
         <setting id="tvdb-metahandler" type="text" default="" visible="false"/>
         <setting id="tvdb-openmeta" type="text" default="" visible="false"/>
         <setting id="tvdb-premiumizer" type="text" default="" visible="false"/>
         <setting id="tvdb-realizer" type="text" default="" visible="false"/>
-        <setting id="tvdb-elementum" type="text" default="" visible="false"/>
+        <setting id="tvdb-qcontinuum" type="text" default="" visible="false"/>
         <setting id="location-yahoo" type="text" default="" visible="false"/>
         <setting id="login-youtube" type="text" default="" visible="false"/>
+        <setting id="ws-wonderfulsubs" type="text" default="" visible="false"/>
     </category>
 
     <category label="Install Settings">
         <setting type="lsep" label="APKs" />
-        <setting type="action" label="Open Kodi Android Updater Settings" action="RunPlugin(plugin://plugin.program.al8inawizard/?mode=fmchoose)" option="close" />
+        <setting type="action" label="Open Kodi Android Updater Settings" action="RunPlugin(plugin://plugin.program.al8inamatrix/?mode=fmchoose)" option="close" />
         <setting id="apk_path" type="folder" label="Choose Download Location" default="/storage/emulated/0/Download/"/>
         <setting type="lsep" label="Save Data When Installing Build:"/>
         <setting id="keeptrakt" type="bool" label="Keep My Trakt Data" default="true"/>

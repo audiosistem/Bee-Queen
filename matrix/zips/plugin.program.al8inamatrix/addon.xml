@@ -1,4 +1,12 @@
+<<<<<<< HEAD
 <addon id="plugin.program.al8inamatrix" name="[COLORorangered]Al8inA[/COLOR] [COLORchocolate]Matrix Wizard[/COLOR]" version="1.2.7" provider-name="AudioSistem">
+=======
+<<<<<<< HEAD
+<addon id="plugin.program.al8inamatrix" name="[COLORorangered]Al8inA[/COLOR] [COLORchocolate]Matrix Wizard[/COLOR]" version="1.2.6" provider-name="AudioSistem">
+=======
+<addon id="plugin.program.al8inamatrix" name="[COLORorangered]Al8inA[/COLOR] [COLORchocolate]Matrix Wizard[/COLOR]" version="1.2.7" provider-name="AudioSistem">
+>>>>>>> 33f854d0493d941632943dc44353cf4f2d58ab51
+>>>>>>> be0deaf5ae6c43948b0b8555e9bdf9d38f2e8097
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />
