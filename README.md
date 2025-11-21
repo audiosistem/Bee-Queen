@@ -1,2 +1,2 @@
-Kodi File Manager Source:
-https://audiosistem.github.io/Bee-Queen
+# Bee-Queen
+4Me,and me community
