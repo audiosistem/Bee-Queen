@@ -22,6 +22,19 @@ IGNORE = [
     "venv",
 ]
 
+def color_text(text, color):
+    """
+    Adauga culori textului pentru consola (ANSI escape codes).
+    Merge in terminalele moderne (VS Code, Git Bash, Win10+ CMD).
+    """
+    colors = {
+        "green": "\033[92m",
+        "red": "\033[91m",
+        "yellow": "\033[93m",
+        "blue": "\033[94m",
+        "end": "\033[0m"
+    }
+    return f"{colors.get(color, '')}{text}{colors['end']}"
 
 class Generator:
     """
@@ -124,20 +137,28 @@ class Generator:
         for ext in root.findall("extension"):
             if ext.get("point") == "xbmc.addon.metadata":
                 assets = ext.find("assets")
-                if not assets:
+                # Fix: Check for None explicit instead of truthiness (DeprecationWarning)
+                if assets is None:
                     continue
                 for art in assets:
-                    copyfiles.append(os.path.normpath(art.text))
+                    # Fix: Check if art.text is valid
+                    if art.text:
+                        copyfiles.append(os.path.normpath(art.text))
 
         src_folder = os.path.join(self.release_path, addon_id)
         for file in copyfiles:
             addon_path = os.path.join(src_folder, file)
             zips_path = os.path.join(addon_folder, file)
             asset_path = os.path.split(zips_path)[0]
+            
             if not os.path.exists(asset_path):
                 os.makedirs(asset_path)
 
-            shutil.copy(addon_path, zips_path)
+            # Fix: Wrap copy in try/except so missing images don't crash the whole process
+            try:
+                shutil.copy(addon_path, zips_path)
+            except Exception as e:
+                print(color_text(f"Warning: Could not copy asset '{file}' for {addon_id}. Skipping file only.", "yellow"))
 
     def _generate_addons_file(self):
         """
@@ -155,8 +176,8 @@ class Generator:
         ]
 
         for addon in folders:
+            _path = os.path.join(self.release_path, addon, "addon.xml")
             try:
-                _path = os.path.join(self.release_path, addon, "addon.xml")
                 xml_lines = open(_path, "r", encoding="utf-8").read().splitlines()
                 addon_xml = ""
 
@@ -175,7 +196,7 @@ class Generator:
                 self._create_zip(addon, version)
                 self._copy_meta_files(addon, os.path.join(self.zips_path, addon))
             except Exception as e:
-                print("Excluding {0}: {1}".format(_path, e))
+                print(color_text("Excluding {0}: {1}".format(_path, e), "red"))
 
         # clean and add closing tag
         addons_xml = addons_xml.strip() + "\n</addons>\n"
@@ -184,7 +205,7 @@ class Generator:
             file=os.path.join(self.zips_path, "addons.xml"),
             decode=True,
         )
-        print("Successfully updated addons.xml")
+        print(color_text(f"Successfully updated addons.xml in {self.release_path}", "green"))
 
     def _generate_md5_file(self):
         """
@@ -197,9 +218,9 @@ class Generator:
                 .encode("utf-8")
             ).hexdigest()
             self._save_file(m, file=os.path.join(self.zips_path, "addons.xml.md5"))
-            print("Successfully updated addons.xml.md5")
+            print(color_text(f"Successfully updated addons.xml.md5 in {self.release_path}", "green"))
         except Exception as e:
-            print("An error occurred creating addons.xml.md5 file!\n{0}".format(e))
+            print(color_text("An error occurred creating addons.xml.md5 file!\n{0}".format(e), "red"))
 
     def _save_file(self, data, file, decode=False):
         """
@@ -211,9 +232,13 @@ class Generator:
             else:
                 open(file, "w").write(data)
         except Exception as e:
-            print("An error occurred saving {0} file!\n{1}".format(file, e))
+            print(color_text("An error occurred saving {0} file!\n{1}".format(file, e), "red"))
 
 
 if __name__ == "__main__":
     for release in [r for r in KODI_VERSIONS if os.path.exists(r)]:
         Generator(release)
+    print("\n" + "="*40)
+    print(color_text("Procesul de generare a repository-ului s-a încheiat.", "green"))
+    print("="*40)
+    input("\nApasă tasta ENTER pentru a închide fereastra...")
