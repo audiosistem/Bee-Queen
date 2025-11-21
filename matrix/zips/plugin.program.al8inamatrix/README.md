@@ -18,13 +18,13 @@ Currently, this version of the wizard supports:
 | Asgard                             | [x]            | [x]   | [x]        | [x]         | [x]        |           | [x]  |      |      | [x]  | [x]       |          |                         |
 | IAGL                               |                |       |            |             |            |           |      |      |      |      |           |          | [x] - Archive.org       |
 | Netflix                            |                |       |            |             |            |           |      |      |      |      |           |          | [x] - Netflix           |
-| Q Continuum                        | [x]            | [x]   |            |             |            |           | [x]  |      |      | [x]  | [x]       |          |                         |
+| ScrubsV2                           | [x]            | [x]   |            |             |            |           | [x]  |      |      | [x]  | [x]       |          |                         |
 | OpenInfo                           | [x]            |       |            |             |            |           | [x]  |      |      |      |           |          |                         |
 | OpenMeta                           | [x]            | [x]   |            |             |            | [x]       | [x]  | [x]  |      |      |           |          |                         |
 | OpenSubtitles.org                  |                |       |            |             |            |           |      |      |      |      |           |          | [x] - OpenSubtitles.org |
 | OpenSubtitles.org by OpenSubtitles |                |       |            |             |            |           |      |      |      |      |           |          | [x] - OpenSubtitles.org |
 | Orion                              |                |       |            |             |            |           |      |      |      |      |           |          | [x] - Orion             |
-| TheOath                            | [x]              [x]   |            | [x]         | [x]        | [x]       | [x]  | [x]  |      | [x]  | [x]       |          |                         |
+| Nightwing                          | [x]              [x]   |            | [x]         | [x]        | [x]       | [x]  | [x]  |      | [x]  | [x]       |          |                         |
 | ThePromise                         | [x]            | [x]   |            | [x]         | [x]        | [x]       | [x]  | [x]  |      | [x]  | [x]       |          |                         |
 | metahandler                        |                |       |            |             |            |           | [x]  | [x]  | [x]  |      |           |          |                         |
 | ResolveURL                         | [x]            |       | [x]        | [x]         | [x]        |           |      |      |      |      |           |          |                         |
@@ -38,7 +38,7 @@ Currently, this version of the wizard supports:
 | Trakt                              |                | [x]   |            |             |            |           |      |      |      |      |           |          |                         |
 | URLResolver                        | [x]            |       | [x]        | [x]         | [x]        |           |      |      |      |      |           |          |                         |
 | WonderfulSubs                      |                |       |            |             |            |           |      |      |      |      |           |          | [x] - WonderfulSubs     |
-| Venom                              | [x]            | [x]   |            |             |            |           | [x]  |      |      | [x]  | [x]       |          |                         |
+| Homelander                         | [x]            | [x]   |            |             |            |           | [x]  |      |      | [x]  | [x]       |          |                         |
 | Yahoo! Weather                     |                |       |            |             |            |           |      |      |      |      |           | [x]      |                         |
 | YouTube                            |                |       |            |             |            |           |      |      |      |      |           |          | [x] - YouTube API       |
 
