@@ -98,7 +98,7 @@ AUTOINSTALL = 'No'
 # Addon ID for the repository
 REPOID = ''
 # Url to Addons.xml file in your repo folder(this is so we can get the latest version)
-REPOADDONXML = 'https://raw.githubusercontent.com/a4k-openproject/repository.openwizard/master/zips/addons.xml'
+REPOADDONXML = 'https://github.com/audiosistem/Bee-Queen/blob/main/matrix/repository.al8ina/addon.xml'
 # Url to folder zip is located in
 REPOZIPURL = 'https://'
 #########################################################
@@ -109,7 +109,7 @@ REPOZIPURL = 'https://'
 # Enable Notification screen Yes or No
 ENABLE = 'Yes'
 # Url to notification file
-NOTIFICATION = 'https://archive.org/download/builds19/notify.txt'
+NOTIFICATION = 'https://mia.nl.tab.digital/public.php/dav/files/dEpNF3AekXx6pNq'
 # Use either 'Text' or 'Image'
 HEADERTYPE = 'Text'
 # Font size of header
