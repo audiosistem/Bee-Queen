@@ -1,0 +1,59 @@
+
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="repository.cralin" name="cralin's Repository" version="1.0.10" provider-name="cralin">
+	<extension point="xbmc.addon.repository" name="cralin's Repository">
+		<dir>
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/repository.cralin/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/repository.cralin/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/repository.cralin/.packages</datadir>
+		</dir>
+		<dir>
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/subtitles.subsroteam/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/subtitles.subsroteam/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/subtitles.subsroteam/.packages</datadir>
+		</dir>
+
+		<dir minversion="20.0.0" maxversion="20.80.00">
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_20/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_20/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_20/.packages</datadir>
+		</dir>
+		<dir minversion="21.0.0" maxversion="21.80.00">
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_21/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_21/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_21/.packages</datadir>
+		</dir>
+		<dir minversion="22.0.0" maxversion="22.80.00">
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_22/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_22/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_22/.packages</datadir>
+		</dir>
+		<dir minversion="23.0.0" maxversion="23.80.00">
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_23/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_23/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_23/.packages</datadir>
+		</dir>
+		<dir minversion="24.0.0" maxversion="24.80.00">
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_24/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_24/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_24/.packages</datadir>
+		</dir>
+
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>cralin's Repository</summary>
+		<description>cralin's Repository</description>
+		<platform>all</platform>
+		<assets>
+        <icon>icon.png</icon>
+		<fanart>fanart.jpg</fanart>
+		</assets>
+	</extension>
+</addon>
