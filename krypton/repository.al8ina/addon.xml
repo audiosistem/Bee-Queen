@@ -14,9 +14,9 @@
 		<dir minversion="18.0.0" maxversion="18.9.9">
             <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/leia/zips/addons.xml</info>
             <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/leia/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/</datadir>
+            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/leia/zips/</datadir>
         </dir>
-		<dir minversion="19.0.0">
+		<dir minversion="19.0.0" maxversion="19.9.9">
             <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/addons.xml</info>
             <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/addons.xml.md5</checksum>
             <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/</datadir>
