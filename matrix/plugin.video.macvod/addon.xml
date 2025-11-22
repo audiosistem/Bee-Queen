@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addon
-	id="plugin.video.macvod" version="1.81" name="[COLORgold]XC MAC M3U[/COLOR]" provider-name="1x|iNKuBo|AS">
+	id="plugin.video.macvod" version="1.995" name="[COLORyellow]XC MAC M3U[/COLOR]" provider-name="1x|iNKuBo|bee">
 <requires>    		
     	<import addon="script.module.resolveurl"/>
 	    <import addon="script.module.requests"/>	
@@ -14,7 +14,7 @@
 	
 	<extension point="xbmc.addon.metadata">
         <platform>all</platform>
-		<summary lang="es">Personal addon for IPTV</summary>
+		<summary lang="en">Personal addon for IPTV</summary>
 		<description lang="es">This addon provides IPTV for personal and private use only</description>
 		<website>https://github.com/</website>
 		<license>GPL 3.0</license>
@@ -24,7 +24,7 @@
         <icon>icon.gif</icon>  
         <fanart>fanart.png</fanart>
     </assets>        
-		<language>es</language>
+		<language>en</language>
 	</extension>	
 	
 </addon>

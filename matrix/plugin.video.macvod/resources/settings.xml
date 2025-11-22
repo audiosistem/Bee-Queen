@@ -6,24 +6,29 @@
    </category>
    <category label="Mac Pastebin">
     <setting id="escogido" type="text" visible="false" value="]1-Personal" />    
-    <setting label="User Pastebin" id="userp" type="text" visible="true" value="AudioSistem" default="AudioSistem"/>
-    <setting id="mac2" type="text" visible="false" value="00:1a:79:6c:43:86" />
+    <setting label="User Pastebin" id="userp" type="text" visible="true" option = 'hidden' value="" default="AudioSistem"/>
+    <setting id="mac2" type="text" visible="false" option = 'hidden' value="00:1a:79:6c:43:86" />
     <setting id="portal2" type="text" visible="false" value="http://portal.wag-iptv.de:8080/" />
     <setting label="Pastreaza favorite" id="favs" type="bool" visible="true" value="true" />
     <setting label="Canale pr0n:" id="pr0n" type="bool" visible="true" value="true" />
     <setting id="ser" type="text" visible="false" value="Kg4mJV4Z" />
    </category>
    <category label="Xtream Codes">
-    <setting label="Portal" id="portalxc" type="text" visible="true" value="" />
-    <setting label="Username" id="usernamexc" type="text" visible="true" value="" />
-	<setting label="Password" id="passxc" type="text" visible="true" value="" />
+    <setting label="Portal" id="portalxc" type="text" visible="true" option = 'hidden' value="" />
+    <setting label="Username" id="usernamexc" type="text" visible="true" option = 'hidden' value="" />
+	<setting label="Password" id="passxc" type="text" visible="true" option = 'hidden' value="" />
 	<setting label="Use F4mProxy?" id="f4mproxy" type="bool" default="false" />
    </category>
-   <category label="M3u">
-    <setting label="Lista M3u" id="listam3u" type="text" visible="true" value="" />
-	<setting label="Edem KEY" id="edem" type="text" visible="true" value="" />
+   <category label="M3u-Edem">
+    <setting type="lsep" label="Adauga un key valid pentru a utiliza zona EDEM" />
+   	<setting label="Edem KEY" id="edem" type="text" visible="true" option = 'hidden' value="" />
+    <setting type="lsep" label="Listele de mai jos vor aparea in zona Liste M3U" />
+    <setting label="Lista M3u" id="listam3u" type="text" visible="true" option = 'hidden' value="" />
+    <setting label="Lista M3u 2" id="listam3u2" type="text" visible="true" option = 'hidden' value="" />
+	<setting label="Lista M3u 3" id="listam3u3" type="text" visible="true" option = 'hidden'value="" />
    </category>
    <category label="Youtube">
+    <setting type="lsep" label="Selecteaza pluginul prin care vei reda YouTube" />
     <setting id="youtube_usar" type="enum" values="YouTube Oficial|Duff You" label="Plugin pt. Video YouTube" default="1"/>
    </category>
 </settings>

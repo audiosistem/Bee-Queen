@@ -1,0 +1,2 @@
+24.10.2021	3.6.9+matrix	rebuilded container-listing like tunein website: added code in
+			GetContent for detecting, listing and selection of container.

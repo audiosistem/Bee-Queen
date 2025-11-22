@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.audio.tunein2021" name="TuneIn Radio" version="3.6.9+matrix" provider-name="newf276">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0"/>
+    		<import addon="script.module.kodi-six" />
+	</requires>
+	<extension point="xbmc.python.pluginsource" library="tunein2021.py">
+		<provides>audio</provides>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary lang="de">tunein.com-Addon für Kodi</summary>
+		<summary lang="en">tunein.com-addon for Kodi</summary>	
+		<platform>all</platform>
+		<source>https://newf276.github.io/</source>
+		<license>The MIT License (MIT)</license>
+		<language>"English and German</language>
+ 		<email>nil</email>
+		<assets>
+			<icon>icon.jpg</icon>
+			<fanart>fanart.jpg</fanart>           
+		</assets>
+   </extension>
+</addon> 

@@ -1,0 +1,11 @@
+[
+    {
+        "name": "TVron",
+        "url": "https://documentarys.do.am/MPD/tvron.m3u",
+        "image": "",
+        "logos": "",
+        "epg": "http://mirel.org/epg/eox.xml",
+        "cache": 0,
+        "uuid": "bd2b688a-3de2-48c4-a639-782658875c87"
+    }
+]

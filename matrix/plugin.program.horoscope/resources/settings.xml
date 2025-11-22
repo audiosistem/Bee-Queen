@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+	<category label="Settings">
+	<setting type="lsep" label="Settings"/>
+	<setting id="startup" type="bool" visible="true" label="Enable Show Horoscope on Startup" default="false"/>
+	<setting id="name" label="Choose Your Sign" type="enum" default="0" values="|Aries|Taurus|Gemini|Cancer|Leo|Virgo|Libra|Scorpio|Sagittarius|Capricorn|Aquarius|Pisces" visible="eq(-1,true)" />
+	<setting id="name2" label="Sign 2" type="enum" default="0" values="|Aries|Taurus|Gemini|Cancer|Leo|Virgo|Libra|Scorpio|Sagittarius|Capricorn|Aquarius|Pisces" visible="gt(-1,0)" />
+    </category>
+</settings>

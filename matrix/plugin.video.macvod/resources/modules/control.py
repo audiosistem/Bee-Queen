@@ -45,10 +45,10 @@ skin = xbmc.getSkinDir()
 player = xbmc.Player()
 playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
 
-transPath = xbmc.translatePath
-skinPath = xbmc.translatePath('special://skin/')
-addonPath = xbmc.translatePath(addonInfo('path'))
-dataPath = xbmc.translatePath(addonInfo('profile'))
+transPath = xbmcvfs.translatePath
+skinPath = xbmcvfs.translatePath('special://skin/')
+addonPath = xbmcvfs.translatePath(addonInfo('path'))
+dataPath = xbmcvfs.translatePath(addonInfo('profile'))
 
 window = xbmcgui.Window(10000)
 dialog = xbmcgui.Dialog()
