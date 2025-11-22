@@ -131,9 +131,8 @@ class Config:
                               'Textures13.db', 'Thumbs.db']
         self.XMLS = ['advancedsettings.xml', 'sources.xml', 'favourites.xml',
                      'profiles.xml', 'playercorefactory.xml', 'guisettings.xml']
-        self.MODURL = 'http://mirrors.kodi.tv/releases/android/arm/'
-        self.MODURL2 = 'http://mirrors.kodi.tv/releases/android/arm64-v8a/'
-        self.MODURL3 = 'http://mirrors.kodi.tv/releases/android/x86/'
+        self.MODURL = 'http://mirrors.kodi.tv/addons/matrix/'
+        self.MODURL2 = 'http://mirrors.kodi.tv/addons/jarvis/'
         self.DEPENDENCIES = ['script.module.bottle', 'script.module.certifi',
                              'script.module.chardet', 'script.module.idna',
                              'script.module.requests', 'script.module.six',
@@ -232,10 +231,10 @@ class Config:
         self.INCLUDEVIDEO = self.get_setting('includevideo')
         self.INCLUDEALL = self.get_setting('includeall')
         self.INCLUDEALVIN = self.get_setting('includealvin')
-        self.INCLUDEHOMELANDER = self.get_setting('includehomelander')
+        self.INCLUDEGAIA = self.get_setting('includegaia')
         self.INCLUDESEREN = self.get_setting('includeseren')
         self.INCLUDETHEPROMISE = self.get_setting('includethepromise')
-        self.INCLUDEELEMENTUM = self.get_setting('includeelementum')
+        self.INCLUDEYODA = self.get_setting('includeyoda')
         self.INCLUDESCRUBSV2 = self.get_setting('includescrubsv2')
         self.INCLUDEMRSP = self.get_setting('includeromanianpack')
         self.INCLUDETHEOATH = self.get_setting('includetheoath')

@@ -16,7 +16,7 @@
 
     <extension point="xbmc.addon.metadata">
         <summary lang="en">[COLOR chocolate]Open Wizard[/COLOR]</summary>
-        <description lang="en">Al8inA Matrix Wizard-- All Credit To drinfernoo and slamious for the Matrix Mods</description>
+        <description lang="en">Al8inA Matrix Wizard-- All Credit To drinfernoo &amp; slamious for the Matrix Mods</description>
         <platform>all</platform>
         <reuselanguageinvoker>false</reuselanguageinvoker>
         <source />
@@ -24,7 +24,7 @@
         </news>
         <assets>
             <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
+            <fanart>fanart.png</fanart>
         </assets>
     </extension>
 </addon><addon id="plugin.program.iptv.merge" name="IPTV Merge" provider-name="SlyGuy" version="0.22.4">
@@ -155,37 +155,21 @@
 			<fanart>fanart.jpg</fanart>
 		</assets>
 	</extension>
-</addon><addon id="repository.al8ina" name="Bee Queen" version="1.0.2" provider-name="ASistem">
-    <extension point="xbmc.addon.repository" name="Bee Queen Repository">
-	    <dir>
-            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/</datadir>
-        </dir>
-        <dir minversion="17.0.0" maxversion="17.9.9">
-            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/</datadir>
-        </dir>
-		<dir minversion="18.0.0" maxversion="18.9.9">
-            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/leia/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/leia/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/</datadir>
-        </dir>
-		<dir minversion="19.0.0">
-            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/</datadir>
+</addon><addon id="repository.angelitto" name="[B][COLOR FFC45AEC]Angelitto Repository[/COLOR][/B]" version="1.0.1" provider-name="[B][COLOR FF6AFB92]angelitto[/COLOR][/B]">
+    <extension point="xbmc.addon.repository" name="Angelitto Repository">
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/angelitto2005/repository.angelitto/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/angelitto2005/repository.angelitto/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/angelitto2005/repository.angelitto/master/zips/</datadir>
         </dir>
     </extension>
     <extension point="xbmc.addon.metadata">
-        <summary>Bee Queen Repository</summary>
-        <description>4install build Al8inA</description>
-        <disclaimer />
+        <summary>Welcome to Angelitto's Repo</summary>
+        <description>[B][COLOR FFEB5406]Angelitto's Kodi Repository[/COLOR][/B]</description>
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
+            <fanart />
         </assets>
     </extension>
 </addon><addon id="repository.jewrepo" name="[COLOR purple]JewRepo[/COLOR]" version="1.5.7" provider-name="JewBMX">
