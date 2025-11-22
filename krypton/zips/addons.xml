@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addons>
+<addon id="plugin.audio.eteatru"
+       name="Eteatru"
+       version="0.1.2"
+       provider-name="Moromete, Sarsailă">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.mutagen"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             library="default.py">
+    <provides>audio</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary>
+      Eteatru
+    </summary>
+    <description>
+      Eteatru
+      http://www.eteatru.ro
+    </description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.audio.romaniaradio"
+       name="Romania Radio"
+       version="1.0.3b"
+       provider-name="Sarsailă">
+    <requires />
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>audio</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <summary>Posturi Radio Romania</summary>
+        <description>Posturi de radio romanesti colectate de pe romaniaradio.ro</description>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="plugin.program.al8inawizard" name="[COLORorangered]Al8inA Wizard[/COLOR]" version="1.1.4" provider-name="[COLORorange]ASistem[/COLOR]">
+    <requires>
+        <import addon="xbmc.python" version="2.1.0" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.six" />
+    </requires>
+
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>executable</provides>
+    </extension>
+
+    <extension point="xbmc.service" library="startup.py" start="startup" />
+
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">[COLOR gold]Open Wizard[/COLOR]</summary>
+        <description lang="en">Wizard offers many maintenance features, selective add-on data saving, and automated build installs.For kodi 17(krypton)and 18(leia).</description>
+        <platform>all</platform>
+        <reuselanguageinvoker>false</reuselanguageinvoker>
+        <source>https://www.github.com/drinfernoo/plugin.program.openwizard/</source>
+        <news>
+ - Credit's to drinfernoo
+        </news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="plugin.video.invidious" name="Invidious" version="0.0.1~alpha1" provider-name="TheAssassin">
+    <requires>
+        <import addon="xbmc.python" version="2.25.0"/>
+        <import addon="script.module.requests" version="2.12.4"/>
+        <import addon="script.module.inputstreamhelper" version="0.4.5"/>
+    </requires>
+
+    <extension point="xbmc.python.pluginsource" library="resources/lib/invidious_addon.py">
+        <provides>video</provides>
+    </extension>
+
+    <extension point="xbmc.python.module" library="resources/lib/"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Invidious client</summary>
+        <description lang="en">A privacy-friendly way of watching YouTube content. Uses the great Invidious web
+            service's API to do the heavy lifting.
+        </description>
+        <disclaimer lang="en_GB">This plugin is not endorsed by Google</disclaimer>
+        <language>en</language>
+        <platform>all</platform>
+        <license>MIT</license>
+        <source>https://github.com/TheAssassin/kodi-invidious-plugin</source>
+        <assets>
+            <icon>resources/icon.png</icon>
+        </assets>
+    </extension>
+</addon>
+
+<addon
+	id="plugin.video.maciptv" version="3.1a" name="MAC IPTV" provider-name="1x|iNKuBo|AS">
+  <requires>
+    	<!--<import addon="script.module.resolveurl" /> -->
+        <import addon="script.module.requests"/>
+
+  </requires>
+	<extension point="xbmc.python.pluginsource" library="default.py">
+		<provides>video</provides>
+	</extension>
+
+	<extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+		<summary lang="en">MAC IPTV</summary>
+		<description lang="es">This addon provides IPTV for personal and private use only</description>
+		<website>https://github.com/</website>
+		<license>GPL 3.0</license>
+		<platform>all</platform>
+		<disclaimer lang="en">The author of this addon makes not responsible for the use of it</disclaimer>
+	<assets>
+        <icon>icon.gif</icon>
+        <fanart>fanart.png</fanart>
+    </assets>
+		<language>en</language>
+	</extension>
+
+</addon>
+
+<addon id="plugin.video.playlistal8ina" name="Playlist Al8inA" version="1.2.2" provider-name="Avigdor and Nux007,AS">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.requests" version="2.9.1"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">Playlist Loader</summary>
+    <summary lang="he">Playlist Loader</summary>
+    <description lang="en">Playlist Loader</description>
+    <description lang="he">Playlist Loader</description>
+    <platform>all</platform>
+	<news>
+
+1.2.2
+- Fixed logo error grouping items.
+
+1.2.1.1
+- Fixed missing import
+
+1.2.1
+- Taking ownership of the addon, see : https://github.com/avigdork/xbmc-avigdork/pull/8#issuecomment-416955692
+- Fixed regex => grouping issue when tvg-logo was empty.
+- Added icon image also when items are grouped.
+- Regex fix for title containing comas.
+- Added TheTvDb scan for each lists in contextual menu ( beta ).
+
+1.2.0
+- (fix) support strings.xml (old Kodi versions).
+
+1.1.9
+- Added an option to show groups in channels lists.
+	</news>
+  </extension>
+</addon>
+
+<addon id="repository.al8ina" name="Bee Queen" version="1.0.2" provider-name="ASistem">
+    <extension point="xbmc.addon.repository" name="Bee Queen Repository">
+	    <dir>
+            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/</datadir>
+        </dir>
+        <dir minversion="17.0.0" maxversion="17.9.9">
+            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/</datadir>
+        </dir>
+		<dir minversion="18.0.0" maxversion="18.9.9">
+            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/leia/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/leia/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/</datadir>
+        </dir>
+		<dir minversion="19.0.0">
+            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Bee Queen Repository</summary>
+        <description>4install build Al8inA</description>
+        <disclaimer></disclaimer>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="repository.jewrepo" name="[COLOR purple]JewRepo[/COLOR]" version="1.5.7" provider-name="JewBMX">
+    <extension point="xbmc.addon.repository" name="[COLOR purple]JewRepo[/COLOR]">
+    <dir>
+        <info compressed="false">https://raw.githubusercontent.com/jewbmx/repo/master/zips/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/jewbmx/repo/master/zips/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/jewbmx/repo/master/zips/</datadir>
+    </dir>
+    <dir>
+        <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+    </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Free the People, Free the World!</summary>
+        <description>JewBMX's Official Repository</description>
+        <platform>all</platform>
+        <genre>movies,usa</genre>
+    </extension>
+</addon>
+
+<addon id="repository.openscrapers" name="OpenScrapers Repository" version="1.0" provider-name="A4K">
+	<extension point="xbmc.addon.repository" name="OpenScrapers Repository">
+		<dir>
+            <info compressed="false">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/</datadir>
+        </dir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>OpenScrapers Repository</summary>
+		<description>The official repo for OpenScrapers!.</description>
+		<disclaimer></disclaimer>
+		<platform>all</platform>
+	</extension>
+</addon>
+</addons>
