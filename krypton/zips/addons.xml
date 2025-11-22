@@ -42,11 +42,13 @@
     </extension>
 </addon>
 
-<addon id="plugin.program.al8inawizard" name="[COLORorangered]Al8inA Wizard[/COLOR]" version="1.1.4" provider-name="[COLORorange]ASistem[/COLOR]">
+<addon id="plugin.program.al8inamatrix" name="[COLORorangered]Al8inA[/COLOR] [COLORchocolate]Matrix Wizard[/COLOR]" version="1.2.7" provider-name="AudioSistem">
     <requires>
-        <import addon="xbmc.python" version="2.1.0" />
+        <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />
         <import addon="script.module.six" />
+        <import addon="script.kodi.android.update" optional="true" version="1.1.7" />
+        <import addon="script.speedtester" optional="true" version="1.1.2" />
     </requires>
 
     <extension point="xbmc.python.pluginsource" library="default.py">
@@ -56,13 +58,12 @@
     <extension point="xbmc.service" library="startup.py" start="startup" />
 
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">[COLOR gold]Open Wizard[/COLOR]</summary>
-        <description lang="en">Wizard offers many maintenance features, selective add-on data saving, and automated build installs.For kodi 17(krypton)and 18(leia).</description>
+        <summary lang="en">[COLOR chocolate]Open Wizard[/COLOR]</summary>
+        <description lang="en">Al8inA Matrix Wizard-- All Credit To drinfernoo & slamious for the Matrix Mods</description>
         <platform>all</platform>
         <reuselanguageinvoker>false</reuselanguageinvoker>
-        <source>https://www.github.com/drinfernoo/plugin.program.openwizard/</source>
+        <source></source>
         <news>
- - Credit's to drinfernoo
         </news>
         <assets>
             <icon>icon.png</icon>
@@ -196,24 +197,24 @@
 <addon id="repository.al8ina" name="Bee Queen" version="1.0.2" provider-name="ASistem">
     <extension point="xbmc.addon.repository" name="Bee Queen Repository">
 	    <dir>
-            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/</datadir>
+            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/repo/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/repo/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/refs/heads/Bee-Queen/main/repo/zips/</datadir>
         </dir>
         <dir minversion="17.0.0" maxversion="17.9.9">
-            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/</datadir>
+            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/krypton/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/krypton/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/refs/heads/Bee-Queen/main/krypton/zips/</datadir>
         </dir>
 		<dir minversion="18.0.0" maxversion="18.9.9">
-            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/leia/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/leia/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/</datadir>
+            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/leia/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/leia/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/refs/heads/Bee-Queen/main/matrix/zips/</datadir>
         </dir>
 		<dir minversion="19.0.0">
-            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/</datadir>
+            <info compressed="false">https://raw.githubusercontent.com/audiosistem/refs/heads/Bee-Queen/main/matrix/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/matrix/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/matrix/zips/</datadir>
         </dir>
     </extension>
     <extension point="xbmc.addon.metadata">
@@ -226,7 +227,7 @@
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon>
+</addon>  +3933791607811
 
 <addon id="repository.jewrepo" name="[COLOR purple]JewRepo[/COLOR]" version="1.5.7" provider-name="JewBMX">
     <extension point="xbmc.addon.repository" name="[COLOR purple]JewRepo[/COLOR]">

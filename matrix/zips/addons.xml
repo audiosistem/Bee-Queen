@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addons>
-<addon id="plugin.program.al8inamatrix" name="[COLORorangered]Al8inA[/COLOR] [COLORchocolate]Matrix Wizard[/COLOR]" version="1.2.6" provider-name="AudioSistem">
+<addon id="plugin.program.al8inamatrix" name="[COLORorangered]Al8inA[/COLOR] [COLORchocolate]Matrix Wizard[/COLOR]" version="1.2.7" provider-name="AudioSistem">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />
@@ -107,63 +107,6 @@
 
 </addon>
 
-<addon id="plugin.video.RomyM3trix" name="[B][COLOR aqua]Romy[/COLOR] [COLOR red]M3trix[/COLOR][/B]" version="3.0.0+matrix" provider-name="RomyTVplace">
-<requires>
-      <!-- <import addon="xbmc.python" version="2.1.0"/> -->
-    <import addon="script.module.resolveurl" version="5.0.06"/>
-	<import addon="script.module.resolveurl" />
-        <!--<import addon="script.module.urlresolver" />-->
-    <import addon="script.module.requests"/>
-    <import addon="script.module.simplejson"/>
-	<import addon="script.module.kodi-six" />
-</requires>
-<extension point="xbmc.python.pluginsource" library="default.py">
-	<provides>video</provides>
-</extension>
-<extension point="xbmc.addon.metadata">
-	 <summary lang="en">TOT CONȚINUTUL ACESTUI ADDON A FOST EXTRAS DIN DOMENIUL GOOGLE. NU SUNT RESPONSABIL PENTRU SCOPURILE PROFITABILE ALE PĂRȚILOR TERȚE.</summary>
-    <description lang="en">LA INCEPUT DE DRUM!</description>
-    <disclaimer lang="en"></disclaimer>
-	<platform>all</platform>
-	<assets>
-       <icon>icon.png</icon>
-       <fanart>fanart.jpg</fanart>
-<screenshot>resources/screenshots/home.png</screenshot>
-<screenshot>resources/screenshots/movies.png</screenshot>
-<screenshot>resources/screenshots/series.png</screenshot>
-</assets>
-	<news>news
-	</news>
-</extension>
-</addon>
-
-<addon id="plugin.video.RomYOU19" name="[COLOR white]Rom[/COLOR][COLOR red][B]YOU19[/B][/COLOR]" version="3.3.7" provider-name="Romy">
-  <requires>
-    <import addon="xbmc.python" version="3.0.0" />
-    <import addon="script.module.requests" />
-    <import addon="script.module.routing"/>
-    <import addon="script.module.unidecode" />
-    <import addon="script.module.inputstreamhelper" />
-    <import addon="script.module.resolveurl"/>
-    <import addon="script.module.microjenscrapers" />
-    <import addon="script.module.grs"/>
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en_GB">[COLOR white]Colectie de canale si playlist-uri de pe[/COLOR] [COLOR red][B]YOUTUBE[/B][/COLOR][COLOR white].[/COLOR]</summary>
-	<description lang="en">[COLOR white][B]Nu este nevoie de configurare plugin[/B][/COLOR] [COLOR red][B]YOUTUBE[/B][/COLOR] [COLOR white][B]cu[/B][/COLOR] [COLOR red][B]API Keys[/B][/COLOR] [COLOR white][B]pentru vizionare! [/B][/COLOR]</description>
-    <platform>all</platform>
-    <language>en</language>
-    <license>GPL-2.0-or-later</license>
-    <assets>
-        <icon>icon.png</icon>
-        <fanart>fanart.jpg</fanart>
-  </assets>
-  </extension>
-</addon>
-
 
 <!--
 #
@@ -235,24 +178,24 @@ Matching repository and package versions are listed below.
 <addon id="repository.al8ina" name="Bee Queen" version="1.0.2" provider-name="ASistem">
     <extension point="xbmc.addon.repository" name="Bee Queen Repository">
 	    <dir>
-            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/</datadir>
+            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/repo/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/repo/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/refs/heads/Bee-Queen/main/repo/zips/</datadir>
         </dir>
         <dir minversion="17.0.0" maxversion="17.9.9">
-            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/</datadir>
+            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/krypton/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/krypton/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/refs/heads/Bee-Queen/main/krypton/zips/</datadir>
         </dir>
 		<dir minversion="18.0.0" maxversion="18.9.9">
-            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/leia/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/leia/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/</datadir>
+            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/leia/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/leia/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/refs/heads/Bee-Queen/main/matrix/zips/</datadir>
         </dir>
 		<dir minversion="19.0.0">
-            <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/</datadir>
+            <info compressed="false">https://raw.githubusercontent.com/audiosistem/refs/heads/Bee-Queen/main/matrix/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/matrix/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/refs/heads/main/matrix/zips/</datadir>
         </dir>
     </extension>
     <extension point="xbmc.addon.metadata">
@@ -265,7 +208,7 @@ Matching repository and package versions are listed below.
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon>
+</addon>  +3933791607811
 
 <addon id="repository.cralin.Kodi_19" name="cralin's Repository for Kodi 19.x (Matrix)" version="1.0.0" provider-name="cralin">
   <extension point="xbmc.addon.repository" name="cralin's repository for Kodi 19.x (Matrix)">
