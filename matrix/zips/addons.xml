@@ -1,5 +1,6 @@
-<?xml version='1.0' encoding='utf-8'?>
-<addons><addon id="plugin.program.al8inamatrix" name="[COLORorangered]Al8inA[/COLOR] [COLORchocolate]Matrix Wizard[/COLOR]" version="1.2.7" provider-name="AudioSistem">
+<?xml version="1.0" encoding="UTF-8"?>
+<addons>
+<addon id="plugin.program.al8inamatrix" name="[COLORorangered]Al8inA[/COLOR] [COLORchocolate]Matrix Wizard[/COLOR]" version="1.2.7" provider-name="AudioSistem">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />
@@ -19,7 +20,7 @@
         <description lang="en">Al8inA Matrix Wizard-- All Credit To drinfernoo and slamious for the Matrix Mods</description>
         <platform>all</platform>
         <reuselanguageinvoker>false</reuselanguageinvoker>
-        <source />
+        <source></source>
         <news>
         </news>
         <assets>
@@ -27,9 +28,11 @@
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.program.iptv.merge" name="IPTV Merge" provider-name="SlyGuy" version="0.22.4">
+</addon>
+
+<addon id="plugin.program.iptv.merge" name="IPTV Merge" provider-name="SlyGuy" version="0.22.4">
   <requires>
-    <import addon="script.module.slyguy" />
+    <import addon="script.module.slyguy"/>
   </requires>
   <extension point="xbmc.python.pluginsource" library="default.py">
     <provides>executable</provides>
@@ -38,22 +41,24 @@
   <extension point="xbmc.addon.metadata">
     <description lang="en">Easily merge multiple IPTV playlists &amp; EPGs from remote, local or supported add-on sources.</description>
     <reuselanguageinvoker>true</reuselanguageinvoker>
-    <license />
-    <language />
-    <website />
+    <license></license>
+    <language/>
+    <website></website>
     <news>Add setting to do merge at specific hour each day</news>
     <assets>
       <icon>icon.png</icon>
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.duffyou" name="Duff You" version="0.1.2" provider-name="La Taberna">
+</addon>
+
+<addon id="plugin.video.duffyou" name="Duff You" version="0.1.2" provider-name="La Taberna">
     <requires>
         <import addon="script.module.six" version="1.11.0" />
         <import addon="script.module.simplecache" />
         <import addon="script.module.inputstreamhelper" version="0.5.0" />
     </requires>
-    
+
     <extension point="xbmc.python.pluginsource" library="libs/plugin.py">
         <provides>video</provides>
     </extension>
@@ -70,18 +75,21 @@
         <news>- Reparado bug al eliminar último item de un listado (historial o preferidos)[CR]- Añadida reproducción de una playlist completa desde el menu contextual.
         </news>
     </extension>
-</addon><addon id="plugin.video.macvod" version="1.81" name="[COLORgold]XC MAC M3U[/COLOR]" provider-name="1x|iNKuBo|AS">
-<requires>    		
-    	<import addon="script.module.resolveurl" />
-	    <import addon="script.module.requests" />	
-		<import addon="script.module.six" />	
-		
+</addon>
+
+<addon
+	id="plugin.video.macvod" version="1.81" name="[COLORgold]XC MAC M3U[/COLOR]" provider-name="1x|iNKuBo|AS">
+<requires>
+    	<import addon="script.module.resolveurl"/>
+	    <import addon="script.module.requests"/>
+		<import addon="script.module.six"/>
+
 		<import addon="script.module.web-pdb" />
   </requires>
 	<extension point="xbmc.python.pluginsource" library="default.py">
 		<provides>video</provides>
 	</extension>
-	
+
 	<extension point="xbmc.addon.metadata">
         <platform>all</platform>
 		<summary lang="es">Personal addon for IPTV</summary>
@@ -91,78 +99,22 @@
 		<platform>all</platform>
 		<disclaimer lang="es">The author of this addon makes not responsible for the use of it</disclaimer>
 	<assets>
-        <icon>icon.gif</icon>  
+        <icon>icon.gif</icon>
         <fanart>fanart.png</fanart>
-    </assets>        
-		<language>es</language>
-	</extension>	
-	
-</addon><addon id="repository.NarcacistWizard" name="Narcacist's Wizard Repository" version="1.1.7" provider-name="Narcacist">
-        <extension point="xbmc.addon.repository" name="Narcacist's Wizard Repository">
-		<dir>
-            <info compressed="false">http://narcacist.com/_repo/addons.xml</info>
-            <checksum>http://narcacist.com/_repo/addons.xml.md5</checksum>
-            <datadir zip="true">http://narcacist.com/_repo/</datadir>
-		</dir>	
-			
-			<dir>
-			<info compressed="false">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml</info>
-			<checksum>https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml.md5</checksum>
-			<datadir zip="true">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/</datadir>
-		</dir>
-		
-		<dir>
-        <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
-        <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
-        <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
-        </dir>
-				        
-        <dir>
-            <info compressed="false">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/</datadir>
-            <hashes>false</hashes>
-        </dir>
-	
-		<dir>
-			<info compressed="false">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml</info>
-			<checksum>https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml.md5</checksum>
-			<datadir zip="true">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/</datadir>
-		</dir>
-		
-        </extension>
-        <extension point="xbmc.addon.metadata">
-            <summary>Install all the latest Builds</summary>
-            <description>Welcome to the New and Improved Narcacist WIZARD for all your Community Builds.</description>
-            <platform>all</platform>
-			<assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>    
     </assets>
-    </extension>
-</addon><addon id="repository.World" name="[COLORsienna]World Repository[/COLOR]" version="0.1.1" provider-name="World">
-	<extension point="xbmc.addon.repository" name="World Repository">
-		<info compressed="false">https://raw.githubusercontent.com/akeotaseo/world_repo/main/addons.xml</info>
-		<checksum>https://raw.githubusercontent.com/akeotaseo/world_repo/main/addons.xml.md5</checksum>
-		<datadir zip="true">https://raw.githubusercontent.com/akeotaseo/world_repo/main/</datadir>
+		<language>es</language>
 	</extension>
-	<extension point="xbmc.addon.metadata">
-		<summary>World Repository</summary>
-		<description>World Build Repo</description>
-		<platform>all</platform>
-		<assets>
-			<icon>icon.png</icon>
-			<fanart>fanart.jpg</fanart>
-		</assets>
-	</extension>
-</addon><addon id="repository.al8ina" name="Bee Queen" version="1.0.2" provider-name="ASistem">
+
+</addon>
+
+<addon id="repository.al8ina" name="Bee Queen" version="1.0.2" provider-name="ASistem">
     <extension point="xbmc.addon.repository" name="Bee Queen Repository">
 	    <dir>
             <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/addons.xml</info>
             <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/addons.xml.md5</checksum>
             <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/repo/zips/</datadir>
         </dir>
-		<dir minversion="17.0.0" maxversion="17.9.9">
+        <dir minversion="17.0.0" maxversion="17.9.9">
             <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/addons.xml</info>
             <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/addons.xml.md5</checksum>
             <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/krypton/zips/</datadir>
@@ -170,7 +122,7 @@
 		<dir minversion="18.0.0" maxversion="18.9.9">
             <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/leia/zips/addons.xml</info>
             <checksum>https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/leia/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/leia/zips/</datadir>
+            <datadir zip="true">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/</datadir>
         </dir>
 		<dir minversion="19.0.0">
             <info compressed="false">https://raw.githubusercontent.com/audiosistem/Bee-Queen/main/matrix/zips/addons.xml</info>
@@ -181,14 +133,16 @@
     <extension point="xbmc.addon.metadata">
         <summary>Bee Queen Repository</summary>
         <description>4install build Al8inA</description>
-        <disclaimer />
+        <disclaimer></disclaimer>
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="repository.jewrepo" name="[COLOR purple]JewRepo[/COLOR]" version="1.5.7" provider-name="JewBMX">
+</addon>
+
+<addon id="repository.jewrepo" name="[COLOR purple]JewRepo[/COLOR]" version="1.5.7" provider-name="JewBMX">
     <extension point="xbmc.addon.repository" name="[COLOR purple]JewRepo[/COLOR]">
     <dir>
         <info compressed="false">https://raw.githubusercontent.com/jewbmx/repo/master/zips/addons.xml</info>
@@ -208,10 +162,12 @@
 		<assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
-        </assets>		
+        </assets>
 		<genre>movies,usa</genre>
     </extension>
-</addon><addon id="repository.jurialmunkey" name="jurialmunkey Alpha Repository" version="2.2" provider-name="jurialmunkey">
+</addon>
+
+<addon id="repository.jurialmunkey" name="jurialmunkey Alpha Repository" version="2.2" provider-name="jurialmunkey">
     <extension point="xbmc.addon.repository" name="jurialmunkey Alpha Repository">
         <dir>
             <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/addons.xml</info>
@@ -232,15 +188,62 @@
     <extension point="xbmc.addon.metadata">
         <summary>jurialmunkey Alpha Repository</summary>
         <description>A repository for alpha releases of jurialmunkey's skins.</description>
-        <disclaimer />
+        <disclaimer></disclaimer>
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon><addon id="repository.octopus" name="[COLOR aqua]Octopus Repository[/COLOR]" version="0.1.99" provider-name="Twiglet">
+</addon>
+
+    <addon id="repository.NarcacistWizard" name="Narcacist's Wizard Repository" version="1.1.7" provider-name="Narcacist">
+        <extension point="xbmc.addon.repository" name="Narcacist's Wizard Repository">
+		<dir>
+            <info compressed="false">http://narcacist.com/_repo/addons.xml</info>
+            <checksum>http://narcacist.com/_repo/addons.xml.md5</checksum>
+            <datadir zip="true">http://narcacist.com/_repo/</datadir>
+		</dir>
+
+			<dir>
+			<info compressed="false">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/</datadir>
+		</dir>
+
+		<dir>
+        <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+        </dir>
+
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/</datadir>
+            <hashes>false</hashes>
+        </dir>
+
+		<dir>
+			<info compressed="false">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/</datadir>
+		</dir>
+
+        </extension>
+        <extension point="xbmc.addon.metadata">
+            <summary>Install all the latest Builds</summary>
+            <description>Welcome to the New and Improved Narcacist WIZARD for all your Community Builds.</description>
+            <platform>all</platform>
+			<assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+    </assets>
+    </extension>
+</addon>
+
+    <addon id="repository.octopus" name="[COLOR aqua]Octopus Repository[/COLOR]" version="0.1.99" provider-name="Twiglet">
         <requires>
-            <import addon="xbmc.addon" version="12.0.0" />
+            <import addon="xbmc.addon" version="12.0.0"/>
         </requires>
         <extension point="xbmc.addon.repository" name="[COLOR aqua]Octopus Repository[/COLOR]">
             <info compressed="false">https://fuse99.com/_octopus/addons.xml</info>
@@ -253,27 +256,27 @@
                 <datadir zip="true">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/</datadir>
                 <hashes>false</hashes>
            </dir>
-		   
+
            <dir>
                <info compressed="false">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml</info>
                <checksum>https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml.md5</checksum>
                <datadir zip="true">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/</datadir>
 			   <hashes>false</hashes>
           </dir>
-		  
+
           <dir>
               <info compressed="false">https://raw.githubusercontent.com/jsergio123/zips/master/addons.xml</info>
               <checksum>https://raw.githubusercontent.com/jsergio123/zips/master/addons.xml.md5</checksum>
               <datadir zip="true">https://raw.githubusercontent.com/jsergio123/zips/master/</datadir>
 			  <hashes>false</hashes>
          </dir>
-		 
+
 		 <dir>
              <info compressed="false">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml</info>
              <checksum>https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml.md5</checksum>
              <datadir zip="true">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/</datadir>
         </dir>
-		
+
 		 <dir>
             <info compressed="false">https://raw.githubusercontent.com/Twilight0/repo.twilight0.libs/master/_zips/addons.xml</info>
             <checksum>https://raw.githubusercontent.com/Twilight0/repo.twilight0.libs/master/_zips/addons.xml.md5</checksum>
@@ -293,10 +296,12 @@
             <genre>movies,usa</genre>
 			<assets>
             <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>    
+            <fanart>fanart.jpg</fanart>
             </assets>
         </extension>
-    </addon><addon id="repository.openscrapers" name="OpenScrapers Repository" version="1.0" provider-name="A4K">
+    </addon>
+
+<addon id="repository.openscrapers" name="OpenScrapers Repository" version="1.0" provider-name="A4K">
 	<extension point="xbmc.addon.repository" name="OpenScrapers Repository">
 		<dir>
             <info compressed="false">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml</info>
@@ -307,14 +312,16 @@
 	<extension point="xbmc.addon.metadata">
 		<summary>OpenScrapers Repository</summary>
 		<description>The official repo for OpenScrapers!.</description>
-		<disclaimer />
+		<disclaimer></disclaimer>
 		<platform>all</platform>
 		<assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
         </assets>
 	</extension>
-</addon><addon id="repository.resolveurl" name="ResolveURL Repository" provider-name="gujal" version="1.0.0">
+</addon>
+
+<addon id="repository.resolveurl" name="ResolveURL Repository" provider-name="gujal" version="1.0.0">
   <extension point="xbmc.addon.repository" name="ResolveURL Repository">
     <dir>
       <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
@@ -325,16 +332,18 @@
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
     <description lang="en_GB">ResolveURL and Link Tester</description>
-    <license />
-    <language />
-    <website />
-    <news />
+    <license></license>
+    <language></language>
+    <website></website>
+    <news></news>
     <assets>
       <icon>icon.png</icon>
       <fanart>fanart.jpg</fanart>
-    </assets> 
+    </assets>
   </extension>
-</addon><addon id="repository.sarsaila" name="Sarsailă's Addons" version="1.1.1" provider-name="Sarsailă">
+</addon>
+
+<addon id="repository.sarsaila" name="Sarsailă's Addons" version="1.1.1" provider-name="Sarsailă">
     <extension point="xbmc.addon.repository" name="Sarsailă's Addons">
         <dir>
             <info compressed="false">https://raw.githubusercontent.com/xngsrs/myhobby/master/addons.xml</info>
@@ -352,9 +361,11 @@
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="repository.universalscrapers" name="universalscrapers-repository" version="1.0.0" provider-name="universalscrapers">
+</addon>
+
+    <addon id="repository.universalscrapers" name="universalscrapers-repository" version="1.0.0" provider-name="universalscrapers">
         <requires>
-            <import addon="xbmc.addon" version="12.0.0" />
+            <import addon="xbmc.addon" version="12.0.0"/>
         </requires>
         <extension point="xbmc.addon.repository" name="universalscrapers">
             <info compressed="false">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml</info>
@@ -371,20 +382,43 @@
             <fanart>fanart.jpg</fanart>
         </assets>
         </extension>
-    </addon><addon id="service.cinemagia" name="[COLORgold]Cinemagia service[/COLOR]" version="1.0.2" provider-name="sarsailă, moromete">
+    </addon>
+
+<addon id="repository.World" name="[COLORsienna]World Repository[/COLOR]" version="0.1.1" provider-name="World">
+	<extension point="xbmc.addon.repository" name="World Repository">
+		<info compressed="false">https://raw.githubusercontent.com/akeotaseo/world_repo/main/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/akeotaseo/world_repo/main/addons.xml.md5</checksum>
+		<datadir zip="true">https://raw.githubusercontent.com/akeotaseo/world_repo/main/</datadir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>World Repository</summary>
+		<description>World Build Repo</description>
+		<platform>all</platform>
+		<assets>
+			<icon>icon.png</icon>
+			<fanart>fanart.jpg</fanart>
+		</assets>
+	</extension>
+</addon>
+
+<addon id="service.cinemagia"
+       name="[COLORgold]Cinemagia service[/COLOR]"
+       version="1.0.2"
+       provider-name="sarsailă, moromete">
   <requires>
-    <import addon="xbmc.python" version="3.0.0" />
-    <import addon="script.module.beautifulsoup4" />
-    <import addon="script.module.requests" version="2.9.1" />
+    <import addon="xbmc.python" version="3.0.0"/>
+    <import addon="script.module.beautifulsoup4"/>
+    <import addon="script.module.requests" version="2.9.1"/>
   </requires>
   <extension point="xbmc.python.script" library="default.py" />
   <extension point="xbmc.python.library" library="default.py" />
   <extension point="xbmc.service" name="cinemagia.service" library="service.py" start="login" />
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
-    <summary lang="en" />
+    <summary lang="en"></summary>
     <assets>
         <icon>icon.png</icon>
     </assets>
   </extension>
-</addon></addons>
+</addon>
+</addons>
