@@ -107,131 +107,6 @@
 
 </addon>
 
-<addon id="plugin.video.RomyM3trix" name="[B][COLOR aqua]Romy[/COLOR] [COLOR red]M3trix[/COLOR][/B]" version="3.0.0+matrix" provider-name="RomyTVplace">
-<requires>
-      <!-- <import addon="xbmc.python" version="2.1.0"/> -->
-    <import addon="script.module.resolveurl" version="5.0.06"/>
-	<import addon="script.module.resolveurl" />
-        <!--<import addon="script.module.urlresolver" />-->
-    <import addon="script.module.requests"/>
-    <import addon="script.module.simplejson"/>
-	<import addon="script.module.kodi-six" />
-</requires>
-<extension point="xbmc.python.pluginsource" library="default.py">
-	<provides>video</provides>
-</extension>
-<extension point="xbmc.addon.metadata">
-	 <summary lang="en">TOT CONȚINUTUL ACESTUI ADDON A FOST EXTRAS DIN DOMENIUL GOOGLE. NU SUNT RESPONSABIL PENTRU SCOPURILE PROFITABILE ALE PĂRȚILOR TERȚE.</summary>
-    <description lang="en">LA INCEPUT DE DRUM!</description>
-    <disclaimer lang="en"></disclaimer>
-	<platform>all</platform>
-	<assets>
-       <icon>icon.png</icon>
-       <fanart>fanart.jpg</fanart>
-<screenshot>resources/screenshots/home.png</screenshot>
-<screenshot>resources/screenshots/movies.png</screenshot>
-<screenshot>resources/screenshots/series.png</screenshot>
-</assets>
-	<news>news
-	</news>
-</extension>
-</addon>
-
-<addon id="plugin.video.RomYOU19" name="[COLOR white]Rom[/COLOR][COLOR red][B]YOU19[/B][/COLOR]" version="3.3.7" provider-name="Romy">
-  <requires>
-    <import addon="xbmc.python" version="3.0.0" />
-    <import addon="script.module.requests" />
-    <import addon="script.module.routing"/>
-    <import addon="script.module.unidecode" />
-    <import addon="script.module.inputstreamhelper" />
-    <import addon="script.module.resolveurl"/>
-    <import addon="script.module.microjenscrapers" />
-    <import addon="script.module.grs"/>
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en_GB">[COLOR white]Colectie de canale si playlist-uri de pe[/COLOR] [COLOR red][B]YOUTUBE[/B][/COLOR][COLOR white].[/COLOR]</summary>
-	<description lang="en">[COLOR white][B]Nu este nevoie de configurare plugin[/B][/COLOR] [COLOR red][B]YOUTUBE[/B][/COLOR] [COLOR white][B]cu[/B][/COLOR] [COLOR red][B]API Keys[/B][/COLOR] [COLOR white][B]pentru vizionare! [/B][/COLOR]</description>
-    <platform>all</platform>
-    <language>en</language>
-    <license>GPL-2.0-or-later</license>
-    <assets>
-        <icon>icon.png</icon>
-        <fanart>fanart.jpg</fanart>
-  </assets>
-  </extension>
-</addon>
-
-
-<!--
-#
-#
-#    Copyright (C) 2021  Alin Cretu
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#
-#
--->
-
-
-<addon id="plugin.video.TVOnline.ro" provider-name="cralin" name="TVOnline.ro" version="19.2.6">
-  <requires>
-    <import addon="xbmc.python" version="3.0.0"/>
-    <import addon="script.module.requests" version="2.22.0"/>
-    <import addon="script.module.inputstreamhelper" version="0.4.7"/>
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="main.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.service" library="service.py"/>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">Watch romanian live TV channels.</summary>
-    <description lang="en_GB">
-Kodi addon for accessing live TV channels from various romanian online platforms.
-
-Supported platforms:
-  - DigiOnline.ro
-  - protvplus.ro
-
-For each supported platform, user registration and login credentials are required in order to access the media content.
-
-Visit https://www.digiromania.ro for more details.
-Visit https://protvplus.ro for more details.
-    </description>
-    <disclaimer lang="en_GB">
-The author is not connected to or in any other way affiliated with Kodi, Team Kodi, the XBMC foundation or any of the online platforms used by this add-on.
-    </disclaimer>
-    <assets>
-      <icon>resources/media/icon.png</icon>
-      <fanart>resources/media/fanart.jpg</fanart>
-      <screenshot></screenshot>
-    </assets>
-    <news>
-Starting with Kodi 19 (Matrix), Python 2.x is replaced with Python 3.x.
-
-When installing the add-on, please make sure you're downloading and using the add-on version matching the Kodi release installed on your device.
-
-Matching repository and package versions are listed below.
-
-  * 19.x.y.z addon version(s) ===> Kodi 19 (Matrix)
-
-    </news>
-  </extension>
-</addon>
-
 <addon id="repository.al8ina" name="Bee Queen" version="1.0.2" provider-name="ASistem">
     <extension point="xbmc.addon.repository" name="Bee Queen Repository">
 	    <dir>
@@ -265,27 +140,6 @@ Matching repository and package versions are listed below.
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon>
-
-<addon id="repository.cralin.Kodi_19" name="cralin's Repository for Kodi 19.x (Matrix)" version="1.0.0" provider-name="cralin">
-  <extension point="xbmc.addon.repository" name="cralin's repository for Kodi 19.x (Matrix)">
-      <info compressed="false">https://github.com/cralin/repository.cralin.Kodi_19.repodata/raw/master/addons.xml</info>
-      <checksum>https://github.com/cralin/repository.cralin.Kodi_19.repodata/raw/master/addons.xml.md5</checksum>
-      <datadir zip="true">https://github.com/cralin/repository.cralin.Kodi_19.repodata/raw/master/.packages</datadir>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <platform>all</platform>
-	<assets>
-        <icon>icon.png</icon>
-        <fanart>fanart.jpg</fanart>
-    </assets>
-    <description lang="en">cralin's repository for Kodi 19.x (Matrix)</description>
-    <license></license>
-    <language></language>
-    <website></website>
-    <news></news>
-    <assets></assets>
-  </extension>
 </addon>
 
 <addon id="repository.jewrepo" name="[COLOR purple]JewRepo[/COLOR]" version="1.5.7" provider-name="JewBMX">
@@ -507,28 +361,6 @@ Matching repository and package versions are listed below.
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon>
-
-<addon id="repository.slyguy" name="SlyGuy Repository" provider-name="SlyGuy" version="0.0.3">
-  <extension point="xbmc.addon.repository" name="SlyGuy Repository">
-    <dir>
-      <info compressed="false">https://k.slyguy.xyz/.repo/addons.xml</info>
-      <checksum>https://k.slyguy.xyz/.repo/addons.xml.md5</checksum>
-      <datadir zip="true">https://k.slyguy.xyz/.repo/</datadir>
-    </dir>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <platform>all</platform>
-    <description lang="en">Addons by SlyGuy</description>
-    <license></license>
-    <language></language>
-    <website></website>
-    <news></news>
-    <assets>
-      <icon>icon.png</icon>
-      <fanart>fanart.jpg</fanart>
-    </assets>
-  </extension>
 </addon>
 
     <addon id="repository.universalscrapers" name="universalscrapers-repository" version="1.0.0" provider-name="universalscrapers">
