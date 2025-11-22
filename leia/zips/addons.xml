@@ -1,15 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<addons>
-<addon id="plugin.audio.eteatru"
-       name="Eteatru"
-       version="0.1.2"
-       provider-name="Moromete, Sarsailă">
+<?xml version='1.0' encoding='utf-8'?>
+<addons><addon id="plugin.audio.eteatru" name="Eteatru" version="0.1.2" provider-name="Moromete, Sarsailă">
   <requires>
-    <import addon="xbmc.python" version="2.1.0"/>
-    <import addon="script.module.mutagen"/>
+    <import addon="xbmc.python" version="2.1.0" />
+    <import addon="script.module.mutagen" />
   </requires>
-  <extension point="xbmc.python.pluginsource"
-             library="default.py">
+  <extension point="xbmc.python.pluginsource" library="default.py">
     <provides>audio</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
@@ -22,9 +17,7 @@
     </description>
     <platform>all</platform>
   </extension>
-</addon>
-
-<addon id="plugin.audio.radio_de" name="Radio" provider-name="Tristan Fischer, enen92" version="3.0.3">
+</addon><addon id="plugin.audio.radio_de" name="Radio" provider-name="Tristan Fischer, enen92" version="3.0.3">
     <requires>
         <import addon="xbmc.python" version="2.14.0" />
         <import addon="script.module.xbmcswift2" version="2.5.0" />
@@ -91,7 +84,12 @@
         <description lang="pl_PL">Wtyczka muzyczna dająca dostęp do ponad 30000 międzynarodowych stacji radiowych z[CR]rad.io, radio.de, daio.fr[CR]Obecnie w językach[CR]- Angielski, Niemiecki i Francuski[CR]- Szukaj stacji według lokacji, gatunku, tematu, kraju, miasta czy języka[CR]- 115 gatunków, 59 tematów, 94 kraje, 1010 miasta, 63 języki</description>
         <description lang="pt_PT">Plugin de música para aceder a mais de 30000 transmissões de rádio internacionais de rad.io, radio.de, radio.fr, radio.pt e radio.es[CR]Actualmente, disponibiliza:[CR]- Traduções em vários idiomas[CR]- Navegar estações por localização, género, tópico, país, cidade e idioma[CR]- Procurar por estações[CR]- 115 géneros, 59 tópicos, 94 países, 1010 cidades, 63 idiomas</description>
         <description lang="pt_BR">Plugin de música para acessar mais de 30000 emissoras de rádio internacionais de rad.io, radio.de, radio.fr, radio.pt e radio.es [CR] Principais características [CR] - Inglês, Alemão e Francês traduzido [CR] - Procure estações por localização, gênero, tópico, país , cidade e  linguagem [CR] - Procure estações [CR] - 115 gêneros, 59 temas, 94 países, 1010 cidades, 63 idiomas</description>
-        <description lang="sk_SK">Hudobný doplnok na prístup k vyše 30000 medzinárodným rádio vysielaniam z rad.io, radio.de a radio.fr&#10;Momentálne podporuje:&#10;- anglické, nemecké a francúzske preklady&#10;- prehliadanie staníc podľa umiestnenia, žánru, témy, krajiny, mesta a jazyka&#10;- vyhľadávanie staníc&#10;- 115 žánrov, 59 tém, 94 krajín, 1010 miest, 63 jazykov</description>
+        <description lang="sk_SK">Hudobný doplnok na prístup k vyše 30000 medzinárodným rádio vysielaniam z rad.io, radio.de a radio.fr
+Momentálne podporuje:
+- anglické, nemecké a francúzske preklady
+- prehliadanie staníc podľa umiestnenia, žánru, témy, krajiny, mesta a jazyka
+- vyhľadávanie staníc
+- 115 žánrov, 59 tém, 94 krajín, 1010 miest, 63 jazykov</description>
         <description lang="sv_SE">Musiktillägg som ger åtkomst till över 30000 internationella radiosändningar från rad.io, radio.de och radio.fr[CR]Nuvarande funktioner[CR]- Engelsk, tysk, svensk och fransk översättning[]- Bläddra efter stationer baserat på genre, ämne, land, stad och språk[CR]- Sök efter stationer[CR]-115 genres, 59 ämnen, 94 länder, 1010 städer, 63 språk</description>
         <description lang="ta_IN">இசை துணை பயன் rad.io, radio.de மற்றும் radio.fr இருந்து 30000 க்கும் மேல் வானொலி ஒளிபரப்புகளை அணுக உதவி செய்யும்[CR]தற்போதைய அம்சங்கள்[CR]- ஆங்கிலம், ஜெர்மன் மற்றும் பிரெஞ்சு மொழியாக்கம்[CR]- இருப்பிடம், வகை, தலைப்பு, நாடு, நகரம் மற்றும் மொழி கொண்டு நிலையங்களை உலாவ முடியும்[CR]- நிலையங்களை தேடுதல்[CR]- 115 வகைகள், 59 தலைப்புகள், 94 நாடுகள், 1010 நகரங்கள், 63 மொழிகள்</description>
         <description lang="zh_CN">访问rad.io、radio.de和radio.fr上超过7000个国际电台广播的音频插件[CR]现有功能[CR]- 英语、德语和法语支持[CR]- 按地点、类别、主题、国家、城市和语言浏览站点[CR]- 搜索站点[CR]- 115个类别、59个主题、94个国家、1010城市、63种语言</description>
@@ -104,12 +102,7 @@
             <screenshot>resources/art/screenshot-4.png</screenshot>
         </assets>
     </extension>
-</addon>
-
-<addon id="plugin.audio.romaniaradio"
-       name="Romania Radio"
-       version="1.0.3b"
-       provider-name="Sarsailă">
+</addon><addon id="plugin.audio.romaniaradio" name="Romania Radio" version="1.0.3b" provider-name="Sarsailă">
     <requires />
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>audio</provides>
@@ -122,21 +115,19 @@
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon>
-
-<addon id="plugin.program.al8inawizard" name="[COLORorangered]Al8inA Wizard[/COLOR]" version="1.1.4" provider-name="[COLORorange]ASistem[/COLOR]">
+</addon><addon id="plugin.program.al8inawizard" name="[COLORorangered]Al8inA Wizard[/COLOR]" version="1.1.4" provider-name="[COLORorange]ASistem[/COLOR]">
     <requires>
         <import addon="xbmc.python" version="2.1.0" />
         <import addon="script.module.requests" />
         <import addon="script.module.six" />
     </requires>
-
+    
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>executable</provides>
     </extension>
-
+    
     <extension point="xbmc.service" library="startup.py" start="startup" />
-
+    
     <extension point="xbmc.addon.metadata">
         <summary lang="en">[COLOR gold]Open Wizard[/COLOR]</summary>
         <description lang="en">Wizard offers many maintenance features, selective add-on data saving, and automated build installs.For kodi 17(krypton)and 18(leia).</description>
@@ -151,35 +142,11 @@
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon>
-
-<addon id="plugin.video.duffyou" name="Duff You" version="0.1" provider-name="La Taberna">
+</addon><addon id="plugin.video.KodiVerse" name="[COLOR lime]KodiVerse[/COLOR]" provider-name="KodiVerse" version="2.0.3">
     <requires>
-        <import addon="script.module.six" version="1.11.0" />
-        <import addon="script.module.simplecache" />
-        <import addon="script.module.inputstreamhelper" version="0.5.0" />
-    </requires>
-
-    <extension point="xbmc.python.pluginsource" library="libs/plugin.py">
-        <provides>video</provides>
-    </extension>
-	<extension point="xbmc.python.module" library="libs" />
-    <extension point="xbmc.addon.metadata">
-        <disclaimer>Este es un software [COLOR red][B]gratuito[/B][/COLOR][CR][COLOR red][B]Pero no se permite[/B][/COLOR] su distribuición preinstalada en ningún tipo de dispositivo ni tampoco su inclusión total o parcial en cualquier paquete de software y/o hardware por el que el usuario final deba [COLOR red][B]pagar o hacer una donación[/B][/COLOR], por su adquisición, por su uso o por recibir asistencia.[CR]Si cree que alguna de estas normas no se está cumpliendo póngase en contacto con nosotros.</disclaimer>
-        <platform>all</platform>
-        <assets>
-            <icon>icon.jpg</icon>
-            <fanart>fanart.jpg</fanart>
-        </assets>
-        <license>[B]Este es un software gratuito[/B]</license>
-    </extension>
-</addon>
-
-<addon id="plugin.video.KodiVerse" name="[COLOR lime]KodiVerse[/COLOR]" provider-name="KodiVerse" version="2.0.3">
-    <requires>
-	    <import addon="script.module.six" version="0.0.1"/>
-		<import addon="script.module.requests"/>
-        <import addon="script.module.resolveurl"/>
+	    <import addon="script.module.six" version="0.0.1" />
+		<import addon="script.module.requests" />
+        <import addon="script.module.resolveurl" />
     </requires>
     <extension library="default.py" point="xbmc.python.pluginsource">
         <provides>video</provides>
@@ -202,19 +169,36 @@
 
         </news>
     </extension>
-</addon>
-
-<addon
-	id="plugin.video.maciptv" version="3.1a" name="MAC IPTV" provider-name="1x|iNKuBo|AS">
-  <requires>
-    	<!--<import addon="script.module.resolveurl" /> -->
-        <import addon="script.module.requests"/>
-
+</addon><addon id="plugin.video.duffyou" name="Duff You" version="0.1" provider-name="La Taberna">
+    <requires>
+        <import addon="script.module.six" version="1.11.0" />
+        <import addon="script.module.simplecache" />
+        <import addon="script.module.inputstreamhelper" version="0.5.0" />
+    </requires>
+    
+    <extension point="xbmc.python.pluginsource" library="libs/plugin.py">
+        <provides>video</provides>
+    </extension>
+	<extension point="xbmc.python.module" library="libs" />
+    <extension point="xbmc.addon.metadata">
+        <disclaimer>Este es un software [COLOR red][B]gratuito[/B][/COLOR][CR][COLOR red][B]Pero no se permite[/B][/COLOR] su distribuición preinstalada en ningún tipo de dispositivo ni tampoco su inclusión total o parcial en cualquier paquete de software y/o hardware por el que el usuario final deba [COLOR red][B]pagar o hacer una donación[/B][/COLOR], por su adquisición, por su uso o por recibir asistencia.[CR]Si cree que alguna de estas normas no se está cumpliendo póngase en contacto con nosotros.</disclaimer>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.jpg</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+        <license>[B]Este es un software gratuito[/B]</license>
+    </extension>
+</addon><addon id="plugin.video.maciptv" version="3.1a" name="MAC IPTV" provider-name="1x|iNKuBo|AS">
+  <requires>    		
+    	   	
+        <import addon="script.module.requests" />	
+	
   </requires>
 	<extension point="xbmc.python.pluginsource" library="default.py">
 		<provides>video</provides>
 	</extension>
-
+	
 	<extension point="xbmc.addon.metadata">
         <platform>all</platform>
 		<summary lang="en">MAC IPTV</summary>
@@ -224,15 +208,13 @@
 		<platform>all</platform>
 		<disclaimer lang="en">The author of this addon makes not responsible for the use of it</disclaimer>
 	<assets>
-        <icon>icon.gif</icon>
+        <icon>icon.gif</icon>  
         <fanart>fanart.png</fanart>
-    </assets>
+    </assets>        
 		<language>en</language>
-	</extension>
-
-</addon>
-
-<addon id="repository.jewrepo" name="[COLOR purple]JewRepo[/COLOR]" version="1.5.7" provider-name="JewBMX">
+	</extension>	
+	
+</addon><addon id="repository.jewrepo" name="[COLOR purple]JewRepo[/COLOR]" version="1.5.7" provider-name="JewBMX">
     <extension point="xbmc.addon.repository" name="[COLOR purple]JewRepo[/COLOR]">
     <dir>
         <info compressed="false">https://raw.githubusercontent.com/jewbmx/repo/master/zips/addons.xml</info>
@@ -251,9 +233,7 @@
         <platform>all</platform>
         <genre>movies,usa</genre>
     </extension>
-</addon>
-
-<addon id="repository.jurialmunkey" name="jurialmunkey Alpha Repository" version="2.2" provider-name="jurialmunkey">
+</addon><addon id="repository.jurialmunkey" name="jurialmunkey Alpha Repository" version="2.2" provider-name="jurialmunkey">
     <extension point="xbmc.addon.repository" name="jurialmunkey Alpha Repository">
         <dir>
             <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/addons.xml</info>
@@ -274,15 +254,13 @@
     <extension point="xbmc.addon.metadata">
         <summary>jurialmunkey Alpha Repository</summary>
         <description>A repository for alpha releases of jurialmunkey's skins.</description>
-        <disclaimer></disclaimer>
+        <disclaimer />
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon>
-
-<addon id="repository.resolveurl" name="ResolveURL Repository" provider-name="gujal" version="1.0.0">
+</addon><addon id="repository.resolveurl" name="ResolveURL Repository" provider-name="gujal" version="1.0.0">
   <extension point="xbmc.addon.repository" name="ResolveURL Repository">
     <dir>
       <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
@@ -293,20 +271,18 @@
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
     <description lang="en_GB">ResolveURL and Link Tester</description>
-    <license></license>
-    <language></language>
-    <website></website>
-    <news></news>
+    <license />
+    <language />
+    <website />
+    <news />
     <assets>
       <icon>icon.png</icon>
       <fanart>fanart.jpg</fanart>
-    </assets>
+    </assets> 
   </extension>
-</addon>
-
-    <addon id="repository.universalscrapers" name="universalscrapers-repository" version="1.0.0" provider-name="universalscrapers">
+</addon><addon id="repository.universalscrapers" name="universalscrapers-repository" version="1.0.0" provider-name="universalscrapers">
         <requires>
-            <import addon="xbmc.addon" version="12.0.0"/>
+            <import addon="xbmc.addon" version="12.0.0" />
         </requires>
         <extension point="xbmc.addon.repository" name="universalscrapers">
             <info compressed="false">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml</info>
@@ -319,5 +295,4 @@
             <description>carrying on the dream</description>
             <platform>all</platform>
         </extension>
-    </addon>
-</addons>
+    </addon></addons>
