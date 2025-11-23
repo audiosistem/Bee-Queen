@@ -283,29 +283,6 @@ Added support for Kodi v19 (Matrix)
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.duffyou" name="Duff You" version="0.1.2" provider-name="La Taberna">
-    <requires>
-        <import addon="script.module.six" version="1.11.0" />
-        <import addon="script.module.simplecache" />
-        <import addon="script.module.inputstreamhelper" version="0.5.0" />
-    </requires>
-    
-    <extension point="xbmc.python.pluginsource" library="libs/plugin.py">
-        <provides>video</provides>
-    </extension>
-	<extension point="xbmc.python.module" library="libs" />
-    <extension point="xbmc.addon.metadata">
-        <description>Hasta las narices de las apikeys de YouTube? Y de ver como calidad máxima los videos de la plataforma solo hasta 720p?[CR]Pues se acabó! Desde nuestra taberna os presentamos un nuevo addon de YouTube, donde no hace falta APIKEY alguna, ni tampoco hay ningún tipo de restricción para ver los videos a la máxima calidad ofrecida, 720p, 1080p, 2K y 4K![CR]Todo esto y mucho mas...</description>
-        <disclaimer>Este es un software [COLOR red][B]gratuito[/B][/COLOR][CR][COLOR red][B]Pero no se permite[/B][/COLOR] su distribuición preinstalada en ningún tipo de dispositivo ni tampoco su inclusión total o parcial en cualquier paquete de software y/o hardware por el que el usuario final deba [COLOR red][B]pagar o hacer una donación[/B][/COLOR], por su adquisición, por su uso o por recibir asistencia.[CR]Si cree que alguna de estas normas no se está cumpliendo póngase en contacto con nosotros.</disclaimer>
-        <platform>all</platform>
-        <assets>
-            <icon>icon.jpg</icon>
-            <fanart>fanart.jpg</fanart>
-        </assets>
-        <license>[B]Este es un software gratuito[/B]</license>
-        <news>- Reparado bug al eliminar último item de un listado (historial o preferidos)[CR]- Añadida reproducción de una playlist completa desde el menu contextual.
-        </news>
-    </extension>
 </addon><addon id="plugin.video.live.streamspro" name="LiveStreamsPro" version="3.0.0~alpha4" provider-name="gujal">
 	<requires>
 		<import addon="script.module.six" />
@@ -420,7 +397,55 @@ In addition to what livestreams allowed you to do, you can now,
 		 <fanart>fanart.gif</fanart>
     </assets>
   </extension>
-</addon><addon id="repository.World" name="[COLORsienna]World Repository[/COLOR]" version="0.1.1" provider-name="World">
+</addon><addon id="repository.Magnetic" name="Magnetic Repo" version="1.1.0b" provider-name="1-cool-guy">
+        <requires>
+            <import addon="xbmc.addon" version="12.0.0" />
+        </requires>
+        <extension point="xbmc.addon.repository" name="Magnetic Repo">
+        	<dir>
+            <info compressed="false">https://magnetic.website/__zips/addons.xml</info>
+            <checksum>https://magnetic.website/__zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://magnetic.website/__zips/</datadir>
+            <hashes>false</hashes>
+            </dir>
+			<dir>
+		    <info compressed="false">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/</datadir>
+            <hashes>false</hashes>
+			</dir>
+			<dir>
+            <info compressed="false">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/</datadir>
+            </dir>
+            <dir>
+            <info compressed="false">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/</datadir>
+            <hashes>false</hashes>
+            </dir>	
+			<dir>
+            <info compressed="false">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/</datadir>
+        </dir>
+		<dir>
+    <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+    <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+    <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+</dir>
+        </extension>
+        <extension point="xbmc.addon.metadata">
+            <summary>Official Magnetic Repository</summary>
+            <description>Welcome to magnetic repo. Please enjoy</description>
+            <platform>all</platform>
+            <genre>movies,usa</genre>
+			<assets>
+			    <icon>icon.png</icon>
+			</assets>
+        </extension>
+    </addon><addon id="repository.World" name="[COLORsienna]World Repository[/COLOR]" version="0.1.1" provider-name="World">
 	<extension point="xbmc.addon.repository" name="World Repository">
 		<info compressed="false">https://raw.githubusercontent.com/akeotaseo/world_repo/main/addons.xml</info>
 		<checksum>https://raw.githubusercontent.com/akeotaseo/world_repo/main/addons.xml.md5</checksum>
@@ -456,6 +481,51 @@ In addition to what livestreams allowed you to do, you can now,
             <icon>icon.png</icon>
             <fanart />
         </assets>
+    </extension>
+</addon><addon id="repository.cMaNWizard" name="cMaN's Wizard Repository" version="3.2" provider-name="cMaN">
+        <extension point="xbmc.addon.repository" name="cMaN's Wizard Repository">
+		<dir>		
+            <info compressed="false">https://raw.githubusercontent.com/mfirepo/repo/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/mfirepo/repo/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/mfirepo/repo/master/plugins/</datadir>
+		</dir>
+		<dir>
+			<info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+        </dir>
+        <dir>
+			<info compressed="false">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/</datadir>
+		</dir>
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/</datadir>
+		</dir>
+        </extension>
+        <extension point="xbmc.addon.metadata">
+            <summary>Install all the latest Builds</summary>
+            <description>Welcome to the New and Improved cMaN Wizard for all your Community Builds.</description>
+            <platform>all</platform>
+		<assets>
+			<icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+		</assets>
+    </extension>
+</addon><addon id="repository.cocoscrapers" name="CocoScrapers Repository" version="1.0.1" provider-name="CocoScrapers">
+    <extension point="xbmc.addon.repository" name="CocoScrapers Repository">
+        <dir minversion="19.0">
+            <info compressed="false">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <summary>CocoScrapers Repository</summary>
+        <description>Unofficial add-ons repository</description>
     </extension>
 </addon><addon id="repository.cralin" name="cralin's Repository" version="1.0.10" provider-name="cralin">
 	<extension point="xbmc.addon.repository" name="cralin's Repository">
@@ -696,6 +766,137 @@ In addition to what livestreams allowed you to do, you can now,
 			<fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="repository.jurialmunkey" name="jurialmunkey Alpha Repository" version="3.5" provider-name="jurialmunkey">
+    <extension point="xbmc.addon.repository" name="jurialmunkey Alpha Repository">
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/</datadir>
+        </dir>
+        <dir minversion="19.9.1" maxversion="20.9.0">
+            <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/nexusrepo/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/nexusrepo/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/nexusrepo/zips/</datadir>
+        </dir>
+        <dir minversion="20.9.1">
+            <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>jurialmunkey Alpha Repository</summary>
+        <description>A repository for alpha releases of jurialmunkey's skins.</description>
+        <disclaimer />
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
+</addon><addon id="repository.kodifitzwell" version="0.0.1" name="kodifitzwell repository" provider-name="kodifitzwell">
+    <extension point="xbmc.addon.repository" name="kodifitzwell repository">
+        <dir minversion="19.0.0">
+            <info compressed="false">https://kodiyashimaru.github.io/repo/packages/addons.xml</info>
+            <checksum>https://kodiyashimaru.github.io/repo/packages/addons.xml.md5</checksum>
+            <datadir zip="true">https://kodiyashimaru.github.io/repo/</datadir>
+        </dir>
+        <dir minversion="19.0.0">
+            <info compressed="false">https://kodifitzwell.github.io/repo/packages/addons.xml</info>
+            <checksum>https://kodifitzwell.github.io/repo/packages/addons.xml.md5</checksum>
+            <datadir zip="true">https://kodifitzwell.github.io/repo/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <description>kodifitzwell repository</description>
+        <assets><icon>icon.png</icon></assets>
+    </extension>
+</addon><addon id="repository.oldsalt" name="Old Salt Repository" version="1.1" provider-name="Jax">
+<extension point="xbmc.addon.repository" name="Old Salt Repository">
+    <dir>
+        <info compressed="false">https://github.com/OldManJax/repository.oldsalt/raw/master/addons.xml</info>
+        <checksum>https://github.com/OldManJax/repository.oldsalt/raw/master/addons.xml.md5</checksum>
+        <datadir zip="true">https://github.com/OldManJax/repository.oldsalt/raw/master/</datadir>
+    </dir> 
+        
+    <dir>
+        <info compressed="true">https://github.com/zach-morris/repository.zachmorris/raw/master/addons.xml</info>
+        <checksum>https://github.com/zach-morris/repository.zachmorris/raw/master/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/zach-morris/repository.zachmorris/master/</datadir>
+    </dir>
+     
+    <dir minversion="19.0">
+        <info compressed="false">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/</datadir>
+    </dir>
+    
+    <dir minversion="19.0.0">
+        <info compressed="false">https://download.osmc.tv/dev/anxdpanic/kodi/youtube/unofficial_testing/addons.xml</info>
+        <checksum>https://download.osmc.tv/dev/anxdpanic/kodi/youtube/unofficial_testing/addons.xml.md5</checksum>
+        <datadir zip="true">https://download.osmc.tv/dev/anxdpanic/kodi/youtube/unofficial_testing/zips</datadir>
+        <hashes>false</hashes>           
+    </dir>  
+    
+    <dir>
+		<info compressed="false">https://raw.githubusercontent.com/newt-sc/a4kSubtitles/master/packages/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/newt-sc/a4kSubtitles/master/packages/addons.xml.crc</checksum>
+        <artdir>https://github.com/a4k-openproject/a4kSubtitles/releases/download/v0.0.13</artdir>
+		<datadir zip="true">https://github.com/newt-sc/a4kSubtitles/archive</datadir>
+	</dir>
+    
+    <dir>
+		<info compressed="false">https://raw.githubusercontent.com/akeotaseo/World-Repo-Repository/main/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/akeotaseo/World-Repo-Repository/main/addons.xml.md5</checksum>
+		<datadir zip="true">https://raw.githubusercontent.com/akeotaseo/World-Repo-Repository/main/</datadir>
+	</dir>
+    
+    <dir>
+        <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/</datadir>
+    </dir>
+    <dir minversion="19.9.1" maxversion="20.9.0">
+        <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/nexusrepo/zips/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/nexusrepo/zips/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/nexusrepo/zips/</datadir>
+    </dir>
+    <dir minversion="20.9.1">
+        <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/</datadir>
+    </dir>
+    
+    <dir minversion="18.9.701" maxversion="19.5">
+        <info compressed="false">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/</datadir>
+    </dir>
+	<dir minversion="19.8.0">
+        <info compressed="false">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/</datadir>
+    </dir>
+    
+    <dir>
+        <info compressed="false">https://raw.githubusercontent.com/Slamious/swzips/main/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/Slamious/swzips/main/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/Slamious/swzips/main/zips/</datadir>
+    </dir>
+    
+    <dir>
+		<info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+		<datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+    </dir>
+</extension>
+<extension point="xbmc.addon.metadata">
+	<summary>Handy Add-ons and Utilities</summary>
+    <description>This and that with a few other things to sail the high seas</description>
+    <assets>
+        <icon>icon.png</icon>
+        <fanart>fanart.jpg</fanart>
+    </assets>
+</extension>
 </addon><addon id="repository.redwizard" name="[COLOR red]The Red Repo[/COLOR]" version="1.1.9" provider-name="[COLOR red]The Red Wizard[/COLOR]">
 	<extension point="xbmc.addon.repository" name="The Red Repo">
 		<dir>
@@ -758,6 +959,71 @@ In addition to what livestreams allowed you to do, you can now,
         <disclaimer>Sarsailă</disclaimer>
         <platform>all</platform>
 		<assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon><addon id="repository.thelab" name="TheLab Repository" version="25.3.27" provider-name="[COLORpurple]• [COLORorchid]Tech [COLORdarkorchid]E [COLORplum]Coyote [COLORpurple]•[/COLOR]">
+    <extension point="xbmc.addon.repository" name="TheLab Repository">
+        <dir minversion="21.0" maxversion="21.9.0">
+            <info compressed="false">https://www.midian.appboxes.co/wolfyB/Th3L48/omega/zips/addons.xml</info>
+            <checksum>https://www.midian.appboxes.co/wolfyB/Th3L48/omega/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://www.midian.appboxes.co/wolfyB/Th3L48/omega/zips/</datadir>
+        </dir>
+        <dir minversion="20.0" maxversion="20.9.0">
+            <info compressed="false">https://www.midian.appboxes.co/wolfyB/Th3L48/nexus/zips/addons.xml</info>
+            <checksum>https://www.midian.appboxes.co/wolfyB/Th3L48/nexus/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://www.midian.appboxes.co/wolfyB/Th3L48/nexus/zips/</datadir>
+        </dir>
+        <dir minversion="19.0" maxversion="19.9.0">
+            <info compressed="false">https://www.midian.appboxes.co/wolfyB/Th3L48/matrix/zips/addons.xml</info>
+            <checksum>https://www.midian.appboxes.co/wolfyB/Th3L48/matrix/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://www.midian.appboxes.co/wolfyB/Th3L48/matrix/zips/</datadir>
+        </dir>
+        <dir minversion="18.0" maxversion="18.9.0">
+            <info compressed="false">https://www.midian.appboxes.co/wolfyB/Th3L48/leia/zips/addons.xml</info>
+            <checksum>https://www.midian.appboxes.co/wolfyB/Th3L48/leia/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://www.midian.appboxes.co/wolfyB/Th3L48/leia/zips/</datadir>
+        </dir>
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>TheLab Repository</summary>
+        <description>TheLab Repository</description>
+        <platform>all</platform>
+    <assets>
+        <icon>icon.png</icon>
+        <fanart>fanart.jpg</fanart>
+    </assets>
+    </extension>
+</addon><addon id="repository.umbrella" name="Umbrella Repository" version="2.2.6" provider-name="Umbrella">
+    <extension point="xbmc.addon.repository" name="Umbrella Repository">
+        <dir minversion="18.9.701" maxversion="19.5">
+            <info compressed="false">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/</datadir>
+        </dir>
+	    <dir minversion="19.8.0" maxversion="20.89.0">
+            <info compressed="false">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/</datadir>
+        </dir>
+		<dir minversion="20.90.0">
+            <info compressed="false">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/omega/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/omega/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/omega/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Umbrella Repository</summary>
+        <description>Repository for the Umbrella video plugin.</description>
+        <disclaimer />
+        <platform>all</platform>
+        <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
         </assets>

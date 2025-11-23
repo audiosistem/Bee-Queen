@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+    <addon id="repository.cMaNWizard" name="cMaN's Wizard Repository" version="3.2" provider-name="cMaN">
+        <extension point="xbmc.addon.repository" name="cMaN's Wizard Repository">
+		<dir>		
+            <info compressed="false">https://raw.githubusercontent.com/mfirepo/repo/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/mfirepo/repo/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/mfirepo/repo/master/plugins/</datadir>
+		</dir>
+		<dir>
+			<info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+        </dir>
+        <dir>
+			<info compressed="false">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/</datadir>
+		</dir>
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/</datadir>
+		</dir>
+        </extension>
+        <extension point="xbmc.addon.metadata">
+            <summary>Install all the latest Builds</summary>
+            <description>Welcome to the New and Improved cMaN Wizard for all your Community Builds.</description>
+            <platform>all</platform>
+		<assets>
+			<icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+		</assets>
+    </extension>
+</addon>
