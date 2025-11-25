@@ -212,7 +212,7 @@ Added support for Kodi v19 (Matrix)
 
     <extension point="xbmc.addon.metadata">
         <summary lang="en">[COLOR chocolate]Open Wizard[/COLOR]</summary>
-        <description lang="en">Al8inA Matrix Wizard-- All Credit To drinfernoo &amp; slamious for the Matrix Mods</description>
+        <description lang="en">Al8inA Matrix Wizard-- All Credit To drinfernoo and slamious for the Matrix Mods</description>
         <platform>all</platform>
         <reuselanguageinvoker>false</reuselanguageinvoker>
         <source />
