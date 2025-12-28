@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="plugin.video.cinema_city_ro" version="1.0.1" name="Cinema_City_RO" provider-name="Cinema_City_RO">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.requests" version="2.22.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="cinema.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="ro">Cinema_City_RO - Streaming România -</summary>
+        <description lang="ro">Cinema_City_RO.</description>
+        <disclaimer lang="ro">Cinema_City_RO este disponibil gratuit.</disclaimer>
+        <language>ro</language>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.png</fanart>
+        </assets>
+    </extension>
+</addon>
