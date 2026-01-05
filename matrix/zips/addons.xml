@@ -1,0 +1,1841 @@
+<?xml version='1.0' encoding='utf-8'?>
+<addons><addon id="context.seren" version="3.0.1" name="Seren - Global Context Menu Items" provider-name="Nixgates">
+	<requires>
+		<import addon="xbmc.addon" version="17.9.910" />
+		<import addon="xbmc.python" version="3.0.0" />
+	</requires>
+	<extension point="kodi.context.item">
+		<menu id="kodi.core.main">
+			<item library="context.py" args="quickRresume">
+				<label>$ADDON[context.seren 30000]</label>
+				<visible>String.IsEmpty(Window(home).Property(context.seren.quickResume)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+String.IsEqual(ListItem.dbtype,tvshow)</visible>
+			</item>
+			<item library="context.py" args="shuffle">
+				<label>$ADDON[context.seren 30001]</label>
+				<visible>String.IsEmpty(Window(home).Property(context.seren.shuffle)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,tvshow)|String.IsEqual(ListItem.dbtype,episode)]</visible>
+			</item>
+			<item library="context.py" args="playFromRandomPoint">
+				<label>$ADDON[context.seren 30002]</label>
+				<visible>String.IsEmpty(Window(home).Property(context.seren.playFromRandomPoint)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+String.IsEqual(ListItem.dbtype,tvshow)</visible>
+			</item>
+			<item library="context.py" args="rescrape">
+				<label>$ADDON[context.seren 30003]</label>
+				<visible>String.IsEmpty(Window(home).Property(context.seren.rescrape)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,episode)|String.IsEqual(ListItem.dbtype,movie)]</visible>
+			</item>
+			<item library="context.py" args="rescrape_ss">
+				<label>$ADDON[context.seren 30010]</label>
+				<visible>String.IsEmpty(Window(home).Property(context.seren.rescrape_ss)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,episode)|String.IsEqual(ListItem.dbtype,movie)]</visible>
+			</item>
+			<item library="context.py" args="sourceSelect">
+				<label>$ADDON[context.seren 30004]</label>
+				<visible>String.IsEmpty(Window(home).Property(context.seren.sourceSelect)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,episode)|String.IsEqual(ListItem.dbtype,movie)]</visible>
+			</item>
+			<item library="context.py" args="findSimilar">
+				<label>$ADDON[context.seren 30005]</label>
+				<visible>String.IsEmpty(Window(home).Property(context.seren.findSimilar)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,tvshow)|String.IsEqual(ListItem.dbtype,movie)]</visible>
+			</item>
+			<item library="context.py" args="browseShow">
+				<label>$ADDON[context.seren 30006]</label>
+				<visible>String.IsEmpty(Window(home).Property(context.seren.browseShow)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,episode)|String.IsEqual(ListItem.dbtype,season)|String.IsEqual(ListItem.dbtype,tvshow)]</visible>
+			</item>
+			<item library="context.py" args="browseSeason">
+				<label>$ADDON[context.seren 30007]</label>
+				<visible>String.IsEmpty(Window(home).Property(context.seren.browseSeason)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,episode)]</visible>
+			</item>
+			<item library="context.py" args="traktManager">
+				<label>$ADDON[context.seren 30008]</label>
+				<visible>String.IsEmpty(Window(home).Property(context.seren.traktManager)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,episode)|String.IsEqual(ListItem.dbtype,tvshow)|String.IsEqual(ListItem.dbtype,season)|String.IsEqual(ListItem.dbtype,movie)]</visible>
+			</item>
+		</menu>
+	</extension>
+	<extension point="xbmc.service" library="service.py" />
+	<extension point="xbmc.addon.metadata">
+		<summary lang="en">Seren - Global Context Menu Items</summary>
+		<summary lang="nl">Seren - Algemene contextmenu-items</summary>
+		<description lang="en">Adds Context Menu items for Seren menu items throughout Kodi</description>
+		<description lang="nl">Voegt contextmenu-items toe voor Seren-menu-items in Kodi</description>
+		<platform>all</platform>
+		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+		<forum />
+		<website />
+		<source />
+		<disclaimer lang="en" />
+		<assets>
+			<icon>resources/images/ico-seren-3.png</icon>
+			<fanart>resources/images/fanart-seren-3.png</fanart>
+			<clearlogo>resources/images/logo-seren-3.png</clearlogo>
+			<poster>resources/images/poster-seren-3.png</poster>
+		</assets>
+		<news>
+			Changelog 3.0.1
+			Fix Shuffle play copy pasta mix up		
+			Resolve settings not showing in Kodi
+
+			Changelog 3.0.0
+			Re-write of context menu addon, supporting py3 only (Matrix and above)
+			Update icons to match Seren 3.0.0 release
+			Update language support set to match Seren (add auto-translated Hebrew)
+
+			Changelog 2.2.0
+			Added "Rescrape and Source Select" context menu item.
+
+			Changelog 2.1.2
+			Added Polish translation
+
+			Changelog 2.1.1:
+			Implemented a workaround for broken future.backports module method (fixes Leia issues)
+
+			Changelog 2.1.0:
+			Refactored code to modern standards
+			Use backported URL lib for py2 to ensure unicode compatibility
+			Extracted out common functions and reused
+			Add settings to enable/disable individual items
+			Add more localizations
+			Add GitHub issue templates
+
+			Changelog 2.0.2:
+			Make python version agnostic
+
+			Changelog 2.0.1:
+			Fixed addon icons/fanart
+
+			Changelog 2.0.0:
+			Rework for Seren 2.0
+		</news>
+	</extension>
+</addon><addon id="plugin.audio.mp3streams" name="MP3 Streams" version="2023.2.31" provider-name="Jon Bovi, Slamious, Diggz">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.future" />
+        <import addon="script.module.mutagen" />
+        <import addon="script.module.requests" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>audio</provides>
+    </extension>
+    <extension point="xbmc.service" library="playerMP3.py" start="startup" />
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <summary>A music streaming Collection.</summary>
+        <description>MP3 Streams Kodi 19+ conversion by Slamious</description>
+        <news>2021.0.4 - Fixed Settings, 2021.0.3 - Bugfixes, 2023.2.31 - Bugfixes. Enjoy!</news>
+        <assets>
+            <icon>resources/icon.png</icon>
+            <fanart>resources/fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon><addon id="plugin.audio.romaniaradio" name="Romania Radio" version="1.0.4" provider-name="Sarsailă">
+    <requires />
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>audio</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <summary>Posturi Radio Romania</summary>
+        <description>Posturi de radio romanesti colectate de pe romaniaradio.ro</description>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
+</addon><addon id="plugin.audio.shoutcast" name="SHOUTcast" provider-name="Tristan Fischer (sphere@dersphere.de), enen92" version="2.5.2+matrix.1">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.xbmcswift2" version="19.0.0" />
+        <import addon="script.module.xmltodict" version="0.12.0" />
+    </requires>
+    <extension library="addon.py" point="xbmc.python.pluginsource">
+        <provides>audio</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <website>https://www.shoutcast.com/</website>
+        <source>https://github.com/XBMC-Addons/plugin.audio.shoutcast</source>
+        <forum>https://forum.kodi.tv/showthread.php?tid=143678</forum>
+        <license>GPL-2.0-only</license>
+        <summary lang="ar_SA">وجود اكثر من 50.000 محطة اذاعية مجانية على الانترنت </summary>
+        <summary lang="be_BY">more than 50.000 free internet radio stations</summary>
+        <summary lang="bg_BG">повече от 50 000 безплатни интернет радиостанции</summary>
+        <summary lang="ca_ES">Més de 50.000 estacions de ràdio per Internet gratuïtes</summary>
+        <summary lang="da_DK">mere end 50.000 gratis netradiostationer</summary>
+        <summary lang="de_DE">mehr als 50.000 kostenlose Internet Radio Sender</summary>
+        <summary lang="el_GR">Πάνω από 50.000 δωρεάν διαδικτυακοί ραδιοφωνικοί σταθμοί</summary>
+        <summary lang="en_GB">more than 50.000 free internet radio stations</summary>
+        <summary lang="en_NZ">more than 50.000 free internet radio stations</summary>
+        <summary lang="en_US">more than 50.000 free internet radio stations</summary>
+        <summary lang="es_ES">Más de 50.000 emisoras de radio por Internet gratuitas</summary>
+        <summary lang="es_MX">mas de 50.000 estaciones de radio gratuitas</summary>
+        <summary lang="fr_FR">plus de 50.000 radios internet gratuites</summary>
+        <summary lang="fr_CA">plus de 50 000 stations de radio Internet gratuites</summary>
+        <summary lang="gl_ES">máis de 50.000 emisoras de radio por internet de balde</summary>
+        <summary lang="he_IL">יותר מ־50.000 תחנות רדיו אינטרנטיות חינמיות</summary>
+        <summary lang="hr_HR">više od 50.000 besplatnih Internet radio stanica</summary>
+        <summary lang="hu_HU">Több mint 50.000 ingyenes internet rádió</summary>
+        <summary lang="id_ID">lebih dari 50.000 stasiun radio internet gratisan</summary>
+        <summary lang="it_IT">più di 50.000 stazioni radio libere su internet</summary>
+        <summary lang="ko_KR">50,000개 이상의 무료 인터넷 라디오 방송 청취</summary>
+        <summary lang="lt_LT">daugiau kaip 50,000 nemokamų internetinių radijo stočių</summary>
+        <summary lang="nl_NL">Meer dan 50.000 vrije internet radio stations</summary>
+        <summary lang="nb_NO">mer enn 50.000 gratis radiokanaler fra internett</summary>
+        <summary lang="pl_PL">Ponad 50.000 darmowych internetowych stacji radiowych</summary>
+        <summary lang="pt_PT">mais de 50.000 estações de rádio da net grátis</summary>
+        <summary lang="pt_BR">mais de 50.000 estações de rádio gratuitas on-line</summary>
+        <summary lang="ru_RU">более 50 000 свободных интернет радиостанций</summary>
+        <summary lang="sk_SK">Viac než 50.000 voľných internetových rádio staníc</summary>
+        <summary lang="sl_SI">več kot 50000 brezplačnih internetnih radijskih postaj</summary>
+        <summary lang="sv_SE">mer än 50.000 fria internetradiostationer</summary>
+        <summary lang="ta_IN">50.000 மேற்பட்ட இலவச இணைய வானொலி நிலையங்கள்</summary>
+        <summary lang="tr_TR">50.000 den Fazla Ücretsiz Internet Radyo Istasyonu</summary>
+        <summary lang="zh_CN">超过50.000免费网络电台</summary>
+        <description lang="be_BY">With this Add-on you can browse more than 50.000 free internet radio stations. Current Features:[CR]- Top 500 Stations[CR]- Browse by genre (and subgenre if enabled in settings)[CR]- Search Station by name[CR]- Search Stations by current playing track[CR]- You can manage a "My Stations"-list[CR]- bitrate and amount of listeners visible and sortable[CR]- 500 Stations on each Page (can be changed in the settings)[CR]- uses cache (24h genre, 1h station listings)</description>
+        <description lang="bg_BG">С това допълнение, можете да слушате над 50.000 достъпни и свободни радиостанции. В момента плъгина позволява:[CR] - Преглед на Топ 500 станции[CR] - Търсене по жанр (и поджанрове, ако е определено в настройките)[CR] - Търсене на станции по име[CR] - Търсене на подобни станции по текущо възпроизвежданата музика[CR] - Управление на списъка "Моите станции"[CR] - Преглеждане, сортиране по битрейт и количество слушатели[CR] - 500 станции на всяка страница (може да се промени в настройките)[CR] - Ползване на кеширане (стилове на 24 часа, списъци на станции на 1 час)</description>
+        <description lang="ca_ES">Amb aquest Add-on poden escoltar més de 50.000 emissores de ràdio per Internet gratuïtes. Característiques: [CR]- Les 500 millors emissores. [CR]- Cerca per gènere (i per subgèneres si s'habilita en la configuració). [CR]- Cerca d'emissores per nom. [CR]- Recerca d'emissores que reprodueixen una cançó. [CR]- Possibilitat d'administrar un directori amb "Els meus emissores". [CR]- Directoris ordenats que mostren bitrate i quantitat d'oients. [CR]- 500 emissores a cada pàgina (la quantitat pot canviar en la configuració). [CR]- Ús de memòria cau (24h gènere, 1h directori d'emissores).</description>
+        <description lang="da_DK">Med denne addon kan du udforske mere end 50.000 gratis internetradiostationer. Nuværende funktioner:[CR]- Top 500 Stationer[CR]- Gennemse efter genre (og undergenre hvis det er aktiveret i indstillinger)[CR]- Søg efter navn på Station[CR]- Søg efter Station ud fra nummeret der spiller[CR]- Du kan administrere en "My Stations"-liste[CR]- bitrate og antal lyttere vises og kan sorteres[CR]- 500 Stationer på hver side (kan ændres i indstillinger)[CR]- bruger cache (24 timer for genre, 1 time for lister)</description>
+        <description lang="de_DE">Dieses Add-on ermöglicht dir Zugriff auf über 50.000 kostenlose Internet Radio Sender.[CR]Aktuelle Features:[CR]- Top 500 Sender[CR]- Nach Genre browsen[CR]- Sender nach Name suchen[CR]- Sender nach aktuellem Track suchen[CR]- Sender per Kontext Menu in die "Meine Sender"-Liste kopieren[CR]- Anzeige der Bitrate und Anzahl Höhrer[CR]- 500 Sender pro Seite[CR]- Schnell durch lokalen Cache</description>
+        <description lang="el_GR">Με αυτό το Πρόσθετο μπορείτε να περιηγηθείτε ανάμεσα σε περισσότερους από 50.000 δωρεάν διαδικτυακούς ραδιοφωνικούς σταθμούς. Τρέχουσες λειτουργίες:[CR]- Κορυφαίοι 500 Σταθμοί[CR]- Περιήγηση ανά είδος (και υπο-είδος αν είναι ενεργό στις ρυθμίσεις)[CR]- Αναζήτηση Σταθμού με βάση το όνομα[CR]- Αναζήτηση Σταθμών με βάση το τρέχον τραγούδι[CR]- Μπορείτε να διαχειριστείτε μία λίστα "Σταθμών μου"[CR]- Το bitrate και το πλήθος των ακροατών είναι ορατά και η ταξινόμηση μπορεί να γίνει σύμφωνα με αυτά[CR]- 500 Σταθμοί σε κάθε Σελίδα (μπορεί να αλλάξει στις ρυθμίσεις)[CR]- Χρήση λανθάνουσας μνήμης (είδος 24 ωρών, καταχωρίσεις σταθμών 1 ώρας)</description>
+        <description lang="en_GB">With this Add-on you can browse more than 50.000 free internet radio stations. Current Features:[CR]- Top 500 Stations[CR]- Browse by genre (and subgenre if enabled in settings)[CR]- Search Station by name[CR]- Search Stations by current playing track[CR]- You can manage a "My Stations"-list[CR]- bitrate and amount of listeners visible and sortable[CR]- 500 Stations on each Page (can be changed in the settings)[CR]- uses cache (24h genre, 1h station listings)</description>
+        <description lang="en_NZ">With this Add-on you can browse more than 50.000 free internet radio stations. Current Features:[CR]- Top 500 Stations[CR]- Browse by genre (and subgenre if enabled in settings)[CR]- Search Station by name[CR]- Search Stations by current playing track[CR]- You can manage a "My Stations"-list[CR]- bitrate and amount of listeners visible and sortable[CR]- 500 Stations on each Page (can be changed in the settings)[CR]- uses cache (24h genre, 1h station listings)</description>
+        <description lang="en_US">With this Add-on you can browse more than 50.000 free internet radio stations. Current Features:[CR]- Top 500 Stations[CR]- Browse by genre (and subgenre if enabled in settings)[CR]- Search Station by name[CR]- Search Stations by current playing track[CR]- You can manage a "My Stations"-list[CR]- bitrate and amount of listeners visible and sortable[CR]- 500 Stations on each Page (can be changed in the settings)[CR]- uses cache (24h genre, 1h station listings)</description>
+        <description lang="es_ES">Con este Add-on pueden escucharse más de 50.000 emisoras de radio por Internet gratuitas. Características:[CR]- Las 500 mejores emisoras.[CR]- Búsqueda por género (y por subgéneros si se habilita en la configuración).[CR]- Búsqueda de emisoras por nombre.[CR]- Búsqueda de emisoras que reproducen una canción.[CR]- Posibilidad de administrar un directorio con "Mis emisoras".[CR]- Directorios ordenados que muestran bitrate y cantidad de oyentes.[CR]- 500 emisoras en cada página (la cantidad puede cambiarse en la configuración).[CR]- Uso de caché (24h género, 1h directorio de emisoras).</description>
+        <description lang="es_MX">Con este complemento usted puede navegar por mas de 50.000 estaciones de redio de internet gratuitas. Caracteristicas Actuales:[CR]- Mejores 500 Estaciones[CR]- Navegar por genero (y subgenero si lo habilita en los ajustes)[CR]- Busqueda de Estacion por nombre[CR]- Busqueda de Estaciones por la pista actual en reproduccion[CR]- Usted puede administrar una lista"Mis Estaciones"[CR]- tasa de bits y cantidad de oyentes visibles y ordenable[CR]- 500 Estaciones en cada Pagina (puede ser cambiado en los ajustes)[CR]- utiliza cache (24h genero, 1h lista de estaciones)</description>
+        <description lang="fr_FR">Avec cette extension vous pouvez accéder à plus de 50.000 station radio internet gratuite. Possibilités actuelles :[CR]- Top 500 stations[CR]- Naviguer par genre (et sous-genre si le réglage est activé)[CR]- Rechercher une station par nom[CR]- Rechercher une station jouant la piste en cours[CR]- Création d'une liste de stations favorites[CR]- Bitrate et nombre d'auditeurs visibles et triables[CR]- 500 stations par page (modifiable dans les réglages)[CR]- Utilisation d'un cache (24h par genre, 1h par station)</description>
+        <description lang="fr_CA">Avec cet addiciel vous pouvez parcourir plus de 50 000 stations de radio Internet gratuites. Caractéristiques actuelles :[CR] - Les 500 1res stations[CR] - Parcourir par genre (et sous-genre si activé dans les paramètres)[CR] - Rechercher les stations par nom[CR] - Rechercher les stations par piste en cours de lecture[CR] - Vous pouvez gérer une liste « Mes stations »[CR] - Débit binaire et nombre d'auditeurs visible et triable[CR] - 500 stations par page (peut être modifié dans les paramètres)[CR] - Utilise un cache (24 h pour les genres, 1h pour les listes de stations).</description>
+        <description lang="gl_ES">Grazas a este complemento pode buscar máis de 50.000 emisoras de radio por internet de balde. Características:[CR]- Mellores 500 Emisoras[CR]- Buscar por xénero (e subxénero se esta habilitado na configuración)[CR]- Buscar Emisoras por nome[CR]- Buscar Emisoras pola pista en reprodución actual[CR]- Pode xestionar a listaxe "As miñas Emisoras"[CR]- taxa de bits e número de ointes visíbeis e ordenábel[CR]- 500 Emisoras en cada páxina (pódese trocar na configuración)[CR]- usar a caché (24h para xénero, 1h para listaxe de emisoras)</description>
+        <description lang="he_IL">בעזרת הרחבה זו ניתן לעיין ביותר מ-50.000 תחנות רדיו אינטרנטיות חינמיות. כולל:[CR]- 500 התחנות הגדולות ביותר[CR]- עיון לפי סגנון (ותת סגנון אם מאופשר בהגדרות)[CR]- חיפוש תחנה לפי שם[CR]- חיפוש תחנות לפי רצועה המנוגנת כעת[CR]- ניתן לנהל רשימת "התחנות שלי"[CR]- מוצג קצב נתונים וכמות מאזינים וניתן למיין לפיהם[CR]- 500 תחנות בכל עמוד (ניתן לשינוי בהגדרות)[CR]- נעשה שימוש בזיכרון מטמון (24 שע' לסגנונות,1 שע' לרשימת התחנות)</description>
+        <description lang="hr_HR">Sa ovim dodatkom možete pregledati više od 50.000 besplatnih Internet radio stanica. Trenutne značajke:[CR]- Top 500 stanica[CR]- Pregledajte prema žanru (i podžanru ako je omogućeno u postavkama)[CR]- Pretraživajte stanice prema nazivu[CR]- Pretraživajte stanice prema trenutnoj reprodukciji pjesme[CR]- Možete upravljati "Moje stanice"-list[CR]- brzina prijenosa i broj slušatelja je vidljiv i prilagodljiv[CR]- 500 stanica na svakoj stranici (mogu se promijeniti u postavkama)[CR]- koristi se predmemorija (24 sata za žanr, 1 sat slušanje stanice)</description>
+        <description lang="hu_HU">Ezzel a kiegészítővel választhatsz több mint 50.000 ingyenes rádió adó közül. Jelenlegi szolgáltatások:[CR]- Top 500 állomás[CR]-Műfajonkénti (és alműfajonkénti) keresés[CR]- Név szerinti állomáskeresés[CR]- Állomáskeresés az éppen játszott szám alapján[CR]- Az "én állomásaim" lista kezelése[CR]- Minőség és hallgatottság szerinti rendezés[CR]- 500 adó minden oldalon (a szám beállítható)[CR]- Gyorsítótár használata (24óra a műfajokra, 1óra az állomásokra)</description>
+        <description lang="id_ID">Dengan addon ini Anda dapat menjelajahi lebih dari 50.000 stasiun radio gratisan. Fitur saat ini:[CR]- 500 Stasiun Teratas[CR]- Jelajahi berdasarkan tema (dan subtema jika diaktifkan di pengaturan)[CR]- Cari Stasiun berdasarkan nama[CR]- Cari Stasiun berdasarkan trek yang diputar[CR]- Anda dapat mengelola daftar "Stasiun Saya"[CR]- bitrate dan jumlah pendengar terlihat dan dapat diurutkan[CR]- 500 Stasiun setiap halaman (dapat diubah di pengaturan)[CR]- menggunakan cache (24 jam tema, 1 jam daftar stasiun)</description>
+        <description lang="it_IT">Con questo Add-on puoi sfogliare più di 50.000 stazioni radio libere su internet. Caratteristiche attuali:[CR]- Migliori 500 stazioni[CR]- Sfoglia per genere (e sottogenere se abilitato nelle impostazioni)[CR]- Cerca le stazioni per nome[CR]- Cerca le stazioni per traccia in esecuzione[CR]- Puoi gestire un lista "Mie Stazioni"[CR]- bitrate e quantità di ascoltatori visibile e riordinabile[CR]- 500 Stazioni in ogni pagina (può essere modificato nelle impostazioni)[CR]- cache utilizzata (24h genere, 1h ascolto)</description>
+        <description lang="ko_KR">이 애드온으로 50,000개 이상의 무료 인터넷 라디오 방송을 탐색할 수 있습니다. 현재 기능:[CR]- Top 500 방송국[CR]- 장르(설정에서 활성화하면 하위 장르)로 탐색[CR]- 방송국명으로 검색[CR]- 현재 트랙을 방송중인 방송국 검색[CR]- "내 방송국" 목록 관리[CR]- 비트레이트와 청취자수 표시와 정렬[CR]- 페이지당 500 방송국 표시 (설정에서 변경 가능)[CR]- 캐시 사용 (장르 24시간, 방송국 리스트 1시간)</description>
+        <description lang="lt_LT">Su šiuo priedu galite naršyti daugiau kaip 50,000 nemokamų internetinių radijo stočių. Dabartinės funkcijos:[CR]- 500 geriausių stočių[CR]- Naršyti pagal žanrą (ir porūšį, jei įjungta nustatymuose)[CR]- Ieškoti stoties pagal pavadinimą[CR]- Ieškoti stočių pagal dabartinį atkuriamą takelį[CR]- Jūs galite valdyti "Mano radijo stotys" sąrašą[CR]- galima matyti pralaidumą ir klausytojų skaičių bei pagal juos rūšiuoti[CR]- 500 stočių kiekviename puslapyje (galima pakeisti nustatymuose)[CR]- Naudoja talpyklą (24h žanro, 1h stoties sąrašai)</description>
+        <description lang="nl_NL">Met deze Add-on die kunt u door meer dan 50.000 vrije internet radiostations bladeren. Huidige functies: [CR]- Top 500 Stations [CR]- bladeren door genre (en subgenre indien ingeschakeld in instellingen) [CR] - Zoek Station op naam [CR] - Zoek Stations door huidig afspelende track [CR]- u kunt een "Mijn Stations" lijst beheren[CR]- bitrate en hoeveelheid luisteraars zichtbaar en sorteerbaar [CR]- 500 Stations op elke pagina (kan gewijzigd worden in de instellingen) [CR]-gebruikte cache (24u genre, 1 uur station luisteren)</description>
+        <description lang="nb_NO">Med denne utvidelsen kan du finne mer enn 50.000 radiokanaler helt gratis fra internett. Nåværende funksjoner:[CR]- Topp 500 stasjoner[CR]- Bla gjennom etter sjanger (og undersjangre om aktivert i innstillinger)[CR]- Søk etter stasjon med navn[CR]- Søk etter stasjoner etter hva som spilles nå[CR]- Du kan lage din egen "Mine stasjoner" -liste[CR]- Kvalitet og antall lyttere vises og kan filtreres[CR]- 500 stasjoner på hver side (kan endres i innstillinger)[CR]- Bruker mellomlagring (24 timer for sjanger, 1 time for stasjonslister)</description>
+        <description lang="pl_PL">Dzięki tej wtyczce możesz przeglądać w ponad 50.000 darmowych stacjach radiowych. Aktualne funkcje:[CR]- Top 500 stacji[CR]- przeglądaj według gatunków (oraz subgatunków jeżeli włączone)[CR]- szukaj stacji po nazwie[CR]- szukaj stacji po granym utworze[CR]- zarządzaj listą Moje stacje[CR]- sortowanie oraz widoczność liczby słuchaczy i bitrate[CR]- 500 stacji na stronie (możliwa edycja)[CR]- pamięć podręczna (24h gatunki, 1h lista stacji)</description>
+        <description lang="pt_PT">Com este add-on, pode escolher entre mais de 50.000 estações de rádio da net grátis. Funcionalidades:[CR]- Top 500 Rádios[CR]- Procure por Género (e sub-género, se activo nas preferências)[CR]- Procurar Rádio por nome[CR]- Procurar Rádios por faixa em reprodução[CR]- Pode gerir uma lista de "Minhas Rádios"[CR]- bitrate e quantidade de ouvintes visíveis e ordenáveis[CR]- 500 Rádios em cada Página (pode ser alterado nas preferências)[CR]- usar cache (24h para género, 1h para lista das rádios)</description>
+        <description lang="pt_BR">Com este Add-on, você pode navegar em mais de 50.000 estações de rádio on-line grátis. Características atuais:[CR]- As 500 Melhores Estações[CR]- Procurar por gênero (e subgênero se habilitado nas configurações)[CR]- Pesquisar estações por nome[CR]- Pesquisar estações pela faixa atual[CR]- Você pode gerenciar uma lista de "Minhas Estações"[CR]- bitrate e quantidade de ouvintes visíveis e ordenáveis[CR]- 500 estações por página (pode ser alterado nas configurações)[CR]- usa cache (24h para gêneros, 1h para listagem de estações)</description>
+        <description lang="ru_RU">С этим дополнением Вы сможете слушать более 50 тысяч доступных свободных радиостанций. На данный момент плагин позволяет:[CR]- Просматривать Top 500 станций[CR]- Искать по стилю (и подстилю, если задано в настройках)[CR]- Искать станции по имени[CR]- Искать похожие станции по текущей воспроизводимой музыке[CR]- Управление списком "Мои станции"[CR]- Просматривать, сортировать по битрейту и количеству слушателей[CR]- 500 станций на каждой странице (может быть изменено в настройках)[CR]- Использование кеширования (стили на 24 часа, списки станций на 1 час) </description>
+        <description lang="sk_SK">S týmto doplnok môžete prehliadať vyše 50.000 voľných internetových rádio staníc. Momentálne podporuje:
+- Top 500 staníc
+- Prehliadanie podľa žánru (a pod-žánru, ak povolené v nastaveniach)
+- hľadanie stanice podľa mena
+- hľadanie stanice podľa práve hranej skladby
+- Môžete spravovať zoznam "Moje stanice"
+- zobrazenie a zoradenie podľa dátového toku a počtu poslucháčov
+- 500 staníc na každej strane (môže byť zmenené v nastaveniach)
+- používa medzi-pamäť (24h pre žánre, 1h pre zoznam staníc)</description>
+        <description lang="sv_SE">Med detta tillägg kan du bläddra bland mer än 50.000 fria internetradiostationer. Nuvarande funktioner:[CR]- Topp 500 stationer[CR]- Bläddra efter genre (och undergenre, om det är påslaget i inställningar)[CR]- Sök station efter namn[CR]- Sök stationer som spelar låt[CR]- Du kan hantera "Mina stationer"-lista[CR]- bitrate och antal lyssnare är synligt och sorterbart[CR]- 500 stationer på varje sida (kan ändras i inställningar)[CR]- använder buffert (24 genre, 1 timmes stationlista)</description>
+        <description lang="ta_IN">இந்த துணை பயன் மூலம் நீங்கள் 50.000 மேற்பட்ட இலவச இணைய வானொலி நிலையங்களை உலாவ முடியும். தற்போதய சிறப்பியல்:[CR]- உச்சி 500 நிலையங்கள்[CR]- வகைபடி உலாவு (துணை வகைப்படி சேர்க்கவும் - அமைப்புகளில் தேர்வு செய்யவும்)[CR]- பெயர்படி நிலையத்தனி தேடுக[CR]- பெயர்படி நிலையத்தனி தேடுக[CR]- "என்னுடைய நிலையங்கள்" பட்டியலை நீங்கள் நிர்வகிக்க முடியும்[CR]- பிட்வீதம் மற்றும் கேட்போர் அளவுகளை பார்க்கவும் மற்றும் வரிசைபடுத்தவும்[CR]- ஒரு பக்கத்தில் 500 நிலையங்கள் (அமைப்புகளில் மாற்ற இயலும்)[CR]- தேக்கத்தை பயன்படுத்தவும் (24 மணிநேர வகை, 1 மணிநேர நிலைய பட்டியல்)</description>
+        <description lang="zh_CN">你可以使用本插件浏览超过50.000免费网络电台。当前功能：[CR]- 500强电台[CR]- 按类别浏览（可设置子类）[CR]- 按名字搜索电台[CR]- 按当前播放曲目搜索电台[CR]- 管理“我的电台”-列表[CR]- 按比特率和收听人数排序[CR]- 每页500个电台（可设置）[CR]- 使用缓存（24小时类别，1小时站点列表）</description>
+        <news>
+            2.5.2+matrix.1 (07/05/2021)
+            - Updated translations from Weblate
+        </news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon><addon id="plugin.audio.soundcloud" name="SoundCloud" version="4.1.0" provider-name="jaylinski">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" version="2.29.0" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="addon.py">
+        <provides>audio</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="de_DE">SoundCloud – Musik- und Podcast-Streaming-Plattform</summary>
+        <summary lang="en_GB">SoundCloud – Music and podcast streaming platform</summary>
+        <summary lang="nl_NL">SoundCloud – Muziek- en podcaststreamingplatform</summary>
+        <description lang="de_DE">SoundCloud ist eine Musik- und Podcast-Streaming-Plattform, mit der Du Millionen von Songs aus der ganzen Welt anhören kannst.</description>
+		<description lang="en_GB">SoundCloud is a music and podcast streaming platform that lets you listen to millions of songs from around the world.</description>
+        <description lang="nl_NL">SoundCloud is een muziek- en podcaststreamingplatform waarmee je naar miljoenen nummers van over de hele wereld kunt luisteren.</description>
+        <disclaimer lang="en_GB">This plugin is not official, approved or endorsed by SoundCloud.</disclaimer>
+        <disclaimer lang="nl_NL">Deze plugin is niet officieel, goedgekeurd of gesteund door SoundCloud.</disclaimer>
+        <platform>all</platform>
+        <license>MIT</license>
+        <forum>https://forum.kodi.tv/showthread.php?tid=206635</forum>
+        <website>https://soundcloud.com</website>
+        <source>https://github.com/jaylinski/kodi-addon-soundcloud</source>
+        <news>4.1.0 (2025-10-06)
+Fixed error when using addon
+Added description and follower-counts to user profiles
+Added description and likes to playlists
+Added playcount to tracks
+Updated Dutch translations
+
+4.0.2 (2022-03-13)
+Fixed random CloudFront errors when sending requests
+Added context-menu option for removing search-history items
+
+4.0.1 (2021-11-02)
+Fixed error in "Discover"-folder
+
+4.0.0 (2020-12-12)
+Added support for Kodi v19 (Matrix)
+        </news>
+        <assets>
+            <icon>resources/icon.png</icon>
+            <fanart>resources/fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon><addon id="plugin.audio.tunein2021" name="TuneIn Radio" version="3.6.9+matrix" provider-name="newf276">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0" />
+    		<import addon="script.module.kodi-six" />
+	</requires>
+	<extension point="xbmc.python.pluginsource" library="tunein2021.py">
+		<provides>audio</provides>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary lang="de">tunein.com-Addon für Kodi</summary>
+		<summary lang="en">tunein.com-addon for Kodi</summary>	
+		<platform>all</platform>
+		<source>https://newf276.github.io/</source>
+		<license>The MIT License (MIT)</license>
+		<language>"English and German</language>
+ 		<email>nil</email>
+		<assets>
+			<icon>icon.jpg</icon>
+			<fanart>fanart.jpg</fanart>           
+		</assets>
+   </extension>
+</addon><addon id="plugin.program.al8inamatrix" name="[COLORorangered]Al8inA[/COLOR] [COLORchocolate]Matrix Wizard[/COLOR]" version="1.2.8" provider-name="AudioSistem">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.six" />
+        <import addon="script.kodi.android.update" optional="true" version="1.1.7" />
+        <import addon="script.speedtester" optional="true" version="1.1.2" />
+    </requires>
+
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>executable</provides>
+    </extension>
+
+    <extension point="xbmc.service" library="startup.py" start="startup" />
+
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">[COLOR chocolate]Open Wizard[/COLOR]</summary>
+        <description lang="en">Al8inA Matrix Wizard-- All Credit To drinfernoo and slamious for the Matrix Mods</description>
+        <platform>all</platform>
+        <reuselanguageinvoker>false</reuselanguageinvoker>
+        <source />
+        <news>
+        </news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.png</fanart>
+        </assets>
+    </extension>
+</addon><addon id="plugin.program.bq" name="BQ" version="1.3" provider-name="AS">
+    <requires>
+        <import addon="script.module.kodi-six" />
+    </requires>
+    <extension point="xbmc.python.script" library="addon.py">
+        <provides>executable</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <summary lang="en">BQ is a pile of account based urls that you can pop-up a browser window. Made from a old Pairing Tool.</summary>
+        <description lang="en">Web Browser needed like FireFox, Dolphin, Chrome. [CR] Simple to use, click the one you need [CR] and if all else fails just open the website needed on another device connected to your internet [CR] and it will do the same as this app.</description>
+        <disclaimer lang="en">The author is not responsible for the use of this addon. The author is not responsible for the content found using this addon. The author does not host or own any content found within this addon.[CR]The author is in no way affiliated with Kodi, Team Kodi, or the XBMC Foundation.[CR]This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</disclaimer>
+        <license>Free the People!, Free the World!!</license>
+        <news>Works in Kodi v21. Now includes a great alternative source for content.</news>
+        <assets>
+            <icon>resources/icon.png</icon>
+        </assets>
+    </extension>
+</addon><addon id="plugin.program.horoscope" name="Horoscope" version="0.0.8" provider-name="Slam">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0" />
+		<import addon="script.module.requests" />
+		<import addon="script.module.beautifulsoup4" />
+	</requires>
+	<extension point="xbmc.python.pluginsource" library="default.py">
+		<provides>executable</provides>
+	</extension>
+	<extension point="xbmc.service" library="service.py" />
+	<extension point="xbmc.addon.metadata">
+		<summary lang="en_GB">Horoscope</summary>
+		<description lang="en_GB">Horoscope</description>
+		<platform>all</platform>
+		<license>GPL-3.0-or-later</license>
+		<website />
+		<source />
+		<assets>
+			<icon>icon.png</icon>
+			<fanart>fanart.jpg</fanart>
+		</assets>
+	</extension>
+</addon><addon id="plugin.program.iptv.merge" name="IPTV Merge" provider-name="SlyGuy" version="0.22.4">
+  <requires>
+    <import addon="script.module.slyguy" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>executable</provides>
+  </extension>
+  <extension point="xbmc.service" library="service.py" start="login" />
+  <extension point="xbmc.addon.metadata">
+    <description lang="en">Easily merge multiple IPTV playlists &amp; EPGs from remote, local or supported add-on sources.</description>
+    <reuselanguageinvoker>true</reuselanguageinvoker>
+    <license />
+    <language />
+    <website />
+    <news>Add setting to do merge at specific hour each day</news>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
+</addon><addon id="plugin.video.cinema_city_ro" version="1.0.6" name="[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO[/COLOR]" provider-name="[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO[/COLOR]">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" version="2.22.0" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="cinema.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="ro">[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO - Streaming România -[/COLOR]</summary>
+        <description lang="ro">[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO[/COLOR]</description>
+        <disclaimer lang="ro">[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO este disponibil gratuit[/COLOR]</disclaimer>
+        <language>ro</language>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon><addon id="plugin.video.dscmovieshub" version="1.2.0" name="[COLOR teal]DSCMoviesHub[/COLOR]" provider-name="DSCMoviesHub">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" version="2.22.0" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="ro">[COLOR blue]DSC MoviseHUB - Streaming România:Cu drag pentru tine![/COLOR][COLOR lime][/COLOR]</summary>
+        <description lang="ro">[COLOR blue]Bine ai venit pe DSC MoviseHUB locul unde pasiunea pentru Filme prinde viață!.[/COLOR][COLOR red][/COLOR]</description>
+        <disclaimer lang="ro">[COLOR blue]Aici găsești cele mai noi filme,cele mai populare seriale HD. Totul este disponibil gratuit, fără cont sau abonament..[/COLOR][COLOR yellow][/COLOR]</disclaimer>
+        <language>ro</language>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon><addon id="plugin.video.free99" version="2.0" name="[COLOR goldenrod]Free99[/COLOR]" provider-name="JewBMX, DIGGZ">
+    <requires>
+        <import addon="script.module.six" />
+        <import addon="script.module.kodi-six" />
+        <import addon="script.module.simplejson" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.resolveurl" />
+        <import addon="script.free99.artwork" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension library="service.py" point="xbmc.service" start="startup" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Squeezing the last drop out of free scapers</summary>
+        <description lang="en">Diggz Scrubs Fork</description>
+        <disclaimer lang="en">The author is not responsible for the use of this addon. The author is not responsible for the content found using this addon. The author does not host or own any content found within this addon.[CR]The author is in no way affiliated with Kodi, Team Kodi, or the XBMC Foundation.[CR]This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</disclaimer>
+        <license />
+        <platform>all</platform>
+        <assets>
+            <icon>resources/images/icon.png</icon>
+            <fanart>resources/images/fanart.jpg</fanart>
+        </assets>
+        <news />
+    </extension>
+</addon><addon id="plugin.video.live.streamspro" name="LiveStreamsPro" version="3.0.0~alpha4" provider-name="gujal">
+	<requires>
+		<import addon="script.module.six" />
+		<import addon="script.module.kodi-six" />
+		<import addon="script.module.requests" optional="true" />
+		<import addon="script.module.websocket" version="0.50.0" optional="true" />
+		<import addon="script.module.youtube.dl" optional="true" />
+		<import addon="plugin.video.youtube" optional="true" />
+		<import addon="script.module.dateutil" optional="true" />
+		<import addon="script.module.resolveurl" optional="true" />
+		<import addon="script.module.urlresolver" optional="true" />
+		<import addon="script.module.cloudscraper" optional="true" />
+		<import addon="script.module.inputstreamhelper" optional="true" />
+		<import addon="script.module.slproxy" optional="true" />
+	</requires>
+	<extension point="xbmc.python.pluginsource" library="default.py">
+		<provides>video</provides>
+	</extension>
+
+	<extension point="xbmc.addon.metadata">
+		<summary>livestreamspro- shamelessly forked from livestreams but added many things</summary>
+		<description>
+In addition to what livestreams allowed you to do, you can now,
+1. call regex in regex,
+2. multiple regex in page, regex in session, also htmlunescape responses
+3. create session from one regex and pass onto next in line
+4. save sessions to a file and open again later
+5. write python code in .py file, put in the profile directory and then call from your regex.
+6. use epoctime, guid and unpack as functions already defined.
+7. Use it to post values to the pages to get the proper responses
+8. support many headers, like origin, X-Requested-With
+9. you can now append cookies in response and then read in regex using includeheaders
+10. You can now link to another web url via your xml using externallink
+11. support for google captcha, now you can show and then post the text		
+		</description>
+		<platform>all</platform>
+		<assets>
+			<icon>icon.png</icon>
+			<fanart>fanart.jpg</fanart>
+		</assets>
+	</extension>
+</addon><addon id="plugin.video.macvod" version="1.995" name="[COLORyellow]XC MAC M3U[/COLOR]" provider-name="1x|iNKuBo|bee">
+<requires>    		
+    	<import addon="script.module.resolveurl" />
+	    <import addon="script.module.requests" />	
+		<import addon="script.module.six" />	
+		
+		<import addon="script.module.web-pdb" />
+  </requires>
+	<extension point="xbmc.python.pluginsource" library="default.py">
+		<provides>video</provides>
+	</extension>
+	
+	<extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+		<summary lang="en">Personal addon for IPTV</summary>
+		<description lang="es">This addon provides IPTV for personal and private use only</description>
+		<website>https://github.com/</website>
+		<license>GPL 3.0</license>
+		<platform>all</platform>
+		<disclaimer lang="es">The author of this addon makes not responsible for the use of it</disclaimer>
+	<assets>
+        <icon>icon.gif</icon>  
+        <fanart>fanart.png</fanart>
+    </assets>        
+		<language>en</language>
+	</extension>	
+	
+</addon><addon id="plugin.video.playlistbee" name="[COLORorangered]Bee[/COLOR]" version="3.1" provider-name="Nux007, Publish3r, Silhouette2022,Bee,1X and Romy">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" version="2.22.0" />
+    <import addon="script.module.dateutil" version="2.8.1" />    
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Playlist Bee</summary>
+    <summary lang="de_DE">Playlist Bee</summary>
+    <description lang="en_GB">Nothing is guaranteed.The guarantee only offers you a subscription.This is an addon for free.</description>
+    <description lang="de_DE">Nichts ist garantiert.Die Garantie bietet Ihnen nur ein Abonnement.Dies ist ein kostenloses Add-on.</description>
+    <description lang="ru_RU">Ничего не гарантировано.Гарантия предлагает вам лишь подписку.Это бесплатный аддон.</description>
+    <language>en de</language>
+    <platform>all</platform>
+    <source>https://github.com/Publish3r/repository.kodi.matrix/tree/main/plugin.video.playlistloader</source>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+  </extension>
+</addon><addon id="plugin.video.romyTVlist" name="romyTVlist" version="1.1.6" provider-name="Nux007, Publish3r, Silhouette2022,AS">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" version="2.22.0" />
+    <import addon="script.module.dateutil" version="2.8.1" />    
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">romyTVlist</summary>
+    <summary lang="de_DE">romyTVlist</summary>
+    <description lang="en_GB">Manage your various playlists in a simple way.[CR]EPG support for xmltv.[CR][CR]Note:[CR]This addon does not contain any illegal content. Should you add any illegal content, you are fully responsible for any consequences.</description>
+    <description lang="de_DE">Verwalte auf einfache Art und Weise deine verschiedenen Playlisten.[CR]Unterstützt EPG für XMLTV.[CR][CR]Hinweis:[CR]Dieses Addon enthält keine illegalen Inhalte. Solltest du irgendwelche illegalen Inhalte hinzufügen, bist du im vollen Umfang für eventuelle Folgen verantwortlich.</description>
+    <description lang="ru_RU">Дополнение для управления плейлистами.[CR][CR]Замечание:[CR]Это дополнение не содержит нелегального контента. Вы несете полную ответственность, если используете любой нелегальный контент.</description>
+    <language>en de</language>
+    <platform>all</platform>
+    <source>romyTVlist</source>
+    <assets>
+        <icon>icon.png</icon>
+		 <fanart>fanart.gif</fanart>
+    </assets>
+  </extension>
+</addon><addon id="plugin.video.scrubsv2" version="5.1.43" name="[COLOR orange]Scrubs v2[/COLOR]" provider-name="JewBMX">
+    <requires>
+        <import addon="script.module.six" />
+        <import addon="script.module.kodi-six" />
+        <import addon="script.module.simplejson" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.resolveurl" />
+        <import addon="script.scrubsv2.artwork" optional="true" />
+        <import addon="script.trakt" optional="true" />
+        <import addon="plugin.video.json_iptv" optional="true" />
+        <import addon="plugin.video.youtube" optional="true" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension library="service.py" point="xbmc.service" start="startup" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">A Clean Source To Dirty Things...</summary>
+        <description lang="en">Movies, Tv Shows, Anime, and What Not. [CR] See Changelog For Changes. [CR] You enable/disable the ones you dont like and let me handle the broken providers. [CR] How it should be :)</description>
+        <disclaimer lang="en">The author is not responsible for the use of this addon. The author is not responsible for the content found using this addon. The author does not host or own any content found within this addon.[CR]The author is in no way affiliated with Kodi, Team Kodi, or the XBMC Foundation.[CR]This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</disclaimer>
+        <license>Free the People!, Free the World!!</license>
+        <platform>all</platform>
+        <assets>
+            <icon>resources/images/icon.png</icon>
+            <fanart>resources/images/fanart.jpg</fanart>
+        </assets>
+        <news>Total CleanUp of Providers : Checked and Cleaned as of July 2024. [CR] Check ChangeLog For More Details.</news>
+    </extension>
+</addon><addon id="plugin.video.seren" version="3.0.62" name="Seren" provider-name="Nixgates">
+    <requires>
+        <import addon="xbmc.addon" version="17.9.910" />
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" version="2.27.0" />
+        <import addon="script.module.beautifulsoup4" version="4.9.3" />
+        <import addon="context.seren" version="2.2.0" />
+        <import addon="script.module.inputstreamhelper" version="0.5.10" optional="true" />
+        <import addon="script.module.unidecode" version="1.1.1" />
+        <import addon="script.module.myconnpy" version="8.0.18" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="seren.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.service" library="service.py" />
+    <extension point="xbmc.addon.metadata">
+        <reuselanguageinvoker>false</reuselanguageinvoker>
+        <summary lang="en">Seren - Modular Multi-source Addon</summary>
+        <description lang="en">Seren is a modular provider based, cloud service streaming software that is tightly
+            interwoven with Trakt. Seren provides the freedom to view media from a single menu system from service
+            providers of the users choosing. Please Note: This addon requires the use of a compatible cloud service.
+        </description>
+        <platform>all</platform>
+        <license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+        <forum />
+        <website>https://github.com/nixgates/plugin.video.seren</website>
+        <source>https://github.com/nixgates/plugin.video.seren</source>
+        <disclaimer lang="en">
+            Last updated: November 29, 2024.
+            The information contained within the Seren software (the "Service") is for general information purposes
+            only.
+            The author assumes no responsibility for errors, omissions in the contents on the Service, nor does it
+            assume responsibility for any material provided by any external services.
+            The use of the Service does not author the user to engage in any kind of illegal, criminal or tortious
+            activity through the use of the software, including infringement of any third party intellectual property
+            rights (including without limitation copyright, trade marks, patent, trade secrets and confidential
+            information), fraud, child pornography, trafficking in obscene material, violation of applicable export
+            restrictions, drug dealing, gambling, harassment, stalking, spamming, hacking, sending of viruses or other
+            harmful files or illegal posting of computer passwords or computer code.
+            The user is responsible for all their activity in connection with the use of the Service and the author
+            reserves the right to report any potentially criminal activity to appropriate law enforcement agencies.
+            The user must not transmit to or via the Service, any material that may infringe the intellectual property
+            rights of any third party, or any defamatory, derogatory or offensive material or publication.
+            In no event shall the author of this software be liable for any special, direct, indirect, consequential, or
+            incidental damages or any damages whatsoever, whether in an action of contract, negligence or other tort,
+            arising out of or in connection with the use of the Service or the contents of the Service.
+            The author reserves the right to make additions, deletions, or modification to the contents on the Service
+            at any time without prior notice.
+            The author of this software does not warrant that the software is free of viruses or other harmful
+            components.
+            Seren may contain links to external websites that are not provided or maintained by or in any way affiliated
+            with the author.
+            Please note that the author does not guarantee the accuracy, relevance, timeliness, or completeness of any
+            information on these external websites.
+        </disclaimer>
+        <assets>
+            <icon>resources/images/ico-seren-3.png</icon>
+            <fanart>resources/images/fanart-seren-3.png</fanart>
+            <clearlogo>resources/images/logo-seren-3.png</clearlogo>
+            <poster>resources/images/poster-seren-3.png</poster>
+            <screenshot>resources/screenshots/screenshot-01.jpg</screenshot>
+            <screenshot>resources/screenshots/screenshot-02.jpg</screenshot>
+            <screenshot>resources/screenshots/screenshot-03.jpg</screenshot>
+            <screenshot>resources/screenshots/screenshot-04.jpg</screenshot>
+        </assets>
+        <news>
+            Changelog 3.0.62
+            [BUG] Optimised RD fix implementation
+            [BUG] Improved RD season pack handling
+            [BUG] Improved RD download handling when uncached
+            [BUG] Improved RD file selection handling when uncached
+
+            Changelog 3.0.61
+            [BUG] Fix AD not deleting magnet if not cached
+
+            Changelog 3.0.6
+            [BUG] Fix AD Playback
+            
+            Changelog 3.0.5
+            [BUG] Fix RD playback
+            [BUG] Improved 3D Filtering
+            [FEATURE] Added option to filer results by internet speed
+            [FEATURE] Added 'Cancel' button to smartplay window
+            [FEATURE] Added 'Icon Only' scraper display style option
+            [FEATURE] Added 'Minimum Percentage Left Before Showing Dialog option' for smartplay window
+            [FEATURE] Added option to hide resolver window when attempting to play
+            [FEATURE] Added 60 FPS filter
+
+            Changelog 3.0.1
+            [FEATURE] Handle Kodi database version for Omega 21
+
+            Changelog 3.0.0
+            [PERFORMANCE] Drop support for Python 2.x (Kodi Leia and below)
+            [PERFORMANCE] Optimize codebase for Python 3.x (Kodi Matrix and above)
+            [PERFORMANCE] Improvements to Smart Play
+            [PERFORMANCE] Improve playlist creation
+            [PERFORMANCE] Don't use strptime
+            [PERFORMANCE] Small perf improvement to supported file type checks
+            [PERFORMANCE] Optimize from_widget detection
+            [PERFORMANCE] Optimize movie release date handling
+            [PERFORMANCE] Use cache for pull_all if not page 1 and ignore_cache = True
+            [FEATURE] Introduce support for direct sources
+            [FEATURE] Better support for adaptive sources
+            [FEATURE] Better passing of movie aliases to providers
+            [FEATURE] Smoother resolver flow
+            [FEATURE] Convert add-on settings to new format
+            [FEATURE] Add AV1 filter
+            [FEATURE] Rework alias passing to scrapers
+            [FEATURE] Better identification of WEB and BLURAY sources
+            [FEATURE] Support clearlogo from TMDB
+            [FEATURE] Prioritize Trakt airdate metadata
+            [FEATURE] Update Seren logo for 3.0.0
+            [FEATURE] Icons for all menus
+            [FEATURE] Support package and provider icons
+            [FEATURE] Add Hebrew localizations
+            [FEATURE] Update pytz to 2022.7
+            [BUG] Improve Player resiliency and error handling (re-factor)
+            [BUG] Fix Multiple issues with player up next popup and track watched reported
+            [BUG] Fix Task Done error (re-write Threadpool)
+            [BUG] Fix Smartplay not working after 2nd episode watched
+            [BUG] Improve Database handling and Foreign Key references (DB schema refactor)
+            [BUG] Increase RD timeout
+            [BUG] Fix Trakt bookmark handling
+            [BUG] Fix TVDB Normalization error
+            [BUG] Fix Most TV Show Episodes/Seasons don't have certification (MPAA)
+            [BUG] Fix Awake from sleep sometimes misses plugin calls
+            [BUG] Fix Seren not playing some cached files from Premiumize
+            [BUG] Fix sort_select tries to read invalid settings
+            [BUG] Fix Local time conversion not happening for movies releases
+            [BUG] Fix Clear logo overlap on getSources window
+            [BUG] Fix Widgets Disappear on Error
+            [BUG] Fix two bugs with Trakt watched/unwatched actions
+            [BUG] Fix missing seeds count when Manual Caching
+            [BUG] Fix typo in German localizations
+            [BUG] Remove rogue \ in translations
+
+		    Changelog 2.2.4
+			[BUG] Fix bugs related to foreign key constraints
+
+            Changelog 2.2.3
+            [BUG] Fix Trakt Scrobbling and Playing Next
+            [FEATURE] Update pytz to 2022.6
+
+            Changelog 2.2.2
+            [BUG] Trakt scrobbling hitting rate limiter
+            [BUG] Improve onWake and sleeping service calls
+            [FEATURE] Update pytz to 2022.5
+            [FEATURE] Fixed 'info_text' item property for themes
+
+            Changelog 2.2.1
+            [BUG] Error on fresh install from update news
+            [BUG] Discover TV Shows Genre multi-select not working
+            [PERFORMANCE] Limit search to title and aliases only
+
+            Changelog 2.2.0
+            [FEATURE] Complete refactor of source sorting
+            [FEATURE] Add enhanced filtering options
+            [FEATURE] Improve release title info detection
+            [FEATURE] Improved source statistics, filtering and pretermination
+            [FEATURE] Updated default seren skin
+            [FEATURE] Window class refactors
+            [FEATURE] Add adaptive source selection when smartplaying
+            [FEATURE] "Original" for TMDB for High artwork size
+            [FEATURE] Allow deleting single search terms from search history
+            [FEATURE] Base List Types for Genres default setting switch
+            [FEATURE] Add trakt user blocked notification.
+            [FEATURE] Auto clean torrent cache
+            [FEATURE] Re-open settings at correct place
+            [FEATURE] Add verbiage in our news function about source sorting changes
+            [FEATURE] Update pytz to 2022.1
+            [FEATURE] Add Kodi 20 Alpha1 Videodb support (Note: Kodi 20 is not officially supported yet)
+            [PERFORMANCE] Lazy load dependencies and optimize imports
+            [PERFORMANCE] Improve performance of pre-emptive termination checks
+            [PERFORMANCE] Improve performance of source sorting and cloud scrapers
+            [PERFORMANCE] Improve performance of source filtering
+            [PERFORMANCE] Optimize TVDB
+            [PERFORMANCE] Optimise year generation code for menus
+            [BUG] Fix background updating of shows
+            [BUG] List cache on first boot for widgets broken
+            [BUG] Marking an episode as unwatched via CM does not remove last_watched_at in DB
+            [BUG] Marking show watched/unwatched shouldn't affect specials
+            [BUG] Handle error response from OMDb
+            [BUG] Increase read timeout for trakt when milling all seasons
+            [BUG] Try close session for trakt.tv
+            [BUG] Double widget refresh can occur when playback ends and trakt manager
+            [BUG] Trakt Manager --&gt; Hide Show
+            [BUG] Duplicate episodes when trakt_id changes
+            [BUG] Tvdb fallback is not working as it should
+            [BUG] TMDB Show meta never up to par
+            [BUG] TMDB air_dates have no time component
+            [BUG] Fix TMDB Rate limiting handler
+            [BUG] My Lists don't pull all lists
+            [BUG] Duplicate my lists lists when no_paging enabled
+            [BUG] Remove a4kSubtitles Integration
+            [BUG] IndexError from sort_sources
+            [BUG] TVDB errors when there is no item in the iterator
+            [BUG] Shuffle Play not working when "Flatten Season Episodes" enabled
+            [BUG] Seren not passing aliases to a4kScrapers for movies
+            [BUG] Cloud Scrapers don't find episodes that include year after title
+            [BUG] Change NoPlayableSourcesExcetion to log at info level
+            [BUG] Fix getSources progress calculation
+            [BUG] Fixup adaptive handling since the source sorting and statistic changes
+            [BUG] Limit flip multiple providers to the current package
+            [BUG] Ensure we have a valid integer value for torrent seeds
+            [BUG] Fix Premiumize transfer progress values
+            [BUG] Return gracefully when we have no valid zipfile from install package
+            [BUG] Handles source sizes in KB
+            [BUG] Fix focus issues on windows
+            [BUG] Fix provider module import issues
+            [BUG] Improve handling of Kodi object cleanup
+
+            Changelog 2.1.9
+            Fix PM Application Authorization
+            Fix show pack retrieval in torrent cache
+            Fix a4kSubtitles import path for case sensitive filesystems
+            Use addon id in setting cache prefix for kodi window properties
+            Fix focus broken in provider window with no providers
+
+            Changelog 2.1.8
+            Fix prescrape cache result being ignored
+            Fix get_sources to return all relevant torrent hashes from torrent cache
+            Some minor cache performance improvements
+
+            Changelog 2.1.7
+            Fix MyFiles listings for all FileWalkers
+            Fix Rescrape item should overwrite torrent cache
+            Added info meta up to par check in fallback logic
+            Fix playback history normalization needed for Quick Resume context menu bug
+            Fix reset playback progress for shows/seasons/episodes
+            Handle Cloudflare 530 error for Trakt
+            Fix Premiumize.me space_used now returns value in TB
+            Handle bugs in Premiumize.me API for list files gracefully.
+
+            Changelog 2.1.6
+            Work around Sqlite on Leia under Windows does not support boolean named values
+            Ensure we fetch all pages for syncing ratings and ignore cache for bookmark/hidden sync
+            Fix collections.Mapping import for Python &gt;= 3.3
+
+            Changelog 2.1.5
+            Workaround trakt shitty season data
+            Added trakt list sort types for Watched, Collected and My Rating
+            Fix trakt season milling for updated shows
+            Fix mill_if_needed queries for seasons and episodes
+            Use cache for first load of widgets for trakt lists
+            Force a cache clear on release version changes
+            Update seasons statistics again, with even more fallbacks
+            Ensure we clean up AD/RD cloudfiles if we can't identify the file to play
+            Fixed typo in url for widget refresh from activities sync
+            Allow widget refresh while playing for foreground tasks
+            Fix air dates not always showed correctly for shows/seasons
+            Fix tzlocal call to pytz.tzinfo.build_tzinfo and update pytz to 2021.3
+            Hide trakt auth option if we are already authed
+            Change icons to transparent background
+            Use an empty content type value for menu containers
+            Added 'an' to the list of excluded sort tokens
+            Update Dutch translations
+            Update French translations
+            Add Polish translations
+
+            Changelog 2.1.4
+            Genre and Next Page icons
+            Improve widget refresh logic
+            Update show/season statistics after reinserting from updated meta
+            Perform trakt sync on system resume
+            Support kodi standard addon localisations
+            Fix downloads
+            Fix hide shows from episodes/season items
+            Add "Auto-Delete Torrents" for AD
+            Fix RD torrents not auto-deleting
+            Fix broken cache cleaning
+            Don't use show OMDB data for seasons
+            Remove update checker
+            Localize custom windows
+            Use show ids for setUniqueIDs
+            Always mill specials
+            Optimise TVDB threading
+            Optimise filter_dictionary and safe_dict_get
+            Increase requests connection pool size
+            Don't use dict.keys() when unnecessary
+            Some minor fixes and optimisations to tools and globals
+            Minor performance improvement to the sqlite row factory
+            Optimise TZ initialisation
+            Debounce onSettingsChanged callback in SerenMonitor
+            Added database indices to episodes, movies, hidden and bookmarks tables
+
+            Changelog 2.1.3
+            Workaround Kodi's lack of multi-process settings management
+            Fix Trakt updated endpoints now only support 30 days from "now"
+            Fix call to get_url in RD account status check and enhanced PM and AD account status checks
+            Fix Trakt IDs being sent wrong to windows
+
+            Changelog 2.1.2
+            Fix RD auth when there are existing values in settings.xml
+            Get debrid premium status immediately after auth and improve values/handling
+            Make Trakt auth for widget loads needing auth to wait for auth
+            Ensure all trakt API instances always get latest auth tokens
+            Fix Trakt revoke auth issues that led to bad values in settings.xml
+            Don't wipe user data in trakt sync db on trakt revoke auth unless next authed user is different
+            Fix clipboard copy to work on Linux under Matrix and and add MacOS support
+            Fix season milling requires update check
+            Fix adding unaired items to watchlist from search when hide unaired is enabled
+            Fix eternal trakt IDs for trakt addon ratings/scrobbling for episodes
+            Fix trakt list sorting direction for rank sorting
+            Don't cache personal trakt lists
+            Reorder code path in GlobalLock to avoid rare race condition
+            Fix Long life service manager does not exit when kodi requests it to
+            Change InputStream Helper dependency to optional
+            Gracefully handle bad dates in OMDB indexer
+            Improved settings cache thread locking
+            Handle None/empty values better in settings cache
+            VACCUM during DB rebuild (reclaim disk space)
+
+            Changelog 2.1.1
+            Fix RD losing auth issue
+            Improve OAUTH refresh flow edge case coverage for Trakt and TVDB
+            Re-implement retry on db lock during sql execution
+            Fix an issue with GlobalLock run_once exiting too early
+            Fix several shows views on demand insertion of missing data
+            Fix movies genres on demand insertion of missing data
+            Update season episode count after episode milling (fixes seasons showing incorrectly as watched)
+            Fix minimum size filter
+
+            Changelog 2.1.0
+            Major re-work of metadata updates and merging
+            Fix air dates not being updated
+            Fix missing artwork not being updated
+            Fix meta data merging
+            Improved meta data fallback processing
+            Improve global and sync locks, reduce thread locking
+            Improve caching code to reduce required requests.
+            Additional caching for metadata indexer endpoints
+            Improve database handling code
+            Improve timezone detection fallback handling
+            Make Seren python version agnostic
+            Implemented a true settings cache
+            Brought back test windows feature for skin developers
+            Moved to kodi module version of unidecode
+            Updated pytz to latest release
+            Fix mysql Kodi database support under Leia
+            Removed youtube dependency
+            Workaround for type error in CacheAssist quality filter
+            Fix resolver window error when no sources found
+            Remove argv usage from SmartPlay
+            Reworked forced widget refresh approach
+            Logging cleanup
+
+            Changelog 2.0.19
+            Fix handling of unicode in URLs, TV Networks and Searching issues on Leia
+            Fix TV show years
+            Fix PM CacheAssist status updates
+            Only try to auto-cache if auto-cache is actually enabled
+            Change default threadpool size and provide user settings
+            Increase timeout configuration setting maximum permitted value
+            Make pre-scrape respect new maximum value for timeout
+            Change approach for deaccenting clean_title and transliterate actor names
+            During prescrape, don't pop up the too restrictive filters window and just use unfiltered list for sorting
+            Fix Kodi Bookmark Clearing with MySQL DB support
+            Temporarily disable totaltime progress indicators as they break our resume on Matrix
+            Fix TVDB session issues
+            Fix XBOX Database Issues
+            Fix database pickling issues
+            Fix Kodi crashes in Leia
+            Fix Kodi crashes in Matrix (with exception of reuselanguageinvoker enabled when stopping playback combined with widgets)
+            Change default value of reuselanguageinvoker to False and force use addon provided value on upgrade
+            Ensure we release all Kodi objects to prevent memory leaks and crashes
+            Ensure we close all requests sessions to prevent memory leaks
+            Workaround occasional python bug with strptime in lambda functions
+            Made Kodi version detection algorithm more resilient and cover pre-release versions
+            Logging enhancements
+            Added Arabic translations
+
+            Changelog 2.0.18
+            Fix the thread pool issues
+            Added logic to push down the country_origin to be used by the scrapers
+            Original title swap now only occurs for display, use unicode everywhere
+            Fixed normalization function retuning unnormalized values
+            Fix for genre multi-select always showing same items
+            Fixed local TZ conversion for dates in Upcoming, Source Select and OSD
+            Real Debrid use status_codes to determine what are good requests
+            Make sure we have all parts for the calculation of the bookmarks
+            Added regex to parse semver out of version label
+            Re-implemented update checker that will work regardless of repo changes
+
+            Changelog 2.0.17:
+            Fix for shows search and TVDB empty data
+            Fix handling of timestamp creation to be UTC compliant
+            Fix timezone code taking unix path on Windows
+            Added a fall through for android getprop timezone detection
+            Handle invalid dates from metadata indexer when obtaining year value.
+            Fix Matrix UI spins on closing download manager
+            Add check for invalid list position in download manager returned by an empty list
+            Fix isFolder bool for download manager
+            Fix resume progress indicators
+            Calculate resumetime at bookmark insert for movies
+            Add support for clearing bookmarks on Matrix
+            Fix view_type has no attribute isdigit bug
+            Ensure studio info value in seasons/episodes
+            Add provider package version information to existing logging item
+            Handle removal of legacy provider meta file both on uninstall and upgrade
+            Replaced seekTime with execute of BigSkipForward
+            Fix Simplejson decode error not caught bug
+            Handle exception instances from a4ksubtitles
+            Fix pagination for genre multi-select
+            Fix paging of Finish Watching has same items bug
+            Fixed show pack suffixes and checking of 1x1 episode naming
+            Updated missing codes and added it-IT, fr-FR and ar-SA translations
+            Update Danish language strings
+
+            Changelog 2.0.16:
+            Fix addon update check
+            Fix trakt module attempting to refresh when not authorised
+
+            Changelog 2.0.15:
+            Fixed python depend
+
+            Changelog 2.0.14:
+            Fixed scraping issue if title is not present at IMDB
+            Added workarounds for syncing trakt database on xbox
+            Fixed Trending/Popular Trakt lists repeating
+            Seperated sort and pagination setting for Trakt collection
+            Applied sort and pagination settings for collection to unfinished shows in collection
+            Re-worked date handling to use UTC for all internal uses and convert to local on display
+            Fixed pagination on recently watched shows menu
+            Fixed source sorting issue for py3
+            Fixed race condition in pre-term for py3
+            File size now displayed on resolver dialog
+            Updated some dutch translations
+            Fixed hosters not being handled correctly at scrape
+            Fix reuselanguageinvoker default
+            Fixed background sync attempting to run when no Trakt auth present
+
+            Changelog 2.0.13
+            Fixed settings not sticking when using reuselanguageinvoker
+            Fixed reuselanguageinvoke status not sticking after toggling
+            Reuselangugageinvoker state now forced on startup
+            Reduced Trakt retries on server failures
+            Increased backoff timeout for retries
+            Fixed playback for special episodes failing
+            Eased timeout issues for bookmarks
+            Fixed non-direct, non-debrid hosters appearing in source select
+            Fix spanish translation file name
+            Fixed title sorting for lists with articles
+            Fixed paging on new shows
+
+            Changelog 2.0.12
+            Fix for source select, tested on 4 skins
+
+            Changelog 2.0.11
+            Take preventative measures to reduce overloading Trakt servers
+            Increase local show/season statistic refreshing
+            Fixed cloud source sorting
+            Fixed HEVC source sorting
+            New shows api call now pulls english and local language from Trakt
+            Modified database commit method to allow for xbox support
+            Reformat source select screen again to allow better filename displaying
+            Fixed next button showing on next up menu
+            Removed pycryptodome dependency, this will need to be requested on a per provider basis
+            Fixed pre-term
+            Fixed empty search results raising exception
+            Fixed auto episode resuming
+            Fixed superficial exceptions in play dialogs
+            Updated danish language strings
+
+            Changelog 2.0.10
+            Fixed issue with milling seasons to often
+            Added checks when attempting to cache magnet
+            Fixed tvshows new
+            Fetching of RD account details after auth fixed
+            Fixed spanish translation folder name
+            Reformat of source select to allow larger file name sizes
+            Fixed race condition in ThreadPool
+            Added fallback for text color if skin color could not be inherited
+            Add legacy param support for smart play playlist creation
+            Fix hide the hiding of unaired episodes from non mixed episode lists
+            Removed default action setting until a appropriate workaround for kodi setting is achieved
+            Wrapped player interactions with Trakt API with Try/Excepts to allow network failures
+            Added fallback method if no thumb art is available
+            Added temporary workaround for ratings issue in add_directory_items
+            Fixed keep-alive in player module. (Fixes dialogs, playlist creation, marking as watched if not caused by network failure)
+            Allowed exceptions in cache check to allow for debrid providers who are offline
+            Replaced ok dialogs for connection issues with notifications
+
+
+            Changelog 2.0.9:
+            Fixed RD cloud scraping
+            Fixed issue if all providers were disabled scraping would run as if all were enabled
+            Fixed smartplay and legacy paramas support
+            Fixed bug causing failure when checking art from TMDB
+            Fixed user lists menus
+            Added spanish translation
+            Fixed backing out from menu when opened from widget (having to backout multiple times)
+            Fixed season watch markers
+            Fixed hidden_items handling with New Shows menu
+
+            Changelog 2.0.8:
+            Temporary Workaround for trakt items not providing trakt_id
+            Better RD episode resolving
+            Better episode identification during resolving
+            Catch WindowsError exception when handling skins
+            Fix text highlight selection
+            Cool down background service on failure
+
+            Changelog 2.0.7:
+            Fixed All debrid torrent resolving
+            Fixed movie resuming
+            Fixed issue with limited providers running at scrape
+            Fixed AD re-auth
+            Changes to attempt to fix XBOX support and ascii issues with timezones
+            Fixed unaired episodes showing blank
+            Fixed AD User info fetching
+            Fixed ghost providers
+            Fixed TypeError with pre-termination
+
+            Changelog 2.0.6:
+            Create Skins directory if missing
+            Allow failure in pre-term until investigated
+
+            Changelog 2.0.5:
+            Allow more failures that will require to be investigated further in the future
+
+            Changelog 2.0.4:
+            Safe get release title when cloud scraping
+            Allow and log failures in maintenance process
+
+            Changelog 2.0.3:
+            Added default value of None for skin color when attempting to pull color from user's skin
+
+            Changelog 2.0.2:
+            Force table re-fresh is sync database fails to rebuild when updating
+
+            Changelog 2.0.1:
+            Fix last_meta_update value to reflect new Seren version
+
+            Changleog 2.0.0:
+
+            Added Download Manager
+            Complete re-write of Trakt Sync Database
+            Metadata handler introduced and complete re-write of handling of metadata
+            Settings that modify metadata can now be changed on the fly and do not require a rebuild
+            Users can now manually resolve a file from the source select screen
+            Users can now manually cache a specific source from the source select screen
+            Complete re-write of menu handling
+            Introduced globals module to handle global variables for interpreter
+            Implement re-use language invoker setting from Kodi
+            Pre-emptive termination now disabled for background Pre-scrapes and timeout set to max for background scrapes
+            New artwork and custom dialogs
+            Metadata now upadted on the fly when updated item encountered from Trakt
+            Next Up menu now populated from local database
+            Sync has been fleshed out to include even more meta data during cycle
+            Failures to auto resolve now prompt user in case they wish to manually interrupt
+            Items are now able to supply multiple images for any given type for skins that make use of it
+            Support for Python 3
+            Global thread lock now implemented for required methods (prevents multiple syncs occuring at once and other locks)
+            InputStreamAdaptive support
+            Providers now have the abiity to implement settings
+            Provider packages can now elect to make use of their own background services
+            Provider packages can now offer images for each provider
+            Cache and Sync database items are now pickled
+            Complete re-write of resovler module and consolidated code
+            Kodi 19 support
+            All Debrid implementation now fully featured
+            Sources can now be sorted by filesize low to high for users that wish to do so
+            Forcing widget refresh after playback now optional
+            Zip manager implemented for handling of zip files
+            Skin Manager rework
+            Automated resolving now more reliable
+            OMDB API implemented
+            Feedback provided at scrape if no providers are found
+            Feedback provided at scrape if no debrid providers are setup
+            Debrid account status now visible from Seren settings
+        </news>
+    </extension>
+</addon><addon id="plugin.video.vixmovie" name="VixMovie" version="1.6" provider-name="1x,Geamanu,apoyotech">
+  <requires>
+    <import addon="xbmc.python" version="3.0.1" />
+    <import addon="script.module.requests" version="2.25.1" />
+    <import addon="plugin.video.themoviedb.helper" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="addon.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">VixMovie Video Plugin</summary>
+    <description lang="en_GB">Watch movies from VixMovie source.</description>
+    <disclaimer lang="en_GB" />
+    <platform>all</platform>
+    <license>MIT</license>
+    <assets>
+      <icon>icon.png</icon>
+	  <fanart>resources/fanart.jpg</fanart>
+    </assets>
+  </extension>
+</addon><addon id="repository.Magnetic" name="Magnetic Repo" version="1.1.0b" provider-name="1-cool-guy">
+        <requires>
+            <import addon="xbmc.addon" version="12.0.0" />
+        </requires>
+        <extension point="xbmc.addon.repository" name="Magnetic Repo">
+        	<dir>
+            <info compressed="false">https://magnetic.website/__zips/addons.xml</info>
+            <checksum>https://magnetic.website/__zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://magnetic.website/__zips/</datadir>
+            <hashes>false</hashes>
+            </dir>
+			<dir>
+		    <info compressed="false">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/</datadir>
+            <hashes>false</hashes>
+			</dir>
+			<dir>
+            <info compressed="false">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/</datadir>
+            </dir>
+            <dir>
+            <info compressed="false">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/</datadir>
+            <hashes>false</hashes>
+            </dir>	
+			<dir>
+            <info compressed="false">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/</datadir>
+        </dir>
+		<dir>
+    <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+    <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+    <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+</dir>
+        </extension>
+        <extension point="xbmc.addon.metadata">
+            <summary>Official Magnetic Repository</summary>
+            <description>Welcome to magnetic repo. Please enjoy</description>
+            <platform>all</platform>
+            <genre>movies,usa</genre>
+			<assets>
+			    <icon>icon.png</icon>
+			</assets>
+        </extension>
+    </addon><addon id="repository.World" name="[COLORsienna]World Repository[/COLOR]" version="0.1.1" provider-name="World">
+	<extension point="xbmc.addon.repository" name="World Repository">
+		<info compressed="false">https://raw.githubusercontent.com/akeotaseo/world_repo/main/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/akeotaseo/world_repo/main/addons.xml.md5</checksum>
+		<datadir zip="true">https://raw.githubusercontent.com/akeotaseo/world_repo/main/</datadir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>World Repository</summary>
+		<description>World Build Repo</description>
+		<platform>all</platform>
+		<assets>
+			<icon>icon.png</icon>
+			<fanart>fanart.jpg</fanart>
+		</assets>
+	</extension>
+</addon><addon id="repository.angelitto" name="[B][COLOR FFC45AEC]Angelitto Repository[/COLOR][/B]" version="1.0.2" provider-name="[B][COLOR FF6AFB92]angelitto[/COLOR][/B]">
+    <extension point="xbmc.addon.repository" name="Angelitto Repository">
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/angelitto2005/repository.angelitto/main/repo/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/angelitto2005/repository.angelitto/main/repo/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/angelitto2005/repository.angelitto/main/repo/zips/</datadir>
+        </dir>
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/angelitto2005/repository.angelitto/main/all/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/angelitto2005/repository.angelitto/main/all/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/angelitto2005/repository.angelitto/main/all/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Welcome to Angelitto's Repo</summary>
+        <description>[B][COLOR FFEB5406]Angelitto's Kodi Repository[/COLOR][/B]</description>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart />
+        </assets>
+    </extension>
+</addon><addon id="repository.cMaNWizard" name="cMaN's Wizard Repository" version="3.2" provider-name="cMaN">
+        <extension point="xbmc.addon.repository" name="cMaN's Wizard Repository">
+		<dir>		
+            <info compressed="false">https://raw.githubusercontent.com/mfirepo/repo/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/mfirepo/repo/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/mfirepo/repo/master/plugins/</datadir>
+		</dir>
+		<dir>
+			<info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+        </dir>
+        <dir>
+			<info compressed="false">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/</datadir>
+		</dir>
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/</datadir>
+		</dir>
+        </extension>
+        <extension point="xbmc.addon.metadata">
+            <summary>Install all the latest Builds</summary>
+            <description>Welcome to the New and Improved cMaN Wizard for all your Community Builds.</description>
+            <platform>all</platform>
+		<assets>
+			<icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+		</assets>
+    </extension>
+</addon><addon id="repository.cocoscrapers" name="CocoScrapers Repository" version="1.0.1" provider-name="CocoScrapers">
+    <extension point="xbmc.addon.repository" name="CocoScrapers Repository">
+        <dir minversion="19.0">
+            <info compressed="false">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <summary>CocoScrapers Repository</summary>
+        <description>Unofficial add-ons repository</description>
+    </extension>
+</addon><addon id="repository.cralin" name="cralin's Repository" version="1.0.10" provider-name="cralin">
+	<extension point="xbmc.addon.repository" name="cralin's Repository">
+		<dir>
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/repository.cralin/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/repository.cralin/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/repository.cralin/.packages</datadir>
+		</dir>
+		<dir>
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/subtitles.subsroteam/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/subtitles.subsroteam/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/subtitles.subsroteam/.packages</datadir>
+		</dir>
+
+		<dir minversion="20.0.0" maxversion="20.80.00">
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_20/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_20/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_20/.packages</datadir>
+		</dir>
+		<dir minversion="21.0.0" maxversion="21.80.00">
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_21/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_21/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_21/.packages</datadir>
+		</dir>
+		<dir minversion="22.0.0" maxversion="22.80.00">
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_22/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_22/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_22/.packages</datadir>
+		</dir>
+		<dir minversion="23.0.0" maxversion="23.80.00">
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_23/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_23/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_23/.packages</datadir>
+		</dir>
+		<dir minversion="24.0.0" maxversion="24.80.00">
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_24/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_24/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_24/.packages</datadir>
+		</dir>
+
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>cralin's Repository</summary>
+		<description>cralin's Repository</description>
+		<platform>all</platform>
+		<assets>
+        <icon>icon.png</icon>
+		<fanart>fanart.jpg</fanart>
+		</assets>
+	</extension>
+</addon><addon id="repository.dexe" name=" dEXE's Addons Repository" version="1.0.11" provider-name="dEXE">
+	<extension point="xbmc.addon.repository" name="dEXE's Addons Repository">
+		<dir>
+			<info compressed="false">https://raw.githubusercontent.com/deklica/repo.dexe/master/repo/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/deklica/repo.dexe/master/repo/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/deklica/repo.dexe/master/repo/</datadir>
+		</dir>
+		<dir minversion="19.0.0">
+			<info compressed="false">https://raw.githubusercontent.com/deklica/repo.dexe/master/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/deklica/repo.dexe/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/deklica/repo.dexe/master/zips/</datadir>
+			<hashes>false</hashes>
+		</dir>
+		<dir minversion="19.0.0">
+			<info compressed="false">https://gitfront.io/r/dexe/n7TtSm9NEVFs/dexerepo/raw/addons.xml</info>
+			<checksum>https://gitfront.io/r/dexe/n7TtSm9NEVFs/dexerepo/raw/addons.xml.md5</checksum>
+			<datadir zip="true">https://gitfront.io/r/dexe/n7TtSm9NEVFs/dexerepo/raw/zips/</datadir>
+			<hashes>false</hashes>
+		</dir>
+		<dir minversion="19.0.0">
+			<info compressed="false">https://raw.githubusercontent.com/deklica/repo.dexe/master/misc/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/deklica/repo.dexe/master/misc/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/deklica/repo.dexe/master/misc/</datadir>
+			<hashes>false</hashes>
+		</dir>
+
+
+
+
+		<dir minversion="18.9.701" maxversion="19.5">
+			<info compressed="false">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/</datadir>
+		</dir>
+		<dir minversion="19.8.0">
+			<info compressed="false">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/</datadir>
+		</dir>
+
+
+		<dir minversion="19.0.0">
+			<info compressed="false">https://kodiyashimaru.github.io/repo/packages/addons.xml</info>
+			<checksum>https://kodiyashimaru.github.io/repo/packages/addons.xml.md5</checksum>
+			<datadir zip="true">https://kodiyashimaru.github.io/repo/</datadir>
+		</dir>
+		<dir minversion="19.0.0">
+			<info compressed="false">https://kodifitzwell.github.io/repo/packages/addons.xml</info>
+			<checksum>https://kodifitzwell.github.io/repo/packages/addons.xml.md5</checksum>
+			<datadir zip="true">https://kodifitzwell.github.io/repo/</datadir>
+		</dir>
+
+
+		<dir minversion="19.0.0">
+			<info compressed="false">https://raw.githubusercontent.com/Sam-Max/repository.jacktook/master/repo/zips/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/Sam-Max/repository.jacktook/master/repo/zips/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/Sam-Max/repository.jacktook/master/repo/zips/</datadir>
+		</dir>
+
+
+		<dir minversion="19.0">
+			<info compressed="false">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/</datadir>
+		</dir>
+
+
+		<dir minversion="19.0">
+			<info>https://raw.githubusercontent.com/newt-sc/a4kStreaming/master/packages/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/newt-sc/a4kStreaming/master/packages/addons.xml.crc</checksum>
+			<datadir>https://github.com/newt-sc/a4kStreaming/archive</datadir>
+			<artdir>https://github.com/newt-sc/a4kStreaming/releases/download/v0.1.0</artdir>
+		</dir>
+
+
+		<dir minversion="19.0">
+			<info>https://raw.githubusercontent.com/newt-sc/a4kSubtitles/master/packages/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/newt-sc/a4kSubtitles/master/packages/addons.xml.crc</checksum>
+			<datadir>https://github.com/newt-sc/a4kSubtitles/archive</datadir>
+			<artdir>https://github.com/a4k-openproject/a4kSubtitles/releases/download/v0.0.13</artdir>
+		</dir>
+
+
+		<dir minversion="19.0.0">
+			<info compressed="false">https://raw.githubusercontent.com/dobbelina/repository.dobbelina/master/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/dobbelina/repository.dobbelina/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/dobbelina/repository.dobbelina/master/</datadir>
+		</dir>
+
+
+		<dir minversion="19.0.0">
+			<info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+		</dir>
+
+
+		<dir minversion="19.0.0">
+			<info compressed="false">https://repo.orionoid.com/addons.xml</info>
+			<checksum>https://repo.orionoid.com/addons.xml.md5</checksum>
+			<datadir zip="true">https://repo.orionoid.com</datadir>
+		</dir>
+
+
+		<dir minversion="18.9.0">
+			<info compressed="false">https://raw.githubusercontent.com/Tolriq/repository.yatse.kodi/master/matrix/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/Tolriq/repository.yatse.kodi/master/matrix/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/Tolriq/repository.yatse.kodi/master/matrix/</datadir>
+			<hashes>false</hashes>
+		</dir>
+
+
+		<dir minversion="19.0.0" maxversion="19.9.0">
+			<info>https://raw.github.com/pkscout/repository.skins.pkscout/matrix/addons.xml</info>
+			<checksum>https://raw.github.com/pkscout/repository.skins.pkscout/matrix/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.github.com/pkscout/repository.skins.pkscout/matrix/download</datadir>
+			<artdir>https://raw.github.com/pkscout/repository.skins.pkscout/matrix/download</artdir>
+			<hashes>false</hashes>
+		</dir>
+		<dir minversion="20.0.0" maxversion="20.8.900">
+			<info>https://raw.github.com/pkscout/repository.skins.pkscout/nexus/addons.xml</info>
+			<checksum>https://raw.github.com/pkscout/repository.skins.pkscout/nexus/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.github.com/pkscout/repository.skins.pkscout/nexus/download</datadir>
+			<artdir>https://raw.github.com/pkscout/repository.skins.pkscout/nexus/download</artdir>
+			<hashes>false</hashes>
+		</dir>
+		<dir minversion="20.9.0">
+			<info>https://raw.github.com/pkscout/repository.skins.pkscout/omega/addons.xml</info>
+			<checksum>https://raw.github.com/pkscout/repository.skins.pkscout/omega/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.github.com/pkscout/repository.skins.pkscout/omega/download</datadir>
+			<artdir>https://raw.github.com/pkscout/repository.skins.pkscout/omega/download</artdir>
+			<hashes>false</hashes>
+		</dir>
+
+
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary lang="en">Kodi dEXE's Repo</summary>
+		<description>A collection of my, fixed/modded, best and latest Kodi add-ons and dependencies.[CR]One repo to rule them all ;)[CR][CR][I]For additional repos and skins install Roooar! (Repo of all Repositories).[/I][CR][CR]Please do NOT post this Repository on Youtube, Facebook, Blogs, or anywhere on the internet, thank you.</description>
+		<disclaimer lang="en">This repository nor the addons within does not form part of the Kodi Media Centre. Please do not seek assistance with this repository or the addons from any of the Official Kodi Support Channels. The authors do not host any of the content in these add-ons and take no responsibility for the content found.</disclaimer>
+		<language>en</language>
+		<platform>all</platform>
+		<assets>
+			<icon>icon.png</icon>
+			<fanart>fanart.jpg</fanart>
+		</assets>
+	</extension>
+</addon><addon id="repository.hub" name="Hub Repo" version="1.1.3" provider-name="1x">
+    <extension point="xbmc.addon.repository" name="Hub Repo">
+		<dir>
+			<info compressed="false">https://raw.githubusercontent.com/staycanuca/hub/main/zip/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/staycanuca/hub/main/zip/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/staycanuca/hub/main/zip/</datadir>
+			<hashes>false</hashes>
+		</dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Hub Repository</summary>
+        <description lang="en_GB">Repo for Hub.</description>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+			<fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon><addon id="repository.jurialmunkey" name="jurialmunkey Alpha Repository" version="3.5" provider-name="jurialmunkey">
+    <extension point="xbmc.addon.repository" name="jurialmunkey Alpha Repository">
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/</datadir>
+        </dir>
+        <dir minversion="19.9.1" maxversion="20.9.0">
+            <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/nexusrepo/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/nexusrepo/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/nexusrepo/zips/</datadir>
+        </dir>
+        <dir minversion="20.9.1">
+            <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>jurialmunkey Alpha Repository</summary>
+        <description>A repository for alpha releases of jurialmunkey's skins.</description>
+        <disclaimer />
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
+</addon><addon id="repository.kodifitzwell" version="0.0.1" name="kodifitzwell repository" provider-name="kodifitzwell">
+    <extension point="xbmc.addon.repository" name="kodifitzwell repository">
+        <dir minversion="19.0.0">
+            <info compressed="false">https://kodiyashimaru.github.io/repo/packages/addons.xml</info>
+            <checksum>https://kodiyashimaru.github.io/repo/packages/addons.xml.md5</checksum>
+            <datadir zip="true">https://kodiyashimaru.github.io/repo/</datadir>
+        </dir>
+        <dir minversion="19.0.0">
+            <info compressed="false">https://kodifitzwell.github.io/repo/packages/addons.xml</info>
+            <checksum>https://kodifitzwell.github.io/repo/packages/addons.xml.md5</checksum>
+            <datadir zip="true">https://kodifitzwell.github.io/repo/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <description>kodifitzwell repository</description>
+        <assets><icon>icon.png</icon></assets>
+    </extension>
+</addon><addon id="repository.oldsalt" name="Old Salt Repository" version="1.1" provider-name="Jax">
+<extension point="xbmc.addon.repository" name="Old Salt Repository">
+    <dir>
+        <info compressed="false">https://github.com/OldManJax/repository.oldsalt/raw/master/addons.xml</info>
+        <checksum>https://github.com/OldManJax/repository.oldsalt/raw/master/addons.xml.md5</checksum>
+        <datadir zip="true">https://github.com/OldManJax/repository.oldsalt/raw/master/</datadir>
+    </dir> 
+        
+    <dir>
+        <info compressed="true">https://github.com/zach-morris/repository.zachmorris/raw/master/addons.xml</info>
+        <checksum>https://github.com/zach-morris/repository.zachmorris/raw/master/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/zach-morris/repository.zachmorris/master/</datadir>
+    </dir>
+     
+    <dir minversion="19.0">
+        <info compressed="false">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/</datadir>
+    </dir>
+    
+    <dir minversion="19.0.0">
+        <info compressed="false">https://download.osmc.tv/dev/anxdpanic/kodi/youtube/unofficial_testing/addons.xml</info>
+        <checksum>https://download.osmc.tv/dev/anxdpanic/kodi/youtube/unofficial_testing/addons.xml.md5</checksum>
+        <datadir zip="true">https://download.osmc.tv/dev/anxdpanic/kodi/youtube/unofficial_testing/zips</datadir>
+        <hashes>false</hashes>           
+    </dir>  
+    
+    <dir>
+		<info compressed="false">https://raw.githubusercontent.com/newt-sc/a4kSubtitles/master/packages/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/newt-sc/a4kSubtitles/master/packages/addons.xml.crc</checksum>
+        <artdir>https://github.com/a4k-openproject/a4kSubtitles/releases/download/v0.0.13</artdir>
+		<datadir zip="true">https://github.com/newt-sc/a4kSubtitles/archive</datadir>
+	</dir>
+    
+    <dir>
+		<info compressed="false">https://raw.githubusercontent.com/akeotaseo/World-Repo-Repository/main/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/akeotaseo/World-Repo-Repository/main/addons.xml.md5</checksum>
+		<datadir zip="true">https://raw.githubusercontent.com/akeotaseo/World-Repo-Repository/main/</datadir>
+	</dir>
+    
+    <dir>
+        <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/</datadir>
+    </dir>
+    <dir minversion="19.9.1" maxversion="20.9.0">
+        <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/nexusrepo/zips/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/nexusrepo/zips/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/nexusrepo/zips/</datadir>
+    </dir>
+    <dir minversion="20.9.1">
+        <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/</datadir>
+    </dir>
+    
+    <dir minversion="18.9.701" maxversion="19.5">
+        <info compressed="false">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/</datadir>
+    </dir>
+	<dir minversion="19.8.0">
+        <info compressed="false">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/</datadir>
+    </dir>
+    
+    <dir>
+        <info compressed="false">https://raw.githubusercontent.com/Slamious/swzips/main/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/Slamious/swzips/main/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/Slamious/swzips/main/zips/</datadir>
+    </dir>
+    
+    <dir>
+		<info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+		<datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+    </dir>
+</extension>
+<extension point="xbmc.addon.metadata">
+	<summary>Handy Add-ons and Utilities</summary>
+    <description>This and that with a few other things to sail the high seas</description>
+    <assets>
+        <icon>icon.png</icon>
+        <fanart>fanart.jpg</fanart>
+    </assets>
+</extension>
+</addon><addon id="repository.redwizard" name="[COLOR red]The Red Repo[/COLOR]" version="1.1.9" provider-name="[COLOR red]The Red Wizard[/COLOR]">
+	<extension point="xbmc.addon.repository" name="The Red Repo">
+		<dir>
+			<info compressed="false">https://repo.redwizard.xyz/redwizardrepo/main/addons.xml</info>
+			<checksum>https://repo.redwizard.xyz/redwizardrepo/main/addons.xml.md5</checksum>
+			<datadir zip="true">https://repo.redwizard.xyz/redwizardrepo/main/</datadir>
+		</dir>
+		<dir minversion="20.9.0" maxversion="21.8.9">
+			<info compressed="false">https://repo.redwizard.xyz/redwizardrepo/21omega/addons.xml</info>
+			<checksum>https://repo.redwizard.xyz/redwizardrepo/21omega/addons.xml.md5</checksum>
+			<datadir zip="true">https://repo.redwizard.xyz/redwizardrepo/21omega/</datadir>
+		</dir>
+		<dir minversion="21.9.0" maxversion="22.8.9">
+			<info compressed="false">https://repo.redwizard.xyz/redwizardrepo/22piers/addons.xml</info>
+			<checksum>https://repo.redwizard.xyz/redwizardrepo/22piers/addons.xml.md5</checksum>
+			<datadir zip="true">https://repo.redwizard.xyz/redwizardrepo/22piers/</datadir>
+		</dir>
+		<dir minversion="19.0">
+            <info compressed="false">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/</datadir>
+        </dir>
+		<dir>
+			<info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+		</dir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary lang="en_GB">[COLOR red]The Red Wizard Builds and Add-ons[/COLOR]</summary>
+		<description lang="en_GB">[COLOR red]The Red Wizard repo for The Red Wizard builds and add-ons[/COLOR]</description>
+		<disclaimer lang="en_GB">[COLOR red]The author of this add-on does not host any content and has no affiliation with the content providers[/COLOR]</disclaimer>
+		<news>[COLOR red]2025-07-14
+- Kodi 20 Nexus specific repository removed (Kodi 19 Leia no longer supported)
+- Descriptions added to addon.xml
+- Forum address updated
+- The Red Wizard has a new home! Go to https://redwizard.xyz[/COLOR]</news>
+		<platform>all</platform>
+		<language>en</language>
+		<license>GNU GENERAL PUBLIC LICENSE Version 3</license>
+		<email>info@redwizard.xyz</email>
+		<website>https://www.redwizard.xyz/</website>
+		<forum>https://t.me/+XiuBf9KvPfw2MzVk</forum>
+		<assets>
+			<icon>icon.png</icon>
+			<fanart>fanart.jpg</fanart>
+		</assets>
+	</extension>
+</addon><addon id="repository.sarsaila" name="Sarsailă's Addons" version="1.1.1" provider-name="Sarsailă">
+    <extension point="xbmc.addon.repository" name="Sarsailă's Addons">
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/xngsrs/myhobby/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/xngsrs/myhobby/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://github.com/xngsrs/myhobby/raw/master/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Install Addons from Sarsa repo</summary>
+        <description>Download and install addons for Kodi.</description>
+        <disclaimer>Sarsailă</disclaimer>
+        <platform>all</platform>
+		<assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon><addon id="repository.thelab" name="TheLab Repository" version="25.3.27" provider-name="[COLORpurple]• [COLORorchid]Tech [COLORdarkorchid]E [COLORplum]Coyote [COLORpurple]•[/COLOR]">
+    <extension point="xbmc.addon.repository" name="TheLab Repository">
+        <dir minversion="21.0" maxversion="21.9.0">
+            <info compressed="false">https://www.midian.appboxes.co/wolfyB/Th3L48/omega/zips/addons.xml</info>
+            <checksum>https://www.midian.appboxes.co/wolfyB/Th3L48/omega/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://www.midian.appboxes.co/wolfyB/Th3L48/omega/zips/</datadir>
+        </dir>
+        <dir minversion="20.0" maxversion="20.9.0">
+            <info compressed="false">https://www.midian.appboxes.co/wolfyB/Th3L48/nexus/zips/addons.xml</info>
+            <checksum>https://www.midian.appboxes.co/wolfyB/Th3L48/nexus/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://www.midian.appboxes.co/wolfyB/Th3L48/nexus/zips/</datadir>
+        </dir>
+        <dir minversion="19.0" maxversion="19.9.0">
+            <info compressed="false">https://www.midian.appboxes.co/wolfyB/Th3L48/matrix/zips/addons.xml</info>
+            <checksum>https://www.midian.appboxes.co/wolfyB/Th3L48/matrix/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://www.midian.appboxes.co/wolfyB/Th3L48/matrix/zips/</datadir>
+        </dir>
+        <dir minversion="18.0" maxversion="18.9.0">
+            <info compressed="false">https://www.midian.appboxes.co/wolfyB/Th3L48/leia/zips/addons.xml</info>
+            <checksum>https://www.midian.appboxes.co/wolfyB/Th3L48/leia/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://www.midian.appboxes.co/wolfyB/Th3L48/leia/zips/</datadir>
+        </dir>
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>TheLab Repository</summary>
+        <description>TheLab Repository</description>
+        <platform>all</platform>
+    <assets>
+        <icon>icon.png</icon>
+        <fanart>fanart.jpg</fanart>
+    </assets>
+    </extension>
+</addon><addon id="repository.umbrella" name="Umbrella Repository" version="2.2.6" provider-name="Umbrella">
+    <extension point="xbmc.addon.repository" name="Umbrella Repository">
+        <dir minversion="18.9.701" maxversion="19.5">
+            <info compressed="false">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/matrix/zips/</datadir>
+        </dir>
+	    <dir minversion="19.8.0" maxversion="20.89.0">
+            <info compressed="false">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/nexus/zips/</datadir>
+        </dir>
+		<dir minversion="20.90.0">
+            <info compressed="false">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/omega/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/omega/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/master/omega/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Umbrella Repository</summary>
+        <description>Repository for the Umbrella video plugin.</description>
+        <disclaimer />
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon><addon id="resource.uisounds.appletv" version="0.0.2" name="AppleTv UI Sounds" provider-name="Fastcolors">
+
+  <requires>
+    <import addon="kodi.resource" version="1.0.0" />
+  </requires>
+
+  <extension point="kodi.resource.uisounds" />
+  <extension point="kodi.addon.metadata">
+    <summary lang="en">AppleTv navigation sounds</summary>
+    <description lang="en">AppleTv navigation sounds</description>
+    <platform>all</platform>
+  </extension>
+</addon><addon id="resource.uisounds.kodi" version="1.0.1" name="Kodi UI Sounds" provider-name="Team Kodi">
+  <requires>
+    <import addon="kodi.resource" version="1.0.0" />
+  </requires>
+  <extension point="kodi.resource.uisounds" />
+  <extension point="kodi.addon.metadata">
+    <summary lang="en">Kodi GUI sounds</summary>
+    <description lang="en">Kodi GUI sounds</description>
+    <platform>all</platform>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
+  </extension>
+</addon><addon id="service.cinemagia" name="[COLORgold]Cinemagia service[/COLOR]" version="1.0.2" provider-name="sarsailă, moromete">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.beautifulsoup4" />
+    <import addon="script.module.requests" version="2.9.1" />
+  </requires>
+  <extension point="xbmc.python.script" library="default.py" />
+  <extension point="xbmc.python.library" library="default.py" />
+  <extension point="xbmc.service" name="cinemagia.service" library="service.py" start="login" />
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary lang="en" />
+    <assets>
+        <icon>icon.png</icon>
+    </assets>
+  </extension>
+</addon></addons>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.audio.romaniaradio"
+       name="Romania Radio"
+       version="1.0.4"
+       provider-name="Sarsailă">
+    <requires />
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>audio</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <summary>Posturi Radio Romania</summary>
+        <description>Posturi de radio romanesti colectate de pe romaniaradio.ro</description>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
+</addon>
