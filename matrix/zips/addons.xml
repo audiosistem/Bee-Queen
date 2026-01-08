@@ -592,7 +592,7 @@ In addition to what livestreams allowed you to do, you can now,
         </assets>
         <news>Total CleanUp of Providers : Checked and Cleaned as of July 2024. [CR] Check ChangeLog For More Details.</news>
     </extension>
-</addon><addon id="plugin.video.seren" version="3.0.62" name="Seren" provider-name="Nixgates">
+</addon><addon id="plugin.video.seren" version="3.0.66" name="Seren" provider-name="Nixgates">
     <requires>
         <import addon="xbmc.addon" version="17.9.910" />
         <import addon="xbmc.python" version="3.0.0" />
@@ -610,9 +610,7 @@ In addition to what livestreams allowed you to do, you can now,
     <extension point="xbmc.addon.metadata">
         <reuselanguageinvoker>false</reuselanguageinvoker>
         <summary lang="en">Seren - Modular Multi-source Addon</summary>
-        <description lang="en">Seren is a modular provider based, cloud service streaming software that is tightly
-            interwoven with Trakt. Seren provides the freedom to view media from a single menu system from service
-            providers of the users choosing. Please Note: This addon requires the use of a compatible cloud service.
+        <description lang="en">Seren is a modular provider based, cloud service streaming software that is tightly interwoven with Trakt. Seren provides the freedom to view media from a single menu system from service providers of the users choosing. Please Note: This addon requires the use of a compatible cloud service.
         </description>
         <platform>all</platform>
         <license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
@@ -620,7 +618,7 @@ In addition to what livestreams allowed you to do, you can now,
         <website>https://github.com/nixgates/plugin.video.seren</website>
         <source>https://github.com/nixgates/plugin.video.seren</source>
         <disclaimer lang="en">
-            Last updated: November 29, 2024.
+            Last updated: December 6, 2024.
             The information contained within the Seren software (the "Service") is for general information purposes
             only.
             The author assumes no responsibility for errors, omissions in the contents on the Service, nor does it
@@ -658,6 +656,25 @@ In addition to what livestreams allowed you to do, you can now,
             <screenshot>resources/screenshots/screenshot-04.jpg</screenshot>
         </assets>
         <news>
+            Changelog 3.0.66
+            [BUG] Resolved Kodi Omega deprecation warnings by migrating cast metadata to InfoTagVideo APIs
+            [BUG] Fixed cast normalization to build xbmc.Actor objects and stop setCast runtime exceptions
+            [BUG] Normalized unique IDs and resume data to prevent type errors and deprecated property usage
+            [BUG] Ensured widget refresh runtime flag resets correctly after triggering refresh
+            [BUG] Stopped duplicate episode rows during Trakt sync by keying upserts on show/season/number
+        
+            Changelog 3.0.65
+            [BUG] Improved SQLite database lock handling
+            [BUG] If you skip back to the start and stop playback seren will now stop trakt scrobble and remove playback history
+            [BUG] Will no longer use stretched icon for fanart on menu items
+            [PERFORMANCE] Will no longer remove trakt bookmark when starting playback
+            [PERFORMANCE] Resuming playback will now seek faster
+            [PERFORMANCE] Removed unnecessary error when RD magnet doesn't resolve
+            [FEATURE] Can limit next up episodes by item limit
+            [FEATURE] Added sorting options for watchlist
+            [FEATURE] Can now use chapter info to trigger smartplay window
+            [FEATURE] Added progress indicators
+
             Changelog 3.0.62
             [BUG] Optimised RD fix implementation
             [BUG] Improved RD season pack handling
@@ -682,6 +699,8 @@ In addition to what livestreams allowed you to do, you can now,
 
             Changelog 3.0.1
             [FEATURE] Handle Kodi database version for Omega 21
+            [PERFORMANCE] Compressed icons from 3.53 MB to 1.34 (Removed)
+            [FEATURE] Update background color to Black for 3.0.1 (Removed)
 
             Changelog 3.0.0
             [PERFORMANCE] Drop support for Python 2.x (Kodi Leia and below)
@@ -728,8 +747,8 @@ In addition to what livestreams allowed you to do, you can now,
             [BUG] Fix typo in German localizations
             [BUG] Remove rogue \ in translations
 
-		    Changelog 2.2.4
-			[BUG] Fix bugs related to foreign key constraints
+            Changelog 2.2.4
+            [BUG] Fix bugs related to foreign key constraints
 
             Changelog 2.2.3
             [BUG] Fix Trakt Scrobbling and Playing Next

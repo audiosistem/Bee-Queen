@@ -1,3 +1,4 @@
+import contextlib
 import copy
 import importlib
 import json
@@ -298,6 +299,17 @@ class SerenPlayer(xbmc.Player):
         if self.playback_started:
             return
 
+        if g.get_bool_setting("playingnext.chapters"):
+            last_chapter = self.final_chapter()
+            if last_chapter is not None:
+                remaining_time = self.item_information["info"]["duration"] * (1 - last_chapter / 100)
+                if remaining_time > 5:
+                    self.playing_next_time = min(self.playing_next_time, remaining_time)
+
+        if self.offset and not self.resumed:
+            self.seekTime(self.offset)
+            self.resumed = True
+
         self.playback_started = True
         self.playback_timestamp = time.time()
         self._running_path = self.getPlayingFile()
@@ -345,20 +357,46 @@ class SerenPlayer(xbmc.Player):
             if not hasattr(provider_module, "get_listitem") and hasattr(provider_module, "sources"):
                 provider_module = provider_module.sources()
             item = provider_module.get_listitem(stream_link)
-            item.setInfo("video", info)
         else:
             item = xbmcgui.ListItem(path=stream_link)
             info["FileNameAndPath"] = parse.unquote(self.playing_file)
-            item.setInfo("video", info)
-            item.setProperty("IsPlayable", "true")
+
+        item.setProperty("IsPlayable", "true")
 
         art = self.item_information.get("art", {})
         item.setArt(art if isinstance(art, dict) else {})
-        cast = self.item_information.get("cast", [])
-        item.setCast(cast if isinstance(cast, list) else [])
-        item.setUniqueIDs(
-            {i.split("_")[0]: info[i] for i in info if i.endswith("id")},
-        )
+
+        kodi_major = getattr(g, "KODI_VERSION", 0) or 0
+        info_tag = None
+        use_video_info_tag = False
+        if kodi_major >= 20:
+            with contextlib.suppress(Exception):
+                info_tag = item.getVideoInfoTag()
+                use_video_info_tag = info_tag is not None
+
+        menu_item_data = self.item_information if isinstance(self.item_information, dict) else {}
+
+        if use_video_info_tag and info_tag:
+            g._apply_video_info_tag(info_tag, info, menu_item_data)
+        else:
+            item.setInfo("video", info)
+
+        primary_cast = menu_item_data.get("cast") if isinstance(menu_item_data, dict) else None
+        fallback_cast = info.get("castandrole")
+        g._apply_cast(item, info_tag if use_video_info_tag else None, primary_cast, fallback_cast)
+
+        unique_ids = g._extract_unique_ids(info, info.get("mediatype"))
+        g._apply_unique_ids(item, info_tag if use_video_info_tag else None, unique_ids)
+
+        if not use_video_info_tag:
+            resume_time = menu_item_data.get("resume_time") if isinstance(menu_item_data, dict) else None
+            if resume_time is not None:
+                item.setProperty("resumetime", str(resume_time))
+                duration_seconds = info.get("duration")
+                with contextlib.suppress(Exception, ZeroDivisionError):
+                    if duration_seconds:
+                        progress = int((float(resume_time) / float(duration_seconds)) * 100)
+                        item.setProperty("WatchedProgress", str(progress))
         return item
 
     def _add_support_for_external_trakt_scrobbling(self):
@@ -431,10 +469,10 @@ class SerenPlayer(xbmc.Player):
             not self.trakt_enabled
             or not self.scrobbling_enabled
             or self.scrobbled
-            or self.current_time < self.ignoreSecondsAtStart
+            or (not self.scrobble_started and self.current_time < self.ignoreSecondsAtStart)
         ):
             return
-
+        
         post_data = self._build_trakt_object()
 
         if post_data["progress"] >= self.playCountMinimumPercent:
@@ -461,11 +499,13 @@ class SerenPlayer(xbmc.Player):
                 return
             else:
                 g.log(f"Trakt scrobble/stop returned status code: {scrobble_response.status_code}", "warning")
-        elif self.current_time > self.ignoreSecondsAtStart:
+        else:
             if (pause_time := time.time() - self.last_attempted_scrobble_pause) < 5:
                 g.log(f"Trakt scrobble/pause repeat called: {pause_time}s", "warning")
             try:
                 scrobble_response = self._trakt_api.post("scrobble/pause", post_data)
+                if self.current_time < self.ignoreSecondsAtStart:
+                    self._remove_playback_history(self.item_information)
             except Exception:
                 g.log_stacktrace()
                 return
@@ -516,10 +556,6 @@ class SerenPlayer(xbmc.Player):
         self.total_time = self.getTotalTime()
         self.min_time_before_scrape = max(self.total_time * 0.2, self.min_time_before_scrape)
 
-        if self.offset and not self.resumed:
-            self.seekTime(self.offset)
-            self.resumed = True
-
         self._log_debug_information()
 
         while not g.wait_for_abort(0.5) and self._is_file_playing():  # This order is correct! Wait then check.
@@ -562,7 +598,6 @@ class SerenPlayer(xbmc.Player):
         except Exception:
             g.log_stacktrace()
         if self.current_time == 0 or self.total_time == 0:
-            self.bookmark_sync.remove_bookmark(self.trakt_id)
             return
 
         if self.watched_percentage < self.playCountMinimumPercent and self.current_time >= self.ignoreSecondsAtStart:
@@ -580,6 +615,34 @@ class SerenPlayer(xbmc.Player):
             return False
 
         return self.isPlayingVideo()
+        
+    def _remove_playback_history(self, item_information):
+        self.bookmark_sync.remove_bookmark(item_information["trakt_id"])
+        item_information = item_information["info"]
+        media_type = "episode" if item_information["mediatype"] != "movie" else "movie"
+        progress = self._trakt_api.get_json(f"sync/playback/{media_type}s")
+        if len(progress) == 0:
+            return
+        if media_type == "movie":
+            progress_ids = [i["playback_id"] for i in progress if i["trakt_id"] == item_information["trakt_id"]]
+        else:
+            progress_ids = [
+                i["playback_id"] for i in progress if i["episode"]["trakt_id"] == item_information["trakt_id"]
+            ]
+
+        for i in progress_ids:
+            self._trakt_api.delete_request(f"sync/playback/{i}")
+
+    def final_chapter(self):
+        try:
+            final_chapter = xbmc.getInfoLabel('Player.Chapters')
+            if final_chapter:
+                final_chapter = float(final_chapter.split(',')[-1])
+                if final_chapter >= 90:
+                    return final_chapter
+        except Exception:  # noqa: broad-except
+            pass
+        return None
 
 
 class PlayerDialogs(xbmc.Player):
