@@ -387,19 +387,18 @@ Added support for Kodi v19 (Matrix)
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.cinema_city_ro" version="1.0.6" name="[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO[/COLOR]" provider-name="[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO[/COLOR]">
+</addon><addon id="plugin.video.cinema_city" version="0.1.0" name="Cinema City" provider-name="Cinema City">
     <requires>
-        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="xbmc.python" version="3.0.1" />
         <import addon="script.module.requests" version="2.22.0" />
+        <import addon="inputstream.adaptive" version="20.3.0" />
     </requires>
     <extension point="xbmc.python.pluginsource" library="cinema.py">
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
-        <summary lang="ro">[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO - Streaming România -[/COLOR]</summary>
-        <description lang="ro">[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO[/COLOR]</description>
-        <disclaimer lang="ro">[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO este disponibil gratuit[/COLOR]</disclaimer>
-        <language>ro</language>
+        <summary lang="ro">Cinema City - Streaming România 2026</summary>
+        <description lang="ro">Addon modular pentru filme și seriale cu subtitrări.</description>
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>
@@ -518,6 +517,28 @@ In addition to what livestreams allowed you to do, you can now,
 		<language>en</language>
 	</extension>	
 	
+</addon><addon id="plugin.video.neo_flix" name="[COLORlime]Neo Flix[/COLOR]" version="3.4.02" provider-name="">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+		<import addon="script.module.resolveurl" />
+		<import addon="script.module.requests" />
+        <import addon="script.module.inputstreamhelper" />
+        <import addon="inputstream.adaptive" version="2.6.0" />
+    </requires>
+	 <extension point="xbmc.python.pluginsource" library="main.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en" />
+	<description lang="en_GB">No Streams Are Stored Locally-All Are Available Freely On The Internet-A Mixture Of Free And Debrid Links</description>
+    <platform>all</platform>
+    <language>en</language>
+    <license>GPL-2.0-or-later</license>
+	<assets>
+		<icon>icon.png</icon>
+		<fanart>fanart.jpg</fanart>
+  </assets>
+  </extension>
 </addon><addon id="plugin.video.playlistbee" name="[COLORorangered]Bee[/COLOR]" version="3.1" provider-name="Nux007, Publish3r, Silhouette2022,Bee,1X and Romy">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -1210,6 +1231,33 @@ In addition to what livestreams allowed you to do, you can now,
             Debrid account status now visible from Seren settings
         </news>
     </extension>
+</addon><addon id="plugin.video.sporthdme" name="SportHD" version="0.1.84" provider-name="Bugatsinho">
+  <requires>
+    
+    <import addon="script.module.dateutil" />
+    <import addon="script.module.six" />
+    <import addon="script.module.requests" version="2.19.1" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">SportHD by Bugatsinho</summary>
+    <description lang="en">Sport Streams from SportHD.me</description>
+    <disclaimer lang="en">All the streams on this add-on are hosted on the third party site and uploaded by other people. We are not responsible for any content that hosted on on the third-party sites. If you have any legal issues please contact appropriate video owners hosters.</disclaimer>
+	  <language>EN</language>
+    <license>GNU GPL, version 2</license>
+    <twitter>https://twitter.com/Bugatsinho</twitter>
+    <news>
+      - compatible with Kodi 18.x - 19.x - 20.x - 21.x version
+      - fixes credits to GKOBU
+    </news>
+
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
 </addon><addon id="plugin.video.vixmovie" name="VixMovie" version="1.6" provider-name="1x,Geamanu,apoyotech">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
@@ -1563,6 +1611,33 @@ In addition to what livestreams allowed you to do, you can now,
 			<fanart>fanart.jpg</fanart>
 		</assets>
 	</extension>
+</addon><addon id="repository.diggz" name="Diggz Repository" version="24" provider-name="Diggz">
+    <extension point="xbmc.addon.repository" name="Diggz Repository">
+        <dir minversion="20.90.0" maxversion="22.9.9">
+            <info compressed="false">https://raw.githubusercontent.com/nebulous42069/Omega/master/omega/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/nebulous42069/Omega/master/omega/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/nebulous42069/Omega/master/omega/zips/</datadir>
+        </dir>
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/Zaxxon709/zaxxon/main/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/Zaxxon709/zaxxon/main/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/Zaxxon709/zaxxon/main/zips/</datadir>
+        </dir>
+        <dir minversion="20.9.1">
+            <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/</datadir>
+        </dir>		
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Diggz Repository</summary>
+        <description>Diggz Kodi Repository.</description>
+        <disclaimer />
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
 </addon><addon id="repository.hub" name="Hub Repo" version="1.1.3" provider-name="1x">
     <extension point="xbmc.addon.repository" name="Hub Repo">
 		<dir>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<security>
+    <addons>
+        <addon id="plugin.video.neo_flix" status="enabled" />
+    </addons>
+    <timestamp>2023-11-15T12:00:00Z</timestamp>
+</security>
