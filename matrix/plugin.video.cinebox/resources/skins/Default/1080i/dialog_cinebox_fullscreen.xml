@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <defaultcontrol always="true">1000</defaultcontrol>
+    <animation effect="slide" start="0,1080" end="0,0" time="400">WindowOpen</animation>
+    <animation effect="fade" start="0" end="100" time="400">WindowOpen</animation>
+    <variables>
+        <variable name="CineboxLabelColor">
+            <value condition="Control.HasFocus(1000)">white</value>
+            <value>red</value>
+        </variable>
+    </variables>
+    <controls>
+
+        <!-- Background sólido + fanart com fade -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="FF000000">AddonWindow/white.png</texture>
+        </control>
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <aspectratio>scale</aspectratio>
+            <texture>$INFO[Window.Property(info.fanart)]</texture>
+            <animation effect="fade" start="0" end="25" time="0" tween="sine">WindowOpen</animation>
+            <visible>!String.IsEmpty(Window.Property(info.fanart))</visible>
+        </control>
+
+        <!-- Panel.png REDUZIDO para não cobrir o poster -->
+        <control type="image">
+            <left>0</left><top>0</top><width>100%</width><height>100%</height>
+            <texture>panel.png</texture>
+            <colordiffuse>E0000000</colordiffuse>
+        </control>
+
+
+        <!-- Logo -->
+        <control type="image">
+            <left>50</left><top>15</top><width>200</width><height>120</height>
+            <aspectratio>keep</aspectratio>
+            <texture>logo.png</texture>
+        </control>
+
+        <!-- Botão Qualidade -->
+        <control type="button" id="1300">
+            <left>300</left><top>40</top><width>250</width><height>50</height>
+            <font>font14</font><textcolor>black</textcolor><focusedcolor>white</focusedcolor><align>center</align>
+            <texturenofocus>common/umbbutton_pill.png</texturenofocus>
+            <texturefocus colordiffuse="FFFF0000">common/umbbutton_pill.png</texturefocus>
+            <label>Qualidade</label>
+            <ondown>1000</ondown><onleft>1500</onleft><onright>1400</onright>
+        </control>
+
+        <!-- Botão Provedor -->
+        <control type="button" id="1400">
+            <left>570</left><top>40</top><width>250</width><height>50</height>
+            <font>font14</font><textcolor>black</textcolor><focusedcolor>white</focusedcolor><align>center</align>
+            <texturenofocus>common/umbbutton_pill.png</texturenofocus>
+            <texturefocus colordiffuse="FFFF0000">common/umbbutton_pill.png</texturefocus>
+            <label>Provedor</label>
+            <ondown>1000</ondown><onleft>1300</onleft><onright>1500</onright>
+        </control>
+
+        <!-- Botão Idioma -->
+        <control type="button" id="1500">
+            <left>840</left><top>40</top><width>250</width><height>50</height>
+            <font>font14</font><textcolor>black</textcolor><focusedcolor>white</focusedcolor><align>center</align>
+            <texturenofocus>common/umbbutton_pill.png</texturenofocus>
+            <texturefocus colordiffuse="FFFF0000">common/umbbutton_pill.png</texturefocus>
+            <label>Idioma</label>
+            <ondown>1000</ondown><onleft>1400</onleft><onright>1300</onright>
+        </control>
+
+
+        <!-- Poster lateral -->
+        <control type="image" id="200">
+            <top>100</top><left>1300</left>
+            <width>600</width><height>950</height>
+            <aspectratio aligny="top">stretch</aspectratio>
+            <texture diffuse="cinebox_diffuse/poster_w217_h320.png">$INFO[Window.Property(info.poster)]</texture>
+            <visible>!String.IsEmpty(Window.Property(info.poster))</visible>
+        </control>
+
+        <!-- Lista estilo Fen -->
+        <control type="list" id="1000">
+            <left>50</left>
+            <top>120</top>
+            <width>1150</width>
+            <height>950</height>
+
+            <onright>60</onright>
+            <pagecontrol>60</pagecontrol>
+            <itemgap>6</itemgap>
+            <onup>1300</onup>
+
+            <!-- ITEM LAYOUT NORMAL -->
+            <itemlayout height="150">
+                <control type="image">
+                    <left>0</left><top>10</top>
+                    <width>1150</width><height>140</height>
+                    <texture colordiffuse="E0101010" border="45">panel_rounded.png</texture>
+                </control>
+
+                <control type="image">
+                    <top>15</top><left>-10</left><width>230</width><height>120</height>
+                    <aspectratio align="center" aligny="center">keep</aspectratio>
+                    <texture>resolution/$INFO[ListItem.Property(quality)].png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(quality))</visible>
+                </control>
+
+                <!-- TAMANHO e SITE -->
+                <control type="label">
+                    <top>15</top><left>210</left><width>400</width><height>20</height>
+                    <font>font10</font><textcolor>FFCCCCCC</textcolor>
+                    <label>[COLOR red]MĂRIME:[/COLOR] $INFO[ListItem.Property(size)]</label>
+                </control>
+                <control type="label">
+                    <top>15</top><left>610</left><width>200</width><height>20</height>
+                    <font>font10</font><textcolor>FFCCCCCC</textcolor>
+                    <label>[COLOR red]SITE:[/COLOR] $INFO[ListItem.Property(provider)]</label>
+                </control>
+                <control type="label">
+                    <top>15</top><left>820</left><width>200</width><height>20</height>
+                    <font>font10</font><textcolor>FFFFFF00</textcolor>
+                    <label>[COLOR red]SEEDS:[/COLOR] $INFO[ListItem.Property(seeders)]</label>
+                </control>
+
+                <!-- HOSTER e IDIOMA -->
+                <control type="label">
+                    <top>40</top><left>210</left><width>400</width><height>20</height>
+                    <font>font10</font><textcolor>FFCCCCCC</textcolor>
+                    <label>[COLOR red]HOSTER:[/COLOR] $INFO[ListItem.Property(hoster)]</label>
+                </control>
+                <control type="label">
+                    <top>40</top><left>610</left><width>400</width><height>20</height>
+                    <font>font10</font><textcolor>FFCCCCCC</textcolor>
+                    <label>[COLOR red]LIMBĂ:[/COLOR] $INFO[ListItem.Property(languages)]</label>
+                </control>
+
+                <!-- INFORMAÇÕES -->
+                <control type="label">
+                    <top>65</top><left>210</left><width>850</width><height>20</height>
+                    <font>font10</font><textcolor>FFCCCCCC</textcolor>
+                    <label>[COLOR red]INFORMATII:[/COLOR] $INFO[ListItem.Property(codec)] | $INFO[ListItem.Property(hdr)] | $INFO[ListItem.Property(audio)] | $INFO[ListItem.Property(source)]</label>
+                </control>
+
+                <!-- TÍTULO -->
+                <control type="label">
+                    <top>90</top><left>210</left><width>850</width><height>40</height>
+                    <font>font10</font><textcolor>white</textcolor>
+                    <label>[COLOR red]TITLU:[/COLOR] $INFO[ListItem.Property(release_title)]</label>
+                </control>
+            </itemlayout>
+
+            <!-- FOCUSED LAYOUT -->
+            <focusedlayout height="150">
+                <control type="image">
+                    <left>0</left><top>10</top>
+                    <width>1150</width><height>140</height>
+                    <texture colordiffuse="FFFF0000" border="45">panel_rounded.png</texture>
+                    <visible>Control.HasFocus(1000)</visible>
+                </control>
+                <control type="image">
+                    <left>0</left><top>10</top>
+                    <width>1150</width><height>140</height>
+                    <texture colordiffuse="E0101010" border="45">panel_rounded.png</texture>
+                    <visible>!Control.HasFocus(1000)</visible>
+                </control>
+
+                <control type="image">
+                    <top>15</top><left>-10</left><width>230</width><height>120</height>
+                    <aspectratio align="center" aligny="center">keep</aspectratio>
+                    <texture>resolution/$INFO[ListItem.Property(quality)].png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(quality))</visible>
+                </control>
+
+                <!-- TAMANHO e SITE -->
+                <control type="label">
+                    <top>15</top><left>210</left><width>400</width><height>20</height>
+                    <font>font10</font><textcolor>white</textcolor>
+                    <label>[COLOR $VAR[CineboxLabelColor]]MARIME:[/COLOR] $INFO[ListItem.Property(size)]</label>
+                </control>
+                <control type="label">
+                    <top>15</top><left>610</left><width>200</width><height>20</height>
+                    <font>font10</font><textcolor>white</textcolor>
+                    <label>[COLOR $VAR[CineboxLabelColor]]SITE:[/COLOR] $INFO[ListItem.Property(provider)]</label>
+                </control>
+                <control type="label">
+                    <top>15</top><left>820</left><width>200</width><height>20</height>
+                    <font>font10</font><textcolor>FFFFFF00</textcolor>
+                    <label>[COLOR $VAR[CineboxLabelColor]]SEEDS:[/COLOR] $INFO[ListItem.Property(seeders)]</label>
+                </control>
+
+                <!-- HOSTER e IDIOMA -->
+                <control type="label">
+                    <top>40</top><left>210</left><width>400</width><height>20</height>
+                    <font>font10</font><textcolor>white</textcolor>
+                    <label>[COLOR $VAR[CineboxLabelColor]]GAZDA:[/COLOR] $INFO[ListItem.Property(hoster)]</label>
+                </control>
+                <control type="label">
+                    <top>40</top><left>610</left><width>400</width><height>20</height>
+                    <font>font10</font><textcolor>white</textcolor>
+                    <label>[COLOR $VAR[CineboxLabelColor]]LIMBA:[/COLOR] $INFO[ListItem.Property(languages)]</label>
+                </control>
+
+                <!-- INFORMAÇÕES -->
+                <control type="label">
+                    <top>65</top><left>210</left><width>850</width><height>20</height>
+                    <font>font10</font><textcolor>white</textcolor><scroll>true</scroll>
+                    <label>[COLOR $VAR[CineboxLabelColor]]INFORMATII:[/COLOR] $INFO[ListItem.Property(codec)] | $INFO[ListItem.Property(hdr)] | $INFO[ListItem.Property(audio)] | $INFO[ListItem.Property(source)]</label>
+                </control>
+
+                <!-- TÍTULO -->
+                <control type="label">
+                    <top>90</top><left>210</left><width>850</width><height>40</height>
+                    <font>font10</font><textcolor>white</textcolor><scroll>true</scroll>
+                    <label>[COLOR $VAR[CineboxLabelColor]]TITLU:[/COLOR] $INFO[ListItem.Property(release_title)]</label>
+                </control>
+            </focusedlayout>
+        </control>
+
+        <!-- Scrollbar -->
+        <control type="scrollbar" id="60">
+            <left>1210</left><top>120</top><width>15</width><height>900</height>
+            <onleft>1000</onleft>
+            <texturesliderbackground colordiffuse="FF302F2F">white.png</texturesliderbackground>
+            <texturesliderbar colordiffuse="FF555556">white.png</texturesliderbar>
+            <texturesliderbarfocus colordiffuse="FF0084FF">white.png</texturesliderbarfocus>
+            <orientation>vertical</orientation>
+        </control>
+
+    </controls>
+</window>

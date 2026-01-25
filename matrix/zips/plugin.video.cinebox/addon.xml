@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.cinebox" version="3.1.2" name="CINEBOX [COLOR red]TrainAgain[/COLOR]" provider-name="@TrainAgain2">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+    <import addon="script.module.requests" />
+    <import addon="script.module.simplejson" version="3.19.1"/> 
+    <import addon="script.module.beautifulsoup4" />
+  </requires>
+
+  <extension point="xbmc.python.pluginsource" library="main.py">
+    <provides>video</provides>
+  </extension>
+
+  <extension point="xbmc.service" library="service.py" start="login" />
+
+  <extension point="xbmc.addon.metadata">
+    <reuselanguageinvoker>false</reuselanguageinvoker>
+    
+    <description lang="ro_RO">CINEBOX TrainAgain - Centrul tău de divertisment. O bibliotecă completă de filme și seriale organizată pentru cea mai bună experiență în Kodi.</description>
+    <disclaimer lang="ro_RO"> #AudacesFortunaJuvat </disclaimer>
+    <platform>all</platform>
+    <license>GPL-3.0-only</license>
+    <source>https://telegra.ph/Hacker-03-20-5</source>
+    <email>  </email>
+    <assets>
+      <po>resources/language</po>
+      <icon>resources/images/icon.gif</icon>
+      <fanart>resources/images/fanart.jpg</fanart>
+      <screenshot>resources/images/screenshot-1.jpg</screenshot>
+      <screenshot>resources/images/screenshot-2.jpg</screenshot>
+      <screenshot>resources/images/screenshot-3.jpg</screenshot>
+    </assets>
+  </extension>
+</addon>

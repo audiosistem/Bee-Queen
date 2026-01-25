@@ -1,0 +1,20 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en_GB\n"
+
+msgctxt "#30001"
+msgid "Refresh EPG"
+msgstr "Refresh EPG"
+
+msgctxt "#30002"
+msgid "EPG refreshed"
+msgstr "EPG refreshed"
+
+msgctxt "#30003"
+msgid "EPG refresh failed"
+msgstr "EPG refresh failed"
+
+msgctxt "#30004"
+msgid "Settings"
+msgstr "Settings"

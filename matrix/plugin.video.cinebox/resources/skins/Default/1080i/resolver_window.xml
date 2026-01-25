@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="window" fullscreen="true">
+    <coordinates>
+        <left>0</left>
+        <top>0</top>
+        <width>1920</width>
+        <height>1080</height>
+    </coordinates>
+
+    <controls>
+        <!-- Background -->
+        <control type="group">
+            <width>1920</width>
+            <height>1080</height>
+            <control type="image">
+                <texture colordiffuse="FF000000">white.png</texture>
+            </control>
+            <control type="image">
+                <texture background="true">$INFO[Window(Home).Property(info.fanart)]</texture>
+                <aspectratio>scale</aspectratio>
+                <colordiffuse>33ffffff</colordiffuse>
+                <animation effect="fade" start="0" end="100" time="500">WindowOpen</animation>
+            </control>
+        </control>
+
+        <control type="group">
+            <animation type="WindowOpen" reversible="false">
+                <effect type="fade" end="100" time="400" />
+            </animation>
+
+            <!-- Logo do Addon -->
+            <control type="group">
+                <control type="image">
+                    <left>20</left>
+                    <top>20</top>
+                    <width>80</width>
+                    <height>80</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture>icon.gif</texture>
+                </control>
+                <control type="label">
+                    <left>110</left>
+                    <top>45</top>
+                    <width>auto</width>
+                    <height>30</height>
+                    <font>font13</font>
+                    <textcolor>white</textcolor>
+                    <label>[B]CINEBOX[/B] | RESOLVENDO FONTE</label>
+                </control>
+            </control>
+
+            <!-- Título / Clearlogo -->
+            <control type="group">
+                <control type="image">
+                    <top>150</top>
+                    <centerleft>50%</centerleft>
+                    <width>1000</width>
+                    <height>250</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture background="true">$INFO[Window(Home).Property(info.clearlogo)]</texture>
+                    <visible>!String.IsEmpty(Window(Home).Property(info.clearlogo))</visible>
+                </control>
+                <control type="label">
+                    <top>300</top>
+                    <width>1920</width>
+                    <height>60</height>
+                    <font>font30_title</font>
+                    <textcolor>FFF5C518</textcolor>
+                    <align>center</align>
+                    <label>[B]$INFO[Window(Home).Property(info.title)][/B]</label>
+                    <visible>String.IsEmpty(Window(Home).Property(info.clearlogo))</visible>
+                </control>
+            </control>
+
+            <!-- Spinner -->
+            <control type="image" id="1002">
+                <centerleft>50%</centerleft>
+                <centertop>50%</centertop>
+                <width>120</width>
+                <height>120</height>
+                <texture background="true">spinner.gif</texture>
+            </control>
+
+            <!-- LABEL 1: MENSAGEM DE ESPERA (Sempre presente, mas some quando o buffering começa) -->
+            <control type="label">
+                <top>650</top>
+                <centerleft>50%</centerleft>
+                <width>1200</width>
+                <height>60</height>
+                <font>font13</font>
+                <align>center</align>
+                <textcolor>white</textcolor>
+                <shadowcolor>FF000000</shadowcolor>
+                <label>ESPERANDO ELEMENTUM...</label>
+                <visible>String.IsEmpty(Window(Home).Property(CineboxStatus))</visible>
+            </control>
+
+            <!-- LABEL 2: INFORMAÇÕES DE BUFFERING (Só aparece quando houver dados, cobrindo o anterior) -->
+            <control type="textbox" id="1001">
+                <top>650</top>
+                <centerleft>50%</centerleft>
+                <width>1200</width>
+                <height>200</height>
+                <font>font13</font>
+                <align>center</align>
+                <textcolor>white</textcolor>
+                <shadowcolor>FF000000</shadowcolor>
+                <label>$INFO[Window(Home).Property(CineboxStatus)]</label>
+                <visible>!String.IsEmpty(Window(Home).Property(CineboxStatus))</visible>
+            </control>
+        </control>
+    </controls>
+</window>

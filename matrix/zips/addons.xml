@@ -387,24 +387,38 @@ Added support for Kodi v19 (Matrix)
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.cinema_city" version="0.1.0" name="Cinema City" provider-name="Cinema City">
-    <requires>
-        <import addon="xbmc.python" version="3.0.1" />
-        <import addon="script.module.requests" version="2.22.0" />
-        <import addon="inputstream.adaptive" version="20.3.0" />
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="cinema.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="ro">Cinema City - Streaming România 2026</summary>
-        <description lang="ro">Addon modular pentru filme și seriale cu subtitrări.</description>
-        <platform>all</platform>
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
-        </assets>
-    </extension>
+</addon><addon id="plugin.video.cinebox" version="3.1.2" name="CINEBOX [COLOR red]TrainAgain[/COLOR]" provider-name="@TrainAgain2">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" />
+    <import addon="script.module.simplejson" version="3.19.1" /> 
+    <import addon="script.module.beautifulsoup4" />
+  </requires>
+
+  <extension point="xbmc.python.pluginsource" library="main.py">
+    <provides>video</provides>
+  </extension>
+
+  <extension point="xbmc.service" library="service.py" start="login" />
+
+  <extension point="xbmc.addon.metadata">
+    <reuselanguageinvoker>false</reuselanguageinvoker>
+    
+    <description lang="ro_RO">CINEBOX TrainAgain - Centrul tău de divertisment. O bibliotecă completă de filme și seriale organizată pentru cea mai bună experiență în Kodi.</description>
+    <disclaimer lang="ro_RO"> #AudacesFortunaJuvat </disclaimer>
+    <platform>all</platform>
+    <license>GPL-3.0-only</license>
+    <source>https://telegra.ph/Hacker-03-20-5</source>
+    <email>  </email>
+    <assets>
+      <po>resources/language</po>
+      <icon>resources/images/icon.gif</icon>
+      <fanart>resources/images/fanart.jpg</fanart>
+      <screenshot>resources/images/screenshot-1.jpg</screenshot>
+      <screenshot>resources/images/screenshot-2.jpg</screenshot>
+      <screenshot>resources/images/screenshot-3.jpg</screenshot>
+    </assets>
+  </extension>
 </addon><addon id="plugin.video.cinema_city_ro" version="1.0.6" name="[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO[/COLOR]" provider-name="[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO[/COLOR]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -604,13 +618,15 @@ In addition to what livestreams allowed you to do, you can now,
 		 <fanart>fanart.gif</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.rotv123" name="Rotv123" version="1.1.1" provider-name="1X,AS si Geamanu">
+</addon><addon id="plugin.video.rotv123" name="Rotv123" version="1.3.0" provider-name="1X,AS si Geamanu">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
+
+    <extension point="xbmc.service" library="resources/lib/service.py" start="startup" />
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Rotv123 Player</summary>
         <summary lang="ro">Player Rotv123</summary>
@@ -626,10 +642,9 @@ In addition to what livestreams allowed you to do, you can now,
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
-            <screenshot>resources/screenshot-01.jpg</screenshot>
-            <screenshot>resources/screenshot-02.jpg</screenshot>
-            <screenshot>resources/screenshot-03.jpg</screenshot>
-        </assets>
+
+
+</assets>
     </extension>
 </addon><addon id="plugin.video.scrubsv2" version="5.1.43" name="[COLOR orange]Scrubs v2[/COLOR]" provider-name="JewBMX">
     <requires>

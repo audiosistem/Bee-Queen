@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+  <category label="EPG">
+    <setting id="epg_source_url" type="text" label="EPG source URL"
+             default="https://epgshare01.online/epgshare01/epg_ripper_RO1.xml.gz" />
+    <setting id="epg_cache_ttl_hours" type="number" label="EPG cache TTL (hours)" default="24" />
+    <setting id="epg_download_timeout" type="number" label="EPG download timeout (seconds)" default="25" />
+  </category>
+
+  <category label="Playback">
+    <setting id="playback_mode" type="enum" label="Playback mode" values="Automatic (fallback)|Manual (choose source)" default="0" />
+    <setting id="play_user_agent" type="text" label="User-Agent"
+             default="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0" />
+    <setting id="play_referer" type="text" label="Referer" default="https://rotv123.com/" />
+    <setting id="play_origin" type="text" label="Origin (optional)" default="https://rotv123.com" />
+  </category>
+
+  <category label="UI">
+    <setting id="show_epg_in_list" type="bool" label="Show NOW/NEXT in channel list" default="true" />
+    <setting id="enable_debug_log" type="bool" label="Enable debug logging" default="false" />
+  </category>
+</settings>
