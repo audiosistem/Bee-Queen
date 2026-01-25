@@ -618,7 +618,7 @@ In addition to what livestreams allowed you to do, you can now,
 		 <fanart>fanart.gif</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.rotv123" name="Rotv123" version="1.3.0" provider-name="1X,AS si Geamanu">
+</addon><addon id="plugin.video.rotv123" name="Rotv123" version="1.3.0" provider-name="1X,AS,Mars la Moscova si Geamanu">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
     </requires>
