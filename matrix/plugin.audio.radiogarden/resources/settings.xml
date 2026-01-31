@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="30000">
+        <setting label="30001" type="lsep"/>
+        <setting id="language_select" type="enum" label="Idioma / Language / Limbă" values="Auto|Português|English|Română" default="0"/>
+        <setting id="search_limit" type="slider" label="30002" default="50" range="10,10,100" option="int"/>
+        <setting id="timeout" type="slider" label="30003" default="10" range="5,1,30" option="int"/>
+    </category>
+    <category label="30010">
+        <setting label="30011" type="lsep"/>
+        <setting id="enable_notifications" type="bool" label="30012" default="true"/>
+        <setting id="show_country_code" type="bool" label="30013" default="false"/>
+    </category>
+    <category label="30020">
+        <setting label="30021" type="lsep"/>
+        <setting type="action" label="30022" action="RunPlugin(plugin://plugin.audio.radiogarden/?mode=clear_cache)"/>
+    </category>
+</settings>
