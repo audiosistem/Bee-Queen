@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# resources/lib/utils.py - VERSÃO OTIMIZADA COM SUPORTE COMPLETO A LEGENDAS
+# resources/lib/utils.py - OPTIMIZED VERSION WITH FULL SUBTITLE SUPPORT
 
 import xbmcaddon
 import xbmc
@@ -10,9 +10,9 @@ from urllib.parse import urlencode
 ADDON = xbmcaddon.Addon()
 BASE_URL = sys.argv[0]
 
-# === CACHE INTELIGENTE DE SETTINGS ===
+# === INTELLIGENT SETTINGS CACHE ===
 class SettingsCache:
-    """Cache de settings com invalidação automática"""
+    """Settings cache with automatic invalidation"""
     def __init__(self):
         self._cache = {}
         self._last_check = 0
@@ -47,7 +47,7 @@ class SettingsCache:
 
 _SETTINGS = SettingsCache()
 
-# === MAPA DE QUALIDADES ===
+# === QUALITY MAP ===
 _IMAGE_QUALITY_MAP = {
     "low":      {"poster": "w342",    "backdrop": "w780"},
     "medium":   {"poster": "w500",    "backdrop": "w1280"},
@@ -55,7 +55,7 @@ _IMAGE_QUALITY_MAP = {
     "original": {"poster": "original", "backdrop": "original"}
 }
 
-# === MAPA DE TAMANHOS DE PÔSTER (NOVO) ===
+# === POSTER SIZE MAP (NEW) ===
 _POSTER_SIZE_MAP = {
     "small":    "w342",
     "medium":   "w500",
@@ -81,7 +81,7 @@ def get_image_resolutions():
     return _resolution_cache
 
 def get_poster_size():
-    """Retorna o tamanho do pôster configurado"""
+    """Returns the configured poster size"""
     poster_size = _SETTINGS.get("poster_size", "medium").lower()
     return _POSTER_SIZE_MAP.get(poster_size, _POSTER_SIZE_MAP["medium"])
 
@@ -161,55 +161,53 @@ def safe_float(value, default=0.0):
     return default
 
 def _get_trakt_context_items(tmdb_id, media_type):
-    """
-    ✅ Menu de contexto LIMPO - SEM Watchlist
+    """✅ CLEAN context menu - NO Watchlist
     
-    Estrutura Final:
-    - Favoritos (local + Trakt Watchlist automático)
-    - Trakt: Coleção (mídia física)
-    - Trakt: Assistido
-    - Trakt: Avaliar
-    """
+    Final Structure:
+    - Favorites (local + automatic Trakt Watchlist)
+    - Trakt: Collection (physical media)
+    - Trakt: Watched
+    - Trakt: Evaluate"""
     try:
         from resources.lib.trakt_sync import get_trakt_settings
         settings = get_trakt_settings()
         
         if not settings.get('access_token'):
-            return []  # Trakt não autenticado
+            return []  # Unauthenticated Trakt
         
         items = []
         
-        # ============================================
-        # COLEÇÃO (para quem coleciona DVDs/Blu-rays/Arquivos)
-        # ============================================
+        # ==========================================================
+        # COLLECTION (for those who collect DVDs/Blu-rays/Files)
+        # ==========================================================
         items.append((
-            'Trakt: Adicionar à Coleção',
+            'Trakt: Add to Collection',
             f'RunPlugin({get_url(action="trakt_add_collection", tmdb_id=tmdb_id, media_type=media_type)})'
         ))
         
         items.append((
-            'Trakt: Remover da Coleção',
+            'Trakt: Remove from Collection',
             f'RunPlugin({get_url(action="trakt_remove_collection", tmdb_id=tmdb_id, media_type=media_type)})'
         ))
         
-        # ============================================
-        # ASSISTIDO (marca como visto)
-        # ============================================
+        # ==========================================================
+        # WATCHED (mark as seen)
+        # ==========================================================
         items.append((
-            'Trakt: Marcar como Assistido',
+            'Trakt: Mark as Watched',
             f'RunPlugin({get_url(action="trakt_mark_watched", tmdb_id=tmdb_id, media_type=media_type)})'
         ))
         
         items.append((
-            'Trakt: Remover Assistido',
+            'Trakt: Remove Watched',
             f'RunPlugin({get_url(action="trakt_remove_watched", tmdb_id=tmdb_id, media_type=media_type)})'
         ))
         
-        # ============================================
-        # AVALIAR (dá nota 1-10)
-        # ============================================
+        # ==========================================================
+        # EVALUATE (grades 1-10)
+        # ==========================================================
         items.append((
-            'Trakt: Avaliar',
+            'Trakt: Evaluate',
             f'RunPlugin({get_url(action="trakt_rate", tmdb_id=tmdb_id, media_type=media_type)})'
         ))
         
@@ -219,24 +217,22 @@ def _get_trakt_context_items(tmdb_id, media_type):
         return []
 
 def create_video_item(item_data, media_type, show_data=None):
-    """
-    Cria ListItem otimizado com suporte COMPLETO para addons de legendas.
+    """Creates optimized ListItem with FULL support for subtitle addons.
     
-    MUDANÇAS CRÍTICAS:
-    ✅ imdbnumber em video_info (além de uniqueids)
-    ✅ season/episode garantidos como int
-    ✅ tvshowtitle sempre presente em episódios
-    ✅ year como int (alguns addons esperam int, não string)
-    """
+    CRITICAL CHANGES:
+    ✅ imdbnumber in video_info (in addition to uniqueids)
+    ✅ season/episode guaranteed as int
+    ✅ tvshowtitle always present in episodes
+    ✅ year as int (some addons expect int, not string)"""
     
-    # === INFO BÁSICA ===
-    label = item_data.get('title') or item_data.get('name') or 'Sem Título'
+    # === BASIC INFO ===
+    label = item_data.get('title') or item_data.get('name') or 'Untitled'
     li = xbmcgui.ListItem(label=label)
     
-    # === RESOLUÇÕES (CACHED) ===
+    # === RESOLUTIONS (CACHED) ===
     res = get_image_resolutions()
     
-    # === DATA E ANO ===
+    # === DATE AND YEAR ===
     aired = normalize_date(item_data.get('premiered', ''))
     year = safe_int(item_data.get('year'))
     
@@ -244,14 +240,14 @@ def create_video_item(item_data, media_type, show_data=None):
     runtime_min = safe_int(item_data.get('runtime'))
     duration_sec = runtime_min * 60
     
-    # === STUDIO E MPAA ===
+    # === STUDIO AND MPAA ===
     studios = item_data.get('studio') or item_data.get('networks') or []
     studio_str = " / ".join(studios) if isinstance(studios, list) else str(studios) if studios else ""
     mpaa = item_data.get('certification') or item_data.get('classification') or ""
     
-    # ============================================
-    # VIDEO INFO - ESTRUTURA CORRIGIDA
-    # ============================================
+    # ==========================================================
+    # VIDEO INFO - CORRECTED STRUCTURE
+    # ==========================================================
     synopsis = item_data.get('synopsis', '')
     from .sinopse import enriquecer_sinopse_filme, enriquecer_sinopse_serie
     if media_type == 'movie':
@@ -264,7 +260,7 @@ def create_video_item(item_data, media_type, show_data=None):
         'originaltitle': item_data.get('original_title', ''),
         'plot': synopsis,
         'aired': aired,
-        'year': year,  # ✅ COMO INT (alguns addons esperam int)
+        'year': year,  # ✅ AS INT (some addons expect int)
         'duration': duration_sec,
         'studio': studio_str,
         'mpaa': mpaa,
@@ -274,42 +270,42 @@ def create_video_item(item_data, media_type, show_data=None):
         'votes': safe_int(item_data.get('vote_count')),
     }
     
-    # ============================================
-    # ✅ CRÍTICO: imdbnumber PARA LEGENDAS
-    # ============================================
+    # ==========================================================
+    # ✅ CRITICAL: imdbnumber FOR SUBTITLES
+    # ==========================================================
     imdb_id = item_data.get('imdb_id', '')
     if imdb_id:
-        video_info['imdbnumber'] = imdb_id  # ✅ ESSENCIAL para legendas
+        video_info['imdbnumber'] = imdb_id  # ✅ ESSENTIAL for subtitles
     
-    # ============================================
-    # ✅ LÓGICA ESPECÍFICA PARA EPISÓDIOS
-    # ============================================
+    # ==========================================================
+    # ✅ EPISODES-SPECIFIC LOGIC
+    # ==========================================================
     if media_type == 'episode':
-        # Season/Episode como INT (obrigatório)
+        # Season/Episode as INT (required)
         season = safe_int(item_data.get('season'))
         episode = safe_int(item_data.get('episode'))
         
         if season > 0:
-            video_info['season'] = season  # ✅ INT, não string
+            video_info['season'] = season  # ✅ INT, not string
         if episode > 0:
-            video_info['episode'] = episode  # ✅ INT, não string
+            video_info['episode'] = episode  # ✅ INT, not string
         
-        # ✅ CRÍTICO: Título da série (para legendas)
+        # ✅ CRITICAL: Series title (for subtitles)
         if show_data:
             video_info['tvshowtitle'] = show_data.get('title', '')
         elif item_data.get('show_title'):
             video_info['tvshowtitle'] = item_data['show_title']
         
-        # Título do episódio (opcional)
+        # Episode title (optional)
         if item_data.get('episode_title'):
             video_info['title'] = item_data['episode_title']
     
-    # Remove valores vazios
+    # Remove empty values
     video_info = {k: v for k, v in video_info.items() if v not in (None, '', 0, 0.0)}
     
     li.setInfo('video', video_info)
     
-    # ✅ Compatibilidade com Kodi 20+ (VideoInfoTag)
+    # ✅ Compatibility with Kodi 20+ (VideoInfoTag)
     try:
         info_tag = li.getVideoInfoTag()
         info_tag.setMediaType(media_type)
@@ -329,9 +325,9 @@ def create_video_item(item_data, media_type, show_data=None):
     except:
         pass
 
-    # ============================================
-    # ✅ UNIQUE IDS (PADRÃO KODI 18+)
-    # ============================================
+    # ==========================================================
+    # ✅ UNIQUE IDS (KODI STANDARD 18+)
+    # ==========================================================
     unique_ids = {}
     
     if imdb_id:
@@ -344,9 +340,9 @@ def create_video_item(item_data, media_type, show_data=None):
     if unique_ids:
         li.setUniqueIDs(unique_ids, 'tmdb' if tmdb_id else 'imdb')
     
-    # ============================================
-    # PROPERTIES (PARA SKINS E ADDONS)
-    # ============================================
+    # ==========================================================
+    # PROPERTIES (FOR SKINS AND ADDONS)
+    # ==========================================================
     if tmdb_id:
         li.setProperty('tmdb_id', str(tmdb_id))
     
@@ -368,7 +364,7 @@ def create_video_item(item_data, media_type, show_data=None):
     if mpaa:
         li.setProperty('classification', mpaa)
     
-    # ✅ PROPERTIES PARA EPISÓDIOS
+    # ✅ PROPERTIES FOR EPISODES
     if media_type == 'episode':
         season = safe_int(item_data.get('season'))
         episode = safe_int(item_data.get('episode'))
@@ -378,14 +374,14 @@ def create_video_item(item_data, media_type, show_data=None):
         if episode > 0:
             li.setProperty('episode', str(episode))
         
-        # Título da série (para skins)
+        # Series title (for skins)
         if show_data:
             li.setProperty('tvshowtitle', show_data.get('title', ''))
         elif item_data.get('show_title'):
             li.setProperty('tvshowtitle', item_data['show_title'])
     
-    # === ARTE ===
-    # ✅ NOVO: Usar tamanho de pôster configurável
+    # === ART ===
+    # ✅ NEW: Use configurable poster size
     poster_size = get_poster_size()
     poster = scale_tmdb(item_data.get('poster'), poster_size)
     backdrop = scale_tmdb(item_data.get('backdrop'), res['backdrop'])
@@ -401,7 +397,7 @@ def create_video_item(item_data, media_type, show_data=None):
     if clearlogo:
         art_dict['clearlogo'] = clearlogo
     
-    # ✅ Para episódios, pode ter thumb e fanart específicos
+    # ✅ For episodes, you can have specific thumbnails and fanart
     if media_type == 'episode':
         if item_data.get('episode_poster'):
             art_dict['thumb'] = item_data['episode_poster']
@@ -416,22 +412,22 @@ def create_video_item(item_data, media_type, show_data=None):
     if media_type in ('movie', 'episode'):
         li.setProperty('IsPlayable', 'true')
     
-    # === MENU DE CONTEXTO ===
+    # === CONTEXT MENU ===
     if tmdb_id and media_type in ('movie', 'tvshow'):
         context_items = []
         
-        # FAVORITOS
+        # FAVORITES
         context_items.append((
-            'Adicionar à Minha Lista',
+            'Add to My List',
             f'RunPlugin({get_url(action="add_to_favorites", tmdb_id=tmdb_id, media_type=media_type)})'
         ))
         
         context_items.append((
-            'Remover da Minha Lista',
+            'Remove from My List',
             f'RunPlugin({get_url(action="remove_from_favorites", tmdb_id=tmdb_id, media_type=media_type)})'
         ))
         
-        # ✅ TRAKT (adiciona apenas se autenticado)
+        # ✅ TRAKT (adds only if authenticated)
         trakt_items = _get_trakt_context_items(tmdb_id, media_type)
         if trakt_items:
             context_items.extend(trakt_items)
@@ -441,12 +437,12 @@ def create_video_item(item_data, media_type, show_data=None):
     return li
 
 
-# ============================================
-# VERSÃO COM BIBLIOTECA E TRAKT
-# ============================================
+# ==========================================================
+# VERSION WITH LIBRARY AND TRAKT
+# ==========================================================
 
 def create_video_item_with_library(item_data, media_type, show_data=None):
-    """Versão com menu de contexto estendido"""
+    """Version with extended context menu"""
     li = create_video_item(item_data, media_type, show_data)
     
     tmdb_id = item_data.get('tmdb_id')
@@ -457,20 +453,20 @@ def create_video_item_with_library(item_data, media_type, show_data=None):
             
             context_items = []
             
-            # FAVORITOS
+            # FAVORITES
             add_fav_url = get_url(action='add_to_favorites', tmdb_id=tmdb_id, media_type=media_type)
-            context_items.append(('Adicionar à Minha Lista', f'RunPlugin({add_fav_url})'))
+            context_items.append(('Add to My List', f'RunPlugin({add_fav_url})'))
             
             remove_fav_url = get_url(action='remove_from_favorites', tmdb_id=tmdb_id, media_type=media_type)
-            context_items.append(('Remover da Minha Lista', f'RunPlugin({remove_fav_url})'))
+            context_items.append(('Remove from My List', f'RunPlugin({remove_fav_url})'))
             
-            # BIBLIOTECA
+            # LIBRARY
             if not in_library:
                 lib_add_url = get_url(action='library_add', tmdb_id=tmdb_id, media_type=media_type)
-                context_items.append(('Adicionar à Biblioteca', f'RunPlugin({lib_add_url})'))
+                context_items.append(('Add to Library', f'RunPlugin({lib_add_url})'))
             else:
                 lib_remove_url = get_url(action='library_remove', tmdb_id=tmdb_id, media_type=media_type)
-                context_items.append(('Remover da Biblioteca', f'RunPlugin({lib_remove_url})'))
+                context_items.append(('Remove from Library', f'RunPlugin({lib_remove_url})'))
             
             # TRAKT
             try:
@@ -480,8 +476,8 @@ def create_video_item_with_library(item_data, media_type, show_data=None):
                     trakt_add_url = get_url(action='trakt_add_collection', tmdb_id=tmdb_id, media_type=media_type)
                     trakt_watched_url = get_url(action='trakt_mark_watched', tmdb_id=tmdb_id, media_type=media_type)
                     
-                    context_items.append(('Trakt: Coleção', f'RunPlugin({trakt_add_url})'))
-                    context_items.append(('Trakt: Assistido', f'RunPlugin({trakt_watched_url})'))
+                    context_items.append(('Trakt: Collection', f'RunPlugin({trakt_add_url})'))
+                    context_items.append(('Trakt: Watched', f'RunPlugin({trakt_watched_url})'))
             except ImportError:
                 pass
             
@@ -493,9 +489,9 @@ def create_video_item_with_library(item_data, media_type, show_data=None):
     return li
 
 
-# ============================================
-# VIEW MODE E OUTROS HELPERS
-# ============================================
+# ==========================================================
+# VIEW MODE AND OTHER HELPERS
+# ==========================================================
 
 VIEW_MODE_MAP = {
     'list': 50, 'poster': 51, 'iconwall': 52, 'shift': 53,
@@ -505,14 +501,14 @@ VIEW_MODE_MAP = {
 
 def set_view_mode(content_type, view_setting_key='view_mode', default='wall'):
     try:
-        # Se for conteúdo de vídeo e o modo pôster estiver forçado, usa 'wall' (pôster)
+        # If it is video content and poster mode is forced, use 'wall' (poster)
         force_poster = _SETTINGS.get_bool("force_poster_mode", True)
         if force_poster and content_type in ['movies', 'tvshows', 'seasons', 'episodes']:
             view_mode_setting = 'wall'
         else:
             view_mode_setting = _SETTINGS.get(view_setting_key, default)
             
-        # Se houver um ID customizado, ele tem prioridade
+        # If there is a custom ID, it takes priority
         custom_id = safe_int(_SETTINGS.get("custom_view_id"), 0)
         if custom_id > 0:
             view_mode_id = custom_id
@@ -535,7 +531,7 @@ def set_view_mode(content_type, view_setting_key='view_mode', default='wall'):
         xbmc.executebuiltin(f'Container.SetViewMode({view_mode_id})')
         
     except Exception as e:
-        xbmc.log(f"[ViewMode] Erro: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[ViewMode] Error: {e}", xbmc.LOGERROR)
 
 def with_view_mode(content, is_menu=False):
     def decorator(func):
@@ -559,9 +555,8 @@ def format_runtime(minutes):
     return f"{mins}min"
 
 def format_file_size(bytes_size):
-    """Formata tamanho de arquivo em bytes para formato legível.
-    Retorna None se o tamanho não for válido.
-    """
+    """Formats file size in bytes to readable format.
+    Returns None if the size is not valid."""
     if not bytes_size or bytes_size <= 0:
         return None
     
@@ -569,7 +564,7 @@ def format_file_size(bytes_size):
         bytes_size = float(bytes_size)
         for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
             if bytes_size < 1024.0:
-                # Não mostrar tamanhos muito pequenos (menos de 1 KB)
+                # Do not show very small sizes (less than 1 KB)
                 if bytes_size < 1.0 and unit == 'B':
                     return None
                 return f"{bytes_size:.1f} {unit}"
@@ -584,23 +579,21 @@ def truncate_text(text, max_length=100):
     return text[:max_length-3] + "..."
 
 
-# ============================================
-# ✅ HELPER PARA BUSCAR PADRÕES DE ANIME
-# ============================================
+# ==========================================================
+# ✅ HELPER TO SEARCH ANIME PATTERNS
+# ==========================================================
 def get_anime_search_patterns(season, episode):
-    """
-    Gera variações de S/E para animes (ex: S01E01, S1E1)
+    """Generates S/E variations for anime (e.g. S01E01, S1E1)
     
     Returns:
-        list: [(1, 1), (01, 01)] como tuplas de int
-    """
+        list: [(1, 1), (01, 01)] as tuples of int"""
     s = safe_int(season)
     e = safe_int(episode)
     
     if s == 0 or e == 0:
         return []
     
-    # Retorna variações: [(1,1), (01,01)]
+    # Returns variations: [(1,1), (01,01)]
     return [
         (s, e),        # S1:E1
         (f"{s:02d}", f"{e:02d}")  # S01:E01

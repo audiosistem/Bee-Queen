@@ -11,7 +11,7 @@
     </variables>
     <controls>
 
-        <!-- Background sólido + fanart com fade -->
+        <!-- Solid background + faded fanart -->
         <control type="image">
             <left>0</left><top>0</top><width>1920</width><height>1080</height>
             <texture colordiffuse="FF000000">AddonWindow/white.png</texture>
@@ -24,7 +24,7 @@
             <visible>!String.IsEmpty(Window.Property(info.fanart))</visible>
         </control>
 
-        <!-- Panel.png REDUZIDO para não cobrir o poster -->
+        <!-- Panel.png REDUCED to not cover the poster -->
         <control type="image">
             <left>0</left><top>0</top><width>100%</width><height>100%</height>
             <texture>panel.png</texture>
@@ -39,33 +39,33 @@
             <texture>logo.png</texture>
         </control>
 
-        <!-- Botão Qualidade -->
+        <!-- Quality button -->
         <control type="button" id="1300">
             <left>300</left><top>40</top><width>250</width><height>50</height>
             <font>font14</font><textcolor>black</textcolor><focusedcolor>white</focusedcolor><align>center</align>
             <texturenofocus>common/umbbutton_pill.png</texturenofocus>
             <texturefocus colordiffuse="FFFF0000">common/umbbutton_pill.png</texturefocus>
-            <label>Qualidade</label>
+            <label>Quality</label>
             <ondown>1000</ondown><onleft>1500</onleft><onright>1400</onright>
         </control>
 
-        <!-- Botão Provedor -->
+        <!-- Provider button -->
         <control type="button" id="1400">
             <left>570</left><top>40</top><width>250</width><height>50</height>
             <font>font14</font><textcolor>black</textcolor><focusedcolor>white</focusedcolor><align>center</align>
             <texturenofocus>common/umbbutton_pill.png</texturenofocus>
             <texturefocus colordiffuse="FFFF0000">common/umbbutton_pill.png</texturefocus>
-            <label>Provedor</label>
+            <label>Provider</label>
             <ondown>1000</ondown><onleft>1300</onleft><onright>1500</onright>
         </control>
 
-        <!-- Botão Idioma -->
+        <!-- Language button -->
         <control type="button" id="1500">
             <left>840</left><top>40</top><width>250</width><height>50</height>
             <font>font14</font><textcolor>black</textcolor><focusedcolor>white</focusedcolor><align>center</align>
             <texturenofocus>common/umbbutton_pill.png</texturenofocus>
             <texturefocus colordiffuse="FFFF0000">common/umbbutton_pill.png</texturefocus>
-            <label>Idioma</label>
+            <label>Language</label>
             <ondown>1000</ondown><onleft>1400</onleft><onright>1300</onright>
         </control>
 
@@ -79,7 +79,7 @@
             <visible>!String.IsEmpty(Window.Property(info.poster))</visible>
         </control>
 
-        <!-- Lista estilo Fen -->
+        <!-- Fen-style list -->
         <control type="list" id="1000">
             <left>50</left>
             <top>120</top>
@@ -106,11 +106,11 @@
                     <visible>!String.IsEmpty(ListItem.Property(quality))</visible>
                 </control>
 
-                <!-- TAMANHO e SITE -->
+                <!-- SIZE and SITE -->
                 <control type="label">
                     <top>15</top><left>210</left><width>400</width><height>20</height>
                     <font>font10</font><textcolor>FFCCCCCC</textcolor>
-                    <label>[COLOR red]MĂRIME:[/COLOR] $INFO[ListItem.Property(size)]</label>
+                    <label>[COLOR red]SIZE:[/COLOR] $INFO[ListItem.Property(size)]</label>
                 </control>
                 <control type="label">
                     <top>15</top><left>610</left><width>200</width><height>20</height>
@@ -123,7 +123,7 @@
                     <label>[COLOR red]SEEDS:[/COLOR] $INFO[ListItem.Property(seeders)]</label>
                 </control>
 
-                <!-- HOSTER e IDIOMA -->
+                <!-- HOSTER and LANGUAGE -->
                 <control type="label">
                     <top>40</top><left>210</left><width>400</width><height>20</height>
                     <font>font10</font><textcolor>FFCCCCCC</textcolor>
@@ -132,21 +132,21 @@
                 <control type="label">
                     <top>40</top><left>610</left><width>400</width><height>20</height>
                     <font>font10</font><textcolor>FFCCCCCC</textcolor>
-                    <label>[COLOR red]LIMBĂ:[/COLOR] $INFO[ListItem.Property(languages)]</label>
+                    <label>[COLOR red]LANGUAGE:[/COLOR] $INFO[ListItem.Property(languages)]</label>
                 </control>
 
-                <!-- INFORMAÇÕES -->
+                <!-- INFORMATION -->
                 <control type="label">
                     <top>65</top><left>210</left><width>850</width><height>20</height>
                     <font>font10</font><textcolor>FFCCCCCC</textcolor>
-                    <label>[COLOR red]INFORMATII:[/COLOR] $INFO[ListItem.Property(codec)] | $INFO[ListItem.Property(hdr)] | $INFO[ListItem.Property(audio)] | $INFO[ListItem.Property(source)]</label>
+                    <label>[COLOR red]INFORMATION:[/COLOR] $INFO[ListItem.Property(codec)] | $INFO[ListItem.Property(hdr)] | $INFO[ListItem.Property(audio)] | $INFO[ListItem.Property(source)]</label>
                 </control>
 
-                <!-- TÍTULO -->
+                <!-- TITLE -->
                 <control type="label">
                     <top>90</top><left>210</left><width>850</width><height>40</height>
                     <font>font10</font><textcolor>white</textcolor>
-                    <label>[COLOR red]TITLU:[/COLOR] $INFO[ListItem.Property(release_title)]</label>
+                    <label>[COLOR red]TITLE:[/COLOR] $INFO[ListItem.Property(release_title)]</label>
                 </control>
             </itemlayout>
 
@@ -172,11 +172,11 @@
                     <visible>!String.IsEmpty(ListItem.Property(quality))</visible>
                 </control>
 
-                <!-- TAMANHO e SITE -->
+                <!-- SIZE and SITE -->
                 <control type="label">
                     <top>15</top><left>210</left><width>400</width><height>20</height>
                     <font>font10</font><textcolor>white</textcolor>
-                    <label>[COLOR $VAR[CineboxLabelColor]]MARIME:[/COLOR] $INFO[ListItem.Property(size)]</label>
+                    <label>[COLOR $VAR[CineboxLabelColor]]SIZE:[/COLOR] $INFO[ListItem.Property(size)]</label>
                 </control>
                 <control type="label">
                     <top>15</top><left>610</left><width>200</width><height>20</height>
@@ -189,30 +189,30 @@
                     <label>[COLOR $VAR[CineboxLabelColor]]SEEDS:[/COLOR] $INFO[ListItem.Property(seeders)]</label>
                 </control>
 
-                <!-- HOSTER e IDIOMA -->
+                <!-- HOSTER and LANGUAGE -->
                 <control type="label">
                     <top>40</top><left>210</left><width>400</width><height>20</height>
                     <font>font10</font><textcolor>white</textcolor>
-                    <label>[COLOR $VAR[CineboxLabelColor]]GAZDA:[/COLOR] $INFO[ListItem.Property(hoster)]</label>
+                    <label>[COLOR $VAR[CineboxLabelColor]]HOSTER:[/COLOR] $INFO[ListItem.Property(hoster)]</label>
                 </control>
                 <control type="label">
                     <top>40</top><left>610</left><width>400</width><height>20</height>
                     <font>font10</font><textcolor>white</textcolor>
-                    <label>[COLOR $VAR[CineboxLabelColor]]LIMBA:[/COLOR] $INFO[ListItem.Property(languages)]</label>
+                    <label>[COLOR $VAR[CineboxLabelColor]]LANGUAGE:[/COLOR] $INFO[ListItem.Property(languages)]</label>
                 </control>
 
-                <!-- INFORMAÇÕES -->
+                <!-- INFORMATION -->
                 <control type="label">
                     <top>65</top><left>210</left><width>850</width><height>20</height>
                     <font>font10</font><textcolor>white</textcolor><scroll>true</scroll>
-                    <label>[COLOR $VAR[CineboxLabelColor]]INFORMATII:[/COLOR] $INFO[ListItem.Property(codec)] | $INFO[ListItem.Property(hdr)] | $INFO[ListItem.Property(audio)] | $INFO[ListItem.Property(source)]</label>
+                    <label>[COLOR $VAR[CineboxLabelColor]]INFORMATION:[/COLOR] $INFO[ListItem.Property(codec)] | $INFO[ListItem.Property(hdr)] | $INFO[ListItem.Property(audio)] | $INFO[ListItem.Property(source)]</label>
                 </control>
 
-                <!-- TÍTULO -->
+                <!-- TITLE -->
                 <control type="label">
                     <top>90</top><left>210</left><width>850</width><height>40</height>
                     <font>font10</font><textcolor>white</textcolor><scroll>true</scroll>
-                    <label>[COLOR $VAR[CineboxLabelColor]]TITLU:[/COLOR] $INFO[ListItem.Property(release_title)]</label>
+                    <label>[COLOR $VAR[CineboxLabelColor]]TITLE:[/COLOR] $INFO[ListItem.Property(release_title)]</label>
                 </control>
             </focusedlayout>
         </control>

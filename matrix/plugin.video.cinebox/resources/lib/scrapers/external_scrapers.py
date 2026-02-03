@@ -9,9 +9,7 @@ from resources.lib.config_manager import get_enabled_scraper
 from resources.lib.debug_logger import logger
 
 def get_module_display_name(module_id):
-    """
-    Obtém o nome amigável do módulo a partir do addon.xml
-    """
+    """Gets the friendly name of the module from addon.xml"""
     try:
         try:
             addons_path = xbmcvfs.translatePath('special://home/addons/')
@@ -31,22 +29,20 @@ def get_module_display_name(module_id):
     return module_id
 
 def scrape_module(module_id, imdb_id, media_type, season, episode, item_data, cancel_event=None):
-    """
-    Executa scraping em um módulo específico.
-    Retorna lista de streams encontrados.
-    """
+    """Performs scraping on a specific module.
+    Returns list of streams found."""
     streams = []
     try:
-        xbmc.log(f"[External-Scraper] Iniciando scrape do módulo: {module_id}", xbmc.LOGINFO)
+        xbmc.log(f"[External-Scraper] Starting module scrape: {module_id}", xbmc.LOGINFO)
         logger.scraper(module_id, f"Iniciando scrape - IMDB: {imdb_id}, Tipo: {media_type}")
         
-        # Localizar o módulo
+        # Find the module
         try:
             addons_path = xbmcvfs.translatePath('special://home/addons/')
         except AttributeError:
             addons_path = xbmc.translatePath('special://home/addons/')
         
-        # Tenta múltiplos caminhos comuns para a pasta lib de addons Kodi
+        # Try multiple common paths to Kodi addons lib folder
         possible_paths = [
             os.path.join(addons_path, module_id, 'lib'),
             os.path.join(addons_path, module_id),
@@ -60,25 +56,25 @@ def scrape_module(module_id, imdb_id, media_type, season, episode, item_data, ca
                 break
         
         if not module_path:
-            xbmc.log(f"[External-Scraper] Nenhum caminho de biblioteca encontrado para {module_id}", xbmc.LOGERROR)
-            logger.scraper_error(module_id, f"Caminho não encontrado em: {possible_paths}")
+            xbmc.log(f"[External-Scraper] No library paths found for {module_id}", xbmc.LOGERROR)
+            logger.scraper_error(module_id, f"Path not found in: {possible_paths}")
             return streams
             
         xbmc.log(f"[External-Scraper] Usando caminho: {module_path}", xbmc.LOGINFO)
         
         if module_path not in sys.path:
-            sys.path.insert(0, module_path) # Insere no início para priorizar o módulo correto
+            sys.path.insert(0, module_path) # Insert at the beginning to prioritize the correct module
         
-        # Extrair nome do módulo
+        # Extract module name
         mod_name = module_id.split('.')[-1]
-        xbmc.log(f"[External-Scraper] Nome do módulo: {mod_name}", xbmc.LOGINFO)
+        xbmc.log(f"[External-Scraper] Module name: {mod_name}", xbmc.LOGINFO)
         
-        # Importar o módulo
+        # Import the module
         module = None
         try:
             xbmc.log(f"[External-Scraper] Tentando importar: {mod_name}", xbmc.LOGINFO)
             module = __import__(mod_name)
-            xbmc.log(f"[External-Scraper] Módulo importado com sucesso", xbmc.LOGINFO)
+            xbmc.log(f"[External-Scraper] Module imported successfully", xbmc.LOGINFO)
         except ImportError as e:
             xbmc.log(f"[External-Scraper] ImportError ao importar {mod_name}: {e}", xbmc.LOGERROR)
             logger.scraper_error(module_id, f"ImportError: {e}")
@@ -90,26 +86,26 @@ def scrape_module(module_id, imdb_id, media_type, season, episode, item_data, ca
                 if spec:
                     module = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(module)
-                    xbmc.log(f"[External-Scraper] Módulo importado via spec com sucesso", xbmc.LOGINFO)
+                    xbmc.log(f"[External-Scraper] Module imported via spec successfully", xbmc.LOGINFO)
             except Exception as e2:
-                xbmc.log(f"[External-Scraper] Erro ao importar via spec: {e2}", xbmc.LOGERROR)
+                xbmc.log(f"[External-Scraper] Error when importing via spec: {e2}", xbmc.LOGERROR)
                 return streams
         
         if not module:
-            xbmc.log(f"[External-Scraper] Não foi possível importar {mod_name}", xbmc.LOGERROR)
+            xbmc.log(f"[External-Scraper] Unable to import {mod_name}", xbmc.LOGERROR)
             return streams
         
-        # Verificar se tem função sources
+        # Check if you have a sources function
         if not hasattr(module, 'sources'):
-            xbmc.log(f"[External-Scraper] {mod_name} sem função 'sources'", xbmc.LOGERROR)
+            xbmc.log(f"[External-Scraper] {mod_name} no function'sources'", xbmc.LOGERROR)
             return streams
         
-        # Preparar dados com aliases para melhorar busca
+        # Prepare data with aliases to improve search
         title = item_data.get('title') if item_data else 'Video'
         original_title = item_data.get('original_title') or title
         year = str(item_data.get('year')) if item_data else ''
         
-        # Gerar aliases (variações do título para melhorar busca em PT-BR e EN)
+        # Generate aliases (title variations to improve search in PT-BR and EN)
         aliases = []
         if title:
             aliases.append(title)
@@ -119,7 +115,7 @@ def scrape_module(module_id, imdb_id, media_type, season, episode, item_data, ca
             aliases.append(original_title)
             if year: aliases.append(f"{original_title} {year}")
             
-        # Adiciona variações com pontos (comum em torrents)
+        # Add variations with dots (common in torrents)
         if title:
             aliases.append(title.replace(' ', '.'))
         if original_title:
@@ -134,7 +130,7 @@ def scrape_module(module_id, imdb_id, media_type, season, episode, item_data, ca
             'original_title': original_title,
             'originaltitle': original_title,
             'premiered': item_data.get('premiered', '') if item_data else '',
-            'aliases': list(set(aliases)), # Remove duplicatas
+            'aliases': list(set(aliases)), # Remove duplicates
         }
         
         if media_type == 'tvshow':
@@ -146,25 +142,25 @@ def scrape_module(module_id, imdb_id, media_type, season, episode, item_data, ca
         
         xbmc.log(f"[External-Scraper] Dados preparados: {data}", xbmc.LOGINFO)
         
-        # Obter sources
+        # Get sources
         try:
             external_sources = module.sources()
             xbmc.log(f"[External-Scraper] Sources obtidas: {len(external_sources) if external_sources else 0}", xbmc.LOGINFO)
             logger.scraper(module_id, f"Sources obtidas: {len(external_sources) if external_sources else 0}")
         except Exception as e:
-            xbmc.log(f"[External-Scraper] Erro ao obter sources: {e}", xbmc.LOGERROR)
-            logger.scraper_error(module_id, f"Erro ao obter sources: {e}")
+            xbmc.log(f"[External-Scraper] Error getting sources: {e}", xbmc.LOGERROR)
+            logger.scraper_error(module_id, f"Error getting sources: {e}")
             return streams
         
         if not external_sources:
             xbmc.log(f"[External-Scraper] Nenhuma source encontrada", xbmc.LOGWARNING)
             return streams
         
-        # Obter nome amigável do módulo
+        # Get module friendly name
         module_display_name = get_module_display_name(module_id)
-        xbmc.log(f"[External-Scraper] Nome do módulo: {module_display_name}", xbmc.LOGINFO)
+        xbmc.log(f"[External-Scraper] Module name: {module_display_name}", xbmc.LOGINFO)
         
-        # Executar em paralelo
+        # Run in parallel
         all_results = []
         lock = threading.Lock()
         threads = []
@@ -182,20 +178,20 @@ def scrape_module(module_id, imdb_id, media_type, season, episode, item_data, ca
                     xbmc.log(f"[External-Scraper] Source retornou {len(res)} resultados", xbmc.LOGINFO)
                     logger.scraper(module_id, f"Source retornou {len(res)} resultados")
                 else:
-                    # Não faz retry se não retornou nada (é legítimo não ter resultados)
-                    xbmc.log(f"[External-Scraper] Source não retornou resultados (normal)", xbmc.LOGINFO)
+                    # Do not retry if nothing is returned (it is legitimate to have no results)
+                    xbmc.log(f"[External-Scraper] Source returned no results (normal)", xbmc.LOGINFO)
             except Exception as e:
                 error_msg = str(e)
-                # Log detalhado do erro
-                xbmc.log(f"[External-Scraper] Erro em source (tentativa {retry_count + 1}): {error_msg}", xbmc.LOGERROR)
-                logger.scraper_error(module_id, f"Erro em source: {error_msg}")
+                # Detailed error log
+                xbmc.log(f"[External-Scraper] Error in source (attempt {retry_count + 1}): {error_msg}", xbmc.LOGERROR)
+                logger.scraper_error(module_id, f"Error in source: {error_msg}")
                 
-                # Se for erro de log_utils, não tenta retry (bug interno do scraper)
+                # If it is a log_utils error, do not try to retry (internal scraper bug)
                 if 'log_utils' in error_msg:
-                    xbmc.log(f"[External-Scraper] Erro log_utils detectado - pulando source com bug", xbmc.LOGWARNING)
+                    xbmc.log(f"[External-Scraper] log_utils error detected - skipping source with bug", xbmc.LOGWARNING)
                     return
                 
-                # Para outros erros, tenta retry
+                # For other errors, try retry
                 if retry_count < max_retries:
                     try:
                         run_source(s_class, retry_count + 1)
@@ -210,7 +206,7 @@ def scrape_module(module_id, imdb_id, media_type, season, episode, item_data, ca
             t.start()
             threads.append(t)
         
-        # Aguardar threads com timeout total de 60s
+        # Wait for threads with a total timeout of 60s
         import time
         start_time = time.time()
         max_wait = 60
@@ -222,15 +218,15 @@ def scrape_module(module_id, imdb_id, media_type, season, episode, item_data, ca
             remaining = max(1, max_wait - elapsed)
             t.join(timeout=remaining)
         
-        # Verificar threads que ainda estão ativas
+        # Check threads that are still active
         active_threads = sum(1 for t in threads if t.is_alive())
         if active_threads > 0:
-            xbmc.log(f"[External-Scraper] {active_threads} threads ainda ativas após timeout", xbmc.LOGWARNING)
+            xbmc.log(f"[External-Scraper] {active_threads} threads still active after timeout", xbmc.LOGWARNING)
         
         xbmc.log(f"[External-Scraper] Total de resultados: {len(all_results)}", xbmc.LOGINFO)
         logger.scraper_sources(module_id, len(all_results), all_results[:3] if all_results else [])
         
-            # Converter para padrão CINEBOX
+            # Convert to CINEBOX standard
         for s in all_results:
             url = s.get('url')
             if not url: continue
@@ -241,7 +237,7 @@ def scrape_module(module_id, imdb_id, media_type, season, episode, item_data, ca
             if size == 'N/A': size = ''
             seeders = s.get('seeders', 0)
             
-            # O provedor específico que o scraper encontrou (ex: YTS, 1337x, RARBG)
+            # The specific provider that the scraper found (e.g. YTS, 1337x, RARBG)
             real_provider = s.get('provider', module_display_name)
             
             stremio_title = f"{name}\n👤 {seeders} | ⚙️ {real_provider} | {quality} | {size}"
@@ -263,8 +259,8 @@ def scrape_module(module_id, imdb_id, media_type, season, episode, item_data, ca
             streams.append(stream)
     
     except Exception as e:
-        xbmc.log(f"[External-Scraper] Erro geral: {e}", xbmc.LOGERROR)
-        logger.scraper_error(module_id, f"Erro geral: {e}")
+        xbmc.log(f"[External-Scraper] General error: {e}", xbmc.LOGERROR)
+        logger.scraper_error(module_id, f"General error: {e}")
         import traceback
         xbmc.log(traceback.format_exc(), xbmc.LOGERROR)
     
@@ -273,10 +269,8 @@ def scrape_module(module_id, imdb_id, media_type, season, episode, item_data, ca
     return streams
 
 def scrape(imdb_id, media_type, season, episode, item_data=None, cancel_event=None):
-    """
-    Executa o scraper externo habilitado.
-    """
-    # Limpar cache de módulos para evitar usar versão antiga
+    """Runs the enabled external scraper."""
+    # Clear module cache to avoid using old version
     import sys
     modules_to_remove = [m for m in sys.modules.keys() if 'magneto' in m.lower() or 'viper' in m.lower() or 'coco' in m.lower()]
     for mod in modules_to_remove:
@@ -288,12 +282,12 @@ def scrape(imdb_id, media_type, season, episode, item_data=None, cancel_event=No
     xbmc.log(f"[External-Scraper] Scraper habilitado: {enabled_scraper_id}", xbmc.LOGINFO)
     
     if not enabled_scraper_id or enabled_scraper_id == 'script.module.magneto':
-        xbmc.log("[External-Scraper] Nenhum scraper externo selecionado ou usando padrão.", xbmc.LOGINFO)
+        xbmc.log("[External-Scraper] No external scraper selected or using default.", xbmc.LOGINFO)
         return []
     
     xbmc.log(f"[External-Scraper] Executando Scraper Universal: {enabled_scraper_id}", xbmc.LOGINFO)
     
-    # Tenta executar o módulo selecionado
+    # Try to run the selected module
     if enabled_scraper_id == 'script.module.jackett':
         from .jackett import scrape as jackett_scrape
         streams = jackett_scrape(imdb_id, media_type, season, episode, item_data, cancel_event)

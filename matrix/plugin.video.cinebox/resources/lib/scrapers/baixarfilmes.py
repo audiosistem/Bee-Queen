@@ -22,7 +22,7 @@ def search_baixarfilmes(query):
         if response.status_code == 200:
             return response.content
     except Exception as e:
-        xbmc.log(f"[baixarfilmes] Erro de busca: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[download movies] Search error: {str(e)}", xbmc.LOGERROR)
         logger.scraper_error("BaixarFilmes", f"Search Error: {e}", search_url)
     return None
 
@@ -40,21 +40,21 @@ def extract_magnets(html, title, target_episode=None, season=None, media_type="m
         parent_text = parent.get_text() if parent else ""
         container_text = parent_text.lower()
 
-        # --- EXTRAÇÃO DOS DADOS ---
+        # --- DATA EXTRACTION ---
         dn_match = re.search(r'dn=([^&]+)', url)
         release_name = urllib.parse.unquote(dn_match.group(1)).replace('.', ' ') if dn_match else title
 
         quality = "1080p" if "1080p" in container_text else "720p" if "720p" in container_text else "4K" if "2160p" in container_text else "HD"
-        audio = "Dual" if "dual" in container_text or "dublado" in container_text else "Legendado" if "legendado" in container_text else "Dublado"
+        audio = "Dual" if "dual" in container_text or "dublado" in container_text else "Subtitled" if "legendado" in container_text else "Dubbed"
         
-        # Extração de Seeders (Sementes)
+        # Extraction of Seeders (Seeds)
         seeds = 0
-        # Tenta encontrar padrões como "Seeders: 10", "S: 10", "10 sementes", etc.
+        # Try to find patterns like "Seeders: 10", "S: 10", "10 seeds", etc.
         seed_match = re.search(r'(?:seeders|seeds|sementes|s)[:\s]*(\d+)', parent_text, re.IGNORECASE)
         if seed_match:
             seeds = int(seed_match.group(1))
         else:
-            # Tenta encontrar apenas o número se estiver perto de palavras chave
+            # Try to find only the number if it is close to keywords
             keyword_match = re.search(r'(\d+)\s*(?:seeders|seeds|sementes)', parent_text, re.IGNORECASE)
             if keyword_match:
                 seeds = int(keyword_match.group(1))

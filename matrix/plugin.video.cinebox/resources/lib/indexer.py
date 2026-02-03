@@ -1,4 +1,4 @@
-# Em: resources/lib/indexer.py
+# In: resources/lib/indexer.py
 # -*- coding: utf-8 -*-
 
 import xbmcgui
@@ -12,13 +12,11 @@ from .db.db import db_instance as db, db as db_class
 from .tmdb_api import fetch_trending_movies, fetch_trending_tvshows, update_local_popularity
 
 def check_for_updates_silently(addon_object):
-    """
-    Verifica e adiciona apenas o novo conteúdo de forma silenciosa usando TMDB Trending.
-    """
+    """Checks and adds only new content silently using TMDB Trending."""
     current_check_dt = datetime.now(timezone.utc)
     
     try:
-        # ✅ MELHORIA: Busca as 5 primeiras páginas de tendências (era 3) para garantir conteúdo novo
+        # ✅ IMPROVEMENT: Search the first 5 trending pages (was 3) to guarantee new content
         trending_movies = []
         trending_tvshows = []
         for p in range(1, 6):
@@ -42,41 +40,39 @@ def check_for_updates_silently(addon_object):
             if new_tvshows:
                 db.add_tvshows_bulk(new_tvshows)
             
-            xbmc.log(f"[Indexer] {total_new} noi articole la modă adăugate.", xbmc.LOGINFO)
+            xbmc.log(f"[Indexer] {total_new} new trending items added.", xbmc.LOGINFO)
         
-        # Atualiza popularidade dos itens existentes que voltaram a ser tendência
-        # Isso ajuda a manter a ordem correta na entrada do Kodi
+        # Updates popularity of existing items that are trending again
+        # This helps maintain the correct order in Kodi input
         update_local_popularity()
         
         addon_object.setSetting('last_update_check', current_check_dt.isoformat())
         
     except Exception as e:
-        xbmc.log(f"[Indexer] Eroare la actualizarea silențioasă prin TMDB: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Indexer] Silent update error via TMDB: {e}", xbmc.LOGERROR)
 
 def run_indexer(batch_size=100):
-    """
-    Atualiza o banco de dados usando TMDB Trending.
-    """
+    """Updates the database using TMDB Trending."""
     progress = xbmcgui.DialogProgress()
     addon = xbmcaddon.Addon()
     
     try:
-        progress.create('Cinebox', 'Sincronizare prin TMDB...')
+        progress.create('Cinebox', 'Synchronizing with TMDB...')
         
-        # --- ETAPA 1: PREPARAÇÃO ---
-        progress.update(5, 'Se inițiază actualizarea catalogului...')
+        # --- STEP 1: PREPARATION ---
+        progress.update(5, 'Starting catalog update...')
         if progress.iscanceled(): return
 
-        # --- ETAPA 2: BUSCA NO TMDB ---
-        progress.update(10, 'Căutând tendințe actualizate în TMDB...')
+        # --- STEP 2: SEARCH IN TMDB ---
+        progress.update(10, 'Looking for updated trends on TMDB...')
         
         all_movies = []
         all_tvshows = []
         
-        # ✅ MELHORIA: Buscar 20 páginas de tendências para garantir conteúdo novo e atualizado (~400 itens de cada)
+        # ✅ IMPROVEMENT: Search 20 trending pages to ensure new and updated content (~400 items each)
         for p in range(1, 21):
             if progress.iscanceled(): break
-            progress.update(10 + (p*4), f'Baixando página {p} de tendências...')
+            progress.update(10 + (p*4), f'Downloading trends page {p}...')
             try:
                 all_movies.extend(fetch_trending_movies(page=p))
                 all_tvshows.extend(fetch_trending_tvshows(page=p))
@@ -88,34 +84,34 @@ def run_indexer(batch_size=100):
         total_items = total_movies + total_tvshows
 
         if total_items == 0:
-            xbmcgui.Dialog().ok("Atentie", "Nu a fost posibil să se obțină date de la TMDB.")
+            xbmcgui.Dialog().ok("Warning", "Could not retrieve data from TMDB.")
             return
 
-        # --- ETAPA 3: PROCESSAMENTO ---
+        # --- STEP 3: PROCESSING ---
         if all_movies:
-            progress.update(50, f"Adăugând {total_movies} filme populare...")
+            progress.update(50, f"Adding {total_movies} popular movies...")
             db.add_movies_bulk(all_movies)
 
         if all_tvshows:
-            progress.update(75, f"Adăugând {total_tvshows} seriale populare...")
+            progress.update(75, f"Adding {total_tvshows} popular series...")
             db.add_tvshows_bulk(all_tvshows)
 
-        # --- ETAPA 4: FINALIZAÇÃO ---
+        # --- STAGE 4: FINALIZATION ---
         if not progress.iscanceled():
-            progress.update(95, "Optimizarea bazei de date...")
+            progress.update(95, "Optimizing database...")
             update_local_popularity()
             
-            progress.update(100, "Catalogul TMDB sincronizat!")
+            progress.update(100, "TMDB catalog synchronized!")
             
             current_check_dt = datetime.now(timezone.utc)
             addon.setSetting('last_update_check', current_check_dt.isoformat())
             
             xbmc.sleep(800)
-            xbmcgui.Dialog().notification("Cinebox", "Catalogul TMDB Actualizat!", xbmcgui.NOTIFICATION_INFO, 5000, False)
+            xbmcgui.Dialog().notification("Cinebox", "TMDB Catalog Updated!", xbmcgui.NOTIFICATION_INFO, 5000, False)
 
     except Exception as e:
-        xbmc.log(f"[Indexer] Eroare critica TMDB: {e}", xbmc.LOGERROR)
-        xbmcgui.Dialog().ok("Eroare de Actualizare", f"Detalii: {e}")
+        xbmc.log(f"[Indexer] TMDB critical error: {e}", xbmc.LOGERROR)
+        xbmcgui.Dialog().ok("Update Error", f"Details: {e}")
     
     finally:
         try:
@@ -123,7 +119,7 @@ def run_indexer(batch_size=100):
         except:
             pass
         
-        # Finaliza o handle do plugin
+        # Finalizes the plugin handle
         h = None
         try:
             from .movies import HANDLE as h_movies

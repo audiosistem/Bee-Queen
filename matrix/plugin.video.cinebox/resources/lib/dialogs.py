@@ -12,37 +12,36 @@ class DialogSelecaoFontes(xbmcgui.WindowXMLDialog):
         self.escolha = None
         self.todas_as_fontes = kwargs.get('fontes', [])
         
-        # === CACHE DE LISTITEMS (OTIMIZACAO) ===
+        # === LISTITEMS CACHE (OTIMIZATION) ===
         self._listitem_cache = {}
         
-        # NOVO: Flag para rastrear cancelamento
+        # NEW: Flag to track cancellation
         self.cancelled = False
         
-        # === PRE-PROCESSA QUALIDADES/IDIOMAS/PROVEDORES ===
+        # === PRE-PROCESS QUALITIES/LANGUAGES/PROVIDERS ===
         self._pre_processar_filtros()
         
-        # Filtros atuais
-        self.filtro_atual = "Todos"
-        self.filtro_idioma_atual = "Todos"
-        self.filtro_provedor_atual = "Todos"
+        # Current filters
+        self.filtro_atual = "All"
+        self.filtro_idioma_atual = "All"
+        self.filtro_provedor_atual = "All"
     
     def _pre_processar_filtros(self):
-        """
-        Pré-processa TODAS as fontes UMA VEZ no init.
-        Extrai qualidades, idiomas e provedores.
-        """
+        """Preprocess ALL sources ONCE in init.
+        Extracts qualities, languages ​​and providers."""
         qualidades_set = set()
         idiomas_set = set()
         provedores_set = set()
         
         for fonte in self.todas_as_fontes:
-            # Qualidade normalizada
+            # Standardized quality
             q = self._normalizar_qualidade(fonte.get('quality_label', ''))
             qualidades_set.add(q)
             
-            # Idiomas - Lógica simplificada e robusta para o menu
+            # Languages ​​- Simplified and robust menu logic
             langs = fonte.get('languages', 'LEG')
-            # Mapeamento manual para garantir nomes limpos no menu
+            # Manual mapping to ensure clean menu names
+            if 'EN-US' in langs or '[EN]' in langs: idiomas_set.add('EN-US')
             if 'PT-BR' in langs or '[BR]' in langs: idiomas_set.add('PT-BR')
             if 'DUAL' in langs or '[DUAL]' in langs: idiomas_set.add('DUAL')
             if 'LEG' in langs or '[EN]' in langs: idiomas_set.add('LEG')
@@ -52,27 +51,27 @@ class DialogSelecaoFontes(xbmcgui.WindowXMLDialog):
             if 'GER' in langs or '[DE]' in langs: idiomas_set.add('GER')
             if 'JAP' in langs or '[JP]' in langs: idiomas_set.add('JAP')
             
-            # Provedor
+            # Provider
             provider = fonte.get('provider', '').strip()
             if provider:
                 provedores_set.add(provider)
         
-        # Ordena qualidades
-        ordem_qualidade = ["4K", "1080p", "720p", "SD", "CAM", "scr", "sd", "Outros"]
-        self.qualidades_disponiveis = ["Todos"] + sorted(
+        # Order qualities
+        ordem_qualidade = ["4K", "1080p", "720p", "SD", "CAM", "scr", "sd", "Others"]
+        self.qualidades_disponiveis = ["All"] + sorted(
             qualidades_set,
             key=lambda q: ordem_qualidade.index(q) if q in ordem_qualidade else 99
         )
         
-        self.idiomas_disponiveis = ["Todos"] + sorted(idiomas_set)
+        self.idiomas_disponiveis = ["All"] + sorted(idiomas_set)
         if len(self.idiomas_disponiveis) == 1:
             self.idiomas_disponiveis.append("Original")
         
-        self.provedores_disponiveis = ["Todos"] + sorted(provedores_set)
+        self.provedores_disponiveis = ["All"] + sorted(provedores_set)
     
     @staticmethod
     def limpar_tags_kodi(texto):
-        """Remove tags Kodi ([COLOR], [B], etc) de forma robusta"""
+        """Remove Kodi tags (, [B], etc) robustly"""
         if not texto:
             return ""
         # Remove tags [COLOR hex], [COLOR name], [/COLOR], [B], [/B], [I], [/I]
@@ -83,10 +82,10 @@ class DialogSelecaoFontes(xbmcgui.WindowXMLDialog):
         return texto.strip()
     
     def _normalizar_qualidade(self, q_string):
-        """Normaliza string de qualidade (com cache)"""
+        """Normalize quality string (with cache)"""
         q_clean = self.limpar_tags_kodi(q_string).upper()
         
-        # Ordem de verificação (mais específico primeiro)
+        # Check order (more specific first)
         if '4K' in q_clean or '2160' in q_clean:
             return "4K"
         if '1080' in q_clean:
@@ -100,34 +99,32 @@ class DialogSelecaoFontes(xbmcgui.WindowXMLDialog):
         if '480' in q_clean or 'SD' in q_clean or 'DVD' in q_clean:
             return "sd"
         
-        # Se não identificou nenhuma das qualidades acima, retorna "Outros"
-        # Isso fará com que o Kodi procure por resolution/Outros.png
-        return "Outros"
+        # If you did not identify any of the qualities above, return "Others"
+        # This will make Kodi look for resolution/Outros.png
+        return "Others"
     
     def _criar_listitem(self, fonte):
-        """
-        Cria ListItem com cache e label otimizado.
-        """
-       # Chave única para cache
+        """Creates ListItem with optimized cache and label."""
+       # Unique key for cache
         cache_key = str(fonte.get('url', '')) or str(id(fonte))
     
         if cache_key in self._listitem_cache:
             return self._listitem_cache[cache_key]
     
-        # Cria novo ListItem
-        li = xbmcgui.ListItem(label="")  # Label vazio, vamos setar depois
+        # Create new ListItem
+        li = xbmcgui.ListItem(label="")  # Empty label, let's set it later
     
-        # Properties (mantenha para filtros/outros usos)
+        # Properties (keep for filters/other uses)
         qualidade_limpa = self._normalizar_qualidade(fonte.get('quality_label', ''))
         
-        # Helper para garantir string
+        # Helper to guarantee string
         def s(v): return str(v) if v is not None else ""
 
         li.setProperty('quality', s(qualidade_limpa))
         li.setProperty('release_title', s(fonte.get('display_title')))
-        # Garante que 'seeders' tenha apenas o número para o XML, enquanto 'seeders_label' tem a cor
+        # Ensures that 'seeders' only has the number for the XML, while 'seeders_label' has the color
         seeds_raw = str(fonte.get('seeders', '0'))
-        # ✅ FORÇA O VALOR NO PROPERTY PARA O XML
+        # ✅ FORCES THE VALUE IN PROPERTY TO XML
         li.setProperty('seeders', seeds_raw)
         li.setProperty('seeders_label', s(fonte.get('seeders_label')))
         li.setProperty('size', s(fonte.get('size')))
@@ -141,14 +138,14 @@ class DialogSelecaoFontes(xbmcgui.WindowXMLDialog):
         li.setProperty('hdr', s(fonte.get('hdr', '')))
         li.setProperty('audio', s(fonte.get('audio', '')))
     
-        # ===== CRIA LABEL OTIMIZADO =====
-        title = fonte.get('display_title', 'Sem título')
+        # ===== CREATE OPTIMIZED LABEL =====
+        title = fonte.get('display_title', 'Untitled')
     
-        # Cria string técnica compacta
+        # Creates compact technical string
         tech_parts = []
     
-        # Qualidade
-        if qualidade_limpa and qualidade_limpa != "Outros":
+        # Quality
+        if qualidade_limpa and qualidade_limpa != "Others":
             tech_parts.append(f"[B][COLOR FF3399FF]{qualidade_limpa}[/COLOR][/B]")
     
         # Codec
@@ -156,12 +153,12 @@ class DialogSelecaoFontes(xbmcgui.WindowXMLDialog):
         if codec:
             tech_parts.append(f"[COLOR FFFFCC00]{codec}[/COLOR]")
     
-        # HDR (só se for HDR)
+        # HDR (only if it is HDR)
         hdr = fonte.get('hdr', '')
         if hdr and hdr.upper() != 'SDR':
             tech_parts.append(f"[COLOR FF00FF00]{hdr}[/COLOR]")
     
-        # Áudio (abreviado)
+        # Audio (abbreviated)
         audio = fonte.get('audio', '')
         if audio:
             audio_short = self._abreviar_audio(audio)
@@ -172,25 +169,25 @@ class DialogSelecaoFontes(xbmcgui.WindowXMLDialog):
         if source:
             tech_parts.append(f"[COLOR FFCC66FF]{source}[/COLOR]")
     
-        # Juntar partes técnicas
+        # Putting technical parts together
         tech_str = ""
         if tech_parts:
             tech_str = " | ".join(tech_parts) + "\n"
     
-        # Info de seeds e tamanho
+        # Seed and size info
         stats_parts = []
         seeders = fonte.get('seeders_label', '')
         if seeders:
             stats_parts.append(f"Seeds: [B]{seeders}[/B]")
     
         size = fonte.get('size', '')
-        # Filtrar valores inválidos de tamanho
+        # Filter invalid size values
         if size and size not in ['N/A', 'n/a', '', '0 B', '0.0 B', '0 KB', '0.0 KB']:
             stats_parts.append(f"Tamanho: [B]{size}[/B]")
     
         stats_str = " | ".join(stats_parts)
     
-        # Provider, Hoster e idioma
+        # Provider, Hoster and language
         provider = fonte.get('provider', '')
         hoster = fonte.get('hoster', provider)
         languages = fonte.get('languages', '')
@@ -207,17 +204,17 @@ class DialogSelecaoFontes(xbmcgui.WindowXMLDialog):
             meta_parts.append(f"Idioma: [B]{languages}[/B]")
         meta_str = " | ".join(meta_parts)
     
-        # Label final (3 linhas máximo)
+        # Final label (3 lines maximum)
         label_lines = []
     
-        # Linha 1: Info técnica
+        # Line 1: Technical information
         if tech_str.strip():
             label_lines.append(tech_str.strip())
     
-        # Linha 2: Título principal
+        # Line 2: Main title
         label_lines.append(f"[B]{title}[/B]")
     
-        # Linha 3: Stats + metadata
+        # Line 3: Stats + metadata
         line3_parts = []
         if stats_str:
             line3_parts.append(stats_str)
@@ -227,20 +224,20 @@ class DialogSelecaoFontes(xbmcgui.WindowXMLDialog):
         if line3_parts:
             label_lines.append(" | ".join(line3_parts))
     
-        # Junta tudo
+        # Put it all together
         final_label = "\n".join(label_lines)
         li.setLabel(final_label)
     
-        # Salva no cache
+        # Saves to cache
         self._listitem_cache[cache_key] = li
     
         return li
 
     def _abreviar_audio(self, audio_string):
-        """Abrevia strings de áudio comuns para economizar espaço"""
+        """Abbreviates common audio strings to save space"""
         audio_lower = audio_string.lower()
     
-        # Mapeamento de abreviações
+        # Abbreviation mapping
         abbrev_map = {
            'dolby digital': 'DD',
            'dd 5.1': 'DD5.1',
@@ -256,70 +253,69 @@ class DialogSelecaoFontes(xbmcgui.WindowXMLDialog):
            'opus': 'Opus'
        }
     
-       # Procura por correspondências
+       # Search for matches
         for key, abbrev in abbrev_map.items():
             if key in audio_lower:
                 return abbrev
     
-        # Se não encontrar, retorna primeiros 6 caracteres
+        # If not found, returns first 6 characters
         return audio_string[:6]
     
     def _atualizar_labels_filtros(self):
-        """Atualiza labels dos botões de filtro"""
+        """Update filter button labels"""
         try:
-            q = self.filtro_atual if self.filtro_atual != "Todos" else "Qualidade"
-            i = self.filtro_idioma_atual if self.filtro_idioma_atual != "Todos" else "Idioma"
-            p = self.filtro_provedor_atual if self.filtro_provedor_atual != "Todos" else "Provedor"
+            q = self.filtro_atual if self.filtro_atual != "All" else "Quality"
+            i = self.filtro_idioma_atual if self.filtro_idioma_atual != "All" else "Language"
+            p = self.filtro_provedor_atual if self.filtro_provedor_atual != "All" else "Provider"
             
             self.getControl(1300).setLabel(q)
             self.getControl(1400).setLabel(i)
             self.getControl(1500).setLabel(p)
         except Exception as e:
-            xbmc.log(f"[Dialogs] Erro ao atualizar labels: {e}", xbmc.LOGERROR)
+            xbmc.log(f"[Dialogs] Error updating labels: {e}", xbmc.LOGERROR)
     
     def onInit(self):
-        """Inicialização do dialog"""
+        """Dialog initialization"""
         try:
-            # Arte de fundo
+            # Background art
             if self.item_data:
                 self.setProperty('info.fanart', self.item_data.get('backdrop', ''))
                 self.setProperty('info.poster', self.item_data.get('poster', ''))
             
-            # Atualiza labels
+            # Update labels
             self._atualizar_labels_filtros()
             
-            # Popula lista (primeira vez)
+            # Popula list (first time)
             self.popular_lista_fontes()
             
-            # Foco no primeiro filtro
+            # Focus on the first filter
             self.setFocusId(1300)
             
         except Exception as e:
-            xbmc.log(f"[Dialogs] Erro no onInit: {e}", xbmc.LOGERROR)
+            xbmc.log(f"[Dialogs] Error in onInit: {e}", xbmc.LOGERROR)
     
     def popular_lista_fontes(self):
-        """
-        Popula lista de fontes (OTIMIZADO).
-        Usa cache de ListItems + filtro rápido.
-        """
+        """Populates font list (OPTIMIZED).
+        Uses ListItems cache + quick filter."""
         try:
             lista_control = self.getControl(1000)
             lista_control.reset()
             
-            # === FILTRO OTIMIZADO (uma passagem) ===
+            # === OPTIMIZED FILTER (one pass) ===
             fontes_filtradas = []
             
             for fonte in self.todas_as_fontes:
-                # Filtro de qualidade
-                if self.filtro_atual != "Todos":
+                # Quality filter
+                if self.filtro_atual != "All":
                     if self._normalizar_qualidade(fonte.get('quality_label', '')) != self.filtro_atual:
                         continue
                 
-                # Filtro de idioma - Comparação direta com o que foi adicionado ao set
-                if self.filtro_idioma_atual != "Todos":
+                # Language filter - Direct comparison with what has been added to the set
+                if self.filtro_idioma_atual != "All":
                     lang_data = fonte.get('languages', '')
-                    # Se o filtro é "PT-BR", ele deve bater se o dado tiver "PT-BR" ou "[BR]"
+                    # If the filter is "PT-BR", it must match if the data has "PT-BR" or "[BR]"
                     match_map = {
+                        'EN-US': ['EN-US', '[EN]'],
                         'PT-BR': ['PT-BR', '[BR]'],
                         'DUAL': ['DUAL', '[DUAL]'],
                         'LEG': ['LEG', '[EN]'],
@@ -334,34 +330,34 @@ class DialogSelecaoFontes(xbmcgui.WindowXMLDialog):
                     if not any(term in lang_data for term in allowed_terms):
                         continue
                 
-                # Filtro de provedor
-                if self.filtro_provedor_atual != "Todos":
+                # Provider filter
+                if self.filtro_provedor_atual != "All":
                     if fonte.get('provider', '') != self.filtro_provedor_atual:
                         continue
                 
                 fontes_filtradas.append(fonte)
             
-            # === ADICIONA ITENS (usando cache) ===
+            # === ADD ITEMS (using cache) ===
             for fonte in fontes_filtradas:
                 li = self._criar_listitem(fonte)
                 lista_control.addItem(li)
             
         except Exception as e:
-            xbmc.log(f"[Dialogs] Erro ao popular lista: {e}", xbmc.LOGERROR)
+            xbmc.log(f"[Dialogs] Error when popular list: {e}", xbmc.LOGERROR)
     
     def onClick(self, controlId):
-        """Handler de cliques"""
+        """Click handler"""
         dialog = xbmcgui.Dialog()
         
         if controlId == 1000:
-            # Seleção de fonte
+            # Font selection
             item = self.getControl(1000).getSelectedItem()
             if item:
                 self.escolha = item.getProperty('url_para_tocar')
                 self.close()
         
         elif controlId == 1300:
-            # Filtro de qualidade
+            # Quality filter
             escolha_idx = dialog.select('Filtrar por Qualidade', self.qualidades_disponiveis)
             if escolha_idx > -1:
                 self.filtro_atual = self.qualidades_disponiveis[escolha_idx]
@@ -369,7 +365,7 @@ class DialogSelecaoFontes(xbmcgui.WindowXMLDialog):
                 self._atualizar_labels_filtros()
         
         elif controlId == 1400:
-            # Filtro de idioma
+            # Language filter
             escolha_idx = dialog.select('Filtrar por Idioma', self.idiomas_disponiveis)
             if escolha_idx > -1:
                 self.filtro_idioma_atual = self.idiomas_disponiveis[escolha_idx]
@@ -377,31 +373,29 @@ class DialogSelecaoFontes(xbmcgui.WindowXMLDialog):
                 self._atualizar_labels_filtros()
         
         elif controlId == 1500:
-            # Filtro de provedor
-            escolha_idx = dialog.select('Filtrar por Provedor', self.provedores_disponiveis)
+            # Provider filter
+            escolha_idx = dialog.select('Filter by Provider', self.provedores_disponiveis)
             if escolha_idx > -1:
                 self.filtro_provedor_atual = self.provedores_disponiveis[escolha_idx]
                 self.popular_lista_fontes()
                 self._atualizar_labels_filtros()
     
     def onAction(self, action):
-        """Handler de ações (back, esc, etc)"""
+        """Action handler (back, esc, etc)"""
         if action.getId() in [ACTION_PREVIOUS_MENU, ACTION_NAV_BACK]:
-            # NOVO: Marca como cancelado antes de fechar
+            # NEW: Mark as canceled before closing
             self.cancelled = True
             xbmc.log("[Dialogs] Usuario cancelou a selecao de fontes", xbmc.LOGINFO)
             self.close()
 
-# ============================================
-# NOVO: CONFIGURAÇÃO DE SCRAPERS EXTERNOS
-# ============================================
+# ==========================================================
+# NEW: EXTERNAL SCRAPERS CONFIGURATION
+# ==========================================================
 
 def configure_external_scrapers():
-    """
-    Abre um menu para escolher qual scraper externo usar.
-    Detecta automaticamente os scrapers instalados no Kodi.
-    Salva a escolha em JSON E nas configurações do Kodi.
-    """
+    """Opens a menu to choose which external scraper to use.
+    Automatically detects scrapers installed on Kodi.
+    Saves the choice in JSON AND in Kodi settings."""
     import xbmcaddon
     import xbmcvfs
     import os
@@ -412,7 +406,7 @@ def configure_external_scrapers():
     
     ADDON = xbmcaddon.Addon()
     
-    # Detectar scrapers instalados
+    # Detect installed scrapers
     try:
         addons_path = xbmcvfs.translatePath('special://home/addons/')
     except AttributeError:
@@ -422,12 +416,12 @@ def configure_external_scrapers():
     
     if os.path.exists(addons_path):
         for item in os.listdir(addons_path):
-            # Procura por script.module.* que são scrapers
+            # Search for script.module.* which are scrapers
             if item.startswith('script.module.'):
                 full_path = os.path.join(addons_path, item)
                 addon_xml = os.path.join(full_path, 'addon.xml')
                 
-                # Tenta pegar o nome amigável
+                # Try to get the friendly name
                 display_name = item
                 if os.path.exists(addon_xml):
                     try:
@@ -446,16 +440,16 @@ def configure_external_scrapers():
                 })
     
     if not scrapers:
-        xbmcgui.Dialog().notification("CINEBOX [COLOR red]TrainAgain[/COLOR]", "Nenhum scraper encontrado!")
-        xbmc.log("[Cinebox] Nenhum scraper encontrado", xbmc.LOGERROR)
+        xbmcgui.Dialog().notification("CINEBOX TrainAgain", "No scrapers found!")
+        xbmc.log("[Cinebox] No scraper found", xbmc.LOGERROR)
         return
     
-    # Ordenar por nome
+    # Sort by name
     scrapers.sort(key=lambda x: x['name'].lower())
     
-    # Obter scraper atual
+    # Get current scraper
     current_scraper = ADDON.getSetting('enabled_external_scrapers')
-    # Remove cores se existirem
+    # Remove colors if they exist
     if '[COLOR' in current_scraper:
         current_scraper = current_scraper.replace('[COLOR lime]', '').replace('[/COLOR]', '')
     
@@ -470,35 +464,35 @@ def configure_external_scrapers():
         except ValueError:
             current_index = -1
     
-    xbmc.log(f"[Cinebox] Scrapers encontrados: {scraper_ids}", xbmc.LOGINFO)
-    xbmc.log(f"[Cinebox] Scraper atual: {current_scraper}", xbmc.LOGINFO)
+    xbmc.log(f"[Cinebox] Scrapers found: {scraper_ids}", xbmc.LOGINFO)
+    xbmc.log(f"[Cinebox] Current scraper: {current_scraper}", xbmc.LOGINFO)
     
-    # Abrir diálogo de seleção
+    # Open selection dialog
     dialog = xbmcgui.Dialog()
     selected = dialog.select(
-        "Escolha o Scraper Externo:",
+        "Choose External Scraper:",
         scraper_names,
         preselect=current_index
     )
     
-    xbmc.log(f"[Cinebox] Seleção do usuário: {selected}", xbmc.LOGINFO)
+    xbmc.log(f"[Cinebox] User selection: {selected}", xbmc.LOGINFO)
     
     if selected >= 0:
         selected_id = scraper_ids[selected]
         selected_name = scraper_names[selected]
         
-        # Salvar em JSON (config_manager)
+        # Save to JSON (config_manager)
         set_enabled_scraper(selected_id)
         
-        # Salvar também no settings.xml do Kodi com cor verde
+        # Also save in Kodi's settings.xml with green color
         colored_value = f"[COLOR lime]{selected_id}[/COLOR]"
         ADDON.setSetting('enabled_external_scrapers', colored_value)
         
-        # Verificar se foi salvo
+        # Check if it was saved
         saved_value = ADDON.getSetting('enabled_external_scrapers')
-        xbmc.log(f"[Cinebox] Tentativa de salvar: {selected_id}", xbmc.LOGINFO)
-        xbmc.log(f"[Cinebox] Valor salvo no Kodi: {saved_value}", xbmc.LOGINFO)
+        xbmc.log(f"[Cinebox] Attempt to save: {selected_id}", xbmc.LOGINFO)
+        xbmc.log(f"[Cinebox] Value saved in Kodi: {saved_value}", xbmc.LOGINFO)
         
         msg = f"Scraper selecionado: {selected_name}"
         xbmcgui.Dialog().notification("CINEBOX [COLOR red]TrainAgain[/COLOR]", msg)
-        xbmc.log(f"[Cinebox] Scraper configurado: {selected_id}", xbmc.LOGINFO)
+        xbmc.log(f"[Cinebox] Scraper configured: {selected_id}", xbmc.LOGINFO)

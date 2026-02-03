@@ -35,15 +35,20 @@ def get_string(string_id):
     
     # Mapeamento de strings manuais para os 3 idiomas
     translations = {
+        'local_stations': {
+            'pt': 'Rádios Locais',
+            'en': 'Local Stations',
+            'ro': 'Stații Locale'
+        },
         'favorites': {
-            'pt': '[B]⭐ Meus Favoritos[/B]',
-            'en': '[B]⭐ My Favorites[/B]',
-            'ro': '[B]⭐ Favoritele Mele[/B]'
+            'pt': 'Meus Favoritos',
+            'en': 'My Favorites',
+            'ro': 'Favoritele Mele'
         },
         'search_stations': {
-            'pt': '[B]Buscar Estações[/B]',
-            'en': '[B]Search Stations[/B]',
-            'ro': '[B]Căutare Stații[/B]'
+            'pt': 'Buscar Estações',
+            'en': 'Search Stations',
+            'ro': 'Căutare Stații'
         },
         'search_country': {
             'pt': 'Buscar por País',
@@ -154,6 +159,9 @@ def add_directory_item(label, mode, is_folder=True, params=None):
 
 def show_main_menu():
     """Exibir menu principal simplificado"""
+    
+    # Opção de rádios locais
+    add_directory_item(get_string('local_stations'), 'local_stations', params={})
     
     # Opção de favoritos
     add_directory_item(get_string('favorites'), 'favorites', params={})
@@ -398,6 +406,18 @@ def show_favorites():
     xbmcplugin.endOfDirectory(addon_handle)
 
 
+def show_local_stations():
+    """Exibir estações de rádio locais baseadas na geolocalização"""
+    api = RadioGardenAPI()
+    title, channels = api.get_local_stations()
+    
+    if not channels:
+        xbmcgui.Dialog().notification('Radio Garden', get_string('no_results'), xbmcgui.NOTIFICATION_INFO, 3000)
+        return
+        
+    display_results(channels)
+
+
 def add_to_favorites(channel_id, title, subtitle=''):
     """Adicionar estação aos favoritos"""
     fav_manager = FavoritesManager()
@@ -431,6 +451,8 @@ def router(params):
     elif mode == 'remove_favorite':
         channel_id = params.get('channel_id', [''])[0]
         remove_from_favorites(channel_id)
+    elif mode == 'local_stations':
+        show_local_stations()
     elif mode == 'search_dialog':
         search_type = params.get('type', ['all'])[0]
         search_dialog(search_type)

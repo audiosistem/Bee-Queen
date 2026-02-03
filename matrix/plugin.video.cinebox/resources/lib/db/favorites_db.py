@@ -5,7 +5,7 @@ from .base_db import BaseDatabase
 class FavoritesDatabase(BaseDatabase):
     
     def add_to_favorites(self, tmdb_id, media_type):
-        """Adiciona favorito (com cache invalidation)"""
+        """Add to favorites (com cache invalidation)"""
         conn = self._get_conn()
         cursor = conn.cursor()
         try:
@@ -15,13 +15,13 @@ class FavoritesDatabase(BaseDatabase):
             )
             conn.commit()
             
-            # Invalida caches relevantes
+            # Invalidates relevant caches
             self._cache_delete_prefix("favorites")
         finally:
             self._release_conn(conn)
     
     def remove_from_favorites(self, tmdb_id, media_type):
-        """Remove favorito (com cache invalidation)"""
+        """Remove favorite (com cache invalidation)"""
         conn = self._get_conn()
         cursor = conn.cursor()
         try:
@@ -31,13 +31,13 @@ class FavoritesDatabase(BaseDatabase):
             )
             conn.commit()
             
-            # Invalida caches relevantes
+            # Invalidates relevant caches
             self._cache_delete_prefix("favorites")
         finally:
             self._release_conn(conn)
     
     def is_favorite(self, tmdb_id, media_type):
-        """Verifica se item é favorito (útil para UI)"""
+        """Checks if item is favorite (useful for UI)"""
         cache_key = f"is_fav:{tmdb_id}:{media_type}"
         cached = self._cache_get(cache_key)
         if cached is not None:
@@ -58,15 +58,15 @@ class FavoritesDatabase(BaseDatabase):
     
     def get_all_favorites(self):
         """
-        Busca TODOS os favoritos (filmes + séries) com JOIN otimizado.
-        Retorna lista unificada ordenada por data de adição (mais recente primeiro).
+        Search ALL favorites (movies + series) with optimized JOIN.
+        Returns unified list ordered by date added (newest first).
         """
         cache_key = "favorites_all"
         cached = self._cache_get(cache_key)
         if cached:
             return cached
         
-        # Query otimizada com UNION ALL (mais rápido que 2 queries separadas)
+        # Query optimized with UNION ALL (faster than 2 separate queries)
         sql = """
             SELECT 
                 m.tmdb_id, m.title, m.original_title, m.year, m.rating,
@@ -97,8 +97,8 @@ class FavoritesDatabase(BaseDatabase):
     
     def get_favorites_by_type(self, media_type):
         """
-        Busca favoritos filtrados por tipo (movie ou tvshow).
-        Mais rápido que get_all_favorites() quando só precisa de um tipo.
+        Search favorites filtered by type (movie ou tvshow).
+        Faster than get_all_favorites() when you only need one type.
         """
         cache_key = f"favorites_{media_type}"
         cached = self._cache_get(cache_key)
@@ -127,7 +127,7 @@ class FavoritesDatabase(BaseDatabase):
         return results
     
     def get_favorites_count(self):
-        """Retorna contagem rápida de favoritos (útil para estatísticas)"""
+        """Returns quick count of favorites (useful for statistics)"""
         cache_key = "favorites_count"
         cached = self._cache_get(cache_key)
         if cached is not None:
@@ -155,7 +155,7 @@ class FavoritesDatabase(BaseDatabase):
             self._release_conn(conn)
     
     def clear_all_favorites(self):
-        """Remove TODOS os favoritos (útil para reset)"""
+        """Remove ALL bookmarks (useful for reset)"""
         conn = self._get_conn()
         cursor = conn.cursor()
         try:

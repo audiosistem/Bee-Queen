@@ -35,16 +35,16 @@
             <aspectratio aligny="top">stretch</aspectratio>
             <texture diffuse="cinebox_diffuse/poster_w217_h320.png">$INFO[Window.Property(poster)]</texture>
             <effect type="shadow" color="66000000" blur="20" />
-            <!-- Animações de abertura --> <animation effect="slide" start="1920,0" end="0,0" time="500">WindowOpen</animation> <animation effect="fade" start="0" end="100" time="500">WindowOpen</animation> <!-- Animações de fechamento --> <animation effect="slide" start="0,0" end="1920,0" time="400">WindowClose</animation> <animation effect="fade" start="100" end="0" time="400">WindowClose</animation>
+            <!-- Opening animations --> <animation effect="slide" start="1920.0" end="0.0" time="500">WindowOpen</animation> <animation effect="fade" start="0" end="100" time="500">WindowOpen</animation> <!-- Closing animations --> <animation effect="slide" start="0.0" end="1920.0" time="400">WindowClose</animation> <animation effect="fade" start="100" end="0" time="400">WindowClose</animation>
         </control>
 
-        <!-- CONTEÚDO PRINCIPAL -->
+        <!-- MAIN CONTENT -->
         <control type="group">
             <left>100</left>
             <top>80</top>
             <width>1100</width>
 
-            <!-- TÍTULO/LOGO -->
+            <!-- TITLE/LOGO -->
             <control type="group">
                 <height>250</height>
                 <left>150</left>
@@ -55,7 +55,7 @@
                     <aspectratio>keep</aspectratio>
                     <texture>$INFO[Window.Property(clearlogo)]</texture>
                     <visible>!IsEmpty(Window.Property(clearlogo))</visible>
-                    <!-- Sem animação - Logo fixo --> <animation effect="fade" start="0" end="100" time="500">WindowOpen</animation> <!-- Animações de fechamento --> <animation effect="fade" start="100" end="0" time="400">WindowClose</animation>
+                    <!-- No animation - Fixed logo --> <animation effect="fade" start="0" end="100" time="500">WindowOpen</animation> <!-- Closing animations --> <animation effect="fade" start="100" end="0" time="400">WindowClose</animation>
                 </control>
                 <control type="label" id="100">
                     <width>1100</width>
@@ -68,7 +68,7 @@
                 </control>
             </control>
 
-            <!-- ANO + DURAÇÃO -->
+            <!-- YEAR + DURATION -->
             <control type="label" id="103">
                 <top>200</top>
                 <width>1100</width>
@@ -79,7 +79,7 @@
                 <label>$INFO[Window.Property(year)] • $INFO[Window.Property(duration)]</label>
             </control>
 
-            <!-- ================== GÊNEROS ================== -->
+            <!-- ================== GENRES ================== -->
             <control type="grouplist" id="400">
                 <top>250</top>
                 <height>70</height>
@@ -149,15 +149,15 @@
                 <width>1100</width>
                 <height>100</height>
                 
-                <!-- TÍTULO "DISPONÍVEL EM" -->
+                <!-- TITLE "AVAILABLE AT" -->
                 <control type="label">
                     <height>25</height>
                     <font>font12</font>
                     <textcolor>FFFFFFFF</textcolor>
-                    <label>[B]Disponibil[/B]</label>
+                    <label>[B]Available at[/B]</label>
                 </control>
 
-                <!-- CONTAINER DE PROVIDERS -->
+                <!-- PROVIDERS CONTAINER -->
                 <control type="group" id="500">
                     <top>45</top>
                     <height>70</height>
@@ -170,7 +170,7 @@
                         <height>60</height>
                         <visible>!IsEmpty(Window.Property(Provider.1.Icon))</visible>
                         
-                        <!-- Fundo circular -->
+                        <!-- Circular background -->
                         <control type="image">
                             <width>60</width>
                             <height>60</height>
@@ -316,8 +316,8 @@
                 </control>
             </control>
 
-            <!-- ================== BOTÕES PRINCIPAIS ================== -->
-            <!-- GRUPO 1: FILME SEM COLEÇÃO (2 botões) -->
+            <!-- ================== MAIN BUTTONS ================== -->
+            <!-- GROUP 1: FILM WITHOUT COLLECTION (2 buttons) -->
             <control type="grouplist" id="300">
                 <top>475</top>
                 <height>80</height>
@@ -330,7 +330,7 @@
 
                 <visible>String.IsEqual(Window.Property(media_type),movie) + !String.IsEqual(Window.Property(HasCollection),true)</visible>
                 
-                <!-- SELECIONAR FONTE -->
+                <!-- SELECT SOURCES -->
                 <control type="button" id="302">
                     <width>540</width>
                     <height>70</height>
@@ -348,7 +348,7 @@
                     <onleft>504</onleft>
                 </control>
                 
-                <!-- FAVORITOS -->
+                <!-- FAVORITES -->
                 <control type="button" id="305">
                     <width>540</width>
                     <height>70</height>
@@ -367,7 +367,7 @@
                 </control>
             </control>
             
-            <!-- GRUPO 2: FILME COM COLEÇÃO (3 botões) -->
+            <!-- GROUP 2: FILM WITH COLLECTION (3 buttons) -->
             <control type="grouplist" id="310">
                 <top>475</top>
                 <height>80</height>
@@ -378,7 +378,7 @@
                 <ondown>50</ondown>
                 <visible>String.IsEqual(Window.Property(media_type),movie) + String.IsEqual(Window.Property(HasCollection),true)</visible>
 
-                <!-- SELECIONAR FONTE -->
+                <!-- SELECT SOURCES -->
                 <control type="button" id="312">
                     <width>340</width>
                     <height>70</height>
@@ -396,11 +396,11 @@
                     <onleft>504</onleft>
                 </control>
                 
-                <!-- COLEÇÃO -->
+                <!-- COLLECTION -->
                 <control type="button" id="313">
                     <width>340</width>
                     <height>70</height>
-                    <label>Coleção</label>
+                    <label>Collection</label>
                     <font>font14</font>
                     <texturefocus border="15" colordiffuse="FF00AEEF">panel.png</texturefocus>
                     <texturenofocus border="15" colordiffuse="FF282828">panel.png</texturenofocus>
@@ -414,7 +414,7 @@
                     <onleft>312</onleft>
                 </control>
                 
-                <!-- FAVORITOS -->
+                <!-- FAVORITES -->
                 <control type="button" id="315">
                     <width>340</width>
                     <height>70</height>
@@ -433,7 +433,7 @@
                 </control>
             </control>
             
-            <!-- GRUPO 3: SÉRIE (2 botões) -->
+            <!-- GROUP 3: SERIES (2 buttons) -->
             <control type="grouplist" id="320">
                 <top>475</top>
                 <height>80</height>
@@ -444,11 +444,11 @@
                 <ondown>50</ondown>
                 <visible>String.IsEqual(Window.Property(media_type),tvshow)</visible>
                 
-                <!-- VER TEMPORADAS -->
+                <!-- SEE SEASONS -->
                 <control type="button" id="321">
                     <width>540</width>
                     <height>70</height>
-                    <label>Vezi Sezoane</label>
+                    <label>See Seasons</label>
                     <font>font14</font>
                     <texturefocus border="15" colordiffuse="FF00AEEF">panel.png</texturefocus>
                     <texturenofocus border="15" colordiffuse="FF282828">panel.png</texturenofocus>
@@ -462,7 +462,7 @@
                     <onleft>504</onleft>
                 </control>
                 
-                <!-- FAVORITOS -->
+                <!-- FAVORITES -->
                 <control type="button" id="322">
                     <width>540</width>
                     <height>70</height>
@@ -519,7 +519,7 @@
                 <visible>Control.HasFocus(50)</visible>
             </control>
 
-            <!-- RODAPÉ -->
+            <!-- FOOTER -->
             <control type="label">
                 <top>940</top>
                 <width>1100</width>
@@ -527,11 +527,11 @@
                 <font>font12</font>
                 <textcolor>FFAAAAAA</textcolor>
                 <align>center</align>
-                <label>Apăsați ÎNAPOI pentru a închide • Dezactivați această funcție din setări</label>
+                <label>Press BACK to close • Disable this function in settings</label>
             </control>
         </control>
 
-        <!-- BOTÃO FECHAR -->
+        <!-- CLOSE BUTTON -->
         <control type="button" id="999">
             <top>20</top>
             <left>1850</left>

@@ -1,11 +1,9 @@
 # resources/lib/trakt_client.py
 # -*- coding: utf-8 -*-
-"""
-Cliente Trakt organizado - Baseado na estrutura do Jacktook
-✅ Listas públicas funcionais
-✅ Paginação correta
-✅ Estrutura limpa
-"""
+"""Organized Trakt Client - Based on the Jacktook framework
+✅ Functional public lists
+✅ Correct pagination
+✅ Clean structure"""
 
 import xbmc
 import xbmcgui
@@ -17,7 +15,7 @@ from urllib.parse import quote_plus
 ADDON = xbmcaddon.Addon()
 
 class TraktAPI:
-    """Cliente base para requests Trakt"""
+    """Base client for Trakt requests"""
     
     def __init__(self):
         self.settings = self._get_settings()
@@ -46,7 +44,7 @@ class TraktAPI:
         return headers
     
     def request(self, method, endpoint, params=None, auth_required=False):
-        """Request genérico para Trakt"""
+        """Request generic para Trakt"""
         try:
             import requests
             
@@ -67,15 +65,15 @@ class TraktAPI:
                     return response.json()
                 return True
             
-            xbmc.log(f"[Trakt] Erro {response.status_code} em {endpoint}", xbmc.LOGERROR)
+            xbmc.log(f"[Trakt] Error {response.status_code} em {endpoint}", xbmc.LOGERROR)
             return None
             
         except Exception as e:
-            xbmc.log(f"[Trakt] Erro requisição {endpoint}: {e}", xbmc.LOGERROR)
+            xbmc.log(f"[Trakt] Error request {endpoint}: {e}", xbmc.LOGERROR)
             return None
     
     def get_public_list(self, endpoint, params=None, **kwargs):
-        """Obtém lista pública (não requer auth)"""
+        """Get public list (does not require auth)"""
         params = params or {}
         params['extended'] = 'full'
         if kwargs:
@@ -84,72 +82,72 @@ class TraktAPI:
         return self.request('GET', endpoint, params, auth_required=False)
 
 class TraktLists:
-    """Gerencia listas do Trakt"""
+    """Trakt List Management"""
     
     def __init__(self):
         self.api = TraktAPI()
     
     def get_trending(self, media_type='movies', page=1, limit=30, **kwargs):
-        """Lista trending (pública)"""
+        """Trending list (public)"""
         endpoint = f'/{media_type}/trending'
         params = {'page': page, 'limit': limit}
         return self.api.get_public_list(endpoint, params, **kwargs)
     
     def get_popular(self, media_type='movies', page=1, limit=30, **kwargs):
-        """Lista popular (pública)"""
+        """Popular (public) list"""
         endpoint = f'/{media_type}/popular'
         params = {'page': page, 'limit': limit}
         return self.api.get_public_list(endpoint, params, **kwargs)
     
     def get_most_watched(self, media_type='movies', period='weekly', page=1, limit=30, **kwargs):
-        """Mais assistidos (pública)"""
+        """Most watched (public)"""
         endpoint = f'/{media_type}/watched/{period}'
         params = {'page': page, 'limit': limit}
         return self.api.get_public_list(endpoint, params, **kwargs)
     
     def get_most_collected(self, media_type='movies', period='weekly', page=1, limit=30, **kwargs):
-        """Mais coletados (pública)"""
+        """Most collected (public)"""
         endpoint = f'/{media_type}/collected/{period}'
         params = {'page': page, 'limit': limit}
         return self.api.get_public_list(endpoint, params, **kwargs)
     
     def get_most_anticipated(self, media_type='movies', page=1, limit=30, **kwargs):
-        """Mais aguardados (pública)"""
+        """Most anticipated (public)"""
         endpoint = f'/{media_type}/anticipated'
         params = {'page': page, 'limit': limit}
         return self.api.get_public_list(endpoint, params, **kwargs)
     
     def get_box_office(self, page=1, limit=30):
-        """Bilheteria (pública) - apenas filmes"""
+        """Box office (public) - films only"""
         endpoint = '/movies/boxoffice'
         params = {'page': page, 'limit': limit}
         return self.api.get_public_list(endpoint, params)
     
     def get_recommended(self, media_type='movies', page=1, limit=30):
-        """Recomendados (requer auth)"""
+        """Recommended (requires auth)"""
         endpoint = f'/recommendations/{media_type}'
         params = {'page': page, 'limit': limit}
         return self.api.request('GET', endpoint, params, auth_required=True)
     
     def get_top_rated(self, media_type='movies', page=1, limit=30, **kwargs):
-        """Melhor avaliados (pública)"""
+        """Top rated (public)"""
         endpoint = f'/{media_type}/rated'
         params = {'page': page, 'limit': limit}
         return self.api.get_public_list(endpoint, params, **kwargs)
     
     def get_most_played(self, media_type='movies', period='weekly', page=1, limit=30, **kwargs):
-        """Mais reproduzidos (pública)"""
+        """Most played (public)"""
         endpoint = f'/{media_type}/played/{period}'
         params = {'page': page, 'limit': limit}
         return self.api.get_public_list(endpoint, params, **kwargs)
 
 class TraktPresentation:
-    """Apresentação dos resultados Trakt"""
+    """Presentation of Trakt results"""
     
     @staticmethod
     def normalize_item(item):
-        """Normaliza item do Trakt para formato padrão"""
-        # Detecta se é filme ou série
+        """Normalizes Trakt item to standard format"""
+        # Detects whether it is a movie or series
         if 'movie' in item:
             media_type = 'movie'
             obj = item['movie']
@@ -159,7 +157,7 @@ class TraktPresentation:
             obj = item['show']
             extra = item
         else:
-            # Pode ser um item direto
+            # Can be a direct item
             obj = item
             extra = {}
             media_type = 'movie' if 'title' in obj else 'tvshow'
@@ -184,7 +182,7 @@ class TraktPresentation:
             'collector_count': extra.get('collector_count', 0),
             'list_count': extra.get('list_count', 0),
             'revenue': extra.get('revenue', 0),
-            # Adicionado para suportar artes
+            # Added to support arts
             'poster': item.get('poster', ''),
             'backdrop': item.get('backdrop', ''),
             'clearlogo': item.get('clearlogo', '')
@@ -192,19 +190,19 @@ class TraktPresentation:
     
     @staticmethod
     def build_url(item):
-        """Constrói URL para o item"""
+        """Build URL for item"""
         media_type = item.get('media_type')
         
-        # Para séries
+        # For series
         if media_type == 'tvshow':
             url = f"plugin://plugin.video.cinebox/?action=list_seasons&tvshow_tmdb_id={item['tmdb_id']}"
-            # Adiciona artes na URL de séries
+            # Add arts to the series URL
             if item.get('poster'): url += f"&poster={quote_plus(item['poster'])}"
             if item.get('backdrop'): url += f"&backdrop={quote_plus(item['backdrop'])}"
             if item.get('clearlogo'): url += f"&clearlogo={quote_plus(item['clearlogo'])}"
             return url
         
-        # Para filmes
+        # For movies
         title = str(item.get('title', ''))
         url_params = [
             f"action=find_sources",
@@ -218,7 +216,7 @@ class TraktPresentation:
         if item.get('imdb_id'):
             url_params.append(f"imdb_id={item['imdb_id']}")
             
-        # Adiciona artes na URL de filmes
+        # Add artwork to movie URLs
         if item.get('poster'):
             url_params.append(f"poster={quote_plus(item['poster'])}")
         if item.get('backdrop'):

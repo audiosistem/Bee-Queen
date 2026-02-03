@@ -11,9 +11,9 @@ ADDON_PATH = xbmcvfs.translatePath(ADDON.getAddonInfo('path'))
 
 MOVIE_DETAILS_ENABLED = ADDON.getSettingBool("movie.enable_details")
 TVSHOW_DETAILS_ENABLED = ADDON.getSettingBool("tvshow.enable_details")
-# AUTOPLAY removido daqui para ser lido em tempo real na função _play e outras chamadas
+# AUTOPLAY removed from here to be read in real time in function _play and other calls
 
-# === CACHE DE LOGOS (OTIMIZADO) ===
+# === LOGOS CACHE (OPTIMIZED) ===
 _PROVIDER_LOGOS = {
     "hulu": "hulu.png",
     "netflix": "netflix.png",
@@ -45,7 +45,7 @@ _PROVIDER_LOGOS = {
 _LOGO_PATHS = {}
 
 def _init_logo_cache():
-    """Inicializa cache de logos (roda 1x no import)"""
+    """Initialize logo cache (runs 1x on import)"""
     for k, logo in _PROVIDER_LOGOS.items():
         path = xbmcvfs.translatePath(f"{ADDON_PATH}/resources/logos/{logo}")
         if xbmcvfs.exists(path):
@@ -54,12 +54,12 @@ def _init_logo_cache():
 _init_logo_cache()
 
 def get_logo_path(provider):
-    """Retorna caminho do logo (com cache)"""
+    """Returns logo path (with cache)"""
     if not provider:
         return ""
     return _LOGO_PATHS.get(provider.lower(), "")
 
-# === DIALOG DE DETALHES ===
+# === DETAILS DIALOG ===
 class CineboxDetailsWindow(xbmcgui.WindowXMLDialog):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -67,14 +67,14 @@ class CineboxDetailsWindow(xbmcgui.WindowXMLDialog):
         self.is_tvshow = self.meta.get('media_type') == 'tvshow'
         self.has_collection = bool(self.meta.get('collection'))
         
-        # Setup ANTES do primeiro frame
+        # Setup BEFORE the first frame
         self._setup_properties()
     
     def _setup_properties(self):
-        """Define propriedades do dialog (instantâneo)"""
+        """Sets dialog properties (snapshot)"""
         m = self.meta
         
-        # Propriedades básicas
+        # Basic properties
         self.setProperty("media_type", "tvshow" if self.is_tvshow else "movie")
         self.setProperty("title", m.get("title", ""))
         self.setProperty("poster", m.get("poster", ""))
@@ -83,26 +83,26 @@ class CineboxDetailsWindow(xbmcgui.WindowXMLDialog):
         self.setProperty("duration", m.get("duration_str", ""))
         self.setProperty("plot", m.get("synopsis", ""))
         self.setProperty("clearlogo", m.get("clearlogo", ""))
-        self.setProperty("FavoriteLabel", "Adicionar à Lista")
+        self.setProperty("FavoriteLabel", "Add to List")
         self.setProperty("HasCollection", "true" if self.has_collection else "false")
         self.setProperty("Collection.Label", str(m.get("collection", "")))
         self.setProperty("tmdb_id", str(m.get("tmdb_id", "")))
         
-        # Gêneros (max 3)
+        # Genres (max 3)
         for i, g in enumerate(m.get('genre_list', []), 1):
             self.setProperty(f"Genre.{i}.Label", g)
         
-        # Provedores (max 4)
+        # Providers (max 4)
         for i, prov in enumerate(m.get('provider_data', []), 1):
             self.setProperty(f"Provider.{i}.Label", prov['name'])
             self.setProperty(f"Provider.{i}.Icon", prov['icon'])
     
     def onInit(self):
-        """Inicialização (só define foco)"""
+        """Initialization (only sets focus)"""
         self.set_focus_immediate()
     
     def set_focus_immediate(self):
-        """Define foco no botão correto"""
+        """Sets focus on the correct button"""
         if self.is_tvshow:
             ids = [321, 303, 10]
         elif self.has_collection:
@@ -118,12 +118,12 @@ class CineboxDetailsWindow(xbmcgui.WindowXMLDialog):
                 pass
     
     def onClick(self, controlID):
-        """Handler de cliques"""
+        """Click handler"""
         try:
             tmdb_id = self.meta.get("tmdb_id")
             media_type = "tvshow" if self.is_tvshow else "movie"
             
-            # Botões de play
+            # play buttons
             if controlID in (301, 311):
                 self.close()
                 self._play(True)
@@ -132,7 +132,7 @@ class CineboxDetailsWindow(xbmcgui.WindowXMLDialog):
                 self.close()
                 self._play(False)
             
-            # Listar temporadas (séries)
+            # List seasons (series)
             elif controlID in (303, 321) and self.is_tvshow:
                 self.close()
                 self._open_container(
@@ -140,7 +140,7 @@ class CineboxDetailsWindow(xbmcgui.WindowXMLDialog):
                     f"action=list_seasons&tvshow_tmdb_id={tmdb_id}"
                 )
             
-            # Listar coleção (filmes)
+            # List collection (films)
             elif controlID in (304, 313) and self.has_collection:
                 self.close()
                 collection = urllib.parse.quote_plus(str(self.meta.get("collection", "")))
@@ -149,11 +149,11 @@ class CineboxDetailsWindow(xbmcgui.WindowXMLDialog):
                     f"action=list_movies_by_collection&collection={collection}"
                 )
             
-            # Toggle favorito
+            # Favorite toggle
             elif controlID in (305, 315, 322):
                 self._toggle_favorite(tmdb_id, media_type)
             
-            # Clique em gênero (400-409)
+            # Click Genre (400-409)
             elif 400 < controlID < 410:
                 idx = controlID - 401
                 genres = self.meta.get('genre_list', [])
@@ -165,7 +165,7 @@ class CineboxDetailsWindow(xbmcgui.WindowXMLDialog):
                         f"action={action}&genre={genre}"
                     )
             
-            # Clique em provedor (500-509)
+            # Click Provider (500-509)
             elif 500 < controlID < 510:
                 idx = controlID - 501
                 providers = self.meta.get('provider_data', [])
@@ -181,14 +181,14 @@ class CineboxDetailsWindow(xbmcgui.WindowXMLDialog):
             xbmc.log(f"[Cinebox] onClick error: {e}", xbmc.LOGERROR)
     
     def _open_container(self, url):
-        """Abre container (fecha dialog antes)"""
+        """Open container (close dialog first)"""
         self.close()
         xbmc.executebuiltin(f"Container.Update({url})")
     
     def _play(self, autoplay):
-        """Inicia reprodução"""
+        """Start playback"""
         from resources.lib import navigation
-        # ✅ CORREÇÃO: Passa season e episode explicitamente se disponíveis no meta
+        # ✅ FIX: Pass season and episode explicitly if available in the meta
         navigation.find_and_play_sources(
             self.meta, 
             autoplay=autoplay,
@@ -197,11 +197,11 @@ class CineboxDetailsWindow(xbmcgui.WindowXMLDialog):
         )
     
     def _toggle_favorite(self, tmdb_id, media_type):
-        """Adiciona/remove favorito (otimizado)"""
+        """Add/remove favorite (optimized)"""
         from resources.lib.favorites import add_item_to_favorites, remove_item_from_favorites
         from resources.lib.db import db
         
-        # Usa helper is_favorite() se disponível
+        # Use is_favorite() helper if available
         try:
             is_fav = db.is_favorite(tmdb_id, media_type)
             if is_fav:
@@ -209,7 +209,7 @@ class CineboxDetailsWindow(xbmcgui.WindowXMLDialog):
             else:
                 add_item_to_favorites(tmdb_id, media_type)
         except AttributeError:
-            # Fallback para query direta
+            # Fallback for direct query
             conn = db._get_conn()
             cur = conn.cursor()
             cur.execute(
@@ -225,36 +225,34 @@ class CineboxDetailsWindow(xbmcgui.WindowXMLDialog):
                 add_item_to_favorites(tmdb_id, media_type)
     
     def onAction(self, action):
-        """Handler de ações (back, esc)"""
+        """Action handler (back, esc)"""
         if action.getId() in (10, 92, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_PREVIOUS_MENU):
             self.close()
 
-# === PREPARAÇÃO DE METADADOS ===
+# === METADATA PREPARATION ===
 def _prepare_common_meta(item_data):
-    """
-    Prepara metadados comuns (OTIMIZADO).
-    Evita regex, usa função do utils.py.
-    """
+    """Prepares common metadata (OPTIMIZED).
+    Avoid regex, use utils.py function."""
     meta = item_data.copy()
     
-    # === GÊNEROS (limita a 3) ===
+    # === GENRES (limits to 3) ===
     raw_genres = meta.get("genre", "")
     if isinstance(raw_genres, str):
         meta['genre_list'] = [g.strip() for g in raw_genres.split(",") if g.strip()][:3]
     else:
         meta['genre_list'] = []
     
-    # === POSTER (usa scale_tmdb do utils.py) ===
+    # === POSTER (uses scale_tmdb from utils.py) ===
     poster = meta.get("poster", "")
     if poster and 'image.tmdb.org' in poster:
-        # Importa função otimizada
+        # Import optimized function
         from resources.lib.utils import scale_tmdb
         meta["poster"] = scale_tmdb(poster, "original")
     
-    # === ANO ===
+    # === YEAR ===
     meta["year_str"] = str(meta.get("year", ""))
     
-    # === PROVEDORES (max 4, sem duplicatas) ===
+    # === PROVIDERS (max 4, no duplicates) ===
     providers = meta.get("providers", [])
     if isinstance(providers, str):
         try:
@@ -275,9 +273,9 @@ def _prepare_common_meta(item_data):
     
     return meta
 
-# === FUNÇÕES PÚBLICAS ===
+# === PUBLIC FUNCTIONS ===
 def show_details_movie(item_data):
-    """Mostra detalhes de filme"""
+    """Shows movie details"""
     if not item_data:
         return
     
@@ -297,7 +295,7 @@ def show_details_movie(item_data):
     del win
 
 def show_details_tvshow(item_data):
-    """Mostra detalhes de série"""
+    """Show series details"""
     if not item_data:
         return
     
@@ -318,19 +316,17 @@ def show_details_tvshow(item_data):
     del win
 
 def show_details(item_data):
-    """
-    Dispatcher principal.
-    Decide se mostra dialog ou pula direto para play/lista.
-    """
+    """Main Dispatcher.
+    Decide whether to show dialog or jump straight to play/list."""
     if not item_data:
         return
     
     media_type = item_data.get("media_type")
     
-    # === FILMES ===
+    # === MOVIES ===
     if media_type == "movie":
         if not MOVIE_DETAILS_ENABLED:
-            # Pula para play direto
+            # Skip to direct play
             from resources.lib import navigation
             navigation.find_and_play_sources(
                 item_data, 
@@ -339,13 +335,13 @@ def show_details(item_data):
                 episode=item_data.get('episode')
             )
         else:
-            # Mostra dialog
+            # Show dialog
             show_details_movie(item_data)
         return
     
-    # === SÉRIES ===
+    # === SERIES ===
     if media_type == "tvshow":
-        # Se tiver season e episode, é um episódio direto (ex: via TMDbHelper)
+        # If there is a season and episode, it is a direct episode (e.g. via TMDbHelper)
         if item_data.get('season') and item_data.get('episode'):
             if not TVSHOW_DETAILS_ENABLED:
                 from resources.lib import navigation
@@ -358,7 +354,7 @@ def show_details(item_data):
                 return
         
         if not TVSHOW_DETAILS_ENABLED:
-            # Pula para lista de temporadas
+            # Skip to season list
             tmdb_id = item_data.get("tmdb_id")
             xbmc.executebuiltin(
                 f"Container.Update("
@@ -366,6 +362,6 @@ def show_details(item_data):
                 f"action=list_seasons&tvshow_tmdb_id={tmdb_id})"
             )
         else:
-            # Mostra dialog
+            # Show dialog
             show_details_tvshow(item_data)
         return

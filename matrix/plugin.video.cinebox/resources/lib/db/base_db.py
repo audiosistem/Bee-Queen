@@ -8,7 +8,7 @@ import xbmcaddon
 import xbmcvfs
 import xbmc
 
-# === CONFIGURAÇÕES ===
+# === SETTINGS ===
 ADDON = xbmcaddon.Addon()
 PROFILE_DIR = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
 DB_FILE = os.path.join(PROFILE_DIR, 'cinebox.db')
@@ -16,7 +16,7 @@ os.makedirs(os.path.dirname(DB_FILE), exist_ok=True)
 
 # === CACHE INTELIGENTE COM TTL ===
 class SmartCache:
-    """✅ OTIMIZADO: Cache com expiração automática e limite de memória"""
+    """✅ OPTIMIZED: Auto-expiring cache and memory limit"""
     def __init__(self, max_size=1000, default_ttl=600):  # ⬆️ Aumentado de 500/300
         self._data = {}
         self.max_size = max_size
@@ -32,9 +32,9 @@ class SmartCache:
         return None
     
     def set(self, key, value, ttl=None):
-        # Limpa cache se tiver muito cheio (LRU simples)
+        # Clears cache if it gets too full (simple LRU)
         if len(self._data) >= self.max_size:
-            # Remove 20% dos itens mais antigos
+            # Remove 20% of the oldest items
             to_remove = sorted(self._data.items(), key=lambda x: x[1][1])[:self.max_size//5]
             for k, _ in to_remove:
                 del self._data[k]
@@ -50,42 +50,42 @@ class SmartCache:
     def clear(self):
         self._data.clear()
 
-# === POOL DE CONEXÕES ===
+# === CONNECTION POOL ===
 class ConnectionPool:
-    """✅ OTIMIZADO: Gerencia conexões reutilizáveis para evitar overhead"""
-    def __init__(self, db_file, pool_size=5):  # ⬆️ Aumentado de 3 para 5
+    """✅ OPTIMIZED: Manages reusable connections to avoid overhead"""
+    def __init__(self, db_file, pool_size=5):  # ⬆️ Increased from 3 to 5
         self.db_file = db_file
         self.pool = []
         self.pool_size = pool_size
         self._in_use = set()
     
     def get_connection(self):
-        # Tenta reusar conexão livre
+        # Try to reuse free connection
         for conn in self.pool:
             if conn not in self._in_use:
                 self._in_use.add(conn)
                 return conn
         
-        # Cria nova se pool não está cheio
+        # Create new if pool is not full
         if len(self.pool) < self.pool_size:
             conn = self._create_connection()
             self.pool.append(conn)
             self._in_use.add(conn)
             return conn
         
-        # Pool cheio, cria temporária
+        # Pool full, temporary creates
         return self._create_connection()
     
     def _create_connection(self):
         conn = sqlite3.connect(self.db_file, timeout=15.0, check_same_thread=False)  # ⬆️ Timeout aumentado
-        # ✅ OTIMIZAÇÕES SQLITE
+        # ✅ SQLITE OPTIMIZATIONS
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA synchronous=NORMAL")
         conn.execute("PRAGMA cache_size=-64000")  # ⬆️ 64MB cache (era 32MB)
         conn.execute("PRAGMA temp_store=MEMORY")
         conn.execute("PRAGMA mmap_size=536870912")  # ⬆️ 512MB mmap (era 256MB)
-        conn.execute("PRAGMA page_size=4096")  # ✅ NOVO: Tamanho de página otimizado
-        conn.execute("PRAGMA locking_mode=NORMAL")  # ✅ NOVO: Melhor concorrência
+        conn.execute("PRAGMA page_size=4096") # ✅ NEW: Optimized page size
+        conn.execute("PRAGMA locking_mode=NORMAL") # ✅ NEW: Better concurrency
         return conn
     
     def release_connection(self, conn):
@@ -101,31 +101,31 @@ class ConnectionPool:
         self.pool.clear()
         self._in_use.clear()
 
-# === BASE DATABASE OTIMIZADA ===
+# === OPTIMIZED DATABASE ===
 class BaseDatabase:
-    _pool = None  # Pool compartilhado entre instâncias
+    _pool = None # Pool shared between instances
     
     def __init__(self, db_file=DB_FILE):
         self.db_file = db_file
-        self._cache = SmartCache(max_size=1000, default_ttl=600)  # ⬆️ Otimizado
+        self._cache = SmartCache(max_size=1000, default_ttl=600)  # ⬆️ Optimized
         
-        # Inicializa pool uma vez
+        # Initialize pool once
         if BaseDatabase._pool is None:
-            BaseDatabase._pool = ConnectionPool(db_file, pool_size=5)  # ⬆️ Otimizado
+            BaseDatabase._pool = ConnectionPool(db_file, pool_size=5)  # ⬆️ Optimized
         
         if not os.path.exists(self.db_file):
             self.run_first_time_setup()
     
     def _get_conn(self):
-        """Retorna conexão do pool (MAIS RÁPIDO)"""
+        """Returns pool connection (FASTER)"""
         return BaseDatabase._pool.get_connection()
     
     def _release_conn(self, conn):
-        """Devolve conexão ao pool"""
+        """Returns connection to the pool"""
         BaseDatabase._pool.release_connection(conn)
     
     def _execute_query(self, sql, params=(), fetch_one=False, fetch_all=True):
-        """Helper universal para queries (reduz código repetido)"""
+        """Universal helper for queries (reduces repeated code)"""
         conn = self._get_conn()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
@@ -154,7 +154,7 @@ class BaseDatabase:
     def _cache_delete_prefix(self, prefix):
         self._cache.delete_prefix(prefix)
     
-    # === NORMALIZAÇÃO ===
+    # === STANDARDIZATION ===
     @staticmethod
     def _normalize_text(text):
         """Cache interno para textos normalizados"""
@@ -163,11 +163,11 @@ class BaseDatabase:
         nfkd = unicodedata.normalize('NFKD', text.lower())
         return "".join([c for c in nfkd if not unicodedata.combining(c)])
     
-    # === OTIMIZAÇÃO DE _rows_to_dict ===
+    # === _rows_to_dict OPTIMIZATION ===
     def _rows_to_dict(self, rows, skip_json=False):
         """
-        Converte rows em dict com opção de pular JSON parse
-        skip_json=True: 50% mais rápido quando não precisa dos arrays
+        Converts rows to dict with option to skip JSON parse
+        skip_json=True: 50% faster when you don't need arrays
         """
         if not rows:
             return []
@@ -177,7 +177,7 @@ class BaseDatabase:
             item = dict(row)
             
             if not skip_json:
-                # JSON fields (só processa se necessário)
+                # JSON fields (only processes if necessary)
                 for field in ['genres', 'streams', 'providers', 'seasons_data']:
                     if field in item and item[field]:
                         try:
@@ -194,7 +194,7 @@ class BaseDatabase:
                 if field in item and (item[field] == 'None' or item[field] is None):
                     item[field] = ''
             
-            # Numeric defaults (só se existir no row)
+            # Numeric defaults (only if it exists in the row)
             numeric_defaults = {
                 'rating': 0.0, 'runtime': 0, 'year': 0, 
                 'popularity': 0.0, 'revenue': 0, 'playcount': 0
@@ -210,7 +210,7 @@ class BaseDatabase:
         
         return items
     
-    # === SETUP INICIAL ===
+    # === INITIAL SETUP ===
     def run_first_time_setup(self):
         conn = self._get_conn()
         cursor = conn.cursor()
@@ -231,7 +231,7 @@ class BaseDatabase:
         self._create_collections_meta_table(cursor)
         self._create_fts_tables(cursor)  # ✅ NOVO
     
-    # === TABELAS (mantidas igual, mas com FTS) ===
+    # === TABLES (kept the same, but with FTS) ===
     def _create_movies_table(self, cursor):
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS movies (
@@ -243,7 +243,7 @@ class BaseDatabase:
                 playcount INTEGER DEFAULT 0, popularity_updated TEXT
             )
         ''')
-        # Índices otimizados
+        # Optimized indexes
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_movies_popularity ON movies(popularity DESC)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_movies_revenue ON movies(revenue DESC)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_movies_date_added ON movies(date_added DESC)")
@@ -318,14 +318,14 @@ class BaseDatabase:
             )
         """)
     
-    # === ✅ FULL-TEXT SEARCH (FTS5) - OPCIONAL ===
+    # === ✅ FULL-TEXT SEARCH (FTS5) - OPTIONAL ===
     def _create_fts_tables(self, cursor):
-        """Cria tabelas FTS para busca ULTRA-RÁPIDA (se suportado)"""
+        """Creates FTS tables for ULTRA-FAST searching (if supported)"""
         try:
-            # Verifica se FTS5 está disponível
+            # Check if FTS5 is available
             cursor.execute("SELECT compile_options FROM pragma_compile_options WHERE compile_options LIKE 'ENABLE_FTS5'")
             if not cursor.fetchone():
-                xbmc.log("[DB] FTS5 não disponível no sistema", xbmc.LOGINFO)
+                xbmc.log("[DB] FTS5 not available on the system", xbmc.LOGINFO)
                 return
 
             cursor.execute('''
@@ -338,7 +338,7 @@ class BaseDatabase:
                 USING fts5(tmdb_id UNINDEXED, title, content=tvshows, content_rowid=tmdb_id)
             ''')
             
-            # Triggers para manter FTS sincronizado
+            # Triggers to keep FTS synchronized
             cursor.execute('''
                 CREATE TRIGGER IF NOT EXISTS movies_fts_insert AFTER INSERT ON movies BEGIN
                     INSERT INTO movies_fts(tmdb_id, title) VALUES (new.tmdb_id, new.title);
@@ -363,20 +363,20 @@ class BaseDatabase:
                 END
             ''')
         except Exception as e:
-            xbmc.log(f"[DB] Erro ao criar FTS: {e}", xbmc.LOGWARNING)
+            xbmc.log(f"[DB] Error creating FTS: {e}", xbmc.LOGWARNING)
     
-    # === BUSCA OTIMIZADA COM FTS ===
+    # === OPTIMIZED SEARCH WITH FTS ===
     def search_items(self, query, limit=20, offset=0):
-        """Busca usando FTS5 se disponível, senão usa LIKE"""
+        """Search using FTS5 if available, otherwise use LIKE"""
         cache_key = f"search:{query}:{limit}:{offset}"
         cached = self._cache_get(cache_key)
         if cached:
             return cached
         
-        # Prepara query (remove acentos)
+        # Prepare query (remove accents)
         norm_query = self._normalize_text(query)
         
-        # Verifica se tabelas FTS existem
+        # Check if FTS tables exist
         conn = self._get_conn()
         cursor = conn.cursor()
         has_fts = False
@@ -413,7 +413,7 @@ class BaseDatabase:
         self._cache_set(cache_key, results, ttl=600)  # 10 min
         return results
     
-    # === HELPERS PARA API CACHE ===
+    # === HELPERS FOR API CACHE ===
     def save_tmdb_cache(self, key, data):
         conn = self._get_conn()
         cursor = conn.cursor()
@@ -433,7 +433,7 @@ class BaseDatabase:
     
     
     def get_watched_movies(self):
-        """Retorna filmes com playcount > 0"""
+        """Returns movies with playcount > 0"""
         sql = """
             SELECT tmdb_id, imdb_id, title, playcount, 
                    datetime(date_added) as last_played
@@ -444,7 +444,7 @@ class BaseDatabase:
         return self._execute_query(sql)
     
     def get_watched_tvshows(self):
-        """Retorna séries com playcount > 0"""
+        """Returns series with playcount > 0"""
         sql = """
             SELECT tmdb_id, imdb_id, title, playcount,
                    datetime(date_added) as last_played
@@ -473,7 +473,7 @@ class BaseDatabase:
             self._release_conn(conn)
     
     def update_tvshow_playcount(self, tmdb_id, last_played=None):
-        """Atualiza playcount de uma série"""
+        """Update a series' playcount"""
         conn = self._get_conn()
         cursor = conn.cursor()
         
@@ -518,7 +518,7 @@ class BaseDatabase:
         return self._execute_query(sql)
 
     def get_favorites_by_type(self, media_type):
-        """Retorna favoritos de um tipo específico com dados completos"""
+        """Returns favorites of a specific type with complete data"""
         table = 'movies' if media_type == 'movie' else 'tvshows'
         sql = f"""
             SELECT t.*, f.media_type
@@ -530,7 +530,7 @@ class BaseDatabase:
         return self._execute_query(sql, (media_type,))
     
     def add_to_favorites(self, tmdb_id, media_type):
-        """Adiciona aos favoritos"""
+        """Add to favorites"""
         conn = self._get_conn()
         cursor = conn.cursor()
         
@@ -547,9 +547,9 @@ class BaseDatabase:
     
     
     
-    # === LIMPEZA ===
+    # === CLEANING ===
     def clear_database(self, preserve_favorites=True):
-        xbmc.log("[DB] Iniciando limpeza do banco de dados", xbmc.LOGINFO)
+        xbmc.log("[DB] Starting database cleanup", xbmc.LOGINFO)
         conn = self._get_conn()
         cursor = conn.cursor()
         

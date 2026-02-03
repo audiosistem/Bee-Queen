@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# resources/lib/scrapers/stremio.py - VERSÃO OTIMIZADA
+# resources/lib/scrapers/stremio.py - OPTIMIZED VERSION
 
 import requests
 import xbmc
@@ -9,44 +9,42 @@ from .utils import get_anime_search_patterns
 from ..debug_logger import logger
 
 def scrape(provider_url, is_configurable, imdb_id, media_type, season, episode, item_data=None, cancel_event=None):
-    """
-    Scraper Stremio unificado e otimizado.
-    """
+    """Unified and optimized Stremio Scraper."""
     
-    # ========================================
-    # 1. VALIDAÇÃO E NORMALIZAÇÃO
-    # ========================================
+    # None
+    # 1. VALIDATION AND STANDARDIZATION
+    # None
     if not provider_url:
         return []
     
-    # Normaliza a URL base (remove manifest.json se presente)
+    # Normalizes the base URL (removes manifest.json if present)
     base_url = provider_url.replace('/manifest.json', '').rstrip('/')
     
-    # Normaliza season/episode APENAS se não forem None
+    # Normalize season/episode ONLY if they are not None
     season = _safe_int(season)
     episode = _safe_int(episode)
     
-    # Valida requisitos mínimos
+    # Validates minimum requirements
     if not imdb_id and "animezey" not in base_url.lower():
         xbmc.log(f"[Stremio] Sem IMDB ID para {base_url}", xbmc.LOGDEBUG)
         return []
     
-    # ========================================
-    # 2. CONSTRUÇÃO DE ENDPOINTS
-    # ========================================
+    # None
+    # 2. CONSTRUCTION OF ENDPOINTS
+    # None
     endpoints = _build_endpoints(media_type, imdb_id, season, episode)
     
-    # Se não temos IMDB, tentamos busca por texto se o provedor suportar (ex: Jackett/Torrentio via search)
-    # Mas a maioria dos addons Stremio exige ID. 
-    # Vamos adicionar suporte a busca por título original se o IMDB falhar ou como complemento.
+    # If we don't have IMDB, we try text search if the provider supports it (ex: Jackett/Torrentio via search)
+    # But most Stremio addons require ID.
+    # We will add support for searching by original title if IMDB fails or as an add-on.
     
     if not endpoints and not item_data:
-        xbmc.log(f"[Stremio] Nenhum endpoint válido para {media_type}", xbmc.LOGWARNING)
+        xbmc.log(f"[Stremio] No valid endpoint for {media_type}", xbmc.LOGWARNING)
         return []
     
-    # ========================================
-    # 3. CONFIGURAÇÃO TORRENTIO
-    # ========================================
+    # None
+    # 3. TORRENTIO SETUP
+    # None
     config_prefix = ""
     if is_configurable:
         try:
@@ -55,13 +53,13 @@ def scrape(provider_url, is_configurable, imdb_id, media_type, season, episode, 
         except Exception as e:
             xbmc.log(f"[Stremio] Config error: {e}", xbmc.LOGDEBUG)
     
-    # ========================================
-    # 4. BUSCA E DEDUPLICAÇÃO
-    # ========================================
+    # None
+    # 4. SEARCH AND DEDUPLICATION
+    # None
     streams = []
     seen_ids = set()
     
-    # Adicionar busca por título se for Torrentio e não tivermos resultados por ID
+    # Add search by title if it's Torrentio and we don't have results by ID
     if "torrentio" in base_url.lower() and not endpoints:
         search_query = item_data.get('original_title') or item_data.get('title')
         if search_query:
@@ -81,31 +79,31 @@ def scrape(provider_url, is_configurable, imdb_id, media_type, season, episode, 
         else:
             url = f"{base_url}{endpoint}"
         
-        # Correção para URLs duplas de barra
+        # Fix for double slash URLs
         url = url.replace('//stream', '/stream')
         
         found = _fetch_streams(url)
         if not found:
             continue
         
-        # Deduplica e adiciona release_title
+        # Deduplicate and add release_title
         for stream in found:
             stream_id = stream.get('url') or stream.get('infoHash')
             
             if stream_id and stream_id in seen_ids:
                 continue
             
-            # Adiciona título de lançamento se não existir
+            # Add release title if it doesn't exist
             if 'release_title' not in stream:
-                # Tenta extrair o título real do arquivo do campo 'title' ou 'description' do Stremio
+                # Attempts to extract the actual title of the file from Stremio's 'title' or 'description' field
                 raw_title = stream.get('title', '') or stream.get('description', '')
                 if raw_title:
-                    # Pega a primeira linha, que geralmente é o nome do arquivo
+                    # Take the first line, which is usually the file name
                     file_name = raw_title.split('\n')[0].strip()
                     if file_name and len(file_name) > 5:
                         stream['release_title'] = file_name
                 
-                # Fallback se não conseguiu extrair um nome de arquivo válido
+                # Fallback if failed to extract a valid filename
                 if 'release_title' not in stream:
                     stream['release_title'] = _generate_release_title(
                         item_data, media_type, season, episode
@@ -122,25 +120,23 @@ def scrape(provider_url, is_configurable, imdb_id, media_type, season, episode, 
     return streams
 
 
-# ============================================
-# FUNÇÕES AUXILIARES (INTERNAS)
-# ============================================
+# ==========================================================
+# AUXILIARY FUNCTIONS (INTERNAL)
+# ==========================================================
 
 def _safe_int(value):
-    """Converte para int de forma segura."""
+    """Converts to int safely."""
     if value is None:
         return None
     try:
         return int(value)
     except (ValueError, TypeError):
-        xbmc.log(f"[Stremio] Conversão inválida: {value}", xbmc.LOGDEBUG)
+        xbmc.log(f"[Stremio] Invalid conversion: {value}", xbmc.LOGDEBUG)
         return None
 
 
 def _build_endpoints(media_type, imdb_id, season, episode):
-    """
-    Constrói lista de endpoints para tentar.
-    """
+    """Builds list of endpoints to try."""
     endpoints = []
     
     if media_type == 'movie':
@@ -154,7 +150,7 @@ def _build_endpoints(media_type, imdb_id, season, episode):
         if not imdb_id:
             return []
         
-        # Usa padrões de busca de anime (ex: S01:E01, S1:E1)
+        # Uses anime search patterns (e.g. S01:E01, S1:E1)
         from .utils import get_anime_search_patterns
         patterns = get_anime_search_patterns(season, episode)
         
@@ -165,9 +161,7 @@ def _build_endpoints(media_type, imdb_id, season, episode):
 
 
 def _fetch_streams(url):
-    """
-    Faz request e retorna lista de streams.
-    """
+    """Makes request and returns list of streams."""
     provider_name = url.split('/')[2]
     try:
         xbmc.log(f"[Stremio] Requisitando: {url}", xbmc.LOGINFO)
@@ -193,28 +187,26 @@ def _fetch_streams(url):
         xbmc.log(f"[Stremio] Timeout: {url}", xbmc.LOGWARNING)
         logger.scraper_error(provider_name, "Timeout", url)
     except requests.RequestException as e:
-        xbmc.log(f"[Stremio] Erro HTTP: {e}", xbmc.LOGDEBUG)
+        xbmc.log(f"[Stremio] HTTP Error: {e}", xbmc.LOGDEBUG)
         logger.scraper_error(provider_name, f"HTTP Error: {e}", url)
     except ValueError:
-        xbmc.log(f"[Stremio] JSON inválido: {url}", xbmc.LOGWARNING)
+        xbmc.log(f"[Stremio] Invalid JSON: {url}", xbmc.LOGWARNING)
         logger.scraper_error(provider_name, "Invalid JSON", url)
     except Exception as e:
-        xbmc.log(f"[Stremio] Erro inesperado: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Stremio] Unexpected error: {e}", xbmc.LOGERROR)
         logger.scraper_error(provider_name, f"Unexpected Error: {e}", url)
     
     return []
 
 
 def _generate_release_title(item_data, media_type, season, episode):
-    """
-    Gera título de lançamento padrão.
-    """
+    """Generates default release title."""
     if not item_data:
         if media_type == 'tvshow' and season is not None and episode is not None:
             return f"S{season:02d}E{episode:02d}"
-        return "Desconhecido"
+        return "Unknown"
     
-    title = item_data.get('title', 'Desconhecido')
+    title = item_data.get('title', 'Unknown')
     
     if media_type == 'tvshow' and season is not None and episode is not None:
         return f"{title} S{season:02d}E{episode:02d}"

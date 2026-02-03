@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.cinebox" version="3.1.2" name="CINEBOX [COLOR red]TrainAgain[/COLOR]" provider-name="@TrainAgain2">
+<addon id="plugin.video.cinebox" version="3.1.1" name="CINEBOX [COLOR red]TrainAgain[/COLOR]" provider-name="@TrainAgain2">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
     <import addon="script.module.requests" />
@@ -16,8 +16,8 @@
   <extension point="xbmc.addon.metadata">
     <reuselanguageinvoker>false</reuselanguageinvoker>
     
-    <description lang="ro_RO">CINEBOX TrainAgain - Centrul tău de divertisment. O bibliotecă completă de filme și seriale organizată pentru cea mai bună experiență în Kodi.</description>
-    <disclaimer lang="ro_RO"> #AudacesFortunaJuvat </disclaimer>
+    <description lang="en_US">CINEBOX TrainAgain - Your entertainment center. A complete library of films and series organized for the best Kodi experience.</description>
+    <disclaimer lang="en_US"> #AudacesFortunaJuvat </disclaimer>
     <platform>all</platform>
     <license>GPL-3.0-only</license>
     <source>https://telegra.ph/Hacker-03-20-5</source>

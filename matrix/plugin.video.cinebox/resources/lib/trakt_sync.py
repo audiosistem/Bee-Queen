@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-"""
-Sistema de Sincronização com Trakt.tv - VERSÃO OTIMIZADA
-✅ Autenticação persistente
-✅ Paginação real (streaming de 20 itens por vez)
-✅ Tradução TMDB automática
-✅ Cache DB ultra-rápido
-✅ Listas customizadas funcionais
-"""
+"""Synchronization System with Trakt.tv - OPTIMIZED VERSION
+✅ Persistent authentication
+✅ Real pagination (streaming 20 items at a time)
+✅ Automatic TMDB translation
+✅ Ultra-fast DB cache
+✅ Functional custom lists"""
 
 import xbmc
 import xbmcgui
@@ -24,9 +22,9 @@ ADDON = xbmcaddon.Addon()
 ADDON_PATH = ADDON.getAddonInfo('path')
 ICON_PATH = os.path.join(ADDON_PATH, 'resources', 'medias', 'icons')
 
-# === CONFIGURAÇÕES ===
+# === SETTINGS ===
 def get_trakt_settings():
-    """Retorna configurações do Trakt"""
+    """Returns Trakt settings"""
     return {
         'client_id': ADDON.getSetting('trakt_client_id') or '',
         'client_secret': ADDON.getSetting('trakt_client_secret') or '',
@@ -42,9 +40,9 @@ def get_trakt_settings():
         'username': ADDON.getSetting('trakt_username') or ''
     }
 
-# === CACHE DB OTIMIZADO ===
+# === OPTIMIZED DB CACHE ===
 def _get_db():
-    """Importa DB do addon"""
+    """Import DB from the addon"""
     try:
         from resources.lib.db import db
         return db
@@ -52,7 +50,7 @@ def _get_db():
         return None
 
 def _create_trakt_cache_tables():
-    """Cria tabelas de cache para Trakt com índices otimizados"""
+    """Create cache tables for Trakt with optimized indexes"""
     db = _get_db()
     if not db:
         return
@@ -61,49 +59,45 @@ def _create_trakt_cache_tables():
     cursor = conn.cursor()
     
     try:
-        # Tabela principal com particionamento por categoria
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS trakt_cache (
+        # Main table with partitioning by category
+        cursor.execute('''CREATE TABLE IF NOT EXISTS trakt_cache (
                 cache_id TEXT PRIMARY KEY,
                 category TEXT NOT NULL,
                 page INTEGER NOT NULL,
                 data_json TEXT NOT NULL,
                 total_items INTEGER DEFAULT 0,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
+            )''')
         
-        # Índices compostos para queries rápidas
+        # Composite indexes for fast queries
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_trakt_cat_page ON trakt_cache(category, page, timestamp)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_trakt_timestamp ON trakt_cache(timestamp)')
         
-        # Tabela de metadados enriquecidos TMDB (evita refetch)
-        # VERSÃO 2: Força atualização para novos logos PT-BR
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS trakt_tmdb_meta_v2 (
+        # TMDB enriched metadata table (avoids refetch)
+        # VERSION 2: Force update for new PT-BR logos
+        cursor.execute('''CREATE TABLE IF NOT EXISTS trakt_tmdb_meta_v2 (
                 tmdb_id INTEGER PRIMARY KEY,
                 media_type TEXT NOT NULL,
                 title_pt TEXT,
-                poster TEXT,
+                TEXT poster,
                 backdrop TEXT,
                 clearlogo TEXT,
                 synopsis_pt TEXT,
                 genres_pt TEXT,
                 runtime INTEGER,
                 last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
+            )''')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_trakt_meta_type ON trakt_tmdb_meta(media_type, last_updated)')
         
         conn.commit()
-        xbmc.log("[Trakt] Tabelas de cache criadas com sucesso", xbmc.LOGINFO)
+        xbmc.log("[Trakt] Cache tables created successfully", xbmc.LOGINFO)
     except Exception as e:
-        xbmc.log(f"[Trakt] Erro criando tabelas: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] Error creating tables: {e}", xbmc.LOGERROR)
     finally:
         db._release_conn(conn)
 
 def _save_trakt_cache(category, page, items, total_items):
-    """Salva dados Trakt em cache no DB"""
+    """Saves cached Trakt data to DB"""
     db = _get_db()
     if not db:
         return
@@ -115,19 +109,17 @@ def _save_trakt_cache(category, page, items, total_items):
         conn = db._get_conn()
         cursor = conn.cursor()
         
-        cursor.execute('''
-            INSERT OR REPLACE INTO trakt_cache 
+        cursor.execute('''INSERT OR REPLACE INTO trakt_cache 
             (cache_id, category, page, data_json, total_items, timestamp)
-            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        ''', (cache_id, category, page, data_json, total_items))
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)''', (cache_id, category, page, data_json, total_items))
         
         conn.commit()
         db._release_conn(conn)
     except Exception as e:
-        xbmc.log(f"[Trakt] Erro salvando cache: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] Error saving cache: {e}", xbmc.LOGERROR)
 
 def _get_trakt_cache(category, page, cache_hours=24):
-    """Recupera dados Trakt do cache (se ainda válido)"""
+    """Retrieves Trakt data from cache (if still valid)"""
     db = _get_db()
     if not db:
         return None
@@ -135,11 +127,9 @@ def _get_trakt_cache(category, page, cache_hours=24):
     cache_id = f"{category}_p{page}"
     
     try:
-        sql = f'''
-            SELECT data_json, total_items FROM trakt_cache 
+        sql = f'''SELECT data_json, total_items FROM trakt_cache 
             WHERE cache_id = ? 
-            AND timestamp > datetime('now', '-{cache_hours} hours')
-        '''
+            AND timestamp > datetime('now', '-{cache_hours} hours')'''
         
         conn = db._get_conn()
         cursor = conn.cursor()
@@ -153,12 +143,12 @@ def _get_trakt_cache(category, page, cache_hours=24):
                 'total_items': result[1]
             }
     except Exception as e:
-        xbmc.log(f"[Trakt] Erro recuperando cache: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] Error retrieving cache: {e}", xbmc.LOGERROR)
     
     return None
 
 def _save_tmdb_metadata(tmdb_id, media_type, metadata):
-    """Salva metadados TMDB traduzidos no cache"""
+    """Saves translated TMDB metadata in cache"""
     db = _get_db()
     if not db:
         return
@@ -167,12 +157,10 @@ def _save_tmdb_metadata(tmdb_id, media_type, metadata):
         conn = db._get_conn()
         cursor = conn.cursor()
         
-        cursor.execute('''
-            INSERT OR REPLACE INTO trakt_tmdb_meta_v2 
+        cursor.execute('''INSERT OR REPLACE INTO trakt_tmdb_meta_v2 
             (tmdb_id, media_type, title_pt, poster, backdrop, clearlogo, 
              synopsis_pt, genres_pt, runtime, last_updated)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        ''', (
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)''', (
             tmdb_id, media_type,
             metadata.get('title'),
             metadata.get('poster'),
@@ -186,22 +174,20 @@ def _save_tmdb_metadata(tmdb_id, media_type, metadata):
         conn.commit()
         db._release_conn(conn)
     except Exception as e:
-        xbmc.log(f"[Trakt] Erro salvando TMDB meta: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] Error saving TMDB metadata: {e}", xbmc.LOGERROR)
 
 def _get_tmdb_metadata(tmdb_id, media_type, max_age_hours=168):
-    """Recupera metadados TMDB do cache (7 dias padrão)"""
+    """Retrieves TMDB metadata from cache (7 days default)"""
     db = _get_db()
     if not db:
         return None
     
     try:
-        sql = f'''
-            SELECT title_pt, poster, backdrop, clearlogo, synopsis_pt, 
+        sql = f'''SELECT title_pt, poster, backdrop, clearlogo, synopsis_pt, 
                    genres_pt, runtime
             FROM trakt_tmdb_meta_v2
             WHERE tmdb_id = ? AND media_type = ?
-            AND last_updated > datetime('now', '-{max_age_hours} hours')
-        '''
+            AND last_updated > datetime('now', '-{max_age_hours} hours')'''
         
         conn = db._get_conn()
         cursor = conn.cursor()
@@ -220,12 +206,12 @@ def _get_tmdb_metadata(tmdb_id, media_type, max_age_hours=168):
                 'runtime': result[6]
             }
     except Exception as e:
-        xbmc.log(f"[Trakt] Erro recuperando TMDB meta: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] Error retrieving TMDB metadata: {e}", xbmc.LOGERROR)
     
     return None
 
 def _clear_trakt_cache(category=None):
-    """Limpa cache Trakt (específico ou tudo)"""
+    """Clear Trakt cache (specific or all)"""
     db = _get_db()
     if not db:
         return
@@ -242,21 +228,21 @@ def _clear_trakt_cache(category=None):
         conn.commit()
         db._release_conn(conn)
     except Exception as e:
-        xbmc.log(f"[Trakt] Erro limpando cache: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] Error clearing cache: {e}", xbmc.LOGERROR)
 
-# === AUTENTICAÇÃO CORRIGIDA ===
+# === AUTHENTICATION FIXED ===
 def authenticate_trakt():
-    """✅ Autenticação com salvamento de username"""
+    """✅ Authentication with username saving"""
     settings = get_trakt_settings()
     
     if not settings['client_id']:
-        xbmcgui.Dialog().ok("Trakt", "Configure Client ID nas configurações primeiro.")
+        xbmcgui.Dialog().ok("Trakt", "Configure Client ID in the settings first.")
         return False
     
     try:
         import requests
         
-        # Etapa 1: Solicita código de device
+        # Step 1: Request device code
         resp = requests.post(
             'https://api.trakt.tv/oauth/device/code',
             json={'client_id': settings['client_id']},
@@ -264,7 +250,7 @@ def authenticate_trakt():
         )
         
         if resp.status_code != 200:
-            xbmcgui.Dialog().ok("Erro", "Não consegui conectar ao Trakt.")
+            xbmcgui.Dialog().ok("Error", "I couldn't connect to Trakt.")
             return False
         
         data = resp.json()
@@ -272,19 +258,19 @@ def authenticate_trakt():
         url = data['verification_url']
         
         message = (
-            f"Acesse no navegador:\n"
+            f"Access in the browser:\n"
             f"[B]{url}[/B]\n\n"
-            f"Digite o código:\n"
+            f"Enter the code:\n"
             f"[B]{user_code}[/B]\n\n"
-            f"Depois volte aqui e clique OK."
+            f"Then come back here and click OK."
         )
         
-        xbmcgui.Dialog().textviewer("Ativar Trakt", message)
+        xbmcgui.Dialog().textviewer("Activate Trakt", message)
         
-        if not xbmcgui.Dialog().yesno("Trakt", "Já autorizou no site?"):
+        if not xbmcgui.Dialog().yesno("Trakt", "Have you already authorized it on the website??"):
             return False
         
-        # Etapa 2: Polling para token
+        # Step 2: Polling for Token
         device_code = data['device_code']
         
         for i in range(30):
@@ -304,29 +290,29 @@ def authenticate_trakt():
                 ADDON.setSetting('trakt_refresh_token', token['refresh_token'])
                 ADDON.setSetting('trakt_expires_at', str(time.time() + token['expires_in']))
                 
-                # ✅ CORREÇÃO: Busca e salva username
+                # ✅ FIX: Search and save username
                 user_info = trakt_request('GET', '/users/me')
                 if user_info:
                     username = user_info.get('username', '')
                     ADDON.setSetting('trakt_username', username)
-                    xbmcgui.Dialog().notification("Trakt", f"✅ Autenticado como {username}!", xbmcgui.NOTIFICATION_INFO, 3000)
+                    xbmcgui.Dialog().notification("Trakt", f"✅ Logged in as {username}!", xbmcgui.NOTIFICATION_INFO, 3000)
                 else:
-                    xbmcgui.Dialog().notification("Trakt", "✅ Autenticado!", xbmcgui.NOTIFICATION_INFO, 3000)
+                    xbmcgui.Dialog().notification("Tract", "✅ Authenticated!", xbmcgui.NOTIFICATION_INFO, 3000)
                 
                 return True
             
             time.sleep(5)
         
-        xbmcgui.Dialog().ok("Timeout", "Não autorizado a tempo.")
+        xbmcgui.Dialog().ok("Timeout", "Not authorized in time.")
         return False
         
     except Exception as e:
-        xbmc.log(f"[Trakt] Erro: {str(e)}", xbmc.LOGERROR)
-        xbmcgui.Dialog().ok("Erro", "Falha na autenticação.")
+        xbmc.log(f"[Trakt] Error: {str(e)}", xbmc.LOGERROR)
+        xbmcgui.Dialog().ok("Error", "Authentication Failed.")
         return False
 
 def refresh_trakt_token():
-    """Refresh do token Trakt se expirado"""
+    """Refresh Trakt token if expired"""
     settings = get_trakt_settings()
     
     if not settings['refresh_token']:
@@ -361,11 +347,11 @@ def refresh_trakt_token():
             return False
             
     except Exception as e:
-        xbmc.log(f"[Trakt] Erro refresh token: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] Error refresh token: {e}", xbmc.LOGERROR)
         return False
 
 def trakt_request(method, endpoint, data=None, retry=True):
-    """✅ Requisição Trakt com paginação automática"""
+    """✅ Trakt request with automatic pagination"""
     settings = get_trakt_settings()
     
     if not settings['access_token'] or not refresh_trakt_token():
@@ -400,7 +386,7 @@ def trakt_request(method, endpoint, data=None, retry=True):
             if response.content:
                 result = response.json()
                 
-                # ✅ Retorna metadados de paginação junto
+                # ✅ Returns pagination metadata along
                 return {
                     'data': result,
                     'page': int(response.headers.get('X-Pagination-Page', 1)),
@@ -413,19 +399,19 @@ def trakt_request(method, endpoint, data=None, retry=True):
         return None
         
     except Exception as e:
-        xbmc.log(f"[Trakt] Erro requisição {endpoint}: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] Request error {endpoint}: {e}", xbmc.LOGERROR)
         return None
 
-# === ENRIQUECIMENTO TMDB OTIMIZADO ===
+# === OPTIMIZED TMDB ENRICHMENT ===
 def _enrich_item_with_tmdb_batch(items, max_workers=10):
-    """✅ Enriquece múltiplos itens em paralelo (10x mais rápido)"""
+    """✅ Enrich multiple items in parallel (10x faster)"""
     try:
         from resources.lib import tmdb_api
         
         enriched_items = []
         
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # Cria futures para cada item
+            # Create futures for each item
             future_to_item = {}
             for item in items:
                 tmdb_id = item.get('tmdb_id')
@@ -435,50 +421,50 @@ def _enrich_item_with_tmdb_batch(items, max_workers=10):
                     enriched_items.append(item)
                     continue
                 
-                # ✅ SALVA imdb_id ORIGINAL do Trakt (mais confiável)
+                # ✅ SAVES ORIGINAL imdb_id from Trakt (most reliable)
                 trakt_imdb_id = item.get('imdb_id', '')
                 
-                # Verifica cache primeiro
+                # Check cache first
                 cached_meta = _get_tmdb_metadata(tmdb_id, media_type)
                 if cached_meta:
                     item.update(cached_meta)
-                    # ✅ PRESERVA imdb_id do Trakt se TMDB não tiver
+                    # ✅ PRESERVES Trakt's imdb_id if TMDB doesn't have it
                     if not item.get('imdb_id') and trakt_imdb_id:
                         item['imdb_id'] = trakt_imdb_id
                     item['fanart'] = item.get('backdrop', '')
                     enriched_items.append(item)
                 else:
-                    # Agenda busca TMDB
+                    # Agenda search TMDB
                     future = executor.submit(_fetch_tmdb_details, tmdb_id, media_type, trakt_imdb_id)
                     future_to_item[future] = item
             
-            # Processa resultados conforme completam
+            # Processes results as they complete
             for future in as_completed(future_to_item):
                 item = future_to_item[future]
                 try:
                     details = future.result()
                     if details:
-                        # ✅ PRESERVA imdb_id do Trakt se TMDB não retornar
+                        # ✅ PRESERVES Trakt's imdb_id if TMDB does not return
                         trakt_imdb = item.get('imdb_id', '')
                         item.update(details)
                         if not item.get('imdb_id') and trakt_imdb:
                             item['imdb_id'] = trakt_imdb
                         item['fanart'] = item.get('backdrop', '')
-                        # Salva no cache
+                        # Saves to cache
                         _save_tmdb_metadata(item['tmdb_id'], item['media_type'], details)
                     enriched_items.append(item)
                 except Exception as e:
-                    xbmc.log(f"[Trakt] Erro enriquecimento {item.get('tmdb_id')}: {e}", xbmc.LOGERROR)
+                    xbmc.log(f"[Trakt] Enrichment error {item.get('tmdb_id')}: {e}", xbmc.LOGERROR)
                     enriched_items.append(item)
         
         return enriched_items
         
     except Exception as e:
-        xbmc.log(f"[Trakt] Erro batch enriquecimento: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] Batch enrichment error: {e}", xbmc.LOGERROR)
         return items
 
 def _fetch_tmdb_details(tmdb_id, media_type, trakt_imdb_id=''):
-    """Helper para buscar detalhes TMDB"""
+    """Helper to fetch TMDB details"""
     try:
         from resources.lib import tmdb_api
         
@@ -492,35 +478,35 @@ def _fetch_tmdb_details(tmdb_id, media_type, trakt_imdb_id=''):
         
         result = {
             'title': details.get('title', ''),
-            'original_title': details.get('original_title', details.get('title', '')),  # ✅ ADICIONADO
+            'original_title': details.get('original_title', details.get('title', '')),  # ✅ ADDED
             'poster': details.get('poster', ''),
             'backdrop': details.get('backdrop', ''),
             'clearlogo': details.get('clearlogo', ''),
             'synopsis': details.get('synopsis', ''),
             'rating': details.get('rating', 0),
             'genres': details.get('genres', []),
-            'imdb_id': details.get('imdb_id', trakt_imdb_id),  # ✅ FALLBACK para Trakt
+            'imdb_id': details.get('imdb_id', trakt_imdb_id),  # ✅ FALLBACK for Trakt
             'runtime': details.get('runtime', 0)
         }
         
         return result
     except Exception as e:
-        xbmc.log(f"[Trakt] Erro fetch TMDB {tmdb_id}: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] TMDB fetch error {tmdb_id}: {e}", xbmc.LOGERROR)
         return {}
 
-# === HELPER: MONTA URL ===
+# === HELPER: MOUNT URL ===
 def _build_source_url(item):
-    """Monta URL completa seguindo o padrão do addon"""
+    """Create full URL following the addon pattern"""
     media_type = item.get('media_type')
     
-    # SÉRIES: Vai para list_seasons
+    # SERIES: Go to list_seasons
     if media_type == 'tvshow':
         return f"plugin://plugin.video.cinebox/?action=list_seasons&tvshow_tmdb_id={item['tmdb_id']}"
     
     
     title = str(item.get('title', ''))
     
-    # FILMES: Vai para find_sources
+    # MOVIES: Go to find_sources
     url_params = [
         f"action=find_sources",
         f"tmdb_id={item['tmdb_id']}",
@@ -544,15 +530,15 @@ def _build_source_url(item):
     
     return f"plugin://plugin.video.cinebox/?{'&'.join(url_params)}"
 
-# === PAGINAÇÃO OTIMIZADA (20 itens por página) ===
+# === OPTIMIZED PAGINATION (20 items per page) ===
 def _fetch_trakt_paginated(endpoint_base, category, page=1, limit=20, params=None):
-    """✅ Busca paginada CORRIGIDA - usa estrutura com 'data'"""
-    # Verifica cache primeiro
+    """✅ FIXED paginated search - uses structure with 'date'"""
+    # Check cache first
     cached = _get_trakt_cache(category, page, cache_hours=6)
     if cached:
         return cached['items']
     
-    # Monta endpoint
+    # Mount endpoint
     endpoint = f"{endpoint_base}"
     
     if '?' not in endpoint:
@@ -569,19 +555,19 @@ def _fetch_trakt_paginated(endpoint_base, category, page=1, limit=20, params=Non
     
     response = trakt_request('GET', endpoint)
     
-    # ✅ CORREÇÃO: response já tem chave 'data'
+    # ✅ FIX: response already has 'data' key
     if not response or not response.get('data'):
         return []
     
     data = response['data']
     items = []
     
-    # Processa os itens
+    # Process the items
     for item in data:
         try:
-            # Estrutura do Trakt para watchlist/coleção:
-            # item = {'movie': {...}, 'listed_at': '...'} 
-            # OU item = {'show': {...}, 'listed_at': '...'}
+            # Trakt structure for watchlist/collection:
+            # item = {'movie': {...}, 'listed_at': '...'}
+            # OR item = {'show': {...}, 'listed_at': '...'}
             
             if 'movie' in item:
                 obj = item['movie']
@@ -590,7 +576,7 @@ def _fetch_trakt_paginated(endpoint_base, category, page=1, limit=20, params=Non
                 obj = item['show']
                 media_type = 'tvshow'
             else:
-                # Pode ser item direto (para listas públicas)
+                # Can be direct item (for public lists)
                 obj = item
                 if 'title' in obj:
                     media_type = 'movie'
@@ -603,7 +589,7 @@ def _fetch_trakt_paginated(endpoint_base, category, page=1, limit=20, params=Non
             tmdb_id = ids.get('tmdb')
             
             if not tmdb_id:
-                continue  # Pula sem TMDB ID
+                continue  # Skips without TMDB ID
             
             base_item = {
                 'title': obj.get('title') or obj.get('name', ''),
@@ -623,7 +609,7 @@ def _fetch_trakt_paginated(endpoint_base, category, page=1, limit=20, params=Non
                 'fanart': ''
             }
             
-            # Adiciona metadados extras
+            # Adds extra metadata
             if 'listed_at' in item:
                 base_item['listed_at'] = item['listed_at']
             if 'collected_at' in item:
@@ -638,18 +624,18 @@ def _fetch_trakt_paginated(endpoint_base, category, page=1, limit=20, params=Non
             items.append(base_item)
             
         except Exception as e:
-            xbmc.log(f"[Trakt] Erro processando item: {e}", xbmc.LOGERROR)
+            xbmc.log(f"[Trakt] Error processing item: {e}", xbmc.LOGERROR)
             continue
     
-    # Salva no cache
+    # Saves to cache
     total_items = response.get('item_count', len(items))
     _save_trakt_cache(category, page, items, total_items)
     
     return items
 
-# === LISTAS PRINCIPAIS ===
+# === TOP LISTS ===
 def list_trakt_watchlist(page=1):
-    """✅ Watchlist com paginação de 20 itens"""
+    """✅ Watchlist with pagination of 20 items"""
     movies = _fetch_trakt_paginated('/sync/watchlist/movies', 'watchlist_movies', page, 20)
     shows = _fetch_trakt_paginated('/sync/watchlist/shows', 'watchlist_shows', page, 20)
     
@@ -657,7 +643,7 @@ def list_trakt_watchlist(page=1):
     return _enrich_item_with_tmdb_batch(all_items)
 
 def list_trakt_collection(page=1):
-    """✅ Coleção com paginação de 20 itens"""
+    """✅ Collection with pagination of 20 items"""
     movies = _fetch_trakt_paginated('/sync/collection/movies', 'collection_movies', page, 20)
     shows = _fetch_trakt_paginated('/sync/collection/shows', 'collection_shows', page, 20)
     
@@ -665,7 +651,7 @@ def list_trakt_collection(page=1):
     return _enrich_item_with_tmdb_batch(all_items)
 
 def list_trakt_watched(page=1):
-    """✅ Assistidos com paginação de 20 itens"""
+    """✅ Assisted with pagination of 20 items"""
     movies = _fetch_trakt_paginated('/sync/watched/movies', 'watched_movies', page, 20)
     shows = _fetch_trakt_paginated('/sync/watched/shows', 'watched_shows', page, 20)
     
@@ -673,7 +659,7 @@ def list_trakt_watched(page=1):
     return _enrich_item_with_tmdb_batch(all_items)
 
 def get_trakt_trending(page=1):
-    """✅ Trending com paginação"""
+    """✅ Trending with pagination"""
     movies = _fetch_trakt_paginated('/movies/trending', 'trending_movies', page, 20)
     shows = _fetch_trakt_paginated('/shows/trending', 'trending_shows', page, 20)
     
@@ -681,16 +667,16 @@ def get_trakt_trending(page=1):
     return _enrich_item_with_tmdb_batch(all_items)
 
 def get_trakt_popular(page=1):
-    """✅ Popular com paginação"""
+    """✅ Popular with pagination"""
     movies = _fetch_trakt_paginated('/movies/popular', 'popular_movies', page, 20)
     shows = _fetch_trakt_paginated('/shows/popular', 'popular_shows', page, 20)
     
     all_items = movies + shows
     return _enrich_item_with_tmdb_batch(all_items)
 
-# === LISTAS CUSTOMIZADAS ===
+# === CUSTOMIZED LISTS ===
 def get_trakt_lists():
-    """✅ CORREÇÃO: Busca listas customizadas do usuário"""
+    """✅ FIX: Searches for user custom lists"""
     settings = get_trakt_settings()
     username = settings.get('username')
     
@@ -705,14 +691,14 @@ def get_trakt_lists():
     return response['data']
 
 def list_trakt_custom_lists():
-    """Lista as listas customizadas do usuário"""
+    """List the user's custom lists"""
     lists = get_trakt_lists()
     items = []
     
     for lst in lists:
         items.append({
             'title': lst.get('name'),
-            'description': lst.get('description', 'Sem descrição'),
+            'description': lst.get('description', 'No description'),
             'list_id': lst['ids'].get('trakt'),
             'item_count': lst.get('item_count', 0),
             'is_private': lst.get('privacy') == 'private',
@@ -722,7 +708,7 @@ def list_trakt_custom_lists():
     return items
 
 def get_trakt_list_items(list_id, page=1):
-    """✅ Busca itens de uma lista customizada"""
+    """✅ Search items from a customized list"""
     settings = get_trakt_settings()
     username = settings.get('username')
     
@@ -739,16 +725,16 @@ def get_trakt_list_items(list_id, page=1):
     return _enrich_item_with_tmdb_batch(items)
 
 
-# Adicione no topo do trakt_sync.py
+# Add at the top of trakt_sync.py
 from resources.lib.trakt_client import TraktLists, TraktPresentation
 
-# === LISTAS PÚBLICAS SIMPLIFICADAS ===
+# === SIMPLIFIED PUBLIC LISTS ===
 
 def get_trakt_public_list(category, media_type='movies', page=1, **kwargs):
-    """Busca lista pública do Trakt com paginação"""
+    """Trakt public list search with pagination"""
     trakt_lists = TraktLists()
     
-    # Mapeamento de categorias
+    # Category Mapping
     handlers = {
         'trending': lambda: trakt_lists.get_trending(media_type, page, 20, **kwargs),
         'popular': lambda: trakt_lists.get_popular(media_type, page, 20, **kwargs),
@@ -762,53 +748,53 @@ def get_trakt_public_list(category, media_type='movies', page=1, **kwargs):
     }
     
     if category not in handlers:
-        xbmc.log(f"[Trakt] Categoria não suportada: {category}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] Category not supported: {category}", xbmc.LOGERROR)
         return []
     
     try:
-        xbmc.log(f"[Trakt] Buscando {category}/{media_type} página {page}", xbmc.LOGINFO)
+        xbmc.log(f"[Trakt] Searching {category}/{media_type} page {page}", xbmc.LOGINFO)
         
         data = handlers[category]()
         
         if not data:
-            xbmc.log(f"[Trakt] Nenhum dado retornado para {category}", xbmc.LOGWARNING)
+            xbmc.log(f"[Trakt] No data returned for {category}", xbmc.LOGWARNING)
             return []
         
-        # Normaliza os itens
+        # Normalize items
         items = []
         for item in data:
             try:
                 normalized = TraktPresentation.normalize_item(item)
-                if normalized['tmdb_id']:  # Apenas itens com TMDB ID
+                if normalized['tmdb_id']:  # Only items with TMDB ID
                     items.append(normalized)
             except Exception as e:
-                xbmc.log(f"[Trakt] Erro normalizando item: {e}", xbmc.LOGERROR)
+                xbmc.log(f"[Trakt] Error normalizing item: {e}", xbmc.LOGERROR)
                 continue
         
-        xbmc.log(f"[Trakt] {len(items)} itens processados", xbmc.LOGINFO)
+        xbmc.log(f"[Trakt] {len(items)} processed items", xbmc.LOGINFO)
         return _enrich_item_with_tmdb_batch(items)
         
     except Exception as e:
-        xbmc.log(f"[Trakt] Erro em get_trakt_public_list: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] Error in get_trakt_public_list: {e}", xbmc.LOGERROR)
         return []
 
 def show_trakt_public_lists_menu():
-    """Menu principal de listas públicas - VERSÃO SIMPLIFICADA"""
+    """Public lists main menu - SIMPLIFIED VERSION"""
     import sys
     import xbmcplugin
     
     handle = int(sys.argv[1])
     
-    # Categorias que funcionam sem autenticação
+    # Categories that work without authentication
     public_categories = [
-        ('trending', 'Tendências'),
-        ('popular', 'Populares'),
-        ('most_watched', 'Mais Assistidos'),
-        ('most_collected', 'Mais Coletados'),
-        ('most_anticipated', 'Mais Aguardados'),
-        ('box_office', 'Bilheteria'),
-        ('top_rated', 'Melhor Avaliados'),
-        ('most_played', 'Mais Reproduzidos'),
+        ('trending', 'Tendencies'),
+        ('popular', 'Popular'),
+        ('most_watched', 'Most Watched'),
+        ('most_collected', 'Most Collected'),
+        ('most_anticipated', 'Most Awaited'),
+        ('box_office', 'Box office'),
+        ('top_rated', 'Top Rated'),
+        ('most_played', 'Most Played'),
     ]
     
     for category_key, category_title in public_categories:
@@ -822,37 +808,37 @@ def show_trakt_public_lists_menu():
     xbmcplugin.endOfDirectory(handle, succeeded=True)
 
 def show_trakt_public_category(category):
-    """Mostra opções Filmes/Séries para uma categoria"""
+    """Show Movies/TV Shows options for a category"""
     import sys
     import xbmcplugin
     
     handle = int(sys.argv[1])
     
-    # Títulos das categorias
+    # Category titles
     category_titles = {
-        'trending': 'Tendências',
-        'popular': 'Populares',
-        'most_watched': 'Mais Assistidos',
-        'most_collected': 'Mais Coletados',
-        'most_anticipated': 'Mais Aguardados',
-        'box_office': 'Bilheteria',
-        'top_rated': 'Melhor Avaliados',
-        'most_played': 'Mais Reproduzidos',
-        'recommended': 'Recomendados'
+        'trending': 'Tendencies',
+        'popular': 'Popular',
+        'most_watched': 'Most Watched',
+        'most_collected': 'Most Collected',
+        'most_anticipated': 'Most Awaited',
+        'box_office': 'Box office',
+        'top_rated': 'Top Rated',
+        'most_played': 'Most Played',
+        'recommended': 'Recommended'
     }
     
     category_title = category_titles.get(category, category)
     
-    # Opções Filmes/Séries
+    # Options Movies/TV Shows
     options = []
     
     if category == 'box_office':
-        # Bilheteria só tem filmes
-        options.append(('movies', f'🎬 {category_title} - Filmes'))
+        # Box office only has films
+        options.append(('movies', f'🎬 {category_title} - Movies'))
     else:
         options = [
-            ('movies', f'🎬 {category_title} - Filmes'),
-            ('shows', f'📺 {category_title} - Séries')
+            ('movies', f'🎬 {category_title} - Movies'),
+            ('shows', f'📺 {category_title} - TV Shows')
         ]
     
     for media_type, title in options:
@@ -866,48 +852,48 @@ def show_trakt_public_category(category):
     xbmcplugin.endOfDirectory(handle, succeeded=True)
 
 def show_trakt_public_list(category, media_type, page=1, **kwargs):
-    """Exibe lista pública com paginação - VERSÃO SIMPLIFICADA"""
+    """Display public list with pagination - SIMPLIFIED VERSION"""
     import sys
     import xbmcplugin
     
     handle = int(sys.argv[1])
     
-    xbmc.log(f"[Trakt] Exibindo {category}/{media_type} página {page}", xbmc.LOGINFO)
+    xbmc.log(f"[Trakt] Displaying {category}/{media_type} page {page}", xbmc.LOGINFO)
     
     items = get_trakt_public_list(category, media_type, page, **kwargs)
     
     xbmcplugin.setContent(handle, 'movies')
     
     if not items:
-        xbmc.log(f"[Trakt] Lista vazia: {category}/{media_type}", xbmc.LOGWARNING)
+        xbmc.log(f"[Trakt] Empty list: {category}/{media_type}", xbmc.LOGWARNING)
         if page == 1:
-            xbmcgui.Dialog().notification("Trakt", "Lista vazia ou erro de conexão", xbmcgui.NOTIFICATION_WARNING, 3000)
+            xbmcgui.Dialog().notification("Trakt", "Empty list or connection error", xbmcgui.NOTIFICATION_WARNING, 3000)
         xbmcplugin.endOfDirectory(handle, succeeded=False)
         return
     
-    # Títulos das categorias
+    # Category titles
     category_titles = {
-        'trending': 'Tendências',
-        'popular': 'Populares',
-        'most_watched': 'Mais Assistidos',
-        'most_collected': 'Mais Coletados',
-        'most_anticipated': 'Mais Aguardados',
-        'box_office': 'Bilheteria',
-        'top_rated': 'Melhor Avaliados',
-        'most_played': 'Mais Reproduzidos',
-        'recommended': 'Recomendados'
+        'trending': 'Tendencies',
+        'popular': 'Popular',
+        'most_watched': 'Most Watched',
+        'most_collected': 'Most Collected',
+        'most_anticipated': 'Most Awaited',
+        'box_office': 'Box office',
+        'top_rated': 'Top Rated',
+        'most_played': 'Most Played',
+        'recommended': 'Recommended'
     }
     
     list_title = category_titles.get(category, f'Lista {category}')
-    media_label = 'Filmes' if media_type == 'movies' else 'Séries'
+    media_label = 'Movies' if media_type == 'movies' else 'TV Shows'
     
-    xbmc.log(f"[Trakt] Exibindo {len(items)} itens de {list_title} - {media_label}", xbmc.LOGINFO)
+    xbmc.log(f"[Trakt] Displaying {len(items)} items of {list_title} - {media_label}", xbmc.LOGINFO)
     
     for item in items:
-        # Formata label
+        # Format label
         label = item['title']
         
-        # Adiciona estatísticas se disponíveis
+        # Add statistics if available
         stats_parts = []
         
         if item.get('year'):
@@ -949,30 +935,30 @@ def show_trakt_public_list(category, media_type, page=1, **kwargs):
         url = TraktPresentation.build_url(item)
         xbmcplugin.addDirectoryItem(handle, url, li, isFolder=is_folder)
     
-    # Próxima página se houver itens suficientes
-    if len(items) >= 20:  # Trakt geralmente retorna 10-20 itens por página
-        li_next = xbmcgui.ListItem(label="[B]→ Próxima Página[/B]")
+    # Next page if there are enough items
+    if len(items) >= 20:  # Trakt typically returns 10-20 items per page
+        li_next = xbmcgui.ListItem(label="[B]→ Next Page[/B]")
         url_next = f"plugin://plugin.video.cinebox/?action=trakt_public_list&category={category}&media_type={media_type}&page={page+1}"
         xbmcplugin.addDirectoryItem(handle, url_next, li_next, isFolder=True)
     
     xbmcplugin.endOfDirectory(handle, succeeded=True)
 
-# === EXIBIÇÃO COM PAGINAÇÃO ===
+# === DISPLAY WITH PAGINATION ===
 
-# === ✅ FUNÇÕES ESPECÍFICAS PARA MENUS DE FILMES E SÉRIES ===
+# === ✅ SPECIFIC FUNCTIONS FOR MOVIE AND SERIES MENUS ===
 
 def show_trakt_movies_list(page=1):
-    """Exibe lista específica de filmes do Trakt - CORRIGIDA"""
+    """Display specific list of Trakt films - FIXED"""
     import sys
     import xbmcplugin
     
     handle = int(sys.argv[1])
     
-    # Obtém a ação atual da URL
+    # Gets the current action of the URL
     params = dict(parse_qsl(sys.argv[2][1:])) if len(sys.argv) > 2 and sys.argv[2] else {}
     action = params.get('action', '')
     
-    # Mapeia ação para categoria
+    # Maps action to category
     action_map = {
         'trakt_movies_trending': ('trending', 'movies'),
         'trakt_movies_popular': ('popular', 'movies'),
@@ -984,7 +970,7 @@ def show_trakt_movies_list(page=1):
     }
     
     if action not in action_map:
-        xbmc.log(f"[Trakt] Ação não mapeada: {action}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] Unmapped action: {action}", xbmc.LOGERROR)
         xbmcplugin.endOfDirectory(handle, succeeded=False)
         return
     
@@ -992,17 +978,17 @@ def show_trakt_movies_list(page=1):
     show_trakt_public_list(category, media_type, page)
 
 def show_trakt_tv_list(page=1):
-    """Exibe lista específica de séries do Trakt - CORRIGIDA"""
+    """Display specific list of Trakt series - FIXED"""
     import sys
     import xbmcplugin
     
     handle = int(sys.argv[1])
     
-    # Obtém a ação atual da URL
+    # Gets the current action of the URL
     params = dict(parse_qsl(sys.argv[2][1:])) if len(sys.argv) > 2 and sys.argv[2] else {}
     action = params.get('action', '')
     
-    # Mapeia ação para categoria
+    # Maps action to category
     action_map = {
         'trakt_tv_trending': ('trending', 'shows'),
         'trakt_tv_popular': ('popular', 'shows'),
@@ -1014,7 +1000,7 @@ def show_trakt_tv_list(page=1):
     }
     
     if action not in action_map:
-        xbmc.log(f"[Trakt] Ação não mapeada: {action}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] Unmapped action: {action}", xbmc.LOGERROR)
         xbmcplugin.endOfDirectory(handle, succeeded=False)
         return
     
@@ -1022,75 +1008,75 @@ def show_trakt_tv_list(page=1):
     show_trakt_public_list(category, media_type, page)
     
     
-# Adicione estas funções diretas no trakt_sync.py:
+# Add these direct functions in trakt_sync.py:
 
 def trakt_movies_trending(page=1):
-    """Filmes em alta no Trakt"""
+    """Movies im high not Trakt"""
     show_trakt_public_list('trending', 'movies', page)
 
 def trakt_movies_popular(page=1):
-    """Filmes populares no Trakt"""
+    """Popular Non-Trakt Movies"""
     show_trakt_public_list('popular', 'movies', page)
 
 def trakt_movies_most_watched(page=1):
-    """Filmes mais assistidos no Trakt"""
+    """Most watched movies on Trakt"""
     show_trakt_public_list('most_watched', 'movies', page)
 
 def trakt_movies_most_collected(page=1):
-    """Filmes mais coletados no Trakt"""
+    """Most collected movies on Trakt"""
     show_trakt_public_list('most_collected', 'movies', page)
 
 def trakt_movies_most_anticipated(page=1):
-    """Filmes mais aguardados no Trakt"""
+    """Most anticipated movies on Trakt"""
     show_trakt_public_list('most_anticipated', 'movies', page)
 
 def trakt_movies_box_office(page=1):
-    """Bilheteria no Trakt"""
+    """Box office at Trakt"""
     show_trakt_public_list('box_office', 'movies', page)
 
 def trakt_movies_top_rated(page=1):
-    """Filmes melhor avaliados no Trakt"""
+    """Top rated movies on Trakt"""
     show_trakt_public_list('top_rated', 'movies', page)
 
 def trakt_tv_trending(page=1):
-    """Séries em alta no Trakt"""
+    """TV Shows trending on Trakt"""
     show_trakt_public_list('trending', 'shows', page)
 
 def trakt_tv_popular(page=1):
-    """Séries populares no Trakt"""
+    """Popular TV Shows on Trakt"""
     show_trakt_public_list('popular', 'shows', page)
 
 def trakt_tv_most_watched(page=1):
-    """Séries mais assistidas no Trakt"""
+    """Most watched TV Shows on Trakt"""
     show_trakt_public_list('most_watched', 'shows', page)
 
 def trakt_tv_most_collected(page=1):
-    """Séries mais coletadas no Trakt"""
+    """Most collected TV Shows on Trakt"""
     show_trakt_public_list('most_collected', 'shows', page)
 
 def trakt_tv_most_anticipated(page=1):
-    """Séries mais aguardadas no Trakt"""
+    """Most anticipated TV Shows on Trakt"""
     show_trakt_public_list('most_anticipated', 'shows', page)
 
 def trakt_tv_top_rated(page=1):
-    """Séries melhor avaliadas no Trakt"""
+    """Top rated TV Shows on Trakt"""
     show_trakt_public_list('top_rated', 'shows', page)
 
 def trakt_tv_recommended(page=1):
-    """Séries recomendadas no Trakt"""
+    """Recommended TV Shows on Trakt"""
     show_trakt_public_list('recommended', 'shows', page)    
 
 def trakt_anime_trending(page=1):
-    """Animes em alta no Trakt"""
+    """You encourage me to high no Trakt"""
     show_trakt_public_list('trending', 'shows', page, genres='anime')
 
 def trakt_anime_most_watched(page=1):
-    """Animes mais assistidos no Trakt"""
+    """Most watched anime on Trakt"""
     show_trakt_public_list('most_watched', 'shows', page, genres='anime')
 
 
 def show_trakt_watchlist_items(page=1):
-    """✅ Exibe Watchlist com paginação otimizada"""
+    """✅ Displays Watchlist with optimized pagination"""
     import sys
     import xbmcplugin
     
@@ -1101,7 +1087,7 @@ def show_trakt_watchlist_items(page=1):
     
     if not items:
         if page == 1:
-            xbmcgui.Dialog().ok("Watchlist", "Sua watchlist está vazia.")
+            xbmcgui.Dialog().ok("Watchlist", "Your watchlist is empty.")
         xbmcplugin.endOfDirectory(handle, succeeded=False)
         return
     
@@ -1128,10 +1114,10 @@ def show_trakt_watchlist_items(page=1):
         url = _build_source_url(item)
         xbmcplugin.addDirectoryItem(handle, url, li, isFolder=is_folder)
     
-    # Próxima página (sempre mostra se tem 20 itens)
+    # Next page (always shows if it has 20 items)
     if len(items) == 20:
         next_icon = os.path.join(ICON_PATH, 'nextpage.png')
-        li_next = xbmcgui.ListItem(label="[B]→ Próxima Página[/B]")
+        li_next = xbmcgui.ListItem(label="[B]→ Next Page[/B]")
         li_next.setArt({'thumb': next_icon, 'icon': next_icon})
         url_next = f"plugin://plugin.video.cinebox/?action=trakt_watchlist_menu&page={page+1}"
         xbmcplugin.addDirectoryItem(handle, url_next, li_next, isFolder=True)
@@ -1139,7 +1125,7 @@ def show_trakt_watchlist_items(page=1):
     xbmcplugin.endOfDirectory(handle, succeeded=True)
 
 def show_trakt_collection_items(page=1):
-    """✅ Exibe Coleção"""
+    """✅ Displays Collection"""
     import sys
     import xbmcplugin
     
@@ -1150,7 +1136,7 @@ def show_trakt_collection_items(page=1):
     
     if not items:
         if page == 1:
-            xbmcgui.Dialog().ok("Coleção", "Sua coleção está vazia.")
+            xbmcgui.Dialog().ok("Collection", "Your collection is empty.")
         xbmcplugin.endOfDirectory(handle, succeeded=False)
         return
     
@@ -1176,7 +1162,7 @@ def show_trakt_collection_items(page=1):
     
     if len(items) == 20:
         next_icon = os.path.join(ICON_PATH, 'nextpage.png')
-        li_next = xbmcgui.ListItem(label="[B]→ Próxima Página[/B]")
+        li_next = xbmcgui.ListItem(label="[B]→ Next Page[/B]")
         li_next.setArt({'thumb': next_icon, 'icon': next_icon})
         url_next = f"plugin://plugin.video.cinebox/?action=trakt_collection_menu&page={page+1}"
         xbmcplugin.addDirectoryItem(handle, url_next, li_next, isFolder=True)
@@ -1184,7 +1170,7 @@ def show_trakt_collection_items(page=1):
     xbmcplugin.endOfDirectory(handle, succeeded=True)
 
 def show_trakt_watched_items(page=1):
-    """✅ Exibe Assistidos"""
+    """✅ Views Watched"""
     import sys
     import xbmcplugin
     
@@ -1195,7 +1181,7 @@ def show_trakt_watched_items(page=1):
     
     if not items:
         if page == 1:
-            xbmcgui.Dialog().ok("Assistidos", "Você não assistiu nada ainda.")
+            xbmcgui.Dialog().ok("Watched", "You haven't watched anything yet.")
         xbmcplugin.endOfDirectory(handle, succeeded=False)
         return
     
@@ -1225,7 +1211,7 @@ def show_trakt_watched_items(page=1):
     
     if len(items) == 20:
         next_icon = os.path.join(ICON_PATH, 'nextpage.png')
-        li_next = xbmcgui.ListItem(label="[B]→ Próxima Página[/B]")
+        li_next = xbmcgui.ListItem(label="[B]→ Next Page[/B]")
         li_next.setArt({'thumb': next_icon, 'icon': next_icon})
         url_next = f"plugin://plugin.video.cinebox/?action=trakt_watched_menu&page={page+1}"
         xbmcplugin.addDirectoryItem(handle, url_next, li_next, isFolder=True)
@@ -1233,7 +1219,7 @@ def show_trakt_watched_items(page=1):
     xbmcplugin.endOfDirectory(handle, succeeded=True)
 
 def show_trakt_trending_items(page=1):
-    """✅ Exibe Trending"""
+    """✅ Displays Trending"""
     import sys
     import xbmcplugin
     
@@ -1271,7 +1257,7 @@ def show_trakt_trending_items(page=1):
     
     if len(items) == 20:
         next_icon = os.path.join(ICON_PATH, 'nextpage.png')
-        li_next = xbmcgui.ListItem(label="[B]→ Próxima Página[/B]")
+        li_next = xbmcgui.ListItem(label="[B]→ Next Page[/B]")
         li_next.setArt({'thumb': next_icon, 'icon': next_icon})
         url_next = f"plugin://plugin.video.cinebox/?action=trakt_trending_menu&page={page+1}"
         xbmcplugin.addDirectoryItem(handle, url_next, li_next, isFolder=True)
@@ -1279,7 +1265,7 @@ def show_trakt_trending_items(page=1):
     xbmcplugin.endOfDirectory(handle, succeeded=True)
 
 def show_trakt_popular_items(page=1):
-    """✅ Exibe Popular"""
+    """✅ Popular Displays"""
     import sys
     import xbmcplugin
     
@@ -1314,7 +1300,7 @@ def show_trakt_popular_items(page=1):
     
     if len(items) == 20:
         next_icon = os.path.join(ICON_PATH, 'nextpage.png')
-        li_next = xbmcgui.ListItem(label="[B]→ Próxima Página[/B]")
+        li_next = xbmcgui.ListItem(label="[B]→ Next Page[/B]")
         li_next.setArt({'thumb': next_icon, 'icon': next_icon})
         url_next = f"plugin://plugin.video.cinebox/?action=trakt_popular_menu&page={page+1}"
         xbmcplugin.addDirectoryItem(handle, url_next, li_next, isFolder=True)
@@ -1322,7 +1308,7 @@ def show_trakt_popular_items(page=1):
     xbmcplugin.endOfDirectory(handle, succeeded=True)
 
 def show_trakt_custom_lists():
-    """✅ Exibe menu de listas customizadas"""
+    """✅ Displays customized list menu"""
     import sys
     import xbmcplugin
     
@@ -1330,7 +1316,7 @@ def show_trakt_custom_lists():
     lists = list_trakt_custom_lists()
     
     if not lists:
-        xbmcgui.Dialog().ok("Listas", "Você não tem listas customizadas.")
+        xbmcgui.Dialog().ok("Lists", "You don't have any custom lists.")
         xbmcplugin.endOfDirectory(handle, succeeded=False)
         return
     
@@ -1346,7 +1332,7 @@ def show_trakt_custom_lists():
     xbmcplugin.endOfDirectory(handle, succeeded=True)
 
 def show_trakt_list_items(list_id, page=1):
-    """✅ Exibe itens de uma lista customizada"""
+    """✅ Display items from a custom list"""
     import sys
     import xbmcplugin
     
@@ -1357,7 +1343,7 @@ def show_trakt_list_items(list_id, page=1):
     
     if not items:
         if page == 1:
-            xbmcgui.Dialog().ok("Lista", "Esta lista está vazia.")
+            xbmcgui.Dialog().ok("List", "This list is empty.")
         xbmcplugin.endOfDirectory(handle, succeeded=False)
         return
     
@@ -1383,7 +1369,7 @@ def show_trakt_list_items(list_id, page=1):
     
     if len(items) == 20:
         next_icon = os.path.join(ICON_PATH, 'nextpage.png')
-        li_next = xbmcgui.ListItem(label="[B]→ Próxima Página[/B]")
+        li_next = xbmcgui.ListItem(label="[B]→ Next Page[/B]")
         li_next.setArt({'thumb': next_icon, 'icon': next_icon})
         url_next = f"plugin://plugin.video.cinebox/?action=trakt_list_items&list_id={list_id}&page={page+1}"
         xbmcplugin.addDirectoryItem(handle, url_next, li_next, isFolder=True)
@@ -1391,92 +1377,90 @@ def show_trakt_list_items(list_id, page=1):
     xbmcplugin.endOfDirectory(handle, succeeded=True)
 
 def show_trakt_status():
-    """✅ Mostra status da autenticação"""
+    """✅ Shows authentication status"""
     settings = get_trakt_settings()
-    username = settings['username'] or "Não autenticado"
+    username = settings['username'] or "Not authenticated"
     
     last_sync = ADDON.getSetting('trakt_last_sync')
     if last_sync:
         last_sync_dt = datetime.fromtimestamp(float(last_sync))
         last_sync_str = last_sync_dt.strftime("%d/%m/%Y %H:%M")
     else:
-        last_sync_str = "Nunca"
+        last_sync_str = "Never"
     
     info = (
-        f"Usuário: [B]{username}[/B]\n\n"
-        f"Última sincronização: {last_sync_str}\n\n"
-        f"Configurações ativas:\n"
-        f"• Sincronizar assistidos: {'Sim' if settings['sync_watched'] else 'Não'}\n"
-        f"• Sincronizar avaliações: {'Sim' if settings['sync_ratings'] else 'Não'}\n"
-        f"• Sincronizar coleção: {'Sim' if settings['sync_collection'] else 'Não'}\n"
-        f"• Intervalo automático: {settings['sync_interval']} minutos\n"
-        f"• Sincronizar no startup: {'Sim' if settings['sync_on_startup'] else 'Não'}\n"
+        f"User: [B]{username}[/B]\n\n"
+        f"Last sync: {last_sync_str}\n\n"
+        f"Active settings:\n"
+        f"• Sync watched: {'Yes' if settings['sync_watched'] else 'No'}\n"
+        f"• Sync assessments: {'Yes' if settings['sync_ratings'] else 'No'}\n"
+        f"• Sync collection: {'Yes' if settings['sync_collection'] else 'No'}\n"
+        f"• Automatic interval: {settings['sync_interval']} minutos\n"
+        f"• Sync on startup: {'Yes' if settings['sync_on_startup'] else 'No'}\n"
     )
     
     xbmcgui.Dialog().textviewer("Status Trakt", info)
 
-# === AÇÕES INDIVIDUAIS ===
+# === INDIVIDUAL ACTIONS ===
 
 
 def clear_trakt_cache():
-    """Limpa cache do Trakt"""
+    """Clean cache to Trakt"""
     _clear_trakt_cache()
     ADDON.setSetting('trakt_access_token', '')
     ADDON.setSetting('trakt_refresh_token', '')
     ADDON.setSetting('trakt_expires_at', '0')
     ADDON.setSetting('trakt_username', '')
     
-    xbmcgui.Dialog().notification("Trakt", "Cache limpo. Autentique novamente.", xbmcgui.NOTIFICATION_INFO, 3000)
+    xbmcgui.Dialog().notification("Tract", "Clear cache. Authenticate again.", xbmcgui.NOTIFICATION_INFO, 3000)
 
 def full_sync_with_trakt(direction="both"):
-    """Sincronização completa com Trakt"""
+    """Full sync with Trakt"""
     progress = xbmcgui.DialogProgress()
-    progress.create("Trakt Sync", "Verificando autenticação...")
+    progress.create("Trakt Sync", "Checking authentication...")
     
     if not refresh_trakt_token():
         progress.close()
-        if xbmcgui.Dialog().yesno("Trakt", "Não autenticado. Autenticar agora?"):
+        if xbmcgui.Dialog().yesno("Trakt", "Not authenticated. Authenticate now?"):
             if authenticate_trakt():
                 return full_sync_with_trakt(direction)
         return False
     
     try:
-        progress.update(100, "Concluído!")
+        progress.update(100, "Completed!")
         xbmc.sleep(200)
         progress.close()
         
-        xbmcgui.Dialog().notification("Trakt", "Sincronização concluída!", xbmcgui.NOTIFICATION_INFO, 3000)
+        xbmcgui.Dialog().notification("Tract", "Sync complete!", xbmcgui.NOTIFICATION_INFO, 3000)
         return True
         
     except Exception as e:
-        xbmc.log(f"[Trakt] Erro full sync: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Trakt] Error full sync: {e}", xbmc.LOGERROR)
         progress.close()
         return False
     
-    # === SINCRONIZAÇÃO LOCAL → TRAKT ===
+    # === LOCAL SYNC → TRAKT ===
 
 def sync_local_to_trakt(progress_dialog=None):
-    """
-    Envia dados locais (DB + playcount) para Trakt
-    ✅ Filmes assistidos
-    ✅ Séries assistidas
-    ✅ Favoritos → Watchlist
-    """
+    """Send local data (DB + playcount) to Trakt
+    ✅ Movies watched
+    ✅ TV Shows watched
+    ✅ Favorites → Watchlist"""
     from resources.lib.db import db
     from resources.lib.trakt_sync import trakt_request, _clear_trakt_cache
     
     if progress_dialog:
-        progress_dialog.update(0, "Coletando dados locais...")
+        progress_dialog.update(0, "Collecting local data...")
     
     try:
-        # === 1. FILMES ASSISTIDOS (playcount > 0) ===
+        # === 1. MOVIES WATCHED (playcount > 0) ===
         watched_movies = db.get_watched_movies()
         
         if watched_movies:
             if progress_dialog:
-                progress_dialog.update(20, f"Enviando {len(watched_movies)} filmes assistidos...")
+                progress_dialog.update(20, f"Sending {len(watched_movies)} watched movies...")
             
-            # Monta payload Trakt
+            # Mounts Trakt payload
             trakt_movies = []
             for movie in watched_movies:
                 trakt_movies.append({
@@ -1484,19 +1468,19 @@ def sync_local_to_trakt(progress_dialog=None):
                     'watched_at': movie.get('last_played') or datetime.now().isoformat()
                 })
             
-            # Envia em lotes de 20
+            # Ships in batches of 20
             for i in range(0, len(trakt_movies), 20):
                 batch = trakt_movies[i:i+20]
                 response = trakt_request('POST', '/sync/history', {'movies': batch})
                 if not response:
-                    xbmc.log(f"[Trakt Sync] Falha ao enviar filmes {i}-{i+20}", xbmc.LOGERROR)
+                    xbmc.log(f"[Trakt Sync] Failed to send movies {i}-{i+20}", xbmc.LOGERROR)
         
-        # === 2. SÉRIES ASSISTIDAS ===
+        # === 2. WATCHED SERIES ===
         watched_shows = db.get_watched_tvshows()
         
         if watched_shows:
             if progress_dialog:
-                progress_dialog.update(40, f"Enviando {len(watched_shows)} séries assistidas...")
+                progress_dialog.update(40, f"Sending {len(watched_shows)} watched series...")
             
             trakt_shows = []
             for show in watched_shows:
@@ -1509,14 +1493,14 @@ def sync_local_to_trakt(progress_dialog=None):
                 batch = trakt_shows[i:i+20]
                 response = trakt_request('POST', '/sync/history', {'shows': batch})
                 if not response:
-                    xbmc.log(f"[Trakt Sync] Falha ao enviar séries {i}-{i+20}", xbmc.LOGERROR)
+                    xbmc.log(f"[Trakt Sync] Failed to send series {i}-{i+20}", xbmc.LOGERROR)
         
-        # === 3. FAVORITOS → WATCHLIST ===
+        # === 3. FAVORITES → WATCHLIST ===
         favorites = db.get_all_favorites()
         
         if favorites:
             if progress_dialog:
-                progress_dialog.update(60, f"Enviando {len(favorites)} favoritos...")
+                progress_dialog.update(60, f"Sending {len(favorites)} favorites...")
             
             fav_movies = [{'ids': {'tmdb': f['tmdb_id']}} for f in favorites if f['media_type'] == 'movie']
             fav_shows = [{'ids': {'tmdb': f['tmdb_id']}} for f in favorites if f['media_type'] == 'tvshow']
@@ -1526,15 +1510,15 @@ def sync_local_to_trakt(progress_dialog=None):
             if fav_shows:
                 trakt_request('POST', '/sync/watchlist', {'shows': fav_shows})
         
-        # Limpa cache Trakt
+        # Clear Trakt cache
         _clear_trakt_cache()
         
         if progress_dialog:
-            progress_dialog.update(100, "Sincronização concluída!")
+            progress_dialog.update(100, "Sync complete!")
         
         xbmcgui.Dialog().notification(
             "Trakt Sync",
-            f"✅ {len(watched_movies)} filmes, {len(watched_shows)} séries enviados",
+            f"✅ {len(watched_movies)} movies, {len(watched_shows)} sent series",
             xbmcgui.NOTIFICATION_INFO,
             3000
         )
@@ -1542,34 +1526,32 @@ def sync_local_to_trakt(progress_dialog=None):
         return True
         
     except Exception as e:
-        xbmc.log(f"[Trakt Sync] Erro: {e}", xbmc.LOGERROR)
-        xbmcgui.Dialog().ok("Erro", f"Falha na sincronização: {str(e)}")
+        xbmc.log(f"[Trakt Sync] Error: {e}", xbmc.LOGERROR)
+        xbmcgui.Dialog().ok("Error", f"Sync failed: {str(e)}")
         return False
 
-# === SINCRONIZAÇÃO TRAKT → LOCAL ===
+# === TRAKT SYNC → LOCAL ===
 
 def sync_trakt_to_local(progress_dialog=None):
-    """
-    Importa dados Trakt para local
-    ✅ Marca filmes/séries como assistidos
-    ✅ Adiciona watchlist aos favoritos
-    ✅ Sincroniza progresso de playback
-    """
+    """Import Trakt data to local
+    ✅ Mark films/series as watched
+    ✅ Add watchlist to favorites
+    ✅ Synchronizes playback progress"""
     from resources.lib.db import db
     from resources.lib.trakt_sync import trakt_request
     
     if progress_dialog:
-        progress_dialog.update(0, "Buscando dados do Trakt...")
+        progress_dialog.update(0, "Fetching data from Trakt...")
     
     try:
-        # === 1. IMPORTA FILMES ASSISTIDOS ===
+        # === 1. IMPORTS MOVIES WATCHED ===
         watched_movies_response = trakt_request('GET', '/sync/watched/movies?extended=full')
         
         if watched_movies_response and watched_movies_response.get('data'):
             watched_movies = watched_movies_response['data']
             
             if progress_dialog:
-                progress_dialog.update(20, f"Importando {len(watched_movies)} filmes...")
+                progress_dialog.update(20, f"Importing {len(watched_movies)} movies...")
             
             for item in watched_movies:
                 movie = item.get('movie', {})
@@ -1578,20 +1560,20 @@ def sync_trakt_to_local(progress_dialog=None):
                 last_watched = item.get('last_watched_at')
                 
                 if tmdb_id:
-                    # Verifica se filme existe no DB local
+                    # Checks if movie exists in local DB
                     local_movie = db.get_movie_by_id(tmdb_id)
                     if local_movie:
-                        # Atualiza playcount
+                        # Update playcount
                         db.update_movie_playcount(tmdb_id, plays, last_watched)
         
-        # === 2. IMPORTA SÉRIES ASSISTIDAS ===
+        # === 2. MATTER WATCHED SERIES ===
         watched_shows_response = trakt_request('GET', '/sync/watched/shows?extended=full')
         
         if watched_shows_response and watched_shows_response.get('data'):
             watched_shows = watched_shows_response['data']
             
             if progress_dialog:
-                progress_dialog.update(40, f"Importando {len(watched_shows)} séries...")
+                progress_dialog.update(40, f"Importing {len(watched_shows)} series...")
             
             for item in watched_shows:
                 show = item.get('show', {})
@@ -1601,15 +1583,15 @@ def sync_trakt_to_local(progress_dialog=None):
                 if tmdb_id:
                     local_show = db.get_tvshow_by_id(tmdb_id)
                     if local_show:
-                        # TODO: Importar episódios assistidos detalhadamente
+                        # TODO: Import watched episodes in detail
                         db.update_tvshow_playcount(tmdb_id, last_watched)
         
-        # === 3. IMPORTA WATCHLIST → FAVORITOS ===
+        # === 3. MATTER WATCHLIST → FAVORITES ===
         watchlist_movies_response = trakt_request('GET', '/sync/watchlist/movies')
         watchlist_shows_response = trakt_request('GET', '/sync/watchlist/shows')
         
         if progress_dialog:
-            progress_dialog.update(60, "Importando watchlist...")
+            progress_dialog.update(60, "Importing watchlist...")
         
         if watchlist_movies_response and watchlist_movies_response.get('data'):
             for item in watchlist_movies_response['data']:
@@ -1626,11 +1608,9 @@ def sync_trakt_to_local(progress_dialog=None):
                     db.add_to_favorites(tmdb_id, 'tvshow')
         
         if progress_dialog:
-            progress_dialog.update(100, "Importação concluída!")
+            progress_dialog.update(100, "Import completed!")
         
-        xbmcgui.Dialog().notification(
-            "Trakt Sync",
-            "✅ Dados importados com sucesso",
+        xbmcgui.Dialog().notification("Trakt Sync", "✅ Data imported successfully",
             xbmcgui.NOTIFICATION_INFO,
             3000
         )
@@ -1638,19 +1618,17 @@ def sync_trakt_to_local(progress_dialog=None):
         return True
         
     except Exception as e:
-        xbmc.log(f"[Trakt Import] Erro: {e}", xbmc.LOGERROR)
-        xbmcgui.Dialog().ok("Erro", f"Falha na importação: {str(e)}")
+        xbmc.log(f"[Trakt Import] Error: {e}", xbmc.LOGERROR)
+        xbmcgui.Dialog().ok("Error", f"Import failed: {str(e)}")
         return False
 
-# === SINCRONIZAÇÃO AUTOMÁTICA AO ASSISTIR ===
+# === AUTOMATIC SYNC WHEN WATCHING ===
 
 class TraktScrobbler(xbmc.Player):
-    """
-    Monitor que sincroniza automaticamente quando você assiste algo
-    ✅ Scrobble em tempo real
-    ✅ Marca como assistido ao final
-    ✅ Sincroniza progresso (pause/resume)
-    """
+    """Monitor that automatically syncs when you watch something
+    ✅ Real-time scrobble
+    ✅ Mark as watched at the end
+    ✅ Synchronizes progress (pause/resume)"""
     
     def __init__(self):
         super(TraktScrobbler, self).__init__()
@@ -1659,15 +1637,15 @@ class TraktScrobbler(xbmc.Player):
         self.scrobbled = False
     
     def onPlayBackStarted(self):
-        """Chamado quando a reprodução inicia"""
+        """Called when playback starts"""
         try:
             from resources.lib.trakt_sync import trakt_request, get_trakt_settings
             
             settings = get_trakt_settings()
             if not settings.get('access_token'):
-                return  # Trakt não configurado
+                return  # Trakt not configured
             
-            # Obtém info do item atual
+            # Gets information about the current item
             if not self.isPlayingVideo():
                 return
             
@@ -1678,7 +1656,7 @@ class TraktScrobbler(xbmc.Player):
             if not tmdb_id:
                 return
             
-            # Detecta tipo (filme ou episódio)
+            # Detects type (movie or episode)
             media_type = info.getMediaType()
             
             if media_type == 'movie':
@@ -1721,39 +1699,39 @@ class TraktScrobbler(xbmc.Player):
             self.start_time = time.time()
             self.scrobbled = False
             
-            xbmc.log(f"[Trakt Scrobble] Iniciado: {self.current_item}", xbmc.LOGINFO)
+            xbmc.log(f"[Trakt Scrobble] Started: {self.current_item}", xbmc.LOGINFO)
             
         except Exception as e:
-            xbmc.log(f"[Trakt Scrobble] Erro onStart: {e}", xbmc.LOGERROR)
+            xbmc.log(f"[Trakt Scrobble] Error onStart: {e}", xbmc.LOGERROR)
     
     def onPlayBackStopped(self):
-        """Chamado quando a reprodução para"""
+        """Called when playback stops"""
         self._scrobble_stop()
     
     def onPlayBackEnded(self):
-        """Chamado quando a reprodução termina"""
+        """Called when playback ends"""
         self._scrobble_stop(completed=True)
     
     def _scrobble_stop(self, completed=False):
-        """Envia scrobble stop/pause para Trakt"""
+        """Send scrobble stop/pause to Trakt"""
         try:
             from resources.lib.trakt_sync import trakt_request
             
             if not self.current_item or self.scrobbled:
                 return
             
-            # Calcula progresso
+            # Calculates progress
             if self.start_time:
                 elapsed = time.time() - self.start_time
                 progress = min(100, int((elapsed / self.current_item['duration']) * 100))
             else:
                 progress = 0
             
-            # Considera assistido se passou de 80%
+            # Consider assisted if it exceeds 80%
             if progress >= 80:
                 completed = True
             
-            # Monta payload
+            # Mount payload
             if self.current_item['type'] == 'movie':
                 payload = {
                     'movie': {'ids': {'tmdb': int(self.current_item['tmdb_id'])}},
@@ -1769,85 +1747,83 @@ class TraktScrobbler(xbmc.Player):
                     'progress': progress
                 }
             
-            # Envia scrobble
+            # Send scrobble
             endpoint = '/scrobble/stop' if completed else '/scrobble/pause'
             trakt_request('POST', endpoint, payload)
             
             self.scrobbled = True
             
-            # Atualiza DB local
+            # Update local DB
             if completed:
                 from resources.lib.db import db
                 if self.current_item['type'] == 'movie':
                     db.mark_movie_as_watched(self.current_item['tmdb_id'])
                 
-                xbmc.log(f"[Trakt Scrobble] Marcado como assistido: {self.current_item['tmdb_id']}", xbmc.LOGINFO)
+                xbmc.log(f"[Trakt Scrobble] Marked as watched: {self.current_item['tmdb_id']}", xbmc.LOGINFO)
             
         except Exception as e:
-            xbmc.log(f"[Trakt Scrobble] Erro onStop: {e}", xbmc.LOGERROR)
+            xbmc.log(f"[Trakt Scrobble] Error onStop: {e}", xbmc.LOGERROR)
 
-# === SINCRONIZAÇÃO BIDIRECIONAL COMPLETA ===
+# === FULL BIDIRECTIONAL SYNC ===
 
 def full_bidirectional_sync():
-    """
-    Sincronização completa em ambas direções
-    1. Local → Trakt (envia assistidos)
-    2. Trakt → Local (importa watchlist)
-    """
+    """Full synchronization in both directions
+    1. Local → Trakt (assisted sends)
+    2. Trakt → Local (imports watchlist)"""
     progress = xbmcgui.DialogProgress()
-    progress.create("Trakt Sync Completo", "Iniciando...")
+    progress.create("Trakt Sync Complete", "Starting...")
     
     try:
-        # Verifica autenticação
+        # Check authentication
         from resources.lib.trakt_sync import refresh_trakt_token
         if not refresh_trakt_token():
             progress.close()
-            xbmcgui.Dialog().ok("Erro", "Você não está autenticado no Trakt.")
+            xbmcgui.Dialog().ok("Error", "You are not signed in to Trakt.")
             return False
         
-        # Etapa 1: Local → Trakt
-        progress.update(10, "Enviando dados locais para Trakt...")
+        # Step 1: Location → Trakt
+        progress.update(10, "Sending local data to Trakt...")
         sync_local_to_trakt(progress)
         
         xbmc.sleep(1000)
         
-        # Etapa 2: Trakt → Local
-        progress.update(50, "Importando dados do Trakt...")
+        # Step 2: Trakt → Location
+        progress.update(50, "Importing data from Trakt...")
         sync_trakt_to_local(progress)
         
-        progress.update(100, "Sincronização concluída!")
+        progress.update(100, "Synchronization completed!")
         xbmc.sleep(200)
         progress.close()
         
-        # Salva timestamp
+        # Save timestamp
         ADDON.setSetting('trakt_last_sync', str(time.time()))
         
         xbmcgui.Dialog().ok(
             "Trakt Sync",
-            "Sincronização bidirecional concluída!\n\n"
-            "✅ Dados locais enviados\n"
-            "✅ Watchlist importada\n"
-            "✅ Histórico sincronizado"
+            "Two-way synchronization completed!\n\n"
+            "✅ Local data sent\n"
+            "✅ Imported watchlist\n"
+            "✅ Synchronized history"
         )
         
         return True
         
     except Exception as e:
         progress.close()
-        xbmc.log(f"[Trakt Full Sync] Erro: {e}", xbmc.LOGERROR)
-        xbmcgui.Dialog().ok("Erro", f"Falha na sincronização:\n{str(e)}")
+        xbmc.log(f"[Trakt Full Sync] Error: {e}", xbmc.LOGERROR)
+        xbmcgui.Dialog().ok("Error", f"Sync failed:\n{str(e)}")
         return False
 
-# === MENU DE SINCRONIZAÇÃO ===
+# === SYNC MENU ===
 
 def show_sync_menu():
-    """Menu de opções de sincronização"""
+    """Sync options menu"""
     options = [
-        "Sincronização Completa (Local ↔ Trakt)",
-        "Enviar Dados Locais → Trakt",
-        "Importar Dados Trakt → Local",
-        "Limpar Cache e Re-sincronizar",
-        "Configurar Scrobble Automático"
+        "Full Synchronization (Local ↔ Trakt)",
+        "Send Local Data → Trakt",
+        "Import Trakt Data → Local",
+        "Clear Cache e Re-sync",
+        "Set Up Automatic Scrobble"
     ]
     
     choice = xbmcgui.Dialog().select("Trakt Sync", options)
@@ -1856,12 +1832,12 @@ def show_sync_menu():
         full_bidirectional_sync()
     elif choice == 1:
         progress = xbmcgui.DialogProgress()
-        progress.create("Trakt Sync", "Enviando...")
+        progress.create("Trakt Sync", "Sending...")
         sync_local_to_trakt(progress)
         progress.close()
     elif choice == 2:
         progress = xbmcgui.DialogProgress()
-        progress.create("Trakt Sync", "Importando...")
+        progress.create("Trakt Sync", "Importing...")
         sync_trakt_to_local(progress)
         progress.close()
     elif choice == 3:
@@ -1871,18 +1847,18 @@ def show_sync_menu():
     elif choice == 4:
         current = ADDON.getSettingBool('trakt_auto_scrobble')
         ADDON.setSettingBool('trakt_auto_scrobble', not current)
-        status = "ativado" if not current else "desativado"
-        xbmcgui.Dialog().notification("Trakt", f"Scrobble automático {status}", xbmcgui.NOTIFICATION_INFO, 2000)
+        status = "enabled" if not current else "disabled"
+        xbmcgui.Dialog().notification("Trakt", f"Automatic scrobble {status}", xbmcgui.NOTIFICATION_INFO, 2000)
 
-# === INTEGRAÇÃO COM O ADDON ===
+# === INTEGRATION WITH ADDON ===
 
 def init_trakt_scrobbler():
-    """Inicializa o monitor de scrobble automático"""
+    """Initializes the automatic scrobble monitor"""
     if ADDON.getSettingBool('trakt_auto_scrobble'):
         scrobbler = TraktScrobbler()
-        xbmc.log("[Trakt] Scrobbler inicializado", xbmc.LOGINFO)
+        xbmc.log("[Trakt] Scrobbler initialized", xbmc.LOGINFO)
         return scrobbler
     return None
 
-# === INICIALIZAÇÃO ===
+# === INITIALIZATION ===
 _create_trakt_cache_tables()

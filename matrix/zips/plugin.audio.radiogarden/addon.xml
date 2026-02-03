@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.audio.radiogarden" 
        name="Radio Garden" 
-       version="1.5" 
+       version="2.0" 
        provider-name="@TrainAgain2">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>

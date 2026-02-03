@@ -13,11 +13,11 @@ HANDLE = int(sys.argv[1])
 ADDON = xbmcaddon.Addon()
 ADDON_PATH = ADDON.getAddonInfo("path")
 
-# ============ INITIALIZE AUTOMATIC SCROBBLER ============
+# ============ INITIALIZES AUTOMATIC SCROBBLER ============
 _SCROBBLER = None
 
 def _init_scrobbler():
-    """Initializes the Trakt automatic scrobble monitor"""
+    """Initialize Trakt's automatic scrobble monitor"""
     global _SCROBBLER
     if _SCROBBLER is not None:
         return _SCROBBLER
@@ -26,7 +26,7 @@ def _init_scrobbler():
         if ADDON.getSettingBool('trakt_auto_scrobble'):
             from resources.lib.trakt_sync import TraktScrobbler
             _SCROBBLER = TraktScrobbler()
-            xbmc.log("[Cinebox] Trakt Scrobbler started", xbmc.LOGINFO)
+            xbmc.log("[Cinebox] Scrobbler Trakt initializing", xbmc.LOGINFO)
             return _SCROBBLER
     except Exception as e:
         xbmc.log(f"[Cinebox] Error initializing Scrobbler: {e}", xbmc.LOGERROR)
@@ -36,12 +36,12 @@ def _init_scrobbler():
 
 # ============ OPTIMIZED CACHE SYSTEM ============
 _MODULE_CACHE = {}
-_MODULE_CACHE_MAX = 20  # ✅ NEW: Module cache limit
+_MODULE_CACHE_MAX = 20  # ✅ NEW: Cached modules limit
 _JSON_CACHE = {}
-_ACTION_HANDLERS = {}  # ✅ NEW: Compiled handlers cache
+_ACTION_HANDLERS = {}  # ✅ NEW: Cache of compiled handlers
 
 def _get_module(name):
-    """Ultra-fast lazy loading with module caching"""
+    """Ultra-fast lazy loading with module cache"""
     if name in _MODULE_CACHE:
         return _MODULE_CACHE[name]
     
@@ -73,16 +73,16 @@ def _get_module(name):
         else:
             return None
         
-        # ✅ OPTIMIZATION: Limit module cache size
+        # ✅ OPTIMIZATION: Limits module cache
         if len(_MODULE_CACHE) >= _MODULE_CACHE_MAX:
-            # Remove least used modules (simple approach: remove first inserted)
+            # Remove less used modules (simple: remove first)
             first_key = next(iter(_MODULE_CACHE))
             del _MODULE_CACHE[first_key]
         
         _MODULE_CACHE[name] = mod
         return mod
     except ImportError as e:
-        xbmc.log(f"[Cinebox] Error importing {name}: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Cinebox] Failed to import {name}: {e}", xbmc.LOGERROR)
         return None
 
 def _parse_json(data):
@@ -108,20 +108,24 @@ def _parse_json(data):
         return {}
 
 def _end_dir(success=True):
-    """Quick helper for endOfDirectory"""
-    xbmcplugin = _get_module('xbmcplugin')
-    if xbmcplugin:
-        xbmcplugin.endOfDirectory(HANDLE, succeeded=success)
+    """Finalizează listarea și forțează vizualizarea de tip Listă"""
+    if success:
+        xbmcplugin.endOfDirectory(HANDLE)
+        # ID-ul 50 corespunde vizualizării 'List' în majoritatea skin-urilor (Estuary)
+        xbmc.executebuiltin('Container.SetViewMode(50)')
+    return success
 
 # ============ ACTION MAPPING - OPTIMIZED ============
 _ACTIONS = {
+    
     
     # == TRAKT.TV ===
     'list_trakt_watchlist': ('trakt_sync', 'list_trakt_watchlist', False, None),
     'list_trakt_collection': ('trakt_sync', 'list_trakt_collection', False, None),
     'list_trakt_watched': ('trakt_sync', 'list_trakt_watched', False, None),
 
-    # === TRAKT MOVIES ===
+    
+    # === TRAKT FILMS ===
     'trakt_movies_trending': ('trakt_sync', 'trakt_movies_trending', True, None),
     'trakt_movies_popular': ('trakt_sync', 'trakt_movies_popular', True, None),
     'trakt_movies_most_watched': ('trakt_sync', 'trakt_movies_most_watched', True, None),
@@ -130,7 +134,7 @@ _ACTIONS = {
     'trakt_movies_box_office': ('trakt_sync', 'trakt_movies_box_office', True, None),
     'trakt_movies_top_rated': ('trakt_sync', 'trakt_movies_top_rated', True, None),
     
-    # === TRAKT TV SHOWS ===
+    # === TRAKT SERIES ===
     'trakt_tv_trending': ('trakt_sync', 'trakt_tv_trending', True, None),
     'trakt_tv_popular': ('trakt_sync', 'trakt_tv_popular', True, None),
     'trakt_tv_most_watched': ('trakt_sync', 'trakt_tv_most_watched', True, None),
@@ -157,7 +161,7 @@ _ACTIONS = {
     'list_movies_by_provider': ('movies', 'list_movies_by_provider', True, ['provider']),
     'list_trending_movies': ('movies', 'list_trending_movies', True, None),
     
-    # === TV SHOWS ===
+    # === SERIES ===
     'list_tvshows_genres': ('tvshows', 'list_tvshows_genres', False, None),
     'list_tvshows_years': ('tvshows', 'list_tvshows_years', False, None),
     'list_tvshows_by_year': ('tvshows', 'list_tvshows_by_year', True, ['year']),
@@ -193,10 +197,8 @@ _ACTIONS = {
 }
 
 def _get_action_handler(action):
-    """
-    ✅ NEW FUNCTION: Returns pre-compiled handler
-    Avoids repeated lookups in the _ACTIONS dictionary
-    """
+    """✅ NEW FUNCTION: Returns pre-compiled handler
+    Avoid repeated lookup in the _ACTIONS dictionary"""
     if action in _ACTION_HANDLERS:
         return _ACTION_HANDLERS[action]
     
@@ -213,7 +215,7 @@ def _get_action_handler(action):
     return handler
 
 def _handle_generic_action(action, params):
-    """OPTIMIZED Generic Handler - FIXED for pagination"""
+    """OPTIMIZED generic handler - FIXED for pagination"""
     handler = _get_action_handler(action)
     if not handler:
         return False
@@ -230,7 +232,7 @@ def _handle_generic_action(action, params):
     if not method:
         return False
     
-    # Assemble args - FIXED
+    # Mounts args - FIXED
     args = []
     
     if extra_params:
@@ -241,7 +243,7 @@ def _handle_generic_action(action, params):
                 val = int(val) if val and val != '' else 0
             args.append(val)
     
-    # Add page as argument (respecting order if region exists)
+    # Add page as argument (respecting the order if there is region)
     if needs_page:
         page_val = params.get('page', '1')
         try:
@@ -259,7 +261,7 @@ def _handle_generic_action(action, params):
         return False
 
 def _handle_show_details(params):
-    """Optimized handler for details"""
+    """Detail-optimized handler"""
     data = _parse_json(params.get('data', ''))
     if not data:
         return False
@@ -271,7 +273,7 @@ def _handle_show_details(params):
     return False
 
 def _handle_list_seasons(params):
-    """Optimized handler for seasons"""
+    """Handler optimized for seasons"""
     tv = _get_module('tvshows')
     if tv:
         tv.list_seasons(params.get('tvshow_tmdb_id'))
@@ -279,7 +281,7 @@ def _handle_list_seasons(params):
     return False
 
 def _handle_list_episodes(params):
-    """Optimized handler for episodes"""
+    """Episode-optimized handler"""
     tv = _get_module('tvshows')
     if tv:
         tv.list_episodes(
@@ -290,7 +292,7 @@ def _handle_list_episodes(params):
     return False
 
 def _handle_favorites(action, params):
-    """Optimized handler for favorites"""
+    """Handler optimized for bookmarks"""
     fav = _get_module('favorites')
     if not fav:
         return False
@@ -317,9 +319,9 @@ def _handle_favorites(action, params):
     return True
 
 def _handle_trakt(action, params):
-    """COMPLETE Trakt handler - with individual actions"""
+    """COMPLETE Handler for Trakt - with individual actions"""
     
-    # Main Menu - no import needed
+    # Main menu - no need to import anything
     if action == 'trakt_main_menu':
         nav = _get_module('navigation')
         const = _get_module('constants')
@@ -327,14 +329,14 @@ def _handle_trakt(action, params):
             nav.show_main_menu(const.TRAKT_MENU)
         return True
 
-    # ✅ LAZY IMPORT only for actions that actually need it
+    # ✅ LAZY IMPORT only for actions that really need it
     trakt = _get_module('trakt_sync')
     if not trakt:
         return False
     
-    # ============================================
+    # ==========================================================
     # ✅ INDIVIDUAL ACTIONS (CONTEXT MENU)
-    # ============================================
+    # ==========================================================
     
     tmdb_id = params.get('tmdb_id')
     media_type = params.get('media_type')
@@ -398,9 +400,9 @@ def _handle_trakt(action, params):
             trakt.trakt_rate_item(tmdb_id, media_type)
         return True
     
-    # ============================================
+    # ==========================================================
     # AUTH AND STATUS
-    # ============================================
+    # ==========================================================
     
     if action == 'trakt_auth':
         settings = trakt.get_trakt_settings()
@@ -414,9 +416,9 @@ def _handle_trakt(action, params):
         trakt.show_trakt_status()
         return True
     
-    # ============================================
+    # ==========================================================
     # LISTING MENUS
-    # ============================================
+    # ==========================================================
     
     if action == 'trakt_watchlist_menu':
         trakt.show_trakt_watchlist_items(page)
@@ -438,7 +440,7 @@ def _handle_trakt(action, params):
         trakt.show_trakt_popular_items(page)
         return True
     
-    # Custom Lists
+    # Custom lists
     if action == 'trakt_lists_menu':
         trakt.show_trakt_custom_lists()
         return True
@@ -448,9 +450,9 @@ def _handle_trakt(action, params):
         trakt.show_trakt_list_items(list_id, page)
         return True
     
-    # ============================================
+    # ==========================================================
     # SYNC
-    # ============================================
+    # ==========================================================
     
     if action == 'trakt_full_sync':
         trakt.full_bidirectional_sync()
@@ -482,8 +484,8 @@ def _handle_trakt(action, params):
     if action == 'trakt_toggle_scrobble':
         current = ADDON.getSettingBool('trakt_auto_scrobble')
         ADDON.setSettingBool('trakt_auto_scrobble', not current)
-        status = "activated ✅" if not current else "deactivated ❌"
-        xbmcgui.Dialog().notification("Trakt Scrobbler", f"Automatic Scrobble {status}", xbmcgui.NOTIFICATION_INFO, 3000)
+        status = "enabled ✅" if not current else "disabled ❌"
+        xbmcgui.Dialog().notification("Trakt Scrobbler", f"Automatic scrobble {status}", xbmcgui.NOTIFICATION_INFO, 3000)
         return True
     
     if action == 'trakt_public_lists':
@@ -503,7 +505,7 @@ def _handle_trakt(action, params):
     return False
 
 def _handle_navigation(action, params):
-    """Optimized handler for navigation"""
+    """Handler optimized for navigation"""
     nav = _get_module('navigation')
     if not nav:
         return False
@@ -553,7 +555,7 @@ def _handle_navigation(action, params):
     if action == 'play_item_direct':
         item_data = _parse_json(params.get('data', ''))
         if item_data:
-            # ✅ CORRECTION: Respects the addon's autoplay setting
+            # ✅ FIX: Respects addon autoplay setting
             autoplay_setting = ADDON.getSettingBool('playback.autoplay')
             nav.find_and_play_sources(item_data, autoplay=autoplay_setting)
         return True
@@ -561,7 +563,7 @@ def _handle_navigation(action, params):
     if action == 'find_and_play_episode':
         item_data = _parse_json(params.get('item_data', ''))
         if item_data:
-            # ✅ CORRECTION: Respects the addon's autoplay setting
+            # ✅ FIX: Respects addon autoplay setting
             autoplay_setting = ADDON.getSettingBool('playback.autoplay')
             nav.find_and_play_sources(
                 item_data,
@@ -606,9 +608,9 @@ def _handle_menu(action, params):
     return False
 
 def _handle_library(action, params):
-    """OPTIMIZED Library handler - Lazy import"""
+    """OPTIMIZED handler for library - Lazy import"""
     
-    # Menu doesn't need import
+    # Menu does not need import
     if action == 'library_menu':
         win = xbmcgui.Window(10000)
         warned = win.getProperty("cinebox.library.warning")
@@ -616,7 +618,7 @@ def _handle_library(action, params):
         if not warned:
             ok = xbmcgui.Dialog().yesno(
                 "Library (Experimental)",
-                "Function in testing. Recommended for advanced users only!\n\nDo you wish to continue?"
+                "Feature in testing. Recommended for advanced users only!\n\nDo you want to continue?"
             )
             if not ok:
                 return False
@@ -659,7 +661,7 @@ def _handle_library(action, params):
     if action == 'library_remove':
         tmdb_id = params.get('tmdb_id')
         media_type = params.get('media_type')
-        if tmdb_id and media_type and xbmcgui.Dialog().yesno("Remove", "Do you want to remove this from the library?"):
+        if tmdb_id and media_type and xbmcgui.Dialog().yesno("Remove", "Do you want to remove it from the library?"):
             if hasattr(lib, 'remove_from_library'):
                 lib.remove_from_library(tmdb_id, media_type)
         return True
@@ -682,7 +684,7 @@ def _handle_library(action, params):
     if action == 'library_stats':
         if hasattr(lib, 'get_library_stats'):
             stats = lib.get_library_stats()
-            xbmcgui.Dialog().ok("Statistics", f"Movies: {stats['movies']}\nShows: {stats['tvshows']}\nEpisodes: {stats['episodes']}")
+            xbmcgui.Dialog().ok("Statistics", f"Movies: {stats['movies']}\nSeries: {stats['tvshows']}\nEpisodes: {stats['episodes']}")
         return True
     
     return False
@@ -691,12 +693,12 @@ def _handle_library(action, params):
 
 def router():
     """Main Router - OPTIMIZED"""
-    # Parse parameters
+    # Parameter Parse
     params = dict(parse_qsl(sys.argv[2][1:])) if len(sys.argv) > 2 and sys.argv[2] else {}
     action = params.get('action', '')
     
     # ============ AUTO-HEAL: DISABLED ============
-    # Removed empty catalog message upon entry as requested.
+    # Removed empty catalog message on entry as requested.
     pass
     
     # ============ ADDON ROOT ============
@@ -708,12 +710,12 @@ def router():
             nav.show_main_menu(const.MAIN_MENU)
             return _end_dir(True)
         else:
-            xbmc.log("[Cinebox] Error loading main menu", xbmc.LOGERROR)
+            xbmc.log("[Cinebox] Failed to load main menu", xbmc.LOGERROR)
             return _end_dir(False)
     
-    # ============ CATEGORY-BASED OPTIMIZED ROUTING ============
+    # ============ OPTIMIZED ROUTING BY CATEGORY ============
     
-    # ✅ Generic actions (most common, tested first)
+    # ✅ Generic actions (most common, test first)
     if _handle_generic_action(action, params):
         return _end_dir()
     
@@ -721,7 +723,7 @@ def router():
     if action == 'show_details':
         return _end_dir(_handle_show_details(params))
     
-    # ✅ Shows (special cases)
+    # ✅ Series (special cases)
     if action == 'list_seasons':
         return _end_dir(_handle_list_seasons(params))
     
@@ -738,14 +740,7 @@ def router():
     
     # ✅ Navigation and Debug
     if action in ('search', 'find_sources', 'play_item_direct', 'find_and_play_episode', 'view_debug_log', 'export_debug_log', 'clear_debug_log'):
-        result = _handle_navigation(action, params)
-        
-        # Dacă acțiunea este 'find_sources', ieșim fără să apelăm _end_dir
-        # pentru a permite setResolvedUrl să funcționeze corect.
-        if action == 'find_sources':
-            return result
-            
-        return _end_dir(result)
+        return _end_dir(_handle_navigation(action, params))
     
     # ✅ Menus
     if action in ('movies_menu', 'tvshows_menu', 'tools_menu', 'streaming_menu'):
@@ -795,14 +790,14 @@ def router():
         del dialog
         return _end_dir()
     
-    # ✅ NEW: Update Catalog
+    # ✅ NEW: Update catalog
     if action == 'update_catalog':
         indexer = _get_module('indexer')
         if indexer:
             indexer.run_indexer()
         return _end_dir()
 
-    # ✅ NEW: Configure External Scrapers
+    # ✅ NEW: Configure external scrapers
     if action == 'configure_external_scrapers':
         try:
             from resources.lib.dialogs import configure_external_scrapers
@@ -818,7 +813,7 @@ def router():
     return _end_dir(False)
 
 if __name__ == '__main__':
-    # Ensure it doesn't show changelog or initial messages
+    # Ensure it does not show changelog or splash messages
     # ADDON.setSetting('first_run_extras', 'done')
     
     try:

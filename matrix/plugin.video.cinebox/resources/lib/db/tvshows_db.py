@@ -7,7 +7,7 @@ import xbmc
 class TVShowsDatabase(BaseDatabase):
     
     def add_tvshows_bulk(self, tvshows_list):
-        """Bulk insert otimizado para séries"""
+        """Bulk insert optimized for series"""
         if not tvshows_list:
             return
         
@@ -50,14 +50,14 @@ class TVShowsDatabase(BaseDatabase):
             
             conn.commit()
             
-            # Limpa caches relevantes
+            # Clear relevant caches
             self._cache_delete_prefix("tv_")
             self._cache_delete_prefix("tvshow:")
         finally:
             self._release_conn(conn)
     
     def get_tvshow_by_id(self, tmdb_id):
-        """Busca série específica (com cache)"""
+        """Search specific series (with cache)"""
         cache_key = f"tvshow:{tmdb_id}"
         cached = self._cache_get(cache_key)
         if cached:
@@ -72,7 +72,7 @@ class TVShowsDatabase(BaseDatabase):
         return show
     
     def get_all_tvshow_ids_set(self):
-        """Retorna SET de IDs (ultra-rápido)"""
+        """Returns SET of IDs (ultra-fast)"""
         cache_key = "all_tvshow_ids"
         cached = self._cache_get(cache_key)
         if cached:
@@ -86,13 +86,13 @@ class TVShowsDatabase(BaseDatabase):
             self._cache_set(cache_key, ids, ttl=600)
             return ids
         except Exception as e:
-            xbmc.log(f"[DB ERROR] Falha ao buscar IDs de séries: {e}", xbmc.LOGERROR)
+            xbmc.log(f"[DB ERROR] Failed to fetch series IDs: {e}", xbmc.LOGERROR)
             return set()
         finally:
             self._release_conn(conn)
     
     def update_tv_popularity_bulk(self, updates):
-        """Atualização em massa de popularidade"""
+        """Mass popularity update"""
         if not updates:
             return
         
@@ -109,7 +109,7 @@ class TVShowsDatabase(BaseDatabase):
         finally:
             self._release_conn(conn)
     
-    # === CACHE DE TEMPORADAS E EPISÓDIOS ===
+    # === CACHE OF SEASONS AND EPISODES ===
     
     def get_cached_seasons(self, tvshow_tmdb_id, max_age_hours=72):
         """Busca temporadas do cache local (com TTL)"""
@@ -143,16 +143,16 @@ class TVShowsDatabase(BaseDatabase):
         if not seasons_data_list:
             return
         
-        xbmc.log(f"[CACHE] Salvando {len(seasons_data_list)} temporadas para {tvshow_tmdb_id}", xbmc.LOGINFO)
+        xbmc.log(f"[CACHE] Saving {len(seasons_data_list)} seasons for {tvshow_tmdb_id}", xbmc.LOGINFO)
         
         conn = self._get_conn()
         cursor = conn.cursor()
         
         try:
-            # Limpa cache antigo
+            # Clear old cache
             cursor.execute("DELETE FROM seasons_cache WHERE tvshow_tmdb_id = ?", (tvshow_tmdb_id,))
             
-            # Prepara novos dados
+            # Prepare new data
             data = []
             for season in seasons_data_list:
                 poster = f"https://image.tmdb.org/t/p/w500{season.get('poster_path')}" if season.get('poster_path') else None
@@ -167,7 +167,7 @@ class TVShowsDatabase(BaseDatabase):
                     season.get('vote_average', 0.0)
                 ))
             
-            # Insert em lote
+            # Batch insert
             cursor.executemany('''
                 INSERT INTO seasons_cache (
                     tvshow_tmdb_id, season_number, name, overview, poster,
@@ -177,13 +177,13 @@ class TVShowsDatabase(BaseDatabase):
             
             conn.commit()
             
-            # Limpa cache de memória
+            # Clear memory cache
             self._cache_delete_prefix(f"seasons:{tvshow_tmdb_id}")
         finally:
             self._release_conn(conn)
     
     def get_cached_episodes(self, tvshow_tmdb_id, season_number, max_age_hours=72):
-        """Busca episódios do cache local"""
+        """Fetch episodes from local cache"""
         cache_key = f"episodes:{tvshow_tmdb_id}:{season_number}"
         cached = self._cache_get(cache_key)
         if cached:
@@ -210,23 +210,23 @@ class TVShowsDatabase(BaseDatabase):
             self._release_conn(conn)
     
     def save_episodes_cache(self, tvshow_tmdb_id, season_number, episodes_data_list):
-        """Salva episódios no cache (batch otimizado)"""
+        """Saves episodes to cache (optimized batch)"""
         if not episodes_data_list:
             return
         
-        xbmc.log(f"[CACHE] Salvando {len(episodes_data_list)} episódios para S{season_number}", xbmc.LOGINFO)
+        xbmc.log(f"[CACHE] Saving {len(episodes_data_list)} episodes for S{season_number}", xbmc.LOGINFO)
         
         conn = self._get_conn()
         cursor = conn.cursor()
         
         try:
-            # Limpa cache antigo
+            # Clear old cache
             cursor.execute(
                 "DELETE FROM episodes_cache WHERE tvshow_tmdb_id = ? AND season_number = ?",
                 (tvshow_tmdb_id, season_number)
             )
             
-            # Prepara novos dados
+            # Prepare new data
             data = []
             for ep in episodes_data_list:
                 data.append((
@@ -241,7 +241,7 @@ class TVShowsDatabase(BaseDatabase):
                     ep.get('runtime', 0)
                 ))
             
-            # Insert em lote
+            # Batch insert
             cursor.executemany('''
                 INSERT INTO episodes_cache (
                     tvshow_tmdb_id, season_number, episode_number, name, overview,
@@ -251,15 +251,15 @@ class TVShowsDatabase(BaseDatabase):
             
             conn.commit()
             
-            # Limpa cache de memória
+            # Clear memory cache
             self._cache_delete_prefix(f"episodes:{tvshow_tmdb_id}:{season_number}")
         finally:
             self._release_conn(conn)
     
-    # === LISTAGENS ===
+    # === LISTINGS ===
     
     def get_all_unique_tvshow_genres(self):
-        """Gêneros únicos de séries (cache super longo)"""
+        """Unique series genres (super long cache)"""
         cache_key = "tv_genres"
         cached = self._cache_get(cache_key)
         if cached:
@@ -287,7 +287,7 @@ class TVShowsDatabase(BaseDatabase):
             self._release_conn(conn)
     
     def get_tvshows_by_genre(self, genre, page=1, items_per_page=20):
-        """Séries por gênero"""
+        """Series by genre"""
         normalized_genre = self._normalize_text(genre)
         cache_key = f"tv_genre:{normalized_genre}:{page}"
         cached = self._cache_get(cache_key)
@@ -307,7 +307,7 @@ class TVShowsDatabase(BaseDatabase):
         return shows
     
     def get_recently_added_tvshows(self, page, page_size):
-        """Recém-adicionadas"""
+        """Newly added"""
         cache_key = f"tv_recent:{page}"
         cached = self._cache_get(cache_key)
         if cached:
@@ -321,7 +321,7 @@ class TVShowsDatabase(BaseDatabase):
         return shows
     
     def get_kids_tvshows(self, page, page_size):
-        """Séries infantis"""
+        """Children's series"""
         cache_key = f"tv_kids:{page}"
         cached = self._cache_get(cache_key)
         if cached:
@@ -340,7 +340,7 @@ class TVShowsDatabase(BaseDatabase):
         return shows
     
     def get_tvshows_by_popularity(self, page=1, page_size=20):
-        """Top séries por popularidade"""
+        """Top series by popularity"""
         cache_key = f"tv_pop:{page}"
         cached = self._cache_get(cache_key)
         if cached:
@@ -354,7 +354,7 @@ class TVShowsDatabase(BaseDatabase):
         return shows
     
     def get_tvshows_by_provider(self, provider, page=1, items_per_page=20):
-        """Séries por streaming"""
+        """Streaming series"""
         cache_key = f"tv_provider:{provider}:{page}"
         cached = self._cache_get(cache_key)
         if cached:
@@ -373,13 +373,13 @@ class TVShowsDatabase(BaseDatabase):
         return shows
     
     def get_all_unique_providers(self):
-        """Provedores únicos (cache longo + normalização)"""
+        """Single providers (long cache + normalization)"""
         cache_key = "tv_providers"
         cached = self._cache_get(cache_key)
         if cached:
             return cached
         
-        # Mapa de normalização
+        # Normalization map
         provider_map = {
             "netflix": "Netflix",
             "netflix basic with ads": "Netflix",

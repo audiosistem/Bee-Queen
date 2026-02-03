@@ -8,20 +8,18 @@ import xbmcaddon
 import xbmcgui
 import xbmcvfs
 
-"""
-Sistema de Atualização Automática - Cinebox
-Versão: 3.1.0 (Enhanced)
-Melhoria: Limpeza profunda de cache e atualização forçada no startup
-Inspirado na arquitetura do IMDB TrainAgain
-"""
+"""Automatic System Update - Cinebox
+Version: 3.1.0 (Enhanced)
+Improvement: Deep cache cleaning and forced update at startup
+Inspired by the architecture of IMDB TrainAgain"""
 
 def get_addon():
     return xbmcaddon.Addon()
 
 def show_notification(title, message, icon=xbmcgui.NOTIFICATION_INFO, duration=5000):
-    """Exibe uma notificação de forma garantida"""
+    """Guaranteedly displays a notification"""
     try:
-        # Remove tags de cores para o título da notificação se necessário
+        # Remove color tags for notification title if necessary
         clean_title = title.replace('[COLOR red]', '').replace('[/COLOR]', '').replace('[COLOR yellow]', '')
         xbmcgui.Dialog().notification(clean_title, message, icon, duration, False)
     except:
@@ -40,7 +38,7 @@ class AutoUpdater:
         self.last_update = self.get_last_update_time()
         self.is_running = False
         
-        self.log_info(f"Inicializado - Enabled: {self.enabled}, Startup: {self.update_on_startup}, Interval: {self.interval_hours}h")
+        self.log_info(f"Initialized - Enabled: {self.enabled}, Startup: {self.update_on_startup}, Interval: {self.interval_hours}h")
 
     def refresh_settings(self):
         try:
@@ -85,7 +83,7 @@ class AutoUpdater:
             get_addon().setSetting('last_update_check', now.isoformat())
             self.last_update = now
         except Exception as e:
-            self.log_error(f"Erro ao salvar timestamp: {e}")
+            self.log_error(f"Error saving timestamp: {e}")
 
     def is_update_needed(self):
         self.refresh_settings()
@@ -94,11 +92,11 @@ class AutoUpdater:
         return (datetime.now() - self.last_update) >= timedelta(hours=self.interval_hours)
 
     def clear_deep_cache(self):
-        """Limpa todos os caches possíveis para garantir novos conteúdos"""
+        """Clears all possible caches to ensure new content"""
         try:
-            self.log_info("Iniciando limpeza profunda de cache...")
+            self.log_info("Starting deep cache cleaning...")
             
-            # 1. Limpa cache de memória (Window Properties)
+            # 1. Clear memory cache (Window Properties)
             window = xbmcgui.Window(10000)
             keys_to_clear = [
                 'cinebox.movies.cache', 'cinebox.tvshows.cache', 'cinebox.trending.cache',
@@ -107,7 +105,7 @@ class AutoUpdater:
             for key in keys_to_clear:
                 window.clearProperty(key)
             
-            # 2. Limpa cache do Banco de Dados (api_cache)
+            # 2. Clear Database cache (api_cache)
             try:
                 from resources.lib.db.db import db_instance
                 conn = db_instance._get_conn()
@@ -115,13 +113,13 @@ class AutoUpdater:
                 cursor.execute("DELETE FROM api_cache")
                 conn.commit()
                 db_instance._release_conn(conn)
-                # Limpa o SmartCache em memória também
+                # Clears SmartCache in memory as well
                 db_instance._cache.clear()
-                self.log_info("✓ Cache do banco de dados limpo")
+                self.log_info("✓ Database cache cleared")
             except Exception as e:
-                self.log_error(f"Erro ao limpar cache do DB: {e}")
+                self.log_error(f"Error clearing the DB cache: {e}")
 
-            # 3. Limpa cache de módulos (main.py)
+            # 3. Clear module cache (main.py)
             try:
                 import sys
                 if 'main' in sys.modules:
@@ -130,35 +128,35 @@ class AutoUpdater:
                         main_mod._MODULE_CACHE.clear()
                     if hasattr(main_mod, '_JSON_CACHE'):
                         main_mod._JSON_CACHE.clear()
-                self.log_info("✓ Cache de módulos limpo")
+                self.log_info("✓ Module cache cleared")
             except:
                 pass
 
-            self.log_info("Limpeza profunda concluída.")
+            self.log_info("Deep cleaning completed.")
         except Exception as e:
-            self.log_error(f"Erro geral na limpeza de cache: {e}")
+            self.log_error(f"General cache clearing error: {e}")
 
-    def update_content(self, reason="Periódica"):
+    def update_content(self, reason="Periodic"):
         if not self.update_lock.acquire(blocking=False):
-            self.log_info("Atualização já em curso.")
+            self.log_info("Update already underway.")
             return False
         
         try:
             self.refresh_settings()
             if not self.enabled: return False
             
-            # Se estiver assistindo algo, espera o player parar (máximo 10 min de espera)
+            # If you are watching something, wait for the player to stop (maximum 10 min wait)
             wait_count = 0
             while xbmc.Player().isPlaying() and wait_count < 60:
                 if self.monitor.waitForAbort(10): return False
                 wait_count += 1
             
-            self.log_info(f"Iniciando atualização ({reason})")
+            self.log_info(f"Starting update ({reason})")
             
             if self.show_notifications:
-                show_notification(self.addon_name, "Atualizando catálogo...", xbmcgui.NOTIFICATION_INFO)
+                show_notification(self.addon_name, "Updating catalogue...", xbmcgui.NOTIFICATION_INFO)
             
-            # Limpeza profunda antes de buscar novos dados
+            # Deep cleaning before fetching new data
             self.clear_deep_cache()
             
             success = False
@@ -172,33 +170,33 @@ class AutoUpdater:
             if success:
                 self.set_last_update_time()
                 if self.show_notifications:
-                    show_notification(self.addon_name, "Catálogo atualizado!", xbmcgui.NOTIFICATION_INFO)
+                    show_notification(self.addon_name, "Catalog updated!", xbmcgui.NOTIFICATION_INFO)
                 
-                # Força o Kodi a atualizar a listagem atual
+                # Force Kodi to update the current listing
                 xbmc.executebuiltin('Container.Refresh')
                 return True
             else:
                 if self.show_notifications:
-                    show_notification(self.addon_name, "Erro na atualização", xbmcgui.NOTIFICATION_ERROR)
+                    show_notification(self.addon_name, "Update error", xbmcgui.NOTIFICATION_ERROR)
                 return False
         finally:
             self.update_lock.release()
 
     def worker(self):
-        self.log_info("Worker iniciado.")
+        self.log_info("Worker started.")
         
-        # --- ATUALIZAÇÃO DE STARTUP ---
-        # Aguarda 15 segundos para o Kodi estabilizar a rede e serviços
+        # --- STARTUP UPDATE ---
+        # Wait 15 seconds for Kodi to stabilize the network and services
         if not self.monitor.waitForAbort(15):
             self.refresh_settings()
             if self.update_on_startup and self.enabled:
-                self.log_info("Disparando atualização de startup...")
+                self.log_info("Shooting startup update...")
                 self.update_content(reason="Startup")
         
-        # --- LOOP PERIÓDICO ---
-        while not self.monitor.waitForAbort(300): # A cada 5 minutos verifica se precisa
+        # --- PERIODIC LOOP ---
+        while not self.monitor.waitForAbort(300): # Every 5 minutes check if necessary
             if self.is_update_needed():
-                self.update_content(reason="Agendada")
+                self.update_content(reason="Scheduled")
         
         self.log_info("Worker finalizado.")
 

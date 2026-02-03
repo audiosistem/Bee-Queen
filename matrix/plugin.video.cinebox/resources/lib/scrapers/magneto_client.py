@@ -26,7 +26,7 @@ class MagnetoClient:
     def parseDOM(html, name, attrs=None, ret=None):
         if attrs is None: attrs = {}
         
-        # Simplificação do parseDOM do Magneto usando regex
+        # Simplifying Magneto's parseDOM using regex
         if name == 'tr':
             pattern = r'<tr[^>]*>(.*?)</tr>'
         elif name == 'td':

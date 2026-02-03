@@ -7,10 +7,8 @@ from .session import USER_AGENT
 from ..debug_logger import logger
 
 def scrape(imdb_id, media_type, season, episode, item_data=None, cancel_event=None):
-    """
-    Scraper Jackett/Prowlarr para Cinebox.
-    Busca em instâncias públicas e melhora a cobertura.
-    """
+    """Jackett/Prowlarr Scraper for Cinebox.
+    Search public instances and improve coverage."""
     if not item_data:
         return []
 
@@ -24,33 +22,33 @@ def scrape(imdb_id, media_type, season, episode, item_data=None, cancel_event=No
     streams = []
     seen_hashes = set()
     
-    # Lista de instâncias públicas de Jackett/Prowlarr ou agregadores similares
-    # Como não temos uma API key do usuário, vamos focar em usar o Torrentio 
-    # com uma configuração mais agressiva de busca por texto.
+    # List of public instances of Jackett/Prowlarr or similar aggregators
+    # As we don't have a user API key, we will focus on using Torrentio
+    # with a more aggressive text search configuration.
     
     from .stremio import scrape as stremio_scrape
     
-    # Torrentio com todos os provedores possíveis
+    # Torrentio with all possible providers
     config = "providers=comando,bludv,micoleaodublado,yts,nyaasi,1337x,tgx,rarbg,eztv,torrentgalaxy,magnetdl,horriblesubs,piratebay,kickasstorrents|language=japanese,portuguese,english"
     provider_url = f"https://torrentio.strem.fun/{config}"
     
-    # 1. Tenta busca normal por ID
+    # 1. Try normal search by ID
     results = stremio_scrape(provider_url, False, imdb_id, media_type, season, episode, item_data, cancel_event)
     streams.extend(results)
     
-    # 2. Se não houver resultados e tivermos título original, tenta busca por texto no Torrentio
+    # 2. If there are no results and we have an original title, try text search on Torrentio
     if not streams and original_title and original_title != title:
-        xbmc.log(f"[Jackett-Scraper] Sem resultados por ID, tentando busca por título original: {original_title}", xbmc.LOGINFO)
-        # O Torrentio suporta busca por texto via endpoint /stream/movie/query.json
+        xbmc.log(f"[Jackett-Scraper] No results by ID, trying to search by original title: {original_title}", xbmc.LOGINFO)
+        # Torrentio supports text search via the /stream/movie/query.json endpoint
         if media_type == 'tvshow':
             query = f"{original_title} S{int(season):02d}E{int(episode):02d}"
         else:
             year = item_data.get('year', '')
             query = f"{original_title} {year}"
         
-        # Simula um item_data sem IMDB para forçar a busca por texto no stremio.py modificado
+        # Simulates an item_data without IMDB to force text search in modified stremio.py
         fake_item_data = item_data.copy()
-        # Remove o IMDB para forçar a busca por título no stremio.py
+        # Remove IMDB to force title search in stremio.py
         results = stremio_scrape(provider_url, False, None, media_type, season, episode, fake_item_data, cancel_event)
         streams.extend(results)
 

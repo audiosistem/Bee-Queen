@@ -1,20 +1,20 @@
-# Em: resources/lib/favorites.py
+# In: resources/lib/favorites.py
 
 import xbmcgui
 from .db import db
 
 def add_item_to_favorites(tmdb_id, media_type):
-    """Adiciona o item aos favoritos e tenta buscar dados em background se necessário."""
+    """Adds item to favorites and tries to fetch data in the background if necessary."""
     try:
         from .db.db import db_instance
         
-        # 1. Adiciona imediatamente à tabela de favoritos (ação rápida)
+        # 1. Immediately adds to favorites table (quick action)
         db_instance.add_to_favorites(tmdb_id, media_type)
         
-        # 2. Notifica o usuário imediatamente
-        xbmcgui.Dialog().notification("Minha Lista", "Adicionado com sucesso!", xbmcgui.NOTIFICATION_INFO, 3000)
+        # 2. Notifies the user immediately
+        xbmcgui.Dialog().notification("My List", "Added successfully!", xbmcgui.NOTIFICATION_INFO, 3000)
         
-        # 3. Verifica se precisamos baixar os dados (apenas se não existirem)
+        # 3. Checks if download is needed the data (only if it does not exist)
         if media_type == 'movie':
             if not db_instance.get_movie_by_id(tmdb_id):
                 from .tmdb_api import get_movie_details
@@ -28,10 +28,10 @@ def add_item_to_favorites(tmdb_id, media_type):
                 
     except Exception as e:
         import xbmc
-        xbmc.log(f"[Cinebox] Erro ao adicionar favorito: {e}", xbmc.LOGERROR)
-        xbmcgui.Dialog().notification("Erro", "Não foi possível adicionar", xbmcgui.NOTIFICATION_ERROR)
+        xbmc.log(f"[Cinebox] Error adding favorite: {e}", xbmc.LOGERROR)
+        xbmcgui.Dialog().notification("Error", "Could not add item", xbmcgui.NOTIFICATION_ERROR)
 
 def remove_item_from_favorites(tmdb_id, media_type):
-    """Chama o banco de dados para remover um item e notifica o usuário."""
+    """Calls the database to remove an item and notifies the user."""
     db.remove_from_favorites(tmdb_id, media_type)
-    xbmcgui.Dialog().notification("Minha Lista", "Removido da sua lista.", xbmcgui.NOTIFICATION_INFO)
+    xbmcgui.Dialog().notification("My List", "Removed from your list.", xbmcgui.NOTIFICATION_INFO)

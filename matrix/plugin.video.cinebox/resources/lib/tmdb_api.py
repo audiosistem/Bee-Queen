@@ -10,25 +10,25 @@ from .db import db
 
 ADDON = xbmcaddon.Addon()
 TMDB_API_KEY = ADDON.getSetting("tmdb_api")
-TMDB_LANG = ADDON.getSetting("tmdb_language") or "pt-BR"
+TMDB_LANG = ADDON.getSetting("tmdb_language") or "en-US"
 BASE_URL = "https://api.themoviedb.org/3"
 
-# --- CONFIGURAÇÕES DE IMAGEM ---
+# --- IMAGE SETTINGS ---
 IMG_POSTER = "https://image.tmdb.org/t/p/w500"
 IMG_BACKDROP = "https://image.tmdb.org/t/p/original"
 
-# --- SESSION REUTILIZÁVEL (GRANDE MELHORIA) ---
-# Reutilizar conexões HTTP é MUITO mais rápido que criar novas a cada request
+# --- REUSABLE SESSION (BIG IMPROVEMENT) ---
+# Reusing HTTP connections is MUCH faster than creating new ones with each request
 _session = None
-_request_cache = {}  # Cache em memória para requisições repetidas
+_request_cache = {}  # In-memory cache for repeated requests
 _cache_max_size = 100
 
 def get_session():
-    """Retorna uma sessão HTTP reutilizável com pool de conexões OTIMIZADO."""
+    """Returns a reusable HTTP session with OPTIMIZED connection pooling."""
     global _session
     if _session is None:
         _session = requests.Session()
-        # ✅ OTIMIZAÇÃO: Pool maior e retry com backoff
+        # ✅ OPTIMIZATION: Larger pool and retry with backoff
         from requests.adapters import Retry
         retry_strategy = Retry(
             total=3,
@@ -36,14 +36,14 @@ def get_session():
             status_forcelist=[429, 500, 502, 503, 504]
         )
         adapter = requests.adapters.HTTPAdapter(
-            pool_connections=30,  # ⬆️ Aumentado de 20 para 30
-            pool_maxsize=30,      # ⬆️ Aumentado de 20 para 30
+            pool_connections=30,  # ⬆️ Increased from 20 to 30
+            pool_maxsize=30,      # ⬆️ Increased from 20 to 30
             max_retries=retry_strategy,
             pool_block=False
         )
         _session.mount('https://', adapter)
         _session.mount('http://', adapter)
-        # ✅ OTIMIZAÇÃO: Adiciona compressão gzip
+        # ✅ OPTIMIZATION: Adds gzip compression
         _session.headers.update({
             'Accept-Encoding': 'gzip, deflate',
             'Connection': 'keep-alive'
@@ -51,34 +51,34 @@ def get_session():
     return _session
 
 def _get_cached_request(url, params):
-    """✅ NOVO: Cache em memória para requisições repetidas."""
+    """✅ NEW: In-memory cache for repeated requests."""
     cache_key = f"{url}_{str(sorted(params.items()))}"
     if cache_key in _request_cache:
         return _request_cache[cache_key]
     return None
 
 def _set_cached_request(url, params, data):
-    """✅ NOVO: Salva requisição no cache em memória."""
+    """✅ NEW: Saves request in memory cache."""
     global _request_cache
     cache_key = f"{url}_{str(sorted(params.items()))}"
-    # Limita tamanho do cache
+    # Limit cache size
     if len(_request_cache) >= _cache_max_size:
-        # Remove 20% dos itens mais antigos (FIFO simples)
+        # Removes 20% of oldest items (simple FIFO)
         keys_to_remove = list(_request_cache.keys())[:_cache_max_size // 5]
         for k in keys_to_remove:
             del _request_cache[k]
     _request_cache[cache_key] = data
 
-# --- MAPAS DE GÊNEROS (Unificados) ---
+# --- GENRE MAPS (Unified) ---
 GENRES_MAP = {
-    'movie': {28: "Ação", 12: "Aventura", 16: "Animação", 35: "Comédia", 80: "Crime", 99: "Documentário", 18: "Drama", 10751: "Família", 14: "Fantasia", 36: "História", 27: "Terror", 10402: "Música", 9648: "Mistério", 10749: "Romance", 878: "Ficção científica", 10770: "Cinema TV", 53: "Suspense", 10752: "Guerra", 37: "Faroeste"},
-    'tv': {10759: 'Ação e Aventura', 16: 'Animação', 35: 'Comédia', 80: 'Crime', 99: 'Documentário', 18: 'Drama', 10751: 'Família', 10762: 'Infantil', 9648: 'Mistério', 10763: 'Notícias', 10764: 'Reality Show', 10765: 'Ficção Científica e Fantasia', 10766: 'Novela', 10767: 'Talk Show', 10768: 'Guerra e Política', 37: 'Faroeste'}
+    'movie': {28: "Action", 12: "Adventure", 16: "Animation", 35: "Comedy", 80: "Crime", 99: "Documentary", 18: "Drama", 10751: "Family", 14: "Fantasy", 36: "History", 27: "Terror", 10402: "Music", 9648: "Mystery", 10749: "Romance", 878: "Science fiction", 10770: "Cinema TV", 53: "Suspense", 10752: "War", 37: "Western"},
+    'tv': {10759: 'Action and Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime', 99: 'Documentary', 18: 'Drama', 10751: 'Family', 10762: 'Kids', 9648: 'Mystery', 10763: 'News', 10764: 'reality show', 10765: 'Science Fiction and Fantasy', 10766: 'Novel', 10767: 'Talk Show', 10768: 'War and Politics', 37: 'Western'}
 }
 
-# --- FUNÇÕES INTERNAS (Helpers) ---
+# --- INTERNAL FUNCTIONS (Helpers) ---
 
 def _normalize_item(item, media_type, extra=None):
-    """Padroniza os campos para filmes e séries em um único lugar."""
+    """Standardizes fields for films and series in one place."""
     is_movie = media_type == 'movie'
     extra = extra or {'imdb_id': '', 'clearlogo': '', 'providers': [], 'runtime': 0, 'collection': ''}
     
@@ -88,15 +88,15 @@ def _normalize_item(item, media_type, extra=None):
 
     backdrop = item.get('backdrop_path')
     
-    # Extrai informações da coleção (apenas para filmes)
+    # Extracts information from the collection (for movies only)
     collection_name = extra.get('collection', '')
     if not collection_name and is_movie:
         collection_info = item.get('belongs_to_collection')
         if collection_info:
             collection_name = collection_info.get('name', '')
         
-    # Se ainda não tem coleção, verifica se o título sugere uma (ex: "Harry Potter and...")
-    # Mas o TMDB geralmente é bom nisso. O importante é garantir que não seja None.
+    # If you don't have a collection yet, check if the title suggests one (e.g. "Harry Potter and...")
+    # But TMDB is generally good at this. The important thing is to make sure it is not None.
     if collection_name is None:
         collection_name = ''
     
@@ -120,28 +120,28 @@ def _normalize_item(item, media_type, extra=None):
     }
 
 def _fetch_tmdb_extra(item, media_type):
-    """Busca logos, providers e IDs externos em um único hit (para Threads)."""
+    """Searches logos, providers and external IDs in a single hit (for Threads)."""
     tmdb_id = item.get('id')
     endpoint = 'movie' if media_type == 'movie' else 'tv'
     url = f"{BASE_URL}/{endpoint}/{tmdb_id}"
     params = {
         "api_key": TMDB_API_KEY,
         "append_to_response": "external_ids,images,watch/providers",
-        "include_image_language": "pt,en,null"
+        "include_image_language": "en,ro,pt,null"
     }
     try:
-        # USA SESSÃO REUTILIZÁVEL + TIMEOUT OTIMIZADO
+        # USES REUSABLE SESSION + OPTIMIZED TIMEOUT
         res = get_session().get(url, params=params, timeout=2.5).json()
         logos = res.get('images', {}).get('logos', [])
         clearlogo_path = ''
         if logos:
-            # 1. Tenta encontrar PT-BR
-            pt_logo = next((l for l in logos if l.get('iso_639_1') == 'pt'), None)
-            clearlogo_path = pt_logo['file_path'] if pt_logo else logos[0]['file_path']
+            # 1. Try to find PT-BR
+            en_logo = next((l for l in logos if l.get('iso_639_1') == 'en'), None)
+            clearlogo_path = en_logo['file_path'] if en_logo else logos[0]['file_path']
         watch = res.get('watch/providers', {}).get('results', {}).get('BR', {})
         br_providers = watch.get('flatrate') or watch.get('buy') or []
         
-        # Extrai informações da coleção (apenas para filmes)
+        # Extracts information from the collection (for movies only)
         collection_name = ''
         if media_type == 'movie':
             collection_info = res.get('belongs_to_collection')
@@ -155,49 +155,47 @@ def _fetch_tmdb_extra(item, media_type):
             'collection': collection_name
         }
     except Exception as e:
-        xbmc.log(f"[TMDB] Erro extra {tmdb_id}: {str(e)}", xbmc.LOGDEBUG)
+        xbmc.log(f"[TMDB] Error extra {tmdb_id}: {str(e)}", xbmc.LOGDEBUG)
         return {'imdb_id': '', 'clearlogo': '', 'providers': [], 'runtime': 0, 'collection': ''}
 
 def _fetch_extras_batch(items, media_type):
-    """
-    OTIMIZAÇÃO CRÍTICA: Busca extras em paralelo com melhor controle.
-    Usa ThreadPoolExecutor de forma mais eficiente.
-    """
+    """CRITICAL OPTIMIZATION: Search for extras in parallel with better control.
+    Uses ThreadPoolExecutor more efficiently."""
     if not items:
         return []
     
-    # ✅ OTIMIZAÇÃO: Workers dinâmicos baseado no tamanho da lista
-    max_workers = min(8, max(3, len(items) // 4))  # Entre 3 e 8 workers
+    # ✅ OPTIMIZATION: Dynamic workers based on list size
+    max_workers = min(8, max(3, len(items) // 4))  # Between 3 and 8 workers
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Submit todas as tarefas mantendo a ordem
+        # Submit all tasks keeping order
         future_to_index = {
             executor.submit(_fetch_tmdb_extra, item, media_type): idx 
             for idx, item in enumerate(items)
         }
         
-        # Inicializa lista com None para manter ordem
+        # Initialize list with None to maintain order
         results = [None] * len(items)
         
-        # Coleta resultados conforme completam (mais rápido)
+        # Collects results as they complete (faster)
         for future in as_completed(future_to_index):
             idx = future_to_index[future]
             try:
                 results[idx] = future.result(timeout=5)
             except Exception as e:
-                xbmc.log(f"[TMDB] Timeout/erro em extra: {e}", xbmc.LOGDEBUG)
+                xbmc.log(f"[TMDB] Timeout/error in extra: {e}", xbmc.LOGDEBUG)
                 results[idx] = {'imdb_id': '', 'clearlogo': '', 'providers': [], 'runtime': 0}
         
-        # Preenche qualquer resultado faltante
+        # Fill in any missing results
         for i in range(len(results)):
             if results[i] is None:
                 results[i] = {'imdb_id': '', 'clearlogo': '', 'providers': [], 'runtime': 0}
         
         return results
 
-# --- FUNÇÕES PÚBLICAS DE LISTAGEM ---
+# --- PUBLIC LISTING FUNCTIONS ---
 
 def fetch_trending(media_type='movie', page=1):
-    """Função genérica para Trending de filmes ou séries - OTIMIZADA."""
+    """Generic function for trending films or series - OPTIMIZED."""
     cache_key = f"trending_{media_type}_p{page}"
     cached = db.get_tmdb_cache(cache_key, hours=24)
     if cached: 
@@ -207,30 +205,30 @@ def fetch_trending(media_type='movie', page=1):
     params = {"api_key": TMDB_API_KEY, "page": page, "language": TMDB_LANG}
     
     try:
-        # USA SESSÃO + TIMEOUT OTIMIZADO
+        # USES SESSION + OPTIMIZED TIMEOUT
         r = get_session().get(url, params=params, timeout=3)
         data = r.json().get('results', [])
 
-        # DEBUG: Verifique se os IDs estão corretos
+        # DEBUG: Check if the IDs are correct
         xbmc.log(f"[TMDB DEBUG] Trending IDs: {[item.get('id') for item in data]}", xbmc.LOGDEBUG)
         
-        # OTIMIZAÇÃO: Só busca extras se realmente necessário
+        # OPTIMIZATION: Only search for extras if really necessary
         extra_results = _fetch_extras_batch(data, media_type)
         
-        # DEBUG: Verifique extras IDs
+        # DEBUG: Check extra IDs
         xbmc.log(f"[TMDB DEBUG] Extras IDs: {[extra.get('imdb_id', 'NO_ID') for extra in extra_results]}", xbmc.LOGDEBUG)
 
-        # Normaliza o resultado final
+        # Normalizes the final result
         results = []
         for item, extra in zip(data, extra_results):
-            # Verificação de segurança
+            # Security check
             if item.get('id') and extra.get('imdb_id'):
-                # Pode adicionar verificação aqui
+                # You can add verification here
                 pass
             normalized = _normalize_item(item, media_type, extra)
             results.append(normalized)
             
-            # DEBUG: Log para identificar problemas
+            # DEBUG: Log to identify problems
             xbmc.log(f"[TMDB DEBUG] Item {item.get('id')} -> {normalized.get('title')}", xbmc.LOGDEBUG)
 
         if results:
@@ -238,10 +236,10 @@ def fetch_trending(media_type='movie', page=1):
         return results
         
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro Trending {media_type}: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Error Trending {media_type}: {str(e)}", xbmc.LOGERROR)
         return []
 
-# Wrappers para manter compatibilidade
+# Wrappers to maintain compatibility
 def fetch_trending_movies(page=1): 
     return fetch_trending('movie', page)
 
@@ -249,13 +247,13 @@ def fetch_trending_tvshows(page=1):
     return fetch_trending('tv', page)
 
 def fetch_popular_movies(page=1):
-    """Busca filmes populares."""
+    """Search popular movies."""
     cache_key = f"popular_movies_p{page}"
     cached = db.get_tmdb_cache(cache_key, hours=24)
     if cached: return cached
 
     url = f"{BASE_URL}/movie/popular"
-    params = {"api_key": TMDB_API_KEY, "page": page, "language": TMDB_LANG, "region": "BR"}
+    params = {"api_key": TMDB_API_KEY, "page": page, "language": TMDB_LANG, "region": "US"}
     
     try:
         r = get_session().get(url, params=params, timeout=3)
@@ -265,17 +263,17 @@ def fetch_popular_movies(page=1):
         if results: db.save_tmdb_cache(cache_key, results)
         return results
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro Popular Movies: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Popular Movies Error: {str(e)}", xbmc.LOGERROR)
         return []
 
 def fetch_top_rated_movies(page=1):
-    """Busca filmes melhor avaliados."""
+    """Search for top-rated movies."""
     cache_key = f"top_rated_movies_p{page}"
     cached = db.get_tmdb_cache(cache_key, hours=24)
     if cached: return cached
 
     url = f"{BASE_URL}/movie/top_rated"
-    params = {"api_key": TMDB_API_KEY, "page": page, "language": TMDB_LANG, "region": "BR"}
+    params = {"api_key": TMDB_API_KEY, "page": page, "language": TMDB_LANG, "region": "US"}
     
     try:
         r = get_session().get(url, params=params, timeout=3)
@@ -285,17 +283,17 @@ def fetch_top_rated_movies(page=1):
         if results: db.save_tmdb_cache(cache_key, results)
         return results
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro Top Rated Movies: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Error Top Rated Movies: {str(e)}", xbmc.LOGERROR)
         return []
 
 def fetch_now_playing_movies(page=1):
-    """Busca filmes em exibição nos cinemas."""
+    """Search for films showing in cinemas."""
     cache_key = f"now_playing_movies_p{page}"
     cached = db.get_tmdb_cache(cache_key, hours=24)
     if cached: return cached
 
     url = f"{BASE_URL}/movie/now_playing"
-    params = {"api_key": TMDB_API_KEY, "page": page, "language": TMDB_LANG, "region": "BR"}
+    params = {"api_key": TMDB_API_KEY, "page": page, "language": TMDB_LANG, "region": "US"}
     
     try:
         r = get_session().get(url, params=params, timeout=3)
@@ -305,11 +303,11 @@ def fetch_now_playing_movies(page=1):
         if results: db.save_tmdb_cache(cache_key, results)
         return results
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro Now Playing Movies: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Error Now Playing Movies: {str(e)}", xbmc.LOGERROR)
         return []
 
 def fetch_popular_tvshows(page=1):
-    """Busca séries populares."""
+    """Search for popular series."""
     cache_key = f"popular_tvshows_p{page}"
     cached = db.get_tmdb_cache(cache_key, hours=24)
     if cached: return cached
@@ -325,11 +323,11 @@ def fetch_popular_tvshows(page=1):
         if results: db.save_tmdb_cache(cache_key, results)
         return results
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro Popular TV: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Popular TV Error: {str(e)}", xbmc.LOGERROR)
         return []
 
 def fetch_top_rated_tvshows(page=1):
-    """Busca séries melhor avaliadas."""
+    """Search for better rated series."""
     cache_key = f"top_rated_tvshows_p{page}"
     cached = db.get_tmdb_cache(cache_key, hours=24)
     if cached: return cached
@@ -345,11 +343,11 @@ def fetch_top_rated_tvshows(page=1):
         if results: db.save_tmdb_cache(cache_key, results)
         return results
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro Top Rated TV: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Error Top Rated TV: {str(e)}", xbmc.LOGERROR)
         return []
 
 def fetch_airing_today_tvshows(page=1):
-    """Busca séries que passam hoje."""
+    """Search for series that air today."""
     cache_key = f"airing_today_tvshows_p{page}"
     cached = db.get_tmdb_cache(cache_key, hours=12)
     if cached: return cached
@@ -365,11 +363,11 @@ def fetch_airing_today_tvshows(page=1):
         if results: db.save_tmdb_cache(cache_key, results)
         return results
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro Airing Today TV: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Error Airing Today TV: {str(e)}", xbmc.LOGERROR)
         return []
 
 def fetch_on_the_air_tvshows(page=1):
-    """Busca séries que estão no ar (esta semana)."""
+    """Search for series that are on air (this week)."""
     cache_key = f"on_the_air_tvshows_p{page}"
     cached = db.get_tmdb_cache(cache_key, hours=12)
     if cached: return cached
@@ -385,29 +383,29 @@ def fetch_on_the_air_tvshows(page=1):
         if results: db.save_tmdb_cache(cache_key, results)
         return results
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro On The Air TV: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Error On The Air TV: {str(e)}", xbmc.LOGERROR)
         return []
 
 def fetch_upcoming_movies(page=1):
-    """Busca filmes que serão lançados em breve usando o endpoint oficial de upcoming."""
+    """Search for soon-to-be-released movies using the official upcoming endpoint."""
     cache_key = f"upcoming_movies_v2_p{page}"
     cached = db.get_tmdb_cache(cache_key, hours=12)
     if cached: return cached
 
-    # O endpoint /movie/upcoming é mais confiável para o que o usuário quer
+    # The /movie/upcoming endpoint is more reliable for what the user wants
     url = f"{BASE_URL}/movie/upcoming"
     params = {
         "api_key": TMDB_API_KEY, 
         "page": page, 
         "language": TMDB_LANG, 
-        "region": "BR"
+        "region": "US"
     }
     
     try:
         r = get_session().get(url, params=params, timeout=3)
         data = r.json().get('results', [])
         
-        # Se falhar ou vier vazio, tenta via discover como fallback
+        # If it fails or comes up empty, try via discover as a fallback
         if not data:
             from datetime import datetime, timedelta
             now = datetime.now().strftime('%Y-%m-%d')
@@ -422,22 +420,22 @@ def fetch_upcoming_movies(page=1):
         if results: db.save_tmdb_cache(cache_key, results)
         return results
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro Upcoming Movies: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Error Upcoming Movies: {str(e)}", xbmc.LOGERROR)
         return []
 
 def fetch_upcoming_tvshows(page=1):
-    """Busca séries que estão para estrear ou com novos episódios."""
+    """Search for series that are about to premiere or with new episodes."""
     cache_key = f"upcoming_tvshows_v2_p{page}"
     cached = db.get_tmdb_cache(cache_key, hours=12)
     if cached: return cached
 
-    # Para TV, usamos discover filtrando por séries que estreiam a partir de hoje
+    # For TV, we use discover filtering by series that premiere from today
     from datetime import datetime, timedelta
     now = datetime.now().strftime('%Y-%m-%d')
     future = (datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d')
     
     try:
-        # Séries que estreiam em breve, ordenadas por popularidade para evitar lixo
+        # TV Shows Coming Soon, Sorted by Popularity to Avoid Junk
         results = fetch_discover('tv', page=page, 
                                 **{'first_air_date.gte': now,
                                    'first_air_date.lte': future,
@@ -446,11 +444,11 @@ def fetch_upcoming_tvshows(page=1):
         if results: db.save_tmdb_cache(cache_key, results)
         return results
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro Upcoming TV: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Error Upcoming TV: {str(e)}", xbmc.LOGERROR)
         return []
 
 def search_tmdb(query, page=1):
-    """Busca unificada (Filmes e Séries) - OTIMIZADA."""
+    """Unified search (Movies and TV Shows) - OPTIMIZED."""
     url = f"{BASE_URL}/search/multi"
     params = {
         "api_key": TMDB_API_KEY, 
@@ -461,16 +459,16 @@ def search_tmdb(query, page=1):
     }
     
     try:
-        # USA SESSÃO
+        # USE SESSION
         r = get_session().get(url, params=params, timeout=5)
         data = r.json().get('results', [])
         
-        # Filtra apenas o que interessa
+        # Filter only what interests you
         filtered = [i for i in data if i.get('media_type') in ['movie', 'tv']]
 
-        # CRÍTICO: Para busca, extras são menos importantes
-        # Você pode até desabilitar se quiser velocidade máxima
-        extra_results = _fetch_extras_batch(filtered[:10], None)  # Limita a 10 primeiros
+        # CRITICAL: For searching, extras are less important
+        # You can even disable it if you want maximum speed
+        extra_results = _fetch_extras_batch(filtered[:10], None)  # Limits to first 10
         extra_results += [{'imdb_id': '', 'clearlogo': '', 'providers': [], 'runtime': 0}] * (len(filtered) - 10)
 
         return [
@@ -479,24 +477,24 @@ def search_tmdb(query, page=1):
         ]
         
     except Exception as e:
-        xbmc.log(f"[TMDB SEARCH] Erro: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB SEARCH] Error: {str(e)}", xbmc.LOGERROR)
         return []
 
-# --- FUNÇÕES DE POPULARIDADE LOCAL ---
+# --- LOCAL POPULARITY FUNCTIONS ---
 
 def update_local_popularity():
-    """Sincroniza popularidade - OTIMIZADA."""
+    """Synchronizes popularity - OPTIMIZED."""
     _sync_popularity('movie', db.get_all_movie_ids_set(), db.update_popularity_bulk)
     _sync_popularity('tv', db.get_all_tvshow_ids_set(), db.update_tv_popularity_bulk)
 
 def _sync_popularity(media_type, local_ids, update_func):
-    """Lógica auxiliar para baixar popularidade - OTIMIZADA."""
+    """Auxiliary logic to download popularity - OPTIMIZED."""
     if not local_ids: 
         return
     
     popular_tmdb = []
     
-    # OTIMIZAÇÃO: Busca paralela de páginas
+    # OPTIMIZATION: Parallel page search
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = []
         for p in range(1, 4):
@@ -511,7 +509,7 @@ def _sync_popularity(media_type, local_ids, update_func):
             except:
                 continue
 
-    # Filtra apenas os que temos no banco local
+    # Filters only the ones we have at the local bank
     updates = [
         {'tmdb_id': i['id'], 'popularity': i['popularity']} 
         for i in popular_tmdb if i['id'] in local_ids
@@ -519,34 +517,34 @@ def _sync_popularity(media_type, local_ids, update_func):
 
     if updates:
         update_func(updates)
-        xbmc.log(f"[Cinebox] Popularidade de {len(updates)} {media_type}s atualizada.", xbmc.LOGINFO)
+        xbmc.log(f"[Cinebox] Popularity of {len(updates)} {media_type}s updated.", xbmc.LOGINFO)
 
-# --- FUNÇÕES DE DETALHES (INDEXER/DB) ---
+# --- DETAIL FUNCTIONS (INDEXER/DB) ---
 
 def get_movie_details(tmdb_id):
-    """Busca detalhes completos de um filme - OTIMIZADA."""
+    """Search complete details of a movie - OPTIMIZED."""
     url = f"{BASE_URL}/movie/{tmdb_id}"
     params = {
         "api_key": TMDB_API_KEY,
         "language": TMDB_LANG,
         "append_to_response": "external_ids,images,credits,watch/providers",
-        "include_image_language": "pt,en,null"
+        "include_image_language": "en,ro,pt,null"
     }
     
     try:
-        # USA SESSÃO
+        # USE SESSION
         r = get_session().get(url, params=params, timeout=8)
         item = r.json()
         
         logos = item.get('images', {}).get('logos', [])
         clearlogo_path = ''
         if logos:
-            pt_logo = next((l for l in logos if l.get('iso_639_1') == 'pt'), None)
-            clearlogo_path = pt_logo['file_path'] if pt_logo else logos[0]['file_path']
+            en_logo = next((l for l in logos if l.get('iso_639_1') == 'en'), None)
+            clearlogo_path = en_logo['file_path'] if en_logo else logos[0]['file_path']
         watch = item.get('watch/providers', {}).get('results', {}).get('BR', {})
         br_providers = watch.get('flatrate') or watch.get('buy') or []
         
-        # Extrai informações da coleção
+        # Extracts information from the collection
         collection_info = item.get('belongs_to_collection')
         collection_name = collection_info.get('name') if collection_info else ''
         
@@ -572,23 +570,23 @@ def get_movie_details(tmdb_id):
             'directors': [c.get('name') for c in item.get('credits', {}).get('crew', []) if c.get('job') == 'Director']
         }
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro detalhes filme {tmdb_id}: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Movie details error {tmdb_id}: {str(e)}", xbmc.LOGERROR)
         return None
 
 def _enrich_seasons_with_images(seasons, tmdb_id):
-    """Simplificado: Apenas garante que os dados básicos existam."""
+    """Simplified: Just ensures that the basic data exists."""
     if not seasons:
         return []
     
     for season in seasons:
         if 'poster_path' in season and season['poster_path']:
             season['poster'] = f"{IMG_POSTER}{season['poster_path']}"
-        # TMDB não fornece backdrop para temporadas individuais
-        # O backdrop será definido pela série no tvshows.py
+        # TMDB does not provide backdrops for individual seasons
+        # The backdrop will be defined by the series on tvshows.py
     return seasons
 
 def fetch_show_details(tmdb_id):
-    """Busca detalhes completos de uma série - OTIMIZADA."""
+    """Fetches complete details of a series - OPTIMIZED."""
     if not tmdb_id: 
         return None
         
@@ -597,11 +595,11 @@ def fetch_show_details(tmdb_id):
         "api_key": TMDB_API_KEY,
         "language": TMDB_LANG,
         "append_to_response": "external_ids,images,credits",
-        "include_image_language": "pt,en,null"
+        "include_image_language": "en,ro,pt,null"
     }
     
     try:
-        # USA SESSÃO
+        # USE SESSION
         response = get_session().get(url, params=params, timeout=8)
         response.raise_for_status()
         show_data = response.json()
@@ -610,8 +608,8 @@ def fetch_show_details(tmdb_id):
         logos = show_data.get('images', {}).get('logos', [])
         clearlogo_path = ''
         if logos:
-            pt_logo = next((l for l in logos if l.get('iso_639_1') == 'pt'), None)
-            clearlogo_path = pt_logo['file_path'] if pt_logo else logos[0]['file_path']
+            en_logo = next((l for l in logos if l.get('iso_639_1') == 'en'), None)
+            clearlogo_path = en_logo['file_path'] if en_logo else logos[0]['file_path']
         
         return {
             'tmdb_id': show_data.get('id'),
@@ -636,11 +634,11 @@ def fetch_show_details(tmdb_id):
             'created_by': [c.get('name') for c in show_data.get('created_by', [])]
         }
     except Exception as e:
-        xbmc.log(f"[TMDB API ERROR] Falha ao buscar detalhes da série {tmdb_id}: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API ERROR] Failed to fetch details from the series {tmdb_id}: {e}", xbmc.LOGERROR)
         return None
 
 def fetch_tvshows_list(list_type, page=1):
-    """Busca listas simples de séries - OTIMIZADA."""
+    """Search simple series lists - OPTIMIZED."""
     endpoint_map = {
         'popular': 'tv/popular',
         'top_rated': 'tv/top_rated',
@@ -652,14 +650,14 @@ def fetch_tvshows_list(list_type, page=1):
     params = {"api_key": TMDB_API_KEY, "language": TMDB_LANG, "page": page}
     
     try:
-        # USA SESSÃO
+        # USE SESSION
         response = get_session().get(url, params=params, timeout=5)
         data = response.json()
         
         normalized_shows = []
         for show in data.get('results', []):
             g_ids = show.get('genre_ids', [])
-            g_names = [GENRES_MAP['tv'].get(gid, 'Desconhecido') for gid in g_ids]
+            g_names = [GENRES_MAP['tv'].get(gid, 'Unknown') for gid in g_ids]
             
             normalized_shows.append({
                 'tmdb_id': show.get('id'),
@@ -676,12 +674,12 @@ def fetch_tvshows_list(list_type, page=1):
         return normalized_shows
         
     except Exception as e:
-        xbmc.log(f"[TMDB API ERROR] Falha ao buscar lista {list_type}: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API ERROR] Failed to fetch list {list_type}: {e}", xbmc.LOGERROR)
         return []
 
 @lru_cache(maxsize=128)
 def get_collection_art(collection_name):
-    """Busca arte de coleção - OTIMIZADA com CACHE."""
+    """Search for collection art - OPTIMIZED with CACHE."""
     url = f"{BASE_URL}/search/collection"
     params = {"api_key": TMDB_API_KEY, "query": collection_name, "language": TMDB_LANG}
     
@@ -700,10 +698,10 @@ def get_collection_art(collection_name):
     return None
 
 def fetch_popular_movies_pages(pages=5):
-    """Busca páginas populares - OTIMIZADA."""
+    """Search popular pages - OPTIMIZED."""
     all_movies = []
     
-    # OTIMIZAÇÃO: Busca paralela
+    # OPTIMIZATION: Parallel search
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = []
         for page in range(1, pages + 1):
@@ -734,7 +732,7 @@ def fetch_popular_movies_pages(pages=5):
     return all_movies
 
 def get_tvshow_seasons(tmdb_id):
-    """Busca temporadas de uma série - OTIMIZADA."""
+    """Search seasons of a series - OPTIMIZED."""
     if not tmdb_id:
         return []
     
@@ -763,11 +761,11 @@ def get_tvshow_seasons(tmdb_id):
         return formatted_seasons
         
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro ao buscar temporadas {tmdb_id}: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Error fetching seasons {tmdb_id}: {e}", xbmc.LOGERROR)
         return []
 
 def get_season_episodes(tmdb_id, season_number):
-    """Busca episódios de uma temporada - OTIMIZADA."""
+    """Search episodes from a season - OPTIMIZED."""
     if not tmdb_id or season_number is None:
         return []
     
@@ -796,15 +794,15 @@ def get_season_episodes(tmdb_id, season_number):
         return formatted_episodes
         
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro ao buscar episódios {tmdb_id} S{season_number}: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Error fetching episodes {tmdb_id} S{season_number}: {e}", xbmc.LOGERROR)
         return []
 def fetch_anime_discover(media_type='tv', page=1, **kwargs):
-    """Função específica para Discover de Animes usando a keyword 210024."""
+    """Specific function for Discover de Animes using the keyword 210024."""
     kwargs['with_keywords'] = '210024'
     return fetch_discover(media_type, page, **kwargs)
 
 def fetch_discover(media_type='movie', page=1, **kwargs):
-    """Função genérica para Discover (Gêneros, Anos, etc) - OTIMIZADA."""
+    """Generic function for Discover (Genres, Years, etc.) - OPTIMIZED."""
     cache_key = f"discover_{media_type}_p{page}_{json.dumps(kwargs, sort_keys=True)}"
     cached = db.get_tmdb_cache(cache_key, hours=24)
     if cached: 
@@ -836,11 +834,11 @@ def fetch_discover(media_type='movie', page=1, **kwargs):
         return results
         
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro Discover {media_type}: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Error Discover {media_type}: {str(e)}", xbmc.LOGERROR)
         return []
 
 def get_genres_list(media_type='movie'):
-    """Retorna a lista de gêneros oficial do TMDB."""
+    """Returns the official TMDB genre list."""
     url = f"{BASE_URL}/genre/{media_type}/list"
     params = {"api_key": TMDB_API_KEY, "language": TMDB_LANG}
     try:
@@ -850,7 +848,7 @@ def get_genres_list(media_type='movie'):
         return []
 
 def get_collection_art(collection_name):
-    """Busca artes de uma coleção pelo nome no TMDB."""
+    """Search for artwork from a collection by name in TMDB."""
     url = f"{BASE_URL}/search/collection"
     params = {"api_key": TMDB_API_KEY, "query": collection_name, "language": TMDB_LANG}
     try:
@@ -867,8 +865,8 @@ def get_collection_art(collection_name):
     return None
 
 def get_collection_movies(collection_name):
-    """Busca todos os filmes de uma coleção pelo nome no TMDB."""
-    # 1. Busca o ID da coleção
+    """Search all films in a collection by name in TMDB."""
+    # 1. Search for the collection ID
     url_search = f"{BASE_URL}/search/collection"
     params_search = {"api_key": TMDB_API_KEY, "query": collection_name, "language": TMDB_LANG}
     
@@ -882,7 +880,7 @@ def get_collection_movies(collection_name):
         if not collection_id:
             return []
             
-        # 2. Busca os detalhes da coleção (que contém os filmes)
+        # 2. Fetch the collection details (which contains the movies)
         url_details = f"{BASE_URL}/collection/{collection_id}"
         params_details = {"api_key": TMDB_API_KEY, "language": TMDB_LANG}
         
@@ -893,36 +891,34 @@ def get_collection_movies(collection_name):
         if not parts:
             return []
             
-        # 3. Busca extras para cada filme da coleção (opcional, mas recomendado para ter imdb_id)
+        # 3. Search for extras for each film in the collection (optional, but recommended to have imdb_id)
         extra_results = _fetch_extras_batch(parts, 'movie')
         
         results = []
         for item, extra in zip(parts, extra_results):
             normalized = _normalize_item(item, 'movie', extra)
-            # Garante que o nome da coleção esteja correto
+            # Ensures the collection name is correct
             normalized['collection'] = collection_name
             results.append(normalized)
             
         return results
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro ao buscar filmes da coleção {collection_name}: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Error fetching movies from the collection {collection_name}: {e}", xbmc.LOGERROR)
         return []
 
 def fetch_popular_collections(page=1):
-    """
-    Busca coleções populares de forma massiva.
-    Explora múltiplas páginas de filmes populares para extrair coleções.
-    """
+    """Massively searches popular collections.
+    Explore multiple pages of popular movies to extract collections."""
     page = int(page)
     collections = {}
     
-    # Para cada página solicitada pelo usuário, vamos olhar 4 páginas do TMDB
-    # Aumentamos para 4 para garantir que tenhamos itens suficientes após a filtragem
+    # For each page requested by the user, we will look at 4 TMDB pages
+    # We increased it to 4 to ensure we have enough items after filtering
     start_tmdb_page = ((page - 1) * 4) + 1
     end_tmdb_page = start_tmdb_page + 4
     
     try:
-        # 1. Busca filmes de múltiplas páginas em paralelo
+        # 1. Search movies from multiple pages in parallel
         all_movies = []
         with ThreadPoolExecutor(max_workers=5) as executor:
             futures = []
@@ -941,20 +937,20 @@ def fetch_popular_collections(page=1):
         if not all_movies:
             return []
 
-        # 2. Extrai IDs de filmes únicos
+        # 2. Extract unique movie IDs
         unique_movies = {m['id']: m for m in all_movies if m.get('id')}.values()
         
-        # 3. Busca extras em lote para descobrir quais pertencem a coleções
-        movie_list = list(unique_movies)[:100] # Aumentado para 100
+        # 3. Batch search extras to find out which ones belong to collections
+        movie_list = list(unique_movies)[:100] # Increased to 100
         extra_results = _fetch_extras_batch(movie_list, 'movie')
         
         for item, extra in zip(movie_list, extra_results):
             col_name = extra.get('collection')
             if col_name:
-                # Normalização rigorosa para evitar duplicatas
+                # Strict normalization to avoid duplicates
                 norm_name = col_name.strip().lower()
                 if norm_name not in collections:
-                    # Busca arte da coleção (com cache interno do get_collection_art)
+                    # Search for art from the collection (with internal cache from get_collection_art)
                     art = get_collection_art(col_name)
                     collections[norm_name] = {
                         'collection': col_name,
@@ -962,33 +958,33 @@ def fetch_popular_collections(page=1):
                         'backdrop': art['backdrop'] if art else ''
                     }
         
-        # Ordena por nome
+        # Sort by name
         sorted_collections = sorted(collections.values(), key=lambda x: x['collection'])
         
-        # ✅ FILTRAGEM GLOBAL DE DUPLICATAS ENTRE PÁGINAS
-        # Usamos um cache temporário no banco de dados para saber o que já foi exibido
+        # ✅ GLOBAL FILTERING OF DUPLICATES BETWEEN PAGES
+        # We use a temporary cache in the database to know what has already been displayed
         from .db.db import db_instance as db
         final_collections = []
         
-        # Normalização extra para remover palavras comuns que causam duplicatas falsas
+        # Extra normalization to remove common words that cause false duplicates
         def super_norm(n):
             import re
             n = n.lower()
-            n = re.sub(r' - coleção| - saga| coleção| saga| collection| anthology| trilogy', '', n)
+            n = re.sub(r' - collection| - saga| collection| saga| collection| anthology| trilogy', '', n)
             return n.strip()
 
         for col in sorted_collections:
             name = col['collection']
             snorm = super_norm(name)
             
-            # Verifica se já foi mostrado nesta sessão (usando cache do banco como flag)
+            # Checks if it has already been shown in this session (using the database cache as a flag)
             cache_key = f"col_shown_{snorm}"
             if page == 1:
-                # Na página 1, sempre mostramos e marcamos
+                # On page 1, we always show and mark
                 db.save_collection_meta(cache_key, "1", "")
                 final_collections.append(col)
             else:
-                # Nas outras páginas, só mostramos se não estiver no cache
+                # On other pages, we only show it if it is not in the cache
                 if not db.get_collection_meta(cache_key):
                     db.save_collection_meta(cache_key, "1", "")
                     final_collections.append(col)
@@ -996,5 +992,8 @@ def fetch_popular_collections(page=1):
         return final_collections
 
     except Exception as e:
-        xbmc.log(f"[TMDB API] Erro massivo ao buscar coleções: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[TMDB API] Massive error fetching collections: {e}", xbmc.LOGERROR)
         return []
+
+def update_local_popularity():
+    return True

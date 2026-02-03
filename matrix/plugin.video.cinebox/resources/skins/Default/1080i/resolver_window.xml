@@ -28,7 +28,7 @@
                 <effect type="fade" end="100" time="400" />
             </animation>
 
-            <!-- Logo do Addon -->
+            <!-- Addon Logo -->
             <control type="group">
                 <control type="image">
                     <left>20</left>
@@ -45,11 +45,11 @@
                     <height>30</height>
                     <font>font13</font>
                     <textcolor>white</textcolor>
-                    <label>[B]CINEBOX[/B] | RESOLVENDO FONTE</label>
+                    <label>[B]CINEBOX[/B] | RESOLVING SOURCE</label>
                 </control>
             </control>
 
-            <!-- Título / Clearlogo -->
+            <!-- Title / Clearlogo -->
             <control type="group">
                 <control type="image">
                     <top>150</top>
@@ -81,7 +81,7 @@
                 <texture background="true">spinner.gif</texture>
             </control>
 
-            <!-- LABEL 1: MENSAGEM DE ESPERA (Sempre presente, mas some quando o buffering começa) -->
+            <!-- LABEL 1: WAIT MESSAGE (Always present, but disappears when buffering starts) -->
             <control type="label">
                 <top>650</top>
                 <centerleft>50%</centerleft>
@@ -91,11 +91,11 @@
                 <align>center</align>
                 <textcolor>white</textcolor>
                 <shadowcolor>FF000000</shadowcolor>
-                <label>ESPERANDO ELEMENTUM...</label>
+                <label>WAITING FOR ELEMENTUM...</label>
                 <visible>String.IsEmpty(Window(Home).Property(CineboxStatus))</visible>
             </control>
 
-            <!-- LABEL 2: INFORMAÇÕES DE BUFFERING (Só aparece quando houver dados, cobrindo o anterior) -->
+            <!-- LABEL 2: BUFFERING INFORMATION (Only appears when there is data, covering the previous one) -->
             <control type="textbox" id="1001">
                 <top>650</top>
                 <centerleft>50%</centerleft>

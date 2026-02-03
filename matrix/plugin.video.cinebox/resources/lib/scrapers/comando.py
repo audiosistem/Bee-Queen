@@ -22,7 +22,7 @@ def search_comando_top(query):
         if response.status_code == 200:
             return response.content
     except Exception as e:
-        xbmc.log(f"[comando.top] Erro de busca: {str(e)}", xbmc.LOGERROR)
+        xbmc.log(f"[command.top] Search error: {str(e)}", xbmc.LOGERROR)
         logger.scraper_error("ComandoTop", f"Search Error: {e}", search_url)
     return None
 
@@ -42,13 +42,13 @@ def extract_magnets(html, title, target_episode=None, season=None, media_type="m
         container_text = parent_text.lower()
 
 
-        # --- EXTRAÇÃO DOS DADOS ---
+        # --- DATA EXTRACTION ---
         dn_match = re.search(r'dn=([^&]+)', url)
         release_name = urllib.parse.unquote(dn_match.group(1)).replace('.', ' ') if dn_match else title
 
         quality = "1080p" if "1080p" in container_text else "720p" if "720p" in container_text else "4K" if "2160p" in container_text else "HD"
-        audio = "Dual" if "dual" in container_text else "Dublado"
-        subtitle = "Legendado" if "legendado" in container_text else "Sem legendas"
+        audio = "Dual" if "dual" in container_text else "Dubbed"
+        subtitle = "Subtitled" if "legendado" in container_text else "No subtitles"
         type_label = "EP" if not any(x in container_text for x in ["volume", "completa"]) else "PACK"
 
         seeds = 0
@@ -122,24 +122,24 @@ def scrape(provider_url, item_data, season=None, episode=None, cancel_event=None
     year = item_data.get("year")
     media_type = item_data.get("media_type", "movie")
 
-    # --- Monta a query de busca ---
+    # --- Set up the search query ---
     clean_title = re.sub(r'[^\w\s]', ' ', title).strip()
     if media_type == "tvshow" and season:
         query = f"{clean_title} {season} temporada"
     else:
         query = clean_title
 
-    # Busca no ComandoTop
+    # Search in ComandoTop
     if cancel_event and cancel_event.is_set(): return []
     html_search = search_comando_top(query)
 
-    # Encontra a URL do post correto
+    # Finds the correct post URL
     if cancel_event and cancel_event.is_set(): return []
     post_url = find_content_url(html_search, title, year, season=season)
     
-    # Se não achou pelo título, tenta pelo título original
+    # If you can't find it by the title, try the original title
     if not post_url and original_title and original_title != title:
-        xbmc.log(f"[comando.top] Tentando busca por título original: {original_title}", xbmc.LOGINFO)
+        xbmc.log(f"[comando.top] Trying to search for original title: {original_title}", xbmc.LOGINFO)
         if media_type == "tvshow" and season:
             query_orig = f"{original_title} {season} temporada"
         else:
@@ -153,7 +153,7 @@ def scrape(provider_url, item_data, season=None, episode=None, cancel_event=None
         headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(post_url, headers=headers, timeout=10)
         xbmc.log(f"[comando.top] Resposta do post: Status {response.status_code}", xbmc.LOGINFO)
-        # Extrai os magnets filtrando pelo episódio se houver
+        # Extract the magnets by filtering by episode if any
         results = extract_magnets(response.content, title, target_episode=episode, season=season, media_type=media_type)
         xbmc.log(f"[comando.top] Encontrados {len(results)} magnets no post.", xbmc.LOGINFO)
         return results

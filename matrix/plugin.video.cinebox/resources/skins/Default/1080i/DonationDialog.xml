@@ -4,7 +4,7 @@
     </coordinates>
 
     <controls>
-        <!-- Fundo transparente -->
+        <!-- Transparent background -->
         <control type="image" id="99">
             <left>0</left>
             <top>0</top>
@@ -13,15 +13,15 @@
             <texture>special://home/addons/script.module.pil/resources/media/transparent.png</texture>
         </control>
 
-        <!-- Container principal com ajuste fino -->
+        <!-- Main container with fine adjustment -->
         <control type="group">
-            <!-- Ajuste "dois dedos esquerda" e "um dedo alto" -->
-            <left>50% - 300</left>  <!-- +50px para esquerda (original 250) -->
-            <top>50% - 220</top>    <!-- +50px para cima (original 170) -->
+            <!-- Adjust "two fingers to the left" and "one finger up" -->
+            <left>50% - 300</left>  <!-- +50px to the left (original 250) -->
+            <top>50% - 220</top>    <!-- +50px up (original 170) -->
             <width>500</width>
             <height>340</height>
 
-            <!-- Imagem -->
+            <!-- Image -->
             <control type="image" id="100">
                 <left>-220</left>
                 <top>-150</top>
@@ -32,7 +32,7 @@
                 <animation effect="fade" start="0" end="100" time="400">WindowOpen</animation>
             </control>
 
-            <!-- Texto com ajuste fino -->
+            <!-- Text with fine-tuning -->
             <control type="label" id="101">
                 <left>-221</left>
                 <top>170</top>
@@ -42,7 +42,7 @@
                 <textcolor>FFFFFFFF</textcolor>
                 <shadowcolor>AA000000</shadowcolor>
                 <align>center</align>
-                <label>[COLOR yellow]Mulțumesc foarte mult pentru sprijinul tău![/COLOR]</label>
+                <label>[COLOR yellow]Thank you for your support![/COLOR]</label>
                 <animation effect="slide" end="0,-10" time="300" delay="200">WindowOpen</animation>
             </control>
         </control>

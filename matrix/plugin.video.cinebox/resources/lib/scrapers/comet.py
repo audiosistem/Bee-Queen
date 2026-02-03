@@ -9,9 +9,7 @@ from io import BytesIO
 from ..debug_logger import logger
 
 def scrape(imdb_id, media_type, season, episode, item_data=None):
-    """
-    Scraper Comet para Cinebox.
-    """
+    """Scraper Comet for Cinebox."""
     base_url = "https://comet.elfhosted.com"
     
     endpoints = []
@@ -29,7 +27,7 @@ def scrape(imdb_id, media_type, season, episode, item_data=None):
         'Accept-Encoding': 'gzip'
     }
     
-    # Adicionar busca por título se não tivermos IMDB ou como complemento
+    # Add search by title if we don't have IMDB or as a complement
     if not imdb_id or not endpoints:
         search_query = item_data.get('original_title') or item_data.get('title')
         if search_query:
@@ -42,7 +40,7 @@ def scrape(imdb_id, media_type, season, episode, item_data=None):
 
     for endpoint in endpoints:
         url = f"{base_url}{endpoint}"
-        # Correção para URLs duplas de barra
+        # Fix for double slash URLs
         url = url.replace('//stream', '/stream')
         try:
             xbmc.log(f"[Comet] Buscando via urllib2: {url}", xbmc.LOGINFO)
@@ -91,7 +89,7 @@ def scrape(imdb_id, media_type, season, episode, item_data=None):
                 seen_hashes.add(info_hash)
                 
         except Exception as e:
-            xbmc.log(f"[Comet] Erro ao buscar {url}: {e}", xbmc.LOGERROR)
+            xbmc.log(f"[Comet] Error fetching {url}: {e}", xbmc.LOGERROR)
             logger.scraper_error("Comet", f"Search Error: {e}", url)
             
     return streams

@@ -8,12 +8,10 @@ import threading
 from ..debug_logger import logger
 
 def scrape(imdb_id, media_type, season, episode, item_data=None, cancel_event=None):
-    """
-    Scraper Magneto seguindo o padrão Stremio exigido pelo Cinebox.
-    """
+    """Scraper Magneto following the Stremio standard required by Cinebox."""
     streams = []
     try:
-        # 1. Localiza o caminho do módulo Magneto
+        # 1. Finds the path of the Magneto module
         try:
             magneto_path = xbmcvfs.translatePath('special://home/addons/script.module.magneto/lib')
         except AttributeError:
@@ -30,7 +28,7 @@ def scrape(imdb_id, media_type, season, episode, item_data=None, cancel_event=No
         except ImportError:
             return streams
         
-        # 2. Prepara os dados para o Magneto
+        # 2. Prepare data for Magneto
         data = {
             'title': item_data.get('title') if item_data else 'Video',
             'year': str(item_data.get('year')) if item_data else '',
@@ -46,12 +44,12 @@ def scrape(imdb_id, media_type, season, episode, item_data=None, cancel_event=No
             if item_data and item_data.get('episode_title'):
                 data['title'] = item_data.get('episode_title')
 
-        # 3. Pega os provedores habilitados
+        # 3. Get qualified providers
         magneto_sources = magneto.sources()
         if not magneto_sources:
             return streams
 
-        # 4. Executa os scrapers em paralelo
+        # 4. Run scrapers in parallel
         all_results = []
         lock = threading.Lock()
         threads = []
@@ -77,24 +75,24 @@ def scrape(imdb_id, media_type, season, episode, item_data=None, cancel_event=No
             
         for t in threads:
             if cancel_event and cancel_event.is_set():
-                # Não podemos matar threads em Python facilmente, mas podemos parar de esperar
+                # We can't kill threads in Python easily, but we can stop waiting
                 break
             t.join(timeout=15)
             
-        # 5. Converte para o padrão STREMIO (que o Cinebox ama)
+        # 5. Converts to the STREMIO standard (which Cinebox loves)
         for s in all_results:
             url = s.get('url')
             if not url: continue
             
-            name = s.get('name', 'Fonte Magneto')
+            name = s.get('name', 'Source Magneto')
             quality = s.get('quality', 'HD')
             size = s.get('size', '')
             if size == 'N/A': size = ''
             seeders = s.get('seeders', 0)
             provider = s.get('provider', 'Magneto')
             
-            # O Cinebox extrai info do campo 'title' usando regex.
-            # Formato: "Nome do Arquivo\n👤 Seeders | ⚙️ Provedor | Qualidade | Tamanho"
+            # Cinebox extracts information from the 'title' field using regex.
+            # Format: "File Name\n👤 Seeders | ⚙️ Provider | Quality | Size"
             stremio_title = f"{name}\n👤 {seeders} | ⚙️ {provider} | {quality} | {size}"
             
             stream = {
@@ -105,20 +103,20 @@ def scrape(imdb_id, media_type, season, episode, item_data=None, cancel_event=No
                 'hoster': 'Magneto'
             }
             
-            # Se for torrent, o Cinebox gosta do infoHash
+            # If it's torrent, Cinebox likes infoHash
             if url.startswith('magnet:'):
                 import re
                 hash_match = re.search(r'btih:([a-fA-F0-9]{40})', url)
                 if hash_match:
                     stream['infoHash'] = hash_match.group(1)
             
-            # Campo essencial para o Cinebox não descartar o item
+            # Essential field for Cinebox not to discard the item
             stream['release_title'] = name
             
             streams.append(stream)
             
     except Exception as e:
-        xbmc.log(f"[Magneto-Scraper] Erro: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Magneto-Scraper] Error: {e}", xbmc.LOGERROR)
         logger.scraper_error("Magneto", f"Error: {e}")
         
     if streams:

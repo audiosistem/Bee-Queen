@@ -1,109 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addons><addon id="context.seren" version="3.0.1" name="Seren - Global Context Menu Items" provider-name="Nixgates">
-	<requires>
-		<import addon="xbmc.addon" version="17.9.910" />
-		<import addon="xbmc.python" version="3.0.0" />
-	</requires>
-	<extension point="kodi.context.item">
-		<menu id="kodi.core.main">
-			<item library="context.py" args="quickRresume">
-				<label>$ADDON[context.seren 30000]</label>
-				<visible>String.IsEmpty(Window(home).Property(context.seren.quickResume)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+String.IsEqual(ListItem.dbtype,tvshow)</visible>
-			</item>
-			<item library="context.py" args="shuffle">
-				<label>$ADDON[context.seren 30001]</label>
-				<visible>String.IsEmpty(Window(home).Property(context.seren.shuffle)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,tvshow)|String.IsEqual(ListItem.dbtype,episode)]</visible>
-			</item>
-			<item library="context.py" args="playFromRandomPoint">
-				<label>$ADDON[context.seren 30002]</label>
-				<visible>String.IsEmpty(Window(home).Property(context.seren.playFromRandomPoint)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+String.IsEqual(ListItem.dbtype,tvshow)</visible>
-			</item>
-			<item library="context.py" args="rescrape">
-				<label>$ADDON[context.seren 30003]</label>
-				<visible>String.IsEmpty(Window(home).Property(context.seren.rescrape)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,episode)|String.IsEqual(ListItem.dbtype,movie)]</visible>
-			</item>
-			<item library="context.py" args="rescrape_ss">
-				<label>$ADDON[context.seren 30010]</label>
-				<visible>String.IsEmpty(Window(home).Property(context.seren.rescrape_ss)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,episode)|String.IsEqual(ListItem.dbtype,movie)]</visible>
-			</item>
-			<item library="context.py" args="sourceSelect">
-				<label>$ADDON[context.seren 30004]</label>
-				<visible>String.IsEmpty(Window(home).Property(context.seren.sourceSelect)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,episode)|String.IsEqual(ListItem.dbtype,movie)]</visible>
-			</item>
-			<item library="context.py" args="findSimilar">
-				<label>$ADDON[context.seren 30005]</label>
-				<visible>String.IsEmpty(Window(home).Property(context.seren.findSimilar)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,tvshow)|String.IsEqual(ListItem.dbtype,movie)]</visible>
-			</item>
-			<item library="context.py" args="browseShow">
-				<label>$ADDON[context.seren 30006]</label>
-				<visible>String.IsEmpty(Window(home).Property(context.seren.browseShow)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,episode)|String.IsEqual(ListItem.dbtype,season)|String.IsEqual(ListItem.dbtype,tvshow)]</visible>
-			</item>
-			<item library="context.py" args="browseSeason">
-				<label>$ADDON[context.seren 30007]</label>
-				<visible>String.IsEmpty(Window(home).Property(context.seren.browseSeason)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,episode)]</visible>
-			</item>
-			<item library="context.py" args="traktManager">
-				<label>$ADDON[context.seren 30008]</label>
-				<visible>String.IsEmpty(Window(home).Property(context.seren.traktManager)) + String.StartsWith(ListItem.path,plugin://plugin.video.seren/)+[String.IsEqual(ListItem.dbtype,episode)|String.IsEqual(ListItem.dbtype,tvshow)|String.IsEqual(ListItem.dbtype,season)|String.IsEqual(ListItem.dbtype,movie)]</visible>
-			</item>
-		</menu>
-	</extension>
-	<extension point="xbmc.service" library="service.py" />
-	<extension point="xbmc.addon.metadata">
-		<summary lang="en">Seren - Global Context Menu Items</summary>
-		<summary lang="nl">Seren - Algemene contextmenu-items</summary>
-		<description lang="en">Adds Context Menu items for Seren menu items throughout Kodi</description>
-		<description lang="nl">Voegt contextmenu-items toe voor Seren-menu-items in Kodi</description>
-		<platform>all</platform>
-		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
-		<forum />
-		<website />
-		<source />
-		<disclaimer lang="en" />
-		<assets>
-			<icon>resources/images/ico-seren-3.png</icon>
-			<fanart>resources/images/fanart-seren-3.png</fanart>
-			<clearlogo>resources/images/logo-seren-3.png</clearlogo>
-			<poster>resources/images/poster-seren-3.png</poster>
-		</assets>
-		<news>
-			Changelog 3.0.1
-			Fix Shuffle play copy pasta mix up		
-			Resolve settings not showing in Kodi
-
-			Changelog 3.0.0
-			Re-write of context menu addon, supporting py3 only (Matrix and above)
-			Update icons to match Seren 3.0.0 release
-			Update language support set to match Seren (add auto-translated Hebrew)
-
-			Changelog 2.2.0
-			Added "Rescrape and Source Select" context menu item.
-
-			Changelog 2.1.2
-			Added Polish translation
-
-			Changelog 2.1.1:
-			Implemented a workaround for broken future.backports module method (fixes Leia issues)
-
-			Changelog 2.1.0:
-			Refactored code to modern standards
-			Use backported URL lib for py2 to ensure unicode compatibility
-			Extracted out common functions and reused
-			Add settings to enable/disable individual items
-			Add more localizations
-			Add GitHub issue templates
-
-			Changelog 2.0.2:
-			Make python version agnostic
-
-			Changelog 2.0.1:
-			Fixed addon icons/fanart
-
-			Changelog 2.0.0:
-			Rework for Seren 2.0
-		</news>
-	</extension>
-</addon><addon id="plugin.audio.mp3streams" name="MP3 Streams" version="2023.2.31" provider-name="Jon Bovi, Slamious, Diggz">
+<addons><addon id="plugin.audio.mp3streams" name="MP3 Streams" version="2023.2.31" provider-name="Jon Bovi, Slamious, Diggz">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.future" />
@@ -124,7 +20,7 @@
             <fanart>resources/fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.audio.radiogarden" name="Radio Garden" version="1.5" provider-name="@TrainAgain2">
+</addon><addon id="plugin.audio.radiogarden" name="Radio Garden" version="2.0" provider-name="@TrainAgain2">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.0.0" />
@@ -175,103 +71,6 @@
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon><addon id="plugin.audio.shoutcast" name="SHOUTcast" provider-name="Tristan Fischer (sphere@dersphere.de), enen92" version="2.5.2+matrix.1">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0" />
-        <import addon="script.module.xbmcswift2" version="19.0.0" />
-        <import addon="script.module.xmltodict" version="0.12.0" />
-    </requires>
-    <extension library="addon.py" point="xbmc.python.pluginsource">
-        <provides>audio</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <platform>all</platform>
-        <website>https://www.shoutcast.com/</website>
-        <source>https://github.com/XBMC-Addons/plugin.audio.shoutcast</source>
-        <forum>https://forum.kodi.tv/showthread.php?tid=143678</forum>
-        <license>GPL-2.0-only</license>
-        <summary lang="ar_SA">وجود اكثر من 50.000 محطة اذاعية مجانية على الانترنت </summary>
-        <summary lang="be_BY">more than 50.000 free internet radio stations</summary>
-        <summary lang="bg_BG">повече от 50 000 безплатни интернет радиостанции</summary>
-        <summary lang="ca_ES">Més de 50.000 estacions de ràdio per Internet gratuïtes</summary>
-        <summary lang="da_DK">mere end 50.000 gratis netradiostationer</summary>
-        <summary lang="de_DE">mehr als 50.000 kostenlose Internet Radio Sender</summary>
-        <summary lang="el_GR">Πάνω από 50.000 δωρεάν διαδικτυακοί ραδιοφωνικοί σταθμοί</summary>
-        <summary lang="en_GB">more than 50.000 free internet radio stations</summary>
-        <summary lang="en_NZ">more than 50.000 free internet radio stations</summary>
-        <summary lang="en_US">more than 50.000 free internet radio stations</summary>
-        <summary lang="es_ES">Más de 50.000 emisoras de radio por Internet gratuitas</summary>
-        <summary lang="es_MX">mas de 50.000 estaciones de radio gratuitas</summary>
-        <summary lang="fr_FR">plus de 50.000 radios internet gratuites</summary>
-        <summary lang="fr_CA">plus de 50 000 stations de radio Internet gratuites</summary>
-        <summary lang="gl_ES">máis de 50.000 emisoras de radio por internet de balde</summary>
-        <summary lang="he_IL">יותר מ־50.000 תחנות רדיו אינטרנטיות חינמיות</summary>
-        <summary lang="hr_HR">više od 50.000 besplatnih Internet radio stanica</summary>
-        <summary lang="hu_HU">Több mint 50.000 ingyenes internet rádió</summary>
-        <summary lang="id_ID">lebih dari 50.000 stasiun radio internet gratisan</summary>
-        <summary lang="it_IT">più di 50.000 stazioni radio libere su internet</summary>
-        <summary lang="ko_KR">50,000개 이상의 무료 인터넷 라디오 방송 청취</summary>
-        <summary lang="lt_LT">daugiau kaip 50,000 nemokamų internetinių radijo stočių</summary>
-        <summary lang="nl_NL">Meer dan 50.000 vrije internet radio stations</summary>
-        <summary lang="nb_NO">mer enn 50.000 gratis radiokanaler fra internett</summary>
-        <summary lang="pl_PL">Ponad 50.000 darmowych internetowych stacji radiowych</summary>
-        <summary lang="pt_PT">mais de 50.000 estações de rádio da net grátis</summary>
-        <summary lang="pt_BR">mais de 50.000 estações de rádio gratuitas on-line</summary>
-        <summary lang="ru_RU">более 50 000 свободных интернет радиостанций</summary>
-        <summary lang="sk_SK">Viac než 50.000 voľných internetových rádio staníc</summary>
-        <summary lang="sl_SI">več kot 50000 brezplačnih internetnih radijskih postaj</summary>
-        <summary lang="sv_SE">mer än 50.000 fria internetradiostationer</summary>
-        <summary lang="ta_IN">50.000 மேற்பட்ட இலவச இணைய வானொலி நிலையங்கள்</summary>
-        <summary lang="tr_TR">50.000 den Fazla Ücretsiz Internet Radyo Istasyonu</summary>
-        <summary lang="zh_CN">超过50.000免费网络电台</summary>
-        <description lang="be_BY">With this Add-on you can browse more than 50.000 free internet radio stations. Current Features:[CR]- Top 500 Stations[CR]- Browse by genre (and subgenre if enabled in settings)[CR]- Search Station by name[CR]- Search Stations by current playing track[CR]- You can manage a "My Stations"-list[CR]- bitrate and amount of listeners visible and sortable[CR]- 500 Stations on each Page (can be changed in the settings)[CR]- uses cache (24h genre, 1h station listings)</description>
-        <description lang="bg_BG">С това допълнение, можете да слушате над 50.000 достъпни и свободни радиостанции. В момента плъгина позволява:[CR] - Преглед на Топ 500 станции[CR] - Търсене по жанр (и поджанрове, ако е определено в настройките)[CR] - Търсене на станции по име[CR] - Търсене на подобни станции по текущо възпроизвежданата музика[CR] - Управление на списъка "Моите станции"[CR] - Преглеждане, сортиране по битрейт и количество слушатели[CR] - 500 станции на всяка страница (може да се промени в настройките)[CR] - Ползване на кеширане (стилове на 24 часа, списъци на станции на 1 час)</description>
-        <description lang="ca_ES">Amb aquest Add-on poden escoltar més de 50.000 emissores de ràdio per Internet gratuïtes. Característiques: [CR]- Les 500 millors emissores. [CR]- Cerca per gènere (i per subgèneres si s'habilita en la configuració). [CR]- Cerca d'emissores per nom. [CR]- Recerca d'emissores que reprodueixen una cançó. [CR]- Possibilitat d'administrar un directori amb "Els meus emissores". [CR]- Directoris ordenats que mostren bitrate i quantitat d'oients. [CR]- 500 emissores a cada pàgina (la quantitat pot canviar en la configuració). [CR]- Ús de memòria cau (24h gènere, 1h directori d'emissores).</description>
-        <description lang="da_DK">Med denne addon kan du udforske mere end 50.000 gratis internetradiostationer. Nuværende funktioner:[CR]- Top 500 Stationer[CR]- Gennemse efter genre (og undergenre hvis det er aktiveret i indstillinger)[CR]- Søg efter navn på Station[CR]- Søg efter Station ud fra nummeret der spiller[CR]- Du kan administrere en "My Stations"-liste[CR]- bitrate og antal lyttere vises og kan sorteres[CR]- 500 Stationer på hver side (kan ændres i indstillinger)[CR]- bruger cache (24 timer for genre, 1 time for lister)</description>
-        <description lang="de_DE">Dieses Add-on ermöglicht dir Zugriff auf über 50.000 kostenlose Internet Radio Sender.[CR]Aktuelle Features:[CR]- Top 500 Sender[CR]- Nach Genre browsen[CR]- Sender nach Name suchen[CR]- Sender nach aktuellem Track suchen[CR]- Sender per Kontext Menu in die "Meine Sender"-Liste kopieren[CR]- Anzeige der Bitrate und Anzahl Höhrer[CR]- 500 Sender pro Seite[CR]- Schnell durch lokalen Cache</description>
-        <description lang="el_GR">Με αυτό το Πρόσθετο μπορείτε να περιηγηθείτε ανάμεσα σε περισσότερους από 50.000 δωρεάν διαδικτυακούς ραδιοφωνικούς σταθμούς. Τρέχουσες λειτουργίες:[CR]- Κορυφαίοι 500 Σταθμοί[CR]- Περιήγηση ανά είδος (και υπο-είδος αν είναι ενεργό στις ρυθμίσεις)[CR]- Αναζήτηση Σταθμού με βάση το όνομα[CR]- Αναζήτηση Σταθμών με βάση το τρέχον τραγούδι[CR]- Μπορείτε να διαχειριστείτε μία λίστα "Σταθμών μου"[CR]- Το bitrate και το πλήθος των ακροατών είναι ορατά και η ταξινόμηση μπορεί να γίνει σύμφωνα με αυτά[CR]- 500 Σταθμοί σε κάθε Σελίδα (μπορεί να αλλάξει στις ρυθμίσεις)[CR]- Χρήση λανθάνουσας μνήμης (είδος 24 ωρών, καταχωρίσεις σταθμών 1 ώρας)</description>
-        <description lang="en_GB">With this Add-on you can browse more than 50.000 free internet radio stations. Current Features:[CR]- Top 500 Stations[CR]- Browse by genre (and subgenre if enabled in settings)[CR]- Search Station by name[CR]- Search Stations by current playing track[CR]- You can manage a "My Stations"-list[CR]- bitrate and amount of listeners visible and sortable[CR]- 500 Stations on each Page (can be changed in the settings)[CR]- uses cache (24h genre, 1h station listings)</description>
-        <description lang="en_NZ">With this Add-on you can browse more than 50.000 free internet radio stations. Current Features:[CR]- Top 500 Stations[CR]- Browse by genre (and subgenre if enabled in settings)[CR]- Search Station by name[CR]- Search Stations by current playing track[CR]- You can manage a "My Stations"-list[CR]- bitrate and amount of listeners visible and sortable[CR]- 500 Stations on each Page (can be changed in the settings)[CR]- uses cache (24h genre, 1h station listings)</description>
-        <description lang="en_US">With this Add-on you can browse more than 50.000 free internet radio stations. Current Features:[CR]- Top 500 Stations[CR]- Browse by genre (and subgenre if enabled in settings)[CR]- Search Station by name[CR]- Search Stations by current playing track[CR]- You can manage a "My Stations"-list[CR]- bitrate and amount of listeners visible and sortable[CR]- 500 Stations on each Page (can be changed in the settings)[CR]- uses cache (24h genre, 1h station listings)</description>
-        <description lang="es_ES">Con este Add-on pueden escucharse más de 50.000 emisoras de radio por Internet gratuitas. Características:[CR]- Las 500 mejores emisoras.[CR]- Búsqueda por género (y por subgéneros si se habilita en la configuración).[CR]- Búsqueda de emisoras por nombre.[CR]- Búsqueda de emisoras que reproducen una canción.[CR]- Posibilidad de administrar un directorio con "Mis emisoras".[CR]- Directorios ordenados que muestran bitrate y cantidad de oyentes.[CR]- 500 emisoras en cada página (la cantidad puede cambiarse en la configuración).[CR]- Uso de caché (24h género, 1h directorio de emisoras).</description>
-        <description lang="es_MX">Con este complemento usted puede navegar por mas de 50.000 estaciones de redio de internet gratuitas. Caracteristicas Actuales:[CR]- Mejores 500 Estaciones[CR]- Navegar por genero (y subgenero si lo habilita en los ajustes)[CR]- Busqueda de Estacion por nombre[CR]- Busqueda de Estaciones por la pista actual en reproduccion[CR]- Usted puede administrar una lista"Mis Estaciones"[CR]- tasa de bits y cantidad de oyentes visibles y ordenable[CR]- 500 Estaciones en cada Pagina (puede ser cambiado en los ajustes)[CR]- utiliza cache (24h genero, 1h lista de estaciones)</description>
-        <description lang="fr_FR">Avec cette extension vous pouvez accéder à plus de 50.000 station radio internet gratuite. Possibilités actuelles :[CR]- Top 500 stations[CR]- Naviguer par genre (et sous-genre si le réglage est activé)[CR]- Rechercher une station par nom[CR]- Rechercher une station jouant la piste en cours[CR]- Création d'une liste de stations favorites[CR]- Bitrate et nombre d'auditeurs visibles et triables[CR]- 500 stations par page (modifiable dans les réglages)[CR]- Utilisation d'un cache (24h par genre, 1h par station)</description>
-        <description lang="fr_CA">Avec cet addiciel vous pouvez parcourir plus de 50 000 stations de radio Internet gratuites. Caractéristiques actuelles :[CR] - Les 500 1res stations[CR] - Parcourir par genre (et sous-genre si activé dans les paramètres)[CR] - Rechercher les stations par nom[CR] - Rechercher les stations par piste en cours de lecture[CR] - Vous pouvez gérer une liste « Mes stations »[CR] - Débit binaire et nombre d'auditeurs visible et triable[CR] - 500 stations par page (peut être modifié dans les paramètres)[CR] - Utilise un cache (24 h pour les genres, 1h pour les listes de stations).</description>
-        <description lang="gl_ES">Grazas a este complemento pode buscar máis de 50.000 emisoras de radio por internet de balde. Características:[CR]- Mellores 500 Emisoras[CR]- Buscar por xénero (e subxénero se esta habilitado na configuración)[CR]- Buscar Emisoras por nome[CR]- Buscar Emisoras pola pista en reprodución actual[CR]- Pode xestionar a listaxe "As miñas Emisoras"[CR]- taxa de bits e número de ointes visíbeis e ordenábel[CR]- 500 Emisoras en cada páxina (pódese trocar na configuración)[CR]- usar a caché (24h para xénero, 1h para listaxe de emisoras)</description>
-        <description lang="he_IL">בעזרת הרחבה זו ניתן לעיין ביותר מ-50.000 תחנות רדיו אינטרנטיות חינמיות. כולל:[CR]- 500 התחנות הגדולות ביותר[CR]- עיון לפי סגנון (ותת סגנון אם מאופשר בהגדרות)[CR]- חיפוש תחנה לפי שם[CR]- חיפוש תחנות לפי רצועה המנוגנת כעת[CR]- ניתן לנהל רשימת "התחנות שלי"[CR]- מוצג קצב נתונים וכמות מאזינים וניתן למיין לפיהם[CR]- 500 תחנות בכל עמוד (ניתן לשינוי בהגדרות)[CR]- נעשה שימוש בזיכרון מטמון (24 שע' לסגנונות,1 שע' לרשימת התחנות)</description>
-        <description lang="hr_HR">Sa ovim dodatkom možete pregledati više od 50.000 besplatnih Internet radio stanica. Trenutne značajke:[CR]- Top 500 stanica[CR]- Pregledajte prema žanru (i podžanru ako je omogućeno u postavkama)[CR]- Pretraživajte stanice prema nazivu[CR]- Pretraživajte stanice prema trenutnoj reprodukciji pjesme[CR]- Možete upravljati "Moje stanice"-list[CR]- brzina prijenosa i broj slušatelja je vidljiv i prilagodljiv[CR]- 500 stanica na svakoj stranici (mogu se promijeniti u postavkama)[CR]- koristi se predmemorija (24 sata za žanr, 1 sat slušanje stanice)</description>
-        <description lang="hu_HU">Ezzel a kiegészítővel választhatsz több mint 50.000 ingyenes rádió adó közül. Jelenlegi szolgáltatások:[CR]- Top 500 állomás[CR]-Műfajonkénti (és alműfajonkénti) keresés[CR]- Név szerinti állomáskeresés[CR]- Állomáskeresés az éppen játszott szám alapján[CR]- Az "én állomásaim" lista kezelése[CR]- Minőség és hallgatottság szerinti rendezés[CR]- 500 adó minden oldalon (a szám beállítható)[CR]- Gyorsítótár használata (24óra a műfajokra, 1óra az állomásokra)</description>
-        <description lang="id_ID">Dengan addon ini Anda dapat menjelajahi lebih dari 50.000 stasiun radio gratisan. Fitur saat ini:[CR]- 500 Stasiun Teratas[CR]- Jelajahi berdasarkan tema (dan subtema jika diaktifkan di pengaturan)[CR]- Cari Stasiun berdasarkan nama[CR]- Cari Stasiun berdasarkan trek yang diputar[CR]- Anda dapat mengelola daftar "Stasiun Saya"[CR]- bitrate dan jumlah pendengar terlihat dan dapat diurutkan[CR]- 500 Stasiun setiap halaman (dapat diubah di pengaturan)[CR]- menggunakan cache (24 jam tema, 1 jam daftar stasiun)</description>
-        <description lang="it_IT">Con questo Add-on puoi sfogliare più di 50.000 stazioni radio libere su internet. Caratteristiche attuali:[CR]- Migliori 500 stazioni[CR]- Sfoglia per genere (e sottogenere se abilitato nelle impostazioni)[CR]- Cerca le stazioni per nome[CR]- Cerca le stazioni per traccia in esecuzione[CR]- Puoi gestire un lista "Mie Stazioni"[CR]- bitrate e quantità di ascoltatori visibile e riordinabile[CR]- 500 Stazioni in ogni pagina (può essere modificato nelle impostazioni)[CR]- cache utilizzata (24h genere, 1h ascolto)</description>
-        <description lang="ko_KR">이 애드온으로 50,000개 이상의 무료 인터넷 라디오 방송을 탐색할 수 있습니다. 현재 기능:[CR]- Top 500 방송국[CR]- 장르(설정에서 활성화하면 하위 장르)로 탐색[CR]- 방송국명으로 검색[CR]- 현재 트랙을 방송중인 방송국 검색[CR]- "내 방송국" 목록 관리[CR]- 비트레이트와 청취자수 표시와 정렬[CR]- 페이지당 500 방송국 표시 (설정에서 변경 가능)[CR]- 캐시 사용 (장르 24시간, 방송국 리스트 1시간)</description>
-        <description lang="lt_LT">Su šiuo priedu galite naršyti daugiau kaip 50,000 nemokamų internetinių radijo stočių. Dabartinės funkcijos:[CR]- 500 geriausių stočių[CR]- Naršyti pagal žanrą (ir porūšį, jei įjungta nustatymuose)[CR]- Ieškoti stoties pagal pavadinimą[CR]- Ieškoti stočių pagal dabartinį atkuriamą takelį[CR]- Jūs galite valdyti "Mano radijo stotys" sąrašą[CR]- galima matyti pralaidumą ir klausytojų skaičių bei pagal juos rūšiuoti[CR]- 500 stočių kiekviename puslapyje (galima pakeisti nustatymuose)[CR]- Naudoja talpyklą (24h žanro, 1h stoties sąrašai)</description>
-        <description lang="nl_NL">Met deze Add-on die kunt u door meer dan 50.000 vrije internet radiostations bladeren. Huidige functies: [CR]- Top 500 Stations [CR]- bladeren door genre (en subgenre indien ingeschakeld in instellingen) [CR] - Zoek Station op naam [CR] - Zoek Stations door huidig afspelende track [CR]- u kunt een "Mijn Stations" lijst beheren[CR]- bitrate en hoeveelheid luisteraars zichtbaar en sorteerbaar [CR]- 500 Stations op elke pagina (kan gewijzigd worden in de instellingen) [CR]-gebruikte cache (24u genre, 1 uur station luisteren)</description>
-        <description lang="nb_NO">Med denne utvidelsen kan du finne mer enn 50.000 radiokanaler helt gratis fra internett. Nåværende funksjoner:[CR]- Topp 500 stasjoner[CR]- Bla gjennom etter sjanger (og undersjangre om aktivert i innstillinger)[CR]- Søk etter stasjon med navn[CR]- Søk etter stasjoner etter hva som spilles nå[CR]- Du kan lage din egen "Mine stasjoner" -liste[CR]- Kvalitet og antall lyttere vises og kan filtreres[CR]- 500 stasjoner på hver side (kan endres i innstillinger)[CR]- Bruker mellomlagring (24 timer for sjanger, 1 time for stasjonslister)</description>
-        <description lang="pl_PL">Dzięki tej wtyczce możesz przeglądać w ponad 50.000 darmowych stacjach radiowych. Aktualne funkcje:[CR]- Top 500 stacji[CR]- przeglądaj według gatunków (oraz subgatunków jeżeli włączone)[CR]- szukaj stacji po nazwie[CR]- szukaj stacji po granym utworze[CR]- zarządzaj listą Moje stacje[CR]- sortowanie oraz widoczność liczby słuchaczy i bitrate[CR]- 500 stacji na stronie (możliwa edycja)[CR]- pamięć podręczna (24h gatunki, 1h lista stacji)</description>
-        <description lang="pt_PT">Com este add-on, pode escolher entre mais de 50.000 estações de rádio da net grátis. Funcionalidades:[CR]- Top 500 Rádios[CR]- Procure por Género (e sub-género, se activo nas preferências)[CR]- Procurar Rádio por nome[CR]- Procurar Rádios por faixa em reprodução[CR]- Pode gerir uma lista de "Minhas Rádios"[CR]- bitrate e quantidade de ouvintes visíveis e ordenáveis[CR]- 500 Rádios em cada Página (pode ser alterado nas preferências)[CR]- usar cache (24h para género, 1h para lista das rádios)</description>
-        <description lang="pt_BR">Com este Add-on, você pode navegar em mais de 50.000 estações de rádio on-line grátis. Características atuais:[CR]- As 500 Melhores Estações[CR]- Procurar por gênero (e subgênero se habilitado nas configurações)[CR]- Pesquisar estações por nome[CR]- Pesquisar estações pela faixa atual[CR]- Você pode gerenciar uma lista de "Minhas Estações"[CR]- bitrate e quantidade de ouvintes visíveis e ordenáveis[CR]- 500 estações por página (pode ser alterado nas configurações)[CR]- usa cache (24h para gêneros, 1h para listagem de estações)</description>
-        <description lang="ru_RU">С этим дополнением Вы сможете слушать более 50 тысяч доступных свободных радиостанций. На данный момент плагин позволяет:[CR]- Просматривать Top 500 станций[CR]- Искать по стилю (и подстилю, если задано в настройках)[CR]- Искать станции по имени[CR]- Искать похожие станции по текущей воспроизводимой музыке[CR]- Управление списком "Мои станции"[CR]- Просматривать, сортировать по битрейту и количеству слушателей[CR]- 500 станций на каждой странице (может быть изменено в настройках)[CR]- Использование кеширования (стили на 24 часа, списки станций на 1 час) </description>
-        <description lang="sk_SK">S týmto doplnok môžete prehliadať vyše 50.000 voľných internetových rádio staníc. Momentálne podporuje:
-- Top 500 staníc
-- Prehliadanie podľa žánru (a pod-žánru, ak povolené v nastaveniach)
-- hľadanie stanice podľa mena
-- hľadanie stanice podľa práve hranej skladby
-- Môžete spravovať zoznam "Moje stanice"
-- zobrazenie a zoradenie podľa dátového toku a počtu poslucháčov
-- 500 staníc na každej strane (môže byť zmenené v nastaveniach)
-- používa medzi-pamäť (24h pre žánre, 1h pre zoznam staníc)</description>
-        <description lang="sv_SE">Med detta tillägg kan du bläddra bland mer än 50.000 fria internetradiostationer. Nuvarande funktioner:[CR]- Topp 500 stationer[CR]- Bläddra efter genre (och undergenre, om det är påslaget i inställningar)[CR]- Sök station efter namn[CR]- Sök stationer som spelar låt[CR]- Du kan hantera "Mina stationer"-lista[CR]- bitrate och antal lyssnare är synligt och sorterbart[CR]- 500 stationer på varje sida (kan ändras i inställningar)[CR]- använder buffert (24 genre, 1 timmes stationlista)</description>
-        <description lang="ta_IN">இந்த துணை பயன் மூலம் நீங்கள் 50.000 மேற்பட்ட இலவச இணைய வானொலி நிலையங்களை உலாவ முடியும். தற்போதய சிறப்பியல்:[CR]- உச்சி 500 நிலையங்கள்[CR]- வகைபடி உலாவு (துணை வகைப்படி சேர்க்கவும் - அமைப்புகளில் தேர்வு செய்யவும்)[CR]- பெயர்படி நிலையத்தனி தேடுக[CR]- பெயர்படி நிலையத்தனி தேடுக[CR]- "என்னுடைய நிலையங்கள்" பட்டியலை நீங்கள் நிர்வகிக்க முடியும்[CR]- பிட்வீதம் மற்றும் கேட்போர் அளவுகளை பார்க்கவும் மற்றும் வரிசைபடுத்தவும்[CR]- ஒரு பக்கத்தில் 500 நிலையங்கள் (அமைப்புகளில் மாற்ற இயலும்)[CR]- தேக்கத்தை பயன்படுத்தவும் (24 மணிநேர வகை, 1 மணிநேர நிலைய பட்டியல்)</description>
-        <description lang="zh_CN">你可以使用本插件浏览超过50.000免费网络电台。当前功能：[CR]- 500强电台[CR]- 按类别浏览（可设置子类）[CR]- 按名字搜索电台[CR]- 按当前播放曲目搜索电台[CR]- 管理“我的电台”-列表[CR]- 按比特率和收听人数排序[CR]- 每页500个电台（可设置）[CR]- 使用缓存（24小时类别，1小时站点列表）</description>
-        <news>
-            2.5.2+matrix.1 (07/05/2021)
-            - Updated translations from Weblate
-        </news>
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
-        </assets>
-    </extension>
 </addon><addon id="plugin.audio.soundcloud" name="SoundCloud" version="4.1.0" provider-name="jaylinski">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -316,27 +115,6 @@ Added support for Kodi v19 (Matrix)
             <fanart>resources/fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.audio.tunein2021" name="TuneIn Radio" version="3.6.9+matrix" provider-name="newf276">
-	<requires>
-		<import addon="xbmc.python" version="3.0.0" />
-    		<import addon="script.module.kodi-six" />
-	</requires>
-	<extension point="xbmc.python.pluginsource" library="tunein2021.py">
-		<provides>audio</provides>
-	</extension>
-	<extension point="xbmc.addon.metadata">
-		<summary lang="de">tunein.com-Addon für Kodi</summary>
-		<summary lang="en">tunein.com-addon for Kodi</summary>	
-		<platform>all</platform>
-		<source>https://newf276.github.io/</source>
-		<license>The MIT License (MIT)</license>
-		<language>"English and German</language>
- 		<email>nil</email>
-		<assets>
-			<icon>icon.jpg</icon>
-			<fanart>fanart.jpg</fanart>           
-		</assets>
-   </extension>
 </addon><addon id="plugin.program.al8inamatrix" name="[COLORorangered]Al8inA[/COLOR] [COLORchocolate]Matrix Wizard[/COLOR]" version="1.2.8" provider-name="AudioSistem">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -425,7 +203,7 @@ Added support for Kodi v19 (Matrix)
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.cinebox" version="3.1.2" name="CINEBOX [COLOR red]TrainAgain[/COLOR]" provider-name="@TrainAgain2">
+</addon><addon id="plugin.video.cinebox" version="3.1.1" name="CINEBOX [COLOR red]TrainAgain[/COLOR]" provider-name="@TrainAgain2">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
@@ -442,8 +220,8 @@ Added support for Kodi v19 (Matrix)
   <extension point="xbmc.addon.metadata">
     <reuselanguageinvoker>false</reuselanguageinvoker>
     
-    <description lang="ro_RO">CINEBOX TrainAgain - Centrul tău de divertisment. O bibliotecă completă de filme și seriale organizată pentru cea mai bună experiență în Kodi.</description>
-    <disclaimer lang="ro_RO"> #AudacesFortunaJuvat </disclaimer>
+    <description lang="en_US">CINEBOX TrainAgain - Your entertainment center. A complete library of films and series organized for the best Kodi experience.</description>
+    <disclaimer lang="en_US"> #AudacesFortunaJuvat </disclaimer>
     <platform>all</platform>
     <license>GPL-3.0-only</license>
     <source>https://telegra.ph/Hacker-03-20-5</source>
@@ -656,15 +434,13 @@ In addition to what livestreams allowed you to do, you can now,
 		 <fanart>fanart.gif</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.rotv123" name="Rotv123" version="1.3.0" provider-name="1X,AS,Derzis si Geamanu">
+</addon><addon id="plugin.video.rotv123" name="Rotv123" version="1.3.1" provider-name="1X,AS si Geamanu">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
-
-    <extension point="xbmc.service" library="resources/lib/service.py" start="startup" />
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Rotv123 Player</summary>
         <summary lang="ro">Player Rotv123</summary>
@@ -680,9 +456,10 @@ In addition to what livestreams allowed you to do, you can now,
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
-
-
-</assets>
+            <screenshot>resources/screenshot-01.jpg</screenshot>
+            <screenshot>resources/screenshot-02.jpg</screenshot>
+            <screenshot>resources/screenshot-03.jpg</screenshot>
+        </assets>
     </extension>
 </addon><addon id="plugin.video.scrubsv2" version="5.1.43" name="[COLOR orange]Scrubs v2[/COLOR]" provider-name="JewBMX">
     <requires>
@@ -1350,6 +1127,141 @@ In addition to what livestreams allowed you to do, you can now,
 	  <fanart>resources/fanart.jpg</fanart>
     </assets>
   </extension>
+</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.0+beta.3.unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" version="2.27.1" />
+        <import addon="inputstream.adaptive" version="19.0.0" />
+        <import addon="script.module.inputstreamhelper" version="0.2.2" optional="true" />
+        <import addon="script.module.pysocks" optional="true" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="resources/lib/plugin.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.service" library="resources/lib/service.py" />
+    <extension point="xbmc.python.module" library="resources/lib/" />
+    <extension point="xbmc.python.script" library="resources/lib/script.py">
+        <provides>executable</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <assets>
+            <icon>resources/media/icon.png</icon>
+            <fanart>resources/media/fanart.jpg</fanart>
+        </assets>
+        <platform>all</platform>
+        <license>GPL-2.0-only</license>
+        <forum>https://ytaddon.panicked.xyz/forum</forum>
+        <website>https://www.youtube.com</website>
+        <source>https://github.com/anxdpanic/plugin.video.youtube</source>
+        <reuselanguageinvoker>true</reuselanguageinvoker>
+        <summary lang="bg_BG">Добавка за YouTube</summary>
+        <summary lang="bs_BA">Dodatak za YouTube</summary>
+        <summary lang="cs_CZ">Plugin pro YouTube</summary>
+        <summary lang="da_DK">Plugin til YouTube</summary>
+        <summary lang="de_DE">Plugin für YouTube</summary>
+        <summary lang="el_GR">Πρόσθετο YouTube</summary>
+        <summary lang="en_GB">Plugin for YouTube</summary>
+        <summary lang="eo">Aldonaĵo por YouTube</summary>
+        <summary lang="es_ES">Complemento para YouTube</summary>
+        <summary lang="es_MX">Complemento para YouTube</summary>
+        <summary lang="et_EE">YouTube lisamoodul</summary>
+        <summary lang="fi_FI">YouTube-lisäosa</summary>
+        <summary lang="fr_FR">Plugin pour YouTube</summary>
+        <summary lang="ga">Breiseán do YouTube</summary>
+        <summary lang="he_IL">תוסף עבור YouTube</summary>
+        <summary lang="hr_HR">Dodatak za YouTube</summary>
+        <summary lang="hu_HU">YouTube kiegészítő</summary>
+        <summary lang="id_ID">Pengaya untuk YouTube</summary>
+        <summary lang="it_IT">Plugin per YouTube</summary>
+        <summary lang="ko_KR">유튜브 플러그인</summary>
+        <summary lang="nb_NO">Tillegg for YouTube</summary>
+        <summary lang="nl_NL">Plugin voor YouTube</summary>
+        <summary lang="pl_PL">Wtyczka YouTube</summary>
+        <summary lang="pt_BR">Plugin para YouTube</summary>
+        <summary lang="ro_RO">Modul pentru YouTube</summary>
+        <summary lang="ru_RU">Видеодополнение YouTube</summary>
+        <summary lang="sk_SK">Doplnok pre YouTube</summary>
+        <summary lang="sv_SE">Insticksmodul för YouTube</summary>
+        <summary lang="tr_TR">YouTube için eklenti</summary>
+        <summary lang="uk_UA">Додаток для YouTube</summary>
+        <summary lang="vi_VN">Plugin dành cho YouTube</summary>
+        <summary lang="zh_CN">油管插件</summary>
+        <summary lang="zh_TW">YouTube附加元件</summary>
+        <description lang="bg_BG">YouTube е един от най-големите уеб сайтове за споделяне на видео в целия свят.</description>
+        <description lang="bs_BA">YouTube je jedna od najvećih svjetskih web stranica za dijeljenje videozapisa.</description>
+        <description lang="cs_CZ">YouTube je jedna z největších webových stránek světa sdílející video.</description>
+        <description lang="da_DK">YouTube er et af verdens største videodelingswebsteder.</description>
+        <description lang="de_DE">YouTube ist eines der größten Video-Sharing-Websites der Welt.</description>
+        <description lang="el_GR">Το YouTube είναι μία από τις μεγαλύτερες ιστοσελίδες διαμοιρασμού βίντεο στον κόσμο.</description>
+        <description lang="en_GB">YouTube is one of the biggest video-sharing websites of the world.</description>
+        <description lang="es_ES">YouTube es uno de los sitios web para compartir vídeos más grandes del mundo.</description>
+        <description lang="es_MX">YouTube es uno de los más grandes sitios web de intercambio de videos del mundo.</description>
+        <description lang="fi_FI">YouTube on yksi maailman suurimmista videoiden jakosivustoista.</description>
+        <description lang="fr_FR">YouTube est l'un des plus grands sites de partage vidéos du monde.</description>
+        <description lang="he_IL">YouTube הוא אחד מאתרי שיתוף הווידאו הגדולים בעולם.</description>
+        <description lang="hr_HR">YouTube je jedna od najvećih stranica za dijeljenje video sadržaja na svijetu.</description>
+        <description lang="hu_HU">A YouTube világ egyik legnagyobb videómegosztó weboldala.</description>
+        <description lang="id_ID">YouTube adalah salah satu situs web berbagi video terbesar di dunia.</description>
+        <description lang="it_IT">YouTube è uno dei più grandi siti di condivisione video del mondo.</description>
+        <description lang="ko_KR">유튜브는 세상에서 가장 큰 동영상 공유 사이트 중의 하나입니다.</description>
+        <description lang="nb_NO">YouTube er en av verdens største nettsider for videodeling.</description>
+        <description lang="nl_NL">YouTube is een van de grootste videodelenwebsite in de hele wereld.</description>
+        <description lang="pl_PL">YouTube jest jednym z największych na świecie serwisów udostępniania wideo.</description>
+        <description lang="pt_BR">O YouTube é um dos maiores sites de compartilhamento de vídeos do mundo.</description>
+        <description lang="ro_RO">YouTube este unul dintre cele mai mari saituri de distribuire de videoclipuri din lume.</description>
+        <description lang="ru_RU">YouTube - популярнейший видеохостинговый сайт, предоставляющий пользователям услуги хранения, доставки и показа видео.</description>
+        <description lang="sk_SK">YouTube je jednou z najväčších stránok na zdieľanie videa na svete.</description>
+        <description lang="sv_SE">YouTube är en av världens största webbplatser för videodelning.</description>
+        <description lang="tr_TR">YouTube, dünya üzerindeki en büyük video paylaşma platformlarından birisidir.</description>
+        <description lang="uk_UA">YouTube є одним з найбільших відеохостингів в світі.</description>
+        <description lang="vi_VN">YouTube là một trong những trang web chia sẻ video lớn nhất trên thế giới.</description>
+        <description lang="zh_CN">油管是世界上最大的视频分享网站之一。</description>
+        <description lang="zh_TW">Youtube 是全世界最大的影片分享網站。</description>
+        <disclaimer lang="bs_BA">Ovaj dodatak nije odobren od strane Googlea</disclaimer>
+        <disclaimer lang="cs_CZ">Tento plugin není schválen společností Google</disclaimer>
+        <disclaimer lang="da_DK">Dette plugin er ikke godkendt af Google</disclaimer>
+        <disclaimer lang="de_DE">Dieses Plugin ist nicht von Google befürwortet</disclaimer>
+        <disclaimer lang="el_GR">Η παρούσα μικροεφαρμογή δεν έχει υϊοθετηθεί από την Google</disclaimer>
+        <disclaimer lang="en_GB">This plugin is not endorsed by Google</disclaimer>
+        <disclaimer lang="eo">Tiu aldonaĵo ne estas aprobita de Google</disclaimer>
+        <disclaimer lang="es_ES">Este add-on no está respaldado por Google</disclaimer>
+        <disclaimer lang="es_MX">Este complemento no está respaldado por Google</disclaimer>
+        <disclaimer lang="fi_FI">Google ei tue tätä lisäosaa</disclaimer>
+        <disclaimer lang="fr_FR">Ce module n'est pas validé par Google</disclaimer>
+        <disclaimer lang="hr_HR">Ovaj dodatak nije podržan od strane Googlea</disclaimer>
+        <disclaimer lang="id_ID">Plugin ini tidak didukung oleh Google</disclaimer>
+        <disclaimer lang="it_IT">Questo plugin non è approvato da Google</disclaimer>
+        <disclaimer lang="ko_KR">이 플러그인은 Google의 허가를 받지 않았습니다</disclaimer>
+        <disclaimer lang="nl_NL">Deze plug-in wordt niet door Google ondersteund</disclaimer>
+        <disclaimer lang="pl_PL">Ta wtyczka nie jest zatwierdzona przez Google</disclaimer>
+        <disclaimer lang="pt_BR">Este plugin não é recomendado pelo Google</disclaimer>
+        <disclaimer lang="ro_RO">Acest modul nu este susținut de Google</disclaimer>
+        <disclaimer lang="ru_RU">Плагин не поддерживается Google</disclaimer>
+        <disclaimer lang="sk_SK">Tento doplnok nie je schválený spoločnosťou Google</disclaimer>
+        <disclaimer lang="sv_SE">Denna insticksmodul är inte godkänd av Google</disclaimer>
+        <disclaimer lang="tr_TR">Bu eklenti Google tarafından üretilmemiştir</disclaimer>
+        <disclaimer lang="uk_UA">Цей додаток не має відношення до компанії Google</disclaimer>
+        <disclaimer lang="vi_VN">Plugin này không được xác nhận bởi Google</disclaimer>
+        <disclaimer lang="zh_CN">此插件未被谷歌认可</disclaimer>
+        <disclaimer lang="zh_TW">此附加元件未由Google支持</disclaimer>
+    <news>## v7.4.0+beta.3
+### Fixed
+- Avoid creating PlayerMonitorThread as a subclass of threading.Thread
+- Additional workarounds for JSON file operations failing due to addon service start delays
+- Avoid unnecessary window navigation when opening More... context menu dialog
+- Fix typo in evaluating whether plugin container is loaded or active
+- Fix possible exception when using default fallback for failed search
+
+### Changed
+- Update and trigger Setup Wizard to set default value for My Subscription sources
+- Pass additional headers to all player request and manifest urls by default
+- Workaround Kodi not executing Play action on listitems in non-video containers
+- Improve context menu runtime checks when used with widget containers
+
+### New
+- Add context menu items to open Settings/Setup Wizard from Setup Wizard/Settings main menu entries
+- Log summary of stream proxy request and response details
+- Log stream proxy request range</news></extension>
 </addon><addon id="repository.Magnetic" name="Magnetic Repo" version="1.1.0b" provider-name="1-cool-guy">
         <requires>
             <import addon="xbmc.addon" version="12.0.0" />

@@ -8,9 +8,7 @@ from .utils import get_anime_search_patterns
 from ..debug_logger import logger
 
 def scrape(imdb_id, media_type, season, episode, item_data=None, cancel_event=None):
-    """
-    Scraper NYAA para Cinebox.
-    """
+    """NYAA Scraper for Cinemabox."""
     if not item_data:
         return []
 
@@ -80,12 +78,12 @@ def scrape(imdb_id, media_type, season, episode, item_data=None, cancel_event=No
                 seen_hashes.add(info_hash)
                 
         except Exception as e:
-            xbmc.log(f"[NYAA] Erro ao buscar {query}: {e}", xbmc.LOGDEBUG)
+            xbmc.log(f"[NYAA] Error fetching {query}: {e}", xbmc.LOGDEBUG)
             logger.scraper_error("NYAA", f"Search Error: {e}", url)
             
         if streams:
             xbmc.log(f"[NYAA] Sucesso: {len(streams)} resultados encontrados para {query}.", xbmc.LOGINFO)
-            # Se já encontrou resultados para este padrão, não precisa tentar a próxima query
+            # If you already found results for this pattern, you don't need to try the next query
             break
             
     if streams:

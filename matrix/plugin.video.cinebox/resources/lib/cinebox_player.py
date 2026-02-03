@@ -1,46 +1,38 @@
 # resources/lib/cinebox_player.py
 import xbmc
 import xbmcplugin
-import xbmcgui # Importe se for usar diálogos de erro
+import xbmcgui # Import if using error dialogs
 
 class CineboxPlayer(xbmc.Player):
-    """
-    Player customizado que monitora o início da reprodução e dispara um callback 
-    para fechar a janela do Resolvedor.
-    """
+    """Custom player that monitors the start of playback and triggers a callback 
+    to close the Resolver window."""
     def __init__(self, on_started_callback=None):
         super().__init__()
         self.on_started_callback = on_started_callback
         self.playback_started = False
 
     def run(self, data, handle):
-        """
-        Inicia a reprodução chamando setResolvedUrl.
-        'data' é o xbmcgui.ListItem preenchido.
-        """
-        # Este é o ponto onde o Kodi é instruído a iniciar o player.
+        """Starts playback by calling setResolvedUrl.
+        'data' is the populated xbmcgui.ListItem."""
+        # This is the point where Kodi is instructed to launch the player.
         xbmcplugin.setResolvedUrl(handle=handle, succeeded=True, listitem=data)
-        xbmc.log("[CineboxPlayer] setResolvedUrl chamado.", xbmc.LOGINFO)
+        xbmc.log("[CineboxPlayer] setResolvedUrl called.", xbmc.LOGINFO)
 
     def onPlayBackStarted(self):
-        """
-        Chamado automaticamente pelo Kodi APÓS a reprodução começar e o buffer inicial terminar.
-        """
+        """Automatically called by Kodi AFTER playback begins and initial buffering has finished."""
         self.playback_started = True
-        xbmc.log("[CineboxPlayer] Evento onPlayBackStarted recebido.", xbmc.LOGINFO)
+        xbmc.log("[CineboxPlayer] onPlayBackStarted event received.", xbmc.LOGINFO)
         
-        # Chama o callback da janela do resolvedor para fechar
+        # Calls the resolver window callback to close
         if self.on_started_callback:
             self.on_started_callback()
             
     def onPlayBackStopped(self):
-        """
-        Chamado automaticamente pelo Kodi quando o player é parado.
-        Usado para garantir que a janela feche mesmo que haja um erro.
-        """
-        # Se a reprodução parou, mas nunca começou, significa que houve um erro 
-        # (Ex: link quebrado, elemento não encontrado, etc.).
+        """Automatically called by Kodi when the player is stopped.
+        Used to ensure that the window closes even if there is an error."""
+        # If playback stopped but never started, there was an error
+        # (Ex: broken link, element not found, etc.).
         if not self.playback_started and self.on_started_callback:
-            xbmc.log("[CineboxPlayer] Playback Stopped antes de iniciar. Fechando Resolvedor.", xbmc.LOGWARNING)
-            # Aciona o callback para fechar a janela em caso de erro.
+            xbmc.log("[CineboxPlayer] Playback stopped before starting. Closing Resolver.", xbmc.LOGWARNING)
+            # Triggers the callback to close the window in case of an error.
             self.on_started_callback()

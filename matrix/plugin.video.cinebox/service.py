@@ -10,10 +10,10 @@ ADDON_PATH = ADDON.getAddonInfo('path')
 sys.path.append(os.path.join(ADDON_PATH, 'resources', 'lib'))
 
 def run_trakt_service(monitor):
-    """Executes automatic Trakt synchronization in a thread"""
+    """Run automatic Trakt synchronization in a thread"""
     def _sync():
         try:
-            # Wait a little to avoid overloading startup
+            # Wait a while so as not to overload the start
             if monitor.waitForAbort(15): return
             
             from resources.lib.trakt_sync import full_bidirectional_sync, get_trakt_settings
@@ -22,7 +22,7 @@ def run_trakt_service(monitor):
             if not settings.get('access_token'):
                 return
             
-            xbmc.log("[Cinebox Trakt Service] Initiating synchronization on startup...", xbmc.LOGINFO)
+            xbmc.log("[Cinebox Trakt Service] Starting boot synchronization...", xbmc.LOGINFO)
             full_bidirectional_sync()
                 
         except Exception as e:
@@ -35,7 +35,7 @@ class CineboxService(xbmc.Monitor):
         xbmc.Monitor.__init__(self)
         xbmc.log("[Cinebox Service] Initializing...", xbmc.LOGINFO)
         
-        # Starts the AutoUpdater (now based on the IMDB system)
+        # Starts AutoUpdater (now based on the IMDB system)
         try:
             from resources.lib.auto_updater import AutoUpdater
             self.updater = AutoUpdater(self)
@@ -43,12 +43,12 @@ class CineboxService(xbmc.Monitor):
         except Exception as e:
             xbmc.log(f"[Cinebox Service] Error starting AutoUpdater: {e}", xbmc.LOGERROR)
         
-        # Starts Trakt Sync (in a separate thread)
+        # Start Trakt Sync (in separate thread)
         if ADDON.getSettingBool('trakt_sync_on_startup'):
             run_trakt_service(self)
 
     def onSettingsChanged(self):
-        # The AutoUpdater now checks settings inside its own loop
+        # AutoUpdater now checks settings within its own loop
         # but we could force a state update here if necessary
         pass
 

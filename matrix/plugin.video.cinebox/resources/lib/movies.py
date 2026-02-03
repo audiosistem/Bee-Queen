@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Em: resources/lib/movies.py - VERSÃO OTIMIZADA E FUNCIONAL
+# In: resources/lib/movies.py - OPTIMIZED AND FUNCTIONAL VERSION
 
 import json
 import xbmc
@@ -13,44 +13,44 @@ from urllib.parse import urlencode
 from .utils import create_video_item_with_library, with_view_mode
 
 
-# --- Configurações gerais ---
+# --- General settings ---
 ADDON = xbmcaddon.Addon()
 HANDLE = int(sys.argv[1])
 BASE_URL = sys.argv[0]
 ADDON_PATH = ADDON.getAddonInfo('path')
 ICON_PATH = os.path.join(ADDON_PATH, 'resources', 'medias', 'icons')
 
-# --- Cache e Detecção de Dispositivo ---
+# --- Cache and Device Detection ---
 _LISTITEM_CACHE = {}
 _MAX_CACHE_SIZE = 30
 
 def is_slow_device():
-    """Detecta dispositivos de baixo desempenho (MXQ, TCL P8M, etc)"""
+    """Detects low performance devices (MXQ, TCL P8M, etc)"""
     model = xbmc.getInfoLabel('System.Model').lower()
     slow_models = ['mxq', 'p8m', 'x96', 'h96', 'tanix', 'tx3', 't95', 'beelink', 'mecool']
     return any(dev in model for dev in slow_models)
 
 def get_items_per_page():
-    """Retorna número de itens por página baseado no dispositivo"""
+    """Returns number of items per page based on device"""
     base_pages = int(ADDON.getSetting("pages"))
     if is_slow_device():
-        return min(base_pages, 20)  # Máximo 20 em dispositivos fracos
+        return min(base_pages, 20)  # Maximum 20 on weak devices
     return base_pages
 
 def get_url(**kwargs):
-    """Cria uma URL de plugin para uma ação."""
+    """Creates a plugin URL for an action."""
     return f"{BASE_URL}?{urlencode(kwargs)}"
 
 def _create_movie_item_tuple(movie):
-    """Cria a tupla padrão para todos os dispositivos usando a função completa"""
-    # li já vem com os IDs corretos no setInfo se você atualizou o utils.py
+    """Creates the default tuple for all devices using the full function"""
+    # li already comes with the correct IDs in setInfo if you updated utils.py
     li = create_video_item_with_library(movie, media_type='movie')
     
-    # Lógica do Dialog de Detalhes (Desativado por padrão)
+    # Details Dialog Logic (Disabled by default)
     if False: # ADDON.getSettingBool("movie.enable_details"):
         item_data = {
             "title": movie.get('title', ''),
-            "original_title": movie.get('original_title', ''), # ADICIONADO
+            "original_title": movie.get('original_title', ''), # ADDED
             "clearlogo": movie.get('clearlogo', ''),
             "poster": movie.get('poster', ''),
             "synopsis": movie.get('synopsis', ''),
@@ -61,16 +61,16 @@ def _create_movie_item_tuple(movie):
             "rating": float(movie.get('rating', 0)),
             "genre": ', '.join(movie.get('genres', [])),
             "tmdb_id": movie.get('tmdb_id'),
-            "imdb_id": movie.get('imdb_id', ''), # ESSENCIAL
+            "imdb_id": movie.get('imdb_id', ''), # ESSENTIAL
             "media_type": 'movie',
             "providers": json.dumps(movie.get('providers', [])) if movie.get('providers') else '[]',
             "streams": movie.get('streams', []),
             "popularity_updated": movie.get('popularity_updated', '') 
         }
-        # Separadores compactos para economizar memória na URL
+        # Compact separators to save memory in the URL
         url = get_url(action='show_details', data=json.dumps(item_data, separators=(',', ':')))
     else:
-        # Play direto
+        # Direct play
         url = get_url(
             action='find_sources',
             tmdb_id=str(movie.get('tmdb_id', '')),
@@ -89,7 +89,7 @@ def _create_movie_item_tuple(movie):
 
 
 def _get_cached_listitem(movie):
-    """Retorna um ListItem com todas as propriedades necessárias, garantindo strings."""
+    """Returns a ListItem with all necessary properties, guaranteeing strings."""
     cache_key = f"{movie.get('tmdb_id', '')}_{movie.get('year', '')}"
     
     if cache_key in _LISTITEM_CACHE:
@@ -99,7 +99,7 @@ def _get_cached_listitem(movie):
     if fanart_addon:
         li.setArt({'fanart': fanart_addon})
 
-    # Artes
+    # Arts
     li.setArt({
         'thumb': movie.get('poster', '') or '',
         'fanart': movie.get('fanart', movie.get('backdrop', '')) or '',
@@ -108,7 +108,7 @@ def _get_cached_listitem(movie):
         'backdrop': movie.get('backdrop', '') or ''
     })
     
-    # Propriedades internas — todas convertidas para str
+    # Internal properties — all converted to str
     li.setProperty('tmdb_id', str(movie.get('tmdb_id', '')))
     li.setProperty('imdb_id', str(movie.get('imdb_id', '')))
     li.setProperty('media_type', str(movie.get('media_type', 'movie')))
@@ -126,7 +126,7 @@ def _get_cached_listitem(movie):
     li.setProperty('providers', ",".join(map(str, movie.get('providers', []))))
     li.setProperty('popularity_updated', str(movie.get('popularity_updated', '')))
 
-    # Salva no cache
+    # Saves to cache
     if len(_LISTITEM_CACHE) < _MAX_CACHE_SIZE:
         _LISTITEM_CACHE[cache_key] = li
     
@@ -136,8 +136,8 @@ def _get_cached_listitem(movie):
 
 def show_movies_menu(menu_structure):
     from .icons import get_icon_url
-    """Cria e exibe o menu da seção 'Filmes'."""
-    xbmcplugin.setPluginCategory(HANDLE, 'Filme')
+    """Creates and displays the 'Movies' section menu."""
+    xbmcplugin.setPluginCategory(HANDLE, 'Movies')
     fanart_addon = ADDON.getAddonInfo('fanart')
     for item in menu_structure:
         li = xbmcgui.ListItem(label=item['title'])
@@ -145,22 +145,22 @@ def show_movies_menu(menu_structure):
             li.setArt({'fanart': fanart_addon})
         icon = item.get('icon')
         if icon:
-            # NOVO: Suporta IDs de ícones do IMDb
+            # NEW: Supports IMDb icon IDs
             if isinstance(icon, str) and len(icon) < 15 and not icon.endswith('.png'):
-                # É um ID de ícone, converte para URL
+                # It's an icon ID, converts to URL
                 icon_url = get_icon_url(icon)
                 li.setArt({'thumb': icon_url, 'icon': icon_url})
             else:
-                # É um caminho local
+                # It's a local path
                 li.setArt({'thumb': icon})
         url = get_url(action=item['action'])
         xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
     xbmcplugin.endOfDirectory(HANDLE)
 
 def list_streaming_platforms():
-    """Lista as plataformas de streaming para filmes."""
+    """Lists streaming platforms for movies."""
     from .constants import STREAMING_PLATFORMS
-    xbmcplugin.setPluginCategory(HANDLE, 'Filme pentru Streaming')
+    xbmcplugin.setPluginCategory(HANDLE, 'Movies by Streaming')
     fanart_addon = ADDON.getAddonInfo('fanart')
     
     for platform in STREAMING_PLATFORMS['movie']:
@@ -168,7 +168,7 @@ def list_streaming_platforms():
         if fanart_addon:
             li.setArt({'fanart': fanart_addon})
         
-        # Usar logo do TMDB (JustWatch) como no IMDB
+        # Use TMDB (JustWatch) logo as on IMDB
         logo = platform.get('logo')
         if logo:
             if logo.endswith('.jpg') or logo.endswith('.png'):
@@ -183,10 +183,10 @@ def list_streaming_platforms():
 
 @with_view_mode('movies')
 def list_movies_by_popularity(page=1):
-    """Lista filmes por popularidade."""
+    """List movies by popularity."""
     from .tmdb_api import fetch_popular_movies
     page = int(page)
-    xbmcplugin.setPluginCategory(HANDLE, 'Filme Populare')
+    xbmcplugin.setPluginCategory(HANDLE, 'Popular Movies')
     xbmcplugin.setContent(HANDLE, 'movies')
     
     movies = fetch_popular_movies(page=page)
@@ -201,7 +201,7 @@ def list_movies_by_popularity(page=1):
 
 @with_view_mode('movies')
 def list_movies_top_rated(page=1):
-    """Lista filmes melhor avaliados."""
+    """List top rated films."""
     from .tmdb_api import fetch_top_rated_movies
     page = int(page)
     xbmcplugin.setPluginCategory(HANDLE, 'Top Rated')
@@ -219,10 +219,10 @@ def list_movies_top_rated(page=1):
 
 @with_view_mode('movies')
 def list_movies_now_playing(page=1):
-    """Lista filmes em exibição nos cinemas."""
+    """Lists films showing in cinemas."""
     from .tmdb_api import fetch_now_playing_movies
     page = int(page)
-    xbmcplugin.setPluginCategory(HANDLE, 'Acum in Cinema')
+    xbmcplugin.setPluginCategory(HANDLE, 'In Cinemas')
     xbmcplugin.setContent(HANDLE, 'movies')
     
     movies = fetch_now_playing_movies(page=page)
@@ -236,34 +236,34 @@ def list_movies_now_playing(page=1):
     xbmcplugin.endOfDirectory(HANDLE)
 
 def add_next_page_item(items_on_current_page, current_page, **kwargs):
-    """Adiciona o item 'Próxima Página' a uma lista se houver mais itens."""
+    """Adds 'Next Page' item to a list if there are more items."""
     num_items = len(items_on_current_page)
     items_per_page = int(ADDON.getSetting("pages") or 20)
     
-    xbmc.log(f"[Cinebox] Paginação: {num_items} itens na página {current_page}, action={kwargs.get('action', 'unknown')}", xbmc.LOGINFO)
+    xbmc.log(f"[Cinebox] Pagination: {num_items} items on the page {current_page}, action={kwargs.get('action', 'unknown')}", xbmc.LOGINFO)
     
-    # Se o número de itens for igual ou maior que o esperado por página, mostra próxima
+    # If the number of items is equal to or greater than expected per page, shows next
     if num_items >= items_per_page:
         next_icon = os.path.join(ICON_PATH, 'nextpage.png')
-        li_next = xbmcgui.ListItem(label="Pagina Urmatoare")
+        li_next = xbmcgui.ListItem(label="Next Page")
         li_next.setArt({'thumb': next_icon, 'icon': next_icon})
-        li_next.setInfo('video', {'plot': f'Ir para a página {current_page + 1}'})
+        li_next.setInfo('video', {'plot': f'Go to page {current_page + 1}'})
         
         next_page_args = kwargs.copy()
         next_page_args['page'] = current_page + 1
         
         next_page_url = get_url(**next_page_args)
-        xbmc.log(f"[Cinebox] Adicionando botão Próxima Página: {next_page_url}", xbmc.LOGINFO)
+        xbmc.log(f"[Cinebox] Adding Next Page button: {next_page_url}", xbmc.LOGINFO)
         xbmcplugin.addDirectoryItem(HANDLE, next_page_url, li_next, isFolder=True)
     else:
-        xbmc.log(f"[Cinebox] Não há próxima página (apenas {num_items} itens)", xbmc.LOGINFO)
+        xbmc.log(f"[Cinebox] There is no next page (only {num_items} items)", xbmc.LOGINFO)
 
 @with_view_mode('genres', is_menu=True)
 def list_genres():
     from .tmdb_api import get_genres_list
     from .icons import get_genre_icon, get_icon_url
-    """Cria e exibe a lista de Gêneros de Filmes usando TMDB."""
-    xbmcplugin.setPluginCategory(HANDLE, 'Gêneros')
+    """Creates and displays the list of Movie Genres using TMDB."""
+    xbmcplugin.setPluginCategory(HANDLE, 'Genres')
     fanart_addon = ADDON.getAddonInfo('fanart')
     xbmcplugin.setContent(HANDLE, 'genres')
     
@@ -273,7 +273,7 @@ def list_genres():
         li = xbmcgui.ListItem(label=genre['name'])
         if fanart_addon:
             li.setArt({'fanart': fanart_addon})
-        # NOVO: Adicionar ícone do gênero
+        # NEW: Add genre icon
         icon_id = get_genre_icon(genre['name'])
         icon_url = get_icon_url(icon_id)
         if icon_url:
@@ -285,15 +285,15 @@ def list_genres():
 @with_view_mode('years', is_menu=True)
 def list_years():
     from .icons import get_year_icon, get_icon_url
-    """Cria e exibe a lista de Anos (TMDB)."""
-    xbmcplugin.setPluginCategory(HANDLE, 'Ani')
+    """Creates and displays the Years list (TMDB)."""
+    xbmcplugin.setPluginCategory(HANDLE, 'Years')
     fanart_addon = ADDON.getAddonInfo('fanart')
     xbmcplugin.setContent(HANDLE, 'years')
     
     import datetime
     current_year = datetime.datetime.now().year
     
-    # NOVO: Obter ícone de ano
+    # NEW: Get year icon
     year_icon_id = get_year_icon()
     year_icon_url = get_icon_url(year_icon_id)
     
@@ -301,7 +301,7 @@ def list_years():
         li = xbmcgui.ListItem(label=str(year))
         if fanart_addon:
             li.setArt({'fanart': fanart_addon})
-        # NOVO: Adicionar ícone de ano
+        # NEW: Add year icon
         if year_icon_url:
             li.setArt({'icon': year_icon_url})
         url = get_url(action='list_movies_by_year', year=year)
@@ -315,7 +315,7 @@ def list_collections(page=1):
     
     page = int(page)
     
-    # Se for a página 1, limpa o cache de duplicatas no banco de dados
+    # If it is page 1, clear the cache of duplicates in the database
     if page == 1:
         try:
             conn = db._get_conn()
@@ -325,10 +325,10 @@ def list_collections(page=1):
         except:
             pass
 
-    xbmcplugin.setPluginCategory(HANDLE, "Colectii")
+    xbmcplugin.setPluginCategory(HANDLE, "Collections")
     xbmcplugin.setContent(HANDLE, 'movies')
     
-    # Busca coleções populares diretamente do TMDB
+    # Search popular collections directly from TMDB
     collections_data = fetch_popular_collections(page)
     
     if not collections_data:
@@ -356,17 +356,17 @@ def list_collections(page=1):
         items.append((url, li, True))
 
     xbmcplugin.addDirectoryItems(HANDLE, items, len(items))
-    # Sempre mostra próxima página para coleções do TMDB
-    # CORREÇÃO: items_per_page deve ser 1 para que o botão sempre apareça se houver dados
+    # Always shows next page for TMDB collections
+    # FIX: items_per_page must be 1 so that the button always appears if there is data
     add_next_page_item(collections_data, page, action='list_collections', items_per_page=1)
     xbmcplugin.endOfDirectory(HANDLE)
 
-# --- LISTAGENS DE FILMES ---
+# --- MOVIE LISTINGS ---
 
 @with_view_mode('movies')
 def list_movies_by_genre(genre_id=None, genre_name=None, page=1):
     from .tmdb_api import fetch_discover
-    xbmcplugin.setPluginCategory(HANDLE, genre_name or "Gen")
+    xbmcplugin.setPluginCategory(HANDLE, genre_name or "Gender")
     xbmcplugin.setContent(HANDLE, 'movies')
     
     page = int(page)
@@ -405,18 +405,18 @@ def list_movies_by_collection(collection_name, page=1):
     xbmcplugin.setPluginCategory(HANDLE, collection_name)
     xbmcplugin.setContent(HANDLE, 'movies')
     
-    # 1. Busca filmes locais
+    # 1. Search for local films
     movies = db.get_movies_by_collection(collection_name)
     
-    # 2. Busca a coleção completa no TMDB para garantir que nada falte
-    # Como as coleções agora vêm do TMDB, precisamos garantir que todos os filmes daquela coleção existam
-    xbmc.log(f"[Cinebox] Sincronizando coleção '{collection_name}' com TMDB...", xbmc.LOGINFO)
+    # 2. Search the complete collection on TMDB to ensure nothing is missing
+    # Since collections now come from TMDB, we need to ensure that all films in that collection exist
+    xbmc.log(f"[Cinebox] Synchronizing collection'{collection_name}' com TMDB...", xbmc.LOGINFO)
     tmdb_movies = get_collection_movies(collection_name)
     
     if tmdb_movies:
-        # Adiciona os filmes novos ao banco para futuras consultas (scrapers, etc)
+        # Add new films to the bank for future reference (scrapers, etc.)
         db.add_movies_bulk(tmdb_movies)
-        # Usa a lista do TMDB que é sempre a mais completa e atualizada
+        # Use the TMDB list, which is always the most complete and updated
         movies = tmdb_movies
     
     items_to_add = []
@@ -425,14 +425,14 @@ def list_movies_by_collection(collection_name, page=1):
 
     xbmcplugin.addDirectoryItems(HANDLE, items_to_add, len(items_to_add))
     
-    # Coleções geralmente não têm muitas páginas, mas mantemos por segurança
+    # Collections usually don't have many pages, but we keep them to be safe
     add_next_page_item(movies, page, action='list_movies_by_collection', collection=collection_name)
     xbmcplugin.endOfDirectory(HANDLE)
 
 @with_view_mode('movies')
 def list_movies_by_rating(page=1):
     from .tmdb_api import fetch_discover
-    xbmcplugin.setPluginCategory(HANDLE, "Dupa Rating")
+    xbmcplugin.setPluginCategory(HANDLE, "Best Reviews")
     xbmcplugin.setContent(HANDLE, 'movies')
     
     page = int(page)
@@ -449,7 +449,7 @@ def list_movies_by_rating(page=1):
 @with_view_mode('movies')
 def list_movies_by_popularity(page=1):
     from .tmdb_api import fetch_discover
-    xbmcplugin.setPluginCategory(HANDLE, "Cele mai Populare")
+    xbmcplugin.setPluginCategory(HANDLE, "Most Popular")
     xbmcplugin.setContent(HANDLE, 'movies')
     
     page = int(page)
@@ -466,10 +466,10 @@ def list_movies_by_popularity(page=1):
 @with_view_mode('movies')
 def list_4k_movies(page=1):
     from .db import db
-    xbmcplugin.setPluginCategory(HANDLE, "Filmes in 4K")
+    xbmcplugin.setPluginCategory(HANDLE, "Movies in 4K")
     fanart_addon = ADDON.getAddonInfo('fanart')
     xbmcplugin.setContent(HANDLE, 'movies')
-    items_per_page = get_items_per_page()  # ✅ CORREÇÃO
+    items_per_page = get_items_per_page()  # ✅ FIX
     movies = db.get_4k_movies(page, items_per_page)
     
     items_to_add = []
@@ -484,8 +484,8 @@ def list_4k_movies(page=1):
 @with_view_mode('movies')
 def list_upcoming_movies(page=1):
     from .tmdb_api import fetch_upcoming_movies
-    """Lista filmes que serão lançados em breve."""
-    xbmcplugin.setPluginCategory(HANDLE, "Filme nelansate")
+    """Lists films that will be released soon."""
+    xbmcplugin.setPluginCategory(HANDLE, "Upcoming Movies")
     xbmcplugin.setContent(HANDLE, 'movies')
     
     page = int(page)
@@ -502,8 +502,8 @@ def list_upcoming_movies(page=1):
 @with_view_mode('movies')
 def list_movies_by_revenue(page=1):
     from .tmdb_api import fetch_discover
-    """Lista filmes ordenados pelas maiores bilheterias (TMDB)."""
-    xbmcplugin.setPluginCategory(HANDLE, "Dupa Incasari")
+    """Lists films ordered by highest box office (TMDB)."""
+    xbmcplugin.setPluginCategory(HANDLE, "Biggest Box Office")
     xbmcplugin.setContent(HANDLE, 'movies')
     
     page = int(page)
@@ -541,11 +541,11 @@ def list_movies_by_provider(provider, page=1):
 def list_trending_movies(page=1):
     from .db import db
     from .tmdb_api import fetch_trending_movies
-    xbmcplugin.setPluginCategory(HANDLE, "Tendinte")
+    xbmcplugin.setPluginCategory(HANDLE, "Tendencies")
     fanart_addon = ADDON.getAddonInfo('fanart')
     xbmcplugin.setContent(HANDLE, 'movies')
     
-    # Busca os dados da API
+    # Fetches data from the API
     movies = fetch_trending_movies(page)
 
     items_to_add = []
@@ -557,7 +557,7 @@ def list_trending_movies(page=1):
     xbmcplugin.endOfDirectory(HANDLE)
 @with_view_mode('movies')
 def list_movies_by_streaming(provider_id, provider_name, region='BR', page=1):
-    """Lista filmes de uma plataforma de streaming específica."""
+    """Lists movies from a specific streaming platform."""
     from .tmdb_api import fetch_discover
     page = int(page)
     xbmcplugin.setPluginCategory(HANDLE, provider_name)

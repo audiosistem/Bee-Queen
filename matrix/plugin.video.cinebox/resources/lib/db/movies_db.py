@@ -6,7 +6,7 @@ import sqlite3
 class MoviesDatabase(BaseDatabase):
     
     def add_movies_bulk(self, movies_list):
-        """Bulk insert otimizado com transaction única"""
+        """Bulk insert optimized with single transaction"""
         if not movies_list:
             return
         
@@ -17,7 +17,7 @@ class MoviesDatabase(BaseDatabase):
         cursor = conn.cursor()
         
         try:
-            # Prepara dados
+            # Prepare data
             data = []
             for movie in movies_list:
                 title_norm = self._normalize_text(movie.get('title', ''))
@@ -39,7 +39,7 @@ class MoviesDatabase(BaseDatabase):
                     movie.get('popularity_updated') or now
                 ))
             
-            # Insert em lote
+            # Batch insert
             cursor.executemany('''
                 INSERT OR REPLACE INTO movies (
                     tmdb_id, title, original_title, title_normalized, year, imdb_id, rating,
@@ -51,13 +51,13 @@ class MoviesDatabase(BaseDatabase):
             
             conn.commit()
             
-            # Limpa caches relevantes
+            # Clear relevant caches
             self._cache_delete_prefix("movies_")
         finally:
             self._release_conn(conn)
     
     def get_movie_by_id(self, tmdb_id):
-        """Busca filme específico (com cache)"""
+        """Search specific movie (with cache)"""
         cache_key = f"movie:{tmdb_id}"
         cached = self._cache_get(cache_key)
         if cached:
@@ -72,7 +72,7 @@ class MoviesDatabase(BaseDatabase):
         return movie
     
     def get_all_movie_ids_set(self):
-        """Retorna SET de IDs (ultra-rápido, só a coluna ID)"""
+        """Returns SET of IDs (ultra-fast, just the ID column)"""
         cache_key = "all_movie_ids"
         cached = self._cache_get(cache_key)
         if cached:
@@ -89,7 +89,7 @@ class MoviesDatabase(BaseDatabase):
             self._release_conn(conn)
     
     def get_movies_by_genre(self, genre, page=1, items_per_page=35):
-        """Busca por gênero (mantém LIKE por enquanto, mas com cache agressivo)"""
+        """Search by genre (keeps LIKE for now, but with aggressive caching)"""
         normalized_genre = self._normalize_text(genre)
         cache_key = f"movies_genre:{normalized_genre}:{page}"
         
@@ -110,7 +110,7 @@ class MoviesDatabase(BaseDatabase):
         return movies
     
     def get_movies_by_popularity(self, page=1, page_size=35):
-        """Top filmes por popularidade (cache longo)"""
+        """Top movies by popularity (long cache)"""
         cache_key = f"movies_pop:{page}"
         cached = self._cache_get(cache_key)
         if cached:
@@ -124,7 +124,7 @@ class MoviesDatabase(BaseDatabase):
         return movies
     
     def update_popularity_bulk(self, updates):
-        """Atualização em massa de popularidade"""
+        """Mass popularity update"""
         if not updates:
             return
         
@@ -142,7 +142,7 @@ class MoviesDatabase(BaseDatabase):
             self._release_conn(conn)
     
     def get_movies_by_revenue(self, page=1, page_size=35):
-        """Top por receita (cache longo)"""
+        """Top by revenue (cache longo)"""
         cache_key = f"movies_revenue:{page}"
         cached = self._cache_get(cache_key)
         if cached:
@@ -156,7 +156,7 @@ class MoviesDatabase(BaseDatabase):
         return movies
     
     def get_4k_movies(self, page=1, page_size=35):
-        """Filmes 4K (cache médio)"""
+        """4K movies (medium cache)"""
         cache_key = f"movies_4k:{page}"
         cached = self._cache_get(cache_key)
         if cached:
@@ -170,16 +170,16 @@ class MoviesDatabase(BaseDatabase):
         return movies
     
     def get_all_collections(self, page=1, page_size=35):
-        """Lista de coleções (query otimizada)"""
+        """Collection list (optimized query)"""
         cache_key = f"collections:{page}"
         cached = self._cache_get(cache_key)
         if cached:
             return cached
         
         offset = (page - 1) * page_size
-        # Otimização: Buscamos coleções que tenham mais de 1 filme no banco OU 
-        # simplesmente todas as coleções. O problema de "só um filme" pode ser porque
-        # Busca coleções no banco de dados local.
+        # Optimization: We look for collections that have more than 1 film in the bank OR 
+        # simply all the collections. The problem of "just a movie" may be because
+        # Search collections in the local database.
         sql = """
             SELECT 
                 collection,
@@ -206,7 +206,7 @@ class MoviesDatabase(BaseDatabase):
             self._release_conn(conn)
     
     def get_movies_by_collection(self, collection_name):
-        """Filmes de uma coleção (cache longo)"""
+        """Movies from a collection (long cache)"""
         cache_key = f"collection:{collection_name}"
         cached = self._cache_get(cache_key)
         if cached:
@@ -218,7 +218,7 @@ class MoviesDatabase(BaseDatabase):
         return movies
     
     def get_cached_collection_meta(self, name):
-        """Metadados de coleção (usado para posters/backdrops da API)"""
+        """Collection metadata (used for API posters/backdrops)"""
         cache_key = f"collection_meta:{name}"
         cached = self._cache_get(cache_key)
         if cached:
@@ -233,7 +233,7 @@ class MoviesDatabase(BaseDatabase):
         return result
     
     def save_collection_meta(self, name, poster, backdrop):
-        """Salva metadados de coleção"""
+        """Saves collection metadata"""
         conn = self._get_conn()
         cursor = conn.cursor()
         try:
@@ -247,7 +247,7 @@ class MoviesDatabase(BaseDatabase):
             self._release_conn(conn)
     
     def get_all_unique_years(self):
-        """Anos únicos (cache super longo)"""
+        """Unique years (super long cache)"""
         cache_key = "movies_years"
         cached = self._cache_get(cache_key)
         if cached:
@@ -264,7 +264,7 @@ class MoviesDatabase(BaseDatabase):
             self._release_conn(conn)
     
     def get_movies_by_year(self, year, page=1, items_per_page=35):
-        """Filmes por ano"""
+        """Films by year"""
         cache_key = f"movies_year:{year}:{page}"
         cached = self._cache_get(cache_key)
         if cached:
@@ -278,7 +278,7 @@ class MoviesDatabase(BaseDatabase):
         return movies
     
     def get_all_unique_genres(self):
-        """Gêneros únicos (cache super longo)"""
+        """Single genres (super long cache)"""
         cache_key = "movies_genres"
         cached = self._cache_get(cache_key)
         if cached:
@@ -306,7 +306,7 @@ class MoviesDatabase(BaseDatabase):
             self._release_conn(conn)
     
     def get_recently_added_movies(self, page=1, page_size=35):
-        """Recém-adicionados"""
+        """Newly Added"""
         cache_key = f"movies_recent:{page}"
         cached = self._cache_get(cache_key)
         if cached:
@@ -320,7 +320,7 @@ class MoviesDatabase(BaseDatabase):
         return movies
     
     def get_movies_by_provider(self, provider, page=1, items_per_page=35):
-        """Filmes por streaming"""
+        """Streaming movies"""
         provider_norm = self._normalize_text(provider)
         cache_key = f"movies_provider:{provider_norm}:{page}"
         cached = self._cache_get(cache_key)

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-db.py - Interface principal para o banco de dados
-✅ Herda de BaseDatabase
-✅ Compatível com Trakt Sync
-✅ Funções otimizadas
+db.py - Main interface to the database
+✅ Inherits from BaseDatabase
+✅ Compatible with Trakt Sync
+✅ Optimized functions
 """
 
 from .base_db import BaseDatabase
@@ -13,22 +13,22 @@ import xbmc
 import json
 import time
 
-# ============ INSTÂNCIA GLOBAL ============
+# ============ GLOBAL INSTANCE ============
 class db(MoviesDatabase, TVShowsDatabase):
-    """Wrapper para o banco de dados com métodos específicos"""
+    """Wrapper for the database with specific methods"""
     
     def __init__(self):
         super().__init__()
-        xbmc.log("[DB] Instância db inicializada", xbmc.LOGINFO)
+        xbmc.log("[DB] Initialized db instance", xbmc.LOGINFO)
     
-    # ============ MÉTODOS ESPECÍFICOS PARA TRAKT ============
+    # ============ SPECIFIC METHODS FOR TRAKT ============
     
 
     
     def add_movie(self, movie_data):
-        """Adiciona ou atualiza filme no DB"""
+        """Add or update movie in DB"""
         try:
-            # Prepara dados
+            # Prepare data
             tmdb_id = movie_data.get('tmdb_id')
             title = movie_data.get('title', '')
             original_title = movie_data.get('original_title', title)
@@ -47,7 +47,7 @@ class db(MoviesDatabase, TVShowsDatabase):
             providers = json.dumps(movie_data.get('providers', []))
             clearlogo = movie_data.get('clearlogo', '')
             
-            # Normalizações
+            # Normalizations
             title_normalized = self._normalize_text(title)
             genres_normalized = self._normalize_text(' '.join(movie_data.get('genres', [])))
             
@@ -70,18 +70,18 @@ class db(MoviesDatabase, TVShowsDatabase):
             
             self._execute_query(sql, params, fetch_all=False, fetch_one=False)
             
-            # Limpa cache
+            # Clear cache
             self._cache_delete_prefix(f"movie_{tmdb_id}")
             self._cache_delete_prefix("movies_list")
             
             return True
             
         except Exception as e:
-            xbmc.log(f"[DB] Erro adicionando filme {tmdb_id}: {e}", xbmc.LOGERROR)
+            xbmc.log(f"[DB] Error adding movie {tmdb_id}: {e}", xbmc.LOGERROR)
             return False
     
     def add_tvshow(self, tvshow_data):
-        """Adiciona ou atualiza série no DB"""
+        """Add or update series in DB"""
         try:
             tmdb_id = tvshow_data.get('tmdb_id')
             title = tvshow_data.get('title', '')
@@ -104,7 +104,7 @@ class db(MoviesDatabase, TVShowsDatabase):
             episodes_count = tvshow_data.get('episodes_count', 0)
             status = tvshow_data.get('status', '')
             
-            # Normalizações
+            # Normalizations
             title_normalized = self._normalize_text(title)
             genres_normalized = self._normalize_text(' '.join(tvshow_data.get('genres', [])))
             
@@ -135,7 +135,7 @@ class db(MoviesDatabase, TVShowsDatabase):
             return True
             
         except Exception as e:
-            xbmc.log(f"[DB] Erro adicionando série {tmdb_id}: {e}", xbmc.LOGERROR)
+            xbmc.log(f"[DB] Error adding series {tmdb_id}: {e}", xbmc.LOGERROR)
             return False
     
     def remove_from_favorites(self, tmdb_id, media_type):
@@ -156,7 +156,7 @@ class db(MoviesDatabase, TVShowsDatabase):
             self._release_conn(conn)
     
     def is_favorite(self, tmdb_id, media_type):
-        """Verifica se é favorito"""
+        """Check if you are a favorite"""
         sql = """
             SELECT 1 FROM favorites 
             WHERE tmdb_id = ? AND media_type = ?
@@ -168,7 +168,7 @@ class db(MoviesDatabase, TVShowsDatabase):
 
     
     def save_season_cache(self, tvshow_tmdb_id, season_number, season_data):
-        """Salva cache de temporada"""
+        """Save season cache"""
         conn = self._get_conn()
         cursor = conn.cursor()
         
@@ -194,7 +194,7 @@ class db(MoviesDatabase, TVShowsDatabase):
             self._release_conn(conn)
     
     def get_season_cache(self, tvshow_tmdb_id, season_number):
-        """Busca cache de temporada"""
+        """Seasonal cache search"""
         sql = """
             SELECT * FROM seasons_cache 
             WHERE tvshow_tmdb_id = ? AND season_number = ?
@@ -202,7 +202,7 @@ class db(MoviesDatabase, TVShowsDatabase):
         return self._execute_query(sql, (tvshow_tmdb_id, season_number), fetch_one=True)
     
     def save_episode_cache(self, tvshow_tmdb_id, season_number, episode_number, episode_data):
-        """Salva cache de episódio"""
+        """Save episode cache"""
         conn = self._get_conn()
         cursor = conn.cursor()
         
@@ -228,7 +228,7 @@ class db(MoviesDatabase, TVShowsDatabase):
             self._release_conn(conn)
     
     def get_episode_cache(self, tvshow_tmdb_id, season_number, episode_number):
-        """Busca cache de episódio"""
+        """Search episode cache"""
         sql = """
             SELECT * FROM episodes_cache 
             WHERE tvshow_tmdb_id = ? 
@@ -238,7 +238,7 @@ class db(MoviesDatabase, TVShowsDatabase):
         return self._execute_query(sql, (tvshow_tmdb_id, season_number, episode_number), fetch_one=True)
     
     def save_collection_meta(self, collection_name, poster, backdrop):
-        """Salva metadados de coleção"""
+        """Saves collection metadata"""
         conn = self._get_conn()
         cursor = conn.cursor()
         
@@ -255,35 +255,35 @@ class db(MoviesDatabase, TVShowsDatabase):
             self._release_conn(conn)
     
     def get_collection_meta(self, collection_name):
-        """Busca metadados de coleção"""
+        """Fetch collection metadata"""
         sql = """
             SELECT * FROM collections_meta 
             WHERE collection_name = ?
         """
         return self._execute_query(sql, (collection_name,), fetch_one=True)
     
-    # ============ MÉTODOS DE ESTATÍSTICAS ============
+    # ============ STATISTICS METHODS ============
     
     def get_stats(self):
-        """Retorna estatísticas do banco"""
+        """Returns bank statistics"""
         stats = {}
         
-        # Contagem de filmes
+        # Movie count
         sql_movies = "SELECT COUNT(*) as count FROM movies"
         result = self._execute_query(sql_movies, fetch_one=True)
         stats['movies'] = result['count'] if result else 0
         
-        # Contagem de séries
+        # Series count
         sql_tvshows = "SELECT COUNT(*) as count FROM tvshows"
         result = self._execute_query(sql_tvshows, fetch_one=True)
         stats['tvshows'] = result['count'] if result else 0
         
-        # Contagem de favoritos
+        # Favorites count
         sql_favs = "SELECT COUNT(*) as count FROM favorites"
         result = self._execute_query(sql_favs, fetch_one=True)
         stats['favorites'] = result['count'] if result else 0
         
-        # Contagem de filmes assistidos
+        # Count of movies watched
         sql_watched = "SELECT COUNT(*) as count FROM movies WHERE playcount > 0"
         result = self._execute_query(sql_watched, fetch_one=True)
         stats['watched_movies'] = result['count'] if result else 0
@@ -291,21 +291,21 @@ class db(MoviesDatabase, TVShowsDatabase):
         return stats
 
     def get_total_movies_count(self):
-        """Retorna o total de filmes no banco"""
+        """Returns the total number of films in the bank"""
         sql = "SELECT COUNT(*) as count FROM movies"
         result = self._execute_query(sql, fetch_one=True)
         return result['count'] if result else 0
 
     def get_total_tvshows_count(self):
-        """Retorna o total de séries no banco"""
+        """Returns the total number of series in the bank"""
         sql = "SELECT COUNT(*) as count FROM tvshows"
         result = self._execute_query(sql, fetch_one=True)
         return result['count'] if result else 0
 
-    # ============ MÉTODOS COMPATIBILIDADE TRAKT ============
+    # ============ TRAKT COMPATIBILITY METHODS ============
     
     def get_last_played_movies(self, limit=10):
-        """Filmes recentemente reproduzidos"""
+        """Recently played movies"""
         sql = """
             SELECT * FROM movies 
             WHERE date_added IS NOT NULL 
@@ -315,7 +315,7 @@ class db(MoviesDatabase, TVShowsDatabase):
         return self._execute_query(sql, (limit,))
     
     def get_last_played_tvshows(self, limit=10):
-        """Séries recentemente reproduzidas"""
+        """Recently played series"""
         sql = """
             SELECT * FROM tvshows 
             WHERE date_added IS NOT NULL 
@@ -324,78 +324,78 @@ class db(MoviesDatabase, TVShowsDatabase):
         """
         return self._execute_query(sql, (limit,))
 
-# ============ INSTÂNCIA GLOBAL ============
+# ============ GLOBAL INSTANCE ============
 db_instance = db()
 
-# ============ FUNÇÕES DE CONVENIÊNCIA ============
-# (Para compatibilidade com código existente)
+# ============ CONVENIENCE FUNCTIONS ============
+# (For compatibility with existing code)
 
 def get_watched_movies():
-    """Compatibilidade: Retorna filmes assistidos"""
+    """Compatibility: Returns watched films"""
     return db_instance.get_watched_movies()
 
 def get_watched_tvshows():
-    """Compatibilidade: Retorna séries assistidas"""
+    """Compatibility: Returns watched series"""
     return db_instance.get_watched_tvshows()
 
 def add_to_favorites(tmdb_id, media_type):
-    """Compatibilidade: Adiciona aos favoritos"""
+    """Compatibility: Add to favorites"""
     return db_instance.add_to_favorites(tmdb_id, media_type)
 
 def remove_from_favorites(tmdb_id, media_type):
-    """Compatibilidade: Remove dos favoritos"""
+    """Compatibility: Remove from favorites"""
     return db_instance.remove_from_favorites(tmdb_id, media_type)
 
 def is_favorite(tmdb_id, media_type):
-    """Compatibilidade: Verifica se é favorito"""
+    """Compatibility: Check if you are a favorite"""
     return db_instance.is_favorite(tmdb_id, media_type)
 
 def get_all_favorites():
-    """Compatibilidade: Retorna todos favoritos"""
+    """Compatibility: Returns all favorites"""
     return db_instance.get_all_favorites()
 
 def get_movie_by_id(tmdb_id):
-    """Compatibilidade: Busca filme"""
+    """Compatibility: Search movie"""
     return db_instance.get_movie_by_id(tmdb_id)
 
 def get_tvshow_by_id(tmdb_id):
-    """Compatibilidade: Busca série"""
+    """Compatibility: Search series"""
     return db_instance.get_tvshow_by_id(tmdb_id)
 
 def add_movies_bulk(movies_list):
-    """Compatibilidade: Adiciona filmes em lote"""
+    """Compatibility: Add movies in batch"""
     return db_instance.add_movies_bulk(movies_list)
 
 def add_tvshows_bulk(tvshows_list):
-    """Compatibilidade: Adiciona séries em lote"""
+    """Compatibility: Add series in batch"""
     return db_instance.add_tvshows_bulk(tvshows_list)
 
 def get_all_movie_ids_set():
-    """Compatibilidade: Retorna IDs de filmes"""
+    """Compatibility: Returns movie IDs"""
     return db_instance.get_all_movie_ids_set()
 
 def get_all_tvshow_ids_set():
-    """Compatibilidade: Retorna IDs de séries"""
+    """Compatibility: Returns series IDs"""
     return db_instance.get_all_tvshow_ids_set()
 
 def clear_database():
-    """Compatibilidade: Limpa o banco de dados"""
+    """Compatibility: Cleans the database"""
     return db_instance.clear_database()
 
 def update_movie_playcount(tmdb_id, playcount, last_played=None):
-    """Compatibilidade: Atualiza playcount filme"""
+    """Compatibility: Updates movie playcount"""
     return db_instance.update_movie_playcount(tmdb_id, playcount, last_played)
 
 def update_tvshow_playcount(tmdb_id, last_played=None):
-    """Compatibilidade: Atualiza playcount série"""
+    """Compatibility: Updates series playcount"""
     return db_instance.update_tvshow_playcount(tmdb_id, last_played)
 
 def mark_movie_as_watched(tmdb_id):
-    """Compatibilidade: Marca filme como assistido"""
+    """Compatibility: Mark movie as watched"""
     return db_instance.mark_movie_as_watched(tmdb_id)
 
-# ============ TESTE DE INTEGRAÇÃO ============
+# ============ INTEGRATION TESTING ============
 if __name__ == '__main__':
-    # Teste rápido (só executa se rodar diretamente)
-    print("✅ db.py carregado com sucesso!")
-    print(f"✅ Instância db criada: {db_instance}")
+    # Quick test (only runs if run directly)
+    print("✅ db.py successfully loaded!")
+    print(f"✅ Created db instance: {db_instance}")

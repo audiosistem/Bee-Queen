@@ -9,9 +9,7 @@ from io import BytesIO
 from ..debug_logger import logger
 
 def scrape(imdb_id, media_type, season, episode, item_data=None):
-    """
-    Scraper Mediafusion para Cinebox.
-    """
+    """Mediafusion Scraper for Cinemabox."""
     base_url = "https://mediafusion.elfhosted.com"
     
     endpoints = []
@@ -30,7 +28,7 @@ def scrape(imdb_id, media_type, season, episode, item_data=None):
         'encoded_user_data': 'eyJlbmFibGVfY2F0YWxvZ3MiOiBmYWxzZSwgIm1heF9zdHJlYW1zX3Blcl9yZXNvbHV0aW9uIjogOTksICJ0b3JyZW50X3NvcnRpbmdfcHJpb3JpdHkiOiBbXSwgImNlcnRpZmljYXRpb25fZmlsdGVyIjogWyJEaXNhYmxlIl0sICJudWRpdHlfZmlsdGVyIjogWyJEaXNhYmxlIl19'
     }
     
-    # Adicionar busca por título se não tivermos IMDB ou como complemento
+    # Add search by title if we don't have IMDB or as a complement
     if not imdb_id or not endpoints:
         search_query = item_data.get('original_title') or item_data.get('title')
         if search_query:
@@ -43,7 +41,7 @@ def scrape(imdb_id, media_type, season, episode, item_data=None):
 
     for endpoint in endpoints:
         url = f"{base_url}{endpoint}"
-        # Correção para URLs duplas de barra
+        # Fix for double slash URLs
         url = url.replace('//stream', '/stream')
         try:
             xbmc.log(f"[Mediafusion] Buscando via urllib2: {url}", xbmc.LOGINFO)
@@ -92,7 +90,7 @@ def scrape(imdb_id, media_type, season, episode, item_data=None):
                 seen_hashes.add(info_hash)
                 
         except Exception as e:
-            xbmc.log(f"[Mediafusion] Erro ao buscar {url}: {e}", xbmc.LOGERROR)
+            xbmc.log(f"[Mediafusion] Error fetching {url}: {e}", xbmc.LOGERROR)
             logger.scraper_error("Mediafusion", f"Search Error: {e}", url)
             
     return streams

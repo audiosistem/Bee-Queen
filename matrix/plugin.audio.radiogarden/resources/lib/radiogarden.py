@@ -194,6 +194,7 @@ class RadioGardenAPI:
                     if cid and cid not in seen_ids:
                         seen_ids.add(cid)
                         channels.append({
+                            'type': 'channel',
                             'channel_id': cid,
                             'title': page.get('title', 'Sem título'),
                             'subtitle': page.get('subtitle', '')
@@ -203,3 +204,124 @@ class RadioGardenAPI:
     def get_stream_url(self, channel_id):
         """Obter URL do stream de áudio"""
         return f"{self.BASE_URL}/ara/content/listen/{channel_id}/channel.mp3"
+    
+    def get_geolocation(self):
+        """Obter geolocalização do usuário baseada no IP"""
+        try:
+            url = f"{self.BASE_URL}/geo"
+            response = self.session.get(url, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            self.log(f"Geolocalização obtida: {data.get('city', 'Unknown')}, {data.get('country_code', 'Unknown')}")
+            return data
+        except Exception as e:
+            self.log(f"Erro ao obter geolocalização: {str(e)}", xbmc.LOGERROR)
+            return None
+    
+    def get_nearby_places(self):
+        """Obter lista de lugares próximos"""
+        try:
+            url = f"{self.BASE_URL}/ara/content/places"
+            response = self.session.get(url, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            places = data.get('data', {}).get('list', [])
+            self.log(f"Total de lugares obtidos: {len(places)}")
+            return places
+        except Exception as e:
+            self.log(f"Erro ao obter lugares próximos: {str(e)}", xbmc.LOGERROR)
+            return []
+    
+    def find_closest_place(self, user_lat, user_lon, places):
+        """Encontrar o lugar mais próximo baseado nas coordenadas do usuário"""
+        import math
+        
+        def haversine_distance(lat1, lon1, lat2, lon2):
+            """Calcular distância entre dois pontos usando fórmula de Haversine"""
+            R = 6371  # Raio da Terra em km
+            
+            lat1_rad = math.radians(lat1)
+            lat2_rad = math.radians(lat2)
+            delta_lat = math.radians(lat2 - lat1)
+            delta_lon = math.radians(lon2 - lon1)
+            
+            a = math.sin(delta_lat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon/2)**2
+            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+            
+            return R * c
+        
+        closest_place = None
+        min_distance = float('inf')
+        
+        for place in places:
+            geo = place.get('geo', [])
+            if len(geo) == 2:
+                place_lon, place_lat = geo[0], geo[1]
+                distance = haversine_distance(user_lat, user_lon, place_lat, place_lon)
+                
+                if distance < min_distance:
+                    min_distance = distance
+                    closest_place = place
+        
+        if closest_place:
+            self.log(f"Lugar mais próximo: {closest_place.get('title')} ({min_distance:.2f} km)")
+        
+        return closest_place
+    
+    def get_local_stations(self):
+        """Obter estações de rádio locais baseadas na geolocalização (expandido para 50km)"""
+        try:
+            geo_data = self.get_geolocation()
+            if not geo_data: return None, []
+            
+            user_lat = geo_data.get('latitude')
+            user_lon = geo_data.get('longitude')
+            if not user_lat or not user_lon: return None, []
+            
+            places = self.get_nearby_places()
+            if not places: return None, []
+            
+            # Encontrar lugares num raio de 50km
+            nearby_place_ids = []
+            import math
+            
+            def haversine(lat1, lon1, lat2, lon2):
+                R = 6371
+                dlat = math.radians(lat2 - lat1)
+                dlon = math.radians(lon2 - lon1)
+                a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+                return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+            # Filtrar lugares próximos (raio de 50km)
+            places_with_dist = []
+            for p in places:
+                geo = p.get('geo', [])
+                if len(geo) == 2:
+                    dist = haversine(user_lat, user_lon, geo[1], geo[0])
+                    if dist <= 50: # 50 km de raio
+                        places_with_dist.append((dist, p))
+            
+            # Ordenar por distância
+            places_with_dist.sort(key=lambda x: x[0])
+            
+            all_channels = []
+            seen_channel_ids = set()
+            
+            # Pegar canais dos lugares mais próximos (limite de 10 cidades para não demorar)
+            for dist, place in places_with_dist[:10]:
+                place_id = place.get('id')
+                channels = self.get_place_channels(place_id)
+                for c in channels:
+                    cid = c.get('channel_id')
+                    if cid and cid not in seen_channel_ids:
+                        seen_channel_ids.add(cid)
+                        # Adicionar nome da cidade ao subtítulo para clareza
+                        if place.get('title'):
+                            c['subtitle'] = f"{place.get('title')} - {c.get('subtitle', '')}".strip(' -')
+                        all_channels.append(c)
+            
+            return geo_data.get('city', 'Local'), all_channels
+            
+        except Exception as e:
+            self.log(f"Erro ao obter estações locais: {str(e)}", xbmc.LOGERROR)
+            return None, []

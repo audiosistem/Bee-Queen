@@ -2,53 +2,53 @@
 <settings>
 
     <category label="General">
-        <setting id="pages" type="labelenum" label="Articole pe pagină" values="20|25|30|35|40|50|75|100|150" default="20" />
-        <setting id="force_poster_mode" type="bool" label="Forțează format poster vertical (2:3) - Filmes, Séries e Temporadas" default="true" />
-        <setting id="poster_size" type="labelenum" label="Dimensiune poster" values="small|medium|large|original" default="medium" />
-        <setting id="custom_view_id" type="number" label="ID vizualizare personalizat (Opțional)" default="0">
-            <description>Introdu ID-ul numeric al modului de vizualizare al skin-ului tău (ex: 51 para Pôster). Lasă 0 pentru implicit.</description>
+        <setting id="pages" type="labelenum" label="Items per Page" values="20|25|30|35|40|50|75|100|150" default="20" />
+        <setting id="force_poster_mode" type="bool" label="Force Vertical Poster Format (2:3) - Movies, Series and Seasons" default="true" />
+        <setting id="poster_size" type="labelenum" label="Poster Size" values="small|medium|large|original" default="medium" />
+        <setting id="custom_view_id" type="number" label="Custom View ID (Optional)" default="0">
+            <description>Enter the numeric ID of your skin's preview mode (e.g. 51 for Poster). Leave 0 to use the default.</description>
         </setting>
-        <setting id="image_quality" type="labelenum" label="Calitate imagini" values="low|medium|high|original" default="high" />         
-        <setting id="playback.autoplay" type="bool" label="Redare automată" default="false">
-            <description>Dacă este activat, încearcă să redea automat cea mai bună sursă.</description>
+        <setting id="image_quality" type="labelenum" label="Image quality" values="low|medium|high|original" default="high" />         
+        <setting id="playback.autoplay" type="bool" label="AutoPlay" default="false">
+            <description>If enabled, tries to play the best source automatically.</description>
         </setting>
-        <setting id="playback.autoplay_type" type="labelenum" label="Aplică Autoplay în:" values="Ambele|Filme|Seriale" default="Ambele" enable="eq(-1,true)">
-            <description>Alege în ce tipuri de conținut ar trebui să funcționeze redarea automată.</description>
+        <setting id="playback.autoplay_type" type="labelenum" label="Apply Autoplay on:" values="Both|Films|Series" default="Both" enable="eq(-1,true)">
+            <description>Choose which types of content autoplay should work on.</description>
         </setting>
-        <setting id="playback.max_resolution" type="labelenum" label="Rezoluție maximă (Autoplay)" values="4K|1080p|720p|SD" default="1080p" enable="eq(-2,true)">
-            <description>Defineți rezoluția maximă permisă pentru redarea automată.</description>
+        <setting id="playback.max_resolution" type="labelenum" label="Maximum Resolution (Autoplay)" values="4K|1080p|720p|S.D." default="1080p" enable="eq(-2,true)">
+            <description>Sets the maximum resolution allowed for autoplay.</description>
         </setting>
-        <setting id="playback.language_priority" type="labelenum" label="Prioritate limbă (Autoplay)" values="Dublat|Subtitrat" default="Dublat" enable="eq(-3,true)">
-            <description>Define ce limbă să fie prioritizată la redarea automată.</description>
+        <setting id="playback.language_priority" type="labelenum" label="Language Priority (Autoplay)" values="Dubbed|Subtitled" default="Dubbed" enable="eq(-3,true)">
+            <description>Defines which language to prioritize for automatic playback.</description>
         </setting>               
     </category>
 
-    <category label="API și Actualizări">
-        <setting label="Setări TMDB" type="lsep"/>
+    <category label="API & Updates">
+        <setting label="TMDB Settings" type="lsep"/>
         <setting id="tmdb_api"
                  type="text"
                  label="TMDB API Key"
                  default="b8eabaf5608b88d0298aa189dd90bf00">
-            <description>Introdu cheia ta API TMDB personalizată.</description>
+            <description>Enter your TMDB API key to enable Trending and External Metadata functions.</description>
         </setting>
 
         <setting id="tmdb_language"
                  type="labelenum"
-                 label="Limba conținutului (TMDB)"
-                 values="ro-RO|en-US|es-ES"
-                 default="ro-RO" />
+                 label="Content Language (TMDB)"
+                 values="en-US|es-ES|ro-RO|pt-BR"
+                 default="en-US" />
 
-        <setting label="Actualizare catalog" type="lsep"/>
-        <setting id="auto_update_enabled" type="bool" label="Activare actualizare automată" default="true" />
-        <setting id="update_on_startup" type="bool" label="Actualizează la pornire" default="true" />
-        <setting id="show_update_notifications" type="bool" label="Afișează notificări" default="true" />
-        <setting label="Interval actualizare (ore)" 
+        <setting label="Catalog Update" type="lsep"/>
+        <setting id="auto_update_enabled" type="bool" label="Enable Automatic Update" default="true" />
+        <setting id="update_on_startup" type="bool" label="Update when starting Kodi" default="true" />
+        <setting id="show_update_notifications" type="bool" label="Show update notifications" default="true" />
+        <setting label="Check interval (hours)" 
                  type="labelenum" 
                  id="update_interval" 
                  values="1|2|3|5|8|12|24" 
                  default="5" />
 
-        <setting label="[internal] Data ultimei verificări" 
+        <setting label="[internal] Last check date" 
                  type="text" 
                  id="last_update_check" 
                  visible="false" />
@@ -56,54 +56,54 @@
 
 
     <category label="Debug">
-        <setting id="debug.enabled" type="bool" label="Activare mod Debug" default="false">
-            <description>Activează jurnale detaliate pentru diagnosticarea problemelor</description>
+        <setting id="debug.enabled" type="bool" label="Activate Debug Mode" default="false">
+            <description>Enables detailed logs for problem diagnosis</description>
         </setting>
-        <setting id="debug.level" type="labelenum" label="Nivel detalii" values="Basic|Mediu|Complet" default="Mediu" enable="eq(-1,true)">
-            <description>Define nivelul de detaliere al jurnalelor</description>
+        <setting id="debug.level" type="labelenum" label="Level of Detail" values="Basic|Average|Full" default="Average" enable="eq(-1,true)">
+            <description>Defines the level of detail of the logs</description>
         </setting>
-        <setting id="debug.scrapers" type="bool" label="Debug Scrapers" default="true" enable="eq(-2,true)">
-            <description>Înregistrează detalii despre toți scraperii (cereri, răspunsuri, erori)</description>
+        <setting id="debug.scrapers" type="bool" label="Scraper debugging" default="true" enable="eq(-2,true)">
+            <description>Records details of all scrapers (requests, responses, errors)</description>
         </setting>
-        <setting id="debug.network" type="bool" label="Depanare rețea" default="false" enable="eq(-3,true)">
-            <description>Înregistrează toate cererile HTTP (URLs, headers, status)</description>
+        <setting id="debug.network" type="bool" label="Network Debugging" default="false" enable="eq(-3,true)">
+            <description>Logs all HTTP requests (URLs, headers, status)</description>
         </setting>
-        <setting id="debug.save_to_file" type="bool" label="Salvează jurnalele în fișier" default="true" enable="eq(-4,true)">
-            <description>Salvează jurnale detaliate într-un fișier separat (cinebox_debug.log)</description>
+        <setting id="debug.save_to_file" type="bool" label="Save Logs to File" default="true" enable="eq(-4,true)">
+            <description>Saves detailed logs in separate file (cinebox_debug.log)</description>
         </setting>
-        <setting type="action" label="   Vizualizați jurnalele de depanare" action="RunPlugin(plugin://plugin.video.cinebox/?action=view_debug_log)" enable="eq(-5,true)" />
-        <setting type="action" label="   Exporta Logs" action="RunPlugin(plugin://plugin.video.cinebox/?action=export_debug_log)" enable="eq(-6,true)" />
-        <setting type="action" label="   Sterge Logs" action="RunPlugin(plugin://plugin.video.cinebox/?action=clear_debug_log)" enable="eq(-7,true)" />
+        <setting type="action" label="View Debug Logs" action="RunPlugin(plugin://plugin.video.cinebox/?action=view_debug_log)" enable="eq(-5,true)" />
+        <setting type="action" label="Export Logs" action="RunPlugin(plugin://plugin.video.cinebox/?action=export_debug_log)" enable="eq(-6,true)" />
+        <setting type="action" label="Clear Logs" action="RunPlugin(plugin://plugin.video.cinebox/?action=clear_debug_log)" enable="eq(-7,true)" />
     </category>         
 
 
     <category label="Trakt.tv">
     <setting label="API" type="lsep"/> 
-    <setting id="trakt_client_id" type="text" label="Client ID" default="2d29a7597164bb74e1d463bc4ebf8dc8b528f2beea715068de1744e88f80f764" />
+    <setting id="trakt_client_id" type="text" label="ClientID" default="2d29a7597164bb74e1d463bc4ebf8dc8b528f2beea715068de1744e88f80f764" />
     <setting id="trakt_client_secret" type="text" label="Client Secret" default="f71fa83d63e64a06a9cecf676a0f5e0485c4f2c1b5a48946d26c4630cef159fb" />
-    <setting id="trakt_username" type="text" label="Utilizator" default="" visible="false" />
+    <setting id="trakt_username" type="text" label="User" default="" visible="false" />
     <setting id="trakt_access_token" type="text" label="Access Token" default="" visible="false" />
     <setting id="trakt_refresh_token" type="text" label="Refresh Token" default="" visible="false" />
-    <setting id="trakt_expires_at" type="text" label="Expires At" default="0" visible="false" />
+    <setting id="trakt_expires_at" type="text" label="Exhale At" default="0" visible="false" />
     <setting id="trakt_last_sync" type="text" label="Last Sync" default="0" visible="false" />
-    <setting label="Sincronizare" type="lsep"/> 
-    <setting id="trakt_sync_on_startup" type="bool" label="Sincronizare la pornire" default="true" />
-    <setting id="trakt_sync_interval" type="labelenum" label="Interval sincronizare (minute)" values="15 minutos|30 minutos|60 minutos|120 minutos|240 minutos" default="60" />
+    <setting label="Synchronization" type="lsep"/> 
+    <setting id="trakt_sync_on_startup" type="bool" label="Sync at startup" default="true" />
+    <setting id="trakt_sync_interval" type="labelenum" label="Sync Interval" values="15 minutes|30 minutes|60 minutes|120 minutes|240 minutes" default="60" />
     
-    <setting id="trakt_sync_watched" type="bool" label="Sincronizează vizionările" default="true" />
-    <setting id="trakt_sync_ratings" type="bool" label="Sincronizează evaluările" default="true" />
-    <setting id="trakt_sync_collection" type="bool" label="Sincronizează colecția" default="true" />
-    <setting id="trakt_sync_playback" type="bool" label="Sincronizează progresul" default="true" />
-    <setting label="Autenticação" type="lsep"/> 
-    <setting type="action" label="Autentificare cu Trakt" action="RunAddon(plugin.video.cinebox,action=trakt_auth)" />
-    <setting type="action" label="Sincronizare Manuala" action="RunAddon(plugin.video.cinebox,action=trakt_sync)" />
-    <setting type="action" label="Deschide Meniul Trakt" action="RunAddon(plugin.video.cinebox,action=trakt_menu)" />
+    <setting id="trakt_sync_watched" type="bool" label="Sync watched" default="true" />
+    <setting id="trakt_sync_ratings" type="bool" label="Sync reviews" default="true" />
+    <setting id="trakt_sync_collection" type="bool" label="Sync collection" default="true" />
+    <setting id="trakt_sync_playback" type="bool" label="Sync progress" default="true" />
+    <setting label="Authentication" type="lsep"/> 
+    <setting type="action" label="Authenticate with Trakt" action="RunAddon(plugin.video.cinebox,action=trakt_auth)" />
+    <setting type="action" label="Manual Sync" action="RunAddon(plugin.video.cinebox,action=trakt_sync)" />
+    <setting type="action" label="Open Trakt Menu" action="RunAddon(plugin.video.cinebox,action=trakt_menu)" />
 
-    <setting id="trakt_auto_scrobble" type="bool" label="Scrobble automat" default="true"/>
-<setting id="cache_age_hours" type="number" label="Cache (ore)" default="72"/>
+    <setting id="trakt_auto_scrobble" type="bool" label="Automatic Scrobble" default="true"/>
+<setting id="cache_age_hours" type="number" label="Cache (hours)" default="72"/>
 </category>
     
-    <category label="Furnizori">
+    <category label="Providers">
         <setting label="Torrent" type="lsep"/>  
 
         <setting id="provider.comandotop.enabled" type="bool" label="ComandoFilmes (Torrent)" default="true" />
@@ -115,15 +115,15 @@
         <setting id="provider.perflix.enabled" type="bool" label="Perflix (Torrent)" default="false" />
         <setting id="provider.nyaa.enabled" type="bool" label="Nyaa (Torrent)" default="true" />
         <setting id="provider.starckfilmes.enabled" type="bool" label="StarckFilmes (Torrent)" default="true" />
-        <setting id="provider.baixarfilmes.enabled" type="bool" label="BaixarFilmes (Torrent)" default="true" />
-        <setting id="provider.magneto.enabled" type="bool" label="Scrapers Externi (Magneto/Alții)" default="true" />
-        <setting id="enabled_external_scrapers" type="text" label="[COLOR lime]⭐ Scraper Activ:[/COLOR] " default="" />
-        <setting type="action" label="[COLOR gold]   Alege Scraper Extern[/COLOR]" action="RunPlugin(plugin://plugin.video.cinebox/?action=configure_external_scrapers)" />
+        <setting id="provider.baixarfilmes.enabled" type="bool" label="Download Movies (Torrent)" default="true" />
+        <setting id="provider.magneto.enabled" type="bool" label="External Scrapers (Magneto/Others)" default="true" />
+        <setting id="enabled_external_scrapers" type="text" label="[COLOR lime]⭐ Active Scraper:[/COLOR]" default="" />
+        <setting type="action" label="[COLOR gold] Choose External Scraper[/COLOR]" action="RunPlugin(plugin://plugin.video.cinebox/?action=configure_external_scrapers)" />
 
-        <setting label="Surse Link Direct" type="lsep"/>  
+        <setting label="Direct Link" type="lsep"/>  
 
         <setting id="provider.skyflix.enabled" type="bool" label="SkyFlix (Direct)" default="true" />
-        <setting id="provider.animezey.enabled" type="bool" label="Animes Totais (Direct)" default="true"/>
+        <setting id="provider.animezey.enabled" type="bool" label="Total Animes (Direct)" default="true"/>
         <setting id="provider.webstreamr.enabled" type="bool" label="WebStreamr (Direct)" default="true" />
     </category>
 

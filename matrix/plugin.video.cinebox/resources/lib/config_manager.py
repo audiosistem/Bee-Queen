@@ -5,12 +5,10 @@ import os
 import json
 
 def get_config_path():
-    """
-    Retorna o caminho do arquivo de configuração JSON.
-    Usa o ID do addon para garantir o caminho correto no profile.
-    """
+    """Returns the JSON configuration file path.
+    Use the addon ID to ensure the correct path in the profile."""
     try:
-        # Tenta obter o ID dinamicamente, fallback para o ID padrão se falhar
+        # Attempts to get the ID dynamically, fallback to the default ID if it fails
         import xbmcaddon
         addon_id = xbmcaddon.Addon().getAddonInfo('id')
     except:
@@ -21,7 +19,7 @@ def get_config_path():
     except AttributeError:
         profile_path = xbmc.translatePath(f'special://profile/addon_data/{addon_id}/')
     
-    # Criar diretório se não existir
+    # Create directory if it doesn't exist
     if not os.path.exists(profile_path):
         try:
             os.makedirs(profile_path)
@@ -31,52 +29,44 @@ def get_config_path():
     return os.path.join(profile_path, 'scraper_config.json')
 
 def load_config():
-    """
-    Carrega a configuração do arquivo JSON.
-    """
+    """Loads configuration from JSON file."""
     config_path = get_config_path()
     
     if os.path.exists(config_path):
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)
-                xbmc.log(f"[ConfigManager] Configuração carregada: {config}", xbmc.LOGINFO)
+                xbmc.log(f"[ConfigManager] Configuration loaded: {config}", xbmc.LOGINFO)
                 return config
         except Exception as e:
-            xbmc.log(f"[ConfigManager] Erro ao carregar config: {e}", xbmc.LOGERROR)
+            xbmc.log(f"[ConfigManager] Error loading config: {e}", xbmc.LOGERROR)
     
-    # Retornar configuração padrão (Magneto)
+    # Return default configuration (Magneto)
     return {'enabled_scraper': 'script.module.magneto'}
 
 def save_config(config):
-    """
-    Salva a configuração no arquivo JSON.
-    """
+    """Saves configuration in JSON file."""
     config_path = get_config_path()
     
     try:
         with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=2, ensure_ascii=False)
-        xbmc.log(f"[ConfigManager] Configuração salva: {config}", xbmc.LOGINFO)
+        xbmc.log(f"[ConfigManager] Settings saved: {config}", xbmc.LOGINFO)
         return True
     except Exception as e:
-        xbmc.log(f"[ConfigManager] Erro ao salvar config: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[ConfigManager] Error saving config: {e}", xbmc.LOGERROR)
         return False
 
 def get_enabled_scraper():
-    """
-    Retorna o scraper externo habilitado.
-    Sempre recarrega do arquivo para evitar cache.
-    """
+    """Returns the external scraper enabled.
+    Always reload from file to avoid caching."""
     config = load_config()
     scraper = config.get('enabled_scraper', 'script.module.magneto')
-    xbmc.log(f"[ConfigManager] Scraper habilitado retornado: {scraper}", xbmc.LOGINFO)
+    xbmc.log(f"[ConfigManager] Enabled scraper returned: {scraper}", xbmc.LOGINFO)
     return scraper
 
 def set_enabled_scraper(scraper_id):
-    """
-    Define o scraper externo habilitado.
-    """
+    """Sets the external scraper enabled."""
     config = load_config()
     config['enabled_scraper'] = scraper_id
     return save_config(config)

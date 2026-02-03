@@ -5,7 +5,7 @@ from .tvshows_db import TVShowsDatabase
 from .favorites_db import FavoritesDatabase
 import xbmc
 
-# ✅ 2. Adicione-o à lista de "habilidades" da classe principal
+# ✅ 2. Add it to the main class "skills" list
 class Database(MoviesDatabase, TVShowsDatabase, FavoritesDatabase):
     def __init__(self):
         super().__init__()

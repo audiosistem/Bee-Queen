@@ -4,18 +4,18 @@ import xbmcaddon
 
 
 class CustomProgress(xbmcgui.WindowXML):
-    # O Kodi chamará o __init__ primeiro
+    # Kodi will call __init__ first
     def __init__(self, *args, **kwargs):
         super(CustomProgress, self).__init__(*args, **kwargs)
         self.canceled = False
 
     def onInit(self):
-        """Chamado automaticamente quando o XML termina de carregar"""
-        self.label = self.getControl(2)         # ID definido no XML
-        self.progress_bar = self.getControl(3)  # ID definido no XML
+        """Automatically called when XML finishes loading"""
+        self.label = self.getControl(2)         # ID defined in XML
+        self.progress_bar = self.getControl(3)  # ID defined in XML
 
     def update(self, percent, message):
-        """Método que você chamará de dentro do indexer"""
+        """Method you will call from within the indexer"""
         try:
             self.label.setLabel(message)
             self.progress_bar.setPercent(int(percent))
@@ -23,8 +23,8 @@ class CustomProgress(xbmcgui.WindowXML):
             pass
 
     def onAction(self, action):
-        """Captura teclas do controle remoto"""
-        if action.getId() in [92, 10, 13]: # Voltar, Sair ou Stop
+        """Capture remote control keys"""
+        if action.getId() in [92, 10, 13]: # Back, Exit or Stop
             self.canceled = True
             self.close()
 

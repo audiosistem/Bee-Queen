@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Integração com Biblioteca do Kodi - VERSÃO CORRIGIDA ANDROID/TV
-Gerenciamento completo de .strm e .nfo com caminhos acessíveis
-"""
+"""Integration with Kodi Library - FIXED VERSION ANDROID/TV
+Complete .strm and .nfo management with accessible paths"""
 
 import os
 import json
@@ -14,63 +12,63 @@ import xbmcvfs
 
 ADDON = xbmcaddon.Addon()
 
-# === CONFIGURAÇÕES - CAMINHOS ACESSÍVEIS ===
+# === SETTINGS - ACCESSIBLE PATHS ===
 def get_library_paths():
-    """Retorna os caminhos das bibliotecas (compatível com Android/TV)"""
+    """Returns library paths (Android/TV compatible)"""
     
-    # Usa caminhos ACESSÍVEIS pelo Kodi (configurações removidas)
+    # Uses paths ACCESSIBLE through Kodi (settings removed)
     addon_profile = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
     movies_path = os.path.join(addon_profile, 'library', 'movies')
     tvshows_path = os.path.join(addon_profile, 'library', 'tvshows')
     
-    # Garante que os caminhos estão traduzidos
+    # Ensures paths are translated
     movies_path = xbmcvfs.translatePath(movies_path)
     tvshows_path = xbmcvfs.translatePath(tvshows_path)
     
     return movies_path, tvshows_path
 
 def ensure_library_folders():
-    """Cria pastas da biblioteca se não existirem"""
+    """Create library folders if they don't exist"""
     movies_path, tvshows_path = get_library_paths()
     
     for path in [movies_path, tvshows_path]:
         if not xbmcvfs.exists(path):
             xbmcvfs.mkdirs(path)
-            xbmc.log(f"[Library] Pasta criada: {path}", xbmc.LOGINFO)
+            xbmc.log(f"[Library] Folder created: {path}", xbmc.LOGINFO)
     
     return movies_path, tvshows_path
 
 def check_library_access():
-    """Verifica se o Kodi consegue acessar as pastas da biblioteca"""
+    """Check if Kodi can access library folders"""
     movies_path, tvshows_path = get_library_paths()
     
     test_file_movie = os.path.join(movies_path, '.test')
     test_file_tv = os.path.join(tvshows_path, '.test')
     
     try:
-        # Testa escrita em filmes
+        # Test writing in films
         with open(test_file_movie, 'w') as f:
             f.write('test')
         xbmcvfs.delete(test_file_movie)
         
-        # Testa escrita em séries
+        # Test writing in series
         with open(test_file_tv, 'w') as f:
             f.write('test')
         xbmcvfs.delete(test_file_tv)
         
         return True
     except Exception as e:
-        xbmc.log(f"[Library] ERRO DE ACESSO: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Library] ACCESS ERROR: {e}", xbmc.LOGERROR)
         return False
 
 def setup_library_sources():
-    """Adiciona as pastas da biblioteca como fontes no Kodi"""
+    """Add library folders as sources in Kodi"""
     movies_path, tvshows_path = get_library_paths()
     
-    # Verifica se precisa configurar
+    # Check if you need to configure
     sources_xml = xbmcvfs.translatePath('special://userdata/sources.xml')
     
-    # Cria sources.xml se não existir
+    # Create sources.xml if it doesn't exist
     if not xbmcvfs.exists(sources_xml):
         sources_content = '''<sources>
     <programs>
@@ -98,27 +96,27 @@ def setup_library_sources():
         except:
             pass
     
-    # Mensagem para o usuário
+    # Message to the user
     dialog = xbmcgui.Dialog()
     dialog.ok(
-        "Configurar Biblioteca",
-        f"[B]IMPORTANTE:[/B] Adicione estas pastas no Kodi:",
-        f"[B]Filmes:[/B] {movies_path}",
-        f"[B]Séries:[/B] {tvshows_path}"
+        "Set Up Library",
+        f"[B]IMPORTANTE:[/B] Add these folders to Kodi:",
+        f"[B]Movies:[/B] {movies_path}",
+        f"[B]TV Shows:[/B] {tvshows_path}"
     )
     
     return True
 
 def sanitize_filename(name):
-    """Remove caracteres inválidos"""
+    """Remove invalid characters"""
     invalid_chars = '<>:"/\\|?*'
     for char in invalid_chars:
         name = name.replace(char, '')
     return name.strip()
 
-# === OPERAÇÕES COM KODI (JSON-RPC) ===
+# === OPERATIONS WITH KODI (JSON-RPC) ===
 def get_all_library_movies():
-    """Busca TODOS os filmes da biblioteca do Kodi via JSON-RPC"""
+    """Fetch ALL movies from Kodi library via JSON-RPC"""
     query = {
         "jsonrpc": "2.0",
         "method": "VideoLibrary.GetMovies",
@@ -129,7 +127,7 @@ def get_all_library_movies():
     return result.get('result', {}).get('movies', [])
 
 def get_all_library_tvshows():
-    """Busca TODAS as séries da biblioteca do Kodi via JSON-RPC"""
+    """Fetches ALL series from the Kodi library via JSON-RPC"""
     query = {
         "jsonrpc": "2.0",
         "method": "VideoLibrary.GetTVShows",
@@ -140,7 +138,7 @@ def get_all_library_tvshows():
     return result.get('result', {}).get('tvshows', [])
 
 def remove_movie_from_kodi(movieid):
-    """Remove filme da biblioteca do Kodi via JSON-RPC"""
+    """Remove movies from library to Kodi via JSON-RPC"""
     query = {
         "jsonrpc": "2.0",
         "method": "VideoLibrary.RemoveMovie",
@@ -150,7 +148,7 @@ def remove_movie_from_kodi(movieid):
     xbmc.executeJSONRPC(json.dumps(query))
 
 def remove_tvshow_from_kodi(tvshowid):
-    """Remove série da biblioteca do Kodi via JSON-RPC"""
+    """Remove series from Kodi library via JSON-RPC"""
     query = {
         "jsonrpc": "2.0",
         "method": "VideoLibrary.RemoveTVShow",
@@ -159,32 +157,32 @@ def remove_tvshow_from_kodi(tvshowid):
     }
     xbmc.executeJSONRPC(json.dumps(query))
 
-# === CRIAÇÃO DE ARQUIVOS ===
+# === FILE CREATION ===
 def create_strm_file(filepath, plugin_url):
-    """Cria arquivo .strm"""
+    """Create .strm file"""
     try:
         directory = os.path.dirname(filepath)
         if not xbmcvfs.exists(directory):
             xbmcvfs.mkdirs(directory)
         
-        # Usa caminho traduzido
+        # Use translated path
         translated_path = xbmcvfs.translatePath(filepath)
         
         with open(translated_path, 'w', encoding='utf-8') as f:
             f.write(plugin_url)
         
-        # Verifica se foi criado
+        # Check if it was created
         if not xbmcvfs.exists(filepath):
-            xbmc.log(f"[Library] AVISO: .strm não foi criado: {filepath}", xbmc.LOGWARNING)
+            xbmc.log(f"[Library] WARNING: .strm was not created: {filepath}", xbmc.LOGWARNING)
             return False
         
         return True
     except Exception as e:
-        xbmc.log(f"[Library] Erro ao criar .strm: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Library] Error creating .strm: {e}", xbmc.LOGERROR)
         return False
 
 def create_movie_nfo(filepath, movie_data):
-    """Cria .nfo para filme"""
+    """Create .nfo for movie"""
     try:
         nfo_content = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <movie>
@@ -197,8 +195,7 @@ def create_movie_nfo(filepath, movie_data):
     <thumb>{movie_data.get('poster', '')}</thumb>
     <fanart>{movie_data.get('backdrop', '')}</fanart>
     <uniqueid type="tmdb" default="true">{movie_data.get('tmdb_id', '')}</uniqueid>
-    <uniqueid type="imdb">{movie_data.get('imdb_id', '')}</uniqueid>
-"""
+    <uniqueid type="imdb">{movie_data.get('imdb_id', '')}</uniqueid>"""
         genres = movie_data.get('genres', [])
         if isinstance(genres, list):
             for genre in genres:
@@ -210,11 +207,11 @@ def create_movie_nfo(filepath, movie_data):
             f.write(nfo_content)
         return True
     except Exception as e:
-        xbmc.log(f"[Library] Erro ao criar .nfo: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Library] Error creating .nfo: {e}", xbmc.LOGERROR)
         return False
 
 def create_tvshow_nfo(filepath, show_data):
-    """Cria .nfo para série"""
+    """Create .nfo for series"""
     try:
         nfo_content = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <tvshow>
@@ -226,8 +223,7 @@ def create_tvshow_nfo(filepath, show_data):
     <thumb>{show_data.get('poster', '')}</thumb>
     <fanart>{show_data.get('backdrop', '')}</fanart>
     <uniqueid type="tmdb" default="true">{show_data.get('tmdb_id', '')}</uniqueid>
-    <uniqueid type="imdb">{show_data.get('imdb_id', '')}</uniqueid>
-"""
+    <uniqueid type="imdb">{show_data.get('imdb_id', '')}</uniqueid>"""
         genres = show_data.get('genres', [])
         if isinstance(genres, list):
             for genre in genres:
@@ -239,11 +235,11 @@ def create_tvshow_nfo(filepath, show_data):
             f.write(nfo_content)
         return True
     except Exception as e:
-        xbmc.log(f"[Library] Erro ao criar tvshow.nfo: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Library] Error creating tvshow.nfo: {e}", xbmc.LOGERROR)
         return False
 
 def create_episode_nfo(filepath, episode_data, show_data):
-    """Cria .nfo para episódio"""
+    """Create .nfo for episode"""
     try:
         nfo_content = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <episodedetails>
@@ -263,7 +259,7 @@ def create_episode_nfo(filepath, episode_data, show_data):
             f.write(nfo_content)
         return True
     except Exception as e:
-        xbmc.log(f"[Library] Erro ao criar episode.nfo: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Library] Error creating episode.nfo: {e}", xbmc.LOGERROR)
         return False
 
 import urllib.parse
@@ -271,10 +267,10 @@ import urllib.parse
 import urllib.parse
 import xbmc, xbmcgui, xbmcvfs, os
 
-# === HELPERS DE VERIFICAÇÃO ===
+# === VERIFICATION HELPERS ===
 
 def is_in_library(movie_data, media_type):
-    """Verifica se o item já existe na biblioteca física (Rápido)"""
+    """Checks if the item already exists in the physical library (Quick)"""
     try:
         movies_path, tvshows_path = get_library_paths()
         title = sanitize_filename(movie_data.get('title', 'Unknown'))
@@ -290,10 +286,10 @@ def is_in_library(movie_data, media_type):
     except:
         return False
 
-# === ADICIONAR À BIBLIOTECA ===
+# === ADD TO LIBRARY ===
 
 def add_movie_to_library(movie_data, show_notification=True):
-    """Adiciona filme à biblioteca incluindo artes na URL do plugin"""
+    """Add movie to library by including artwork in the plugin URL"""
     try:
         movies_path, _ = ensure_library_folders()
         
@@ -305,7 +301,7 @@ def add_movie_to_library(movie_data, show_notification=True):
         if not xbmcvfs.exists(movie_folder):
             xbmcvfs.mkdirs(movie_folder)
 
-        # Extração das artes
+        # Extraction of the arts
         poster = movie_data.get('poster', '')
         backdrop = movie_data.get('backdrop', '') or movie_data.get('fanart', '')
         clearlogo = movie_data.get('clearlogo', '')
@@ -330,17 +326,17 @@ def add_movie_to_library(movie_data, show_notification=True):
         if not create_movie_nfo(nfo_file, movie_data): return False
         
         if show_notification:
-            xbmcgui.Dialog().notification("Biblioteca", f"{title} adicionado!", xbmcgui.NOTIFICATION_INFO, 3000)
+            xbmcgui.Dialog().notification("Library", f"{title} added!", xbmcgui.NOTIFICATION_INFO, 3000)
         
-        xbmc.log(f"[Library] Filme adicionado: {title}", xbmc.LOGINFO)
+        xbmc.log(f"[Library] Movie added: {title}", xbmc.LOGINFO)
         return True
         
     except Exception as e:
-        xbmc.log(f"[Library] Erro ao adicionar filme: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Library] Error adding movie: {e}", xbmc.LOGERROR)
         return False
 
 def add_tvshow_to_library(show_data, show_notification=True):
-    """Adiciona série à biblioteca"""
+    """Add series to library"""
     try:
         _, tvshows_path = ensure_library_folders()
         
@@ -352,7 +348,7 @@ def add_tvshow_to_library(show_data, show_notification=True):
             xbmcvfs.mkdirs(show_folder)
         
         if show_notification:
-            xbmcgui.Dialog().notification("Biblioteca", f"Sincronizando: {raw_title}", xbmcgui.NOTIFICATION_INFO, 2000)
+            xbmcgui.Dialog().notification("Library", f"Synchronizing:{raw_title}", xbmcgui.NOTIFICATION_INFO, 2000)
 
         tvshow_nfo = os.path.join(show_folder, "tvshow.nfo")
         if not create_tvshow_nfo(tvshow_nfo, show_data):
@@ -366,7 +362,7 @@ def add_tvshow_to_library(show_data, show_notification=True):
         
         episodes_added = 0
         
-        # Otimização: Encoding das artes uma única vez fora do loop
+        # Optimization: Encoding the arts once outside the loop
         poster = urllib.parse.quote_plus(str(show_data.get('poster', '')))
         backdrop = urllib.parse.quote_plus(str(show_data.get('backdrop', '') or show_data.get('fanart', '')))
         clearlogo = urllib.parse.quote_plus(str(show_data.get('clearlogo', '')))
@@ -401,29 +397,28 @@ def add_tvshow_to_library(show_data, show_notification=True):
                     episodes_added += 1
         
         if show_notification:
-            xbmcgui.Dialog().notification("Biblioteca", f"{raw_title} finalizada!", xbmcgui.NOTIFICATION_INFO, 3000)
-
-        xbmc.log(f"[Library] Série adicionada: {title} ({episodes_added} episódios)", xbmc.LOGINFO)
+            xbmcgui.Dialog().notification("Library", f"{raw_title} completed!", xbmcgui.NOTIFICATION_INFO, 3000)
+        xbmc.log(f"[Library] Series added: {title} ({episodes_added} episodes)", xbmc.LOGINFO)
         return True
         
     except Exception as e:
-        xbmc.log(f"[Library] Erro ao adicionar série: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Library] Error adding series: {e}", xbmc.LOGERROR)
         return False
 
-# === SINCRONIZAR BIBLIOTECA (USADO PELO SERVICE.PY) ===    
+# === SYNC LIBRARY (USED BY SERVICE.PY) ===
     
 def sync_library_silently():
-    """Verifica o banco local e garante que tudo está na biblioteca física sem alertas"""
+    """Checks local bank and ensures everything is in the physical library without alerts"""
     from resources.lib.db import db
     
-    # 1. Sincronizar Filmes
+    # 1. Sync Movies
     all_movies = db.get_all_movie_ids_set()
     for tmdb_id in all_movies:
         movie_data = db.get_movie_by_id(tmdb_id)
         if movie_data and not is_in_library(movie_data, 'movie'):
             add_movie_to_library(movie_data, show_notification=False)
 
-    # 2. Sincronizar Séries
+    # 2. Sync TV Shows
     all_series = db.get_all_tvshow_ids_set()
     for tmdb_id in all_series:
         show_data = db.get_tvshow_by_id(tmdb_id)
@@ -431,50 +426,50 @@ def sync_library_silently():
             add_tvshow_to_library(show_data, show_notification=False)
     
 
-# === LIMPAR BIBLIOTECA (REFATORADO) ===
+# === CLEAN UP LIBRARY (REFACTORED) ===
 def clear_library():
-    """Remove TODOS os itens da biblioteca (método COMPLETO corrigido)"""
+    """Remove ALL items from library (FULL method fixed)"""
     if not xbmcgui.Dialog().yesno(
-        "Limpar Biblioteca",
-        "ATENÇÃO: Isso vai DELETAR TUDO da biblioteca!",
-        "Tem certeza?"
+        "Limpar Library",
+        "ATTENTION: This will DELETE EVERYTHING from the library!",
+        "Are you sure?"
     ):
         return False
     
     progress = xbmcgui.DialogProgressBG()
-    progress.create("Limpando Biblioteca", "Iniciando...")
+    progress.create("Cleaning Library", "Starting...")
     
     try:
-        # === PASSO 0: Parar scanners ===
-        progress.update(5, message="Parando scanners...")
+        # === STEP 0: Stop scanners ===
+        progress.update(5, message="Stopping scanners...")
         xbmc.executebuiltin('CancelLibraryScan')
         xbmc.sleep(1000)
         
-        # === PASSO 1: Remove da biblioteca do Kodi (JSON-RPC completo) ===
-        progress.update(10, message="Removendo filmes do Kodi...")
+        # === STEP 1: Remove from Kodi library (full JSON-RPC) ===
+        progress.update(10, message="Removing movies from Kodi...")
         
-        # Remove TODOS os filmes (não apenas do Cinebox)
+        # Remove ALL movies (not just from Cinebox)
         movies = get_all_library_movies()
         for idx, movie in enumerate(movies):
             progress.update(10 + int((idx/len(movies))*20) if movies else 10, 
-                          message=f"Removendo filme {idx+1}/{len(movies)}...")
+                          message=f"Removing movie{idx+1}/{len(movies)}...")
             remove_movie_from_kodi(movie['movieid'])
             xbmc.sleep(50)
         
-        progress.update(30, message="Removendo séries do Kodi...")
+        progress.update(30, message="Removing series from Kodi...")
         
-        # Remove TODAS as séries
+        # Remove ALL series
         tvshows = get_all_library_tvshows()
         for idx, tvshow in enumerate(tvshows):
             progress.update(30 + int((idx/len(tvshows))*20) if tvshows else 30,
-                          message=f"Removendo série {idx+1}/{len(tvshows)}...")
+                          message=f"Removing series {idx+1}/{len(tvshows)}...")
             remove_tvshow_from_kodi(tvshow['tvshowid'])
-            xbmc.sleep(100)  # Mais tempo para séries
+            xbmc.sleep(100)  # More time for series
         
-        # === PASSO 2: Limpa database do Kodi ===
-        progress.update(50, message="Limpando database...")
+        # === STEP 2: Clean Kodi database ===
+        progress.update(50, message="Cleaning database...")
         
-        # Comando para limpar database completamente
+        # Command to clean database completely
         xbmc.executeJSONRPC(json.dumps({
             "jsonrpc": "2.0",
             "method": "VideoLibrary.Clean",
@@ -483,20 +478,20 @@ def clear_library():
         }))
         xbmc.sleep(2000)
         
-        # === PASSO 3: Deleta arquivos físicos COMPLETAMENTE ===
-        progress.update(60, message="Deletando arquivos...")
+        # === STEP 3: DELETE physical files COMPLETELY ===
+        progress.update(60, message="Deleting files...")
         
         movies_path, tvshows_path = get_library_paths()
         
-        # Função robusta de remoção
+        # Robust removal function
         def force_delete_folder(path):
             try:
                 if xbmcvfs.exists(path):
-                    # Tenta deletar via shutil primeiro
+                    # Try deleting via shutil first
                     shutil.rmtree(xbmcvfs.translatePath(path), ignore_errors=True)
                     xbmc.sleep(500)
                     
-                    # Tenta deletar arquivo por arquivo
+                    # Try deleting file by file
                     dirs, files = xbmcvfs.listdir(path)
                     for file in files:
                         try:
@@ -504,7 +499,7 @@ def clear_library():
                         except:
                             pass
                     
-                    # Tenta deletar novamente
+                    # Try deleting again
                     if xbmcvfs.exists(path):
                         xbmcvfs.rmdir(path, force=True)
             except:
@@ -513,14 +508,14 @@ def clear_library():
         force_delete_folder(movies_path)
         force_delete_folder(tvshows_path)
         
-        # Recria pastas vazias
+        # Recreate empty folders
         xbmcvfs.mkdirs(movies_path)
         xbmcvfs.mkdirs(tvshows_path)
         
-        # === PASSO 4: Limpeza AGGRESSIVA de cache ===
-        progress.update(75, message="Limpando caches profundos...")
+        # === STEP 4: AGGRESSIVE cache cleaning ===
+        progress.update(75, message="Cleaning deep caches...")
         
-        # Limpa vários tipos de cache
+        # Clears various types of cache
         cache_paths = [
             'special://temp/archive_cache/',
             'special://temp/library/',
@@ -534,12 +529,12 @@ def clear_library():
             except:
                 pass
         
-        # Executa múltiplas limpezas
+        # Performs multiple cleanings
         for i in range(5):
             xbmc.executebuiltin('CleanLibrary(video)')
             xbmc.sleep(500)
         
-        # Limpeza via JSON-RPC
+        # Cleaning via JSON-RPC
         xbmc.executeJSONRPC(json.dumps({
             "jsonrpc": "2.0",
             "method": "VideoLibrary.Clean",
@@ -547,8 +542,8 @@ def clear_library():
             "id": 1
         }))
         
-        # === PASSO 5: Remove fontes do sources.xml ===
-        progress.update(85, message="Removendo fontes...")
+        # === STEP 5: Remove sources from sources.xml ===
+        progress.update(85, message="Removing sources...")
         
         try:
             sources_xml = xbmcvfs.translatePath('special://userdata/sources.xml')
@@ -556,7 +551,7 @@ def clear_library():
                 with open(sources_xml, 'r', encoding='utf-8') as f:
                     content = f.read()
                 
-                # Remove referências às pastas
+                # Remove references to folders
                 import re
                 content = re.sub(r'<path.*?</path>', '', content, flags=re.DOTALL)
                 
@@ -565,92 +560,92 @@ def clear_library():
         except:
             pass
         
-        # === PASSO 6: Atualizações finais ===
-        progress.update(90, message="Forçando atualização...")
+        # === STEP 6: Final Updates ===
+        progress.update(90, message="Forcing update...")
         
-        # Atualiza biblioteca vazia
+        # Update empty library
         xbmc.executebuiltin('UpdateLibrary(video)')
         xbmc.sleep(3000)
         
-        # Limpa novamente
+        # Clean again
         xbmc.executebuiltin('CleanLibrary(video)')
         xbmc.sleep(1000)
         
-        # Recarrega skin DUAS vezes
+        # Recharge skin TWICE
         xbmc.executebuiltin('ReloadSkin()')
         xbmc.sleep(1000)
         xbmc.executebuiltin('ReloadSkin()')
         
-        progress.update(95, message="Reiniciando serviços...")
+        progress.update(95, message="Restarting services...")
         
-        # Reinicia serviços de vídeo
+        # Restarts video services
         xbmc.executebuiltin('RestartVideoLibrary')
         xbmc.sleep(2000)
         
-        progress.update(100, message="Concluído!")
+        progress.update(100, message="Done!")
         xbmc.sleep(1000)
         progress.close()
         
-        # Mensagem final com instruções
+        # Final message with instructions
         xbmcgui.Dialog().ok(
-            "Biblioteca Completamente Limpa",
-            "✅ Todos os itens foram removidos!",
+            "Library Completely Clean",
+            "✅ All items have been removed!",
             "",
-            "Se ainda aparecer algo:",
-            "1. Reinicie o Kodi completamente",
-            "2. Vá em Configurações > Media > Limpar biblioteca",
-            "3. Execute 'Atualizar biblioteca' novamente"
+            "If something still shows up:",
+            "1. Restart Kodi completely",
+            "2. Go to Settings > Media > Clear library",
+            "3. Execute 'Update library' again"
         )
         
-        # Sugere reinício
-        if xbmcgui.Dialog().yesno("Reiniciar", "Recomendado: Reiniciar o Kodi agora?"):
+        # Suggests restart
+        if xbmcgui.Dialog().yesno("Restart", "Recommended: Restart Kodi now?"):
             xbmc.executebuiltin('RestartApp')
         
         return True
         
     except Exception as e:
-        xbmc.log(f"[Library] Erro ao limpar: {e}", xbmc.LOGERROR)
+        xbmc.log(f"[Library] Error clearing: {e}", xbmc.LOGERROR)
         progress.close()
         xbmcgui.Dialog().ok(
-            "Erro na Limpeza",
-            f"Erro: {str(e)}",
-            "Tente:",
-            "1. Reinicie o Kodi",
-            "2. Vá em Configurações > Media",
-            "3. Execute 'Limpar biblioteca' manualmente"
+            "Cleaning Error",
+            f"Error: {str(e)}",
+            "Try:",
+            "1. Restart Kodi",
+            "2. Go to Settings > Media",
+            "3. Execute 'Clear library' manuallye"
         )
         return False
 
-# === ADICIONAR TUDO (EM MASSA) ===
+# === ADD ALL (IN BULK) ===
 def add_all_movies_to_library(*args, **kwargs):
-    """Adiciona todos os filmes"""
+    """Add all movies"""
     from resources.lib.db import db
     
-    # Verifica acesso primeiro
+    # Check access first
     if not check_library_access():
         if xbmcgui.Dialog().yesno(
-            "Problema de Acesso",
-            "Não consigo acessar as pastas da biblioteca.",
-            "Deseja configurar as fontes agora?"
+            "Access Problem",
+            "I can't access the library folders.",
+            "Do you want to set up the fonts now?"
         ):
             setup_library_sources()
         return False
     
     all_movie_ids = db.get_all_movie_ids_set()
     if not all_movie_ids:
-        xbmcgui.Dialog().ok("Biblioteca", "Nenhum filme encontrado.")
+        xbmcgui.Dialog().ok("Library", "No movies found.")
         return False
     
     total = len(all_movie_ids)
-    if not xbmcgui.Dialog().yesno("Adicionar Todos", f"Adicionar {total} filmes?"):
+    if not xbmcgui.Dialog().yesno("Add All", f"Add {total} movies?"):
         return False
     
     progress = xbmcgui.DialogProgressBG()
-    progress.create("Cinebox", "Adicionando filmes...")
+    progress.create("Cinebox", "Adding movies...")
     
     added = 0
     for idx, tmdb_id in enumerate(all_movie_ids, 1):
-        progress.update(int((idx / total) * 100), message=f"Filme {idx}/{total}")
+        progress.update(int((idx / total) * 100), message=f"Movie {idx}/{total}")
         movie_data = db.get_movie_by_id(tmdb_id)
         if movie_data and add_movie_to_library(movie_data):
             added += 1
@@ -659,40 +654,40 @@ def add_all_movies_to_library(*args, **kwargs):
     
     progress.close()
     
-    if xbmcgui.Dialog().yesno("Concluído", f"{added} filmes adicionados", "Atualizar biblioteca?"):
+    if xbmcgui.Dialog().yesno("Completed", f"{added} added movies", "Update library?"):
         xbmc.executebuiltin('UpdateLibrary(video)')
     
     return True
 
 def add_all_tvshows_to_library(*args, **kwargs):
-    """Adiciona todas as séries"""
+    """Add all series"""
     from resources.lib.db import db
     
-    # Verifica acesso primeiro
+    # Check access first
     if not check_library_access():
         if xbmcgui.Dialog().yesno(
-            "Problema de Acesso",
-            "Não consigo acessar as pastas da biblioteca.",
-            "Deseja configurar as fontes agora?"
+            "Access Problem",
+            "I can't access the library folders.",
+            "Do you want to set up the fonts now?"
         ):
             setup_library_sources()
         return False
     
     all_tvshow_ids = db.get_all_tvshow_ids_set()
     if not all_tvshow_ids:
-        xbmcgui.Dialog().ok("Biblioteca", "Nenhuma série encontrada.")
+        xbmcgui.Dialog().ok("Library", "No series found.")
         return False
     
     total = len(all_tvshow_ids)
-    if not xbmcgui.Dialog().yesno("Adicionar Todas", f"Adicionar {total} séries?", "Pode demorar MUITO!"):
+    if not xbmcgui.Dialog().yesno("Add All", f"Add {total} series?", "It can take A LOT of time!"):
         return False
     
     progress = xbmcgui.DialogProgressBG()
-    progress.create("Cinebox", "Adicionando séries...")
+    progress.create("Cinebox", "Adding series...")
     
     added = 0
     for idx, tmdb_id in enumerate(all_tvshow_ids, 1):
-        progress.update(int((idx / total) * 100), message=f"Série {idx}/{total}")
+        progress.update(int((idx / total) * 100), message=f"Series {idx}/{total}")
         show_data = db.get_tvshow_by_id(tmdb_id)
         if show_data and add_tvshow_to_library(show_data):
             added += 1
@@ -701,34 +696,34 @@ def add_all_tvshows_to_library(*args, **kwargs):
     
     progress.close()
     
-    if xbmcgui.Dialog().yesno("Concluído", f"{added} séries adicionadas", "Atualizar biblioteca?"):
+    if xbmcgui.Dialog().yesno("Completed", f"{added} series added", "Update Library?"):
         xbmc.executebuiltin('UpdateLibrary(video)')
     
     return True
 
 # === MENU ===
 def show_library_menu(*args, **kwargs):
-    """Menu de gerenciamento"""
+    """Management Menu"""
     from resources.lib.db import db
     
-    # Mostra caminhos para o usuário
+    # Shows paths to the user
     movies_path, tvshows_path = get_library_paths()
     
     total_movies = len(db.get_all_movie_ids_set())
     total_tvshows = len(db.get_all_tvshow_ids_set())
     
     options = [
-        f"Adicionar Filmes ({total_movies})",
-        f"Adicionar Séries ({total_tvshows})",
-        "Adicionar Tudo",
-        "Limpar Biblioteca",
-        "Atualizar Kodi",
-        "Ver Caminhos da Biblioteca",
-        "Configurar Fontes",
-        "Cancelar"
+        f"Add Movies ({total_movies})",
+        f"Add TV Shows ({total_tvshows})",
+        "Add All",
+        "Clear Library",
+        "Update Kodi",
+        "View Library Paths",
+        "Configure Sources",
+        "Cancel"
     ]
     
-    choice = xbmcgui.Dialog().select("Biblioteca", options)
+    choice = xbmcgui.Dialog().select("Library", options)
     
     if choice == 0:
         add_all_movies_to_library()
@@ -743,23 +738,23 @@ def show_library_menu(*args, **kwargs):
         xbmc.executebuiltin('UpdateLibrary(video)')
     elif choice == 5:
         xbmcgui.Dialog().textviewer(
-            "Caminhos da Biblioteca",
-            f"FILMES:\n{movies_path}\n\nSÉRIES:\n{tvshows_path}\n\n"
-            f"Adicione estas pastas como fontes no Kodi:\n"
-            f"Configurações > Media > Biblioteca > Videos > Adicionar fonte..."
+            "Library Paths",
+            f"MOVIES:\n{movies_path}\n\nseries:\n{tvshows_path}\n\n"
+            f"Add these folders as sources in Kodi:\n"
+            f"Settings > Media > Library > Videos > Add sources..."
         )
     elif choice == 6:
         setup_library_sources()
 
 
 def update_kodi_library(media_type='video', *args, **kwargs):
-    """Atualiza biblioteca do Kodi"""
+    """Update Kodi library"""
     xbmc.executebuiltin('UpdateLibrary(video)')
     xbmc.sleep(2000)
     xbmc.executebuiltin('CleanLibrary(video)')
 
 def get_library_stats():
-    """Retorna estatísticas"""
+    """Returns statistics"""
     import glob
     movies_path, tvshows_path = get_library_paths()
     
@@ -775,5 +770,5 @@ def get_library_stats():
 def remove_from_library(tmdb_id=None, media_type=None, *args, **kwargs):
 
     """Remove item individual"""
-    # Implementação simplificada - use clear_library() para remoção completa
+    # Simplified implementation - use clear_library() for complete removal
     return False

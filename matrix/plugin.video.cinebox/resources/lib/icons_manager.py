@@ -1,8 +1,6 @@
-"""
-Gerenciador de Ícones para Gêneros e Anos - Cinebox Plugin
-Adiciona ícones visuais aos gêneros de filmes, séries e animes
-E aos anos de lançamento
-"""
+"""Icon Manager for Genres and Years - Cinebox Plugin
+Adds visual icons to film, series and anime genres
+And the years of release"""
 
 import os
 import xbmcaddon
@@ -11,117 +9,109 @@ ADDON = xbmcaddon.Addon()
 ADDON_PATH = ADDON.getAddonInfo('path')
 ICON_PATH = os.path.join(ADDON_PATH, 'resources', 'medias', 'icons')
 
-# Mapeamento de gêneros para ícones
+# Mapping genres to icons
 GENRE_ICONS = {
-    'Ação': os.path.join(ICON_PATH, 'genres', 'action.png'),
-    'Aventura': os.path.join(ICON_PATH, 'genres', 'adventure.png'),
-    'Animação': os.path.join(ICON_PATH, 'genres', 'animation.png'),
-    'Comédia': os.path.join(ICON_PATH, 'genres', 'comedy.png'),
+    'Action': os.path.join(ICON_PATH, 'genres', 'action.png'),
+    'Adventure': os.path.join(ICON_PATH, 'genres', 'adventure.png'),
+    'Animation': os.path.join(ICON_PATH, 'genres', 'animation.png'),
+    'Comedy': os.path.join(ICON_PATH, 'genres', 'comedy.png'),
     'Crime': os.path.join(ICON_PATH, 'genres', 'crime.png'),
-    'Documentário': os.path.join(ICON_PATH, 'genres', 'documentary.png'),
+    'Documentary': os.path.join(ICON_PATH, 'genres', 'documentary.png'),
     'Drama': os.path.join(ICON_PATH, 'genres', 'drama.png'),
-    'Família': os.path.join(ICON_PATH, 'genres', 'family.png'),
-    'Fantasia': os.path.join(ICON_PATH, 'genres', 'fantasy.png'),
-    'Ficção Científica': os.path.join(ICON_PATH, 'genres', 'scifi.png'),
-    'Ficção científica': os.path.join(ICON_PATH, 'genres', 'scifi.png'),
-    'História': os.path.join(ICON_PATH, 'genres', 'history.png'),
+    'Family': os.path.join(ICON_PATH, 'genres', 'family.png'),
+    'Fantasy': os.path.join(ICON_PATH, 'genres', 'fantasy.png'),
+    'Science Fiction': os.path.join(ICON_PATH, 'genres', 'scifi.png'),
+    'Science fiction': os.path.join(ICON_PATH, 'genres', 'scifi.png'),
+    'History': os.path.join(ICON_PATH, 'genres', 'history.png'),
     'Horror': os.path.join(ICON_PATH, 'genres', 'horror.png'),
-    'Mistério': os.path.join(ICON_PATH, 'genres', 'mystery.png'),
-    'Música': os.path.join(ICON_PATH, 'genres', 'music.png'),
+    'Mystery': os.path.join(ICON_PATH, 'genres', 'mystery.png'),
+    'Music': os.path.join(ICON_PATH, 'genres', 'music.png'),
     'Romance': os.path.join(ICON_PATH, 'genres', 'romance.png'),
     'Suspense': os.path.join(ICON_PATH, 'genres', 'thriller.png'),
     'Thriller': os.path.join(ICON_PATH, 'genres', 'thriller.png'),
-    'Guerra': os.path.join(ICON_PATH, 'genres', 'war.png'),
+    'War': os.path.join(ICON_PATH, 'genres', 'war.png'),
     'Western': os.path.join(ICON_PATH, 'genres', 'western.png'),
-    'Infantil': os.path.join(ICON_PATH, 'genres', 'kids.png'),
+    'Kids': os.path.join(ICON_PATH, 'genres', 'kids.png'),
     'Reality': os.path.join(ICON_PATH, 'genres', 'reality.png'),
 }
 
-# Ícone padrão para gêneros
+# Default icon for genres
 DEFAULT_GENRE_ICON = os.path.join(ICON_PATH, 'genres', 'default.png')
 
 
 def get_genre_icon(genre_name):
-    """
-    Retorna o caminho do ícone para um gênero específico
+    """Returns the icon path for a specific genre
     
     Args:
-        genre_name (str): Nome do gênero
+        genre_name (str): Genre name
         
     Returns:
-        str: Caminho do ícone do gênero ou ícone padrão
-    """
+        str: Genre icon path or default icon"""
     if not genre_name:
         return DEFAULT_GENRE_ICON
     
-    # Procura no mapeamento
+    # Mapping search
     icon_path = GENRE_ICONS.get(genre_name)
     if icon_path and os.path.exists(icon_path):
         return icon_path
     
-    # Tenta com variações de capitalização
+    # Try with capitalization variations
     for key, value in GENRE_ICONS.items():
         if key.lower() == genre_name.lower():
             if os.path.exists(value):
                 return value
     
-    # Retorna ícone padrão se não encontrar
+    # Returns default icon if not found
     return DEFAULT_GENRE_ICON
 
 
 def get_year_icon(year):
-    """
-    Retorna o caminho do ícone para um ano específico
+    """Returns the icon path for a specific year
     
     Args:
-        year (int or str): Ano de lançamento
+        year (int or str): Year of release
         
     Returns:
-        str: Caminho do ícone do ano
-    """
+        str: Year icon path"""
     if not year:
         return os.path.join(ICON_PATH, 'years', 'default.png')
     
     year_str = str(year)
     year_icon = os.path.join(ICON_PATH, 'years', f'{year_str}.png')
     
-    # Se existir ícone específico do ano, retorna
+    # If there is a year-specific icon, return
     if os.path.exists(year_icon):
         return year_icon
     
-    # Caso contrário, retorna ícone padrão
+    # Otherwise, return default icon
     return os.path.join(ICON_PATH, 'years', 'default.png')
 
 
 def add_genre_icon_to_item(list_item, genre_name):
-    """
-    Adiciona ícone de gênero a um ListItem do Kodi
+    """Add gender icon to a Kodi ListItem
     
     Args:
         list_item: xbmcgui.ListItem
-        genre_name (str): Nome do gênero
-    """
+        genre_name (str): Genre name"""
     try:
         icon = get_genre_icon(genre_name)
         if icon and os.path.exists(icon):
             list_item.setArt({'icon': icon})
     except Exception as e:
         import xbmc
-        xbmc.log(f"[Cinebox] Erro ao adicionar ícone de gênero: {e}", xbmc.LOGWARNING)
+        xbmc.log(f"[Cinebox] Error adding gender icon: {e}", xbmc.LOGWARNING)
 
 
 def add_year_icon_to_item(list_item, year):
-    """
-    Adiciona ícone de ano a um ListItem do Kodi
+    """Add year icon to a Kodi ListItem
     
     Args:
         list_item: xbmcgui.ListItem
-        year (int or str): Ano de lançamento
-    """
+        year (int or str): Year of release"""
     try:
         icon = get_year_icon(year)
         if icon and os.path.exists(icon):
             list_item.setArt({'icon': icon})
     except Exception as e:
         import xbmc
-        xbmc.log(f"[Cinebox] Erro ao adicionar ícone de ano: {e}", xbmc.LOGWARNING)
+        xbmc.log(f"[Cinebox] Error adding year icon: {e}", xbmc.LOGWARNING)

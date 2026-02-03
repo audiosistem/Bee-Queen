@@ -20,7 +20,7 @@ class CineboxPlayer(xbmc.Player):
         self.callback = callback
 
     def onPlayBackStarted(self):
-        xbmc.log("[CineboxPlayer] Playback iniciado. Fechando resolvedor...", xbmc.LOGINFO)
+        xbmc.log("[CineboxPlayer] Playback started. Closing resolver...", xbmc.LOGINFO)
         self.callback()
 
 class CineboxResolverWindow(xbmcgui.WindowXMLDialog):
@@ -33,11 +33,11 @@ class CineboxResolverWindow(xbmcgui.WindowXMLDialog):
         self.is_torrent_source = False
         self.player: Optional[CineboxPlayer] = None
         
-        # ✅ NOVO: Flag para rastrear se foi cancelado
+        # ✅ NEW: Flag to track if it has been canceled
         self.cancelled = False
         self.elementum_process_id = None
 
-        # Limpa propriedades antigas ao iniciar
+        # Clears old properties on startup
         xbmc.executebuiltin('ClearProperty(elementum_progress,home)')
         xbmc.executebuiltin('ClearProperty(elementum_status,home)')
         xbmc.executebuiltin('ClearProperty(resolve_status,home)')
@@ -48,12 +48,12 @@ class CineboxResolverWindow(xbmcgui.WindowXMLDialog):
             fanart = self.item_data.get('backdrop') or self.item_data.get('episode_fanart') or ''
             clearlogo = self.item_data.get('clearlogo') or self.item_data.get('tvshow.clearlogo') or ''
 
-            self.setProperty("info.title", self.item_data.get('title', 'Resolvendo Fonte...'))
+            self.setProperty("info.title", self.item_data.get('title', 'Solving Source...'))
             self.setProperty("info.fanart", fanart)
             self.setProperty("info.poster", self.item_data.get('poster', ''))
             self.setProperty("info.clearlogo", clearlogo)
             
-            # Define também como propriedades globais para garantir que a skin as veja se houver refresh
+            # Also defines them as global properties to ensure that the skin sees them if there is a refresh
             xbmc.executebuiltin(f'SetProperty(info.fanart,{fanart},home)')
             xbmc.executebuiltin(f'SetProperty(info.clearlogo,{clearlogo},home)')
 
@@ -61,15 +61,15 @@ class CineboxResolverWindow(xbmcgui.WindowXMLDialog):
         threading.Thread(target=self.start_resolution_process, daemon=True).start()
 
     def start_resolution_process(self):
-        xbmc.log("[Cinebox] start_resolution_process iniciado", xbmc.LOGINFO)
+        xbmc.log("[Cinebox] start_resolution_process started", xbmc.LOGINFO)
         time.sleep(0.5)
         try:
-            xbmc.log("[Cinebox] Iniciando resolução de URL", xbmc.LOGINFO)
-            xbmc.executebuiltin('SetProperty(resolve_status,Buscando informações...,home)')
+            xbmc.log("[Cinebox] Starting URL resolution", xbmc.LOGINFO)
+            xbmc.executebuiltin('SetProperty(resolve_status,Searching for information...,home)')
             final_url, item_info = self.resolve_url_logic(self.source_url, self.item_data)
 
             if not final_url:
-                raise Exception("Falha ao resolver a URL final.")
+                raise Exception("Failed to resolve the final URL.")
 
             self.resolved_url = final_url
             xbmc.executebuiltin('SetProperty(resolve_status,Carregando player...,home)')
@@ -77,9 +77,9 @@ class CineboxResolverWindow(xbmcgui.WindowXMLDialog):
             self.play_resolved_source(final_url, item_info)
 
         except Exception as e:
-            xbmc.executebuiltin('SetProperty(resolve_status,Erro ao resolver,home)')
-            xbmc.log(f"[CineboxResolver] ERRO: {e}", xbmc.LOGERROR)
-            xbmcgui.Dialog().notification("Cinebox", "Erro ao resolver a fonte.", xbmcgui.NOTIFICATION_ERROR, 5000)
+            xbmc.executebuiltin('SetProperty(resolve_status,Error resolving,home)')
+            xbmc.log(f"[CineboxResolver] ERROR: {e}", xbmc.LOGERROR)
+            xbmcgui.Dialog().notification("Cinebox", "Error resolving source.", xbmcgui.NOTIFICATION_ERROR, 5000)
             self.close()
 
     def resolve_url_logic(self, url, item_info):
@@ -119,14 +119,14 @@ class CineboxResolverWindow(xbmcgui.WindowXMLDialog):
     def play_resolved_source(self, final_url, item_info):
         play_item = self._create_listitem(final_url, item_info)
         
-        # Inicia o monitoramento ANTES de chamar o setResolvedUrl para suprimir diálogos
+        # Start monitoring BEFORE calling setResolvedUrl to suppress dialogs
         is_elementum = "plugin.video.elementum" in final_url
 
         def dialog_killer():
-            """Thread dedicada para fechar diálogos indesejados o mais rápido possível."""
+            """Dedicated thread to close unwanted dialogs as quickly as possible."""
             if not is_elementum: return
             
-            # IDs de diálogos comuns que queremos suprimir
+            # Common dialog IDs we want to suppress
             dialog_ids = [10101, 10151, 10100, 10150]
             dialog_names = ['extendedprogressdialog', 'progressdialog', 'busydialog']
             
@@ -134,30 +134,30 @@ class CineboxResolverWindow(xbmcgui.WindowXMLDialog):
             while not xbmc.Player().isPlaying() and (time.time() - start_kill < 180) and not self.cancelled:
                 if xbmc.Monitor().abortRequested(): break
                 
-                # Fecha por ID
+                # Closes by ID
                 for d_id in dialog_ids:
                     if xbmcgui.getCurrentWindowDialogId() == d_id:
                         xbmc.executebuiltin(f'Dialog.Close({d_id}, true)')
                 
-                # Fecha por nome
+                # Close by name
                 for d_name in dialog_names:
                     xbmc.executebuiltin(f'Dialog.Close({d_name}, true)')
                 
-                xbmc.sleep(100) # Checa a cada 100ms
+                xbmc.sleep(100) # Checks every 100ms
 
         def get_kodi_log_path():
-            """Obtém o caminho do arquivo de log do Kodi com múltiplas tentativas"""
+            """Gets the path of the Kodi log file with multiple retries"""
             log_paths = []
             
             try:
-                # Tenta obter via xbmc.translatePath
+                # Try to get it via xbmc.translatePath
                 log_path = xbmc.translatePath('special://logpath/')
                 if log_path and os.path.isdir(log_path):
                     log_paths.append(os.path.join(log_path, 'kodi.log'))
             except:
                 pass
             
-            # Caminhos conhecidos para Android
+            # Known paths for Android
             android_paths = [
                 '/storage/emulated/0/Android/data/org.xbmc.kodi/files/.kodi/temp/kodi.log',
                 '/data/data/org.xbmc.kodi/files/.kodi/temp/kodi.log',
@@ -166,31 +166,31 @@ class CineboxResolverWindow(xbmcgui.WindowXMLDialog):
             ]
             log_paths.extend(android_paths)
             
-            # Testa cada caminho
+            # Test each path
             for path in log_paths:
                 try:
                     if os.path.exists(path) and os.path.isfile(path):
-                        xbmc.log(f"[Cinebox] Log encontrado em: {path}", xbmc.LOGINFO)
+                        xbmc.log(f"[Cinebox] Log found in: {path}", xbmc.LOGINFO)
                         return path
                 except:
                     pass
             
-            xbmc.log(f"[Cinebox] Nenhum arquivo de log encontrado. Caminhos testados: {log_paths}", xbmc.LOGWARNING)
+            xbmc.log(f"[Cinebox] No log file found. Paths tested: {log_paths}", xbmc.LOGWARNING)
             return None
 
         def parse_elementum_buffer_info(log_line):
-            """Extrai informações de buffer do Elementum do log"""
+            """Extracts Elementum buffer information from the log"""
             try:
-                # Extrai progresso: Pr: 43%
+                # Extracts progress: Pr: 43%
                 pr_match = re.search(r'Pr:\s*(\d+)%', log_line)
                 progress = int(pr_match.group(1)) if pr_match else 0
                 
-                # Extrai velocidade: Sp: 71 kB / 0 B
+                # Extracts Speed: Sp: 71 kB / 0 B
                 sp_match = re.search(r'Sp:\s*([\d.]+\s*[KMG]?B)\s*/\s*([\d.]+\s*[KMG]?B)', log_line)
                 download_speed = sp_match.group(1).strip() if sp_match else "0 B"
                 upload_speed = sp_match.group(2).strip() if sp_match else "0 B"
                 
-                # Extrai conexões: Con: 4/7 + 1/35
+                # Extracts connections: Con: 4/7 + 1/35
                 con_match = re.search(r'Con:\s*(\d+)/(\d+)\s*\+\s*(\d+)/(\d+)', log_line)
                 if con_match:
                     seeds = int(con_match.group(1))
@@ -207,69 +207,69 @@ class CineboxResolverWindow(xbmcgui.WindowXMLDialog):
                     'valid': True
                 }
             except Exception as e:
-                xbmc.log(f"[Cinebox] Erro ao parsear buffer info: {e}", xbmc.LOGDEBUG)
+                xbmc.log(f"[Cinebox] Error parsing buffer info: {e}", xbmc.LOGDEBUG)
                 return None
 
         def read_last_elementum_buffer_line(log_path):
-            """Lê o último evento de buffer do Elementum do arquivo de log"""
+            """Read the last Elementum buffer event from the log file"""
             try:
                 if not log_path or not os.path.exists(log_path):
-                    xbmc.log(f"[Cinebox] Arquivo de log não existe: {log_path}", xbmc.LOGDEBUG)
+                    xbmc.log(f"[Cinebox] Log file does not exist: {log_path}", xbmc.LOGDEBUG)
                     return None
                 
-                # Abre o arquivo e lê as últimas linhas
+                # Open the file and read the last lines
                 with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    # Vai para o final do arquivo
+                    # Go to the end of the file
                     f.seek(0, 2)
                     file_size = f.tell()
                     
-                    # Lê os últimos 100KB (aumentado para ter mais histórico)
+                    # Reads the last 100KB (enlarged for more history)
                     buffer_size = min(100000, file_size)
                     f.seek(file_size - buffer_size)
                     content = f.read()
                 
-                # Procura pela última linha com bufferTickerEvent
+                # Search for the last line with bufferTickerEvent
                 lines = content.split('\n')
                 for line in reversed(lines):
                     if 'bufferTickerEvent' in line and 'Buffer. Pr:' in line:
-                        xbmc.log(f"[Cinebox] Buffer line encontrada: {line[:100]}", xbmc.LOGDEBUG)
+                        xbmc.log(f"[Cinebox] Buffer line found: {line[:100]}", xbmc.LOGDEBUG)
                         return line
                 
-                xbmc.log(f"[Cinebox] Nenhuma linha de buffer encontrada no log", xbmc.LOGDEBUG)
+                xbmc.log(f"[Cinebox] No buffer line found in the log", xbmc.LOGDEBUG)
                 return None
             except Exception as e:
-                xbmc.log(f"[Cinebox] Erro ao ler log: {str(e)[:100]}", xbmc.LOGDEBUG)
+                xbmc.log(f"[Cinebox] Error reading log: {str(e)[:100]}", xbmc.LOGDEBUG)
                 return None
 
         def stop_elementum():
-            """✅ NOVO: Para o Elementum quando cancelado"""
-            xbmc.log("[Cinebox] Parando Elementum...", xbmc.LOGINFO)
+            """✅ NEW: For Elementum when canceled"""
+            xbmc.log("[Cinebox] Stopping Elementum...", xbmc.LOGINFO)
             try:
-                # Tenta parar via RPC do Elementum
+                # Try stopping via Elementum RPC
                 xbmc.executebuiltin('RunPlugin(plugin://plugin.video.elementum/stop)')
-                xbmc.log("[Cinebox] Comando stop enviado ao Elementum", xbmc.LOGINFO)
+                xbmc.log("[Cinebox] Stop command sent to Elementum", xbmc.LOGINFO)
             except Exception as e:
-                xbmc.log(f"[Cinebox] Erro ao parar Elementum: {e}", xbmc.LOGWARNING)
+                xbmc.log(f"[Cinebox] Error stopping Elementum: {e}", xbmc.LOGWARNING)
             
-            # Força parada do player
+            # Player stopping force
             try:
                 player = xbmc.Player()
                 if player.isPlaying():
                     player.stop()
-                    xbmc.log("[Cinebox] Player parado", xbmc.LOGINFO)
+                    xbmc.log("[Cinebox] Player stopped", xbmc.LOGINFO)
             except Exception as e:
-                xbmc.log(f"[Cinebox] Erro ao parar player: {e}", xbmc.LOGWARNING)
+                xbmc.log(f"[Cinebox] Error stopping player: {e}", xbmc.LOGWARNING)
 
         def monitor():
-            xbmc.log("[Cinebox] Monitor thread iniciado", xbmc.LOGINFO)
+            xbmc.log("[Cinebox] Monitor thread started", xbmc.LOGINFO)
             if is_elementum:
-                xbmc.log("[Cinebox] Detectado Elementum, iniciando monitoramento de progresso", xbmc.LOGINFO)
-                # Tenta forçar o Elementum a não mostrar diálogos via propriedade
+                xbmc.log("[Cinebox] Elementum detected, starting progress monitoring", xbmc.LOGINFO)
+                # Try to force Elementum not to show dialogs via property
                 xbmc.executebuiltin('SetProperty(ElementumBackground,true,home)')
-                xbmc.executebuiltin('SetProperty(resolve_status,Iniciando Elementum...,home)')
-                xbmc.executebuiltin('SetProperty(CineboxStatus,Iniciando Elementum...,home)')
+                xbmc.executebuiltin('SetProperty(resolve_status,Starting Elementum...,home)')
+                xbmc.executebuiltin('SetProperty(CineboxStatus,Starting Elementum...,home)')
                 
-                # Inicia o matador de diálogos em paralelo
+                # Start dialog killer in parallel
                 threading.Thread(target=dialog_killer, daemon=True).start()
 
             player = xbmc.Player()
@@ -277,18 +277,18 @@ class CineboxResolverWindow(xbmcgui.WindowXMLDialog):
             last_status_info = {}
             log_path = get_kodi_log_path()
             
-            xbmc.log(f"[Cinebox] Caminho do log: {log_path}", xbmc.LOGINFO)
-            xbmc.log(f"[Cinebox] Iniciando loop de monitoramento", xbmc.LOGINFO)
+            xbmc.log(f"[Cinebox] Log path: {log_path}", xbmc.LOGINFO)
+            xbmc.log(f"[Cinebox] Starting monitoring loop", xbmc.LOGINFO)
 
             loop_count = 0
-            # Monitora ENQUANTO está baixando (antes de iniciar playback)
+            # Monitor WHILE downloading (before starting playback)
             while not player.isPlaying() and not self.cancelled:
                 loop_count += 1
                 if loop_count % 10 == 0:
                     xbmc.log(f"[Cinebox] Loop iteration {loop_count}", xbmc.LOGDEBUG)
                 
                 if xbmc.Monitor().abortRequested():
-                    xbmc.log("[Cinebox] Abort solicitado", xbmc.LOGINFO)
+                    xbmc.log("[Cinebox] Abort requested", xbmc.LOGINFO)
                     self.cancelled = True
                     stop_elementum()
                     break
@@ -298,14 +298,14 @@ class CineboxResolverWindow(xbmcgui.WindowXMLDialog):
                     break
 
                 if is_elementum:
-                    xbmc.log("[Cinebox] Dentro do bloco is_elementum", xbmc.LOGDEBUG)
-                    # Se ainda não temos dados, avisa que está resolvendo
+                    xbmc.log("[Cinebox] Inside the block is_elementum", xbmc.LOGDEBUG)
+                    # If we still don't have data, let us know that it is being resolved.
                     if time.time() - start_time < 5:
-                        xbmc.executebuiltin('SetProperty(CineboxStatus,Resolvendo Link Magnético...,home)')
+                        xbmc.executebuiltin('SetProperty(CineboxStatus,Solving Magnetic Link...,home)')
 
                     found_status = False
                     
-                    # Tenta ler informações do log
+                    # Try reading log information
                     if log_path:
                         buffer_line = read_last_elementum_buffer_line(log_path)
                         if buffer_line:
@@ -317,65 +317,65 @@ class CineboxResolverWindow(xbmcgui.WindowXMLDialog):
                                 seeds = buffer_info.get('seeds', 0)
                                 peers = buffer_info.get('peers', 0)
                                 
-                                xbmc.log(f"[Cinebox] Progresso detectado: {progress}% - {download_speed}", xbmc.LOGINFO)
+                                xbmc.log(f"[Cinebox] Progress detected: {progress}% - {download_speed}", xbmc.LOGINFO)
                                 
-                                # Formata status com informações completas
+                                # Format status with complete information
                                 status_label = f"Buffering ({progress}%)\nD:{download_speed} U:{upload_speed} S:{seeds}/{peers}"
                                 resolve_status = f"Buffering ({progress}%)"
                                 
-                                # Armazena no cache
+                                # Store in cache
                                 last_status_info = {
                                     'progress': progress,
                                     'status_label': status_label,
                                     'resolve_status': resolve_status
                                 }
 
-                                # Define propriedades GLOBAIS
+                                # Sets GLOBAL properties
                                 xbmc.executebuiltin(f"SetProperty(elementum_progress,{progress},home)")
                                 status_escaped = status_label.replace('"', '\\"').replace("'", "\\'")
                                 resolve_escaped = resolve_status.replace('"', '\\"').replace("'", "\\'")
                                 xbmc.executebuiltin(f"SetProperty(CineboxStatus,\"{status_escaped}\",home)")
                                 xbmc.executebuiltin(f"SetProperty(resolve_status,\"{resolve_escaped}\",home)")
                                 
-                                # Define na janela do diálogo também
+                                # Defines in the dialog window as well
                                 try:
                                     self.setProperty('elementum_progress', str(progress))
                                     self.setProperty('CineboxStatus', status_label)
                                     self.setProperty('resolve_status', resolve_status)
                                 except Exception as e:
-                                    xbmc.log(f"[Cinebox] Erro ao setProperty: {e}", xbmc.LOGWARNING)
+                                    xbmc.log(f"[Cinebox] Error when setProperty: {e}", xbmc.LOGWARNING)
                                 
-                                # ATUALIZAÇÃO DIRETA DOS CONTROLES PELO ID
+                                # DIRECT UPDATE OF CONTROLS BY ID
                                 try:
                                     self.getControl(1001).setText(status_label)
                                     self.getControl(1003).setPercent(progress)
                                 except Exception as e:
-                                    xbmc.log(f"[Cinebox] Erro ao atualizar controles: {e}", xbmc.LOGWARNING)
+                                    xbmc.log(f"[Cinebox] Error updating controls: {e}", xbmc.LOGWARNING)
                                 
                                 found_status = True
                     
                     if not found_status:
                         elapsed = int(time.time() - start_time)
-                        xbmc.log(f"[Cinebox] Aguardando Elementum... (tentativa {elapsed}s)", xbmc.LOGDEBUG)
-                        # Se temos informacoes em cache, mostra elas
+                        xbmc.log(f"[Cinebox] Waiting for Elementum... (tentativa {elapsed}s)", xbmc.LOGDEBUG)
+                        # If we have cached information, show it
                         if last_status_info:
                             xbmc.executebuiltin(f"SetProperty(elementum_progress,{last_status_info.get('progress', 0)},home)")
-                            xbmc.executebuiltin(f"SetProperty(resolve_status,{last_status_info.get('resolve_status', 'Aguardando Elementum...')},home)")
-                            xbmc.executebuiltin(f"SetProperty(CineboxStatus,{last_status_info.get('status_label', 'Aguardando Elementum...')},home)")
+                            xbmc.executebuiltin(f"SetProperty(resolve_status,{last_status_info.get('resolve_status', 'Waiting for Elementum...')},home)")
+                            xbmc.executebuiltin(f"SetProperty(CineboxStatus,{last_status_info.get('status_label', 'Waiting for Elementum...')},home)")
                         else:
-                            xbmc.executebuiltin('SetProperty(resolve_status,Aguardando Elementum...,home)')
-                            xbmc.executebuiltin('SetProperty(CineboxStatus,Aguardando Elementum...,home)')
+                            xbmc.executebuiltin('SetProperty(resolve_status,Waiting for Elementum...,home)')
+                            xbmc.executebuiltin('SetProperty(CineboxStatus,Waiting for Elementum...,home)')
                     else:
                         xbmc.log("[Cinebox] Status encontrado!", xbmc.LOGDEBUG)
 
                 xbmc.sleep(1000)
             
-            # ✅ NOVO: Se foi cancelado, para o Elementum
+            # ✅ NEW: If canceled, for Elementum
             if self.cancelled:
-                xbmc.log("[Cinebox] Cancelamento detectado no monitor, parando Elementum", xbmc.LOGINFO)
+                xbmc.log("[Cinebox] Cancellation detected on monitor, stopping Elementum", xbmc.LOGINFO)
                 stop_elementum()
             
-            # Limpa propriedades ao finalizar
+            # Clears properties when finished
             xbmc.executebuiltin('ClearProperty(elementum_progress,home)')
             xbmc.executebuiltin('ClearProperty(elementum_status,home)')
             xbmc.executebuiltin('ClearProperty(resolve_status,home)')
@@ -392,20 +392,20 @@ class CineboxResolverWindow(xbmcgui.WindowXMLDialog):
         xbmcplugin.setResolvedUrl(handle=self.handle, succeeded=True, listitem=play_item)
 
     def onAction(self, action):
-        """✅ MELHORADO: Detecta cancelamento e para o Elementum"""
+        """✅ IMPROVED: Detects cancellation and stops Elementum"""
         if action.getId() in (xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_PARENT_DIR, xbmcgui.ACTION_STOP):
-            xbmc.log("[Cinebox] Ação de cancelamento detectada", xbmc.LOGINFO)
+            xbmc.log("[Cinebox] Cancellation action detected", xbmc.LOGINFO)
             self.cancelled = True
             
-            # Para o Elementum imediatamente
+            # To Elementum immediately
             if self.is_torrent_source:
-                xbmc.log("[Cinebox] Parando Elementum no cancelamento", xbmc.LOGINFO)
+                xbmc.log("[Cinebox] Stopping Elementum on cancellation", xbmc.LOGINFO)
                 try:
                     xbmc.executebuiltin('RunPlugin(plugin://plugin.video.elementum/stop)')
                     player = xbmc.Player()
                     if player.isPlaying():
                         player.stop()
                 except Exception as e:
-                    xbmc.log(f"[Cinebox] Erro ao parar Elementum: {e}", xbmc.LOGWARNING)
+                    xbmc.log(f"[Cinebox] Error stopping Elementum: {e}", xbmc.LOGWARNING)
             
             self.close()
