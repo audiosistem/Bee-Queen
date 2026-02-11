@@ -140,7 +140,7 @@ Added support for Kodi v19 (Matrix)
         </news>
         <assets>
             <icon>icon.png</icon>
-            <fanart>fanart.png</fanart>
+            <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
 </addon><addon id="plugin.program.bq" name="BQ" version="1.3" provider-name="AS">
@@ -1347,12 +1347,12 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart />
         </assets>
     </extension>
-</addon><addon id="repository.cMaNWizard" name="cMaN's Wizard Repository" version="3.2" provider-name="cMaN">
+</addon><addon id="repository.cMaNWizard" name="cMaN's Wizard Repository" version="3.5" provider-name="cMaN">
         <extension point="xbmc.addon.repository" name="cMaN's Wizard Repository">
 		<dir>		
-            <info compressed="false">https://raw.githubusercontent.com/mfirepo/repo/master/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/mfirepo/repo/master/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/mfirepo/repo/master/plugins/</datadir>
+            <info compressed="false">https://cmanbuildsxyz.com/cman/repo/addons.xml</info>
+            <checksum>https://cmanbuildsxyz.com/cman/repo/addons.xml.md5</checksum>
+            <datadir zip="true">https://cmanbuildsxyz.com/cman/repo/</datadir>
 		</dir>
 		<dir>
 			<info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
