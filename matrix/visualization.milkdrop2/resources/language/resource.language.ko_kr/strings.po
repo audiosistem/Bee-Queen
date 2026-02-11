@@ -1,0 +1,26 @@
+# Kodi Media Center language file
+# Addon Name: MilkDrop 2
+# Addon id: visualization.milkdrop2
+# Addon Provider: Team Kodi
+msgid ""
+msgstr ""
+"Project-Id-Version: KODI Addons\n"
+"Report-Msgid-Bugs-To: translations@kodi.tv\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: 2021-09-21 07:30+0000\n"
+"Last-Translator: Minho Park <parkmino@gmail.com>\n"
+"Language-Team: Korean <https://kodi.weblate.cloud/projects/kodi-add-ons-look-and-feel/visualization-milkdrop2/ko_kr/>\n"
+"Language: ko_kr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Weblate 4.8\n"
+
+msgctxt "Addon Summary"
+msgid "MilkDrop takes you flying through the soundwaves you're hearing"
+msgstr "MilkDrop은 사운드웨이브 속으로 날아가는듯한 효과를 보여줍니다"
+
+msgctxt "Addon Description"
+msgid "MilkDrop was originally a music visualiser \"plug-in\" to the Winamp music player. As you listen to your music, MilkDrop takes you flying through the actual soundwaves you're hearing, and uses beat detection to trigger myriad psychedelic effects, creating a rich visual journey through sound."
+msgstr "MilkDrop는 원래 윈앰프의 음악 시각화 플러그인입니다. 음악을 들으면서 사운드 웨이브로 날아가는듯한 효과를 보여주며 비트 감지를 해서 다양한 싸이키데릭한 효과를 만들어 풍부한 시각적 경험을 하게합니다."
