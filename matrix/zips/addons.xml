@@ -203,6 +203,46 @@ Added support for Kodi v19 (Matrix)
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
+</addon><addon id="plugin.video.TVOnline.ro" provider-name="cralin" name="TVOnline.ro" version="21.0.14">
+  <requires>
+    <import addon="xbmc.python" version="3.0.1" />
+    <import addon="script.module.requests" version="2.31.0" />
+    <import addon="script.module.inputstreamhelper" version="0.6.1+matrix.1" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="main.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.service" library="service.py" />
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">Watch romanian live TV channels.</summary>
+    <description lang="en_GB">
+Kodi addon for accessing live TV channels from various romanian online platforms.
+
+Supported platforms:
+  - DigiOnline.ro
+  - voyo.ro
+  - tvrplus.ro
+  - primaplay.ro
+
+For each supported platform, user registration and login credentials are required in order to access the media content.
+
+Visit https://www.digiromania.ro for more details.
+Visit https://voyo.ro for more details.
+Visit https://www.tvrplus.ro for more details.
+Visit https://www.primaplay.ro for more details.
+    </description>
+    <disclaimer lang="en_GB">
+The author is not connected to or in any other way affiliated with Kodi, Team Kodi, the XBMC foundation or any of the online platforms used by this add-on.
+    </disclaimer>
+    <assets>
+      <icon>resources/media/icon.png</icon>
+      <fanart>resources/media/fanart.jpg</fanart>
+      <screenshot />
+    </assets>
+    <news>
+
+    </news>
+  </extension>
 </addon><addon id="plugin.video.cinebox" version="3.1.1" name="CINEBOX [COLOR red]TrainAgain[/COLOR]" provider-name="@TrainAgain2">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -366,28 +406,6 @@ In addition to what livestreams allowed you to do, you can now,
 		<language>en</language>
 	</extension>	
 	
-</addon><addon id="plugin.video.neo_flix" name="[COLORlime]Neo Flix[/COLOR]" version="3.3.36" provider-name="">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0" />
-		<import addon="script.module.resolveurl" />
-		<import addon="script.module.requests" />
-        <import addon="script.module.inputstreamhelper" />
-        <import addon="inputstream.adaptive" version="2.6.0" />
-    </requires>
-	 <extension point="xbmc.python.pluginsource" library="main.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en" />
-	<description lang="en_GB">No Streams Are Stored Locally-All Are Available Freely On The Internet-A Mixture Of Free And Debrid Links</description>
-    <platform>all</platform>
-    <language>en</language>
-    <license>GPL-2.0-or-later</license>
-	<assets>
-		<icon>icon.png</icon>
-		<fanart>fanart.jpg</fanart>
-  </assets>
-  </extension>
 </addon><addon id="plugin.video.playlistbee" name="[COLORorangered]Bee[/COLOR]" version="3.1" provider-name="Nux007, Publish3r, Silhouette2022,Bee,1X and Romy">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -1411,7 +1429,7 @@ In addition to what livestreams allowed you to do, you can now,
         <summary>CocoScrapers Repository</summary>
         <description>Unofficial add-ons repository</description>
     </extension>
-</addon><addon id="repository.cralin" name="cralin's Repository" version="1.0.10" provider-name="cralin">
+</addon><addon id="repository.cralin" name="cralin's Repository" version="1.0.11" provider-name="cralin">
 	<extension point="xbmc.addon.repository" name="cralin's Repository">
 		<dir>
 			<hashes>false</hashes>
@@ -1432,29 +1450,47 @@ In addition to what livestreams allowed you to do, you can now,
 			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_20/addons.xml.md5</checksum>
 			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_20/.packages</datadir>
 		</dir>
+
 		<dir minversion="21.0.0" maxversion="21.80.00">
 			<hashes>false</hashes>
 			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_21/addons.xml</info>
 			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_21/addons.xml.md5</checksum>
 			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_21/.packages</datadir>
 		</dir>
-		<dir minversion="22.0.0" maxversion="22.80.00">
+
+		<dir minversion="21.90.00" maxversion="22.80.00">
 			<hashes>false</hashes>
 			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_22/addons.xml</info>
 			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_22/addons.xml.md5</checksum>
 			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_22/.packages</datadir>
 		</dir>
-		<dir minversion="23.0.0" maxversion="23.80.00">
+
+		<dir minversion="22.90.00" maxversion="23.80.00">
 			<hashes>false</hashes>
 			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_23/addons.xml</info>
 			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_23/addons.xml.md5</checksum>
 			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_23/.packages</datadir>
 		</dir>
-		<dir minversion="24.0.0" maxversion="24.80.00">
+
+		<dir minversion="23.90.00" maxversion="24.80.00">
 			<hashes>false</hashes>
 			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_24/addons.xml</info>
 			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_24/addons.xml.md5</checksum>
 			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_24/.packages</datadir>
+		</dir>
+
+		<dir minversion="24.90.00" maxversion="25.80.00">
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_25/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_25/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_25/.packages</datadir>
+		</dir>
+
+		<dir minversion="25.90.00" maxversion="26.80.00">
+			<hashes>false</hashes>
+			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_26/addons.xml</info>
+			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_26/addons.xml.md5</checksum>
+			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_26/.packages</datadir>
 		</dir>
 
 	</extension>
@@ -1463,8 +1499,7 @@ In addition to what livestreams allowed you to do, you can now,
 		<description>cralin's Repository</description>
 		<platform>all</platform>
 		<assets>
-        <icon>icon.png</icon>
-		<fanart>fanart.jpg</fanart>
+			<icon />
 		</assets>
 	</extension>
 </addon><addon id="repository.dexe" name=" dEXE's Addons Repository" version="1.0.11" provider-name="dEXE">
