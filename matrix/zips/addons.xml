@@ -1107,6 +1107,25 @@ In addition to what livestreams allowed you to do, you can now,
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
+</addon><addon id="plugin.video.veziaici.net" name="VeziAici.net" version="1.1.1" provider-name="1 x Geamanu">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" />
+    <import addon="script.module.beautifulsoup4" />
+    <import addon="script.module.resolveurl" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="addon.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">Watch Romanian shows and series from VeziAici.net</summary>
+    <description lang="en">This addon allows you to browse and watch content from VeziAici.net, including Romanian shows and series.</description>
+    <platform>all</platform>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
 </addon><addon id="plugin.video.vixmovie" name="VixMovie" version="1.6" provider-name="1x,Geamanu,apoyotech">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
