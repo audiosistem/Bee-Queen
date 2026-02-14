@@ -1125,16 +1125,18 @@ In addition to what livestreams allowed you to do, you can now,
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.veziaici.net" name="VeziAici.net" version="1.1.1" provider-name="1 x Geamanu">
+</addon><addon id="plugin.video.veziaici.net" name="VeziAici.net" version="1.1.2" provider-name="1 x Geamanu">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
     <import addon="script.module.beautifulsoup4" />
     <import addon="script.module.resolveurl" />
+    <import addon="script.module.yt-dlp" />
   </requires>
   <extension point="xbmc.python.pluginsource" library="addon.py">
     <provides>video</provides>
   </extension>
+  <extension point="xbmc.service" library="service.py" />
   <extension point="xbmc.addon.metadata">
     <summary lang="en">Watch Romanian shows and series from VeziAici.net</summary>
     <description lang="en">This addon allows you to browse and watch content from VeziAici.net, including Romanian shows and series.</description>
@@ -1981,6 +1983,23 @@ In addition to what livestreams allowed you to do, you can now,
       <icon>icon.png</icon>
     </assets>
   </extension>
+</addon><addon id="script.module.yt-dlp" name="yt-dlp" version="2026.02.04-1" provider-name="yt-dlp contributors">
+
+    <requires>
+        <import addon="xbmc.python" version="3.0.1" />
+        <import addon="script.module.certifi" version="2023.5.7" />
+    </requires>
+
+    <extension point="xbmc.python.module" library="lib" />
+
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">A youtube-dl fork with additional features and patches</summary>
+        <description lang="en_GB">yt-dlp is a youtube-dl fork based on the now inactive youtube-dlc. The main focus of this project is adding new features and patches while also keeping up to date with the original project</description>
+        <license>Unlicense</license>
+        <platform>all</platform>
+        <source>https://github.com/yt-dlp/yt-dlp</source>
+    </extension>
+
 </addon><addon id="service.cinemagia" name="[COLORgold]Cinemagia service[/COLOR]" version="1.0.2" provider-name="sarsailă, moromete">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />

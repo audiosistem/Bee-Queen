@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="General">
+        <setting id="resolver" type="select" label="Metoda de rezolvare" default="0" values="ResolveURL|Youtube-DL" />
+    </category>
+    <category label="Trakt">
+        <setting id="trakt_info" type="text" label="Status" default="Neconectat" enable="false" />
+        <setting id="authorize_trakt" type="action" label="Autorizeaza Trakt" action="RunPlugin(plugin://plugin.video.veziaici.net/?mode=authorize_trakt)" />
+        <setting id="revoke_trakt" type="action" label="Deconecteaza Trakt" action="RunPlugin(plugin://plugin.video.veziaici.net/?mode=revoke_trakt)" />
+        <setting id="trakt_token" type="text" label="Token" visible="false" />
+        <setting id="trakt_refresh" type="text" label="Refresh Token" visible="false" />
+        <setting id="trakt_expiry" type="text" label="Expiry" visible="false" />
+    </category>
+</settings>

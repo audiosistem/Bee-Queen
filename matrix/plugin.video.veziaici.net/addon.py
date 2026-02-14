@@ -13,6 +13,7 @@ import os
 import time
 import base64
 from bs4 import BeautifulSoup
+from resources.lib.trakt_api import TraktAPI
 
 # Get the addon ID
 ADDON_ID = xbmcaddon.Addon().getAddonInfo('id')
@@ -112,7 +113,7 @@ def list_main_menu():
             url = sys.argv[0] + '?' + urllib.parse.urlencode({'mode': 'list_show_categories', 'shows': json.dumps(category['shows']), 'name': category['title'], 'latest_url': 'https://veziaici.net/category/a-emisiuni-romanesti/'})
         elif 'seriale' in category['title'].lower():
             category_icon = CUSTOM_IMAGES.get('las fierbinti', category_icon)
-            url = sys.argv[0] + '?' + urllib.parse.urlencode({'mode': 'list_show_categories', 'shows': json.dumps(category['shows']), 'name': category['title'], 'latest_url': 'https://veziaici.net/category/a-seriale-romanesti/'})
+            url = sys.argv[0] + '?' + urllib.parse.urlencode({'mode': 'list_show_categories', 'shows': json.dumps(category['shows']), 'name': category['title'], 'latest_url': 'https://veziaici.net/category/c-seriale-romanesti/'})
         else:
             url = sys.argv[0] + '?' + urllib.parse.urlencode({'mode': 'list_shows', 'shows': json.dumps(category['shows']), 'name': category['title']})
 
@@ -238,7 +239,8 @@ def list_episodes(url, name=""):
     all_episodes = []
 
     # Try to load from cache first
-    if os.path.exists(cache_file) and (time.time() - os.path.getmtime(cache_file)) < cache_expiry:
+    # Force refresh to clear potentially bad cache
+    if False and os.path.exists(cache_file) and (time.time() - os.path.getmtime(cache_file)) < cache_expiry:
         with open(cache_file, 'r') as f:
             all_episodes = json.load(f)
     else:
@@ -252,11 +254,10 @@ def list_episodes(url, name=""):
             except requests.exceptions.RequestException:
                 break
 
-            for item_container in soup.find_all('div', class_='rb-col-m12'):
-                title_element = item_container.find('h2', class_='entry-title')
-                if title_element and title_element.find('a'):
+            for title_element in soup.find_all(['h3', 'h2'], class_='entry-title'):
+                if title_element.find('a'):
                     link_element = title_element.find('a')
-                    item_url = link_element['href']
+                    item_url = link_element.get('href')
                     title = link_element.text.strip()
                     if item_url and title:
                         all_episodes.append({'title': title, 'url': item_url, 'name': name})
@@ -329,7 +330,7 @@ def list_episodes_for_season(episodes_json, season, name=""):
         xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=True)
     xbmcplugin.endOfDirectory(HANDLE)
 
-def list_sources(url):
+def list_sources(url, name=""):
     try:
         response = _get_html_content(url)
         response.raise_for_status()
@@ -353,17 +354,103 @@ def list_sources(url):
         list_item = xbmcgui.ListItem(f"Sursa: {domain}")
         list_item.setInfo('video', {'title': f"Sursa: {domain}"})
         list_item.setProperty('IsPlayable', 'true')
-        url_params = {'mode': 'play_source', 'url': video_url}
+        
+        # Pass the real title (name) to play_source
+        url_params = {'mode': 'play_source', 'url': video_url, 'title': name}
+        
         context_menu_items = [('Download', f'RunPlugin({sys.argv[0]}?mode=download_source&url={urllib.parse.quote_plus(video_url)})')]
         list_item.addContextMenuItems(context_menu_items)
         xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=False)
     
     xbmcplugin.endOfDirectory(HANDLE)
 
-def play_source(url):
-    resolved_url = resolveurl.resolve(url)
+def resolve_url_wrapper(url):
+    resolver_method = ADDON.getSetting('resolver')
+    xbmc.log(f"[{ADDON.getAddonInfo('name')}] Resolver Setting: '{resolver_method}' (0=ResolveURL, 1=Youtube-DL)", xbmc.LOGINFO)
+    
+    # Method 1: Youtube-DL (Check for index '1' or value 'Youtube-DL')
+    if resolver_method == '1' or resolver_method == 'Youtube-DL':
+        
+        ydl_module = None
+        module_name = ""
+
+        try:
+            import yt_dlp as ydl_module
+            module_name = "yt-dlp"
+        except ImportError:
+            try:
+                import youtube_dl as ydl_module
+                module_name = "youtube_dl"
+            except ImportError:
+                xbmc.log(f"[{ADDON.getAddonInfo('name')}] Nici yt-dlp, nici youtube_dl nu au fost gasite.", xbmc.LOGWARNING)
+
+        if ydl_module:
+            xbmcgui.Dialog().notification(ADDON.getAddonInfo('name'), f"Incercare rezolvare cu {module_name}...", xbmcgui.NOTIFICATION_INFO)
+            
+            try:
+                # Options to mimic a browser and avoid bot detection
+                ydl_opts = {
+                    'format': 'best',
+                    'quiet': True,
+                    'no_warnings': True,
+                    'nocheckcertificate': True,
+                    'user_agent': HEADERS['User-Agent'],
+                    'referer': BASE_URL,
+                    # youtube_dl might not support all these, but usually ignores unknown opts or shares them
+                }
+                
+                with ydl_module.YoutubeDL(ydl_opts) as ydl:
+                    xbmc.log(f"[{ADDON.getAddonInfo('name')}] {module_name} Processing: {url}", xbmc.LOGINFO)
+                    info = ydl.extract_info(url, download=False)
+                    
+                    if 'url' in info:
+                        xbmc.log(f"[{ADDON.getAddonInfo('name')}] {module_name} Success: {info['url']}", xbmc.LOGINFO)
+                        return info['url']
+                    elif 'entries' in info:
+                        # Sometimes it returns a playlist, take first item
+                        first_entry = info['entries'][0]
+                        if 'url' in first_entry:
+                            xbmc.log(f"[{ADDON.getAddonInfo('name')}] {module_name} Success (Playlist): {first_entry['url']}", xbmc.LOGINFO)
+                            return first_entry['url']
+                    
+                    xbmc.log(f"[{ADDON.getAddonInfo('name')}] {module_name} did not return a direct URL.", xbmc.LOGWARNING)
+
+            except Exception as e:
+                xbmc.log(f"[{ADDON.getAddonInfo('name')}] {module_name} Error: {e}. Falling back.", xbmc.LOGERROR)
+                # Do not return None yet, fall through to ResolveURL
+        else:
+             xbmcgui.Dialog().notification(ADDON.getAddonInfo('name'), "Module Youtube-DL lipsa! Folosesc ResolveURL.", xbmcgui.NOTIFICATION_WARNING)
+
+        xbmc.log(f"[{ADDON.getAddonInfo('name')}] Youtube-DL method failed. Falling back to ResolveURL.", xbmc.LOGINFO)
+    
+    # Method 0 (or Fallback): ResolveURL
+    # Check if ResolveURL supports the host before trying blindly (optional, but ResolveURL handles checking)
+    try:
+        if resolveurl.HostedMediaFile(url=url).valid_url():
+            xbmc.log(f"[{ADDON.getAddonInfo('name')}] Using ResolveURL for: {url}", xbmc.LOGINFO)
+            return resolveurl.resolve(url)
+        else:
+            xbmc.log(f"[{ADDON.getAddonInfo('name')}] ResolveURL says URL is invalid: {url}", xbmc.LOGWARNING)
+            # If we are here and YT-DLP also failed (or wasn't selected), we might try passing it directly
+            # assuming it's a direct link (mp4/m3u8)
+            if url.endswith('.mp4') or url.endswith('.m3u8'):
+                 return url
+    except Exception as e:
+        xbmc.log(f"[{ADDON.getAddonInfo('name')}] ResolveURL Error: {e}", xbmc.LOGERROR)
+
+    return None
+
+def play_source(url, title=None):
+    resolved_url = resolve_url_wrapper(url)
     if resolved_url:
         list_item = xbmcgui.ListItem(path=resolved_url)
+        if title:
+            list_item.setInfo('video', {'title': title})
+            # Communicate title to service.py via window property
+            xbmcgui.Window(10000).setProperty('VeziAici_Title', title)
+        else:
+            xbmcgui.Window(10000).clearProperty('VeziAici_Title')
+            
         xbmcplugin.setResolvedUrl(HANDLE, True, list_item)
     else:
         xbmcgui.Dialog().ok(ADDON.getAddonInfo('name'), "Could not resolve video URL.")
@@ -430,11 +517,10 @@ def list_latest(url, name=""):
         except requests.exceptions.RequestException:
             break
 
-        for item_container in soup.find_all('div', class_='rb-col-m12'):
-            title_element = item_container.find('h2', class_='entry-title')
-            if title_element and title_element.find('a'):
+        for title_element in soup.find_all(['h3', 'h2'], class_='entry-title'):
+            if title_element.find('a'):
                 link_element = title_element.find('a')
-                item_url = link_element['href']
+                item_url = link_element.get('href')
                 title = link_element.text.strip()
 
                 show_icon = ADDON.getAddonInfo('icon')
@@ -523,7 +609,7 @@ def list_turkish_episodes(url, name):
             list_item = xbmcgui.ListItem(title)
             list_item.setArt({'thumb': thumb, 'icon': thumb})
             list_item.setInfo('video', {'title': title})
-            url_params = {'mode': 'list_turkish_sources', 'url': episode_url}
+            url_params = {'mode': 'list_turkish_sources', 'url': episode_url, 'name': name} # Pass name
             xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=True)
     # Handle pagination
     next_page_link = soup.find('a', class_='next page-numbers')
@@ -535,7 +621,7 @@ def list_turkish_episodes(url, name):
     xbmcplugin.endOfDirectory(HANDLE)
 
 
-def list_turkish_sources(url):
+def list_turkish_sources(url, name=""):
     try:
         response = _get_html_content(url)
         response.raise_for_status()
@@ -571,7 +657,10 @@ def list_turkish_sources(url):
                     list_item = xbmcgui.ListItem(f"Sursa: {domain}")
                     list_item.setInfo('video', {'title': f"Sursa: {domain}"})
                     list_item.setProperty('IsPlayable', 'true')
-                    url_params = {'mode': 'play_source', 'url': video_url}
+                    
+                    # Pass title
+                    url_params = {'mode': 'play_source', 'url': video_url, 'title': name}
+                    
                     context_menu_items = [('Download', f'RunPlugin({sys.argv[0]}?mode=download_source&url={urllib.parse.quote_plus(video_url)})')]
                     list_item.addContextMenuItems(context_menu_items)
                     xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=False)
@@ -722,7 +811,7 @@ def list_korean_series(url, name, page='1'):
                 list_item = xbmcgui.ListItem(title)
                 list_item.setArt({'thumb': thumb, 'icon': thumb})
                 list_item.setInfo('video', {'title': title, 'plot': description})
-                url_params = {'mode': 'list_korean_episodes_and_sources', 'url': series_url}
+                url_params = {'mode': 'list_korean_episodes_and_sources', 'url': series_url, 'name': title} # Pass name
                 xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=True)
 
     # Pagination - try both methods
@@ -822,7 +911,7 @@ def list_movies(url, name, page='1'):
                 if is_series:
                     url_params = {'mode': 'list_series_episodes', 'url': series_url, 'name': title}
                 else:
-                    url_params = {'mode': 'list_movie_sources', 'url': series_url}
+                    url_params = {'mode': 'list_movie_sources', 'url': series_url, 'name': title} # Pass name
                 
                 xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=True)
 
@@ -848,7 +937,7 @@ def list_movies(url, name, page='1'):
 
     xbmcplugin.endOfDirectory(HANDLE)
 
-def list_movie_sources(url):
+def list_movie_sources(url, name=""):
     try:
         response = _get_html_content(url)
         response.raise_for_status()
@@ -869,7 +958,10 @@ def list_movie_sources(url):
             list_item = xbmcgui.ListItem(f"Sursa: {domain}")
             list_item.setInfo('video', {'title': f"Sursa: {domain}"})
             list_item.setProperty('IsPlayable', 'true')
-            url_params = {'mode': 'play_source', 'url': video_url}
+            
+            # Pass title
+            url_params = {'mode': 'play_source', 'url': video_url, 'title': name}
+            
             context_menu_items = [('Download', f'RunPlugin({sys.argv[0]}?mode=download_source&url={urllib.parse.quote_plus(video_url)})')]
             list_item.addContextMenuItems(context_menu_items)
             xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=False)
@@ -888,7 +980,10 @@ def list_movie_sources(url):
             list_item = xbmcgui.ListItem(f"Sursa: {domain}")
             list_item.setInfo('video', {'title': f"Sursa: {domain}"})
             list_item.setProperty('IsPlayable', 'true')
-            url_params = {'mode': 'play_source', 'url': video_url}
+            
+            # Pass title
+            url_params = {'mode': 'play_source', 'url': video_url, 'title': name}
+            
             xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=False)
             sources_found = True
 
@@ -927,14 +1022,18 @@ def list_series_episodes(url, name):
                         list_item = xbmcgui.ListItem(display_title)
                         list_item.setProperty('IsPlayable', 'true')
                         list_item.setInfo('video', {'title': display_title})
-                        url_params = {'mode': 'play_source', 'url': source_url}
+                        
+                        # Use Name + Episode Title for player title so Trakt can parse it
+                        full_player_title = f"{name} - {episode_title}"
+                        url_params = {'mode': 'play_source', 'url': source_url, 'title': full_player_title}
+                        
                         context_menu_items = [('Download', f'RunPlugin({sys.argv[0]}?mode=download_source&url={urllib.parse.quote_plus(source_url)})')]
                         list_item.addContextMenuItems(context_menu_items)
                         xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=False)
 
     xbmcplugin.endOfDirectory(HANDLE)
 
-def list_korean_episodes_and_sources(url):
+def list_korean_episodes_and_sources(url, name=""):
     try:
         response = _get_html_content(url)
         response.raise_for_status()
@@ -965,7 +1064,8 @@ def list_korean_episodes_and_sources(url):
             url_params = {
                 'mode': 'list_korean_season_episodes',
                 'url': url, # Pass the page URL
-                'season_title': season_title
+                'season_title': season_title,
+                'name': name # Pass show name
             }
             list_item = xbmcgui.ListItem(season_title)
             xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=True)
@@ -993,7 +1093,11 @@ def list_korean_episodes_and_sources(url):
                 list_item = xbmcgui.ListItem(display_title)
                 list_item.setProperty('IsPlayable', 'true')
                 list_item.setInfo('video', {'title': display_title})
-                url_params = {'mode': 'play_source', 'url': source_url}
+                
+                # Use Show Name + Episode Title
+                full_player_title = f"{name} - {display_title}"
+                url_params = {'mode': 'play_source', 'url': source_url, 'title': full_player_title}
+                
                 context_menu_items = [('Download', f'RunPlugin({sys.argv[0]}?mode=download_source&url={urllib.parse.quote_plus(source_url)})')]
                 list_item.addContextMenuItems(context_menu_items)
                 xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=False)
@@ -1021,7 +1125,10 @@ def list_korean_episodes_and_sources(url):
                         list_item = xbmcgui.ListItem(display_title)
                         list_item.setProperty('IsPlayable', 'true')
                         list_item.setInfo('video', {'title': display_title})
-                        url_params = {'mode': 'play_source', 'url': video_url}
+                        
+                        full_player_title = f"{name} - {current_episode_title}"
+                        url_params = {'mode': 'play_source', 'url': video_url, 'title': full_player_title}
+                        
                         context_menu_items = [('Download', f'RunPlugin({sys.argv[0]}?mode=download_source&url={urllib.parse.quote_plus(video_url)})')]
                         list_item.addContextMenuItems(context_menu_items)
                         xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=False)
@@ -1039,7 +1146,10 @@ def list_korean_episodes_and_sources(url):
                         list_item = xbmcgui.ListItem(display_title)
                         list_item.setProperty('IsPlayable', 'true')
                         list_item.setInfo('video', {'title': display_title})
-                        url_params = {'mode': 'play_source', 'url': source_url}
+                        
+                        full_player_title = f"{name} - {current_episode_title}"
+                        url_params = {'mode': 'play_source', 'url': source_url, 'title': full_player_title}
+                        
                         context_menu_items = [('Download', f'RunPlugin({sys.argv[0]}?mode=download_source&url={urllib.parse.quote_plus(source_url)})')]
                         list_item.addContextMenuItems(context_menu_items)
                         xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=False)
@@ -1056,7 +1166,7 @@ def list_korean_episodes_and_sources(url):
 
     xbmcplugin.endOfDirectory(HANDLE)
 
-def list_korean_season_episodes(url, season_title):
+def list_korean_season_episodes(url, season_title, name=""):
     try:
         response = _get_html_content(url)
         response.raise_for_status()
@@ -1113,7 +1223,10 @@ def list_korean_season_episodes(url, season_title):
                         list_item = xbmcgui.ListItem(display_title)
                         list_item.setProperty('IsPlayable', 'true')
                         list_item.setInfo('video', {'title': display_title})
-                        url_params = {'mode': 'play_source', 'url': source_url}
+                        
+                        full_player_title = f"{name} - {display_title}"
+                        url_params = {'mode': 'play_source', 'url': source_url, 'title': full_player_title}
+                        
                         context_menu_items = [('Download', f'RunPlugin({sys.argv[0]}?mode=download_source&url={urllib.parse.quote_plus(source_url)})')]
                         list_item.addContextMenuItems(context_menu_items)
                         xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=False)
@@ -1147,7 +1260,10 @@ def list_korean_season_episodes(url, season_title):
                             list_item = xbmcgui.ListItem(display_title)
                             list_item.setProperty('IsPlayable', 'true')
                             list_item.setInfo('video', {'title': display_title})
-                            url_params = {'mode': 'play_source', 'url': video_url}
+                            
+                            full_player_title = f"{name} - {current_episode_title}"
+                            url_params = {'mode': 'play_source', 'url': video_url, 'title': full_player_title}
+                            
                             context_menu_items = [('Download', f'RunPlugin({sys.argv[0]}?mode=download_source&url={urllib.parse.quote_plus(video_url)})')]
                             list_item.addContextMenuItems(context_menu_items)
                             xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=False)
@@ -1164,7 +1280,10 @@ def list_korean_season_episodes(url, season_title):
                             list_item = xbmcgui.ListItem(display_title)
                             list_item.setProperty('IsPlayable', 'true')
                             list_item.setInfo('video', {'title': display_title})
-                            url_params = {'mode': 'play_source', 'url': source_url}
+                            
+                            full_player_title = f"{name} - {current_episode_title}"
+                            url_params = {'mode': 'play_source', 'url': source_url, 'title': full_player_title}
+                            
                             context_menu_items = [('Download', f'RunPlugin({sys.argv[0]}?mode=download_source&url={urllib.parse.quote_plus(source_url)})')]
                             list_item.addContextMenuItems(context_menu_items)
                             xbmcplugin.addDirectoryItem(handle=HANDLE, url=sys.argv[0] + '?' + urllib.parse.urlencode(url_params), listitem=list_item, isFolder=False)
@@ -1626,11 +1745,15 @@ def play_serialecoreene_episode(url, name):
         xbmc.log(f"[{ADDON.getAddonInfo('name')}] Video URL: {video_url}", xbmc.LOGINFO)
 
         # Step 4: Resolve and play the video
-        resolved_url = resolveurl.resolve(video_url)
+        resolved_url = resolve_url_wrapper(video_url)
         if resolved_url:
             xbmc.log(f"[{ADDON.getAddonInfo('name')}] Resolved URL: {resolved_url}", xbmc.LOGINFO)
             list_item = xbmcgui.ListItem(path=resolved_url)
             list_item.setInfo('video', {'title': name})
+            
+            # Communicate title to service
+            xbmcgui.Window(10000).setProperty('VeziAici_Title', name)
+            
             xbmcplugin.setResolvedUrl(HANDLE, True, list_item)
         else:
             xbmc.log(f"[{ADDON.getAddonInfo('name')}] Could not resolve URL", xbmc.LOGERROR)
@@ -1644,7 +1767,7 @@ def play_serialecoreene_episode(url, name):
         xbmcgui.Dialog().ok(ADDON.getAddonInfo('name'), f"A aparut o eroare neasteptata: {e}")
 
 def download_source(url):
-    resolved_url = resolveurl.resolve(url)
+    resolved_url = resolve_url_wrapper(url)
     if resolved_url:
         # The most reliable way to handle downloads in Kodi for external URLs
         # is to use the Download builtin with the resolved URL
@@ -1657,6 +1780,7 @@ def router(paramstring):
     mode = params.get('mode')
     name = params.get('name')
     url = params.get('url')
+    title = params.get('title') # Extract title for play_source
     shows = params.get('shows')
     episodes = params.get('episodes')
     season = params.get('season')
@@ -1677,9 +1801,9 @@ def router(paramstring):
     elif mode == 'list_search_results':
         list_search_results(url)
     elif mode == 'list_sources':
-        list_sources(url)
+        list_sources(url, name) # Pass name here
     elif mode == 'play_source':
-        play_source(url)
+        play_source(url, title) # Pass title here
     elif mode == 'search':
         search()
     elif mode == 'list_turkish_series_categories':
@@ -1689,7 +1813,7 @@ def router(paramstring):
     elif mode == 'list_turkish_episodes':
         list_turkish_episodes(url, name)
     elif mode == 'list_turkish_sources':
-        list_turkish_sources(url)
+        list_turkish_sources(url, name) # Pass name
     elif mode == 'list_korean_series_categories':
         list_korean_series_categories()
     elif mode == 'list_korean_series_years':
@@ -1697,9 +1821,9 @@ def router(paramstring):
     elif mode == 'list_korean_series':
         list_korean_series(url, name, page)
     elif mode == 'list_korean_episodes_and_sources':
-        list_korean_episodes_and_sources(url)
+        list_korean_episodes_and_sources(url, name) # Pass name
     elif mode == 'list_korean_season_episodes':
-        list_korean_season_episodes(url, season_title)
+        list_korean_season_episodes(url, season_title, name) # Pass name too
     elif mode == 'list_movies_categories':
         list_movies_categories()
     elif mode == 'list_serialecoreene_main':
@@ -1717,13 +1841,17 @@ def router(paramstring):
     elif mode == 'list_movies':
         list_movies(url, name, page)
     elif mode == 'list_movie_sources':
-        list_movie_sources(url)
+        list_movie_sources(url, name) # Pass name
     elif mode == 'list_series_episodes':
         list_series_episodes(url, name)
     elif mode == 'play_serialecoreene_episode':
         play_serialecoreene_episode(url, name)
     elif mode == 'download_source':
         download_source(url)
+    elif mode == 'authorize_trakt':
+        TraktAPI().authorize()
+    elif mode == 'revoke_trakt':
+        TraktAPI().revoke_auth()
 
 if __name__ == '__main__':
     router(sys.argv[2][1:])
