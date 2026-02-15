@@ -338,6 +338,29 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
         </assets>
         <news />
     </extension>
+</addon><addon id="plugin.video.hublive" name="HubLive" version="1.0.8" provider-name="1X si Geamanu">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="main.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Hub Live Plugin</summary>
+    <description lang="en_GB">Plays a premium M3U list with dynamic token generation.</description>
+    <disclaimer lang="en_GB" />
+    <platform>all</platform>
+    <license />
+    <forum />
+    <website />
+    <email />
+    <source />
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
 </addon><addon id="plugin.video.live.streamspro" name="LiveStreamsPro" version="3.0.0~alpha4" provider-name="gujal">
 	<requires>
 		<import addon="script.module.six" />
@@ -1125,7 +1148,7 @@ In addition to what livestreams allowed you to do, you can now,
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.vavooto" name="VAVOO.TO" version="2026.02.11" provider-name="kasi,michaz">
+</addon><addon id="plugin.video.vavooto" name="VAVOO.TO" version="2026.02.15" provider-name="kasi,michaz,1X">
 	<requires>
 		<import addon="script.module.requests" />
 		<import addon="script.module.resolveurl" />

@@ -1,0 +1,722 @@
+#EXTM3U
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/208004.png" group-title="RO| CANALE GENERALE",RO|  TVR FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=208004&extension=ts&play_token=RZ2RVgDzoW
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92459.png" group-title="RO| CANALE GENERALE",RO| TVR HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92459&extension=ts&play_token=zGYHlYB6zf
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56086.png" group-title="RO| CANALE GENERALE",RO| TVR 1
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56086&extension=ts&play_token=quGHmbxQBx
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56088.png" group-title="RO| CANALE GENERALE",RO| TVR 2
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56088&extension=ts&play_token=z91xdsOrTG
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207938.png" group-title="RO| CANALE GENERALE",RO|  TVR 2
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207938&extension=ts&play_token=SW5LNuSUCA
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207939.png" group-title="RO| CANALE GENERALE",RO|  TVR 3
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207939&extension=ts&play_token=VxkPEJxadq
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459769.png" group-title="RO| CANALE GENERALE",RO| TVR CLUJ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459769&extension=ts&play_token=kG9pTpeFJu
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/208003.png" group-title="RO| CANALE GENERALE",RO|  TVR CRAIOVA
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=208003&extension=ts&play_token=kXYGmb0ist
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1487631.png" group-title="RO| CANALE GENERALE",RO| TVR INTERNATIONAL
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1487631&extension=ts&play_token=PpfmKTbS7r
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459772.png" group-title="RO| CANALE GENERALE",RO| TVR TARGU MURES
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459772&extension=ts&play_token=cOh3JEhipC
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56095.png" group-title="RO| CANALE GENERALE",RO| NATIONAL TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56095&extension=ts&play_token=6OBaZVzv75
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459776.png" group-title="RO| CANALE GENERALE",RO| NAŢIONAL TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459776&extension=ts&play_token=Bza7CNNFju
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207987.png" group-title="RO| CANALE GENERALE",RO|  NATIONAL 24
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207987&extension=ts&play_token=KdzngbRq0d
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459775.png" group-title="RO| CANALE GENERALE",RO| NAŢIONAL 24 PLUS
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459775&extension=ts&play_token=inKiqFQqxa
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/319084.png" group-title="RO| CANALE GENERALE",RO| PRO TV HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=319084&extension=ts&play_token=MoPbais2WM
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56093.png" group-title="RO| CANALE GENERALE",RO| PRO TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56093&extension=ts&play_token=F0EGeKmoQG
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/319072.png" group-title="RO| CANALE GENERALE",RO| PROTV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=319072&extension=ts&play_token=cguQyvtVdu
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/319173.png" group-title="RO| CANALE GENERALE",RO| PRO TV NEWS
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=319173&extension=ts&play_token=UuyPq8BWU8
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56042.png" group-title="RO| CANALE GENERALE",RO| PROTV INTERNATIONAL
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56042&extension=ts&play_token=BZP9NaET2N
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56091.png" group-title="RO| CANALE GENERALE",RO| ROMANIA TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56091&extension=ts&play_token=fGYNaUUnsk
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207908.png" group-title="RO| CANALE GENERALE",RO|  AGRO TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207908&extension=ts&play_token=bFGM5UHvqt
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207911.png" group-title="RO| CANALE GENERALE",RO|  ANTENA 1
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207911&extension=ts&play_token=jAoHVJDh54
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207912.png" group-title="RO| CANALE GENERALE",RO|  ANTENA STARS HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207912&extension=ts&play_token=7AOTIYZrGO
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207948.png" group-title="RO| CANALE GENERALE",RO|  BUCOVINA TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207948&extension=ts&play_token=Nu3lFvTcJ6
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207950.png" group-title="RO| CANALE GENERALE",RO| AGRO TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207950&extension=ts&play_token=jIqjwIqHx0
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207960.png" group-title="RO| CANALE GENERALE",RO| DIGI 24
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207960&extension=ts&play_token=1OHwp58idV
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207919.png" group-title="RO| CANALE GENERALE",RO|  DUNA HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207919&extension=ts&play_token=4ooa9TTnro
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207949.png" group-title="RO| CANALE GENERALE",RO|  KANAL D 2
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207949&extension=ts&play_token=XmsdTmNgRT
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207970.png" group-title="RO| CANALE GENERALE",RO|  MOLDOVA TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207970&extension=ts&play_token=Nrw1M28GXR
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207991.png" group-title="RO| CANALE GENERALE",RO|  PRO TV NEWS HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207991&extension=ts&play_token=cBbaUr22QM
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207997.png" group-title="RO| CANALE GENERALE",RO|  PROFIT TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207997&extension=ts&play_token=EQEgxXMSWJ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207999.png" group-title="RO| CANALE GENERALE",RO| ROMANIA TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207999&extension=ts&play_token=pcgmH1I5lj
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/208013.png" group-title="RO| CANALE GENERALE",RO|  TRINITAS
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=208013&extension=ts&play_token=w8uUhWnrr6
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92517.png" group-title="RO| CANALE GENERALE",RO| ALFA & OMEGA
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92517&extension=ts&play_token=lDX2UU4rRF
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459771.png" group-title="RO| CANALE GENERALE",RO| ALFA OMEGA TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459771&extension=ts&play_token=VI2wGVgChQ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56082.png" group-title="RO| CANALE GENERALE",RO| ANTENA 3
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56082&extension=ts&play_token=eTGsxZYMLd
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459741.png" group-title="RO| CANALE GENERALE",RO| ANTENA 3 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459741&extension=ts&play_token=7ZCDcZ60Tw
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56126.png" group-title="RO| CANALE GENERALE",RO| ANTENA STARS
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56126&extension=ts&play_token=TKHraQyCqg
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459736.png" group-title="RO| CANALE GENERALE",RO| ANTENA STARS HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459736&extension=ts&play_token=mryuy2t21I
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56125.png" group-title="RO| CANALE GENERALE",RO| B1 TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56125&extension=ts&play_token=HjKw7jjpJZ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92533.png" group-title="RO| CANALE GENERALE",RO| BUCOVINA TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92533&extension=ts&play_token=odLT3XX5UB
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464650.png" group-title="RO| CANALE GENERALE",RO| CNBC EUROPE
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464650&extension=ts&play_token=1XjYKZ1Fx6
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464649.png" group-title="RO| CANALE GENERALE",RO| CNN
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464649&extension=ts&play_token=d9U3eLEYkY
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/319123.png" group-title="RO| CANALE GENERALE",RO| CREDO TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=319123&extension=ts&play_token=SWc2Y47yTN
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464648.png" group-title="RO| CANALE GENERALE",RO| DIGI 24
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464648&extension=ts&play_token=NcFEPhBXlD
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1041538.png" group-title="RO| CANALE GENERALE",RO| DIGI 24 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1041538&extension=ts&play_token=mHOHFm3vLQ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459766.png" group-title="RO| CANALE GENERALE",RO| MOLDOVA TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459766&extension=ts&play_token=wXoqj0RHUf
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56061.png" group-title="RO| CANALE GENERALE",RO| ETNO
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56061&extension=ts&play_token=nYXWaoRQSG
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1410220.png" group-title="RO| CANALE GENERALE",RO| EURONEWS
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1410220&extension=ts&play_token=RZu5XnIGQS
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464640.png" group-title="RO| CANALE GENERALE",RO| FRANCE 24
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464640&extension=ts&play_token=S3wJT2cU5X
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/75802.png" group-title="RO| CANALE GENERALE",RO| KANAL D
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=75802&extension=ts&play_token=s9CP17X61L
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459765.png" group-title="RO| CANALE GENERALE",RO| KANAL D HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459765&extension=ts&play_token=13urXEs8yM
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464639.png" group-title="RO| CANALE GENERALE",RO| KANAL D 2
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464639&extension=ts&play_token=PXhkXPj6po
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92619.png" group-title="RO| CANALE GENERALE",RO| MDI TV RO
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92619&extension=ts&play_token=wozhhWbHgJ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464634.png" group-title="RO| CANALE GENERALE",RO| MEDIASET ITALIA
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464634&extension=ts&play_token=5ZuL2rf5bq
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/319140.png" group-title="RO| CANALE GENERALE",RO| MOLDOVA TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=319140&extension=ts&play_token=Db3xCd3fxy
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56052.png" group-title="RO| CANALE GENERALE",RO| N24
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56052&extension=ts&play_token=5ll5GoTj7c
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56051.png" group-title="RO| CANALE GENERALE",RO| NASUL TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56051&extension=ts&play_token=YQH5MRoOoh
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56092.png" group-title="RO| CANALE GENERALE",RO| REALITATEA TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56092&extension=ts&play_token=seZ1iQTmSK
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56041.png" group-title="RO| CANALE GENERALE",RO| SPERANTA Tv
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56041&extension=ts&play_token=ghj12xne2F
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464622.png" group-title="RO| CANALE GENERALE",RO| SUPERTV2
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464622&extension=ts&play_token=nPorVrBQgR
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56035.png" group-title="RO| CANALE GENERALE",RO| TV PAPRIKA
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56035&extension=ts&play_token=ZFZOHmXJDo
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459754.png" group-title="RO| CANALE GENERALE",RO| TV PAPRIKA HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459754&extension=ts&play_token=PPRAQnqSu6
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464617.png" group-title="RO| CANALE GENERALE",RO| TV5 MONDE
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464617&extension=ts&play_token=q46mn2Qqo3
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207946.png" group-title="RO| CANALE DE DIVERTISMENT",RO|  ARCADIA WORLD FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207946&extension=ts&play_token=WTu2zDHSG5
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207976.png" group-title="RO| CANALE DE DIVERTISMENT",RO|  FOOD NETWORK FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207976&extension=ts&play_token=f3tc0ehIlM
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207979.png" group-title="RO| CANALE DE DIVERTISMENT",RO|  HAPPY CHANNEL FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207979&extension=ts&play_token=rM36lhrd2d
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207995.png" group-title="RO| CANALE DE DIVERTISMENT",RO|  PRIMA LOVE
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207995&extension=ts&play_token=WkpnXAl8M3
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56127.png" group-title="RO| CANALE DE DIVERTISMENT",RO| ANTENA 1 FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56127&extension=ts&play_token=53WJf0uouj
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1041528.png" group-title="RO| CANALE DE DIVERTISMENT",RO| CBS REALITY
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1041528&extension=ts&play_token=Z98A5kLgzq
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56072.png" group-title="RO| CANALE DE DIVERTISMENT",RO| COMEDY CENTRAL
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56072&extension=ts&play_token=XFidE4GvLq
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459757.png" group-title="RO| CANALE DE DIVERTISMENT",RO| COMEDY CENTRAL HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459757&extension=ts&play_token=knB4ghR2xo
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56063.png" group-title="RO| CANALE DE DIVERTISMENT",RO| DIVA UNIVERSAL
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56063&extension=ts&play_token=hjXqxcSHF4
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464647.png" group-title="RO| CANALE DE DIVERTISMENT",RO| DIZI CHANNEL
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464647&extension=ts&play_token=HXuWlnU8FP
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56062.png" group-title="RO| CANALE DE DIVERTISMENT",RO| E!
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56062&extension=ts&play_token=eAypW7dvdW
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459758.png" group-title="RO| CANALE DE DIVERTISMENT",RO| E! ENTERTAINMENT HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459758&extension=ts&play_token=BaIRwdr4Kk
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459761.png" group-title="RO| CANALE DE DIVERTISMENT",RO| FASHION TV HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459761&extension=ts&play_token=LGZZkJjEOy
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459779.png" group-title="RO| CANALE DE DIVERTISMENT",RO| FOOD TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459779&extension=ts&play_token=NsyuuQ97Ht
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56106.png" group-title="RO| CANALE DE DIVERTISMENT",RO| HAPPY CHANNEL
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56106&extension=ts&play_token=NsQ2N0AKWy
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459764.png" group-title="RO| CANALE DE DIVERTISMENT",RO| HAPPY CHANNEL HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459764&extension=ts&play_token=xER437rj0f
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56100.png" group-title="RO| CANALE DE DIVERTISMENT",RO| HGTV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56100&extension=ts&play_token=8By1y8vGza
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464638.png" group-title="RO| CANALE DE DIVERTISMENT",RO| IZAURA TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464638&extension=ts&play_token=SNhZJPymI1
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459746.png" group-title="RO| CANALE DE DIVERTISMENT",RO| MYZEN HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459746&extension=ts&play_token=CGpxeHyC2L
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464626.png" group-title="RO| CANALE DE DIVERTISMENT",RO| PRIMA
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464626&extension=ts&play_token=O5PCitNVCe
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56094.png" group-title="RO| CANALE DE DIVERTISMENT",RO| PRIMA TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56094&extension=ts&play_token=xAAVCyCFOl
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1041521.png" group-title="RO| CANALE DE DIVERTISMENT",RO| PRIMATV HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1041521&extension=ts&play_token=pY4ggvK4J4
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92655.png" group-title="RO| CANALE DE DIVERTISMENT",RO| REALITATEA PLUS
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92655&extension=ts&play_token=72OueVJh2N
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92465.png" group-title="RO| CANALE DE DIVERTISMENT",RO| TLC
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92465&extension=ts&play_token=MW5zPy7TSy
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464619.png" group-title="RO| CANALE DE DIVERTISMENT",RO| TV2
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464619&extension=ts&play_token=aeINGO8qAZ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464618.png" group-title="RO| CANALE DE DIVERTISMENT",RO| TV4
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464618&extension=ts&play_token=lRqIcC1zj2
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207951.png" group-title="RO| CANALE DE CINEMA",RO|  CINEMAX 1 FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207951&extension=ts&play_token=NYfZincNz1
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207952.png" group-title="RO| CANALE DE CINEMA",RO|  CINEMAX 2 FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207952&extension=ts&play_token=OWoAcYhkTs
+#EXTINF:-1 tvg-logo="http://103.176.90.118/picons/logos/CINETHRONIX-.jpg" group-title="RO| CANALE DE CINEMA",RO|  CINETHRONIX
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207953&extension=ts&play_token=d3hxXUz2kd
+#EXTINF:-1 tvg-logo="http://103.176.90.118/picons/logos/epicdramahd.png" group-title="RO| CANALE DE CINEMA",RO|  EPIC DRAMA FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207969&extension=ts&play_token=Gs1ynTcSOG
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207922.png" group-title="RO| CANALE DE CINEMA",RO|  FILM CAFE
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207922&extension=ts&play_token=R94vmbOx3w
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207920.png" group-title="RO| CANALE DE CINEMA",RO|  FILM NOW
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207920&extension=ts&play_token=euk5RsXBzm
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207957.png" group-title="RO| CANALE DE CINEMA",RO|  FILM NOW HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207957&extension=ts&play_token=pZymG3v35t
+#EXTINF:-1 tvg-logo="http://103.176.90.118/picons/logos/filmboxfamily.png" group-title="RO| CANALE DE CINEMA",RO|  FILMBOX FAMILY
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207974&extension=ts&play_token=1fQMcaUfVA
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207975.png" group-title="RO| CANALE DE CINEMA",RO|  FILMBOX PLUS
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207975&extension=ts&play_token=sYRt7IHuMn
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207924.png" group-title="RO| CANALE DE CINEMA",RO|  FILMBOX PREMIUM
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207924&extension=ts&play_token=iOU3GhTUMT
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207925.png" group-title="RO| CANALE DE CINEMA",RO|  HBO
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207925&extension=ts&play_token=c1M50wWVT8
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56057.png" group-title="RO| CANALE DE CINEMA",RO| HBO HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56057&extension=ts&play_token=1CbKbsQQAE
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56105.png" group-title="RO| CANALE DE CINEMA",RO| HBO 2 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56105&extension=ts&play_token=9OwgQxOMaG
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207926.png" group-title="RO| CANALE DE CINEMA",RO|  HBO 3
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207926&extension=ts&play_token=EpnHowh9k7
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459747.png" group-title="RO| CANALE DE CINEMA",RO| HBO 3 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459747&extension=ts&play_token=2W9Kb5p8mL
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56104.png" group-title="RO| CANALE DE CINEMA",RO| HBO 3 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56104&extension=ts&play_token=pMbbNFD4vE
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207984.png" group-title="RO| CANALE DE CINEMA",RO|  MANIA TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207984&extension=ts&play_token=UqcHFfM5qX
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/208000.png" group-title="RO| CANALE DE CINEMA",RO|  SANGEORZ TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=208000&extension=ts&play_token=cYTLOFRlfb
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/319158.png" group-title="RO| CANALE DE CINEMA",RO| ACASA
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=319158&extension=ts&play_token=mNUagL6WY7
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56044.png" group-title="RO| CANALE DE CINEMA",RO| ACASA GOLD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56044&extension=ts&play_token=4FAVsa5Lsq
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/amcmehd.png" group-title="RO| CANALE DE CINEMA",RO| AMC
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56083&extension=ts&play_token=RZLugkgZhs
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/amcmehd.png" group-title="RO| CANALE DE CINEMA",RO| AMC HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459750&extension=ts&play_token=1v2Hs5rLID
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/amcmehd.png" group-title="RO| CANALE DE CINEMA",RO| AMC RO
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92505&extension=ts&play_token=1ZWOP8wLWm
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56081.png" group-title="RO| CANALE DE CINEMA",RO| AXN
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56081&extension=ts&play_token=EYaCnNpAHK
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56080.png" group-title="RO| CANALE DE CINEMA",RO| AXN BLACK
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56080&extension=ts&play_token=Em8MjWCKo3
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459751.png" group-title="RO| CANALE DE CINEMA",RO| AXN HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459751&extension=ts&play_token=tHLAPQkJGZ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56079.png" group-title="RO| CANALE DE CINEMA",RO| AXN SPIN
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56079&extension=ts&play_token=xMT67IDfai
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56078.png" group-title="RO| CANALE DE CINEMA",RO| AXN WHITE
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56078&extension=ts&play_token=kilRZLLNxA
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459780.png" group-title="RO| CANALE DE CINEMA",RO| BOLLYWOOD CLASIC
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459780&extension=ts&play_token=R31wAVU1Hm
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459738.png" group-title="RO| CANALE DE CINEMA",RO| BOLLYWOOD HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459738&extension=ts&play_token=KWQfosskEk
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56077.png" group-title="RO| CANALE DE CINEMA",RO| BOLLYWOOD TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56077&extension=ts&play_token=ybUvyxtpVw
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207947.png" group-title="RO| CANALE DE CINEMA",RO|  BOLLYWOOD CLASIC
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207947&extension=ts&play_token=PsDoCOd39g
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1041535.png" group-title="RO| CANALE DE CINEMA",RO| CINE THRONIX
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1041535&extension=ts&play_token=WhdECIoN6I
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459734.png" group-title="RO| CANALE DE CINEMA",RO| CINEMARATON
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459734&extension=ts&play_token=63eb7bVxRp
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207954.png" group-title="RO| CANALE DE CINEMA",RO| CINEMARATON
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207954&extension=ts&play_token=wEeeUImikD
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92537.png" group-title="RO| CANALE DE CINEMA",RO| CINEMARATON
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92537&extension=ts&play_token=akp4zNF8Ud
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1041525.png" group-title="RO| CANALE DE CINEMA",RO| CINEMARATON HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1041525&extension=ts&play_token=6yqk1OFoN7
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/319009.png" group-title="RO| CANALE DE CINEMA",RO| CINEMAX 1
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=319009&extension=ts&play_token=1qJ8uhNCSf
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56124.png" group-title="RO| CANALE DE CINEMA",RO| CINEMAX 2
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56124&extension=ts&play_token=SCZ2Pqilxe
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459743.png" group-title="RO| CANALE DE CINEMA",RO| CINEMAX HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459743&extension=ts&play_token=saCSkFkHkJ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56073.png" group-title="RO| CANALE DE CINEMA",RO| CINEMAX RO
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56073&extension=ts&play_token=PQliMRr9Nc
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459753.png" group-title="RO| CANALE DE CINEMA",RO| FILM CAFE HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459753&extension=ts&play_token=3Up7Po3K1W
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1041530.png" group-title="RO| CANALE DE CINEMA",RO| FILM NOW HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1041530&extension=ts&play_token=SHGw3AfLh4
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464643.png" group-title="RO| CANALE DE CINEMA",RO| FILMBOX BASIC
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464643&extension=ts&play_token=2gf6USjQny
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92588.png" group-title="RO| CANALE DE CINEMA",RO| FILMBOX EXTRA HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92588&extension=ts&play_token=Ek8v5xMlS6
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464642.png" group-title="RO| CANALE DE CINEMA",RO| FILMBOX STARS INT
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464642&extension=ts&play_token=bs2OLFPTtT
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464632.png" group-title="RO| CANALE DE CINEMA",RO| MOZI+
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464632&extension=ts&play_token=wYDhS0DJLv
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56046.png" group-title="RO| CANALE DE CINEMA",RO| PRO 2
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56046&extension=ts&play_token=d4zScpYJ7t
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459762.png" group-title="RO| CANALE DE CINEMA",RO| PRO 2 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459762&extension=ts&play_token=r532EDy3OS
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56045.png" group-title="RO| CANALE DE CINEMA",RO| PRO CINEMA
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56045&extension=ts&play_token=lEh8o68Q0N
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/319090.png" group-title="RO| CANALE DE CINEMA",RO| TV 1000
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=319090&extension=ts&play_token=TI2yEri60N
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464620.png" group-title="RO| CANALE DE CINEMA",RO| TV1000
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464620&extension=ts&play_token=xkfeJXOd5C
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464616.png" group-title="RO| CANALE DE CINEMA",RO| WARNER TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464616&extension=ts&play_token=z6YkBd0Suj
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56037.png" group-title="RO| CANALE DE CINEMA",RO| WB TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56037&extension=ts&play_token=JAvQC3DHwy
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459760.png" group-title="RO| CANALE DE CINEMA",RO| WB TV HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459760&extension=ts&play_token=Qhe3JwLwsi
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56076.png" group-title="RO| CANALE PENTRU COPII",RO| CARTOONITO
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56076&extension=ts&play_token=Fl09hwKFjO
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/319006.png" group-title="RO| CANALE PENTRU COPII",RO| CARTOON
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=319006&extension=ts&play_token=NeVuxPB0Lr
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464652.png" group-title="RO| CANALE PENTRU COPII",RO| CARTOONITO
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464652&extension=ts&play_token=FW0gBNzvbM
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56075.png" group-title="RO| CANALE PENTRU COPII",RO| CARTOON NETWORK
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56075&extension=ts&play_token=goIVfJfox0
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56069.png" group-title="RO| CANALE PENTRU COPII",RO| DA VINCI LEARNING
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56069&extension=ts&play_token=4xLeYmesaE
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92492.png" group-title="RO| CANALE PENTRU COPII",RO| DISNEY
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92492&extension=ts&play_token=c64J2qEyZZ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/disneych.png" group-title="RO| CANALE PENTRU COPII",RO| DISNEY CHANNEL
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56064&extension=ts&play_token=aEkeoTaUQW
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56114.png" group-title="RO| CANALE PENTRU COPII",RO| DISNEY JUNIOR
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56114&extension=ts&play_token=Sjc9ftpUJu
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207968.png" group-title="RO| CANALE PENTRU COPII",RO|  DUCK TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207968&extension=ts&play_token=Am5ITtaYkv
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464646.png" group-title="RO| CANALE PENTRU COPII",RO| DUCKTV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464646&extension=ts&play_token=VKTR5pU4I6
+#EXTINF:-1 tvg-logo="https://logo.protv.cc/piconsnew/jimjam.png" group-title="RO| CANALE PENTRU COPII",RO| JIM JAM
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92611&extension=ts&play_token=Yt8fs7e5gW
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464636.png" group-title="RO| CANALE PENTRU COPII",RO| M1
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464636&extension=ts&play_token=K88GKa0ZGa
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464635.png" group-title="RO| CANALE PENTRU COPII",RO| M2|PETOFI
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464635&extension=ts&play_token=HSJ26BF1Rx
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56099.png" group-title="RO| CANALE PENTRU COPII",RO| MINIMAX
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56099&extension=ts&play_token=OrCMf9BZTE
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207989.png" group-title="RO| CANALE PENTRU COPII",RO|  NICKELODEON
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207989&extension=ts&play_token=TYDNQDzmbF
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/319169.png" group-title="RO| CANALE PENTRU COPII",RO| NICK JR
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=319169&extension=ts&play_token=CCouwZnqYH
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464627.png" group-title="RO| CANALE PENTRU COPII",RO| NICKTOONS
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464627&extension=ts&play_token=Shmk51T0lp
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464621.png" group-title="RO| CANALE PENTRU COPII",RO| TEENNICK ROMANIA
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464621&extension=ts&play_token=apm2EY2uFQ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207913.png" group-title="RO| CANALE DE SPORT",RO|  AUTO MOTOR SPORT
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207913&extension=ts&play_token=jWhMDgs5XY
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207916.png" group-title="RO| CANALE DE SPORT",RO|  DIGI SPORT 1 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207916&extension=ts&play_token=RSza5qTwBk
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56119.png" group-title="RO| CANALE DE SPORT",RO| DIGI SPORT 1
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56119&extension=ts&play_token=jSvLhJM55f
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207917.png" group-title="RO| CANALE DE SPORT",RO|  DIGI SPORT 2 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207917&extension=ts&play_token=vOcDWbVLaC
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56118.png" group-title="RO| CANALE DE SPORT",RO| DIGI SPORT 2
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56118&extension=ts&play_token=6vH0pFZwLl
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207963.png" group-title="RO| CANALE DE SPORT",RO|  DIGI SPORT 3 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207963&extension=ts&play_token=fRvCbhY372
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1041527.png" group-title="RO| CANALE DE SPORT",RO| DIGI SPORT 3 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1041527&extension=ts&play_token=RgmpKFamDL
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/319153.png" group-title="RO| CANALE DE SPORT",RO| DIGI SPORT 3
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=319153&extension=ts&play_token=ffz77vYepD
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56117.png" group-title="RO| CANALE DE SPORT",RO| DIGI SPORT 3
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56117&extension=ts&play_token=TEuzuZKfsS
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207964.png" group-title="RO| CANALE DE SPORT",RO|  DIGI SPORT 4 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207964&extension=ts&play_token=DU3SBTztKr
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56116.png" group-title="RO| CANALE DE SPORT",RO| DIGI SPORT 4
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56116&extension=ts&play_token=ss3JoXtbkh
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459742.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459742&extension=ts&play_token=ErugBBk62K
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92618.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92618&extension=ts&play_token=d4ckRlx5OG
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207930.png" group-title="RO| CANALE DE SPORT",RO|  PRIMA SPORT
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207930&extension=ts&play_token=2xvRLdBJUn
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/208006.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT 1 FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=208006&extension=ts&play_token=ccIpdJXr3o
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92489.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT 1 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92489&extension=ts&play_token=DnTKnMB4L4
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56113.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT 1
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56113&extension=ts&play_token=ljj280TVIF
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207928.png" group-title="RO| CANALE DE SPORT",RO|  PRIMA SPORT 1
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207928&extension=ts&play_token=ulRnGduh18
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56040.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT 1
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56040&extension=ts&play_token=IXRfuJYwfM
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/208007.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT 2 FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=208007&extension=ts&play_token=ea5AOnZFjC
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92488.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT 2 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92488&extension=ts&play_token=uGfEWeRXSL
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92477.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT 2 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92477&extension=ts&play_token=0gwflUs96h
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/208009.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT 3 FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=208009&extension=ts&play_token=Vxtxs4LTlU
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459749.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT 3 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459749&extension=ts&play_token=wGMf9dWPbO
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92476.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT 3 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92476&extension=ts&play_token=rrkxjFDnhB
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56111.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT 3
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56111&extension=ts&play_token=MPcAmfEsNW
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92486.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT 4 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92486&extension=ts&play_token=tH5wusFcOq
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92680.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT 4
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92680&extension=ts&play_token=NN9BSPyXYj
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56110.png" group-title="RO| CANALE DE SPORT",RO| EUROSPORT 1 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56110&extension=ts&play_token=tTCskdZKyl
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56109.png" group-title="RO| CANALE DE SPORT",RO| EUROSPORT 2 HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56109&extension=ts&play_token=ltXFjmCEs5
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459773.png" group-title="RO| CANALE DE SPORT",RO| EXTREME SPORTS
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459773&extension=ts&play_token=TcKRvCBb3i
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56060.png" group-title="RO| CANALE DE SPORT",RO| EXTREME SPORTS CHANNEL
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56060&extension=ts&play_token=UdgZVO4U5a
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92584.png" group-title="RO| CANALE DE SPORT",RO| FIGHTBOX
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92584&extension=ts&play_token=iUlc9RlifU
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56039.png" group-title="RO| CANALE DE SPORT",RO| PRIMA SPORT 2
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56039&extension=ts&play_token=zexbgLloKE
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459763.png" group-title="RO| CANALE DE SPORT",RO| PRO ARENA  HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459763&extension=ts&play_token=roEcgFR7M7
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92467.png" group-title="RO| CANALE DE SPORT",RO| Pro Arena
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92467&extension=ts&play_token=a2lyRia8cM
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/443338.png" group-title="RO| CANALE DOCUMENTARE",RO| DIGI 4K UHD [Only For 4K Devices]
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=443338&extension=ts&play_token=guXyqeVWjD
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207910.png" group-title="RO| CANALE DOCUMENTARE",RO|  ANIMAL PLANET HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207910&extension=ts&play_token=JPElck3L3J
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207956.png" group-title="RO| CANALE DOCUMENTARE",RO|  CRIME INVESTIGATION
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207956&extension=ts&play_token=jFvJPBL0Fa
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207965.png" group-title="RO| CANALE DOCUMENTARE",RO|  DIGI WORLD FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207965&extension=ts&play_token=49yOyAyJHU
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207918.png" group-title="RO| CANALE DOCUMENTARE",RO|  DISCOVERY CHANNEL
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207918&extension=ts&play_token=Jw9rloTVPX
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207967.png" group-title="RO| CANALE DOCUMENTARE",RO|  DTX HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207967&extension=ts&play_token=r9FVdMmF5P
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207927.png" group-title="RO| CANALE DOCUMENTARE",RO|  HISTORY HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207927&extension=ts&play_token=oPKNbE3ICc
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207986.png" group-title="RO| CANALE DOCUMENTARE",RO|  NAT GEO FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207986&extension=ts&play_token=g0hSbpzuO9
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/208012.png" group-title="RO| CANALE DOCUMENTARE",RO|  TRAVEL MIX FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=208012&extension=ts&play_token=CWJssWVhZq
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207940.png" group-title="RO| CANALE DOCUMENTARE",RO|  VIASAT EXPLORER
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207940&extension=ts&play_token=vW13oyt0eS
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459737.png" group-title="RO| CANALE DOCUMENTARE",RO| ANIMAL PLANET HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459737&extension=ts&play_token=Bd2j3JXy2Q
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1132498.png" group-title="RO| CANALE DOCUMENTARE",RO| BBC EARTH FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1132498&extension=ts&play_token=DnsgalHXSC
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459778.png" group-title="RO| CANALE DOCUMENTARE",RO| CRIME&INVESTIGATION NETWORK
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459778&extension=ts&play_token=H0Zf2Fmfn8
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56122.png" group-title="RO| CANALE DOCUMENTARE",RO| DIGI ANIMAL WORLD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56122&extension=ts&play_token=9HTc8OCTI8
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1041529.png" group-title="RO| CANALE DOCUMENTARE",RO| DIGI ANIMAL WORLD HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1041529&extension=ts&play_token=7ivRytwHai
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56120.png" group-title="RO| CANALE DOCUMENTARE",RO| DIGI LIFE
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56120&extension=ts&play_token=cz61p1rYFF
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56115.png" group-title="RO| CANALE DOCUMENTARE",RO| DIGI WORLD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56115&extension=ts&play_token=gWW0e2qDYa
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56068.png" group-title="RO| CANALE DOCUMENTARE",RO| DISCOVERY
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56068&extension=ts&play_token=ugBRucB9rQ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459752.png" group-title="RO| CANALE DOCUMENTARE",RO| DISCOVERY HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459752&extension=ts&play_token=iz2KNhgCWH
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459774.png" group-title="RO| CANALE DOCUMENTARE",RO| DISCOVERY SCIENCE
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459774&extension=ts&play_token=wGQ62ssDqq
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92561.png" group-title="RO| CANALE DOCUMENTARE",RO| DISCOVERY SHOWCASE HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92561&extension=ts&play_token=GSLxdedR9f
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92490.png" group-title="RO| CANALE DOCUMENTARE",RO| DOCUBOX
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92490&extension=ts&play_token=ufovfjlyXG
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56107.png" group-title="RO| CANALE DOCUMENTARE",RO| FISHING & HUNTING
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56107&extension=ts&play_token=Yr6ZwVKY6u
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56103.png" group-title="RO| CANALE DOCUMENTARE",RO| HISTORY CHANNEL
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56103&extension=ts&play_token=pZzNarGoa7
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459768.png" group-title="RO| CANALE DOCUMENTARE",RO| ID
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459768&extension=ts&play_token=D2fzfwwBAX
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92610.png" group-title="RO| CANALE DOCUMENTARE",RO| INVESTIGATION DISCOVERY HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92610&extension=ts&play_token=6hl2l2PGtT
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464637.png" group-title="RO| CANALE DOCUMENTARE",RO| LOVE NATURE
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464637&extension=ts&play_token=pIHG3TYgy8
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56097.png" group-title="RO| CANALE DOCUMENTARE",RO| NAT GEO WILD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56097&extension=ts&play_token=Yo9Rwmbm1r
+#EXTINF:-1 tvg-logo="http://103.176.90.118/picons/logos/natgeographicro.png" group-title="RO| CANALE DOCUMENTARE",RO| NAT GEOGRAPHIC
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56096&extension=ts&play_token=ulnRApr4eV
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/319098.png" group-title="RO| CANALE DOCUMENTARE",RO| TRAVEL CHANNEL HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=319098&extension=ts&play_token=twnMZkOcNi
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459739.png" group-title="RO| CANALE DOCUMENTARE",RO| TRAVEL HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459739&extension=ts&play_token=yNwc4ArRSk
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459777.png" group-title="RO| CANALE DOCUMENTARE",RO| TRAVEL MIX
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459777&extension=ts&play_token=UuF3WFUucq
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459735.png" group-title="RO| CANALE DOCUMENTARE",RO| TRAVEL XP HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459735&extension=ts&play_token=f6RVtSEYYh
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459755.png" group-title="RO| CANALE DOCUMENTARE",RO| VIASAT EXPLORE HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459755&extension=ts&play_token=9SThkU2M4a
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56029.png" group-title="RO| CANALE DOCUMENTARE",RO| VIASAT HISTORY
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56029&extension=ts&play_token=MTFnGDZGeC
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459740.png" group-title="RO| CANALE DOCUMENTARE",RO| VIASAT HISTORY HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459740&extension=ts&play_token=NDxggIcxp3
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56087.png" group-title="RO| CANALE DOCUMENTARE",RO| VIASAT NATURE
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56087&extension=ts&play_token=lgdRoaw2uV
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/459756.png" group-title="RO| CANALE DOCUMENTARE",RO| VIASAT NATURE HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=459756&extension=ts&play_token=fE5p1JmJWK
+#EXTINF:-1 tvg-logo="http://103.176.90.118/picons/logos/1musicchannel.png" group-title="RO| CANALE MUZICALE",RO| 1 MUSIC CHANNEL
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92506&extension=ts&play_token=A8LjpLnE5Z
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207958.png" group-title="RO| CANALE MUZICALE",RO|  DIASPORA TV FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207958&extension=ts&play_token=bmcRD7EWHb
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1429937.png" group-title="RO| CANALE MUZICALE",RO| FAVORIT TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1429937&extension=ts&play_token=Pma5aTrWlx
+#EXTINF:-1 tvg-logo="http://103.176.90.118/picons/logos/hitmusicro.png" group-title="RO| CANALE MUZICALE",RO|  HIT MUSIC
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207980&extension=ts&play_token=4T9Ao4cQoV
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/92603.png" group-title="RO| CANALE MUZICALE",RO| HORA TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=92603&extension=ts&play_token=t1H68kiWrp
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1041541.png" group-title="RO| CANALE MUZICALE",RO| HORA TV HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1041541&extension=ts&play_token=6iAqyau22j
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56102.png" group-title="RO| CANALE MUZICALE",RO| KISS TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56102&extension=ts&play_token=XNJjHBjQoO
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207983.png" group-title="RO| CANALE MUZICALE",RO|  MAGIC TV FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207983&extension=ts&play_token=1luCjKCyKN
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/319159.png" group-title="RO| CANALE MUZICALE",RO| MAGIC TV FHD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=319159&extension=ts&play_token=FdT5KSVkB0
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464633.png" group-title="RO| CANALE MUZICALE",RO| MEZZO
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464633&extension=ts&play_token=ArkaAGGp2c
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56054.png" group-title="RO| CANALE MUZICALE",RO| MOOZ RO
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56054&extension=ts&play_token=ss4OHoLU5h
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464631.png" group-title="RO| CANALE MUZICALE",RO| MTV 00s
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464631&extension=ts&play_token=Gljp1zKl7s
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1464630.png" group-title="RO| CANALE MUZICALE",RO| MTV 80s
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464630&extension=ts&play_token=X8YPbD38oG
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/207932.png" group-title="RO| CANALE MUZICALE",RO|  MTV HITS
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=207932&extension=ts&play_token=0oKjiynxUa
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56053.png" group-title="RO| CANALE MUZICALE",RO| MTV ROCKS
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56053&extension=ts&play_token=JwRgxwVfJB
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/stingraycmusic.png" group-title="RO| CANALE MUZICALE",RO| STINGRAY CMUSIC
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464624&extension=ts&play_token=35kAtvd5ZD
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/stingraycmusic.png" group-title="RO| CANALE MUZICALE",RO| STINGRAY ICONCERTS
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1464623&extension=ts&play_token=1zQOvLU0MY
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1041540.png" group-title="RO| CANALE MUZICALE",RO| TARFA TV HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1041540&extension=ts&play_token=FBFZ2D2r64
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56032.png" group-title="RO| CANALE MUZICALE",RO| UTV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56032&extension=ts&play_token=87cG51F0Sn
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1041537.png" group-title="RO| CANALE MUZICALE",RO| UTV HD
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1041537&extension=ts&play_token=VZVu1D9hTL
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56031.png" group-title="RO| CANALE MUZICALE",RO| VH 1
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56031&extension=ts&play_token=tjSWxPvSI0
+#EXTINF:-1 tvg-logo="http://103.176.90.118/picons/logos/vh1classic.png" group-title="RO| CANALE MUZICALE",RO| VH 1 CLASSIC
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56030&extension=ts&play_token=F2Bf3tZm2M
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/56028.png" group-title="RO| CANALE MUZICALE",RO| ZU TV
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=56028&extension=ts&play_token=iyQzczWXnW
+#EXTINF:-1 tvg-logo="" group-title="RO| FOCUS SAT VIP",####### FOCUS SAT VIP #######
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741091&extension=ts&play_token=Xtm05l5Bsd
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741090.png" group-title="RO| FOCUS SAT VIP",RO| ACASA ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741090&extension=ts&play_token=Dcpab8krDD
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741089.png" group-title="RO| FOCUS SAT VIP",RO| ACASA GOLD ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741089&extension=ts&play_token=Q4pYJ9qJ4J
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741088.png" group-title="RO| FOCUS SAT VIP",RO| AGRO TV ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741088&extension=ts&play_token=uTVJwwSh1Y
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/amcmehd.png" group-title="RO| FOCUS SAT VIP",RO| AMC ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741087&extension=ts&play_token=tO36PgRAUX
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741086.png" group-title="RO| FOCUS SAT VIP",RO| AUTO MOTOR SPORT ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741086&extension=ts&play_token=BVb1Y1nM68
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741085.png" group-title="RO| FOCUS SAT VIP",RO| AXN BLACK ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741085&extension=ts&play_token=oUSpcmlRny
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741084.png" group-title="RO| FOCUS SAT VIP",RO| AXN ROMANIA ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741084&extension=ts&play_token=s0YddFqvST
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741083.png" group-title="RO| FOCUS SAT VIP",RO| AXN WHITE ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741083&extension=ts&play_token=beXLwrC6RV
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741082.png" group-title="RO| FOCUS SAT VIP",RO| B1 ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741082&extension=ts&play_token=AowaLYpUHB
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741081.png" group-title="RO| FOCUS SAT VIP",RO| BBC EARTH ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741081&extension=ts&play_token=ZIt4cwv6us
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741080.png" group-title="RO| FOCUS SAT VIP",RO| BOLLYWOOD TV ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741080&extension=ts&play_token=BWxRxxMBWV
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741079.png" group-title="RO| FOCUS SAT VIP",RO| CARTOON NETWORK ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741079&extension=ts&play_token=yjCurJDtsZ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741078.png" group-title="RO| FOCUS SAT VIP",RO| CARTOONITO ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741078&extension=ts&play_token=qMVdREgsfY
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741077.png" group-title="RO| FOCUS SAT VIP",RO| CBS REALITY ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741077&extension=ts&play_token=e3LVUNlcLI
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741076.png" group-title="RO| FOCUS SAT VIP",RO| CINEMAX ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741076&extension=ts&play_token=msRDSSEsnU
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741075.png" group-title="RO| FOCUS SAT VIP",RO| CINEMAX 2 ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741075&extension=ts&play_token=jcX86mymuh
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741074.png" group-title="RO| FOCUS SAT VIP",RO| CLUB MTV ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741074&extension=ts&play_token=jOg29zfJUY
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741073.png" group-title="RO| FOCUS SAT VIP",RO| CNBC EUROPE ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741073&extension=ts&play_token=ULEz2P9T3E
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741072.png" group-title="RO| FOCUS SAT VIP",RO| CNN ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741072&extension=ts&play_token=Us4IPjMa5Q
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741071.png" group-title="RO| FOCUS SAT VIP",RO| COMEDY CENTRAL ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741071&extension=ts&play_token=IiIP2ZlEgM
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741070.png" group-title="RO| FOCUS SAT VIP",RO| COMEDY CENTRAL ROMANIA ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741070&extension=ts&play_token=9e031Y7jkg
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741069.png" group-title="RO| FOCUS SAT VIP",RO| CRIME+ INVESTIGATION ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741069&extension=ts&play_token=WpbAmiYnaG
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741068.png" group-title="RO| FOCUS SAT VIP",RO| CURRENT TIME TV ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741068&extension=ts&play_token=oxpgFjNrZz
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741067.png" group-title="RO| FOCUS SAT VIP",RO| DIGI 24 ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741067&extension=ts&play_token=LYTaAepGQX
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741066.png" group-title="RO| FOCUS SAT VIP",RO| DISNEY ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741066&extension=ts&play_token=MzFdJjMcSp
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741065.png" group-title="RO| FOCUS SAT VIP",RO| DISNEY JUNIOR ROMANIA ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741065&extension=ts&play_token=2rKLrbBOdo
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741064.png" group-title="RO| FOCUS SAT VIP",RO| DIVA UNIVERSAL ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741064&extension=ts&play_token=ijmsJMTRlK
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741063.png" group-title="RO| FOCUS SAT VIP",RO| DIZI CHANNEL ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741063&extension=ts&play_token=D1067K3PEg
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741062.png" group-title="RO| FOCUS SAT VIP",RO| DOCU BOX ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741062&extension=ts&play_token=lDZf7aeDkn
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741061.png" group-title="RO| FOCUS SAT VIP",RO| DUCK TV ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741061&extension=ts&play_token=P7VKpLMQgK
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741060.png" group-title="RO| FOCUS SAT VIP",RO| DUNA TV ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741060&extension=ts&play_token=L8gL6MZgR7
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741059.png" group-title="RO| FOCUS SAT VIP",RO| DUNA WORLD / M4 SPORT+ ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741059&extension=ts&play_token=JiT3pY3inf
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741058.png" group-title="RO| FOCUS SAT VIP",RO| E! ENTERTAINMENT ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741058&extension=ts&play_token=xIrGxLfqbA
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741057.png" group-title="RO| FOCUS SAT VIP",RO| ENGLISH CLUB TV ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741057&extension=ts&play_token=QtsYeu54zh
+#EXTINF:-1 tvg-logo="https://logo.protv.cc/piconsnew/epicdrama.png" group-title="RO| FOCUS SAT VIP",RO| EPIC DRAMA ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741056&extension=ts&play_token=6xHzjvWkzU
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741055.png" group-title="RO| FOCUS SAT VIP",RO| ETNO ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741055&extension=ts&play_token=T9K8IxpDUm
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741054.png" group-title="RO| FOCUS SAT VIP",RO| EXTREME SPORTS CHANNEL ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741054&extension=ts&play_token=84h5hDP33q
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741053.png" group-title="RO| FOCUS SAT VIP",RO| FASHION TV ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741053&extension=ts&play_token=vib1ovUyep
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741052.png" group-title="RO| FOCUS SAT VIP",RO| FAVORIT TV ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741052&extension=ts&play_token=Zcbr5PhTxn
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741051.png" group-title="RO| FOCUS SAT VIP",RO| FIGHT BOX ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741051&extension=ts&play_token=vt69klhIEs
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741050.png" group-title="RO| FOCUS SAT VIP",RO| FILM CAFE ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741050&extension=ts&play_token=Ajzyzt4lHq
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741049.png" group-title="RO| FOCUS SAT VIP",RO| FILM BOX BASIC ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741049&extension=ts&play_token=n6OkruJ7z4
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741048.png" group-title="RO| FOCUS SAT VIP",RO| FILM BOX EXTRA ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741048&extension=ts&play_token=0NFNLLq2dX
+#EXTINF:-1 tvg-logo="https://logo.protv.cc/piconsnew/filmboxfamily.png" group-title="RO| FOCUS SAT VIP",RO| FILM BOX FAMILY ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741047&extension=ts&play_token=zKILCdi2xq
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741046.png" group-title="RO| FOCUS SAT VIP",RO| FILM BOX PREMIUM ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741046&extension=ts&play_token=Srr3Wln33Q
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741045.png" group-title="RO| FOCUS SAT VIP",RO| FILM BOX STARS INT ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741045&extension=ts&play_token=skVjHtg0tf
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741044.png" group-title="RO| FOCUS SAT VIP",RO| FRANCE 24 ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741044&extension=ts&play_token=xTyOfpoUkw
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741043.png" group-title="RO| FOCUS SAT VIP",RO| HBO ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741043&extension=ts&play_token=AQGVlDhFAZ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741042.png" group-title="RO| FOCUS SAT VIP",RO| HBO 2 ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741042&extension=ts&play_token=R7jGC3zbDB
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741041.png" group-title="RO| FOCUS SAT VIP",RO| HBO 3 ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741041&extension=ts&play_token=cozZkESdXk
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741040.png" group-title="RO| FOCUS SAT VIP",RO| HISTORY ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741040&extension=ts&play_token=2apfGDynAL
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741039.png" group-title="RO| FOCUS SAT VIP",RO| IZAURA TV ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741039&extension=ts&play_token=HFC8Npc8av
+#EXTINF:-1 tvg-logo="https://logo.protv.cc/piconsnew/jimjam.png" group-title="RO| FOCUS SAT VIP",RO| JIMJAM ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741038&extension=ts&play_token=N4YAbHwupB
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741037.png" group-title="RO| FOCUS SAT VIP",RO| KANAL D ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741037&extension=ts&play_token=sHBKbgNLkJ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741036.png" group-title="RO| FOCUS SAT VIP",RO| KANAL D 2 ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741036&extension=ts&play_token=E9cybitxhS
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741035.png" group-title="RO| FOCUS SAT VIP",RO| LOVE NATURE ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741035&extension=ts&play_token=YFU4HXDl5D
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741034.png" group-title="RO| FOCUS SAT VIP",RO| M1 ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741034&extension=ts&play_token=kSwgIjjYsB
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741033.png" group-title="RO| FOCUS SAT VIP",RO| M2 / PETOFI ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741033&extension=ts&play_token=2DbKWslClb
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741032.png" group-title="RO| FOCUS SAT VIP",RO| MEDIASET ITALIA ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741032&extension=ts&play_token=ZdccNthvdk
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741031.png" group-title="RO| FOCUS SAT VIP",RO| MEZZO ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741031&extension=ts&play_token=XgFzjUJH7D
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741030.png" group-title="RO| FOCUS SAT VIP",RO| MINI MAX ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741030&extension=ts&play_token=7D6f5ZCetp
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741029.png" group-title="RO| FOCUS SAT VIP",RO| MOZI+ ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741029&extension=ts&play_token=dweGEyzr7s
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741028.png" group-title="RO| FOCUS SAT VIP",RO| MTV 00S ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741028&extension=ts&play_token=yUdS344z9g
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741027.png" group-title="RO| FOCUS SAT VIP",RO| MTV 80S ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741027&extension=ts&play_token=8obpyxVW7T
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741026.png" group-title="RO| FOCUS SAT VIP",RO| MTV EUROPE ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741026&extension=ts&play_token=nS7FdurcDB
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741025.png" group-title="RO| FOCUS SAT VIP",RO| MTV HITS ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741025&extension=ts&play_token=1ALzPh2cxd
+#EXTINF:-1 tvg-logo="https://logo.protv.cc/piconsnew/nationalgeographic.png" group-title="RO| FOCUS SAT VIP",RO| NATIONAL GEOGRAPHIC ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741024&extension=ts&play_token=LmVOgISX2V
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741023.png" group-title="RO| FOCUS SAT VIP",RO| NATIONAL TV ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741023&extension=ts&play_token=s0Ix9SUjJm
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741022.png" group-title="RO| FOCUS SAT VIP",RO| NAUTICAL CHANNEL ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741022&extension=ts&play_token=jBbSguZ1Hr
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741021.png" group-title="RO| FOCUS SAT VIP",RO| NEWS MAX ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741021&extension=ts&play_token=UrP39KyCzT
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741020.png" group-title="RO| FOCUS SAT VIP",RO| NICK JR ROMANIA ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741020&extension=ts&play_token=Ax8Md1KEDf
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741019.png" group-title="RO| FOCUS SAT VIP",RO| NICKELODEON HUNGARY ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741019&extension=ts&play_token=fr5fDqBbss
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741018.png" group-title="RO| FOCUS SAT VIP",RO| NICKELODEON ROMANIA ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741018&extension=ts&play_token=eVPMfhstlZ
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741017.png" group-title="RO| FOCUS SAT VIP",RO| NICKTOONS ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741017&extension=ts&play_token=OPtZmoyj5Q
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741016.png" group-title="RO| FOCUS SAT VIP",RO| PRIME ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741016&extension=ts&play_token=7ceRujcCkr
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741015.png" group-title="RO| FOCUS SAT VIP",RO| PRO ARENA ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741015&extension=ts&play_token=Swhyew3ZSy
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741014.png" group-title="RO| FOCUS SAT VIP",RO| PRO CINEMA ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741014&extension=ts&play_token=r9vhPTldQY
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741013.png" group-title="RO| FOCUS SAT VIP",RO| PRO TV ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741013&extension=ts&play_token=WI8VYWbwJU
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741012.png" group-title="RO| FOCUS SAT VIP",RO| REALITATEA TV ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741012&extension=ts&play_token=MjXiiKNYLc
+#EXTINF:-1 tvg-logo="https://logo.protv.cc/piconsnew/nationalgeographicwild.png" group-title="RO| FOCUS SAT VIP",RO| NATIONAL GEOGRAPHIC WILD ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741011&extension=ts&play_token=E5oZSjpdmc
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/stingraycmusic.png" group-title="RO| FOCUS SAT VIP",RO| STINGRAY CMUSIC ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741010&extension=ts&play_token=zmd2KCOQpE
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/stingraycmusic.png" group-title="RO| FOCUS SAT VIP",RO| STINGRAY ICONCERTS ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741009&extension=ts&play_token=1TTxOIWq0w
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741008.png" group-title="RO| FOCUS SAT VIP",RO| SUPER TV 2 ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741008&extension=ts&play_token=6BCB7s5jqu
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741007.png" group-title="RO| FOCUS SAT VIP",RO| TEENNICK ROMANIA ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741007&extension=ts&play_token=QLkhggzk27
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741006.png" group-title="RO| FOCUS SAT VIP",RO| TRAVEL XP ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741006&extension=ts&play_token=Qf54YtDr3F
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741005.png" group-title="RO| FOCUS SAT VIP",RO| TRINITAS ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741005&extension=ts&play_token=OtZ46o7FAl
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741004.png" group-title="RO| FOCUS SAT VIP",RO| TV PAPRIKA ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741004&extension=ts&play_token=dE853v01aY
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741003.png" group-title="RO| FOCUS SAT VIP",RO| TV PAPRIKA RO ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741003&extension=ts&play_token=OoK13hM7wt
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741002.png" group-title="RO| FOCUS SAT VIP",RO| TV1000 ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741002&extension=ts&play_token=kHmm3A5KrB
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741001.png" group-title="RO| FOCUS SAT VIP",RO| TV 2 ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741001&extension=ts&play_token=18x8aah0J7
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1741000.png" group-title="RO| FOCUS SAT VIP",RO| TV4 ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1741000&extension=ts&play_token=8nXWfrpAwG
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1740999.png" group-title="RO| FOCUS SAT VIP",RO| TV5 MONDE ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1740999&extension=ts&play_token=d3Aa9ccBPt
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1740998.png" group-title="RO| FOCUS SAT VIP",RO| TVR 1 ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1740998&extension=ts&play_token=GCDB24nT3g
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1740997.png" group-title="RO| FOCUS SAT VIP",RO| TVR 2 ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1740997&extension=ts&play_token=OstS5ZGmwP
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1740996.png" group-title="RO| FOCUS SAT VIP",RO| TVR SPORT ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1740996&extension=ts&play_token=rsp8R7gDv3
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1740995.png" group-title="RO| FOCUS SAT VIP",RO| VIASAT EXPLORE ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1740995&extension=ts&play_token=DBNRDxLVGY
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1740994.png" group-title="RO| FOCUS SAT VIP",RO| VIASAT HISTORY ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1740994&extension=ts&play_token=9U52iNvyL8
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1740993.png" group-title="RO| FOCUS SAT VIP",RO| VIASAT NATURE ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1740993&extension=ts&play_token=HOMbbRun5M
+#EXTINF:-1 tvg-logo="http://picons.cmshulk.com/picons/1740992.png" group-title="RO| FOCUS SAT VIP",RO| WARNER TV ᴿᴬᵂ
+http://line.free-tv.pro:80/play/live.php?mac=00:1A:79:0D:A0:8C&stream=1740992&extension=ts&play_token=jZuvlUNsWE
+

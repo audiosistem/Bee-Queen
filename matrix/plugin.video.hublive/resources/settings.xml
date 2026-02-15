@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="General">
+        <setting id="server_selection" type="enum" label="Select Server" values="Server 1|Server 2|Server 3|All" default="0"/>
+    </category>
+
+    <category label="EPG Settings">
+        <setting id="epg_enabled" type="bool" label="Enable EPG (Electronic Program Guide)" default="false" />
+        <setting id="epg_cache_duration" type="number" label="EPG Cache Duration (minutes)" default="30" />
+    </category>
+</settings>

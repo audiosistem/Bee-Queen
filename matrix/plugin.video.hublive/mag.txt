@@ -1,0 +1,218 @@
+#EXTM3U
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) TVR 1
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31381&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) TVR 2
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31382&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) TVR 3 4K+
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121950&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Pro TV HD
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31327&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Pro.2
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31329&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Etno TV
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31324&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Pro TV International
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31326&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Happy Channel 4K+
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31348&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Prima Tv
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31330&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Antena Stars
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31376&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Look Plus
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31341&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Agro TV
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31379&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) E! Entertainment 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121915&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Antena 1 HD
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31378&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) National 24 Plus
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=129191&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Kanal D
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31343&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) TV Paprika
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121948&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) B1 TV
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31372&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Profit TV
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121932&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Trinitas
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121947&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Zu TV 4K+
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121955&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Alfa Omega
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121906&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) FOOD network
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121927&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Telestar 1
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121934&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) TVR Cluj HD+
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121951&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) TVR Craiova HD+
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121952&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) Digi 24 HD 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31366&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) REALITATEA PLUS
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31325&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Romania TV
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121933&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Antena 3 4K+
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31377&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Aleph News
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=129184&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) BBC Earth 4K+
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=129178&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) CNN
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=129187&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Comedy Central
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=129190&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Duck TV
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=129189&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) HGTV
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=129182&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Mezzo
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=129188&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) NCN
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=129180&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) TLC
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31386&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) Taraf TV
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31323&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : SPORT",(RO) Pro X 4K+
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121905&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) NationalTV
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121929&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) Bollywood TV
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121908&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) Pro Gold 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121931&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) AMC 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31322&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) Film Now
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121925&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) Pro Cinema
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31328&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) Diva
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121914&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : ROMAINE",(RO) TV1000
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121949&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) HBO
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31345&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) HBO 2 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31347&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) HBO 3
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31346&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) TNT
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121935&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) CineMaraton HD
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121912&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) Cinemax 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31369&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) Cinemax 2
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31368&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) Epic Drama
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121916&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) AXN
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31374&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) AXN White
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31373&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) AXN Black
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=129183&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) Axn Spin
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121907&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) FilmBOX
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121920&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) FILMCAFE
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121924&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) Filmbox Extra 4k
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31350&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) Filmbox Family
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121921&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) Filmbox Plus
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121922&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) Filmbox Premium
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121923&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : FILM",(RO) Paramount Channel
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31331&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) Discovery Channel 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121987&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) Discovery ID HD
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31335&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) Travel Channel 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31385&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) Digi Animal World 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31365&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) Digi Life 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31363&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) Digi World 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31358&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) History 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=120692&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) Nat Geo Wild
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31336&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) Cbs Reality
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121910&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) Travelmix 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121946&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) National Geographic 4K+
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31334&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) Viasat History 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31344&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) Viasat Nature 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121954&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : DOCU & REALITATE",(RO) Viasat Explore
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121953&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : COPİİ",(RO) Boomerang
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121909&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : COPİİ",(RO) Cartoon Network
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31371&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : COPİİ",(RO) Disney Channel
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31355&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : COPİİ",(RO) Disney Junior
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31354&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : COPİİ",(RO) Nickelodeon
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31349&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : COPİİ",(RO) Nicktoons
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=129186&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : COPİİ",(RO) JimJam
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=119280&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : COPİİ",(RO) Nick JR
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121930&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : COPİİ",(RO) Minimax
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31338&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : SPORT",(RO) Digi Sport 1 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31362&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : SPORT",(RO) Digi Sport 2 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31361&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : SPORT",(RO) Digi Sport 3 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31360&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : SPORT",(RO) Digi Sport 4 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31359&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : SPORT",(RO) Prima Sport 1 HD
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31392&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : SPORT",(RO) Prima Sport 2 HD
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31391&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : SPORT",(RO) Prima Sport 3 HD
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31390&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : SPORT",(RO) Prima Sport 4 HD
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31389&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : SPORT",(RO) Eurosport 1 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31352&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : SPORT",(RO) Eurosport 2 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31351&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : SPORT",(RO) Fightbox 4K
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121919&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : SPORT",(RO) Look Sport
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31340&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : MUZICÄ",(RO) Favorit
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121918&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : MUZICÄ",(RO) Kiss TV
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31342&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : MUZICÄ",(RO) Hit Music
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121928&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : MUZICÄ",(RO) Music Channel
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=31337&extension=ts&play_token=TOKENPH
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/038/015/883/non_2x/ai-generated-modern-tv-isolated-on-transparent-background-free-png.png" group-title="RO : SPORT",(RO) The Fishing & Hunting
+http://d.tvdark.eu/play/live.php?mac=MACPH&stream=121926&extension=ts&play_token=TOKENPH
+
