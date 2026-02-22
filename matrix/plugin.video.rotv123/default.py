@@ -27,14 +27,14 @@ PLUGIN_URL = sys.argv[0]
 HANDLE     = int(sys.argv[1])
 
 CATEGORY_ICONS = {
-    'Generale':    'DefaultTVShows.png',
-    'Știri':       'DefaultNews.png',
-    'Sport':       'DefaultSports.png',
-    'Filme':       'DefaultMovies.png',
-    'Documentare': 'DefaultDocumentaries.png',
-    'Muzică':      'DefaultMusicVideos.png',
-    'Copii':       'DefaultKids.png',
-    'Religioase':  'DefaultTVShows.png',
+    'Generale':    'cat_Generale.png',
+    'Știri':       'cat_Stiri.png',
+    'Sport':       'cat_Sport.png',
+    'Filme':       'cat_Filme.png',
+    'Documentare': 'cat_Documentare.png',
+    'Muzică':      'cat_Muzica.png',
+    'Copii':       'cat_Copii.png',
+    'Religioase':  'cat_Religioase.png',
 }
 
 
@@ -70,7 +70,14 @@ def main_menu():
     for cat in categories:
         url  = build_url({'mode': 'category', 'category': cat})
         li   = xbmcgui.ListItem(label=cat)
-        icon = CATEGORY_ICONS.get(cat, 'DefaultTVShows.png')
+        icon_file = CATEGORY_ICONS.get(cat)
+        if icon_file:
+            import xbmcaddon as _xa
+            addon_path = _xa.Addon().getAddonInfo('path')
+            import xbmcvfs as _xv
+            icon = _xv.translatePath(f'{addon_path}/resources/icons/{icon_file}')
+        else:
+            icon = 'DefaultTVShows.png'
         li.setArt({'icon': icon, 'thumb': icon})
         xbmcplugin.addDirectoryItem(handle=HANDLE, url=url, listitem=li, isFolder=True)
     xbmcplugin.endOfDirectory(HANDLE)
@@ -97,7 +104,7 @@ def list_category(category):
 
         if logo:
             clean  = logo.replace('https://', '').replace('http://', '')
-            poster = f'https://images.weserv.nl/?url={clean}&w=320&h=180&fit=contain&bg=transparent'
+            poster = f'https://images.weserv.nl/?url={clean}&w=320&h=450&fit=contain&bg=transparent'
         else:
             poster = ''
 

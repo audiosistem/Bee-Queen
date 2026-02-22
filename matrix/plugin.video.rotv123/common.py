@@ -204,11 +204,12 @@ def get_active_channels():
 
 
 def get_categories():
-    cats = set()
+    seen = {}
     for ch in get_active_channels():
         for cat in ch.get('categories', []):
-            cats.add(cat)
-    return sorted(cats)
+            if cat not in seen:
+                seen[cat] = True
+    return list(seen.keys())
 
 
 def get_channels_by_category(category):
@@ -318,7 +319,6 @@ def load_epg(station_id):
         _EPG_RAM[sid] = {'expire': expire, 'data': disk}
         return disk
 
-    # 3) API
     url = f'{CINEMAGIA_API}?acckey={CINEMAGIA_KEY}&station_id={sid}'
     raw = http_get(url)
     if not raw:
