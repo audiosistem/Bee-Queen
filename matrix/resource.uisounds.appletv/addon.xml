@@ -10,5 +10,8 @@
     <summary lang="en">AppleTv navigation sounds</summary>
     <description lang="en">AppleTv navigation sounds</description>
     <platform>all</platform>
+		<assets>
+			<icon>icon.png</icon>
+		</assets>
   </extension>
 </addon>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    
+
+    <!-- M3U Player Settings -->
+    <category label="M3U Player">
+        <setting id="m3u_url" type="text" label="M3U Playlist URL" default=""/>
+        <setting id="m3u_catchup_days" type="number" label="Catch-up Days" default="7"/>
+    </category>
+
+    <!-- Edem Player Settings -->
+    <category label="Edem Player">
+        <setting id="edem_playlist_url" type="text" label="Edem Playlist URL" default=""/>
+        <setting id="edem_epg_url" type="text" label="Edem EPG URL" default=""/>
+        <setting label="Active Profile Name" type="text" id="edem_active_profile_name" default="" visible="false"/>
+        <setting label="Active Profile Unique String" type="text" id="edem_active_profile_unique_string" default="" visible="false"/>
+        <setting label="Last Working Server" type="text" id="edem_last_working_server" default="" visible="false"/>
+        <setting label="Last Check Timestamp" type="text" id="edem_last_check_timestamp" default="0" visible="false"/>
+    </category>
+
+    <!-- Stalker Player Settings -->
+    <category label="Stalker Player">
+        <setting id="stalker_mac_address" type="text" label="MAC Address" default="00:1A:79:"/>
+        <setting id="stalker_portal_url" type="text" label="Portal URL" default=""/>
+        <setting id="stalker_serial_number" type="text" label="Serial Number" default=""/>
+    </category>
+
+    <!-- Radio RO Player Settings -->
+    <category label="Radio RO Player">
+        <setting id="radio_ro_quality" type="enum" label="Default Stream Quality" values="Low|Medium|High" default="1"/>
+        <setting id="radio_ro_country_code" type="text" label="Country Code" default="RO"/>
+        <setting id="radio_ro_use_de1_server" type="bool" label="Use Default API Server (de1)" default="true"/>
+        <setting id="radio_ro_use_de2_server" type="bool" label="Use Germany 2 API Server (de2)" default="false"/>
+        <setting id="radio_ro_use_fi1_server" type="bool" label="Use Finland 1 API Server (fi1)" default="false"/>
+        <setting id="radio_ro_favorites" type="text" label="Favorites" default="" visible="false"/>
+    </category>
+
+    <!-- Xtreme IPTV Player Settings -->
+    <category label="Xtreme IPTV Player">
+        <setting id="xtreme_username" type="text" label="Username" default=""/>
+        <setting id="xtreme_password" type="text" label="Password" default=""/>
+        <setting id="xtreme_url" type="text" label="Server URL" default=""/>
+    </category>
+    <category label="Visibility Settings">
+        <setting id="show_xtreme_iptv" type="bool" label="Show Xtream IPTV" default="true"/>
+        <setting id="show_stalker_iptv" type="bool" label="Show Stalker IPTV" default="true"/>
+        <setting id="show_edem_iptv" type="bool" label="Show Edem IPTV" default="true"/>
+        <setting id="show_m3u_player" type="bool" label="Show Liste M3U" default="true"/>
+        <setting id="show_radio_romania" type="bool" label="Show Radio Romania" default="true"/>
+        <setting id="show_alte_liste" type="bool" label="Show Alte Liste" default="true"/>
+    </category>
+</settings>

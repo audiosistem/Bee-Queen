@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.youtube" name="YouTube" version="7.4.0+beta.3.unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
+<addon id="plugin.video.youtube" name="YouTube" version="7.4.0.1+unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" version="2.27.1"/>
@@ -116,22 +116,7 @@
         <disclaimer lang="vi_VN">Plugin này không được xác nhận bởi Google</disclaimer>
         <disclaimer lang="zh_CN">此插件未被谷歌认可</disclaimer>
         <disclaimer lang="zh_TW">此附加元件未由Google支持</disclaimer>
-    <news>## v7.4.0+beta.3
+    <news>## v7.4.0.1
 ### Fixed
-- Avoid creating PlayerMonitorThread as a subclass of threading.Thread
-- Additional workarounds for JSON file operations failing due to addon service start delays
-- Avoid unnecessary window navigation when opening More... context menu dialog
-- Fix typo in evaluating whether plugin container is loaded or active
-- Fix possible exception when using default fallback for failed search
-
-### Changed
-- Update and trigger Setup Wizard to set default value for My Subscription sources
-- Pass additional headers to all player request and manifest urls by default
-- Workaround Kodi not executing Play action on listitems in non-video containers
-- Improve context menu runtime checks when used with widget containers
-
-### New
-- Add context menu items to open Settings/Setup Wizard from Setup Wizard/Settings main menu entries
-- Log summary of stream proxy request and response details
-- Log stream proxy request range</news></extension>
+- Use correct default value if view count is missing from player requests response</news></extension>
 </addon>

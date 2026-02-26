@@ -24,7 +24,7 @@
     <email>  </email>
     <assets>
       <po>resources/language</po>
-      <icon>resources/images/icon.gif</icon>
+      <icon>resources/images/icon.png</icon>
       <fanart>resources/images/fanart.jpg</fanart>
       <screenshot>resources/images/screenshot-1.jpg</screenshot>
       <screenshot>resources/images/screenshot-2.jpg</screenshot>

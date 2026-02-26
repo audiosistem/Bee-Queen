@@ -268,7 +268,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
     <email>  </email>
     <assets>
       <po>resources/language</po>
-      <icon>resources/images/icon.gif</icon>
+      <icon>resources/images/icon.png</icon>
       <fanart>resources/images/fanart.jpg</fanart>
       <screenshot>resources/images/screenshot-1.jpg</screenshot>
       <screenshot>resources/images/screenshot-2.jpg</screenshot>
@@ -338,7 +338,30 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
         </assets>
         <news />
     </extension>
-</addon><addon id="plugin.video.hublive" name="HubLive" version="1.0.8" provider-name="1X si Geamanu">
+</addon><addon id="plugin.video.hub" name="HUB" version="1.2.0" provider-name="1X&amp;Geamanu">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="main.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">HUB Plugin</summary>
+    <description lang="en_GB">A central hub for multiple video and audio plugins.</description>
+    <disclaimer lang="en_GB" />
+    <platform>all</platform>
+    <license />
+    <forum />
+    <website />
+    <email />
+    <source />
+    <assets>
+      <icon>resources/icon.png</icon>
+      <fanart>resources/fanart.jpg</fanart>
+    </assets>
+  </extension>
+</addon><addon id="plugin.video.hublive" name="HubLive" version="1.0.3" provider-name="1X si Geamanu">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
@@ -451,6 +474,100 @@ In addition to what livestreams allowed you to do, you can now,
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
         </assets>
+  </extension>
+</addon><addon id="plugin.video.romanianpack" name="[B][COLOR FFFDBD01]MRSP Lite[/COLOR][/B]" version="1.2.27" provider-name="Sarsailă, [B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+	<import addon="script.module.requests" version="2.22.0" />
+    <import addon="script.module.resolveurl" version="5.0.06" />
+    <import addon="plugin.video.elementum" optional="true" />
+    <import addon="script.module.torrent2http" />
+    <import addon="repository.angelitto" version="1.0.0" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+  </extension>
+  <extension point="kodi.context.item">
+    <menu id="kodi.core.main">
+        <item library="resources/lib/context.py">
+            <label>[B][COLOR FFFDBD01]Play with MRSP[/COLOR][/B]</label>
+            <visible>!String.StartsWith(ListItem.path,plugin://plugin.video.romanianpack/)+[String.IsEqual(ListItem.dbtype,episode)|String.IsEqual(ListItem.dbtype,movie)]</visible>
+        </item>
+    </menu>
+</extension>
+  <extension point="xbmc.service" name="mrsp.service" library="service.py" />
+  <extension point="xbmc.addon.metadata">
+	<summary>Motor de căutare și redare Torente</summary>
+    <description>[B][COLOR FF009900]Browser și Player pentru torente video[/COLOR][/B]</description>
+    <platform>all</platform>
+    <disclaimer lang="en">The author of this addon do not host any of the content which is found and have no affiliation with any of the content providers. This addon simply searches websites for content. Use at your own risk!</disclaimer>
+    <disclaimer lang="ro">Autorul acestui supliment nu găzduiește conținutul găsit și nu are nicio legătură cu furnizorii de conținut. Acest supliment doar caută conținutul furnizat de site-uri web. Folosiți-l pe propria răspundere! </disclaimer>
+    <news>
+1.2.25
+- Added TorrServer
+
+1.2.24
+- Added Comet, Meteor, Mediafusion and Heartive providers
+
+1.2.13
+- Removed all streaming websites support.
+- The addon is now strictly Torrent-based.
+- Cleaned up Settings menu.
+- Direct access to Torrents menu on startup.
+- Code optimization and performance improvements.
+
+1.2.12
+- Fixed some small bugs
+
+1.2.11
+- Fixed Recente
+- Enhanced UI
+- Better filterring for Filelist, Uindex and Speedapp
+- Better search with TMDb Player (MRSP Lite)
+- Fixed MISC: Mod Cautare Context Global Si Trakt
+
+1.2.10
+- Fixed YTS
+
+1.2.9
+- Fixed Speedapp
+
+1.2.8
+- Fixed marked as watched in Trakt
+- Fixed the section Văzute
+- Fixed cleaning for Văzute, Favorite and Căutare
+
+1.2.7
+- Fixed Trakt
+- Added Trakt Favorited and Anticipated lists
+- Added Trakt User Lists
+- Fixed MetaInfo IMDb
+
+1.2.6
+Fixed YTS
+
+1.2.5
+Added UIndex
+
+1.2.4
+- Fixed watched status in Kodi
+when using context and "Play with MRSP"
+- Fixed some visual issues
+
+1.2.3
+- Fixed watched status in Kodi
+when using TMDB Helper and MRSP Lite player
+
+1.2.2
+Fixed Speedapp
+
+1.2.0
+Fixed autosub addon exclusions
+    </news>
+    <assets>
+        <icon>icon.png</icon>
+		<fanart>fanart.jpg</fanart>
+    </assets>
   </extension>
 </addon><addon id="plugin.video.romyTVlist" name="romyTVlist" version="1.1.6" provider-name="Nux007, Publish3r, Silhouette2022,AS">
   <requires>
@@ -1143,6 +1260,96 @@ In addition to what livestreams allowed you to do, you can now,
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
+</addon><addon id="plugin.video.themoviedb.helper" version="6.14.3" name="TMDb Helper" provider-name="jurialmunkey">
+<requires>
+  <import addon="xbmc.python" version="3.0.1" />
+  <import addon="script.module.requests" version="2.9.1" />
+  <import addon="script.module.pil" version="1.1.7" />
+  <import addon="script.module.addon.signals" version="0.0.6" />
+  <import addon="script.module.jurialmunkey" version="0.2.31" />
+  <import addon="script.module.infotagger" version="0.0.5" />
+  <import addon="script.module.qrcode" version="6.1.0" />
+</requires>
+<extension point="xbmc.python.pluginsource" library="resources/plugin.py">
+  <provides>video</provides>
+</extension>
+<extension point="xbmc.python.script" library="resources/script.py" />
+<extension point="xbmc.service" library="resources/service.py" />
+<extension point="xbmc.python.module" library="resources/modules" />
+<extension point="xbmc.addon.metadata">
+  <reuselanguageinvoker>false</reuselanguageinvoker>
+  <summary lang="de_DE">TMDb Helfer</summary>
+  <summary lang="en_GB">TMDb Helper</summary>
+  <summary lang="zh_CN">TMDb 助手</summary>
+  <description lang="de_DE">TMDb Helper liefert Details über Filme, Fernsehsendungen und Schauspieler aus TMDb. Benutzer können auf eine Vielzahl von Listen aus TMDb TVDb MDbList und Trakt zugreifen.</description>
+  <description lang="en_GB">TMDb Helper provides details about movies, tvshows and actors from TMDb. Users can access a variety of lists from TMDb TVDb MDbList and Trakt.</description>
+  <description lang="sv_SE">TMDb Helper tillhandahåller information om filmer, tv-serier och skådespelare från TMDb. Användare kan få tillgång till en mängd olika listor från TMDb, TVDb, MDbList och Trakt.</description>
+  <description lang="zh_CN">TMDb 助手从 TMDb（影视数据库） 获取电影、电视剧及演员的详细信息。用户可访问来自 TMDb、TVDb、MDbList 和 Trakt 的各类影视列表。</description>
+  <disclaimer lang="de_DE">Daten bereitgestellt von TMDb TVDb MDbList OMDb FanartTV und Trakt. Einige der Informationen werden von TheTVDB.com bereitgestellt. Bitte erwäge sie zu unterstützen. https://thetvdb.com/subscribe</disclaimer>
+  <disclaimer lang="en_GB">Data provided by TMDb TVDb MDbList OMDb FanartTV and Trakt. Some of the information is provided by TheTVDB.com. Please consider supporting them. https://thetvdb.com/subscribe</disclaimer>
+  <disclaimer lang="sv_SE">Data tillhandahållen av TMDb TVDb MDbList OMDb FanartTV och Trakt. En del av informationen tillhandahålls av TheTVDB.com. Stöd dem gärna. https://thetvdb.com/subscribe</disclaimer>
+  <disclaimer lang="zh_CN">数据由 TMDb、TVDb、MDbList、OMDb、FanartTV 和 Trakt 提供。部分信息由 TheTVDB.com 提供，建议您支持他们。订阅链接：https://thetvdb.com/subscribe</disclaimer>
+  <license>GPL-3.0-or-later</license>
+  <website>https://github.com/jurialmunkey/plugin.video.themoviedb.helper</website>
+  <forum>https://forum.kodi.tv/showthread.php?tid=345847</forum>
+  <assets>
+    <icon>icon.png</icon>
+    <fanart>fanart.jpg</fanart>
+    <clearlogo>clearlogo.png</clearlogo>
+    <screenshot>resources/screenshot-01.jpg</screenshot>
+    <screenshot>resources/screenshot-02.jpg</screenshot>
+  </assets>
+</extension>
+</addon><addon id="plugin.video.tmdbmovies" version="1.1.43" name="[B][COLOR FFFDBD01]TMDb Movies[/COLOR][/B]" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" version="2.22.0" />
+    </requires>
+    
+    <extension point="xbmc.python.pluginsource" library="service.py">
+        <provides>video</provides>
+    </extension>
+    
+    <extension point="xbmc.service" library="service.py" />
+
+    
+    <extension point="kodi.context.item">
+        <menu id="kodi.core.main">
+            
+            
+            <item library="context.py">
+                <label>[B][COLOR FF6AFB92]TMDb INFO[/COLOR][/B]</label>
+                <visible>
+                    String.IsEqual(Window(10000).Property(TMDbMovies.ContextMenu),true) + 
+                    !String.IsEmpty(ListItem.Title) +
+                    [String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode) | !String.IsEmpty(ListItem.Property(mediatype))]
+                </visible>
+            </item>
+
+            
+            <item library="context_extended.py">
+                <label>[B][COLOR FF33CCFF]TMDb Extended INFO[/COLOR][/B]</label>
+                <visible>
+                    String.IsEqual(Window(10000).Property(TMDbMovies.ExtendedContext),true) + 
+                    !String.IsEmpty(ListItem.Title) +
+                    [String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode) | !String.IsEmpty(ListItem.Property(mediatype))]
+                </visible>
+            </item>
+            
+        </menu>
+    </extension>
+
+    <extension point="xbmc.addon.metadata">
+        <summary lang="ro">Sursa ta de filme și seriale</summary>
+        <description lang="ro">[B][COLOR FF009900]Filme și Seriale populare folosind API-ul TMDB.[/COLOR][/B]</description>
+        <disclaimer lang="ro">Acest addon este un motor de căutare video. Nu găzduim conținut.</disclaimer>
+        <language>ro</language>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
 </addon><addon id="plugin.video.vavooto" name="VAVOO.TO" version="2026.02.15" provider-name="kasi,michaz,1X">
 	<requires>
 		<import addon="script.module.requests" />
@@ -1161,13 +1368,12 @@ In addition to what livestreams allowed you to do, you can now,
 			<icon>icon.png</icon>
 		</assets>
 	</extension>
-</addon><addon id="plugin.video.veziaici.net" name="VeziAici.net" version="1.1.2" provider-name="1 x Geamanu">
+</addon><addon id="plugin.video.veziaici.net" name="VeziAici.net" version="1.1.4" provider-name="1 x Geamanu x MiniMi">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
     <import addon="script.module.beautifulsoup4" />
     <import addon="script.module.resolveurl" />
-    <import addon="script.module.yt-dlp" />
   </requires>
   <extension point="xbmc.python.pluginsource" library="addon.py">
     <provides>video</provides>
@@ -1202,7 +1408,7 @@ In addition to what livestreams allowed you to do, you can now,
 	  <fanart>resources/fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.0+beta.3.unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
+</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.0.1+unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.27.1" />
@@ -1319,24 +1525,9 @@ In addition to what livestreams allowed you to do, you can now,
         <disclaimer lang="vi_VN">Plugin này không được xác nhận bởi Google</disclaimer>
         <disclaimer lang="zh_CN">此插件未被谷歌认可</disclaimer>
         <disclaimer lang="zh_TW">此附加元件未由Google支持</disclaimer>
-    <news>## v7.4.0+beta.3
+    <news>## v7.4.0.1
 ### Fixed
-- Avoid creating PlayerMonitorThread as a subclass of threading.Thread
-- Additional workarounds for JSON file operations failing due to addon service start delays
-- Avoid unnecessary window navigation when opening More... context menu dialog
-- Fix typo in evaluating whether plugin container is loaded or active
-- Fix possible exception when using default fallback for failed search
-
-### Changed
-- Update and trigger Setup Wizard to set default value for My Subscription sources
-- Pass additional headers to all player request and manifest urls by default
-- Workaround Kodi not executing Play action on listitems in non-video containers
-- Improve context menu runtime checks when used with widget containers
-
-### New
-- Add context menu items to open Settings/Setup Wizard from Setup Wizard/Settings main menu entries
-- Log summary of stream proxy request and response details
-- Log stream proxy request range</news></extension>
+- Use correct default value if view count is missing from player requests response</news></extension>
 </addon><addon id="repository.Magnetic" name="Magnetic Repo" version="1.1.0b" provider-name="1-cool-guy">
         <requires>
             <import addon="xbmc.addon" version="12.0.0" />
@@ -1946,6 +2137,26 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="repository.slyguy" name="SlyGuy Repository" provider-name="SlyGuy" version="0.0.9">
+  <extension point="xbmc.addon.repository" name="SlyGuy Repository">
+    <dir>
+      <info compressed="false">https://slyguy.uk/.repo/repository.slyguy/addons.xml</info>
+      <checksum>https://slyguy.uk/.repo/repository.slyguy/addons.xml.md5</checksum>
+      <datadir zip="true">https://slyguy.uk/.repo/repository.slyguy/</datadir>
+    </dir>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <description lang="en">Addons by SlyGuy (slyguy.uk)</description>
+    <license />
+    <language />
+    <website />
+    <news />
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
 </addon><addon id="repository.thelab" name="TheLab Repository" version="25.3.27" provider-name="[COLORpurple]• [COLORorchid]Tech [COLORdarkorchid]E [COLORplum]Coyote [COLORpurple]•[/COLOR]">
     <extension point="xbmc.addon.repository" name="TheLab Repository">
         <dir minversion="21.0" maxversion="21.9.0">
@@ -2011,6 +2222,33 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="resource.images.studios.white" name="Studio Icons - White" version="0.0.30" provider-name="Team Kodi">
+	<extension point="kodi.resource.images" compile="true" type="studios" />
+	<requires>
+		<import addon="kodi.resource" version="1.0.0" />
+	</requires>
+	<extension point="xbmc.addon.metadata">
+		<summary lang="en">White Studio Icons</summary>
+		<description lang="en">White Studio Icons</description>
+		<platform>all</platform>
+		<license>CC-BY-SA-3.0</license>
+		<assets>
+			<icon>icon.png</icon>
+		</assets>
+	</extension>
+</addon><addon id="resource.images.weathericons.white" name="Weather Icons - White" version="0.0.6" provider-name="Team Kodi">
+	<extension point="kodi.resource.images" compile="true" type="weather" />
+	<requires>
+		<import addon="kodi.resource" version="1.0.0" />
+	</requires>
+	<extension point="xbmc.addon.metadata">
+		<summary lang="en">White Weather Icons</summary>
+		<description lang="en">White Weather Icons</description>
+		<platform>all</platform>
+		<assets>
+			<icon>icon.png</icon>
+		</assets>
+	</extension>
 </addon><addon id="resource.uisounds.appletv" version="0.0.2" name="AppleTv UI Sounds" provider-name="Fastcolors">
 
   <requires>
@@ -2022,6 +2260,9 @@ In addition to what livestreams allowed you to do, you can now,
     <summary lang="en">AppleTv navigation sounds</summary>
     <description lang="en">AppleTv navigation sounds</description>
     <platform>all</platform>
+		<assets>
+			<icon>icon.png</icon>
+		</assets>
   </extension>
 </addon><addon id="resource.uisounds.kodi" version="1.0.1" name="Kodi UI Sounds" provider-name="Team Kodi">
   <requires>

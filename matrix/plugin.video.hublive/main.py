@@ -10,10 +10,8 @@ import re
 import os
 import json
 import time
-from urllib.parse import parse_qsl, urlencode, quote_plus, quote
+from urllib.parse import parse_qsl, urlencode, quote_plus
 import uuid
-import hashlib
-import string
 from epg import EpgManager, format_epg_tooltip
 
 # EPG data store
@@ -127,6 +125,113 @@ def get_current_program(epg_items):
     return None
 
 
+def search_channels():
+    """Search for channels by name."""
+    # Get user input for search term
+    kb = xbmc.Keyboard('', 'Search Channels')
+    kb.doModal()
+    if not kb.isConfirmed():
+        return
+
+    search_term = kb.getText().strip()
+    if not search_term:
+        return
+
+    # Read all channels from M3U
+    addon_path = _ADDON.getAddonInfo('path')
+    m3u_file = os.path.join(addon_path, 'premium.txt')
+
+    try:
+        with open(m3u_file, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+    except Exception as e:
+        xbmcgui.Dialog().notification('Error', f'Could not read premium.txt: {e}', xbmcgui.NOTIFICATION_ERROR)
+        return
+
+    # Extract all channels
+    channels = []
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if line.startswith('#EXTINF:') or '#EXTINF:' in line.upper():
+            # Extract group-title and tvg-logo using more flexible regex
+            group_title_match = re.search(r'group-title\s*=\s*"?([^"",]*)"?,?', line, re.IGNORECASE)
+            tvg_logo_match = re.search(r'tvg-logo\s*=\s*["\'"]([^"\'"]*)["\'"]', line, re.IGNORECASE)
+            
+            # Find the last comma in the line to separate attributes from the channel name
+            last_comma_pos = line.rfind(',')
+            if last_comma_pos != -1:
+                channel_name = line[last_comma_pos + 1:].strip()
+            else:
+                channel_name = 'Unknown Channel'
+            
+            group_title = group_title_match.group(1) if group_title_match else 'Uncategorized'
+            tvg_logo = tvg_logo_match.group(1) if tvg_logo_match else ''
+
+            # Map category name
+            group_title = map_category_name(group_title)
+
+            # Get the next line which should be the URL
+            if i + 1 < len(lines):
+                url_line = lines[i + 1].strip()
+                if url_line and not url_line.startswith('#'):
+                    # Extract stream ID from URL - look for stream= followed by digits
+                    stream_id_match = re.search(r'stream=(\d+)', url_line)
+                    if stream_id_match:
+                        stream_id = stream_id_match.group(1)
+                        channels.append({
+                            'name': channel_name,
+                            'group': group_title,
+                            'logo': tvg_logo,
+                            'stream_id': stream_id,
+                            'url': url_line
+                        })
+        i += 1
+
+    # Filter channels based on search term
+    search_term_lower = search_term.lower()
+    matching_channels = [ch for ch in channels if search_term_lower in ch['name'].lower()]
+
+    # Create list items for matching channels
+    for channel in matching_channels:
+        # Build channel label with current program
+        channel_label = channel['name']
+
+        # Add current program to label if EPG available and enabled
+        if is_epg_enabled() and channel['stream_id'] in epg_data:
+            epg_items = epg_data[channel['stream_id']]
+            current_prog = get_current_program(epg_items)
+            if current_prog:
+                channel_label = f"{channel['name']} - {current_prog}"
+
+        li = xbmcgui.ListItem(label=channel_label)
+
+        # Set thumbnail from tvg-logo if available
+        if channel['logo']:
+            li.setArt({'thumb': channel['logo'], 'icon': channel['logo']})
+
+        li.setProperty('IsPlayable', 'true')
+
+        # Set EPG data if available and enabled
+        if is_epg_enabled() and channel['stream_id'] in epg_data:
+            epg_items = epg_data[channel['stream_id']]
+            plot = format_epg_tooltip(epg_items)
+            li.setInfo('video', {'plot': plot})
+
+        # Create URL to play this specific channel
+        url = f"{_BASE_URL}?mode=play&stream_id={channel['stream_id']}&name={quote_plus(channel['name'])}"
+
+        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=False)
+
+    # Show a message if no results found
+    if not matching_channels:
+        li = xbmcgui.ListItem(label=f'[COLOR red]No channels found for "{search_term}"[/COLOR]')
+        li.setProperty('IsPlayable', 'false')
+        xbmcplugin.addDirectoryItem(handle=_HANDLE, url='', listitem=li, isFolder=False)
+
+    xbmcplugin.endOfDirectory(_HANDLE)
+
+
 def epg_callback(channel_key, items):
     xbmc.log(f"[DEBUG] EPG callback for channel {channel_key} with {len(items)} items. Data: {items}", level=xbmc.LOGDEBUG)
     epg_data[channel_key] = items
@@ -143,7 +248,6 @@ def is_epg_enabled():
 
 # Category mapping and sorting
 CATEGORY_MAPPING = {
-    # Server 1
     'RO| CANALE DE CINEMA': 'Filme',
     'RO| CANALE DE DIVERTISMENT': 'Divertisment',
     'RO| CANALE DE SPORT': 'Sport',
@@ -151,14 +255,7 @@ CATEGORY_MAPPING = {
     'RO| CANALE GENERALE': 'Generale',
     'RO| CANALE MUZICALE': 'Muzica',
     'RO| CANALE PENTRU COPII': 'Pentru Copii',
-    'RO| FOCUS SAT VIP': 'Focus Sat',
-    # Server 2
-    'RO : ROMAINE': 'Generale',
-    'RO : COPİİ': 'Pentru Copii',
-    'RO : DOCU & REALITATE': 'Documentare',
-    'RO : MUZICÄ': 'Muzica',
-    'RO : SPORT': 'Sport',
-    'RO : FILM': 'Filme'
+    'RO| FOCUS SAT VIP': 'Focus Sat'
 }
 
 # Custom sort order for categories
@@ -201,227 +298,97 @@ def get_category_sort_key(category_name):
         return 999  # Put unmapped categories at the end
 
 # MAC list cache
-_mac_list_cache = {}
+_mac_list_cache = {'macs': [], 'timestamp': 0}
 _MAC_CACHE_TTL = 3600  # 1 hour in seconds
 _ONLINE_MAC_URL = 'https://raw.githubusercontent.com/staycanuca/hub/refs/heads/main/_tools/mac'
-_ONLINE_MAC_URL_SERVER2 = 'https://raw.githubusercontent.com/staycanuca/hub/refs/heads/main/_tools/mac2'
-_ONLINE_MAC_URL_SERVER3 = 'https://raw.githubusercontent.com/staycanuca/hub/refs/heads/main/_tools/mac3'
 
-_PREMIUM_URL = 'https://raw.githubusercontent.com/staycanuca/hub/refs/heads/main/_tools/premium.txt'
-_MAG_URL = 'https://raw.githubusercontent.com/staycanuca/hub/refs/heads/main/_tools/mag.txt'
-_S3_URL = 'https://raw.githubusercontent.com/staycanuca/hub/refs/heads/main/_tools/s3.txt'
-_M3U_CACHE = {}
-_M3U_CACHE_TTL = 3600  # 1 hour
-
-def get_m3u_lines(server='server1'):
-    global _M3U_CACHE
-    if server == 'server1':
-        url = _PREMIUM_URL
-    elif server == 'server2':
-        url = _MAG_URL
-    else:
-        url = _S3_URL
-
-    current_time = time.time()
-    
-    if server in _M3U_CACHE and (current_time - _M3U_CACHE[server]['timestamp'] < _M3U_CACHE_TTL):
-        xbmc.log(f"[DEBUG] Using cached M3U for {server}", level=xbmc.LOGINFO)
-        return _M3U_CACHE[server]['lines']
-
-    try:
-        xbmc.log(f"[DEBUG] Fetching M3U from {url}", level=xbmc.LOGINFO)
-        response = requests.get(url, timeout=15)
-        response.raise_for_status()
-        response.encoding = 'utf-8' 
-        lines = response.text.splitlines()
-        
-        _M3U_CACHE[server] = {
-            'lines': lines,
-            'timestamp': current_time
-        }
-        return lines
-    except Exception as e:
-        xbmc.log(f"[ERROR] Failed to fetch M3U from {url}: {e}", level=xbmc.LOGERROR)
-        raise e
-
-def fetch_mac_list_online(server='server1'):
+def fetch_mac_list_online():
     """Fetch MAC addresses from online source."""
-    if server == 'server1':
-        url = _ONLINE_MAC_URL
-    elif server == 'server2':
-        url = _ONLINE_MAC_URL_SERVER2
-    else:
-        url = _ONLINE_MAC_URL_SERVER3
-
     try:
-        xbmc.log(f"[MAC] Fetching MAC list from {url}", level=xbmc.LOGINFO)
-        response = requests.get(url, timeout=10)
+        xbmc.log("[MAC] Fetching MAC list from online source", level=xbmc.LOGINFO)
+        response = requests.get(_ONLINE_MAC_URL, timeout=10)
         response.raise_for_status()
-        mac_list = [line.strip() for line in response.text.split() if line.strip()]
-        xbmc.log(f"[MAC] Successfully fetched {len(mac_list)} MACs from {url}", level=xbmc.LOGINFO)
+        mac_list = [line.strip() for line in response.text.split('\n') if line.strip()]
+        xbmc.log(f"[MAC] Successfully fetched {len(mac_list)} MACs from online source", level=xbmc.LOGINFO)
         return mac_list
     except Exception as e:
         xbmc.log(f"[MAC] Failed to fetch online MAC list: {e}", level=xbmc.LOGWARNING)
         return None
 
-def get_random_mac_from_file(server='server1'):
-    """Get a random MAC address from online source (with fallback to local mac file)"""
+def get_random_mac_from_file():
+    """Get a random MAC address from online source (with fallback to local mac.txt file)"""
     global _mac_list_cache
 
     current_time = time.time()
 
     # Check if we have a valid cached MAC list
-    if server in _mac_list_cache and (current_time - _mac_list_cache[server]['timestamp']) < _MAC_CACHE_TTL:
-        xbmc.log(f"[MAC] Using cached MAC list for {server}", level=xbmc.LOGDEBUG)
-        return random.choice(_mac_list_cache[server]['macs'])
+    if _mac_list_cache['macs'] and (current_time - _mac_list_cache['timestamp']) < _MAC_CACHE_TTL:
+        xbmc.log("[MAC] Using cached MAC list", level=xbmc.LOGDEBUG)
+        return random.choice(_mac_list_cache['macs'])
 
     # Try to fetch from online source first
-    mac_list = fetch_mac_list_online(server)
+    mac_list = fetch_mac_list_online()
 
     if mac_list and len(mac_list) > 0:
         # Cache the online MAC list
-        if server not in _mac_list_cache:
-            _mac_list_cache[server] = {'macs': [], 'timestamp': 0}
-        _mac_list_cache[server]['macs'] = mac_list
-        _mac_list_cache[server]['timestamp'] = current_time
+        _mac_list_cache['macs'] = mac_list
+        _mac_list_cache['timestamp'] = current_time
         return random.choice(mac_list)
 
-    # Fallback to local mac file
-    if server == 'server1':
-        mac_file_name = 'mac.txt'
-    elif server == 'server2':
-        mac_file_name = 'mac2.txt'
-    else:
-        mac_file_name = 'mac3.txt'
-        
-    xbmc.log(f"[MAC] Falling back to local {mac_file_name} file", level=xbmc.LOGINFO)
+    # Fallback to local mac.txt file
+    xbmc.log("[MAC] Falling back to local mac.txt file", level=xbmc.LOGINFO)
     addon_path = _ADDON.getAddonInfo('path')
-    mac_file = os.path.join(addon_path, mac_file_name)
+    mac_file = os.path.join(addon_path, 'mac.txt')
 
     try:
         with open(mac_file, 'r') as f:
-            mac_list = [line.strip() for line in f.read().split() if line.strip()]
+            mac_list = [line.strip() for line in f.readlines() if line.strip()]
 
         if mac_list:
             # Cache the local MAC list too
-            if server not in _mac_list_cache:
-                _mac_list_cache[server] = {'macs': [], 'timestamp': 0}
-            _mac_list_cache[server]['macs'] = mac_list
-            _mac_list_cache[server]['timestamp'] = current_time
+            _mac_list_cache['macs'] = mac_list
+            _mac_list_cache['timestamp'] = current_time
             return random.choice(mac_list)
         else:
             xbmcgui.Dialog().notification('Error', 'MAC list is empty', xbmcgui.NOTIFICATION_ERROR)
             return None
     except Exception as e:
-        xbmcgui.Dialog().notification('Error', f'Could not read {mac_file_name}: {e}', xbmcgui.NOTIFICATION_ERROR)
+        xbmcgui.Dialog().notification('Error', f'Could not read mac.txt: {e}', xbmcgui.NOTIFICATION_ERROR)
         return None
 
-def handshake(portal_url, mac, server='server1'):
+def handshake(portal_url, mac):
     """Perform handshake with Stalker portal to get a session token."""
     headers = {
         'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
         'X-User-Agent': 'Model: MAG250; Link: WiFi',
     }
     cookies = {'mac': mac}
-
-    # Ensure no trailing slash
-    portal_url = portal_url.rstrip('/')
-    
-    # The correct path is /portal.php for these types of servers.
     url = f"{portal_url}/portal.php?type=stb&action=handshake&token=&JsHttpRequest=1-xml"
-
     try:
-        xbmc.log(f'[Handshake] Requesting: {url} with MAC: {mac}', level=xbmc.LOGDEBUG)
         response = requests.get(url, headers=headers, cookies=cookies, timeout=10)
         response.raise_for_status()
         data = response.json()
-
-        # Check if response is a dict (expected) or list (error)
-        if isinstance(data, dict):
-            js_data = data.get('js', {})
-            if isinstance(js_data, dict):
-                token = js_data.get('token')
-                if token:
-                    return token
-                else:
-                    xbmc.log(f'[Handshake] No token in response. js data: {js_data}', level=xbmc.LOGWARNING)
-                    return None
-            elif isinstance(js_data, list):
-                xbmc.log(f'[Handshake] Server returned error list: {js_data}', level=xbmc.LOGWARNING)
-                return None
-            else:
-                xbmc.log(f'[Handshake] Unexpected js data type: {type(js_data)}', level=xbmc.LOGWARNING)
-                return None
-        elif isinstance(data, list):
-            xbmc.log(f'[Handshake] Server returned error list at root level: {data}', level=xbmc.LOGWARNING)
-            return None
-
-        xbmc.log(f'[Handshake] Unexpected response format: {type(data)}', level=xbmc.LOGWARNING)
-        return None
+        return data.get('js', {}).get('token')
     except requests.exceptions.RequestException as e:
-        xbmc.log(f'[Handshake] Request failed: {e}', level=xbmc.LOGWARNING)
-        return None
-    except Exception as e:
-        xbmc.log(f'[Handshake] Error: {e}', level=xbmc.LOGWARNING)
+        xbmc.log(f'[EPG] Handshake failed: {e}', level=xbmc.LOGWARNING)
         return None
 
 # Token cache to avoid handshake for every channel
-# Keyed by server name: 'server1': {...}, 'server2': {...}
-_token_cache = {}
+_token_cache = {'token': None, 'mac': None, 'timestamp': 0}
 _TOKEN_TTL = 600  # 10 minutes
 
-def make_token_provider(server_name, portal_url):
-    """Factory to create a token provider bound to a specific server."""
-    
-    def provider():
-        global _token_cache
+# Token provider for EPG Manager with caching
+def epg_token_provider():
+    """Provide token, headers, and cookies for EPG requests with caching."""
+    global _token_cache
 
-        current_time = time.time()
-        
-        # Initialize cache for this server if needed
-        if server_name not in _token_cache:
-            _token_cache[server_name] = {'token': None, 'mac': None, 'timestamp': 0}
-        
-        cache_entry = _token_cache[server_name]
+    portal_url = _ADDON.getSetting('portal_url')
+    current_time = time.time()
 
-        # Check if we have a valid cached token
-        if (cache_entry['token'] and cache_entry['mac'] and
-            (current_time - cache_entry['timestamp']) < _TOKEN_TTL):
-            # xbmc.log(f"[EPG] Using cached token for {server_name}", level=xbmc.LOGDEBUG)
-
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
-                'X-User-Agent': 'Model: MAG250; Link: WiFi',
-            }
-
-            cookies = {
-                'mac': cache_entry['mac'],
-                'token': cache_entry['token']
-            }
-
-            return cache_entry['token'], headers, cookies
-
-        # Need fresh token
-        xbmc.log(f"[EPG] Fetching fresh token for {server_name} ({portal_url})", level=xbmc.LOGINFO)
-        mac = get_random_mac_from_file(server_name)
-
-        if not mac:
-            xbmc.log(f"[EPG] Failed to get MAC address for {server_name}", level=xbmc.LOGWARNING)
-            return None, {}, {}
-
-        # Perform handshake
-        token = handshake(portal_url, mac, server=server_name)
-
-        if not token:
-            xbmc.log(f"[EPG] Failed to get token from handshake for {server_name}", level=xbmc.LOGWARNING)
-            return None, {}, {}
-
-        # Cache the token
-        _token_cache[server_name]['token'] = token
-        _token_cache[server_name]['mac'] = mac
-        _token_cache[server_name]['timestamp'] = current_time
-
-        xbmc.log(f"[EPG] Cached new token for {server_name}: {token[:10]}...", level=xbmc.LOGINFO)
+    # Check if we have a valid cached token
+    if (_token_cache['token'] and _token_cache['mac'] and
+        (current_time - _token_cache['timestamp']) < _TOKEN_TTL):
+        xbmc.log(f"[EPG] Using cached token (age: {int(current_time - _token_cache['timestamp'])}s)", level=xbmc.LOGDEBUG)
 
         headers = {
             'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
@@ -429,64 +396,77 @@ def make_token_provider(server_name, portal_url):
         }
 
         cookies = {
-            'mac': mac,
-            'token': token
+            'mac': _token_cache['mac'],
+            'token': _token_cache['token']
         }
 
-        return token, headers, cookies
-        
-    return provider
+        return _token_cache['token'], headers, cookies
 
-def get_server_details(server):
-    """Return (portal_url, mac_file_key) for a given server."""
-    try:
-        lines = get_m3u_lines(server)
-        for line in lines:
-            line = line.strip()
-            if line and not line.startswith('#'):
-                # Extract portal URL from the first valid URL found in the file
-                match = re.match(r'(https?://[^/]+)', line)
-                if match:
-                    return match.group(1), server
-    except Exception as e:
-        xbmc.log(f"[ERROR] Failed to get portal URL for {server}: {e}", level=xbmc.LOGERROR)
+    # Need fresh token
+    xbmc.log("[EPG] Fetching fresh token", level=xbmc.LOGINFO)
+    mac = get_random_mac_from_file()
 
-    return "", server
+    if not mac:
+        xbmc.log("[EPG] Failed to get MAC address", level=xbmc.LOGWARNING)
+        return None, {}, {}
 
-# Initialize EPG Manager (will be reconfigured dynamically)
+    token = handshake(portal_url, mac)
+
+    if not token:
+        xbmc.log("[EPG] Failed to get token from handshake", level=xbmc.LOGWARNING)
+        return None, {}, {}
+
+    # Cache the token
+    _token_cache['token'] = token
+    _token_cache['mac'] = mac
+    _token_cache['timestamp'] = current_time
+
+    xbmc.log(f"[EPG] Cached new token: {token[:10]}...", level=xbmc.LOGINFO)
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
+        'X-User-Agent': 'Model: MAG250; Link: WiFi',
+    }
+
+    cookies = {
+        'mac': mac,
+        'token': token
+    }
+
+    return token, headers, cookies
+
+# Initialize EPG Manager AFTER defining token provider (only if enabled)
+# Optimized settings for faster EPG fetching with parallel workers
 epg_manager = None
 if is_epg_enabled():
-    # Initial dummy config, will be reconfigured on list_channels
-    portal_url, _ = get_server_details('server1')
     epg_manager = EpgManager(
         mode='stalker',
-        base_url=portal_url,
+        base_url=_ADDON.getSetting('portal_url'),
         callback=epg_callback,
-        token_provider=lambda: (None, {}, {}), # Dummy provider
-        connect_timeout=10.0,
-        read_timeout=30.0,
-        max_retries=3,
-        backoff_factor=1.0,
-        cache_ttl=1800.0,
+        token_provider=epg_token_provider,
+        connect_timeout=10.0,    # Increased timeout for connection
+        read_timeout=30.0,      # Increased timeout for reading
+        max_retries=3,          # Retry 3 times on failure
+        backoff_factor=1.0,     # More aggressive backoff
+        cache_ttl=1800.0,       # 30 minutes cache
         max_items_default=10,
-        num_workers=10
+        num_workers=10          # Process 10 channels in parallel
     )
 
 
 # Favorites file
-FAVORITES_FILE = os.path.join(xbmcvfs.translatePath(_ADDON.getAddonInfo('profile')), 'favorites_{server}.json')
+FAVORITES_FILE = os.path.join(xbmcvfs.translatePath(_ADDON.getAddonInfo('profile')), 'favorites.json')
 
-def list_favorites(server='server1'):
+def list_favorites():
     """List favorite channels."""
     # Add "Change MAC" button at the top
     change_mac_button = xbmcgui.ListItem(label="[COLOR orange]Change MAC Address[/COLOR]")
     change_mac_button.setArt({'icon': 'DefaultIconInfo.png', 'thumb': 'DefaultIconInfo.png'})
-    change_mac_url = f"{_BASE_URL}?mode=change_mac&category=favorites&server={server}"
+    change_mac_url = f"{_BASE_URL}?mode=change_mac&category=favorites"
     xbmcplugin.addDirectoryItem(handle=_HANDLE, url=change_mac_url, listitem=change_mac_button, isFolder=False)
 
-    favorites_file = FAVORITES_FILE.format(server=server)
     try:
-        with open(favorites_file, 'r', encoding='utf-8') as f:
+        with open(FAVORITES_FILE, 'r', encoding='utf-8') as f:
             favorites = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         favorites = []
@@ -500,73 +480,70 @@ def list_favorites(server='server1'):
 
     for fav in favorites:
         li = xbmcgui.ListItem(label=fav['name'])
-        logo = fav.get('logo', '')
-        if logo:
-            logo = quote(logo, safe=':/?&=')
-        li.setArt({'thumb': logo, 'icon': logo})
+        li.setArt({'thumb': fav.get('logo', ''), 'icon': fav.get('logo', '')})
         li.setProperty('IsPlayable', 'true')
 
-        url = f"{_BASE_URL}?mode=play&stream_id={fav['stream_id']}&name={quote_plus(fav['name'])}&server={server}"
+        url = f"{_BASE_URL}?mode=play&stream_id={fav['stream_id']}&name={quote_plus(fav['name'])}"
 
         # Context menu to remove from favorites
         li.addContextMenuItems([
-            ('Remove from Favorites', f'RunPlugin({_BASE_URL}?mode=remove_from_favorites&stream_id={fav["stream_id"]}&server={server})')
+            ('Remove from Favorites', f'RunPlugin({_BASE_URL}?mode=remove_from_favorites&stream_id={fav["stream_id"]})')
         ])
 
         xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=False)
 
     xbmcplugin.endOfDirectory(_HANDLE)
 
-def add_to_favorites(stream_id, name, logo, server='server1'):
+def add_to_favorites(stream_id, name, logo):
     """Add a channel to favorites."""
-    favorites_file = FAVORITES_FILE.format(server=server)
     try:
-        with open(favorites_file, 'r', encoding='utf-8') as f:
+        with open(FAVORITES_FILE, 'r', encoding='utf-8') as f:
             favorites = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         favorites = []
 
     if not any(fav['stream_id'] == stream_id for fav in favorites):
         favorites.append({'stream_id': stream_id, 'name': name, 'logo': logo})
-        with open(favorites_file, 'w', encoding='utf-8') as f:
+        with open(FAVORITES_FILE, 'w', encoding='utf-8') as f:
             json.dump(favorites, f)
         xbmcgui.Dialog().notification('Favorites', f'{name} added to favorites', xbmcgui.NOTIFICATION_INFO, 2000)
     else:
         xbmcgui.Dialog().notification('Favorites', f'{name} is already in favorites', xbmcgui.NOTIFICATION_INFO, 2000)
 
-def remove_from_favorites(stream_id, server='server1'):
+def remove_from_favorites(stream_id):
     """Remove a channel from favorites."""
-    favorites_file = FAVORITES_FILE.format(server=server)
     try:
-        with open(favorites_file, 'r', encoding='utf-8') as f:
+        with open(FAVORITES_FILE, 'r', encoding='utf-8') as f:
             favorites = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return
 
     favorites = [fav for fav in favorites if fav['stream_id'] != stream_id]
 
-    with open(favorites_file, 'w', encoding='utf-8') as f:
+    with open(FAVORITES_FILE, 'w', encoding='utf-8') as f:
         json.dump(favorites, f)
     xbmcgui.Dialog().notification('Favorites', 'Channel removed from favorites', xbmcgui.NOTIFICATION_INFO, 2000)
     xbmc.executebuiltin('Container.Refresh')
 
 def get_params():
-    """Get the plugin parameters"""""
+    """Get the plugin parameters"""
     paramstring = sys.argv[2][1:]
     return dict(parse_qsl(paramstring))
 
-def list_channels(server='server1'):
+def list_channels():
     """List channel categories first, then channels if a category is selected."""
-    xbmc.log(f"[DEBUG] Loading channels for {server}", level=xbmc.LOGINFO)
+    addon_path = _ADDON.getAddonInfo('path')
+    m3u_file = os.path.join(addon_path, 'premium.txt')
     
     # Check if we're viewing a specific category
     params = get_params()
     selected_category = params.get('category')
 
     try:
-        lines = get_m3u_lines(server)
+        with open(m3u_file, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
     except Exception as e:
-        xbmcgui.Dialog().notification('Error', f'Could not fetch channels: {e}', xbmcgui.NOTIFICATION_ERROR)
+        xbmcgui.Dialog().notification('Error', f'Could not read premium.txt: {e}', xbmcgui.NOTIFICATION_ERROR)
         return
 
     # Extract channel information (EXTINF lines and corresponding URLs)
@@ -580,8 +557,8 @@ def list_channels(server='server1'):
         # Check if this line starts with #EXTINF (case insensitive check)
         if line.startswith('#EXTINF:') or '#EXTINF:' in line.upper():
             # Extract group-title and tvg-logo using more flexible regex
-            group_title_match = re.search(r'group-title="?([^",]*)"?', line, re.IGNORECASE)
-            tvg_logo_match = re.search(r'tvg-logo=["\']([^"\']*)["\']', line, re.IGNORECASE)
+            group_title_match = re.search(r'group-title\s*=\s*"?([^"",]*)"?,?', line, re.IGNORECASE)
+            tvg_logo_match = re.search(r'tvg-logo\s*=\s*["\'"]([^"\'"]*)["\'"]', line, re.IGNORECASE)
             
             # Find the last comma in the line to separate attributes from the channel name
             last_comma_pos = line.rfind(',')
@@ -590,97 +567,59 @@ def list_channels(server='server1'):
             else:
                 channel_name = 'Unknown Channel'
             
-            # For Server 2 and 3, clean non-alphanumeric characters from channel title
-            if server in ['server2', 'server3']:
-                channel_name = re.sub(r'[^a-zA-Z0-9\s]', ' ', channel_name)
-                channel_name = ' '.join(channel_name.split())
-            
-            group_title = group_title_match.group(1).strip() if group_title_match else 'Uncategorized'
+            group_title = group_title_match.group(1) if group_title_match else 'Uncategorized'
             tvg_logo = tvg_logo_match.group(1) if tvg_logo_match else ''
 
             # Map category name
             group_title = map_category_name(group_title)
-            
-            # For Server 2 and 3, clean non-alphanumeric characters from category title
-            if server in ['server2', 'server3']:
-                group_title = re.sub(r'[^a-zA-Z0-9\s]', ' ', group_title)
-                group_title = ' '.join(group_title.split())
 
             # Get the next line which should be the URL
             if i + 1 < len(lines):
                 url_line = lines[i + 1].strip()
                 if url_line and not url_line.startswith('#'):
                     # Extract stream ID from URL - look for stream= followed by digits
-                    real_stream_id = None
-                    real_id_match = re.search(r'stream=(\d+)', url_line)
-                    if real_id_match:
-                        real_stream_id = real_id_match.group(1)
-
-                    if server == 'server2':
-                        # For Server 2, always use s2_ prefix with index
-                        stream_id = f"s2_{len(channels)}"
+                    stream_id_match = re.search(r'stream=(\d+)', url_line)
+                    if stream_id_match:
+                        stream_id = stream_id_match.group(1)
                         channels.append({
                             'name': channel_name,
                             'group': group_title,
                             'logo': tvg_logo,
                             'stream_id': stream_id,
-                            'ch_id': real_stream_id, # Real ID for EPG
                             'url': url_line
                         })
-                    elif server == 'server3':
-                        # For Server 3, use s3_ prefix with index
-                        stream_id = f"s3_{len(channels)}"
-                        channels.append({
-                            'name': channel_name,
-                            'group': group_title,
-                            'logo': tvg_logo,
-                            'stream_id': stream_id,
-                            'ch_id': real_stream_id, # Real ID for EPG
-                            'url': url_line
-                        })
-                    else:
-                        # Server 1 format: stream=12345
-                        if real_stream_id:
-                            stream_id = real_stream_id
-                            channels.append({
-                                'name': channel_name,
-                                'group': group_title,
-                                'logo': tvg_logo,
-                                'stream_id': stream_id,
-                                'ch_id': real_stream_id,
-                                'url': url_line
-                            })
-
+        
         i += 1
-
-    xbmc.log(f"[DEBUG] Found {len(channels)} channels for {server}", level=xbmc.LOGINFO)
+    
+    # Debug output
+    xbmc.log(f"[DEBUG] Found {len(channels)} channels across {len(set([ch['group'] for ch in channels]))} categories", level=xbmc.LOGDEBUG)
     
     # If a category is selected, list channels in that category
     if selected_category:
-        list_channels_in_category(channels, selected_category, server=server)
+        list_channels_in_category(channels, selected_category)
     else:
         # List all available categories
-        list_categories(channels, server=server)
+        list_categories(channels)
 
-def list_categories(channels, server='server1'):
+def list_categories(channels):
     """List all available channel categories with Get Full EPG button."""
     # Add "Search" button at the top
     search_button = xbmcgui.ListItem(label="[COLOR yellow]Cauta[/COLOR]")
     search_button.setArt({'icon': 'DefaultAddonsSearch.png', 'thumb': 'DefaultAddonsSearch.png'})
-    search_button_url = f"{_BASE_URL}?mode=search&server={server}"
+    search_button_url = f"{_BASE_URL}?mode=search"
     xbmcplugin.addDirectoryItem(handle=_HANDLE, url=search_button_url, listitem=search_button, isFolder=True)
 
     # Add "Favorites" button at the top
     favorites_button = xbmcgui.ListItem(label="[COLOR gold]Favorite[/COLOR]")
     favorites_button.setArt({'icon': 'DefaultFavourites.png', 'thumb': 'DefaultFavourites.png'})
-    favorites_button_url = f"{_BASE_URL}?mode=favorites&server={server}"
+    favorites_button_url = f"{_BASE_URL}?mode=favorites"
     xbmcplugin.addDirectoryItem(handle=_HANDLE, url=favorites_button_url, listitem=favorites_button, isFolder=True)
     
-    # Add "Get Full EPG" button at the top (only if EPG is enabled and on server 1)
-    if is_epg_enabled() and server == 'server1':
+    # Add "Get Full EPG" button at the top (only if EPG is enabled)
+    if is_epg_enabled():
         epg_button = xbmcgui.ListItem(label="[COLOR yellow]Get Full EPG[/COLOR]")
         epg_button.setArt({'icon': 'DefaultAddonPVRClient.png', 'thumb': 'DefaultAddonPVRClient.png'})
-        epg_button_url = f"{_BASE_URL}?mode=get_full_epg&server={server}"
+        epg_button_url = f"{_BASE_URL}?mode=get_full_epg"
         xbmcplugin.addDirectoryItem(handle=_HANDLE, url=epg_button_url, listitem=epg_button, isFolder=False)
 
     # Get unique categories (already mapped in list_channels)
@@ -698,25 +637,24 @@ def list_categories(channels, server='server1'):
         li.setArt({'icon': icon, 'thumb': icon})
 
         # Create URL to navigate to this category
-        category_url = f"{_BASE_URL}?category={quote_plus(category)}&server={server}"
+        category_url = f"{_BASE_URL}?category={quote_plus(category)}"
 
         xbmcplugin.addDirectoryItem(handle=_HANDLE, url=category_url, listitem=li, isFolder=True)
 
     # Add Settings link at the end
     settings_item = xbmcgui.ListItem(label="[COLOR cyan]Settings[/COLOR]")
     settings_item.setArt({'icon': 'DefaultAddonService.png', 'thumb': 'DefaultAddonService.png'})
-    settings_url = f"{_BASE_URL}?mode=settings&server={server}"
+    settings_url = f"{_BASE_URL}?mode=settings"
     xbmcplugin.addDirectoryItem(handle=_HANDLE, url=settings_url, listitem=settings_item, isFolder=False)
 
     xbmcplugin.endOfDirectory(_HANDLE)
 
 
-def list_channels_in_category(all_channels, selected_category, server='server1'):
+def list_channels_in_category(all_channels, selected_category):
     """List channels within a specific category."""
     # Load favorites to check which channels are already favorited
-    favorites_file = FAVORITES_FILE.format(server=server)
     try:
-        with open(favorites_file, 'r', encoding='utf-8') as f:
+        with open(FAVORITES_FILE, 'r', encoding='utf-8') as f:
             favorites = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         favorites = []
@@ -728,17 +666,11 @@ def list_channels_in_category(all_channels, selected_category, server='server1')
     # Add "Change MAC" button at the top
     change_mac_button = xbmcgui.ListItem(label="[COLOR orange]Change MAC Address[/COLOR]")
     change_mac_button.setArt({'icon': 'DefaultIconInfo.png', 'thumb': 'DefaultIconInfo.png'})
-    change_mac_url = f"{_BASE_URL}?mode=change_mac&category={quote_plus(selected_category)}&server={server}"
+    change_mac_url = f"{_BASE_URL}?mode=change_mac&category={quote_plus(selected_category)}"
     xbmcplugin.addDirectoryItem(handle=_HANDLE, url=change_mac_url, listitem=change_mac_button, isFolder=False)
 
     # Only load and request EPG if enabled
     if is_epg_enabled() and epg_manager:
-        # Reconfigure EPG Manager for the current server
-        portal_url, server_key = get_server_details(server)
-        token_provider = make_token_provider(server_key, portal_url)
-        
-        epg_manager.reconfigure(base_url=portal_url, token_provider=token_provider)
-        
         # Load EPG cache first
         load_epg_cache()
 
@@ -810,13 +742,7 @@ def list_channels_in_category(all_channels, selected_category, server='server1')
 
         # Set thumbnail from tvg-logo if available
         if channel['logo']:
-            # Skip logos from known problematic domains
-            problematic_domains = ['picon.nxtbox.tv', 'picon.tivi-ott.net']
-            if any(domain in channel['logo'] for domain in problematic_domains):
-                li.setArt({'thumb': 'DefaultVideo.png', 'icon': 'DefaultVideo.png'})
-            else:
-                safe_logo = quote(channel['logo'], safe=':/?&=')
-                li.setArt({'thumb': safe_logo, 'icon': safe_logo})
+            li.setArt({'thumb': channel['logo'], 'icon': channel['logo']})
 
         li.setProperty('IsPlayable', 'true')
 
@@ -827,14 +753,14 @@ def list_channels_in_category(all_channels, selected_category, server='server1')
             li.setInfo('video', {'plot': plot})
 
         # Create URL to play this specific channel
-        url = f"{_BASE_URL}?mode=play&stream_id={channel['stream_id']}&name={quote_plus(channel['name'])}&server={server}"
+        url = f"{_BASE_URL}?mode=play&stream_id={channel['stream_id']}&name={quote_plus(channel['name'])}"
 
         # Add context menu for favorites
         context_menu = []
         if channel['stream_id'] in favorite_stream_ids:
-            context_menu.append(('Remove from Favorites', f'RunPlugin({_BASE_URL}?mode=remove_from_favorites&stream_id={channel["stream_id"]}&server={server})'))
+            context_menu.append(('Remove from Favorites', f'RunPlugin({_BASE_URL}?mode=remove_from_favorites&stream_id={channel["stream_id"]})'))
         else:
-            context_menu.append(('Add to Favorites', f'RunPlugin({_BASE_URL}?mode=add_to_favorites&stream_id={channel["stream_id"]}&name={quote_plus(channel["name"] )}&logo={quote_plus(channel["logo"])}&server={server})'))
+            context_menu.append(('Add to Favorites', f'RunPlugin({_BASE_URL}?mode=add_to_favorites&stream_id={channel["stream_id"]}&name={quote_plus(channel["name"])}&logo={quote_plus(channel["logo"])})'))
         li.addContextMenuItems(context_menu)
 
         xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=False)
@@ -852,10 +778,14 @@ def get_full_epg():
     load_epg_cache()
 
     # Read all channels from M3U
+    addon_path = _ADDON.getAddonInfo('path')
+    m3u_file = os.path.join(addon_path, 'premium.txt')
+
     try:
-        lines = get_m3u_lines('server1')
+        with open(m3u_file, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
     except Exception as e:
-        xbmcgui.Dialog().notification('Error', f'Could not fetch premium.txt: {e}', xbmcgui.NOTIFICATION_ERROR)
+        xbmcgui.Dialog().notification('Error', f'Could not read premium.txt: {e}', xbmcgui.NOTIFICATION_ERROR)
         return
 
     # Extract all channels
@@ -864,7 +794,7 @@ def get_full_epg():
     while i < len(lines):
         line = lines[i].strip()
         if line.startswith('#EXTINF:') or '#EXTINF:' in line.upper():
-            group_title_match = re.search(r'group-title="?([^",]*)"?', line, re.IGNORECASE)
+            group_title_match = re.search(r'group-title\s*=\s*"?([^",]*)"?,?', line, re.IGNORECASE)
             last_comma_pos = line.rfind(',')
             if last_comma_pos != -1:
                 channel_name = line[last_comma_pos + 1:].strip()
@@ -983,12 +913,12 @@ def generate_random_mac():
     return f"{prefix}:{suffix}"
 
 
-def change_mac(category=None, server='server1'):
+def change_mac(category=None):
     """Change to a new random MAC address and clear token cache."""
     global _token_cache
 
     # Get a new random MAC from file
-    new_mac = get_random_mac_from_file(server)
+    new_mac = get_random_mac_from_file()
     if not new_mac:
         xbmcgui.Dialog().notification('Error', 'Failed to get new MAC address', xbmcgui.NOTIFICATION_ERROR)
         return
@@ -1006,378 +936,83 @@ def change_mac(category=None, server='server1'):
         xbmc.executebuiltin(f'Container.Refresh')
 
 
-def play_stream(stream_id, name, server='server1'):
+def play_stream(stream_id, name):
     """Get the token and MAC dynamically and resolve the URL for a single stream."""
-    # Get portal URL from remote file
-    portal_url, _ = get_server_details(server)
-
-    # Use server parameter to determine logic
-    if server == 'server2':
-        xbmc.log(f"--- SERVER 2 PLAYBACK START: {name} ---", level=xbmc.LOGINFO)
-        
-        # Server 2: Get URL template from mag.txt and replace placeholders
-        xbmc.log(f"[Server 2] Step 1: Fetching M3U content for Server 2", level=xbmc.LOGINFO)
-
-        try:
-            lines = get_m3u_lines('server2')
-            xbmc.log(f"[Server 2] Step 1a: Successfully fetched {len(lines)} lines from M3U.", level=xbmc.LOGINFO)
-
-            # Find the channel by index (extract index from stream_id)
-            if stream_id.startswith('s2_'):
-                channel_index = int(stream_id.split('_')[1])
-            else:
-                # Fallback: search by name if stream_id is not index-based
-                # (This shouldn't happen with our recent list_channels change)
-                channel_index = -1
-                
-            xbmc.log(f"[Server 2] Step 2: Searching for channel at index {channel_index}.", level=xbmc.LOGINFO)
-            channel_count = 0
-
-            for i, line in enumerate(lines):
-                line = line.strip()
-                if line.startswith('#EXTINF:') or '#EXTINF:' in line.upper():
-                    # Get next line which should be the URL
-                    if i + 1 < len(lines):
-                        url_line = lines[i + 1].strip()
-                        if url_line and not url_line.startswith('#'):
-                            if channel_count == channel_index or (channel_index == -1 and name in line):
-                                xbmc.log(f"[Server 2] Step 2a: Found channel template URL: {url_line}", level=xbmc.LOGINFO)
-                                
-                                # Found our channel! Extract stream ID from URL
-                                stream_id_match = re.search(r'stream=(\d+)', url_line)
-                                if stream_id_match:
-                                    actual_stream_id = stream_id_match.group(1)
-                                    xbmc.log(f"[Server 2] Step 3: Extracted Stream ID: {actual_stream_id}", level=xbmc.LOGINFO)
-
-                                    # Perform handshake to get token
-                                    # Extract portal URL from the URL template
-                                    portal_match = re.match(r'(https?://[^/]+)', url_line)
-                                    if portal_match:
-                                        server2_portal_url = portal_match.group(1)
-                                        xbmc.log(f"[Server 2] Step 4: Extracted Portal URL: {server2_portal_url}", level=xbmc.LOGINFO)
-
-                                        # Try up to 3 different MACs
-                                        for mac_attempt in range(3):
-                                            xbmc.log(f"--- Starting MAC Attempt {mac_attempt + 1}/3 ---", level=xbmc.LOGINFO)
-                                            
-                                            random_mac = get_random_mac_from_file(server)
-                                            if not random_mac:
-                                                xbmc.log("[Server 2] Step 5: Failed to get a random MAC address.", level=xbmc.LOGERROR)
-                                                return
-                                            xbmc.log(f"[Server 2] Step 5: Using MAC Address: {random_mac}", level=xbmc.LOGINFO)
-
-                                            # Get session token via handshake
-                                            xbmc.log("[Server 2] Step 6: Performing handshake...", level=xbmc.LOGINFO)
-                                            session_token = handshake(server2_portal_url, random_mac, server='server2')
-                                            if not session_token:
-                                                xbmc.log(f"[Server 2] Step 6a: Handshake failed for MAC {random_mac}, trying another...", level=xbmc.LOGWARNING)
-                                                continue
-                                            xbmc.log(f"[Server 2] Step 6a: Handshake successful. Session token: {session_token[:10]}...", level=xbmc.LOGINFO)
-
-                                            # Create link to get play token
-                                            headers = {
-                                                'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
-                                                'X-User-Agent': 'Model: MAG250; Link: WiFi',
-                                            }
-                                            create_link_url = f"{server2_portal_url}/portal.php?action=create_link&type=itv&cmd={actual_stream_id}&JsHttpRequest=1-xml"
-                                            xbmc.log(f"[Server 2] Step 7: Requesting create_link URL: {create_link_url}", level=xbmc.LOGINFO)
-                                            cookies = {'mac': random_mac, 'token': session_token}
-
-                                            try:
-                                                response = requests.get(create_link_url, headers=headers, cookies=cookies, timeout=10)
-                                                response.raise_for_status()
-                                                link_data = response.json()
-                                                xbmc.log(f"[Server 2] Step 8: Received create_link response: {link_data}", level=xbmc.LOGINFO)
-
-                                                if not isinstance(link_data, dict):
-                                                    xbmc.log(f"[Server 2] Unexpected response type: {type(link_data)}", level=xbmc.LOGWARNING)
-                                                    continue
-
-                                                js_data = link_data.get('js', {})
-                                                
-                                                if isinstance(js_data, list):
-                                                    xbmc.log(f"[Server 2] Step 9: js_data is a list (likely empty/error): {js_data}", level=xbmc.LOGWARNING)
-                                                    continue
-                                                    
-                                                returned_cmd = js_data.get('cmd')
-
-                                                if returned_cmd:
-                                                    xbmc.log(f"[Server 2] Step 9: Found 'cmd' field: {returned_cmd}", level=xbmc.LOGINFO)
-                                                    play_token_match = re.search(r'play_token=([a-zA-Z0-9]+)', returned_cmd)
-                                                    if play_token_match:
-                                                        play_token = play_token_match.group(1)
-                                                        xbmc.log(f"[Server 2] Step 10: Extracted play_token: {play_token}", level=xbmc.LOGINFO)
-                                                        
-                                                        # Replace placeholders in the original URL from mag.txt
-                                                        final_url = url_line.replace('MACPH', random_mac).replace('TOKENPH', play_token)
-                                                        xbmc.log(f"[Server 2] Step 11: Constructed final URL from template: {final_url}", level=xbmc.LOGINFO)
-
-                                                        # Add User-Agent and X-User-Agent to the final URL
-                                                        headers_str = urlencode({
-                                                            'User-Agent': headers['User-Agent'],
-                                                            'X-User-Agent': headers['X-User-Agent']
-                                                        })
-                                                        final_url_with_ua = f"{final_url}|{headers_str}"
-                                                        xbmc.log(f"[Server 2] Step 12: Appending Headers. Final URL for player: {final_url_with_ua}", level=xbmc.LOGINFO)
-
-                                                        play_item = xbmcgui.ListItem(path=final_url_with_ua)
-                                                        xbmcplugin.setResolvedUrl(_HANDLE, True, listitem=play_item)
-                                                        xbmc.log(f"--- SERVER 2 PLAYBACK SUCCESS ---", level=xbmc.LOGINFO)
-                                                        return  # SUCCESS!
-                                                    else:
-                                                        xbmc.log(f"[Server 2] No play_token in response, trying another MAC...", level=xbmc.LOGWARNING)
-                                                        continue  # Try next MAC
-                                                else:
-                                                    xbmc.log(f"[Server 2] No cmd in response, trying another MAC...", level=xbmc.LOGWARNING)
-                                                    continue  # Try next MAC
-
-                                            except requests.exceptions.RequestException as e:
-                                                xbmc.log(f"[Server 2] Request for create_link failed: {e}, trying another MAC...", level=xbmc.LOGWARNING)
-                                                continue  # Try next MAC
-                                            except Exception as e:
-                                                xbmc.log(f"[Server 2] Error processing create_link response: {e}", level=xbmc.LOGWARNING)
-                                                continue # Try next MAC
-
-                                        # All MAC attempts failed
-                                        xbmc.log("--- All MAC address attempts failed for Server 2 ---", level=xbmc.LOGERROR)
-                                        xbmcgui.Dialog().notification('Error', 'All MAC addresses rejected by Server 2. Try again later.', xbmcgui.NOTIFICATION_ERROR)
-                                        return
-                                    else:
-                                        xbmcgui.Dialog().notification('Error', 'Could not extract portal URL from mag.txt', xbmcgui.NOTIFICATION_ERROR)
-                                        return
-                                else:
-                                    xbmcgui.Dialog().notification('Error', 'Could not extract stream ID from URL', xbmcgui.NOTIFICATION_ERROR)
-                                    return
-                            channel_count += 1
-
-            xbmcgui.Dialog().notification('Error', 'Channel not found in mag.txt', xbmcgui.NOTIFICATION_ERROR)
-            return
-
-        except Exception as e:
-            xbmcgui.Dialog().notification('Error', f'Failed to load mag.txt: {e}', xbmcgui.NOTIFICATION_ERROR)
-            return
-
-    elif server == 'server3':
-        xbmc.log(f"--- SERVER 3 PLAYBACK START: {name} ---", level=xbmc.LOGINFO)
-        
-        try:
-            lines = get_m3u_lines('server3')
-            
-            # Extract index if stream_id is index-based
-            if stream_id.startswith('s3_'):
-                channel_index = int(stream_id.split('_')[1])
-            else:
-                channel_index = -1
-
-            channel_count = 0
-            for i, line in enumerate(lines):
-                line = line.strip()
-                if line.startswith('#EXTINF:') or '#EXTINF:' in line.upper():
-                    if i + 1 < len(lines):
-                        url_line = lines[i + 1].strip()
-                        if url_line and not url_line.startswith('#') and 'MACPH' in url_line:
-                            if channel_count == channel_index or (channel_index == -1 and name in line):
-                                # Found channel template
-                                stream_id_match = re.search(r'stream=(\d+)', url_line)
-                                if stream_id_match:
-                                    actual_stream_id = stream_id_match.group(1)
-                                    
-                                    # Extract portal URL
-                                    portal_match = re.match(r'(https?://[^/]+)', url_line)
-                                    if portal_match:
-                                        server3_portal_url = portal_match.group(1)
-                                        
-                                        # Try up to 3 MACs
-                                        for mac_attempt in range(3):
-                                            random_mac = get_random_mac_from_file('server3')
-                                            if not random_mac: break
-                                            
-                                            # Handshake
-                                            session_token = handshake(server3_portal_url, random_mac, server='server3')
-                                            if not session_token: continue
-                                            
-                                            # Create Link Request
-                                            headers = {
-                                                'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
-                                                'X-User-Agent': 'Model: MAG250; Link: WiFi',
-                                            }
-                                            create_link_url = f"{server3_portal_url}/portal.php?action=create_link&type=itv&cmd={actual_stream_id}&JsHttpRequest=1-xml"
-                                            cookies = {'mac': random_mac, 'token': session_token}
-                                            
-                                            try:
-                                                response = requests.get(create_link_url, headers=headers, cookies=cookies, timeout=10)
-                                                response.raise_for_status()
-                                                link_data = response.json()
-                                                
-                                                # Check response structure
-                                                if isinstance(link_data, dict):
-                                                    js_data = link_data.get('js', {})
-                                                    if isinstance(js_data, dict):
-                                                        returned_cmd = js_data.get('cmd')
-                                                        if returned_cmd:
-                                                            play_token_match = re.search(r'play_token=([a-zA-Z0-9]+)', returned_cmd)
-                                                            if play_token_match:
-                                                                play_token = play_token_match.group(1)
-                                                                
-                                                                # Construct final URL
-                                                                # Start with the template from playlist
-                                                                final_url = url_line.replace('MACPH', random_mac)
-                                                                
-                                                                # Add play_token if not present (Server 3 doesn't have TOKENPH)
-                                                                if 'play_token=' not in final_url:
-                                                                    final_url += f"&play_token={play_token}"
-                                                                
-                                                                # Add User-Agent and X-User-Agent to the final URL
-                                                                headers_str = urlencode({
-                                                                    'User-Agent': headers['User-Agent'],
-                                                                    'X-User-Agent': headers['X-User-Agent']
-                                                                })
-                                                                final_url_with_ua = f"{final_url}|{headers_str}"
-                                                                
-                                                                play_item = xbmcgui.ListItem(path=final_url_with_ua)
-                                                                xbmcplugin.setResolvedUrl(_HANDLE, True, listitem=play_item)
-                                                                return
-                                            except:
-                                                pass
-                                        
-                                        xbmcgui.Dialog().notification('Error', 'Server 3: All MACs failed', xbmcgui.NOTIFICATION_ERROR)
-                                        return
-                            channel_count += 1
-            xbmcgui.Dialog().notification('Error', 'Channel not found in s3.txt', xbmcgui.NOTIFICATION_ERROR)
-            return
-        except Exception as e:
-             xbmcgui.Dialog().notification('Error', f'Failed Server 3: {e}', xbmcgui.NOTIFICATION_ERROR)
-             return
-
-    # Server 1: Try up to 3 MACs
+    portal_url = _ADDON.getSetting('portal_url')
     if not portal_url:
-        xbmcgui.Dialog().notification('Error', 'Could not find portal URL for Server 1 in premium.txt', xbmcgui.NOTIFICATION_ERROR)
+        xbmcgui.Dialog().notification('Error', 'Portal URL is not set in settings.', xbmcgui.NOTIFICATION_ERROR)
         return
 
-    for mac_attempt in range(3):
-        random_mac = get_random_mac_from_file(server)
-        if not random_mac:
-            return
+    # Get a random MAC address from the file (as requested)
+    random_mac = get_random_mac_from_file()
+    if not random_mac:
+        return
 
-        xbmc.log(f"[Server1] Attempt {mac_attempt + 1}/3 with MAC: {random_mac}", level=xbmc.LOGINFO)
+    # Perform handshake to get a fresh token from the server for each request
+    session_token = handshake(portal_url, random_mac)
+    if not session_token:
+        xbmcgui.Dialog().notification('Error', 'Failed to get a session token.', xbmcgui.NOTIFICATION_ERROR)
+        return
 
-        # Perform handshake to get a fresh token from the server for each request
-        session_token = handshake(portal_url, random_mac)
-        if not session_token:
-            xbmc.log(f"[Server1] Handshake failed for MAC {random_mac}, trying another...", level=xbmc.LOGWARNING)
-            continue
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
+        'X-User-Agent': 'Model: MAG250; Link: WiFi',
+    }
+    create_link_url = f"{portal_url}/portal.php?type=itv&action=create_link&cmd={stream_id}&JsHttpRequest=1-xml"
+    cookies = {'mac': random_mac, 'token': session_token}
 
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3',
-            'X-User-Agent': 'Model: MAG250; Link: WiFi',
-        }
-        create_link_url = f"{portal_url}/portal.php?type=itv&action=create_link&cmd={stream_id}&JsHttpRequest=1-xml"
-        cookies = {'mac': random_mac, 'token': session_token}
+    try:
+        response = requests.get(create_link_url, headers=headers, cookies=cookies, timeout=10)
+        response.raise_for_status()
+        link_data = response.json()
+        returned_cmd = link_data.get('js', {}).get('cmd')
 
-        try:
-            response = requests.get(create_link_url, headers=headers, cookies=cookies, timeout=10)
-            response.raise_for_status()
-            link_data = response.json()
-
-            # Check if response is a dict (expected) or list (error)
-            if isinstance(link_data, dict):
-                js_data = link_data.get('js', {})
-                if isinstance(js_data, dict):
-                    returned_cmd = js_data.get('cmd')
-                elif isinstance(js_data, list):
-                    xbmc.log(f"[Server1] MAC {random_mac} rejected (empty list), trying another...", level=xbmc.LOGWARNING)
-                    continue  # Try next MAC
-                else:
-                    xbmc.log(f"[Server1] Unexpected js data type: {type(js_data)}", level=xbmc.LOGWARNING)
-                    continue  # Try next MAC
-            elif isinstance(link_data, list):
-                xbmc.log(f"[Server1] MAC {random_mac} rejected (root level list), trying another...", level=xbmc.LOGWARNING)
-                continue  # Try next MAC
+        if returned_cmd:
+            play_token_match = re.search(r'play_token=([a-zA-Z0-9]+)', returned_cmd)
+            if play_token_match:
+                play_token = play_token_match.group(1)
+                final_url = f"{portal_url}/play/live.php?mac={random_mac}&stream={stream_id}&extension=ts&play_token={play_token}"
+                play_item = xbmcgui.ListItem(path=final_url)
+                xbmcplugin.setResolvedUrl(_HANDLE, True, listitem=play_item)
             else:
-                xbmc.log(f"[Server1] Unexpected response type: {type(link_data)}", level=xbmc.LOGWARNING)
-                continue  # Try next MAC
+                 xbmcgui.Dialog().notification('Error', 'Could not extract play_token.', xbmcgui.NOTIFICATION_ERROR)
+        else:
+            xbmcgui.Dialog().notification('Error', 'create_link did not return a command.', xbmcgui.NOTIFICATION_ERROR)
 
-            if returned_cmd:
-                play_token_match = re.search(r'play_token=([a-zA-Z0-9]+)', returned_cmd)
-                if play_token_match:
-                    play_token = play_token_match.group(1)
-                    final_url = f"{portal_url}/play/live.php?mac={random_mac}&stream={stream_id}&extension=ts&play_token={play_token}"
-                    xbmc.log(f"[Server1] Successfully playing with MAC: {random_mac}", level=xbmc.LOGINFO)
-                    play_item = xbmcgui.ListItem(path=final_url)
-                    xbmcplugin.setResolvedUrl(_HANDLE, True, listitem=play_item)
-                    return  # SUCCESS!
-                else:
-                    xbmc.log(f"[Server1] No play_token in response, trying another MAC...", level=xbmc.LOGWARNING)
-                    continue  # Try next MAC
-            else:
-                xbmc.log(f"[Server1] No cmd in response, trying another MAC...", level=xbmc.LOGWARNING)
-                continue  # Try next MAC
+    except requests.exceptions.RequestException as e:
+        xbmcgui.Dialog().notification('Error', f'Failed to create link: {e}', xbmcgui.NOTIFICATION_ERROR)
 
-        except requests.exceptions.RequestException as e:
-            xbmc.log(f"[Server1] Request failed: {e}, trying another MAC...", level=xbmc.LOGWARNING)
-            continue  # Try next MAC
-
-    # All MAC attempts failed
-    xbmcgui.Dialog().notification('Error', 'All MAC addresses rejected by server. Try again later.', xbmcgui.NOTIFICATION_ERROR)
 def router(params):
     """Router function"""
-    server = params.get('server')
-    if server is None:
-        server_selection = _ADDON.getSetting('server_selection')
-        if server_selection == '0':
-            server = 'server1'
-        elif server_selection == '1':
-            server = 'server2'
-        elif server_selection == '2':
-            server = 'server3'
-        else:
-            server = 'all'
-    
-    params['server'] = server
-
     mode = params.get('mode')
-
-    if server == 'all' and mode is None:
-        li = xbmcgui.ListItem(label='Server 1 RO')
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=f'{_BASE_URL}?server=server1', listitem=li, isFolder=True)
-        li = xbmcgui.ListItem(label='Server 2 RO')
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=f'{_BASE_URL}?server=server2', listitem=li, isFolder=True)
-        li = xbmcgui.ListItem(label='Server 3 RO')
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=f'{_BASE_URL}?server=server3', listitem=li, isFolder=True)
-        xbmcplugin.endOfDirectory(_HANDLE)
-        return
-
     if mode is None:
-        list_channels(server=server)
+        list_channels()
     elif mode == 'play':
-        play_stream(params['stream_id'], params['name'], server=server)
+        play_stream(params['stream_id'], params['name'])
     elif mode == 'get_full_epg':
         get_full_epg()
     elif mode == 'search':
-        corrected_search_channels(server=server)
+        corrected_search_channels()
     elif mode == 'change_mac':
-        change_mac(params.get('category'), server=server)
+        change_mac(params.get('category'))
     elif mode == 'settings':
         _ADDON.openSettings()
-        xbmc.executebuiltin('Container.Refresh')
     elif mode == 'favorites':
-        list_favorites(server=server)
+        list_favorites()
     elif mode == 'add_to_favorites':
-        add_to_favorites(params['stream_id'], params['name'], params.get('logo', ''), server=server)
+        add_to_favorites(params['stream_id'], params['name'], params.get('logo', ''))
     elif mode == 'remove_from_favorites':
-        remove_from_favorites(params['stream_id'], server=server)
+        remove_from_favorites(params['stream_id'])
 
     # Only stop epg_manager if it exists
     if epg_manager:
         epg_manager.stop()
 
-
-def corrected_search_channels(server='server1'):
+def corrected_search_channels():
     """Search for channels by name."""
     # Load favorites to check which channels are already favorited
-    favorites_file = FAVORITES_FILE.format(server=server)
     try:
-        with open(favorites_file, 'r', encoding='utf-8') as f:
+        with open(FAVORITES_FILE, 'r', encoding='utf-8') as f:
             favorites = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         favorites = []
@@ -1387,10 +1022,8 @@ def corrected_search_channels(server='server1'):
     kb = xbmc.Keyboard('', 'Search Channels')
     kb.doModal()
     if not kb.isConfirmed():
-        # User cancelled. Explicitly navigate back to the category list for the current server.
-        xbmc.executebuiltin(f"Container.Update({_BASE_URL}?server={server})")
-        # End the current script cleanly after starting the new navigation action.
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+        # User cancelled - show empty directory to allow back navigation
+        xbmcplugin.endOfDirectory(_HANDLE)
         return
 
     search_term = kb.getText().strip()
@@ -1400,10 +1033,14 @@ def corrected_search_channels(server='server1'):
         return
 
     # Read all channels from M3U
+    addon_path = _ADDON.getAddonInfo('path')
+    m3u_file = os.path.join(addon_path, 'premium.txt')
+
     try:
-        lines = get_m3u_lines(server)
+        with open(m3u_file, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
     except Exception as e:
-        xbmcgui.Dialog().notification('Error', f'Could not fetch channels: {e}', xbmcgui.NOTIFICATION_ERROR)
+        xbmcgui.Dialog().notification('Error', f'Could not read premium.txt: {e}', xbmcgui.NOTIFICATION_ERROR)
         return
 
     # Extract all channels
@@ -1413,8 +1050,8 @@ def corrected_search_channels(server='server1'):
         line = lines[i].strip()
         if line.startswith('#EXTINF:') or '#EXTINF:' in line.upper():
             # Extract group-title and tvg-logo using more flexible regex
-            group_title_match = re.search(r'group-title="?([^",]*)"?', line, re.IGNORECASE)
-            tvg_logo_match = re.search(r'tvg-logo=["\']([^"\']*)["\']', line, re.IGNORECASE)
+            group_title_match = re.search(r'group-title\s*=\s*"?([^",]*)"?,?', line, re.IGNORECASE)
+            tvg_logo_match = re.search(r'tvg-logo\s*=\s*["\'"]([^"\'"]*)["\'"]', line, re.IGNORECASE)
             
             # Find the last comma in the line to separate attributes from the channel name
             last_comma_pos = line.rfind(',')
@@ -1423,86 +1060,32 @@ def corrected_search_channels(server='server1'):
             else:
                 channel_name = 'Unknown Channel'
             
-            # For Server 2 and 3, clean non-alphanumeric characters from channel title
-            if server in ['server2', 'server3']:
-                channel_name = re.sub(r'[^a-zA-Z0-9\s]', ' ', channel_name)
-                channel_name = ' '.join(channel_name.split())
-            
             group_title = group_title_match.group(1) if group_title_match else 'Uncategorized'
             tvg_logo = tvg_logo_match.group(1) if tvg_logo_match else ''
 
             # Map category name
             group_title = map_category_name(group_title)
-            
-            # For Server 2 and 3, clean non-alphanumeric characters from category title
-            if server in ['server2', 'server3']:
-                group_title = re.sub(r'[^a-zA-Z0-9\s]', ' ', group_title)
-                group_title = ' '.join(group_title.split())
 
             # Get the next line which should be the URL
             if i + 1 < len(lines):
                 url_line = lines[i + 1].strip()
                 if url_line and not url_line.startswith('#'):
                     # Extract stream ID from URL - look for stream= followed by digits
-                    real_stream_id = None
-                    real_id_match = re.search(r'stream=(\d+)', url_line)
-                    if real_id_match:
-                        real_stream_id = real_id_match.group(1)
-
-                    if server == 'server2':
-                        # For Server 2, always use s2_ prefix with index
-                        stream_id = f"s2_{len(channels)}"
+                    stream_id_match = re.search(r'stream=(\d+)', url_line)
+                    if stream_id_match:
+                        stream_id = stream_id_match.group(1)
                         channels.append({
                             'name': channel_name,
                             'group': group_title,
                             'logo': tvg_logo,
                             'stream_id': stream_id,
-                            'ch_id': real_stream_id, # Real ID for EPG
                             'url': url_line
                         })
-                    elif server == 'server3':
-                        # For Server 3, use s3_ prefix with index
-                        stream_id = f"s3_{len(channels)}"
-                        channels.append({
-                            'name': channel_name,
-                            'group': group_title,
-                            'logo': tvg_logo,
-                            'stream_id': stream_id,
-                            'ch_id': real_stream_id, # Real ID for EPG
-                            'url': url_line
-                        })
-                    else:
-                        # Server 1 format: stream=12345
-                        if real_stream_id:
-                            stream_id = real_stream_id
-                            channels.append({
-                                'name': channel_name,
-                                'group': group_title,
-                                'logo': tvg_logo,
-                                'stream_id': stream_id,
-                                'ch_id': real_stream_id,
-                                'url': url_line
-                            })
         i += 1
 
     # Filter channels based on search term
     search_term_lower = search_term.lower()
     matching_channels = [ch for ch in channels if search_term_lower in ch['name'].lower()]
-
-    # Reconfigure and fetch EPG for search results if enabled
-    if is_epg_enabled() and epg_manager and matching_channels:
-        portal_url, server_key = get_server_details(server)
-        token_provider = make_token_provider(server_key, portal_url)
-        epg_manager.reconfigure(base_url=portal_url, token_provider=token_provider)
-        
-        load_epg_cache()
-        # Only request for displayed items to save bandwidth
-        for ch in matching_channels[:20]: # Limit to top 20 for speed
-            epg_manager.request(ch, size=5)
-            
-        # Give a short time for EPG to populate
-        time.sleep(1.0)
-        save_epg_cache()
 
     # Create list items for matching channels
     for channel in matching_channels:
@@ -1520,13 +1103,7 @@ def corrected_search_channels(server='server1'):
 
         # Set thumbnail from tvg-logo if available
         if channel['logo']:
-            # Skip logos from known problematic domains
-            problematic_domains = ['picon.nxtbox.tv', 'picon.tivi-ott.net']
-            if any(domain in channel['logo'] for domain in problematic_domains):
-                li.setArt({'thumb': 'DefaultVideo.png', 'icon': 'DefaultVideo.png'})
-            else:
-                safe_logo = quote(channel['logo'], safe=':/?&=')
-                li.setArt({'thumb': safe_logo, 'icon': safe_logo})
+            li.setArt({'thumb': channel['logo'], 'icon': channel['logo']})
 
         li.setProperty('IsPlayable', 'true')
 
@@ -1537,14 +1114,14 @@ def corrected_search_channels(server='server1'):
             li.setInfo('video', {'plot': plot})
 
         # Create URL to play this specific channel
-        url = f"{_BASE_URL}?mode=play&stream_id={channel['stream_id']}&name={quote_plus(channel['name'])}&server={server}"
+        url = f"{_BASE_URL}?mode=play&stream_id={channel['stream_id']}&name={quote_plus(channel['name'])}"
 
         # Add context menu for favorites
         context_menu = []
         if channel['stream_id'] in favorite_stream_ids:
-            context_menu.append(('Remove from Favorites', f'RunPlugin({_BASE_URL}?mode=remove_from_favorites&stream_id={channel["stream_id"]}&server={server})'))
+            context_menu.append(('Remove from Favorites', f'RunPlugin({_BASE_URL}?mode=remove_from_favorites&stream_id={channel["stream_id"]})'))
         else:
-            context_menu.append(('Add to Favorites', f'RunPlugin({_BASE_URL}?mode=add_to_favorites&stream_id={channel["stream_id"]}&name={quote_plus(channel["name"] )}&logo={quote_plus(channel["logo"])}&server={server})'))
+            context_menu.append(('Add to Favorites', f'RunPlugin({_BASE_URL}?mode=add_to_favorites&stream_id={channel["stream_id"]}&name={quote_plus(channel["name"])}&logo={quote_plus(channel["logo"])})'))
         li.addContextMenuItems(context_menu)
 
         xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=False)

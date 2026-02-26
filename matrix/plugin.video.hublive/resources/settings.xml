@@ -1,11 +1,9 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
     <category label="General">
-        <setting id="server_selection" type="enum" label="Select Server" values="Server 1|Server 2|Server 3|All" default="0"/>
+        <setting id="portal_url" type="text" label="Portal URL" default="http://tv.premiumplus.tv:80"/>
     </category>
-
     <category label="EPG Settings">
-        <setting id="epg_enabled" type="bool" label="Enable EPG (Electronic Program Guide)" default="false" />
-        <setting id="epg_cache_duration" type="number" label="EPG Cache Duration (minutes)" default="30" />
+        <setting id="epg_enabled" type="bool" label="Enable EPG (Electronic Program Guide)" default="false"/>
+        <setting id="epg_cache_duration" type="number" label="EPG Cache Duration (minutes)" default="30" visible="eq(-1,true)"/>
     </category>
 </settings>
