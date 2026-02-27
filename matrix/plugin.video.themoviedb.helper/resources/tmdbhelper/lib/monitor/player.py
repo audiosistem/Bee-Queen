@@ -268,7 +268,12 @@ class PlayerMonitor(Player, CommonMonitorFunctions):
         self.scrobbler.stop(self.tmdb_type, self.tmdb_id)
 
     def scrobbler_sync(self):
-        if not self.scrobbler:
+        if not self.scrobbler or not self.isPlayingVideo():
+            return
+        try:
+            if (self.getTime() / self.getTotalTime()) < 0.8:
+                return
+        except ZeroDivisionError:
             return
         self.scrobbler_update()
         self.scrobbler.sync(self.tmdb_type, self.tmdb_id)

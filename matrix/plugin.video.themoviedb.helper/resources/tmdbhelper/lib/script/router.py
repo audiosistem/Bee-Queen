@@ -54,6 +54,8 @@ class Script(object):
             lambda **kwargs: importmodule('tmdbhelper.lib.script.method.tmdb', 'refresh_item')(**kwargs),
         'delete_itemtype':
             lambda **kwargs: importmodule('tmdbhelper.lib.script.method.tmdb', 'delete_itemtype')(**kwargs),
+        'delete_listdata':
+            lambda **kwargs: importmodule('tmdbhelper.lib.script.method.tmdb', 'delete_listdata')(**kwargs),
 
         # Trakt Utils
         'like_list':
@@ -88,6 +90,8 @@ class Script(object):
             lambda **kwargs: importmodule('tmdbhelper.lib.script.method.image_functions', 'blur_image')(**kwargs),
         'image_colors':
             lambda **kwargs: importmodule('tmdbhelper.lib.script.method.image_functions', 'image_colors')(**kwargs),
+        'genre_fanart':
+            lambda **kwargs: importmodule('tmdbhelper.lib.script.method.image_functions', 'genre_fanart')(**kwargs),
 
         # User Configuration
         'provider_allowlist':

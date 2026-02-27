@@ -177,6 +177,14 @@
                     </constraints>
                     <control type="button" format="action"/>
                 </setting>
+                <setting id="delete_listdata" type="action" label="32396" help="">
+                    <level>0</level>
+                    <data>RunScript(plugin.video.themoviedb.helper, delete_listdata)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="button" format="action"/>
+                </setting>
             </group>
         </category>
         <category id="widgets" label="32092" help="">
@@ -831,6 +839,16 @@
                     <control type="button" format="path">
                         <heading>32506</heading>
                     </control>
+                </setting>
+                <setting id="genre_fanart" type="boolean" label="32388" help="">
+                    <level>0</level>
+                    <default>False</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="provider_fanart" type="boolean" label="32389" help="">
+                    <level>0</level>
+                    <default>False</default>
+                    <control type="toggle"/>
                 </setting>
             </group>
             <group id="5" label="25000">
