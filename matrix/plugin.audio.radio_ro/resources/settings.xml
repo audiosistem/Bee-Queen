@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<settings>
+    <category label="General">
+        <setting id="country_code" type="text" label="Country Code" default="RO"/>
+    </category>
+    <category label="API Server Settings">
+        <setting id="use_de1_server" type="bool" label="Use Default API Server (de1)" default="true"/>
+        <setting id="use_de2_server" type="bool" label="Use Germany 2 API Server (de2)" default="false"/>
+        <setting id="use_fi1_server" type="bool" label="Use Finland 1 API Server (fi1)" default="false"/>
+    </category>
+</settings>
