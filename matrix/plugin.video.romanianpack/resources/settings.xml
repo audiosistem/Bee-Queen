@@ -1,6 +1,7 @@
 ﻿<settings>
     <category label="General">
-        <setting id="timeout"  type="slider"   label="Timeout accesare surse (0=nelimitat)" default="20" range="1,1,50" option="int"/>
+        <setting id="enable_global_context" type="bool" label="Activează meniul contextual Global: [B][COLOR orange](Play with MRSP)[/COLOR][/B]" default="true"/>
+        <setting id="timeout"  type="slider"   label="Timeout accesare surse (0=nelimitat)" default="3" range="1,1,50" option="int"/>
         <setting type="sep"/>
         <setting id="metadata" type="select" label="Extragere Informatii de pe:" values="TMdb|IMDb|Ambele" default="Ambele" />
         <setting type="sep"/>
@@ -23,7 +24,7 @@
         <setting id="slow_system_search" type="bool" label="Cautare sisteme slabe (sortare mai putin exacta)" default="false" />
     </category>
     <category label="AutoSub">
-        <setting id="enable_autosub" type="bool" default="true" label="Activează căutarea automată a subtitrării, la Play"/>
+        <setting id="enable_autosub" type="bool" default="false" label="Activează căutarea automată a subtitrării, la Play"/>
         <setting type="text" label="Dezactivați dacă aveți activat addonul oficial Autosubs în Kodi [CR]Sau dezactivați addonul oficial Autosubs în Kodi" enable="false"/>
         <setting id="check_for_specific" type="bool" default="false" label="Caută o anumită limbă"/>
         <setting id="selected_languagea" type="select" enable="eq(-1,true)" visible="eq(-1,true)" label="32102" default="Romanian" values="Albanian|Arabic|Belarusian|Bosnian (Latin)|Bulgarian|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Estonian|Finnish|French|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Korean|Latvian|Lithuanian|Macedonian|Norwegian|Polish|Portuguese|Romanian|Russian|SerbianLatin|Slovak|Slovenian|Spanish|Swedish|Thai|Turkish|Ukrainian|Vietnamese|Farsi|Malay" />
@@ -101,7 +102,7 @@
         <setting id="no_sparse"            type="bool"     label="Do not use sparse file allocation" default="false" />
     </category>
     <category label="Torrent Client">
-        <setting id="torrserver_enabled" type="bool" label="Activează [B][COLOR FF6AFB92]TorrServer[/COLOR][/B]" default="false"/>
+        <setting id="torrserver_enabled" type="bool" label="Activează [B][COLOR FF6AFB92]TorrServer[/COLOR][/B]" default="true"/>
         <setting id="torrserver_host" type="text" label="TorrServer Host (ex: http://127.0.0.1:8090)" default="http://127.0.0.1:8090" enable="eq(-1,true)"/>
         <setting id="torrserver_user" type="text" label="TorrServer User" default="" enable="eq(-2,true)"/>
         <setting id="torrserver_pass" type="text" label="TorrServer Password" default="" option="hidden" enable="eq(-3,true)"/>
@@ -161,34 +162,8 @@
 		<setting id="heartive" type="bool" label="Heartive (Multi-Source)" default="true"/>
 		<setting id="mediafusion" type="bool" label="MediaFusion" default="true"/>
         <setting id="yts" type="bool" label="YTS" default="true"/>
-        <setting type="sep"/>
-		<setting id="ieet" type="bool" label="1377x" default="false"/>
-        <setting id="rarbg" type="bool" label="RARBG" default="false"/>
-        <setting id="datascene"    type="bool"   label="DataScene" default="false"/>
-        <setting id="DSusername" type="text" label="Username DataScene" subsetting="true" visible="eq(-1,true)" default=""/>
-        <setting id="DSpassword" type="text" label="Parola DataScene" default="" subsetting="true" visible="eq(-2,true)" option="hidden" />
-        <setting id="kickass2" type="bool" label="KickAss2" default="false"/>
-        <setting id="zooqle" type="bool" label="Zooqle" default="false"/>
-        <setting id="fluxzone"    type="bool"   label="FluxZone" default="false"/>
-        <setting id="FZusername" type="text" label="Username Fluxzone" subsetting="true" visible="eq(-1,true)" default=""/>
-        <setting id="FZpassword" type="text" label="Parola Fluxzone" default="" subsetting="true" visible="eq(-2,true)" option="hidden" />
-        <setting id="seedfilero"    type="bool"   label="SeedFile" default="false"/>
-        <setting id="seedfilerousername" type="text" label="Username SeedFile" subsetting="true" visible="eq(-1,true)" default=""/>
-        <setting id="seedfileropassword" type="text" label="Parola SeedFile" default="" subsetting="true" visible="eq(-2,true)" option="hidden" />
-        <setting id="lime" type="bool" label="LimeTorrents" default="false"/>
-        <setting id="xtremlymtorrents"    type="bool"   label="ExtremlyMTorrents" default="false"/>
-        <setting id="ELTusername" type="text" label="Username ExtremlyMTorrents" subsetting="true" visible="eq(-1,true)" default=""/>
-        <setting id="ELTpassword" type="text" label="Parola ExtremlyMTorrents" default="" subsetting="true" visible="eq(-2,true)" option="hidden" />
-        <setting type="sep"/>
-        <setting id="kickass" type="bool" label="Kickass" default="false"/>
-        <setting id="eztv" type="bool" label="EZTV" default="false"/>
-        <setting id="ettv" type="bool" label="ETTV" default="false" visible="false" />
-        <setting id="magnetdl" type="bool" label="MagnetDL" default="false"/>
-        <setting id="glotorrents" type="bool" label="GloTorrents" default="false"/>
-        <setting id="torrentgalaxy" type="bool" label="TorrentGalaxy" default="false"/>
-        <setting id="yourbittorrent" type="bool" label="YourBittorrent" default="false"/>
-        <setting id="rutor" type="bool" label="RuTor" default="false"/>
     </category>
+	
     <category label="Misc">
         <setting id="cleandatabasetable" type="enum" label="Curăță : " values="Favorite|Văzute|Căutare" default="0" />
         <setting id="cleandatabaselimit"  type="slider"   label="Păstrează ultimul număr de intrări" default="100" range="1,50,1000" option="int"/>

@@ -220,6 +220,38 @@ Added support for Kodi v19 (Matrix)
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
+</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.0+matrix" provider-name="RomyCupidon">  
+<requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" />
+    <import addon="script.module.simplejson" />
+	<import addon="script.module.kodi-six" />
+	<import addon="script.module.resolveurl" version="5.0.00" />
+</requires>  
+<extension point="xbmc.python.pluginsource" library="default.py">
+	<provides>video</provides>
+</extension>   
+<extension point="xbmc.addon.metadata">
+	 <summary lang="en">TOT CONȚINUTUL ACESTUI ADDON A FOST EXTRAS DIN DOMENIUL GOOGLE. NU SUNT RESPONSABIL PENTRU SCOPURILE PROFITABILE ALE PĂRȚILOR TERȚE.</summary>
+    <description lang="en">[COLOR white]RomyLive+ este un plugin complet pentru Kodi, dedicat divertismentului online. 
+Oferă acces la filme, seriale și multiple categorii de TV live, organizate 
+într-o interfață modernă și intuitivă. Navigarea este rapidă, conținutul este 
+structurat eficient, iar experiența de utilizare este optimizată pentru 
+performanță și stabilitate pe toate dispozitivele compatibile Kodi.[/COLOR]
+
+Cu RomyLive+, ai tot conținutul preferat într-un singur loc.</description>
+    <disclaimer lang="en" />
+	<platform>all</platform>
+	<assets>
+       <icon>icon.png</icon>
+       <fanart>fanart.png</fanart>
+<screenshot>resources/screenshots/home.png</screenshot>
+<screenshot>resources/screenshots/movies.png</screenshot>
+<screenshot>resources/screenshots/series.png</screenshot>
+</assets>
+	<news>news
+	</news>
+</extension>
 </addon><addon id="plugin.video.TVOnline.ro" provider-name="cralin" name="TVOnline.ro" version="21.0.14">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
@@ -492,7 +524,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.romanianpack" name="[B][COLOR FFFDBD01]MRSP Lite[/COLOR][/B]" version="1.2.27" provider-name="Sarsailă, [B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="plugin.video.romanianpack" name="[B][COLOR FFFDBD01]MRSP Lite[/COLOR][/B]" version="1.2.32" provider-name="Sarsailă, [B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
 	<import addon="script.module.requests" version="2.22.0" />
@@ -508,10 +540,10 @@ In addition to what livestreams allowed you to do, you can now,
     <menu id="kodi.core.main">
         <item library="resources/lib/context.py">
             <label>[B][COLOR FFFDBD01]Play with MRSP[/COLOR][/B]</label>
-            <visible>!String.StartsWith(ListItem.path,plugin://plugin.video.romanianpack/)+[String.IsEqual(ListItem.dbtype,episode)|String.IsEqual(ListItem.dbtype,movie)]</visible>
+            <visible>String.IsEqual(Window(10000).Property(mrsp.context_menu_enabled),true) + !String.StartsWith(ListItem.path,plugin://plugin.video.romanianpack/) + [String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,movie)]</visible>
         </item>
     </menu>
-</extension>
+  </extension>
   <extension point="xbmc.service" name="mrsp.service" library="service.py" />
   <extension point="xbmc.addon.metadata">
 	<summary>Motor de căutare și redare Torente</summary>
@@ -1319,7 +1351,7 @@ Fixed autosub addon exclusions
     <screenshot>resources/screenshot-02.jpg</screenshot>
   </assets>
 </extension>
-</addon><addon id="plugin.video.tmdbmovies" version="1.1.43" name="[B][COLOR FFFDBD01]TMDb Movies[/COLOR][/B]" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="plugin.video.tmdbmovies" version="1.1.44" name="[B][COLOR FFFDBD01]TMDb Movies[/COLOR][/B]" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.22.0" />
@@ -1366,7 +1398,7 @@ Fixed autosub addon exclusions
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
+            <fanart>icon.png</fanart>
         </assets>
     </extension>
 </addon><addon id="plugin.video.vavooto" name="VAVOO.TO" version="2026.02.15" provider-name="kasi,michaz,1X">
@@ -1764,7 +1796,7 @@ Fixed autosub addon exclusions
 		<description>cralin's Repository</description>
 		<platform>all</platform>
 		<assets>
-			<icon />
+			<icon>icon.png</icon>
 		</assets>
 	</extension>
 </addon><addon id="repository.dexe" name=" dEXE's Addons Repository" version="1.0.11" provider-name="dEXE">

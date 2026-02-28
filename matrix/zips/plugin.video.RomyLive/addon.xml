@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.0+matrix" provider-name="RomyCupidon">  
+<requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+    <import addon="script.module.requests"/>
+    <import addon="script.module.simplejson"/>
+	<import addon="script.module.kodi-six" />
+	<import addon="script.module.resolveurl" version="5.0.00"/>
+</requires>  
+<extension point="xbmc.python.pluginsource" library="default.py">
+	<provides>video</provides>
+</extension>   
+<extension point="xbmc.addon.metadata">
+	 <summary lang="en">TOT CONȚINUTUL ACESTUI ADDON A FOST EXTRAS DIN DOMENIUL GOOGLE. NU SUNT RESPONSABIL PENTRU SCOPURILE PROFITABILE ALE PĂRȚILOR TERȚE.</summary>
+    <description lang="en">[COLOR white]RomyLive+ este un plugin complet pentru Kodi, dedicat divertismentului online. 
+Oferă acces la filme, seriale și multiple categorii de TV live, organizate 
+într-o interfață modernă și intuitivă. Navigarea este rapidă, conținutul este 
+structurat eficient, iar experiența de utilizare este optimizată pentru 
+performanță și stabilitate pe toate dispozitivele compatibile Kodi.[/COLOR]
+
+Cu RomyLive+, ai tot conținutul preferat într-un singur loc.</description>
+    <disclaimer lang="en"></disclaimer>
+	<platform>all</platform>
+	<assets>
+       <icon>icon.png</icon>
+       <fanart>fanart.png</fanart>
+<screenshot>resources/screenshots/home.png</screenshot>
+<screenshot>resources/screenshots/movies.png</screenshot>
+<screenshot>resources/screenshots/series.png</screenshot>
+</assets>
+	<news>news
+	</news>
+</extension>
+</addon>

@@ -70,7 +70,7 @@
 		<description>cralin's Repository</description>
 		<platform>all</platform>
 		<assets>
-			<icon></icon>
+			<icon>icon.png</icon>
 		</assets>
 	</extension>
 </addon>
