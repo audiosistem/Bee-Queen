@@ -1,0 +1,7 @@
+With a bit of testing the top providers for results are set for the Defaults while the remaining providers are used as backup.
+Currently, Torrentio and the Elfhosted scrapers yield the best results.
+
+A setting in some add-ons is used to control when disabled providers are used. If no results are found on the enabled sources, the add-on will automatically check ALL providers regardless of them being disabled in the settings. This allows you to keep a minimum number of providers enabled, resulting in quicker scrapes and results.
+
+Only the best are chosen for the defaults to help increase scraping speed. The less work the add-on has to do to find sources, the faster the scraping process will be. Getting 100 results is a waste as you will never need that many.
+The only reason you would want to manually switch on other providers would be for unique content like Anime or a TV show that only pulls from a source that isn't on by default. Switching that on would help avoid a full rescrape every time you watched that specific series.

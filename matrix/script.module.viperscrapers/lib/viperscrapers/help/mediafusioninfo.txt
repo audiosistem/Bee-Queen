@@ -1,0 +1,13 @@
+Instructions:
+
+The MediaFusion scraper works well on it's own, but you can get a slightly more enhanced scrape by linking to the MediaFusion website with a PIN code. It's completely free and optional. No registration is needed but you will need to pair the website to your Debrid account before you pair it to Viper Scrapers.
+
+1. In a web browser, go to: https://mediafusion.elfhosted.com/configure
+
+2. Complete your desired setup and preferences on the configure page and pair to your debrid account.
+
+3. Select "Setup Kodi Addon" at the bottom of the page to go to the next screen.
+
+4. Leave the browser window open and come back to the ViperScrapers/Providers/MediaFusion to select "Setup using Device PIN Code" which will give you a PIN code.
+
+5. Go back to the mediafuson page in your browser and Input the PIN code into the empty field and click submit. You can now close your browser and save your ViperScraper settings. 

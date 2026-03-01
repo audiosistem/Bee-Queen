@@ -20,36 +20,6 @@
             <fanart>resources/fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.audio.radio_ro" name="Radio RO" version="1.1" provider-name="1x">
-  <requires>
-    <import addon="xbmc.python" version="3.0.0" />
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="main.py">
-    <provides>audio</provides>
-  </extension>
-  <extension point="xbmc.addon.repository" name="Radio RO">
-        <info compressed="false">https://raw.githubusercontent.com/your-github-username/repository.example/master/addons.xml</info>
-        <checksum>https://raw.githubusercontent.com/your-github-username/repository.example/master/addons.xml.md5</checksum>
-        <datadir zip="true">https://raw.githubusercontent.com/your-github-username/repository.example/master/zips/</datadir>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en_GB">Romanian Radio</summary>
-    <description lang="en_GB">Listen to Romanian radio stations</description>
-    <disclaimer lang="en_GB" />
-    <language />
-    <platform>all</platform>
-    <license />
-    <forum />
-    <website />
-    <email />
-    <source />
-    <news />
-    <assets>
-      <icon>icon.png</icon>
-      <fanart>fanart.png</fanart>
-    </assets>
-    <settings>resources/settings.xml</settings>
-  </extension>
 </addon><addon id="plugin.audio.radiogarden" name="Radio Garden" version="2.0" provider-name="@TrainAgain2">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -88,6 +58,36 @@
             <fanart>resources/fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="plugin.audio.radio_ro" name="Radio RO" version="1.1" provider-name="1x">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="main.py">
+    <provides>audio</provides>
+  </extension>
+  <extension point="xbmc.addon.repository" name="Radio RO">
+        <info compressed="false">https://raw.githubusercontent.com/your-github-username/repository.example/master/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/your-github-username/repository.example/master/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/your-github-username/repository.example/master/zips/</datadir>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Romanian Radio</summary>
+    <description lang="en_GB">Listen to Romanian radio stations</description>
+    <disclaimer lang="en_GB" />
+    <language />
+    <platform>all</platform>
+    <license />
+    <forum />
+    <website />
+    <email />
+    <source />
+    <news />
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.png</fanart>
+    </assets>
+    <settings>resources/settings.xml</settings>
+  </extension>
 </addon><addon id="plugin.audio.soundcloud" name="SoundCloud" version="4.1.0" provider-name="jaylinski">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -220,78 +220,6 @@ Added support for Kodi v19 (Matrix)
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.0+matrix" provider-name="RomyCupidon">  
-<requires>
-    <import addon="xbmc.python" version="3.0.0" />
-    <import addon="script.module.requests" />
-    <import addon="script.module.simplejson" />
-	<import addon="script.module.kodi-six" />
-	<import addon="script.module.resolveurl" version="5.0.00" />
-</requires>  
-<extension point="xbmc.python.pluginsource" library="default.py">
-	<provides>video</provides>
-</extension>   
-<extension point="xbmc.addon.metadata">
-	 <summary lang="en">TOT CONȚINUTUL ACESTUI ADDON A FOST EXTRAS DIN DOMENIUL GOOGLE. NU SUNT RESPONSABIL PENTRU SCOPURILE PROFITABILE ALE PĂRȚILOR TERȚE.</summary>
-    <description lang="en">[COLOR white]RomyLive+ este un plugin complet pentru Kodi, dedicat divertismentului online. 
-Oferă acces la filme, seriale și multiple categorii de TV live, organizate 
-într-o interfață modernă și intuitivă. Navigarea este rapidă, conținutul este 
-structurat eficient, iar experiența de utilizare este optimizată pentru 
-performanță și stabilitate pe toate dispozitivele compatibile Kodi.[/COLOR]
-
-Cu RomyLive+, ai tot conținutul preferat într-un singur loc.</description>
-    <disclaimer lang="en" />
-	<platform>all</platform>
-	<assets>
-       <icon>icon.png</icon>
-       <fanart>fanart.png</fanart>
-<screenshot>resources/screenshots/home.png</screenshot>
-<screenshot>resources/screenshots/movies.png</screenshot>
-<screenshot>resources/screenshots/series.png</screenshot>
-</assets>
-	<news>news
-	</news>
-</extension>
-</addon><addon id="plugin.video.TVOnline.ro" provider-name="cralin" name="TVOnline.ro" version="21.0.14">
-  <requires>
-    <import addon="xbmc.python" version="3.0.1" />
-    <import addon="script.module.requests" version="2.31.0" />
-    <import addon="script.module.inputstreamhelper" version="0.6.1+matrix.1" />
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="main.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.service" library="service.py" />
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">Watch romanian live TV channels.</summary>
-    <description lang="en_GB">
-Kodi addon for accessing live TV channels from various romanian online platforms.
-
-Supported platforms:
-  - DigiOnline.ro
-  - voyo.ro
-  - tvrplus.ro
-  - primaplay.ro
-
-For each supported platform, user registration and login credentials are required in order to access the media content.
-
-Visit https://www.digiromania.ro for more details.
-Visit https://voyo.ro for more details.
-Visit https://www.tvrplus.ro for more details.
-Visit https://www.primaplay.ro for more details.
-    </description>
-    <disclaimer lang="en_GB">
-The author is not connected to or in any other way affiliated with Kodi, Team Kodi, the XBMC foundation or any of the online platforms used by this add-on.
-    </disclaimer>
-    <assets>
-      <icon>resources/media/icon.png</icon>
-      <fanart>resources/media/fanart.jpg</fanart>
-      <screenshot />
-    </assets>
-    <news>
-
-    </news>
-  </extension>
 </addon><addon id="plugin.video.cinebox" version="3.1.1" name="CINEBOX [COLOR red]TrainAgain[/COLOR]" provider-name="@TrainAgain2">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -361,6 +289,29 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
         </assets>
+    </extension>
+</addon><addon id="plugin.video.fen" name="Fen" provider-name="Tikipeter, [COLOR red]The Red Wizard[/COLOR]" version="3.5.05">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" version="2.19.1" />
+    </requires>
+    <extension library="resources/lib/fen.py" point="xbmc.python.pluginsource">
+        <provides>video</provides>
+    </extension>
+    <extension library="resources/lib/service.py" point="xbmc.service" />
+    <extension library="resources/lib/" point="xbmc.python.module" />
+    <extension point="xbmc.addon.metadata">
+        <reuselanguageinvoker>false</reuselanguageinvoker>
+        <summary lang="en">Access your content from Furk, Easynews and Debrid Clouds.</summary>
+        <description lang="en">This add-on is intended for advanced Kodi users only. You must own the content of any media you play through this addon.</description>
+        <platform>all</platform>
+		<disclaimer lang="en">The author of this addon does not host any of the content which is found and has no affiliation with any of the content providers.</disclaimer>
+        <license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+        <assets>
+            <icon>resources/media/fen_icon.png</icon>
+            <fanart>resources/media/fen_fanart.png</fanart>
+        </assets>
+        <news>Unofficial updates by [COLOR red]The Red Wizard[/COLOR]. For the latest changes, see the Changelog in FEN-&gt;Tools.</news>
     </extension>
 </addon><addon id="plugin.video.free99" version="2.0" name="[COLOR goldenrod]Free99[/COLOR]" provider-name="JewBMX, DIGGZ">
     <requires>
@@ -636,6 +587,38 @@ Fixed autosub addon exclusions
 		<fanart>fanart.jpg</fanart>
     </assets>
   </extension>
+</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.0+matrix" provider-name="RomyCupidon">  
+<requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" />
+    <import addon="script.module.simplejson" />
+	<import addon="script.module.kodi-six" />
+	<import addon="script.module.resolveurl" version="5.0.00" />
+</requires>  
+<extension point="xbmc.python.pluginsource" library="default.py">
+	<provides>video</provides>
+</extension>   
+<extension point="xbmc.addon.metadata">
+	 <summary lang="en">TOT CONȚINUTUL ACESTUI ADDON A FOST EXTRAS DIN DOMENIUL GOOGLE. NU SUNT RESPONSABIL PENTRU SCOPURILE PROFITABILE ALE PĂRȚILOR TERȚE.</summary>
+    <description lang="en">[COLOR white]RomyLive+ este un plugin complet pentru Kodi, dedicat divertismentului online. 
+Oferă acces la filme, seriale și multiple categorii de TV live, organizate 
+într-o interfață modernă și intuitivă. Navigarea este rapidă, conținutul este 
+structurat eficient, iar experiența de utilizare este optimizată pentru 
+performanță și stabilitate pe toate dispozitivele compatibile Kodi.[/COLOR]
+
+Cu RomyLive+, ai tot conținutul preferat într-un singur loc.</description>
+    <disclaimer lang="en" />
+	<platform>all</platform>
+	<assets>
+       <icon>icon.png</icon>
+       <fanart>fanart.png</fanart>
+<screenshot>resources/screenshots/home.png</screenshot>
+<screenshot>resources/screenshots/movies.png</screenshot>
+<screenshot>resources/screenshots/series.png</screenshot>
+</assets>
+	<news>news
+	</news>
+</extension>
 </addon><addon id="plugin.video.romyTVlist" name="romyTVlist" version="1.1.6" provider-name="Nux007, Publish3r, Silhouette2022,AS">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -1419,6 +1402,46 @@ Fixed autosub addon exclusions
             <fanart>icon.png</fanart>
         </assets>
     </extension>
+</addon><addon id="plugin.video.TVOnline.ro" provider-name="cralin" name="TVOnline.ro" version="21.0.14">
+  <requires>
+    <import addon="xbmc.python" version="3.0.1" />
+    <import addon="script.module.requests" version="2.31.0" />
+    <import addon="script.module.inputstreamhelper" version="0.6.1+matrix.1" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="main.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.service" library="service.py" />
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">Watch romanian live TV channels.</summary>
+    <description lang="en_GB">
+Kodi addon for accessing live TV channels from various romanian online platforms.
+
+Supported platforms:
+  - DigiOnline.ro
+  - voyo.ro
+  - tvrplus.ro
+  - primaplay.ro
+
+For each supported platform, user registration and login credentials are required in order to access the media content.
+
+Visit https://www.digiromania.ro for more details.
+Visit https://voyo.ro for more details.
+Visit https://www.tvrplus.ro for more details.
+Visit https://www.primaplay.ro for more details.
+    </description>
+    <disclaimer lang="en_GB">
+The author is not connected to or in any other way affiliated with Kodi, Team Kodi, the XBMC foundation or any of the online platforms used by this add-on.
+    </disclaimer>
+    <assets>
+      <icon>resources/media/icon.png</icon>
+      <fanart>resources/media/fanart.jpg</fanart>
+      <screenshot />
+    </assets>
+    <news>
+
+    </news>
+  </extension>
 </addon><addon id="plugin.video.vavooto" name="VAVOO.TO" version="2026.02.15" provider-name="kasi,michaz,1X">
 	<requires>
 		<import addon="script.module.requests" />
@@ -1597,69 +1620,6 @@ Fixed autosub addon exclusions
     <news>## v7.4.0.1
 ### Fixed
 - Use correct default value if view count is missing from player requests response</news></extension>
-</addon><addon id="repository.Magnetic" name="Magnetic Repo" version="1.1.0b" provider-name="1-cool-guy">
-        <requires>
-            <import addon="xbmc.addon" version="12.0.0" />
-        </requires>
-        <extension point="xbmc.addon.repository" name="Magnetic Repo">
-        	<dir>
-            <info compressed="false">https://magnetic.website/__zips/addons.xml</info>
-            <checksum>https://magnetic.website/__zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://magnetic.website/__zips/</datadir>
-            <hashes>false</hashes>
-            </dir>
-			<dir>
-		    <info compressed="false">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/</datadir>
-            <hashes>false</hashes>
-			</dir>
-			<dir>
-            <info compressed="false">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/</datadir>
-            </dir>
-            <dir>
-            <info compressed="false">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/</datadir>
-            <hashes>false</hashes>
-            </dir>	
-			<dir>
-            <info compressed="false">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/</datadir>
-        </dir>
-		<dir>
-    <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
-    <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
-    <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
-</dir>
-        </extension>
-        <extension point="xbmc.addon.metadata">
-            <summary>Official Magnetic Repository</summary>
-            <description>Welcome to magnetic repo. Please enjoy</description>
-            <platform>all</platform>
-            <genre>movies,usa</genre>
-			<assets>
-			    <icon>icon.png</icon>
-			</assets>
-        </extension>
-    </addon><addon id="repository.World" name="[COLORsienna]World Repository[/COLOR]" version="0.1.1" provider-name="World">
-	<extension point="xbmc.addon.repository" name="World Repository">
-		<info compressed="false">https://raw.githubusercontent.com/akeotaseo/world_repo/main/addons.xml</info>
-		<checksum>https://raw.githubusercontent.com/akeotaseo/world_repo/main/addons.xml.md5</checksum>
-		<datadir zip="true">https://raw.githubusercontent.com/akeotaseo/world_repo/main/</datadir>
-	</extension>
-	<extension point="xbmc.addon.metadata">
-		<summary>World Repository</summary>
-		<description>World Build Repo</description>
-		<platform>all</platform>
-		<assets>
-			<icon>icon.png</icon>
-			<fanart>fanart.jpg</fanart>
-		</assets>
-	</extension>
 </addon><addon id="repository.addonniss" name="Addonniss Repository" version="1.0.0" provider-name="Addonniss">
     <extension point="xbmc.addon.repository" name="Addonniss Repository">
         <dir>
@@ -1815,6 +1775,7 @@ Fixed autosub addon exclusions
 		<platform>all</platform>
 		<assets>
 			<icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
 		</assets>
 	</extension>
 </addon><addon id="repository.dexe" name=" dEXE's Addons Repository" version="1.0.11" provider-name="dEXE">
@@ -2053,7 +2014,55 @@ Fixed autosub addon exclusions
         <description>kodifitzwell repository</description>
         <assets><icon>icon.png</icon></assets>
     </extension>
-</addon><addon id="repository.oldsalt" name="Old Salt Repository" version="1.1" provider-name="Jax">
+</addon><addon id="repository.Magnetic" name="Magnetic Repo" version="1.1.0b" provider-name="1-cool-guy">
+        <requires>
+            <import addon="xbmc.addon" version="12.0.0" />
+        </requires>
+        <extension point="xbmc.addon.repository" name="Magnetic Repo">
+        	<dir>
+            <info compressed="false">https://magnetic.website/__zips/addons.xml</info>
+            <checksum>https://magnetic.website/__zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://magnetic.website/__zips/</datadir>
+            <hashes>false</hashes>
+            </dir>
+			<dir>
+		    <info compressed="false">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/</datadir>
+            <hashes>false</hashes>
+			</dir>
+			<dir>
+            <info compressed="false">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/</datadir>
+            </dir>
+            <dir>
+            <info compressed="false">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/</datadir>
+            <hashes>false</hashes>
+            </dir>	
+			<dir>
+            <info compressed="false">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/</datadir>
+        </dir>
+		<dir>
+    <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+    <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+    <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+</dir>
+        </extension>
+        <extension point="xbmc.addon.metadata">
+            <summary>Official Magnetic Repository</summary>
+            <description>Welcome to magnetic repo. Please enjoy</description>
+            <platform>all</platform>
+            <genre>movies,usa</genre>
+			<assets>
+			    <icon>icon.png</icon>
+			</assets>
+        </extension>
+    </addon><addon id="repository.oldsalt" name="Old Salt Repository" version="1.1" provider-name="Jax">
 <extension point="xbmc.addon.repository" name="Old Salt Repository">
     <dir>
         <info compressed="false">https://github.com/OldManJax/repository.oldsalt/raw/master/addons.xml</info>
@@ -2291,6 +2300,90 @@ Fixed autosub addon exclusions
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="repository.World" name="[COLORsienna]World Repository[/COLOR]" version="0.1.1" provider-name="World">
+	<extension point="xbmc.addon.repository" name="World Repository">
+		<info compressed="false">https://raw.githubusercontent.com/akeotaseo/world_repo/main/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/akeotaseo/world_repo/main/addons.xml.md5</checksum>
+		<datadir zip="true">https://raw.githubusercontent.com/akeotaseo/world_repo/main/</datadir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>World Repository</summary>
+		<description>World Build Repo</description>
+		<platform>all</platform>
+		<assets>
+			<icon>icon.png</icon>
+			<fanart>fanart.jpg</fanart>
+		</assets>
+	</extension>
+</addon><addon id="script.module.cocoscrapers" name="CocoScrapers Module" version="1.0.39" provider-name="CocoJoe">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0" />
+		<import addon="script.module.requests" />
+	</requires>
+	<extension point="xbmc.python.pluginsource" library="lib/default.py">
+		<provides>executable</provides>
+	</extension> 
+	<extension point="xbmc.service" library="lib/service.py" start="startup" />
+	<extension point="xbmc.python.module" library="lib" />
+	<extension point="xbmc.addon.metadata">
+		<reuselanguageinvoker>false</reuselanguageinvoker>
+		<summary lang="en">CocoScrapers Module</summary>
+		<description>A module that can be used to provide site scrapers.</description>
+		<platform>all</platform>
+		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+		<forum />
+		<website />
+		<source />
+		<disclaimer lang="en">The author is not responsible for the use of this addon. The author is not responsible for the content found using this addon. The author does not host or own any content found within this addon.[CR]The author is in no way affiliated with Kodi, Team Kodi, or the XBMC Foundation.[CR]This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</disclaimer>
+		<assets>
+			<icon>icon.png</icon>
+			<fanart>fanart.png</fanart>
+			<screenshot />
+		</assets>
+		<news />
+	</extension>
+</addon><addon id="script.module.magneto" version="6.02.06" name="Magneto Module" provider-name="Magneto">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0" />
+		<import addon="script.module.requests" />
+	</requires>
+	<extension point="xbmc.python.pluginsource" library="lib/router.py">
+		<provides>executable video</provides>
+	</extension>
+	<extension point="xbmc.service" library="lib/service.py" />
+	<extension point="xbmc.python.module" library="lib" />
+	<extension point="xbmc.addon.metadata">
+		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+		<summary>Magneto Module</summary>
+		<description>A module to query magnet providers.[CR][CR]This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</description>
+		<disclaimer>The author does not host or own any content found within this addon. The author is not responsible for the content found using this addon. The author is not responsible for the use of this addon.</disclaimer>
+		<assets><icon>resources/magneto.png</icon></assets>
+	</extension>
+</addon><addon id="script.module.viperscrapers" name="Viper Scrapers" version="1.4.5" provider-name="Jax">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0" />
+		<import addon="script.module.requests" />
+	</requires>
+	<extension point="xbmc.python.pluginsource" library="lib/default.py">
+		<provides>executable</provides>
+	</extension> 
+	<extension point="xbmc.service" library="lib/service.py" start="startup" />
+	<extension point="xbmc.python.module" library="lib" />
+	<extension point="xbmc.addon.metadata">
+		<reuselanguageinvoker>false</reuselanguageinvoker>
+		<summary lang="en">External Scrapers Module</summary>
+		<description>This module is a fork of CoCoScrapers with new scrapers from Kodifitzwell installed[CR]Credits to the develpers involved from former Fenom and CoCoScraper coders to current coders of CocoScrapers and of course, Kodifitzwell.[CR]Compatible with Fen, Fen Light, Umbrella and any other add-ons currently using the CoCoScrapers option.</description>
+		<platform>all</platform>
+		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+		<disclaimer lang="en">This module simply scans for internet sources that matches common metadata.</disclaimer>
+		<assets>
+			<icon>icon.png</icon>
+			<fanart>fanart.jpg</fanart>
+		</assets>
+		<news>
+- 1.4.4 Removed dead providers
+		</news>
+	</extension>
 </addon><addon id="service.cinemagia" name="[COLORgold]Cinemagia service[/COLOR]" version="1.0.2" provider-name="sarsailă, moromete">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
