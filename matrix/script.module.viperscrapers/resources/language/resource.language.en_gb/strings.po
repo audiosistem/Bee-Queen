@@ -384,7 +384,7 @@ msgid "ETTV"
 msgstr ""
 
 msgctxt "#32106"
-msgid "EXTRATORRENT (Pack capable)"
+msgid "DMM"
 msgstr ""
 
 msgctxt "#32107"
@@ -404,11 +404,11 @@ msgid "ISOHUNT2"
 msgstr ""
 
 msgctxt "#32111"
-msgid "KICKASS2 (Pack Capable)"
+msgid "KICKASS2"
 msgstr ""
 
 msgctxt "#32112"
-msgid "LIMETORRENTS (TV Pack capable)"
+msgid "LIMETORRENTS"
 msgstr ""
 
 msgctxt "#32113"
@@ -416,11 +416,11 @@ msgid "MAGNET$NUMBER[4]YOU"
 msgstr ""
 
 msgctxt "#32114"
-msgid "TORRENTQUEST (Pack capable)"
+msgid "TORRENTQUEST"
 msgstr ""
 
 msgctxt "#32115"
-msgid "MOVIEMAGNET"
+msgid "METEOR"
 msgstr ""
 
 msgctxt "#32116"
@@ -428,7 +428,7 @@ msgid "NYAA (Anime)"
 msgstr ""
 
 msgctxt "#32117"
-msgid "PIRATEBAY (Pack capable)"
+msgid "PIRATEBAY"
 msgstr ""
 
 msgctxt "#32118"
@@ -452,7 +452,7 @@ msgid "TORRENTAPI (Pack capable)"
 msgstr ""
 
 msgctxt "#32123"
-msgid "TORRENTDOWNLOAD (Pack capable)"
+msgid "TORRENTDOWNLOAD"
 msgstr ""
 
 msgctxt "#32124"
@@ -460,7 +460,7 @@ msgid "TORRENTFUNK (Pack capable)"
 msgstr ""
 
 msgctxt "#32125"
-msgid "TORRENTGALAXY (Pack capable)"
+msgid "TORRENTGALAXY"
 msgstr ""
 
 msgctxt "#32126"
@@ -508,7 +508,7 @@ msgid "TORRENTPROJECT2 (Pack capable)"
 msgstr ""
 
 msgctxt "#32137"
-msgid "BITCQ (Pack capable)"
+msgid "BITMAGNET"
 msgstr ""
 
 msgctxt "#32138"
@@ -516,7 +516,7 @@ msgid "BITSEARCH (Pack capable)"
 msgstr ""
 
 msgctxt "#32139"
-msgid "TORRENTIO - Multi-Source (Pack capable)"
+msgid "TORRENTIO - Multi-Source"
 msgstr ""
 
 msgctxt "#32140"
@@ -528,7 +528,7 @@ msgid "KNIGHTCRAWLER - Elfhosted (Pack Capable)"
 msgstr ""
 
 msgctxt "#32142"
-msgid "RUTOR (Pack capable)"
+msgid "RUTOR"
 msgstr ""
 
 msgctxt "#32143"
@@ -540,7 +540,7 @@ msgid "NYAAIO (Pack capable Anime Plus)"
 msgstr ""
 
 msgctxt "#32145"
-msgid "MEDIAFUSION (Pack Capable)"
+msgid "MEDIAFUSION"
 msgstr ""
 
 msgctxt "#32146"
@@ -548,15 +548,15 @@ msgid "ANIMETOSHO (Pack capable)"
 msgstr ""
 
 msgctxt "#32147"
-msgid "ZILEAN - Elfhosted (Pack capable)"
+msgid "ZILEAN"
 msgstr ""
 
 msgctxt "#32148"
-msgid "COMET - Elfhosted (Pack Capable)"
+msgid "COMET"
 msgstr ""
 
 msgctxt "#32149"
-msgid "AIOSTREAMS - Multi-Source (Pack Capable)"
+msgid "AIOSTREAMS - Multi-Source"
 msgstr ""
 
 msgctxt "#32150"
@@ -588,11 +588,11 @@ msgid "- Use (Optional) Mediafusion Pairing"
 msgstr ""
 
 msgctxt "#32157"
-msgid "TORZ - Elfhosted (Pack Capable)"
+msgid "TORZ"
 msgstr ""
 
 msgctxt "#32158"
-msgid "KNABEN (Pack Capable)"
+msgid "KNABEN"
 msgstr ""
 
 msgctxt "#32507"
@@ -736,7 +736,7 @@ msgid "See Active PlexShares"
 msgstr ""
 
 msgctxt "#32545"
-msgid "KNABEN (Pack capable)"
+msgid "KNABEN"
 msgstr ""
 
 msgctxt "#32546"
@@ -784,7 +784,7 @@ msgid "Make a basic HTTP request to make sure your settings are correct."
 msgstr ""
 
 msgctxt "#32557"
-msgid "TORRENTSDB - Multi-Source (Pack capable)"
+msgid "TORRENTSDB - Multi-Source"
 msgstr ""
 
 msgctxt "#32558"

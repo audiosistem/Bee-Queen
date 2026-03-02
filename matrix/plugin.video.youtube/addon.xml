@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.youtube" name="YouTube" version="7.4.0.1+unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
+<addon id="plugin.video.youtube" name="YouTube" version="7.4.1+unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" version="2.27.1"/>
@@ -10,7 +10,7 @@
     <extension point="xbmc.python.pluginsource" library="resources/lib/plugin.py">
         <provides>video</provides>
     </extension>
-    <extension point="xbmc.service" library="resources/lib/service.py"/>
+    <!--<extension point="xbmc.service" library="resources/lib/service.py"/>-->
     <extension point="xbmc.python.module" library="resources/lib/"/>
     <extension point="xbmc.python.script" library="resources/lib/script.py">
         <provides>executable</provides>
@@ -116,7 +116,24 @@
         <disclaimer lang="vi_VN">Plugin này không được xác nhận bởi Google</disclaimer>
         <disclaimer lang="zh_CN">此插件未被谷歌认可</disclaimer>
         <disclaimer lang="zh_TW">此附加元件未由Google支持</disclaimer>
-    <news>## v7.4.0.1
+    <news>## v7.4.1
 ### Fixed
-- Use correct default value if view count is missing from player requests response</news></extension>
+- Fix unnecessary double resolve on playback
+- Attempt to break busy dialog workaround loop if post run action succeeds
+- Don't swallow unhandled plugin exceptions without logging and running listing end callback
+- Python 2 compatibility fix for urllib3 only checking for str type when accessing module constants using getattr
+- Always refresh missing access tokens if partially logged in and refresh tokens are available
+- Fix missing post run plugin runner option used when search input is a plugin url
+- Fix incorrectly identifying and removing Opus audio from list of available streams
+- Clean up window properties in case of exception during plugin invocation
+
+### Changed
+- Simplify caching and fetching of updated subscriptions for My Subscriptions
+- Always load cached My Subscriptions feed data and load cached data if feed update fails
+- Use available access token when first initialising client rather than setting access tokens at later stage of client initialisation
+- Don't cache main plugin menu so that Sign-In/Out item always reflects actual logged in status
+- Automatically add/remove items from local watch later list when using YouTube WL list
+
+### New
+- Add Auto-like after watch feature with optional channel filtering</news></extension>
 </addon>

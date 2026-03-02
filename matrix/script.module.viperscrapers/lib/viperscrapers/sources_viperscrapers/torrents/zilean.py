@@ -1,15 +1,16 @@
-# An Elfhosted Scraper created by Kodifitzwell
+# created by kodifitzwell for Fenomscrapers
 """
-	Viper Scrapers Project
+	Fenomscrapers Project
 """
 
-#from json import loads as jsloads
-import re, requests, queue
-#from fenom import client
+from json import loads as jsloads
+import queue
+from viperscrapers.modules import client
 from viperscrapers.modules import source_utils
 
 
 class source:
+	timeout = 5
 	priority = 1
 	pack_capable = True
 	hasMovies = True
@@ -17,7 +18,7 @@ class source:
 	_queue = queue.SimpleQueue()
 	def __init__(self):
 		self.language = ['en']
-		self.base_link = "https://zilean.elfhosted.com"
+		self.base_link = "https://zilean.stremio.ru"
 		self.movieSearch_link = '/dmm/filtered?ImdbId=%s'
 		self.tvSearch_link = '/dmm/filtered?ImdbId=%s&Season=%s&Episode=%s'
 		self.min_seeders = 0
@@ -25,7 +26,7 @@ class source:
 	def sources(self, data, hostDict):
 		sources = []
 		if not data: return sources
-		append = sources.append
+		sources_append = sources.append
 		try:
 			title = data['tvshowtitle'] if 'tvshowtitle' in data else data['title']
 			title = title.replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
@@ -39,15 +40,18 @@ class source:
 				hdlr = 'S%02dE%02d' % (int(season), int(episode))
 				url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, episode))
 			else:
-				url = '%s%s' % (self.base_link, self.movieSearch_link % imdb)
 				hdlr = year
+				url = '%s%s' % (self.base_link, self.movieSearch_link % imdb)
 			# log_utils.log('url = %s' % url)
 			try:
-				results = requests.get(url, timeout=5) # client.request(url, timeout=5)
-				files = results.json() # jsloads(results)
-			except: files = []
-			self._queue.put_nowait(files) # if seasons
-			self._queue.put_nowait(files) # if shows
+				results = client.request(url, timeout=self.timeout)
+				files = jsloads(results)
+			except:
+				files = []
+				raise
+			finally:
+				self._queue.put_nowait(files) # if seasons
+				self._queue.put_nowait(files) # if shows
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
 		except:
@@ -64,7 +68,7 @@ class source:
 				if source_utils.remove_lang(name_info, check_foreign_audio): continue
 				if undesirables and source_utils.remove_undesirables(name_info, undesirables): continue
 
-				url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name) 
+				url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name)
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
 					dsize, isize = source_utils.convert_size(float(file["size"]), to='GB')
@@ -72,8 +76,11 @@ class source:
 				except: dsize = 0
 				info = ' | '.join(info)
 
-				append({'provider': 'zilean', 'source': 'torrent', 'seeders': 0, 'hash': hash, 'name': name, 'name_info': name_info, 'quality': quality,
-							'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize})
+				sources_append({
+					'source': 'torrent', 'language': 'en', 'direct': False, 'debridonly': True,
+					'provider': 'zilean', 'hash': hash, 'url': url, 'name': name, 'name_info': name_info,
+					'quality': quality, 'info': info, 'size': dsize, 'seeders': 0
+				})
 			except:
 				source_utils.scraper_error('ZILEAN')
 		return sources
@@ -89,8 +96,7 @@ class source:
 			year = data['year']
 			season = data['season']
 			url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, data['episode']))
-#			results = requests.get(url, timeout=5) # client.request(url, timeout=5)
-			files = self._queue.get(timeout=6) # jsloads(results)
+			files = self._queue.get(timeout=self.timeout + 1)
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
 		except:
@@ -128,12 +134,14 @@ class source:
 				except: dsize = 0
 				info = ' | '.join(info)
 
-				item = {'provider': 'zilean', 'source': 'torrent', 'seeders': 0, 'hash': hash, 'name': name, 'name_info': name_info, 'quality': quality,
-							'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize, 'package': package}
+				item = {
+					'source': 'torrent', 'language': 'en', 'direct': False, 'debridonly': True,
+					'provider': 'zilean', 'hash': hash, 'url': url, 'name': name, 'name_info': name_info,
+					'quality': quality, 'info': info, 'size': dsize, 'seeders': 0, 'package': package
+				}
 				if search_series: item.update({'last_season': last_season})
 				elif episode_start: item.update({'episode_start': episode_start, 'episode_end': episode_end}) # for partial season packs
 				sources_append(item)
 			except:
 				source_utils.scraper_error('ZILEAN')
 		return sources
-

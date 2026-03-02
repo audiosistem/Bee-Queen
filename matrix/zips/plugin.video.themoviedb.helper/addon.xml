@@ -16,7 +16,7 @@ provider-name="jurialmunkey">
   <provides>video</provides>
 </extension>
 <extension point="xbmc.python.script" library="resources/script.py" />
-<extension point="xbmc.service" library="resources/service.py" />
+<!--<extension point="xbmc.service" library="resources/service.py" />-->
 <extension point="xbmc.python.module" library="resources/modules"/>
 <extension point="xbmc.addon.metadata">
   <reuselanguageinvoker>false</reuselanguageinvoker>

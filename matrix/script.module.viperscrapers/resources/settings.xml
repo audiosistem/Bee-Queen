@@ -164,6 +164,11 @@
 					<default>false</default>
 					<control type="toggle"/>
 				</setting>	
+				<setting id="provider.meteor" type="boolean" label="32115" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
 				<setting id="provider.comet" type="boolean" label="32148" help="">
 					<level>0</level>
 					<default>false</default>
@@ -181,16 +186,26 @@
 				</setting>			
 			</group>	
 			<group id="3" label="32511">
+				<setting id="provider.bitmagnet" type="boolean" label="32137" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>	
+				<setting id="provider.dmm" type="boolean" label="32106" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>	
 				<setting id="provider.kickass2" type="boolean" label="32111" help="">
 					<level>0</level>
 					<default>false</default>
 					<control type="toggle"/>
-				</setting>				
+				</setting>	
 				<setting id="provider.limetorrents" type="boolean" label="32112" help="">
 					<level>0</level>
 					<default>false</default>
 					<control type="toggle"/>
-				</setting>					
+				</setting>								
 				<setting id="provider.piratebay" type="boolean" label="32117" help="">
 					<level>0</level>
 					<default>false</default>

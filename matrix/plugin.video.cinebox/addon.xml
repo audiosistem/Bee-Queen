@@ -11,7 +11,7 @@
     <provides>video</provides>
   </extension>
 
-  <extension point="xbmc.service" library="service.py" start="login" />
+  <!--<extension point="xbmc.service" library="service.py" start="login" />-->
 
   <extension point="xbmc.addon.metadata">
     <reuselanguageinvoker>false</reuselanguageinvoker>

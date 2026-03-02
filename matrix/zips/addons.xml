@@ -9,7 +9,7 @@
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>audio</provides>
     </extension>
-    <extension point="xbmc.service" library="playerMP3.py" start="startup" />
+    
     <extension point="xbmc.addon.metadata">
         <platform>all</platform>
         <summary>A music streaming Collection.</summary>
@@ -187,7 +187,7 @@ Added support for Kodi v19 (Matrix)
 	<extension point="xbmc.python.pluginsource" library="default.py">
 		<provides>executable</provides>
 	</extension>
-	<extension point="xbmc.service" library="service.py" />
+	
 	<extension point="xbmc.addon.metadata">
 		<summary lang="en_GB">Horoscope</summary>
 		<description lang="en_GB">Horoscope</description>
@@ -304,7 +304,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
     <provides>video</provides>
   </extension>
 
-  <extension point="xbmc.service" library="service.py" start="login" />
+  
 
   <extension point="xbmc.addon.metadata">
     <reuselanguageinvoker>false</reuselanguageinvoker>
@@ -370,7 +370,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
     <extension library="resources/lib/fen.py" point="xbmc.python.pluginsource">
         <provides>video</provides>
     </extension>
-    <extension library="resources/lib/service.py" point="xbmc.service" />
+    
     <extension library="resources/lib/" point="xbmc.python.module" />
     <extension point="xbmc.addon.metadata">
         <reuselanguageinvoker>false</reuselanguageinvoker>
@@ -555,7 +555,7 @@ In addition to what livestreams allowed you to do, you can now,
 	<extension point="xbmc.python.pluginsource" library="resources/lib/router.py">
 		<provides>video</provides>
 	</extension>
-	<extension point="xbmc.service" library="resources/lib/service.py" />
+	
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
@@ -565,100 +565,6 @@ In addition to what livestreams allowed you to do, you can now,
 		<news>INFO: For latest changes see Changelog within add-on.</news>
 		<assets><icon>pov.png</icon><fanart>pov_fanart.png</fanart></assets>
 	</extension>
-</addon><addon id="plugin.video.romanianpack" name="[B][COLOR FFFDBD01]MRSP Lite[/COLOR][/B]" version="1.2.32" provider-name="Sarsailă, [B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
-  <requires>
-    <import addon="xbmc.python" version="3.0.0" />
-	<import addon="script.module.requests" version="2.22.0" />
-    <import addon="script.module.resolveurl" version="5.0.06" />
-    <import addon="plugin.video.elementum" optional="true" />
-    <import addon="script.module.torrent2http" />
-    <import addon="repository.angelitto" version="1.0.0" />
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="default.py">
-        <provides>video</provides>
-  </extension>
-  <extension point="kodi.context.item">
-    <menu id="kodi.core.main">
-        <item library="resources/lib/context.py">
-            <label>[B][COLOR FFFDBD01]Play with MRSP[/COLOR][/B]</label>
-            <visible>String.IsEqual(Window(10000).Property(mrsp.context_menu_enabled),true) + !String.StartsWith(ListItem.path,plugin://plugin.video.romanianpack/) + [String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,movie)]</visible>
-        </item>
-    </menu>
-  </extension>
-  <extension point="xbmc.service" name="mrsp.service" library="service.py" />
-  <extension point="xbmc.addon.metadata">
-	<summary>Motor de căutare și redare Torente</summary>
-    <description>[B][COLOR FF009900]Browser și Player pentru torente video[/COLOR][/B]</description>
-    <platform>all</platform>
-    <disclaimer lang="en">The author of this addon do not host any of the content which is found and have no affiliation with any of the content providers. This addon simply searches websites for content. Use at your own risk!</disclaimer>
-    <disclaimer lang="ro">Autorul acestui supliment nu găzduiește conținutul găsit și nu are nicio legătură cu furnizorii de conținut. Acest supliment doar caută conținutul furnizat de site-uri web. Folosiți-l pe propria răspundere! </disclaimer>
-    <news>
-1.2.25
-- Added TorrServer
-
-1.2.24
-- Added Comet, Meteor, Mediafusion and Heartive providers
-
-1.2.13
-- Removed all streaming websites support.
-- The addon is now strictly Torrent-based.
-- Cleaned up Settings menu.
-- Direct access to Torrents menu on startup.
-- Code optimization and performance improvements.
-
-1.2.12
-- Fixed some small bugs
-
-1.2.11
-- Fixed Recente
-- Enhanced UI
-- Better filterring for Filelist, Uindex and Speedapp
-- Better search with TMDb Player (MRSP Lite)
-- Fixed MISC: Mod Cautare Context Global Si Trakt
-
-1.2.10
-- Fixed YTS
-
-1.2.9
-- Fixed Speedapp
-
-1.2.8
-- Fixed marked as watched in Trakt
-- Fixed the section Văzute
-- Fixed cleaning for Văzute, Favorite and Căutare
-
-1.2.7
-- Fixed Trakt
-- Added Trakt Favorited and Anticipated lists
-- Added Trakt User Lists
-- Fixed MetaInfo IMDb
-
-1.2.6
-Fixed YTS
-
-1.2.5
-Added UIndex
-
-1.2.4
-- Fixed watched status in Kodi
-when using context and "Play with MRSP"
-- Fixed some visual issues
-
-1.2.3
-- Fixed watched status in Kodi
-when using TMDB Helper and MRSP Lite player
-
-1.2.2
-Fixed Speedapp
-
-1.2.0
-Fixed autosub addon exclusions
-    </news>
-    <assets>
-        <icon>icon.png</icon>
-		<fanart>fanart.jpg</fanart>
-    </assets>
-  </extension>
 </addon><addon id="plugin.video.romyTVlist" name="romyTVlist" version="1.1.6" provider-name="Nux007, Publish3r, Silhouette2022,AS">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -689,7 +595,7 @@ Fixed autosub addon exclusions
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
-    <extension point="xbmc.service" library="service.py" start="startup" />
+    
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Rotv123 Player</summary>
         <summary lang="ro">Player Rotv123</summary>
@@ -1364,7 +1270,7 @@ Fixed autosub addon exclusions
   <provides>video</provides>
 </extension>
 <extension point="xbmc.python.script" library="resources/script.py" />
-<extension point="xbmc.service" library="resources/service.py" />
+
 <extension point="xbmc.python.module" library="resources/modules" />
 <extension point="xbmc.addon.metadata">
   <reuselanguageinvoker>false</reuselanguageinvoker>
@@ -1392,56 +1298,242 @@ Fixed autosub addon exclusions
     <screenshot>resources/screenshot-02.jpg</screenshot>
   </assets>
 </extension>
-</addon><addon id="plugin.video.tmdbmovies" version="1.1.44" name="[B][COLOR FFFDBD01]TMDb Movies[/COLOR][/B]" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0" />
-        <import addon="script.module.requests" version="2.22.0" />
-    </requires>
-    
-    <extension point="xbmc.python.pluginsource" library="service.py">
-        <provides>video</provides>
-    </extension>
-    
-    <extension point="xbmc.service" library="service.py" />
+</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.53">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0" />
+		<import addon="script.module.requests" />
+		<import addon="plugin.video.youtube" optional="true" />
+	</requires>
+	<extension point="xbmc.python.pluginsource" library="umbrella.py">
+		<provides>video</provides>
+	</extension>
+	<extension point="kodi.context.item">
+		<menu id="kodi.core.main">
+			<item library="resources\lib\context\addtoLibrary.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Add to Library</label>
+				<visible>
+					!String.IsEmpty(Window(home).Property(context.umbrella.addtoLibrary)) +
+					String.StartsWith(ListItem.path,plugin://plugin.video.umbrella/) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					[String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,tvshow) | String.IsEqual(ListItem.dbtype,season) | String.IsEqual(ListItem.dbtype,movie)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\addtoFavourite.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Add/Remove Favourite</label>
+				<visible>
+					!String.IsEmpty(Window(home).Property(context.umbrella.addtoFavourite)) +
+					String.StartsWith(ListItem.path,plugin://plugin.video.umbrella/) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					[String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,tvshow) | String.IsEqual(ListItem.dbtype,movie)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\artworkCustomize.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Customize Artwork</label>
+				<visible>
+					!String.IsEmpty(Window(home).Property(context.umbrella.artworkCustomize)) +
+					String.StartsWith(ListItem.path,plugin://plugin.video.umbrella/) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					[String.IsEqual(ListItem.dbtype,tvshow) | String.IsEqual(ListItem.dbtype,movie) | String.IsEqual(ListItem.dbtype,season)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\playTrailer.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Play Trailer</label>
+				<visible>
+					!String.IsEmpty(Window(home).Property(context.umbrella.playTrailer)) +
+					String.StartsWith(ListItem.path,plugin://plugin.video.umbrella/) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					[String.IsEqual(ListItem.dbtype,tvshow) | String.IsEqual(ListItem.dbtype,movie)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\playTrailerSelect.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Play Trailer (Select)</label>
+				<visible>
+					!String.IsEmpty(Window(home).Property(context.umbrella.playTrailerSelect)) +
+					String.StartsWith(ListItem.path,plugin://plugin.video.umbrella/) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					[String.IsEqual(ListItem.dbtype,tvshow) | String.IsEqual(ListItem.dbtype,movie)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\traktManager.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Trakt Manager</label>
+				<visible>
+					!String.IsEmpty(Window(home).Property(context.umbrella.traktManager)) +
+					String.StartsWith(ListItem.path,plugin://plugin.video.umbrella/) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					[String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,tvshow) | String.IsEqual(ListItem.dbtype,season) | String.IsEqual(ListItem.dbtype,movie)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\mdblistManager.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]MDBList Manager</label>
+				<visible>
+					!String.IsEmpty(Window(home).Property(context.umbrella.mdblistManager)) +
+					String.StartsWith(ListItem.path,plugin://plugin.video.umbrella/) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					[String.IsEqual(ListItem.dbtype,tvshow) | String.IsEqual(ListItem.dbtype,movie)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\tmdbListManager.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]TMDB List Manager</label>
+				<visible>
+					!String.IsEmpty(Window(home).Property(context.umbrella.tmdbListManager)) +
+					String.StartsWith(ListItem.path,plugin://plugin.video.umbrella/) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					[String.IsEqual(ListItem.dbtype,tvshow) | String.IsEqual(ListItem.dbtype,movie)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\clearProviders.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Clear Providers</label>
+				<visible>
+					[!String.IsEmpty(Window(home).Property(context.umbrella.clearProviders)) +
+					String.StartsWith(ListItem.FolderPath,plugin://plugin.video.umbrella/?action=play) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					[String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,movie)]] |
+					[String.Contains(Container.FolderPath,videodb://) +
+					[String.Contains(Container.ListItem.Path,Window(home).Property(umbrella.movieLib.path)) | String.Contains(Container.ListItem.Path,Window(home).Property(umbrella.tvLib.path))] +
+					[String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,movie)]]
+				</visible>
+			</item>
+			<item library="resources\lib\context\clearBookmark.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Clear Item Bookmark</label>
+				<visible>
+					!String.IsEmpty(Window(home).Property(context.umbrella.clearBookmark)) +
+					String.StartsWith(ListItem.FolderPath,plugin://plugin.video.umbrella/?action=play) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					ListItem.IsResumable +
+					[String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,movie)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\rescrape.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Rescrape Item</label>
+				<visible>
+					[!String.IsEmpty(Window(home).Property(context.umbrella.rescrape)) +
+					String.StartsWith(ListItem.FolderPath,plugin://plugin.video.umbrella/?action=play) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					[String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,movie)]]
+				</visible>
+			</item>
+			<item library="resources\lib\context\libMdblistManager.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]MDBList Watchlist Lib</label>
+				<visible>
+					[String.Contains(Container.FolderPath,videodb://) | String.Contains(Container.ListItem.FolderPath,videodb://)] +
+					[String.Contains(Container.ListItem.Path,Window(home).Property(umbrella.movieLib.path)) | String.Contains(Container.ListItem.Path,Window(home).Property(umbrella.tvLib.path))] +
+					[String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,movie)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\addLibtoFavourite.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Add/Remove Favourite</label>
+				<visible>
+					[String.Contains(Container.FolderPath,videodb://) | String.Contains(Container.ListItem.FolderPath,videodb://)] +
+					[String.Contains(Container.ListItem.Path,Window(home).Property(umbrella.movieLib.path)) | String.Contains(Container.ListItem.Path,Window(home).Property(umbrella.tvLib.path))] +
+					[String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,movie)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\libRescrape.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Rescrape Lib Item</label>
+				<visible>
+					[String.Contains(Container.FolderPath,videodb://) | String.Contains(Container.ListItem.FolderPath,videodb://)] +
+					[String.Contains(Container.ListItem.Path,Window(home).Property(umbrella.movieLib.path)) | String.Contains(Container.ListItem.Path,Window(home).Property(umbrella.tvLib.path))] +
+					[String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,movie)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\playFromHere.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Play from here</label>
+				<visible>
+					!String.IsEmpty(Window(home).Property(context.umbrella.playFromHere)) +
+					String.StartsWith(ListItem.path,plugin://plugin.video.umbrella/) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					String.IsEqual(ListItem.dbtype,episode)
+				</visible>
+			</item>
+			<item library="resources\lib\context\autoPlay.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Auto Play</label>
+				<visible>
+					String.IsEmpty(Window(home).Property(umbrella.autoPlay.enabled)) +
+					!String.IsEmpty(Window(home).Property(context.umbrella.autoPlay)) +
+					String.StartsWith(ListItem.FolderPath,plugin://plugin.video.umbrella/?action=play) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					[String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,movie)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\sourceSelect.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Source Select</label>
+				<visible>
+					!String.IsEmpty(Window(home).Property(umbrella.autoPlay.enabled)) +
+					!String.IsEmpty(Window(home).Property(context.umbrella.sourceSelect)) +
+					String.StartsWith(ListItem.FolderPath,plugin://plugin.video.umbrella/?action=play) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					[String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,movie)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\findSimilar.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Find Similar</label>
+				<visible>
+					!String.IsEmpty(Window(home).Property(context.umbrella.findSimilar)) +
+					String.StartsWith(ListItem.path,plugin://plugin.video.umbrella/) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					[String.IsEqual(ListItem.dbtype,tvshow) | String.IsEqual(ListItem.dbtype,movie)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\browseSeries.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Browse Series</label>
+				<visible>
+					!String.IsEmpty(Window(home).Property(context.umbrella.browseSeries)) +
+					String.StartsWith(ListItem.path,plugin://plugin.video.umbrella/) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					[String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,tvshow)]
+				</visible>
+			</item>
+			<item library="resources\lib\context\browseEpisodes.py">
+				<label>$INFO[Window(home).Property(context.umbrella.showUmbrella)]Browse Episodes</label>
+				<visible>
+					!String.IsEmpty(Window(home).Property(context.umbrella.browseEpisodes)) +
+					String.StartsWith(ListItem.path,plugin://plugin.video.umbrella/) +
+					String.IsEqual(ListItem.Property(isUmbrella_widget),true) +
+					String.IsEqual(ListItem.dbtype,episode)
+				</visible>
+			</item>
+		</menu>
+	</extension>
+	
+	<extension point="xbmc.python.module" library="resources/lib/" />
+	<extension point="xbmc.addon.metadata">
+		<reuselanguageinvoker>true</reuselanguageinvoker>
+		<summary lang="en">[B]Umbrella[/B] - We do not host any of the contents streamed</summary>
+		<description lang="en">[B]Umbrella[/B][CR] This addon does not form part of the Kodi Media Centre. Please do not seek assistance with this addon from any of the Official Kodi Support Channels.[CR]The author does not host any of the content in this addon and takes no responsibility for content found. We do not know anything about a lab under Raccoon City. Umbrella is not actually an umbrella and will not shield you from rain.</description>
+		<platform>all</platform>
+		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+		<forum />
+		<website>https://umbrellaplug.github.io</website>
+		<source>https://raw.githubusercontent.com/umbrellaplug/umbrellaplug.github.io/</source>
+		<disclaimer lang="en">The author of this addon does not host any of the content which is found and have no affiliation with any of the content providers. This addon simply searches websites for content. Use at your own risk!</disclaimer>
+		<assets>
+			<icon>icon.png</icon>
+			<fanart>fanart.jpg</fanart>
+			<screenshot>resources/screenshots/screenshot001.jpg</screenshot>
+			<screenshot>resources/screenshots/screenshot002.jpg</screenshot>
+			<screenshot>resources/screenshots/screenshot003.jpg</screenshot>
+		</assets>
+		<news>
+[B]Update - v6.7.53 - Feb 21st, 2026[/B]
+--[Removed] imdb user id in settings and lists from imdb user removed.
+--[New] Episode level art customization added.
+--[New] TMDdb v4 List Support Added.
+--[New] TMDdb v4 lists can be imported into the Kodi library using the existing list import functionality, alongside Trakt lists and MDBList lists.
+--[Fix] Changed method for Trakt lists to use page numbers.
+--[Fix] Resolved issue with genres by decade ending in 2024.
+--[Fix] Removed IMDd Lists that were restricted to 25 results.
+--[Fix] Trakt Pagination API changes to comply with Trakt's new requirements.
+--[Fix] Corrected auto-import list manager not remembering which lists were previously selected when reopening.
+--[Fix] Fixed typo in tvshows worker causing some items to not have tvdb populated.
+--[New] Added ability to import MDBList user lists into the Kodi library (one-time and automatic)
+--[New] "Select Lists to Auto-Import" now lets you choose between Trakt and MDBList and TMDb lists, with the total count of all lists shown in the settings.
+--[New] The auto-import list count shown in settings now reflects the total across both Trakt and MDBList and TMDb combined
+--[Fix] Cleaned up and removed some unused or no longer needed settings.
+--[Change] Added support for Trakt dropped instead of hidden.
+--[Fix] Real-Debrid Authorization: Fixed the QR code randomly not appearing on the authorization prompt. 
+ 		</news>
+	</extension>
 
-    
-    <extension point="kodi.context.item">
-        <menu id="kodi.core.main">
-            
-            
-            <item library="context.py">
-                <label>[B][COLOR FF6AFB92]TMDb INFO[/COLOR][/B]</label>
-                <visible>
-                    String.IsEqual(Window(10000).Property(TMDbMovies.ContextMenu),true) + 
-                    !String.IsEmpty(ListItem.Title) +
-                    [String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode) | !String.IsEmpty(ListItem.Property(mediatype))]
-                </visible>
-            </item>
-
-            
-            <item library="context_extended.py">
-                <label>[B][COLOR FF33CCFF]TMDb Extended INFO[/COLOR][/B]</label>
-                <visible>
-                    String.IsEqual(Window(10000).Property(TMDbMovies.ExtendedContext),true) + 
-                    !String.IsEmpty(ListItem.Title) +
-                    [String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode) | !String.IsEmpty(ListItem.Property(mediatype))]
-                </visible>
-            </item>
-            
-        </menu>
-    </extension>
-
-    <extension point="xbmc.addon.metadata">
-        <summary lang="ro">Sursa ta de filme și seriale</summary>
-        <description lang="ro">[B][COLOR FF009900]Filme și Seriale populare folosind API-ul TMDB.[/COLOR][/B]</description>
-        <disclaimer lang="ro">Acest addon este un motor de căutare video. Nu găzduim conținut.</disclaimer>
-        <language>ro</language>
-        <platform>all</platform>
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>icon.png</fanart>
-        </assets>
-    </extension>
 </addon><addon id="plugin.video.vavooto" name="VAVOO.TO" version="2026.02.15" provider-name="kasi,michaz,1X">
 	<requires>
 		<import addon="script.module.requests" />
@@ -1500,7 +1592,7 @@ Fixed autosub addon exclusions
 	  <fanart>resources/fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.0.1+unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
+</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.1+unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.27.1" />
@@ -1511,7 +1603,7 @@ Fixed autosub addon exclusions
     <extension point="xbmc.python.pluginsource" library="resources/lib/plugin.py">
         <provides>video</provides>
     </extension>
-    <extension point="xbmc.service" library="resources/lib/service.py" />
+    
     <extension point="xbmc.python.module" library="resources/lib/" />
     <extension point="xbmc.python.script" library="resources/lib/script.py">
         <provides>executable</provides>
@@ -1617,9 +1709,51 @@ Fixed autosub addon exclusions
         <disclaimer lang="vi_VN">Plugin này không được xác nhận bởi Google</disclaimer>
         <disclaimer lang="zh_CN">此插件未被谷歌认可</disclaimer>
         <disclaimer lang="zh_TW">此附加元件未由Google支持</disclaimer>
-    <news>## v7.4.0.1
+    <news>## v7.4.1
 ### Fixed
-- Use correct default value if view count is missing from player requests response</news></extension>
+- Fix unnecessary double resolve on playback
+- Attempt to break busy dialog workaround loop if post run action succeeds
+- Don't swallow unhandled plugin exceptions without logging and running listing end callback
+- Python 2 compatibility fix for urllib3 only checking for str type when accessing module constants using getattr
+- Always refresh missing access tokens if partially logged in and refresh tokens are available
+- Fix missing post run plugin runner option used when search input is a plugin url
+- Fix incorrectly identifying and removing Opus audio from list of available streams
+- Clean up window properties in case of exception during plugin invocation
+
+### Changed
+- Simplify caching and fetching of updated subscriptions for My Subscriptions
+- Always load cached My Subscriptions feed data and load cached data if feed update fails
+- Use available access token when first initialising client rather than setting access tokens at later stage of client initialisation
+- Don't cache main plugin menu so that Sign-In/Out item always reflects actual logged in status
+- Automatically add/remove items from local watch later list when using YouTube WL list
+
+### New
+- Add Auto-like after watch feature with optional channel filtering</news></extension>
+</addon><addon id="program.optiklean" name="OptiKlean" provider-name="DigiTalking" version="2.1.0">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>executable</provides>
+    </extension>
+	<extension point="xbmc.service" library="service.py" />
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <license>MIT</license>
+        <source>https://gitlab.com/personal4143605/optiklean</source>
+        <license>https://opensource.org/licenses/MIT</license>
+        <summary lang="en_GB">Clean and optimize Kodi utility.</summary>
+        <summary lang="it_IT">Utilità di pulizia e ottimizzazione Kodi.</summary>
+        <description lang="en_GB">Advanced tool to perform various types of Kodi cleaning and optimization.</description>
+        <description lang="it_IT">Strumento avanzato che permette di eseguire vari tipi di pulizie e ottimizzazione Kodi.</description>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>resources/media/fanart.jpg</fanart>
+            <screenshot>resources/media/screenshot-1.png</screenshot>
+            <screenshot>resources/media/screenshot-2.png</screenshot>
+            <screenshot>resources/media/screenshot-3.png</screenshot>
+        </assets>
+    </extension>
 </addon><addon id="repository.Magnetic" name="Magnetic Repo" version="1.1.0b" provider-name="1-cool-guy">
         <requires>
             <import addon="xbmc.addon" version="12.0.0" />
@@ -2077,7 +2211,7 @@ Fixed autosub addon exclusions
         <description>kodifitzwell repository</description>
         <assets><icon>icon.png</icon></assets>
     </extension>
-</addon><addon id="repository.oldsalt" name="Old Salt Repository" version="1.1" provider-name="Jax">
+</addon><addon id="repository.oldsalt" name="Old Salt Repository" version="1.2" provider-name="Jax">
 <extension point="xbmc.addon.repository" name="Old Salt Repository">
     <dir>
         <info compressed="false">https://github.com/OldManJax/repository.oldsalt/raw/master/addons.xml</info>
@@ -2089,12 +2223,6 @@ Fixed autosub addon exclusions
         <info compressed="true">https://github.com/zach-morris/repository.zachmorris/raw/master/addons.xml</info>
         <checksum>https://github.com/zach-morris/repository.zachmorris/raw/master/addons.xml.md5</checksum>
         <datadir zip="true">https://raw.githubusercontent.com/zach-morris/repository.zachmorris/master/</datadir>
-    </dir>
-     
-    <dir minversion="19.0">
-        <info compressed="false">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml</info>
-        <checksum>https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml.md5</checksum>
-        <datadir zip="true">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/</datadir>
     </dir>
     
     <dir minversion="19.0.0">
@@ -2212,6 +2340,26 @@ Fixed autosub addon exclusions
 			<fanart>fanart.jpg</fanart>
 		</assets>
 	</extension>
+</addon><addon id="repository.resolveurl" name="ResolveURL Repository" provider-name="gujal" version="1.0.0">
+  <extension point="xbmc.addon.repository" name="ResolveURL Repository">
+    <dir>
+      <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+      <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+    </dir>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <description lang="en_GB">ResolveURL and Link Tester</description>
+    <license />
+    <language />
+    <website />
+    <news />
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets> 
+  </extension>
 </addon><addon id="repository.sarsaila" name="Sarsailă's Addons" version="1.1.1" provider-name="Sarsailă">
     <extension point="xbmc.addon.repository" name="Sarsailă's Addons">
         <dir>
@@ -2241,6 +2389,26 @@ Fixed autosub addon exclusions
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
     <description lang="en">Addons by SlyGuy (slyguy.uk)</description>
+    <license />
+    <language />
+    <website />
+    <news />
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
+</addon><addon id="repository.slyguy.inputstreamhelper" name="SlyGuy InputStream Helper Wrapper Repository" provider-name="SlyGuy" version="0.0.1">
+  <extension point="xbmc.addon.repository" name="SlyGuy InputStream Helper Wrapper Repository">
+    <dir>
+      <info compressed="false">https://slyguy.uk/.repo/repository.slyguy.inputstreamhelper/addons.xml</info>
+      <checksum>https://slyguy.uk/.repo/repository.slyguy.inputstreamhelper/addons.xml.md5</checksum>
+      <datadir zip="true">https://slyguy.uk/.repo/repository.slyguy.inputstreamhelper/</datadir>
+    </dir>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <description lang="en">InputStream Helper Wrapper add-on by SlyGuy Repository</description>
     <license />
     <language />
     <website />
@@ -2323,7 +2491,7 @@ Fixed autosub addon exclusions
 	<extension point="xbmc.python.pluginsource" library="lib/default.py">
 		<provides>executable</provides>
 	</extension> 
-	<extension point="xbmc.service" library="lib/service.py" start="startup" />
+	
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>false</reuselanguageinvoker>
@@ -2350,7 +2518,7 @@ Fixed autosub addon exclusions
 	<extension point="xbmc.python.pluginsource" library="lib/router.py">
 		<provides>executable video</provides>
 	</extension>
-	<extension point="xbmc.service" library="lib/service.py" />
+	
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
@@ -2359,7 +2527,7 @@ Fixed autosub addon exclusions
 		<disclaimer>The author does not host or own any content found within this addon. The author is not responsible for the content found using this addon. The author is not responsible for the use of this addon.</disclaimer>
 		<assets><icon>resources/magneto.png</icon></assets>
 	</extension>
-</addon><addon id="script.module.viperscrapers" name="Viper Scrapers" version="1.4.5" provider-name="Jax">
+</addon><addon id="script.module.viperscrapers" name="Viper Scrapers" version="1.5.1" provider-name="Jax">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -2367,12 +2535,12 @@ Fixed autosub addon exclusions
 	<extension point="xbmc.python.pluginsource" library="lib/default.py">
 		<provides>executable</provides>
 	</extension> 
-	<extension point="xbmc.service" library="lib/service.py" start="startup" />
+	
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>false</reuselanguageinvoker>
 		<summary lang="en">External Scrapers Module</summary>
-		<description>This module is a fork of CoCoScrapers with new scrapers from Kodifitzwell installed[CR]Credits to the develpers involved from former Fenom and CoCoScraper coders to current coders of CocoScrapers and of course, Kodifitzwell.[CR]Compatible with Fen, Fen Light, Umbrella and any other add-ons currently using the CoCoScrapers option.</description>
+		<description>This module is a fork of CoCoScrapers with new scrapers from Kodifitzwell installed[CR]Credits to the develpers involved from former Fenom and CoCoScraper coders to current coders of CocoScrapers and of course, Kodifitzwell.[CR]Compatible with any add-ons currently using the CoCoScrapers scrapers.</description>
 		<platform>all</platform>
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
 		<disclaimer lang="en">This module simply scans for internet sources that matches common metadata.</disclaimer>
@@ -2380,9 +2548,7 @@ Fixed autosub addon exclusions
 			<icon>icon.png</icon>
 			<fanart>fanart.jpg</fanart>
 		</assets>
-		<news>
-- 1.4.4 Removed dead providers
-		</news>
+		<news>- 1.5.1 Added new scrapers</news>
 	</extension>
 </addon><addon id="service.cinemagia" name="[COLORgold]Cinemagia service[/COLOR]" version="1.0.2" provider-name="sarsailă, moromete">
   <requires>
