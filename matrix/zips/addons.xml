@@ -433,7 +433,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
       <fanart>resources/fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.hublive" name="HubLive" version="1.0.3" provider-name="1X si Geamanu">
+</addon><addon id="plugin.video.hublive" name="HubLive" version="1.2.0" provider-name="1X si Geamanu">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
@@ -565,29 +565,6 @@ In addition to what livestreams allowed you to do, you can now,
 		<news>INFO: For latest changes see Changelog within add-on.</news>
 		<assets><icon>pov.png</icon><fanart>pov_fanart.png</fanart></assets>
 	</extension>
-</addon><addon id="plugin.video.romyTVlist" name="romyTVlist" version="1.1.6" provider-name="Nux007, Publish3r, Silhouette2022,AS">
-  <requires>
-    <import addon="xbmc.python" version="3.0.0" />
-    <import addon="script.module.requests" version="2.22.0" />
-    <import addon="script.module.dateutil" version="2.8.1" />    
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en_GB">romyTVlist</summary>
-    <summary lang="de_DE">romyTVlist</summary>
-    <description lang="en_GB">Manage your various playlists in a simple way.[CR]EPG support for xmltv.[CR][CR]Note:[CR]This addon does not contain any illegal content. Should you add any illegal content, you are fully responsible for any consequences.</description>
-    <description lang="de_DE">Verwalte auf einfache Art und Weise deine verschiedenen Playlisten.[CR]Unterstützt EPG für XMLTV.[CR][CR]Hinweis:[CR]Dieses Addon enthält keine illegalen Inhalte. Solltest du irgendwelche illegalen Inhalte hinzufügen, bist du im vollen Umfang für eventuelle Folgen verantwortlich.</description>
-    <description lang="ru_RU">Дополнение для управления плейлистами.[CR][CR]Замечание:[CR]Это дополнение не содержит нелегального контента. Вы несете полную ответственность, если используете любой нелегальный контент.</description>
-    <language>en de</language>
-    <platform>all</platform>
-    <source>romyTVlist</source>
-    <assets>
-        <icon>icon.png</icon>
-		 <fanart>fanart.gif</fanart>
-    </assets>
-  </extension>
 </addon><addon id="plugin.video.rotv123" name="Rotv123" version="1.3.4" provider-name="1X,AS,Derzis si Geamanu">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -1552,7 +1529,7 @@ In addition to what livestreams allowed you to do, you can now,
 			<icon>icon.png</icon>
 		</assets>
 	</extension>
-</addon><addon id="plugin.video.veziaici.net" name="VeziAici.net" version="1.1.4" provider-name="1 x Geamanu x MiniMi">
+</addon><addon id="plugin.video.veziaici.net" name="VeziAici.net" version="1.2.1" provider-name="1 x Geamanu x MiniMi">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />

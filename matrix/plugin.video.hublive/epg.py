@@ -375,18 +375,18 @@ class EpgManager(threading.Thread):
     def _process_one_channel(self, key: str, channel: Dict[str, Any], req_size: int):
         """Process a single channel EPG request."""
         try:
-            logging.info(f"[EPG] Processing channel key={key}")
+            logging.debug(f"[EPG] Processing channel key={key}")
             token, headers, cookies = self._get_auth()
             # Ask server for at least req_size, but some endpoints ignore 'size'
             items_raw = self._try_fetch_epg(channel, req_size, token, headers, cookies)
-            logging.info(f"[EPG] Got {len(items_raw)} raw items for key={key}")
+            logging.debug(f"[EPG] Got {len(items_raw)} raw items for key={key}")
         except Exception as e:
             logging.warning(f"[EPG] worker unexpected error for key={key}: {e}")
             items_raw = []
 
         # Normalize (no truncation here)
         normalized_full = self._normalize_items(items_raw)
-        logging.info(f"[EPG] Normalized to {len(normalized_full)} items for key={key}")
+        logging.debug(f"[EPG] Normalized to {len(normalized_full)} items for key={key}")
 
         # Cache full list
         with self._cache_lock:
