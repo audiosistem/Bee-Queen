@@ -4,7 +4,4 @@
         <setting id="country_code" type="text" label="Country Code" default="RO"/>
         <setting id="auto_fullscreen" type="bool" label="Auto-switch to Fullscreen on play" default="true"/>
     </category>
-    <category label="API Server Settings">
-        <setting id="api_server_selection" type="enum" label="API Server" values="Germany 1 (Default)|Germany 2|Finland 1" default="0"/>
-    </category>
 </settings>
