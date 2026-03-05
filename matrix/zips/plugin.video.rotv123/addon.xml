@@ -6,7 +6,7 @@
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
-    <!--<extension point="xbmc.service" library="service.py" start="startup"/>-->
+    <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Rotv123 Player</summary>
         <summary lang="ro">Player Rotv123</summary>

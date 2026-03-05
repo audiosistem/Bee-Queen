@@ -1,0 +1,80 @@
+2.0.9
+- Reparat cateva buguri mici
+
+2.0.8
+- Afiseaza numele traducatorului sub streag
+- Reparat cateva buguri mici
+
+2.0.7
+- Algoritm nou de cautare
+
+2.0.6
+- Fix bugs
+
+2.0.5
+- Filtrare mai performanta
+
+2.0.4
+- Ajustari culori
+
+2.0.3
+
+- Boom shakalaka
+- Merg arhivele RAR pe Android
+
+2.0.2
+- Filtrare mai corecta
+- Imbunatatiri arhive ZIP cu subfoldere
+- Imbunatatiri arhive RAR
+
+2.0.1
+Îmbunătățiri vizuale UI
+
+2.0.0
+- Reparat un bug care impiedica filtrarea corecta a subtitrarilor pe episod.
+- Imbunatatita logica de cautare pentru a functiona cu add-on-uri externe (ex: MRSP, Elementum, TMDB Helper).
+- Remediată extragerea subtitrărilor din arhivele RAR</news>
+- Adaugat suport pentru extragerea arhivelor RAR pe toate platformele (Windows, OSMC, Android) prin unelte externe.
+- Curatare automata a fisierelor temporare la fiecare rulare.
+- Imbunatatita lizibilitatea textului in lista de rezultate.
+- Adaugat suport pentru cautare cand in nume apar coduri de tara (US, UK).
+
+1.1.1
+Adaugat setare pentru dezactivare pop-up
+
+1.1.0
+Fix download subtitrare cand nu e arhivata
+
+1.0.9
+Small fixes
+
+1.0.8
+reparare eroare cauzata de certificatul ssl
+
+1.0.7
+curatenie, fix marime icon, fix arata foldere daca nume subtitrari identice
+
+1.0.6
+imbunatatire cautare nume serial
+
+1.0.5
+fix cautare manuala
+
+1.0.4
+eliminat random useragent: probleme cu set-up boxes si android
+
+1.0.3
+Adaugat user-agent
+Imbunatatit cautare dupa numele fisierului daca nu se afla in baza de date
+
+1.0.2
+
+Fix selectie subtitrare - nu corespundea cu cea aleasa
+
+1.0.1
+
+Adaugat nume traducator in numele subtitrarii si in pagina de selectie
+
+1.0.0
+
+Primul release

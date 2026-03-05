@@ -8,7 +8,7 @@
 	<extension point="xbmc.python.pluginsource" library="default.py">
 		<provides>executable</provides>
 	</extension>
-	<!--<extension point="xbmc.service" library="service.py" />-->
+	<extension point="xbmc.service" library="service.py" />
 	<extension point="xbmc.addon.metadata">
 		<summary lang="en_GB">Horoscope</summary>
 		<description lang="en_GB">Horoscope</description>
