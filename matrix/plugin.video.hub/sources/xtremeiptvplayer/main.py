@@ -575,7 +575,46 @@ def play_stream(stream_type, stream_id, extension):
     cache_buster = int(time.time())
     play_url = f"{SERVER_URL}/{path_segment}/{USERNAME}/{PASSWORD}/{stream_id}.{extension}?_={cache_buster}"
     
-    li = xbmcgui.ListItem(path=play_url + '|' + urlencode(HEADERS))
+    playback_method = ADDON.getSettingInt('xtreme_playback_method') # 0: Default, 1: Adaptive, 2: FFmpeg
+
+    # InputStream Adaptive
+    if playback_method == 1:
+        li = xbmcgui.ListItem(path=play_url)
+        li.setProperty('inputstream', 'inputstream.adaptive')
+        li.setProperty('inputstream.adaptive.manifest_type', 'hls')
+        li.setMimeType('application/vnd.apple.mpegurl')
+
+        manifest_retries = ADDON.getSetting('xtreme_adaptive_manifest_retries')
+        segment_retries = ADDON.getSetting('xtreme_adaptive_segment_retries')
+        max_buffer = ADDON.getSetting('xtreme_adaptive_max_buffer_size')
+
+        if manifest_retries:
+            li.setProperty('inputstream.adaptive.manifest_load_retries', manifest_retries)
+        if segment_retries:
+            li.setProperty('inputstream.adaptive.segment_load_retries', segment_retries)
+        if max_buffer:
+            max_buffer_bytes = str(int(max_buffer) * 1024 * 1024)
+            li.setProperty('inputstream.adaptive.max_buffer_size', max_buffer_bytes)
+    # InputStream FFmpeg Direct
+    elif playback_method == 2:
+        li = xbmcgui.ListItem(path=play_url)
+        li.setProperty('inputstream', 'inputstream.ffmpegdirect')
+        li.setProperty('inputstream.ffmpegdirect.reconnect', '1')
+
+        probesize = ADDON.getSetting('xtreme_ffmpeg_probesize')
+        analyzeduration = ADDON.getSetting('xtreme_ffmpeg_analyzeduration')
+        timeout = ADDON.getSetting('xtreme_ffmpeg_timeout')
+
+        if probesize:
+            li.setProperty('inputstream.ffmpegdirect.probesize', probesize)
+        if analyzeduration:
+            li.setProperty('inputstream.ffmpegdirect.analyzeduration', analyzeduration)
+        if timeout:
+            li.setProperty('inputstream.ffmpegdirect.timeout', timeout)
+    # Default
+    else:
+        li = xbmcgui.ListItem(path=play_url + '|' + urlencode(HEADERS))
+
     li.setInfo(type='Video', infoLabels={'Title': 'Playing Stream'})
     xbmcplugin.setResolvedUrl(ADDON_HANDLE, True, listitem=li)
 
@@ -612,6 +651,7 @@ def search_items(item_type):
     dialog = xbmcgui.Dialog()
     query = dialog.input(f'Search {item_type.title()}', type=xbmcgui.INPUT_ALPHANUM)
     if not query:
+        xbmcplugin.endOfDirectory(ADDON_HANDLE)
         return
 
     if item_type == 'series':

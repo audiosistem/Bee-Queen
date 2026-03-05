@@ -1,9 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
     <category label="General">
-        <setting id="portal_url" type="text" label="Portal URL" default="http://tv.premiumplus.tv:80"/>
+        <setting id="servers_json_url" type="text" label="Servers JSON URL (leave empty for local file)" default="https://raw.githubusercontent.com/staycanuca/hub/refs/heads/main/_tools/servers.json" />
     </category>
+
     <category label="EPG Settings">
-        <setting id="epg_enabled" type="bool" label="Enable EPG (Electronic Program Guide)" default="false"/>
-        <setting id="epg_cache_duration" type="number" label="EPG Cache Duration (minutes)" default="30" visible="eq(-1,true)"/>
+        <setting id="epg_enabled" type="bool" label="Enable EPG (Electronic Program Guide)" default="false" />
+        <setting id="epg_cache_duration" type="number" label="EPG Cache Duration (minutes)" default="30" />
     </category>
 </settings>

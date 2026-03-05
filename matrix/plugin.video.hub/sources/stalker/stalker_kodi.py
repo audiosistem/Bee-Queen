@@ -207,19 +207,34 @@ class StalkerPortal:
         self.ensure_valid_token()
         url = f"{self.portal_url}/portal.php?type=itv&action=search&q={quote(query)}&JsHttpRequest=1-xml"
         response = self.make_request_with_retries(url, headers=self.get_headers(), cookies=self.get_cookies())
-        return self.safe_json_parse(response).get('js', {}).get('data', []) if response else []
+        if not response:
+            return []
+        data = self.safe_json_parse(response)
+        if not data:
+            return []
+        return data.get('js', {}).get('data', [])
 
     def search_vod(self, query):
         self.ensure_valid_token()
         url = f"{self.portal_url}/portal.php?type=vod&action=search&q={quote(query)}&JsHttpRequest=1-xml"
         response = self.make_request_with_retries(url, headers=self.get_headers(), cookies=self.get_cookies())
-        return self.safe_json_parse(response).get('js', {}).get('data', []) if response else []
+        if not response:
+            return []
+        data = self.safe_json_parse(response)
+        if not data:
+            return []
+        return data.get('js', {}).get('data', [])
 
     def search_series(self, query):
         self.ensure_valid_token()
         url = f"{self.portal_url}/portal.php?type=series&action=search&q={quote(query)}&JsHttpRequest=1-xml"
         response = self.make_request_with_retries(url, headers=self.get_headers(), cookies=self.get_cookies())
-        return self.safe_json_parse(response).get('js', {}).get('data', []) if response else []
+        if not response:
+            return []
+        data = self.safe_json_parse(response)
+        if not data:
+            return []
+        return data.get('js', {}).get('data', [])
 
     def get_stream_link(self, cmd, stream_id):
         self.ensure_valid_token()

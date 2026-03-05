@@ -1,175 +1,733 @@
-import xbmc
+import os
 import sys
 import json
+import xbmc
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
+import xbmcvfs
 import urllib.request
+import urllib.parse
 from urllib.parse import parse_qsl
 
 # Get the plugin handle
 _handle = int(sys.argv[1])
-_base_url = 'plugin://plugin.video.hub/'
-_addon = xbmcaddon.Addon('plugin.video.hub')
+_base_url = "plugin://plugin.video.hub/"
+_addon = xbmcaddon.Addon("plugin.video.hub")
 
-def get_stations(offset=0, limit=20, order='clickcount'):
+API_BASE = "https://all.api.radio-browser.info"
+
+
+def make_api_request(url_path):
+    """
+    Make API request to radio-browser.info
+    """
+    url = API_BASE + url_path
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Content-Type": "application/json",
+    }
+
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        response = urllib.request.urlopen(req, timeout=15)
+        data = response.read()
+        response.close()
+        return json.loads(data)
+    except Exception as e:
+        xbmc.log(f"RadioRO API Error: {str(e)}", xbmc.LOGERROR)
+        return []
+
+
+def get_stations(
+    offset=0,
+    limit=20,
+    order="clickcount",
+    name=None,
+    by_uuid=None,
+    tag=None,
+    override_country=None,
+):
     """
     Fetches the radio station data from the Radio Browser API
     """
     try:
-        country_code = _addon.getSetting('radio_ro_country_code')
-        
-        api_server = "https://de1.api.radio-browser.info" # Default
+        country_code = (
+            override_country
+            if override_country
+            else _addon.getSetting("radio_ro_country_code")
+        )
 
-        if _addon.getSetting('radio_ro_use_de2_server') == 'true':
-            api_server = "https://de2.api.radio-browser.info"
-        elif _addon.getSetting('radio_ro_use_fi1_server') == 'true':
-            api_server = "https://fi1.api.radio-browser.info"
+        if by_uuid:
+            url_path = f"/json/stations/byuuid/{by_uuid}"
+        else:
+            reverse = "true" if order == "clickcount" else "false"
+            params = {
+                "countrycode": country_code,
+                "hidebroken": "true",
+                "order": order,
+                "reverse": reverse,
+                "offset": offset,
+                "limit": limit,
+            }
+            if name:
+                params["name"] = name
+            if tag:
+                params["tag"] = tag
 
-        reverse = 'true' if order == 'clickcount' else 'false'
-        url = f"{api_server}/json/stations/search?countrycode={country_code}&hidebroken=true&order={order}&reverse={reverse}&offset={offset}&limit={limit}"
-        response = urllib.request.urlopen(url)
-        data = response.read()
-        stations = json.loads(data)
+            query_string = urllib.parse.urlencode(params)
+            url_path = f"/json/stations/search?{query_string}"
+
+        return make_api_request(url_path)
     except Exception as e:
         xbmcgui.Dialog().ok("Error", str(e))
         return []
-    return stations
 
-def list_stations(stations, page=1, list_type='all'):
+
+def list_stations(stations, page=1, action="all"):
     """
-    Lists the given stations
+    Lists the given stations with enhanced visual quality info
     """
-    xbmcplugin.setContent(_handle, 'audio')
+    xbmcplugin.setContent(_handle, "audio")
+
+    title_prefix = "Radio"
+    if "search" in action:
+        title_prefix = "Results"
+    elif "by_genre" in action:
+        title_prefix = "Genre"
+    elif "by_city" in action:
+        title_prefix = "Local"
+
+    if stations:
+        xbmcplugin.setPluginCategory(
+            _handle, f"{title_prefix} ({len(stations)} stations found)"
+        )
+
     for station in stations:
-        list_item = xbmcgui.ListItem(label=station['name'])
-        list_item.setInfo('music', {
-            'title': station['name'],
-            'genre': station.get('tags', ''),
-            'plot': f"Language: {station.get('language', '')}\nCountry: {station.get('country', '')}\nTags: {station.get('tags', '')}",
-            'website': station.get('homepage', ''),
-            'album': station.get('country', ''),
-            'comment': station.get('language', ''),
-            'bitrate': station.get('bitrate', 0),
-            'codec': station.get('codec', '')
-        })
-        list_item.setArt({'thumb': station['favicon'], 'fanart': station['favicon']})
-        list_item.setProperty('IsPlayable', 'true')
-        url = station['url_resolved']
+        label = station["name"]
+        quality_info = []
+        if station.get("codec"):
+            quality_info.append(station["codec"].lower())
+        if station.get("bitrate") and station["bitrate"] > 0:
+            quality_info.append(f"{station['bitrate']}k")
+
+        if quality_info:
+            label = f"{label} [COLOR gray][{' '.join(quality_info)}][/COLOR]"
+
+        list_item = xbmcgui.ListItem(label=label)
+        list_item.setInfo(
+            "music",
+            {
+                "title": station["name"],
+                "genre": station.get("tags", ""),
+                "plot": f"Language: {station.get('language', '')}\nCountry: {station.get('country', '')}\nTags: {station.get('tags', '')}",
+                "website": station.get("homepage", ""),
+                "album": station.get("country", ""),
+                "comment": station.get("language", ""),
+                "bitrate": station.get("bitrate", 0),
+                "codec": station.get("codec", ""),
+            },
+        )
+
+        thumb = station.get("favicon")
+        if not thumb or not thumb.startswith("http"):
+            thumb = ""
+
+        list_item.setArt({"thumb": thumb, "icon": thumb, "fanart": thumb})
+        list_item.setProperty("IsPlayable", "true")
+        list_item.setProperty("IsLive", "true")
+        url = f"{_base_url}?action=radio_ro&mode=play&station_uuid={station['stationuuid']}"
         commands = []
-        commands.append(('Add to Favorites', f'RunPlugin({_base_url}?action=radio_ro&mode=add_favorite&station_uuid={station["stationuuid"]})'))
+        commands.append(
+            (
+                "Add to Favorites",
+                f"RunPlugin({_base_url}?action=radio_ro&mode=add_favorite&station_uuid={station['stationuuid']})",
+            )
+        )
+        commands.append(
+            (
+                "Export to Library (.strm)",
+                f"RunPlugin({_base_url}?action=radio_ro&mode=export_strm&station_uuid={station['stationuuid']})",
+            )
+        )
+        commands.append(
+            (
+                "Play Next",
+                f"RunPlugin({_base_url}?action=radio_ro&mode=queue&station_uuid={station['stationuuid']}&next=1)",
+            )
+        )
+        commands.append(
+            (
+                "Add to Queue",
+                f"RunPlugin({_base_url}?action=radio_ro&mode=queue&station_uuid={station['stationuuid']}&next=0)",
+            )
+        )
         list_item.addContextMenuItems(commands)
         xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=False)
-    
-    if list_type == 'all' or list_type == 'popular':
+
+    if action != "search" and action != "favorites":
         if len(stations) == 20:
-            xbmcplugin.addDirectoryItem(_handle, _base_url + f'?action=radio_ro&mode={list_type}&page={page+1}', xbmcgui.ListItem('Next >>'), isFolder=True)
+            li_next = xbmcgui.ListItem("[COLOR lightblue]Next Page >>[/COLOR]")
+            li_next.setArt({"icon": "DefaultFolder.png", "thumb": "DefaultFolder.png"})
+            xbmcplugin.addDirectoryItem(
+                _handle,
+                _base_url + f"?action=radio_ro&mode={action}&page={page + 1}",
+                li_next,
+                isFolder=True,
+            )
         if page > 1:
-            xbmcplugin.addDirectoryItem(_handle, _base_url + f'?action=radio_ro&mode={list_type}&page={page-1}', xbmcgui.ListItem('<< Previous'), isFolder=True)
+            li_prev = xbmcgui.ListItem("[COLOR lightblue]<< Previous Page[/COLOR]")
+            li_prev.setArt({"icon": "DefaultFolder.png", "thumb": "DefaultFolder.png"})
+            xbmcplugin.addDirectoryItem(
+                _handle,
+                _base_url + f"?action=radio_ro&mode={action}&page={page - 1}",
+                li_prev,
+                isFolder=True,
+            )
 
     xbmcplugin.endOfDirectory(_handle)
+
+
+def list_genres():
+    """
+    Lists the most popular tags/genres
+    """
+    try:
+        url_path = (
+            "/json/tags/?order=stationcount&reverse=true&hidebroken=true&limit=50"
+        )
+        tags = make_api_request(url_path)
+
+        xbmcplugin.setContent(_handle, "files")
+        xbmcplugin.setPluginCategory(_handle, "Browse by Genre")
+        for tag in tags:
+            tag_name = tag.get("name", "").capitalize()
+            if not tag_name:
+                continue
+            list_item = xbmcgui.ListItem(
+                label=f"[B]{tag_name}[/B] [COLOR gray]({tag.get('stationcount', 0)})[/COLOR]"
+            )
+            list_item.setArt(
+                {"icon": "DefaultMusicGenres.png", "thumb": "DefaultMusicGenres.png"}
+            )
+            url_action = f"{_base_url}?action=radio_ro&mode=by_genre&tag={urllib.parse.quote(tag['name'])}&page=1"
+            xbmcplugin.addDirectoryItem(_handle, url_action, list_item, isFolder=True)
+        xbmcplugin.endOfDirectory(_handle)
+    except Exception as e:
+        xbmcgui.Dialog().ok("Error", str(e))
+
+
+def create_menu_item(label, url_action, icon_name):
+    li = xbmcgui.ListItem(label)
+    li.setArt({"icon": icon_name, "thumb": icon_name})
+    xbmcplugin.addDirectoryItem(_handle, _base_url + url_action, li, isFolder=True)
+
 
 def main_menu():
     """
     Creates the main menu
     """
-    xbmcplugin.addDirectoryItem(_handle, _base_url + '?action=radio_ro&mode=popular&page=1', xbmcgui.ListItem('Most Popular'), isFolder=True)
-    xbmcplugin.addDirectoryItem(_handle, _base_url + '?action=radio_ro&mode=all&page=1', xbmcgui.ListItem('All Stations'), isFolder=True)
-    xbmcplugin.addDirectoryItem(_handle, _base_url + '?action=radio_ro&mode=favorites', xbmcgui.ListItem('Favorites'), isFolder=True)
-    xbmcplugin.addDirectoryItem(_handle, _base_url + '?action=radio_ro&mode=search', xbmcgui.ListItem('Search'), isFolder=True)
-    xbmcplugin.addDirectoryItem(_handle, _base_url + '?action=radio_ro&mode=settings', xbmcgui.ListItem('Settings'), isFolder=True)
+    create_menu_item(
+        "[COLOR yellow]Search[/COLOR]",
+        "?action=radio_ro&mode=search",
+        "DefaultAddonsSearch.png",
+    )
+
+    favorites = get_favorites()
+    if len(favorites) > 0:
+        create_menu_item(
+            "[COLOR gold]Favorites[/COLOR]",
+            "?action=radio_ro&mode=favorites",
+            "DefaultTags.png",
+        )
+
+    create_menu_item(
+        "[COLOR lightblue]Most Popular[/COLOR]",
+        "?action=radio_ro&mode=popular&page=1",
+        "DefaultMusicTop100.png",
+    )
+    create_menu_item(
+        "[COLOR white]All Stations[/COLOR]",
+        "?action=radio_ro&mode=all&page=1",
+        "DefaultMusicSongs.png",
+    )
+    create_menu_item(
+        "[COLOR pink]Genres / Tags[/COLOR]",
+        "?action=radio_ro&mode=genres",
+        "DefaultMusicGenres.png",
+    )
+    create_menu_item(
+        "[COLOR green]Local Radios (RO)[/COLOR]",
+        "?action=radio_ro&mode=local_radios",
+        "DefaultNetwork.png",
+    )
+    create_menu_item(
+        "[COLOR orange]Change Country[/COLOR]",
+        "?action=radio_ro&mode=countries",
+        "DefaultCountry.png",
+    )
+    create_menu_item(
+        "[COLOR gray]Settings[/COLOR]",
+        "?action=radio_ro&mode=settings",
+        "DefaultAddonService.png",
+    )
+
     xbmcplugin.endOfDirectory(_handle)
 
-def search():
+
+def list_local_radios():
     """
-    Searches for a station
+    Lists major Romanian cities for local radios
     """
-    keyboard = xbmc.Keyboard('', 'Search for a station')
-    keyboard.doModal()
-    if keyboard.isConfirmed():
-        query = keyboard.getText()
-        stations = get_stations(limit=1000)
-        search_results = []
-        for station in stations:
-            if query.lower() in station['name'].lower():
-                search_results.append(station)
-        list_stations(search_results)
+    cities = [
+        "Alba",
+        "Arad",
+        "Arges",
+        "Bacau",
+        "Bihor",
+        "Bistrita-Nasaud",
+        "Botosani",
+        "Brasov",
+        "Braila",
+        "Buzau",
+        "Caras-Severin",
+        "Calarasi",
+        "Cluj",
+        "Constanta",
+        "Covasna",
+        "Dambovita",
+        "Dolj",
+        "Galati",
+        "Giurgiu",
+        "Gorj",
+        "Harghita",
+        "Hunedoara",
+        "Ialomita",
+        "Iasi",
+        "Ilfov",
+        "Maramures",
+        "Mehedinti",
+        "Mures",
+        "Neamt",
+        "Olt",
+        "Prahova",
+        "Satu Mare",
+        "Salaj",
+        "Sibiu",
+        "Suceava",
+        "Teleorman",
+        "Timis",
+        "Tulcea",
+        "Vaslui",
+        "Valcea",
+        "Vrancea",
+        "Bucuresti",
+    ]
+    xbmcplugin.setContent(_handle, "files")
+    xbmcplugin.setPluginCategory(_handle, "Local Radios by City")
+    for city in sorted(cities):
+        list_item = xbmcgui.ListItem(label=f"[B]{city}[/B]")
+        list_item.setArt({"icon": "DefaultNetwork.png", "thumb": "DefaultNetwork.png"})
+        url_action = f"{_base_url}?action=radio_ro&mode=by_city&city={urllib.parse.quote(city)}&page=1"
+        xbmcplugin.addDirectoryItem(_handle, url_action, list_item, isFolder=True)
+    xbmcplugin.endOfDirectory(_handle)
+
+
+def list_countries():
+    """
+    Lists countries to choose from
+    """
+    try:
+        url_path = "/json/countries/?order=stationcount&reverse=true&limit=100"
+        countries = make_api_request(url_path)
+
+        xbmcplugin.setContent(_handle, "files")
+        for country in countries:
+            name = country.get("name", "")
+            code = country.get("iso_3166_1", "")
+            if not name or not code:
+                continue
+
+            list_item = xbmcgui.ListItem(
+                label=f"{name} ({country.get('stationcount', 0)} stations)"
+            )
+            list_item.setArt(
+                {"icon": "DefaultCountry.png", "thumb": "DefaultCountry.png"}
+            )
+            url_action = f"{_base_url}?action=radio_ro&mode=set_country&code={urllib.parse.quote(code)}&name={urllib.parse.quote(name)}"
+            xbmcplugin.addDirectoryItem(_handle, url_action, list_item, isFolder=False)
+        xbmcplugin.endOfDirectory(_handle)
+    except Exception as e:
+        xbmcgui.Dialog().ok("Error", str(e))
+
+
+def set_country(code, name):
+    """
+    Sets the country code in settings
+    """
+    _addon.setSetting("radio_ro_country_code", code)
+    xbmcgui.Dialog().notification("Country Changed", f"Country set to {name}")
+    xbmc.executebuiltin("Container.Refresh")
+
+
+def get_search_history_file():
+    profile_dir = xbmcvfs.translatePath(_addon.getAddonInfo("profile"))
+    return os.path.join(profile_dir, "radio_ro_search_history.json")
+
+
+def get_search_history():
+    history_file = get_search_history_file()
+    if os.path.exists(history_file):
+        try:
+            with open(history_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            pass
+    return []
+
+
+def add_to_history(query):
+    history = get_search_history()
+    if query in history:
+        history.remove(query)
+    history.insert(0, query)
+    history = history[:10]
+    history_file = get_search_history_file()
+    with open(history_file, "w", encoding="utf-8") as f:
+        json.dump(history, f, indent=4)
+
+
+def search(query=None):
+    """
+    Searches for a station with history support
+    """
+    if not query:
+        history = get_search_history()
+        options = ["-- New Search --"] + history
+        if history:
+            options.append("-- Clear History --")
+
+        sel = xbmcgui.Dialog().select("Search", options)
+        if sel == 0:
+            keyboard = xbmc.Keyboard("", "Search for a station")
+            keyboard.doModal()
+            if keyboard.isConfirmed():
+                query = keyboard.getText()
+        elif sel > 0 and sel <= len(history):
+            query = history[sel - 1]
+        elif sel == len(options) - 1 and history:
+            try:
+                os.remove(get_search_history_file())
+            except:
+                pass
+            return search()
+        else:
+            return
+
+    if query:
+        add_to_history(query)
+        stations = get_stations(limit=100, name=query)
+        list_stations(stations, action=f"search&query={urllib.parse.quote(query)}")
+
+
+def get_favorites_file():
+    """
+    Returns the path to the favorites JSON file
+    """
+    profile_dir = xbmcvfs.translatePath(_addon.getAddonInfo("profile"))
+    if not os.path.exists(profile_dir):
+        os.makedirs(profile_dir)
+    return os.path.join(profile_dir, "radio_ro_favorites.json")
+
+
+def save_favorites(favorites):
+    """
+    Saves favorites to the JSON file
+    """
+    fav_file = get_favorites_file()
+    with open(fav_file, "w", encoding="utf-8") as f:
+        json.dump(favorites, f, indent=4)
+
 
 def get_favorites():
     """
     Gets the favorite stations
     """
-    favorites_str = _addon.getSetting('radio_ro_favorites')
+    fav_file = get_favorites_file()
+    if os.path.exists(fav_file):
+        try:
+            with open(fav_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            pass
+
+    favorites_str = _addon.getSetting("radio_ro_favorites")
     if favorites_str:
-        return json.loads(favorites_str)
+        try:
+            favs = json.loads(favorites_str)
+            save_favorites(favs)
+            _addon.setSetting("radio_ro_favorites", "")
+            return favs
+        except:
+            pass
+
     return []
+
 
 def add_favorite(station_uuid):
     """
     Adds a station to the favorites
     """
     favorites = get_favorites()
-    if station_uuid not in [f['stationuuid'] for f in favorites]:
-        stations = get_stations(limit=1000)
-        station = next((s for s in stations if s['stationuuid'] == station_uuid), None)
-        if station:
+    if station_uuid not in [f["stationuuid"] for f in favorites]:
+        stations = get_stations(by_uuid=station_uuid)
+        if stations and len(stations) > 0:
+            station = stations[0]
             favorites.append(station)
-            _addon.setSetting('radio_ro_favorites', json.dumps(favorites))
-            xbmcgui.Dialog().notification('Favorites', f'{station["name"]} added to favorites')
+            save_favorites(favorites)
+            xbmcgui.Dialog().notification(
+                "Favorites", f"{station['name']} added to favorites"
+            )
+
 
 def remove_favorite(station_uuid):
     """
     Removes a station from the favorites
     """
     favorites = get_favorites()
-    favorites = [f for f in favorites if f['stationuuid'] != station_uuid]
-    _addon.setSetting('radio_ro_favorites', json.dumps(favorites))
-    xbmcgui.Dialog().notification('Favorites', 'Station removed from favorites')
-    xbmc.executebuiltin('Container.Refresh')
+    favorites = [f for f in favorites if f["stationuuid"] != station_uuid]
+    save_favorites(favorites)
+    xbmcgui.Dialog().notification("Favorites", "Station removed from favorites")
+    xbmc.executebuiltin("Container.Refresh")
+
 
 def list_favorites():
     """
     Lists the favorite stations
     """
     favorites = get_favorites()
-    xbmcplugin.setContent(_handle, 'audio')
+    xbmcplugin.setContent(_handle, "audio")
+
     for station in favorites:
-        list_item = xbmcgui.ListItem(label=station['name'])
-        list_item.setInfo('music', {'title': station['name']})
-        list_item.setArt({'thumb': station['favicon'], 'fanart': station['favicon']})
-        list_item.setProperty('IsPlayable', 'true')
-        url = station['url_resolved']
+        label = station["name"]
+        quality_info = []
+        if station.get("codec"):
+            quality_info.append(station["codec"])
+        if station.get("bitrate") and station["bitrate"] > 0:
+            quality_info.append(f"{station['bitrate']}kbps")
+        if quality_info:
+            label = f"{label} [{' '.join(quality_info)}]"
+
+        list_item = xbmcgui.ListItem(label=label)
+        list_item.setInfo("music", {"title": station["name"]})
+
+        thumb = station.get("favicon")
+        if not thumb or not thumb.startswith("http"):
+            thumb = ""
+
+        list_item.setArt({"thumb": thumb, "icon": thumb, "fanart": thumb})
+        list_item.setProperty("IsPlayable", "true")
+        list_item.setProperty("IsLive", "true")
+        url = f"{_base_url}?action=radio_ro&mode=play&station_uuid={station['stationuuid']}"
         commands = []
-        commands.append(('Remove from Favorites', f'RunPlugin({_base_url}?action=radio_ro&mode=remove_favorite&station_uuid={station["stationuuid"]})'))
+        commands.append(
+            (
+                "Remove from Favorites",
+                f"RunPlugin({_base_url}?action=radio_ro&mode=remove_favorite&station_uuid={station['stationuuid']})",
+            )
+        )
+        commands.append(
+            (
+                "Export to Library (.strm)",
+                f"RunPlugin({_base_url}?action=radio_ro&mode=export_strm&station_uuid={station['stationuuid']})",
+            )
+        )
+        commands.append(
+            (
+                "Play Next",
+                f"RunPlugin({_base_url}?action=radio_ro&mode=queue&station_uuid={station['stationuuid']}&next=1)",
+            )
+        )
+        commands.append(
+            (
+                "Add to Queue",
+                f"RunPlugin({_base_url}?action=radio_ro&mode=queue&station_uuid={station['stationuuid']}&next=0)",
+            )
+        )
         list_item.addContextMenuItems(commands)
         xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=False)
     xbmcplugin.endOfDirectory(_handle)
+
+
+def check_url_alive(url):
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        req = urllib.request.Request(url, headers=headers)
+        response = urllib.request.urlopen(req, timeout=5)
+        response.close()
+        return True
+    except:
+        return False
+
+
+def play_station(station_uuid):
+    stations = get_stations(by_uuid=station_uuid)
+    if stations:
+        station = stations[0]
+        url = station.get("url_resolved")
+        if url:
+            if check_url_alive(url):
+                li = xbmcgui.ListItem(path=url)
+                li.setProperty("IsLive", "true")
+                li.setInfo(
+                    "music",
+                    {
+                        "title": "Live Broadcast",
+                        "artist": station["name"],
+                        "album": station.get("country", "Radio"),
+                    },
+                )
+
+                thumb = station.get("favicon")
+                if not thumb or not thumb.startswith("http"):
+                    thumb = ""
+
+                li.setArt(
+                    {
+                        "thumb": thumb,
+                        "icon": thumb,
+                        "fanart": thumb,
+                        "clearart": thumb,
+                        "clearlogo": thumb,
+                    }
+                )
+
+                xbmcplugin.setResolvedUrl(_handle, True, li)
+                xbmcgui.Dialog().notification(
+                    "Radio RO", f"Playing: {station['name']}", sound=False
+                )
+                return
+
+    xbmcgui.Dialog().notification(
+        "Stream Offline",
+        "This radio station is currently unreachable.",
+        xbmcgui.NOTIFICATION_ERROR,
+    )
+    xbmcplugin.setResolvedUrl(_handle, False, xbmcgui.ListItem())
+
+
+def export_strm(station_uuid):
+    stations = get_stations(by_uuid=station_uuid)
+    if stations:
+        station = stations[0]
+        name = (
+            station["name"]
+            .replace("/", "_")
+            .replace("\\", "_")
+            .replace(":", "")
+            .replace("*", "")
+            .replace("?", "")
+            .replace('"', "")
+            .replace("<", "")
+            .replace(">", "")
+            .replace("|", "")
+        )
+        profile_dir = xbmcvfs.translatePath(_addon.getAddonInfo("profile"))
+        strm_dir = os.path.join(profile_dir, "strm")
+        if not os.path.exists(strm_dir):
+            os.makedirs(strm_dir)
+        strm_path = os.path.join(strm_dir, f"{name}.strm")
+        with open(strm_path, "w", encoding="utf-8") as f:
+            f.write(station.get("url_resolved", ""))
+        xbmcgui.Dialog().notification(
+            "Exported", f"Station saved to Addon Data / strm", time=5000
+        )
+
+
+def queue_station(station_uuid, play_next=False):
+    stations = get_stations(by_uuid=station_uuid)
+    if stations:
+        station = stations[0]
+        url = f"{_base_url}?action=radio_ro&mode=play&station_uuid={station['stationuuid']}"
+        li = xbmcgui.ListItem(label=station["name"])
+        li.setInfo("music", {"title": station["name"]})
+        li.setArt({"thumb": station.get("favicon", "")})
+        playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+        if play_next:
+            pos = playlist.getposition() + 1
+            playlist.insert(pos, url, li)
+            xbmcgui.Dialog().notification("Queue", "Playing next: " + station["name"])
+        else:
+            playlist.add(url, li)
+            xbmcgui.Dialog().notification("Queue", "Added to queue: " + station["name"])
+
 
 def router(params):
     """
     Router function
     """
-    mode = params.get('mode')
-    page = int(params.get('page', 1))
+    mode = params.get("mode")
+    page = int(params.get("page", 1))
     offset = (page - 1) * 20
 
-    if mode == 'all':
-        list_stations(get_stations(offset=offset, limit=20, order='name'), page=page, list_type='all')
-    elif mode == 'popular':
-        stations = get_stations(offset=offset, limit=20, order='clickcount')
-        list_stations(stations, page=page, list_type='popular')
-    elif mode == 'search':
-        search()
-    elif mode == 'favorites':
+    if mode == "all":
+        list_stations(
+            get_stations(offset=offset, limit=20, order="name"), page=page, action="all"
+        )
+    elif mode == "popular":
+        stations = get_stations(offset=offset, limit=20, order="clickcount")
+        list_stations(stations, page=page, action="popular")
+    elif mode == "genres":
+        list_genres()
+    elif mode == "by_genre":
+        tag = urllib.parse.unquote(params.get("tag", ""))
+        stations = get_stations(offset=offset, limit=20, order="clickcount", tag=tag)
+        list_stations(
+            stations, page=page, action=f"by_genre&tag={urllib.parse.quote(tag)}"
+        )
+    elif mode == "local_radios":
+        list_local_radios()
+    elif mode == "by_city":
+        city = urllib.parse.unquote(params.get("city", ""))
+        stations = get_stations(
+            offset=offset,
+            limit=20,
+            order="clickcount",
+            name=city,
+            override_country="RO",
+        )
+        list_stations(
+            stations, page=page, action=f"by_city&city={urllib.parse.quote(city)}"
+        )
+    elif mode == "countries":
+        list_countries()
+    elif mode == "set_country":
+        set_country(
+            urllib.parse.unquote(params.get("code", "")),
+            urllib.parse.unquote(params.get("name", "")),
+        )
+    elif mode == "search":
+        search(params.get("query"))
+    elif mode == "play":
+        play_station(params.get("station_uuid"))
+    elif mode == "export_strm":
+        export_strm(params.get("station_uuid"))
+    elif mode == "queue":
+        queue_station(params.get("station_uuid"), params.get("next") == "1")
+    elif mode == "favorites":
         list_favorites()
-    elif mode == 'add_favorite':
-        add_favorite(params['station_uuid'])
-    elif mode == 'remove_favorite':
-        remove_favorite(params['station_uuid'])
-    elif mode == 'settings':
+    elif mode == "add_favorite":
+        add_favorite(params["station_uuid"])
+    elif mode == "remove_favorite":
+        remove_favorite(params["station_uuid"])
+    elif mode == "settings":
         _addon.openSettings()
     else:
         main_menu()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     router(dict(parse_qsl(sys.argv[2][1:])))

@@ -40,6 +40,17 @@
         <setting id="xtreme_username" type="text" label="Username" default=""/>
         <setting id="xtreme_password" type="text" label="Password" default=""/>
         <setting id="xtreme_url" type="text" label="Server URL" default=""/>
+        <setting id="xtreme_playback_method" type="enum" label="Playback Method" values="Default|InputStream Adaptive|InputStream FFmpeg Direct" default="0"/>
+        <category label="InputStream Adaptive Advanced Settings" visible="eq(-1,1)">
+            <setting id="xtreme_adaptive_manifest_retries" type="number" label="Manifest Load Retries" default="5"/>
+            <setting id="xtreme_adaptive_segment_retries" type="number" label="Segment Load Retries" default="3"/>
+            <setting id="xtreme_adaptive_max_buffer_size" type="number" label="Max Buffer Size (MB)" default="20"/>
+        </category>
+        <category label="FFmpeg Direct Advanced Settings" visible="eq(-2,2)">
+            <setting id="xtreme_ffmpeg_probesize" type="text" label="Probe Size (bytes)" default="2048000"/>
+            <setting id="xtreme_ffmpeg_analyzeduration" type="text" label="Analyze Duration (microseconds)" default="2000000"/>
+            <setting id="xtreme_ffmpeg_timeout" type="text" label="Timeout (microseconds)" default="20000000"/>
+        </category>
     </category>
     <category label="Visibility Settings">
         <setting id="show_xtreme_iptv" type="bool" label="Show Xtream IPTV" default="true"/>
