@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="service.subtitles.gemeni" name="gemeni" version="1.0.2" provider-name="gemeni">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.requests" version="2.25.1"/>
+    </requires>
+    <extension point="xbmc.subtitle.module" library="service.py" listitemmonitor="true"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="ro">Subtitrări de pe OpenSubtitles traducere gemeni (2026)</summary>
+        <platform>all</platform>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
+    </extension>
+</addon>

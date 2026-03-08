@@ -43,22 +43,25 @@ def search():
         targets.append("en")
 
     for target_lang in targets:
-        params = {'id': v_id, 'language': target_lang}
+        params = {'id': v_id, 'language': target_lang, 'source': 'all'}
         if s and s != "0": params.update({'season': s, 'episode': e})
         try:
-            r = requests.get(base_url, params=params, timeout=10)
+            r = requests.get(base_url, params=params, timeout=20)
             if r.ok:
                 for sub in r.json():
                     t_code = sub.get('language', 'en')
                     # Luăm numele complet al limbii sau codul majusculă dacă nu e în listă
                     full_lang = lang_map.get(t_code, t_code.upper())
                     
+                    # MODIFICARE: Folosim 'release' dacă 'fileName' lipsește
+                    f_name = sub.get('fileName') or sub.get('release') or 'sub.srt'
+                    
                     all_results.append({
                         'language_name': full_lang,             # Pentru Label (stânga)
-                        'filename': sub.get('fileName', 'sub.srt'), # Pentru Label2 (dreapta)
+                        'filename': f_name,                     # Pentru Label2 (dreapta)
                         'url': sub['url'], 
                         'l_code': t_code, 
-                        'api_filename': sub.get('fileName'), 
+                        'api_filename': f_name, 
                         'is_chosen': (t_code == l_code)
                     })
         except: pass
@@ -66,18 +69,21 @@ def search():
     # --- PASUL 2: FALLBACK WYZIE ---
     if not all_results and robot_activat:
         try:
-            r = requests.get(base_url, params={'id': v_id}, timeout=10)
+            r = requests.get(base_url, params={'id': v_id, 'source': 'all'}, timeout=20)
             if r.ok:
                 for sub in r.json():
                     t_code = sub.get('language', 'en')
                     full_lang = lang_map.get(t_code, t_code.upper())
                     
+                    # MODIFICARE: Folosim 'release' dacă 'fileName' lipsește
+                    f_name = sub.get('fileName') or sub.get('release') or 'sub.srt'
+                    
                     all_results.append({
                         'language_name': full_lang,
-                        'filename': sub.get('fileName', 'sub.srt'),
+                        'filename': f_name,
                         'url': sub['url'], 
                         'l_code': t_code, 
-                        'api_filename': sub.get('fileName'), 
+                        'api_filename': f_name, 
                         'is_chosen': False
                     })
         except: pass

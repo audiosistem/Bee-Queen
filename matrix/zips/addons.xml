@@ -1105,7 +1105,7 @@ Fixed autosub addon exclusions
 	  <fanart>resources/fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.0.1+unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
+</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.1.1+unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.27.1" />
@@ -1222,9 +1222,9 @@ Fixed autosub addon exclusions
         <disclaimer lang="vi_VN">Plugin này không được xác nhận bởi Google</disclaimer>
         <disclaimer lang="zh_CN">此插件未被谷歌认可</disclaimer>
         <disclaimer lang="zh_TW">此附加元件未由Google支持</disclaimer>
-    <news>## v7.4.0.1
+    <news>## v7.4.1.1
 ### Fixed
-- Use correct default value if view count is missing from player requests response</news></extension>
+- Address possible race condition resulting in KeyError exception when calling pop() on an empty set</news></extension>
 </addon><addon id="program.optiklean" name="OptiKlean" provider-name="DigiTalking" version="2.1.0">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -1695,6 +1695,19 @@ Fixed autosub addon exclusions
         <icon>icon.png</icon>
     </assets>
   </extension>
+</addon><addon id="service.subtitles.gemeni" name="gemeni" version="1.0.2" provider-name="gemeni">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" version="2.25.1" />
+    </requires>
+    <extension point="xbmc.subtitle.module" library="service.py" listitemmonitor="true" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="ro">Subtitrări de pe OpenSubtitles traducere gemeni (2026)</summary>
+        <platform>all</platform>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
+    </extension>
 </addon><addon id="service.subtitles.opensubtitles_by_opensubtitles" name="OpenSubtitles.org by OpenSubtitles" version="5.3.1" provider-name="amet, opensubtitles">
   <extension point="xbmc.subtitle.module" library="service.py" />
   <extension point="xbmc.addon.metadata">
@@ -2028,7 +2041,7 @@ Cod refactorizat pentru a se alinia cu actualizarile sitului
 - Adaugat suport pentru cautare cand in nume apar coduri de tara (US, UK).
     </news>
   </extension>
-</addon><addon id="service.subtitles.wyzie" name="Wyzie Subtitles" version="1.0.4b" provider-name="Wyzie">
+</addon><addon id="service.subtitles.wyzie" name="Wyzie Subtitles" version="1.0.5" provider-name="Wyzie">
     <requires>
         <import addon="xbmc.python" version="3.0.1" />
         <import addon="script.module.requests" version="2.25.1" />
