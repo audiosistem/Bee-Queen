@@ -1695,7 +1695,7 @@ Fixed autosub addon exclusions
         <icon>icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="service.subtitles.gemeni" name="gemeni" version="1.0.2" provider-name="gemeni">
+</addon><addon id="service.subtitles.gemeni" name="[COLORdodgerblue]Gemeni[/COLOR]" version="1.0.2" provider-name="gemeni">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.25.1" />
@@ -2041,7 +2041,7 @@ Cod refactorizat pentru a se alinia cu actualizarile sitului
 - Adaugat suport pentru cautare cand in nume apar coduri de tara (US, UK).
     </news>
   </extension>
-</addon><addon id="service.subtitles.wyzie" name="Wyzie Subtitles" version="1.0.5" provider-name="Wyzie">
+</addon><addon id="service.subtitles.wyzie" name="[COLORmediumturquoise]Wyzie Subtitles[/COLOR]" version="1.0.5" provider-name="Wyzie">
     <requires>
         <import addon="xbmc.python" version="3.0.1" />
         <import addon="script.module.requests" version="2.25.1" />
