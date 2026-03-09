@@ -19,14 +19,14 @@ session = requests.Session()
 retry = requests.adapters.Retry(total=None, status=1, status_forcelist=(429, 502, 503, 504))
 session.mount('https://api.themoviedb.org', requests.adapters.HTTPAdapter(pool_maxsize=100, max_retries=retry))
 
-def get_tmdb(url, errors=True):
+def get_tmdb(url):
 	try:
 		response = session.get(url, timeout=timeout)
 		result = response.json() if 'json' in response.headers.get('Content-Type', '') else response.text
 		if not response.ok: response.raise_for_status()
 		return result
 	except requests.exceptions.RequestException as e:
-		if errors: logger('tmdb error', str(e))
+		logger('tmdb error', str(e))
 
 def tmdb_keyword_id(query):
 	string = 'tmdb_keyword_id_%s' % query
@@ -298,7 +298,7 @@ def tvshow_details(tmdb_id, language, tmdb_api=None):
 def season_episodes_details(tmdb_id, season_no, language, tmdb_api=None):
 	try:
 		url = '%s/tv/%s/season/%s?api_key=%s&language=%s&append_to_response=credits' % (base_url, tmdb_id, season_no, get_tmdb_api(tmdb_api), language)
-		return get_tmdb(url, False)
+		return get_tmdb(url)
 	except: return None
 
 def movie_external_id(external_source, external_id, tmdb_api=None):

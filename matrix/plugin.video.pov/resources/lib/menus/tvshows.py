@@ -27,11 +27,11 @@ nextpage_str, switchjump_str, jumpto_str = ls(32799), ls(32784), ls(32964)
 class TVShows:
 	def __init__(self, params):
 		self.params = params
-		self.items, self.new_page, self.total_pages = [], {}, None
 		self.id_type = self.params.get('id_type', 'tmdb_id')
 		self.list = self.params.get('list', [])
 		self.action = self.params.get('action')
 		self.exit_list_params = self.params.get('exit_list_params')
+		self.items, self.new_page, self.total_pages = [], {}, None
 		self.append = self.items.append
 		self.current_date = get_datetime_function()
 		self.meta_user_info = settings.metadata_user_info()
@@ -147,39 +147,27 @@ class TVShows:
 			self.append((url_params, listitem, self.is_folder))
 		except: pass
 
+class Menu(TVShows):
+	personal_dict = {'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'), 'favourites_tvshows': ('caches.favourites_cache', 'get_favourites'), 'watched_tvshows': ('caches.watched_cache', 'get_watched_items')}
+	tmdb_special_key_dict = {'tmdb_tv_networks': 'network_id', 'tmdb_tv_year': 'year', 'tmdb_tvanime_year': 'year'}
+	tmdb_main = ('tmdb_tv_popular', 'tmdb_tv_premieres', 'tmdb_tv_upcoming', 'tmdb_tvanime_popular', 'tmdb_tvanime_premieres')
+	trakt_main = ('trakt_tv_trending', 'trakt_tv_trending_recent', 'trakt_tv_most_watched', 'trakt_tvanime_trending', 'trakt_tvanime_most_watched')
+	tmdb_personal = ('tmdb_watchlist', 'tmdb_favorite', 'tmdb_recommendations')
+	trakt_personal = ('trakt_collection', 'trakt_watchlist', 'trakt_favorites', 'trakt_droplist', 'trakt_collection_lists')
+	mdblist_personal = ('mdblist_collection', 'mdblist_watchlist', 'mdblist_droplist')
+	imdb_personal = ('imdb_watchlist', 'imdb_user_list_contents', 'imdb_keywords_list_contents')
+	similar = ('tmdb_tv_similar', 'tmdb_tv_recommendations')
+
 	def worker(self):
 #		threads = list(make_thread_list_enumerate(self.build_tvshow_content, self.list, Thread))
 		for i in TaskPool().tasks_enumerate(self.build_tvshow_content, self.list, Thread): i.join()
 		self.items.sort(key=lambda k: int(k[1].getProperty('pov_sort_order')))
 		return self.items
 
-class Menu(TVShows):
-	tmdb_main, trakt_main, tmdb_special_key_dict = (
-		'tmdb_tv_popular', 'tmdb_tv_premieres', 'tmdb_tv_upcoming',
-		'tmdb_tvanime_popular', 'tmdb_tvanime_premieres'
-	), (
-		'trakt_tv_trending', 'trakt_tv_trending_recent', 'trakt_tv_most_watched',
-		'trakt_tvanime_trending', 'trakt_tvanime_most_watched'
-	), {
-		'tmdb_tv_networks': 'network_id', 'tmdb_tv_year': 'year', 'tmdb_tvanime_year': 'year'
-	}
-	tmdb_personal = ('tmdb_watchlist', 'tmdb_favorite', 'tmdb_recommendations')
-	trakt_personal = (
-		'trakt_collection', 'trakt_watchlist', 'trakt_favorites', 'trakt_droplist', 'trakt_collection_lists'
-	)
-	mdblist_personal = ('mdblist_collection', 'mdblist_watchlist', 'mdblist_droplist')
-	imdb_personal = ('imdb_watchlist', 'imdb_user_list_contents', 'imdb_keywords_list_contents')
-	similar = ('tmdb_tv_similar', 'tmdb_tv_recommendations')
-	personal_dict = {
-		'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'),
-		'favourites_tvshows': ('caches.favourites_cache', 'get_favourites'),
-		'watched_tvshows': ('caches.watched_cache', 'get_watched_items')
-	}
-
 	def run(self):
 		try:
 			params_get = self.params.get
-			self.handle = int(sys.argv[1])
+			__handle__ = int(sys.argv[1])
 			view_type, content_type = 'view.tvshows', 'tvshows'
 			mode = params_get('mode')
 			try: page_no = int(params_get('new_page', '1'))
@@ -287,15 +275,15 @@ class Menu(TVShows):
 					'query': params_get('search_name', ''), 'actor_id': params_get('actor_id', ''),
 					'transfer_mode': mode, 'transfer_action': self.action, 'media_type': 'TV Shows'
 				}
-				kodi_utils.add_dir(self.handle, url_params, jumpto_str, item_jump, isFolder=False)
-			kodi_utils.add_items(self.handle, self.worker())
+				kodi_utils.add_dir(__handle__, url_params, jumpto_str, item_jump, isFolder=False)
+			kodi_utils.add_items(__handle__, self.worker())
 			if self.new_page:
 				self.new_page.update({'mode': mode, 'action': self.action, 'exit_list_params': self.exit_list_params, 'name': ls(params_get('name'))})
-				kodi_utils.add_dir(self.handle, self.new_page, nextpage_str, item_next)
+				kodi_utils.add_dir(__handle__, self.new_page, nextpage_str, item_next)
 		except: pass
-		kodi_utils.set_category(self.handle, ls(params_get('name')))
-		kodi_utils.set_sort_method(self.handle, content_type)
-		kodi_utils.set_content(self.handle, content_type)
-		kodi_utils.end_directory(self.handle, False if self.is_widget else None)
+		kodi_utils.set_category(__handle__, ls(params_get('name')))
+		kodi_utils.set_sort_method(__handle__, content_type)
+		kodi_utils.set_content(__handle__, content_type)
+		kodi_utils.end_directory(__handle__, False if self.is_widget else None)
 		kodi_utils.set_view_mode(view_type, content_type)
 

@@ -30,6 +30,7 @@ class Seasons:
 		self.watched_title = ('POV', 'Trakt', 'MDBList')[self.watched_indicators]
 		self.show_unaired = settings.show_unaired()
 		self.is_widget = kodi_utils.external_browse()
+		self.image_resolution = self.meta_user_info['image_resolution']
 		self.fanart_enabled = self.meta_user_info['extra_fanart_enabled']
 		self.widget_hide_watched = self.is_widget and self.meta_user_info['widget_hide_watched']
 		self.poster_main, self.poster_backup, self.fanart_main, self.fanart_backup = get_art_provider()
@@ -37,7 +38,6 @@ class Seasons:
 	def build_season_list(self, params):
 		def _process_season_list():
 			use_season_title = settings.use_season_title()
-			image_resolution = self.meta_user_info['image_resolution']['poster']
 			season_data = meta_get('season_data')
 			if season_data:
 				if 'season' in params: season_data = [i for i in season_data if i['season_number'] == params['season']]
@@ -51,18 +51,17 @@ class Seasons:
 					cm = []
 					cm_append = cm.append
 					item_get = item.get
-					name, overview, rating = item_get('name'), item_get('overview'), item_get('vote_average')
 					season_number, episode_count = item_get('season_number'), item_get('episode_count')
-					poster_path, air_date = item_get('poster_path'), item_get('air_date')
-					if not poster_path is None: poster = tmdb_image_base % (image_resolution, poster_path)
+					overview, rating = item_get('overview'), item_get('vote_average')
+					name, air_date = item_get('name'), item_get('air_date')
+					poster_path = item_get('poster_path')
+					if poster_path: poster = tmdb_image_base % (self.image_resolution['poster'], poster_path)
 					else: poster = show_poster
-					if season_number == 0: unaired = False
-					elif episode_count == 0: unaired = True
-					elif season_number != total_seasons: unaired = False
-					else:
+					if season_number == total_seasons:
 						episode_airs = adjust_premiered_date_function(air_date, 0)[0]
-						if not episode_airs or self.current_date < episode_airs: unaired = True
-						else: unaired = False
+						unaired = True if not episode_airs or self.current_date < episode_airs else False
+					elif episode_count == 0: unaired = True
+					else: unaired = False
 					if unaired:
 						if not self.show_unaired: return
 						episode_count = 0
@@ -147,24 +146,25 @@ class Seasons:
 					item_get = item.get
 					season, episode, ep_name = item_get('season'), item_get('episode'), item_get('title')
 					premiered, cast = item_get('premiered'), show_cast + item_get('guest_stars', [])
+					season_poster = item_get('season_poster') or show_poster
+					thumb = item_get('thumb') or fanart
+					background = thumb if thumb_fanart else fanart
 					episode_date, premiered = adjust_premiered_date_function(premiered, adjust_hours)
 					playcount, overlay = get_watched_status_episode(self.watched_info, string(tmdb_id), season, episode)
 					resumetime, progress = get_resumetime(bookmarks, tmdb_id, season, episode)
-					thumb = item_get('thumb') or fanart
-					background = thumb if thumb_fanart else fanart
-					item.update({'trailer': trailer, 'tvshowtitle': show_title, 'premiered': premiered, 'genre': genre, 'duration': episode_run_time, 'mpaa': mpaa, 'studio': studio,
-								'playcount': playcount, 'overlay': overlay})
+					item.update({'trailer': trailer, 'tvshowtitle': show_title, 'premiered': premiered, 'genre': genre, 'mpaa': mpaa, 'studio': studio,
+								'duration': item_get('duration') or episode_run_time, 'playcount': playcount, 'overlay': overlay})
 					extras_params = build_url({'mode': 'extras_menu_choice', 'media_type': 'tvshow', 'tmdb_id': tmdb_id, 'is_widget': self.is_widget})
 					options_params = build_url({'mode': 'options_menu_choice', 'content': 'episode', 'tmdb_id': tmdb_id, 'season': season, 'episode': episode, 'is_widget': self.is_widget})
 					url_params = build_url({'mode': 'play_media', 'media_type': 'episode', 'tmdb_id': tmdb_id, 'season': season, 'episode': episode})
 					display = ep_name
-					unaired = False
 					if not episode_date or self.current_date < episode_date:
 						if not self.show_unaired: continue
 						if season != 0:
-							unaired = True
 							display = '[I]%s[/I]' % (unaired_label % ep_name)
 							item['title'] = display
+							unaired = True
+					else: unaired = False
 					if self.widget_hide_watched and playcount and not unaired: continue
 					try: year = premiered.split('-')[0]
 					except: year = show_year
@@ -189,7 +189,7 @@ class Seasons:
 					listitem.addContextMenuItems(cm)
 					listitem.setProperties(props)
 					listitem.setLabel(display)
-					listitem.setArt({'poster': show_poster, 'fanart': background, 'thumb': thumb, 'icon': thumb, 'banner': banner, 'clearart': clearart, 'clearlogo': clearlogo,
+					listitem.setArt({'poster': season_poster, 'fanart': background, 'thumb': thumb, 'icon': thumb, 'banner': banner, 'clearart': clearart, 'clearlogo': clearlogo,
 									'landscape': thumb, 'tvshow.poster': show_poster, 'tvshow.clearart': clearart, 'tvshow.clearlogo': clearlogo, 'tvshow.landscape': thumb, 'tvshow.banner': banner})
 					if KODI_VERSION < 20:
 						listitem.setCast(cast)
@@ -228,17 +228,17 @@ class Seasons:
 		meta = tv_meta_function('tmdb_id', params['tmdb_id'], self.meta_user_info, self.current_date)
 		meta_get = meta.get
 		tmdb_id, tvdb_id, imdb_id = meta_get('tmdb_id'), meta_get('tvdb_id'), meta_get('imdb_id')
-		rootname, show_status = meta_get('rootname'), meta_get('status')
+		show_cast, show_status = meta_get('cast', []), meta_get('status')
 		show_title, show_year, show_plot = meta_get('title'), meta_get('year'), meta_get('plot')
+		mpaa, rating, votes = meta_get('mpaa'), meta_get('rating'), meta_get('votes')
+		trailer, genre, studio = string(meta_get('trailer')), meta_get('genre'), meta_get('studio')
+		episode_run_time, premiered = meta_get('duration'), meta_get('premiered')
+		total_seasons, total_aired_eps = meta_get('total_seasons'), meta_get('total_aired_eps')
 		show_poster = meta_get(self.poster_main) or meta_get(self.poster_backup) or poster_empty
 		fanart = meta_get(self.fanart_main) or meta_get(self.fanart_backup) or fanart_empty
 		clearlogo = meta_get('clearlogo') or meta_get('tmdblogo') or ''
 		if self.fanart_enabled: banner, clearart, landscape = meta_get('banner'), meta_get('clearart'), meta_get('landscape')
 		else: banner, clearart, landscape = '', '', ''
-		show_cast, mpaa, votes = meta_get('cast', []), meta_get('mpaa'), meta_get('votes')
-		trailer, genre, studio = string(meta_get('trailer')), meta_get('genre'), meta_get('studio')
-		episode_run_time, rating, premiered = meta_get('duration'), meta_get('rating'), meta_get('premiered')
-		total_seasons, total_aired_eps = meta_get('total_seasons'), meta_get('total_aired_eps')
 		mode = self.params.get('mode', 'build_season_list')
 		if 'episode' in mode: _process_episode_list()
 		else: _process_season_list()
