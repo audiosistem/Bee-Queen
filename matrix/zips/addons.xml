@@ -1723,6 +1723,20 @@ Fixed autosub addon exclusions
       <icon>icon.png</icon>
     </assets>
     </extension>
+</addon><addon id="service.subtitles.lingva" name="Lingva Subtitles" version="1.0.1" provider-name="Lingva">
+    <requires>
+        <import addon="xbmc.python" version="3.0.1" />
+        <import addon="script.module.requests" version="2.25.1" />
+        <import addon="resource.images.languageflags.colour" version="0.0.1" />
+    </requires>
+    <extension point="xbmc.subtitle.module" library="service.py" languages="Romanian" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="ro">Subtitrări Wyzie (IMDB/TMDB) traducere Lingva</summary>
+        <platform>all</platform>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
+    </extension>
 </addon><addon id="service.subtitles.opensubtitles_by_opensubtitles" name="OpenSubtitles.org by OpenSubtitles" version="5.3.1" provider-name="amet, opensubtitles">
   <extension point="xbmc.subtitle.module" library="service.py" />
   <extension point="xbmc.addon.metadata">
