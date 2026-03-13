@@ -123,7 +123,6 @@ class Navigator:
 		trakt_status = ku.get_setting('trakt_user') not in ('', None)
 		tmdb_status = ku.get_setting('tmdb.account_id') not in ('', None)
 		mdblist_status = ku.get_setting('mdblist.token') not in ('', None)
-		imdb_status = ku.get_setting('imdb_user') not in ('', None)
 		if trakt_status:
 			self._add_item({'mode': 'navigator.trakt_lists'                                                 , 'name': ls_str   }, 'trakt.png', t_n_ins)
 			self._add_item({'mode': 'navigator.trakt_watchlists'                                            , 'name': wlist_str}, 'trakt.png', t_n_ins)
@@ -151,9 +150,6 @@ class Navigator:
 			self._add_item({'mode': 'build_tvshow_list', 'action': 'tmdb_favorite'          , 'name': 'TV Show Favorite'       }, 'tmdb.png', '[B]TMDB:[/B] ')
 			self._add_item({'mode': 'build_movie_list', 'action': 'tmdb_recommendations'    , 'name': 'Movie Recommendations'  }, 'tmdb.png', '[B]TMDB:[/B] ')
 			self._add_item({'mode': 'build_tvshow_list', 'action': 'tmdb_recommendations'   , 'name': 'TV Show Recommendations'}, 'tmdb.png', '[B]TMDB:[/B] ')
-		if imdb_status:
-			self._add_item({'mode': 'navigator.imdb_watchlists', 'name': wlist_str}, 'imdb.png', i_n_ins)
-			self._add_item({'mode': 'navigator.imdb_lists',      'name': ls_str   }, 'imdb.png', i_n_ins)
 		self._end_directory()
 
 	def trakt_collections(self):
@@ -210,34 +206,13 @@ class Navigator:
 		self._add_item({'mode': 'build_tvshow_list', 'action': 'trakt_recommendations', 'name': tv_str }, 'trakt.png', n_ins)
 		self._end_directory()
 
-	def imdb_watchlists(self):
-		imdb_str, watchlist_str = ls(32064), ls(32500)
-		imdb_watchlist_str = '%s %s' % (imdb_str, watchlist_str)
-		n_ins = _in_str % (imdb_watchlist_str.upper(), '')
-		self._add_item({'mode': 'build_movie_list', 'action': 'imdb_watchlist',  'name': mov_str}, 'imdb.png', n_ins)
-		self._add_item({'mode': 'build_tvshow_list', 'action': 'imdb_watchlist', 'name': tv_str }, 'imdb.png', n_ins)
-		self._end_directory()
-
-	def imdb_lists(self):
-		imdb_str, lists_str = ls(32064), ls(32501)
-		imdb_lists_str = '%s %s' % (imdb_str, lists_str)
-		n_ins = _in_str % (imdb_lists_str.upper(), '')
-		self._add_item({'mode': 'imdb_build_user_lists', 'media_type': 'movie',  'name': mov_str}, 'imdb.png', n_ins)
-		self._add_item({'mode': 'imdb_build_user_lists', 'media_type': 'tvshow', 'name': tv_str }, 'imdb.png', n_ins)
-		self._end_directory()
-
 	def search(self):
-		search_str, people_str, clca_str = ls(32450), ls(32507), ls(32497)
-		coll_str, clear_search_str = '%s %s (%s)' % (mov_str, ls(32499), ls(32068)), clca_str % search_str
-		kw_mov, kw_tv = '%s %s (%s)' % (ls(32064), ls(32092), mov_str), '%s %s (%s)' % (ls(32064), ls(32092), tv_str)
-		n_ins, s_n_ins = _in_str % (ls(32524).upper(), ''), _in_str % (search_str.upper(), '')
+		search_str, people_str = ls(32450), ls(32507)
+		coll_str, s_n_ins = '%s %s (%s)' % (mov_str, ls(32499), ls(32068)), _in_str % (search_str.upper(), '')
 		self._add_item({'mode': 'search_history', 'action': 'movie',               'name': mov_str         }, 'search_movie.png' , s_n_ins)
 		self._add_item({'mode': 'search_history', 'action': 'tvshow',              'name': tv_str          }, 'search_tv.png'    , s_n_ins)
 		self._add_item({'mode': 'search_history', 'action': 'people',              'name': people_str      }, 'search_people.png', s_n_ins)
 		self._add_item({'mode': 'search_history', 'action': 'tmdb_collections',    'name': coll_str        }, 'search_tmdb.png'  , s_n_ins)
-		self._add_item({'mode': 'search_history', 'action': 'imdb_keyword_movie',  'name': kw_mov          }, 'search_imdb.png'  , s_n_ins)
-		self._add_item({'mode': 'search_history', 'action': 'imdb_keyword_tvshow', 'name': kw_tv           }, 'search_imdb.png'  , s_n_ins)
-		self._add_item({'mode': 'clear_search_history',                            'name': clear_search_str}, 'tools.png'        , n_ins, False)
 		self._end_directory()
 
 	def settings(self):

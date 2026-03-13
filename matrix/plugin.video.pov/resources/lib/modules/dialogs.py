@@ -19,25 +19,6 @@ def imdb_videos_choice(videos, poster):
 	kwargs = {'items': json.dumps(list_items), 'heading': ls(32241)}
 	return select_dialog([i['url'] for i in videos], **kwargs)
 
-def imdb_keywords_choice(media_type, imdb_id, poster):
-	from indexers.imdb_api import imdb_keywords
-	from menus.history import add_to_search_history
-	show_busy_dialog()
-	keywords_info = imdb_keywords(imdb_id)
-	if len(keywords_info) == 0:
-		hide_busy_dialog()
-		return notification(32760, 1500)
-	meta_type = 'movie' if media_type == 'movies' else 'tvshow'
-	mode, action = 'build_%s_list' % meta_type, 'imdb_keywords_list_contents'
-	list_items = [{'line1': i, 'icon': poster, 'list_id': i, 'media_type': media_type} for i in keywords_info]
-	hide_busy_dialog()
-	keyword_choice = select_dialog(
-		[{'mode': mode, 'action': action, 'list_id': i, 'media_type': media_type} for i in keywords_info],
-		**{'items': json.dumps(list_items), 'heading': ls(32092)}
-	)
-	if keyword_choice: add_to_search_history(keyword_choice['list_id'], 'imdb_keyword_%s_queries' % meta_type)
-	return keyword_choice
-
 def trailer_choice(media_type, poster, tmdb_id, trailer_url, all_trailers=None):
 	if settings.get_language() != 'en' and not trailer_url and not all_trailers:
 		from indexers.tmdb_api import tmdb_media_videos

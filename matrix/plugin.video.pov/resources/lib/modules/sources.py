@@ -471,13 +471,13 @@ class SourceSelect:
 					ep_data = next((i for i in episodes_data if i['episode'] == int(self.episode)))
 					meta.update({
 						'mediatype': 'episode', 'season': ep_data['season'], 'episode': ep_data['episode'],
-						'premiered': ep_data['premiered'], 'ep_name': ep_data['title'], 'plot': ep_data['plot']
+						'ep_name': ep_data['title'], 'premiered': ep_data['premiered'], 'plot': ep_data['plot']
 					})
 				except: pass
 			else: meta = movie_meta('tmdb_id', self.tmdb_id, meta_user_info, current_date)
 		meta.update({
-			'background': self.background, 'media_type': self.media_type,
-			'season': self.season, 'episode': self.episode
+			'mediatype': self.media_type, 'season': self.season, 'episode': self.episode,
+			'media_type': self.media_type, 'background': self.background
 		})
 		if self.custom_title: meta['custom_title'] = self.custom_title
 		if self.custom_year: meta['custom_year'] = self.custom_year
@@ -515,7 +515,7 @@ class SourceSelect:
 		year = meta.get('year') or '0'
 		if self.active_external and get_setting('search.enable.yearcheck', 'false') == 'true':
 			from indexers.imdb_api import imdb_movie_year
-			try: year = str(imdb_movie_year(meta.get('imdb_id')) or year)
+			try: year = imdb_movie_year(meta.get('imdb_id')) or year
 			except: pass
 		return year
 

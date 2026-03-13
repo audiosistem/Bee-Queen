@@ -1,6 +1,6 @@
 import sys
 from threading import Thread
-from indexers.metadata import tvshow_meta, season_episodes_meta, all_episodes_meta, tmdb_image_base
+from indexers.metadata import tvshow_meta, season_episodes_meta, all_episodes_meta, episode_infodict, season_infodict, info_tagger, tmdb_image_base
 from caches.watched_cache import get_watched_info_tv, get_watched_status_season, get_bookmarks, get_resumetime, set_resumetime, get_watched_status_episode
 from modules import kodi_utils, settings
 from modules.utils import adjust_premiered_date, get_datetime
@@ -9,7 +9,6 @@ from modules.utils import adjust_premiered_date, get_datetime
 tv_meta_function, season_meta_function, default_duration = tvshow_meta, season_episodes_meta, 3600
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
 string, ls, build_url = str, kodi_utils.local_string, kodi_utils.build_url
-remove_meta_keys, dict_removals = kodi_utils.remove_meta_keys, kodi_utils.episode_dict_removals
 get_art_provider, show_specials = settings.get_art_provider, settings.show_specials
 adjust_premiered_date_function, get_datetime_function = adjust_premiered_date, get_datetime
 run_plugin, container_refresh, container_update = 'RunPlugin(%s)', 'Container.Refresh(%s)', 'Container.Update(%s)'
@@ -47,18 +46,15 @@ class Seasons:
 			running_ep_count = total_aired_eps
 			for item in season_data:
 				try:
-					props = {}
 					cm = []
 					cm_append = cm.append
 					item_get = item.get
 					season_number, episode_count = item_get('season_number'), item_get('episode_count')
-					overview, rating = item_get('overview'), item_get('vote_average')
-					name, air_date = item_get('name'), item_get('air_date')
-					poster_path = item_get('poster_path')
+					poster_path, name = item_get('poster_path'), item_get('name')
 					if poster_path: poster = tmdb_image_base % (self.image_resolution['poster'], poster_path)
 					else: poster = show_poster
 					if season_number == total_seasons:
-						episode_airs = adjust_premiered_date_function(air_date, 0)[0]
+						episode_airs = adjust_premiered_date_function(item_get('air_date'), 0)[0]
 						unaired = True if not episode_airs or self.current_date < episode_airs else False
 					elif episode_count == 0: unaired = True
 					else: unaired = False
@@ -68,17 +64,23 @@ class Seasons:
 					elif season_number != 0:
 						running_ep_count -= episode_count
 						if running_ep_count < 0: episode_count = running_ep_count + episode_count
-					try: year = air_date.split('-')[0]
-					except: year = show_year
-					plot = overview or show_plot
-					title = name if use_season_title and name else ' '.join([season_str, string(season_number)])
-					if 'season' in params: title = '%s: %s' % (show_title, title)
-					if unaired: title = '[I]%s[/I]' % (unaired_label % title)
+					display = name if use_season_title and name else ' '.join([season_str, string(season_number)])
+					if unaired: display = '[I]%s[/I]' % (unaired_label % display)
+					if 'season' in params: display = '%s: %s' % (show_title, display)
 					playcount, overlay, watched, unwatched = get_watched_status_season(self.watched_info, string(tmdb_id), season_number, episode_count)
 					if self.widget_hide_watched and watched: continue
-					url_params = build_url({'mode': 'build_episode_list', 'tmdb_id': tmdb_id, 'season': season_number})
-					extras_params = build_url({'mode': 'extras_menu_choice', 'media_type': 'tvshow', 'tmdb_id': tmdb_id, 'is_widget': self.is_widget})
-					options_params = build_url({'mode': 'options_menu_choice', 'content': 'season', 'tmdb_id': tmdb_id, 'is_widget': self.is_widget})
+					item.update({'name': display, 'playcount': playcount, 'overlay': overlay})
+					url_params = build_url({
+						'mode': 'build_episode_list', 'tmdb_id': tmdb_id, 'season': season_number
+					})
+					extras_params = build_url({
+						'mode': 'extras_menu_choice', 'media_type': 'tvshow',
+						'tmdb_id': tmdb_id, 'is_widget': self.is_widget
+					})
+					options_params = build_url({
+						'mode': 'options_menu_choice', 'content': 'season',
+						'tmdb_id': tmdb_id, 'is_widget': self.is_widget
+					})
 					cm_append((options_str, run_plugin % options_params))
 					cm_append((extras_str, run_plugin % extras_params))
 					if not playcount: cm_append((watched_str % self.watched_title, run_plugin % build_url({
@@ -89,44 +91,29 @@ class Seasons:
 						'mode': 'mark_as_watched_unwatched_season', 'action': 'mark_as_unwatched', 'year': show_year,
 						'tmdb_id': tmdb_id, 'tvdb_id': tvdb_id, 'season': season_number, 'title': show_title
 					})))
-					props['unwatchedepisodes'] = string(unwatched)
-					props['totalepisodes'] = string(episode_count)
-					props['pov_sort_order'] = string(params.get('sort', ''))
+					props = {
+						'pov_sort_order': string(params.get('sort', '')), 'totalepisodes': string(episode_count),
+						'watchedepisodes': string(watched), 'unwatchedepisodes': string(unwatched)
+					}
 					listitem = kodi_utils.make_listitem()
 					listitem.addContextMenuItems(cm)
 					listitem.setProperties(props)
-					listitem.setLabel(title)
-					listitem.setArt({'poster': poster, 'icon': poster, 'thumb': poster, 'fanart': fanart, 'banner': banner, 'clearart': clearart, 'clearlogo': clearlogo,
-									'landscape': landscape, 'tvshow.poster': poster, 'tvshow.clearart': clearart, 'tvshow.clearlogo': clearlogo, 'tvshow.landscape': landscape, 'tvshow.banner': banner})
+					listitem.setLabel(display)
+					listitem.setArt({
+						'poster': poster, 'fanart': fanart, 'icon': poster, 'clearlogo': clearlogo,
+						'banner': banner, 'clearart': clearart, 'landscape': landscape, 'thumb': poster,
+						'season.poster': poster, 'tvshow.poster': poster, 'tvshow.clearlogo': clearlogo,
+						'tvshow.banner': banner, 'tvshow.clearart': clearart, 'tvshow.landscape': landscape
+					})
 					if KODI_VERSION < 20:
-						listitem.setCast(show_cast)
 						listitem.setUniqueIDs({'imdb': imdb_id, 'tmdb': string(tmdb_id), 'tvdb': string(tvdb_id)})
-						listitem.setInfo('video', {'mediatype': 'season', 'trailer': trailer, 'title': title, 'size': '0', 'duration': episode_run_time, 'plot': plot,
-									'rating': rating, 'premiered': air_date, 'studio': studio, 'year': year, 'genre': genre, 'mpaa': mpaa, 'tvshowtitle': show_title,
-									'imdbnumber': imdb_id, 'votes': votes, 'season': season_number, 'playcount': playcount, 'overlay': overlay})
-						listitem.setProperty('watchedepisodes', string(watched))
+						listitem.setInfo('video', season_infodict(meta, **item))
+						listitem.setCast(show_cast)
 					else:
-						if watched > 0: listitem.setProperty('watchedepisodes', string(watched))
-						videoinfo = listitem.getVideoInfoTag(offscreen=True)
-						videoinfo.setCast(make_cast_list(show_cast))
+						videoinfo = info_tagger(listitem, season_infodict(meta, **item))
+						videoinfo.setTitle(display)
 						videoinfo.setUniqueIDs({'imdb': imdb_id, 'tmdb': string(tmdb_id), 'tvdb': string(tvdb_id)})
-						videoinfo.setDuration(episode_run_time)
-						videoinfo.setGenres(genre.split(', '))
-						videoinfo.setIMDBNumber(imdb_id)
-						videoinfo.setMediaType('season')
-						videoinfo.setMpaa(mpaa)
-						videoinfo.setPlaycount(playcount)
-						videoinfo.setPlot(plot)
-						videoinfo.setPremiered(air_date)
-						videoinfo.setRating(rating)
-						videoinfo.setSeason(season_number)
-						videoinfo.setStudios((studio,))
-						videoinfo.setTitle(title)
-						videoinfo.setTrailer(trailer)
-						videoinfo.setTvShowStatus(show_status)
-						videoinfo.setTvShowTitle(show_title)
-						videoinfo.setVotes(votes)
-						videoinfo.setYear(int(year))
+						videoinfo.setCast(make_cast_list(show_cast))
 					self.append((url_params, listitem, True))
 				except: pass
 		def _process_episode_list():
@@ -140,7 +127,6 @@ class Seasons:
 			else: episodes_data = season_meta_function(params['season'], meta, self.meta_user_info)
 			for item in episodes_data:
 				try:
-					props = {}
 					cm = []
 					cm_append = cm.append
 					item_get = item.get
@@ -150,24 +136,30 @@ class Seasons:
 					thumb = item_get('thumb') or fanart
 					background = thumb if thumb_fanart else fanart
 					episode_date, premiered = adjust_premiered_date_function(premiered, adjust_hours)
-					playcount, overlay = get_watched_status_episode(self.watched_info, string(tmdb_id), season, episode)
-					resumetime, progress = get_resumetime(bookmarks, tmdb_id, season, episode)
-					item.update({'trailer': trailer, 'tvshowtitle': show_title, 'premiered': premiered, 'genre': genre, 'mpaa': mpaa, 'studio': studio,
-								'duration': item_get('duration') or episode_run_time, 'playcount': playcount, 'overlay': overlay})
-					extras_params = build_url({'mode': 'extras_menu_choice', 'media_type': 'tvshow', 'tmdb_id': tmdb_id, 'is_widget': self.is_widget})
-					options_params = build_url({'mode': 'options_menu_choice', 'content': 'episode', 'tmdb_id': tmdb_id, 'season': season, 'episode': episode, 'is_widget': self.is_widget})
-					url_params = build_url({'mode': 'play_media', 'media_type': 'episode', 'tmdb_id': tmdb_id, 'season': season, 'episode': episode})
-					display = ep_name
 					if not episode_date or self.current_date < episode_date:
 						if not self.show_unaired: continue
-						if season != 0:
-							display = '[I]%s[/I]' % (unaired_label % ep_name)
-							item['title'] = display
-							unaired = True
-					else: unaired = False
+						if season != 0: display = '[I]%s[/I]' % (unaired_label % ep_name)
+						unaired = True
+					else: display, unaired = ep_name, False
+					playcount, overlay = get_watched_status_episode(self.watched_info, string(tmdb_id), season, episode)
 					if self.widget_hide_watched and playcount and not unaired: continue
-					try: year = premiered.split('-')[0]
-					except: year = show_year
+					resumetime, progress = get_resumetime(bookmarks, tmdb_id, season, episode)
+					item.update({
+						'title': display, 'premiered': premiered, 'playcount': playcount, 'overlay': overlay,
+						'duration': item_get('duration') or meta_get('duration') or default_duration
+					})
+					url_params = build_url({
+						'mode': 'play_media', 'media_type': 'episode',
+						'tmdb_id': tmdb_id, 'season': season, 'episode': episode
+					})
+					extras_params = build_url({
+						'mode': 'extras_menu_choice', 'media_type': 'tvshow',
+						'tmdb_id': tmdb_id, 'is_widget': self.is_widget
+					})
+					options_params = build_url({
+						'mode': 'options_menu_choice', 'content': 'episode',
+						'tmdb_id': tmdb_id, 'season': season, 'episode': episode, 'is_widget': self.is_widget
+					})
 					cm_append((options_str, run_plugin % options_params))
 					cm_append((extras_str, run_plugin % extras_params))
 					clearprog_params, unwatched_params, watched_params = '', '', ''
@@ -184,55 +176,34 @@ class Seasons:
 							'mode': 'mark_as_watched_unwatched_episode', 'action': 'mark_as_watched', 'year': show_year,
 							'tmdb_id': tmdb_id, 'tvdb_id': tvdb_id, 'season': season, 'episode': episode, 'title': show_title
 						})))
-					props['episode_type'] = item_get('episode_type')
+					props = {'episode_type': item_get('episode_type'), 'watchedprogress': progress}
 					listitem = kodi_utils.make_listitem()
 					listitem.addContextMenuItems(cm)
 					listitem.setProperties(props)
 					listitem.setLabel(display)
-					listitem.setArt({'poster': season_poster, 'fanart': background, 'thumb': thumb, 'icon': thumb, 'banner': banner, 'clearart': clearart, 'clearlogo': clearlogo,
-									'landscape': thumb, 'tvshow.poster': show_poster, 'tvshow.clearart': clearart, 'tvshow.clearlogo': clearlogo, 'tvshow.landscape': thumb, 'tvshow.banner': banner})
+					listitem.setArt({
+						'poster': season_poster, 'fanart': background, 'icon': thumb, 'clearlogo': clearlogo,
+						'banner': banner, 'clearart': clearart, 'landscape': thumb, 'thumb': thumb,
+						'season.poster': season_poster, 'tvshow.poster': show_poster, 'tvshow.clearlogo': clearlogo,
+						'tvshow.banner': banner, 'tvshow.clearart': clearart, 'tvshow.landscape': thumb
+					})
 					if KODI_VERSION < 20:
-						listitem.setCast(cast)
 						listitem.setUniqueIDs({'imdb': imdb_id, 'tmdb': string(tmdb_id), 'tvdb': string(tvdb_id)})
-						listitem.setInfo('video', remove_meta_keys(item, dict_removals))
+						listitem.setInfo('video', episode_infodict(meta, **item))
+						listitem.setCast(cast)
 						listitem.setProperty('resumetime', resumetime)
 					else:
-						videoinfo = listitem.getVideoInfoTag(offscreen=True)
-						videoinfo.setCast(make_cast_list(cast))
+						videoinfo = info_tagger(listitem, episode_infodict(meta, **item))
+						videoinfo.setTitle(display)
 						videoinfo.setUniqueIDs({'imdb': imdb_id, 'tmdb': string(tmdb_id), 'tvdb': string(tvdb_id)})
-						videoinfo.setDirectors(item_get('director').split(', '))
-						videoinfo.setDuration(int(item_get('duration') or default_duration))
-						videoinfo.setEpisode(episode)
-						videoinfo.setFirstAired(premiered)
-						videoinfo.setGenres(genre.split(', '))
-						videoinfo.setIMDBNumber(imdb_id)
-						videoinfo.setMediaType('episode')
-						videoinfo.setMpaa(mpaa)
-						videoinfo.setPlaycount(playcount)
-						videoinfo.setPlot(item_get('plot'))
-						videoinfo.setRating(item_get('rating'))
-						videoinfo.setSeason(season)
-						videoinfo.setStudios((studio,))
-						videoinfo.setTitle(item_get('title'))
-						videoinfo.setTrailer(trailer)
-						videoinfo.setTvShowStatus(show_status)
-						videoinfo.setTvShowTitle(show_title)
-						videoinfo.setVotes(item_get('votes'))
-						videoinfo.setWriters(item_get('writer').split(', '))
-						videoinfo.setYear(int(year))
-						if int(progress):
-							listitem.setProperty('watchedprogress', progress)
-							videoinfo.setResumePoint(*set_resumetime(resumetime, progress, videoinfo.getDuration()))
+						videoinfo.setCast(make_cast_list(cast))
+						videoinfo.setResumePoint(*set_resumetime(resumetime, progress, videoinfo.getDuration()))
 					self.append((url_params, listitem, False))
 				except: pass
 		meta = tv_meta_function('tmdb_id', params['tmdb_id'], self.meta_user_info, self.current_date)
 		meta_get = meta.get
 		tmdb_id, tvdb_id, imdb_id = meta_get('tmdb_id'), meta_get('tvdb_id'), meta_get('imdb_id')
-		show_cast, show_status = meta_get('cast', []), meta_get('status')
-		show_title, show_year, show_plot = meta_get('title'), meta_get('year'), meta_get('plot')
-		mpaa, rating, votes = meta_get('mpaa'), meta_get('rating'), meta_get('votes')
-		trailer, genre, studio = string(meta_get('trailer')), meta_get('genre'), meta_get('studio')
-		episode_run_time, premiered = meta_get('duration'), meta_get('premiered')
+		show_title, show_year, show_cast = meta_get('title'), meta_get('year'), meta_get('cast', [])
 		total_seasons, total_aired_eps = meta_get('total_seasons'), meta_get('total_aired_eps')
 		show_poster = meta_get(self.poster_main) or meta_get(self.poster_backup) or poster_empty
 		fanart = meta_get(self.fanart_main) or meta_get(self.fanart_backup) or fanart_empty

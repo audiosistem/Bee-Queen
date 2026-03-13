@@ -163,11 +163,6 @@
 		<setting id="tmdb.account_id" label="User" type="text" default="" enable="false" visible="false"/>
 		<setting id="tmdblist.sort_name" label="Sort List Names Type" type="enum" default="0" values="Title|Number of Items|Recently Updated" visible="!eq(-2,)" />
 		<setting id="tmdblist.watchlist_sync" label="Purge Watchlist on Trakt Refresh" type="bool" default="false" visible="!eq(-3,)" />
-		<!-- IMDb -->
-		<setting label="IMDb" type="lsep" />
-		<setting id="imdb_user" label="User" type="text" default="" enable="true" />
-		<setting id="imdb_lists.sort_type" label="Sort Type" type="enum" default="0" values="List Default|Alphabetical|IMDb Rating|Popularity|Your Rating|Number Of Ratings|Release Date|Runtime|Date Added" visible="!eq(-1,)" />
-		<setting id="imdb_lists.sort_direction" label="Sort Order" type="enum" default="0" values="Ascending|Descending" visible="!eq(-2,)" />
 	</category>
 	<!-- General -->
 	<category label="General">
@@ -255,16 +250,6 @@
 		<setting id="sort.collection" label="Collection Sort Type" type="enum" default="0" values="Title|Date Added|Release Date" />
 		<setting id="sort.watchlist" label="Watchlist Sort Type" type="enum" default="0" values="Title|Date Added|Release Date" />
 		<setting id="ignore_articles" label="Ignore Articles When Sorting Lists" type="bool" default="true" />
-		<!-- Context Menu -->
-		<setting label="Context Menu Sorting" type="lsep" />
-		<setting id="context.options" label="Options..." type="slider" default="1" range="0,1,7" option="int" />
-		<setting id="context.extras" label="Extras.../Playback.../Browse..." type="slider" default="2" range="0,1,7" option="int" />
-		<setting id="context.trakt" label="Trakt Lists Manager" type="slider" default="3" range="0,1,7" option="int" />
-		<setting id="context.mdblist" label="MDBList Manager" type="slider" default="4" range="0,1,7" option="int" />
-		<setting id="context.tmdblist" label="TMDB Lists Manager" type="slider" default="4" range="0,1,7" option="int" />
-		<setting id="context.favourites" label="Favorites Manager" type="slider" default="5" range="0,1,7" option="int" />
-		<setting id="context.mark" label="Mark Watched/Unwatched" type="slider" default="6" range="0,1,7" option="int" />
-		<setting id="context.exit" label="Exit List" type="slider" default="7" range="0,1,7" option="int" />
 	</category>
 	<!-- Playback -->
 	<category label="Playback">
@@ -380,6 +365,19 @@
 		<!-- Trakt -->
 		<setting id="trakt.client_id" type="text" default="6bc29124c3d9466e06a3ed19a7b5976fcb28311008401e1ce04cf08196f8b16a" visible="false" />
 		<setting id="trakt.client_secret" type="text" default="99478842b17d44d7accafef45c6c1bbba235792753c195069ae149595cd3a919" visible="false" />
+	</category>
+	<!-- Context Menu -->
+	<category label="Context Menu">
+		<!-- Context Menu Sorting -->
+		<setting label="Context Menu Sorting" type="lsep" />
+		<setting id="context.options" label="Options..." type="slider" default="1" range="0,1,7" option="int" />
+		<setting id="context.extras" label="Extras.../Playback.../Browse..." type="slider" default="2" range="0,1,7" option="int" />
+		<setting id="context.trakt" label="Trakt Lists Manager" type="slider" default="3" range="0,1,7" option="int" />
+		<setting id="context.mdblist" label="MDBList Manager" type="slider" default="4" range="0,1,7" option="int" />
+		<setting id="context.tmdblist" label="TMDB Lists Manager" type="slider" default="4" range="0,1,7" option="int" />
+		<setting id="context.favourites" label="Favorites Manager" type="slider" default="5" range="0,1,7" option="int" />
+		<setting id="context.mark" label="Mark Watched/Unwatched" type="slider" default="6" range="0,1,7" option="int" />
+		<setting id="context.exit" label="Exit List" type="slider" default="7" range="0,1,7" option="int" />
 	</category>
 </settings>
 

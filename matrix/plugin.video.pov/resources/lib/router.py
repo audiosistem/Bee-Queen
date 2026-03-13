@@ -44,8 +44,6 @@ class Router:
 				dialogs.scraper_dialog_color_choice(params['setting'])
 			elif mode == 'scraper_quality_color_choice':
 				dialogs.scraper_quality_color_choice(params['setting'])
-			elif mode == 'imdb_images_choice':
-				dialogs.imdb_images_choice(params['imdb_id'], params['rootname'])
 			elif mode == 'set_quality_choice':
 				dialogs.set_quality_choice(params['quality_setting'])
 			elif mode == 'results_sorting_choice':
@@ -147,15 +145,9 @@ class Router:
 			elif mode == 'build_navigate_to_page':
 				from modules.dialogs import build_navigate_to_page
 				build_navigate_to_page(params)
-			elif mode == 'imdb_build_user_lists':
-				from indexers.imdb_api import imdb_build_user_lists
-				imdb_build_user_lists(params_get('media_type'))
 			elif mode == 'build_popular_people':
 				from menus.people import popular_people
 				popular_people()
-			elif mode == 'imdb_build_keyword_results':
-				from indexers.imdb_api import imdb_build_keyword_results
-				imdb_build_keyword_results(params['media_type'], params['query'])
 		elif 'watched_unwatched' in mode:
 			if mode == 'mark_as_watched_unwatched_episode':
 				from caches.watched_cache import mark_as_watched_unwatched_episode
@@ -185,7 +177,7 @@ class Router:
 				search_history(params)
 			elif mode == 'clear_search_history':
 				from menus.history import clear_search_history
-				clear_search_history()
+				clear_search_history(params)
 			elif mode == 'remove_from_history':
 				from menus.history import remove_from_search_history
 				remove_from_search_history(params)

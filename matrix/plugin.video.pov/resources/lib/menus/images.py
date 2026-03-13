@@ -3,7 +3,7 @@ import json
 from threading import Thread
 from windows import open_window
 from indexers.tmdb_api import tmdb_people_full_info, tmdb_popular_people, tmdb_image_base
-from indexers.imdb_api import imdb_images, people_get_imdb_id, imdb_people_images
+from indexers.imdb_api import people_get_imdb_id, imdb_tagged_images
 from modules.kodi_utils import media_path, notification, set_property, make_listitem, list_dirs, delete_file
 # from modules.kodi_utils import logger
 
@@ -11,9 +11,8 @@ class Images:
 	def run(self, params):
 		self.params = params
 		self.mode = self.params.pop('mode')
-		if self.mode == 'people_image_results': self.people_image_results()
+		if   self.mode == 'people_image_results': self.people_image_results()
 		elif self.mode == 'people_tagged_image_results': self.people_tagged_image_results()
-		elif self.mode == 'imdb_image_results': self.imdb_image_results()
 		elif self.mode == 'popular_people_image_results': self.popular_people_image_results()
 		elif self.mode == 'browser_image': self.browser_image(params['folder_path'])
 		elif self.mode == 'slideshow_image': return self.slideshow_image()
@@ -24,10 +23,21 @@ class Images:
 		else: return self.list_items, self.next_page_params
 
 	def open_window_xml(self):
-		open_window(('windows.imageviewer', 'ThumbImageViewer'), 'thumbviewer.xml', list_items=self.list_items, next_page_params= self.next_page_params, ImagesInstance=self)
+		open_window(
+			('windows.imageviewer', 'ThumbImageViewer'),
+			'thumbviewer.xml',
+			list_items=self.list_items,
+			next_page_params=self.next_page_params,
+			ImagesInstance=self
+		)
 
 	def slideshow_image(self):
-		return open_window(('windows.imageviewer', 'SlideShow'), 'slideshow.xml', all_images=json.loads(self.params['all_images']), index=int(self.params['current_index']))
+		return open_window(
+			('windows.imageviewer', 'SlideShow'),
+			'slideshow.xml',
+			all_images=json.loads(self.params['all_images']),
+			index=int(self.params['current_index'])
+		)
 
 	def popular_people_image_results(self):
 		def builder():
@@ -38,7 +48,10 @@ class Images:
 				else:
 					actor_poster = media_path('people.png')
 					actor_image = media_path('people.png')
-				url_params = {'mode': 'person_data_dialog', 'actor_name': item['name'], 'actor_id': item['id'], 'actor_image': actor_image}
+				url_params = {
+					'mode': 'person_data_dialog', 'actor_name': item['name'],
+					'actor_id': item['id'], 'actor_image': actor_image
+				}
 				listitem = make_listitem()
 				listitem.setProperty('tikiskins.thumb', actor_poster)
 				listitem.setProperty('tikiskins.name', item['name'])
@@ -51,41 +64,7 @@ class Images:
 		else: page_no = 'final_page'
 		self.next_page_params = {'mode': 'popular_people_image_results', 'page_no': page_no}
 
-	def imdb_image_results(self):
-		def builder(rolling_count):
-			for item in image_info:
-				try:
-					listitem = make_listitem()
-					rolling_count += 1
-					name = '%s_%s_%03d' % (media_title, item['title'], rolling_count)
-					listitem.setProperty('tikiskins.thumb', item['thumb'])
-					listitem.setProperty('tikiskins.name', name)
-					listitem.setProperty('tikiskins.path', item['image'])
-					listitem.setProperty('tikiskins.action', image_action)
-					yield listitem
-				except: pass
-		imdb_id = self.params['imdb_id']
-		page_no = int(self.params['page_no'])
-		rolling_count = int(self.params['rolling_count'])
-		media_title = self.params['media_title']
-		image_info, next_page = imdb_images(imdb_id, page_no)
-		image_info.sort(key=lambda x: x['title'])
-		all_images_json = json.dumps([(i['image'], '%s_%s' % (media_title, i['title'])) for i in image_info])
-		image_action = json.dumps({'mode': 'slideshow_image', 'all_images': all_images_json})
-		self.list_items = list(builder(rolling_count))
-		rolling_count = rolling_count + len(image_info)
-		if len(image_info) == 48: page_no = next_page
-		else: page_no = 'final_page'
-		self.next_page_params = {'mode': 'imdb_image_results', 'imdb_id': imdb_id, 'page_no': page_no, 'rolling_count': rolling_count, 'media_title': media_title}
-
 	def people_image_results(self):
-		def get_tmdb():
-			try: tmdb_append(tmdb_people_full_info(actor_id)['images'])
-			except: pass
-		def get_imdb():
-			imdb_id = people_get_imdb_id(actor_name, actor_id)
-			try: imdb_append(imdb_people_images(imdb_id, page_no)[0])
-			except: pass
 		def builder():
 			for item in all_images:
 				try:
@@ -96,54 +75,43 @@ class Images:
 					listitem.setProperty('tikiskins.action', image_action)
 					yield listitem
 				except: pass
-		threads = []
 		tmdb_images = []
 		all_images = []
 		tmdb_results = []
-		imdb_results = []
 		tmdb_append = tmdb_results.append
-		imdb_append = imdb_results.append
 		actor_name = self.params['actor_name']
 		actor_id = self.params['actor_id']
 		actor_image = self.params.get('actor_image', '')
 		page_no = int(self.params['page_no'])
 		rolling_count = int(self.params['rolling_count'])
-		if page_no == 1: threads.append(Thread(target=get_tmdb))
-		threads.append(Thread(target=get_imdb))
-		[i.start() for i in threads]
-		[i.join() for i in threads]
-		if page_no == 1:
-			tmdb_image_info = tmdb_results[0]['profiles']
-			tmdb_image_info.sort(key=lambda x: x['file_path'])
-			tmdb_images = [
-				('%s_%sx%s_%03d' % (actor_name, i['height'], i['width'], count), tmdb_image_base % ('original', i['file_path']), tmdb_image_base % ('w185', i['file_path']))
-				for count, i in enumerate(tmdb_image_info, rolling_count+1)
-			]
-			all_images.extend(tmdb_images)
+		try: tmdb_append(tmdb_people_full_info(actor_id)['images'])
+		except: pass
+		tmdb_image_info = tmdb_results[0]['profiles']
+		tmdb_images = [
+			('%s_%sx%s_%03d' % (actor_name, i['height'],
+			 i['width'], count), tmdb_image_base % ('original', i['file_path']),
+			 tmdb_image_base % ('w185', i['file_path']))
+			for count, i in enumerate(tmdb_image_info, rolling_count + 1)
+		]
+		all_images.extend(tmdb_images)
 		rolling_count = rolling_count + len(tmdb_images)
-		imdb_image_info = imdb_results[0]
-		imdb_image_info.sort(key=lambda x: x['title'])
-		imdb_images = [('%s_%s_%03d' % (actor_name, i['title'], count), i['image'], i['thumb']) for count, i in enumerate(imdb_image_info, rolling_count+1)]
-		all_images.extend(imdb_images)
-		rolling_count = rolling_count + len(imdb_images)
 		all_images_json = json.dumps([(i[1], i[0]) for i in all_images])
 		image_action = json.dumps({'mode': 'slideshow_image', 'all_images': all_images_json})
 		self.list_items = list(builder())
-		if len(imdb_image_info) == 48: page_no += 1
-		else: page_no = 'final_page'
-		self.next_page_params = {'mode': 'people_image_results', 'actor_id': actor_id, 'actor_name': actor_name,
-								'actor_image': actor_image, 'page_no': page_no, 'rolling_count': rolling_count}
+		page_no = 'final_page'
+		self.next_page_params = {
+			'mode': 'people_image_results', 'actor_id': actor_id, 'actor_name': actor_name,
+			'actor_image': actor_image, 'page_no': page_no, 'rolling_count': rolling_count
+		}
 
 	def people_tagged_image_results(self):
 		def builder():
-			for count, item in enumerate(image_info, 1):
+			for count, item in enumerate(results, 1):
 				try:
-					media = item['media']
-					if 'title' in media: name_key = 'title'
-					else: name_key = 'name'
-					thumb_url = tmdb_image_base % ('w185', item['file_path'])
-					image_url = tmdb_image_base % ('original', item['file_path'])
-					name = '%s_%s_%03d' % (actor_name, media[name_key], count)
+					media = item['type']
+					thumb_url = item['url']
+					image_url = item['url']
+					name = '%s_%s_%03d' % (actor_name, media, count)
 					listitem = make_listitem()
 					listitem.setProperty('tikiskins.thumb', thumb_url)
 					listitem.setProperty('tikiskins.path', image_url)
@@ -153,14 +121,15 @@ class Images:
 				except: pass
 		actor_name = self.params['actor_name']
 		actor_id = self.params['actor_id']
-		try: results = tmdb_people_full_info(actor_id)['tagged_images']
+		imdb_id = people_get_imdb_id(actor_name, actor_id)
+		try: results = imdb_tagged_images(imdb_id)
 		except: results = []
-		image_info = results['results']
-		image_info.sort(key=lambda x: x['file_path'])
-		all_images_json = json.dumps([(tmdb_image_base % ('original', i['file_path']), (i['media']['title']) if 'title' in i['media'] else i['media']['name']) for i in image_info])
+		all_images_json = json.dumps([(i['url'], i['type']) for i in results])
 		image_action = json.dumps({'mode': 'slideshow_image', 'all_images': all_images_json})
 		self.list_items = list(builder())
-		self.next_page_params = {'mode': 'people_tagged_image_results', 'actor_id': actor_id, 'actor_name': actor_name}
+		self.next_page_params = {
+			'mode': 'people_tagged_image_results', 'actor_id': actor_id, 'actor_name': actor_name
+		}
 
 	def browser_image(self, folder_path, return_items=False):
 		def builder():
@@ -187,11 +156,12 @@ class Images:
 		thumbs = list_dirs(thumbs_path)[1]
 		thumbs.sort()
 		all_images_json = json.dumps([(os.path.join(folder_path, i), i) for i in files])
-		image_action = json.dumps({'mode': 'slideshow_image', 'all_images': all_images_json, 'page_no': 'final_page'})
+		image_action = json.dumps({
+			'mode': 'slideshow_image', 'all_images': all_images_json, 'page_no': 'final_page'
+		})
 		self.list_items = list(builder())
 		self.next_page_params = {}
-		if return_items:
-			return self.list_items
+		if return_items: return self.list_items
 
 	def delete_image(self):
 		image_url = self.params['image_url']

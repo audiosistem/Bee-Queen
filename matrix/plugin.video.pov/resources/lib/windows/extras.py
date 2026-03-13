@@ -267,7 +267,7 @@ class Extras(BaseDialog):
 				except: pass
 		try:
 			trivia = ls(32984).upper()
-			data = imdb_api.imdb_trivia(self.imdb_id)
+			data = []
 			item_list = list(builder())
 			self.setProperty('tikiskins.extras.imdb_trivia.number', '(x%02d)' % len(item_list))
 			self.item_action_dict[trivia_id] = 'tikiskins.extras.text'
@@ -285,7 +285,7 @@ class Extras(BaseDialog):
 				except: pass
 		try:
 			blunders = ls(32986).upper()
-			data = imdb_api.imdb_blunders(self.imdb_id)
+			data = []
 			item_list = list(builder())
 			self.setProperty('tikiskins.extras.imdb_blunders.number', '(x%02d)' % len(item_list))
 			self.item_action_dict[blunders_id] = 'tikiskins.extras.text'
@@ -329,7 +329,7 @@ class Extras(BaseDialog):
 					yield listitem
 				except: pass
 		try:
-			data = imdb_api.imdb_videos(self.imdb_id)
+			data = []
 			item_list = list(builder())
 			self.setProperty('tikiskins.extras.imdb_videos.number', '(x%02d)' % len(item_list))
 			self.item_action_dict[videos_id] = 'tikiskins.extras.qualities'

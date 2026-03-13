@@ -527,7 +527,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.03.02" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.03.10" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -1737,6 +1737,19 @@ Fixed autosub addon exclusions
       <icon>icon.png</icon>
     </assets>
     </extension>
+</addon><addon id="service.subtitles.opensub" name="OpenSub" version="1.0.1" provider-name="OpenSub">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" version="2.25.1" />
+    </requires>
+    <extension point="xbmc.subtitle.module" library="service.py" listitemmonitor="true" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="ro">Subtitrări de pe OpenSubtitles (2026)</summary>
+        <platform>all</platform>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
+    </extension>
 </addon><addon id="service.subtitles.opensubtitles_by_opensubtitles" name="OpenSubtitles.org by OpenSubtitles" version="5.3.1" provider-name="amet, opensubtitles">
   <extension point="xbmc.subtitle.module" library="service.py" />
   <extension point="xbmc.addon.metadata">
@@ -1966,7 +1979,7 @@ Mărime redusă a pachetului pentru o instalare mai rapidă
 	  <fanart>icon.png</fanart>
     </assets>
   </extension>
-</addon><addon id="service.subtitles.substudio" name="[B][COLOR FFB048B5]Sub[COLOR FF00BFFF]Studio[/COLOR][/B]" version="1.0.0" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="service.subtitles.substudio" name="[B][COLOR FFB048B5]Sub[COLOR FF00BFFF]Studio[/COLOR][/B]" version="1.0.2" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.22.0" />

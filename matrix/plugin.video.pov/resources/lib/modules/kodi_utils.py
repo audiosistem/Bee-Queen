@@ -29,14 +29,6 @@ packages_path  = 'special://home/addons/packages/'
 
 current_dbs           = ('settings.xml', 'debridcache.db', 'favourites.db', 'maincache.db', 'metacache.db', 'fenomundesirables.db',
 						'navigator.db', 'providerscache.db', 'traktcache4.db', 'mdblcache.db', 'views.db', 'watched.db', 'fenomcache.db')
-movie_dict_removals   = ('tmdblogo', 'fanart_added', 'cast', 'poster', 'rootname', 'imdb_id', 'tmdb_id', 'tvdb_id', 'all_trailers',
-						'fanart', 'banner', 'clearlogo', 'clearart', 'landscape', 'discart', 'original_title', 'english_title', 'extra_info',
-						'alternative_titles', 'country_codes', 'fanarttv_fanart', 'fanarttv_poster', 'fanart2', 'poster2', 'meta_language')
-tvshow_dict_removals  = ('tmdblogo', 'fanart_added', 'cast', 'poster', 'rootname', 'imdb_id', 'tmdb_id', 'tvdb_id', 'all_trailers',
-						'fanart', 'banner', 'clearlogo', 'clearart', 'landscape', 'discart', 'original_title', 'english_title', 'extra_info',
-						'alternative_titles', 'country_codes', 'fanarttv_fanart', 'fanarttv_poster', 'fanart2', 'poster2', 'meta_language',
-						'total_episodes', 'total_seasons', 'total_aired_eps', 'season_summary', 'season_data')
-episode_dict_removals = ('thumb', 'guest_stars', 'episode_type', 'meta_language')
 myvideos_db_paths     = {19: '119', 20: '121', 21: '131', 22: '139'}
 
 def logger(heading, function):

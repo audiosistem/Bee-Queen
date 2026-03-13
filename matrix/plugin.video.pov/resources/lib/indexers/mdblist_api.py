@@ -9,13 +9,12 @@ from indexers.metadata import movie_external_id, tvshow_external_id
 from modules import kodi_utils, settings
 from modules.cache import check_databases
 from modules.utils import make_thread_list, sort_for_article, jsondate_to_datetime, paginate_list, get_datetime, TaskPool
-# logger = kodi_utils.logger
 
-get_setting, js2date = kodi_utils.get_setting, jsondate_to_datetime
+EXPIRES_1_HOURS, MAX_LIST_ITEMS = 1, 250_000
+get_setting, logger, js2date = kodi_utils.get_setting, kodi_utils.logger, jsondate_to_datetime
 review_provider_id = {1: 'Trakt', 2: 'TMDb', 3: 'RT', 4: 'Metacritics'}
 rank_map = {'0': 'mild', '1': 'mild', '2': 'moderate', '3': 'moderate', '4': 'severe', '5': 'severe'}
 guide_map = {'Nudity': 'Sex & Nudity', 'Violence': 'Violence & Gore', 'Profanity': 'Profanity', 'Alcohol': 'Alcohol, Drugs & Smoking'}
-MAX_LIST_ITEMS, EXPIRES_1_HOURS = 250_000, 1
 base_url = 'https://api.mdblist.com/%s'
 timeout = 5.05
 session = requests.Session()
@@ -30,7 +29,7 @@ def call_mdblist(path, params=None, json=None, method=None):
 		if not response.ok: response.raise_for_status()
 		return result
 	except requests.exceptions.RequestException as e:
-		kodi_utils.logger('mdblist error', str(e))
+		logger('mdblist error', str(e))
 
 def mdbl_parentsguide(imdb_id, media_type):
 	def _process(url):

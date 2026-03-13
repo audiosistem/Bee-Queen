@@ -2,7 +2,6 @@ import json
 from threading import Thread
 from windows import BaseDialog
 from indexers.tmdb_api import tmdb_people_info, tmdb_people_full_info, tmdb_image_base
-from indexers.imdb_api import imdb_videos
 from menus.images import Images
 from modules import dialogs
 from modules.utils import calculate_age
@@ -143,7 +142,7 @@ class People(BaseDialog):
 					yield listitem
 				except: pass
 		try:
-			data = imdb_videos(self.imdb_id)
+			data = []
 			item_list = list(builder())
 			self.setProperty('tikiskins.person.imdb_videos.number', '(x%02d)' % len(item_list))
 			self.item_action_dict[imdb_videos_id] = 'tikiskins.person.params'

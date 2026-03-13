@@ -27,11 +27,11 @@ class MenuEditor:
 		if len(active_list) != 1:
 			listing.append((ls(32716) % menu_name_translated_display, self.move))
 			listing.append((ls(32717) % menu_name_translated_display, self.remove))
-		listing.append((ls(32721) % list_name, self.add_original))
 		if not shortcut_folder:
 			listing.append((ls(32718) % menu_name_translated_display, self.add_original_external))
 			listing.append((ls(32719) % menu_name_translated_display, self.shortcut_folder_add_item))
 		listing.append((ls(32725) % list_name, self.shortcut_folder_add_to_main_menu))
+		listing.append((ls(32721) % list_name, self.add_original))
 		listing.append((ls(32723) % list_name, self.check_update_list))
 		listing.append((ls(32722) % list_name, self.restore))
 		if not external_list_item: listing.append((ls(32724) % menu_name_translated_display, self.reload_menu_item))
@@ -196,9 +196,7 @@ class MenuEditor:
 		return [(i, default_menus.main_menu_items[i]) for i in choice_list]
 
 	def _make_menu_item(self):
-		if 'imdb_keywords' in self.params_get('mode'):
-			self.menu_item = {'mode': 'build_%s_list' % self.params_get('media_type'), 'action': 'imdb_keywords_list_contents',
-								'list_id': self.params_get('list_id'), 'iconImage': 'imdb.png'}
+		pass
 
 	def _remove_active_shortcut_folder(self, main_menu_items_list, folder_name):
 		for x in main_menu_items_list:

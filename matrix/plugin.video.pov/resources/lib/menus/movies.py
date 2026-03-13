@@ -1,6 +1,6 @@
 import sys
 from threading import Thread
-from indexers.metadata import movie_meta, rpdb_get, tmdb_image_base
+from indexers.metadata import movie_meta, art_infodict, movie_show_infodict, tmdb_image_base
 from caches.watched_cache import get_watched_info_movie, get_watched_status_movie, get_bookmarks, get_resumetime, set_resumetime
 from modules import kodi_utils, settings
 #from modules.utils import manual_function_import, get_datetime, make_thread_list_enumerate, chunks
@@ -11,7 +11,6 @@ movie_meta_function, get_datetime_function, default_duration = movie_meta, get_d
 get_watched_function, get_watched_info_function = get_watched_status_movie, get_watched_info_movie
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
 string, ls, build_url, get_infolabel = str, kodi_utils.local_string, kodi_utils.build_url, kodi_utils.get_infolabel
-remove_meta_keys, dict_removals = kodi_utils.remove_meta_keys, kodi_utils.movie_dict_removals
 run_plugin, container_refresh, container_update = 'RunPlugin(%s)', 'Container.Refresh(%s)', 'Container.Update(%s)'
 fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
@@ -39,13 +38,11 @@ class Movies:
 		self.include_year_in_title = settings.include_year_in_title('movie')
 		self.open_extras = settings.extras_open_action('movie')
 		self.cm_sort = settings.context_menu_sort()
-		self.rpdb_enabled = self.meta_user_info['extra_rpdb_movies']
-		self.fanart_enabled = self.meta_user_info['extra_fanart_enabled']
 		self.is_widget = kodi_utils.external_browse()
 		self.widget_hide_watched = self.is_widget and self.meta_user_info['widget_hide_watched']
 		if not self.exit_list_params: self.exit_list_params = get_infolabel('Container.FolderPath')
 		self.watched_title = ('POV', 'Trakt', 'MDBList')[self.watched_indicators]
-		self.poster_main, self.poster_backup, self.fanart_main, self.fanart_backup = settings.get_art_provider()
+		self.art_provider = (*settings.get_art_provider(), poster_empty, fanart_empty)
 
 	def build_movie_content(self, position, tag):
 		try:
@@ -56,30 +53,41 @@ class Movies:
 			if self.widget_hide_watched and playcount: return
 			meta.update({'playcount': playcount, 'overlay': overlay})
 			resumetime, progress = get_resumetime(self.bookmarks, string(meta['tmdb_id']))
-			props = {'pov_sort_order': string(position)}
 			cm = []
 			cm_append = cm.append
-			clearprog_params, unwatched_params, watched_params = '', '', ''
 			rootname, title, year = meta_get('rootname'), meta_get('title'), meta_get('year')
 			display = rootname if self.include_year_in_title else title
 			tmdb_id, imdb_id = meta_get('tmdb_id'), meta_get('imdb_id')
-			poster = meta_get(self.poster_main) or meta_get(self.poster_backup) or poster_empty
-			fanart = meta_get(self.fanart_main) or meta_get(self.fanart_backup) or fanart_empty
-			clearlogo = meta_get('clearlogo') or meta_get('tmdblogo') or ''
-			if self.rpdb_enabled:
-				rpdb_data = rpdb_get('movie', imdb_id or str(tmdb_id), self.meta_user_info['rpdb_api_key'], self.meta_user_info['rpdb_theme'])
-				poster = rpdb_data.get('rpdb') or poster
-			if self.fanart_enabled:
-				banner, clearart, landscape, discart = meta_get('banner'), meta_get('clearart'), meta_get('landscape'), meta_get('discart')
-			else: banner, clearart, landscape, discart = '', '', '', ''
-			play_params = build_url({'mode': 'play_media', 'media_type': 'movie', 'tmdb_id': tmdb_id})
-			extras_params = build_url({'mode': 'extras_menu_choice', 'media_type': 'movie', 'tmdb_id': tmdb_id, 'is_widget': self.is_widget})
-			options_params = build_url({'mode': 'options_menu_choice', 'media_type': 'movie', 'tmdb_id': tmdb_id, 'is_widget': self.is_widget})
-			recommended_params = build_url({'mode': 'build_movie_list', 'action': 'tmdb_movies_recommendations', 'tmdb_id': tmdb_id})
-			trakt_manager_params = build_url({'mode': 'trakt_manager_choice', 'media_type': 'movie', 'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': 'None'})
-			tmdb_manager_params = build_url({'mode': 'tmdb_manager_choice', 'media_type': 'movie', 'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': 'None'})
-			mdbl_manager_params = build_url({'mode': 'mdbl_manager_choice', 'media_type': 'movie', 'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': 'None'})
-			fav_manager_params = build_url({'mode': 'favourites_choice', 'media_type': 'movie', 'tmdb_id': tmdb_id, 'title': title})
+			play_params = build_url({
+				'mode': 'play_media', 'media_type': 'movie', 'tmdb_id': tmdb_id
+			})
+			extras_params = build_url({
+				'mode': 'extras_menu_choice', 'media_type': 'movie',
+				'tmdb_id': tmdb_id, 'is_widget': self.is_widget
+			})
+			options_params = build_url({
+				'mode': 'options_menu_choice', 'media_type': 'movie',
+				'tmdb_id': tmdb_id, 'is_widget': self.is_widget
+			})
+			recommended_params = build_url({
+				'mode': 'build_movie_list', 'action': 'tmdb_movies_recommendations', 'tmdb_id': tmdb_id
+			})
+			trakt_manager_params = build_url({
+				'mode': 'trakt_manager_choice', 'media_type': 'movie',
+				'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': 'None'
+			})
+			mdbl_manager_params = build_url({
+				'mode': 'mdbl_manager_choice', 'media_type': 'movie',
+				'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': 'None'
+			})
+			tmdb_manager_params = build_url({
+				'mode': 'tmdb_manager_choice', 'media_type': 'movie',
+				'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': 'None'
+			})
+			fav_manager_params = build_url({
+				'mode': 'favourites_choice', 'media_type': 'movie',
+				'tmdb_id': tmdb_id, 'title': title
+			})
 			cm_append((self.cm_sort['options'], options_str, run_plugin % options_params))
 			if self.open_extras:
 				url_params = extras_params
@@ -91,33 +99,40 @@ class Movies:
 			cm_append((self.cm_sort['mdblist'], mdblmanager_str, run_plugin % mdbl_manager_params))
 			cm_append((self.cm_sort['tmdblist'], tmdbmanager_str, run_plugin % tmdb_manager_params))
 			cm_append((self.cm_sort['favourites'], favmanager_str, run_plugin % fav_manager_params))
-			if progress != '0' or resumetime != '0': cm_append((self.cm_sort['mark'], clearprog_str, run_plugin % build_url({
-				'mode': 'watched_unwatched_erase_bookmark', 'media_type': 'movie', 'tmdb_id': tmdb_id, 'refresh': 'true'
+			if progress != '0' or resumetime != '0': cm_append((
+				self.cm_sort['mark'], clearprog_str, run_plugin % build_url({
+					'mode': 'watched_unwatched_erase_bookmark', 'media_type': 'movie',
+					'tmdb_id': tmdb_id, 'refresh': 'true'
 			})))
-			if playcount: cm_append((self.cm_sort['mark'], unwatched_str % self.watched_title, run_plugin % build_url({
-				'mode': 'mark_as_watched_unwatched_movie', 'action': 'mark_as_unwatched', 'tmdb_id': tmdb_id, 'title': title, 'year': year
+			if playcount: cm_append((
+				self.cm_sort['mark'], unwatched_str % self.watched_title, run_plugin % build_url({
+					'mode': 'mark_as_watched_unwatched_movie', 'action': 'mark_as_unwatched',
+					'tmdb_id': tmdb_id, 'title': title, 'year': year
 			})))
-			else: cm_append((self.cm_sort['mark'], watched_str % self.watched_title, run_plugin % build_url({
-				'mode': 'mark_as_watched_unwatched_movie', 'action': 'mark_as_watched', 'tmdb_id': tmdb_id, 'title': title, 'year': year
+			else: cm_append((
+				self.cm_sort['mark'], watched_str % self.watched_title, run_plugin % build_url({
+					'mode': 'mark_as_watched_unwatched_movie', 'action': 'mark_as_watched',
+					'tmdb_id': tmdb_id, 'title': title, 'year': year
 			})))
 			cm_append((self.cm_sort['exit'], exit_str, container_refresh % self.exit_list_params))
 			cm.sort(key=lambda k: k[0])
 			cm = [v for k, *v in cm if k]
+			props = {'pov_sort_order': string(position), 'watchedprogress': progress}
 			listitem = kodi_utils.make_listitem()
 			listitem.addContextMenuItems(cm)
 			listitem.setProperties(props)
 			listitem.setLabel(display)
-			listitem.setArt({'poster': poster, 'fanart': fanart, 'icon': poster, 'banner': banner, 'clearart': clearart,
-							'clearlogo': clearlogo, 'landscape': landscape, 'discart': discart})
+			listitem.setArt(art_infodict(meta, self.art_provider, self.meta_user_info))
 			if KODI_VERSION < 20:
-				listitem.setCast(meta_get('cast', []))
 				listitem.setUniqueIDs({'imdb': imdb_id, 'tmdb': string(tmdb_id)})
-				listitem.setInfo('video', remove_meta_keys(meta, dict_removals))
+				listitem.setInfo('video', movie_show_infodict(meta))
+				listitem.setCast(meta_get('cast', []))
 				listitem.setProperty('resumetime', resumetime)
 			else:
 				videoinfo = listitem.getVideoInfoTag(offscreen=True)
-				videoinfo.setCast(make_cast_list(meta_get('cast', [])))
+				videoinfo.setTitle(display)
 				videoinfo.setUniqueIDs({'imdb': imdb_id, 'tmdb': string(tmdb_id)})
+				videoinfo.setCast(make_cast_list(meta_get('cast', [])))
 				videoinfo.setCountries(meta_get('country'))
 				videoinfo.setDirectors(meta_get('director').split(', '))
 				videoinfo.setDuration(int(meta_get('duration') or default_duration))
@@ -129,17 +144,13 @@ class Movies:
 				videoinfo.setPlot(meta_get('plot'))
 				videoinfo.setPremiered(meta_get('premiered'))
 				videoinfo.setRating(meta_get('rating'))
+				videoinfo.setResumePoint(*set_resumetime(resumetime, progress, videoinfo.getDuration()))
 				videoinfo.setStudios((meta_get('studio'),))
 				videoinfo.setTagLine(meta_get('tagline'))
 				videoinfo.setTags((imdb_id, string(tmdb_id)))
-				videoinfo.setTitle(display)
 				videoinfo.setTrailer(meta_get('trailer'))
 				videoinfo.setVotes(meta_get('votes'))
 				videoinfo.setWriters(meta_get('writer').split(', '))
-				videoinfo.setYear(int(year))
-				if int(progress):
-					listitem.setProperty('watchedprogress', progress)
-					videoinfo.setResumePoint(*set_resumetime(resumetime, progress, videoinfo.getDuration()))
 			self.append((url_params, listitem, False))
 		except: pass
 
@@ -151,7 +162,6 @@ class Menu(Movies):
 	tmdb_personal = ('tmdb_watchlist', 'tmdb_favorite', 'tmdb_recommendations')
 	trakt_personal = ('trakt_collection', 'trakt_watchlist', 'trakt_favorites', 'trakt_collection_lists')
 	mdblist_personal = ('mdblist_collection', 'mdblist_watchlist')
-	imdb_personal = ('imdb_watchlist', 'imdb_user_list_contents', 'imdb_keywords_list_contents')
 	similar = ('tmdb_movies_similar', 'tmdb_movies_recommendations')
 
 	def build_movies_results(self):
@@ -222,12 +232,6 @@ class Menu(Movies):
 				try:
 					if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1), 'new_letter': letter}
 				except: pass
-			elif self.action in Menu.imdb_personal:
-				self.id_type = 'imdb_id'
-				list_id = params_get('list_id')
-				data, next_page = function('movie', list_id, page_no)
-				self.list = [i['imdb_id'] for i in data]
-				if next_page: self.new_page = {'list_id': list_id, 'new_page': string(page_no + 1), 'new_letter': letter}
 			elif self.action in Menu.personal_dict:
 				data, total_pages = function('movie', page_no, letter)
 				self.list = [i['media_id'] for i in data]

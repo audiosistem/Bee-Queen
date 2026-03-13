@@ -2,12 +2,14 @@ import json
 from threading import Thread
 from caches import watched_cache as ws
 from windows import open_window
+from indexers.metadata import art_infodict, movie_show_infodict, episode_infodict, info_tagger
 from modules import kodi_utils, settings
 from modules.utils import sec2time, make_title_slug
 # from modules.kodi_utils import logger
 
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
 ls, get_setting = kodi_utils.local_string, kodi_utils.get_setting
+get_art_provider, meta_user_info = settings.get_art_provider, settings.metadata_user_info
 fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
 
@@ -96,39 +98,25 @@ class POVPlayer(kodi_utils.xbmc_player):
 	def _make_listitem(self):
 		listitem = kodi_utils.make_listitem()
 		try:
-			poster_main, poster_backup, fanart_main, fanart_backup = settings.get_art_provider()
-			poster = self.meta_get(poster_main) or self.meta_get(poster_backup) or poster_empty
-			fanart = self.meta_get(fanart_main) or self.meta_get(fanart_backup) or fanart_empty
-			clearlogo = self.meta_get('clearlogo') or self.meta_get('tmdblogo') or ''
-			if settings.get_fanart_data():
-				banner, clearart, landscape = self.meta_get('banner'), self.meta_get('clearart'), self.meta_get('landscape')
-			else: banner, clearart, landscape = '', '', ''
-			listitem.setArt({
-				'poster': poster, 'fanart': fanart, 'icon': poster, 'clearlogo': clearlogo,
-				'banner': banner, 'landscape': landscape, 'clearart': clearart,
-				'tvshow.clearlogo': clearlogo, 'tvshow.banner': banner,
-				'tvshow.landscape': landscape, 'tvshow.clearart': clearart
-			})
+			listitem.setArt(art_infodict(self.meta, (*get_art_provider(), poster_empty, fanart_empty), meta_user_info()))
 			if self.media_type == 'movie':
 				if KODI_VERSION < 20:
-					listitem.setCast(self.meta_get('cast', []))
 					listitem.setUniqueIDs({'imdb': self.imdb_id, 'tmdb': str(self.tmdb_id)})
-					listitem.setInfo('video', set_info(self.meta))
+					listitem.setInfo('video', movie_show_infodict(self.meta))
+					listitem.setCast(self.meta_get('cast', []))
 				else:
-					videoinfo = infotagger(listitem, self.meta)
-					videoinfo.setCast(make_cast_list(self.meta_get('cast', [])))
-					videoinfo.setUniqueIDs({'imdb': self.imdb_id, 'tmdb': str(self.tmdb_id)})
-					videoinfo.setMediaType('movie')
+					infotag = info_tagger(listitem, movie_show_infodict(self.meta))
+					infotag.setUniqueIDs({'imdb': self.imdb_id, 'tmdb': str(self.tmdb_id)})
+					infotag.setCast(make_cast_list(self.meta_get('cast', [])))
 			else:
 				if KODI_VERSION < 20:
-					listitem.setCast(self.meta_get('cast', []))
 					listitem.setUniqueIDs({'imdb': self.imdb_id, 'tmdb': str(self.tmdb_id), 'tvdb': str(self.tvdb_id)})
-					listitem.setInfo('video', {**set_info(self.meta), 'mediatype': 'episode', 'title': self.meta_get('ep_name')})
+					listitem.setInfo('video', {**episode_infodict(self.meta), 'title': self.meta_get('ep_name')})
+					listitem.setCast(self.meta_get('cast', []))
 				else:
-					videoinfo = infotagger(listitem, self.meta)
-					videoinfo.setCast(make_cast_list(self.meta_get('cast', [])))
-					videoinfo.setUniqueIDs({'imdb': self.imdb_id, 'tmdb': str(self.tmdb_id), 'tvdb': str(self.tvdb_id)})
-					videoinfo.setMediaType('episode')
+					infotag = info_tagger(listitem, {**episode_infodict(self.meta), 'title': self.meta_get('ep_name')})
+					infotag.setUniqueIDs({'imdb': self.imdb_id, 'tmdb': str(self.tmdb_id), 'tvdb': str(self.tvdb_id)})
+					infotag.setCast(make_cast_list(self.meta_get('cast', [])))
 		except: pass
 		return listitem
 
@@ -262,41 +250,4 @@ class POVPlayer(kodi_utils.xbmc_player):
 
 	def onPlayBackStopped(self):
 		self.playback_event = 'stop'
-
-def set_info(meta):
-	return {key: val for key in (
-		'country', 'director', 'duration', 'genre', 'imdbnumber', 'mediatype',
-		'mpaa', 'originaltitle', 'overlay', 'playcount', 'plot', 'premiered', 'rating',
-		'studio', 'tag', 'tagline', 'title', 'trailer', 'votes', 'writer', 'year',
-		# tvshow exclusive
-		'episode', 'season', 'status', 'tvshowtitle'
-	) if key in meta and (val := meta[key])}
-
-def infotagger(listitem, meta=None):
-	infotag = listitem.getVideoInfoTag(offscreen=True)
-	if not meta: return infotag
-	for key, val in (
-		('country', 'setCountries'), ('director', 'setDirectors'),
-		('duration', 'setDuration'), ('genre', 'setGenres'),
-		('imdbnumber', 'setIMDBNumber'), ('mediatype', 'setMediaType'),
-		('mpaa', 'setMpaa'), ('original_title', 'setOriginalTitle'),
-		('playcount', 'setPlaycount'), ('plot', 'setPlot'),
-		('premiered', 'setFirstAired' if 'episode' in meta else 'setPremiered'),
-		('rating', 'setRating'), ('studio', 'setStudios'),
-		('tagline', 'setTagLine'), ('title', 'setTitle'),
-		('trailer', 'setTrailer'), ('votes', 'setVotes'),
-		('writer', 'setWriters'), ('year', 'setYear'),
-		# tvshow exclusive
-		('air_date', 'setPremiered'), ('aired', 'setFirstAired'),
-		('ep_name', 'setTitle'), ('episode', 'setEpisode'), ('season', 'setSeason'),
-		('status', 'setTvShowStatus'), ('tvshowtitle', 'setTvShowTitle')
-	):
-		try:
-			if not key in meta or not (arg := meta[key]): continue
-			if   key in {'director', 'genre', 'studio', 'writer'}: arg = arg.split(', ')
-			elif key in {'episode', 'season', 'year'}: arg = int(arg)
-			func = getattr(infotag, val)
-			func(arg)
-		except: pass
-	return infotag
 
