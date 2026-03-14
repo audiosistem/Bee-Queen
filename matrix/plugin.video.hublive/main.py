@@ -1,22 +1,23 @@
-import sys
-import xbmc
-import xbmcgui
-import xbmcplugin
-import xbmcaddon
-import xbmcvfs
-import requests
-from requests.adapters import HTTPAdapter
+import hashlib
+import json
+import os
 import random
 import re
-import os
-import json
-import time
-from urllib.parse import parse_qsl, urlencode, quote_plus
-import uuid
-import hashlib
 import string
-from functools import lru_cache
+import sys
+import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import lru_cache
+from urllib.parse import parse_qsl, quote_plus, urlencode
+
+import requests
+import xbmc
+import xbmcaddon
+import xbmcgui
+import xbmcplugin
+import xbmcvfs
+from requests.adapters import HTTPAdapter
 
 try:
     import orjson
@@ -311,6 +312,11 @@ def is_epg_enabled():
     return _ADDON.getSetting("epg_enabled") == "true"
 
 
+def is_server_check_enabled():
+    """Check if automatic server ON/OFF detection is enabled in settings."""
+    return _ADDON.getSetting("server_check_enabled") == "true"
+
+
 # Category mapping and sorting
 CATEGORY_MAPPING = {
     # Server 1
@@ -591,19 +597,35 @@ _epg_current_server = "server1"
 _categories_cache = {}
 _CATEGORIES_CACHE_TTL = 604800  # 7 days
 
+# Cached server cache folder path — avoids repeated xbmcaddon.Addon() IPC calls
+_server_cache_folder_path = None
+
+# Per-server authentication cache — avoids a full handshake on every request
+_auth_cache = {}  # {server_id: {"token": str, "mac": str, "timestamp": float}}
+_AUTH_TOKEN_TTL = 300  # 5 minutes
+
+# In-memory channels cache — avoids re-reading large JSON files on every category click
+_channels_memory_cache = {}  # {server_id: {"channels": list, "timestamp": float}}
+
+# Shared probe session for server status checks — reused across all parallel checks
+_probe_session = None
+
 
 def get_server_cache_folder():
-    """Get the server cache folder path."""
+    """Get the server cache folder path (result is cached to avoid repeated IPC calls)."""
+    global _server_cache_folder_path
+    if _server_cache_folder_path is not None:
+        return _server_cache_folder_path
     addon_profile_path = xbmcaddon.Addon().getAddonInfo("profile")
     try:
         addon_path = xbmcvfs.translatePath(addon_profile_path)
-    except:
+    except Exception:
         addon_path = xbmc.translatePath(addon_profile_path)
-
     cache_folder = os.path.join(addon_path, "server_cache")
     if not os.path.exists(cache_folder):
         os.makedirs(cache_folder)
-    return cache_folder
+    _server_cache_folder_path = cache_folder
+    return _server_cache_folder_path
 
 
 def get_server_cache_file(server_id):
@@ -846,7 +868,36 @@ def save_server_data_cache(server_id, cache_data):
 
 
 def get_server_auth(server="server1"):
-    """Get authentication credentials (MAC and token) for server."""
+    """Get authentication credentials (MAC and token) for server.
+
+    Results are cached per server for _AUTH_TOKEN_TTL seconds to avoid
+    a full HTTP handshake on every categories/channels request.
+    """
+    global _auth_cache
+    current_time = time.time()
+    cached = _auth_cache.get(server, {})
+
+    if (
+        cached.get("token")
+        and cached.get("mac")
+        and (current_time - cached.get("timestamp", 0)) < _AUTH_TOKEN_TTL
+    ):
+        xbmc.log(
+            f"[Auth] Using cached token for {server} "
+            f"(age: {int(current_time - cached['timestamp'])}s)",
+            level=xbmc.LOGDEBUG,
+        )
+        portal_url = get_portal_url_for_server(server)
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 "
+                "(KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3"
+            ),
+            "X-User-Agent": "Model: MAG250; Link: WiFi",
+        }
+        cookies = {"mac": cached["mac"], "token": cached["token"]}
+        return cached["token"], headers, cookies, portal_url
+
     portal_url = get_portal_url_for_server(server)
     if not portal_url:
         return None, None, None, portal_url
@@ -859,12 +910,16 @@ def get_server_auth(server="server1"):
     if not token:
         return None, None, None, portal_url
 
+    _auth_cache[server] = {"token": token, "mac": mac, "timestamp": current_time}
+
     headers = {
-        "User-Agent": "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3",
+        "User-Agent": (
+            "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 "
+            "(KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3"
+        ),
         "X-User-Agent": "Model: MAG250; Link: WiFi",
     }
     cookies = {"mac": mac, "token": token}
-
     return token, headers, cookies, portal_url
 
 
@@ -1005,6 +1060,7 @@ def get_romanian_categories(server_categories):
         "ro(",
         "ro)",
         "ro:",
+        "|EU| ROMANIA",
         "romania",
         "roumanie",
         "romanie",
@@ -1047,171 +1103,145 @@ def get_romanian_categories(server_categories):
 
 
 def fetch_channels_by_category_from_server(category_id, server="server1"):
-    """Fetch channels for a specific category from server with file caching."""
+    """Fetch channels for a specific category from server.
+
+    Cache hierarchy (fastest → slowest):
+      1. In-memory dict  — no I/O, instant
+      2. File cache      — disk read, fast
+      3. Server fetch    — HTTP request, slow (only when cache is stale/missing)
+    """
+    global _channels_memory_cache
     current_time = time.time()
 
-    # Try to load from file cache first
-    file_cache = load_channels_cache(server)
-    channels = None
-
-    if file_cache and file_cache.get("channels"):
-        if (current_time - file_cache.get("timestamp", 0)) < _CATEGORIES_CACHE_TTL:
-            channels = file_cache["channels"]
-            xbmc.log(
-                f"[Categories] Loaded {len(channels)} channels from file cache",
-                level=xbmc.LOGDEBUG,
-            )
-
-    # If not in cache, fetch from server
-    if not channels:
+    # 1. In-memory cache (sub-millisecond)
+    mem = _channels_memory_cache.get(server, {})
+    if (
+        mem.get("channels")
+        and (current_time - mem.get("timestamp", 0)) < _CATEGORIES_CACHE_TTL
+    ):
+        channels = mem["channels"]
         xbmc.log(
-            f"[Categories] Fetching all channels from server {server}",
-            level=xbmc.LOGINFO,
+            f"[Channels] Memory cache hit for {server}: {len(channels)} channels",
+            level=xbmc.LOGDEBUG,
         )
+    else:
+        channels = None
 
-        token, headers, cookies, portal_url = get_server_auth(server)
-
-        if not token or not portal_url:
-            xbmc.log("[Categories] No token or portal URL", level=xbmc.LOGERROR)
-            return []
-
-        url = f"{portal_url}/portal.php?type=itv&action=get_all_channels&JsHttpRequest=1-xml"
-
-        try:
-            response = get_session().get(
-                url, headers=headers, cookies=cookies, timeout=TIMEOUTS["channels"]
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            if isinstance(data, dict):
-                js_data = data.get("js", {})
-                if isinstance(js_data, list):
-                    channels = js_data
-                elif isinstance(js_data, dict):
-                    channels = js_data.get("data") or js_data.get("channels") or []
-                else:
-                    return []
-            elif isinstance(data, list):
-                channels = data
-            else:
-                return []
-
-            if channels:
-                essential_channels = []
-                for ch in channels:
-                    logo = ch.get("logo") or ""
-                    if logo and RE_BOX_CHARS.search(logo):
-                        logo = ""
-
-                    essential_channels.append(
-                        {
-                            "id": ch.get("id"),
-                            "name": clean_category_title(ch.get("name")),
-                            "cmd": ch.get("cmd"),
-                            "logo": logo,
-                            "tv_genre_id": ch.get("tv_genre_id"),
-                        }
-                    )
-
-                # Save to file cache (separate file)
-                save_channels_cache(server, essential_channels)
+        # 2. File cache
+        file_cache = load_channels_cache(server)
+        if file_cache and file_cache.get("channels"):
+            if (current_time - file_cache.get("timestamp", 0)) < _CATEGORIES_CACHE_TTL:
+                channels = file_cache["channels"]
+                _channels_memory_cache[server] = {
+                    "channels": channels,
+                    "timestamp": file_cache.get("timestamp", current_time),
+                }
                 xbmc.log(
-                    f"[Categories] Fetched and cached {len(essential_channels)} channels",
-                    level=xbmc.LOGINFO,
+                    f"[Channels] File cache hit for {server}: {len(channels)} channels",
+                    level=xbmc.LOGDEBUG,
                 )
 
-        except Exception as e:
-            xbmc.log(f"[Categories] Failed to fetch channels: {e}", level=xbmc.LOGERROR)
-            return []
+        # 3. Server fetch
+        if not channels:
+            xbmc.log(
+                f"[Channels] Fetching all channels from server {server}",
+                level=xbmc.LOGINFO,
+            )
+            token, headers, cookies, portal_url = get_server_auth(server)
+            if not token or not portal_url:
+                xbmc.log("[Channels] No token or portal URL", level=xbmc.LOGERROR)
+                return []
+
+            url = f"{portal_url}/portal.php?type=itv&action=get_all_channels&JsHttpRequest=1-xml"
+            try:
+                response = get_session().get(
+                    url, headers=headers, cookies=cookies, timeout=TIMEOUTS["channels"]
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                if isinstance(data, dict):
+                    js_data = data.get("js", {})
+                    if isinstance(js_data, list):
+                        raw_channels = js_data
+                    elif isinstance(js_data, dict):
+                        raw_channels = (
+                            js_data.get("data") or js_data.get("channels") or []
+                        )
+                    else:
+                        return []
+                elif isinstance(data, list):
+                    raw_channels = data
+                else:
+                    return []
+
+                if raw_channels:
+                    channels = []
+                    for ch in raw_channels:
+                        logo = ch.get("logo") or ""
+                        if logo and RE_BOX_CHARS.search(logo):
+                            logo = ""
+                        channels.append(
+                            {
+                                "id": ch.get("id"),
+                                "name": clean_category_title(ch.get("name")),
+                                "cmd": ch.get("cmd"),
+                                "logo": logo,
+                                "tv_genre_id": ch.get("tv_genre_id"),
+                            }
+                        )
+                    _channels_memory_cache[server] = {
+                        "channels": channels,
+                        "timestamp": current_time,
+                    }
+                    save_channels_cache(server, channels)
+                    xbmc.log(
+                        f"[Channels] Fetched and cached {len(channels)} channels for {server}",
+                        level=xbmc.LOGINFO,
+                    )
+            except Exception as e:
+                xbmc.log(
+                    f"[Channels] Failed to fetch channels: {e}", level=xbmc.LOGERROR
+                )
+                return []
 
     if not channels:
         return []
 
-    # If no category_id specified, return all channels
+    # Return all channels if no category filter
     if category_id is None:
         xbmc.log(
-            f"[Categories] Returning all {len(channels)} channels (no filter)",
+            f"[Channels] Returning all {len(channels)} channels (no filter)",
             level=xbmc.LOGINFO,
         )
         return channels
 
-    # Filter by category - use tv_genre_id field
-    filtered = []
-    for ch in channels:
-        ch_genre_id = ch.get("tv_genre_id")
-        if ch_genre_id is None:
-            continue
-        if str(ch_genre_id) == str(category_id):
-            filtered.append(ch)
-
+    # Filter by category using tv_genre_id
+    filtered = [
+        ch for ch in channels if str(ch.get("tv_genre_id", "")) == str(category_id)
+    ]
     xbmc.log(
-        f"[Categories] Filtered {len(filtered)} channels for cat_id={category_id}",
+        f"[Channels] Filtered {len(filtered)} channels for cat_id={category_id}",
         level=xbmc.LOGINFO,
     )
     return filtered
 
 
-# Token provider for EPG Manager with caching
+# Token provider for EPG Manager — delegates to the unified per-server auth cache
 def epg_token_provider(server=None):
-    """Provide token, headers, and cookies for EPG requests with caching."""
-    global _token_cache, _epg_current_server
+    """Provide token, headers, and cookies for EPG requests.
 
-    # Use current server context if not specified
+    Delegates to get_server_auth which now uses the unified per-server
+    _auth_cache, so no duplicate handshakes occur.
+    """
+    global _epg_current_server
     if server is None:
         server = _epg_current_server
 
-    portal_url = get_portal_url_for_server(server)
-    current_time = time.time()
-
-    # Check if we have a valid cached token
-    if (
-        _token_cache["token"]
-        and _token_cache["mac"]
-        and (current_time - _token_cache["timestamp"]) < _TOKEN_TTL
-    ):
-        xbmc.log(
-            f"[EPG] Using cached token (age: {int(current_time - _token_cache['timestamp'])}s)",
-            level=xbmc.LOGINFO,
-        )
-
-        headers = {
-            "User-Agent": "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3",
-            "X-User-Agent": "Model: MAG250; Link: WiFi",
-        }
-
-        cookies = {"mac": _token_cache["mac"], "token": _token_cache["token"]}
-
-        return _token_cache["token"], headers, cookies
-
-    # Need fresh token
-    xbmc.log("[EPG] Fetching fresh token", level=xbmc.LOGINFO)
-    mac = get_random_mac_from_file()
-
-    if not mac:
-        xbmc.log("[EPG] Failed to get MAC address", level=xbmc.LOGWARNING)
-        return None, {}, {}
-
-    token = handshake(portal_url, mac)
-
+    token, headers, cookies, _ = get_server_auth(server)
     if not token:
-        xbmc.log("[EPG] Failed to get token from handshake", level=xbmc.LOGWARNING)
+        xbmc.log("[EPG] Failed to get token via get_server_auth", level=xbmc.LOGWARNING)
         return None, {}, {}
-
-    # Cache the token
-    _token_cache["token"] = token
-    _token_cache["mac"] = mac
-    _token_cache["timestamp"] = current_time
-
-    xbmc.log(f"[EPG] Cached new token: {token[:10]}...", level=xbmc.LOGINFO)
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3",
-        "X-User-Agent": "Model: MAG250; Link: WiFi",
-    }
-
-    cookies = {"mac": mac, "token": token}
-
     return token, headers, cookies
 
 
@@ -1704,45 +1734,54 @@ def list_channels_in_category(
         )
 
         if cache_coverage >= 0.8:
-            # Good cache, wait less
-            max_wait_time = min(10000, num_channels * 200)  # 200ms per channel, max 10s
+            # Good cache — wait at most 3 s (50 ms per channel)
+            max_wait_time = min(3000, num_channels * 50)
             xbmc.log(
-                f"[EPG] Good cache coverage ({cache_coverage:.0%}), waiting {max_wait_time}ms",
+                f"[EPG] Good cache coverage ({cache_coverage:.0%}), waiting up to {max_wait_time}ms",
                 level=xbmc.LOGINFO,
             )
         else:
-            # Need fresh EPG, estimate ~500ms per channel for network fetch
-            max_wait_time = min(45000, num_channels * 500)  # 500ms per channel, max 45s
+            # Fresh fetch needed — wait at most 15 s (200 ms per channel)
+            max_wait_time = min(15000, num_channels * 200)
             xbmc.log(
                 f"[EPG] Fetching fresh EPG, waiting up to {max_wait_time}ms",
                 level=xbmc.LOGINFO,
             )
 
-        wait_interval = 300  # Check every 300ms
+        wait_interval = 100  # Poll every 100 ms (was 300 ms)
         waited = 0
         last_count = channels_with_cached_epg
+        no_progress_since = 0  # ms since last new EPG arrived
 
         while waited < max_wait_time:
             xbmc.sleep(wait_interval)
             waited += wait_interval
 
-            # Check how many channels have EPG data
             channels_with_epg = sum(
                 1 for ch in channels_in_category if ch["stream_id"] in epg_data
             )
 
-            # Log progress if changed
             if channels_with_epg != last_count:
                 xbmc.log(
-                    f"[EPG] Progress: {channels_with_epg}/{num_channels} channels ({waited}ms elapsed)",
+                    f"[EPG] Progress: {channels_with_epg}/{num_channels} ({waited}ms)",
                     level=xbmc.LOGDEBUG,
                 )
                 last_count = channels_with_epg
+                no_progress_since = 0
+            else:
+                no_progress_since += wait_interval
 
-            # Exit only if no progress for 5 seconds
-            if waited >= 5000 and channels_with_epg == channels_with_cached_epg:
+            # All channels have EPG — no need to wait further
+            if channels_with_epg >= num_channels:
                 xbmc.log(
-                    f"[EPG] No new EPG after 5s, proceeding with {channels_with_epg}/{num_channels}",
+                    "[EPG] All channels have EPG, proceeding early", level=xbmc.LOGDEBUG
+                )
+                break
+
+            # No new EPG for 2 s — give up waiting
+            if no_progress_since >= 2000:
+                xbmc.log(
+                    f"[EPG] No new EPG for 2s, proceeding with {channels_with_epg}/{num_channels}",
                     level=xbmc.LOGDEBUG,
                 )
                 break
@@ -2329,6 +2368,168 @@ def show_settings_menu(server="server1"):
     xbmcplugin.endOfDirectory(_HANDLE)
 
 
+def _list_servers_page(available_servers, server_statuses=None):
+    """Render the server selection directory page.
+
+    Args:
+        available_servers: list of server dicts from servers.json
+        server_statuses:   dict {srv_id: bool} or None.
+                           When None, no ON/OFF badge is shown (fast path).
+    Always appends an on-demand 'Verificare servere' button at the bottom.
+    """
+    for srv in available_servers:
+        srv_name = srv.get("name", srv.get("id", "Unknown"))
+        srv_id = srv.get("id", "server1")
+
+        if server_statuses is not None:
+            is_online = server_statuses.get(srv_id, False)
+            status = (
+                "[COLOR green]● ON[/COLOR]" if is_online else "[COLOR red]● OFF[/COLOR]"
+            )
+            label = f"{srv_name}  {status}"
+        else:
+            label = srv_name
+
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({"icon": "DefaultNetwork.png", "thumb": "DefaultNetwork.png"})
+        xbmcplugin.addDirectoryItem(
+            handle=_HANDLE,
+            url=f"{_BASE_URL}?server={srv_id}",
+            listitem=li,
+            isFolder=True,
+        )
+
+    # On-demand check button — always visible regardless of the auto-check setting
+    check_btn = xbmcgui.ListItem(label="[COLOR cyan]>> Verificare servere[/COLOR]")
+    check_btn.setArt(
+        {"icon": "DefaultAddonRepository.png", "thumb": "DefaultAddonRepository.png"}
+    )
+    xbmcplugin.addDirectoryItem(
+        handle=_HANDLE,
+        url=f"{_BASE_URL}?mode=check_servers",
+        listitem=check_btn,
+        isFolder=True,
+    )
+
+    xbmcplugin.endOfDirectory(_HANDLE)
+
+
+def _get_probe_session():
+    """Return a shared lightweight session used only for server status probes.
+
+    A single session is reused across all parallel server checks to avoid the
+    overhead of creating connection pools for each server individually.
+    Thread-safe: requests.Session is safe for concurrent use.
+    """
+    global _probe_session
+    if _probe_session is None:
+        _probe_session = requests.Session()
+        adapter = HTTPAdapter(pool_connections=8, pool_maxsize=8, max_retries=0)
+        _probe_session.mount("http://", adapter)
+        _probe_session.mount("https://", adapter)
+    return _probe_session
+
+
+def check_server_online(portal_url, timeout=3):
+    """Improved connectivity check for Stalker portal URLs.
+
+    Uses a dedicated no-retry session to avoid false negatives caused by the
+    global session's max_retries=3 adapter blocking on connection failures.
+
+    Strategy:
+      1. Try /portal.php with MAG headers — the actual Stalker API endpoint.
+         Many portals don't serve anything at '/' but do respond on portal.php.
+      2. Fall back to the root URL in case the server has a custom layout.
+    Any HTTP response (even 4xx/5xx) is treated as ON — the server is reachable.
+    Only a connection error or timeout on BOTH attempts means OFF.
+    """
+    if not portal_url:
+        return False
+
+    portal_url = portal_url.rstrip("/")
+
+    probe_session = _get_probe_session()
+    mag_headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 "
+            "(KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3"
+        ),
+        "X-User-Agent": "Model: MAG250; Link: WiFi",
+    }
+
+    # 1. Try /portal.php — the real Stalker API endpoint
+    try:
+        probe_session.get(
+            f"{portal_url}/portal.php",
+            headers=mag_headers,
+            timeout=timeout,
+            allow_redirects=True,
+        )
+        return True
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        pass
+    except Exception:
+        pass
+
+    # 2. Fall back to root URL
+    try:
+        probe_session.get(
+            portal_url,
+            headers=mag_headers,
+            timeout=timeout,
+            allow_redirects=True,
+        )
+        return True
+    except Exception:
+        pass
+
+    return False
+
+
+def _check_all_servers_online(servers_list):
+    """Check all servers online status in parallel. Returns dict {srv_id: bool}.
+
+    Uses a manual executor (no 'with' block) so we can shutdown(wait=False)
+    when the 8-second wall-clock timeout fires, preventing a crash/hang on
+    the main page when one server is unreachable.
+
+    Per-server timeout is 3 s × 2 attempts = 6 s max, safely under 8 s global.
+    """
+
+    def _check(srv):
+        srv_id = srv.get("id", "")
+        portal_url = srv.get("portal_url", "")
+        return srv_id, check_server_online(portal_url)
+
+    statuses = {srv.get("id", ""): False for srv in servers_list}
+    executor = ThreadPoolExecutor(max_workers=min(len(servers_list), 10))
+    try:
+        futures = {executor.submit(_check, srv): srv for srv in servers_list}
+        try:
+            for future in as_completed(futures, timeout=8):
+                try:
+                    srv_id, is_online = future.result()
+                    statuses[srv_id] = is_online
+                except Exception as exc:
+                    srv = futures[future]
+                    xbmc.log(
+                        f"[ServerCheck] {srv.get('id', '?')} probe error: {exc}",
+                        level=xbmc.LOGWARNING,
+                    )
+        except Exception:
+            # as_completed raises TimeoutError when the wall-clock expires;
+            # remaining servers keep their pre-initialised False status.
+            xbmc.log(
+                "[ServerCheck] 8s global timeout reached; slow servers marked offline",
+                level=xbmc.LOGWARNING,
+            )
+    finally:
+        # Do NOT wait for lingering threads — let them finish in the background
+        # so the main page is never blocked by a slow/dead server.
+        executor.shutdown(wait=False)
+    return statuses
+
+
 def router(params):
     """Router function with global error handling"""
     try:
@@ -2347,24 +2548,32 @@ def router(params):
         servers_config = reload_servers_config()
         available_servers = servers_config.get("servers", [])
 
+        # On-demand server check (triggered by the 'Verificare servere' button)
+        if mode == "check_servers":
+            xbmc.log("[Router] On-demand server check triggered", level=xbmc.LOGINFO)
+            server_statuses = _check_all_servers_online(available_servers)
+            xbmc.log(
+                f"[Router] On-demand statuses: {server_statuses}", level=xbmc.LOGINFO
+            )
+            _list_servers_page(available_servers, server_statuses)
+            return
+
         # If no server specified, show server selection from JSON
         if server is None:
             if len(available_servers) > 1:
-                # Show server selection
-                for idx, srv in enumerate(available_servers):
-                    srv_name = srv.get("name", srv.get("id", "Unknown"))
-                    srv_id = srv.get("id", "server1")
-                    li = xbmcgui.ListItem(label=srv_name)
-                    li.setArt(
-                        {"icon": "DefaultNetwork.png", "thumb": "DefaultNetwork.png"}
+                if is_server_check_enabled():
+                    xbmc.log(
+                        "[Router] Auto server check enabled, checking status...",
+                        level=xbmc.LOGINFO,
                     )
-                    xbmcplugin.addDirectoryItem(
-                        handle=_HANDLE,
-                        url=f"{_BASE_URL}?server={srv_id}",
-                        listitem=li,
-                        isFolder=True,
+                    server_statuses = _check_all_servers_online(available_servers)
+                    xbmc.log(
+                        f"[Router] Server statuses: {server_statuses}",
+                        level=xbmc.LOGINFO,
                     )
-                xbmcplugin.endOfDirectory(_HANDLE)
+                else:
+                    server_statuses = None
+                _list_servers_page(available_servers, server_statuses)
                 return
             elif len(available_servers) == 1:
                 server = available_servers[0].get("id", "server1")
@@ -2412,18 +2621,11 @@ def router(params):
             remove_from_favorites(params.get("stream_id"), server=server)
 
         if server == "both" and mode is None:
-            for idx, srv in enumerate(available_servers):
-                srv_name = srv.get("name", srv.get("id", "Unknown"))
-                srv_id = srv.get("id", "server1")
-                li = xbmcgui.ListItem(label=srv_name)
-                li.setArt({"icon": "DefaultNetwork.png", "thumb": "DefaultNetwork.png"})
-                xbmcplugin.addDirectoryItem(
-                    handle=_HANDLE,
-                    url=f"{_BASE_URL}?server={srv_id}",
-                    listitem=li,
-                    isFolder=True,
-                )
-            xbmcplugin.endOfDirectory(_HANDLE)
+            if is_server_check_enabled():
+                server_statuses = _check_all_servers_online(available_servers)
+            else:
+                server_statuses = None
+            _list_servers_page(available_servers, server_statuses)
             return
 
         if mode is None:
