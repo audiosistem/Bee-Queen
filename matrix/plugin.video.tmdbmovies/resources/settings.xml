@@ -25,14 +25,15 @@
         <setting id="use_nuviostreams" type="bool" label="Activează [B][COLOR FF00FA9A]NotNow[/COLOR][/B]" default="false"/>
         <setting id="use_webstreamr" type="bool" label="Activează [B][COLOR FF00FA9A]WebNow[/COLOR][/B]" default="true"/>
 		<setting id="use_vixsrc" type="bool" label="Activează [B][COLOR FF00FA9A]VixSrc[/COLOR][/B]" default="true"/>
+        <setting id="use_meowtv" type="bool" label="Activează [B][COLOR FF00FA9A]MeowTV (VFlix)[/COLOR][/B]" default="true"/>
         <setting id="use_streamvix" type="bool" label="Activează [B][COLOR FF00FA9A]StreamNow[/COLOR][/B]" default="true"/>
-        <setting id="use_vega" type="bool" label="Activează [B][COLOR FF00FA9A]Vega (VFlix)[/COLOR][/B]" default="false"/>
-		<setting id="use_vidzee" type="bool" label="Activează [B][COLOR FF00FA9A]Vidzee (VFlix)[/COLOR][/B]" default="false"/>
-        <setting id="use_rogflix" type="bool" label="Activează [B][COLOR FF00FA9A]Rogflix[/COLOR][/B]" default="false"/>
+		<setting id="use_vega" type="bool" label="Activează Vega" default="false" visible="false"/>
+		<setting id="use_vidzee" type="bool" label="Activează Vidzee" default="false" visible="false"/>
+        <setting id="use_rogflix" type="bool" label="Activează Rogflix" default="false" visible="false"/>
 		<setting id="use_hdhub4u" type="bool" label="Activează [B][COLOR FF00FA9A]HDHub4u (Hindi)[/COLOR][/B]" default="true" />
-		<setting id="use_mkvcinemas" type="bool" label="Activează [B][COLOR FF00FA9A]MKVCinemas (Hindi)[/COLOR][/B]" default="false"/>
+		<setting id="use_mkvcinemas" type="bool" label="Activează [B][COLOR FF00FA9A]MKVCinemas (Hindi)[/COLOR][/B]" default="false" visible="false"/>
 		<setting id="use_moviesdrive" type="bool" label="Activează [B][COLOR FF00FA9A]MoviesDrive (Hindi)[/COLOR][/B]" default="true" />
-		<setting id="use_xdmovies" type="bool" label="Activează [B][COLOR FF00FA9A]SmileNow[/COLOR][/B]" default="true"/>
+		<setting id="use_xdmovies" type="bool" label="Activează [B][COLOR FF00FA9A]SmileNow[/COLOR][/B]" default="false" visible="false"/>
 		
         <setting type="lsep" label="Excluderi"/>
 		<setting id="exclude_4k" type="bool" label="Exclude 4K / 2160p" default="false"/>
@@ -63,6 +64,21 @@
         
     </category>
 
+<!-- 6. MY PLAYS (PLAYERE EXTERNE) -->
+    <category label="[B][COLOR FFFF69B4]My Plays[/COLOR][/B]">
+        <setting type="lsep" label="Alege ce playere apar în meniu"/>
+        <setting id="use_pov" type="bool" label="Afișează [B][COLOR FFB041FF]POV[/COLOR][/B]" default="true"/>
+        <setting id="use_fenlight" type="bool" label="Afișează [B][COLOR lightskyblue]Fen Light[/COLOR][/B]" default="true"/>
+        <setting id="use_fen" type="bool" label="Afișează [B][COLOR blue]Fen[/COLOR][/B]" default="true"/>
+        <setting id="use_magneto" type="bool" label="Afișează [B][COLOR red]Magneto[/COLOR][/B]" default="true"/>
+        <setting id="use_luckodi" type="bool" label="Afișează [B][COLOR ff00fa9a]luc_[/COLOR]Kodi[/B]" default="true"/>
+        <setting id="use_umbrella" type="bool" label="Afișează [B][COLOR FFE41B17]Umbrella[/COLOR][/B]" default="true"/>
+        <setting id="use_elementum" type="bool" label="Afișează [B][COLOR FF786D5F]Elementum[/COLOR][/B]" default="true"/>
+        <setting id="use_cinebox" type="bool" label="Afișează [B][COLOR FFA70D2A]CINEBOX[/COLOR][/B]" default="true"/>
+        <setting id="use_seren" type="bool" label="Afișează [B][COLOR FF00BFFF]Seren[/COLOR][/B]" default="true"/>
+        <setting id="use_mrsplite" type="bool" label="Afișează [B][COLOR orange]MRSP Lite[/COLOR][/B]" default="true"/>
+        <setting id="use_tmdbhelper" type="bool" label="Afișează [B][COLOR gold]TMDb Helper[/COLOR][/B]" default="true"/>
+    </category>
 
     <!-- 4. SUBTITRĂRI -->
     <category label="Subtitrări">

@@ -617,7 +617,7 @@ In addition to what livestreams allowed you to do, you can now,
 		<news>INFO: For latest changes see Changelog within add-on.</news>
 		<assets><icon>pov.png</icon><fanart>pov_fanart.png</fanart></assets>
 	</extension>
-</addon><addon id="plugin.video.romanianpack" name="[B][COLOR FFFDBD01]MRSP Lite[/COLOR][/B]" version="1.2.41" provider-name="Sarsailă, [B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="plugin.video.romanianpack" name="[B][COLOR FFFDBD01]MRSP Lite[/COLOR][/B]" version="1.2.43" provider-name="Sarsailă, [B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
 	<import addon="script.module.requests" version="2.22.0" />
@@ -833,7 +833,7 @@ Fixed autosub addon exclusions
     <screenshot>resources/screenshot-02.jpg</screenshot>
   </assets>
 </extension>
-</addon><addon id="plugin.video.tmdbmovies" version="1.1.44" name="[B][COLOR FFFDBD01]TMDb Movies[/COLOR][/B]" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="plugin.video.tmdbmovies" version="1.1.46" name="[B][COLOR FFFDBD01]TMDb Movies[/COLOR][/B]" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.22.0" />
@@ -843,7 +843,7 @@ Fixed autosub addon exclusions
         <provides>video</provides>
     </extension>
     
-    <extension point="xbmc.service" library="service.py" />
+    
 
     
     <extension point="kodi.context.item">
@@ -1384,6 +1384,25 @@ Fixed autosub addon exclusions
         <assets>
             <icon>icon.png</icon>
             <fanart />
+        </assets>
+    </extension>
+</addon><addon id="repository.arkane14" name="Arkane14 Repository" version="1.0.0" provider-name="Arkane14">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+    </requires>
+    <extension point="xbmc.addon.repository" name="Arkane14 Repository">
+        <dir>
+            <info compressed="false">https://arkane14.github.io/addons.xml</info>
+            <checksum>https://arkane14.github.io/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/Arkane14/arkane14.github.io/main/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Arkane14 Repository</summary>
+        <description lang="en">Arkane14 Kodi addon repository</description>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
         </assets>
     </extension>
 </addon><addon id="repository.cralin" name="cralin's Repository" version="1.0.11" provider-name="cralin">

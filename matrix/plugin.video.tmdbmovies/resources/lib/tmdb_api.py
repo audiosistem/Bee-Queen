@@ -35,6 +35,7 @@ ADDON_PATH = ADDON.getAddonInfo('path')
 TRAKT_ICON = os.path.join(ADDON_PATH, 'resources', 'media', 'trakt.png')
 TMDB_ICON = os.path.join(ADDON_PATH, 'resources', 'media', 'tmdb.png')
 TMDbmovies_ICON = os.path.join(ADDON_PATH, 'icon.png')
+NEXT_PAGE_ICON = os.path.join(ADDON_PATH, 'resources', 'media', 'item_next.png')
 
 
 def render_from_fast_cache(items):
@@ -121,81 +122,51 @@ def prefetch_metadata_parallel(items, media_type):
         list(executor.map(fetch_task, items))
 
 # =============================================================================
-# FUNCȚIE PENTRU PLOT TRADUS (VERSIUNE CORECTĂ)
+# FUNCȚIE PENTRU LOCALIZARE COMPLETĂ (PLOT, POSTER, FANART în RO, Nume în EN)
 # =============================================================================
-def get_translated_plot(tmdb_id, media_type, original_plot='', season=None, episode=None):
+def get_localized_assets(media_type, original_plot='', original_poster='', original_backdrop='', full_details=None):
     """
-    Returnează plotul în limba selectată din setări.
-    
-    Args:
-        tmdb_id: ID-ul TMDb
-        media_type: 'movie' sau 'tv'
-        original_plot: Plotul original (fallback)
-        season: Numărul sezonului (opțional, pentru sezoane/episoade)
-        episode: Numărul episodului (opțional, pentru episoade)
+    Extrage din memorie Plot-ul și Imaginile în RO. NU face request-uri API (Viteză MAXIMĂ).
+    Necesită ca full_details să conțină 'translations' și 'images'.
     """
-    from resources.lib.config import ADDON
-    
-    # Verificăm setarea
     try:
-        setting = ADDON.getSetting('plot_language')
-        if setting != '1':  # Dacă nu e Română (1), returnăm original
-            return original_plot
+        from resources.lib.config import ADDON
+        if ADDON.getSetting('plot_language') != '1':
+            return original_plot, original_poster, original_backdrop
     except:
-        return original_plot
-    
-    # Limba pentru traducere
-    plot_lang = 'ro-RO'
-    
-    try:
-        # Construim URL-ul corect bazat pe tip
-        if media_type == 'movie':
-            url = f"{BASE_URL}/movie/{tmdb_id}?api_key={API_KEY}&language={plot_lang}"
-            cache_key = f"plot_movie_{tmdb_id}_{plot_lang}"
-        elif episode is not None and season is not None:
-            # Episod specific
-            url = f"{BASE_URL}/tv/{tmdb_id}/season/{season}/episode/{episode}?api_key={API_KEY}&language={plot_lang}"
-            cache_key = f"plot_ep_{tmdb_id}_s{season}e{episode}_{plot_lang}"
-        elif season is not None:
-            # Sezon specific
-            url = f"{BASE_URL}/tv/{tmdb_id}/season/{season}?api_key={API_KEY}&language={plot_lang}"
-            cache_key = f"plot_season_{tmdb_id}_s{season}_{plot_lang}"
-        else:
-            # Serial (overview general)
-            url = f"{BASE_URL}/tv/{tmdb_id}?api_key={API_KEY}&language={plot_lang}"
-            cache_key = f"plot_tv_{tmdb_id}_{plot_lang}"
+        return original_plot, original_poster, original_backdrop
+
+    out_plot = original_plot
+    out_poster = original_poster
+    out_backdrop = original_backdrop
+
+    if full_details:
+        # 1. Extragere PLOT RO din Translations
+        translations = full_details.get('translations', {}).get('translations', [])
+        for t in translations:
+            if t.get('iso_639_1') == 'ro':
+                ro_ov = t.get('data', {}).get('overview')
+                if ro_ov: out_plot = ro_ov
+                break
         
-        # Folosim MainCache
-        from resources.lib.cache import MainCache
-        cache = MainCache()
+        # 2. Extragere IMAGINI RO din array
+        images = full_details.get('images', {})
         
-        # Verificăm cache-ul
-        cached = cache.get(cache_key)
-        if cached is not None:
-            # cached poate fi string gol "" dacă nu există traducere
-            return cached if cached else original_plot
+        # Căutăm Postere RO
+        posters = images.get('posters', []) or images.get('stills', [])
+        for p in posters:
+            if p.get('iso_639_1') == 'ro':
+                out_poster = p.get('file_path')
+                break
         
-        # Facem request
-        r = requests.get(url, timeout=5)
-        if r.status_code == 200:
-            data = r.json()
-            translated_plot = data.get('overview', '')
-            
-            # Salvăm în cache (24 ore) - expiration e în ORE
-            cache.set(cache_key, translated_plot, expiration=24)
-            
-            if translated_plot:
-                return translated_plot
-        
-        # Dacă request-ul a eșuat, salvăm string gol în cache pentru a nu repeta
-        cache.set(cache_key, '', expiration=24)
-        
-        # Fallback la original
-        return original_plot
-        
-    except Exception as e:
-        log(f"[PLOT] Error getting translation: {e}", xbmc.LOGWARNING)
-        return original_plot
+        # Căutăm Backdrop RO
+        backdrops = images.get('backdrops', [])
+        for b in backdrops:
+            if b.get('iso_639_1') == 'ro':
+                out_backdrop = b.get('file_path')
+                break
+
+    return out_plot, out_poster, out_backdrop
 
 # =============================================================================
 # HELPER PENTRU IMAGINI LISTE TMDB
@@ -612,7 +583,17 @@ def get_tmdb_movies_standard(action, page_no):
     elif action == 'tmdb_movies_now_playing':
         url = f"{BASE_URL}/movie/now_playing?api_key={API_KEY}&language={LANG}&page={page_no}"
     elif action == 'tmdb_movies_top_rated':
-        url = f"{BASE_URL}/movie/top_rated?api_key={API_KEY}&language={LANG}&page={page_no}"
+        # Dinamic: Cele mai votate/adăugate la favorite filme din ultimele 60 de zile
+        current_date = datetime.date.today().strftime('%Y-%m-%d')
+        recent_past = (datetime.date.today() - datetime.timedelta(days=60)).strftime('%Y-%m-%d')
+        url = (
+            f"{BASE_URL}/discover/movie?api_key={API_KEY}"
+            f"&language=en-US&region=US"
+            f"&primary_release_date.gte={recent_past}"
+            f"&primary_release_date.lte={current_date}"
+            f"&sort_by=vote_count.desc"
+            f"&page={page_no}"
+        )
         
     elif action == 'tmdb_movies_upcoming':
         tomorrow = (datetime.date.today() + datetime.timedelta(days=1)).strftime('%Y-%m-%d')
@@ -769,7 +750,17 @@ def get_tmdb_tv_standard(action, page_no):
         url = f"{BASE_URL}/tv/on_the_air?api_key={API_KEY}&language={LANG}&page={page_no}"
         
     elif action == 'tmdb_tv_top_rated':
-        url = f"{BASE_URL}/tv/top_rated?api_key={API_KEY}&language={LANG}&page={page_no}"
+        # Dinamic: Cele mai votate/adăugate la favorite seriale din ultimele 90 de zile
+        current_date = datetime.date.today().strftime('%Y-%m-%d')
+        recent_past = (datetime.date.today() - datetime.timedelta(days=90)).strftime('%Y-%m-%d')
+        url = (
+            f"{BASE_URL}/discover/tv?api_key={API_KEY}"
+            f"&language=en-US&region=US"
+            f"&first_air_date.gte={recent_past}"
+            f"&first_air_date.lte={current_date}"
+            f"&sort_by=vote_count.desc"
+            f"&page={page_no}"
+        )
         
     elif action == 'tmdb_tv_upcoming':
         current_date, future_date = get_dates(31, reverse=False)
@@ -855,7 +846,7 @@ def build_movie_list(params):
         next_url = f"{sys.argv[0]}?{urlencode(next_params)}"
         
         next_li = xbmcgui.ListItem(next_label)
-        next_li.setArt({'icon': 'DefaultFolder.png', 'thumb': 'DefaultFolder.png'})
+        next_li.setArt({'icon': NEXT_PAGE_ICON, 'thumb': NEXT_PAGE_ICON})
         
         # 1. Adăugăm la afișare imediată
         items_to_add.append((next_url, next_li, True))
@@ -866,7 +857,7 @@ def build_movie_list(params):
             'li': next_li,          # <--- ADĂUGAT (CRITIC PENTRU CACHE)
             'is_folder': True,
             'info': {'mediatype': 'video'}, # Minim necesar
-            'art': {'icon': 'DefaultFolder.png', 'thumb': 'DefaultFolder.png'},
+            'art': {'icon': NEXT_PAGE_ICON, 'thumb': NEXT_PAGE_ICON},
             'cm_items': [],         # <--- RENUMIT DIN 'cm' IN 'cm_items'
             'resume_time': 0,
             'total_time': 0
@@ -960,7 +951,7 @@ def build_tvshow_list(params):
         next_url = f"{sys.argv[0]}?{urlencode(next_params)}"
         
         next_li = xbmcgui.ListItem(next_label)
-        next_li.setArt({'icon': 'DefaultFolder.png', 'thumb': 'DefaultFolder.png'})
+        next_li.setArt({'icon': NEXT_PAGE_ICON, 'thumb': NEXT_PAGE_ICON})
         
         # 1. Adăugăm la afișare
         items_to_add.append((next_url, next_li, True))
@@ -971,7 +962,7 @@ def build_tvshow_list(params):
             'li': next_li,          # <--- ADĂUGAT (CRITIC)
             'is_folder': True,
             'info': {'mediatype': 'video'},
-            'art': {'icon': 'DefaultFolder.png', 'thumb': 'DefaultFolder.png'},
+            'art': {'icon': NEXT_PAGE_ICON, 'thumb': NEXT_PAGE_ICON},
             'cm_items': [],         # <--- RENUMIT
             'resume_time': 0,
             'total_time': 0
@@ -1110,7 +1101,13 @@ def _process_movie_item(item, is_in_favorites_view=False, return_data=False):
     
     duration = full_details.get('runtime', 0)
     if duration: duration = int(duration) * 60
-    plot = get_translated_plot(tmdb_id, 'movie', full_details.get('overview', plot))
+    
+    # Acum full_details are DEJA RO în el automat!
+    plot = full_details.get('overview', item.get('overview', ''))
+    poster_path = full_details.get('poster_path', item.get('poster_path', ''))
+    backdrop_path = full_details.get('backdrop_path', item.get('backdrop_path', ''))
+
+    # --- LOGICA CULOARE ROȘIE FILME NELANSATE ---
 
     # --- LOGICA CULOARE ROȘIE FILME NELANSATE ---
     display_title = f"{title} ({year})" if year else title
@@ -1194,7 +1191,11 @@ def _process_tv_item(item, is_in_favorites_view=False, return_data=False):
     premiered = full_details.get('first_air_date', item.get('first_air_date', ''))
     
     duration = (int(full_details.get('episode_run_time', [0])[0]) * 60) if full_details.get('episode_run_time') else 0
-    plot = get_translated_plot(tmdb_id, 'tv', full_details.get('overview', plot))
+    
+    # 1. Datele de bază în engleză
+    plot = full_details.get('overview', item.get('overview', ''))
+    poster_path = full_details.get('poster_path', item.get('poster_path', ''))
+    backdrop_path = full_details.get('backdrop_path', item.get('backdrop_path', ''))
 
     # --- LOGICA CULOARE ROȘIE SERIALE NELANSATE ---
     display_name = f"{title} ({year})" if year else title
@@ -1807,7 +1808,7 @@ def tmdb_list_items(params):
         else: _process_tv_item(item)
 
     if page < total:
-        add_directory(f"[B]Next Page ({page+1}) >>[/B]", {'mode': 'tmdb_list_items', 'list_id': list_id, 'list_name': list_name, 'page': str(page+1)}, icon='DefaultFolder.png', folder=True)
+        add_directory(f"[B]Next Page ({page+1}) >>[/B]", {'mode': 'tmdb_list_items', 'list_id': list_id, 'list_name': list_name, 'page': str(page+1)}, icon=NEXT_PAGE_ICON, folder=True)
     xbmcplugin.setContent(HANDLE, 'movies'); xbmcplugin.endOfDirectory(HANDLE)
 
 
@@ -1885,9 +1886,9 @@ def tmdb_watchlist(params):
         next_params = {'mode': 'tmdb_watchlist', 'type': content_type, 'page': str(page+1)}
         next_url = f"{sys.argv[0]}?{urlencode(next_params)}"
         next_li = xbmcgui.ListItem(next_label)
-        next_li.setArt({'icon': 'DefaultFolder.png', 'thumb': 'DefaultFolder.png'})
+        next_li.setArt({'icon': NEXT_PAGE_ICON, 'thumb': NEXT_PAGE_ICON})
         items_to_add.append((next_url, next_li, True))
-        cache_list.append({'label': next_label, 'url': next_url, 'is_folder': True, 'art': {'icon': 'DefaultFolder.png'}, 'info': {'mediatype': 'video'}, 'cm_items': []})
+        cache_list.append({'label': next_label, 'url': next_url, 'is_folder': True, 'art': {'icon': NEXT_PAGE_ICON}, 'info': {'mediatype': 'video'}, 'cm_items': []})
 
     if items_to_add:
         xbmcplugin.addDirectoryItems(HANDLE, items_to_add, len(items_to_add))
@@ -1945,7 +1946,7 @@ def tmdb_favorites(params):
         else: _process_tv_item(item)
 
     if page < total:
-        add_directory(f"[B]Next Page ({page+1}) >>[/B]", {'mode': 'tmdb_favorites', 'type': content_type, 'page': str(page+1)}, icon='DefaultFolder.png', folder=True)
+        add_directory(f"[B]Next Page ({page+1}) >>[/B]", {'mode': 'tmdb_favorites', 'type': content_type, 'page': str(page+1)}, icon=NEXT_PAGE_ICON, folder=True)
     xbmcplugin.setContent(HANDLE, 'movies' if content_type == 'movie' else 'tvshows')
     xbmcplugin.endOfDirectory(HANDLE)
 
@@ -2527,19 +2528,8 @@ def list_favorites(content_type):
 def show_details(tmdb_id, content_type):
     xbmcplugin.setContent(HANDLE, 'seasons')
 
-    string = f"tv_details_{tmdb_id}_{LANG}"
-    
-    data = trakt_sync.get_tmdb_item_details_from_db(tmdb_id, content_type)
-    if not data:
-        url = f"{BASE_URL}/tv/{tmdb_id}?api_key={API_KEY}&language={LANG}"
-        def get_details_worker(u):
-            return requests.get(u, timeout=10)
-        data = cache_object(get_details_worker, string, url, expiration=168)
-        if data:
-            conn = trakt_sync.get_connection()
-            trakt_sync.set_tmdb_item_details_to_db(conn.cursor(), tmdb_id, content_type, data)
-            conn.commit()
-            conn.close()
+    # Folosim Creierul Central care știe de limba RO/EN și se vindecă singur!
+    data = get_tmdb_item_details(tmdb_id, 'tv')
 
     if not data:
         xbmcplugin.endOfDirectory(HANDLE)
@@ -2549,9 +2539,7 @@ def show_details(tmdb_id, content_type):
     backdrop = f"{BACKDROP_BASE}{data.get('backdrop_path', '')}" if data.get('backdrop_path') else ''
     tv_title = data.get('name', '')
     
-    # --- INCEPUT COD MODIFICAT (SALVARE PLOT PRINCIPAL) ---
     main_show_plot = data.get('overview', '')
-    # --- SFARSIT COD MODIFICAT ---
     
     studio = ''
     if data.get('networks'):
@@ -2568,24 +2556,23 @@ def show_details(tmdb_id, content_type):
 
         name = f"Season {s_num}"
         ep_count = s.get('episode_count', 0)
+        
+        # s_poster primește automat posterul RO din creierul central!
         s_poster = f"{IMG_BASE}{s.get('poster_path', '')}" if s.get('poster_path') else poster
         
         premiered = s.get('air_date', '')
 
-        # --- LOGICA CULOARE ROȘIE SEZON (INJECTATĂ) ---
         display_name = name
         if premiered:
             try:
                 if datetime.datetime.strptime(premiered, '%Y-%m-%d').date() > today:
                     display_name = f"[B][COLOR FFE238EC]{name}[/COLOR] (Lansare: {premiered}[/B])"
             except: pass
-        # ----------------------------------------------
 
+        # Plot-ul sezonului vine deja tradus dacă setarea e pe RO
         season_plot = s.get('overview', '')
         if not season_plot:
             season_plot = main_show_plot
-
-        season_plot = get_translated_plot(tmdb_id, 'tv', season_plot, season=s_num)
 
         watched_count = trakt_api.get_watched_counts(tmdb_id, 'season', s_num)
         watched_info = {'watched': watched_count, 'total': ep_count}
@@ -2609,24 +2596,62 @@ def show_details(tmdb_id, content_type):
     xbmcplugin.endOfDirectory(HANDLE)
 
 
+def get_smart_season_details(tmdb_id, season_num):
+    from resources.lib import trakt_sync
+    from resources.lib.config import ADDON, SESSION, get_headers
+    current_lang = ADDON.getSetting('plot_language') # '1' = RO, '0' = EN
+
+    data = trakt_sync.get_tmdb_season_details_from_db(tmdb_id, season_num)
+    
+    if data:
+        cached_lang = data.get('_cached_lang', '0')
+        if cached_lang == current_lang:
+            return data
+            
+    # Dacă nu e în cache sau diferă limba, descărcăm
+    url_en = f"{BASE_URL}/tv/{tmdb_id}/season/{season_num}?api_key={API_KEY}&language=en-US"
+    
+    try:
+        res_en = SESSION.get(url_en, headers=get_headers(), timeout=5)
+        if res_en.status_code == 200:
+            data = res_en.json()
+            data['_cached_lang'] = current_lang
+            
+            if current_lang == '1':
+                url_ro = f"{BASE_URL}/tv/{tmdb_id}/season/{season_num}?api_key={API_KEY}&language=ro-RO&include_image_language=ro,en,null&append_to_response=images"
+                res_ro = SESSION.get(url_ro, headers=get_headers(), timeout=5)
+                
+                if res_ro.status_code == 200:
+                    data_ro = res_ro.json()
+                    if data_ro.get('overview'): data['overview'] = data_ro['overview']
+                    
+                    ro_posters = data_ro.get('images', {}).get('posters', [])
+                    if ro_posters: data['poster_path'] = ro_posters[0].get('file_path')
+                    elif data_ro.get('poster_path'): data['poster_path'] = data_ro['poster_path']
+                        
+                    ro_eps = {ep['episode_number']: ep for ep in data_ro.get('episodes', [])}
+                    for ep in data.get('episodes', []):
+                        ep_num = ep['episode_number']
+                        if ep_num in ro_eps:
+                            ro_ep = ro_eps[ep_num]
+                            if ro_ep.get('overview'): ep['overview'] = ro_ep['overview']
+                            if ro_ep.get('still_path'): ep['still_path'] = ro_ep['still_path']
+
+            conn = trakt_sync.get_connection()
+            trakt_sync.set_tmdb_season_details_to_db(conn.cursor(), tmdb_id, season_num, data)
+            conn.commit()
+            conn.close()
+            return data
+    except: pass
+    return None
+
+
 def list_episodes(tmdb_id, season_num, tv_show_title):
     from resources.lib import trakt_sync
     from resources.lib import trakt_api
     xbmcplugin.setContent(HANDLE, 'episodes')
 
-    string = f"tv_episodes_{tmdb_id}_{season_num}_{LANG}"
-    
-    data = trakt_sync.get_tmdb_season_details_from_db(tmdb_id, season_num)
-    if not data:
-        url = f"{BASE_URL}/tv/{tmdb_id}/season/{season_num}?api_key={API_KEY}&language={LANG}"
-        def get_eps_worker(u):
-            return requests.get(u, timeout=10)
-        data = cache_object(get_eps_worker, string, url, expiration=168)
-        if data:
-            conn = trakt_sync.get_connection()
-            trakt_sync.set_tmdb_season_details_to_db(conn.cursor(), tmdb_id, season_num, data)
-            conn.commit()
-            conn.close()
+    data = get_smart_season_details(tmdb_id, season_num)
 
     if not data:
         xbmcplugin.endOfDirectory(HANDLE)
@@ -2679,7 +2704,15 @@ def list_episodes(tmdb_id, season_num, tv_show_title):
         elif progress_value > 0 and progress_value < 90:
             resume_percent = progress_value
 
-        thumb = f"{IMG_BASE}{ep.get('still_path', '')}" if ep.get('still_path') else ''
+# Imaginile și plotul sunt deja localizate automat de Dual-Fetch-ul de mai sus!
+        # --- LOGICĂ NOUĂ IMAGINI EPISOD ---
+        ep_still = ep.get('still_path', '')
+        if ep_still:
+            final_image = f"{IMG_BASE}{ep_still}"
+        else:
+            # Fallback la posterul Sezonului/Serialului (deja localizat pe RO/EN conform setării)
+            final_image = poster
+        # ----------------------------------
 
         is_watched = trakt_api.check_episode_watched(tmdb_id, season_num, ep_num)
         
@@ -2691,7 +2724,6 @@ def list_episodes(tmdb_id, season_num, tv_show_title):
             resume_percent = (resume_seconds / duration) * 100
 
         ep_plot = ep.get('overview', '')
-        ep_plot = get_translated_plot(tmdb_id, 'tv', ep_plot, season=int(season_num), episode=ep_num)
 
         info = {
             'mediatype': 'episode',
@@ -2748,9 +2780,13 @@ def list_episodes(tmdb_id, season_num, tv_show_title):
             url_params['resume_time'] = resume_seconds
         
         url = f"{sys.argv[0]}?{urlencode(url_params)}"
-        li = xbmcgui.ListItem(display_label) # MODIFICAT DIN 'name'
         
-        li.setArt({'thumb': thumb, 'icon': thumb, 'poster': poster, 'fanart': thumb})
+        # 1. Creăm obiectul ListItem PRIMA DATĂ
+        li = xbmcgui.ListItem(display_label)
+        
+        # 2. Abia apoi aplicăm final_image pe el
+        li.setArt({'thumb': final_image, 'icon': final_image, 'poster': final_image, 'fanart': final_image})
+        
         li.setProperty('tmdb_id', tmdb_id)
         set_metadata(li, info, unique_ids={'tmdb': tmdb_id}, watched_info=is_watched)
         set_resume_point(li, resume_seconds, duration)
@@ -2765,31 +2801,18 @@ def show_info_dialog(params):
     tmdb_id = params.get('tmdb_id')
     content_type = params.get('type')
 
-    data = trakt_sync.get_tmdb_item_details_from_db(tmdb_id, content_type)
+    # Folosim direct creierul central care ne aduce din prima tot (inclusiv RO)
+    data = get_tmdb_item_details(tmdb_id, content_type)
     if not data:
-        # --- MODIFICARE: Am adaugat include_video_language ---
-        url = f"{BASE_URL}/{content_type}/{tmdb_id}?api_key={API_KEY}&language={LANG}&include_video_language={VIDEO_LANGS}&append_to_response=credits,videos,release_dates,external_ids"
-        try:
-            r = requests.get(url, timeout=10)
-            if r.status_code != 200:
-                xbmcgui.Dialog().notification("[B][COLOR FF00CED1]TMDB[/COLOR][/B]", "Eroare la încărcare", xbmcgui.NOTIFICATION_ERROR)
-                return
-            data = r.json()
-            if data:
-                conn = trakt_sync.get_connection()
-                trakt_sync.set_tmdb_item_details_to_db(conn.cursor(), tmdb_id, content_type, data)
-                conn.commit()
-                conn.close()
-        except Exception as e:
-            log(f"[TMDB-INFO] Error: {e}", xbmc.LOGERROR)
-            xbmcgui.Dialog().notification("[B][COLOR FF00CED1]TMDB[/COLOR][/B]", "Eroare conexiune", xbmcgui.NOTIFICATION_ERROR)
-            return
-
-    if not data:
-        return 
+        xbmcgui.Dialog().notification("[B][COLOR FF00CED1]TMDB[/COLOR][/B]", "Eroare la încărcare", xbmcgui.NOTIFICATION_ERROR)
+        return
 
     title = data.get('title') or data.get('name', 'Unknown')
     li = xbmcgui.ListItem(title)
+
+    plot = data.get('overview', '')
+    poster_path = data.get('poster_path', '')
+    backdrop_path = data.get('backdrop_path', '')
 
     cast = []
     for p in data.get('credits', {}).get('cast', [])[:20]:
@@ -2870,7 +2893,7 @@ def show_info_dialog(params):
         tag = li.getVideoInfoTag()
         tag.setMediaType('movie' if content_type == 'movie' else 'tvshow')
         tag.setTitle(title)
-        tag.setPlot(data.get('overview', ''))
+        tag.setPlot(plot) # <--- AICI ERA BUG-UL (era data.get('overview'))
 
         if data.get('vote_average'):
             tag.setRating(float(data['vote_average']))
@@ -2885,22 +2908,64 @@ def show_info_dialog(params):
             except:
                 pass
 
+        # --- 1. SETARE GENURI ȘI TAGLINE ---
+        genres_str = ""
+        colored_genres_list = []
         if data.get('genres'):
-            tag.setGenres([g['name'] for g in data['genres']])
+            genres_list = [g['name'] for g in data['genres']]
+            colored_genres_list = [f"[B][COLOR cyan]{g}[/COLOR][/B]" for g in genres_list]
+            genres_str = " • ".join(colored_genres_list)
+
+        raw_tagline = data.get('tagline')
+        tagline = raw_tagline.strip() if raw_tagline else ""
+
+        # --- 2. TRUCURI PENTRU SKIN-UL KODI ---
+        if content_type == 'movie':
+            # La filme, Kodi știe să pună Genul în dreapta și Tagline-ul sub titlu
+            if colored_genres_list:
+                tag.setGenres(colored_genres_list)
+                
+            if tagline and genres_str:
+                tag.setTagLine(f"[B][COLOR yellow]{tagline}[/COLOR][/B]   |   {genres_str}")
+            elif tagline:
+                tag.setTagLine(f"[B][COLOR yellow]{tagline}[/COLOR][/B]")
+            elif genres_str:
+                tag.setTagLine(f"{genres_str}")
+        else:
+            # PĂCĂLIM KODI LA SERIALE! 
+            # Pentru că ignoră Tagline-ul, îl unim cu Genul (pe care știm că îl afișează sub titlu)
+            final_tv_string = ""
+            if tagline and genres_str:
+                final_tv_string = f"[B][COLOR yellow]{tagline}[/COLOR][/B]   |   {genres_str}"
+            elif tagline:
+                final_tv_string = f"[B][COLOR yellow]{tagline}[/COLOR][/B]"
+            elif genres_str:
+                final_tv_string = genres_str
+                
+            if final_tv_string:
+                # Trimitem totul ca un singur "Gen"
+                tag.setGenres([final_tv_string])
 
         # --- FIX STATUS: Folosim "Studios" pentru a afisa Statusul in dreapta ---
         # Estuary afiseaza lista de Studiouri (Networks) sub Rating/An.
         studios_list = []
         
-        # 1. Calculam Statusul
+        # 1. Calculam Statusul și aplicăm CULORI DINAMICE
         if content_type in ['tv', 'tvshow'] and 'status' in data:
             st = data['status']
-            status_text = st
-            # Nota: Estuary s-ar putea sa ignore culorile in campul Studio, dar textul va aparea.
-            if st == 'Returning Series': status_text = "Status: Continuing" 
-            elif st == 'Ended': status_text = "Status: Ended"
-            elif st == 'Canceled': status_text = "Status: Canceled"
-            elif st == 'In Production': status_text = "Status: In Production"
+            status_text = ""
+            
+            if st == 'Returning Series': 
+                status_text = "[COLOR cyan]Status: [B]Continuing[/COLOR][/B]" 
+            elif st == 'Ended': 
+                status_text = "[COLOR orange]Status: [B]Ended[/COLOR][/B]"
+            elif st == 'Canceled': 
+                status_text = "[COLOR red]Status: [B]Canceled[/COLOR][/B]"
+            elif st == 'In Production': 
+                status_text = "[B][COLOR yellow]Status: In Production[/COLOR][/B]"
+            else:
+                # Pentru orice alt status necunoscut
+                status_text = f"[B][COLOR cyan]Status: {st}[/COLOR][/B]"
             
             # Adaugam statusul ca PRIMUL element in lista de studiouri
             if status_text:
@@ -2948,11 +3013,12 @@ def show_info_dialog(params):
         log(f"[TMDB-INFO] Tag Error: {e}", xbmc.LOGERROR)
 
     art = {}
-    if data.get('poster_path'):
-        art['poster'] = f"{IMG_BASE}{data['poster_path']}"
-        art['thumb'] = f"{IMG_BASE}{data['poster_path']}"
-    if data.get('backdrop_path'):
-        art['fanart'] = f"{BACKDROP_BASE}{data['backdrop_path']}"
+    if poster_path: # <--- Folosim variabila localizată, nu data.get('poster_path')
+        art['poster'] = f"{IMG_BASE}{poster_path}"
+        art['thumb'] = f"{IMG_BASE}{poster_path}"
+        art['icon'] = f"{IMG_BASE}{poster_path}"
+    if backdrop_path:
+        art['fanart'] = f"{BACKDROP_BASE}{backdrop_path}"
     li.setArt(art)
 
     xbmcgui.Dialog().info(li)
@@ -3095,15 +3161,47 @@ def show_specific_info_dialog(tmdb_id, specific_type, season=1, episode=1):
     except:
         pass
     
-    # Construim URL-ul pentru sezon/episod
-    data = None
+# Construim URL-urile pentru sezon/episod (EN)
     if specific_type == 'season':
-        url = f"{BASE_URL}/tv/{tmdb_id}/season/{season}?api_key={API_KEY}&language={LANG}&include_video_language={VIDEO_LANGS}&append_to_response=images,credits,videos"
-        data = get_json(url)
-    elif specific_type == 'episode':
-        url = f"{BASE_URL}/tv/{tmdb_id}/season/{season}/episode/{episode}?api_key={API_KEY}&language={LANG}&include_video_language={VIDEO_LANGS}&append_to_response=images,credits,videos"
-        data = get_json(url)
+        url_en = f"{BASE_URL}/tv/{tmdb_id}/season/{season}?api_key={API_KEY}&language=en-US&include_video_language={VIDEO_LANGS}&append_to_response=images,credits,videos"
+    else:
+        url_en = f"{BASE_URL}/tv/{tmdb_id}/season/{season}/episode/{episode}?api_key={API_KEY}&language=en-US&include_video_language={VIDEO_LANGS}&append_to_response=images,credits,videos"
+        
+    data = get_json(url_en)
     
+    # --- INJECȚIE LOCALIZARE RO PENTRU CONTEXT MENU ---
+    try:
+        from resources.lib.config import ADDON
+        if ADDON.getSetting('plot_language') == '1' and data and data.get('success') != False:
+            # Cerem RO și forțăm imaginile de pe limba română
+            url_ro = url_en.replace('language=en-US', 'language=ro-RO') + "&include_image_language=ro"
+            data_ro = get_json(url_ro)
+            
+            if data_ro:
+                if data_ro.get('overview'): 
+                    data['overview'] = data_ro['overview']
+                
+                # Extragem imaginea din matrice
+                imgs = data_ro.get('images', {})
+                ro_posters = imgs.get('posters', []) or imgs.get('stills', [])
+                if ro_posters:
+                    data['poster_path'] = ro_posters[0].get('file_path')
+                    data['still_path'] = ro_posters[0].get('file_path')
+                elif data_ro.get('poster_path'):
+                    data['poster_path'] = data_ro.get('poster_path')
+                elif data_ro.get('still_path'):
+                    data['still_path'] = data_ro.get('still_path')
+                    
+                # Fallback la plot serial dacă episodul/sezonul nu are plot
+                if show_data and not data.get('overview'):
+                    show_loc_url = f"{BASE_URL}/tv/{tmdb_id}?api_key={API_KEY}&language=ro-RO"
+                    show_loc = get_json(show_loc_url)
+                    if show_loc and show_loc.get('overview'):
+                        show_data['overview'] = show_loc['overview']
+    except Exception as e:
+        log(f"[SPECIFIC-INFO] Error RO localization: {e}")
+    # --- FINAL INJECȚIE LOCALIZARE ---
+
     # FALLBACK: Dacă sezonul/episodul nu există, afișăm info de serial
     if not data or data.get('success') == False:
         log(f"[SPECIFIC-INFO] Season/Episode not found (S{season}E{episode}), falling back to TV show info")
@@ -3295,9 +3393,9 @@ def build_search_result(search_type, query, page=1): # Adăugat parametrul page
         next_params = {'mode': 'perform_search', 'type': search_type, 'query': query, 'page': str(page+1)}
         next_url = f"{sys.argv[0]}?{urlencode(next_params)}"
         next_li = xbmcgui.ListItem(next_label)
-        next_li.setArt({'icon': 'DefaultFolder.png', 'thumb': 'DefaultFolder.png'})
+        next_li.setArt({'icon': NEXT_PAGE_ICON, 'thumb': NEXT_PAGE_ICON})
         items_to_add.append((next_url, next_li, True))
-        cache_list.append({'label': next_label, 'url': next_url, 'is_folder': True, 'art': {'icon': 'DefaultFolder.png'}, 'info': {'mediatype': 'video'}, 'cm_items': []})
+        cache_list.append({'label': next_label, 'url': next_url, 'is_folder': True, 'art': {'icon': NEXT_PAGE_ICON}, 'info': {'mediatype': 'video'}, 'cm_items': []})
 
     if items_to_add:
         xbmcplugin.addDirectoryItems(HANDLE, items_to_add, len(items_to_add))
@@ -3349,9 +3447,9 @@ def list_recommendations(params):
         next_params = {'mode': 'list_recommendations', 'tmdb_id': tmdb_id, 'menu_type': menu_type, 'page': str(page+1)}
         next_url = f"{sys.argv[0]}?{urlencode(next_params)}"
         next_li = xbmcgui.ListItem(next_label)
-        next_li.setArt({'icon': 'DefaultFolder.png', 'thumb': 'DefaultFolder.png'})
+        next_li.setArt({'icon': NEXT_PAGE_ICON, 'thumb': NEXT_PAGE_ICON})
         items_to_add.append((next_url, next_li, True))
-        cache_list.append({'label': next_label, 'url': next_url, 'is_folder': True, 'art': {'icon': 'DefaultFolder.png'}, 'info': {'mediatype': 'video'}, 'cm_items': []})
+        cache_list.append({'label': next_label, 'url': next_url, 'is_folder': True, 'art': {'icon': NEXT_PAGE_ICON}, 'info': {'mediatype': 'video'}, 'cm_items': []})
 
     if items_to_add:
         xbmcplugin.addDirectoryItems(HANDLE, items_to_add, len(items_to_add))
@@ -3545,25 +3643,83 @@ def go_back():
 
 def get_tmdb_item_details(tmdb_id, content_type):
     endpoint = 'movie' if content_type == 'movie' else 'tv'
-    from resources.lib.config import SESSION, get_headers
-    url = f"{BASE_URL}/{endpoint}/{tmdb_id}?api_key={API_KEY}&language={LANG}&include_video_language={VIDEO_LANGS}&append_to_response=credits,videos,external_ids,images"
-
-    string = f"details_{content_type}_{tmdb_id}"
-
-    def worker(u):
-        # Asigură-te că aici timeout este mic (5 secunde)
-        # Folosim SESSION importat din config pentru conexiune persistentă
-        from resources.lib.config import SESSION, get_headers
-        return SESSION.get(u, headers=get_headers(), timeout=5) # <--- TIMEOUT 5s
-
-    data = cache_object(worker, string, url, expiration=168)
+    
+    from resources.lib.config import ADDON
+    current_lang = ADDON.getSetting('plot_language') # '1' = RO, '0' = EN
+    
+    from resources.lib import trakt_sync
+    data = trakt_sync.get_tmdb_item_details_from_db(tmdb_id, content_type)
+    
+    # Verificăm dacă cache-ul are aceeași limbă cu setarea
     if data:
+        cached_lang = data.get('_cached_lang', '0')
+        if cached_lang == current_lang:
+            return data
+            
+    # Dacă nu e în cache sau s-a schimbat limba, descărcăm:
+    from resources.lib.config import SESSION, get_headers
+    
+    url_en = f"{BASE_URL}/{endpoint}/{tmdb_id}?api_key={API_KEY}&language=en-US&append_to_response=credits,videos,external_ids"
+    
+    try:
+        res_en = SESSION.get(url_en, headers=get_headers(), timeout=5)
+        if res_en.status_code != 200: return None
+        data = res_en.json()
+        
+        # Salvăm eticheta limbii curentă!
+        data['_cached_lang'] = current_lang
+        
+        # Facem request de RO DOAR dacă e bifat în setări! (Asta face Engleză instantanee)
+        if current_lang == '1':
+            url_ro = f"{BASE_URL}/{endpoint}/{tmdb_id}?api_key={API_KEY}&language=ro-RO&include_image_language=ro,en,null&append_to_response=images"
+            res_ro = SESSION.get(url_ro, headers=get_headers(), timeout=5)
+            
+            if res_ro.status_code == 200:
+                data_ro = res_ro.json()
+                
+                # Suprascriere Plot
+                if data_ro.get('overview'):
+                    data['overview'] = data_ro['overview']
+                    
+                # Suprascriere Tagline (Motto-ul filmului)
+                if data_ro.get('tagline'):
+                    data['tagline'] = data_ro['tagline']
+                
+                # Suprascriere Poster
+                ro_imgs = data_ro.get('images', {})
+                ro_posters = [p for p in ro_imgs.get('posters', []) if p.get('iso_639_1') == 'ro']
+                if ro_posters:
+                    data['poster_path'] = ro_posters[0]['file_path']
+                elif data_ro.get('poster_path'):
+                    data['poster_path'] = data_ro['poster_path']
+                    
+                # Suprascriere Fanart
+                ro_backdrops = [b for b in ro_imgs.get('backdrops', []) if b.get('iso_639_1') == 'ro']
+                if ro_backdrops:
+                    data['backdrop_path'] = ro_backdrops[0]['file_path']
+                elif data_ro.get('backdrop_path'):
+                    data['backdrop_path'] = data_ro['backdrop_path']
+                    
+                # Suprascriere Sezoane
+                if content_type == 'tv' and 'seasons' in data and 'seasons' in data_ro:
+                    ro_seasons = {s['season_number']: s for s in data_ro['seasons']}
+                    for s in data['seasons']:
+                        s_num = s['season_number']
+                        if s_num in ro_seasons:
+                            if ro_seasons[s_num].get('overview'): 
+                                s['overview'] = ro_seasons[s_num]['overview']
+                            if ro_seasons[s_num].get('poster_path'): 
+                                s['poster_path'] = ro_seasons[s_num]['poster_path']
+                                
         conn = trakt_sync.get_connection()
         trakt_sync.set_tmdb_item_details_to_db(conn.cursor(), tmdb_id, content_type, data)
         conn.commit()
         conn.close()
-    return data
-
+        return data
+    except Exception as e:
+        import xbmc
+        xbmc.log(f"[TMDB] Fetch Error: {e}", xbmc.LOGERROR)
+        return None
 
 def check_tmdb_connection():
     try:
@@ -3686,21 +3842,6 @@ def test_api_connection():
 # FUNCȚII IN PROGRESS (Corectate)
 # =============================================================================
 
-def _get_poster_path(tmdb_id, media_type):
-    cached_poster = trakt_sync.get_poster_from_db(tmdb_id, media_type)
-    if cached_poster:
-        return cached_poster.replace(IMG_BASE, '').replace(BACKDROP_BASE, '')
-
-    import requests
-    def worker(u): return requests.get(u, timeout=5)
-    string = f"meta_poster_{media_type}_{tmdb_id}_{LANG}"
-    url = f"{BASE_URL}/{media_type}/{tmdb_id}?api_key={API_KEY}&language={LANG}"
-    data = cache_object(worker, string, url, expiration=168)
-    if data and data.get('poster_path'):
-        full_poster_url = f"{IMG_BASE}{data.get('poster_path')}"
-        trakt_sync.set_poster_to_db(tmdb_id, media_type, full_poster_url)
-        return data.get('poster_path')
-    return ''
 
 
 def in_progress_movies(params):
@@ -3764,14 +3905,11 @@ def in_progress_movies(params):
             if dur_mins:
                 duration = int(dur_mins) * 60 # Convertim in secunde
 
-        # Imagine
-        poster_path_db = _get_poster_path(tmdb_id, 'movie')
-        if poster_path_db:
-             poster = f"{IMG_BASE}{poster_path_db}"
-        elif poster_path_api:
-             poster = f"{IMG_BASE}{poster_path_api}"
-        else:
-             poster = icon
+        # Imagine (Scoasă direct din detaliile localizate)
+        poster = f"{IMG_BASE}{poster_path_api}" if poster_path_api else icon
+
+        # Construim plot-ul combinat
+        display_plot = f"[B]Progres: {int(progress)}%[/B]\n\n{plot}"
 
         # Construim plot-ul combinat
         display_plot = f"[B]Progres: {int(progress)}%[/B]\n\n{plot}"
@@ -3827,7 +3965,7 @@ def in_progress_movies(params):
         add_directory(
             f"[B]Next Page ({page+1}/{total_pages}) >>[/B]",
             {'mode': 'in_progress_movies', 'page': str(page + 1)},
-            icon='DefaultFolder.png', folder=True
+            icon=NEXT_PAGE_ICON, folder=True
         )
         
     xbmcplugin.setContent(HANDLE, 'movies')
@@ -3913,7 +4051,9 @@ def in_progress_tvshows(params):
             progress_pct = 0
             display_total = "?"
         
-        poster_path = _get_poster_path(tmdb_id, 'tv')
+        # Folosim inteligența localizată
+        show_details_fast = get_tmdb_item_details(tmdb_id, 'tv')
+        poster_path = show_details_fast.get('poster_path', '') if show_details_fast else ''
         poster = f"{IMG_BASE}{poster_path}" if poster_path else icon
 
         # --- MODIFICARE: Recuperăm imdb_id din item pt My Plays---
@@ -3950,7 +4090,7 @@ def in_progress_tvshows(params):
         add_directory(
             f"[B]Next Page ({page+1}/{total_pages}) >>[/B]",
             {'mode': 'in_progress_tvshows', 'page': str(page + 1)},
-            icon='DefaultFolder.png', folder=True
+            icon=NEXT_PAGE_ICON, folder=True
         )
         
     xbmcplugin.setContent(HANDLE, 'tvshows')
@@ -4005,40 +4145,32 @@ def in_progress_episodes(params):
             show_imdb_id = show_details.get('external_ids', {}).get('imdb_id', '')
         # --------------------------------------------------
 
-        # 2. Luăm datele SEZONULUI pentru detalii EPISOD (rating, durata, data)
-        season_data = trakt_sync.get_tmdb_season_details_from_db(tmdb_id, season)
+# 2. Luăm datele SEZONULUI (Folosim creierul inteligent!)
+        season_data = get_smart_season_details(tmdb_id, season)
         
-        if not season_data:
-            import requests
-            url = f"{BASE_URL}/tv/{tmdb_id}/season/{season}?api_key={API_KEY}&language={LANG}"
-            try:
-                r = requests.get(url, timeout=5)
-                if r.status_code == 200:
-                    season_data = r.json()
-                    conn = trakt_sync.get_connection()
-                    trakt_sync.set_tmdb_season_details_to_db(conn.cursor(), tmdb_id, season, season_data)
-                    conn.commit()
-                    conn.close()
-            except: pass
-
+        ep_still = '' # Salvăm thumbnail-ul
+        
         if season_data:
             for ep in season_data.get('episodes', []):
                 if ep.get('episode_number') == episode:
                     ep_plot = ep.get('overview', '')
+                    if ep.get('still_path'): ep_still = ep.get('still_path')
+                    
                     if 'Unknown' in title or 'Episode' in title:
                         title = f"{ep.get('name', title)}"
                     
-                    # Extragem metadatele episodului
                     rating = ep.get('vote_average', 0)
                     premiered = ep.get('air_date', '')
-                    
                     dur_mins = ep.get('runtime', 0)
-                    if dur_mins:
-                        duration = int(dur_mins) * 60
+                    if dur_mins: duration = int(dur_mins) * 60
                     break
 
-        poster_path = _get_poster_path(tmdb_id, 'tv') 
-        poster = f"{IMG_BASE}{poster_path}" if poster_path else icon
+        # 3. SETĂM IMAGINEA
+        if ep_still:
+            poster = f"{IMG_BASE}{ep_still}"
+        else:
+            poster_path = show_details.get('poster_path', '') if show_details else ''
+            poster = f"{IMG_BASE}{poster_path}" if poster_path else icon
         
         show_title = title.split(' - ')[0] if ' - ' in title else "TV Show"
         
@@ -4130,7 +4262,7 @@ def in_progress_episodes(params):
         add_directory(
             f"[B]Next Page ({page+1}/{total_pages}) >>[/B]",
             {'mode': 'in_progress_episodes', 'page': str(page + 1)},
-            icon='DefaultFolder.png', folder=True
+            icon=NEXT_PAGE_ICON, folder=True
         )
         
     xbmcplugin.setContent(HANDLE, 'episodes')
@@ -4138,22 +4270,53 @@ def in_progress_episodes(params):
 
 
 def get_next_episodes(params=None):
-    """Afișează Next Episodes (Up Next) cu culori și data lansării."""
+    """Afișează Next Episodes (Up Next) cu culori, data lansării și THUMBNAIL episod."""
     from resources.lib import trakt_sync
     items = trakt_sync.get_next_episodes_from_db()
     today = datetime.date.today()
+    
+    def prefetch_next(it):
+        get_tmdb_item_details(it['tmdb_id'], 'tv')
+        get_smart_season_details(it['tmdb_id'], it['season'])
+        
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        list(executor.map(prefetch_next, items))
+    
     if not items:
         add_directory("[COLOR gray]Nu ai episoade noi (Rulează 'Sincronizare Trakt')[/COLOR]", {'mode': 'trakt_sync_db'}, folder=False)
-        xbmcplugin.endOfDirectory(HANDLE); return
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
 
     for it in items:
         tmdb_id = it['tmdb_id']
-        label = f"[B][COLOR FF00CED1]{it['show_title']}[/COLOR][/B] - S{it['season']:02d}E{it['episode']:02d} - [I]{it['ep_title']}[/I]"
 
-        # --- MODIFICARE: Extragem IMDB ID ---
+        # 1. CEREM DETALIILE SERIALULUI PRIMA DATĂ (Aici era eroarea ta!)
         show_details = get_tmdb_item_details(tmdb_id, 'tv')
         imdb_id = show_details.get('external_ids', {}).get('imdb_id', '') if show_details else ''
-        # ------------------------------------
+
+        # 2. EXTRAGEM DATELE EPISODULUI (Plot RO + Thumbnail RO)
+        ep_plot = it['overview'] # Fallback
+        ep_still = '' # Variabilă nouă pentru thumbnail-ul episodului
+        
+        season_data = get_smart_season_details(tmdb_id, it['season'])
+        if season_data:
+            for ep in season_data.get('episodes', []):
+                if ep.get('episode_number') == it['episode']:
+                    if ep.get('overview'): ep_plot = ep.get('overview')
+                    if ep.get('still_path'): ep_still = ep.get('still_path')
+                    break
+                    
+        # 3. SETĂM IMAGINEA: Prioritate are Thumbnail-ul episodului, fallback la Poster Serial
+        if ep_still:
+            poster = f"{IMG_BASE}{ep_still}"
+        else:
+            poster_path = show_details.get('poster_path', '') if show_details else it.get('poster', '')
+            poster = f"{IMG_BASE}{poster_path}" if poster_path and not poster_path.startswith('http') else (it.get('poster') or TRAKT_ICON)
+        
+        info = {'mediatype': 'episode', 'title': it['ep_title'], 'tvshowtitle': it['show_title'], 'season': it['season'], 'episode': it['episode'], 'plot': ep_plot, 'premiered': it['air_date']}
+        
+        label = f"[B][COLOR FF00CED1]{it['show_title']}[/COLOR][/B] - S{it['season']:02d}E{it['episode']:02d} - [I]{it['ep_title']}[/I]"
         
         # CULOARE ROȘIE DACĂ NU E LANSAT
         if it['air_date']:
@@ -4163,29 +4326,34 @@ def get_next_episodes(params=None):
             except: pass
 
         url_params = {'mode': 'sources', 'tmdb_id': tmdb_id, 'type': 'tv', 'season': str(it['season']), 'episode': str(it['episode']), 'title': it['ep_title'], 'tv_show_title': it['show_title']}
-        info = {'mediatype': 'episode', 'title': it['ep_title'], 'tvshowtitle': it['show_title'], 'season': it['season'], 'episode': it['episode'], 'plot': it['overview'], 'premiered': it['air_date']}
-        poster = f"{IMG_BASE}{it['poster']}" if it['poster'] and not it['poster'].startswith('http') else TRAKT_ICON
 
-        # --- MODIFICARE: Trimitem tipul 'episode' și numerele S/E ---
         cm = _get_full_context_menu(
             tmdb_id, 
-            'episode',             # AICI am corectat din 'tv' în 'episode'
+            'episode',             
             it['show_title'], 
             imdb_id=imdb_id,
-            season=it['season'],   # Trimitem sezonul
-            episode=it['episode']  # Trimitem episodul
+            season=it['season'],   
+            episode=it['episode']  
         )
-        # ------------------------------------------------------------
-        add_directory(label, url_params, icon=poster, thumb=poster, info=info, cm=cm, folder=False)
+        
+        # Punem imaginea și la "fanart" pentru a arăta frumos pe fundal
+        add_directory(label, url_params, icon=poster, thumb=poster, fanart=poster, info=info, cm=cm, folder=False)
 
     xbmcplugin.setContent(HANDLE, 'episodes')
     xbmcplugin.endOfDirectory(HANDLE)
 
 # FOR SEREN
 def get_trakt_client_id():
-    """Extrage Trakt client_id din codul sursă al addon-urilor instalate"""
-    import os, re, xbmcaddon, xbmc
+    """Extrage Trakt client_id fără a genera erori în log dacă addon-urile lipsesc."""
+    import os
+    import re
+    import xbmc
     
+    # Folosim xbmcvfs pentru a verifica dacă un folder de addon există, e mai sigur
+    def addon_exists(addon_id):
+        addon_path = f"special://home/addons/{addon_id}"
+        return xbmcvfs.exists(addon_path)
+
     search_map = {
         'plugin.video.seren': [
             'resources/lib/modules/globals.py',
@@ -4203,9 +4371,16 @@ def get_trakt_client_id():
     }
     
     for addon_id, paths in search_map.items():
+        if not addon_exists(addon_id):
+            continue  # Sărim peste dacă addon-ul nu e instalat
+        
         try:
-            base = xbmcaddon.Addon(addon_id).getAddonInfo('path')
-        except: continue
+            import xbmcaddon
+            addon_instance = xbmcaddon.Addon(addon_id)
+            base = addon_instance.getAddonInfo('path')
+        except:
+            continue
+
         for rp in paths:
             fp = os.path.join(base, *rp.split('/'))
             if not os.path.isfile(fp): continue
@@ -4213,38 +4388,41 @@ def get_trakt_client_id():
                 with open(fp, 'r', encoding='utf-8', errors='ignore') as f:
                     txt = f.read()
                 for m in re.finditer(r'["\']([a-f0-9]{64})["\']', txt):
-                    xbmc.log(f"[tmdbmovies] [SEREN] Trakt client_id found in {addon_id}", xbmc.LOGINFO)
+                    xbmc.log(f"[tmdbmovies] Trakt client_id found in {addon_id}", xbmc.LOGINFO)
                     return m.group(1)
             except: continue
     
-    # Fallback: scanează TOATE fișierele .py din Seren
-    try:
-        base = xbmcaddon.Addon('plugin.video.seren').getAddonInfo('path')
-        for root, _, files in os.walk(base):
-            for fn in files:
-                if not fn.endswith('.py'): continue
-                fp = os.path.join(root, fn)
-                try:
-                    with open(fp, 'r', encoding='utf-8', errors='ignore') as f:
-                        txt = f.read()
-                    if 'client' not in txt.lower(): continue
-                    for m in re.finditer(r'["\']([a-f0-9]{64})["\']', txt):
-                        xbmc.log(f"[tmdbmovies] [SEREN] Trakt client_id found in {fp}", xbmc.LOGINFO)
-                        return m.group(1)
-                except: continue
-    except: pass
+    # Fallback scan (doar dacă Seren există)
+    if addon_exists('plugin.video.seren'):
+        try:
+            import xbmcaddon
+            seren_addon = xbmcaddon.Addon('plugin.video.seren')
+            base = seren_addon.getAddonInfo('path')
+            for root, _, files in os.walk(base):
+                for fn in files:
+                    if not fn.endswith('.py'): continue
+                    fp = os.path.join(root, fn)
+                    try:
+                        with open(fp, 'r', encoding='utf-8', errors='ignore') as f:
+                            txt = f.read()
+                        if 'client' not in txt.lower(): continue
+                        for m in re.finditer(r'["\']([a-f0-9]{64})["\']', txt):
+                            xbmc.log(f"[tmdbmovies] Trakt client_id found via fallback in {fp}", xbmc.LOGINFO)
+                            return m.group(1)
+                    except: continue
+        except: pass
     
     return None
 
 
 def get_trakt_id(imdb_id, tmdb_id, media_type='movie'):
-    """Convertește IMDb/TMDb ID → Trakt ID"""
+    """Convertește IMDb/TMDb ID → Trakt ID, fără erori în log."""
     import requests
     import xbmc
     
     client_id = get_trakt_client_id()
     if not client_id:
-        xbmc.log("[tmdbmovies] [SEREN] No Trakt client_id found!", xbmc.LOGWARNING)
+        # AICI AM SCOS LINIA CARE GENERA EROAREA IN LOG!
         return None
     
     headers = {
@@ -4255,7 +4433,6 @@ def get_trakt_id(imdb_id, tmdb_id, media_type='movie'):
     
     trakt_type = 'movie' if media_type == 'movie' else 'show'
     
-    # IMDb lookup
     if imdb_id and str(imdb_id).startswith('tt'):
         try:
             r = requests.get(
@@ -4264,12 +4441,9 @@ def get_trakt_id(imdb_id, tmdb_id, media_type='movie'):
             )
             if r.ok and r.json():
                 tid = r.json()[0][trakt_type]['ids']['trakt']
-                xbmc.log(f"[tmdbmovies] [SEREN] Trakt ID: {tid} (from IMDb)", xbmc.LOGINFO)
                 return tid
-        except Exception as e:
-            xbmc.log(f"[tmdbmovies] [SEREN] IMDb lookup failed: {e}", xbmc.LOGWARNING)
+        except: pass
     
-    # TMDb lookup
     if tmdb_id:
         try:
             r = requests.get(
@@ -4278,20 +4452,19 @@ def get_trakt_id(imdb_id, tmdb_id, media_type='movie'):
             )
             if r.ok and r.json():
                 tid = r.json()[0][trakt_type]['ids']['trakt']
-                xbmc.log(f"[tmdbmovies] [SEREN] Trakt ID: {tid} (from TMDb)", xbmc.LOGINFO)
                 return tid
-        except Exception as e:
-            xbmc.log(f"[tmdbmovies] [SEREN] TMDb lookup failed: {e}", xbmc.LOGWARNING)
+        except: pass
     
     return None
-    
+
     
 # =============================================================================
-# MENU: MY PLAYS (Custom Player Launcher) - REPARAȚIE FINALĂ LUC_KODI
+# MENU: MY PLAYS (Custom Player Launcher) - CU SUPORT SETĂRI
 # =============================================================================
 def show_my_plays_menu(params):
     import json
     import xbmc
+    from resources.lib.config import ADDON
     
     tmdb_id = params.get('tmdb_id')
     c_type = params.get('type') # movie, tv, season, episode
@@ -4323,22 +4496,18 @@ def show_my_plays_menu(params):
     writer = ''
 
     try:
-        # Preluăm detaliile principale (din cache)
         main_details = get_tmdb_item_details(tmdb_id, 'movie' if c_type == 'movie' else 'tv') or {}
         
         if main_details:
-            # Imagini
             if main_details.get('poster_path'):
                 poster = f"{IMG_BASE}{main_details['poster_path']}"
             if main_details.get('backdrop_path'):
                 fanart = f"{BACKDROP_BASE}{main_details['backdrop_path']}"
             
-            # IDs
             ext_ids = main_details.get('external_ids', {})
             if not correct_imdb_id: correct_imdb_id = ext_ids.get('imdb_id', '')
             correct_tvdb_id = str(ext_ids.get('tvdb_id', ''))
             
-            # Meta
             status = main_details.get('status', '')
             if main_details.get('genres'):
                 genre = ' / '.join([g['name'] for g in main_details['genres']])
@@ -4347,13 +4516,11 @@ def show_my_plays_menu(params):
             elif main_details.get('production_companies'):
                 studio = main_details['production_companies'][0].get('name', '')
             
-            # Year fallback
             if not year:
                 date_ref = main_details.get('release_date') or main_details.get('first_air_date')
                 if date_ref: year = date_ref[:4]
 
         if c_type == 'episode':
-            # Detalii specifice episod (Plot, Rating, Cast)
             ep_url = f"{BASE_URL}/tv/{tmdb_id}/season/{season}/episode/{episode}?api_key={API_KEY}&language={LANG}&append_to_response=credits"
             import requests
             r_ep = requests.get(ep_url, timeout=3)
@@ -4362,7 +4529,6 @@ def show_my_plays_menu(params):
                 plot = ed.get('overview', '')
                 rating = float(ed.get('vote_average', 0.0))
                 votes = int(ed.get('vote_count', 0))
-                # Cast formatat ca listă de dict-uri (cum vrea luc_kodi)
                 for actor in ed.get('credits', {}).get('guest_stars', [])[:10]:
                     cast_list.append({"name": actor['name'], "role": actor.get('character', '')})
         else:
@@ -4374,9 +4540,22 @@ def show_my_plays_menu(params):
 
     except: pass
 
-    # Fallbacks finale
     if not year and premiered: year = premiered[:4]
     
+    # === CITIRE SETĂRI PLAYERE ===
+    # != 'false' asigură că, dacă setarea nu a fost încă salvată în settings.xml, va funcționa ca TRUE implicit.
+    show_pov = ADDON.getSetting('use_pov') != 'false'
+    show_fenlight = ADDON.getSetting('use_fenlight') != 'false'
+    show_fen = ADDON.getSetting('use_fen') != 'false'
+    show_magneto = ADDON.getSetting('use_magneto') != 'false'
+    show_luckodi = ADDON.getSetting('use_luckodi') != 'false'
+    show_umbrella = ADDON.getSetting('use_umbrella') != 'false'
+    show_elementum = ADDON.getSetting('use_elementum') != 'false'
+    show_cinebox = ADDON.getSetting('use_cinebox') != 'false'
+    show_seren = ADDON.getSetting('use_seren') != 'false'
+    show_mrsplite = ADDON.getSetting('use_mrsplite') != 'false'
+    show_tmdbhelper = ADDON.getSetting('use_tmdbhelper') != 'false'
+
     options = []
     actions = []
     is_folder_list = [] 
@@ -4389,248 +4568,225 @@ def show_my_plays_menu(params):
     # 0. SERIALE (TV)
     # =========================================================================
     if c_type == 'tv':
-        url = f"plugin://plugin.video.themoviedb.helper/?info=search&type=tv&query={safe_title}"
-        options.append(f"[B]Search with [COLOR FF00CED1]TMDB Helper[/COLOR][/B]")
-        actions.append(url)
-        is_folder_list.append(True) 
-        is_luc_kodi_action.append(False)
+        if show_tmdbhelper:
+            url = f"plugin://plugin.video.themoviedb.helper/?info=search&type=tv&query={safe_title}"
+            options.append(f"[B]Search with [COLOR FF00CED1]TMDB Helper[/COLOR][/B]")
+            actions.append(url)
+            is_folder_list.append(True) 
+            is_luc_kodi_action.append(False)
         
+        if not options:
+            xbmcgui.Dialog().notification("My Plays", "Toate playerele sunt dezactivate!", xbmcgui.NOTIFICATION_WARNING)
+            return
+            
         ret = xbmcgui.Dialog().contextmenu(options)
         if ret >= 0:
             xbmc.executebuiltin(f'ActivateWindow(Videos,"{actions[ret]}",return)')
         return
 
     # =========================================================================
-    # 1. POV, Fen, Fen Light & Magneto
+    # 1. PLAYERE DIRECTE
     # =========================================================================
     if c_type != 'season':
         # POV
-        if c_type == 'movie':
-            pov_url = f"plugin://plugin.video.pov/?mode=play_media&media_type=movie&query={safe_title}&year={year}&poster={quote_plus(poster)}&tmdb_id={tmdb_id}&autoplay=false"
-        else:
-            pov_url = f"plugin://plugin.video.pov/?mode=play_media&media_type=episode&query={safe_title}&year={year}&season={season}&episode={episode}&tmdb_id={tmdb_id}&autoplay=false"
-        options.append(f"[B]{prefix} [COLOR FFB041FF]POV[/COLOR][/B]")
-        actions.append(pov_url)
-        is_folder_list.append(False)
-        is_luc_kodi_action.append(False)
-
-        # FEN LIGHT (Fix: Adaugat poster, ep_name si premiered)
-        if c_type == 'movie':
-            fen_url = f"plugin://plugin.video.fenlight/?mode=playback.media&media_type=movie&query={safe_title}&year={year}&poster={quote_plus(poster)}&title={safe_title}&tmdb_id={tmdb_id}&autoplay=false"
-        else:
-            fen_url = f"plugin://plugin.video.fenlight/?mode=playback.media&media_type=episode&query={safe_title}&year={year}&season={season}&episode={episode}&ep_name={quote_plus(ep_name)}&tmdb_id={tmdb_id}&premiered={premiered}&autoplay=false"
-        options.append(f"[B]{prefix} [COLOR lightskyblue]Fen Light[/COLOR][/B]")
-        actions.append(fen_url)
-        is_folder_list.append(False)
-        is_luc_kodi_action.append(False)
-
-        # FEN (Fix: Adaugat poster, ep_name si premiered)
-        if c_type == 'movie':
-            fen_url = f"plugin://plugin.video.fen/?mode=playback.media&media_type=movie&query={safe_title}&year={year}&poster={quote_plus(poster)}&title={safe_title}&tmdb_id={tmdb_id}&autoplay=false"
-        else:
-            fen_url = f"plugin://plugin.video.fen/?mode=playback.media&media_type=episode&query={safe_title}&year={year}&season={season}&episode={episode}&ep_name={quote_plus(ep_name)}&tmdb_id={tmdb_id}&premiered={premiered}&autoplay=false"
-        options.append(f"[B]{prefix} [COLOR blue]Fen[/COLOR][/B]")
-        actions.append(fen_url)
-        is_folder_list.append(False)
-        is_luc_kodi_action.append(False)
-
-    # MAGNETO AIOStreams (Adaugat Nou)
-    if c_type != 'season' and c_type != 'tv':
-        if c_type == 'movie':
-            mag_url = f"plugin://script.module.magneto/?action=MediaPlay&mediatype=movie&imdb_id={correct_imdb_id}"
-        else:
-            mag_url = f"plugin://script.module.magneto/?action=MediaPlay&mediatype=episode&imdb_id={correct_imdb_id}&season={season}&episode={episode}"
-        
-        options.append(f"[B]{prefix} [COLOR red]Magneto[/COLOR][/B]")
-        actions.append(mag_url)
-        is_folder_list.append(False)
-        is_luc_kodi_action.append(False)
-
-
-    # =========================================================================
-    # 2. luc_Kodi
-    # =========================================================================
-    if c_type != 'season':
-        # Construim meta exact ca în log-ul functional de Fallout
-        meta_obj = {
-            "premiered": premiered,
-            "plot": plot,
-            "tmdb": str(tmdb_id),
-            "poster": poster,
-            "thumb": poster,
-            "fanart": fanart,
-            "rating": rating,
-            "votes": votes,
-            "imdb": correct_imdb_id,
-            "imdbnumber": correct_imdb_id,
-            "code": correct_imdb_id,
-            "year": str(year),
-            "mediatype": c_type,
-            "studio": studio,
-            "genre": genre,
-            "status": status,
-            "castandart": cast_list # Listă de obiecte
-        }
-        
-        if c_type == 'episode':
-            meta_obj.update({
-                "title": ep_name,
-                "tvshowtitle": title,
-                "label": ep_name,
-                "season": int(season), # Integer
-                "episode": int(episode), # Integer
-                "tvdb": correct_tvdb_id
-            })
-            meta_enc = quote_plus(json.dumps(meta_obj, ensure_ascii=False))
-            lk_url = f"plugin://plugin.video.luc_kodi/?action=play&tmdb={tmdb_id}&tvdb={correct_tvdb_id}&title={quote_plus(ep_name)}&tvshowtitle={safe_title}&season={season}&episode={episode}&year={year}&premiered={premiered}&imdb={correct_imdb_id}&select=0&meta={meta_enc}"
-        else:
-            meta_obj.update({"title": title, "originaltitle": title})
-            meta_enc = quote_plus(json.dumps(meta_obj, ensure_ascii=False))
-            lk_url = f"plugin://plugin.video.luc_kodi/?action=play&tmdb={tmdb_id}&title={safe_title}&year={year}&premiered={premiered}&imdb={correct_imdb_id}&select=0&meta={meta_enc}"
-
-        options.append(f"[B]{prefix} [COLOR ff00fa9a]luc_[/COLOR]Kodi[/B]")
-        actions.append(lk_url)
-        is_folder_list.append(False)
-        is_luc_kodi_action.append(True)
-
-    # =========================================================================
-    # 3. UMBRELLA (Adaugat Nou - foloseste meta_enc generat de luc_kodi)
-    # =========================================================================
-        if c_type == 'movie':
-            umb_url = f"plugin://plugin.video.umbrella/?action=play&title={safe_title}&year={year}&imdb={correct_imdb_id}&tmdb={tmdb_id}&meta={meta_enc}&select=0"
-        else:
-            umb_url = f"plugin://plugin.video.umbrella/?action=play&title={quote_plus(ep_name)}&year={year}&imdb={correct_imdb_id}&tmdb={tmdb_id}&tvdb={correct_tvdb_id}&season={season}&episode={episode}&tvshowtitle={safe_title}&premiered={premiered}&meta={meta_enc}&select=0"
-        
-        options.append(f"[B]{prefix} [COLOR FFE41B17]Umbrella[/COLOR][/B]")
-        actions.append(umb_url)
-        is_folder_list.append(False)
-        is_luc_kodi_action.append(True) # Umbrella merge cu RunPlugin, nu are nevoie de PlayMedia forcat ca luc_kodi
-
-
-    # =========================================================================
-    # 4. ELEMENTUM (Adaugat Nou)
-    # =========================================================================
-
-    if c_type != 'season':
-        if c_type == 'movie':
-            elem_url = f"plugin://plugin.video.elementum/library/play/movie/{tmdb_id}"
-        else:
-            elem_url = f"plugin://plugin.video.elementum/library/play/show/{tmdb_id}/season/{season}/episode/{episode}"
-        
-        options.append(f"[B]{prefix} [COLOR FF786D5F]Elementum[/COLOR][/B]")
-        actions.append(elem_url)
-        is_folder_list.append(False)
-        is_luc_kodi_action.append(True)
-
-    # =========================================================================
-    # 5. CINEBOX (Adaugat Nou)
-    # =========================================================================
-    if c_type != 'season':
-        if c_type == 'movie':
-            cine_url = f"plugin://plugin.video.cinebox/?action=find_sources&media_type=movie&title={safe_title}&year={year}&tmdb_id={tmdb_id}&imdb_id={correct_imdb_id}&poster={quote_plus(poster)}&autoplay=false"
-        else:
-            cine_url = f"plugin://plugin.video.cinebox/?action=find_sources&media_type=tvshow&title={safe_title}&year={year}&season={season}&episode={episode}&tmdb_id={tmdb_id}&imdb_id={correct_imdb_id}&poster={quote_plus(poster)}&autoplay=false"
-        
-        options.append(f"[B]{prefix} [COLOR FFA70D2A]CINEBOX[/COLOR][/B]")
-        actions.append(cine_url)
-        is_folder_list.append(False)
-        is_luc_kodi_action.append(True) # Cinebox gestionează intern dialogul de căutare surse
-        
-    # =========================================================================
-    # SEREN (necesită Trakt ID)
-    # =========================================================================
-    if c_type != 'season':
-        trakt_media = 'movie' if c_type == 'movie' else 'show'
-        trakt_id = get_trakt_id(correct_imdb_id, tmdb_id, trakt_media)
-        
-        if trakt_id:
-            trakt_id_int = int(trakt_id)
-            
+        if show_pov:
             if c_type == 'movie':
-                action_args = quote_plus(json.dumps({
-                    "item_type": "movie",
-                    "trakt_id": trakt_id_int
-                }))
-                seren_url = (f"plugin://plugin.video.seren/"
-                             f"?action=getSources"
-                             f"&forceresumecheck=true"
-                             f"&source_select=true"
-                             f"&actionArgs={action_args}")
+                pov_url = f"plugin://plugin.video.pov/?mode=play_media&media_type=movie&query={safe_title}&year={year}&poster={quote_plus(poster)}&tmdb_id={tmdb_id}&autoplay=false"
             else:
-                action_args = quote_plus(json.dumps({
-                    "episode": int(episode),
-                    "item_type": "episode",
-                    "season": int(season),
-                    "trakt_id": trakt_id_int
-                }))
-                seren_url = (f"plugin://plugin.video.seren/"
-                             f"?action=getSources"
-                             f"&smartPlay=false"
-                             f"&source_select=true"
-                             f"&forceresumecheck=true"
-                             f"&actionArgs={action_args}")
+                pov_url = f"plugin://plugin.video.pov/?mode=play_media&media_type=episode&query={safe_title}&year={year}&season={season}&episode={episode}&tmdb_id={tmdb_id}&autoplay=false"
+            options.append(f"[B]{prefix} [COLOR FFB041FF]POV[/COLOR][/B]")
+            actions.append(pov_url)
+            is_folder_list.append(False)
+            is_luc_kodi_action.append(False)
+
+        # FEN LIGHT
+        if show_fenlight:
+            if c_type == 'movie':
+                fen_url = f"plugin://plugin.video.fenlight/?mode=playback.media&media_type=movie&query={safe_title}&year={year}&poster={quote_plus(poster)}&title={safe_title}&tmdb_id={tmdb_id}&autoplay=false"
+            else:
+                fen_url = f"plugin://plugin.video.fenlight/?mode=playback.media&media_type=episode&query={safe_title}&year={year}&season={season}&episode={episode}&ep_name={quote_plus(ep_name)}&tmdb_id={tmdb_id}&premiered={premiered}&autoplay=false"
+            options.append(f"[B]{prefix} [COLOR lightskyblue]Fen Light[/COLOR][/B]")
+            actions.append(fen_url)
+            is_folder_list.append(False)
+            is_luc_kodi_action.append(False)
+
+        # FEN
+        if show_fen:
+            if c_type == 'movie':
+                fen_url = f"plugin://plugin.video.fen/?mode=playback.media&media_type=movie&query={safe_title}&year={year}&poster={quote_plus(poster)}&title={safe_title}&tmdb_id={tmdb_id}&autoplay=false"
+            else:
+                fen_url = f"plugin://plugin.video.fen/?mode=playback.media&media_type=episode&query={safe_title}&year={year}&season={season}&episode={episode}&ep_name={quote_plus(ep_name)}&tmdb_id={tmdb_id}&premiered={premiered}&autoplay=false"
+            options.append(f"[B]{prefix} [COLOR blue]Fen[/COLOR][/B]")
+            actions.append(fen_url)
+            is_folder_list.append(False)
+            is_luc_kodi_action.append(False)
+
+        # MAGNETO
+        if show_magneto:
+            if c_type == 'movie':
+                mag_url = f"plugin://script.module.magneto/?action=MediaPlay&mediatype=movie&imdb_id={correct_imdb_id}"
+            else:
+                mag_url = f"plugin://script.module.magneto/?action=MediaPlay&mediatype=episode&imdb_id={correct_imdb_id}&season={season}&episode={episode}"
             
-            options.append(f"[B]{prefix} [COLOR FF00BFFF]Seren[/COLOR][/B]")
-            actions.append(seren_url)
+            options.append(f"[B]{prefix} [COLOR red]Magneto[/COLOR][/B]")
+            actions.append(mag_url)
+            is_folder_list.append(False)
+            is_luc_kodi_action.append(False)
+
+
+        # =========================================================================
+        # 2. luc_Kodi
+        # =========================================================================
+        meta_enc = "" # O definim aici să fie accesibilă și la Umbrella
+        if show_luckodi or show_umbrella:
+            meta_obj = {
+                "premiered": premiered,
+                "plot": plot,
+                "tmdb": str(tmdb_id),
+                "poster": poster,
+                "thumb": poster,
+                "fanart": fanart,
+                "rating": rating,
+                "votes": votes,
+                "imdb": correct_imdb_id,
+                "imdbnumber": correct_imdb_id,
+                "code": correct_imdb_id,
+                "year": str(year),
+                "mediatype": c_type,
+                "studio": studio,
+                "genre": genre,
+                "status": status,
+                "castandart": cast_list
+            }
+            
+            if c_type == 'episode':
+                meta_obj.update({"title": ep_name, "tvshowtitle": title, "label": ep_name, "season": int(season), "episode": int(episode), "tvdb": correct_tvdb_id})
+                meta_enc = quote_plus(json.dumps(meta_obj, ensure_ascii=False))
+                lk_url = f"plugin://plugin.video.luc_kodi/?action=play&tmdb={tmdb_id}&tvdb={correct_tvdb_id}&title={quote_plus(ep_name)}&tvshowtitle={safe_title}&season={season}&episode={episode}&year={year}&premiered={premiered}&imdb={correct_imdb_id}&select=0&meta={meta_enc}"
+            else:
+                meta_obj.update({"title": title, "originaltitle": title})
+                meta_enc = quote_plus(json.dumps(meta_obj, ensure_ascii=False))
+                lk_url = f"plugin://plugin.video.luc_kodi/?action=play&tmdb={tmdb_id}&title={safe_title}&year={year}&premiered={premiered}&imdb={correct_imdb_id}&select=0&meta={meta_enc}"
+
+            if show_luckodi:
+                options.append(f"[B]{prefix} [COLOR ff00fa9a]luc_[/COLOR]Kodi[/B]")
+                actions.append(lk_url)
+                is_folder_list.append(False)
+                is_luc_kodi_action.append(True)
+
+        # =========================================================================
+        # 3. UMBRELLA
+        # =========================================================================
+        if show_umbrella:
+            if c_type == 'movie':
+                umb_url = f"plugin://plugin.video.umbrella/?action=play&title={safe_title}&year={year}&imdb={correct_imdb_id}&tmdb={tmdb_id}&meta={meta_enc}&select=0"
+            else:
+                umb_url = f"plugin://plugin.video.umbrella/?action=play&title={quote_plus(ep_name)}&year={year}&imdb={correct_imdb_id}&tmdb={tmdb_id}&tvdb={correct_tvdb_id}&season={season}&episode={episode}&tvshowtitle={safe_title}&premiered={premiered}&meta={meta_enc}&select=0"
+            
+            options.append(f"[B]{prefix} [COLOR FFE41B17]Umbrella[/COLOR][/B]")
+            actions.append(umb_url)
             is_folder_list.append(False)
             is_luc_kodi_action.append(True)
-        else:
-            # Fallback: Search (nu necesită Trakt ID)
+
+        # =========================================================================
+        # 4. ELEMENTUM
+        # =========================================================================
+        if show_elementum:
             if c_type == 'movie':
-                seren_url = f"plugin://plugin.video.seren/?action=moviesSearchResults&actionArgs={safe_title}"
+                elem_url = f"plugin://plugin.video.elementum/library/play/movie/{tmdb_id}"
             else:
-                seren_url = f"plugin://plugin.video.seren/?action=showsSearchResults&actionArgs={safe_title}"
+                elem_url = f"plugin://plugin.video.elementum/library/play/show/{tmdb_id}/season/{season}/episode/{episode}"
             
-            options.append(f"[B]Search with [COLOR FF00BFFF]Seren[/COLOR][/B]")
-            actions.append(seren_url)
-            is_folder_list.append(True)
+            options.append(f"[B]{prefix} [COLOR FF786D5F]Elementum[/COLOR][/B]")
+            actions.append(elem_url)
+            is_folder_list.append(False)
+            is_luc_kodi_action.append(True)
+
+        # =========================================================================
+        # 5. CINEBOX
+        # =========================================================================
+        if show_cinebox:
+            if c_type == 'movie':
+                cine_url = f"plugin://plugin.video.cinebox/?action=find_sources&media_type=movie&title={safe_title}&year={year}&tmdb_id={tmdb_id}&imdb_id={correct_imdb_id}&poster={quote_plus(poster)}&autoplay=false"
+            else:
+                cine_url = f"plugin://plugin.video.cinebox/?action=find_sources&media_type=tvshow&title={safe_title}&year={year}&season={season}&episode={episode}&tmdb_id={tmdb_id}&imdb_id={correct_imdb_id}&poster={quote_plus(poster)}&autoplay=false"
+            
+            options.append(f"[B]{prefix} [COLOR FFA70D2A]CINEBOX[/COLOR][/B]")
+            actions.append(cine_url)
+            is_folder_list.append(False)
+            is_luc_kodi_action.append(True)
+            
+        # =========================================================================
+        # 6. SEREN
+        # =========================================================================
+        if show_seren:
+            trakt_media = 'movie' if c_type == 'movie' else 'show'
+            trakt_id = get_trakt_id(correct_imdb_id, tmdb_id, trakt_media)
+            
+            if trakt_id:
+                trakt_id_int = int(trakt_id)
+                if c_type == 'movie':
+                    action_args = quote_plus(json.dumps({"item_type": "movie", "trakt_id": trakt_id_int}))
+                    seren_url = f"plugin://plugin.video.seren/?action=getSources&forceresumecheck=true&source_select=true&actionArgs={action_args}"
+                else:
+                    action_args = quote_plus(json.dumps({"episode": int(episode), "item_type": "episode", "season": int(season), "trakt_id": trakt_id_int}))
+                    seren_url = f"plugin://plugin.video.seren/?action=getSources&smartPlay=false&source_select=true&forceresumecheck=true&actionArgs={action_args}"
+                
+                options.append(f"[B]{prefix} [COLOR FF00BFFF]Seren[/COLOR][/B]")
+                actions.append(seren_url)
+                is_folder_list.append(False)
+                is_luc_kodi_action.append(True)
+            else:
+                # Fallback: Search (nu necesită Trakt ID)
+                seren_url = f"plugin://plugin.video.seren/?action=moviesSearchResults&actionArgs={safe_title}" if c_type == 'movie' else f"plugin://plugin.video.seren/?action=showsSearchResults&actionArgs={safe_title}"
+                options.append(f"[B]Search with [COLOR FF00BFFF]Seren[/COLOR][/B]")
+                actions.append(seren_url)
+                is_folder_list.append(True)
+                is_luc_kodi_action.append(False)
+            
+        # =========================================================================
+        # 7. MRSP Lite
+        # =========================================================================
+        if show_mrsplite:
+            if c_type == 'movie':
+                mrsp_url = f"plugin://plugin.video.romanianpack/?action=searchSites&searchSites=cuvant&cuvant={safe_title}+{year}&tmdb_id={tmdb_id}&imdb_id={correct_imdb_id}&mediatype=movie"
+            else:
+                try: s_str = f"s{int(season):02d}"
+                except: s_str = f"s{season}"
+                mrsp_url = f"plugin://plugin.video.romanianpack/?action=searchSites&searchSites=cuvant&cuvant={safe_title}+{s_str}&showname={safe_title}&season={season}&episode={episode}&tmdb_id={tmdb_id}&imdb_id={correct_imdb_id}&mediatype=episode"
+            
+            options.append(f"[B]{prefix} [COLOR orange]MRSP Lite[/COLOR][/B]")
+            actions.append(mrsp_url)
+            is_folder_list.append(False)
             is_luc_kodi_action.append(False)
-        
-    # =========================================================================
-    # 6. MRSP Lite
-    # =========================================================================
-    if c_type != 'season':
-        if c_type == 'movie':
-            mrsp_url = f"plugin://plugin.video.romanianpack/?action=searchSites&searchSites=cuvant&cuvant={safe_title}+{year}&tmdb_id={tmdb_id}&imdb_id={correct_imdb_id}&mediatype=movie"
-        else:
-            try: s_str = f"s{int(season):02d}"
-            except: s_str = f"s{season}"
-            mrsp_url = f"plugin://plugin.video.romanianpack/?action=searchSites&searchSites=cuvant&cuvant={safe_title}+{s_str}&showname={safe_title}&season={season}&episode={episode}&tmdb_id={tmdb_id}&imdb_id={correct_imdb_id}&mediatype=episode"
-        
-        options.append(f"[B]{prefix} [COLOR orange]MRSP Lite[/COLOR][/B]")
-        actions.append(mrsp_url)
-        is_folder_list.append(False)
-        is_luc_kodi_action.append(False)
 
-
-    # =========================================================================
-    # 7. Extra: Search TMDbH (Filme)
-    # =========================================================================
-    if c_type == 'movie':
-        actions.append(f"plugin://plugin.video.themoviedb.helper/?info=search&type=movie&query={safe_title}")
-        options.append(f"[B]Search with [COLOR gold]TMDB Helper[/COLOR][/B]")
-        is_folder_list.append(True)
-        is_luc_kodi_action.append(False)
-
-    # =========================================================================
-    # 8. TMDb Helper
-    # =========================================================================
-    url = ""
-    if c_type == 'movie':
-        url = f"plugin://plugin.video.themoviedb.helper/?info=play&type=movie&tmdb_id={tmdb_id}"
-    elif c_type == 'episode':
-        url = f"plugin://plugin.video.themoviedb.helper/?info=play&type=episode&tmdb_id={tmdb_id}&season={season}&episode={episode}"
-    elif c_type == 'season':
-        url = f"plugin://plugin.video.themoviedb.helper/?info=search&type=tv&query={safe_title}"
-    
-    if url:
-        options.append(f"[B]{'Search' if c_type=='season' else prefix} [COLOR FF00CED1]TMDB Helper[/COLOR][/B]")
-        actions.append(url)
-        is_folder_list.append(c_type == 'season')
-        is_luc_kodi_action.append(False)
-
+        # =========================================================================
+        # 8. TMDb Helper
+        # =========================================================================
+        if show_tmdbhelper:
+            if c_type == 'movie':
+                actions.append(f"plugin://plugin.video.themoviedb.helper/?info=search&type=movie&query={safe_title}")
+                options.append(f"[B]Search with [COLOR gold]TMDB Helper[/COLOR][/B]")
+                is_folder_list.append(True)
+                is_luc_kodi_action.append(False)
+                
+                url = f"plugin://plugin.video.themoviedb.helper/?info=play&type=movie&tmdb_id={tmdb_id}"
+                options.append(f"[B]{prefix} [COLOR FF00CED1]TMDB Helper[/COLOR][/B]")
+                actions.append(url)
+                is_folder_list.append(False)
+                is_luc_kodi_action.append(False)
+            elif c_type == 'episode':
+                url = f"plugin://plugin.video.themoviedb.helper/?info=play&type=episode&tmdb_id={tmdb_id}&season={season}&episode={episode}"
+                options.append(f"[B]{prefix} [COLOR FF00CED1]TMDB Helper[/COLOR][/B]")
+                actions.append(url)
+                is_folder_list.append(False)
+                is_luc_kodi_action.append(False)
 
     # --- EXECUȚIE ---
+    if not options:
+        xbmcgui.Dialog().notification("My Plays", "Toate playerele sunt dezactivate!", xbmcgui.NOTIFICATION_WARNING)
+        return
+
     ret = xbmcgui.Dialog().contextmenu(options)
     if ret >= 0:
         target = actions[ret]
@@ -4640,10 +4796,8 @@ def show_my_plays_menu(params):
             xbmc.sleep(300)
             
             if "script.module.magneto" in target:
-                # Magneto: RunPlugin (script, nu plugin)
                 xbmc.executebuiltin(f"RunPlugin({target})")
             else:
-                # Seren, luc_kodi, Umbrella, Elementum, Cinebox: PlayMedia
                 xbmc.executebuiltin(f"PlayMedia({target})")
             
         elif is_folder_list[ret]:
@@ -4712,7 +4866,7 @@ def process_single_list_warmup(action, content_type, page=1):
         
         cache_list.append({
             'label': next_label, 'url': next_url, 'is_folder': True,
-            'art': {'icon': 'DefaultFolder.png', 'thumb': 'DefaultFolder.png'},
+            'art': {'icon': NEXT_PAGE_ICON, 'thumb': NEXT_PAGE_ICON},
             'info': {'mediatype': 'video', 'plot': 'Next Page'},
             'cm': [], 'resume_time': 0, 'total_time': 0, 'li': None
         })
