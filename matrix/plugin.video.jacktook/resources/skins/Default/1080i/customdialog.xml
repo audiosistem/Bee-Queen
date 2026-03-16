@@ -1,0 +1,105 @@
+<window type="dialog">
+    <coordinates>
+        <left>460</left>
+        <top>290</top>
+        <width>1000</width>
+        <height>500</height>
+    </coordinates>
+
+    <defaultcontrol always="true">32503</defaultcontrol>
+    <animation type="WindowOpen" reversible="false">
+        <effect type="zoom" start="80" end="100" center="50%,50%" delay="160" tween="back" time="240"/>
+        <effect type="fade" delay="160" end="100" time="240"/>
+    </animation>
+    <animation type="WindowClose" reversible="false">
+        <effect type="zoom" start="100" end="80" center="50%,50%" easing="in" tween="back" time="240"/>
+        <effect type="fade" start="100" end="0" time="240"/>
+    </animation>
+    <depth>0.40</depth>
+
+    <controls>
+        <control type="group">
+            <width>1000</width>
+            <height>500</height>
+
+            <!-- Card with Rounded Corners -->
+            <control type="image">
+                <width>1000</width>
+                <height>500</height>
+                <texture border="30">circle.png</texture>
+                <colordiffuse>CC000000</colordiffuse>
+            </control>
+
+            <!-- Window Title -->
+            <control type="label" id="32500">
+                <top>20</top>
+                <width>1000</width>
+                <height>40</height>
+                <font>font25</font>
+                <align>center</align>
+                <textcolor>white</textcolor>
+                <shadowcolor>AA000000</shadowcolor>
+            </control>
+
+            <!-- QR Code -->
+            <control type="image" id="32504">
+                <top>110</top>
+                <left>60</left>
+                <width>280</width>
+                <height>280</height>
+                <texture>qr_placeholder.png</texture>
+                <aspectratio>keep</aspectratio>
+            </control>
+
+            <!-- Text Body -->
+            <control type="label" id="32501">
+                <font>font14</font>
+                <top>110</top>
+                <left>400</left>
+                <width>550</width>
+                <height>180</height>
+                <align>left</align>
+                <textcolor>white</textcolor>
+                <shadowcolor>AA000000</shadowcolor>
+                <wrapmultiline>true</wrapmultiline>
+            </control>
+
+             <!-- Close button -->
+            <control type="button" id="32503">
+                <left>940</left>
+                <top>10</top>
+                <width>50</width>
+                <height>50</height>
+                <texturefocus colordiffuse="FF12A0C7">Button/close.png</texturefocus>
+                <texturenofocus colordiffuse="EEFFFFFF">Button/close.png</texturenofocus>
+            </control>
+        </control>
+
+        <control type="group">
+            <width>550</width>
+            <height>100</height>
+            <top>320</top>
+            <left>400</left>
+
+            <!-- Card with Rounded Corners -->
+            <control type="image">
+                <right>-6</right>
+                <bottom>-2</bottom>
+                <texture border="30">circle.png</texture>
+                <colordiffuse>CCFF0000</colordiffuse>
+            </control>
+
+             <!-- Text URL -->
+            <control type="label" id="32502">
+                <font>font14</font>
+                <align>center</align>
+                <aligny>center</aligny>
+                <height>100</height>
+                <textcolor>white</textcolor>
+                <shadowcolor>FF000000</shadowcolor>
+                <wrap>true</wrap> 
+            </control>
+        </control>
+    </controls>
+</window>
+

@@ -83,6 +83,7 @@ def episode_infodict(meta, **kwargs):
 
 def season_infodict(meta, **kwargs):
 	obj = {k: v for k in seasonkeys if (v := meta.get(k))}
+	obj.update({k: v for k, v in kwargs.items() if k in seasonkeys})
 	obj['mediatype'] = 'season'
 	obj['premiered'] = kwargs['air_date']
 	obj['rating'] = kwargs['vote_average']

@@ -1,0 +1,1659 @@
+<?xml version='1.0' encoding='utf-8'?>
+<settings version="1">
+    <section id="plugin.video.jacktook">
+            <category id="general_category" label="30717">
+                <group id="search" label="90006">
+                    <setting id="search_dialog_style" type="string" label="90238" help="">
+                        <default>0</default>
+                        <constraints>
+                            <options>
+                                <option label="90239">0</option>
+                                <option label="90240">1</option>
+                            </options>
+                        </constraints>
+                        <control type="spinner" format="string" />
+                    </setting>
+                </group>
+                <group id="update" label="30724">
+                    <setting id="addon_update" type="action" label="30724" help="30839"> 
+                        <data>RunPlugin(plugin://plugin.video.jacktook/?action=addon_update)</data>
+                        <control type="button" format="action">
+                            <close>false</close>
+                        </control>
+                    </setting>
+                    <setting id="update_action" type="string" label="30932" help="30933">
+                        <default>0</default>
+                        <constraints>
+                            <options>
+                                <option label="30934">0</option>
+                                <option label="30935">1</option>
+                                <option label="30732">2</option>
+                            </options>
+                        </constraints>
+                        <control type="spinner" format="string" />
+                    </setting>
+                    <setting id="downgrade_addon" type="action" label="90215" help="">
+                        <data>RunPlugin(plugin://plugin.video.jacktook/?action=downgrade_addon)</data>
+                        <control type="button" format="action">
+                            <close>false</close>
+                        </control>
+                    </setting>
+                    <setting id="show_changelog" type="action" label="30894" help="30895">
+                        <data>RunPlugin(plugin://plugin.video.jacktook/?action=show_changelog)</data>
+                        <control type="button" format="action">
+                            <close>false</close>
+                        </control>
+                    </setting>
+                    <setting id="donate" type="action" label="90018" help="">
+                        <data>RunPlugin(plugin://plugin.video.jacktook/?action=donate)</data>
+                        <control type="button" format="action">
+                            <close>false</close>
+                        </control>
+                    </setting>
+                </group>
+                <group id="backup" label="90258">
+                    <setting id="settings_backup_strip_sensitive" type="boolean" label="90263" help="90264">
+                        <default>true</default>
+                        <control type="toggle" />
+                    </setting>
+                    <setting id="export_settings_backup" type="action" label="90259" help="90260">
+                        <data>RunPlugin(plugin://plugin.video.jacktook/?action=export_settings_backup)</data>
+                        <control type="button" format="action">
+                            <close>false</close>
+                        </control>
+                    </setting>
+                    <setting id="restore_settings_backup" type="action" label="90261" help="90262">
+                        <data>RunPlugin(plugin://plugin.video.jacktook/?action=restore_settings_backup)</data>
+                        <control type="button" format="action">
+                            <close>true</close>
+                        </control>
+                    </setting>
+                    <setting id="reset_all_settings" type="action" label="90278" help="90284">
+                        <data>RunPlugin(plugin://plugin.video.jacktook/?action=reset_all_settings)</data>
+                        <control type="button" format="action">
+                            <close>true</close>
+                        </control>
+                    </setting>
+                    <setting id="factory_reset" type="action" label="90285" help="90291">
+                        <data>RunPlugin(plugin://plugin.video.jacktook/?action=factory_reset)</data>
+                        <control type="button" format="action">
+                            <close>true</close>
+                        </control>
+                    </setting>
+                </group>
+                <group id="cache" label="30723">
+                    <setting id="cache_enabled" type="boolean" label="30721" help="30809"> 
+                        <default>true</default>
+                        <control type="toggle" />
+                    </setting>
+                    <setting id="cache_expiration" type="integer" label="30722" help="30813"> 
+                        <default>24</default>
+                        <constraints>
+                            <minimum>1</minimum>
+                            <step>1</step>
+                            <maximum>30</maximum>
+                        </constraints>
+                        <control type="slider" format="integer">
+                            <popup>false</popup>
+                        </control>
+                        <dependencies>
+                            <dependency type="visible">
+                                <condition operator="is" setting="cache_enabled">true</condition>
+                            </dependency>
+                        </dependencies>
+                    </setting>
+                    <setting id="clear_cache_update" type="boolean" label="30806" help="30846"> 
+                        <default>true</default>
+                        <control type="toggle" />
+                        <dependencies>
+                            <dependency type="visible">
+                                <condition operator="is" setting="cache_enabled">true</condition>
+                            </dependency>
+                        </dependencies>
+                    </setting>
+                </group>
+                <group id="calendar" label="30896">
+                    <setting id="use_broadcast_adjustment" type="boolean" label="30897" help="30898">
+                        <default>false</default>
+                        <control type="toggle" />
+                    </setting>
+                    <setting id="broadcast_offset" type="integer" label="30899" help="30900">
+                        <default>0</default>
+                        <constraints>
+                            <minimum>-24</minimum>
+                            <maximum>24</maximum>
+                            <step>1</step>
+                        </constraints>
+                        <control type="slider" format="integer">
+                            <popup>false</popup>
+                        </control>
+                        <dependencies>
+                            <dependency type="visible">
+                                <condition operator="is" setting="use_broadcast_adjustment">true</condition>
+                            </dependency>
+                        </dependencies>
+                    </setting>
+                </group>
+        </category>
+        <category id="services_category" label="30150">
+            <group id="torrents" label="30862">
+                <setting id="torrent_enable" type="boolean" label="30713" help="30836">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="torrent_client" type="string" label="30002" help="30863">
+                    <default>Jacktorr</default>
+                    <constraints>
+                        <options>
+                            <option label="30714">Jacktorr</option>
+                            <option label="30715">Torrest</option>
+                            <option label="30716">Elementum</option>
+                        </options>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="torrent_enable">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="spinner" format="string" />
+                </setting>
+            </group>
+            <group id="real_debrid" label="30152">
+                <setting id="real_debrid_enabled" type="boolean" label="30734" help="30837">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="real_debid_authorized" type="boolean" label="" help="">
+                    <visible>false</visible>
+                    <default>false</default>
+                    <control type="toggle" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="real_debrid_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="real_debrid_user" type="string" label="30782" help="30817">
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="real_debrid_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="real_debrid_token" type="string" label="30787" help="30848">
+                    <default />
+                    <visible>false</visible>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="real_debrid_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="real_debrid_auth" type="action" label="30783" help="30835">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=rd_auth)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="real_debrid_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="real_debrid_remove_auth" type="action" label="30784" help="30853">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=rd_remove_auth)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="real_debrid_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <group id="alldebrid" label="90121">
+                <setting id="alldebrid_enabled" type="boolean" label="30734" help="30824">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="alldebrid_authorized" type="boolean" label="" help="">
+                    <visible>false</visible>
+                    <default>false</default>
+                    <control type="toggle" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="alldebrid_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="alldebrid_user" type="string" label="30782" help="30817">
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="alldebrid_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="alldebrid_token" type="string" label="30787" help="30814">
+                    <default />
+                    <visible>false</visible>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="alldebrid_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="alldebrid_auth" type="action" label="30783" help="30845">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=ad_auth)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="alldebrid_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="alldebrid_remove_auth" type="action" label="30784" help="30853">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=ad_remove_auth)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="alldebrid_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <!-- <group id="debrider" label="30789">
+                <setting id="debrider_enabled" type="boolean" label="30734" help="">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="debrider_token" type="string" label="30787" help="">
+                    <default />
+                    <visible>false</visible>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="debrider_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="debrider_auth" type="action" label="30783" help="">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=debrider_auth)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="debrider_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="debrider_remove_auth" type="action" label="30784" help="">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=debrider_remove_auth)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="debrider_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group> -->
+            <group id="torbox" label="30788">
+                <setting id="torbox_enabled" type="boolean" label="30734" help="30843">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="torbox_user" type="string" label="30782" help="30911">
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="torbox_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="torbox_token" type="string" label="30787" help="30832">
+                    <default />
+                    <visible>false</visible>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="torbox_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="tb_auth" type="action" label="30783" help="30912">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=tb_auth)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="torbox_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="tb_remove_auth" type="action" label="30784" help="30913">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=tb_remove_auth)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="torbox_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <group id="premiumize" label="30785">
+                <setting id="premiumize_enabled" type="boolean" label="30734" help="30824">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="premiumize_token" type="string" label="30787" help="30814">
+                    <default />
+                    <visible>false</visible>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="premiumize_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="premiumize_auth" type="action" label="30783" help="30845">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=pm_auth)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="premiumize_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <group id="easynews" label="90232">
+                <setting id="easynews_enabled" type="boolean" label="30734" help="90233">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="easynews_user" type="string" label="90127" help="90234">
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="easynews_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="easynews_password" type="string" label="90128" help="90235">
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="easynews_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="easynews_timeout" type="integer" label="30031" help="90236">
+                    <default>25</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <maximum>60</maximum>
+                        <step>1</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="easynews_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="easynews_info" type="action" label="90237" help="">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=easynews_info)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="easynews_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <group id="debrid_cleanup" label="30106">
+                <setting id="clear_debrid_cache" type="action" label="90344"> 
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=clear_debrid_cache)</data>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="cache_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <group id="uncached" label="30790">
+                <setting id="show_uncached" type="boolean" label="30791" help="30803">
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+            </group>
+            <group id="service_notifications" label="90225">
+                <setting id="debrid_expiration_enabled" type="boolean" label="90226" help="90227">
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="debrid_expiration_threshold" type="integer" label="90228" help="90229">
+                    <default>3</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <maximum>30</maximum>
+                        <step>1</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="debrid_expiration_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+        </category>
+        <category id="sources_category" label="30864">
+            <group id="stremio_general" label="90150">
+                <setting id="stremio_enabled" type="boolean" label="30734" help="30869">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="stremio_loggedin" type="string">
+                    <default>false</default>
+                    <control type="edit" format="string" />
+                    <visible>false</visible>
+                </setting>
+                <setting id="stremio_email" type="string">
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <visible>false</visible>
+                </setting>
+                <setting id="stremio_pass" type="string">
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <visible>false</visible>
+                </setting>
+                <setting id="stremio_timeout" type="integer" label="90123" help="">
+                    <default>25</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <maximum>120</maximum>
+                        <step>1</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="stremio_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="stremio_only_catalogs" type="boolean" label="30901" help="30902">
+                    <default>false</default>
+                    <control type="toggle" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="stremio_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="stremio_ping_addons" type="action" label="30930" help="30931">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=stremio_filtered_selection)</data>
+                    <control type="button" format="action">
+                         <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="stremio_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="clear_stremio_cache" type="action" label="90343"> 
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=clear_stremio_cache)</data>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <and>
+                                <condition operator="is" setting="stremio_enabled">true</condition>
+                                <condition operator="is" setting="cache_enabled">true</condition>
+                            </and>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="stremio_login" type="action" label="30871" help="30866">
+                    <dependencies>
+                        <dependency type="visible">
+                            <and>
+                                <condition operator="is" setting="stremio_enabled">true</condition>
+                                <condition operator="is" setting="stremio_loggedin">false</condition>
+                            </and>
+                        </dependency>
+                    </dependencies>
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=stremio_login)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                </setting>
+                <setting id="stremio_logout" type="action" label="30868" help="30867">
+                    <dependencies>
+                        <dependency type="visible">
+                            <and>
+                                <condition operator="is" setting="stremio_enabled">true</condition>
+                                <condition operator="is" setting="stremio_loggedin">true</condition>
+                            </and>
+                        </dependency>
+                    </dependencies>
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=stremio_logout)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                </setting>
+                <setting id="stremio_update" type="action" label="30874" help="90336">
+                    <dependencies>
+                        <dependency type="visible">
+                            <and>
+                                <condition operator="is" setting="stremio_enabled">true</condition>
+                                <condition operator="is" setting="stremio_loggedin">true</condition>
+                            </and>
+                        </dependency>
+                    </dependencies>
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=stremio_update)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                </setting>
+                <setting id="stremio_toggle_addons" type="action" label="30870" help="90337">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=stremio_toggle_addons)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="stremio_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="stremio_toggle_catalogs" type="action" label="30875" help="90338">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=stremio_toggle_catalogs)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="stremio_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="stremio_toggle_tv_addons" type="action" label="30903" help="90339">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=stremio_toggle_tv_addons)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="stremio_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="stremio_add_custom_addon" type="action" label="90001" help="90002">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=add_custom_stremio_addon)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="stremio_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="stremio_remove_custom_addon" type="action" label="90138" help="90340">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=remove_custom_stremio_addon)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="stremio_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="stremio_manage_phone" type="action" label="90162" help="90163">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=stremio_manage_phone)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="stremio_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <group id="jackett" label="30775">
+                <setting id="jackett_enabled" type="boolean" label="30734" help="30849">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="jackett_host" type="string" label="30052" help="30815">
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="jackett_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="jackett_port" type="string" label="90118" help="90119">
+                    <default>9117</default>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="jackett_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="jackett_apikey" type="string" label="30051" help="30821">
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="jackett_enabled">true</condition>                        
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="jackett_timeout" type="integer" label="30031" help="30810">
+                    <default>30</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <maximum>300</maximum>
+                        <step>1</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="jackett_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <group id="prowlarr" label="30776">
+                <setting id="prowlarr_enabled" type="boolean" label="30734" help="30826">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="prowlarr_host" type="string" label="30052" help="30851">
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string"/>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="prowlarr_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="prowlarr_port" type="string" label="90118" help="90120">
+                    <default>9696</default>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string"/>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="prowlarr_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="prowlarr_apikey" type="string" label="30051" help="30854">
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="prowlarr_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="prowlarr_indexer_ids" type="string" label="30053" help="30840">
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="prowlarr_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="prowlarr_timeout" type="integer" label="30031" help="30841">
+                    <default>25</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <maximum>30</maximum>
+                        <step>1</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="prowlarr_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+             <group id="jacktookburst" label="30780">
+                <setting id="jacktookburst_enabled" type="boolean" label="30734" help="30859">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="burst_config" type="action" label="30781" help="30823">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=open_burst_config)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="jacktookburst_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <group id="jackgram" label="30767">
+                <setting id="jackgram_enabled" type="boolean" label="30734" help="30850">
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="jackgram_host" type="string" label="30768" help="30827">
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="jackgram_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="jackgram_token" type="string" label="30787" help="90249">
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="jackgram_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+        </category>
+        <category id="playback_category" label="90139">
+            <group id="playback_group" label="90139">
+                <setting id="auto_play" type="boolean" label="30718" help="30838"> 
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="auto_play_quality" type="string" label="30879" help="">
+                    <default>1080p</default>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="auto_play">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <constraints>
+                        <options>
+                            <option label="30882">4K</option>
+                            <option label="30880">1080p</option>
+                            <option label="30881">720p</option>
+                            <option label="30883">480p</option>
+                        </options>
+                    </constraints>
+                    <control type="spinner" format="string" />
+                </setting>
+                <setting id="super_quick_play" type="boolean" label="90140" help="90141">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="precaching_enabled" type="boolean" label="90145" help="90146">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="precaching_episode_count" type="integer" label="90147" help="90148">
+                    <default>1</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <maximum>5</maximum>
+                        <step>1</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="precaching_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>                <setting id="playnext_dialog_enabled" type="boolean" label="30719" help="30834"> 
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="playnext_time" type="integer" label="30720" help="30829"> 
+                    <default>50</default>
+                    <constraints>
+                        <minimum>5</minimum>
+                        <maximum>180</maximum>
+                        <step>1</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                </setting>
+                <setting id="volume_check_enabled" type="boolean" label="90216" help="90217"> 
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="volume_check_threshold" type="integer" label="90218" help="90219">
+                    <default>50</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <maximum>100</maximum>
+                        <step>1</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="volume_check_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="auto_audio" type="boolean" label="90003" help=""> 
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="auto_audio_language" type="string" label="90004" help="90005">
+                    <default>None</default>
+                    <heading>90004</heading>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="auto_audio">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <constraints>
+                        <options>
+                            <option label="None">None</option>
+                            <option label="English">English</option>
+                            <option label="Spanish">Spanish</option>
+                            <option label="Portuguese">Portuguese</option>
+                            <option label="German">German</option>
+                            <option label="French">French</option>
+                            <option label="Italian">Italian</option>
+                            <option label="Dutch">Dutch</option>
+                            <option label="Polish">Polish</option>
+                            <option label="Russian">Russian</option>
+                            <option label="Turkish">Turkish</option>
+                            <option label="Greek">Greek</option>
+                            <option label="Hindi">Hindi</option>
+                            <option label="Indonesian">Indonesia</option>
+                            <option label="Japanese">Japanese</option>
+                            <option label="Korean">Korean</option>
+                            <option label="Ukrainian">Ukrainian</option>
+                            <option label="Chinese">Chinese</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="string" />
+                </setting>
+            </group>
+            <group id="skip_intro" label="90155">
+                <setting id="skip_intro_enabled" type="boolean" label="90156" help="90157">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="skip_intro_auto" type="boolean" label="90158" help="90159">
+                    <default>false</default>
+                    <control type="toggle" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="skip_intro_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+        </category>
+        <category id="filtering_category" label="30861">
+            <group id="filtering_stremio" label="90150">
+                <setting id="stremio_bypass_addons" type="boolean" label="90211" help="90212">
+                    <default>false</default>
+                    <control type="toggle" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="stremio_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="stremio_bypass_addons_select" type="action" label="90213" help="90214">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=stremio_bypass_addons_select)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <and>
+                                <condition operator="is" setting="stremio_enabled">true</condition>
+                                <condition operator="is" setting="stremio_bypass_addons">true</condition>
+                            </and>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="stremio_bypass_addon_list" type="string">
+                    <default>aiostreams</default>
+                    <control type="edit" format="string" />
+                    <visible>false</visible>
+                </setting>
+            </group>
+            <group id="filtering_group" label="30865">
+                <setting id="indexers_total_results" type="integer" label="30029" help="30852">
+                    <default>100</default>
+                    <constraints>
+                        <minimum>10</minimum>
+                        <maximum>300</maximum>
+                        <step>10</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                </setting>
+                <setting id="indexers_desc_length" type="integer" label="30026" help="30825">
+                    <default>100</default>
+                    <constraints>
+                        <minimum>50</minimum>
+                        <maximum>200</maximum>
+                        <step>10</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                </setting>
+                <setting id="indexers_sort_by" type="string" label="30726" help="30822">
+                    <default>Seeds</default>
+                    <constraints>
+                        <options>
+                            <option label="30728">Seeds</option>
+                            <option label="30729">Size</option>
+                            <option label="30727">Quality</option>
+                            <option label="30730">Cached</option>
+                            <option label="30731">Date</option>
+                            <option label="30732">None</option>
+                        </options>
+                    </constraints>
+                    <control type="spinner" format="string" />
+                </setting>
+                <setting id="include_season_packs" type="boolean" label="30710" help="">
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+                 <setting id="include_tvshow_specials" type="boolean" label="90085" help="">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+            </group>
+            <group id="quality_filter" label="90099">
+               <setting id="bluray_hd_enabled" type="boolean" label="90100" help="90105">
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="web_hd_enabled" type="boolean" label="90101" help="90106">
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="dvd_tv_enabled" type="boolean" label="90102" help="90107">
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="cam_screener_enabled" type="boolean" label="90103" help="90108">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="unknown_enabled" type="boolean" label="90104" help="90109">
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+            </group>
+            <group id="size_filter" label="90058">
+                <setting id="filter_size_enabled" type="boolean" label="90059" help="">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="minimum_size" type="integer" label="90060" help="">
+                    <default>100</default>
+                    <constraints>
+                        <minimum>100</minimum>
+                        <maximum>100000</maximum>
+                        <step>10</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="filter_size_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="maximum_size" type="integer" label="90061" help="">
+                    <default>20000</default>
+                    <constraints>
+                        <minimum>100</minimum>
+                        <maximum>100000</maximum>
+                        <step>100</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="filter_size_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+        </category>
+        <category id="subtitle_category" label="30886">
+            <group id="general_settings" label="30884">
+                <setting id="auto_subtitle_selection" type="boolean" label="30878" help=""> 
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="auto_subtitle_download" type="boolean" label="90122" help=""> 
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+            </group>   
+            <group id="stremio_subtitle" label="30893">
+                <setting id="stremio_subtitle_enabled" type="boolean" label="30734" help="">
+                    <default>false</default>
+                    <control type="toggle" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="stremio_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="stremio_sub_addon_host" type="string" label="30885" help="">
+                    <default>https://opensubtitles-v3.strem.io/</default>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <and>
+                                <condition operator="is" setting="stremio_enabled">true</condition>
+                                <condition operator="is" setting="stremio_subtitle_enabled">true</condition>
+                            </and>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string" />
+                </setting>
+                <setting id="subtitle_language" type="string" label="30736" help="30873">
+                    <default>None</default>
+                    <heading>30736</heading>
+                    <constraints>
+                        <options>
+                            <option label="None">None</option>
+                            <option label="English">English</option>
+                            <option label="Spanish">Spanish</option>
+                            <option label="Portuguese">Portuguese</option>
+                            <option label="German">German</option>
+                            <option label="French">French</option>
+                            <option label="Italian">Italian</option>
+                            <option label="Dutch">Dutch</option>
+                            <option label="Polish">Polish</option>
+                            <option label="Russian">Russian</option>
+                            <option label="Turkish">Turkish</option>
+                            <option label="Greek">Greek</option>
+                            <option label="Hindi">Hindi</option>
+                            <option label="Indonesian">Indonesia</option>
+                            <option label="Japanese">Japanese</option>
+                            <option label="Korean">Korean</option>
+                            <option label="Ukrainian">Ukrainian</option>
+                            <option label="Chinese">Chinese</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="stremio_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <group id="deepl_translator" label="30891">
+                <setting id="deepl_enabled" type="boolean" label="30889" help="">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="deepl_api_key" type="string" label="30890" help="">
+                    <default></default>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="deepl_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string" />
+                </setting>
+                <setting id="deepl_target_language" type="string" label="30892" help="">
+                    <default>None</default>
+                    <heading>30736</heading>
+                    <constraints>
+                        <options>
+                            <option value="None">None</option>
+                            <option value="ar">العربية</option>
+                            <option value="bg">Български</option>
+                            <option value="zh">中文</option>
+                            <option value="zh-Hant">繁體中文</option>
+                            <option value="zh-Hans">简体中文</option>
+                            <option value="cs">Čeština</option>
+                            <option value="da">Dansk</option>
+                            <option value="nl">Nederlands</option>
+                            <option value="en">English</option>
+                            <option value="en-GB">English (British)</option>
+                            <option value="en-US">English (American)</option>
+                            <option value="et">Eesti</option>
+                            <option value="fi">Suomi</option>
+                            <option value="fr">Français</option>
+                            <option value="de">Deutsch</option>
+                            <option value="el">Ελληνικά</option>
+                            <option value="hu">Magyar</option>
+                            <option value="id">Indonesia</option>
+                            <option value="it">Italiano</option>
+                            <option value="ja">日本語</option>
+                            <option value="ko">한국어</option>
+                            <option value="lv">Latviešu</option>
+                            <option value="lt">Lietuvių</option>
+                            <option value="nb">Norsk (Bokmål)</option>
+                            <option value="pl">Polski</option>
+                            <option value="pt">Português</option>
+                            <option value="pt-BR">Português (Brasil)</option>
+                            <option value="ro">Română</option>
+                            <option value="ru">Русский</option>
+                            <option value="sk">Slovenčina</option>
+                            <option value="sl">Slovenščina</option>
+                            <option value="es">Español</option>
+                            <option value="sv">Svenska</option>
+                            <option value="tr">Türkçe</option>
+                            <option value="uk">Українська</option>
+                        </options>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="deepl_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="list" format="string" />
+                </setting>
+            </group>
+        </category>
+        <category id="metdata_category" label="90073">
+            <group id="fanart_tv" label="90222">
+                <setting id="fanart_client_key" type="string" label="90223" help="90224">
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string"/>
+                </setting>
+            </group>
+            <group id="tmdb" label="30102">
+                <setting id="tmdb_api_key" type="string" label="30103" help="30858">
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string"/>
+                </setting>
+                <setting id="language" type="integer" label="42418" help="42419">
+                    <default>18</default>
+                    <constraints>
+                        <options>
+                            <option label="40000">0</option>
+                            <option label="40001">1</option>
+                            <option label="40002">2</option>
+                            <option label="40003">3</option>
+                            <option label="40004">4</option>
+                            <option label="40005">5</option>
+                            <option label="40006">6</option>
+                            <option label="40007">7</option>
+                            <option label="40008">8</option>
+                            <option label="40009">9</option>
+                            <option label="40010">10</option>
+                            <option label="40011">11</option>
+                            <option label="40012">12</option>
+                            <option label="40013">13</option>
+                            <option label="40014">14</option>
+                            <option label="40015">15</option>
+                            <option label="40016">16</option>
+                            <option label="40017">17</option>
+                            <option label="40018">18</option>
+                            <option label="40019">19</option>
+                            <option label="40020">20</option>
+                            <option label="40021">21</option>
+                            <option label="40022">22</option>
+                            <option label="40023">23</option>
+                            <option label="40024">24</option>
+                            <option label="40025">25</option>
+                            <option label="40026">26</option>
+                            <option label="40027">27</option>
+                            <option label="40028">28</option>
+                            <option label="40029">29</option>
+                            <option label="40030">30</option>
+                            <option label="40031">31</option>
+                            <option label="40030">32</option>
+                            <option label="40033">33</option>
+                            <option label="40034">34</option>
+                            <option label="40035">35</option>
+                            <option label="40036">36</option>
+                            <option label="40037">37</option>
+                            <option label="40038">38</option>
+                            <option label="40039">39</option>
+                            <option label="40040">40</option>
+                            <option label="40041">41</option>
+                            <option label="40042">42</option>
+                            <option label="40043">43</option>
+                            <option label="40044">44</option>
+                            <option label="40045">45</option>
+                            <option label="40046">46</option>
+                            <option label="40047">47</option>
+                            <option label="40048">48</option>
+                            <option label="40049">49</option>
+                            <option label="40050">50</option>
+                            <option label="40051">51</option>
+                            <option label="40052">52</option>
+                            <option label="40053">53</option>
+                            <option label="40054">54</option>
+                            <option label="40055">55</option>
+                            <option label="40056">56</option>
+                            <option label="40057">57</option>
+                            <option label="40058">58</option>
+                            <option label="40059">59</option>
+                            <option label="40060">60</option>
+                            <option label="40061">61</option>
+                            <option label="40062">62</option>
+                            <option label="40063">63</option>
+                            <option label="40064">64</option>
+                            <option label="40065">65</option>
+                            <option label="40066">66</option>
+                            <option label="40067">67</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="string">
+                        <heading>42418</heading>
+                    </control>
+                </setting>
+                <setting id="clear_tmdb_cache" type="action" label="30921"> 
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=clear_tmdb_cache)</data>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="cache_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <group id="mdblist_group" label="90077">
+                <setting id="mdblist_enabled" type="boolean" label="30786" help="">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="mdblist_api_key" type="string" label="30023" help="">
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="mdblist_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="clear_mdblist_cache" type="action" label="90345"> 
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=clear_mdblist_cache)</data>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="cache_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <group id="trakt" label="30794">
+                <setting id="trakt_enabled" type="boolean" label="30786" help="">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="trakt_auth" type="action" label="30783" help="30819">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=trakt_auth)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="trakt_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="is_trakt_auth" type="boolean" label="30783" help="">
+                    <visible>false</visible>
+                    <default>false</default>
+                    <control type="toggle" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="trakt_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="trakt_user" type="string" label="30782" help="30855">
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="trakt_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="trakt_client" type="string" label="30798" help="30818">
+                    <default>1038ef327e86e7f6d39d80d2eb5479bff66dd8394e813c5e0e387af0f84d89fb</default>
+                    <visible>false</visible>
+                    <control type="edit" format="string" />
+                </setting>
+                <setting id="trakt_secret" type="string" label="30800" help="30811">
+                    <default>8d27a92e1d17334dae4a0590083a4f26401cb8f721f477a79fd3f218f8534fd1</default>
+                    <visible>false</visible>
+                    <control type="edit" format="string" />
+                </setting>
+                <setting id="trakt_logout" type="action" label="30802" help="30856">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=trakt_auth_revoke)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="trakt_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="trakt_calendar_previous_days" type="integer" label="30905" help="30906">
+                    <default>0</default>
+                    <constraints>
+                        <minimum>0</minimum>
+                        <maximum>30</maximum>
+                        <step>1</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="trakt_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="trakt_calendar_future_days" type="integer" label="30907" help="30908">
+                    <default>14</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <maximum>30</maximum>
+                        <step>1</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="trakt_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="trakt_calendar_show_all" type="boolean" label="30909" help="30910">
+                    <default>false</default>
+                    <control type="toggle" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="trakt_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="trakt_scrobbling_enabled" type="boolean" label="30877" help="30936">
+                    <default>true</default>
+                    <control type="toggle" />
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="trakt_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="trakt_sync_interval" type="integer" label="30914" help="30915">
+                    <default>15</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <maximum>120</maximum>
+                        <step>1</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="trakt_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="clear_trakt_cache" type="action" label="30920" help="30937"> 
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=clear_trakt_cache)</data>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="cache_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+        </category>
+        <category id="webdav" label="90131">
+            <group id="webdav_provider" label="90124">
+                <setting id="webdav_hostname" type="string" label="90126" help="90133">
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                </setting>
+                 <setting id="webdav_username" type="string" label="90127" help="90134">
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                </setting>
+                <setting id="webdav_password" type="string" label="90128" help="90135">
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                </setting>
+                <setting id="webdav_port" type="string" label="90118" help="">
+                    <default>8080</default>
+                    <control type="edit" format="string"/>
+                </setting>
+                <setting id="webdav_remote_path" type="string" label="90132" help="90136">
+                    <default />
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string" />
+                </setting>
+                <setting id="webdav_provider_test" type="action" label="90129" help="90137">
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=webdav_provider_test)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                </setting>
+            </group>
+        </category>
+        <category id="menus" label="30804">
+            <group id="telegram" label="">
+                <setting id="show_telegram_menu" type="boolean" label="30805" help="30816">
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+            </group>
+        </category>
+        <category id="others_category" label="30860">
+            <group id="others" label="90052">
+                <setting id="thread_number" type="integer" label="90052" help="90053">
+                    <default>8</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <maximum>30</maximum>
+                        <step>1</step>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                </setting>
+            </group>
+            <group id="downloads" label="30702">
+                <setting id="download_dir" type="path" label="30876" help="">
+                    <level>0</level>
+					<default>special://profile/addon_data/plugin.video.jacktook/Downloads/</default>
+					<constraints>
+						<allowempty>true</allowempty>
+						<writable>true</writable>
+					</constraints>
+					<control type="button" format="path"/>
+                </setting>
+            </group>
+            <group id="cleanup" label="30106">
+                <setting id="clear_database_cache" type="action" label="90342"> 
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=clear_database_cache)</data>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="cache_enabled">true</condition>
+                        </dependency>
+                    </dependencies>
+                </setting>
+            </group>
+             <group id="maintenance_logs" label="90057">
+                <setting id="kodi_logs" type="action" label="90054" help="90056"> 
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=kodi_logs&amp;log_file=kodi.log)</data>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+                 <setting id="kodi_logs_old" type="action" label="90055" help="90056"> 
+                    <data>RunPlugin(plugin://plugin.video.jacktook/?action=kodi_logs&amp;log_file=kodi.old.log)</data>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+            </group>
+        </category>
+    </section>
+</settings>

@@ -1,0 +1,284 @@
+# -*- coding: utf-8 -*-
+from lib.utils.kodi.utils import kodi_refresh
+import shutil
+import requests
+import os
+from xbmcvfs import translatePath as translate_path
+
+from lib.utils.kodi.utils import (
+    ADDON_VERSION,
+    notification,
+    dialog_ok,
+    dialogyesno,
+    close_all_dialog,
+    execute_builtin,
+    delete_file,
+    update_local_addons,
+    disable_enable_addon,
+    update_kodi_addons_db,
+    dialog_text,
+    dialog_select,
+    show_busy_dialog,
+    close_busy_dialog,
+    kodilog,
+)
+from lib.utils.general.utils import unzip
+
+
+# =========================
+# Constants
+# =========================
+ADDON_ID = "plugin.video.jacktook"
+ADDON_NAME = "Jacktook"
+HEADING = f"{ADDON_NAME} Updater"
+
+PACKAGES_DIR = translate_path("special://home/addons/packages/")
+HOME_ADDONS_DIR = translate_path("special://home/addons/")
+DESTINATION_DIR = translate_path(f"special://home/addons/{ADDON_ID}")
+CHANGELOG_PATH = translate_path(f"special://home/addons/{ADDON_ID}/CHANGELOG.md")
+
+BASE_REPO_URL = "https://github.com/Sam-Max/repository.jacktook/raw/main/packages"
+BASE_ZIP_URL = (
+    "https://raw.githubusercontent.com/Sam-Max/repository.jacktook/main/repo/zips"
+)
+
+VERSION_FILE = f"{BASE_REPO_URL}/jacktook_version"
+CHANGELOG_FILE = f"{BASE_REPO_URL}/jacktook_changelog"
+
+
+# =========================
+# Helpers
+# =========================
+def http_get(url, stream=False):
+    """Make a GET request and return text or raw stream."""
+    try:
+        resp = requests.get(url, stream=stream)
+        resp.raise_for_status()
+        return resp.text if not stream else resp.raw
+    except requests.RequestException as e:
+        notification(f"HTTP Error: {e}")
+        return None
+
+
+def get_versions():
+    """Return (current_version, online_version) or (None, None) on failure."""
+    show_busy_dialog()
+    online_version = http_get(VERSION_FILE)
+    close_busy_dialog()
+    if not online_version:
+        return None, None
+    return ADDON_VERSION, online_version.strip()
+
+
+def version_less_than(v1, v2):
+    """Return True if v1 < v2 using numeric comparison."""
+    try:
+        import re
+
+        def normalize(v):
+            return [int(x) for x in re.sub(r"[^0-9.]", "", v).split(".")]
+
+        return normalize(v1) < normalize(v2)
+    except Exception:
+        return v1 < v2
+
+
+def get_changes(online_version=None):
+    """Display changelog (online if version passed, else local)."""
+    if online_version:
+        changelog = http_get(CHANGELOG_FILE)
+        if changelog:
+            dialog_text(f"New Release v{online_version} - Changelog", str(changelog))
+    else:
+        dialog_text("Changelog", file=CHANGELOG_PATH)
+
+
+# =========================
+# Entry Point
+# =========================
+def updates_check_addon(automatic=False):
+    kodilog("Checking for updates...")
+    current_version, online_version = get_versions()
+    if not current_version or not online_version:
+        kodilog("Failed to fetch versions for update check.")
+        if not automatic:
+            dialog_ok(heading=HEADING, line1="[B]Unable to check for updates[/B]")
+        return
+
+    kodilog(f"Update check - Current: {current_version}, Online: {online_version}")
+
+    msg = f"Installed: [B]{current_version}[/B][CR]Online: [B]{online_version}[/B][CR][CR]"
+
+    if current_version == online_version:
+        kodilog("No update available.")
+        if not automatic:
+            notification(heading=HEADING, message="[B]No update available[/B]")
+        return
+
+    if version_less_than(current_version, online_version):
+        kodilog("Newer version available.")
+        if not automatic:
+            if not dialogyesno(
+                header=HEADING,
+                text=msg + "[B]Update available. Do you want to update?[/B]",
+            ):
+                return
+            update_addon(online_version)
+        else:
+            from lib.utils.kodi.settings import get_update_action
+
+            action = get_update_action()
+            if action == 0:  # Ask
+                if dialogyesno(
+                    header=HEADING,
+                    text=msg + "[B]Update available. Do you want to update?[/B]",
+                ):
+                    update_addon(online_version)
+            elif action == 1:  # Notify
+                notification(
+                    heading=HEADING,
+                    message=f"[B]Update Available (v{online_version}).[/B] [I]Check settings to update.[/I]",
+                )
+
+
+# =========================
+# Core Update Logic
+# =========================
+
+
+def downgrade_addon_menu():
+    """Fetch available versions from GitHub and display them in a selection dialog."""
+    repo_contents_url = "https://api.github.com/repos/Sam-Max/repository.jacktook/contents/repo/zips/plugin.video.jacktook"
+    try:
+        resp = requests.get(repo_contents_url)
+        resp.raise_for_status()
+        contents = resp.json()
+    except Exception as e:
+        dialog_ok(heading=HEADING, line1=f"Error fetching versions: {e}")
+        return
+
+    # Extract versions from zip filenames: plugin.video.jacktook-X.Y.Z.zip
+    versions = []
+    prefix = f"{ADDON_ID}-"
+    suffix = ".zip"
+    for item in contents:
+        name = item.get("name", "")
+        if name.startswith(prefix) and name.endswith(suffix):
+            version_str = name[len(prefix) : -len(suffix)]
+            versions.append(version_str)
+
+    kodilog(f"Available versions found: {versions}")
+
+    # Filter out current version
+    versions = [v for v in versions if v != ADDON_VERSION]
+
+    if not versions:
+        dialog_ok(heading=HEADING, line1="No older/different versions found.")
+        return
+
+    # Sort versions
+    try:
+        from pkg_resources import parse_version
+
+        versions.sort(key=parse_version, reverse=True)
+    except ImportError:
+        import re
+
+        def n(v):
+            return [int(x) for x in re.sub(r"[^0-9.]", "", v).split(".")]
+
+        versions.sort(key=n, reverse=True)
+
+    selected_index = dialog_select(
+        heading="Select Version to Downgrade", _list=versions
+    )
+
+    if selected_index == -1:
+        return
+
+    selected_version = versions[selected_index]
+
+    if not dialogyesno(
+        header=HEADING,
+        text=f"Are you sure you want to downgrade/reinstall to version [B]{selected_version}[/B]?",
+    ):
+        return
+
+    update_addon(selected_version)
+
+
+def update_addon(new_version):
+    kodilog(f"Starting update to version: {new_version}")
+    close_all_dialog()
+    execute_builtin("ActivateWindow(Home)", True)
+    notification(heading=HEADING, message="[B]Downloading update...[/B]")
+
+    zip_name = f"{ADDON_ID}-{new_version}.zip"
+    zip_url = f"{BASE_ZIP_URL}/{ADDON_ID}/{zip_name}"
+    zip_path = os.path.join(PACKAGES_DIR, zip_name)
+    kodilog(f"Zip URL: {zip_url}")
+    kodilog(f"Zip Path: {zip_path}")
+
+    # Download new version
+    show_busy_dialog()
+    kodilog("Downloading zip file...")
+    raw_data = http_get(zip_url, stream=True)
+    close_busy_dialog()
+    if not raw_data:
+        kodilog("Error: Unable to download update.")
+        dialog_ok(heading=HEADING, line1="Error: Unable to download update.")
+        return
+
+    try:
+        with open(zip_path, "wb") as f:
+            shutil.copyfileobj(raw_data, f)
+        kodilog("Zip file downloaded successfully.")
+    except Exception as e:
+        kodilog(f"Error saving update file: {e}")
+        dialog_ok(heading=HEADING, line1=f"Error saving update file: {e}")
+        return
+
+    # Remove old addon
+    kodilog(f"Removing old version at: {DESTINATION_DIR}")
+    try:
+        if os.path.lexists(DESTINATION_DIR):
+            if os.path.islink(DESTINATION_DIR):
+                os.unlink(DESTINATION_DIR)
+                kodilog("Old version symlink removed.")
+            elif os.path.isdir(DESTINATION_DIR):
+                shutil.rmtree(DESTINATION_DIR)
+                kodilog("Old version directory removed.")
+            else:
+                os.remove(DESTINATION_DIR)
+                kodilog("Old version file removed.")
+        else:
+            kodilog("Old version directory not found, skipping removal.")
+    except Exception as e:
+        kodilog(f"Error removing old version: {e}")
+
+    # Extract
+    kodilog(f"Extracting {zip_path} to {HOME_ADDONS_DIR}")
+    if not unzip(zip_path, HOME_ADDONS_DIR, DESTINATION_DIR):
+        kodilog("Error extracting update.")
+        delete_file(zip_path)
+        dialog_ok(
+            heading=HEADING, line1="Error extracting update. Please install manually."
+        )
+        return
+
+    delete_file(zip_path)
+
+    if dialogyesno(
+        header=HEADING,
+        text="Do you want to view the changelog for the new version?",
+    ):
+        get_changes()
+
+    # Refresh Kodi addon system
+    update_local_addons()
+    disable_enable_addon()
+    update_kodi_addons_db()
+    kodi_refresh()
+
+    notification(heading=HEADING, message="[B]Update complete.[/B]")
+    kodilog("Update process finished successfully.")

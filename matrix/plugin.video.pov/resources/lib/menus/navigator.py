@@ -423,7 +423,7 @@ class Navigator:
 				folder_path = ks.source_folders_directory(media_type, source)
 				if not folder_path: continue
 				name = name_str % (source.upper(), self.make_list_name(media_type).upper(), ku.get_setting('%s.display_name' % source).upper(), folder_path)
-				self._add_item({'mode': 'navigator.folder_navigator','sources_folders': 'True', 'folder_path': folder_path, 'name': name}, 'most_collected.png')
+				self._add_item({'mode': 'navigator.folder_navigator', 'sources_folders': 'True', 'folder_path': folder_path, 'name': name}, 'most_collected.png')
 		self._end_directory()
 
 	def shortcut_folders(self):

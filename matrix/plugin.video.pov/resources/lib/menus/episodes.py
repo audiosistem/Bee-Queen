@@ -45,7 +45,6 @@ class Episodes:
 		self.all_episodes = default_all_episodes()
 		self.thumb_fanart = thumb_fanart_info()
 		self.display_title, self.date_format = single_ep_display_title(), single_ep_format()
-		self.fanart_enabled = self.meta_user_info['extra_fanart_enabled']
 		self.is_widget = kodi_utils.external_browse()
 		self.widget_hide_watched = self.is_widget and self.meta_user_info['widget_hide_watched']
 		self.watched_title = ('POV', 'Trakt', 'MDBList')[self.watched_indicators]

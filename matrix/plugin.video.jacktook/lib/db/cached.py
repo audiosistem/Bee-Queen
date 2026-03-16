@@ -1,0 +1,429 @@
+import os
+import pickle
+import sqlite3
+import sys
+import threading
+import traceback
+import re
+
+from base64 import b64encode, b64decode
+from datetime import datetime, timedelta
+from hashlib import sha256
+
+from lib.jacktook.utils import kodilog
+
+import xbmcaddon
+import xbmc
+import xbmcgui
+
+PY3 = sys.version_info.major >= 3
+if PY3:
+    from xbmcvfs import translatePath
+else:
+    from xbmc import translatePath
+
+ADDON_DATA = translatePath(
+    xbmcaddon.Addon("plugin.video.jacktook").getAddonInfo("profile")
+)
+ADDON_ID = xbmcaddon.Addon().getAddonInfo("id")
+
+if not PY3:
+    ADDON_DATA = ADDON_DATA.decode("utf-8")
+
+if not os.path.exists(ADDON_DATA):
+    os.makedirs(ADDON_DATA)
+
+SQLITE_SETTINGS = {
+    "journal_mode": "wal",
+    "auto_vacuum": "full",
+    "cache_size": 8 * 1024,
+    "mmap_size": 64 * 1024 * 1024,
+    "synchronous": "normal",
+}
+
+
+def pickle_hash(obj):
+    data = pickle.dumps(obj)
+    h = sha256()
+    h.update(data)
+    return h.hexdigest()
+
+
+class _BaseCache(object):
+    __instance = None
+
+    _load_func = staticmethod(pickle.loads)
+    _dump_func = staticmethod(pickle.dumps)
+    _hash_func = staticmethod(pickle_hash)
+
+    @classmethod
+    def get_instance(cls):
+        if cls.__instance is None:
+            cls.__instance = cls()
+        return cls.__instance
+
+    def _get(self, key, default=None, hashed_key=False, identifier=""):
+        result = self.get(self._generate_key(key, hashed_key, identifier))
+        return result if result is not None else default
+
+    def _set(self, key, data, expiry_time, hashed_key=False, identifier=""):
+        if expiry_time == timedelta(0):
+            return  # Do nothing, as it will expire immediately
+
+        self.set(
+            self._generate_key(key, hashed_key, identifier),
+            data,
+            expiry_time,
+        )
+
+    def close(self):
+        pass
+
+    def _generate_key(self, key, hashed_key=False, identifier=""):
+        if not hashed_key:
+            key = self._hash_func(key)
+        if identifier:
+            key += identifier
+        return key
+
+    def _process(self, obj):
+        return obj
+
+    def _prepare(self, s):
+        return s
+
+
+class RuntimeCache:
+    _store = {}
+
+    @classmethod
+    def set(cls, key, value):
+        cls._store[key] = value
+
+    @classmethod
+    def get(cls, key):
+        return cls._store.get(key)
+
+    @classmethod
+    def delete(cls, key):
+        if key in cls._store:
+            del cls._store[key]
+
+    @classmethod
+    def clear(cls):
+        cls._store.clear()
+
+
+class MemoryCache(_BaseCache):
+    def __init__(self, database=ADDON_ID):
+        self._window = xbmcgui.Window(10000)
+        self._database = database + "."
+
+    def get(self, key):
+        data = self._window.getProperty(self._database + key)
+        if data:
+            try:
+                decoded_data = self._load_func(b64decode(data))
+                # Check for (data, expires) tuple format
+                if isinstance(decoded_data, tuple) and len(decoded_data) == 2:
+                    val, expires = decoded_data
+                    if isinstance(expires, datetime):
+                        if expires > datetime.utcnow():
+                            return val
+                        else:
+                            self.delete(key)
+                            return None
+                return decoded_data
+            except Exception:
+                return None
+
+    def set(self, key, data, expires=timedelta(hours=24)):
+        self._add_key_to_index(key)
+        try:
+            # Wrap data with expiry
+            expiry_dt = datetime.utcnow() + expires
+            val_to_store = (data, expiry_dt)
+
+            blob = self._dump_func(val_to_store)
+            self._window.setProperty(self._database + key, b64encode(blob).decode())
+        except Exception as e:
+            kodilog(
+                f"[MemoryCache] Error storing key {key!r}: {str(e)}",
+                level=xbmc.LOGERROR,
+            )
+            kodilog(traceback.format_exc(), level=xbmc.LOGERROR)
+
+    def delete(self, key):
+        self._remove_key_from_index(key)
+        self._window.clearProperty(self._database + key)
+
+    def delete_like(self, pattern):
+        # Convert SQL LIKE pattern to regex
+        regex_pattern = (
+            re.escape(pattern)
+            .replace(r"\%", ".*")
+            .replace("%", ".*")
+            .replace(r"\_", ".")
+            .replace("_", ".")
+        )
+        regex = re.compile(f"^{regex_pattern}$")
+
+        keys = self._get_key_index()
+        to_delete = [k for k in keys if regex.match(k)]
+
+        for k in to_delete:
+            self.delete(k)
+
+    def clean_all(self):
+        keys = self._get_key_index()
+        for k in keys:
+            self._window.clearProperty(self._database + k)
+        self._window.clearProperty(self._database + "_KEY_INDEX_")
+
+    def _get_key_index(self):
+        try:
+            data = self._window.getProperty(self._database + "_KEY_INDEX_")
+            if data:
+                return self._load_func(b64decode(data))
+        except:
+            pass
+        return set()
+
+    def _save_key_index(self, index):
+        try:
+            blob = self._dump_func(index)
+            self._window.setProperty(
+                self._database + "_KEY_INDEX_", b64encode(blob).decode()
+            )
+        except:
+            pass
+
+    def _add_key_to_index(self, key):
+        index = self._get_key_index()
+        if key not in index:
+            index.add(key)
+            self._save_key_index(index)
+
+    def _remove_key_from_index(self, key):
+        index = self._get_key_index()
+        if key in index:
+            index.remove(key)
+            self._save_key_index(index)
+
+
+class HybridCache(_BaseCache):
+    def __init__(self):
+        self.memory = MemoryCache()
+        self.db = SQLiteCache()
+
+    def get(self, key):
+        # L1: Memory
+        data = self.memory.get(key)
+        if data is not None:
+            return data
+
+        # L2: Database
+        data = self.db.get(key)
+        if data is not None:
+            self.memory.set(key, data, expires=timedelta(minutes=30))
+            return data
+        return None
+
+    def set(self, key, data, expires=timedelta(hours=24)):
+        # Write to both
+        self.memory.set(key, data, expires)
+        self.db.set(key, data, expires)
+
+    def delete(self, key):
+        self.memory.delete(key)
+        self.db.delete(key)
+
+    def add_to_list(self, key, item, expires):
+        existing_data = self.get_list(key)
+        if item in existing_data:
+            existing_data.remove(item)
+        existing_data.append(item)
+        self.set(key, existing_data, expires)
+
+    def get_list(self, key):
+        result = self.get(key)
+        if result:
+            seen = set()
+            deduped = []
+            for item in reversed(result):
+                t = tuple(item)
+                if t not in seen:
+                    seen.add(t)
+                    deduped.append(t)
+            deduped.reverse()
+            return deduped
+        return []
+
+    def clear_list(self, key):
+        self.set(key, [], expires=timedelta(seconds=1))
+
+    def clean_all(self):
+        self.memory.clean_all()
+        self.db.clean_all()
+
+    def delete_like(self, pattern):
+        self.memory.delete_like(pattern)
+        self.db.delete_like(pattern)
+
+
+class SQLiteCache(_BaseCache):
+    def __init__(
+        self,
+        database=os.path.join(ADDON_DATA, ADDON_ID + ".cached.sqlite"),
+        cleanup_interval=timedelta(minutes=15),
+    ):
+        self._conn = sqlite3.connect(
+            database,
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            isolation_level=None,
+            check_same_thread=False,
+        )
+        self._conn.execute(
+            "CREATE TABLE IF NOT EXISTS `cached` ("
+            "key TEXT PRIMARY KEY NOT NULL, "
+            "data BLOB NOT NULL, "
+            "expires TIMESTAMP NOT NULL"
+            ")"
+        )
+        for k, v in SQLITE_SETTINGS.items():
+            self._conn.execute("PRAGMA {}={}".format(k, v))
+        self._cleanup_interval = cleanup_interval
+        self._last_cleanup = datetime.utcnow()
+        self.clean_up()
+        self._object_store = {}  # store raw objects that can't be pickled
+        self._lock = threading.Lock()
+
+    def _process(self, obj):
+        return self._load_func(obj)
+
+    def _prepare(self, s):
+        return self._dump_func(s)
+
+    def add_to_list(self, key, item, expires):
+        """Append an item to a list stored under the given key."""
+        existing_data = self.get_list(key)
+        if item in existing_data:
+            existing_data.remove(item)
+        existing_data.append(item)
+        self.set(
+            key,
+            existing_data,
+            expires,
+        )
+
+    def get_list(self, key):
+        """Retrieve the list stored under the given key."""
+        result = self.get(key)
+        if result:
+            seen = set()
+            deduped = []
+            for item in reversed(result):
+                t = tuple(item)
+                if t not in seen:
+                    seen.add(t)
+                    deduped.append(t)
+            deduped.reverse()
+            return deduped
+        return []
+
+    def get(self, key):
+        with self._lock:
+            if key in self._object_store:
+                data, expires = self._object_store[key]
+                if expires > datetime.utcnow():
+                    return data
+                else:
+                    del self._object_store[key]
+                    return None
+            self.check_clean_up()
+            try:
+                result = self._conn.execute(
+                    "SELECT data, expires FROM `cached` WHERE key = ?", (key,)
+                ).fetchone()
+            except Exception as e:
+                kodilog(f"SQL error for key {key!r}: {e}", level=xbmc.LOGERROR)
+                kodilog(traceback.format_exc(), level=xbmc.LOGERROR)
+                return None
+            if result:
+                data, expires = result
+                if expires > datetime.utcnow():
+                    return self._process(data)
+            return None
+
+    def set(self, key, data, expires):
+        with self._lock:
+            try:
+                self.check_clean_up()
+                self._conn.execute(
+                    "INSERT OR REPLACE INTO `cached` (key, data, expires) VALUES(?, ?, ?)",
+                    (
+                        key,
+                        sqlite3.Binary(self._prepare(data)),
+                        datetime.utcnow() + expires,
+                    ),
+                )
+                kodilog(
+                    "Set cache for key '{}' with expiry {}".format(key, expires),
+                    level=xbmc.LOGDEBUG,
+                )
+            except Exception as e:
+                kodilog(
+                    "Failed to set cache for key '{}': {}".format(key, str(e)),
+                    level=xbmc.LOGERROR,
+                )
+                # fallback to raw in‑memory store
+                self._object_store[key] = (data, expires)
+
+    def clear_list(self, key):
+        """Clear the list stored under the given key."""
+        self.set(
+            key,
+            self._prepare([]),
+            datetime.utcnow(),  # Set an immediate expiry to clear the list
+        )
+
+    def delete(self, key):
+        """Remove a single key from the SQLite store."""
+        self._conn.execute("DELETE FROM `cached` WHERE key = ?", (key,))
+
+    def delete_like(self, pattern):
+        """Remove keys matching a pattern from the SQLite store."""
+        self._conn.execute("DELETE FROM `cached` WHERE key LIKE ?", (pattern,))
+
+    def _set_version(self, version):
+        self._conn.execute("PRAGMA user_version={}".format(version))
+
+    @property
+    def version(self):
+        return self._conn.execute("PRAGMA user_version").fetchone()[0]
+
+    @property
+    def needs_cleanup(self):
+        return self._last_cleanup + self._cleanup_interval < datetime.utcnow()
+
+    def clean_up(self):
+        self._conn.execute(
+            "DELETE FROM `cached` WHERE expires <= STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')"
+        )
+        self._last_cleanup = datetime.utcnow()
+
+    def clean_all(self):
+        self._conn.execute("DELETE FROM cached")
+        self._object_store.clear()
+
+    def check_clean_up(self):
+        clean_up = self.needs_cleanup
+        if clean_up:
+            self.clean_up()
+        return clean_up
+
+    def close(self):
+        self._conn.close()
+
+
+cache = HybridCache()

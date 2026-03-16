@@ -1,0 +1,106 @@
+<window type="dialog">
+    <coordinates>
+        <left>0</left>
+        <top>0</top>
+        <width>1920</width>
+        <height>1080</height>
+    </coordinates>
+
+    <controls>
+        <!-- Background -->
+        <control type="group">
+            <width>1920</width>
+            <height>1080</height>
+
+            <!-- Fallback Jacktook Fanart-->
+            <control type="image">
+                <texture background="true">jtk_fanart.png</texture>
+                <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
+                <visible>String.IsEmpty(Window().Property(info.poster))</visible>
+            </control>
+
+            <!-- Fallback Poster -->
+            <control type="image">
+                <texture background="true">$INFO[Window().Property(info.poster)]</texture>
+                <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
+                <visible>!String.IsEmpty(Window().Property(info.poster))</visible>
+            </control>
+
+            <!-- Fanart -->
+            <control type="image">
+                <texture background="true">$INFO[Window().Property(info.fanart)]</texture>
+                <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
+                <visible>!String.IsEmpty(Window().Property(info.fanart))</visible>
+            </control>
+
+            <!-- Dark Overlay -->
+            <control type="image">
+                <texture background="true">white.png</texture>
+                <colordiffuse>CC000000</colordiffuse>
+            </control>
+        </control>
+
+        <!-- === CLEARLOGO (top of stack) === -->
+        <control type="image">
+            <centerleft>960</centerleft> <!-- 1920 / 2 -->
+            <centertop>340</centertop>   <!-- Center vertically -200px offset -->
+            <width>400</width>
+            <height>100</height>
+            <texture>$INFO[Window().Property(info.clearlogo)]</texture>
+            <visible>!String.IsEmpty(Window().Property(info.clearlogo))</visible>
+        </control>
+
+        <!-- Fallback Clearlogo -->
+        <control type="image">
+            <centerleft>960</centerleft>
+            <centertop>340</centertop>
+            <width>400</width>
+            <height>100</height>
+            <aspectratio align="center" aligny="center">scale</aspectratio>
+            <texture>jtk_clearlogo.png</texture>
+            <visible>String.IsEmpty(Window().Property(info.clearlogo))</visible>
+        </control>
+
+        <!-- === PLOT TEXT (middle) === -->
+        <control type="label">
+            <centerleft>960</centerleft>
+            <centertop>580</centertop> <!-- Middle of screen -->
+            <width>700</width>
+            <height>200</height>
+            <align>center</align>
+            <aligny>center</aligny>
+            <wrapmultiline>true</wrapmultiline>
+            <truncate>true</truncate>
+            <font>font14</font>
+            <textcolor>FFDDDDDD</textcolor>
+            <label>$INFO[Window().Property(info.overview)]</label>
+        </control>
+
+        <!-- === SPINNER (bottom of stack) === -->
+        <control type="group">
+            <centerleft>960</centerleft>
+            <centertop>840</centertop> <!-- 200px below the plot -->
+            <width>150</width>
+            <height>150</height>
+
+            <!-- Outer Spinner -->
+            <control type="image">
+                <visible>String.IsEqual(Window.Property(enable_busy_spinner),true)</visible>
+                <width>150</width>
+                <height>150</height>
+                <texture flipx="true" colordiffuse="66FAFAFA">spinner.png</texture>
+                <animation effect="rotate" end="360" center="auto" time="2400" loop="true" reversible="false" condition="true">OuterRotation</animation>
+            </control>
+
+            <!-- Inner Spinner -->
+            <control type="image">
+                <width>100</width>
+                <height>100</height>
+                <top>25</top>
+                <left>25</left>
+                <texture flipx="true" colordiffuse="66FAFAFA">spinner.png</texture>
+                <animation effect="rotate" end="-360" center="auto" time="2400" loop="true" reversible="false" condition="true">InnerRotation</animation>
+            </control>
+        </control>
+    </controls>
+</window>

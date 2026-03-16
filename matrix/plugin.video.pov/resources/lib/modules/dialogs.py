@@ -393,7 +393,7 @@ def set_subtitle_choice():
 	if choice: return set_setting('subtitles.subs_action', choice)
 
 def scraper_dialog_color_choice(setting):
-	setting ='int_dialog_highlight' if setting == 'internal' else 'ext_dialog_highlight'
+	setting = 'int_dialog_highlight' if setting == 'internal' else 'ext_dialog_highlight'
 	chosen_color = color_choice()
 	if chosen_color: set_setting(setting, chosen_color)
 

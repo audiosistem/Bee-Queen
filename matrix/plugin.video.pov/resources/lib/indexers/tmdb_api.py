@@ -324,7 +324,7 @@ def tvshow_external_id(external_source, external_id, tmdb_api=None):
 def movie_title_year(title, year, tmdb_api=None):
 	try:
 		string = 'movie_title_year_%s_%s' % (title, year)
-		url = '%s/search/movie?api_key=%s&query=%s&year=%s&page=%s' % (base_url, get_tmdb_api(tmdb_api), title, year)
+		url = '%s/search/movie?api_key=%s&query=%s&year=%s' % (base_url, get_tmdb_api(tmdb_api), title, year)
 		result = cache_function(get_tmdb, string, url, EXPIRES_1_MONTH)
 		result = result['results']
 		if result: return result[0]

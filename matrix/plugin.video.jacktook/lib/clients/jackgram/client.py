@@ -1,0 +1,130 @@
+from typing import List, Dict, Optional, Any, Callable
+from lib.clients.base import BaseClient, TorrentStream
+from lib.utils.kodi.utils import kodilog, translation
+
+
+class Jackgram(BaseClient):
+    def __init__(
+        self, host: str, notification: Callable, token: Optional[str] = None
+    ) -> None:
+        super().__init__(host, notification)
+        self.token = token
+        if token:
+            self.session.headers.update({"Authorization": f"Bearer {token}"})
+
+    def search(
+        self,
+        tmdb_id: str,
+        query: str,
+        mode: str,
+        media_type: str,
+        season: Optional[int],
+        episode: Optional[int],
+    ) -> Optional[List[TorrentStream]]:
+        try:
+            if mode == "tv" or media_type == "tv":
+                url = f"{self.host}/stream/series/{tmdb_id}:{season}:{episode}.json"
+            elif mode == "movies" or media_type == "movies":
+                url = f"{self.host}/stream/movie/{tmdb_id}.json"
+            else:
+                url = f"{self.host}/search?query={query}"
+
+            kodilog(f"URL: {url}")
+
+            res = self.session.get(url, timeout=10)
+            if res.status_code != 200:
+                return
+
+            if mode in ["tv", "movies"]:
+                return self.parse_response(res)
+            else:
+                return self.parse_response_search(res)
+        except Exception as e:
+            self.handle_exception(f"{translation(30232)}: {e}")
+
+    def get_latest_movies(self, page: int) -> Optional[Dict[str, Any]]:
+        try:
+            url = f"{self.host}/stream/movies/latest?page={page}"
+            res = self.session.get(url, timeout=10)
+            if res.status_code != 200:
+                kodilog(f"get_latest_movies failed with status {res.status_code}")
+                return
+            return res.json()
+        except Exception as e:
+            self.handle_exception(f"{translation(30232)}: {e}")
+
+    def get_latest_series(self, page: int) -> Optional[Dict[str, Any]]:
+        try:
+            url = f"{self.host}/stream/series/latest?page={page}"
+            res = self.session.get(url, timeout=10)
+            if res.status_code != 200:
+                kodilog(f"get_latest_series failed with status {res.status_code}")
+                return
+            return res.json()
+        except Exception as e:
+            self.handle_exception(f"{translation(30232)}: {e}")
+
+    def get_files(self, page: int) -> Optional[Dict[str, Any]]:
+        try:
+            url = f"{self.host}/stream/files?page={page}"
+            res = self.session.get(url, timeout=10)
+            if res.status_code != 200:
+                kodilog(f"get_files failed with status {res.status_code}")
+                return
+            return res.json()
+        except Exception as e:
+            self.handle_exception(f"{translation(30232)}: {e}")
+
+    def parse_response(self, res: Any) -> List[TorrentStream]:
+        res = res.json()
+        results = []
+        for item in res["streams"]:
+            url = item["url"]
+            if self.token and url:
+                url = f"{url}|Authorization=Bearer {self.token}"
+
+            results.append(
+                TorrentStream(
+                    title=item["title"],
+                    type="Direct",
+                    indexer=item["name"],
+                    size=item["size"],
+                    publishDate=item["date"],
+                    url=url,
+                    guid=item.get("guid", ""),
+                    infoHash=item.get("infoHash", ""),
+                    seeders=item.get("seeders", 0),
+                    languages=item.get("languages", []),
+                    fullLanguages=item.get("fullLanguages", ""),
+                    provider=item.get("provider", ""),
+                    peers=item.get("peers", 0),
+                )
+            )
+        return results
+
+    def parse_response_search(self, res: Any) -> List[TorrentStream]:
+        res = res.json()
+        results = []
+        for item in res["results"]:
+            if item.get("type") == "file":
+                file_info = self._extract_file_info(item)
+                results.append(TorrentStream(**file_info))
+            else:
+                for file in item.get("files", []):
+                    file_info = self._extract_file_info(file)
+                    results.append(TorrentStream(**file_info))
+        return results
+
+    def _extract_file_info(self, file):
+        url = file.get("url", "")
+        if self.token and url:
+            url = f"{url}|Authorization=Bearer {self.token}"
+
+        return {
+            "title": file.get("title", ""),
+            "type": "Direct",
+            "indexer": file.get("name", ""),
+            "size": file.get("size", ""),
+            "publishDate": file.get("date", ""),
+            "url": url,
+        }
