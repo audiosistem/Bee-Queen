@@ -192,9 +192,13 @@ def get_system_architecture():
                 arch = 'x86_64'
             elif machine in ('i386', 'i686', 'x86'):
                 arch = 'x86'  # 32-bit x86
-            elif machine in ('aarch64', 'arm64'):
+            elif machine in ('aarch64', 'arm64', 'arm64-v8a'):
                 arch = 'ARM64'
-            elif machine in ('armv7l', 'armv6l', 'arm'):
+            elif machine in ('armv8l', 'armv7l', 'armv7', 'armeabi-v7a', 'armv6l', 'arm'):
+                arch = 'ARM32'
+            elif 'aarch64' in machine or 'arm64' in machine:
+                arch = 'ARM64'
+            elif 'arm' in machine:
                 arch = 'ARM32'
             else:
                 # Fallback per architetture non standard
@@ -207,7 +211,11 @@ def get_system_architecture():
                 machine = uname.machine.lower()
                 if machine in ('x86_64', 'amd64'):
                     arch = 'x86_64'
-                elif machine in ('aarch64', 'arm64'):
+                elif machine in ('aarch64', 'arm64', 'arm64-v8a'):
+                    arch = 'ARM64'
+                elif machine in ('armv8l', 'armv7l', 'armv7', 'armeabi-v7a', 'armv6l', 'arm'):
+                    arch = 'ARM32'
+                elif 'aarch64' in machine or 'arm64' in machine:
                     arch = 'ARM64'
                 elif 'arm' in machine:
                     arch = 'ARM32'
@@ -728,6 +736,17 @@ def check_cross_platform_compatibility(backup_metadata):
     current_arch_info = get_system_architecture()
     current_arch = current_arch_info.get("arch", "Unknown")
     current_variant = current_arch_info.get("variant", "Unknown")
+
+    # Se ci sono addon nativi e l'architettura non è determinabile, tratta come rischio alto.
+    if len(native_addons) > 0 and (backup_arch == "Unknown" or current_arch == "Unknown"):
+        return {
+            "status": "incompatible_variant_native",
+            "reason": "Native addons present but architecture could not be determined safely",
+            "backup_info": f"{backup_arch} ({backup_variant})",
+            "current_info": f"{current_arch} ({current_variant})",
+            "native_addons": native_addons,
+            "arm_category": "unknown_architecture"
+        }
     
     # 1. CONTROLLO ARCHITETTURA (livello critico)
     if backup_arch != "Unknown" and current_arch != "Unknown":
@@ -750,7 +769,7 @@ def check_cross_platform_compatibility(backup_metadata):
         if arm_compatibility and not arm_compatibility["compatible"]:
             category = arm_compatibility.get("category", "arm_incompatible")
             
-            if category in ("architecture_mismatch", "embedded_mismatch", "android_mismatch", "ios_mismatch"):
+            if category in ("architecture_mismatch", "embedded_mismatch", "android_mismatch", "ios_mismatch", "unknown_variants"):
                 return {
                     "status": "incompatible_variant_native",
                     "reason": arm_compatibility["reason"],
@@ -986,8 +1005,26 @@ def is_native_addon(addon_id):
         "peripheral.",      # Peripheral addons (joystick, etc.)
         "vfs.",             # Virtual filesystem
     ]
-    
-    return any(addon_id.startswith(prefix) for prefix in native_addon_prefixes)
+
+    if any(addon_id.startswith(prefix) for prefix in native_addon_prefixes):
+        return True
+
+    # Fallback robusto: scansione reale dei binari nell'addon.
+    try:
+        addon_local_path = xbmcvfs.translatePath(f"special://home/addons/{addon_id}")
+        if not os.path.exists(addon_local_path):
+            return False
+
+        native_ext = ('.so', '.pyd', '.dll', '.dylib', '.jnilib')
+        for root, _, files in os.walk(addon_local_path):
+            for filename in files:
+                if filename.lower().endswith(native_ext):
+                    xbmc.log(f"OptiKlean: Native binary detected for addon {addon_id}: {filename}", xbmc.LOGDEBUG)
+                    return True
+    except Exception as e:
+        xbmc.log(f"OptiKlean: Native addon scan failed for {addon_id}: {str(e)}", xbmc.LOGDEBUG)
+
+    return False
 
 def install_native_addons_from_repo(addon_ids, progress_callback=None):
     """
@@ -1513,13 +1550,15 @@ def create_temp_backup(backup_items, progress_callback=None, backup_metadata=Non
     
     temp_zip = safe_path_join(temp_dir, f"backup_temp_{int(time.time())}.zip")
     temp_zip_local = xbmcvfs.translatePath(temp_zip)
+    cancelled = False
     
     try:
         with zipfile.ZipFile(temp_zip_local, 'w', zipfile.ZIP_DEFLATED) as backup_zip:
             total_items = len(backup_items)
             for i, (source_path, archive_path) in enumerate(backup_items):
                 if progress_callback and progress_callback():  # Check for cancellation
-                    return None
+                    cancelled = True
+                    break
                 
                 if progress_callback:
                     # 31006: "Backing up: {filename}"
@@ -1538,7 +1577,9 @@ def create_temp_backup(backup_items, progress_callback=None, backup_metadata=Non
                             # Opzionale: interrompi il backup se lo spazio è troppo poco
                             if temp_free_now < 50:  # Meno di 50MB - situazione critica
                                 xbmc.log(f"OptiKlean: Critical temp space shortage: {temp_free_now:.1f}MB", xbmc.LOGERROR)
-                                raise Exception(f"Insufficient temporary space: {temp_free_now:.1f}MB remaining")
+                                raise RuntimeError(f"Insufficient temporary space: {temp_free_now:.1f}MB remaining")
+                    except RuntimeError:
+                        raise
                     except Exception:
                         # Non interrompere il backup per errori di controllo spazio (eccetto spazio critico)
                         # Se l'eccezione contiene il messaggio di spazio critico, deve essere rilanciata
@@ -1546,19 +1587,29 @@ def create_temp_backup(backup_items, progress_callback=None, backup_metadata=Non
                         pass
                 
                 add_to_zip_recursive(backup_zip, source_path, archive_path)
-        
-            # Crea marker file con metadati per compatibilità cross-platform
-            if backup_metadata:
-                backup_marker = json.dumps(backup_metadata, indent=2)
+
+            if cancelled:
+                xbmc.log("OptiKlean: Backup creation cancelled by user", xbmc.LOGINFO)
             else:
-                # Fallback per backup legacy
-                backup_marker = json.dumps({
-                    "optiklean_backup": True,
-                    "os_info": get_current_os(),
-                    "native_addons": []
-                }, indent=2)
-            
-            backup_zip.writestr('.optiklean_backup', backup_marker)
+                # Crea marker file con metadati per compatibilità cross-platform
+                if backup_metadata:
+                    backup_marker = json.dumps(backup_metadata, indent=2)
+                else:
+                    # Fallback per backup legacy
+                    backup_marker = json.dumps({
+                        "optiklean_backup": True,
+                        "os_info": get_current_os(),
+                        "native_addons": []
+                    }, indent=2)
+                
+                backup_zip.writestr('.optiklean_backup', backup_marker)
+
+        if cancelled:
+            if os.path.exists(temp_zip_local):
+                os.remove(temp_zip_local)
+            elif xbmcvfs.exists(temp_zip):
+                xbmcvfs.delete(temp_zip)
+            return None
         
         return temp_zip
     except Exception as e:
@@ -2378,7 +2429,7 @@ def perform_restore():
         compatibility = check_cross_platform_compatibility(backup_metadata)
         compatibility_status = compatibility.get("status", "unknown")
         
-        if compatibility_status == "incompatible_architecture":
+        if compatibility_status in ("incompatible_architecture", "incompatible_variant_native"):
             native_addons = backup_metadata.get("native_addons", [])
             
             if native_addons:
@@ -2531,8 +2582,6 @@ def perform_restore():
                 elif choice == 2:  # Restore all
                     skip_native_addons = False
                     xbmc.log("OptiKlean: User chose to restore all addons including native ones", xbmc.LOGINFO)
-                    skip_native_addons = False
-                    xbmc.log("OptiKlean: User chose to restore all addons including native ones", xbmc.LOGINFO)
         else:
             skip_native_addons = False
             if compatibility_status == "cross_platform_safe":
@@ -2609,6 +2658,29 @@ def perform_restore():
 
         # FASE 2: Estrazione file - approccio diretto come OpenWizard
         with zipfile.ZipFile(temp_backup_local, 'r') as backup_zip:
+            def resolve_safe_target_base(zip_member_path):
+                """Resolve allowed extraction base and reject suspicious archive paths."""
+                normalized = zip_member_path.replace('\\', '/')
+                if normalized.startswith('/'):
+                    return None, None
+
+                parts = [p for p in normalized.split('/') if p not in ('', '.')]
+                if any(p == '..' for p in parts):
+                    return None, None
+
+                if normalized.startswith('addons/'):
+                    return xbmcvfs.translatePath("special://home/"), normalized
+                if normalized.startswith('addon_data/'):
+                    return xbmcvfs.translatePath("special://profile/"), normalized
+                if normalized.startswith('Database/'):
+                    return xbmcvfs.translatePath("special://profile/"), normalized
+                if normalized.startswith('keymaps/'):
+                    return xbmcvfs.translatePath("special://userdata/"), normalized
+                if normalized in ['sources.xml', 'guisettings.xml', 'profiles.xml', 'advancedsettings.xml', 'passwords.xml']:
+                    return userdata_path, normalized
+
+                return None, None
+
             for i, item in enumerate(backup_zip.infolist()):
                 file_path = item.filename
                 
@@ -2643,24 +2715,18 @@ def perform_restore():
                 )
                 
                 try:
-                    # Determina la directory di estrazione in base al tipo di file
-                    extract_base = None
-                    
-                    if file_path.startswith('addons/'):
-                        extract_base = xbmcvfs.translatePath("special://home/")
-                    elif file_path.startswith('addon_data/'):
-                        extract_base = xbmcvfs.translatePath("special://profile/")
-                    elif file_path.startswith('Database/'):
-                        extract_base = xbmcvfs.translatePath("special://profile/")
-                    elif file_path.startswith('keymaps/'):
-                        extract_base = xbmcvfs.translatePath("special://userdata/")
-                    elif file_path in ['sources.xml', 'guisettings.xml', 'profiles.xml', 'advancedsettings.xml', 'passwords.xml']:
-                        extract_base = userdata_path
-                    else:
-                        xbmc.log(f"OptiKlean: Skipping unknown file: {file_path}", xbmc.LOGWARNING)
-                        continue
+                    # Determina la directory di estrazione e valida il path interno dello zip
+                    extract_base, safe_member = resolve_safe_target_base(file_path)
                     
                     if extract_base is None:
+                        xbmc.log(f"OptiKlean: Skipping unsafe or unknown zip entry: {file_path}", xbmc.LOGWARNING)
+                        continue
+
+                    # Verifica finale: il target deve restare sotto la base consentita
+                    base_norm = os.path.normpath(extract_base.replace('/', os.sep).replace('\\', os.sep))
+                    target_path = os.path.normpath(os.path.join(base_norm, safe_member.replace('/', os.sep)))
+                    if os.path.commonpath([base_norm, target_path]) != base_norm:
+                        xbmc.log(f"OptiKlean: Path traversal blocked for zip entry: {file_path}", xbmc.LOGWARNING)
                         continue
                     
                     # Normalizza il percorso per il sistema operativo

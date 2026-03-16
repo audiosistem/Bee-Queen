@@ -52,6 +52,64 @@ def ensure_path_format(path):
     return path + '/'
 
 
+def _ensure_parent_dir(path):
+    """Ensure parent directory exists using os first, then xbmcvfs fallback."""
+    parent = os.path.dirname(path)
+    if not parent:
+        return
+    if os.path.exists(parent) or xbmcvfs.exists(parent):
+        return
+    try:
+        os.makedirs(parent, exist_ok=True)
+    except Exception:
+        xbmcvfs.mkdirs(parent)
+
+
+def _read_text_file(path):
+    """Read text preferring os I/O, with xbmcvfs fallback for edge environments."""
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except Exception:
+        f = None
+        try:
+            f = xbmcvfs.File(path, 'r')
+            return f.read()
+        finally:
+            if f:
+                f.close()
+
+
+def _write_text_file(path, content):
+    """Write text preferring os I/O, with xbmcvfs fallback for edge environments."""
+    _ensure_parent_dir(path)
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return
+    except Exception:
+        f = None
+        try:
+            f = xbmcvfs.File(path, 'w')
+            f.write(content)
+        finally:
+            if f:
+                f.close()
+
+
+def _read_json_file(path, default=None):
+    """Read JSON with fallback and default on parse/read errors."""
+    try:
+        return json.loads(_read_text_file(path))
+    except Exception:
+        return {} if default is None else default
+
+
+def _write_json_file(path, data):
+    """Write JSON with stable formatting through hybrid I/O."""
+    _write_text_file(path, json.dumps(data, indent=2, ensure_ascii=False))
+
+
 # Definisce i percorsi per i file di log
 log_files = {
     "clear_kodi_temp_folder": os.path.join(addon_data_folder, "clear_kodi_temp_folder.log"),
@@ -130,22 +188,21 @@ def update_automatic_settings_log():
 
         if xbmcvfs.exists(last_run_file):
             try:
-                with open(last_run_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    last_run_timestamp = data.get('timestamp', 0)
-                    last_run_human = data.get('human_readable', '')
+                data = _read_json_file(last_run_file, {})
+                last_run_timestamp = data.get('timestamp', 0)
+                last_run_human = data.get('human_readable', '')
 
-                    if last_run_timestamp > 0:
-                        last_run_local = datetime.fromtimestamp(last_run_timestamp).strftime(full_format)
-                        next_run = datetime.fromtimestamp(last_run_timestamp + (interval_days * 86400))
-                        next_run_local = next_run.strftime(full_format)
-                        day_label = "day" if interval_days == 1 else "days"
-                        next_run_info = (
-                            f" (set on {last_run_local})\n"
-                            f"next run time: {next_run_local} (every {interval_days} {day_label})"
-                        )
-                    elif last_run_human:
-                        next_run_info = f" (set on {last_run_human})\nnext run time: unknown"
+                if last_run_timestamp > 0:
+                    last_run_local = datetime.fromtimestamp(last_run_timestamp).strftime(full_format)
+                    next_run = datetime.fromtimestamp(last_run_timestamp + (interval_days * 86400))
+                    next_run_local = next_run.strftime(full_format)
+                    day_label = "day" if interval_days == 1 else "days"
+                    next_run_info = (
+                        f" (set on {last_run_local})\n"
+                        f"next run time: {next_run_local} (every {interval_days} {day_label})"
+                    )
+                elif last_run_human:
+                    next_run_info = f" (set on {last_run_human})\nnext run time: unknown"
             except Exception as e:
                 xbmc.log(f"OptiKlean: Error reading {last_run_file}: {str(e)}", xbmc.LOGERROR)
                 next_run_info = "\n(last run time unknown)"
@@ -156,9 +213,7 @@ def update_automatic_settings_log():
 
     # Scrivi il file di log usando xbmcvfs
     try:
-        file = xbmcvfs.File(log_path, 'w')
-        file.write(log_content)
-        file.close()
+        _write_text_file(log_path, log_content)
         xbmc.log("OptiKlean: Updated automatic settings log", xbmc.LOGINFO)
     except Exception as e:
         xbmc.log(f"OptiKlean: Error writing automatic settings log: {str(e)}", xbmc.LOGERROR)
@@ -176,8 +231,7 @@ def update_last_run(cleaning_type):
             "timestamp": int(time.time()),
             "human_readable": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
-        with open(last_run_file, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2)
+        _write_json_file(last_run_file, data)
         xbmc.log(f"OptiKlean: Updated last run info for {cleaning_type}", xbmc.LOGINFO)
     except Exception as e:
         xbmc.log(f"OptiKlean: Failed to update last run for {cleaning_type}: {str(e)}", xbmc.LOGERROR)
@@ -203,10 +257,9 @@ def monitor_settings_changes():
             last_run_file = os.path.join(addon_data_folder, f"last_{prefix}.json")
 
             if xbmcvfs.exists(last_run_file):
-                with open(last_run_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    last_enable = data.get("enabled", False)
-                    last_interval = data.get("interval", 7)
+                data = _read_json_file(last_run_file, {})
+                last_enable = data.get("enabled", False)
+                last_interval = data.get("interval", 7)
             else:
                 last_enable = not current_enable
                 last_interval = current_interval + 1
@@ -853,7 +906,7 @@ def clear_kodi_temp_folder(temp_path, progress_dialog=None, critical_cache_addon
     return results
 
 
-def clear_cache_and_temp(auto_mode=False):
+def clear_cache_and_temp(auto_mode=False, skip_auto_delay=False):
 
     # Inizializza il totale cumulativo
     total_freed_all_options = 0
@@ -880,7 +933,7 @@ def clear_cache_and_temp(auto_mode=False):
     else:
         # Modalità automatica: applica il ritardo se impostato prima di iniziare
         delay_seconds = get_autostart_delay()
-        if delay_seconds > 0:
+        if delay_seconds > 0 and not skip_auto_delay:
             xbmc.log(f"OptiKlean: Automatic cleaning delayed by {delay_seconds} seconds", xbmc.LOGINFO)
             time.sleep(delay_seconds)
         
@@ -1588,7 +1641,7 @@ def get_kodi_major_version():
 
 
 # Funzione per cancellare le thumbnails non più utilizzate
-def clear_unused_thumbnails(auto_mode=False):
+def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
     xbmc.log("OptiKlean DEBUG: Starting clear_unused_thumbnails", xbmc.LOGINFO)
     start_time = time.perf_counter()
     
@@ -1613,7 +1666,7 @@ def clear_unused_thumbnails(auto_mode=False):
     else:
         # Modalità automatica: applica il ritardo se impostato prima di iniziare
         delay_seconds = get_autostart_delay()
-        if delay_seconds > 0:
+        if delay_seconds > 0 and not skip_auto_delay:
             xbmc.log(f"OptiKlean: Automatic thumbnails cleaning delayed by {delay_seconds} seconds", xbmc.LOGINFO)
             time.sleep(delay_seconds)
         
@@ -2695,7 +2748,7 @@ def delete_folder(folder_path, progress_dialog=None):
 
 
 # Funzione per pulire i residui degli addon (addon disabilitati e residui di addon disinstallati)
-def clear_addon_leftovers(auto_mode=False):
+def clear_addon_leftovers(auto_mode=False, skip_auto_delay=False):
     start_time = time.perf_counter()
     progress = xbmcgui.DialogProgress()
     progress.create("OptiKlean", addon.getLocalizedString(31197))  # "Reading addon information..."
@@ -2830,7 +2883,7 @@ def clear_addon_leftovers(auto_mode=False):
     else:
         # Modalità automatica: applica il ritardo se impostato prima di iniziare
         delay_seconds = get_autostart_delay()
-        if delay_seconds > 0:
+        if delay_seconds > 0 and not skip_auto_delay:
             xbmc.log(f"OptiKlean: Automatic addon leftovers cleaning delayed by {delay_seconds} seconds", xbmc.LOGINFO)
             time.sleep(delay_seconds)
         
@@ -2938,11 +2991,11 @@ def clear_addon_leftovers(auto_mode=False):
             xbmc.log(f"OptiKlean: Error updating automatic logs: {str(e)}", xbmc.LOGERROR)
 
 # Funzione per pulire i pacchetti (packages)
-def clear_kodi_packages(auto_mode=False):
+def clear_kodi_packages(auto_mode=False, skip_auto_delay=False):
     # Se è in modalità automatica, applica il ritardo se impostato prima di iniziare
     if auto_mode:
         delay_seconds = get_autostart_delay()
-        if delay_seconds > 0:
+        if delay_seconds > 0 and not skip_auto_delay:
             xbmc.log(f"OptiKlean: Automatic packages cleaning delayed by {delay_seconds} seconds", xbmc.LOGINFO)
             time.sleep(delay_seconds)
     
@@ -3148,11 +3201,11 @@ def clear_kodi_packages(auto_mode=False):
             xbmc.log(f"OptiKlean: Error updating automatic logs: {str(e)}", xbmc.LOGERROR)
 
 # Funzione per ottimizzare i database di Kodi e degli addons
-def optimize_databases(auto_mode=False):
+def optimize_databases(auto_mode=False, skip_auto_delay=False):
     # Se è in modalità automatica, applica il ritardo se impostato prima di iniziare
     if auto_mode:
         delay_seconds = get_autostart_delay()
-        if delay_seconds > 0:
+        if delay_seconds > 0 and not skip_auto_delay:
             xbmc.log(f"OptiKlean: Automatic database optimization delayed by {delay_seconds} seconds", xbmc.LOGINFO)
             time.sleep(delay_seconds)
     
@@ -3851,8 +3904,7 @@ def view_logs():
 
         try:
             if os.path.exists(log_file):
-                with open(log_file, "r", encoding="utf-8") as f:
-                    content = f.read()
+                content = _read_text_file(log_file)
                 if not content.strip():
                     content = addon.getLocalizedString(31220)  # "Empty content"
             else:
@@ -3863,7 +3915,7 @@ def view_logs():
         xbmcgui.Dialog().textviewer(addon.getLocalizedString(31223).format(log_name=display_names[selected]), content)  # "Log: {log_name}"
 
 
-def run_automatic_maintenance():
+def run_automatic_maintenance(skip_auto_delay=False):
     """Esegue la manutenzione automatica quando chiamato da autoexec.py"""
     xbmc.log("OptiKlean: Avvio manutenzione automatica", xbmc.LOGINFO)
     
@@ -3889,9 +3941,8 @@ def run_automatic_maintenance():
             if not xbmcvfs.exists(last_run_file):
                 return True  # prima esecuzione
 
-            with open(last_run_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                last_run = data.get("timestamp", 0)
+            data = _read_json_file(last_run_file, {})
+            last_run = data.get("timestamp", 0)
 
             if last_run == 0:
                 return True
@@ -3916,7 +3967,9 @@ def run_automatic_maintenance():
             if should_run_cleaning(cleaning_name):
                 xbmc.log(f"OptiKlean: Starting {cleaning_name} cleaning", xbmc.LOGINFO)
 
-                if 'auto_mode' in function.__code__.co_varnames:
+                if 'skip_auto_delay' in function.__code__.co_varnames:
+                    function(auto_mode=True, skip_auto_delay=skip_auto_delay)
+                elif 'auto_mode' in function.__code__.co_varnames:
                     function(auto_mode=True)
                 else:
                     function()

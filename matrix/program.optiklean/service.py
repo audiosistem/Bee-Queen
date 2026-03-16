@@ -32,6 +32,30 @@ sys.path.append(addon_path)
 addon_data_folder = xbmcvfs.translatePath(f"special://profile/addon_data/{addon.getAddonInfo('id')}/")
 
 
+def run_scheduled_maintenance(monitor):
+    """Run automatic maintenance once, applying the startup delay only once."""
+    if run_automatic_maintenance is None:
+        addon_id = addon.getAddonInfo('id')
+        xbmc.executebuiltin(f'RunScript({addon_id}, autorun)')
+        return not monitor.abortRequested()
+
+    delay_seconds = monitor.addon.getSettingInt("autostart_delay") * 60
+    if delay_seconds > 0:
+        xbmc.log(f"OptiKlean: Applying startup delay once before automatic maintenance ({delay_seconds} seconds)", xbmc.LOGINFO)
+        elapsed = 0
+        while elapsed < delay_seconds and not monitor.abortRequested():
+            step = min(5, delay_seconds - elapsed)
+            if monitor.waitForAbort(step):
+                return False
+            elapsed += step
+
+    if monitor.abortRequested():
+        return False
+
+    run_automatic_maintenance(skip_auto_delay=True)
+    return True
+
+
 class OptiKleanMonitor(xbmc.Monitor):
     def __init__(self):
         super(OptiKleanMonitor, self).__init__()
@@ -81,7 +105,9 @@ class OptiKleanMonitor(xbmc.Monitor):
 
                 if not self.abortRequested():
                     xbmc.log("OptiKlean: avvio prima manutenzione automatica", xbmc.LOGINFO)
-                    run_automatic_maintenance()
+                    if run_scheduled_maintenance(self):
+                        self.maintenance_executed = True
+                        check_and_run_update(self, settle_before_check=True)
 
         except Exception as e:
             xbmc.log(f"OptiKlean: Errore in check_first_run: {str(e)}", xbmc.LOGERROR)
@@ -96,7 +122,10 @@ class OptiKleanMonitor(xbmc.Monitor):
                 xbmcvfs.mkdirs(addon_data_folder)
 
             # Aggiorna subito lo stato delle impostazioni automatiche
-            monitor_settings_changes()
+            if monitor_settings_changes:
+                monitor_settings_changes()
+            else:
+                xbmc.log("OptiKlean: monitor_settings_changes non disponibile", xbmc.LOGWARNING)
 
             # Check if first run needed for newly enabled cleanings
             self.check_first_run()
@@ -123,13 +152,14 @@ class OptiKleanMonitor(xbmc.Monitor):
             self.startup_complete = True
             xbmc.log("OptiKlean: Interazione utente rilevata", xbmc.LOGDEBUG)
 
-def check_and_run_update(monitor):
+def check_and_run_update(monitor, settle_before_check=False):
     if (
         monitor.maintenance_executed
         and monitor.updater
         and monitor.updater._is_auto_update_enabled()
     ):
-        xbmc.sleep(3000)
+        if settle_before_check and monitor.waitForAbort(3):
+            return
         if monitor.updater.check_and_update():
             xbmc.log("OptiKlean: Aggiornamento completato", xbmc.LOGINFO)
 
@@ -152,6 +182,7 @@ if __name__ == '__main__':
     wait_time = 3
     idle_counter = 0
     settings_check_counter = 0  # Contatore per monitoraggio impostazioni (ogni 10 minuti)
+    update_check_counter = 0  # Contatore per controlli update periodici
     
     while not monitor.abortRequested():
         xbmc.log(f"OptiKlean: Avvio completo: {monitor.startup_complete}, Manutenzione automatica eseguita: {monitor.maintenance_executed}", xbmc.LOGDEBUG)
@@ -168,33 +199,33 @@ if __name__ == '__main__':
             except Exception as e:
                 xbmc.log(f"OptiKlean: Errore controllo periodico impostazioni: {str(e)}", xbmc.LOGERROR)
             settings_check_counter = 0
+
+        update_check_counter += wait_time
+        if update_check_counter >= 600:
+            try:
+                check_and_run_update(monitor)
+            except Exception as e:
+                xbmc.log(f"OptiKlean: Errore controllo periodico aggiornamenti: {str(e)}", xbmc.LOGERROR)
+            update_check_counter = 0
         
         if not monitor.maintenance_executed:
             try:
                 xbmc.sleep(2000)
                 if not xbmc.Player().isPlaying():
                     xbmc.log("OptiKlean: Kodi è pronto, controllo intervalli giorni per manutenzione automatica", xbmc.LOGINFO)
-                    if run_automatic_maintenance:
-                        run_automatic_maintenance()
-                    else:
-                        addon_id = addon.getAddonInfo('id')
-                        xbmc.executebuiltin(f'RunScript({addon_id}, autorun)')
-                    monitor.maintenance_executed = True
-                    wait_time = 60
-                    check_and_run_update(monitor)
+                    if run_scheduled_maintenance(monitor):
+                        monitor.maintenance_executed = True
+                        wait_time = 60
+                        check_and_run_update(monitor, settle_before_check=True)
                 else:
                     xbmc.log("OptiKlean: Riproduzione in corso, riprogrammo la pulizia", xbmc.LOGINFO)
                     idle_counter += 1
                     if idle_counter > 10:
                         xbmc.log("OptiKlean: Timeout attesa inattività, controllo intervalli", xbmc.LOGINFO)
-                        if run_automatic_maintenance:
-                            run_automatic_maintenance()
-                        else:
-                            addon_id = addon.getAddonInfo('id')
-                            xbmc.executebuiltin(f'RunScript({addon_id}, autorun)')
-                        monitor.maintenance_executed = True
-                        wait_time = 60
-                        check_and_run_update(monitor)
+                        if run_scheduled_maintenance(monitor):
+                            monitor.maintenance_executed = True
+                            wait_time = 60
+                            check_and_run_update(monitor, settle_before_check=True)
             except Exception as e:
                 xbmc.log(f"OptiKlean: Errore durante la manutenzione automatica: {str(e)}", xbmc.LOGERROR)
                 monitor.maintenance_executed = True

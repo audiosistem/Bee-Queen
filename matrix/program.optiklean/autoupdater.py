@@ -12,12 +12,19 @@ import zipfile
 import hashlib
 import glob
 from datetime import datetime, timedelta
-from distutils.version import LooseVersion
 
 import xbmc
 import xbmcaddon
 import xbmcvfs
 import xbmcgui
+
+
+def _parse_version(v):
+    """Parse a version string into a comparable tuple of ints."""
+    try:
+        return tuple(int(x) for x in re.split(r'[.\-]', str(v))[:3])
+    except Exception:
+        return (0, 0, 0)
 
 class AutoUpdater:
     # 1. Configurazione GitLab
@@ -193,7 +200,7 @@ class AutoUpdater:
         xbmc.log(f"OptiKlean: Version comparison - Remote: {gitlab_version}, Local: {local_version}", xbmc.LOGINFO)
 
         try:
-            is_newer = LooseVersion(gitlab_version) > LooseVersion(local_version)
+            is_newer = _parse_version(gitlab_version) > _parse_version(local_version)
             if is_newer:
                 xbmc.log("OptiKlean: New version found, ignoring time limits for update", xbmc.LOGINFO)
             return is_newer
@@ -454,6 +461,12 @@ class AutoUpdater:
 
             if not gitlab_commit:
                 xbmc.log("OptiKlean: Failed to retrieve commit information", xbmc.LOGWARNING)
+                # Save last_check even on API failure so the rate-limit is respected
+                # and we don't hammer the API every cycle when the repo is empty or unreachable.
+                self._save_commit_data(
+                    local_data.get('commit_id', ''),
+                    local_data.get('gitlab_version', self.current_version),
+                )
                 return False
                 
             if self._should_update(gitlab_commit, local_data):
@@ -461,6 +474,9 @@ class AutoUpdater:
                 return self._perform_update(gitlab_commit)
             else:
                 xbmc.log("OptiKlean: No update needed", xbmc.LOGDEBUG)
+                version_match = self._extract_version(gitlab_commit['message'])
+                gitlab_version = version_match.group(1) if version_match else local_data.get('gitlab_version', self.current_version)
+                self._save_commit_data(gitlab_commit['id'], gitlab_version)
                 return False
                 
         except Exception as e:
