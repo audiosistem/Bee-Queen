@@ -640,7 +640,7 @@ In addition to what livestreams allowed you to do, you can now,
 		<news>INFO: For latest changes see Changelog within add-on.</news>
 		<assets><icon>pov.png</icon><fanart>pov_fanart.png</fanart></assets>
 	</extension>
-</addon><addon id="plugin.video.romanianpack" name="[B][COLOR FFFDBD01]MRSP Lite[/COLOR][/B]" version="1.2.43" provider-name="Sarsailă, [B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="plugin.video.romanianpack" name="[B][COLOR FFFDBD01]MRSP Lite[/COLOR][/B]" version="1.2.45" provider-name="Sarsailă, [B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
 	<import addon="script.module.requests" version="2.22.0" />
@@ -660,7 +660,7 @@ In addition to what livestreams allowed you to do, you can now,
         </item>
     </menu>
   </extension>
-  <extension point="xbmc.service" name="mrsp.service" library="service.py" />
+  
   <extension point="xbmc.addon.metadata">
 	<summary>Motor de căutare și redare Torente</summary>
     <description>[B][COLOR FF009900]Browser și Player pentru torente video[/COLOR][/B]</description>
@@ -906,7 +906,7 @@ Fixed autosub addon exclusions
             <fanart>icon.png</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.55">
+</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.56">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -1122,7 +1122,7 @@ Fixed autosub addon exclusions
 			</item>
 		</menu>
 	</extension>
-	<extension point="xbmc.service" library="service.py" start="startup" />
+	
 	<extension point="xbmc.python.module" library="resources/lib/" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
@@ -1142,13 +1142,9 @@ Fixed autosub addon exclusions
 			<screenshot>resources/screenshots/screenshot003.jpg</screenshot>
 		</assets>
 		<news>
-[B]Update - v6.7.55 - Mar 15th, 2026[/B]
---[Info] You may need to go to Tools, Trakt Management and Force Sync with Local database
---[Info] You may need to go to Tools, Simkl Management and Force Sync with Local database
---[Change] Added Academy Award Winners movies and New TV Shows (TMDb).
---[Fix] Changes for Trakt API updates limiting to 10.
---[Change] Setting for Watched and Indicators changed to only show available serrvices.
---[Fix] MDBList pagination settings corrected.
+[B]Update - v6.7.56 - Mar 16th, 2026[/B]
+--[Fix] Threading change for Trakt sync to stop crashes.
+--[Fix] Changes for skin detection to avoid heavy processing when checking for skin.
 		</news>
 	</extension>
 
@@ -1840,7 +1836,7 @@ Fixed autosub addon exclusions
 		</assets>
 		<news>- 1.5.1 Added new scrapers</news>
 	</extension>
-</addon><addon id="script.service.fastautosubs" name="[B][COLOR FF00BFFF]Fast AutoSubs[/COLOR][/B]" version="1.0.7" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="script.service.fastautosubs" name="[B][COLOR FF00BFFF]Fast AutoSubs[/COLOR][/B]" version="1.0.11" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
     </requires>
