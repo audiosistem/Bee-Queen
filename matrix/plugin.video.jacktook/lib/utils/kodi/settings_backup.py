@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timedelta, timezone
 import xml.etree.ElementTree as ET
 
+import requests
 import xbmcgui
 
 from lib.clients.stremio.constants import (
@@ -13,6 +14,7 @@ from lib.clients.stremio.constants import (
     decode_selected_ids,
     encode_selected_ids,
 )
+from lib.api.stremio.addon_manager import build_addon_instance_key
 from lib.db.cached import cache
 from lib.db.pickle_db import PickleDatabase
 from lib.utils.general.utils import (
@@ -44,6 +46,8 @@ BACKUP_VERSION = 1
 CUSTOM_ADDON_EXPIRY = timedelta(days=365 * 20)
 SETTINGS_XML_PATH = os.path.join(ADDON_PATH, "resources", "settings.xml")
 EXPORT_FILENAME_TEMPLATE = "jacktook-settings-backup-{timestamp}.json"
+RESTORE_SOURCE_FILE = "file"
+RESTORE_SOURCE_URL = "url"
 
 CUSTOM_SELECTION_KEYS = {
     "stream": STREMIO_ADDONS_KEY,
@@ -137,12 +141,7 @@ def _setting_clear_value(setting_id, schema_entry):
 
 
 def _custom_addon_key(addon):
-    manifest = addon.get("manifest") or {}
-    addon_id = manifest.get("id") or manifest.get("name")
-    transport_url = addon.get("transportUrl")
-    if not addon_id or not transport_url:
-        return None
-    return f"{addon_id}|{transport_url}"
+    return build_addon_instance_key(addon) or None
 
 
 def _get_custom_stremio_addons(user_addons=None):
@@ -420,9 +419,51 @@ def _get_restore_path():
     return translatePath(restore_path)
 
 
+def _get_restore_source():
+    selected_index = xbmcgui.Dialog().select(
+        translation(90346),
+        [translation(90347), translation(90348)],
+    )
+    if selected_index == 0:
+        return RESTORE_SOURCE_FILE
+    if selected_index == 1:
+        return RESTORE_SOURCE_URL
+    notification(translation(90277))
+    return None
+
+
+def _get_restore_url():
+    restore_url = xbmcgui.Dialog().input(
+        heading=translation(90349),
+        type=xbmcgui.INPUT_ALPHANUM,
+    )
+    restore_url = (restore_url or "").strip()
+    if not restore_url:
+        notification(translation(90350))
+        return None
+    return restore_url
+
+
+def _load_backup_payload_from_file(restore_path):
+    with open(restore_path, encoding="utf-8") as backup_file:
+        return json.load(backup_file)
+
+
+def _load_backup_payload_from_url(restore_url):
+    response = requests.get(restore_url, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
+
 def restore_settings_backup(params=None):
-    restore_path = _get_restore_path()
-    if not restore_path:
+    restore_source = _get_restore_source()
+    if not restore_source:
+        return
+
+    restore_target = (
+        _get_restore_path() if restore_source == RESTORE_SOURCE_FILE else _get_restore_url()
+    )
+    if not restore_target:
         return
 
     try:
@@ -434,14 +475,18 @@ def restore_settings_backup(params=None):
             notification(translation(90277))
             return
 
-        with open(restore_path, encoding="utf-8") as backup_file:
-            payload = json.load(backup_file)
+        if restore_source == RESTORE_SOURCE_FILE:
+            payload = _load_backup_payload_from_file(restore_target)
+        else:
+            payload = _load_backup_payload_from_url(restore_target)
         apply_backup_payload(payload)
         notification(translation(90266))
     except ValueError:
         dialog_ok(translation(90267), translation(90270))
+    except requests.RequestException:
+        dialog_ok(translation(90267), translation(90351), restore_target)
     except Exception:
-        dialog_ok(translation(90267), translation(90274), restore_path)
+        dialog_ok(translation(90267), translation(90274), restore_target)
 
 
 def reset_all_settings_action(params=None):
