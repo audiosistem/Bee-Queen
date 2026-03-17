@@ -27,7 +27,7 @@ sort_method_dict = {'episodes': 24, 'files': 5, 'label': 2}
 playlist_type_dict = {'music': 0, 'video': 1}
 
 def get_setting(setting_id, fallback=None):
-	setting = addon_object.getSetting(setting_id)
+	setting = xbmcaddon.Addon().getSetting(setting_id)
 	if not fallback is None and not setting: setting = fallback
 	return setting
 

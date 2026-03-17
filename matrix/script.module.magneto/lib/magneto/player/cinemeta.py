@@ -18,6 +18,19 @@ def _cinemeta(url):
 	if not response.ok: return logger(__name__, f"{response.reason}\n{url}")
 	return response.json()
 
+def external_ids(external_source, external_id, tmdb_api='7b2b174744f774ba48145e2859bb2e2c'):
+	result = None
+	try:
+		base_url = 'https://api.themoviedb.org/3'
+		string = 'magneto_external_id_%s_%s' % (external_source, external_id)
+		url = '%s/find/%s?api_key=%s&external_source=%s' % (base_url, external_id, tmdb_api, external_source)
+		result = _cache_get(string)
+		if not result: result = requests.get(url, timeout=3.0).json()
+		if not result['movie_results'] and not result['tv_results']: raise
+		_cache_set(result, string)
+	except: pass
+	return result
+
 def top_movies():
 	string = 'cinemeta_top_movies'
 	url = '%s/top/catalog/movie/top/skip=0.json' % list_url

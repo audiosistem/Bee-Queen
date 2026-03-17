@@ -1,0 +1,22 @@
+Version 5.1.194 (Mar 16, 2026)
+- Code Base Changes:
+    - None
+
+- Resolvers Added:
+    - virstream
+
+- Resolvers Fixed/Updated:
+    - byse
+    - cocoleech
+    - hdvid
+    - kinoger
+    - playhd
+    - torbox
+    - videa
+    - waaw
+
+- Resolvers Removed
+    - None
+
+- Languages Added/Updated
+    - None

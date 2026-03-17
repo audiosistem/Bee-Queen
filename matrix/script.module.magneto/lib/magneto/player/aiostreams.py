@@ -33,7 +33,7 @@ class source:
 				try: file.update(item)
 				except: pass
 				else: sources_append(file)
-		except Exception as e: logger(f"POV {self.scrape_provider} Exception", f"{e}")
+		except Exception as e: logger(f"Magneto {self.scrape_provider} Exception", f"{e}")
 		if self.errors: logger(self.scrape_provider, f"{self.errors}")
 		logger(self.scrape_provider, f"{title} : {self.elapsed}s, {len(self.sources)}, {len(self.scrape_results)}")
 		internal_results(self.scrape_provider, self.sources)

@@ -77,7 +77,6 @@
 <category label="AIOStreams"> <!-- AIOStreams -->
     <setting label="Results" type="lsep" />
     <setting id="provider.aiostreams" type="bool" label="" default="true" visible="false" />
-    <setting id="scraping_timeout" type="number" label="Scraping Timeout" default="30" />
     <setting id="results.list_format" type="enum" label="Results Format" default="1" values="List|Wide List" />
     <setting id="highlight.type" label="Result Hightlight Type" type="enum" default="1" values="Resolution|Single Color" />
     <setting id="scraper_single_highlight" label="" type="text" default="dodgerblue" visible="false" />
@@ -90,6 +89,7 @@
     <setting id="scraper_720p_display" label="720p Color Hightlight" type="action" default="[COLOR FF0000FF]blue[/COLOR]" action="RunPlugin(plugin://script.module.magneto/?action=ColorPick&amp;setting=scraper_720p_highlight)"/>
     <setting id="scraper_SD_highlight" label="" type="text" default="green" visible="false" />
     <setting id="scraper_SD_display" label="SD Color Hightlight" type="action" default="[COLOR FF008000]green[/COLOR]" action="RunPlugin(plugin://script.module.magneto/?action=ColorPick&amp;setting=scraper_SD_highlight)" />
+    <setting id="scraping_timeout" type="number" label="Scraping Timeout" default="30" />
     <setting label="Setup" type="lsep" />
     <setting id="aiostreams_instance" type="enum" label="Provider" default="0" values="Kuu|Custom|Viren|Yeb|Midnight" enable="true" />
     <setting id="aio.ku_url" type="text" label="Url" default="https://aiostreams.stremio.ru" enable="false" visible="eq(-1,0)" />

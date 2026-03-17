@@ -287,6 +287,7 @@ class MagnetoPlayer():
 				})
 			except: pass
 		else: self.meta = cinemeta.movie_meta(self.imdb_id)
+		(Thread(target=cinemeta.external_ids, args=('imdb_id', self.imdb_id))).start()
 
 	def _clear_properties(self):
 		for item in default_internal_scrapers: clear_property(int_window_prop % item)
