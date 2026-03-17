@@ -1027,6 +1027,9 @@ class Movies:
 					watched = getMovieOverlay(indicators, imdb) == '5'
 					if self.traktCredentials:
 						cm.append((traktManagerMenu, 'RunPlugin(%s?action=tools_traktManager&name=%s&imdb=%s&watched=%s&unfinished=%s)' % (sysaddon, sysname, imdb, watched, unfinished)))
+					from resources.lib.modules.mdblist import getMDBListCredentialsInfo as _mdb_ok
+					if _mdb_ok() and imdb:
+						cm.append((getLS(40220), 'RunPlugin(%s?action=mdblist_Manager&name=%s&imdb=%s&media_type=movie)' % (sysaddon, sysname, imdb)))
 					if watched:
 						cm.append((unwatchedMenu, 'RunPlugin(%s?action=playcount_Movie&name=%s&imdb=%s&query=4)' % (sysaddon, sysname, imdb)))
 						meta.update({'playcount': 1, 'overlay': 5})

@@ -1025,6 +1025,9 @@ class TVshows:
 					watched = (getTVShowOverlay(indicators[1], imdb, tvdb) == '5') if indicators else False
 					if self.traktCredentials:
 						cm.append((traktManagerMenu, 'RunPlugin(%s?action=tools_traktManager&name=%s&imdb=%s&tvdb=%s&watched=%s)' % (sysaddon, systitle, imdb, tvdb, watched)))
+					from resources.lib.modules.mdblist import getMDBListCredentialsInfo as _mdb_ok
+					if _mdb_ok() and imdb:
+						cm.append((getLS(40220), 'RunPlugin(%s?action=mdblist_Manager&name=%s&imdb=%s&media_type=show)' % (sysaddon, systitle, imdb)))
 					if watched:
 						meta.update({'playcount': 1, 'overlay': 5})
 						cm.append((unwatchedMenu, 'RunPlugin(%s?action=playcount_TVShow&name=%s&imdb=%s&tvdb=%s&query=4)' % (sysaddon, systitle, imdb, tvdb)))

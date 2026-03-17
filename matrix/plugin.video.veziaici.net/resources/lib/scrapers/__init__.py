@@ -32,6 +32,14 @@ from resources.lib.scrapers.serialecoreene import (
     get_playable_url,
 )
 
+from resources.lib.scrapers.serialero import (
+    get_menu as get_serialero_menu,
+    get_series_list as get_serialero_series,
+    get_seasons_and_episodes as get_serialero_episodes,
+    get_season_episodes as get_serialero_season_episodes,
+    get_sources as get_serialero_sources,
+)
+
 __all__ = [
     # Veziaici
     "get_veziaici_menu",
@@ -57,4 +65,10 @@ __all__ = [
     "get_new_episodes",
     "get_serialecoreene_episodes",
     "get_playable_url",
+    # SerialeRo
+    "get_serialero_menu",
+    "get_serialero_series",
+    "get_serialero_episodes",
+    "get_serialero_season_episodes",
+    "get_serialero_sources",
 ]

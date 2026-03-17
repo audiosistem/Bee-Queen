@@ -103,6 +103,43 @@ def router(params):
 	elif action == 'movies_LikedLists':
 		from resources.lib.menus import movies
 		movies.Movies().traktLikedLists()
+	####################################################
+	#---MDBLIST MOVIES
+	####################################################
+	elif action == 'mdblist_movieNavigator':
+		from resources.lib.menus import navigator
+		navigator.Navigator().mdblist_movies()
+	elif action == 'mdblist_movieWatchlist':
+		from resources.lib.menus.mdblist_menus import MDBListMovies
+		MDBListMovies().watchlist()
+	elif action == 'mdblist_movieUserLists':
+		from resources.lib.menus.mdblist_menus import MDBListMovies
+		MDBListMovies().userLists()
+	elif action == 'mdblist_movieTopLists':
+		from resources.lib.menus.mdblist_menus import MDBListMovies
+		MDBListMovies().topLists()
+	elif action == 'mdblist_movieSearchLists':
+		from resources.lib.menus.mdblist_menus import MDBListMovies
+		MDBListMovies().searchLists()
+	elif action == 'mdblist_movieListItems':
+		from resources.lib.menus.mdblist_menus import MDBListMovies
+		MDBListMovies().listItems(params.get('list_id'))
+	####################################################
+	#---MDBLIST CONTINUE WATCHING + TOP LISTS (MOVIES)
+	####################################################
+	elif action == 'mdblist_continueMovies':
+		from resources.lib.menus.mdblist_menus import MDBListContinueMovies
+		MDBListContinueMovies().get()
+	elif action == 'mdblist_movieTopListsPublic':
+		from resources.lib.menus.mdblist_menus import MDBListTopMovies
+		MDBListTopMovies().topLists()
+	elif action == 'mdblist_movieSearchListsPublic':
+		from resources.lib.menus.mdblist_menus import MDBListTopMovies
+		MDBListTopMovies().searchLists()
+	elif action == 'mdblist_movieTopListItems':
+		from resources.lib.menus.mdblist_menus import MDBListTopMovies
+		MDBListTopMovies().listItems(params.get('list_id'))
+	####################################################
 	elif action == 'movies_traktUnfinishedManager':
 		from resources.lib.menus import movies
 		movies.Movies().unfinishedManager()
@@ -233,6 +270,64 @@ def router(params):
 	elif action == 'shows_LikedLists':
 		from resources.lib.menus import tvshows
 		tvshows.TVshows().traktLikedLists()
+	####################################################
+	#---MDBLIST TV SHOWS
+	####################################################
+	elif action == 'mdblist_tvNavigator':
+		from resources.lib.menus import navigator
+		navigator.Navigator().mdblist_tv()
+	elif action == 'mdblist_showWatchlist':
+		from resources.lib.menus.mdblist_menus import MDBListShows
+		MDBListShows().watchlist()
+	elif action == 'mdblist_showUserLists':
+		from resources.lib.menus.mdblist_menus import MDBListShows
+		MDBListShows().userLists()
+	elif action == 'mdblist_showTopLists':
+		from resources.lib.menus.mdblist_menus import MDBListShows
+		MDBListShows().topLists()
+	elif action == 'mdblist_showSearchLists':
+		from resources.lib.menus.mdblist_menus import MDBListShows
+		MDBListShows().searchLists()
+	elif action == 'mdblist_showListItems':
+		from resources.lib.menus.mdblist_menus import MDBListShows
+		MDBListShows().listItems(params.get('list_id'))
+	####################################################
+	#---MDBLIST CONTINUE WATCHING + TOP LISTS (TV SHOWS)
+	####################################################
+	elif action == 'mdblist_continueEpisodes':
+		from resources.lib.menus.mdblist_menus import MDBListContinueEpisodes
+		MDBListContinueEpisodes().get()
+	elif action == 'mdblist_showTopListsPublic':
+		from resources.lib.menus.mdblist_menus import MDBListTopShows
+		MDBListTopShows().topLists()
+	elif action == 'mdblist_showSearchListsPublic':
+		from resources.lib.menus.mdblist_menus import MDBListTopShows
+		MDBListTopShows().searchLists()
+	elif action == 'mdblist_showTopListItems':
+		from resources.lib.menus.mdblist_menus import MDBListTopShows
+		MDBListTopShows().listItems(params.get('list_id'))
+	####################################################
+	#---MDBLIST CONTEXT MENU
+	####################################################
+	elif action == 'mdblist_Manager':
+		from resources.lib.modules import mdblist as mdblist_mod
+		mdblist_mod.manager(name, imdb, params.get('media_type', 'movie'))
+	####################################################
+	#---MDBLIST BROWSE USER LISTS
+	####################################################
+	elif action == 'mdblist_browseUser':
+		from resources.lib.menus.mdblist_menus import MDBListUserBrowse
+		MDBListUserBrowse().browseUser()
+	elif action == 'mdblist_importByUrl':
+		from resources.lib.menus.mdblist_menus import MDBListUserBrowse
+		MDBListUserBrowse().importByUrl(params.get('media_type', 'movie'))
+	elif action == 'mdblist_userBrowseListItems':
+		from resources.lib.menus.mdblist_menus import MDBListUserBrowse
+		_lid = params.get('list_id', '')
+		_mt  = 'show' if _lid.endswith('__show') else ('movie' if _lid.endswith('__movie') else 'both')
+		_lid = _lid.replace('__show', '').replace('__movie', '')
+		MDBListUserBrowse().listItems(_lid, params.get('username', ''), _mt)
+	####################################################
 	elif action == 'shows_traktHiddenManager':
 		from resources.lib.menus import tvshows
 		tvshows.TVshows().traktHiddenManager()

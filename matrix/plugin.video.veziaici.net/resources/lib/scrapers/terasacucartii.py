@@ -7,12 +7,13 @@ from resources.lib.utils import get_html_content, log, log_error, BASE_URL_TERAS
 
 
 def get_categories():
-    """Get categories from terasacucartii.net dropdown."""
+    """Get categories from terasacucartii.net dropdown with caching."""
     categories = []
 
     try:
-        response = get_html_content(BASE_URL_TERASA)
-        response.raise_for_status()
+        response = get_html_content(BASE_URL_TERASA, cache_time=86400)
+        if response.status_code != 200:
+            return []
         soup = BeautifulSoup(response.text, "html.parser")
 
         select = soup.find("select", {"id": "cat"})
@@ -33,14 +34,15 @@ def get_categories():
 
 
 def get_series_list(url, page="1"):
-    """Get list of series/episodes from category."""
+    """Get list of series/episodes from category with caching."""
     page_url = url if page == "1" else f"{url}&paged={page}"
     episodes = []
     next_page = None
 
     try:
-        response = get_html_content(page_url)
-        response.raise_for_status()
+        response = get_html_content(page_url, cache_time=3600)
+        if response.status_code != 200:
+            return episodes, next_page
         soup = BeautifulSoup(response.text, "html.parser")
     except Exception as e:
         log_error(f"Failed to fetch Turkish series: {e}")
@@ -151,7 +153,7 @@ def get_sources(url):
                             video_url = "https:" + video_url
                         if video_url and video_url not in sources_found:
                             sources_found.append(video_url)
-                except:
+                except Exception:
                     continue
 
     # Method 4: Look for videoembed URLs
@@ -163,7 +165,8 @@ def get_sources(url):
                 sources_found.append(video_url)
 
     # Filter unsupported domains
-    unsupported_domains = ["vidmoly", "filemoon", "streamtape", "doodstream"]
+    # Nota: vidmoly si filemoon au resolveri dedicati in plugin -> nu le filtram
+    unsupported_domains = ["streamtape", "doodstream"]
     filtered_sources = []
 
     for video_url in sources_found:

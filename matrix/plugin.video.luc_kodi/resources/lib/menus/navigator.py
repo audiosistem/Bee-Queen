@@ -7,6 +7,7 @@ from sys import exit as sysexit
 from urllib.parse import quote_plus
 from resources.lib.modules import control
 from resources.lib.modules.trakt import getTraktCredentialsInfo, getTraktIndicatorsInfo
+from resources.lib.modules.mdblist import getMDBListCredentialsInfo
 
 getLS = control.lang
 getSetting = control.setting
@@ -24,6 +25,7 @@ class Navigator:
 		self.imdbCredentials = getSetting('imdb.user') != ''
 		self.tmdbSessionID = getSetting('tmdb.session_id') != ''
 		self.highlight_color = control.getHighlightColor()
+		self.mdblistCredentials = getMDBListCredentialsInfo()
 
 	def root(self):
 		self.addDirectoryItem(33046, 'movieNavigator', 'movies.png', 'DefaultMovies.png')
@@ -73,6 +75,13 @@ class Navigator:
 			self.addDirectoryItem(32418, 'movies_PublicLists&url=trakt_trendingLists', 'trakt.png' if self.iconLogos else 'movies.png', 'DefaultMovies.png')
 		if getMenuEnabled('navi.movie.trakt.searchList'):
 			self.addDirectoryItem(32419, 'movies_SearchLists&media_type=movies', 'trakt.png' if self.iconLogos else 'movies.png', 'DefaultMovies.png', isFolder=False)
+		if self.mdblistCredentials:
+			if getMenuEnabled('navi.movie.mdblist.continue'):
+				self.addDirectoryItem(40231, 'mdblist_continueMovies', 'mdblist.png', 'DefaultVideoPlaylists.png', queue=True)
+			if getMenuEnabled('navi.movie.mdblist.topLists'):
+				self.addDirectoryItem(40232, 'mdblist_movieTopListsPublic', 'mdblist.png', 'DefaultVideoPlaylists.png')
+			if getMenuEnabled('navi.movie.mdblist.searchList'):
+				self.addDirectoryItem(40233, 'mdblist_movieSearchListsPublic', 'mdblist.png', 'DefaultAddonsSearch.png', isFolder=False)
 		if not lite:
 			if getMenuEnabled('mylists.widget'): self.addDirectoryItem(32003, 'mymovieliteNavigator', 'mymovies.png', 'DefaultMovies.png')
 			self.addDirectoryItem(33042, 'movieSearch', 'trakt.png' if self.iconLogos else 'search.png', 'DefaultAddonsSearch.png')
@@ -89,6 +98,8 @@ class Navigator:
 			self.addDirectoryItem(32032, 'movies&url=traktcollection', 'trakt.png', 'trakt.png', queue=True, context=(32551, 'library_moviesToLibrary&url=traktcollection&name=traktcollection'))
 			self.addDirectoryItem('My Liked Lists', 'movies_LikedLists', 'trakt.png', 'trakt.png', queue=True)
 		if self.imdbCredentials: self.addDirectoryItem(32682, 'movies&url=imdbwatchlist', 'imdb.png', 'imdb.png', queue=True)
+		if self.mdblistCredentials:
+			self.addDirectoryItem(40210, 'mdblist_movieNavigator', 'mdblist.png', 'DefaultVideoPlaylists.png')
 		if not lite:
 			self.addDirectoryItem(32031, 'movieliteNavigator', 'movies.png', 'DefaultMovies.png')
 			self.addDirectoryItem(33044, 'moviePerson', 'imdb.png' if self.iconLogos else 'people-search.png', 'DefaultAddonsSearch.png', isFolder=False)
@@ -127,6 +138,13 @@ class Navigator:
 			self.addDirectoryItem(32418, 'tv_PublicLists&url=trakt_trendingLists', 'trakt.png' if self.iconLogos else 'tvshows.png', 'DefaultMovies.png')
 		if getMenuEnabled('navi.tv.trakt.searchList'):
 			self.addDirectoryItem(32419, 'tv_SearchLists&media_type=shows', 'trakt.png' if self.iconLogos else 'tvshows.png', 'DefaultMovies.png', isFolder=False)
+		if self.mdblistCredentials:
+			if getMenuEnabled('navi.tv.mdblist.continue'):
+				self.addDirectoryItem(40234, 'mdblist_continueEpisodes', 'mdblist.png', 'DefaultVideoPlaylists.png', queue=True)
+			if getMenuEnabled('navi.tv.mdblist.topLists'):
+				self.addDirectoryItem(40235, 'mdblist_showTopListsPublic', 'mdblist.png', 'DefaultVideoPlaylists.png')
+			if getMenuEnabled('navi.tv.mdblist.searchList'):
+				self.addDirectoryItem(40236, 'mdblist_showSearchListsPublic', 'mdblist.png', 'DefaultAddonsSearch.png', isFolder=False)
 		if not lite:
 			if getMenuEnabled('mylists.widget'): self.addDirectoryItem(32004, 'mytvliteNavigator', 'mytvshows.png', 'DefaultTVShows.png')
 			self.addDirectoryItem(33043, 'tvSearch', 'trakt.png' if self.iconLogos else 'search.png', 'DefaultAddonsSearch.png')
@@ -148,10 +166,30 @@ class Navigator:
 			self.addDirectoryItem(32032, 'tvshows&url=traktcollection', 'trakt.png', 'trakt.png', context=(32551, 'library_tvshowsToLibrary&url=traktcollection&name=traktcollection'))
 			self.addDirectoryItem('My Liked Lists', 'shows_LikedLists', 'trakt.png', 'trakt.png', queue=True)
 		if self.imdbCredentials: self.addDirectoryItem(32682, 'tvshows&url=imdbwatchlist', 'imdb.png', 'imdb.png')
+		if self.mdblistCredentials:
+			self.addDirectoryItem(40211, 'mdblist_tvNavigator', 'mdblist.png', 'DefaultVideoPlaylists.png')
 		if not lite:
 			self.addDirectoryItem(32031, 'tvliteNavigator', 'tvshows.png', 'DefaultTVShows.png')
 			self.addDirectoryItem(33045, 'tvPerson', 'imdb.png' if self.iconLogos else 'people-search.png', 'DefaultAddonsSearch.png', isFolder=False)
 			self.addDirectoryItem(33043, 'tvSearch', 'trakt.png' if self.iconLogos else 'search.png', 'DefaultAddonsSearch.png')
+		self.endDirectory()
+
+	def mdblist_movies(self):
+		self.addDirectoryItem(40212, 'mdblist_movieWatchlist', 'mdblist.png', 'DefaultVideoPlaylists.png', queue=True)
+		self.addDirectoryItem(40213, 'mdblist_movieUserLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
+		self.addDirectoryItem(40214, 'mdblist_movieTopLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
+		self.addDirectoryItem(40215, 'mdblist_movieSearchLists', 'mdblist.png', 'DefaultAddonsSearch.png', isFolder=False)
+		self.addDirectoryItem(40241, 'mdblist_browseUser', 'mdblist.png', 'DefaultVideoPlaylists.png', isFolder=False)
+		self.addDirectoryItem(40243, 'mdblist_importByUrl&media_type=movie', 'mdblist.png', 'DefaultVideoPlaylists.png', isFolder=False)
+		self.endDirectory()
+
+	def mdblist_tv(self):
+		self.addDirectoryItem(40216, 'mdblist_showWatchlist', 'mdblist.png', 'DefaultVideoPlaylists.png', queue=True)
+		self.addDirectoryItem(40217, 'mdblist_showUserLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
+		self.addDirectoryItem(40218, 'mdblist_showTopLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
+		self.addDirectoryItem(40219, 'mdblist_showSearchLists', 'mdblist.png', 'DefaultAddonsSearch.png', isFolder=False)
+		self.addDirectoryItem(40241, 'mdblist_browseUser', 'mdblist.png', 'DefaultVideoPlaylists.png', isFolder=False)
+		self.addDirectoryItem(40243, 'mdblist_importByUrl&media_type=show', 'mdblist.png', 'DefaultVideoPlaylists.png', isFolder=False)
 		self.endDirectory()
 
 	def anime(self, lite=False):

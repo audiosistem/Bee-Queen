@@ -378,6 +378,20 @@ class Player(xbmc.Player):
 				control.closeAll()
 				break
 			else: control.sleep(200)
+		# MDBList Continue Watching: if Bookmarks().get() returned '0', check our
+		# window property for a direct resume override (set by mdblist_menus.py)
+		if self.offset == '0':
+			try:
+				_mdb_key = 'mdblist.resume.%s.%s.%s' % (
+					self.imdb or self.tmdb or '',
+					self.season or '0',
+					self.episode or '0',
+				)
+				_mdb_sec = homeWindow.getProperty(_mdb_key)
+				if _mdb_sec:
+					self.offset = str(float(_mdb_sec))
+					homeWindow.clearProperty(_mdb_key)
+			except: pass
 		if self.offset != '0' and self.playback_resumed is False:
 			control.sleep(200)
 			if getSetting('trakt.scrobble') == 'true' and getSetting('resume.source') == '1': # re-adjust the resume point since dialog is based on meta runtime vs. getTotalTime() and inaccurate

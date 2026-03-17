@@ -28,7 +28,7 @@ if LIB_PATH not in sys.path:
 # Base URLs
 BASE_URL_VEZIAICI = "https://veziaici.net/"
 BASE_URL_TERASA = "https://terasacucartii.net"
-BASE_URL_BLOGUL = "https://blogul-lui-atanase.ro"
+BASE_URL_BLOGUL = "https://blogul-lui-atanase.ro/"
 BASE_URL_SERIALECOREENE = "https://serialecoreene.org/"
 
 # Headers for HTTP requests
@@ -60,9 +60,53 @@ CUSTOM_IMAGES = {
 }
 
 
-def get_html_content(url, referer=None):
-    """Fetch HTML content from URL with proper headers."""
+class CachedResponse:
+    """Mock requests.Response for cached content."""
+    def __init__(self, text, status_code=200, url=""):
+        self.text = text
+        self.content = text.encode("utf-8") if text else b""
+        self.status_code = status_code
+        self.url = url
+        self.headers = {}
+
+    def json(self):
+        import json
+        return json.loads(self.text)
+
+    def raise_for_status(self):
+        if 400 <= self.status_code < 600:
+            raise Exception(f"HTTP Error: {self.status_code}")
+        return None
+
+
+def get_html_content(url, referer=None, cache_time=3600):
+    """Fetch HTML content from URL with proper headers and caching."""
+    import hashlib
+    import time
     import requests
+
+    # Fix encoding for URLs with special characters (like em-dash in images)
+    if " " in url or "–" in url:
+        parts = list(urllib.parse.urlparse(url))
+        parts[2] = urllib.parse.quote(parts[2])
+        url = urllib.parse.urlunparse(parts)
+
+    # Generate cache filename
+    url_hash = hashlib.md5(url.encode("utf-8")).hexdigest()
+    cache_file = os.path.join(CACHE_DIR, f"html_{url_hash}.cache")
+
+    # Check cache
+    if cache_time > 0 and os.path.exists(cache_file):
+        mtime = os.path.getmtime(cache_file)
+        if time.time() - mtime < cache_time:
+            try:
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    if content:
+                        log_debug(f"Using cache for: {url}")
+                        return CachedResponse(content, url=url)
+            except Exception as e:
+                log_debug(f"Cache read error: {e}")
 
     headers = HEADERS.copy()
     if referer:
@@ -73,7 +117,64 @@ def get_html_content(url, referer=None):
         headers["Referer"] = "https://www.terasacucarti.com/"
     else:
         headers["Referer"] = BASE_URL_VEZIAICI
-    return requests.get(url, headers=headers)
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=15)
+        if response.status_code == 200 and cache_time > 0:
+            try:
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    f.write(response.text)
+            except Exception as e:
+                log_debug(f"Cache write error: {e}")
+        return response
+    except Exception as e:
+        log_error(f"HTTP Request error for {url}: {e}")
+        return CachedResponse("", status_code=500, url=url)
+
+
+def parallel_map(func, iterable, threads=5):
+    """Execute a function over an iterable in parallel."""
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=threads) as executor:
+        return list(executor.map(func, iterable))
+
+
+def js_unpack(packed):
+    """Unpack Dean Edwards packed JavaScript with more robust logic."""
+    import re
+    
+    def unbase(n, base):
+        alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        if n < base:
+            return alphabet[n]
+        else:
+            return unbase(n // base, base) + alphabet[n % base]
+
+    # Pattern for p,a,c,k,e,d
+    pattern = r"}\s*\('(.*)',\s*(\d+),\s*(\d+),\s*'(.*?)'\.split\('\|'\)"
+    match = re.search(pattern, packed, re.DOTALL)
+    if not match:
+        return packed
+
+    p, a, c, k = match.groups()
+    a = int(a)
+    c = int(c)
+    k = k.split("|")
+
+    # Map words
+    words = {}
+    for i in range(c):
+        b_val = unbase(i, a)
+        words[b_val] = k[i] if i < len(k) and k[i] else b_val
+
+    # Replace words
+    # Use word boundary to avoid partial matches
+    def replace_word(m):
+        w = m.group(0)
+        return words.get(w, w)
+
+    unpacked = re.sub(r"\b\w+\b", replace_word, p)
+    return unpacked
 
 
 def int_or_none(value, default=None):

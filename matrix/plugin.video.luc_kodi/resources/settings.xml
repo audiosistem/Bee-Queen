@@ -66,6 +66,10 @@
     <setting id="navi.movie.trakt.popularList" type="bool" label="32417" default="true" />
     <setting id="navi.movie.trakt.trendingList" type="bool" label="32418" default="true" />
     <setting id="navi.movie.trakt.searchList" type="bool" label="32419" default="true" />
+    <setting type="lsep" label="MDBList" />
+    <setting id="navi.movie.mdblist.continue"    type="bool" label="40231" default="true" />
+    <setting id="navi.movie.mdblist.topLists"    type="bool" label="40232" default="true" />
+    <setting id="navi.movie.mdblist.searchList"  type="bool" label="40233" default="true" />
     <setting type="lsep" label="32002" />
     <setting id="navi.tv.trakt.trending" type="bool" label="32443" default="true" />
     <setting id="navi.originals" type="bool" label="40069" default="true" />
@@ -80,6 +84,10 @@
     <setting id="navi.tv.trakt.popularList" type="bool" label="32417" default="true" />
     <setting id="navi.tv.trakt.trendingList" type="bool" label="32418" default="true" />
     <setting id="navi.tv.trakt.searchList" type="bool" label="32419" default="true" />
+    <setting type="lsep" label="MDBList" />
+    <setting id="navi.tv.mdblist.continue"    type="bool" label="40234" default="true" />
+    <setting id="navi.tv.mdblist.topLists"    type="bool" label="40235" default="true" />
+    <setting id="navi.tv.mdblist.searchList"  type="bool" label="40236" default="true" />
   </category>
   <category label="32002">
     <setting id="flatten.tvshows" type="enum" label="32317" values="Never|Always|One Season" default="2" visible="true" />

@@ -4404,3 +4404,119 @@ msgstr ""
 
 
 
+
+msgctxt "#40200"
+msgid "MDBList"
+msgstr ""
+
+msgctxt "#40201"
+msgid "Add to MDBList Watchlist"
+msgstr ""
+
+msgctxt "#40202"
+msgid "Remove from MDBList Watchlist"
+msgstr ""
+
+msgctxt "#40203"
+msgid "Added to MDBList Watchlist"
+msgstr ""
+
+msgctxt "#40204"
+msgid "Removed from MDBList Watchlist"
+msgstr ""
+
+msgctxt "#40205"
+msgid "MDBList: Action failed"
+msgstr ""
+
+msgctxt "#40210"
+msgid "MDBList"
+msgstr ""
+
+msgctxt "#40211"
+msgid "MDBList"
+msgstr ""
+
+msgctxt "#40212"
+msgid "Watchlist Movies"
+msgstr ""
+
+msgctxt "#40213"
+msgid "My Lists (Movies)"
+msgstr ""
+
+msgctxt "#40214"
+msgid "Top Lists (Movies)"
+msgstr ""
+
+msgctxt "#40215"
+msgid "Search Lists (Movies)"
+msgstr ""
+
+msgctxt "#40216"
+msgid "Watchlist TV Shows"
+msgstr ""
+
+msgctxt "#40217"
+msgid "My Lists (TV Shows)"
+msgstr ""
+
+msgctxt "#40218"
+msgid "Top Lists (TV Shows)"
+msgstr ""
+
+msgctxt "#40219"
+msgid "Search Lists (TV Shows)"
+msgstr ""
+
+msgctxt "#40220"
+msgid "MDBList..."
+msgstr ""
+
+msgctxt "#40230"
+msgid "No items in progress"
+msgstr ""
+
+msgctxt "#40231"
+msgid "MDBList: Continue Watching (Movies)"
+msgstr ""
+
+msgctxt "#40232"
+msgid "MDBList: Top Lists (Movies)"
+msgstr ""
+
+msgctxt "#40233"
+msgid "MDBList: Search Lists (Movies)"
+msgstr ""
+
+msgctxt "#40234"
+msgid "MDBList: Continue Watching (TV)"
+msgstr ""
+
+msgctxt "#40235"
+msgid "MDBList: Top Lists (TV)"
+msgstr ""
+
+msgctxt "#40236"
+msgid "MDBList: Search Lists (TV)"
+msgstr ""
+
+msgctxt "#40241"
+msgid "Browse User Lists..."
+msgstr ""
+
+msgctxt "#40242"
+msgid "No public lists found for this user"
+msgstr ""
+
+msgctxt "#40243"
+msgid "Open List by URL..."
+msgstr ""
+
+msgctxt "#40244"
+msgid "Movies"
+msgstr ""
+
+msgctxt "#40245"
+msgid "TV Shows"
+msgstr ""

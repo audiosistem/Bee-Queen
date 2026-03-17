@@ -4,9 +4,18 @@ import re
 import json
 import urllib.parse
 import time
+import html
 import requests
+import xbmc
 import xbmcgui
-from resources.lib.utils import log, log_debug, log_error, log_warning, HEADERS
+from resources.lib.utils import (
+    HEADERS,
+    js_unpack,
+    log,
+    log_debug,
+    log_error,
+    log_warning,
+)
 
 # Simple cache for resolved URLs: {url: (timestamp, stream_info)}
 _RESOLVER_CACHE = {}
@@ -37,6 +46,9 @@ def extract_ok_ru_url_optimized(url):
     Optimized extractor for ok.ru videos.
     Returns StreamInfo object with proper headers and cookies.
     """
+    # Fix missing '?' before query parameters (e.g. nochat=1)
+    url = re.sub(r'(\d+)(nochat=\d+|autoplay=\d+)', r'\1?\2', url)
+    
     log(f"[ok.ru] Extracting from: {url}")
 
     # Check cache first
@@ -82,20 +94,37 @@ def extract_ok_ru_url_optimized(url):
         # Step 3: Get metadata
         metadata = flashvars.get("metadata")
         if metadata and isinstance(metadata, str):
-            metadata = json.loads(metadata)
-        elif not metadata:
+            try:
+                metadata = json.loads(metadata)
+            except:
+                metadata = None
+        
+        # If metadata is missing or doesn't have streams, try metadataUrl
+        has_inline_streams = False
+        if metadata and isinstance(metadata, dict):
+            # Check for any HLS/DASH/Videos
+            has_inline_streams = any(metadata.get(f) for f in ["hlsManifestUrl", "hlsMasterPlaylistUrl", "hls", "videos"])
+            if not has_inline_streams and "movie" in metadata:
+                movie = metadata["movie"]
+                if isinstance(movie, dict):
+                    has_inline_streams = any(movie.get(f) for f in ["hlsManifestUrl", "hlsMasterPlaylistUrl", "hls", "videos"])
+
+        if not metadata or not has_inline_streams:
             # Fetch from metadataUrl
             metadata_url = flashvars.get("metadataUrl")
             if metadata_url:
+                log("[ok.ru] Inline metadata insufficient, fetching from metadataUrl...")
                 metadata_url = urllib.parse.unquote(metadata_url)
-                data = {}
+                post_data = {}
                 if flashvars.get("location"):
-                    data["st.location"] = flashvars["location"]
+                    post_data["st.location"] = flashvars["location"]
 
                 meta_response = session.post(
-                    metadata_url, data=urllib.parse.urlencode(data), timeout=15
+                    metadata_url, data=post_data, timeout=15
                 )
-                metadata = meta_response.json()
+                if meta_response.status_code == 200:
+                    metadata = meta_response.json()
+                    log("[ok.ru] MetadataUrl fetch successful")
 
         if not metadata or "movie" not in metadata:
             log_warning("[ok.ru] No metadata found")
@@ -104,10 +133,9 @@ def extract_ok_ru_url_optimized(url):
         movie = metadata["movie"]
 
         # Debug: log available metadata keys
-        log_debug(f"[ok.ru] Metadata keys: {list(metadata.keys())}")
-        log_debug(
-            f"[ok.ru] Movie keys: {list(movie.keys()) if isinstance(movie, dict) else 'N/A'}"
-        )
+        log(f"[ok.ru] Metadata keys: {list(metadata.keys())}")
+        if isinstance(movie, dict):
+            log(f"[ok.ru] Movie keys: {list(movie.keys())}")
 
         # Check if HLS is in movie object instead
         if isinstance(movie, dict):
@@ -125,104 +153,88 @@ def extract_ok_ru_url_optimized(url):
         # Step 4: Collect all available formats
         formats = []
 
-        # HLS manifest - try ALL possible field names (preferred for streaming)
-        hls_fields = [
-            "hlsManifestUrl",
-            "ondemandHls",
-            "hls",
-            "hlsManifest",
-            "masterHls",
-            "playlistHls",
+        # Stream fields to check in both metadata root and 'movie' object
+        stream_fields = [
+            ("hls", ["hlsManifestUrl", "ondemandHls", "hls", "hlsManifest", "masterHls", "playlistHls", "hlsMasterPlaylistUrl"]),
+            ("dash", ["ondemandDash", "metadataWebmUrl", "dash", "dashManifest", "mpd"]),
         ]
-        hls_url = None
-        for field in hls_fields:
-            if field in metadata and metadata[field]:
-                hls_url = metadata[field]
-                log_debug(f"[ok.ru] Found HLS in field '{field}': {hls_url[:60]}...")
-                break
 
-        if hls_url:
-            formats.append(
-                {
-                    "url": hls_url,
-                    "format_id": "hls",
-                    "priority": 100,  # Highest priority
-                    "manifest_type": "hls",
-                }
-            )
+        for m_type, fields in stream_fields:
+            stream_url = None
+            # Check root
+            for field in fields:
+                if metadata.get(field):
+                    stream_url = metadata[field]
+                    break
+            # Check movie object if not found in root
+            if not stream_url and isinstance(movie, dict):
+                for field in fields:
+                    if movie.get(field):
+                        stream_url = movie[field]
+                        break
+            
+            if stream_url:
+                stream_url = stream_url.replace("\\/", "/")
+                formats.append({
+                    "url": stream_url,
+                    "format_id": m_type,
+                    "priority": 100 if m_type == "hls" else 90,
+                    "manifest_type": m_type
+                })
 
-        # DASH manifest
-        dash_fields = ["ondemandDash", "metadataWebmUrl", "dash", "dashManifest", "mpd"]
-        dash_url = None
-        for field in dash_fields:
-            if field in metadata and metadata[field]:
-                dash_url = metadata[field]
-                log_debug(f"[ok.ru] Found DASH in field '{field}'")
-                break
+        # Embedded DASH
+        dash_embedded = metadata.get("metadataEmbedded") or (isinstance(movie, dict) and movie.get("metadataEmbedded"))
+        if dash_embedded:
+            formats.append({
+                "url": dash_embedded,
+                "format_id": "dash-embedded",
+                "priority": 91,
+                "manifest_type": "dash"
+            })
 
-        if dash_url:
-            formats.append(
-                {
-                    "url": dash_url,
-                    "format_id": "dash",
-                    "priority": 90,
-                    "manifest_type": "dash",
-                }
-            )
-
-        # Live HLS
-        live_hls = metadata.get("hlsMasterPlaylistUrl") or metadata.get("liveHls")
-        if live_hls:
-            formats.append(
-                {
-                    "url": live_hls,
-                    "format_id": "live-hls",
-                    "priority": 95,
-                    "manifest_type": "hls",
-                }
-            )
-
-        # DASH manifest
-        dash_url = metadata.get("ondemandDash") or metadata.get("metadataWebmUrl")
-        if dash_url:
-            formats.append(
-                {
-                    "url": dash_url,
-                    "format_id": "dash",
-                    "priority": 90,
-                    "manifest_type": "dash",
-                }
-            )
-
-        # Live HLS
-        live_hls = metadata.get("hlsMasterPlaylistUrl")
-        if live_hls:
-            formats.append(
-                {
-                    "url": live_hls,
-                    "format_id": "live-hls",
-                    "priority": 95,
-                    "manifest_type": "hls",
-                }
-            )
-
-        # Direct MP4 files (fallback)
-        for video in metadata.get("videos", []):
+        # Direct MP4 files
+        videos = metadata.get("videos")
+        if not videos and isinstance(movie, dict):
+            videos = movie.get("videos")
+            
+        for video in (videos or []):
             video_url = video.get("url")
             if video_url:
+                video_url = video_url.replace("\\/", "/")
                 quality = video.get("name", "unknown")
                 width = video.get("width", 0)
                 height = video.get("height", 0)
-                # Higher resolution = higher priority within MP4s
                 priority = 50 + (width or height or 0) // 100
-                formats.append(
-                    {
-                        "url": video_url,
-                        "format_id": f"mp4-{quality}",
-                        "priority": priority,
-                        "manifest_type": "mp4",
-                    }
-                )
+                formats.append({
+                    "url": video_url,
+                    "format_id": f"mp4-{quality}",
+                    "priority": priority,
+                    "manifest_type": "mp4",
+                })
+
+        if not formats:
+            # Fallback Step: Try mobile site (robust for some restricted videos)
+            log("[ok.ru] No formats in desktop metadata, trying mobile site fallback...")
+            try:
+                video_id = url.split("/")[-1].split("?")[0]
+                mobile_url = f"https://m.ok.ru/video/{video_id}"
+                m_resp = session.get(mobile_url, timeout=15)
+                m_match = re.search(r'data-video="(.+?)"', m_resp.text)
+                if m_match:
+                    m_data = json.loads(html.unescape(m_match.group(1)))
+                    m_video_src = m_data.get("videoSrc")
+                    if m_video_src:
+                        log("[ok.ru] Found stream via mobile site")
+                        # Get redirect URL (direct MP4)
+                        direct_resp = session.head(m_video_src, allow_redirects=True, timeout=10)
+                        formats.append({
+                            "url": direct_resp.url,
+                            "format_id": "mobile-mp4",
+                            "priority": 85,
+                            "manifest_type": "mp4"
+                        })
+            except Exception as m_e:
+                log_warning(f"[ok.ru] Mobile fallback failed: {m_e}")
 
         if not formats:
             if metadata.get("paymentInfo"):
@@ -250,7 +262,7 @@ def extract_ok_ru_url_optimized(url):
         }
 
         # Get cookies from session as dict
-        cookies_dict = dict(session.cookies)
+        cookies_dict = session.cookies.get_dict()
 
         result = StreamInfo(
             url=best_format["url"],
@@ -564,7 +576,7 @@ def extract_vk_url_optimized(url):
         result = StreamInfo(
             url=best_format["url"],
             headers=stream_headers,
-            cookies=dict(session.cookies),
+            cookies=session.cookies.get_dict(),
             manifest_type=best_format["manifest_type"],
         )
 
@@ -581,18 +593,250 @@ def extract_vk_url_optimized(url):
         return None
 
 
+def extract_filemoon_url_optimized(url):
+    """
+    Optimized extractor for Filemoon.
+    Unpacks JS to find the final video source.
+    """
+    log(f"[filemoon] Extracting from: {url}")
+
+    # Check cache
+    global _RESOLVER_CACHE
+    now = time.time()
+    cache_key = f"filemoon_{url}"
+    if cache_key in _RESOLVER_CACHE:
+        timestamp, cached = _RESOLVER_CACHE[cache_key]
+        if now - timestamp < _CACHE_TTL:
+            log("[filemoon] Using cached result")
+            return cached
+
+    try:
+        session = requests.Session()
+        session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://filemoon.to/',
+        })
+        
+        response = session.get(url, timeout=15)
+        if response.status_code != 200:
+            log_warning(f"[filemoon] Page fetch failed: {response.status_code}")
+            return None
+            
+        page_content = response.text
+        
+        # Step 1: Look for packed scripts
+        video_url = None
+        # Filemoon usually has the source in an eval block
+        packed_matches = re.findall(r"(eval\(function\(p,a,c,k,e,.*?\)\s*;?)", page_content, re.DOTALL)
+        
+        for packed in packed_matches:
+            try:
+                unpacked = js_unpack(packed)
+                # Step 2: Find the file URL in the unpacked content
+                file_match = re.search(r'file\s*:\s*["\']([^"\']+\.m3u8[^"\']*)["\']', unpacked)
+                if file_match:
+                    video_url = file_match.group(1)
+                    log_debug(f"[filemoon] Found HLS URL in unpacked JS")
+                    break
+            except Exception as ue:
+                log_debug(f"[filemoon] Unpack failed for block: {ue}")
+
+        # Fallback 1: Search directly in page content for .m3u8
+        if not video_url:
+            file_match = re.search(r'file\s*:\s*["\']([^"\']+\.m3u8[^"\']*)["\']', page_content)
+            if file_match:
+                video_url = file_match.group(1)
+                log_debug(f"[filemoon] Found HLS URL directly in page")
+        
+        # Fallback 2: Check for modern React template but try to find hidden config
+        if not video_url and "root" in page_content and "assets" in page_content:
+            log("[filemoon] Modern template detected, looking for secondary data...")
+            # Sometimes data is in a script tag with id like 'config'
+            config_match = re.search(r'id=["\']config["\'][^>]*>(.+?)</script>', page_content)
+            if config_match:
+                try:
+                    config = json.loads(config_match.group(1))
+                    video_url = config.get('file') or config.get('url')
+                except: pass
+
+        if not video_url:
+            log_warning("[filemoon] No video URL found")
+            return None
+
+        # Fix slashes
+        video_url = video_url.replace("\\/", "/")
+        log(f"[filemoon] Found URL: {video_url[:100]}...")
+
+        # Filemoon requires Referer and Origin for playback
+        parsed_url = urllib.parse.urlparse(url)
+        base_origin = f"{parsed_url.scheme}://{parsed_url.netloc}"
+        
+        result = StreamInfo(
+            url=video_url,
+            headers={
+                "User-Agent": session.headers['User-Agent'],
+                "Referer": base_origin + "/",
+                "Origin": base_origin
+            },
+            manifest_type="hls"
+        )
+
+        _RESOLVER_CACHE[cache_key] = (now, result)
+        return result
+
+    except Exception as e:
+        log_error(f"[filemoon] Extraction error: {e}")
+        return None
+
+
+def extract_mail_ru_url_optimized(url):
+    """
+    Optimized extractor for my.mail.ru videos.
+    Prioritizes metadata discovery from page content and handles mangled URLs.
+    """
+    # Normalize URL - handle mangled URLs (sometimes missing /video/embed/ or ID is outside path)
+    if "my.mail.ru" in url and not "/video/embed/" in url:
+        id_match = re.search(r'(\d{10,})', url)
+        if id_match:
+            url = f"https://my.mail.ru/video/embed/{id_match.group(1)}"
+            log(f"[mail.ru] Normalized URL to: {url}")
+
+    log(f"[mail.ru] Extracting from: {url}")
+
+    # Check cache first
+    global _RESOLVER_CACHE
+    now = time.time()
+    cache_key = f"mailru_{url}"
+    if cache_key in _RESOLVER_CACHE:
+        timestamp, cached = _RESOLVER_CACHE[cache_key]
+        if now - timestamp < _CACHE_TTL:
+            log("[mail.ru] Using cached result")
+            return cached
+
+    try:
+        session = requests.Session()
+        session.headers.update(HEADERS)
+        
+        # Step 1: Get the embed page to find the real metadata URL
+        log("[mail.ru] Fetching embed page...")
+        page_resp = session.get(url, timeout=15)
+        if page_resp.status_code != 200:
+            log_warning(f"[mail.ru] Failed to fetch embed page: {page_resp.status_code}")
+            return None
+            
+        # Strategy A: Find "metadataUrl" in scripts (most reliable)
+        meta_url = None
+        meta_match = re.search(r'"metadataUrl"\s*:\s*"([^"]+)"', page_resp.text)
+        if not meta_match:
+            meta_match = re.search(r'"metaUrl"\s*:\s*"([^"]+)"', page_resp.text)
+            
+        if meta_match:
+            meta_url = meta_match.group(1)
+            if meta_url.startswith('//'): meta_url = 'https:' + meta_url
+            elif meta_url.startswith('/'): meta_url = 'https://my.mail.ru' + meta_url
+            log(f"[mail.ru] Found metadata API via page: {meta_url[:60]}...")
+        else:
+            # Strategy B: Fallback to ID-based construction
+            video_id = None
+            id_match = re.search(r"/video/embed/(\d+)", url)
+            if id_match:
+                video_id = id_match.group(1)
+            else:
+                id_match = re.search(r'"videoid"\s*:\s*"(\d+)"', page_resp.text)
+                if id_match: video_id = id_match.group(1)
+            
+            if video_id:
+                meta_url = f"https://my.mail.ru/+/video/meta/{video_id}"
+                log(f"[mail.ru] Constructing API URL from ID: {video_id}")
+
+        if not meta_url:
+            log_warning("[mail.ru] Could not discover metadata API URL")
+            return None
+
+        # Step 2: Call the Metadata API
+        session.headers["Referer"] = url
+        response = session.get(meta_url, timeout=15)
+        
+        if response.status_code != 200:
+            log_warning(f"[mail.ru] Meta API failed with status {response.status_code}")
+            return None
+            
+        data = response.json()
+        videos = data.get("videos")
+        if not videos:
+            log_warning("[mail.ru] No video formats found in API response")
+            return None
+
+        # Parse formats
+        formats = []
+        for v in videos:
+            v_url = v.get("url")
+            if v_url:
+                # Priority based on resolution key (e.g. 1080p, 720p)
+                priority = 50
+                if "1080" in key: priority = 90
+                elif "720" in key: priority = 80
+                elif "480" in key: priority = 70
+                elif "360" in key: priority = 60
+
+                # Detect manifest type from URL
+                m_type = "mp4"
+                if ".m3u8" in v_url: m_type = "hls"
+                elif ".mpd" in v_url or "stream.mpd" in v_url: m_type = "dash"
+
+                formats.append({
+                    "url": v_url,
+                    "format_id": key,
+                    "priority": priority,
+                    "manifest_type": m_type
+                })
+
+        if not formats:
+            return None
+
+        formats.sort(key=lambda x: x["priority"], reverse=True)
+        best = formats[0]
+        
+        log(f"[mail.ru] Selected format: {best['format_id']}")
+        
+        result = StreamInfo(
+            url=best["url"],
+            headers={"User-Agent": HEADERS["User-Agent"], "Referer": "https://my.mail.ru/"},
+            cookies=session.cookies.get_dict(),
+            manifest_type="mp4"
+        )
+
+        _RESOLVER_CACHE[cache_key] = (now, result)
+        return result
+
+    except Exception as e:
+        log_error(f"[mail.ru] Extraction error: {e}")
+        return None
+
+
 def create_listitem_with_stream(stream_info, title="Video"):
     """
     Create a properly configured xbmcgui.ListItem for the stream.
     This handles all the InputStream Adaptive configuration.
     """
-    import xbmc
-
     list_item = xbmcgui.ListItem()
     list_item.setInfo("video", {"title": title})
 
-    # Check if we need InputStream Adaptive
-    if stream_info.is_hls() or stream_info.is_dash():
+    # Check if we need to bypass InputStream Adaptive
+    # We bypass ISA for CDNs that are strict with headers/cookies (OK, VK, Mail.ru, HQQ)
+    is_russian_cdn = any(
+        domain in stream_info.url for domain in [
+            "vkuser.net", 
+            "vk.com", "vkvideo.ru", "vk.me", "vk-cdn.net",
+            "mail.ru", "imgsmail.ru",
+            "hqq.ac", "hqq.to", "netu.tv", "waaw.to", "waaw.ac", "cfglobalcdn.com"
+        ]
+    )
+    
+    # Mail.ru DASH manifests (.mpd) with slave[] params REQUIRE inputstream.adaptive
+    is_mailru_dash = "mail.ru" in stream_info.url and stream_info.is_dash()
+    
+    if (stream_info.is_hls() or stream_info.is_dash()) and not is_russian_cdn or is_mailru_dash:
         list_item.setProperty("inputstream", "inputstream.adaptive")
 
         # IMPORTANT: Don't set deprecated manifest_type - let ISA auto-detect
@@ -645,19 +889,115 @@ def create_listitem_with_stream(stream_info, title="Video"):
         log_debug(f"[stream] Final URL: {clean_url[:100]}...")
 
     else:
-        # For direct MP4 files
-        # Add cache-busting and better buffering
+        # Optimizations for FFmpeg internal player
         list_item.setProperty("VideoPlayer.UseFastSeek", "true")
 
-        if stream_info.headers:
-            header_string = "|".join(
-                [f"{k}={v}" for k, v in stream_info.headers.items()]
-            )
+        if is_russian_cdn:
+            # OK.ru, VK and Mail.ru often contain all auth in query parameters OR require specific headers.
+            # Fix missing '?' in URL if it's malformed
+            final_url = stream_info.url
+            if ("cmd=" in final_url or "slave[]=" in final_url) and not "?" in final_url:
+                final_url = re.sub(r'(\.m3u8|\.mp4|\.mpd)(cmd=|nochat=|autoplay=|slave\[\]=)', r'\1?\2', final_url)
+            
+            # Start building header string for Kodi VFS
+            path_parts = []
+            
+            # 1. User-Agent (Always needed)
+            ua = stream_info.headers.get("User-Agent") or HEADERS.get("User-Agent", "Mozilla/5.0")
+            path_parts.append(f"User-Agent={urllib.parse.quote(ua)}")
+            
+            # 2. Referer (Critical for Mail.ru, VK and HQQ)
+            referer = stream_info.headers.get("Referer")
+            if not referer:
+                if "mail.ru" in final_url:
+                    referer = "https://my.mail.ru/"
+                elif "vk.com" in final_url or "vkvideo.ru" in final_url:
+                    referer = "https://vk.com/"
+                elif "hqq" in final_url or "netu" in final_url or "waaw" in final_url:
+                    referer = "https://hqq.ac/"
+                elif "cfglobalcdn.com" in final_url:
+                    referer = "https://hqq.ac/"
+                
+            if referer:
+                path_parts.append(f"Referer={urllib.parse.quote(referer)}")
+
+            # 3. Cookies (Critical for Mail.ru MP4s)
+            if stream_info.cookies:
+                cookie_str = "; ".join([f"{k}={v}" for k, v in stream_info.cookies.items()])
+                path_parts.append(f"Cookie={urllib.parse.quote(cookie_str)}")
+            
+            header_string = "&".join(path_parts)
+            final_path = f"{final_url}|{header_string}"
+            list_item.setPath(final_path)
+            log_debug(f"[stream] Russian CDN path set: {final_path[:150]}...")
+
+        elif stream_info.headers:
+            header_string = "&".join([f"{k}={urllib.parse.quote(v)}" for k, v in stream_info.headers.items()])
             list_item.setPath(f"{stream_info.url}|{header_string}")
         else:
             list_item.setPath(stream_info.url)
 
     return list_item
+
+
+def extract_bysebuho_url(url):
+    """
+    Extractor for bysebuho.com (used on serialero).
+    Unpacks JS to find final video source.
+    """
+    log(f"[bysebuho] Extracting from: {url}")
+    try:
+        session = requests.Session()
+        session.headers.update(HEADERS)
+        response = session.get(url, timeout=15)
+        if response.status_code != 200:
+            return None
+        
+        # Look for packed script
+        packed_match = re.search(r"(eval\(function\(p,a,c,k,e,.*?\)\s*;?)", response.text, re.DOTALL)
+        if packed_match:
+            unpacked = js_unpack(packed_match.group(1))
+            file_match = re.search(r'file\s*:\s*["\']([^"\']+\.m3u8[^"\']*)["\']', unpacked)
+            if file_match:
+                video_url = file_match.group(1).replace("\\/", "/")
+                return StreamInfo(video_url, headers={"Referer": url, "User-Agent": HEADERS["User-Agent"]}, manifest_type="hls")
+    except Exception as e:
+        log_error(f"[bysebuho] Extraction error: {e}")
+    return None
+
+
+def extract_hqq_url(url):
+    """
+    Extractor for HQQ.ac / Waaw.to / Netu.tv.
+    These use the same system with packed JS.
+    """
+    log(f"[hqq] Extracting from: {url}")
+    try:
+        session = requests.Session()
+        session.headers.update(HEADERS)
+        response = session.get(url, timeout=15)
+        if response.status_code != 200:
+            return None
+        
+        # Look for packed script
+        packed_match = re.search(r"(eval\(function\(p,a,c,k,e,.*?\)\s*;?)", response.text, re.DOTALL)
+        if packed_match:
+            unpacked = js_unpack(packed_match.group(1))
+            # HQQ usually has a manifest or direct link
+            file_match = re.search(r'["\'](https?://[^"\']+\.(m3u8|mp4)[^"\']*)["\']', unpacked)
+            if file_match:
+                video_url = file_match.group(1).replace("\\/", "/")
+                return StreamInfo(video_url, headers={"Referer": url, "User-Agent": HEADERS["User-Agent"]})
+        
+        # Fallback: search for manifest in raw page
+        file_match = re.search(r'["\'](https?://[^"\']+\.(m3u8|mp4)[^"\']*)["\']', response.text)
+        if file_match:
+            video_url = file_match.group(1).replace("\\/", "/")
+            return StreamInfo(video_url, headers={"Referer": url, "User-Agent": HEADERS["User-Agent"]})
+
+    except Exception as e:
+        log_error(f"[hqq] Extraction error: {e}")
+    return None
 
 
 def resolve_url_wrapper(url):
@@ -698,6 +1038,32 @@ def resolve_url_wrapper(url):
             log(f"[vk.com] Resolved to {result.manifest_type}")
         else:
             log_warning("[vk.com] Optimized resolver failed")
+
+    # Check for Mail.ru
+    elif "my.mail.ru" in url:
+        result = extract_mail_ru_url_optimized(url)
+        if result:
+            log(f"[mail.ru] Resolved to {result.manifest_type}")
+        else:
+            log_warning("[mail.ru] Optimized resolver failed")
+
+    # Check for hqq
+    elif any(domain in url for domain in ["hqq.ac", "hqq.to", "waaw.to", "waaw.ac", "netu.tv", "cfglobalcdn.com"]):
+        result = extract_hqq_url(url)
+        if result:
+            log(f"[hqq] Resolved successfully")
+
+    # Check for bysebuho
+    elif "bysebuho.com" in url:
+        result = extract_bysebuho_url(url)
+        if result:
+            log(f"[bysebuho] Resolved successfully")
+
+    # Check for filemoon
+    elif "filemoon" in url:
+        result = extract_filemoon_url_optimized(url)
+        if result:
+            log(f"[filemoon] Resolved successfully")
 
     # For other URLs, try to return a simple StreamInfo
     elif url.endswith(".m3u8"):

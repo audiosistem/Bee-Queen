@@ -8,8 +8,8 @@ from resources.lib.utils import get_html_content, log, log_error, BASE_URL_BLOGU
 
 def get_korean_categories():
     """Get Korean series categories."""
+    # Nota: "Dupa Ani" este adaugat hardcodat in addon.py -> nu il includem aici
     categories = [
-        {"title": "Dupa Ani", "mode": "list_korean_series_years"},
         {
             "title": "Seriale Coreene de Familie",
             "url": f"{BASE_URL_BLOGUL}categorie/seriale-coreene-de-familie-50-ep/",
@@ -57,14 +57,24 @@ def get_years():
 
 
 def get_series_list(url, page="1"):
-    """Get list of series from a category."""
-    page_url = f"{url}page/{page}/" if int(page) > 1 else url
+    """Get list of series from a category with optimized parallel loading."""
+    from resources.lib.utils import parallel_map
+    
+    # If we are on first page, let's pre-load page 2 in parallel for speed if user navigates next
+    # For now, let's just optimize single page fetching with cache
+    if int(page) > 1:
+        # Handle both slash-ended and non-slash-ended URLs
+        base = url.rstrip('/')
+        page_url = f"{base}/page/{page}/"
+    else:
+        page_url = url
     series = []
     next_page = None
 
     try:
-        response = get_html_content(page_url)
-        response.raise_for_status()
+        response = get_html_content(page_url, cache_time=3600)
+        if response.status_code != 200:
+            return series, next_page
         soup = BeautifulSoup(response.text, "html.parser")
     except Exception as e:
         log_error(f"Failed to fetch series: {e}")
@@ -75,37 +85,23 @@ def get_series_list(url, page="1"):
         items = soup.find_all("article")
 
     for item in items:
-        title_h2 = None
-        thumb_figure = None
-        thumb_div = None
-        description_div = None
+        title_h2 = item.find(["h2", "h3"], class_=["entry-title", "post-title", "cm-entry-title"])
+        thumb_figure = item.find("figure", class_="post-featured-image")
+        thumb_div = item.find("div", class_=["post-thumb", "cm-featured-image"])
+        description_div = item.find("div", class_=["entry-content", "cm-entry-summary", "post-content"])
 
-        # Check for New Layout (MagazineNP)
-        if item.find("figure", class_="post-featured-image"):
-            title_h2 = item.find("h2", class_="entry-title")
-            thumb_figure = item.find("figure", class_="post-featured-image")
-            description_div = item.find("div", class_="entry-content")
-        else:
-            # Try old structure
-            title_h2 = item.find("h2", class_="post-title")
-            thumb_div = item.find("div", class_="post-thumb")
-            description_div = item.find("div", class_="entry-content")
-
-            # Try new structure (ColorMag)
-            if not title_h2:
-                title_h2 = item.find("h2", class_="cm-entry-title")
-            if not thumb_div:
-                thumb_div = item.find("div", class_="cm-featured-image")
-            if not description_div:
-                description_div = item.find("div", class_="cm-entry-summary")
+        if not title_h2:
+            # Last ditch effort: find any link that looks like a title
+            title_h2 = item.find("a", rel="bookmark")
 
         if title_h2:
-            title_link = title_h2.find("a")
+            title_link = title_h2 if title_h2.name == "a" else title_h2.find("a")
             if title_link:
                 series_url = title_link["href"]
-                title = title_link.get("title", title_link.text.strip())
+                title = title_link.get("title") or title_link.text.strip()
 
                 thumb = ""
+                # Priority 1: Figure with background style
                 if thumb_figure:
                     a_thumb = thumb_figure.find("a", class_="mnp-post-image")
                     if a_thumb and "style" in a_thumb.attrs:
@@ -113,10 +109,13 @@ def get_series_list(url, page="1"):
                         match = re.search(r'url\([\'"]?(.*?)[\'"]?\)', style)
                         if match:
                             thumb = match.group(1)
-                elif thumb_div:
-                    thumb_img = thumb_div.find("img")
-                    if thumb_img:
-                        thumb = thumb_img.get("data-src", thumb_img.get("src", ""))
+                
+                # Priority 2: Direct img inside figure or div
+                if not thumb:
+                    container = thumb_figure or thumb_div or item
+                    img = container.find("img")
+                    if img:
+                        thumb = img.get("data-src") or img.get("src") or img.get("data-lazy-src", "")
 
                 description = description_div.text.strip() if description_div else ""
 
@@ -183,7 +182,7 @@ def get_episodes_and_sources(url, show_name=""):
     # Check for direct episode links
     for link in all_links:
         link_text = link.text.strip()
-        if re.search(r"ep(?:isodul|\\.|\\s*)?\\s*\\d+", link_text, re.IGNORECASE):
+        if re.search(r"ep(?:isodul|\.|\s*)?\s*\d+", link_text, re.IGNORECASE):
             episodes.append(
                 {
                     "title": link_text,
@@ -213,6 +212,22 @@ def get_episodes_and_sources(url, show_name=""):
                                 "type": "iframe",
                             }
                         )
+            elif node.name == "a" and current_episode_title:
+                source_url = node.get("href")
+                if source_url:
+                    source_name = node.text.strip()
+                    if source_name and "episodul" not in source_name.lower():
+                        if episodes and episodes[-1]["url"] == source_url:
+                            prev_name = episodes[-1]["title"].replace(f"{current_episode_title} - ", "")
+                            episodes[-1]["title"] = f"{current_episode_title} - {prev_name}{source_name}"
+                        else:
+                            episodes.append(
+                                {
+                                    "title": f"{current_episode_title} - {source_name}",
+                                    "url": source_url,
+                                    "type": "link",
+                                }
+                            )
             elif isinstance(node, str):
                 text_val = node.strip()
                 if text_val and (
@@ -287,12 +302,16 @@ def get_season_episodes(url, season_title, show_name=""):
                 if source_url:
                     source_name = node.text.strip()
                     if source_name and "episodul" not in source_name.lower():
-                        episodes.append(
-                            {
-                                "title": f"{current_episode_title} - {source_name}",
-                                "url": source_url,
-                            }
-                        )
+                        if episodes and episodes[-1]["url"] == source_url:
+                            prev_name = episodes[-1]["title"].replace(f"{current_episode_title} - ", "")
+                            episodes[-1]["title"] = f"{current_episode_title} - {prev_name}{source_name}"
+                        else:
+                            episodes.append(
+                                {
+                                    "title": f"{current_episode_title} - {source_name}",
+                                    "url": source_url,
+                                }
+                            )
             elif isinstance(node, str):
                 text_val = node.strip()
                 if text_val and (
@@ -308,6 +327,15 @@ def get_season_episodes(url, season_title, show_name=""):
 
 def get_movie_sources(url):
     """Get sources from a movie page."""
+    supported_hosts = [
+        "netu.ac", "vidmoly", "waaw", "streamtape", "ok.ru",
+        "uqload", "vk.com", "vkvideo", "sibnet.ru", "my.mail.ru",
+        "filemoon", "hqq",
+    ]
+    if any(host in url for host in supported_hosts):
+        domain = urllib.parse.urlparse(url).netloc.replace("www.", "")
+        return [{"url": url, "domain": domain}]
+
     try:
         response = get_html_content(url)
         response.raise_for_status()
@@ -326,15 +354,17 @@ def get_movie_sources(url):
 
         supported_hosts = [
             "netu.ac",
-            "vidmoly.me",
-            "waaw.ac",
-            "streamtape.com",
+            "vidmoly",
+            "waaw",
+            "streamtape",
             "ok.ru",
-            "waaw.to",
-            "uqload.cx",
+            "uqload",
             "vk.com",
+            "vkvideo",
             "sibnet.ru",
             "my.mail.ru",
+            "filemoon",
+            "hqq",
         ]
 
         if any(host in video_url for host in supported_hosts):

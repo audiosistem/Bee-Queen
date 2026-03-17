@@ -39,14 +39,15 @@ def get_main_menu():
 
 
 def get_series_list(url, page="1"):
-    """Get list of series from a category."""
+    """Get list of series from a category with caching."""
     page_url = f"{url}page/{page}/" if int(page) > 1 else url
     series = []
     next_page = None
 
     try:
-        response = get_html_content(page_url)
-        response.raise_for_status()
+        response = get_html_content(page_url, cache_time=3600)
+        if response.status_code != 200:
+            return series, next_page
         soup = BeautifulSoup(response.text, "html.parser")
     except Exception as e:
         log_error(f"Failed to fetch series list: {e}")
@@ -85,14 +86,15 @@ def get_series_list(url, page="1"):
 
 
 def get_new_episodes(url, page="1"):
-    """Get new episodes list."""
+    """Get new episodes list with caching."""
     page_url = f"{url}page/{page}/" if int(page) > 1 else url
     episodes = []
     next_page = None
 
     try:
-        response = get_html_content(page_url)
-        response.raise_for_status()
+        response = get_html_content(page_url, cache_time=3600)
+        if response.status_code != 200:
+            return episodes, next_page
         soup = BeautifulSoup(response.text, "html.parser")
     except Exception as e:
         log_error(f"Failed to fetch new episodes: {e}")
@@ -131,10 +133,11 @@ def get_new_episodes(url, page="1"):
 
 
 def get_episodes_and_sources(url):
-    """Get episodes and sources from a series page."""
+    """Get episodes and sources from a series page with caching."""
     try:
-        response = get_html_content(url)
-        response.raise_for_status()
+        response = get_html_content(url, cache_time=3600)
+        if response.status_code != 200:
+            return []
         soup = BeautifulSoup(response.text, "html.parser")
     except Exception as e:
         log_error(f"Failed to fetch episode page: {e}")
