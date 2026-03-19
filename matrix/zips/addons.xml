@@ -577,6 +577,23 @@ In addition to what livestreams allowed you to do, you can now,
 		<language>en</language>
 	</extension>	
 	
+</addon><addon id="plugin.video.ontv" name="OnTV" version="1.0.2" provider-name="OnTV">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.service" library="service.py" start="login" />
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary lang="en">OnTV</summary>
+    <description lang="en">Streams Portal — Xtream, Stalker/MAC, M3U</description>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.png</fanart>
+    </assets>
+  </extension>
 </addon><addon id="plugin.video.playlistal8ina" name="[COLORorangered]Al8inA[/COLOR]" version="1.1.6" provider-name="Nux007, Publish3r, Silhouette2022,AS">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -1559,6 +1576,26 @@ Fixed autosub addon exclusions
         <description>kodifitzwell repository</description>
         <assets><icon>icon.png</icon></assets>
     </extension>
+</addon><addon id="repository.ontv" name="OnTV Repository" version="1.0.2" provider-name="OnTV">
+  <requires>
+    <import addon="xbmc.addon" version="12.0.0" />
+  </requires>
+  <extension point="xbmc.addon.repository" name="OnTV Repository">
+    <dir>
+      <info compressed="false">https://raw.githubusercontent.com/nnllv0id/ontv-repo/main/addons.xml</info>
+      <checksum>https://raw.githubusercontent.com/nnllv0id/ontv-repo/main/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.githubusercontent.com/nnllv0id/ontv-repo/main</datadir>
+    </dir>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary lang="en">OnTV Repository</summary>
+    <description lang="en">Official OnTV Repository</description>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.png</fanart>
+    </assets>
+  </extension>
 </addon><addon id="repository.redwizard" name="[COLOR red]The Red Repo[/COLOR]" version="1.1.9" provider-name="[COLOR red]The Red Wizard[/COLOR]">
 	<extension point="xbmc.addon.repository" name="The Red Repo">
 		<dir>
