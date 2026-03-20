@@ -306,11 +306,135 @@
       <top>150</top>
       <width>502</width>
       <height>745</height>
-      <texture colordiffuse="FFAD1457">luc_diffuse/poster_border.png</texture>
+      <texture colordiffuse="FFB0C4DE">luc_diffuse/poster_border.png</texture>
       <visible>String.IsEqual(Container(2000).ListItem.Property(luc_kodi.quality),CAM) + !String.IsEqual(Window().Property(luc_kodi.wide_list),true)</visible>
     </control>
-    
-		
+
+    <!-- ═══════════════════════════════════════════════════════════
+         RATINGS STRIP — below the poster border (top=902)
+         Two adaptive layouts, both centered within the 502px poster width:
+           Layout A (2 items): Trakt + TMDB — visible when IMDb slot is empty
+           Layout B (3 items): Trakt + IMDb/MC/RT + TMDB — visible when IMDb slot has data
+         ═══════════════════════════════════════════════════════════ -->
+    <control type="group">
+      <description>Ratings Strip</description>
+      <visible>!String.IsEqual(Window().Property(luc_kodi.wide_list),true)</visible>
+
+      <!-- ══ LAYOUT A — 2 items centered (264px total, start=1516) ══
+           Shown only when IMDb/MC/RT slot is empty                    -->
+      <control type="group">
+        <description>Ratings 2-item layout</description>
+        <visible>String.IsEmpty(Window().Property(luc_kodi.rating.imdb))</visible>
+
+        <!-- Trakt — left -->
+        <control type="group">
+          <description>Rating Trakt A</description>
+          <visible>!String.IsEmpty(Window().Property(luc_kodi.rating.trakt))</visible>
+          <control type="image">
+            <left>1516</left><top>909</top><width>26</width><height>26</height>
+            <aspectratio align="center" aligny="center">keep</aspectratio>
+            <texture>ratings/rating_trakt.png</texture>
+          </control>
+          <control type="label">
+            <left>1548</left><top>902</top><width>70</width><height>40</height>
+            <font>font13</font><textcolor>FFED1C24</textcolor>
+            <align>left</align><aligny>center</aligny>
+            <label>$INFO[Window().Property(luc_kodi.rating.trakt)]</label>
+          </control>
+        </control>
+
+        <!-- TMDB — right -->
+        <control type="group">
+          <description>Rating TMDB A</description>
+          <visible>!String.IsEmpty(Window().Property(luc_kodi.rating.tmdb))</visible>
+          <control type="image">
+            <left>1678</left><top>909</top><width>26</width><height>26</height>
+            <aspectratio align="center" aligny="center">keep</aspectratio>
+            <texture>ratings/rating_tmdb.png</texture>
+          </control>
+          <control type="label">
+            <left>1710</left><top>902</top><width>70</width><height>40</height>
+            <font>font13</font><textcolor>FF01D277</textcolor>
+            <align>left</align><aligny>center</aligny>
+            <label>$INFO[Window().Property(luc_kodi.rating.tmdb)]</label>
+          </control>
+        </control>
+      </control>
+
+      <!-- ══ LAYOUT B — 3 items centered (386px total, start=1455) ══
+           Shown only when IMDb/MC/RT slot has data                    -->
+      <control type="group">
+        <description>Ratings 3-item layout</description>
+        <visible>!String.IsEmpty(Window().Property(luc_kodi.rating.imdb))</visible>
+
+        <!-- Trakt — left -->
+        <control type="group">
+          <description>Rating Trakt B</description>
+          <visible>!String.IsEmpty(Window().Property(luc_kodi.rating.trakt))</visible>
+          <control type="image">
+            <left>1455</left><top>909</top><width>26</width><height>26</height>
+            <aspectratio align="center" aligny="center">keep</aspectratio>
+            <texture>ratings/rating_trakt.png</texture>
+          </control>
+          <control type="label">
+            <left>1487</left><top>902</top><width>70</width><height>40</height>
+            <font>font13</font><textcolor>FFED1C24</textcolor>
+            <align>left</align><aligny>center</aligny>
+            <label>$INFO[Window().Property(luc_kodi.rating.trakt)]</label>
+          </control>
+        </control>
+
+        <!-- IMDb / MC / RT — middle (icon switches per source) -->
+        <control type="group">
+          <description>Rating IMDb B</description>
+          <visible>!String.IsEmpty(Window().Property(luc_kodi.rating.imdb))</visible>
+          <control type="image">
+            <left>1597</left><top>909</top><width>26</width><height>26</height>
+            <aspectratio align="center" aligny="center">keep</aspectratio>
+            <texture>ratings/rating_imdb.png</texture>
+            <visible>!String.IsEqual(Window().Property(luc_kodi.rating.imdb_source),metacritic) + !String.IsEqual(Window().Property(luc_kodi.rating.imdb_source),rt)</visible>
+          </control>
+          <control type="image">
+            <left>1597</left><top>909</top><width>26</width><height>26</height>
+            <aspectratio align="center" aligny="center">keep</aspectratio>
+            <texture>ratings/rating_metacritic.png</texture>
+            <visible>String.IsEqual(Window().Property(luc_kodi.rating.imdb_source),metacritic)</visible>
+          </control>
+          <control type="image">
+            <left>1597</left><top>909</top><width>26</width><height>26</height>
+            <aspectratio align="center" aligny="center">keep</aspectratio>
+            <texture>ratings/rating_rt.png</texture>
+            <visible>String.IsEqual(Window().Property(luc_kodi.rating.imdb_source),rt)</visible>
+          </control>
+          <control type="label">
+            <left>1629</left><top>902</top><width>70</width><height>40</height>
+            <font>font13</font><textcolor>FFF5C518</textcolor>
+            <align>left</align><aligny>center</aligny>
+            <label>$INFO[Window().Property(luc_kodi.rating.imdb)]</label>
+          </control>
+        </control>
+
+        <!-- TMDB — right -->
+        <control type="group">
+          <description>Rating TMDB B</description>
+          <visible>!String.IsEmpty(Window().Property(luc_kodi.rating.tmdb))</visible>
+          <control type="image">
+            <left>1739</left><top>909</top><width>26</width><height>26</height>
+            <aspectratio align="center" aligny="center">keep</aspectratio>
+            <texture>ratings/rating_tmdb.png</texture>
+          </control>
+          <control type="label">
+            <left>1771</left><top>902</top><width>70</width><height>40</height>
+            <font>font13</font><textcolor>FF01D277</textcolor>
+            <align>left</align><aligny>center</aligny>
+            <label>$INFO[Window().Property(luc_kodi.rating.tmdb)]</label>
+          </control>
+        </control>
+      </control>
+
+    </control>
+    <!-- ═══ END RATINGS STRIP ═══ -->
+
     <control type="group">
       
 			
@@ -691,7 +815,7 @@
             <height>95</height>
             
 						
-            <texture background="true">common/card_focus.png</texture>
+            <texture background="true" colordiffuse="FF696969">common/card_focus.png</texture>
           <control type="image">
             <description>Card Tint</description>
             <left>0</left>
@@ -2076,7 +2200,7 @@
             <height>100</height>
             
 						
-            <texture background="true">common/card_focus.png</texture>
+            <texture background="true" colordiffuse="FF696969">common/card_focus.png</texture>
           <control type="image">
             <description>Card Tint</description>
             <left>0</left>

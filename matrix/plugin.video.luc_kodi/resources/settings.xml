@@ -348,6 +348,8 @@
 	<setting id="mdblist.event.start" type="bool" label="MDBList event: start" default="true" subsetting="true" visible="eq(-6,true)" />
 	<setting id="mdblist.event.pause" type="bool" label="MDBList event: pause" default="true" subsetting="true" visible="eq(-7,true)" />
 	<setting id="mdblist.event.resume" type="bool" label="MDBList event: resume" default="true" subsetting="true" visible="eq(-8,true)" />
+	<setting type="lsep" label="Ratings" />
+	<setting id="omdb.apikey" type="text" label="OMDb API" default="" option="hidden" />
 	<setting id="mdblist.event.stop" type="bool" label="MDBList event: stop" default="true" subsetting="true" visible="eq(-9,true)" />
 	<setting id="mdblist.event.end" type="bool" label="MDBList event: end" default="true" subsetting="true" visible="eq(-10,true)" />
 	<setting id="mdblist.event.seek" type="bool" label="MDBList event: seek" default="true" subsetting="true" visible="eq(-11,true)" />

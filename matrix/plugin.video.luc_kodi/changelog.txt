@@ -1,3 +1,8 @@
+[B][COLOR ff00fa9a]Version 0.0.76[/COLOR][/B]
+-Add OMDb API for ratings
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.75[/COLOR][/B]
+-Small aesthetic changes
 [B][COLOR ff00fa9a]Version 0.0.74[/COLOR][/B]
 -New category Mdblist for Movies and TV Shows( to working it needs to be installed before service.luc_kodi.mdblist and Mdblist api in settings)
 -Add suport for  full scrobbling Movies and TV Shows ( to working it needs to be installed before service.luc_kodi.mdblist and Mdblist api in settings)

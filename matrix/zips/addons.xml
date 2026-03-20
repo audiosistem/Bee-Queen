@@ -372,7 +372,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
     <extension library="resources/lib/fen.py" point="xbmc.python.pluginsource">
         <provides>video</provides>
     </extension>
-    <extension library="resources/lib/service.py" point="xbmc.service" />
+    
     <extension library="resources/lib/" point="xbmc.python.module" />
     <extension point="xbmc.addon.metadata">
         <reuselanguageinvoker>false</reuselanguageinvoker>
@@ -522,7 +522,7 @@ In addition to what livestreams allowed you to do, you can now,
 			<fanart>fanart.jpg</fanart>
 		</assets>
 	</extension>
-</addon><addon id="plugin.video.luc_kodi" name="[B][COLOR ff00fa9a]luc_[/COLOR][/B]kodi" provider-name="[COLOR fffdb515]apoyotech[/COLOR]" version="0.0.74">
+</addon><addon id="plugin.video.luc_kodi" name="[B][COLOR ff00fa9a]luc_[/COLOR][/B]kodi" provider-name="[COLOR fffdb515]apoyotech[/COLOR]" version="0.0.76">
 	<requires>
 		<import addon="xbmc.python" version="3.0.1" />
 		<import addon="script.module.requests" />

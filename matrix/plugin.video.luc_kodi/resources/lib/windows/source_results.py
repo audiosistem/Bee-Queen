@@ -223,7 +223,7 @@ class SourceResultsXML(BaseDialog):
 						'720P':  'FFFFA726',
 						'SD':    'FF607D8B',
 						'SCR':   'FFB71C1C',
-						'CAM':   'FFAD1457',
+						'CAM':   'FFB0C4DE',
 					}
 					quality_assets = {
 						'4K':    ('resolution/card_4k.png',    'resolution/bar_4k.png'),
@@ -231,7 +231,7 @@ class SourceResultsXML(BaseDialog):
 						'720P':  ('resolution/card_720p.png',  'resolution/bar_720p.png'),
 						'SD':    ('resolution/card_sd.png',    'resolution/bar_sd.png'),
 						'SCR':   ('resolution/card_scr.png',   'resolution/bar_scr.png'),
-						'CAM':   ('resolution/card_cam.png',   'resolution/bar_cam.png'),
+						'CAM':   ('resolution/card_cam_b.png',  'resolution/bar_cam_b.png'),
 					}
 					q_key = quality.upper()
 					q_color = quality_colors.get(q_key, 'FF363C3D')
@@ -296,7 +296,164 @@ class SourceResultsXML(BaseDialog):
 			details = ' | '.join(i for i in (mpaa, duration) if i)
 			self.setProperty('luc_kodi.details', details)
 			self.setProperty('luc_kodi.wide_list', 'true' if self.window_id == WIDE_LIST_ID else 'false')
+			self._fetch_ratings()
 		except:
+			from resources.lib.modules import log_utils
+			log_utils.error()
+
+	def _fetch_ratings(self):
+		"""
+		Ratings pipeline — three tiers, first available wins for each slot:
+
+		  Tier 1 — MDBList (if API key configured):
+		    One call returns IMDb + Trakt + Metacritic + more.
+		    All three slots filled from a single request.
+
+		  Tier 2 — Individual free APIs (no MDBList):
+		    TMDB  : from meta dict (always, zero config)
+		    Trakt : plugin's built-in API key, public endpoint, no login
+		    IMDb  : OMDB free key (omdbapi.com) with MC/RT fallback
+
+		  Properties set:
+		    luc_kodi.rating.tmdb        — score string e.g. "7.3"
+		    luc_kodi.rating.trakt       — score string e.g. "8.1"
+		    luc_kodi.rating.imdb        — score string (IMDb, MC or RT value)
+		    luc_kodi.rating.imdb_source — 'imdb' | 'metacritic' | 'rt'
+		"""
+		try:
+			# Clear previous values so stale data never shows
+			for svc in ('tmdb', 'trakt', 'imdb', 'imdb_source'):
+				self.setProperty('luc_kodi.rating.%s' % svc, '')
+
+			mediatype = self.meta.get('mediatype', 'movie')
+			imdb_id   = self.meta.get('imdb', '')
+
+			# ── TMDB from meta — always available regardless of tier ──
+			tmdb_val = self.meta.get('rating', '')
+			if tmdb_val:
+				try:
+					self.setProperty('luc_kodi.rating.tmdb', '%.1f' % float(tmdb_val))
+				except (ValueError, TypeError):
+					pass
+
+			if not imdb_id:
+				return
+
+			# ════════════════════════════════════════════════
+			# TIER 1 — MDBList (single call, covers all slots)
+			# ════════════════════════════════════════════════
+			try:
+				from resources.lib.modules import mdblist
+				if mdblist.getMDBListCredentialsInfo():
+					data = mdblist.getMediaInfo(imdb_id)
+					if data:
+						ratings = data.get('ratings') or []
+						score_map = {}
+						for r in ratings:
+							src = (r.get('source') or '').lower()
+							val = r.get('value')
+							if val is not None:
+								score_map[src] = val
+
+						# TMDB — override meta value with MDBList if available
+						for key in ('tmdb',):
+							if key in score_map:
+								try:
+									self.setProperty('luc_kodi.rating.tmdb', '%.1f' % float(score_map[key]))
+								except (ValueError, TypeError):
+									pass
+
+						# Trakt
+						for key in ('trakt', 'traktus'):
+							if key in score_map:
+								try:
+									self.setProperty('luc_kodi.rating.trakt', '%.1f' % float(score_map[key]))
+								except (ValueError, TypeError):
+									pass
+								break
+
+						# IMDb → Metacritic fallback → RT fallback
+						if 'imdb' in score_map:
+							try:
+								self.setProperty('luc_kodi.rating.imdb',        '%.1f' % float(score_map['imdb']))
+								self.setProperty('luc_kodi.rating.imdb_source', 'imdb')
+							except (ValueError, TypeError):
+								pass
+						else:
+							for key in ('metacritic', 'metacritics'):
+								if key in score_map:
+									try:
+										self.setProperty('luc_kodi.rating.imdb',        '%d' % int(float(score_map[key])))
+										self.setProperty('luc_kodi.rating.imdb_source', 'metacritic')
+									except (ValueError, TypeError):
+										pass
+									break
+
+						# MDBList succeeded — skip Tier 2
+						return
+			except Exception:
+				from resources.lib.modules import log_utils
+				log_utils.error()
+
+			# ════════════════════════════════════════════════
+			# TIER 2 — Individual free APIs (no MDBList key)
+			# ════════════════════════════════════════════════
+
+			# ── Trakt public ratings endpoint (uses plugin's built-in API key) ──
+			try:
+				from resources.lib.modules.trakt import getTraktAsJson
+				from resources.lib.database import cache
+				if mediatype == 'episode':
+					season  = self.meta.get('season', '')
+					episode = self.meta.get('episode', '')
+					trakt_url = '/shows/%s/seasons/%s/episodes/%s/ratings' % (imdb_id, season, episode)
+				elif mediatype in ('tvshow', 'season'):
+					trakt_url = '/shows/%s/ratings' % imdb_id
+				else:
+					trakt_url = '/movies/%s/ratings' % imdb_id
+				trakt_data = cache.get(getTraktAsJson, 24, trakt_url)
+				if trakt_data and trakt_data.get('rating'):
+					self.setProperty('luc_kodi.rating.trakt', '%.1f' % float(trakt_data['rating']))
+			except Exception:
+				from resources.lib.modules import log_utils
+				log_utils.error()
+
+			# ── OMDB — IMDb primary, Metacritic fallback, RT last resort ──
+			try:
+				omdb_key = getSetting('omdb.apikey').strip()
+				if omdb_key:
+					import requests as _req
+					from resources.lib.database import cache
+					def _omdb_fetch(iid, key):
+						try:
+							r = _req.get('https://www.omdbapi.com/', params={'i': iid, 'apikey': key}, timeout=8)
+							if r.status_code == 200:
+								return r.json()
+						except Exception:
+							pass
+						return None
+					omdb = cache.get(_omdb_fetch, 48, imdb_id, omdb_key)
+					if omdb:
+						imdb_score = omdb.get('imdbRating', '')
+						if imdb_score and imdb_score != 'N/A':
+							self.setProperty('luc_kodi.rating.imdb',        imdb_score)
+							self.setProperty('luc_kodi.rating.imdb_source', 'imdb')
+						else:
+							ratings_list = omdb.get('Ratings', [])
+							mc_raw = next((r['Value'] for r in ratings_list if r.get('Source') == 'Metacritic'), None)
+							if mc_raw and mc_raw != 'N/A':
+								self.setProperty('luc_kodi.rating.imdb',        mc_raw.split('/')[0].strip())
+								self.setProperty('luc_kodi.rating.imdb_source', 'metacritic')
+							else:
+								rt_raw = next((r['Value'] for r in ratings_list if r.get('Source') == 'Rotten Tomatoes'), None)
+								if rt_raw and rt_raw != 'N/A':
+									self.setProperty('luc_kodi.rating.imdb',        rt_raw)
+									self.setProperty('luc_kodi.rating.imdb_source', 'rt')
+			except Exception:
+				from resources.lib.modules import log_utils
+				log_utils.error()
+
+		except Exception:
 			from resources.lib.modules import log_utils
 			log_utils.error()
 
