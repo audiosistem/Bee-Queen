@@ -1913,6 +1913,21 @@ Fixed autosub addon exclusions
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="resource.images.blacklodge.artwork" name="BlackLodge Artwork" version="1.1.1" provider-name="bleak-lodge">
+    <extension point="kodi.resource.images" compile="false" type="BlackLodge" />
+    <requires>
+        <import addon="kodi.resource" version="1.0.0" />
+    </requires>
+    <extension point="xbmc.python.module" library="lib" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Themes for BlackLodge add-on</summary>
+        <description lang="en_GB">Provided separately to allow easier distribution and consume less bandwidth</description>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
 </addon><addon id="resource.uisounds.appletv" version="0.0.2" name="AppleTv UI Sounds" provider-name="Fastcolors">
 
   <requires>
@@ -1945,6 +1960,16 @@ Fixed autosub addon exclusions
 		<assets>
 				<icon>icon.png</icon>
 		</assets>
+    </extension>
+</addon><addon id="script.free99.artwork" version="1.0" name="[COLOR orange]Free99 Artwork[/COLOR]" provider-name="JewBMX">
+    <extension point="xbmc.python.module" library="lib" />
+    <extension point="xbmc.addon.metadata">
+        <summary>Free99 Artwork</summary>
+        <description>Free99 Artwork</description>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
     </extension>
 </addon><addon id="script.module.addon.signals" name="Addon Signals" version="0.0.6+matrix.1" provider-name="Rick Phillips (ruuk)">
     <requires>
@@ -2573,6 +2598,17 @@ Fixed autosub addon exclusions
     </assets>
     <news>- 1.6.3: Sync changes with the upstream library version.</news>
   </extension>
+</addon><addon id="script.scrubsv2.artwork" version="1.6" name="[COLOR orange]Scrubs v2 Artwork[/COLOR]" provider-name="JewBMX">
+    <extension point="xbmc.python.module" library="lib" />
+    <extension point="xbmc.addon.metadata">
+        <summary>Scrubs v2 Artwork</summary>
+        <description>Scrubs v2 Artwork</description>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+        <news>Changed the fanart to be a simple small image that has a matching color tone to the theme chosen.</news>
+    </extension>
 </addon><addon id="script.service.fastautosubs" name="[B][COLOR FF00BFFF]Fast AutoSubs[/COLOR][/B]" version="1.0.11" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
