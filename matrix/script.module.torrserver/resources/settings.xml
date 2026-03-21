@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="Configurare TorrServer">
+      <setting id="host" type="text" label="Host" default="127.0.0.1"/>
+      <setting id="port" type="number" label="Port" default="8090"/>
+      <setting id="save_in_database" type="bool" label="Save torrent in DB" default="true"/>
+
+      <setting id="use_auth" type="bool" label="Use Authentication" default="false"/>
+      <setting id="login" type="text" label="Login" visible="eq(-1,true)" subsetting="true" default=""/>
+      <setting id="passw" type="text" label="Password" visible="eq(-2,true)" option="hidden" subsetting="true" default=""/>
+
+    </category>
+</settings>
