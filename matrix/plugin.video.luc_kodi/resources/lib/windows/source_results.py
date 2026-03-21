@@ -303,13 +303,10 @@ class SourceResultsXML(BaseDialog):
 
 	def _fetch_ratings(self):
 		"""
-		Ratings pipeline — three tiers, first available wins for each slot:
+		Ratings pipeline — slots filled by best available source per slot:
 
-		  Tier 1 — MDBList (if API key configured):
-		    One call returns IMDb + Trakt + Metacritic + more.
-		    All three slots filled from a single request.
-
-		  Tier 2 — Individual free APIs (no MDBList):
+		  MDBList (if configured) fills slots first.
+		  Tier 2 fills any slots still empty after MDBList:
 		    TMDB  : from meta dict (always, zero config)
 		    Trakt : plugin's built-in API key, public endpoint, no login
 		    IMDb  : OMDB free key (omdbapi.com) with MC/RT fallback
@@ -339,9 +336,10 @@ class SourceResultsXML(BaseDialog):
 			if not imdb_id:
 				return
 
-			# ════════════════════════════════════════════════
-			# TIER 1 — MDBList (single call, covers all slots)
-			# ════════════════════════════════════════════════
+			# ════════════════════════════════════════════════════════
+			# MDBList — fills slots when API key is configured
+			# Any slot left empty here will be filled by Tier 2 below
+			# ════════════════════════════════════════════════════════
 			try:
 				from resources.lib.modules import mdblist
 				if mdblist.getMDBListCredentialsInfo():
@@ -356,12 +354,11 @@ class SourceResultsXML(BaseDialog):
 								score_map[src] = val
 
 						# TMDB — override meta value with MDBList if available
-						for key in ('tmdb',):
-							if key in score_map:
-								try:
-									self.setProperty('luc_kodi.rating.tmdb', '%.1f' % float(score_map[key]))
-								except (ValueError, TypeError):
-									pass
+						if 'tmdb' in score_map:
+							try:
+								self.setProperty('luc_kodi.rating.tmdb', '%.1f' % float(score_map['tmdb']))
+							except (ValueError, TypeError):
+								pass
 
 						# Trakt
 						for key in ('trakt', 'traktus'):
@@ -372,7 +369,7 @@ class SourceResultsXML(BaseDialog):
 									pass
 								break
 
-						# IMDb → Metacritic fallback → RT fallback
+						# IMDb → Metacritic fallback (from MDBList data)
 						if 'imdb' in score_map:
 							try:
 								self.setProperty('luc_kodi.rating.imdb',        '%.1f' % float(score_map['imdb']))
@@ -388,70 +385,70 @@ class SourceResultsXML(BaseDialog):
 									except (ValueError, TypeError):
 										pass
 									break
-
-						# MDBList succeeded — skip Tier 2
-						return
 			except Exception:
 				from resources.lib.modules import log_utils
 				log_utils.error()
 
-			# ════════════════════════════════════════════════
-			# TIER 2 — Individual free APIs (no MDBList key)
-			# ════════════════════════════════════════════════
+			# ════════════════════════════════════════════════════════
+			# Tier 2 — fills any slot still empty (MDBList missing
+			# data, not configured, or returned N/A for that slot)
+			# ════════════════════════════════════════════════════════
 
-			# ── Trakt public ratings endpoint (uses plugin's built-in API key) ──
-			try:
-				from resources.lib.modules.trakt import getTraktAsJson
-				from resources.lib.database import cache
-				if mediatype == 'episode':
-					season  = self.meta.get('season', '')
-					episode = self.meta.get('episode', '')
-					trakt_url = '/shows/%s/seasons/%s/episodes/%s/ratings' % (imdb_id, season, episode)
-				elif mediatype in ('tvshow', 'season'):
-					trakt_url = '/shows/%s/ratings' % imdb_id
-				else:
-					trakt_url = '/movies/%s/ratings' % imdb_id
-				trakt_data = cache.get(getTraktAsJson, 24, trakt_url)
-				if trakt_data and trakt_data.get('rating'):
-					self.setProperty('luc_kodi.rating.trakt', '%.1f' % float(trakt_data['rating']))
-			except Exception:
-				from resources.lib.modules import log_utils
-				log_utils.error()
-
-			# ── OMDB — IMDb primary, Metacritic fallback, RT last resort ──
-			try:
-				omdb_key = getSetting('omdb.apikey').strip()
-				if omdb_key:
-					import requests as _req
+			# ── Trakt — only if slot still empty ──
+			if not self.getProperty('luc_kodi.rating.trakt'):
+				try:
+					from resources.lib.modules.trakt import getTraktAsJson
 					from resources.lib.database import cache
-					def _omdb_fetch(iid, key):
-						try:
-							r = _req.get('https://www.omdbapi.com/', params={'i': iid, 'apikey': key}, timeout=8)
-							if r.status_code == 200:
-								return r.json()
-						except Exception:
-							pass
-						return None
-					omdb = cache.get(_omdb_fetch, 48, imdb_id, omdb_key)
-					if omdb:
-						imdb_score = omdb.get('imdbRating', '')
-						if imdb_score and imdb_score != 'N/A':
-							self.setProperty('luc_kodi.rating.imdb',        imdb_score)
-							self.setProperty('luc_kodi.rating.imdb_source', 'imdb')
-						else:
-							ratings_list = omdb.get('Ratings', [])
-							mc_raw = next((r['Value'] for r in ratings_list if r.get('Source') == 'Metacritic'), None)
-							if mc_raw and mc_raw != 'N/A':
-								self.setProperty('luc_kodi.rating.imdb',        mc_raw.split('/')[0].strip())
-								self.setProperty('luc_kodi.rating.imdb_source', 'metacritic')
+					if mediatype == 'episode':
+						season  = self.meta.get('season', '')
+						episode = self.meta.get('episode', '')
+						trakt_url = '/shows/%s/seasons/%s/episodes/%s/ratings' % (imdb_id, season, episode)
+					elif mediatype in ('tvshow', 'season'):
+						trakt_url = '/shows/%s/ratings' % imdb_id
+					else:
+						trakt_url = '/movies/%s/ratings' % imdb_id
+					trakt_data = cache.get(getTraktAsJson, 24, trakt_url)
+					if trakt_data and trakt_data.get('rating'):
+						self.setProperty('luc_kodi.rating.trakt', '%.1f' % float(trakt_data['rating']))
+				except Exception:
+					from resources.lib.modules import log_utils
+					log_utils.error()
+
+			# ── OMDB — only if IMDb slot still empty ──
+			if not self.getProperty('luc_kodi.rating.imdb'):
+				try:
+					omdb_key = getSetting('omdb.apikey').strip()
+					if omdb_key:
+						import requests as _req
+						from resources.lib.database import cache
+						def _omdb_fetch(iid, key):
+							try:
+								r = _req.get('https://www.omdbapi.com/', params={'i': iid, 'apikey': key}, timeout=8)
+								if r.status_code == 200:
+									return r.json()
+							except Exception:
+								pass
+							return None
+						omdb = cache.get(_omdb_fetch, 48, imdb_id, omdb_key)
+						if omdb:
+							imdb_score = omdb.get('imdbRating', '')
+							if imdb_score and imdb_score != 'N/A':
+								self.setProperty('luc_kodi.rating.imdb',        imdb_score)
+								self.setProperty('luc_kodi.rating.imdb_source', 'imdb')
 							else:
-								rt_raw = next((r['Value'] for r in ratings_list if r.get('Source') == 'Rotten Tomatoes'), None)
-								if rt_raw and rt_raw != 'N/A':
-									self.setProperty('luc_kodi.rating.imdb',        rt_raw)
-									self.setProperty('luc_kodi.rating.imdb_source', 'rt')
-			except Exception:
-				from resources.lib.modules import log_utils
-				log_utils.error()
+								ratings_list = omdb.get('Ratings', [])
+								mc_raw = next((r['Value'] for r in ratings_list if r.get('Source') == 'Metacritic'), None)
+								if mc_raw and mc_raw != 'N/A':
+									self.setProperty('luc_kodi.rating.imdb',        mc_raw.split('/')[0].strip())
+									self.setProperty('luc_kodi.rating.imdb_source', 'metacritic')
+								else:
+									rt_raw = next((r['Value'] for r in ratings_list if r.get('Source') == 'Rotten Tomatoes'), None)
+									if rt_raw and rt_raw != 'N/A':
+										self.setProperty('luc_kodi.rating.imdb',        rt_raw)
+										self.setProperty('luc_kodi.rating.imdb_source', 'rt')
+				except Exception:
+					from resources.lib.modules import log_utils
+					log_utils.error()
 
 		except Exception:
 			from resources.lib.modules import log_utils

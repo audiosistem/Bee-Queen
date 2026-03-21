@@ -85,6 +85,8 @@ cacheFile = joinPath(dataPath, 'cache.db')
 traktSyncFile = joinPath(dataPath, 'traktsync.db')
 fanarttvCacheFile = joinPath(dataPath, 'fanarttv.db')
 watchedcacheFile = joinPath(dataPath, 'watched.db')
+subsFile         = joinPath(dataPath, 'substitute.db')
+subtitlesPath    = joinPath(dataPath, 'subtitles')
 trailer = 'plugin://plugin.video.youtube/play/?video_id=%s'
 KODI_VERSION = int(xbmc.getInfoLabel("System.BuildVersion")[:2])
 
@@ -98,8 +100,20 @@ def setting(id, fallback=None):
 	if settings_dict is None: settings_dict = settings_fallback(id)
 	# Kodi may not write default values into userdata/addon_data/.../settings.xml on some platforms (e.g. iOS).
 	# If the key is missing from the parsed settings dict, fall back to xbmcaddon so we still get the default.
+	# FIX: also fall back when key exists but has empty value — this covers the case where a version update
+	# triggers a settings.xml rewrite that resets credentials (e.g. Trakt token) to their default empty string.
+	# Without this, an empty-string value in the cache dict would be returned directly, bypassing Kodi's
+	# internal settings store which may still hold the real non-empty value.
 	if id in settings_dict:
 		value = settings_dict.get(id, '')
+		if value == '':
+			try:
+				api_value = xbmcaddon.Addon().getSetting(id)
+				if api_value:
+					value = api_value
+					settings_dict[id] = value
+					homeWindow.setProperty('luc_kodi_settings', jsdumps(settings_dict))
+			except: pass
 	else:
 		try: value = xbmcaddon.Addon().getSetting(id)
 		except: value = ''

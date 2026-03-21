@@ -1,3 +1,7 @@
+[B][COLOR ff00fa9a]Version 0.0.78[/COLOR][/B]
+-Added automatic subtitle download system via OpenSubtitles.com (Movies + TV shows), it is needed user and password
+[B][COLOR ff00fa9a]Version 0.0.77[/COLOR][/B]
+-Small bugs fixed
 [B][COLOR ff00fa9a]Version 0.0.76[/COLOR][/B]
 -Add OMDb API for ratings
 -Small aesthetic changes

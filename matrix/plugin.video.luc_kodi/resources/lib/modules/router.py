@@ -725,6 +725,15 @@ def router(params):
 		elif action == 'tools_cleanSettings':
 			from resources.lib.modules import clean_settings
 			clean_settings.clean_settings()
+		elif action == 'tools_openSubsTest':
+			from resources.lib.modules import opensubs
+			opensubs.Opensubs().getAccountStatus()
+		elif action == 'tools_openSubsRevoke':
+			from resources.lib.modules import opensubs
+			opensubs.Opensubs().revokeAccess()
+		elif action == 'tools_subsList':
+			from resources.lib.modules import sources
+			sources.Sources().getSubsList()
 		elif action == 'tools_openSettings':
 			control.openSettings(query)
 		elif action == 'tools_contextluc_kodiSettings':

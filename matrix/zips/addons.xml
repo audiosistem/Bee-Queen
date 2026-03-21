@@ -323,7 +323,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.dltv" name="DLTV" version="1.0.9" provider-name="Arkane14">
+</addon><addon id="plugin.video.dltv" name="DLTV" version="1.0.11" provider-name="Arkane14">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />
@@ -343,7 +343,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
         </assets>
-        <news>v1.0.9: probe lovecdn before use; AnyPlayer fallback to CHEVY no-auth when all players fail</news>
+        <news>v1.0.11: schedule refresh triggers Container.Refresh after clearing cache</news>
     </extension>
 </addon><addon id="plugin.video.dscmovieshub" version="1.2.0" name="[COLOR teal]DSCMoviesHub[/COLOR]" provider-name="DSCMoviesHub">
     <requires>
@@ -522,7 +522,7 @@ In addition to what livestreams allowed you to do, you can now,
 			<fanart>fanart.jpg</fanart>
 		</assets>
 	</extension>
-</addon><addon id="plugin.video.luc_kodi" name="[B][COLOR ff00fa9a]luc_[/COLOR][/B]kodi" provider-name="[COLOR fffdb515]apoyotech[/COLOR]" version="0.0.76">
+</addon><addon id="plugin.video.luc_kodi" name="[B][COLOR ff00fa9a]luc_[/COLOR][/B]kodi" provider-name="[COLOR fffdb515]apoyotech[/COLOR]" version="0.0.78">
 	<requires>
 		<import addon="xbmc.python" version="3.0.1" />
 		<import addon="script.module.requests" />
@@ -657,7 +657,7 @@ In addition to what livestreams allowed you to do, you can now,
 		<news>INFO: For latest changes see Changelog within add-on.</news>
 		<assets><icon>pov.png</icon><fanart>pov_fanart.png</fanart></assets>
 	</extension>
-</addon><addon id="plugin.video.romanianpack" name="[B][COLOR FFFDBD01]MRSP Lite[/COLOR][/B]" version="1.2.49" provider-name="Sarsailă, [B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="plugin.video.romanianpack" name="[B][COLOR FFFDBD01]MRSP Lite[/COLOR][/B]" version="1.2.52" provider-name="Sarsailă, [B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
 	<import addon="script.module.requests" version="2.22.0" />
@@ -677,7 +677,7 @@ In addition to what livestreams allowed you to do, you can now,
         </item>
     </menu>
   </extension>
-  
+  <extension point="xbmc.service" name="mrsp.service" library="service.py" />
   <extension point="xbmc.addon.metadata">
 	<summary>Motor de căutare și redare Torente</summary>
     <description>[B][COLOR FF009900]Browser și Player pentru torente video[/COLOR][/B]</description>
@@ -1182,6 +1182,26 @@ Fixed autosub addon exclusions
 			<icon>icon.png</icon>
 		</assets>
 	</extension>
+</addon><addon id="plugin.video.veziaici.net" name="VeziAici.net" version="1.4" provider-name="1 x Geamanu x MiniMi">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" />
+    <import addon="script.module.beautifulsoup4" />
+    <import addon="script.module.resolveurl" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="addon.py">
+    <provides>video</provides>
+  </extension>
+  
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">Watch Romanian shows and series from VeziAici.net</summary>
+    <description lang="en">This addon allows you to browse and watch content from VeziAici.net, including Romanian shows and series.</description>
+    <platform>all</platform>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
 </addon><addon id="plugin.video.vixmovie" name="VixMovie" version="1.7" provider-name="1x,Geamanu,apoyotech">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />

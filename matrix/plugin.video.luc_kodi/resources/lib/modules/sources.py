@@ -1427,6 +1427,65 @@ class Sources:
 			log_utils.error()
 			return []
 
+	def subTitle(self, tvshowtitle):
+		"""
+		Comprueba si 'tvshowtitle' tiene una sustitución almacenada y la devuelve.
+		Usado durante el scraping para remap de títulos (ej. "Fargo" → "Fargo US").
+		"""
+		if tvshowtitle:
+			try:
+				from resources.lib.database import titlesubs
+				subtvshowtitle = titlesubs.substitute_get(tvshowtitle)
+				if subtvshowtitle:
+					tvshowtitle = subtvshowtitle
+			except:
+				tvshowtitle = tvshowtitle
+			return tvshowtitle
+		else:
+			return None
+
+	def getSubsList(self):
+		"""
+		Abre el diálogo de gestión de sustituciones de títulos.
+		Permite al usuario ver y eliminar sustituciones guardadas.
+		"""
+		try:
+			control.hide()
+			from resources.lib.database import titlesubs
+			addedSubs = titlesubs.all_substitutes(self)
+			items = [{'originalTitle': i['originalTitle'], 'subTitle': i['subTitle']} for i in addedSubs]
+			from resources.lib.windows.title_sublist_manager import TitleSublistManagerXML
+			window = TitleSublistManagerXML('title_sublist_manager.xml', control.addonPath(control.addonId()), results=items)
+			selected_items = window.run()
+			if selected_items:
+				self.removeSubs(selected_items)
+			del window
+		except:
+			log_utils.error()
+
+	def addNewSub(self):
+		"""
+		Solicita al usuario un par de títulos (original → sustituto) y lo guarda.
+		"""
+		original_title = control.dialog.input('[COLOR %s]%s[/COLOR]' % (self.highlight_color, getLS(40245)), type=control.alpha_input)
+		if original_title:
+			sub_title = control.dialog.input('[COLOR %s]%s[/COLOR]' % (self.highlight_color, getLS(40247)), type=control.alpha_input)
+			if sub_title:
+				from resources.lib.database import titlesubs
+				titlesubs.sub_insert(original_title, sub_title)
+				control.notification(message=40248)
+
+	def removeSubs(self, items):
+		"""Elimina una lista de sustituciones de la base de datos."""
+		try:
+			if len(items) > 0:
+				for v in items:
+					removeitem = str(v.get('originalTitle'))
+					from resources.lib.database import titlesubs
+					titlesubs.clear_substitute('substitle', removeitem)
+		except:
+			log_utils.error()
+
 	def getTitle(self, title):
 		title = string_tools.normalize(title)
 		return title

@@ -140,7 +140,30 @@ class VersionIsUpdateCheck:
 						cleared = fanarttv_cache.cache_clear()
 						control.notification(message='Forced fanarttv.db clear for version update complete.')
 						control.log('[ plugin.video.luc_kodi ]  Forced fanarttv.db clear for version update complete.', LOGINFO)
+				# FIX: save Trakt + subtitle credentials BEFORE the settings write that may reset settings.xml to defaults
+				import xbmcaddon as _xa
+				_addon_pre = _xa.Addon()
+				_trakt_keys = ('trakt.token', 'trakt.refresh', 'trakt.username', 'trakt.isauthed', 'trakt.expires')
+				_saved_trakt = {k: _addon_pre.getSetting(k) for k in _trakt_keys}
+				_sub_keys = ('subtitles', 'subtitles.notification', 'opensubsusername', 'opensubspassword', 'subtitles.lang.1', 'subtitles.lang.2')
+				_saved_subs = {k: _addon_pre.getSetting(k) for k in _sub_keys}
+				control.log('[ plugin.video.luc_kodi ]  VersionIsUpdateCheck: Trakt + subtitle settings backed up before settings write', LOGINFO)
+
 				control.setSetting('trakt.message2', '') # force a settings write for any added settings that may have been added in new version
+
+				# FIX: restore Trakt + subtitle credentials if they existed before the write
+				control.sleep(200) # small wait for Kodi to finish writing settings.xml
+				_addon_post = _xa.Addon()
+				if _saved_trakt.get('trakt.token'):
+					for _k, _v in _saved_trakt.items():
+						if _v:
+							_addon_post.setSetting(_k, _v)
+					control.log('[ plugin.video.luc_kodi ]  VersionIsUpdateCheck: Trakt credentials restored after settings write', LOGINFO)
+				for _k, _v in _saved_subs.items():
+					if _v:
+						_addon_post.setSetting(_k, _v)
+				control.log('[ plugin.video.luc_kodi ]  VersionIsUpdateCheck: Subtitle settings restored after settings write', LOGINFO)
+
 				control.log('[ plugin.video.luc_kodi ]  Forced new User Data settings.xml saved', LOGINFO)
 				control.log('[ plugin.video.luc_kodi ]  Plugin updated to v%s' % curVersion, LOGINFO)
 		except:
@@ -201,6 +224,61 @@ def getTraktCredentialsInfo():
 	if (username == '' or token == '' or refresh == ''): return False
 	return True
 
+
+class SubtitlePlayer(control.player2):
+	"""
+	Persistent xbmc.Player subclass in service.py.
+	Reads metadata directly from getVideoInfoTag() — no inter-process
+	window property passing needed.
+	"""
+	def onAVStarted(self):
+		try:
+			import xbmcaddon as _xa
+			subs_on = _xa.Addon('plugin.video.luc_kodi').getSetting('subtitles') == 'true'
+		except:
+			subs_on = False
+		control.log('[ luc_kodi ] SubtitlePlayer.onAVStarted — subs_on=%s' % subs_on, LOGINFO)
+		if not subs_on:
+			return
+		try:
+			tag     = self.getVideoInfoTag()
+			title   = tag.getTitle() or ''
+			year    = str(tag.getYear()) if tag.getYear() else ''
+			# getIMDBNumber() only works if setIMDBNumber() was called.
+			# infoTagger() uses setUniqueIDs({'imdb': ...}), so use getUniqueID('imdb')
+			try: imdb = tag.getUniqueID('imdb') or ''
+			except: imdb = tag.getIMDBNumber() or ''
+			mtype   = tag.getMediaType() or ''
+			season  = str(tag.getSeason()) if mtype == 'episode' and tag.getSeason() else None
+			episode = str(tag.getEpisode()) if mtype == 'episode' and tag.getEpisode() else None
+		except:
+			log_utils.error()
+			return
+		control.log('[ luc_kodi ] SubtitlePlayer: title=%s imdb=%s season=%s ep=%s' % (title, imdb, season, episode), LOGINFO)
+		if not title and not imdb:
+			control.log('[ luc_kodi ] SubtitlePlayer: no metadata available, skipping', LOGINFO)
+			return
+		try:
+			from resources.lib.modules.player import Subtitles
+			Subtitles().get(title, year, imdb, season, episode)
+		except:
+			log_utils.error()
+
+	def onPlayBackResumed(self):
+		"""
+		Fired when the user resumes a paused/stopped video.
+		Delete the stale TemporarySubs file so the subLang check in
+		Subtitles.get() does not exit early, then re-trigger onAVStarted.
+		"""
+		try:
+			from resources.lib.modules import tools
+			tools.delete_all_subs()
+			control.log('[ luc_kodi ] SubtitlePlayer.onPlayBackResumed — cleared stale subs, re-triggering', LOGINFO)
+		except:
+			pass
+		control.sleep(500)
+		self.onAVStarted()
+
 def main():
 	while not control.monitor.abortRequested():
 		control.log('[ plugin.video.luc_kodi ]  Service Started', LOGINFO)
@@ -221,6 +299,9 @@ def main():
 
 		catalogService = Thread(target=CatalogService().run)
 		catalogService.start()
+
+		_subtitle_player = SubtitlePlayer()  # persistent Player in service process
+		control.log('[ luc_kodi ] SubtitlePlayer registered', LOGINFO)
 
 
 		if getTraktCredentialsInfo():

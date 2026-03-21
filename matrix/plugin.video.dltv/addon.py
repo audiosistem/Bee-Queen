@@ -3042,6 +3042,7 @@ def Menu_Trans():
     categs = getCategTrans()
     if not categs:
         return
+    addDir('[B][COLOR cyan]Update schedule[/COLOR][/B]', build_url({'mode': 'menu', 'serv_type': 'refresh_schedule'}))
     for categ_name, _ in categs:
         addDir(categ_name, build_url({'mode': 'showChannels', 'trType': categ_name}))
     closeDir()
@@ -4934,6 +4935,19 @@ else:
             Search_Channels()
         elif servType == 'search_by_number':
             Search_Channel_By_Number()
+        elif servType == 'refresh_schedule':
+            try:
+                cache = _load_page_cache()
+                removed = sum(1 for u in list(cache) if 'index.php' in u or '24-7' in u)
+                for u in list(cache):
+                    if 'index.php' in u or '24-7' in u:
+                        del cache[u]
+                _save_page_cache(cache)
+                xbmcgui.Dialog().notification('DLTV', f'Schedule cache cleared ({removed} page(s))', ICON, 2500)
+            except Exception as e:
+                xbmcgui.Dialog().notification('DLTV', f'Error: {e}', ICON, 3000)
+            xbmcplugin.endOfDirectory(addon_handle, False)
+            xbmc.executebuiltin('Container.Refresh')
         elif servType == 'diagnostics':
             run_diagnostics()
             xbmcplugin.endOfDirectory(addon_handle, False)

@@ -1186,7 +1186,7 @@ msgid "Set up your download folders in order to enable them."
 msgstr ""
 
 msgctxt "#32353"
-msgid "Subtitles"
+msgid "[COLOR ff00fa9a]Subtitles[/COLOR]"
 msgstr ""
 
 msgctxt "#32354"
@@ -4519,4 +4519,52 @@ msgstr ""
 
 msgctxt "#40245"
 msgid "TV Shows"
+msgstr ""
+
+msgctxt "#40194"
+msgid "Subtitle settings. Automatic subtitle download via OpenSubtitles."
+msgstr ""
+
+msgctxt "#40247"
+msgid "Please enter the title to use when scraping:"
+msgstr ""
+
+msgctxt "#40248"
+msgid "New substitute added"
+msgstr ""
+
+msgctxt "#40503"
+msgid "OpenSubs"
+msgstr ""
+
+msgctxt "#40504"
+msgid "Open Subtitles Username"
+msgstr ""
+
+msgctxt "#40505"
+msgid "Open Subtitles Password"
+msgstr ""
+
+msgctxt "#40506"
+msgid "%s - Language Downloaded from Opensubtitles.com"
+msgstr ""
+
+msgctxt "#40507"
+msgid "Check OpenSubtitles Account"
+msgstr ""
+
+msgctxt "#40508"
+msgid "Logged in Username: %s [CR] Allowed Downloads: %s"
+msgstr ""
+
+msgctxt "#40509"
+msgid "Unable to authorize OpenSubtitles. Please check your username and password."
+msgstr ""
+
+msgctxt "#40510"
+msgid "Revoke OpenSubtitles Token"
+msgstr ""
+
+msgctxt "#40513"
+msgid "Manage Title Substitutions"
 msgstr ""

@@ -84,3 +84,34 @@ def convert_time(stringTime, stringDay=None, abbreviate=False, formatInput=Forma
 		from resources.lib.modules import log_utils
 		log_utils.error()
 		return stringTime
+
+
+def delete_all_subs():
+	"""
+	Elimina todos los archivos de subtítulos descargados previamente
+	en control.subtitlesPath antes de descargar uno nuevo.
+	"""
+	import os, fnmatch
+	try:
+		from resources.lib.modules import control
+		download_path = control.subtitlesPath
+		subtitle = download_path
+
+		def find(pattern, path):
+			result = []
+			for root, dirs, files in os.walk(path):
+				for name in files:
+					if fnmatch.fnmatch(name, pattern):
+						result.append(os.path.join(root, name))
+			return result
+
+		subtitles = find('*.*', subtitle)
+		for x in subtitles:
+			try:
+				os.remove(x)
+			except:
+				from resources.lib.modules import log_utils
+				log_utils.error()
+	except:
+		from resources.lib.modules import log_utils
+		log_utils.error()
