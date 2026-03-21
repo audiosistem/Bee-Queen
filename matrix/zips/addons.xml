@@ -272,6 +272,38 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
 
     </news>
   </extension>
+</addon><addon id="plugin.video.blacklodge" name="Blacklodge" provider-name="bob" version="1.06.26g">
+    <requires>
+        <import addon="resource.images.blacklodge.artwork" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.six" />
+        <import addon="script.module.kodi-six" />
+        <import addon="script.module.simplejson" />
+        <import addon="script.module.blackscrapers" />
+        <import addon="script.module.resolveurl" />
+    </requires>
+    <extension library="blacklodge.py" point="xbmc.python.pluginsource">
+        <provides>video</provides>
+    </extension>
+    <extension library="service.py" point="xbmc.service" start="startup" />
+    <extension point="xbmc.addon.metadata">
+        <reuselanguageinvoker>false</reuselanguageinvoker>
+        <summary lang="en_GB">Blacklodge</summary>
+        <description lang="en_GB">Fetches official stream urls/ids from various streaming services, and sends them to their equivalent Kodi add-on for playback.[CR]NOTE: This add-on uses free and legal resources for it's purposes. User has to have installed and configured (with linked active account where required) the supported services' equivalent add-ons in order to achieve playback.</description>
+        <platform>all</platform>
+        <license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+        <forum />
+        <website />
+        <source />
+        <disclaimer lang="en_GB">This project uses the TMDb, JustWatch, Trakt, Fanart.tv APIs, but is not affiliated nor endorsed by any of their respective ogranisations.[CR]Please support these ogranisations however you can.</disclaimer>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+        <news>
+- See Changelog on Tools menu
+        </news>
+    </extension>
 </addon><addon id="plugin.video.cinebox" version="3.1.1" name="CINEBOX [COLOR red]TrainAgain[/COLOR]" provider-name="@TrainAgain2">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -532,7 +564,7 @@ In addition to what livestreams allowed you to do, you can now,
 	<extension point="xbmc.python.pluginsource" library="luc_kodi.py">
 		<provides>video</provides>
 	</extension>
-	<extension point="xbmc.service" library="service.py" />
+	
 	<extension point="xbmc.python.module" library="resources/lib/" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
@@ -776,6 +808,24 @@ Fixed autosub addon exclusions
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="plugin.video.sallts" version="6.03.02" name="SALTS Redux" provider-name="kodifitzwell">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0" />
+		<import addon="script.module.requests" />
+	</requires>
+	<extension point="xbmc.python.pluginsource" library="resources/lib/router.py">
+		<provides>video</provides>
+	</extension>
+	<extension point="xbmc.service" library="resources/lib/service.py" />
+	<extension point="xbmc.addon.metadata">
+		<reuselanguageinvoker>true</reuselanguageinvoker>
+		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+		<disclaimer lang="en">The author of this addon does not host any of the content which is found and has no affiliation with any of the content providers.[CR]The author is in no way affiliated with Kodi, Team Kodi, or the XBMC Foundation.</disclaimer>
+		<summary>Stream All The Sources.[CR]</summary>
+		<description lang="en">This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</description>
+		<news>INFO: For latest changes see Changelog within add-on.</news>
+		<assets><icon>salts.png</icon><fanart>salts_fanart.jpg</fanart></assets>
+	</extension>
 </addon><addon id="plugin.video.scrubsv2" version="5.1.43" name="[COLOR orange]Scrubs v2[/COLOR]" provider-name="JewBMX">
     <requires>
         <import addon="script.module.six" />
@@ -1803,6 +1853,38 @@ Fixed autosub addon exclusions
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
+</addon><addon id="repository.thelab" name="TheLab Repository" version="23.9.10" provider-name="[COLORpurple]• [COLORorchid]Tech [COLORdarkorchid]E [COLORplum]Coyote [COLORpurple]•[/COLOR]">
+    <extension point="xbmc.addon.repository" name="TheLab Repository">
+        <dir minversion="20.0">
+            <info compressed="false">https://th3l48.github.io/TheLab/nexus/zips/addons.xml</info>
+            <checksum>https://th3l48.github.io/TheLab/nexus/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://th3l48.github.io/TheLab/nexus/zips/</datadir>
+        </dir>
+        <dir minversion="19.0" maxversion="19.9.0">
+            <info compressed="false">https://th3l48.github.io/TheLab/matrix/zips/addons.xml</info>
+            <checksum>https://th3l48.github.io/TheLab/matrix/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://th3l48.github.io/TheLab/matrix/zips/</datadir>
+        </dir>
+        <dir minversion="18.0" maxversion="18.9.0">
+            <info compressed="false">https://th3l48.github.io/TheLab/leia/zips/addons.xml</info>
+            <checksum>https://th3l48.github.io/TheLab/leia/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://th3l48.github.io/TheLab/leia/zips/</datadir>
+        </dir>
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>TheLab Repository</summary>
+        <description>TheLab Repository</description>
+        <platform>all</platform>
+    <assets>
+        <icon>icon.png</icon>
+        <fanart>fanart.jpg</fanart>
+    </assets>
+    </extension>
 </addon><addon id="repository.umbrella" name="Umbrella Repository" version="2.2.6" provider-name="Umbrella">
     <extension point="xbmc.addon.repository" name="Umbrella Repository">
         <dir minversion="18.9.701" maxversion="19.5">

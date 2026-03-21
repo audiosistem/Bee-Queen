@@ -1,0 +1,10 @@
+  TODO:
+- downloader, select dialog
+
+  [COLOR orange][B]Version 6.03[/B][/COLOR]
+- (Experimental) Added FlickList.tv personal lists and watched/resume points.
+- Initial release.
+
+  [COLOR orange][B]CREDITS[/B][/COLOR]
+- Viren070, k3l3vra, Fen, Venom.
+

@@ -9,7 +9,7 @@
 	<extension point="xbmc.python.pluginsource" library="luc_kodi.py">
 		<provides>video</provides>
 	</extension>
-	<extension point="xbmc.service" library="service.py" />
+	<!--<extension point="xbmc.service" library="service.py" />-->
 	<extension point="xbmc.python.module" library="resources/lib/" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
