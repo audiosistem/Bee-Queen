@@ -689,103 +689,6 @@ In addition to what livestreams allowed you to do, you can now,
 		<news>INFO: For latest changes see Changelog within add-on.</news>
 		<assets><icon>pov.png</icon><fanart>pov_fanart.png</fanart></assets>
 	</extension>
-</addon><addon id="plugin.video.romanianpack" name="[B][COLOR FFFDBD01]MRSP Lite[/COLOR][/B]" version="1.2.52" provider-name="Sarsailă, [B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
-  <requires>
-    <import addon="xbmc.python" version="3.0.0" />
-	<import addon="script.module.requests" version="2.22.0" />
-    <import addon="script.module.resolveurl" version="5.0.06" />
-    <import addon="plugin.video.elementum" optional="true" />
-    <import addon="script.module.torrent2http" />
-    <import addon="repository.angelitto" version="1.0.0" />
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="default.py">
-        <provides>video</provides>
-  </extension>
-  <extension point="kodi.context.item">
-    <menu id="kodi.core.main">
-        <item library="resources/lib/context.py">
-            <label>[B][COLOR FFFDBD01]Play with MRSP[/COLOR][/B]</label>
-            <visible>String.IsEqual(Window(10000).Property(mrsp.context_menu_enabled),true) + !String.StartsWith(ListItem.path,plugin://plugin.video.romanianpack/) + [String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(ListItem.dbtype,movie)]</visible>
-        </item>
-    </menu>
-  </extension>
-  <extension point="xbmc.service" name="mrsp.service" library="service.py" />
-  <extension point="xbmc.addon.metadata">
-	<summary>Motor de căutare și redare Torente</summary>
-    <description>[B][COLOR FF009900]Browser și Player pentru torente video[/COLOR][/B]</description>
-    <platform>all</platform>
-    <disclaimer lang="en">The author of this addon do not host any of the content which is found and have no affiliation with any of the content providers. This addon simply searches websites for content. Use at your own risk!</disclaimer>
-    <disclaimer lang="ro">Autorul acestui supliment nu găzduiește conținutul găsit și nu are nicio legătură cu furnizorii de conținut. Acest supliment doar caută conținutul furnizat de site-uri web. Folosiți-l pe propria răspundere! </disclaimer>
-    <news>
-1.2.34
-- Added Torrentio
-
-1.2.25
-- Added TorrServer
-
-1.2.24
-- Added Comet, Meteor, Mediafusion and Heartive providers
-
-1.2.13
-- Removed all streaming websites support.
-- The addon is now strictly Torrent-based.
-- Cleaned up Settings menu.
-- Direct access to Torrents menu on startup.
-- Code optimization and performance improvements.
-
-1.2.12
-- Fixed some small bugs
-
-1.2.11
-- Fixed Recente
-- Enhanced UI
-- Better filterring for Filelist, Uindex and Speedapp
-- Better search with TMDb Player (MRSP Lite)
-- Fixed MISC: Mod Cautare Context Global Si Trakt
-
-1.2.10
-- Fixed YTS
-
-1.2.9
-- Fixed Speedapp
-
-1.2.8
-- Fixed marked as watched in Trakt
-- Fixed the section Văzute
-- Fixed cleaning for Văzute, Favorite and Căutare
-
-1.2.7
-- Fixed Trakt
-- Added Trakt Favorited and Anticipated lists
-- Added Trakt User Lists
-- Fixed MetaInfo IMDb
-
-1.2.6
-Fixed YTS
-
-1.2.5
-Added UIndex
-
-1.2.4
-- Fixed watched status in Kodi
-when using context and "Play with MRSP"
-- Fixed some visual issues
-
-1.2.3
-- Fixed watched status in Kodi
-when using TMDB Helper and MRSP Lite player
-
-1.2.2
-Fixed Speedapp
-
-1.2.0
-Fixed autosub addon exclusions
-    </news>
-    <assets>
-        <icon>icon.png</icon>
-		<fanart>fanart.jpg</fanart>
-    </assets>
-  </extension>
 </addon><addon id="plugin.video.rotv123" name="Rotv123" version="1.3.4" provider-name="1X,AS,Derzis si Geamanu">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -923,56 +826,6 @@ Fixed autosub addon exclusions
     <screenshot>resources/screenshot-02.jpg</screenshot>
   </assets>
 </extension>
-</addon><addon id="plugin.video.tmdbmovies" version="1.1.47" name="[B][COLOR FFFDBD01]TMDb Movies[/COLOR][/B]" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0" />
-        <import addon="script.module.requests" version="2.22.0" />
-    </requires>
-    
-    <extension point="xbmc.python.pluginsource" library="service.py">
-        <provides>video</provides>
-    </extension>
-    
-    <extension point="xbmc.service" library="service.py" />
-
-    
-    <extension point="kodi.context.item">
-        <menu id="kodi.core.main">
-            
-            
-            <item library="context.py">
-                <label>[B][COLOR FF6AFB92]TMDb INFO[/COLOR][/B]</label>
-                <visible>
-                    String.IsEqual(Window(10000).Property(TMDbMovies.ContextMenu),true) + 
-                    !String.IsEmpty(ListItem.Title) +
-                    [String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode) | !String.IsEmpty(ListItem.Property(mediatype))]
-                </visible>
-            </item>
-
-            
-            <item library="context_extended.py">
-                <label>[B][COLOR FF33CCFF]TMDb Extended INFO[/COLOR][/B]</label>
-                <visible>
-                    String.IsEqual(Window(10000).Property(TMDbMovies.ExtendedContext),true) + 
-                    !String.IsEmpty(ListItem.Title) +
-                    [String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode) | !String.IsEmpty(ListItem.Property(mediatype))]
-                </visible>
-            </item>
-            
-        </menu>
-    </extension>
-
-    <extension point="xbmc.addon.metadata">
-        <summary lang="ro">Sursa ta de filme și seriale</summary>
-        <description lang="ro">[B][COLOR FF009900]Filme și Seriale populare folosind API-ul TMDB.[/COLOR][/B]</description>
-        <disclaimer lang="ro">Acest addon este un motor de căutare video. Nu găzduim conținut.</disclaimer>
-        <language>ro</language>
-        <platform>all</platform>
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>icon.png</fanart>
-        </assets>
-    </extension>
 </addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.58">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
@@ -1431,6 +1284,88 @@ Fixed autosub addon exclusions
             <screenshot>resources/media/screenshot-3.png</screenshot>
         </assets>
     </extension>
+</addon><addon id="repository.Magnetic" name="Magnetic Repo" version="1.1.0b" provider-name="1-cool-guy">
+        <requires>
+            <import addon="xbmc.addon" version="12.0.0" />
+        </requires>
+        <extension point="xbmc.addon.repository" name="Magnetic Repo">
+        	<dir>
+            <info compressed="false">https://magnetic.website/__zips/addons.xml</info>
+            <checksum>https://magnetic.website/__zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://magnetic.website/__zips/</datadir>
+            <hashes>false</hashes>
+            </dir>
+			<dir>
+		    <info compressed="false">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/</datadir>
+            <hashes>false</hashes>
+			</dir>
+			<dir>
+            <info compressed="false">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/</datadir>
+            </dir>
+            <dir>
+            <info compressed="false">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/jenaddon/repository.jenrepo/master/zips/</datadir>
+            <hashes>false</hashes>
+            </dir>	
+			<dir>
+            <info compressed="false">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/a4k-openproject/repository.openscrapers/master/zips/</datadir>
+        </dir>
+		<dir>
+    <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+    <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+    <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+</dir>
+        </extension>
+        <extension point="xbmc.addon.metadata">
+            <summary>Official Magnetic Repository</summary>
+            <description>Welcome to magnetic repo. Please enjoy</description>
+            <platform>all</platform>
+            <genre>movies,usa</genre>
+			<assets>
+			    <icon>icon.png</icon>
+			</assets>
+        </extension>
+    </addon><addon id="repository.alfa-addon" name="[COLOR red]Alfa Add-on[/COLOR] Repo" version="1.0.8" provider-name="Alfa Development Group">
+    <requires>
+        <import addon="xbmc.addon" version="12.0.0" />
+    </requires>
+    <extension point="xbmc.addon.repository" name="Alfa Add-on Repo">
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/alfa-addon/alfa-repo/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/alfa-addon/alfa-repo/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/alfa-addon/alfa-repo/master/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="ca">Repositori d'Alfa Add-on</summary>
+        <summary lang="en">Alfa Add-on Repository</summary>
+        <summary lang="es">Repositorio de Alfa Add-on</summary>
+        <summary lang="it">Repository di Alfa Add-on</summary>
+        <summary lang="pt">Repositório de Alfa Add-on</summary>
+        <description lang="ca">Repositori per instal·lar Alfa Addon, un dels principals add-ons de contingut de parla hispana al món, successor al conegut Pelisalacarta-ce. També es proveeix algunes utilitats addicionals.</description>
+        <description lang="en">Repository to install Alfa Addon, one of the main Spanish-speaking content add-ons in the world, successor to the well-known Pelisalacarta-ce. Some additional utilities are also provided.</description>
+        <description lang="es">Repositorio para instalar Alfa Addon, uno de los principales add-ons de contenido de habla hispana en el mundo, sucesor al conocido Pelisalacarta-ce. También se provee de algunas utilidades adicionales.</description>
+        <description lang="it">Repository per installare Alfa Addon, uno dei principali add-on di contenuti di lingua spagnola nel mondo, successore del noto Pelisalacarta-ce. Vengono fornite anche alcune utilità aggiuntive.</description>
+        <description lang="pt">Repositório para instalação do Alfa Addon, um dos principais add-ons de conteúdo em língua espanhola do mundo, sucessor do conhecido Pelisalacarta-ce. Alguns utilitários adicionais também são fornecidos.</description>
+        <disclaimer lang="ca">[COLOR red]Els propietaris i distribuïdors d'aquest complemento no proveeixen ni distribueixen cap contingut mostrat pel complemento ni tenen affiliación alguna amb els proveïdors de l'contingut.[/COLOR]</disclaimer>
+        <disclaimer lang="en">[COLOR red]The owners and submitters to this add-on do not host or distribute any of the content displayed by these add-ons nor do they have any affiliation with the content providers.[/COLOR]</disclaimer>
+        <disclaimer lang="es">[COLOR red]Los propietarios y distribuidores de este add-on no proveen ni distribuyen ningún contenido mostrado por el add-on ni tienen afiliación alguna con los proveedores del contenido.[/COLOR]</disclaimer>
+        <disclaimer lang="it">[COLOR red]I proprietari e i distributori di questo add-on aggiuntivo non forniscono o distribuiscono alcun contenuto visualizzato dal add-on aggiuntivo né hanno alcuna affiliazione con i fornitori di contenuti.[/COLOR]</disclaimer>
+        <disclaimer lang="pt">[COLOR red]Os proprietários e distribuidores deste add-on não fornecem ou distribuem qualquer conteúdo exibido pelo add-on nem têm qualquer afiliação com os provedores de conteúdo.[/COLOR]</disclaimer>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+        <source>https://github.com/alfa-addon/alfa-repo</source>
+    </extension>
 </addon><addon id="repository.angelitto" name="[B][COLOR FFC45AEC]Angelitto Repository[/COLOR][/B]" version="1.0.2" provider-name="[B][COLOR FF6AFB92]angelitto[/COLOR][/B]">
     <extension point="xbmc.addon.repository" name="Angelitto Repository">
         <dir>
@@ -1471,6 +1406,124 @@ Fixed autosub addon exclusions
         <assets>
             <icon>icon.png</icon>
         </assets>
+    </extension>
+</addon><addon id="repository.balandro" name="[COLOR aqua]Balandro[/COLOR] Repo" version="4.0.1" provider-name="Team Balandro">
+
+    <extension point="xbmc.addon.repository" name="balandro repo">
+        <dir>
+            <info>https://raw.githubusercontent.com/repobal/base/main/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/repobal/base/main/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/repobal/base/main/</datadir>
+        </dir>
+    </extension>
+
+    <extension point="xbmc.addon.metadata">
+       <summary>Repositorio de Balandro</summary>
+       <assets>
+          <icon>icon.png</icon>
+          <fanart>fanart.jpg</fanart>
+       </assets>
+       <news>
+       [COLOR cyan][B]Repositorio para instalar el addon de vídeo Balandro[/B][/COLOR]
+
+       [COLOR darkorange][B]Versión  [/COLOR][COLOR yellow]4.0.1[/COLOR][COLOR red]  Marzo 2024[/B][/COLOR]
+
+       [COLOR goldenrod][B]Media Centers:[/B][/COLOR]
+           [COLOR tan][B]Kodi Versiones Oficiales Soportadas:[/B][/COLOR]
+           [COLOR plum][B]22.x Piers,  21.x Omega,  20.x Nexus,  19.x Matrix,[/B][/COLOR]
+           [COLOR plum][B]18.x Leia  y  17.x Krypton[/B][/COLOR]
+
+       [COLOR springgreen][B]Fuente[/COLOR]  [COLOR cyan]repobal.github.io/base/[/B][/COLOR]
+
+       [COLOR firebrick][B]Team[/COLOR]  [COLOR orange]https://github.com/repobal[/B][/COLOR]
+
+       [COLOR limegreen][B]Contacto:[/B][/COLOR]
+           Foro  www.mimediacenter.info/foro/
+           Telegram  t.me/balandro_asesor
+           Team  t.me/Balandro_team
+       </news>
+       <summary>Balandro es un Navegador de Páginas Webs</summary>
+       <description>[COLOR moccasin][B]Navega con Kodi por Páginas Webs para poder ver sus contenidos de manera fácil. [COLOR yellow]Balandro es desde el año [COLOR cyan]2018[COLOR yellow] un MOD derivado de [COLOR yellowgreen]Pelisalacarta y Alfa[COLOR yellow],[COLOR mediumaquamarine] y tiene como objeto, permitir visualizar [COLOR deepskyblue]Películas[COLOR mediumaquamarine], [COLOR hotpink]Series[COLOR mediumaquamarine], [COLOR darkcyan]Documentales[COLOR mediumaquamarine], etc., todo a través de Internet y directamente desde su sistema Media Center. [COLOR orchid]Este Add-On es tan solo un mero Ejercicio de Aprendizaje del Lenguaje de Programación Python y se distribuye sin Ningún Contenido Multimedia adjunto al mismo [COLOR lightgrey][I]En consecuencia solo las Webs son Plenamente Responsables de los contenidos que publiquen.[/I][/B][/COLOR]</description>
+       <disclaimer>[COLOR aqua][B]Los Propietarios y Distribuidores de este Add-On no Proveen ni Distribuyen Ningún Contenido Mostrado por el Add-On, ni Tienen Afiliación alguna con los Proveedores/Webs de contenidos. [COLOR tan]Está Prohibida su distribución, solo ó junto con Contenidos Multimedia Protegidos por los Derechos de Autor. [COLOR chocolate]Si este tipo de contenido está Prohibido en su País, solamente Usted será el Responsable de su uso. [COLOR white]La vulneración de estas prohibiciones Exonerarán de cualquier Culpa a sus Autores, [COLOR red]Siendo el unico Responsable quien lo haya Distribuido ó Utilizado Ilegalmente.[/B][/COLOR]</disclaimer>
+       <platform>all</platform>
+       <license>GNU GPL v3</license>
+       <source>https://repobal.github.io/base/</source>
+       <forum>https://www.mimediacenter.info/foro/</forum>
+    </extension>
+
+    <extension point="xbmc.service" library="service.py" start="login|startup" />
+</addon><addon id="repository.bugatsinho" name=" Bugatsinho repository" version="2.8" provider-name="Bugatsinho">
+    <extension point="xbmc.addon.repository" name="Bugatsinho repository">
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/bugatsinho/bugatsinho.github.io/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/bugatsinho/bugatsinho.github.io/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/bugatsinho/bugatsinho.github.io/master/_zips</datadir>
+            <hashes>false</hashes>
+        </dir>
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/teamuniversal/scrapers/master/_modules4all/zips/</datadir>
+            <hashes>false</hashes>
+        </dir>
+        <dir>
+            <info>https://raw.githubusercontent.com/jsergio123/zips/master/addons.xml.gz</info>
+			<checksum verify="sha256">https://raw.githubusercontent.com/jsergio123/zips/master/addons.xml.gz.sha256</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/jsergio123/zips/master/</datadir>
+			<artdir>https://raw.githubusercontent.com/jsergio123/zips/master/</artdir>
+			<hashes>sha256</hashes>
+        </dir>
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+        </dir>
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/bugatsinho/python-koding/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/bugatsinho/python-koding/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/bugatsinho/python-koding/master/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Bugatsinho repository</summary>
+        <description>This repository contains Greek, Spanish and other addons!Read first each addon's description!</description>
+        <assets>
+			<icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+		</assets>
+        <platform>all</platform>
+    </extension>
+</addon><addon id="repository.cMaNWizard" name="cMaN's Wizard Repository" version="3.5" provider-name="cMaN">
+        <extension point="xbmc.addon.repository" name="cMaN's Wizard Repository">
+		<dir>		
+            <info compressed="false">https://cmanbuildsxyz.com/cman/repo/addons.xml</info>
+            <checksum>https://cmanbuildsxyz.com/cman/repo/addons.xml.md5</checksum>
+            <datadir zip="true">https://cmanbuildsxyz.com/cman/repo/</datadir>
+		</dir>
+		<dir>
+			<info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+        </dir>
+        <dir>
+			<info compressed="false">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/totalrevolution/python-koding/master/zips/</datadir>
+		</dir>
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/</datadir>
+		</dir>
+        </extension>
+        <extension point="xbmc.addon.metadata">
+            <summary>Install all the latest Builds</summary>
+            <description>Welcome to the New and Improved cMaN Wizard for all your Community Builds.</description>
+            <platform>all</platform>
+		<assets>
+			<icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+		</assets>
     </extension>
 </addon><addon id="repository.cralin" name="cralin's Repository" version="1.0.11" provider-name="cralin">
 	<extension point="xbmc.addon.repository" name="cralin's Repository">
@@ -1546,6 +1599,116 @@ Fixed autosub addon exclusions
             <fanart>fanart.jpg</fanart>
 		</assets>
 	</extension>
+</addon><addon id="repository.diggz" name="Diggz Repository" version="24" provider-name="Diggz">
+    <extension point="xbmc.addon.repository" name="Diggz Repository">
+        <dir minversion="20.90.0" maxversion="22.9.9">
+            <info compressed="false">https://raw.githubusercontent.com/nebulous42069/Omega/master/omega/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/nebulous42069/Omega/master/omega/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/nebulous42069/Omega/master/omega/zips/</datadir>
+        </dir>
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/Zaxxon709/zaxxon/main/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/Zaxxon709/zaxxon/main/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/Zaxxon709/zaxxon/main/zips/</datadir>
+        </dir>
+        <dir minversion="20.9.1">
+            <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/</datadir>
+        </dir>		
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Diggz Repository</summary>
+        <description>Diggz Kodi Repository.</description>
+        <disclaimer />
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
+</addon><addon id="repository.dobbelina" name="[COLOR pink]Dobbelina Repository[/COLOR]" version="1.0.4" provider-name="dobbelina">
+    <extension point="xbmc.addon.repository" name="[COLOR pink]Dobbelina Repository[/COLOR]">
+    <dir>
+        <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+</dir>
+<dir>
+        <info compressed="false">https://raw.githubusercontent.com/dobbelina/repository.dobbelina/master/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/dobbelina/repository.dobbelina/master/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/dobbelina/repository.dobbelina/master/</datadir>
+		</dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Unofficial Addons for Kodi</summary>
+		<description>For Cumination Updates
+Please visit
+https://github.com/dobbelina/repository.dobbelina/issues
+for support!
+
+Kodi is a registered trademark of the XBMC Foundation. We are not connected to or in any other way affiliated with Kodi, Team Kodi, or the XBMC Foundation.</description>
+<disclaimer>The owners and submitters to this repository do not host or distribute any of the content displayed by these addons nor do they have any affiliation with the content providers.</disclaimer>
+<forum>https://github.com/dobbelina/repository.dobbelina/issues</forum>
+        <platform>all</platform>
+    </extension>
+</addon><addon id="repository.dregs" name="[COLOR red]Dr[/COLOR]e[COLOR black]Gs[/COLOR] [COLORcyan]Repository[/COLOR]" version="2.36" provider-name="[COLORchocolate]@by_black[COLORgold]_eagle[/COLOR]">
+  <requires>
+    <import addon="xbmc.addon" version="12.0.0" />  
+  </requires>
+  <extension point="xbmc.addon.repository" name="[COLOR red]Dregs [COLOR cyan]Repositorio[/COLOR]">
+    <dir>
+    <info compressed="true">https://raw.github.com/dregs1/dregs1.github.io/master/addons.xml</info>
+    <checksum>https://raw.github.com/dregs1/dregs1.github.io/master/addons.xml.md5</checksum>
+    <datadir zip="true">https://raw.github.com/dregs1/dregs1.github.io/master</datadir>
+    <hashes>false</hashes>
+</dir>
+<dir minversion="29.9.9">
+      <info compressed="true">https://raw.github.com/dregs1/dregs1.github.io/master/piers/addons.xml</info>
+      <checksum>https://raw.github.com/dregs1/dregs1.github.io/master/piers/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.github.com/dregs1/dregs1.github.io/master/piers</datadir>
+      <hashes>false</hashes>
+  </dir>
+<dir minversion="20.0.0">
+      <info compressed="true">https://raw.github.com/dregs1/dregs1.github.io/master/omega/addons.xml</info>
+      <checksum>https://raw.github.com/dregs1/dregs1.github.io/master/omega/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.github.com/dregs1/dregs1.github.io/master/omega</datadir>
+      <hashes>false</hashes>
+  </dir>
+  <dir minversion="19.9.9">
+      <info compressed="true">https://raw.github.com/dregs1/dregs1.github.io/master/nexus/addons.xml</info>
+      <checksum>https://raw.github.com/dregs1/dregs1.github.io/master/nexus/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.github.com/dregs1/dregs1.github.io/master/nexus</datadir>
+      <hashes>false</hashes>
+  </dir>   
+  <dir minversion="19.0.0">
+      <info compressed="true">https://raw.github.com/dregs1/dregs1.github.io/master/matrix/addons.xml</info>
+      <checksum>https://raw.github.com/dregs1/dregs1.github.io/master/matrix/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.github.com/dregs1/dregs1.github.io/master/matrix</datadir>
+      <hashes>false</hashes>
+  </dir>    
+  <dir minversion="17.0.0" maxversion="18.9.0">
+      <info compressed="true">https://raw.github.com/dregs1/dregs1.github.io/master/leia/addons.xml</info>
+      <checksum>https://raw.github.com/dregs1/dregs1.github.io/master/leia/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.github.com/dregs1/dregs1.github.io/master/leia</datadir>
+      <hashes>false</hashes>
+  </dir>
+  <dir minversion="16.0.0" maxversion="17.0.0">
+      <info compressed="true">https://raw.github.com/dregs1/dregs1.github.io/master/krypton/addons.xml</info>
+      <checksum>https://raw.github.com/dregs1/dregs1.github.io/master/krypton/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.github.com/dregs1/dregs1.github.io/master/krypton</datadir>
+      <hashes>false</hashes>
+  </dir>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary>repositorio Dregs</summary>
+    <description>repositorio oficial Dregs- Proibido reproducao sem autorização prévia</description>
+    <disclaimer />
+    <platform>all</platform>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
 </addon><addon id="repository.hub" name="Hub Repo" version="1.1.3" provider-name="1x">
     <extension point="xbmc.addon.repository" name="Hub Repo">
 		<dir>
@@ -1582,6 +1745,28 @@ Fixed autosub addon exclusions
 <fanart>fanart.jpg</fanart>
 </assets>
 </extension>
+</addon><addon id="repository.jewrepo" name="[COLOR purple]JewRepo[/COLOR]" version="1.6.0" provider-name="JewBMX">
+    <extension point="xbmc.addon.repository" name="[COLOR purple]JewRepo[/COLOR]">
+    <dir>
+        <info compressed="false">https://raw.githubusercontent.com/jewbmx/repo/master/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/jewbmx/repo/master/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/jewbmx/repo/master/zips/</datadir>
+    </dir>
+    <dir>
+        <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+    </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Free the People, Free the World!</summary>
+        <description>JewBMX's Official Repository</description>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>icon.png</fanart>
+        </assets>
+    </extension>
 </addon><addon id="repository.jurialmunkey" name="jurialmunkey Alpha Repository" version="3.5" provider-name="jurialmunkey">
     <extension point="xbmc.addon.repository" name="jurialmunkey Alpha Repository">
         <dir>
@@ -1626,6 +1811,34 @@ Fixed autosub addon exclusions
         <description>kodifitzwell repository</description>
         <assets><icon>icon.png</icon></assets>
     </extension>
+</addon><addon id="repository.mbebe" name="mbebe" version="0.10" provider-name="mbebe">
+        <extension point="xbmc.addon.repository" name="mbebe">
+            <dir>
+                <info compressed="false">https://raw.githubusercontent.com/mbebe/blomqvist/master/zips/addons.xml</info>
+                <checksum>https://raw.githubusercontent.com/mbebe/blomqvist/master/zips/addons.xml.md5</checksum>
+                <datadir zip="true">https://raw.githubusercontent.com/mbebe/blomqvist/master/zips/</datadir>
+            </dir>
+            <dir>
+                <info compressed="false">https://raw.githubusercontent.com/Proximus20001/mb-support/master/zips/addons.xml</info>
+                <checksum>https://raw.githubusercontent.com/Proximus20001/mb-support/master/zips/addons.xml.md5</checksum>
+                <datadir zip="true">https://raw.githubusercontent.com/Proximus20001/mb-support/master/zips</datadir>
+            </dir>
+            <dir>
+                <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+                <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+                <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+            </dir>
+        </extension>
+        <extension point="xbmc.addon.metadata">
+            <summary>...</summary>
+            <description>...</description>
+            <platform>all</platform>
+            <assets>
+                <icon>icon.png</icon>
+                <fanart>fanart.jpg</fanart>            
+            </assets>
+        </extension>
+            
 </addon><addon id="repository.oldsalt" name="Old Salt Repository" version="1.2" provider-name="Jax">
 <extension point="xbmc.addon.repository" name="Old Salt Repository">
     <dir>
