@@ -1,5 +1,45 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addons><addon id="plugin.audio.mp3streams" name="MP3 Streams" version="2023.2.31" provider-name="Jon Bovi, Slamious, Diggz">
+<addons><addon id="One.repo" version="1.16" name="[B]Repositorio: [COLOR aquamarine]ONE[/COLOR]PLAY[/B]" provider-name="Team ONEPLAY">
+  <requires>
+    <import addon="xbmc.addon" version="12.0.0" />
+  </requires>
+  <extension point="xbmc.addon.repository" name="OnePlay Repositorio">
+    <dir>
+      <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+      <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips</datadir>
+      <hashes>false</hashes>
+    </dir>
+    <dir>
+      <info compressed="false">https://raw.githubusercontent.com/oneplayhd/oneplayhd.github.io/master/addons.xml</info>
+      <checksum>https://raw.githubusercontent.com/oneplayhd/oneplayhd.github.io/master/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.githubusercontent.com/oneplayhd/oneplayhd.github.io/master</datadir>
+      <hashes>false</hashes>
+    </dir>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+      <platform>all</platform>
+      <summary lang="pt_BR">••• Repositorio Oficial •••</summary>
+      <description lang="pt_BR">[COLOR aquamarine]ONE[/COLOR]REPO é um agregador de addons. Assim como o Google.com, o OnePlay atua exclusivamente como um indexador e organizador de links de conteúdos disponibilizados publicamente na internet.</description>
+      <disclaimer lang="pt_BR">[COLOR aquamarine]O plugin atua unicamente como um agregador de links. Não hospedamos, transmitimos ou reproduzimos qualquer conteúdo de mídia. A responsabilidade pelo conteúdo acessado é exclusiva do respectivo provedor ou fonte original.[/COLOR]</disclaimer>
+    <news>
+[COLOR lime]•[/COLOR] Adaptação das informações de acordo com a versão atual do Kodi.
+[COLOR lime]•[/COLOR] Adição de capturas de tela em "resources" para visualização prévia.
+[COLOR lime]•[/COLOR] Atualização dos links de apontamento para o GitHub.
+[COLOR lime]•[/COLOR] O repositório oferecerá suporte apenas para as versões mais recentes.
+[COLOR lime]•[/COLOR] Atualizado os links de apontamento para raw.usercontent
+[COLOR lime]•[/COLOR] Adicionado o repositorio Gujal00: Fork do UrlResolver para XBMC/Kodi.
+[COLOR lime]•[/COLOR] [COLOR aquamarine]Atualização em: 2026-01-11[/COLOR]
+    </news>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+      <screenshot>resources/screenshot-1.jpg</screenshot>
+      <screenshot>resources/screenshot-2.jpg</screenshot>
+      <screenshot>resources/screenshot-3.jpg</screenshot>
+    </assets>
+  </extension>
+</addon><addon id="plugin.audio.mp3streams" name="MP3 Streams" version="2023.2.31" provider-name="Jon Bovi, Slamious, Diggz">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.future" />
@@ -1332,7 +1372,50 @@ In addition to what livestreams allowed you to do, you can now,
 			    <icon>icon.png</icon>
 			</assets>
         </extension>
-    </addon><addon id="repository.alfa-addon" name="[COLOR red]Alfa Add-on[/COLOR] Repo" version="1.0.8" provider-name="Alfa Development Group">
+    </addon><addon id="repository.StreamArmy" name="[COLOR crimson]S[COLOR silver]tream Army Addons[/COLOR]" version="17.0.000" provider-name="@Nemzzy668 / @_Manc_ // LordJD">
+	<extension point="xbmc.addon.repository" name="Stream Army">
+		<dir>
+			<info compressed="false">https://raw.githubusercontent.com/nemesis668/repository.streamarmy18-19/main/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/nemesis668/repository.streamarmy18-19/main/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/nemesis668/repository.streamarmy18-19/main/zips/</datadir>
+		</dir>
+		<dir>
+			<info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+		</dir>
+		<dir>
+			<info compressed="false">https://raw.githubusercontent.com/nemesis668/repository.streamarmy/master/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/nemesis668/repository.streamarmy/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/nemesis668/repository.streamarmy/master/zips/</datadir>
+		</dir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>Stream Army Repo</summary>
+		<description>Repo For Stream Army, Bought to you by @Nemzzy668 /  @_MANC_</description>
+		<disclaimer>Educational use only, not for public release.</disclaimer>
+		<platform>all</platform>
+	</extension>
+</addon><addon id="repository.addon-rajada" name="[B][COLOR FFFF6B00]Repositório Rajada[/COLOR][/B]" version="1.2" provider-name="gbchr">
+    <extension point="xbmc.addon.repository" name="Repositório Rajada">
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/addon-rajada/addon-rajada.github.io/main/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/addon-rajada/addon-rajada.github.io/main/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/addon-rajada/addon-rajada.github.io/main/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>[COLOR FFFF6B00]Repositório Rajada[/COLOR]</summary>
+        <description />
+        <disclaimer />
+        <platform>all</platform>
+		<website>https://addon-rajada.github.io/</website>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon><addon id="repository.alfa-addon" name="[COLOR red]Alfa Add-on[/COLOR] Repo" version="1.0.8" provider-name="Alfa Development Group">
     <requires>
         <import addon="xbmc.addon" version="12.0.0" />
     </requires>
@@ -1452,6 +1535,27 @@ In addition to what livestreams allowed you to do, you can now,
     </extension>
 
     <extension point="xbmc.service" library="service.py" start="login|startup" />
+</addon><addon id="repository.bingie" name="Bingie Repository" provider-name="matke" version="1.0.0">
+	<extension point="xbmc.addon.repository" name="Bingie Repository">
+		<requires>
+			<import addon="xbmc.addon" version="12.0.0" />
+		</requires>
+		<dir minversion="20.9.1">
+			<info compressed="false">https://raw.githubusercontent.com/matke-84/repository.bingie/main/omega/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/matke-84/repository.bingie/main/omega/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/matke-84/repository.bingie/main/omega/</datadir>
+		</dir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary lang="en">Bingie Repository</summary>
+        <description lang="en">A repository for Bingie skin.</description>
+        <disclaimer />
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+	</extension>
 </addon><addon id="repository.bugatsinho" name=" Bugatsinho repository" version="2.8" provider-name="Bugatsinho">
     <extension point="xbmc.addon.repository" name="Bugatsinho repository">
         <dir>
@@ -1839,6 +1943,74 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
             </assets>
         </extension>
             
+</addon><addon id="repository.michaz" name="Michaz Repository" provider-name="Michaz" version="5.0">
+	<extension point="xbmc.addon.repository" name="Michaz Repository">
+		<dir>
+			<info compressed="false">https://michaz1988.github.io/repo/addons.xml</info>
+			<checksum>https://michaz1988.github.io/repo/addons.xml.md5</checksum>
+			<datadir zip="true">https://michaz1988.github.io/repo/</datadir>
+		</dir>
+			<dir minversion="19.0.0" maxversion="19.9.0">
+			<info compressed="false">https://raw.github.com/kaffepausse71/SKINBASE19/master/addons.xml</info>
+			<checksum>https://raw.github.com/kaffepausse71/SKINBASE19/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.github.com/kaffepausse71/SKINBASE19/master/</datadir>
+		</dir>
+		<dir minversion="20.0.0" maxversion="20.9.0">
+			<info compressed="false">https://raw.github.com/kaffepausse71/SKINBASE.NEXUS/master/addons.xml</info>
+			<checksum>https://raw.github.com/kaffepausse71/SKINBASE.NEXUS/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.github.com/kaffepausse71/SKINBASE.NEXUS/master/</datadir>
+		</dir>
+		<dir minversion="21.0.0" maxversion="21.9.0">
+			<info compressed="false">https://raw.github.com/kaffepausse71/SKINBASE.OMEGA/master/addons.xml</info>
+			<checksum>https://raw.github.com/kaffepausse71/SKINBASE.OMEGA/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.github.com/kaffepausse71/SKINBASE.OMEGA/master/</datadir>
+		</dir>
+		<dir minversion="22.0.0" maxversion="22.9.0">
+			<info compressed="false">https://raw.github.com/kaffepausse71/SKINBASE.PEGASUS/master/addons.xml</info>
+			<checksum>https://raw.github.com/kaffepausse71/SKINBASE.PEGASUS/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.github.com/kaffepausse71/SKINBASE.PEGASUS/master/</datadir>
+		</dir>
+		<dir>
+			<info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+		</dir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<platform>all</platform>
+		<description lang="en">Addons by Michaz</description>
+		<website>https://michaz1988.github.io</website>
+		<assets>
+			<icon>icon.png</icon>
+		</assets> 
+	</extension>
+</addon><addon id="repository.nixgates" name="Nixgates Repo" version="2.2.0" provider-name="Nixgates">
+	<extension point="xbmc.addon.repository" name="Nixgates Repo">
+		<dir minversion="18.0">
+			<info compressed="false">https://raw.githubusercontent.com/nixgates/nixgates/master/repo/zips/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/nixgates/nixgates/master/repo/zips/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/nixgates/nixgates/master/repo/zips/</datadir>
+		</dir>
+		<dir minversion="18.0" maxversion="18.9.0">
+			<info compressed="false">https://raw.githubusercontent.com/nixgates/nixgates/master/leia/zips/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/nixgates/nixgates/master/leia/zips/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/nixgates/nixgates/master/leia/zips/</datadir>
+		</dir>
+		<dir minversion="18.9.0">
+			<info compressed="false">https://raw.githubusercontent.com/nixgates/nixgates/master/matrix/zips/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/nixgates/nixgates/master/matrix/zips/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/nixgates/nixgates/master/matrix/zips/</datadir>
+		</dir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>Nixgates</summary>
+		<description>Nixgates Repository</description>
+		<platform>all</platform>
+		<assets>
+			<icon>icon.png</icon>
+			<fanart>fanart.png</fanart>
+		</assets>
+	</extension>
 </addon><addon id="repository.oldsalt" name="Old Salt Repository" version="1.2" provider-name="Jax">
 <extension point="xbmc.addon.repository" name="Old Salt Repository">
     <dir>
@@ -2125,6 +2297,22 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
         </assets>
+    </extension>
+</addon><addon id="repository.vstream" name="vStream Repository" version="0.0.6" provider-name="Venom">
+    <extension point="xbmc.addon.repository" name="vStream XBMC Addon Repository">
+    <dir>
+        <info compressed="false">https://raw.githubusercontent.com/Kodi-vStream/venom-xbmc-addons/master/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/Kodi-vStream/venom-xbmc-addons/master/addons.xml.md5</checksum>
+        <datadir zip="true">https://github.com/Kodi-vStream/venom-xbmc-addons/raw/master/repo</datadir>
+    </dir>
+   </extension>
+
+    <extension point="xbmc.addon.metadata">
+        <summary lang="fr">vStream Repository</summary>
+        <description lang="fr">Installer vStream</description>
+        <summary lang="en">vStream Repository</summary>
+        <description lang="en">Download and install vStream</description>
+        <platform>all</platform>
     </extension>
 </addon><addon id="resource.images.blacklodge.artwork" name="BlackLodge Artwork" version="1.1.1" provider-name="bleak-lodge">
     <extension point="kodi.resource.images" compile="false" type="BlackLodge" />
@@ -3258,4 +3446,54 @@ Cod refactorizat pentru a se alinia cu actualizarile sitului
       <icon>icon.png</icon>
     </assets>
     </extension>
+</addon><addon id="vkkodi.repo" version="3.33" name="[B][COLOR yellow]Vikings - [COLOR orange]Repositorio Oficial! A Casa dos Melhores Add-ons BR[/COLOR][/COLOR][/B]" provider-name="Team Vikings">
+  <requires>
+    <import addon="xbmc.addon" version="12.0.0" />
+  </requires>
+  <extension point="xbmc.addon.repository" name="Vikings Repositorio">
+    <dir>
+      <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+      <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips</datadir>
+      <hashes>false</hashes>
+    </dir>
+    <dir minversion="16.0.0" maxversion="18.9.9"> 
+      <info compressed="false">https://raw.githubusercontent.com/vikingskoditeam/vikingskoditeam.github.io/master/leia/addons.xml</info>
+      <checksum>https://raw.githubusercontent.com/vikingskoditeam/vikingskoditeam.github.io/master/leia/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.githubusercontent.com/vikingskoditeam/vikingskoditeam.github.io/master/leia</datadir>
+      <hashes>false</hashes>
+    </dir>
+    <dir minversion="19.0.0"> 
+      <info compressed="false">https://raw.githubusercontent.com/vikingskoditeam/vikingskoditeam.github.io/master/matrix/addons.xml</info>
+      <checksum>https://raw.githubusercontent.com/vikingskoditeam/vikingskoditeam.github.io/master/matrix/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.githubusercontent.com/vikingskoditeam/vikingskoditeam.github.io/master/matrix</datadir>
+      <hashes>false</hashes>
+    </dir>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="pt_BR">Repositório Vikings levando os melhores addons a sua familia e aos quatro cantos do Mundo!!!</summary>
+    <description lang="pt_BR">
+[B][COLOR orange]Repositório Vikings, SEM BANIMENTO! SEM SCRIPT MALICIOSO!! PURO, LIMPO E SIMPLES!!![/COLOR][/B]
+
+[B][COLOR red]Repositório oficial Vikings Build - Proibido reprodução total ou parcial sem prévia autorização[/COLOR][/B]
+
+[B][COLOR white]Addons deste repositório é de uso gratuito!![/COLOR][/B]
+
+[B][COLOR firebrick]Proibido a venda dos add-ons contidos neste repositório[/COLOR][/B]
+    </description>
+    <disclaimer lang="pt_BR">[B][COLOR orange]Repositório Vikings é apenas um AGREGADOR de ADDONS e, assim como o Google.com, apenas agrega e organiza ADDONS DE TERCEIROS. Não somos responsáveis pelos arquivos aqui encontrados.[/COLOR][/B]</disclaimer>
+	<news>
+[COLOR lime]•[/COLOR] Adaptação das informações de acordo com a versão atual do Kodi.
+[COLOR lime]•[/COLOR] Atualização dos links de apontamento GitHub correção de falhas.
+[COLOR lime]•[/COLOR] Suporte para Kodi: [COLOR blue]Python 2 (16,17,18) e Python 3 (19+)[/COLOR].
+[COLOR lime]•[/COLOR] Adicionado o repositorio Gujal00: Fork do UrlResolver para XBMC/Kodi.
+[COLOR lime]•[/COLOR] [COLOR orange]Atualização em: 2026-01-11[/COLOR]
+	</news>
+    <platform>all</platform>
+    <source>https://vikingskoditeam.github.io</source>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
 </addon></addons>
