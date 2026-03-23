@@ -20,7 +20,10 @@ class NavigatorCache(BaseCache):
 			if default_contents is None:
 				self.rebuild_database()
 				return self.get_main_lists(list_name)
-			try: edited_contents = self.get_list(list_name, 'edited')
+			try:
+				edited_contents = self.get_list(list_name, 'edited')
+				self.set_memory_cache(list_name, 'edited', edited_contents)
+				self.set_memory_cache(list_name, 'default', default_contents)
 			except: edited_contents = None
 		else: edited_contents = self.get_memory_cache(list_name, 'edited')
 		return default_contents, edited_contents
@@ -41,14 +44,14 @@ class NavigatorCache(BaseCache):
 		self.dbcur.execute("""VACUUM""")
 
 	def get_memory_cache(self, list_name, list_type):
-		try: return eval(get_property(self._get_list_prop(list_type) % list_name))
+		try: return eval(get_property(prop_dict.get(list_type) % list_name))
 		except: return None
 
 	def set_memory_cache(self, list_name, list_type, list_contents):
-		set_property(self._get_list_prop(list_type) % list_name, repr(list_contents))
+		set_property(prop_dict.get(list_type) % list_name, repr(list_contents))
 
 	def delete_memory_cache(self, list_name, list_type):
-		clear_property(self._get_list_prop(list_type) % list_name)
+		clear_property(prop_dict.get(list_type) % list_name)
 
 	def get_shortcut_folders(self):
 		try:
@@ -70,9 +73,6 @@ class NavigatorCache(BaseCache):
 
 	def rebuild_database(self):
 		for list_name in default_menus.default_menu_items: self.set_list(list_name, 'default', main_menus[list_name])
-
-	def _get_list_prop(self, list_type):
-		return prop_dict[list_type]
 
 navigator_cache = NavigatorCache()
 

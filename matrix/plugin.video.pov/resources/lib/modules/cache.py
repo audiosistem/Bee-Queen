@@ -4,7 +4,7 @@ from modules import kodi_utils
 ls = kodi_utils.local_string
 navigator_db = kodi_utils.navigator_db
 watched_db = kodi_utils.watched_db
-favourites_db = kodi_utils.favourites_db
+favorites_db = kodi_utils.favorites_db
 views_db = kodi_utils.views_db
 trakt_db = kodi_utils.trakt_db
 mdbl_db = kodi_utils.mdbl_db
@@ -30,8 +30,8 @@ def check_databases():
 					(db_type text, media_id text, season integer, episode integer, resume_point text, curr_time text,
 					last_played text, resume_id integer, title text, unique(db_type, media_id, season, episode))""")
 	dbcon.close()
-	dbcon = database_connect(favourites_db) # Favourites
-	dbcon.execute("""CREATE TABLE IF NOT EXISTS favourites (db_type text, tmdb_id text, title text, unique (db_type, tmdb_id))""")
+	dbcon = database_connect(favorites_db) # Favorites
+	dbcon.execute("""CREATE TABLE IF NOT EXISTS favorites (db_type text, tmdb_id text, title text, unique (db_type, tmdb_id))""")
 	dbcon.close()
 	dbcon = database_connect(views_db) # Views
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS views (view_type text, view_id text, unique (view_type))""")
@@ -90,7 +90,7 @@ def clean_databases(current_time=None, database_check=True, silent=False):
 	remove_old_databases()
 	if database_check: check_databases()
 	current_time = current_time or get_current_time()
-	command_base = 'DELETE from %s WHERE CAST(%s AS INT) <= ?'
+	command_base = """DELETE from %s WHERE CAST(%s AS INT) <= ?"""
 	for db, sql in (
 		(external_db, command_base % ('results_data', 'expires')),
 		(debridcache_db, command_base % ('debrid_data', 'expires')),
@@ -141,7 +141,7 @@ def clear_cache(cache_type, silent=False):
 		if not _confirm(): return
 		from debrids.easynews_api import clear_media_results_database
 		clear_media_results_database()
-		items = 'ad_cloud', 'pm_cloud', 'rd_cloud', 'tb_cloud', 'oc_cloud', 'folders'
+		items = 'ad_cloud', 'pm_cloud', 'rd_cloud', 'tb_cloud', 'oc_cloud'
 		for item in items: clear_cache(item, silent=True)
 	elif cache_type == 'external_scrapers':
 		if not _confirm(): return
@@ -186,9 +186,6 @@ def clear_cache(cache_type, silent=False):
 		if not _confirm(): return
 		from debrids.offcloud_api import OffcloudAPI
 		success = OffcloudAPI().clear_cache()
-	elif cache_type == 'folders':
-		from caches.main_cache import MainCache
-		MainCache().delete_all_folderscrapers()
 	else: # 'list'
 		if not _confirm(): return
 		from caches.main_cache import MainCache
@@ -207,11 +204,12 @@ def clear_all_cache():
 		('internal_scrapers', '%s %s' % (ls(32096), ls(32524))),
 		('external_scrapers', '%s %s' % (ls(32118), ls(32524)))
 	)
+	len_caches = len(caches)
 	kodi_utils.progressDialog.create('POV', '')
 	for count, (cache_type, cache_label) in enumerate(caches, 1):
 		try:
 			if kodi_utils.progressDialog.iscanceled(): break
-			kodi_utils.progressDialog.update(int(count / len(caches) * 100), line % (ls(32816), cache_label))
+			kodi_utils.progressDialog.update(int(count / len_caches * 100), line % (ls(32816), cache_label))
 			clear_cache(cache_type, silent=True)
 			kodi_utils.sleep(200)
 		except: kodi_utils.notification(32574, 1500)

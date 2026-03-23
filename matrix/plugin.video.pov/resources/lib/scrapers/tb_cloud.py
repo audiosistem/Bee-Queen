@@ -18,9 +18,9 @@ class source(Debrid):
 			if not enabled_debrids_check('tb'): return internal_results(self.scrape_provider, self.sources)
 			self.scrape_results = []
 			title_filter = filter_by_name(self.scrape_provider)
-			self.media_type, title = info.get('media_type'), info.get('title')
+			self.mediatype, title = info.get('mediatype'), info.get('title')
 			self.year, self.season, self.episode = int(info.get('year')), info.get('season'), info.get('episode')
-			if self.media_type == 'episode': self.seas_ep_query_list = source_utils.seas_ep_query_list(self.season, self.episode)
+			if self.mediatype == 'episode': self.seas_ep_query_list = source_utils.seas_ep_query_list(self.season, self.episode)
 			self.folder_query, self.year_query_list = clean_title(normalize(title)), tuple(map(str, range(self.year - 1, self.year + 2)))
 			self._scrape_cloud()
 			if not self.scrape_results: return internal_results(self.scrape_provider, self.sources)
@@ -33,7 +33,7 @@ class source(Debrid):
 					foldername = clean_title(formalized)
 					normalized = normalize(item['filename'])
 					filename = clean_title(normalized)
-					if self.media_type == 'movie':
+					if self.mediatype == 'movie':
 						if any(x in filename for x in extras_filtering_list): continue
 						if not (
 							any(x in filename for x in self.year_query_list)
@@ -48,7 +48,7 @@ class source(Debrid):
 					if not (self.folder_query in filename or self.folder_query in foldername): continue
 
 					if title_filter and not check_title(title, normalized, self.aliases, self.year, self.season, self.episode): continue
-					direct_debrid_link, URLName = item['media_type'], clean_file_name(normalized).replace('html', ' ').replace('+', ' ').replace('-', ' ')
+					direct_debrid_link, URLName = item['mediatype'], clean_file_name(normalized).replace('html', ' ').replace('+', ' ').replace('-', ' ')
 					file_dl, size = item['link'], round(float(item['size'])/1073741824, 2)
 					video_quality, details = get_file_info(name_info=release_info_format(normalized))
 					sources_append({
@@ -74,7 +74,7 @@ class source(Debrid):
 			[i.join() for i in threads]
 		except: pass
 
-	def _scrape_folders(self, function, media_type):
+	def _scrape_folders(self, function, mediatype):
 		try:
 			results_append = self.scrape_results.append
 			folder = function(check_cache=False)
@@ -82,7 +82,7 @@ class source(Debrid):
 				for item in file['files']:
 					try: item.update({
 						'filename': item['short_name'], 'folder_name': file['name'],
-						'media_type': media_type, 'link': '%d,%d' % (file['id'], item['id'])
+						'mediatype': mediatype, 'link': '%d,%d' % (file['id'], item['id'])
 					})
 					except: pass
 					else: results_append(item)

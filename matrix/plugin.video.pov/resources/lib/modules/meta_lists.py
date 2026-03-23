@@ -4,18 +4,16 @@ def years():
 	return list(range(datetime.today().year, 1899, -1))
 
 oscar_winners = (
-	1064213, 872585, 545611, 776503, 581734, 496243, 490132, 399055, 376867, 314365, 194662, 76203, 68734, 74643, 45269, 12162, 12405, 6977,
+	1054867, 1064213, 872585, 545611, 776503, 581734, 496243, 490132, 399055, 376867, 314365, 194662, 76203, 68734, 74643, 45269, 12162, 12405, 6977,
 	1422, 1640, 70, 122, 1574, 453, 98, 14, 1934, 597, 409, 197, 13, 424, 33, 274, 581, 403, 380, 746,
 	792, 606, 279, 11050, 783, 9443, 16619, 12102, 11778, 703, 1366, 510, 240, 9277, 238, 1051, 11202, 3116, 17917, 10633,
 	874, 15121, 11113, 5769, 947, 1725, 284, 665, 17281, 826, 2897, 15919, 654, 11426, 27191, 2769, 705, 25430, 23383, 33667,
 	887, 28580, 17661, 27367, 289, 43266, 223, 770, 34106, 43278, 43277, 12311, 3078, 56164, 33680, 42861, 143, 65203, 28966, 631
 )
 
-movie_certifications = (
+movie_certifications, tvshow_certifications = (
 	'G', 'PG', 'PG-13', 'R', 'NC-17', 'NR'
-)
-
-tvshow_certifications = (
+), (
 	'tv-y', 'tv-y7', 'tv-g', 'tv-pg', 'tv-14', 'tv-ma'
 )
 
@@ -158,7 +156,7 @@ meta_colors = (
 	'burlywood', 'darkgoldenrod', 'ghostwhite', 'azure', 'lightsaltegray', 'lightsteelblue',
 	'powderblue', 'lightblue', 'skyblue', 'lightskyblue', 'deepskyblue', 'dodgerblue', 'royalblue',
 	'blue', 'mediumblue', 'midnightblue', 'navy', 'darkblue', 'cornflowerblue', 'slateblue', 'slategray',
-	'yellowgreen', 'springgreen', 'seagreen', 'steelblue', 'teal', 'fuchsia', 'deeppink', 'darkmagenta',
+	'yellowgreen', 'springgreen', 'seagreen', 'steelblue', 'teal', 'magenta', 'deeppink', 'darkmagenta',
 	'blueviolet', 'darkviolet', 'darkorchid', 'darkslateblue', 'darkslategray', 'indigo', 'cadetblue',
 	'darkcyan', 'darkturquoise', 'turquoise', 'cyan', 'paleturquoise', 'lightcyan', 'mintcream', 'honeydew',
 	'aqua', 'aquamarine', 'chartreuse', 'greenyellow', 'palegreen', 'lawngreen', 'lightgreen', 'lime',

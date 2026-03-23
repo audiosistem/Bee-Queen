@@ -59,7 +59,7 @@ class Menu(Debrid):
 				size = float(int(item['size']))/1073741824
 				display = '%02d | [B]%s[/B] | %.2f GB | [I]%s [/I]' % (count, file_str, size, name)
 				params = {'name': name, 'url': item['url'], 'image': default_icon}
-				url_params = {**params, 'mode': 'media_play', 'media_type': 'video'}
+				url_params = {**params, 'mode': 'media_play', 'mediatype': 'video'}
 				down_file_params = {**params, 'mode': 'downloader', 'action': 'cloud.offcloud_direct'}
 				cm_append((down_str, 'RunPlugin(%s)' % build_url(down_file_params)))
 				url = build_url(url_params)

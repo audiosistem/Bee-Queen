@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
     <category label="General">
-        <setting id="servers_json_url" type="text" label="Servers JSON URL (leave empty for local file)" default="https://raw.githubusercontent.com/staycanuca/hub/refs/heads/main/_tools/servers.json" />
+        <setting id="servers_json_url" type="text" label="Servers JSON URL (leave empty for local file)" default="https://raw.githubusercontent.com/staycanuca/hub/refs/heads/main/servers.json" />
     </category>
 
     <category label="Server Settings">

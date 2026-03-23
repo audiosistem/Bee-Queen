@@ -38,17 +38,17 @@ def tmdb_company_id(query):
 	url = '%s/search/company?api_key=%s&query=%s' % (base_url, tmdb_api_key(), query)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
 
-def tmdb_media_images(media_type, tmdb_id):
-	if media_type == 'movies': media_type = 'movie'
-	string = 'tmdb_media_images_%s_%s' % (media_type, tmdb_id)
-	url = '%s/%s/%s/images?api_key=%s' % (base_url, media_type, tmdb_id, tmdb_api_key())
+def tmdb_media_images(mediatype, tmdb_id):
+	if mediatype == 'movies': mediatype = 'movie'
+	string = 'tmdb_media_images_%s_%s' % (mediatype, tmdb_id)
+	url = '%s/%s/%s/images?api_key=%s' % (base_url, mediatype, tmdb_id, tmdb_api_key())
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
 
-def tmdb_media_videos(media_type, tmdb_id):
-	if media_type == 'movies': media_type = 'movie'
-	if media_type in ('tvshow', 'tvshows'): media_type = 'tv'
-	string = 'tmdb_media_videos_%s_%s' % (media_type, tmdb_id)
-	url = '%s/%s/%s/videos?api_key=%s' % (base_url, media_type, tmdb_id, tmdb_api_key())
+def tmdb_media_videos(mediatype, tmdb_id):
+	if mediatype == 'movies': mediatype = 'movie'
+	if mediatype in ('tvshow', 'tvshows'): mediatype = 'tv'
+	string = 'tmdb_media_videos_%s_%s' % (mediatype, tmdb_id)
+	url = '%s/%s/%s/videos?api_key=%s' % (base_url, mediatype, tmdb_id, tmdb_api_key())
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
 
 def tmdb_movies_discover(query, page_no):
@@ -349,10 +349,10 @@ def movie_keywords(tmdb_id, tmdb_api=None):
 		return result
 	except: return None
 
-def english_translation(media_type, tmdb_id, tmdb_api=None):
+def english_translation(mediatype, tmdb_id, tmdb_api=None):
 	try:
-		string = 'english_translation_%s_%s' % (media_type, tmdb_id)
-		url = '%s/%s/%s/translations?api_key=%s' % (base_url, media_type, tmdb_id, get_tmdb_api(tmdb_api))
+		string = 'english_translation_%s_%s' % (mediatype, tmdb_id)
+		url = '%s/%s/%s/translations?api_key=%s' % (base_url, mediatype, tmdb_id, get_tmdb_api(tmdb_api))
 		result = cache_function(get_tmdb, string, url, EXPIRES_1_WEEK * 52)
 		try: result = result['translations']
 		except: result = None
@@ -379,9 +379,9 @@ def episode_group_details(group_id, tmdb_api=None):
 		return result
 	except: return []
 
-def tmdb_watchlist(media_type, page, letter):
-	title, premiered = ('name', 'first_air_date') if media_type == 'tv' else ('title', 'release_date')
-	original_list = all_list_items(watchlist, media_type)
+def tmdb_watchlist(mediatype, page, letter):
+	title, premiered = ('name', 'first_air_date') if mediatype == 'tv' else ('title', 'release_date')
+	original_list = all_list_items(watchlist, mediatype)
 	if not show_unaired_watchlist():
 		current_date = get_datetime()
 		str_format = '%Y-%m-%d'
@@ -396,20 +396,20 @@ def tmdb_watchlist(media_type, page, letter):
 	else: final_list, total_pages = original_list, 1
 	return final_list, total_pages
 
-def tmdb_favorite(media_type, page, letter):
-	original_list = all_list_items(favorite, media_type)
+def tmdb_favorites(mediatype, page, letter):
+	original_list = all_list_items(favorites, mediatype)
 	if paginate():
 		limit = page_limit()
 		final_list, total_pages = paginate_list(original_list, page, letter, limit)
 	else: final_list, total_pages = original_list, 1
 	return final_list, total_pages
 
-def tmdb_recommendations(media_type, page, letter):
-	original_list = recommendations(media_type, page)
+def tmdb_recommendations(mediatype, page, letter):
+	original_list = recommendations(mediatype, page)
 	final_list, total_pages = original_list['results'], original_list['total_pages']
 	return final_list, total_pages
 
-def add_to_watchlist_favorite(item, list_type):
+def add_to_watchlist_favorites(item, list_type):
 	session_account_id = get_setting('tmdb.session_account_id')
 	session_id = get_setting('tmdb.session_id')
 	params = {'session_id': session_id}
@@ -479,8 +479,8 @@ def list_update(list_id, data):
 	url = '%s/list/%s' % (list_url, list_id)
 	return list_request(url, data=data, method='put')
 
-def list_status(list_id, media_type, media_id):
-	params = {'media_type': media_type, 'media_id': int(media_id)}
+def list_status(list_id, mediatype, media_id):
+	params = {'media_type': mediatype, 'media_id': int(media_id)}
 	url = '%s/list/%s/item_status' % (list_url, list_id)
 	return list_request(url, params=params)
 
@@ -503,23 +503,23 @@ def user_lists(page=1, account_id=''):
 	return cache_object(list_request, string, url, json=False)
 
 @_account_id
-def watchlist(media_type, page=1, account_id=''):
-	string = 'tmdblist_watchlist_%s_%s_%s' % (account_id, media_type, page)
-	url = '%s/account/%s/%s/watchlist' % (list_url, account_id, media_type)
+def watchlist(mediatype, page=1, account_id=''):
+	string = 'tmdblist_watchlist_%s_%s_%s' % (account_id, mediatype, page)
+	url = '%s/account/%s/%s/watchlist' % (list_url, account_id, mediatype)
 	url += '?page=%slanguage=en-US&sort_by=created_at.desc' % page
 	return cache_object(list_request, string, url, json=False)
 
 @_account_id
-def favorite(media_type, page=1, account_id=''):
-	string = 'tmdblist_favorite_%s_%s_%s' % (account_id, media_type, page)
-	url = '%s/account/%s/%s/favorites' % (list_url, account_id, media_type)
+def favorites(mediatype, page=1, account_id=''):
+	string = 'tmdblist_favorites_%s_%s_%s' % (account_id, mediatype, page)
+	url = '%s/account/%s/%s/favorites' % (list_url, account_id, mediatype)
 	url += '?page=%slanguage=en-US&sort_by=created_at.desc' % page
 	return cache_object(list_request, string, url, json=False)
 
 @_account_id
-def recommendations(media_type, page=1, account_id=''):
-	string = 'tmdblist_recommendations_%s_%s_%s' % (account_id, media_type, page)
-	url = '%s/account/%s/%s/recommendations' % (list_url, account_id, media_type)
+def recommendations(mediatype, page=1, account_id=''):
+	string = 'tmdblist_recommendations_%s_%s_%s' % (account_id, mediatype, page)
+	url = '%s/account/%s/%s/recommendations' % (list_url, account_id, mediatype)
 	url += '?page=%slanguage=en-US' % page
 	return cache_object(list_request, string, url, json=False)
 
@@ -545,7 +545,7 @@ def tmdb_clean_watchlist(silent=False):
 			for i in t[0] + p[0] if i['media_id'] in watchlist_ids
 		]
 		if not items: return '0 items to remove.'
-		threads = TaskPool(40).tasks(add_to_watchlist_favorite, [(i, 'watchlist') for i in items], Thread)
+		threads = TaskPool(40).tasks(add_to_watchlist_favorites, [(i, 'watchlist') for i in items], Thread)
 		[i.join() for i in threads]
 		clear_tmdbl_cache()
 		if not silent: kodi_utils.notification(32576)
@@ -555,7 +555,7 @@ def tmdb_clean_watchlist(silent=False):
 def import_trakt_watchlist(*args):
 	if not kodi_utils.confirm_dialog(): return
 	def _process(group, count):
-		add_to_watchlist_favorite(group, 'watchlist')
+		add_to_watchlist_favorites(group, 'watchlist')
 		progressBG.update(int(count / len_items * 100), send_str)
 	from indexers.trakt_api import trakt_fetch_collection_watchlist
 	send_str = 'Sending items to TMDB Watchlist...'

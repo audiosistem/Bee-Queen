@@ -2,7 +2,7 @@ import json
 from windows import BaseDialog
 from modules.debrid import Source
 from modules.kodi_utils import media_path, hide_busy_dialog, dialog, select_dialog, ok_dialog, local_string as ls
-from modules.settings import get_art_provider, get_fanart_data, info_icons, provider_sort_ranks
+from modules.settings import get_art_provider, info_icons, provider_sort_ranks
 # from modules.kodi_utils import logger
 
 fanart_empty = BaseDialog.fanart
@@ -19,8 +19,8 @@ quality_choices, pack_check = ('4K', '1080P', '720P', 'SD', 'TELE', 'CAM', 'SCR'
 extra_info_str, down_file_str, browse_pack_str, down_pack_str, cloud_str = ls(32605), ls(32747), ls(32746), ls(32007), ls(32016)
 filter_str, clr_filter_str, filters_ignored, start_full_scrape = ls(32152), ls(32153), ls(32686), ls(32529)
 filter_quality, filter_provider, filter_title, filter_extraInfo = ls(32154), ls(32157), ls(32679), ls(32169)
-run_plugin_str, ignored_str, check_str = 'RunPlugin(%s)', '[B][COLOR dodgerblue](%s)[/COLOR][/B]', '[B]CHECK CACHE STATUS[/B]'
-en_seek_str, en_dl_str = '[B]EN: PLAY (SEEK ENABLED)[/B]', '[B]EN: PLAY (FROM DOWNLOAD)[/B]'
+run_plugin_str, ignored_str = 'RunPlugin(%s)', '[B][COLOR dodgerblue](%s)[/COLOR][/B]'
+en_seek_str, check_str = '[B]EN: PLAY (SEEK ENABLED)[/B]', '[B]CHECK CACHE STATUS[/B]'
 string, upper, lower = str, str.upper, str.lower
 
 class SourceResults(BaseDialog):
@@ -81,18 +81,18 @@ class SourceResults(BaseDialog):
 				return self.close()
 		elif action == self.info_actions:
 			kwargs = dict(item=chosen_listitem, fanart=self.original_fanart())
-			self.open_window(('windows.sources', 'ResultsInfo'), 'sources_info.xml', **kwargs)
+			self.open_window(('sources.windows_sources', 'ResultsInfo'), 'sources_info.xml', **kwargs)
 		elif action in self.context_actions:
 			highlight = chosen_listitem.getProperty('tikiskins.highlight')
 			source = json.loads(chosen_listitem.getProperty('source'))
 			kwargs = dict(item=source, meta=self.meta, highlight=highlight, filter_applied=self.filter_applied)
-			choice = self.open_window(('windows.sources', 'ResultsContextMenu'), 'contextmenu.xml', **kwargs)
+			choice = self.open_window(('sources.windows_sources', 'ResultsContextMenu'), 'contextmenu.xml', **kwargs)
 			if choice is None: return
 			if 'clear_results_filter' in choice: return self.clear_filter()
 			elif 'results_filter' in choice: return self.filter_results()
 			elif 'results_info' in choice:
 				kwargs = dict(item=chosen_listitem, fanart=self.original_fanart())
-				self.open_window(('windows.sources', 'ResultsInfo'), 'sources_info.xml', **kwargs)
+				self.open_window(('sources.windows_sources', 'ResultsInfo'), 'sources_info.xml', **kwargs)
 			elif 'seekable_easynews' in choice:
 				link = Source(source, self.meta).resolve_internal_sources(True)
 				if not link is None:
@@ -203,7 +203,7 @@ class SourceResults(BaseDialog):
 		self.setProperty('tikiskins.fanart', self.original_fanart())
 		self.setProperty('tikiskins.poster', self.original_poster())
 		self.setProperty('tikiskins.title', self.meta['title'])
-		self.setProperty('tikiskins.clearlogo', self.meta['clearlogo'] if get_fanart_data() else self.meta['tmdblogo'] or '')
+		self.setProperty('tikiskins.clearlogo', self.meta['clearlogo'] or '')
 		self.setProperty('tikiskins.plot', self.meta['plot'])
 		self.setProperty('tikiskins.total_results', self.total_results)
 		self.setProperty('tikiskins.filters_ignored', self.filters_ignored)
@@ -351,11 +351,7 @@ class ResultsContextMenu(BaseDialog):
 		if next((True for x in ('real-debrid', 'alldebrid') if x in cache_provider), False):
 			append(self.make_contextmenu_item(check_str, run_plugin_str, {'mode': 'unchecked_magnet_status'}))
 		if 'easynews' in scrape_provider:
-			params = {'meta': meta_json, 'name': name, 'url_dl': self.item['url_dl'], 'size': self.item['size']}
-			spool_params = {'mode': 'easynews.spool_easynews', **params}
-			seek_params = {'mode': 'seekable_easynews'}
-			append(self.make_contextmenu_item(en_seek_str, run_plugin_str, seek_params))
-			append(self.make_contextmenu_item(en_dl_str, run_plugin_str, spool_params))
+			append(self.make_contextmenu_item(en_seek_str, run_plugin_str, {'mode': 'seekable_easynews'}))
 		if self.filter_applied:
 			append(self.make_contextmenu_item(clr_filter_str, run_plugin_str, {'mode': 'clear_results_filter'}))
 		else: append(self.make_contextmenu_item(filter_str, run_plugin_str, {'mode': 'results_filter'}))
@@ -378,102 +374,4 @@ class ResultsContextMenu(BaseDialog):
 
 	def set_properties(self):
 		self.setProperty('tikiskins.context.highlight', self.highlight)
-
-class SourceResultsChooser(BaseDialog):
-	def __init__(self, *args, **kwargs):
-		BaseDialog.__init__(self, args)
-		self.window_id = 5001
-		self.xml_choices = kwargs.get('xml_choices')
-		self.xml_items = []
-		self.make_items()
-
-	def onInit(self):
-		self.win = self.getControl(self.window_id)
-		self.win.addItems(self.xml_items)
-		self.setFocusId(self.window_id)
-
-	def run(self):
-		self.doModal()
-		return self.choice
-
-	def onAction(self, action):
-		if action in self.closing_actions:
-			self.choice = None
-			self.close()
-		if action in self.selection_actions:
-			chosen_listitem = self.get_listitem(self.window_id)
-			self.choice = chosen_listitem.getProperty('tikiskins.window.name')
-			self.close()
-
-	def make_items(self):
-		append = self.xml_items.append
-		for item in self.xml_choices:
-			listitem = self.make_listitem()
-			listitem.setProperty('tikiskins.window.name', item[0])
-			listitem.setProperty('tikiskins.window.image', item[1])
-			append(listitem)
-
-class ProgressMedia(BaseDialog):
-	def __init__(self, *args, **kwargs):
-		BaseDialog.__init__(self, args)
-		self.is_canceled = False
-		self.selected = None
-		self.meta = kwargs['meta']
-		self.text = kwargs.get('text', '')
-		self.enable_buttons = kwargs.get('enable_buttons', False)
-		self.true_button = kwargs.get('true_button', '')
-		self.false_button = kwargs.get('false_button', '')
-		self.focus_button = kwargs.get('focus_button', 10)
-		self.percent = float(kwargs.get('percent', 0))
-		self.make_items()
-		self.set_properties()
-
-	def onInit(self):
-		if self.enable_buttons: self.allow_buttons()
-
-	def run(self):
-		self.doModal()
-		self.clearProperties()
-		return self.selected
-
-	def iscanceled(self):
-		if self.enable_buttons: return self.selected
-		else: return self.is_canceled
-
-	def onAction(self, action):
-		if action in self.closing_actions:
-			self.is_canceled = True
-			self.close()
-
-	def onClick(self, controlID):
-		self.selected = controlID == 10
-		self.close()
-
-	def allow_buttons(self):
-		self.setProperty('tikiskins.source_progress.buttons', 'true')
-		self.setProperty('tikiskins.source_progress.true_button', self.true_button)
-		self.setProperty('tikiskins.source_progress.false_button', self.false_button)
-		self.update(self.text, self.percent)
-		self.setFocusId(self.focus_button)
-
-	def make_items(self):
-		self.poster_main, self.poster_backup, self.fanart_main, self.fanart_backup = get_art_provider()
-		self.title = self.meta['title']
-		self.year = str(self.meta['year'])
-		self.poster = self.meta.get(self.poster_main) or self.meta.get(self.poster_backup) or poster_empty
-		self.fanart = self.meta.get(self.fanart_main) or self.meta.get(self.fanart_backup) or fanart_empty
-		self.clearlogo = self.meta['clearlogo'] if get_fanart_data() else self.meta['tmdblogo'] or ''
-
-	def set_properties(self):
-		self.setProperty('tikiskins.source_progress.title', self.title)
-		self.setProperty('tikiskins.source_progress.year', self.year)
-		self.setProperty('tikiskins.source_progress.poster', self.poster)
-		self.setProperty('tikiskins.source_progress.fanart', self.fanart)
-		self.setProperty('tikiskins.source_progress.clearlogo', self.clearlogo)
-
-	def update(self, content='', percent=0):
-		try:
-			self.getControl(2000).setText(content)
-			self.getControl(5000).setPercent(percent)
-		except: pass
 

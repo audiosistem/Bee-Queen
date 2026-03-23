@@ -53,34 +53,12 @@
 				<visible>String.IsEqual(Window.Property(tikiskins.dialog.multi_choice),false)</visible>
 				<top>130</top>
 				<left>260r</left>
-				<control type="group">
-					<visible>!String.IsEqual(Container(2025).ListItem.Property(tikiskins.dialog.default_icon),true)</visible>
-					<control type="image">
-						<aligny>left</aligny>
-						<height>240</height>
-						<width>240</width>
-						<aspectratio aligny="top">keep</aspectratio>
-						<texture>$INFO[Container(2025).ListItem.Property(tikiskins.dialog.icon)]</texture>
-						<visible>String.IsEqual(Window.Property(tikiskins.dialog.multi_choice),false)</visible>
-					</control>
-					<control type="image">
-						<aligny>left</aligny>
-						<height>240</height>
-						<width>240</width>
-						<aspectratio aligny="top">keep</aspectratio>
-						<texture>$INFO[Container(2025).ListItem.Property(tikiskins.dialog.icon)]</texture>
-						<visible>String.IsEqual(Window.Property(tikiskins.dialog.multi_choice),true)</visible>
-					</control>
-				</control>
-				<control type="group">
-					<visible>String.IsEqual(Container(2025).ListItem.Property(tikiskins.dialog.default_icon),true)</visible>
-					<control type="image">
-						<aligny>left</aligny>
-						<height>240</height>
-						<width>240</width>
-						<aspectratio aligny="top">keep</aspectratio>
-						<texture>$INFO[Window.Property(tikiskins.pov.icon)]</texture>
-					</control>
+				<control type="image">
+					<aligny>left</aligny>
+					<height>240</height>
+					<width>240</width>
+					<aspectratio aligny="top">keep</aspectratio>
+					<texture>$INFO[Container(2025).ListItem.Property(tikiskins.dialog.icon)]</texture>
 				</control>
 			</control>
 			<control type="group">

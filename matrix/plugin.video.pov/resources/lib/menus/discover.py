@@ -24,20 +24,20 @@ listitem_position = {
 class Discover:
 	def __init__(self, params):
 		self.view = 'view.main'
-		self.media_type, self.key = params.get('media_type'), params.get('key')
-		self.window_id = 'POV_%s_discover_params' % self.media_type.upper() if self.media_type else ''
+		self.mediatype, self.key = params.get('mediatype'), params.get('key')
+		self.window_id = 'pov_%s_discover_params' % self.mediatype.upper() if self.mediatype else ''
 		try: self.discover_params = json.loads(kodi_utils.get_property(self.window_id))
 		except: self.discover_params = {}
 		self.tmdb_api = tmdb_api_key()
 
 	def movie(self):
-		if not 'media_type' in self.discover_params: self._set_default_params('movie')
+		if not 'mediatype' in self.discover_params: self._set_default_params('movie')
 		names = self.discover_params['search_name']
-		self._add_dir({'mode': 'discover._clear_property', 'media_type': 'movie', 'list_name': '[B]%s[/B]' % ls(32656).upper()})
+		self._add_dir({'mode': 'discover._clear_property', 'mediatype': 'movie', 'list_name': '[B]%s[/B]' % ls(32656).upper()})
 		if not 'recommended' in names:
-			self._add_dir({'mode': 'discover.similar_recommended', 'media_type': 'movie', 'key': 'similar', 'list_name': _ln_ins % (ls(32451), ls(32592), names.get('similar', ''))})
+			self._add_dir({'mode': 'discover.similar_recommended', 'mediatype': 'movie', 'key': 'similar', 'list_name': _ln_ins % (ls(32451), ls(32592), names.get('similar', ''))})
 		if not 'similar' in names:
-			self._add_dir({'mode': 'discover.similar_recommended', 'media_type': 'movie', 'key': 'recommended', 'list_name': _ln_ins % (ls(32451), ls(32593), names.get('recommended', ''))})
+			self._add_dir({'mode': 'discover.similar_recommended', 'mediatype': 'movie', 'key': 'recommended', 'list_name': _ln_ins % (ls(32451), ls(32593), names.get('recommended', ''))})
 		if not any(i in names for i in ('similar', 'recommended')):
 			for item in (
 				('discover.year_start', base_str % ('%s %s' % (ls(32543), ls(32654)), names.get('year_start', ''))),
@@ -55,18 +55,18 @@ class Discover:
 				('discover.cast', base_str % (include_base_str % ls(32664), names.get('cast', ''))),
 				('discover.sort_by', base_str % (ls(32067), names.get('sort_by', ''))),
 				('discover.adult', base_str % (include_base_str % ls(32665), names.get('adult', ls(32860))))
-			): self._add_dir({'mode': item[0], 'media_type': 'movie', 'list_name': item[1]})
+			): self._add_dir({'mode': item[0], 'mediatype': 'movie', 'list_name': item[1]})
 		self._add_defaults()
 		self._end_directory()
 
 	def tvshow(self):
-		if not 'media_type' in self.discover_params: self._set_default_params('tvshow')
+		if not 'mediatype' in self.discover_params: self._set_default_params('tvshow')
 		names = self.discover_params['search_name']
-		self._add_dir({'mode': 'discover._clear_property', 'media_type': 'tvshow', 'list_name': '[B]%s[/B]' % ls(32656).upper()})
+		self._add_dir({'mode': 'discover._clear_property', 'mediatype': 'tvshow', 'list_name': '[B]%s[/B]' % ls(32656).upper()})
 		if not 'recommended' in names:
-			self._add_dir({'mode': 'discover.similar_recommended', 'media_type': 'tvshow', 'key': 'similar', 'list_name': _ln_ins % (ls(32451), ls(32592), names.get('similar', ''))})
+			self._add_dir({'mode': 'discover.similar_recommended', 'mediatype': 'tvshow', 'key': 'similar', 'list_name': _ln_ins % (ls(32451), ls(32592), names.get('similar', ''))})
 		if not 'similar' in names:
-			self._add_dir({'mode': 'discover.similar_recommended', 'media_type': 'tvshow', 'key': 'recommended', 'list_name': _ln_ins % (ls(32451), ls(32593), names.get('recommended', ''))})
+			self._add_dir({'mode': 'discover.similar_recommended', 'mediatype': 'tvshow', 'key': 'recommended', 'list_name': _ln_ins % (ls(32451), ls(32593), names.get('recommended', ''))})
 		if not any(i in names for i in ['similar', 'recommended']):
 			for item in (
 				('discover.year_start', base_str % ('%s %s' % (ls(32543), ls(32654)), names.get('year_start', ''))),
@@ -80,7 +80,7 @@ class Discover:
 				('discover.rating', base_str % ('%s %s' % (ls(32661), ls(32621)), names.get('rating', ''))),
 				('discover.rating_votes', base_str % ('%s %s' % (ls(32661), ls(32663)), names.get('rating_votes', ''))),
 				('discover.sort_by', base_str % (ls(32067), names.get('sort_by', '')))
-			): self._add_dir({'mode': item[0], 'media_type': 'tvshow', 'list_name': item[1]})
+			): self._add_dir({'mode': item[0], 'mediatype': 'tvshow', 'list_name': item[1]})
 		self._add_defaults()
 		self._end_directory()
 
@@ -89,7 +89,7 @@ class Discover:
 		if self._action(key) in ('clear', None): return
 		title = kodi_utils.dialog.input(heading_base % ls(32228))
 		if not title: return
-		if self.media_type == 'movie': function = tmdb_movies_title_year
+		if self.mediatype == 'movie': function = tmdb_movies_title_year
 		else: function = tmdb_tv_title_year
 		year = kodi_utils.dialog.numeric(0, heading_base % ('%s (%s)' % (ls(32543), ls(32669))))
 		results = function(title, year)['results']
@@ -97,8 +97,8 @@ class Discover:
 		choice_list = []
 		append = choice_list.append
 		for item in results:
-			title = item['title'] if self.media_type == 'movie' else item['name']
-			try: year = item['release_date'].split('-')[0] if self.media_type == 'movie' else item['first_air_date'].split('-')[0]
+			title = item['title'] if self.mediatype == 'movie' else item['name']
+			try: year = item['release_date'].split('-')[0] if self.mediatype == 'movie' else item['first_air_date'].split('-')[0]
 			except: year = ''
 			if year: rootname = '%s (%s)' % (title, year)
 			else: rootname = title
@@ -166,7 +166,7 @@ class Discover:
 		years_list = [str(i) for i in years]
 		year_start = self._selection_dialog(years_list, years, heading_base % ('%s %s' % (ls(32654), ls(32543))))
 		if year_start != None:
-			if self.discover_params['media_type'] == 'movie':
+			if self.discover_params['mediatype'] == 'movie':
 				value = 'primary_release_date.gte'
 			else:
 				value = 'first_air_date.gte'
@@ -180,7 +180,7 @@ class Discover:
 		years_list = [str(i) for i in years]
 		year_end = self._selection_dialog(years_list, years, heading_base % ('%s %s' % (ls(32655), ls(32543))))
 		if year_end != None:
-			if self.discover_params['media_type'] == 'movie':
+			if self.discover_params['mediatype'] == 'movie':
 				value = 'primary_release_date.lte'
 			else:
 				value = 'first_air_date.lte'
@@ -190,7 +190,7 @@ class Discover:
 	def include_genres(self):
 		key = 'include_genres'
 		if self._action(key) in ('clear', None): return
-		if self.discover_params['media_type'] == 'movie': genres = meta_lists.movie_genres
+		if self.discover_params['mediatype'] == 'movie': genres = meta_lists.movie_genres
 		else: genres = meta_lists.tvshow_genres
 		genre_list = [(k, v[0]) for k, v in sorted(genres.items())]
 		genres_choice = self._multiselect_dialog(heading_base % (include_base_str % ls(32470)), [i[0] for i in genre_list], genre_list)
@@ -203,7 +203,7 @@ class Discover:
 	def exclude_genres(self):
 		key = 'exclude_genres'
 		if self._action(key) in ('clear', None): return
-		if self.discover_params['media_type'] == 'movie': genres = meta_lists.movie_genres
+		if self.discover_params['mediatype'] == 'movie': genres = meta_lists.movie_genres
 		else: genres = meta_lists.tvshow_genres
 		genre_list = [(k, v[0]) for k, v in sorted(genres.items())]
 		genres_choice = self._multiselect_dialog(heading_base % (exclude_base_str % ls(32470)), [i[0] for i in genre_list], genre_list)
@@ -339,7 +339,7 @@ class Discover:
 	def sort_by(self):
 		key = 'sort_by'
 		if self._action(key) in ('clear', None): return
-		if self.discover_params['media_type'] == 'movie':
+		if self.discover_params['mediatype'] == 'movie':
 			sort_by_list = self._movies_sort()
 		else:
 			sort_by_list = self._tvshows_sort()
@@ -358,11 +358,11 @@ class Discover:
 
 	def export(self):
 		try:
-			media_type = self.discover_params['media_type']
+			mediatype = self.discover_params['mediatype']
 			query = self.discover_params['final_string']
 			name = self.discover_params['name']
-			set_history(media_type, name, query)
-			if media_type == 'movie': final_params = {'mode': 'build_movie_list', 'action': 'tmdb_movies_discover'}
+			set_history(mediatype, name, query)
+			if mediatype == 'movie': final_params = {'mode': 'build_movie_list', 'action': 'tmdb_movies_discover'}
 			else: final_params = {'mode': 'build_tvshow_list', 'action': 'tmdb_tv_discover'}
 			final_params.update({'name': name, 'query': query, 'iconImage': 'discover.png'})
 			if self.key == 'folder': mode = 'menu_editor.shortcut_folder_add_item'
@@ -384,7 +384,7 @@ class Discover:
 					display = '%s | %s' % (count, item['name'])
 					url = build_url(url_params)
 					remove_single_params = {'mode': 'discover_remove_from_history', 'data_id': data_id, 'silent': False}
-					remove_all_params = {'mode': 'discover_remove_all_history', 'media_type': media_type, 'silent': True}
+					remove_all_params = {'mode': 'discover_remove_all_history', 'mediatype': mediatype, 'silent': True}
 #					export_params = {'mode': 'navigator.adjust_main_lists', 'method': 'add_external', 'list_name': name, 'menu_item': json.dumps(url_params)}
 					cm_append(('[B]%s[/B]' % remove_str, 'RunPlugin(%s)'% build_url(remove_single_params)))
 					cm_append(('[B]%s[/B]' % clear_str, 'RunPlugin(%s)'% build_url(remove_all_params)))
@@ -396,8 +396,8 @@ class Discover:
 					yield (url, listitem, True)
 				except: pass
 		__handle__ = int(sys.argv[1])
-		media_type = self.media_type
-		data = get_history(media_type)
+		mediatype = self.mediatype
+		data = get_history(mediatype)
 		item_list = list(_builder())
 		kodi_utils.add_items(__handle__, item_list)
 		self._end_directory()
@@ -405,21 +405,21 @@ class Discover:
 	def help(self):
 		return kodi_utils.show_text(heading_base % ls(32487), discover_help)
 
-	def _set_default_params(self, media_type):
+	def _set_default_params(self, mediatype):
 		self._clear_property()
-		url_media_type = 'movie' if media_type == 'movie' else 'tv'
-		param_media_type = 'Movies' if media_type == 'movie' else 'TV Shows'
-		self.discover_params['media_type'] = media_type
+		url_mediatype = 'movie' if mediatype == 'movie' else 'tv'
+		param_mediatype = 'Movies' if mediatype == 'movie' else 'TV Shows'
+		self.discover_params['mediatype'] = mediatype
 		self.discover_params['search_string'] = {
-			'base': '%s/discover/%s?api_key=%s&language=en-US&page=%s' % (base_url, url_media_type, self.tmdb_api, '%s'),
-			'base_similar': '%s/%s/%s/similar?api_key=%s&language=en-US&page=%s' % (base_url, url_media_type, '%s', self.tmdb_api, '%s'),
-			'base_recommended': '%s/%s/%s/recommendations?api_key=%s&language=en-US&page=%s' % (base_url, url_media_type, '%s', self.tmdb_api, '%s')
+			'base': '%s/discover/%s?api_key=%s&language=en-US&page=%s' % (base_url, url_mediatype, self.tmdb_api, '%s'),
+			'base_similar': '%s/%s/%s/similar?api_key=%s&language=en-US&page=%s' % (base_url, url_mediatype, '%s', self.tmdb_api, '%s'),
+			'base_recommended': '%s/%s/%s/recommendations?api_key=%s&language=en-US&page=%s' % (base_url, url_mediatype, '%s', self.tmdb_api, '%s')
 		}
-		self.discover_params['search_name'] = {'media_type': param_media_type}
+		self.discover_params['search_name'] = {'mediatype': param_mediatype}
 		self._set_property()
 
 	def _add_defaults(self):
-		if self.discover_params['media_type'] == 'movie':
+		if self.discover_params['mediatype'] == 'movie':
 			mode = 'build_movie_list'
 			action = 'tmdb_movies_discover'
 		else:
@@ -429,9 +429,9 @@ class Discover:
 		query = self.discover_params.get('final_string', '')
 		self._add_dir({'mode': mode, 'action': action, 'query': query, 'name': name, 'list_name': ls(32666) % name}, isFolder=True,
 					icon=kodi_utils.media_path('search.png'))
-		self._add_dir({'mode': 'discover.export', 'media_type': self.media_type, 'list_name': base_str % (menu_export_str, name)},
+		self._add_dir({'mode': 'discover.export', 'mediatype': self.mediatype, 'list_name': base_str % (menu_export_str, name)},
 					icon=kodi_utils.media_path('item_jump.png'))
-		self._add_dir({'mode': 'discover.export', 'media_type': self.media_type, 'list_name': base_str % (fold_export_str , name), 'key': 'folder'},
+		self._add_dir({'mode': 'discover.export', 'mediatype': self.mediatype, 'list_name': base_str % (fold_export_str , name), 'key': 'folder'},
 					icon=kodi_utils.media_path('folder.png'))
 
 	def _action(self, key):
@@ -524,8 +524,8 @@ class Discover:
 
 	def _build_name(self):
 		values = self.discover_params['search_name']
-		media_type = values['media_type']
-		db_name = ls(32028) if media_type == 'Movies' else ls(32029)
+		mediatype = values['mediatype']
+		db_name = ls(32028) if mediatype == 'Movies' else ls(32029)
 		name = '[B]%s[/B] ' % db_name
 		if 'similar' in values:
 			name += '| %s %s' % (ls(32672), values['similar'])
@@ -563,7 +563,7 @@ class Discover:
 		self.discover_params['name'] = name
 
 	def _listitem_position(self, key):
-		if self.media_type == 'movie' and key in ('rating', 'rating_votes', 'sort_by'): key = '%s_movie' % key
+		if self.mediatype == 'movie' and key in ('rating', 'rating_votes', 'sort_by'): key = '%s_movie' % key
 		try: return listitem_position[key]
 		except: return None
 
@@ -585,22 +585,22 @@ class Discover:
 			('%s (%s)' % (rat_str, asc_str), '&sort_by=vote_average.asc'),     ('%s (%s)' % (rat_str, desc_str), '&sort_by=vote_average.desc')
 		]
 
-def get_history(media_type):
-	string = 'pov_discover_%s_%%' % media_type
+def get_history(mediatype):
+	string = 'pov_discover_%s_%%' % mediatype
 	dbcon = kodi_utils.database_connect(maincache_db)
 	dbcur = dbcon.cursor()
 	dbcur.execute("""SELECT id, data FROM maincache WHERE id LIKE ? ORDER BY rowid DESC""", (string,))
 	history = dbcur.fetchall()
 	return history
 
-def set_history(media_type, name, query):
+def set_history(mediatype, name, query):
 	from caches.main_cache import MainCache
 	from datetime import timedelta
-	string = 'pov_discover_%s_%s' % (media_type, query)
+	string = 'pov_discover_%s_%s' % (mediatype, query)
 	maincache = MainCache()
 	cache = maincache.get(string)
 	if cache: return
-	if media_type == 'movie':
+	if mediatype == 'movie':
 		mode = 'build_movie_list'
 		action = 'tmdb_movies_discover'
 	else:
@@ -620,9 +620,9 @@ def remove_from_history(params):
 	if not params['silent']: kodi_utils.notification(32576)
 
 def remove_all_history(params):
-	media_type = params['media_type']
+	mediatype = params['mediatype']
 	if not kodi_utils.confirm_dialog(): return
-	all_history = get_history(media_type)
+	all_history = get_history(mediatype)
 	for item in (i[0] for i in all_history):
 		remove_from_history({'data_id': item, 'silent': True})
 	kodi_utils.notification(32576)

@@ -35,7 +35,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 			self.meta = meta or {}
 			self.meta_get = self.meta.get
 			self.tmdb_id, self.imdb_id, self.tvdb_id = self.meta_get('tmdb_id'), self.meta_get('imdb_id'), self.meta_get('tvdb_id')
-			self.media_type, self.title, self.year = self.meta_get('media_type'), self.meta_get('title'), self.meta_get('year')
+			self.mediatype, self.title, self.year = self.meta_get('mediatype'), self.meta_get('title'), self.meta_get('year')
 			self.season, self.episode = self.meta_get('season', ''), self.meta_get('episode', '')
 			if any(i in self.meta for i in ('random', 'random_continual')): bookmark = 0
 			else: bookmark = self.bookmarkPOV()
@@ -48,14 +48,14 @@ class POVPlayer(kodi_utils.xbmc_player):
 			listitem.setProperty('StartPercent', str(bookmark))
 			try:
 				trakt_ids = {'tmdb': self.tmdb_id, 'imdb': self.imdb_id, 'slug': make_title_slug(self.title)}
-				if self.media_type == 'episode': trakt_ids['tvdb'] = self.tvdb_id
+				if self.mediatype == 'episode': trakt_ids['tvdb'] = self.tvdb_id
 				kodi_utils.clear_property('script.trakt.ids')
 				kodi_utils.set_property('script.trakt.ids', json.dumps(trakt_ids))
 			except: pass
 			self.playback_event = False
 			self.play(url, listitem)
 
-			if self.media_type == 'episode':
+			if self.mediatype == 'episode':
 				self.play_random_continual = 'random_continual' in self.meta
 				if not self.play_random_continual and self.autoplay_nextep: self.autoplay_next_episode = 'random' not in self.meta
 				if not self.play_random_continual and self.autoscrape_nextep: self.autoscrape_next_episode = 'random' not in self.meta
@@ -99,7 +99,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		listitem = kodi_utils.make_listitem()
 		try:
 			listitem.setArt(art_infodict(self.meta, (*get_art_provider(), poster_empty, fanart_empty), meta_user_info()))
-			if self.media_type == 'movie':
+			if self.mediatype == 'movie':
 				if KODI_VERSION < 20:
 					listitem.setUniqueIDs({'imdb': self.imdb_id, 'tmdb': str(self.tmdb_id)})
 					listitem.setInfo('video', movie_show_infodict(self.meta))
@@ -123,7 +123,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 	def bookmarkPOV(self):
 		bookmark = 0
 		watched_indicators = settings.watched_indicators()
-		try: resume_point, curr_time, resume_id = ws.detect_bookmark(ws.get_bookmarks(watched_indicators, self.media_type), self.tmdb_id, self.season, self.episode)
+		try: resume_point, curr_time, resume_id = ws.detect_bookmark(ws.get_bookmarks(watched_indicators, self.mediatype), self.tmdb_id, self.season, self.episode)
 		except: resume_point, curr_time = 0, 0
 		resume_check = float(resume_point)
 		if resume_check > 0:
@@ -132,13 +132,13 @@ class POVPlayer(kodi_utils.xbmc_player):
 			if watched_indicators in (1, 2): resume_point = '%s%%' % str(percent)
 			else: resume_point = sec2time(raw_time, n_msec=0)
 			bookmark = self.getResumeStatus(resume_point, percent, bookmark)
-			if bookmark == 0: ws.erase_bookmark(self.media_type, self.tmdb_id, self.season, self.episode)
+			if bookmark == 0: ws.erase_bookmark(self.mediatype, self.tmdb_id, self.season, self.episode)
 		return bookmark
 
 	def getResumeStatus(self, resume_point, percent, bookmark):
-		if settings.auto_resume(self.media_type): return percent
+		if settings.auto_resume(self.mediatype): return percent
 		choice = open_window(
-			('windows.sources', 'ProgressMedia'),
+			('windows.progress', 'ProgressMedia'),
 			'progress_media.xml',
 			meta=self.meta,
 			text=ls(32790) % resume_point,
@@ -164,7 +164,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.media_marked = True
 		try:
 			if self.current_point >= self.set_watched:
-				if self.media_type == 'movie': watched_function, watched_params = ws.mark_as_watched_unwatched_movie, {
+				if self.mediatype == 'movie': watched_function, watched_params = ws.mark_as_watched_unwatched_movie, {
 					'mode': 'mark_as_watched_unwatched_movie', 'action': 'mark_as_watched', 'refresh': 'false', 'from_playback': 'true',
 					'tmdb_id': self.tmdb_id, 'title': self.title, 'year': self.year
 				}
@@ -176,7 +176,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 			else:
 				kodi_utils.clear_property('pov_total_autoplays')
 				if not self.current_point >= self.set_resume: return
-				ws.set_bookmark(self.media_type, self.tmdb_id, self.curr_time, self.total_time, self.title, self.season, self.episode)
+				ws.set_bookmark(self.mediatype, self.tmdb_id, self.curr_time, self.total_time, self.title, self.season, self.episode)
 		except: pass
 
 	def run_media_watched(self, function, params):
@@ -208,8 +208,8 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.subs_searched = True
 		try:
 			poster = self.meta.get('poster') or poster_empty
-			season = self.season if self.media_type == 'episode' else None
-			episode = self.episode if self.media_type == 'episode' else None
+			season = self.season if self.mediatype == 'episode' else None
+			episode = self.episode if self.mediatype == 'episode' else None
 			from indexers.subtitles import Subtitles
 			Thread(target=Subtitles().run, args=(self.title, self.imdb_id, season, episode, poster)).start()
 		except: pass
@@ -218,7 +218,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.stingers_checked = True
 		try:
 			poster = self.meta.get('poster') or poster_empty
-			tmdb_id = self.tmdb_id if self.media_type == 'movie' and self.stinger_enabled else None
+			tmdb_id = self.tmdb_id if self.mediatype == 'movie' and self.stinger_enabled else None
 			Thread(target=self.getStingers, args=(tmdb_id, poster)).start()
 		except: pass
 

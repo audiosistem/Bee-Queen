@@ -169,5 +169,5 @@ class Images:
 		folder_path = self.params['folder_path']
 		delete_file(thumb_url)
 		delete_file(image_url)
-		set_property('pov_home_window.delete_image_finished', 'true')
+		set_property('pov_delete_image_finished', 'true')
 

@@ -44,45 +44,6 @@ def resolve_easynews(params):
 	if not params.get('play', 'false') == 'true': return resolved_link
 	kodi_utils.player.play(resolved_link)
 
-def spool_easynews(params):
-	import json, shutil
-	from threading import Thread, Event
-	from modules.player import POVPlayer
-	name, url_dl, size = params['url_dl'].split('/')[-1], params['url_dl'], float(params['size'])
-	*_, free_space = shutil.disk_usage(kodi_utils.translate_path(kodi_utils.databases_path))
-	free_space /= 1073741824
-	if not free_space > size * 1.05: return kodi_utils.notification('Insufficient Free Space')
-	path = kodi_utils.translate_path(kodi_utils.get_addoninfo('profile') + 'spool')
-	file_path = kodi_utils.translate_path(kodi_utils.get_addoninfo('profile') + 'spool' + '/%s' % name)
-	if not kodi_utils.path_exists(path): kodi_utils.make_directory(path)
-	kodi_utils.progressDialogBG.create('EasyNews Spooling File', 'POV Working...')
-	response = EasyNews().unrestrict_link(url_dl, spool=True)
-	if response is None:
-		kodi_utils.progressDialogBG.close()
-		return kodi_utils.notification(32574)
-	shutdown = Event()
-	fileobj = kodi_utils.open_file(file_path, 'w')
-	try:
-		thread = Thread(target=_downloader, args=(response, fileobj, shutdown))
-		thread.start()
-		for i in range(20):
-			if fileobj.size() > 1048576 * 20: break
-			kodi_utils.sleep(500)
-		kodi_utils.progressDialogBG.close()
-		POVPlayer().run(file_path, json.loads(params.get('meta', '{}')))
-	finally:
-		shutdown.set()
-		fileobj.close()
-		kodi_utils.delete_file(file_path)
-
-def _downloader(response, fileobj, shutdown):
-	try:
-		for chunk in response.iter_content(chunk_size=1048576):
-			if shutdown.is_set(): break
-			if chunk: fileobj.write(chunk)
-	except Exception as e:
-		kodi_utils.logger('POV easynews Downloader Exception', str(e))
-
 def account_info(params):
 	from datetime import datetime
 	from modules.utils import jsondate_to_datetime

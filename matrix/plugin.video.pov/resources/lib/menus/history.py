@@ -8,18 +8,18 @@ from modules import kodi_utils, settings
 ls, build_url, make_listitem = kodi_utils.local_string, kodi_utils.build_url, kodi_utils.make_listitem
 search_icon = kodi_utils.media_path('search_history.png')
 default_icon = kodi_utils.media_path('search.png')
-remove_str, search_str, hist_str = ls(32786), ls(32450), ls(32486)
-new_search_str, clear_str = '[B]%s %s...[/B]' % (ls(32857).upper(), search_str.upper()), '[B]Remove all history[/B]'
+remove_str, search_str, hist_str, clear_str = ls(32698), ls(32450), ls(32486), ls(32699)
+new_search_str = '[B]%s %s...[/B]' % (ls(32857).upper(), search_str.upper())
 mode_dict, query_dict = {
-	'movie': ('movie_queries', {'mode': 'get_search_term', 'media_type': 'movie'}),
-	'tvshow': ('tvshow_queries', {'mode': 'get_search_term', 'media_type': 'tv_show'}),
+	'movie': ('movie_queries', {'mode': 'get_search_term', 'mediatype': 'movie'}),
+	'tvshow': ('tvshow_queries', {'mode': 'get_search_term', 'mediatype': 'tv_show'}),
 	'people': ('people_queries', {'mode': 'get_search_term', 'search_type': 'people'}),
-	'tmdb_collections': ('tmdb_collections_queries', {'mode': 'get_search_term', 'search_type': 'tmdb_collections', 'media_type': 'movie'}),
+	'tmdb_collections': ('tmdb_collections_queries', {'mode': 'get_search_term', 'search_type': 'tmdb_collections', 'mediatype': 'movie'}),
 	'easynews_video': ('easynews_video_queries', {'mode': 'get_search_term', 'search_type': 'easynews_video'})
 }, {
-	'people': ({'mode': 'person_search'}, 'people_queries'),
-	'tmdb_collections': ({'mode': 'build_movie_list', 'action': 'tmdb_movies_search_collections'}, 'tmdb_collections_queries'),
-	'easynews_video': ({'mode': 'easynews.search_easynews'}, 'easynews_video_queries')
+	'people': ('people_queries', {'mode': 'person_search'}),
+	'tmdb_collections': ('tmdb_collections_queries', {'mode': 'build_movie_list', 'action': 'tmdb_movies_search_collections'}),
+	'easynews_video': ('easynews_video_queries', {'mode': 'easynews.search_easynews'})
 }
 
 def search_history(params):
@@ -30,8 +30,8 @@ def search_history(params):
 				url_params['query'] = query
 				display = '[B]%s:[/B] [I]%s[/I]' % (hist_str.upper(), query)
 				url = build_url(url_params)
-				cm.append((remove_str, 'RunPlugin(%s)' % build_url({'mode': 'remove_from_history', 'setting_id': setting_id, 'query': query})))
-				cm.append((clear_str, 'RunPlugin(%s)' % build_url({'mode': 'clear_search_history', 'setting_id': setting_id, 'query': query})))
+				cm.append(('[B]%s[/B]' % remove_str, 'RunPlugin(%s)' % build_url({'mode': 'remove_from_history', 'setting_id': setting_id, 'query': query})))
+				cm.append(('[B]%s[/B]' % clear_str, 'RunPlugin(%s)' % build_url({'mode': 'clear_search_history', 'setting_id': setting_id, 'query': query})))
 				listitem = make_listitem()
 				listitem.setLabel(display)
 				listitem.setArt({'icon': search_icon, 'poster': search_icon, 'thumb': search_icon, 'fanart': fanart, 'banner': search_icon})
@@ -51,14 +51,14 @@ def search_history(params):
 
 def get_search_term(params):
 	kodi_utils.close_all_dialog()
-	media_type = params.get('media_type', '')
+	mediatype = params.get('mediatype', '')
 	search_type = params.get('search_type', 'media_title')
 	params_query = params.get('query', '')
 	if not search_type in query_dict:
-		if media_type == 'movie':
-			url_params, string = {'mode': 'build_movie_list', 'action': 'tmdb_movies_search'}, 'movie_queries'
-		else: url_params, string = {'mode': 'build_tvshow_list', 'action': 'tmdb_tv_search'}, 'tvshow_queries'
-	else: url_params, string = query_dict[search_type]
+		if mediatype == 'movie':
+			string, url_params = 'movie_queries', {'mode': 'build_movie_list', 'action': 'tmdb_movies_search'}
+		else: string, url_params = 'tvshow_queries', {'mode': 'build_tvshow_list', 'action': 'tmdb_tv_search'}
+	else: string, url_params = query_dict[search_type]
 	query = params_query or kodi_utils.dialog.input('POV')
 	if not query.strip(): return
 	query = unquote(query)

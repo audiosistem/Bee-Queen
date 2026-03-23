@@ -88,7 +88,7 @@ class Menu(Debrid):
 				datetime_object = jsondate_to_datetime(item['generated'], '%Y-%m-%dT%H:%M:%S.%fZ', remove_time=True)
 				display = '%02d | %.2f GB | %s | [I]%s [/I]' % (count, size, datetime_object, name)
 				params = {'name': name, 'url': item['download'], 'id': item['id'], 'image': default_icon}
-				url_params = {**params, 'mode': 'media_play', 'media_type': 'video'}
+				url_params = {**params, 'mode': 'media_play', 'mediatype': 'video'}
 				delete_params = {**params, 'mode': 'real_debrid.rd_delete', 'cache_type': 'download'}
 				down_file_params = {**params, 'mode': 'downloader', 'action': 'cloud.real-debrid_direct'}
 				cm_append(('[B]%s %s[/B]' % (delete_str, file_str.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))

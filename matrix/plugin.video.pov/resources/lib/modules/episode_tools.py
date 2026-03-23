@@ -6,8 +6,8 @@ import _strptime  # fix bug in python import
 from windows import open_window
 from indexers.metadata import tvshow_meta, season_episodes_meta, all_episodes_meta
 from modules import kodi_utils, settings
-from modules.sources import SourceSelect
 from modules.utils import get_datetime, adjust_premiered_date
+from sources import Sources
 # from modules.kodi_utils import logger
 
 ls, build_url = kodi_utils.local_string, kodi_utils.build_url
@@ -41,13 +41,13 @@ def get_random_episode(tmdb_id, continual=False):
 	try: premiered = adjust_premiered_date(chosen_episode['premiered'], adjust_hours)[1]
 	except: premiered = chosen_episode['premiered']
 	meta.update({
-		'media_type': 'episode', 'rootname': display_name, 'season': season, 'episode': episode,
+		'mediatype': 'episode', 'rootname': display_name, 'season': season, 'episode': episode,
 		'premiered': premiered, 'ep_name': ep_name, 'plot': plot
 	})
 	if continual: meta['random_continual'] = 'true'
 	else: meta['random'] = 'true'
 	url_params = {
-		'mode': 'play_media', 'media_type': 'episode', 'autoplay': 'true', 'season': season, 'episode': episode,
+		'mode': 'play_media', 'mediatype': 'episode', 'autoplay': 'true', 'season': season, 'episode': episode,
 		'tmdb_id': meta['tmdb_id'], 'tvshowtitle': meta['rootname'], 'query': query, 'meta': json.dumps(meta)
 	}
 	return meta, url_params
@@ -65,11 +65,11 @@ def nextep_playback_info(meta):
 		title = custom_title or meta_get('title')
 		display_name = '%s - %dx%.2d' % (title, int(season), int(episode))
 		meta.update({
-			'media_type': 'episode', 'rootname': display_name, 'season': season, 'episode': episode,
+			'mediatype': 'episode', 'rootname': display_name, 'season': season, 'episode': episode,
 			'premiered': airdate, 'ep_name': ep_data['title'], 'plot': ep_data['plot']
 		})
 		url_params = {
-			'mode': 'play_media', 'media_type': 'episode', 'season': season, 'episode': episode,
+			'mode': 'play_media', 'mediatype': 'episode', 'season': season, 'episode': episode,
 			'tmdb_id': tmdb_id, 'tvshowtitle': meta_get('rootname')
 		}
 		if custom_title: url_params['custom_title'] = custom_title
@@ -90,11 +90,11 @@ def execute_scrape_nextep(meta):
 	nextep_meta, nextep_params = nextep_playback_info(meta)
 	if nextep_params == 'error': return kodi_utils.notification(32574)
 	elif nextep_params == 'no_next_episode': return
-	if not SourceSelect.background_prep(nextep_params): return kodi_utils.notification(32760)
-	SourceSelect.nextep_callback(nextep_params)
+	if not Sources.background_prep(nextep_params): return kodi_utils.notification(32760)
+	Sources.nextep_callback(nextep_params)
 	action = open_window(('windows.next_episode', 'NextEpisode'), 'next_episode.xml', meta=nextep_meta, function='next_ep')
 	if action == 'cancel':
-		SourceSelect.nextep_params.clear()
+		Sources.nextep_params.clear()
 		return kodi_utils.notification(32736)
 	if action == 'play': kodi_utils.player.stop()
 
@@ -147,11 +147,11 @@ def execute_nextep(meta, nextep_settings):
 	nextep_meta, nextep_params = _get_nextep_params()
 	if nextep_params == 'error': return kodi_utils.notification(32574)
 	elif nextep_params == 'no_next_episode': return
-	if not SourceSelect.background_prep(nextep_params): return kodi_utils.notification(32760)
-	SourceSelect.nextep_callback(nextep_params)
+	if not Sources.background_prep(nextep_params): return kodi_utils.notification(32760)
+	Sources.nextep_callback(nextep_params)
 	action = _control()
 	if action == 'cancel':
-		SourceSelect.nextep_params.clear()
+		Sources.nextep_params.clear()
 		kodi_utils.clear_property('pov_total_autoplays')
 		return kodi_utils.notification(32736)
 	if action == 'close':

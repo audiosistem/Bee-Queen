@@ -5,13 +5,12 @@ from concurrent.futures import ThreadPoolExecutor as TPE, as_completed
 from threading import Thread
 from magneto import sources as magneto_sources
 from windows import open_window, create_window
-from scrapers import folders
 from caches.providers_cache import ExternalProvidersCache
 from indexers.metadata import movie_meta, tvshow_meta, season_episodes_meta, get_title
-from modules.debrid import debrid_enabled, debrid_type_enabled, debrid_valid_hosts, Source, DebridCheck
+from modules.debrid import debrid_enabled, debrid_type_enabled, Source, DebridCheck
 from modules import player, kodi_utils, settings
-from modules.source_utils import internal_sources, internal_folders_import
-from modules.source_utils import pack_enable_check, sources_quality_count, scraper_names
+from modules.source_utils import internal_sources
+from modules.source_utils import pack_enable_check, sources_quality_count
 from modules.source_utils import get_cache_expiry, get_filename_match, get_file_info, normalize
 from modules.utils import clean_file_name, safe_string, string_to_float, remove_accents, get_datetime
 #from modules.kodi_utils import logger
@@ -23,7 +22,6 @@ ls, monitor, sleep, get_setting = kodi_utils.local_string, kodi_utils.monitor, k
 check_prescrape_sources, quality_filter, sort_to_top = settings.check_prescrape_sources, settings.quality_filter, settings.sort_to_top
 results_xml_style, results_xml_window_number = settings.results_xml_style, settings.results_xml_window_number
 default_internal_scrapers, cloud_scrapers = settings.default_internal_scrapers, settings.cloud_scrapers
-folder_scrapers = ('folder1', 'folder2', 'folder3', 'folder4', 'folder5')
 quality_ranks = {'4K': 1, '1080p': 2, '720p': 3, 'SD': 4, 'SCR': 5, 'CAM': 5, 'TELE': 5}
 av1_filter_key, hevc_filter_key, hdr_filter_key, dolby_vision_filter_key = '[B]AV1[/B]', '[B]HEVC[/B]', '[B]HDR[/B]', '[B]D/VISION[/B]'
 total_format, int_format, ext_format = '[COLOR %s][B]%s[/B][/COLOR]', '[COLOR %s][B]Int: [/B][/COLOR]%s', '[COLOR %s][B]Ext: [/B][/COLOR]%s'
@@ -34,10 +32,10 @@ remaining_format, season_str, show_str, nextep_str, nores_str = ls(32676), ls(32
 season_display, show_display = ls(32537), ls(32089)
 pack_check = (season_display, show_display)
 
-class SourceSelect:
+class Sources:
 	def __init__(self):
 		self.params = {}
-		self.clear_properties, self.filters_ignored, self.active_folders = True, False, False
+		self.clear_properties, self.filters_ignored = True, False
 		self.progress_dialog, self.pov_background_url = None, None
 		self.threads, self.providers, self.sources, self.internal_scraper_names = [], [], [], []
 		self.prescrape_scrapers, self.prescrape_threads, self.prescrape_sources = [], [], []
@@ -56,10 +54,10 @@ class SourceSelect:
 		if self.background: hide_busy_dialog()
 		else: show_busy_dialog()
 		if 'autoplay' in self.params: self.autoplay = params_get('autoplay', 'false') == 'true'
-		else: self.autoplay = settings.auto_play(params_get('media_type'))
+		else: self.autoplay = settings.auto_play(params_get('mediatype'))
 		self.disabled_ignored = params_get('disabled_ignored', self.disabled_ignored) == 'true'
 		self.ignore_scrape_filters = params_get('ignore_scrape_filters', 'false') == 'true'
-		self.media_type = params_get('media_type')
+		self.mediatype = params_get('mediatype')
 		self.tmdb_id = params_get('tmdb_id')
 		self.season = int(params_get('season')) if 'season' in self.params else ''
 		self.episode = int(params_get('episode')) if 'episode' in self.params else ''
@@ -109,8 +107,7 @@ class SourceSelect:
 
 	def collect_results(self):
 		self.sources.extend(self.prescrape_sources)
-		if self.active_folders: self.append_folder_scrapers(self.providers)
-		self.providers.extend(internal_sources(self.active_internal_scrapers, self.media_type))
+		self.providers.extend(internal_sources(self.active_internal_scrapers, self.mediatype))
 		if self.providers:
 			threads = (Thread(target=self.activate_providers, args=(i[0], i[1], False), name=i[2]) for i in self.providers)
 			self.threads.extend(threads)
@@ -122,7 +119,6 @@ class SourceSelect:
 					self.meta,
 					self.external_providers,
 					self.debrid_torrent_enabled,
-					self.debrid_hoster_enabled,
 #					self.internal_scraper_names,
 					self.threads,
 					self.prescrape_sources,
@@ -137,11 +133,7 @@ class SourceSelect:
 		return self.sources
 
 	def collect_prescrape_results(self):
-		if self.active_folders:
-			if self.autoplay or check_prescrape_sources('folders', self.media_type):
-				self.append_folder_scrapers(self.prescrape_scrapers)
-				self.remove_scrapers.append('folders')
-		self.prescrape_scrapers.extend(internal_sources(self.active_internal_scrapers, self.media_type, True))
+		self.prescrape_scrapers.extend(internal_sources(self.active_internal_scrapers, self.mediatype, True))
 		if not self.prescrape_scrapers: return []
 		threads = (Thread(target=self.activate_providers, args=(i[0], i[1], True), name=i[2]) for i in self.prescrape_scrapers)
 		self.prescrape_threads.extend(threads)
@@ -172,20 +164,11 @@ class SourceSelect:
 	def prepare_internal_scrapers(self):
 		if self.active_external and len(self.active_internal_scrapers) == 1: return
 		active_internal_scrapers = [i for i in self.active_internal_scrapers if not i in self.remove_scrapers]
-		self.active_folders = 'folders' in active_internal_scrapers
-		if self.active_folders:
-			self.folder_info = self.get_folderscraper_info()
-			self.internal_scraper_names = [i for i in active_internal_scrapers if not i == 'folders']
-			self.internal_scraper_names += [i[0] for i in self.folder_info]
-			self.active_internal_scrapers = active_internal_scrapers
-		else:
-			self.folder_info = []
-			self.internal_scraper_names = active_internal_scrapers[:]
-			self.active_internal_scrapers = active_internal_scrapers
+		self.internal_scraper_names = active_internal_scrapers[:]
+		self.active_internal_scrapers = active_internal_scrapers
 
 	def activate_providers(self, module_type, function, prescrape):
 		if module_type == 'external': module = function(*self.external_args)
-		elif module_type == 'folders': module = function[0](*function[1])
 		else: module = function()
 		sources = module.results(self.meta['search_info'])
 		if not sources: return
@@ -195,20 +178,18 @@ class SourceSelect:
 	def activate_external_providers(self):
 		self.debrid_enabled = debrid_enabled()
 		self.debrid_torrent_enabled = debrid_type_enabled('torrent', self.debrid_enabled)
-		self.debrid_hoster_enabled = debrid_valid_hosts(debrid_type_enabled('hoster', self.debrid_enabled))
-		if not self.debrid_torrent_enabled and not self.debrid_hoster_enabled:
+		if not self.debrid_torrent_enabled:
 			self._kill_progress_dialog()
 			if ''.join(self.active_internal_scrapers) == 'external': notification(32854)
 			self.active_external = False
 		else:
 #			if not self.debrid_torrent_enabled: self.exclude_list.extend(scraper_names('torrents'))
-#			elif not self.debrid_hoster_enabled: self.exclude_list.extend(scraper_names('hosters'))
 			external_providers = magneto_sources(ret_all=self.disabled_ignored)
 			self.external_providers = [
 				i for i in external_providers if not i[0] in self.exclude_list
-				and (i[1].hasEpisodes if self.media_type == 'episode' else i[1].hasMovies)
+				and (i[1].hasEpisodes if self.mediatype == 'episode' else i[1].hasMovies)
 			]
-			if not self.media_type == 'episode': return
+			if not self.mediatype == 'episode': return
 			self.external_providers = [(i[0], i[1], '') for i in self.external_providers]
 			season_packs, show_packs = pack_enable_check(self.meta, self.season, self.episode)
 			if not season_packs: return
@@ -217,13 +198,6 @@ class SourceSelect:
 				self.external_providers.extend([(i[0], i[1], season_str) for i in pack_capable])
 			if pack_capable and show_packs:
 				self.external_providers.extend([(i[0], i[1], show_str) for i in pack_capable])
-
-	def append_folder_scrapers(self, current_list):
-		current_list.extend(internal_folders_import(self.folder_info))
-
-	def get_folderscraper_info(self):
-		folder_info = [(get_setting('%s.display_name' % i), i) for i in folder_scrapers]
-		return [i for i in folder_info if not i[0] in (None, 'None', '')]
 
 	def scrapers_dialog(self, scrape_type):
 		if scrape_type == 'internal':
@@ -283,17 +257,16 @@ class SourceSelect:
 			for k in self.internal_resolutions: self.internal_resolutions[k] += sources.get(k, 0)
 
 	def _quality_filter(self):
-		setting = 'results_quality_%s' % self.media_type if not self.autoplay else 'autoplay_quality_%s' % self.media_type
+		setting = 'results_quality_%s' % self.mediatype if not self.autoplay else 'autoplay_quality_%s' % self.mediatype
 		filter_list = quality_filter(setting)
 		if self.include_prerelease_results and 'SD' in filter_list: filter_list += ['SCR', 'CAM', 'TELE']
 		return filter_list
 
 	def _clear_properties(self):
 		for item in default_internal_scrapers: clear_property('%s.internal_results' % item)
-		for item in self.get_folderscraper_info(): clear_property('%s.internal_results' % item[0])
 
 	def _make_progress_dialog(self):
-		self.progress_dialog = create_window(('windows.sources', 'ProgressMedia'), 'progress_media.xml', meta=self.meta)
+		self.progress_dialog = create_window(('windows.progress', 'ProgressMedia'), 'progress_media.xml', meta=self.meta)
 		Thread(target=self.progress_dialog.run).start()
 
 	def _kill_progress_dialog(self):
@@ -306,7 +279,7 @@ class SourceSelect:
 	def display_results(self, results):
 		window_style = results_xml_style()
 		chosen_item = open_window(
-			('windows.sources', 'SourceResults'),
+			('sources.windows_sources', 'SourceResults'),
 			'sources_results.xml',
 			window_style=window_style,
 			window_id=results_xml_window_number(window_style),
@@ -340,8 +313,10 @@ class SourceSelect:
 						percent = int(((total_items := len(items))-count)/total_items*100)
 						name = item['name'].replace('.', ' ').replace('-', ' ').upper()
 						line1 = item.get('scrape_provider'), item.get('cache_provider'), item.get('provider')
+						line2 = item.get('size_label', ''), item.get('extraInfo', '')
+						if source_index: line2 = ('[B]%02d[/B]' % (source_index + count), *line2)
 						line1 = ' | '.join(i for i in line1 if i and i != 'external').upper()
-						line2 = ' | '.join(i for i in (item.get('size_label', ''), item.get('extraInfo', '')) if i)
+						line2 = ' | '.join(i for i in line2 if i)
 						if self.progress_dialog: self.progress_dialog.update(format_line % (line1, line2, name), percent)
 						else: progressDialogBG.update(percent, name)
 					except: pass
@@ -381,7 +356,7 @@ class SourceSelect:
 		if not self.include_3D_results: results = [i for i in results if not '3D' in i['extraInfo']]
 		if not self.size_filter: return results
 		if self.size_filter == 1:
-			duration = self.meta['duration'] or (3600 if self.media_type == 'episode' else 5400)
+			duration = self.meta['duration'] or (3600 if self.mediatype == 'episode' else 5400)
 			max_size = ((0.125 * (0.90 * string_to_float(get_setting('results.size.speed', '20'), '20'))) * duration)/1000
 		if self.size_filter == 2:
 			max_size = string_to_float(get_setting('results.size.file', '10000'), '10000') / 1000
@@ -439,32 +414,26 @@ class SourceSelect:
 			remainder_list = [i for i in results if not i in priority_list]
 			results = priority_list + remainder_list
 		elif enable_setting == 3:
-			priority_list = lambda k: key in k['extraInfo'] and not 'Uncached' in k.get('cache_provider', '')
-			results.sort(key=priority_list, reverse=True)
+			results.sort(key=lambda k: key in k['extraInfo'] and not 'Uncached' in k.get('cache_provider', ''), reverse=True)
 		return results
 
 	def _sort_first(self, results):
 		try:
 			sort_first_scrapers = []
-			if 'folders' in self.all_scrapers and sort_to_top('folders'): sort_first_scrapers.append('folders')
 			sort_first_scrapers.extend([i for i in self.all_scrapers if i in cloud_scrapers and sort_to_top(i)])
 			if not sort_first_scrapers: return results
 			sort_first = [i for i in results if i['scrape_provider'] in sort_first_scrapers]
-			sort_first.sort(key=lambda k: (self._sort_folder_to_top(k['scrape_provider']), k['quality_rank']))
+			sort_first.sort(key=lambda k: k['quality_rank'])
 			sort_last = [i for i in results if not i in sort_first]
 			results = sort_first + sort_last
 		except: pass
 		return results
 
-	def _sort_folder_to_top(self, provider):
-		if provider == 'folders': return 0
-		else: return 1
-
 	def get_source_meta(self):
 		if 'meta' in self.params: meta = json.loads(self.params['meta'])
 		else:
 			meta_user_info, current_date = settings.metadata_user_info(), get_datetime()
-			if self.media_type == 'episode':
+			if self.mediatype == 'episode':
 				meta = tvshow_meta('tmdb_id', self.tmdb_id, meta_user_info, current_date)
 				try:
 					episodes_data = season_episodes_meta(self.season, meta, meta_user_info)
@@ -476,20 +445,20 @@ class SourceSelect:
 				except: pass
 			else: meta = movie_meta('tmdb_id', self.tmdb_id, meta_user_info, current_date)
 		meta.update({
-			'mediatype': self.media_type, 'season': self.season, 'episode': self.episode,
-			'media_type': self.media_type, 'background': self.background
+			'background': self.background, 'mediatype': self.mediatype,
+			'season': self.season, 'episode': self.episode
 		})
 		if self.custom_title: meta['custom_title'] = self.custom_title
 		if self.custom_year: meta['custom_year'] = self.custom_year
 		if self.custom_season: meta['custom_season'] = self.custom_season
 		if self.custom_episode: meta['custom_episode'] = self.custom_episode
-		expiry_times = get_cache_expiry(self.media_type, meta, self.season)
+		expiry_times = get_cache_expiry(self.mediatype, meta, self.season)
 		title = get_title(meta)
 		aliases = self._make_alias_dict(meta, title)
 		year = self._get_search_year(meta)
 		ep_name = self._get_ep_name(meta)
 		meta['search_info'] = {
-			'media_type': self.media_type, 'expiry_times': expiry_times, 'year': year, 'aliases': aliases,
+			'mediatype': self.mediatype, 'expiry_times': expiry_times, 'year': year, 'aliases': aliases,
 			'tmdb_id': self.tmdb_id, 'imdb_id': meta.get('imdb_id'), 'tvdb_id': meta.get('tvdb_id'),
 			'title': title, 'ep_name': ep_name, 'total_seasons': meta.get('total_seasons', ''),
 			'season': self.custom_season or self.season, 'episode': self.custom_episode or self.episode
@@ -520,7 +489,7 @@ class SourceSelect:
 		return year
 
 	def _get_ep_name(self, meta):
-		if meta.get('media_type') == 'episode':
+		if meta.get('mediatype') == 'episode':
 			ep_name = meta.get('ep_name')
 			try: ep_name = safe_string(remove_accents(ep_name))
 			except: ep_name = safe_string(ep_name)
@@ -531,7 +500,7 @@ class SourceSelect:
 
 	@classmethod
 	def factory(cls, params):
-		if params.get('media_type') == 'episode':
+		if params.get('mediatype') == 'episode':
 			cls.nextep_callback(params)
 			while cls.nextep_params:
 				try: cls().playback_prep(cls.nextep_params.pop())
@@ -566,21 +535,21 @@ class Manager:
 		return wrapper
 
 	def __init__(
-		self, meta, source_dict, debrid_torrents, debrid_hosters, internal_scrapers,
-		prescrape_sources, display_uncached_torrents, progress_dialog, disabled_ignored=False
+		self, meta, source_dict, debrid_torrents, internal_scrapers, prescrape_sources,
+		display_uncached_torrents, progress_dialog, disabled_ignored=False
 	):
 		self.meta = meta
 		self.background, self.full_screen = self.meta.get('background', False), self.meta.get('full_screen', False)
-		self.debrid_torrents, self.debrid_hosters = debrid_torrents, debrid_hosters
-		self.source_dict, self.hostDict = source_dict, self.make_host_dict()
+		self.source_dict, self.debrid_torrents = source_dict, debrid_torrents
 		self.internal_scrapers, self.prescrape_sources = internal_scrapers, prescrape_sources
 		self.display_uncached_torrents = display_uncached_torrents
 		self.disabled_ignored, self.progress_dialog = disabled_ignored, progress_dialog
 		self.internal_activated = len(self.internal_scrapers) > 0
 		self.internal_prescraped = len(self.prescrape_sources) > 0
 		self.processed_prescrape = False
-		self.processed_internal_scrapers, self.sources, self.final_sources = [], [], []
+		self.processed_internal_scrapers = []
 		self.processed_internal_scrapers_append = self.processed_internal_scrapers.append
+		self.hostDict, self.sources, self.final_sources = [], [], []
 		self.sleep_time = settings.display_sleep_time()
 		self.timeout = int(self.meta.get('scrape_timeout', '10')) - 1
 		self.int_dialog_highlight = get_setting('int_dialog_highlight', 'dodgerblue')
@@ -621,12 +590,6 @@ class Manager:
 				status = ('Unchecked %s' if name in ('real-debrid', 'alldebrid') else 'Uncached %s') % name
 				self.final_sources.extend({**i, 'cache_provider': name, 'debrid': name} for i in torrent_sources if i['hash'] in hashes)
 				self.final_sources.extend({**i, 'cache_provider': status, 'debrid': name} for i in torrent_sources if not i['hash'] in hashes)
-			hoster_sources = [i for i in self.sources if not 'hash' in i]
-			result_hosters = list({i['source'].lower() for i in hoster_sources})
-			for item in self.debrid_hosters:
-				for k, v in item.items():
-					valid_hosters = [i for i in result_hosters if i in v]
-					self.final_sources.extend([{**i, 'debrid': k} for i in hoster_sources if i['source'] in valid_hosters])
 		except: notification(32574)
 		finally: tpe.shutdown(False)
 		return self.final_sources
@@ -701,16 +664,9 @@ class Manager:
 			_process_quality_count(internal_sources)
 		return [i.name for i in self.internal_scrapers if not i.name in self.processed_internal_scrapers]
 
-	def make_host_dict(self):
-		pr_list = []
-		pr_list_extend = pr_list.extend
-		for item in self.debrid_hosters:
-			for k, v in item.items(): pr_list_extend(v)
-		return list(set(pr_list))
-
 	def _make_progress_dialog(self):
 		if self.progress_dialog: return
-		self.progress_dialog = create_window(('windows.sources', 'ProgressMedia'), 'progress_media.xml', meta=self.meta)
+		self.progress_dialog = create_window(('windows.progress', 'ProgressMedia'), 'progress_media.xml', meta=self.meta)
 		Thread(target=self.progress_dialog.run).start()
 
 	def _kill_progress_dialog(self):
@@ -727,11 +683,11 @@ class ExternalSource:
 
 	def results(self, info):
 		try:
-			self.media_type, self.tmdb_id, self.year = info['media_type'], str(info['tmdb_id']), info['year']
+			self.mediatype, self.tmdb_id, self.year = info['mediatype'], str(info['tmdb_id']), info['year']
 			self.season, self.episode, self.total_seasons = info['season'], info['episode'], info['total_seasons']
 			self.title, self.orig_title, aliases = normalize(info['title']), info['title'], info['aliases']
 			self.single_expiry, self.season_expiry, self.show_expiry = info['expiry_times']
-			if self.media_type == 'episode':
+			if self.mediatype == 'episode':
 				season_divider = (
 					i['episode_count'] for i in self.meta['season_data']
 					if int(i['season_number']) == int(self.meta['season'])
@@ -755,11 +711,11 @@ class ExternalSource:
 
 	def get_movie_source(self, provider, module):
 		epc = ExternalProvidersCache()
-		sources = epc.get(provider, self.media_type, self.tmdb_id, self.title, self.year, '', '')
+		sources = epc.get(provider, self.mediatype, self.tmdb_id, self.title, self.year, '', '')
 		if sources is None:
 			sources = module().sources(self.data, self.hostDict)
 			sources = self.process_sources(provider, sources)
-			epc.set(provider, self.media_type, self.tmdb_id, self.title, self.year, '', '', sources, self.single_expiry)
+			epc.set(provider, self.mediatype, self.tmdb_id, self.title, self.year, '', '', sources, self.single_expiry)
 		if sources:
 			self.sources.extend(sources)
 
@@ -767,7 +723,7 @@ class ExternalSource:
 		if pack in pack_check: s_check, e_check = '' if pack == show_display else self.season, ''
 		else: s_check, e_check = self.season, self.episode
 		epc = ExternalProvidersCache()
-		sources = epc.get(provider, self.media_type, self.tmdb_id, self.title, self.year, s_check, e_check)
+		sources = epc.get(provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check)
 		if sources is None:
 			if pack == show_display:
 				expiry_hours = self.show_expiry
@@ -779,7 +735,7 @@ class ExternalSource:
 				expiry_hours = self.single_expiry
 				sources = module().sources(self.data, self.hostDict)
 			sources = self.process_sources(provider, sources)
-			epc.set(provider, self.media_type, self.tmdb_id, self.title, self.year, s_check, e_check, sources, expiry_hours)
+			epc.set(provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check, sources, expiry_hours)
 		if sources:
 			if pack == season_display: sources = [i for i in sources if not 'episode_start' in i or i['episode_start'] <= self.episode <= i['episode_end']]
 			elif pack == show_display: sources = [i for i in sources if i['last_season'] >= self.season]

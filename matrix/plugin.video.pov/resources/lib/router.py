@@ -34,8 +34,8 @@ class Router:
 			close_all_dialog()
 			player.play(params['url'])
 		elif mode == 'play_media':
-			from modules.sources import SourceSelect
-			SourceSelect.factory(params)
+			from sources import Sources
+			Sources.factory(params)
 		elif 'choice' in mode:
 			from modules import dialogs
 			if mode == 'scraper_color_choice':
@@ -56,16 +56,14 @@ class Router:
 				dialogs.meta_language_choice()
 			elif mode == 'extras_menu_choice':
 				dialogs.extras_menu(params)
-			elif mode == 'favourites_choice':
-				dialogs.favourites_choice(params)
+			elif mode == 'favorites_choice':
+				dialogs.favorites_choice(params)
 			elif mode == 'trakt_manager_choice':
 				dialogs.trakt_manager_choice(params)
 			elif mode == 'tmdb_manager_choice':
 				dialogs.tmdb_manager_choice(params)
 			elif mode == 'mdbl_manager_choice':
 				dialogs.mdbl_manager_choice(params)
-			elif mode == 'folder_scraper_manager_choice':
-				dialogs.folder_scraper_manager_choice()
 			elif mode == 'set_language_filter_choice':
 				dialogs.set_language_filter_choice(params['filter_setting'])
 			elif mode == 'extras_lists_choice':
@@ -76,9 +74,6 @@ class Router:
 			if 'trakt_account_info' in mode:
 				from menus.trakt import trakt_account_info
 				trakt_account_info()
-			elif 'hide_unhide_trakt_items' in mode:
-				from menus.trakt_api import hide_unhide_trakt_items
-				hide_unhide_trakt_items(params['action'], params['media_type'], params['media_id'], params['section'])
 			else:
 				from modules.utils import manual_function_import
 				function = manual_function_import('indexers.trakt_api', mode.split('.')[-1])
@@ -163,7 +158,7 @@ class Router:
 				mark_as_watched_unwatched_movie(params)
 			elif mode == 'watched_unwatched_erase_bookmark':
 				from caches.watched_cache import erase_bookmark
-				erase_bookmark(params_get('media_type'), params_get('tmdb_id'), params_get('season', ''), params_get('episode', ''), params_get('refresh', 'false'))
+				erase_bookmark(params_get('mediatype'), params_get('tmdb_id'), params_get('season', ''), params_get('episode', ''), params_get('refresh', 'false'))
 		elif 'toggle' in mode:
 			if mode == 'toggle_provider':
 				from modules.utils import toggle_provider
@@ -208,9 +203,6 @@ class Router:
 			else: Menu().run(params)
 		elif 'offcloud' in mode:
 			from menus.offcloud import Menu
-			Menu().run(params)
-		elif 'easydebrid' in mode:
-			from menus.easydebrid import Menu
 			Menu().run(params)
 		elif '_settings' in mode:
 			if mode == 'open_settings':

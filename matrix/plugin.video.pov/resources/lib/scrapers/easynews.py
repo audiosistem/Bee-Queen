@@ -15,10 +15,10 @@ class source(Debrid):
 			sources_append = self.sources.append
 			filter_lang, lang_filters = easynews_language_filter()
 			title_filter = filter_by_name('easynews')
-			self.media_type, title, self.year = info.get('media_type'), info.get('title'), int(info.get('year'))
+			self.mediatype, title, self.year = info.get('mediatype'), info.get('title'), int(info.get('year'))
 			self.season, self.episode = info.get('season'), info.get('episode')
 			self.search_title = clean_file_name(title).replace('&', 'and')
-			if self.media_type == 'movie': query = '%s %d' % (self.search_title, self.year)
+			if self.mediatype == 'movie': query = '%s %d' % (self.search_title, self.year)
 			else: query = '%s S%02dE%02d' % (self.search_title, self.season, self.episode)
 			self.scrape_results = self.search(query, info.get('expiry_times')[0])
 			if not self.scrape_results: return internal_results(self.scrape_provider, self.sources)

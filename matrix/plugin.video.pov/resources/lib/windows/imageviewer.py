@@ -3,7 +3,7 @@ from windows import BaseDialog
 from indexers.tmdb_api import tmdb_popular_people
 from menus.people import person_data_dialog
 from modules.settings import download_directory
-from modules.kodi_utils import media_path, show_busy_dialog, hide_busy_dialog, local_string as ls
+from modules.kodi_utils import media_path, show_busy_dialog, hide_busy_dialog, local_string as ls, get_property, set_property
 # from modules.kodi_utils import logger
 
 fanart = BaseDialog.fanart
@@ -92,9 +92,9 @@ class ThumbImageViewer(BaseDialog):
 		except: pass
 
 	def reset_after_delete(self, choice, position):
-		self.set_home_property('delete_image_finished', 'false')
+		set_property('pov_delete_image_finished', 'false')
 		self.execute_code(choice)
-		while not self.get_home_property('delete_image_finished') == 'true': self.sleep(10)
+		while not get_property('pov_delete_image_finished') == 'true': self.sleep(10)
 		self.win.reset()
 		self.list_items = self.ImagesInstance.browser_image(download_directory('image'), return_items=True)
 		self.make_page()
@@ -146,7 +146,7 @@ class ThumbContextMenu(BaseDialog):
 				'thumb_url': thumb_url, 'image_url': path, 'in_progress': 'true'
 			}))
 		else: self.item_list.append(self.make_contextmenu_item(down_str, 'RunPlugin(%s)', {
-			'mode': 'downloader', 'action': 'image', 'media_type': 'image', 'image': BaseDialog.icon,
+			'mode': 'downloader', 'action': 'image', 'mediatype': 'image', 'image': BaseDialog.icon,
 			'thumb_url': thumb_url, 'image_url': path, 'name': self.list_item.getProperty('tikiskins.name')
 		}))
 

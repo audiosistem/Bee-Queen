@@ -5,7 +5,7 @@ root_list = [
 	{'name': 32452, 'iconImage': 'people.png', 'mode': 'build_popular_people', 'isFolder': 'false'},
 	{'name': 32451, 'iconImage': 'discover.png', 'mode': 'navigator.discover_main'},
 	{'name': 32450, 'iconImage': 'search.png', 'mode': 'navigator.search'},
-	{'name': 32453, 'iconImage': 'favourites.png', 'mode': 'navigator.favourites'},
+	{'name': 32453, 'iconImage': 'favorites.png', 'mode': 'navigator.favorites'},
 	{'name': 32107, 'iconImage': 'downloads.png', 'mode': 'navigator.downloads'},
 	{'name': 32454, 'iconImage': 'lists.png', 'mode': 'navigator.my_content'},
 	{'name': 32455, 'iconImage': 'premium.png', 'mode': 'navigator.premium'},

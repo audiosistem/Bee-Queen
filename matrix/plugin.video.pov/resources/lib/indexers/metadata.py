@@ -1,17 +1,19 @@
-from indexers import tmdb_api as tmdb, fanarttv_api as fanarttv
+from indexers import tmdb_api
 from caches.meta_cache import MetaCache
 from modules.utils import jsondate_to_datetime, subtract_dates, TaskPool
 # from modules.kodi_utils import logger
 
 EXPIRES_2_DAYS, EXPIRES_4_DAYS, EXPIRES_7_DAYS, EXPIRES_14_DAYS, EXPIRES_182_DAYS = 2, 4, 7, 14, 182
-movie_data, tvshow_data, tmdb_english_translation = tmdb.movie_details, tmdb.tvshow_details, tmdb.english_translation
-movie_external_id, tvshow_external_id, season_episodes_details = tmdb.movie_external_id, tmdb.tvshow_external_id, tmdb.season_episodes_details
-default_fanarttv_data, fanarttv_get, fanarttv_add = fanarttv.default_fanart_nometa, fanarttv.get, fanarttv.add
+movie_data, tvshow_data = tmdb_api.movie_details, tmdb_api.tvshow_details
+season_episodes_details, tmdb_english_translation = tmdb_api.season_episodes_details, tmdb_api.english_translation
+movie_external_id, tvshow_external_id = tmdb_api.movie_external_id, tmdb_api.tvshow_external_id
 subtract_dates_function, jsondate_to_datetime_function = subtract_dates, jsondate_to_datetime
-backup_resolutions, writer_credits = {'poster': 'w780', 'fanart': 'w1280', 'still': 'original', 'profile': 'h632'}, ('Author', 'Writer', 'Screenplay', 'Characters')
-alt_titles_test, trailers_test, finished_show_check, empty_value_check = ('US', 'GB', 'UK', ''), ('Trailer', 'Teaser'), ('Ended', 'Canceled'), ('', 'None', None)
-tmdb_image_base, youtube_url, date_format = tmdb.tmdb_image_base, 'plugin://plugin.video.youtube/play/?video_id=%s', '%Y-%m-%d'
+tmdb_image_base, writer_credits = tmdb_api.tmdb_image_base, ('Author', 'Writer', 'Screenplay', 'Characters')
+backup_resolutions = {'poster': 'w780', 'fanart': 'w1280', 'still': 'original', 'profile': 'h632'}
 rpdb_themes = {'0': '', '1': '&theme=rounded-blocks', '2': '&theme=blocks'}
+alt_titles_test, trailers_test = ('US', 'GB', 'UK', ''), ('Trailer', 'Teaser')
+finished_show_check, empty_value_check = ('Ended', 'Canceled'), ('', 'None', None)
+youtube_url, date_format = 'plugin://plugin.video.youtube/play/?video_id=%s', '%Y-%m-%d'
 infokeys, episodekeys, seasonkeys, videoinfomethods = (
 	'country', 'director', 'duration', 'genre', 'imdbnumber', 'mediatype', 'mpaa', 'originaltitle',
 	'plot', 'premiered', 'rating', 'studio', 'tag', 'tagline', 'title', 'trailer', 'votes', 'writer', 'year',
@@ -38,15 +40,12 @@ def art_infodict(meta, art_provider, meta_user_info, extra_art=None):
 	poster_main, poster_backup, fanart_main, fanart_backup, poster_empty, fanart_empty = art_provider
 	poster = meta_get(poster_main) or meta_get(poster_backup) or poster_empty
 	fanart = meta_get(fanart_main) or meta_get(fanart_backup) or fanart_empty
-	clearlogo = meta_get('clearlogo') or meta_get('tmdblogo') or ''
+	clearlogo = meta_get('clearlogo') or ''
+	banner, clearart, landscape, discart = '', '', '', ''
 	if meta_user_info['extra_rpdb_movies' if meta_get('mediatype') == 'movie' else 'extra_rpdb_series']:
 		key = 'movie' if meta_get('mediatype') == 'movie' else 'series'
 		args = meta_user_info['rpdb_api_key'], meta_user_info['rpdb_theme']
 		poster = rpdb_get(key, imdb_id or str(tmdb_id), *args) or poster
-	if meta_user_info['extra_fanart_enabled']:
-		banner, clearart = meta_get('banner'), meta_get('clearart')
-		landscape, discart = meta_get('landscape'), meta_get('discart')
-	else: banner, clearart, landscape, discart = '', '', '', ''
 	art = {
 		'poster': poster, 'fanart': fanart, 'icon': poster, 'clearlogo': clearlogo,
 		'banner': banner, 'clearart': clearart, 'landscape': landscape, 'discart': discart
@@ -112,18 +111,12 @@ def movie_meta(id_type, media_id, user_info, current_date):
 	if media_id is None: return {}
 	metacache = MetaCache()
 	metacache_get, metacache_set = metacache.get, metacache.set
-	fanarttv_data, language, extra_fanart_enabled, fanart_client_key = None, user_info['language'], user_info['extra_fanart_enabled'], user_info['fanart_client_key']
 	meta = metacache_get('movie', id_type, media_id)
-	if meta:
-		if 'tmdb_id' in meta:
-			if not meta.get('fanart_added', False) and extra_fanart_enabled:
-				meta = fanarttv_add('movies', language, meta['tmdb_id'], fanart_client_key, meta)
-				metacache_set('movie', id_type, meta, movie_expiry(current_date, meta))
-			return meta
-		else: fanarttv_data = dict(meta)
+	if meta: return meta
 	try:
-		tmdb_api = user_info['tmdb_api']
-		if id_type == 'tmdb_id' or id_type == 'imdb_id': data = movie_data(media_id, language, tmdb_api)
+		tmdb_api, language = user_info['tmdb_api'], user_info['language']
+		if id_type == 'tmdb_id' or id_type == 'imdb_id':
+			data = movie_data(media_id, language, tmdb_api)
 		else:
 			external_result = movie_external_id(id_type, media_id, tmdb_api)
 			if not external_result: data = None
@@ -136,8 +129,7 @@ def movie_meta(id_type, media_id, user_info, current_date):
 		if language != 'en' and data['overview'] in empty_value_check:
 			eng_all_trailers = english_trailers('movie', data, tmdb_api)
 			if eng_all_trailers: data['videos']['results'] = eng_all_trailers
-		if not fanarttv_data and extra_fanart_enabled: fanarttv_data = fanarttv_get('movies', language, data['id'], fanart_client_key)
-		meta = build_movie_meta(data, user_info, fanarttv_data)
+		meta = build_movie_meta(data, user_info)
 		metacache_set('movie', id_type, meta, movie_expiry(current_date, meta))
 	except: pass
 	return meta
@@ -151,17 +143,10 @@ def tvshow_meta(id_type, media_id, user_info, current_date):
 	if media_id is None: return {}
 	metacache = MetaCache()
 	metacache_get, metacache_set = metacache.get, metacache.set
-	fanarttv_data, language, extra_fanart_enabled, fanart_client_key = None, user_info['language'], user_info['extra_fanart_enabled'], user_info['fanart_client_key']
 	meta = metacache_get('tvshow', id_type, media_id)
-	if meta:
-		if 'tmdb_id' in meta:
-			if not meta.get('fanart_added', False) and extra_fanart_enabled:
-				meta = fanarttv_add('tv', language, meta['tvdb_id'], fanart_client_key, meta)
-				metacache_set('tvshow', id_type, meta, tvshow_expiry(current_date, meta))
-			return meta
-		else: fanarttv_data = dict(meta)
+	if meta: return meta
 	try:
-		tmdb_api = user_info['tmdb_api']
+		tmdb_api, language = user_info['tmdb_api'], user_info['language']
 		if id_type == 'tmdb_id':
 			data = tvshow_data(media_id, language, tmdb_api)
 		else:
@@ -177,8 +162,7 @@ def tvshow_meta(id_type, media_id, user_info, current_date):
 		if language != 'en' and data['overview'] in empty_value_check:
 			eng_all_trailers = english_trailers('tvshow', data, tmdb_api)
 			if eng_all_trailers: data['videos']['results'] = eng_all_trailers
-		if not fanarttv_data and extra_fanart_enabled: fanarttv_data = fanarttv_get('tv', language, data['external_ids']['tvdb_id'], fanart_client_key)
-		meta = build_tvshow_meta(data, user_info, fanarttv_data)
+		meta = build_tvshow_meta(data, user_info)
 		metacache_set('tvshow', id_type, meta, tvshow_expiry(current_date, meta))
 	except: pass
 	return meta
@@ -254,9 +238,9 @@ def all_episodes_meta(meta, user_info, Thread):
 	except: pass
 	return data
 
-def english_trailers(media_type, data, tmdb_api):
+def english_trailers(mediatype, data, tmdb_api):
 	media_id, id_type = data['id'], 'tmdb_id'
-	if media_type == 'tvshow': eng_data = tvshow_data(media_id, 'en', tmdb_api)
+	if mediatype == 'tvshow': eng_data = tvshow_data(media_id, 'en', tmdb_api)
 	else: eng_data = movie_data(media_id, 'en', tmdb_api)
 	eng_overview = eng_data['overview']
 	data['overview'] = eng_overview
@@ -273,9 +257,9 @@ def english_trailers(media_type, data, tmdb_api):
 			if eng_all_trailers: return eng_all_trailers
 	return None
 
-def english_translation(media_type, media_id, user_info):
-	key = 'title' if media_type == 'movie' else 'name'
-	translations = tmdb_english_translation(media_type, media_id, user_info['tmdb_api'])
+def english_translation(mediatype, media_id, user_info):
+	key = 'title' if mediatype == 'movie' else 'name'
+	translations = tmdb_english_translation(mediatype, media_id, user_info['tmdb_api'])
 	try: english = [i['data'][key] for i in translations if i['iso_639_1'] == 'en'][0]
 	except: english = ''
 	return english
@@ -302,23 +286,20 @@ def tvshow_expiry(current_date, meta):
 def get_title(meta, language=None):
 	if 'custom_title' in meta: return meta['custom_title']
 	if not language: language = meta.get('meta_language', '')
-	if language == 'en': title = meta['title']
-	else: title = meta.get('english_title')
+	title = meta['title'] if language == 'en' else meta.get('english_title')
 	if not title:
 		try:
 			from settings import metadata_user_info
-			meta_user_info = metadata_user_info()
-			media_type = 'movie' if meta['media_type'] == 'movie' else 'tv'
-			english_title = tmdb_english_translation(media_type, meta['tmdb_id'], meta_user_info)
-			if english_title: title = english_title
-			else: title = meta['original_title']
+			mediatype = 'movie' if meta['mediatype'] == 'movie' else 'tv'
+			english_title = tmdb_english_translation(mediatype, meta['tmdb_id'], metadata_user_info())
+			title = english_title if english_title else meta['original_title']
 		except: pass
 	if not title: title = meta['original_title']
 	if '(' in title: title = title.split('(')[0]
 	if '/' in title: title = title.replace('/', ' ')
 	return title
 
-def build_movie_meta(data, user_info, fanarttv_data=None):
+def build_movie_meta(data, user_info):
 	image_resolution, language = user_info.get('image_resolution', backup_resolutions), user_info['language']
 	data_get = data.get
 	cast, all_trailers, country, country_codes = [], [], [], []
@@ -407,7 +388,7 @@ def build_movie_meta(data, user_info, fanarttv_data=None):
 		'budget': ei_budget, 'revenue': ei_revenue, 'homepage': homepage
 	}
 	meta_dict = {
-		'tmdb_id': tmdb_id, 'tvdb_id': 'None', 'imdb_id': imdb_id, 'imdbnumber': imdb_id, 'tmdblogo': tmdblogo,
+		'tmdb_id': tmdb_id, 'tvdb_id': 'None', 'imdb_id': imdb_id, 'imdbnumber': imdb_id, 'clearlogo': tmdblogo,
 		'poster': poster, 'fanart': fanart, 'year': year, 'title': title, 'rootname': rootname,
 		'original_title': original_title, 'english_title': english_title, 'alternative_titles': alternative_titles,
 		'tagline': tagline, 'plot': plot, 'mpaa': mpaa, 'studio': studio, 'director': director, 'writer': writer,
@@ -415,11 +396,9 @@ def build_movie_meta(data, user_info, fanarttv_data=None):
 		'country': country, 'country_codes': country_codes, 'trailer': trailer, 'all_trailers': all_trailers,
 		'cast': cast, 'extra_info': extra_info, 'mediatype': 'movie', 'meta_language': language
 	}
-	if fanarttv_data: meta_dict.update(fanarttv_data)
-	else: meta_dict.update(default_fanarttv_data)
 	return meta_dict
 
-def build_tvshow_meta(data, user_info, fanarttv_data=None):
+def build_tvshow_meta(data, user_info):
 	image_resolution, language = user_info.get('image_resolution', backup_resolutions), user_info['language']
 	data_get = data.get
 	cast, all_trailers, country, country_codes = [], [], [], []
@@ -512,7 +491,7 @@ def build_tvshow_meta(data, user_info, fanarttv_data=None):
 		'next_episode_to_air': ei_next_ep, 'last_episode_to_air': ei_last_ep
 	}
 	meta_dict = {
-		'tmdb_id': tmdb_id, 'tvdb_id': tvdb_id, 'imdb_id': imdb_id, 'imdbnumber': imdb_id, 'tmdblogo': tmdblogo,
+		'tmdb_id': tmdb_id, 'tvdb_id': tvdb_id, 'imdb_id': imdb_id, 'imdbnumber': imdb_id, 'clearlogo': tmdblogo,
 		'poster': poster, 'fanart': fanart, 'year': year, 'title': title, 'rootname': rootname, 'tvshowtitle': title,
 		'original_title': original_title, 'english_title': english_title, 'alternative_titles': alternative_titles,
 		'tagline': tagline, 'plot': plot, 'mpaa': mpaa, 'studio': studio, 'director': director, 'writer': writer,
@@ -521,15 +500,13 @@ def build_tvshow_meta(data, user_info, fanarttv_data=None):
 		'cast': cast, 'extra_info': extra_info, 'mediatype': 'tvshow', 'meta_language': language, 'status': status,
 		'total_aired_eps': total_aired_eps, 'total_seasons': total_seasons, 'season_data': season_data
 	}
-	if fanarttv_data: meta_dict.update(fanarttv_data)
-	else: meta_dict.update(default_fanarttv_data)
 	return meta_dict
 
-def rpdb_get(media_type, media_id, api_key, theme):
+def rpdb_get(mediatype, media_id, api_key, theme):
 	try:
 		if not api_key or not media_id: raise Exception
 		if media_id.startswith('tt'): id_type = 'imdb'
-		else: id_type, media_id = 'tmdb', '%s-%s' % (media_type, media_id)
+		else: id_type, media_id = 'tmdb', '%s-%s' % (mediatype, media_id)
 		rpdb_url = 'https://api.ratingposterdb.com/%s/%s/poster-default/%s.jpg?fallback=true'
 		if theme in ('1', '2'): rpdb_url += rpdb_themes[theme]
 		rpdb_url = rpdb_url % (api_key, id_type, media_id)

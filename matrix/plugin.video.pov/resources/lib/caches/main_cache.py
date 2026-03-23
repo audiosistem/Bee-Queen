@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from caches import BaseCache, maincache_db, get_property, set_property, clear_property
 # from modules.kodi_utils import logger
 
-BASE_GET = 'SELECT expires, data FROM maincache WHERE id = ?'
+BASE_GET = 'SELECT data, expires FROM maincache WHERE id = ? AND expires > ?'
 BASE_SET = 'INSERT OR REPLACE INTO maincache (id, data, expires) VALUES (?, ?, ?)'
 BASE_DELETE = 'DELETE FROM maincache WHERE id = ?'
 LIKE_SELECT = 'SELECT id from maincache where id LIKE %s'
@@ -18,15 +18,12 @@ class MainCache(BaseCache):
 		try:
 			current_time = self._get_timestamp(datetime.now())
 			result = self.get_memory_cache(string, current_time)
-			if result is None:
-				self.dbcur.execute(BASE_GET, (string,))
-				cache_data = self.dbcur.fetchone()
-				if cache_data:
-					if cache_data[0] > current_time:
-						result = eval(cache_data[1])
-						self.set_memory_cache(result, string, cache_data[1])
-					else:
-						self.delete(string, dbcon=None)
+			if result: raise Exception('memory cache true')
+			self.dbcur.execute(BASE_GET, (string, current_time))
+			cache_data = self.dbcur.fetchone()
+			if not cache_data: raise Exception('disk cache false')
+			result, expiry = eval(cache_data[0]), cache_data[1]
+			self.set_memory_cache(result, string, expiry)
 		except: pass
 		return result
 
@@ -75,16 +72,6 @@ class MainCache(BaseCache):
 					self.delete_memory_cache(str(item[0]))
 				except: pass
 			self.dbcur.execute("""VACUUM""")
-		except: pass
-
-	def delete_all_folderscrapers(self):
-		self.dbcur.execute(LIKE_SELECT % "'pov_FOLDERSCRAPER_%'")
-		remove_list = [str(i[0]) for i in self.dbcur.fetchall()]
-		if not remove_list: return 'success'
-		try:
-			self.dbcur.execute(LIKE_DELETE % "'pov_FOLDERSCRAPER_%'")
-			self.dbcur.execute("""VACUUM""")
-			for item in remove_list: self.delete_memory_cache(str(item))
 		except: pass
 
 def cache_object(function, string, url, json=False, expiration=24):

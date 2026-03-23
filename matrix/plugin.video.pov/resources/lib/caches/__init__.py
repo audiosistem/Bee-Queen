@@ -4,7 +4,7 @@ from modules import kodi_utils
 # logger = kodi_utils.logger
 
 debridcache_db = kodi_utils.debridcache_db
-favourites_db = kodi_utils.favourites_db
+favorites_db = kodi_utils.favorites_db
 maincache_db = kodi_utils.maincache_db
 metacache_db = kodi_utils.metacache_db
 navigator_db = kodi_utils.navigator_db

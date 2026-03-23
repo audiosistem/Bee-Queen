@@ -71,8 +71,9 @@ class Select(BaseDialog):
 				else: line1 = item['line1']
 				if 'line2' in item: line2 = item['line2']
 				else: line2 = ''
-				if 'icon' in item: listitem.setProperty('tikiskins.dialog.icon', item['icon'])
-				else: listitem.setProperty('tikiskins.dialog.default_icon', 'true')
+				if 'icon' in item: icon = item['icon']
+				else: icon = BaseDialog.icon
+				listitem.setProperty('tikiskins.dialog.icon', icon)
 				listitem.setProperty('tikiskins.dialog.line1', line1)
 				listitem.setProperty('tikiskins.dialog.line2', line2)
 				listitem.setProperty('tikiskins.dialog.item', json.dumps(item))

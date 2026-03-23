@@ -16,20 +16,20 @@ extensions = supported_video_extensions()
 class Menu(Debrid):
 	def run(self, params):
 		if   '_delete' in params['mode']:
-			return self.cloud_delete(params['folder_id'], params['media_type'])
+			return self.cloud_delete(params['folder_id'], params['mediatype'])
 		elif '_browse_cloud' in params['mode']:
-			folder_id, media_type = params['folder_id'], params['media_type']
-			if   media_type == 'usenet': items = self.user_cloud_usenet(folder_id)
-			elif media_type == 'webdl': items = self.user_cloud_webdl(folder_id)
+			folder_id, mediatype = params['folder_id'], params['mediatype']
+			if   mediatype == 'usenet': items = self.user_cloud_usenet(folder_id)
+			elif mediatype == 'webdl': items = self.user_cloud_webdl(folder_id)
 			else: items = self.user_cloud(folder_id)
-			items = [{**i, 'url': '%d,%d' % (int(folder_id), i['id']), 'media_type': media_type} for i in items['files']]
+			items = [{**i, 'url': '%d,%d' % (int(folder_id), i['id']), 'mediatype': mediatype} for i in items['files']]
 			_builder = self.browse_cloud
 		elif '_torrent_cloud' in params['mode']:
-			media_type = params['media_type']
-			if   media_type == 'usenet': items = self.user_cloud_usenet()
-			elif media_type == 'webdl': items = self.user_cloud_webdl()
+			mediatype = params['mediatype']
+			if   mediatype == 'usenet': items = self.user_cloud_usenet()
+			elif mediatype == 'webdl': items = self.user_cloud_webdl()
 			else: items = self.user_cloud()
-			items = [{**i, 'media_type': media_type} for i in items]
+			items = [{**i, 'mediatype': mediatype} for i in items]
 			_builder = self.torrent_cloud
 		else: return getattr(self, params['mode'].split('.')[-1])()
 		__handle__ = int(sys.argv[1])
@@ -45,8 +45,8 @@ class Menu(Debrid):
 				cm = []
 				cm_append = cm.append
 				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, folder_str, clean_file_name(normalize(item['name'])).upper())
-				url_params = {'mode': 'torbox.tb_browse_cloud', 'folder_id': item['id'], 'media_type': item['media_type']}
-				delete_params = {'mode': 'torbox.tb_delete', 'folder_id': item['id'], 'media_type': item['media_type']}
+				url_params = {'mode': 'torbox.tb_browse_cloud', 'folder_id': item['id'], 'mediatype': item['mediatype']}
+				delete_params = {'mode': 'torbox.tb_delete', 'folder_id': item['id'], 'mediatype': item['mediatype']}
 				cm_append(('[B]%s %s[/B]' % (delete_str, folder_str.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))
 				url = build_url(url_params)
 				listitem = make_listitem()
@@ -65,7 +65,7 @@ class Menu(Debrid):
 				name = clean_file_name(item['short_name']).upper()
 				size = float(int(item['size']))/1073741824
 				display = '%02d | [B]%s[/B] | %.2f GB | [I]%s [/I]' % (count, file_str, size, name)
-				params = {'name': name, 'url': item['url'], 'media_type': item['media_type'], 'image': default_icon}
+				params = {'name': name, 'url': item['url'], 'mediatype': item['mediatype'], 'image': default_icon}
 				url_params = {**params, 'mode': 'torbox.resolve_tb', 'play': 'true'}
 				down_file_params = {**params, 'mode': 'downloader', 'action': 'cloud.torbox'}
 				cm_append((down_str, 'RunPlugin(%s)' % build_url(down_file_params)))
@@ -78,10 +78,10 @@ class Menu(Debrid):
 				yield (url, listitem, False)
 			except: pass
 
-	def cloud_delete(self, folder_id, media_type):
+	def cloud_delete(self, folder_id, mediatype):
 		if not kodi_utils.confirm_dialog(): return
-		if   media_type == 'usenet': result = self.delete_usenet(folder_id)
-		elif media_type == 'webdl': result = self.delete_webdl(folder_id)
+		if   mediatype == 'usenet': result = self.delete_usenet(folder_id)
+		elif mediatype == 'webdl': result = self.delete_webdl(folder_id)
 		else: result = self.delete_torrent(folder_id)
 		if not result: return kodi_utils.notification(32574)
 		self.clear_cache()
@@ -109,9 +109,9 @@ class Menu(Debrid):
 		except: kodi_utils.hide_busy_dialog()
 
 def resolve_tb(params):
-	file_id, media_type = params['url'], params['media_type']
-	if   media_type == 'usenet': resolved_link = Debrid().unrestrict_usenet(file_id)
-	elif media_type == 'webdl': resolved_link = Debrid().unrestrict_webdl(file_id)
+	file_id, mediatype = params['url'], params['mediatype']
+	if   mediatype == 'usenet': resolved_link = Debrid().unrestrict_usenet(file_id)
+	elif mediatype == 'webdl': resolved_link = Debrid().unrestrict_webdl(file_id)
 	else: resolved_link = Debrid().unrestrict_link(file_id)
 	if params.get('play', 'false') != 'true': return resolved_link
 	kodi_utils.player.play(resolved_link)

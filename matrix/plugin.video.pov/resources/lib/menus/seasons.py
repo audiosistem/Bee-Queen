@@ -30,7 +30,6 @@ class Seasons:
 		self.show_unaired = settings.show_unaired()
 		self.is_widget = kodi_utils.external_browse()
 		self.image_resolution = self.meta_user_info['image_resolution']
-		self.fanart_enabled = self.meta_user_info['extra_fanart_enabled']
 		self.widget_hide_watched = self.is_widget and self.meta_user_info['widget_hide_watched']
 		self.poster_main, self.poster_backup, self.fanart_main, self.fanart_backup = get_art_provider()
 
@@ -73,16 +72,6 @@ class Seasons:
 					url_params = build_url({
 						'mode': 'build_episode_list', 'tmdb_id': tmdb_id, 'season': season_number
 					})
-					extras_params = build_url({
-						'mode': 'extras_menu_choice', 'media_type': 'tvshow',
-						'tmdb_id': tmdb_id, 'is_widget': self.is_widget
-					})
-					options_params = build_url({
-						'mode': 'options_menu_choice', 'content': 'season',
-						'tmdb_id': tmdb_id, 'is_widget': self.is_widget
-					})
-					cm_append((options_str, run_plugin % options_params))
-					cm_append((extras_str, run_plugin % extras_params))
 					if not playcount: cm_append((watched_str % self.watched_title, run_plugin % build_url({
 						'mode': 'mark_as_watched_unwatched_season', 'action': 'mark_as_watched', 'year': show_year,
 						'tmdb_id': tmdb_id, 'tvdb_id': tvdb_id, 'season': season_number, 'title': show_title
@@ -149,11 +138,11 @@ class Seasons:
 						'duration': item_get('duration') or meta_get('duration') or default_duration
 					})
 					url_params = build_url({
-						'mode': 'play_media', 'media_type': 'episode',
+						'mode': 'play_media', 'mediatype': 'episode',
 						'tmdb_id': tmdb_id, 'season': season, 'episode': episode
 					})
 					extras_params = build_url({
-						'mode': 'extras_menu_choice', 'media_type': 'tvshow',
+						'mode': 'extras_menu_choice', 'mediatype': 'tvshow',
 						'tmdb_id': tmdb_id, 'is_widget': self.is_widget
 					})
 					options_params = build_url({
@@ -165,7 +154,7 @@ class Seasons:
 					clearprog_params, unwatched_params, watched_params = '', '', ''
 					if not unaired:
 						if progress != '0' or resumetime != '0': cm_append((clearprog_str, run_plugin % build_url({
-							'mode': 'watched_unwatched_erase_bookmark', 'media_type': 'episode',
+							'mode': 'watched_unwatched_erase_bookmark', 'mediatype': 'episode',
 							'tmdb_id': tmdb_id, 'season': season, 'episode': episode, 'refresh': 'true'
 						})))
 						if playcount: cm_append((unwatched_str % self.watched_title, run_plugin % build_url({
@@ -207,9 +196,8 @@ class Seasons:
 		total_seasons, total_aired_eps = meta_get('total_seasons'), meta_get('total_aired_eps')
 		show_poster = meta_get(self.poster_main) or meta_get(self.poster_backup) or poster_empty
 		fanart = meta_get(self.fanart_main) or meta_get(self.fanart_backup) or fanart_empty
-		clearlogo = meta_get('clearlogo') or meta_get('tmdblogo') or ''
-		if self.fanart_enabled: banner, clearart, landscape = meta_get('banner'), meta_get('clearart'), meta_get('landscape')
-		else: banner, clearart, landscape = '', '', ''
+		clearlogo = meta_get('clearlogo') or ''
+		banner, clearart, landscape = '', '', ''
 		mode = self.params.get('mode', 'build_season_list')
 		if 'episode' in mode: _process_episode_list()
 		else: _process_season_list()

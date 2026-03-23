@@ -1,8 +1,7 @@
+  removal pending: download, tmdblist, sync_kodi_library_watchstatus
 
   [COLOR dodgerblue][B]Version 6.03[/B][/COLOR]
-- Local Favorites database will change in the next update 6.03.12+.
-  Back up or transition to Trakt/MDBList Favorites now.
-- Fix for season watched indicators.
+- Removed easydebrid, fanarttv, folders scraper.
 - Added Blocks/Rounded-Blocks themes to RPDB options.
 - Added meteor.
 - Removed animetosho, prowlarr.

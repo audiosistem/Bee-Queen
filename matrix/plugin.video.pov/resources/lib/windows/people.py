@@ -58,9 +58,9 @@ class People(BaseDialog):
 			chosen_listitem = self.get_listitem(self.control_id)
 			chosen_var = chosen_listitem.getProperty(self.item_action_dict[self.control_id])
 			if self.control_id in (2050, 2051, 2053):
-				if self.control_id in (2050, 2053): media_type = 'movie'
-				else: media_type = 'tvshow'
-				params = {'tmdb_id': chosen_var, 'media_type': media_type, 'is_widget': 'false'}
+				if self.control_id in (2050, 2053): mediatype = 'movie'
+				else: mediatype = 'tvshow'
+				params = {'tmdb_id': chosen_var, 'mediatype': mediatype, 'is_widget': 'false'}
 				return dialogs.extras_menu(params)
 			elif self.control_id == 2052:
 				params = json.loads(chosen_var)
@@ -104,17 +104,17 @@ class People(BaseDialog):
 		self.tvshow_data = [i for i in acting_data if i['media_type'] == 'tv']
 		self.director_data = [i for i in directing_data if i['job'].lower() == 'director']
 
-	def make_more_from(self, media_type):
+	def make_more_from(self, mediatype):
 		try:
-			if media_type == 'movie':
-				list_type = media_type
+			if mediatype == 'movie':
+				list_type = mediatype
 				_id = more_from_movies_id
 				data = self.movie_data
 				if self.exclude_non_acting:
 					try: data = [i for i in data if not 99 in i['genre_ids'] and not i['character'].lower() in roles_exclude]
 					except: pass
-			elif media_type == 'tvshow':
-				list_type = media_type
+			elif mediatype == 'tvshow':
+				list_type = mediatype
 				_id = more_from_tvshows_id
 				data = self.tvshow_data
 				if self.exclude_non_acting:
@@ -125,7 +125,7 @@ class People(BaseDialog):
 				_id = more_from_director_id
 				data = self.director_data
 			item_list = list(self.make_tmdb_listitems(data, list_type))
-			self.setProperty('tikiskins.person.more_from_%s.number' % media_type, '(x%02d)' % len(item_list))
+			self.setProperty('tikiskins.person.more_from_%s.number' % mediatype, '(x%02d)' % len(item_list))
 			self.item_action_dict[_id] = 'tikiskins.person.tmdb_id'
 			control = self.getControl(_id)
 			control.addItems(item_list)
@@ -150,11 +150,11 @@ class People(BaseDialog):
 			control.addItems(item_list)
 		except: pass
 
-	def make_tmdb_listitems(self, data, media_type):
+	def make_tmdb_listitems(self, data, mediatype):
 		used_ids = []
 		append = used_ids.append
-		name_key = 'title' if media_type == 'movie' else 'name'
-		release_key = 'release_date' if media_type == 'movie' else 'first_air_date'
+		name_key = 'title' if mediatype == 'movie' else 'name'
+		release_key = 'release_date' if mediatype == 'movie' else 'first_air_date'
 		for item in sorted(data, key=lambda x: x.get(release_key) or '', reverse=True):
 			try:
 				tmdb_id = item['id']

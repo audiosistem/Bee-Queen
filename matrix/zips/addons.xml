@@ -507,7 +507,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
       <fanart>resources/fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.hublive" name="HubLive" version="1.2.1" provider-name="1X si Geamanu">
+</addon><addon id="plugin.video.hublive" name="HubLive" version="1.4" provider-name="1X si Geamanu">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
@@ -711,7 +711,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.03.11" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.03.20" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -719,7 +719,7 @@ In addition to what livestreams allowed you to do, you can now,
 	<extension point="xbmc.python.pluginsource" library="resources/lib/router.py">
 		<provides>video</provides>
 	</extension>
-	
+	<extension point="xbmc.service" library="resources/lib/service.py" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
@@ -2011,7 +2011,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
 			<fanart>fanart.png</fanart>
 		</assets>
 	</extension>
-</addon><addon id="repository.oldsalt" name="Old Salt Repository" version="1.2" provider-name="Jax">
+</addon><addon id="repository.oldsalt" name="Old Salt Repository" version="1.3" provider-name="Jax">
 <extension point="xbmc.addon.repository" name="Old Salt Repository">
     <dir>
         <info compressed="false">https://github.com/OldManJax/repository.oldsalt/raw/master/addons.xml</info>
@@ -2079,6 +2079,12 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
     </dir>
     
     <dir>
+        <info compressed="false">https://uck.st/rdprepo/addons.xml</info>
+        <checksum>https://uck.st/rdprepo/addons.xml.md5</checksum>
+        <datadir zip="true">https://uck.st/rdprepo/zips/</datadir>
+    </dir>
+    
+    <dir>
 		<info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
 		<checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
 		<datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
@@ -2112,7 +2118,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
       <fanart>fanart.png</fanart>
     </assets>
   </extension>
-</addon><addon id="repository.redwizard" name="[COLOR red]The Red Repo[/COLOR]" version="1.1.9" provider-name="[COLOR red]The Red Wizard[/COLOR]">
+</addon><addon id="repository.redwizard" name="[COLOR red]The Red Repo[/COLOR]" version="1.2.2" provider-name="[COLOR red]The Red Wizard[/COLOR]">
 	<extension point="xbmc.addon.repository" name="The Red Repo">
 		<dir>
 			<info compressed="false">https://repo.redwizard.xyz/redwizardrepo/main/addons.xml</info>
@@ -2129,11 +2135,6 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
 			<checksum>https://repo.redwizard.xyz/redwizardrepo/22piers/addons.xml.md5</checksum>
 			<datadir zip="true">https://repo.redwizard.xyz/redwizardrepo/22piers/</datadir>
 		</dir>
-		<dir minversion="19.0">
-            <info compressed="false">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://raw.githubusercontent.com/not-coco-joe/repository.cocoscrapers/master/zips/</datadir>
-        </dir>
 		<dir>
 			<info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
 			<checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
@@ -2142,12 +2143,12 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
 	</extension>
 	<extension point="xbmc.addon.metadata">
 		<summary lang="en_GB">[COLOR red]The Red Wizard Builds and Add-ons[/COLOR]</summary>
-		<description lang="en_GB">[COLOR red]The Red Wizard repo for The Red Wizard builds and add-ons[/COLOR]</description>
+		<description lang="en_GB">[COLOR red]The Red Repo for The Red Wizard builds and add-ons[/COLOR]</description>
 		<disclaimer lang="en_GB">[COLOR red]The author of this add-on does not host any content and has no affiliation with the content providers[/COLOR]</disclaimer>
-		<news>[COLOR red]2025-07-14
-- Kodi 20 Nexus specific repository removed (Kodi 19 Leia no longer supported)
-- Descriptions added to addon.xml
-- Forum address updated
+		<news>[COLOR red]2026-03-23
+- Change to the add-on description
+- Typos corrected in the news section and changelog
+- Chains Repository and The 7o9 Repo now available to install from The Red Repo
 - The Red Wizard has a new home! Go to https://redwizard.xyz[/COLOR]</news>
 		<platform>all</platform>
 		<language>en</language>
@@ -3192,7 +3193,7 @@ v5.2.14 (2017-01-23)
 - Adaugat suport pentru cautare cand in nume apar coduri de tara (US, UK).
     </news>
   </extension>
-</addon><addon id="service.subtitles.subsro" name="[B][COLOR FFFDBD01]Subs.ro[/COLOR][/B]" version="2.5.24" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="service.subtitles.subsro" name="[B][COLOR FFFDBD01]Subs.ro[/COLOR][/B]" version="2.5.28" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" version="2.22.0" />

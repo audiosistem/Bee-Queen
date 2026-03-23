@@ -88,7 +88,7 @@ class Menu(Debrid):
 				datetime_object = datetime.fromtimestamp(item['date']).strftime('%Y-%m-%d')
 				display = '%02d | %.2f GB | %s | [I]%s [/I]' % (count, size, datetime_object, name)
 				params = {'name': name, 'url': item['link_dl'], 'image': default_icon}
-				url_params = {**params, 'mode': 'media_play', 'media_type': 'video'}
+				url_params = {**params, 'mode': 'media_play', 'mediatype': 'video'}
 				down_file_params = {**params, 'mode': 'downloader', 'action': 'cloud.alldebrid_direct'}
 				cm_append((down_str, 'RunPlugin(%s)' % build_url(down_file_params)))
 				url = build_url(url_params)

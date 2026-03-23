@@ -1,3 +1,14 @@
+v1.2.2 (2026-03-23)
+ - Change to the add-on description
+ - Typos corrected in the news section and changelog
+
+v1.2.1 (2026-03-22)
+ - Chains Repository and The 7o9 Repo now available to install from The Red Repo
+
+v1.2.0 (2026-03-20)
+ - Chains Repository and The 7o9 Repo added
+ - CocoScrapers Repository removed, recommend Gears Scrapers from Chains Repository
+
 v1.1.9 (2025-07-13)
  - Kodi 20 Nexus specific repository removed (Kodi 19 Leia no longer supported)
 

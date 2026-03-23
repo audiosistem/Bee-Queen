@@ -24,7 +24,7 @@ fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
 watched_str, unwatched_str, extras_str, options_str = ls(32642), ls(32643), ls(32645), ls(32646)
 clearprog_str, browse_str, browse_seas_str = ls(32651), ls(32652), ls(32544)
-traktmanager_str, mdblmanager_str = ls(32198), '[B]MDBList Lists Manager[/B]'
+traktmanager_str, mdblmanager_str = ls(32198), ls(32200)
 
 class Episodes:
 	def __init__(self, params):
@@ -117,7 +117,7 @@ class Episodes:
 				'duration': item_get('duration') or episode_run_time or default_duration
 			})
 			extras_params = build_url({
-				'mode': 'extras_menu_choice', 'media_type': 'tvshow',
+				'mode': 'extras_menu_choice', 'mediatype': 'tvshow',
 				'tmdb_id': tmdb_id, 'is_widget': self.is_widget
 			})
 			options_params = build_url({
@@ -125,7 +125,7 @@ class Episodes:
 				'tmdb_id': tmdb_id, 'season': season, 'episode': episode, 'is_widget': self.is_widget
 			})
 			url_params = build_url({
-				'mode': 'play_media', 'media_type': 'episode',
+				'mode': 'play_media', 'mediatype': 'episode',
 				'tmdb_id': tmdb_id, 'season': season, 'episode': episode
 			})
 			if self.all_episodes and self.all_episodes == 1 and meta_get('total_seasons') > 1: browse_params = build_url({
@@ -147,7 +147,7 @@ class Episodes:
 			if not unaired:
 				if progress != '0' or resumetime != '0': cm_append((
 					self.cm_sort['mark'], clearprog_str, run_plugin % build_url({
-						'mode': 'watched_unwatched_erase_bookmark', 'media_type': 'episode',
+						'mode': 'watched_unwatched_erase_bookmark', 'mediatype': 'episode',
 						'tmdb_id': tmdb_id, 'season': season, 'episode': episode, 'refresh': 'true'
 				})))
 				if playcount: cm_append((
@@ -162,12 +162,12 @@ class Episodes:
 				})))
 			if self.watched_indicators == 1: cm_append((
 				self.cm_sort['trakt'], traktmanager_str, run_plugin % build_url({
-					'mode': 'trakt_manager_choice', 'media_type': 'tvshow',
+					'mode': 'trakt_manager_choice', 'mediatype': 'tvshow',
 					'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id
 			})))
 			if self.watched_indicators == 2: cm_append((
 				self.cm_sort['mdblist'], mdblmanager_str, run_plugin % build_url({
-					'mode': 'mdbl_manager_choice', 'media_type': 'tvshow',
+					'mode': 'mdbl_manager_choice', 'mediatype': 'tvshow',
 					'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id
 			})))
 			cm.sort(key=lambda k: k[0])

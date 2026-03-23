@@ -59,31 +59,20 @@ UNWANTED_TAGS = ('tamilrockers.com', 'www.tamilrockers.com', 'www.tamilrockers.w
 				'ramin.djawadi', 'extramovies.casa', 'extramovies.wiki', '13+', '18+', 'taht.oyunlar', 'crazy4tv.com', 'karibu', '989pa.com', 'best-torrents-net', '1-3-3-8.com',
 				'ssrmovies.club', 'va:', 'zgxybbs-fdns-uk', 'www.tamilblasters.mx', 'www.1tamilmv.work', 'www.xbay.me', 'crazy4tv-com', '(es)')
 
-def internal_sources(active_sources, media_type, prescrape=False):
+def internal_sources(active_sources, mediatype, prescrape=False):
 	source_list = []
 	append = source_list.append
 	files = kodi_utils.list_dirs('special://home/addons/plugin.video.pov/resources/lib/scrapers')[1]
 	for item in files:
 		try:
 			module_name = item.split('.')[0]
-			if module_name in ('__init__', 'external', 'folders'): continue
+			if module_name in ('__init__',): continue
 			if not module_name in active_sources: continue
-			if prescrape and not check_prescrape_sources(module_name, media_type): continue
+			if prescrape and not check_prescrape_sources(module_name, mediatype): continue
 			module = manual_function_import('scrapers.%s' % module_name, 'source')
 			append(('internal', module, module_name))
 		except: pass
 	return source_list
-
-def internal_folders_import(folders):
-	def import_info():
-		for item in folders:
-			scraper_name = item[0]
-			module = manual_function_import('scrapers.folders', 'source')
-			yield ('folders', (module, (item[1], scraper_name)), scraper_name)
-	sourceDict = list(import_info())
-	try: sourceDict = list(import_info())
-	except: sourceDict = []
-	return sourceDict
 
 def get_aliases_titles(aliases):
 	try: result = [i['title'] for i in aliases]
@@ -388,10 +377,10 @@ def get_file_info(name_info=None, url=None):
 	info = ' | '.join(filter(None, info))
 	return quality, info
 
-def get_cache_expiry(media_type, meta, season):
+def get_cache_expiry(mediatype, meta, season):
 	try:
 		current_date = get_datetime()
-		if media_type == 'movie':
+		if mediatype == 'movie':
 			premiered = jsondate_to_datetime(meta['premiered'], '%Y-%m-%d', remove_time=True)
 			difference = subtract_dates(current_date, premiered)
 			if difference == 0: single_expiry = int(24*0.125)

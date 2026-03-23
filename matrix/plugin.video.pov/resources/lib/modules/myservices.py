@@ -10,7 +10,7 @@ get_setting, set_setting, sleep = kodi_utils.get_setting, kodi_utils.set_setting
 notification, confirm_dialog = kodi_utils.notification, kodi_utils.confirm_dialog
 user_agent = 'POV/%s' % kodi_utils.get_addoninfo('version')
 qr_str = 'https://api.qrserver.com/v1/create-qr-code/?size=256x256&qzone=1%s'
-meta_keys = 'title year poster fanart clearlogo tmdblogo'
+meta_keys = 'title year poster fanart clearlogo'
 code_str, nav2_str, await_str = 'PIN CODE: [B]%s[/B]', 'LOCATION: [B]%s[/B]', 'REMAINING: [B]%02d:%02d[/B]'
 auth_str, noauth_str = 'Authorized: Select to Remove', 'Unauthorized: Select to Add'
 timeout = 10.05
@@ -25,7 +25,7 @@ def watch_indicators(function):
 	return wrapper
 
 def _make_progress_dialog(**kwargs):
-	progress_dialog = create_window(('windows.sources', 'ProgressMedia'), 'progress_media.xml', **kwargs)
+	progress_dialog = create_window(('windows.progress', 'ProgressMedia'), 'progress_media.xml', **kwargs)
 	Thread(target=progress_dialog.run).start()
 	return progress_dialog
 
@@ -40,7 +40,7 @@ def authorize():
 	icon_path, services = kodi_utils.media_path(), (
 		('trakt', Trakt), ('mdblist', MDBList), ('tmdblist', TMDbList),
 		('real-debrid', RealDebrid), ('premiumize.me', Premiumize), ('alldebrid', AllDebrid),
-		('torbox', TorBox), ('offcloud', Offcloud), ('easydebrid', EasyDebrid), ('easynews', EasyNews)
+		('torbox', TorBox), ('offcloud', Offcloud), ('easynews', EasyNews)
 	)
 	service = kodi_utils.dialog.select('My Services', list(_builder()), useDetails=True)
 	if service < 0: return
@@ -333,33 +333,6 @@ class Offcloud:
 		customer = result['user_id']
 		set_setting('oc.account_id', str(customer))
 		set_setting('oc.token', self.token)
-		notification('Set %s Authorization' % cls_name)
-		return True
-
-class EasyDebrid:
-	icon = 'easydebrid.png'
-	def __init__(self):
-		self.token = get_setting('ed.token')
-
-	def base_url(self, path):
-		return 'https://easydebrid.com/api/v1/%s' % path
-
-	def set(self):
-		cls_name = self.__class__.__name__
-		if self.token:
-			if not confirm_dialog(): return
-			set_setting('ed.token', '')
-			set_setting('ed.account_id', '')
-			return notification('Removed %s Authorization' % cls_name)
-
-		api_key = kodi_utils.dialog.input('EasyDebrid API Key:')
-		if not api_key: return
-		headers = {'Authorization': 'Bearer %s' % api_key}
-		response = requests.get(self.base_url('user/details'), headers=headers, timeout=timeout)
-		result = response.json()
-		customer = result['id']
-		set_setting('ed.account_id', str(customer))
-		set_setting('ed.token', api_key)
 		notification('Set %s Authorization' % cls_name)
 		return True
 

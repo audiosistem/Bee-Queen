@@ -89,10 +89,9 @@ class EasyNewsAPI:
 		try: return json.loads(response)
 		except: return response
 
-	def unrestrict_link(self, url_dl, spool=False):
+	def unrestrict_link(self, url_dl):
 		response = session.get(url_dl, auth=(self.username, self.password), stream=True, timeout=timeout*3)
 		if not response.ok: return None
-		if spool: return response
 		chunk = next(response.iter_content(chunk_size=1048576), b'')
 		if len(chunk): resolved_link = response.url # direct/unrestricted link
 		else: resolved_link = None

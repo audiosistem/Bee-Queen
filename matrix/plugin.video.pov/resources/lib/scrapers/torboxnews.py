@@ -18,11 +18,11 @@ class source(Debrid):
 			if not enabled_debrids_check('tb'): return internal_results(self.scrape_provider, self.sources)
 			self.scrape_results = []
 			title_filter = True # filter_by_name(self.scrape_provider)
-			self.media_type, title = info.get('media_type'), info.get('title')
+			self.mediatype, title = info.get('mediatype'), info.get('title')
 			self.year, self.season, self.episode = int(info.get('year')), info.get('season'), info.get('episode')
-			if self.media_type == 'episode': self.seas_ep_query_list = source_utils.seas_ep_query_list(self.season, self.episode)
+			if self.mediatype == 'episode': self.seas_ep_query_list = source_utils.seas_ep_query_list(self.season, self.episode)
 			self.folder_query, self.year_query_list = clean_title(normalize(title)), tuple(map(str, range(self.year - 1, self.year + 2)))
-			self.search(self.media_type, info.get('imdb_id'), self.season, self.episode)
+			self.search(self.mediatype, info.get('imdb_id'), self.season, self.episode)
 			if not self.scrape_results: return internal_results(self.scrape_provider, self.sources)
 			self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
 			extras_filtering_list = tuple(i for i in extras_filter if not i in title.lower())
@@ -62,11 +62,11 @@ class source(Debrid):
 		internal_results(self.scrape_provider, self.sources)
 		return self.sources
 
-	def search(self, media_type, imdb_id, season, episode):
+	def search(self, mediatype, imdb_id, season, episode):
 		try:
 			url = 'https://search-api.torbox.app/usenet/imdb:%s' % imdb_id
 			params = {'check_cache': 'true', 'check_owned': 'true', 'search_user_engines': 'true'}
-			if media_type == 'episode': params.update({'season': int(season), 'episode': int(episode)})
+			if mediatype == 'episode': params.update({'season': int(season), 'episode': int(episode)})
 			results = self._get(url, params=params)
 			self.scrape_results.extend(results['nzbs'])
 			self.user_engines_only = kodi_utils.get_setting('tb.user_engines_only') == 'true'

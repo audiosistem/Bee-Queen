@@ -83,14 +83,14 @@ def traktMonitor():
 	logger('POV', 'TraktMonitor Service Starting')
 	trakt_service_string = 'TraktMonitor Service Update %s - %s'
 	update_string = 'Next Update in %s minutes...'
-	if not kodi_utils.get_property('pov_traktmonitor_first_run') == 'true':
+	if not get_property('pov_traktmonitor_first_run') == 'true':
 		for i in ('user_lists', 'liked_lists', 'my_lists'): clear_trakt_list_contents_data(i)
 		clear_tmdbl_cache()
-		kodi_utils.set_property('pov_traktmonitor_first_run', 'true')
+		set_property('pov_traktmonitor_first_run', 'true')
 	while not monitor.abortRequested():
 		while is_playing() or get_visibility('Container().isUpdating') or get_property('pov_pause_services') == 'true':
 			monitor.waitForAbort(10)
-		if not kodi_utils.get_property('pov_traktmonitor_first_run') == 'true':
+		if not get_property('pov_traktmonitor_first_run') == 'true':
 			monitor.waitForAbort(5)
 		value, interval = settings.trakt_sync_interval()
 		next_update_string = update_string % value

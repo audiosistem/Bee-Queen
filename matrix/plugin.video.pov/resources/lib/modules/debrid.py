@@ -1,6 +1,6 @@
 import json
 from threading import Thread
-from debrids import alldebrid_api, premiumize_api, real_debrid_api, torbox_api, offcloud_api, easydebrid_api
+from debrids import alldebrid_api, premiumize_api, real_debrid_api, torbox_api, offcloud_api
 from caches.debrid_cache import DebridCache
 from indexers import metadata
 from modules.utils import clean_file_name
@@ -11,7 +11,7 @@ ls, get_setting, notification = kodi_utils.local_string, kodi_utils.get_setting,
 show_busy_dialog, hide_busy_dialog = kodi_utils.show_busy_dialog, kodi_utils.hide_busy_dialog
 ok_dialog, confirm_dialog, select_dialog = kodi_utils.ok_dialog, kodi_utils.confirm_dialog, kodi_utils.select_dialog
 default_internal_scrapers, enabled_debrids_check = settings.default_internal_scrapers, settings.enabled_debrids_check
-default_hosters_providers = ('real-debrid', 'premiumize.me', 'alldebrid')
+default_external_scrapers = ('external',)
 plswait_str, checking_debrid_str, remaining_debrid_str = ls(32577), ls(32578), ls(32579)
 
 debrid_list = (
@@ -20,7 +20,6 @@ debrid_list = (
 	('alldebrid', 'ad', alldebrid_api.AllDebridAPI),
 	('torbox', 'tb', torbox_api.TorBoxAPI),
 	('offcloud', 'oc', offcloud_api.OffcloudAPI),
-	('easydebrid', 'ed', easydebrid_api.EasyDebridAPI)
 )
 
 def import_debrid(debrid_provider):
@@ -33,9 +32,6 @@ def debrid_enabled():
 def debrid_type_enabled(debrid_type, enabled_debrids):
 	return [i[0] for i in debrid_list if i[0] in enabled_debrids and get_setting('%s.%s.enabled' % (i[1], debrid_type)) == 'true']
 
-def debrid_valid_hosts(enabled_debrids):
-	return []
-
 class Source:
 	def dumps(self, depth=1, width=172):
 		from pprint import pformat
@@ -47,8 +43,8 @@ class Source:
 
 	def resolve_sources(self):
 		try:
-			if self.scrape_provider in ('external',):
-				if self.meta['media_type'] == 'episode':
+			if self.scrape_provider in default_external_scrapers:
+				if self.meta['mediatype'] == 'episode':
 					title = self.meta.get('ep_name') or self.meta.get('title')
 					season = self.meta.get('custom_season') or self.meta.get('season')
 					episode = self.meta.get('custom_episode') or self.meta.get('episode')
@@ -61,8 +57,6 @@ class Source:
 				return api.resolve_nzb(self.url, self.hash, store_to_cloud, title, season, episode)
 			if self.scrape_provider in default_internal_scrapers:
 				return self.resolve_internal_sources(self.direct_debrid_link)
-			if self.debrid in default_hosters_providers and not self.source.lower() == 'torrent':
-				return import_debrid(self.debrid).unrestrict_link(self.url)
 			return self.url
 		except: pass
 
@@ -119,10 +113,6 @@ class Source:
 				from menus.easynews import resolve_easynews
 				url = resolve_easynews({'url_dl': self.url_dl, 'play': 'false'})
 				if not direct_debrid_link: url += '|seekable=0'
-			elif self.scrape_provider == 'folders':
-				if self.url_dl.endswith('.strm'):
-					with kodi_utils.open_file(self.url_dl) as f: url = f.read()
-				else: url = self.url_dl
 			else: url = self.url_dl
 			return url
 		except Exception as e:

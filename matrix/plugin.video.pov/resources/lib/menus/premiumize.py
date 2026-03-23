@@ -62,7 +62,7 @@ class Menu(Debrid):
 					size = item['size']
 					display_size = float(int(size))/1073741824
 					display = '%02d | [B]%s[/B] | %.2f GB | [I]%s [/I]' % (count, file_str, display_size, name)
-					url_params = {'mode': 'media_play', 'url': url_link, 'media_type': 'video'}
+					url_params = {'mode': 'media_play', 'url': url_link, 'mediatype': 'video'}
 					down_file_params = {'mode': 'downloader', 'action': 'cloud.premiumize', 'name': item['name'], 'url': url_link, 'image': default_icon}
 					cm_append((download_string, 'RunPlugin(%s)' % build_url(down_file_params)))
 				cm_append(('[B]%s %s[/B]' % (delete_str, string.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))
@@ -99,8 +99,8 @@ class Menu(Debrid):
 					size = details['size']
 					display_size = float(int(size))/1073741824
 					display = '%02d | %.2f%% | [B]%s[/B] | %.2f GB | [I]%s [/I]' % (count, progress, file_str, display_size, name)
-					url_params = {'mode': 'media_play', 'url': url_link, 'media_type': 'video'}
-					down_file_params = {'mode': 'downloader', 'media_type': 'cloud.premiumize', 'name': item['name'], 'url': url_link, 'image': default_icon}
+					url_params = {'mode': 'media_play', 'url': url_link, 'mediatype': 'video'}
+					down_file_params = {'mode': 'downloader', 'mediatype': 'cloud.premiumize', 'name': item['name'], 'url': url_link, 'image': default_icon}
 					cm_append((down_str, 'RunPlugin(%s)' % build_url(down_file_params)))
 				url = build_url(url_params)
 				listitem = make_listitem()

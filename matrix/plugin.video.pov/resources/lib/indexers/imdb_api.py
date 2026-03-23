@@ -22,6 +22,12 @@ def imdb_tagged_images(imdb_id):
 	params = {'url': url, 'action': 'imdb_tagged_images'}
 	return cache_object(get_imdb, string, params, False, 168)[0]
 
+def imdb_parentsguide(imdb_id):
+	url = '%s/titles/%s/parentsGuide' % (api_url, imdb_id)
+	string = 'imdb_parentsguide_%s' % imdb_id
+	params = {'url': url, 'action': 'imdb_parentsguide'}
+	return cache_object(get_imdb, string, params, False, 168)[0]
+
 def imdb_movie_year(imdb_id):
 	url = 'https://v2.sg.media-imdb.com/suggestion/t/%s.json' % imdb_id
 	string = 'imdb_movie_year_%s' % imdb_id
@@ -57,6 +63,18 @@ def get_imdb(params):
 			result = session.get(url, params=params, timeout=timeout)
 			result = result.json()['images']
 			imdb_list = [i for i in result if not i['type'] in ('still_frame', 'poster', 'product')]
+		except: pass
+	elif action == 'imdb_parentsguide':
+		try:
+			append = imdb_list.append
+			result = requests.get(url, timeout=timeout)
+			result = result.json()['parentsGuide']
+			for i in result:
+				try:
+					listings = [x['text'] for x in i.get('reviews', [])]
+					rank = max(i['severityBreakdowns'], key=lambda k: k['voteCount'])['severityLevel']
+					append({'title': i['category'].lower(), 'ranking': rank, 'listings': listings})
+				except: pass
 		except: pass
 	elif action == 'imdb_movie_year':
 		result = session.get(url, timeout=timeout).json()

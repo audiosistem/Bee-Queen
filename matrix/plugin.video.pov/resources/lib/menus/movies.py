@@ -59,33 +59,33 @@ class Movies:
 			display = rootname if self.include_year_in_title else title
 			tmdb_id, imdb_id = meta_get('tmdb_id'), meta_get('imdb_id')
 			play_params = build_url({
-				'mode': 'play_media', 'media_type': 'movie', 'tmdb_id': tmdb_id
+				'mode': 'play_media', 'mediatype': 'movie', 'tmdb_id': tmdb_id
 			})
 			extras_params = build_url({
-				'mode': 'extras_menu_choice', 'media_type': 'movie',
+				'mode': 'extras_menu_choice', 'mediatype': 'movie',
 				'tmdb_id': tmdb_id, 'is_widget': self.is_widget
 			})
 			options_params = build_url({
-				'mode': 'options_menu_choice', 'media_type': 'movie',
+				'mode': 'options_menu_choice', 'mediatype': 'movie',
 				'tmdb_id': tmdb_id, 'is_widget': self.is_widget
 			})
 			recommended_params = build_url({
 				'mode': 'build_movie_list', 'action': 'tmdb_movies_recommendations', 'tmdb_id': tmdb_id
 			})
 			trakt_manager_params = build_url({
-				'mode': 'trakt_manager_choice', 'media_type': 'movie',
+				'mode': 'trakt_manager_choice', 'mediatype': 'movie',
 				'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': 'None'
 			})
 			mdbl_manager_params = build_url({
-				'mode': 'mdbl_manager_choice', 'media_type': 'movie',
+				'mode': 'mdbl_manager_choice', 'mediatype': 'movie',
 				'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': 'None'
 			})
 			tmdb_manager_params = build_url({
-				'mode': 'tmdb_manager_choice', 'media_type': 'movie',
+				'mode': 'tmdb_manager_choice', 'mediatype': 'movie',
 				'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': 'None'
 			})
 			fav_manager_params = build_url({
-				'mode': 'favourites_choice', 'media_type': 'movie',
+				'mode': 'favorites_choice', 'mediatype': 'movie',
 				'tmdb_id': tmdb_id, 'title': title
 			})
 			cm_append((self.cm_sort['options'], options_str, run_plugin % options_params))
@@ -98,10 +98,10 @@ class Movies:
 			cm_append((self.cm_sort['trakt'], traktmanager_str, run_plugin % trakt_manager_params))
 			cm_append((self.cm_sort['mdblist'], mdblmanager_str, run_plugin % mdbl_manager_params))
 			cm_append((self.cm_sort['tmdblist'], tmdbmanager_str, run_plugin % tmdb_manager_params))
-			cm_append((self.cm_sort['favourites'], favmanager_str, run_plugin % fav_manager_params))
+			cm_append((self.cm_sort['favorites'], favmanager_str, run_plugin % fav_manager_params))
 			if progress != '0' or resumetime != '0': cm_append((
 				self.cm_sort['mark'], clearprog_str, run_plugin % build_url({
-					'mode': 'watched_unwatched_erase_bookmark', 'media_type': 'movie',
+					'mode': 'watched_unwatched_erase_bookmark', 'mediatype': 'movie',
 					'tmdb_id': tmdb_id, 'refresh': 'true'
 			})))
 			if playcount: cm_append((
@@ -155,11 +155,11 @@ class Movies:
 		except: pass
 
 class Menu(Movies):
-	personal_dict = {'in_progress_movies': ('caches.watched_cache', 'get_in_progress_movies'), 'favourites_movies': ('caches.favourites_cache', 'get_favourites'), 'watched_movies': ('caches.watched_cache', 'get_watched_items')}
+	personal_dict = {'in_progress_movies': ('caches.watched_cache', 'get_in_progress_movies'), 'favorites_movies': ('caches.favorites_cache', 'get_favorites'), 'watched_movies': ('caches.watched_cache', 'get_watched_items')}
 	tmdb_special_key_dict = {'tmdb_movies_networks': 'company', 'tmdb_movies_year': 'year', 'tmdb_moviesanime_year': 'year'}
 	tmdb_main = ('tmdb_movies_popular', 'tmdb_movies_latest_releases', 'tmdb_movies_premieres', 'tmdb_movies_upcoming', 'tmdb_movies_blockbusters', 'tmdb_moviesanime_popular', 'tmdb_moviesanime_latest_releases')
 	trakt_main = ('trakt_movies_trending', 'trakt_movies_trending_recent', 'trakt_movies_most_watched', 'trakt_moviesanime_trending', 'trakt_moviesanime_most_watched')
-	tmdb_personal = ('tmdb_watchlist', 'tmdb_favorite', 'tmdb_recommendations')
+	tmdb_personal = ('tmdb_watchlist', 'tmdb_favorites', 'tmdb_recommendations')
 	trakt_personal = ('trakt_collection', 'trakt_watchlist', 'trakt_favorites', 'trakt_collection_lists')
 	mdblist_personal = ('mdblist_collection', 'mdblist_watchlist')
 	similar = ('tmdb_movies_similar', 'tmdb_movies_recommendations')
@@ -290,7 +290,7 @@ class Menu(Movies):
 				url_params = {
 					'mode': 'build_navigate_to_page', 'current_page': page_no, 'total_pages': self.total_pages,
 					'query': params_get('search_name', ''), 'actor_id': params_get('actor_id', ''),
-					'transfer_mode': mode, 'transfer_action': self.action, 'media_type': 'Movies'
+					'transfer_mode': mode, 'transfer_action': self.action, 'mediatype': 'Movies'
 				}
 				kodi_utils.add_dir(__handle__, url_params, jumpto_str, item_jump, isFolder=False)
 			kodi_utils.add_items(__handle__, worker())

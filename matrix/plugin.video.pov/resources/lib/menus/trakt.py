@@ -172,7 +172,7 @@ def build_trakt_list(params):
 	if total_pages > 2 and not is_widget and use_alphabet:
 		url = {'mode': 'build_navigate_to_page', 'current_page': page, 'total_pages': total_pages,
 				'user': user, 'slug': slug, 'name': name, 'list_id': list_id, 'list_type': list_type,
-				'transfer_mode': 'build_trakt_list', 'media_type': 'Media'}
+				'transfer_mode': 'build_trakt_list', 'mediatype': 'Media'}
 		kodi_utils.add_dir(__handle__, url, jump2_str, iconImage=item_jump, isFolder=False)
 	kodi_utils.add_items(__handle__, items)
 	if total_pages > page:

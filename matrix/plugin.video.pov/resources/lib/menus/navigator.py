@@ -32,11 +32,11 @@ class Navigator:
 		discover_str, his_str, help_str = ls(32451), ls(32486), ls(32487)
 		movh_str, tvh_str = '%s %s' % (mov_str, his_str), '%s %s' % (tv_str, his_str)
 		n_ins = _in_str % (discover_str.upper(), '')
-		self._add_item({'mode': 'discover.movie', 'media_type': 'movie',    'name': mov_str }, 'discover.png', n_ins)
-		self._add_item({'mode': 'discover.tvshow', 'media_type': 'tvshow',  'name': tv_str  }, 'discover.png', n_ins)
-		self._add_item({'mode': 'discover.history', 'media_type': 'movie',  'name': movh_str}, 'discover.png', n_ins)
-		self._add_item({'mode': 'discover.history', 'media_type': 'tvshow', 'name': tvh_str }, 'discover.png', n_ins)
-		self._add_item({'mode': 'discover.help',                            'name': help_str}, 'discover.png', n_ins, False)
+		self._add_item({'mode': 'discover.movie', 'mediatype': 'movie',    'name': mov_str }, 'discover.png', n_ins)
+		self._add_item({'mode': 'discover.tvshow', 'mediatype': 'tvshow',  'name': tv_str  }, 'discover.png', n_ins)
+		self._add_item({'mode': 'discover.history', 'mediatype': 'movie',  'name': movh_str}, 'discover.png', n_ins)
+		self._add_item({'mode': 'discover.history', 'mediatype': 'tvshow', 'name': tvh_str }, 'discover.png', n_ins)
+		self._add_item({'mode': 'discover.help',                           'name': help_str}, 'discover.png', n_ins, False)
 		self._end_directory()
 
 	def premium(self):
@@ -48,7 +48,6 @@ class Navigator:
 		if 'alldebrid' in debrids: self.alldebrid()
 		if 'torbox' in debrids: self.torbox()
 		if 'offcloud' in debrids: self.offcloud()
-		if 'easydebrid' in debrids: self.easydebrid()
 		self._end_directory()
 
 	def easynews(self):
@@ -85,11 +84,11 @@ class Navigator:
 		tor_str, usenet_str, web_str = 'Torrent', 'Usenet', 'Web Download'
 		tb_str, cloud_str, ai_str = 'TorBox', ls(32496), ls(32494)
 		clca_str, n_ins = ls(32497) % tb_str, _in_str % (tb_str.upper(), '')
-		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'media_type': 'torent', 'name': tor_str   }, 'torbox.png', n_ins)
-		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'media_type': 'usenet', 'name': usenet_str}, 'torbox.png', n_ins)
-		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'media_type': 'webdl',  'name': web_str   }, 'torbox.png', n_ins)
-		self._add_item({'mode': 'torbox.show_account_info',                        'name': ai_str    }, 'torbox.png', n_ins, False)
-		self._add_item({'mode': 'clear_cache', 'cache': 'tb_cloud',                'name': clca_str  }, 'torbox.png', n_ins, False)
+		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'mediatype': 'torent', 'name': tor_str   }, 'torbox.png', n_ins)
+		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'mediatype': 'usenet', 'name': usenet_str}, 'torbox.png', n_ins)
+		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'mediatype': 'webdl',  'name': web_str   }, 'torbox.png', n_ins)
+		self._add_item({'mode': 'torbox.show_account_info',                       'name': ai_str    }, 'torbox.png', n_ins, False)
+		self._add_item({'mode': 'clear_cache', 'cache': 'tb_cloud',               'name': clca_str  }, 'torbox.png', n_ins, False)
 
 	def offcloud(self):
 		cloud_str, ai_str, oc_str = ls(32496), ls(32494), 'Offcloud'
@@ -98,23 +97,18 @@ class Navigator:
 		self._add_item({'mode': 'offcloud.show_account_info',       'name': ai_str   }, 'offcloud.png', n_ins, False)
 		self._add_item({'mode': 'clear_cache', 'cache': 'oc_cloud', 'name': clca_str }, 'offcloud.png', n_ins, False)
 
-	def easydebrid(self):
-		ed_str, cloud_str, ai_str = 'EasyDebrid', ls(32496), ls(32494)
-		n_ins = _in_str % (ed_str.upper(), '')
-		self._add_item({'mode': 'easydebrid.show_account_info',                    'name': ai_str    }, 'easydebrid.png', n_ins, False)
-
-	def favourites(self):
+	def favorites(self):
 		fav_str = ls(32453)
 		clear_fav_str = ls(32497) % fav_str
 		n_ins, c_n_ins = _in_str % (fav_str.upper(), ''), _in_str % (ls(32524).upper(), '')
-		self._add_item({'mode': 'build_movie_list', 'action': 'favourites_movies',   'name': mov_str      }, 'movies.png', n_ins)
-		self._add_item({'mode': 'build_tvshow_list', 'action': 'favourites_tvshows', 'name': tv_str       }, 'tv.png'    , n_ins)
-		self._add_item({'mode': 'favourites_choice', 'cache': 'clear_favourites',     'name': clear_fav_str}, 'tools.png' , c_n_ins, False)
+		self._add_item({'mode': 'build_movie_list', 'action': 'favorites_movies',   'name': mov_str      }, 'movies.png', n_ins)
+		self._add_item({'mode': 'build_tvshow_list', 'action': 'favorites_tvshows', 'name': tv_str       }, 'tv.png'    , n_ins)
+		self._add_item({'mode': 'favorites_choice', 'cache': 'clear_favorites',     'name': clear_fav_str}, 'tools.png' , c_n_ins, False)
 		self._end_directory()
 
 	def my_content(self):
-		trakt_str, imdb_str, coll_str, wlist_str, fav_str, ls_str = ls(32037), ls(32064), ls(32499), ls(32500), 'Favorites', ls(32501)
-		t_n_ins, i_n_ins, m_n_ins = _in_str % (trakt_str.upper(), ''), _in_str % (imdb_str.upper(), ''), _in_str % ('MDBList'.upper(), '')
+		trakt_str, coll_str, wlist_str, fav_str, ls_str = ls(32037), ls(32499), ls(32500), ls(32453), ls(32501)
+		t_n_ins, m_n_ins = _in_str % (trakt_str.upper(), ''), _in_str % ('MDBList'.upper(), '')
 		t_str, user_str, l_str, ai_str, ml_str, drp_str = ls(32037), ls(32065), ls(32501), ls(32494), ls(32454), 'Dropped TV Shows'
 		tu_str, pu_str = '%s %s %s' % (ls(32458), user_str, l_str), '%s %s %s' % (ls(32459), user_str, l_str)
 		sea_str, n_ins = '%s %s' % (ls(32477), l_str), _in_str % (t_str.upper(), '')
@@ -124,32 +118,32 @@ class Navigator:
 		tmdb_status = ku.get_setting('tmdb.account_id') not in ('', None)
 		mdblist_status = ku.get_setting('mdblist.token') not in ('', None)
 		if trakt_status:
-			self._add_item({'mode': 'navigator.trakt_lists'                                                 , 'name': ls_str   }, 'trakt.png', t_n_ins)
-			self._add_item({'mode': 'navigator.trakt_watchlists'                                            , 'name': wlist_str}, 'trakt.png', t_n_ins)
-			self._add_item({'mode': 'navigator.trakt_collections'                                           , 'name': coll_str }, 'trakt.png', t_n_ins)
-			self._add_item({'mode': 'navigator.trakt_favorites'                                             , 'name': fav_str  }, 'trakt.png', t_n_ins)
-			self._add_item({'mode': 'trakt.trakt_account_info'                                              , 'name': ai_str   }, 'trakt.png', t_n_ins, False)
+			self._add_item({'mode': 'navigator.trakt_lists',                                                  'name': ls_str   }, 'trakt.png', t_n_ins)
+			self._add_item({'mode': 'navigator.trakt_watchlists',                                             'name': wlist_str}, 'trakt.png', t_n_ins)
+			self._add_item({'mode': 'navigator.trakt_collections',                                            'name': coll_str }, 'trakt.png', t_n_ins)
+			self._add_item({'mode': 'navigator.trakt_favorites',                                              'name': fav_str  }, 'trakt.png', t_n_ins)
+			self._add_item({'mode': 'trakt.trakt_account_info',                                               'name': ai_str   }, 'trakt.png', t_n_ins, False)
 		self._add_item({'mode': 'build_trakt_list.get_trakt_trending_popular_lists', 'list_type': 'trending', 'name': tu_str }, 'trakt.png', n_ins)
 		self._add_item({'mode': 'build_trakt_list.get_trakt_trending_popular_lists', 'list_type': 'popular' , 'name': pu_str }, 'trakt.png', n_ins)
-		self._add_item({'mode': 'build_trakt_list.search_trakt_lists'                                       , 'name': sea_str}, 'trakt.png', n_ins)
+		self._add_item({'mode': 'build_trakt_list.search_trakt_lists',                                        'name': sea_str}, 'trakt.png', n_ins)
 		if mdblist_status:
 			self._add_item({'mode': 'build_mdbl_list.get_mdbl_lists', 'list_type': 'my_lists', 'name': ml_str    }, 'mdblist.png', m_n_ins)
-			self._add_item({'mode': 'build_movie_list', 'action': 'mdblist_watchlist'       , 'name': mdb_mw_str}, 'mdblist.png', m_n_ins)
-			self._add_item({'mode': 'build_tvshow_list', 'action': 'mdblist_watchlist'      , 'name': mdb_tw_str}, 'mdblist.png', m_n_ins)
-			self._add_item({'mode': 'build_movie_list', 'action': 'mdblist_collection'      , 'name': mdb_mc_str}, 'mdblist.png', m_n_ins)
-			self._add_item({'mode': 'build_tvshow_list', 'action': 'mdblist_collection'     , 'name': mdb_tc_str}, 'mdblist.png', m_n_ins)
-			self._add_item({'mode': 'build_tvshow_list', 'action': 'mdblist_droplist'       , 'name': drp_str   }, 'mdblist.png', m_n_ins)
-			self._add_item({'mode': 'mdblist.mdbl_account_info'                             , 'name': ai_str    }, 'mdblist.png', m_n_ins, False)
-			self._add_item({'mode': 'build_mdbl_list.get_mdbl_top_lists'                     , 'name': pu_str    }, 'mdblist.png', m_n_ins)
-			self._add_item({'mode': 'build_mdbl_list.search_mdbl_lists'                      , 'name': sea_str   }, 'mdblist.png', m_n_ins)
+			self._add_item({'mode': 'build_movie_list', 'action': 'mdblist_watchlist',         'name': mdb_mw_str}, 'mdblist.png', m_n_ins)
+			self._add_item({'mode': 'build_tvshow_list', 'action': 'mdblist_watchlist',        'name': mdb_tw_str}, 'mdblist.png', m_n_ins)
+			self._add_item({'mode': 'build_movie_list', 'action': 'mdblist_collection',        'name': mdb_mc_str}, 'mdblist.png', m_n_ins)
+			self._add_item({'mode': 'build_tvshow_list', 'action': 'mdblist_collection',       'name': mdb_tc_str}, 'mdblist.png', m_n_ins)
+			self._add_item({'mode': 'build_tvshow_list', 'action': 'mdblist_droplist',         'name': drp_str   }, 'mdblist.png', m_n_ins)
+			self._add_item({'mode': 'mdblist.mdbl_account_info',                               'name': ai_str    }, 'mdblist.png', m_n_ins, False)
+			self._add_item({'mode': 'build_mdbl_list.get_mdbl_top_lists',                      'name': pu_str    }, 'mdblist.png', m_n_ins)
+			self._add_item({'mode': 'build_mdbl_list.search_mdbl_lists',                       'name': sea_str   }, 'mdblist.png', m_n_ins)
 		if tmdb_status:
-			self._add_item({'mode': 'build_movie_list', 'action': 'tmdb_watchlist'          , 'name': 'Movie Watchlist'        }, 'tmdb.png', '[B]TMDB:[/B] ')
-			self._add_item({'mode': 'build_tvshow_list', 'action': 'tmdb_watchlist'         , 'name': 'TV Show Watchlist'      }, 'tmdb.png', '[B]TMDB:[/B] ')
-			self._add_item({'mode': 'build_tmdb_list.get_tmdb_lists'                        , 'name': 'My Lists'               }, 'tmdb.png', '[B]TMDB:[/B] ')
-			self._add_item({'mode': 'build_movie_list', 'action': 'tmdb_favorite'           , 'name': 'Movie Favorite'         }, 'tmdb.png', '[B]TMDB:[/B] ')
-			self._add_item({'mode': 'build_tvshow_list', 'action': 'tmdb_favorite'          , 'name': 'TV Show Favorite'       }, 'tmdb.png', '[B]TMDB:[/B] ')
-			self._add_item({'mode': 'build_movie_list', 'action': 'tmdb_recommendations'    , 'name': 'Movie Recommendations'  }, 'tmdb.png', '[B]TMDB:[/B] ')
-			self._add_item({'mode': 'build_tvshow_list', 'action': 'tmdb_recommendations'   , 'name': 'TV Show Recommendations'}, 'tmdb.png', '[B]TMDB:[/B] ')
+			self._add_item({'mode': 'build_movie_list', 'action': 'tmdb_watchlist',        'name': 'Movie Watchlist'        }, 'tmdb.png', '[B]TMDB:[/B] ')
+			self._add_item({'mode': 'build_tvshow_list', 'action': 'tmdb_watchlist',       'name': 'TV Show Watchlist'      }, 'tmdb.png', '[B]TMDB:[/B] ')
+			self._add_item({'mode': 'build_tmdb_list.get_tmdb_lists',                      'name': 'My Lists'               }, 'tmdb.png', '[B]TMDB:[/B] ')
+			self._add_item({'mode': 'build_movie_list', 'action': 'tmdb_favorite',         'name': 'Movie Favorite'         }, 'tmdb.png', '[B]TMDB:[/B] ')
+			self._add_item({'mode': 'build_tvshow_list', 'action': 'tmdb_favorite',        'name': 'TV Show Favorite'       }, 'tmdb.png', '[B]TMDB:[/B] ')
+			self._add_item({'mode': 'build_movie_list', 'action': 'tmdb_recommendations',  'name': 'Movie Recommendations'  }, 'tmdb.png', '[B]TMDB:[/B] ')
+			self._add_item({'mode': 'build_tvshow_list', 'action': 'tmdb_recommendations', 'name': 'TV Show Recommendations'}, 'tmdb.png', '[B]TMDB:[/B] ')
 		self._end_directory()
 
 	def trakt_collections(self):
@@ -160,13 +154,13 @@ class Navigator:
 		mrec_str, mran_str = '%s %s' % (ls(32498), mov_str), '%s %s' % (ls(32504), mov_str)
 		tvrec_str, tvran_str, ra_str = '%s %s' % (ls(32498), tv_str), '%s %s' % (ls(32504), tv_str), '%s %s' % (ls(32505), ls(32506))
 		n_ins = _in_str % (col_str.upper(), '')
-		self._add_item({'mode': 'build_movie_list', 'action': 'trakt_collection'                             , 'name': mov_str  }, 'trakt.png', n_ins)
-		self._add_item({'mode': 'build_tvshow_list', 'action': 'trakt_collection'                            , 'name': tv_str   }, 'trakt.png', n_ins)
-		self._add_item({'mode': 'build_movie_list', 'action': 'trakt_collection_lists', 'new_page': 'recent' , 'name': mrec_str }, 'trakt.png', n_ins)
-		self._add_item({'mode': 'build_movie_list', 'action': 'trakt_collection_lists', 'new_page': 'random' , 'name': mran_str }, 'trakt.png', n_ins)
+		self._add_item({'mode': 'build_movie_list', 'action': 'trakt_collection',                              'name': mov_str  }, 'trakt.png', n_ins)
+		self._add_item({'mode': 'build_tvshow_list', 'action': 'trakt_collection',                             'name': tv_str   }, 'trakt.png', n_ins)
+		self._add_item({'mode': 'build_movie_list', 'action': 'trakt_collection_lists', 'new_page': 'recent',  'name': mrec_str }, 'trakt.png', n_ins)
+		self._add_item({'mode': 'build_movie_list', 'action': 'trakt_collection_lists', 'new_page': 'random',  'name': mran_str }, 'trakt.png', n_ins)
 		self._add_item({'mode': 'build_tvshow_list', 'action': 'trakt_collection_lists', 'new_page': 'recent', 'name': tvrec_str}, 'trakt.png', n_ins)
 		self._add_item({'mode': 'build_tvshow_list', 'action': 'trakt_collection_lists', 'new_page': 'random', 'name': tvran_str}, 'trakt.png', n_ins)
-		self._add_item({'mode': 'build_my_calendar', 'recently_aired': 'true'                                , 'name': ra_str   }, 'trakt.png', n_ins)
+		self._add_item({'mode': 'build_my_calendar', 'recently_aired': 'true',                                 'name': ra_str   }, 'trakt.png', n_ins)
 		self._end_directory()
 
 	def trakt_watchlists(self):
@@ -191,12 +185,12 @@ class Navigator:
 		t_str, ml_str, ll_str, rec_str = ls(32037), ls(32454), ls(32502), ls(32503)
 		cal_str, ani_str, drp_str = ls(32081), 'Anime Calendar', 'Dropped TV Shows'
 		n_ins = _in_str % (t_str.upper(), '')
-		self._add_item({'mode': 'build_trakt_list.get_trakt_lists', 'list_type': 'my_lists'   , 'name': ml_str }, 'trakt.png', n_ins)
+		self._add_item({'mode': 'build_trakt_list.get_trakt_lists', 'list_type': 'my_lists',    'name': ml_str }, 'trakt.png', n_ins)
 		self._add_item({'mode': 'build_trakt_list.get_trakt_lists', 'list_type': 'liked_lists', 'name': ll_str }, 'trakt.png', n_ins)
-		self._add_item({'mode': 'navigator.trakt_recommendations'                             , 'name': rec_str}, 'trakt.png', n_ins)
-		self._add_item({'mode': 'build_tvshow_list', 'action': 'trakt_droplist'               , 'name': drp_str}, 'trakt.png', n_ins)
-		self._add_item({'mode': 'build_my_calendar'                                           , 'name': cal_str}, 'trakt.png', n_ins)
-		self._add_item({'mode': 'build_my_anime_calendar'                                     , 'name': ani_str}, 'trakt.png', n_ins)
+		self._add_item({'mode': 'navigator.trakt_recommendations',                              'name': rec_str}, 'trakt.png', n_ins)
+		self._add_item({'mode': 'build_tvshow_list', 'action': 'trakt_droplist',                'name': drp_str}, 'trakt.png', n_ins)
+		self._add_item({'mode': 'build_my_calendar',                                            'name': cal_str}, 'trakt.png', n_ins)
+		self._add_item({'mode': 'build_my_anime_calendar',                                      'name': ani_str}, 'trakt.png', n_ins)
 		self._end_directory()
 
 	def trakt_recommendations(self):
@@ -216,10 +210,10 @@ class Navigator:
 		self._end_directory()
 
 	def settings(self):
-		pov_str, manager_str, changelog_str, short_str, source_str = ls(32036), ls(32513), ls(32508), ls(32514), ls(32515)
+		pov_str, manager_str, changelog_str, short_str = ls(32036), ls(32513), ls(32508), ls(32514)
 		log_utils, views_str, clean_str, lang_inv_str, ms_str = ls(32777), ls(32510), ls(32512), ls(32978), ls(32455)
 		settings_str, changelog_log_viewer_str = ls(32247), '%s & %s' % (changelog_str, log_utils)
-		shortcut_manager_str, source_manager_str = '%s %s' % (short_str, manager_str), '%s %s' % (source_str, manager_str)
+		shortcut_manager_str = '%s %s' % (short_str, manager_str)
 		n_ins, l_str = _in_str % (settings_str.upper(), ''), _in_str % ('LINKS', '')
 		self._add_item({'mode': 'open_settings', 'query': '4.0', 'name': pov_str                 }, 'pov.png', n_ins, False)
 		self._add_item({'mode': 'myservices',                    'name': ms_str                  }, 'settings.png', n_ins, False)
@@ -227,7 +221,6 @@ class Navigator:
 		self._add_item({'mode': 'navigator.log_utils',           'name': changelog_log_viewer_str}, 'settings.png', n_ins)
 		self._add_item({'mode': 'navigator.set_view_modes',      'name': views_str               }, 'settings.png', n_ins)
 		self._add_item({'mode': 'navigator.shortcut_folders',    'name': shortcut_manager_str    }, 'settings.png', n_ins)
-		self._add_item({'mode': 'navigator.sources_folders',     'name': source_manager_str      }, 'settings.png', n_ins)
 		self._add_item({'mode': 'toggle_language_invoker',       'name': lang_inv_str            }, 'settings.png', n_ins, False)
 		self._add_item({'mode': 'refer_link', 'query': 'realdebrid',  'name': 'Real Debrid Referral Link'}, 'realdebrid.png', l_str, False)
 		self._add_item({'mode': 'refer_link', 'query': 'torbox',      'name': 'TorBox Referral Link'     }, 'torbox.png',     l_str, False)
@@ -268,14 +261,14 @@ class Navigator:
 		tvshows_str, season_str, episode_str = ls(32029), ls(32537), ls(32506)
 		premium_files_str, ep_lists_str = ls(32485), '%s %s' % (episode_str, lists_str)
 		n_ins, reset_str = _in_str % (set_views_str.upper(), ''), 'Reset All Views'
-		self._add_item({'mode': 'choose_view', 'view_type': 'view.main', 'content': '', 'exclude_external': 'true'                  , 'name': root_str         }, 'settings.png', n_ins)
-		self._add_item({'mode': 'choose_view', 'view_type': 'view.movies', 'content': 'movies', 'exclude_external': 'true'          , 'name': movies_str       }, 'settings.png', n_ins)
-		self._add_item({'mode': 'choose_view', 'view_type': 'view.tvshows', 'content': 'tvshows', 'exclude_external': 'true'        , 'name': tvshows_str      }, 'settings.png', n_ins)
-		self._add_item({'mode': 'choose_view', 'view_type': 'view.seasons', 'content': 'seasons', 'exclude_external': 'true'        , 'name': season_str       }, 'settings.png', n_ins)
-		self._add_item({'mode': 'choose_view', 'view_type': 'view.episodes', 'content': 'episodes', 'exclude_external': 'true'      , 'name': episode_str      }, 'settings.png', n_ins)
+		self._add_item({'mode': 'choose_view', 'view_type': 'view.main', 'content': '', 'exclude_external': 'true',                   'name': root_str         }, 'settings.png', n_ins)
+		self._add_item({'mode': 'choose_view', 'view_type': 'view.movies', 'content': 'movies', 'exclude_external': 'true',           'name': movies_str       }, 'settings.png', n_ins)
+		self._add_item({'mode': 'choose_view', 'view_type': 'view.tvshows', 'content': 'tvshows', 'exclude_external': 'true',         'name': tvshows_str      }, 'settings.png', n_ins)
+		self._add_item({'mode': 'choose_view', 'view_type': 'view.seasons', 'content': 'seasons', 'exclude_external': 'true',         'name': season_str       }, 'settings.png', n_ins)
+		self._add_item({'mode': 'choose_view', 'view_type': 'view.episodes', 'content': 'episodes', 'exclude_external': 'true',       'name': episode_str      }, 'settings.png', n_ins)
 		self._add_item({'mode': 'choose_view', 'view_type': 'view.episodes_lists', 'content': 'episodes', 'exclude_external': 'true', 'name': ep_lists_str     }, 'settings.png', n_ins)
-		self._add_item({'mode': 'choose_view', 'view_type': 'view.premium', 'content': 'files', 'exclude_external': 'true'          , 'name': premium_files_str}, 'settings.png', n_ins)
-		self._add_item({'mode': 'clear_view', 'view_type': 'all'                                                                    , 'name': reset_str        }, 'settings.png', n_ins, False)
+		self._add_item({'mode': 'choose_view', 'view_type': 'view.premium', 'content': 'files', 'exclude_external': 'true',           'name': premium_files_str}, 'settings.png', n_ins)
+		self._add_item({'mode': 'clear_view', 'view_type': 'all',                                                                     'name': reset_str        }, 'settings.png', n_ins, False)
 		self._end_directory()
 
 	def log_utils(self):
@@ -379,16 +372,16 @@ class Navigator:
 			_watched.sort(key=lambda x: (x[0], x[1], x[2]), reverse=True)
 			return [(i[0], i[3], i[4], [(i[1], i[2])]) for i in _watched if not (i[0] in seen or seen.add(i[0]))]
 		watched_indicators = ks.watched_indicators()
-		media_type = self.params_get('menu_type')
-		function = get_watched_info_movie if media_type == 'movie' else _convert_pov_watched_episodes_info
-		mode = 'build_movie_list' if media_type == 'movie' else 'build_tvshow_list'
-		action = 'tmdb_movies_recommendations' if media_type == 'movie' else 'tmdb_tv_recommendations'
+		mediatype = self.params_get('menu_type')
+		function = get_watched_info_movie if mediatype == 'movie' else _convert_pov_watched_episodes_info
+		mode = 'build_movie_list' if mediatype == 'movie' else 'build_tvshow_list'
+		action = 'tmdb_movies_recommendations' if mediatype == 'movie' else 'tmdb_tv_recommendations'
 		recently_watched = function(watched_indicators)
 		recently_watched = sorted(recently_watched, key=lambda k: k[2], reverse=True)
 		because_ins = '[I]%s[/I]  [B]%s[/B]' % (ls(32474), '%s')
 		for item in recently_watched:
 			tmdb_id = item[0]
-			if media_type == 'movie': name = because_ins % item[1]
+			if mediatype == 'movie': name = because_ins % item[1]
 			else:
 				season, episode = item[3][-1]
 				name = because_ins % '%s - %sx%s' % (item[1], season, episode)
@@ -414,16 +407,6 @@ class Navigator:
 		items = [(i, True) for i in dirs] + [(i, False) for i in files]
 		add_items(handle, list(_process()))
 		set_sort_method(handle, 'files')
-		self._end_directory()
-
-	def sources_folders(self):
-		name_str = '[B]%s (%s): %s[/B]\n     [I]%s[/I]'
-		for source in ('folder1', 'folder2', 'folder3', 'folder4', 'folder5'):
-			for media_type in ('movie', 'tvshow'):
-				folder_path = ks.source_folders_directory(media_type, source)
-				if not folder_path: continue
-				name = name_str % (source.upper(), self.make_list_name(media_type).upper(), ku.get_setting('%s.display_name' % source).upper(), folder_path)
-				self._add_item({'mode': 'navigator.folder_navigator', 'sources_folders': 'True', 'folder_path': folder_path, 'name': name}, 'most_collected.png')
 		self._end_directory()
 
 	def shortcut_folders(self):

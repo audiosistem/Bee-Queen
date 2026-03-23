@@ -82,9 +82,9 @@ def trakt_expires(func):
 		return func(*args, **kwargs)
 	return wrapper
 
-def trakt_recommendations(media_type):
-	string = 'trakt_recommendations_%s' % media_type
-	url = {'path': '/recommendations/%s', 'path_insert': media_type, 'params': {'limit': 50}, 'with_auth': True, 'pagination': False}
+def trakt_recommendations(mediatype):
+	string = 'trakt_recommendations_%s' % mediatype
+	url = {'path': '/recommendations/%s', 'path_insert': mediatype, 'params': {'limit': 50}, 'with_auth': True, 'pagination': False}
 	return trakt_cache.cache_trakt_object(get_trakt, string, url)
 
 def trakt_movies_trending(page_no):
@@ -141,7 +141,7 @@ def trakt_tvanime_most_watched(page_no):
 	url = {'path': 'shows/watched/all/%s', 'params': {'limit': 20, 'genres': 'anime'}, 'page': page_no}
 	return cache_object(get_trakt, string, url, json=False, expiration=EXPIRES_2_DAYS)
 
-def trakt_droplist(media_type, page_no, letter):
+def trakt_droplist(mediatype, page_no, letter):
 	results = trakt_get_hidden_items('dropped')
 	return [{'media_ids': {'tmdb': i}} for i in results], 1
 
@@ -160,27 +160,28 @@ def trakt_get_hidden_items(list_type):
 	url = {'path': 'users/hidden/%s', 'path_insert': list_type, 'params': {'limit': 1000, 'type': 'show'}, 'with_auth': True, 'pagination': False}
 	return trakt_cache.cache_trakt_object(_process, string, url)
 
-def hide_unhide_trakt_items(action, media_type, media_id, list_type):
+def hide_unhide_trakt_items(action, mediatype, media_id, list_type):
 	if not action in ('hide', 'unhide'):
 		try:
 			hidden_data = set(map(str, trakt_get_hidden_items('dropped')))
 			action = 'unhide' if action in hidden_data else 'hide'
 		except: return kodi_utils.notification(32574)
-	media_type = 'movies' if media_type in ['movie', 'movies'] else 'shows'
-	key = 'tmdb' if media_type == 'movies' else 'imdb'
+	mediatype = 'movies' if mediatype in ['movie', 'movies'] else 'shows'
+	key = 'tmdb' if mediatype == 'movies' else 'imdb'
 	url = 'users/hidden/%s' % list_type if action == 'hide' else 'users/hidden/%s/remove' % list_type
-	data = {media_type: [{'ids': {key: media_id}}]}
+	data = {mediatype: [{'ids': {key: media_id}}]}
 	call_trakt(url, data=data)
 	trakt_sync_activities()
 	kodi_utils.container_refresh()
 
-def trakt_collection_lists(media_type, param1, param2):
+def trakt_collection_lists(mediatype, param1, param2):
 	# param1 = the type of list to be returned (from 'new_page' param), param2 is currently not used
 	limit = 20
-	string_insert = 'movie' if media_type in ('movie', 'movies') else 'tvshow'
-	window_property_name = 'pov_trakt_collection_%s' % string_insert
-	try: data = json.loads(kodi_utils.get_property(window_property_name))
-	except: data = trakt_fetch_collection_watchlist('collection', media_type)
+#	string_insert = 'movie' if mediatype in ('movie', 'movies') else 'tvshow'
+#	window_property_name = 'pov_trakt_collection_%s' % string_insert
+#	try: data = json.loads(kodi_utils.get_property(window_property_name))
+#	except: data = trakt_fetch_collection_watchlist('collection', mediatype)
+	data = trakt_fetch_collection_watchlist('collection', mediatype)
 	if param1 == 'recent':
 		data.sort(key=lambda k: k['collected_at'], reverse=True)
 	elif param1 == 'random':
@@ -189,9 +190,9 @@ def trakt_collection_lists(media_type, param1, param2):
 	data = data[:limit]
 	return data, 1
 
-def trakt_collection(media_type, page_no, letter):
-	string_insert = 'movie' if media_type in ('movie', 'movies') else 'tvshow'
-	original_list = trakt_fetch_collection_watchlist('collection', media_type)
+def trakt_collection(mediatype, page_no, letter):
+	string_insert = 'movie' if mediatype in ('movie', 'movies') else 'tvshow'
+	original_list = trakt_fetch_collection_watchlist('collection', mediatype)
 	sort_key = settings.lists_sort_order('collection')
 	if   sort_key == 2: original_list.sort(key=lambda k: k['premiered'], reverse=True)
 	elif sort_key == 1: original_list.sort(key=lambda k: k['collected_at'], reverse=True)
@@ -202,12 +203,12 @@ def trakt_collection(media_type, page_no, letter):
 	else: final_list, total_pages = original_list, 1
 	return final_list, total_pages
 
-def trakt_watchlist(media_type, page_no, letter):
-	string_insert = 'movie' if media_type in ('movie', 'movies') else 'tvshow'
-	original_list = trakt_fetch_collection_watchlist('watchlist', media_type)
+def trakt_watchlist(mediatype, page_no, letter):
+	string_insert = 'movie' if mediatype in ('movie', 'movies') else 'tvshow'
+	original_list = trakt_fetch_collection_watchlist('watchlist', mediatype)
 	if not settings.show_unaired_watchlist():
 		current_date = get_datetime()
-		str_format = '%Y-%m-%d' if media_type in ('movie', 'movies') else '%Y-%m-%dT%H:%M:%S.000Z'
+		str_format = '%Y-%m-%d' if mediatype in ('movie', 'movies') else '%Y-%m-%dT%H:%M:%S.000Z'
 		original_list = [i for i in original_list if i.get('premiered') and js2date(i.get('premiered'), str_format, remove_time=True) <= current_date]
 	sort_key = settings.lists_sort_order('watchlist')
 	if   sort_key == 2: original_list.sort(key=lambda k: k['premiered'], reverse=True)
@@ -219,26 +220,26 @@ def trakt_watchlist(media_type, page_no, letter):
 	else: final_list, total_pages = original_list, 1
 	return final_list, total_pages
 
-def trakt_favorites(media_type, page_no, letter):
-	string_insert = 'movie' if media_type in ('movie', 'movies') else 'tvshow'
-	original_list = trakt_fetch_collection_watchlist('favorites', media_type)
+def trakt_favorites(mediatype, page_no, letter):
+	string_insert = 'movie' if mediatype in ('movie', 'movies') else 'tvshow'
+	original_list = trakt_fetch_collection_watchlist('favorites', mediatype)
 	if settings.paginate():
 		limit = settings.page_limit()
 		final_list, total_pages = paginate_list(original_list, page_no, letter, limit)
 	else: final_list, total_pages = original_list, 1
 	return final_list, total_pages
 
-def trakt_fetch_collection_watchlist(list_type, media_type):
-	if media_type in ('movie', 'movies'): key, string_insert, path_insert = ('movie', 'movie', 'movies')
+def trakt_fetch_collection_watchlist(list_type, mediatype):
+	if mediatype in ('movie', 'movies'): key, string_insert, path_insert = ('movie', 'movie', 'movies')
 	else: key, string_insert, path_insert = ('show', 'tvshow', 'shows')
-	if list_type == 'collection':
-		collected_at = 'collected_at' if media_type in ('movie', 'movies') else 'last_collected_at'
-	else: collected_at = 'listed_at'
 	premiered = 'released' if key == 'movie' else 'first_aired'
+	if list_type == 'collection':
+		if mediatype in ('movie', 'movies'): collected_at = 'collected_at'
+		else: collected_at = 'last_collected_at'
+	else: collected_at = 'listed_at'
 	string = 'trakt_%s_%s' % (list_type, string_insert)
-	url = {'path': 'sync/%s/%s', 'path_insert': (list_type, path_insert), 'params': {'extended': 'full'}, 'with_auth': True, 'pagination': False}
-	if list_type == 'collection': url['params']['limit'] = 1000
-	data = trakt_cache.cache_trakt_object(get_trakt, string, url)
+	url = 'sync/%s/%s' % (list_type, path_insert)
+	data = trakt_cache.cache_trakt_object(_get_trakt_paginated_list, string, url)
 	return [
 		{'title': i[key]['title'], 'media_ids': i[key]['ids'],
 		 'collected_at': i.get(collected_at), 'premiered': i[key].get(premiered) or ''}
@@ -289,18 +290,26 @@ def trakt_trending_popular_lists(list_type):
 
 def get_trakt_list_contents(list_type, list_id, user, slug):
 	string = 'trakt_list_contents_%s_%s_%s' % (list_type, user, slug)
-#	url = {'path': 'users/%s/lists/%s/items', 'path_insert': (user, slug), 'params': {'extended':'full'}, 'with_auth': True} # , 'method': 'sort_by_headers'}
-	url = {'path': 'users/%s/lists/%s/items', 'path_insert': (user, list_id), 'params': {'limit': 1000}, 'with_auth': True}
-	return trakt_cache.cache_trakt_object(get_trakt, string, url)
+	url = 'users/%s/lists/%s/items' % (user, list_id)
+	return trakt_cache.cache_trakt_object(_get_trakt_paginated_list, string, url)
+
+def _get_trakt_paginated_list(url):
+	items = []
+	try:
+		params = {'limit': 1000}
+		if 'sync' in url: params['extended'] = 'full'
+		items, pages = call_trakt(url, params, pagination=True)
+		for page in range(2, int(pages) + 1):
+			params['page'] = page
+			result = call_trakt(url, params)
+			if result is None: break
+			items += result
+	finally: return items
 
 def trakt_get_lists(list_type):
-	if list_type == 'liked_lists':
-		string = 'trakt_liked_lists'
-		path = 'users/likes/lists%s'
-	else:
-		string = 'trakt_my_lists'
-		path = 'users/me/lists%s'
-	url = {'path': path, 'params': {'limit': 1000}, 'with_auth': True, 'pagination': False}
+	if list_type == 'liked_lists': string, path_insert = 'trakt_liked_lists', 'likes/lists'
+	else: string, path_insert = 'trakt_my_lists', 'lists'
+	url = {'path': 'users/me/%s', 'path_insert': path_insert, 'with_auth': True}
 	return trakt_cache.cache_trakt_object(get_trakt, string, url)
 
 def make_new_trakt_list(params):
@@ -478,7 +487,7 @@ def trakt_progress_tv(progress_info):
 	insert_list = list(_process())
 	trakt_cache.TraktCache().set_bulk_tvshow_progress(insert_list)
 
-def trakt_official_status(media_type):
+def trakt_official_status(mediatype):
 	if not kodi_utils.addon_installed('script.trakt'): return True
 	trakt_addon = kodi_utils.addon('script.trakt')
 	try: authorization = trakt_addon.getSetting('authorization')
@@ -487,7 +496,7 @@ def trakt_official_status(media_type):
 	try: exclude_http = trakt_addon.getSetting('ExcludeHTTP')
 	except: exclude_http = ''
 	if exclude_http in ('true', ''): return True
-	media_setting = 'scrobble_movie' if media_type in ('movie', 'movies') else 'scrobble_episode'
+	media_setting = 'scrobble_movie' if mediatype in ('movie', 'movies') else 'scrobble_episode'
 	try: scrobble = trakt_addon.getSetting(media_setting)
 	except: scrobble = ''
 	if scrobble in ('false', ''): return True
@@ -552,11 +561,11 @@ def trakt_calendar_days(recently_aired, current_date):
 	return start, finish
 
 def trakt_get_activity():
-	url = {'path': 'sync/last_activities%s', 'with_auth': True, 'pagination': False}
+	url = {'path': 'sync/%s', 'path_insert': 'last_activities', 'with_auth': True, 'pagination': False}
 	return get_trakt(url)
 
 def trakt_playback_progress():
-	url = {'path': 'sync/playback%s', 'with_auth': True, 'pagination': False}
+	url = {'path': 'sync/%s', 'path_insert': 'playback', 'with_auth': True, 'pagination': False}
 	return get_trakt(url)
 
 def trakt_sync_activities_thread(*args, **kwargs):

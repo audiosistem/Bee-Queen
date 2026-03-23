@@ -58,30 +58,22 @@ RE_EXTINF = re.compile(r"#EXTINF:", re.IGNORECASE)
 RE_GROUP_TITLE = re.compile(r'group-title="?([^",]*)"?', re.IGNORECASE)
 RE_TVG_LOGO = re.compile(r'tvg-logo=["\']([^"\']*)["\']', re.IGNORECASE)
 
-_session = None
+import threading
 
-TIMEOUTS = {
-    "handshake": 5,
-    "categories": 10,
-    "channels": 20,
-    "epg": 15,
-    "playlink": 8,
-}
-
-_portal_response_cache = {}
-_PORTAL_CACHE_TTL = 300  # 5 minutes
+# Thread-local storage for HTTP sessions to ensure thread-safety in Mega Search
+_session_storage = threading.local()
 
 
 def get_session():
-    global _session
-    if _session is None:
-        _session = requests.Session()
+    """Get or create a thread-safe HTTP session."""
+    if not hasattr(_session_storage, "session") or _session_storage.session is None:
+        s = requests.Session()
         adapter = HTTPAdapter(
             pool_connections=20, pool_maxsize=30, max_retries=3, pool_block=False
         )
-        _session.mount("http://", adapter)
-        _session.mount("https://", adapter)
-        _session.headers.update(
+        s.mount("http://", adapter)
+        s.mount("https://", adapter)
+        s.headers.update(
             {
                 "User-Agent": "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3",
                 "X-User-Agent": "Model: MAG250; Link: WiFi",
@@ -89,7 +81,21 @@ def get_session():
                 "Accept-Encoding": "gzip, deflate",
             }
         )
-    return _session
+        _session_storage.session = s
+    return _session_storage.session
+
+
+TIMEOUTS = {
+    "handshake": 5,
+    "categories": 10,
+    "channels": 20,
+    "epg": 15,
+    "playlink": 8,
+    "play": 15,
+}
+
+_portal_response_cache = {}
+_PORTAL_CACHE_TTL = 300  # 5 minutes
 
 
 def get_cached_response(key):
@@ -525,19 +531,37 @@ def get_random_mac_from_file(server="server1"):
 def handshake(portal_url, mac, server="server1"):
     """Perform handshake with Stalker portal to get a session token."""
     session = get_session()
+    # CRITICAL: Clear cookies from previous server handshakes
+    session.cookies.clear()
+
+    from urllib.parse import urlparse
+
+    parsed_url = urlparse(portal_url)
+
     headers = {
         "User-Agent": "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3",
         "X-User-Agent": "Model: MAG250; Link: WiFi",
+        "Referer": f"{portal_url}/stalker_portal/c/index.html",
+        "Host": parsed_url.netloc,
     }
     cookies = {"mac": mac}
 
-    url = (
-        f"{portal_url}/portal.php?type=stb&action=handshake&token=&JsHttpRequest=1-xml"
-    )
+    # Use params for robust URL construction
+    url = f"{portal_url}/portal.php"
+    params = {
+        "type": "stb",
+        "action": "handshake",
+        "token": "",
+        "JsHttpRequest": "1-xml",
+    }
 
     try:
-        response = get_session().get(
-            url, headers=headers, cookies=cookies, timeout=TIMEOUTS["handshake"]
+        response = session.get(
+            url,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            timeout=TIMEOUTS["handshake"],
         )
         response.raise_for_status()
         data = response.json()
@@ -602,7 +626,7 @@ _server_cache_folder_path = None
 
 # Per-server authentication cache — avoids a full handshake on every request
 _auth_cache = {}  # {server_id: {"token": str, "mac": str, "timestamp": float}}
-_AUTH_TOKEN_TTL = 300  # 5 minutes
+_AUTH_TOKEN_TTL = 3600  # 1 hour (increased from 5m to avoid 429 Too Many Requests)
 
 # In-memory channels cache — avoids re-reading large JSON files on every category click
 _channels_memory_cache = {}  # {server_id: {"channels": list, "timestamp": float}}
@@ -888,12 +912,18 @@ def get_server_auth(server="server1"):
             level=xbmc.LOGDEBUG,
         )
         portal_url = get_portal_url_for_server(server)
+        from urllib.parse import urlparse
+
+        parsed_url = urlparse(portal_url)
+
         headers = {
             "User-Agent": (
                 "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 "
                 "(KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3"
             ),
             "X-User-Agent": "Model: MAG250; Link: WiFi",
+            "Referer": f"{portal_url}/stalker_portal/c/index.html",
+            "Host": parsed_url.netloc,
         }
         cookies = {"mac": cached["mac"], "token": cached["token"]}
         return cached["token"], headers, cookies, portal_url
@@ -912,12 +942,18 @@ def get_server_auth(server="server1"):
 
     _auth_cache[server] = {"token": token, "mac": mac, "timestamp": current_time}
 
+    from urllib.parse import urlparse
+
+    parsed_url = urlparse(portal_url)
+
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 "
             "(KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3"
         ),
         "X-User-Agent": "Model: MAG250; Link: WiFi",
+        "Referer": f"{portal_url}/stalker_portal/c/index.html",
+        "Host": parsed_url.netloc,
     }
     cookies = {"mac": mac, "token": token}
     return token, headers, cookies, portal_url
@@ -957,22 +993,20 @@ def fetch_server_categories(server="server1", force_refresh=False):
         return _categories_cache[cache_key]
 
     # Need to fetch fresh data
+    xbmc.log(f"[Categories] Fast fetch genres for {server}", level=xbmc.LOGINFO)
     token, headers, cookies, portal_url = get_server_auth(server)
     if not token or not portal_url:
-        xbmc.log("[Categories] Failed to get authentication", level=xbmc.LOGERROR)
-        return _categories_cache.get(cache_key)
+        return []
 
-    url = f"{portal_url}/portal.php?type=itv&action=get_genres&JsHttpRequest=1-xml"
-
+    url = f"{portal_url}/portal.php"
+    params = {"type": "itv", "action": "get_genres", "token": token, "JsHttpRequest": "1-xml"}
+    
     try:
-        response = get_session().get(
-            url, headers=headers, cookies=cookies, timeout=TIMEOUTS["categories"]
-        )
-        response.raise_for_status()
-        data = response.json()
-
+        res = get_session().get(url, params=params, headers=headers, cookies=cookies, timeout=TIMEOUTS["categories"])
+        res.raise_for_status()
+        data = res.json()
+        
         categories = []
-
         if isinstance(data, dict):
             js_data = data.get("js", {})
             if isinstance(js_data, list):
@@ -980,13 +1014,11 @@ def fetch_server_categories(server="server1", force_refresh=False):
                     cat_id = item.get("id")
                     cat_title = item.get("title", "")
                     if cat_id and cat_title:
-                        categories.append(
-                            {
-                                "id": cat_id,
-                                "title": cat_title.strip(),
-                                "original_title": cat_title.strip(),
-                            }
-                        )
+                        categories.append({
+                            "id": cat_id,
+                            "title": cat_title.strip(),
+                            "original_title": cat_title.strip(),
+                        })
             elif isinstance(js_data, dict):
                 genres = js_data.get("genres") or js_data.get("data") or []
                 if isinstance(genres, list):
@@ -994,42 +1026,133 @@ def fetch_server_categories(server="server1", force_refresh=False):
                         cat_id = item.get("id")
                         cat_title = item.get("title") or item.get("name", "")
                         if cat_id and cat_title:
-                            categories.append(
-                                {
-                                    "id": cat_id,
-                                    "title": cat_title.strip(),
-                                    "original_title": cat_title.strip(),
-                                }
-                            )
+                            categories.append({
+                                "id": cat_id,
+                                "title": cat_title.strip(),
+                                "original_title": cat_title.strip(),
+                            })
 
         if categories:
+            save_categories_cache(server, categories)
             _categories_cache[cache_key] = categories
             _categories_cache[f"timestamp_{server}"] = current_time
-
-            # Save to file cache (separate file)
-            save_categories_cache(server, categories)
-
-            xbmc.log(
-                f"[Categories] Fetched {len(categories)} categories from server {server}",
-                level=xbmc.LOGINFO,
-            )
             return categories
-
     except Exception as e:
-        xbmc.log(f"[Categories] Failed to fetch categories: {e}", level=xbmc.LOGERROR)
+        xbmc.log(f"[Categories] Fast fetch failed: {e}", level=xbmc.LOGERROR)
 
-    # Return cached if available
-    return _categories_cache.get(cache_key)
+    # If we reach here, fetch failed or returned empty.
+    # Fallback to whatever is in memory (even if expired)
+    return _categories_cache.get(cache_key, [])
+
+
+def fetch_vod_categories(server="server1"):
+    """Fetch VOD categories from server."""
+    token, headers, cookies, portal_url = get_server_auth(server)
+    if not token or not portal_url:
+        return []
+
+    url = f"{portal_url}/portal.php?type=vod&action=get_categories&JsHttpRequest=1-xml"
+    try:
+        response = get_session().get(
+            url, headers=headers, cookies=cookies, timeout=TIMEOUTS["categories"]
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data.get("js", [])
+    except Exception as e:
+        xbmc.log(f"[VOD] Failed to fetch VOD categories: {e}", level=xbmc.LOGERROR)
+        return []
+
+
+def fetch_series_categories(server="server1"):
+    """Fetch Series categories from server."""
+    token, headers, cookies, portal_url = get_server_auth(server)
+    if not token or not portal_url:
+        return []
+
+    url = (
+        f"{portal_url}/portal.php?type=series&action=get_categories&JsHttpRequest=1-xml"
+    )
+    try:
+        response = get_session().get(
+            url, headers=headers, cookies=cookies, timeout=TIMEOUTS["categories"]
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data.get("js", [])
+    except Exception as e:
+        xbmc.log(
+            f"[Series] Failed to fetch Series categories: {e}", level=xbmc.LOGERROR
+        )
+        return []
 
 
 def clean_category_title(title):
-    """Remove Unicode box drawing characters and clean up category title."""
+    """Remove Unicode box drawing characters, stars and clean up category title."""
     if not title:
         return ""
 
     cleaned = RE_BOX_CHARS.sub("", str(title))
+    cleaned = cleaned.replace("✰", "")
     cleaned = cleaned.strip(r"|-[]:() ")
     return cleaned.strip()
+
+
+def get_sport_categories(server_categories):
+    """Filter categories that are Sport related (anywhere in the title)."""
+    if not server_categories:
+        return []
+
+    sport_keywords = [
+        "sport",
+        "bundesliga",
+        "football",
+        "laliga",
+        "la liga",
+        "deportes",
+        "liga de campeones",
+        "formula 1",
+        "moto gp",
+        "ligue 1",
+        "equipe",
+        "basket",
+        "hockey",
+        "espn",
+        "championship",
+        "games",
+        "premier leagues",
+        "league",
+        "rugby",
+        "rally",
+        "serie a",
+        "boxing",
+        "tennis",
+    ]
+
+    sport_cats = []
+    keywords_lower = [k.lower() for k in sport_keywords]
+
+    for cat in server_categories:
+        title = cat["title"].strip()
+        title_lower = title.lower()
+
+        is_sport = False
+        for keyword in keywords_lower:
+            if keyword in title_lower:
+                is_sport = True
+                break
+
+        if is_sport:
+            sport_cats.append(cat)
+            xbmc.log(
+                f"[Categories] Matched Sport category: {cat['title']}",
+                level=xbmc.LOGDEBUG,
+            )
+
+    xbmc.log(
+        f"[Categories] Found {len(sport_cats)} Sport categories", level=xbmc.LOGINFO
+    )
+    return sport_cats
 
 
 def get_romanian_categories(server_categories):
@@ -1064,6 +1187,8 @@ def get_romanian_categories(server_categories):
         "romania",
         "roumanie",
         "romanie",
+        "✰ romania",
+        "✰romania",
     ]
 
     romanian_cats = []
@@ -1103,128 +1228,78 @@ def get_romanian_categories(server_categories):
 
 
 def fetch_channels_by_category_from_server(category_id, server="server1"):
-    """Fetch channels for a specific category from server.
-
-    Cache hierarchy (fastest → slowest):
-      1. In-memory dict  — no I/O, instant
-      2. File cache      — disk read, fast
-      3. Server fetch    — HTTP request, slow (only when cache is stale/missing)
+    """Fetch channels with Lazy Loading. 
+    Downloads full channel list ONLY when first category is accessed.
     """
     global _channels_memory_cache
     current_time = time.time()
 
-    # 1. In-memory cache (sub-millisecond)
+    # 1. Memory/File Cache check
     mem = _channels_memory_cache.get(server, {})
-    if (
-        mem.get("channels")
-        and (current_time - mem.get("timestamp", 0)) < _CATEGORIES_CACHE_TTL
-    ):
+    if mem.get("channels") and (current_time - mem.get("timestamp", 0)) < _CATEGORIES_CACHE_TTL:
         channels = mem["channels"]
-        xbmc.log(
-            f"[Channels] Memory cache hit for {server}: {len(channels)} channels",
-            level=xbmc.LOGDEBUG,
-        )
     else:
-        channels = None
-
-        # 2. File cache
         file_cache = load_channels_cache(server)
-        if file_cache and file_cache.get("channels"):
-            if (current_time - file_cache.get("timestamp", 0)) < _CATEGORIES_CACHE_TTL:
-                channels = file_cache["channels"]
-                _channels_memory_cache[server] = {
-                    "channels": channels,
-                    "timestamp": file_cache.get("timestamp", current_time),
-                }
-                xbmc.log(
-                    f"[Channels] File cache hit for {server}: {len(channels)} channels",
-                    level=xbmc.LOGDEBUG,
-                )
+        if file_cache and file_cache.get("channels") and (current_time - file_cache.get("timestamp", 0)) < _CATEGORIES_CACHE_TTL:
+            channels = file_cache["channels"]
+            _channels_memory_cache[server] = {"channels": channels, "timestamp": file_cache["timestamp"]}
+        else:
+            channels = None
 
-        # 3. Server fetch
-        if not channels:
-            xbmc.log(
-                f"[Channels] Fetching all channels from server {server}",
-                level=xbmc.LOGINFO,
-            )
-            token, headers, cookies, portal_url = get_server_auth(server)
-            if not token or not portal_url:
-                xbmc.log("[Channels] No token or portal URL", level=xbmc.LOGERROR)
-                return []
-
-            url = f"{portal_url}/portal.php?type=itv&action=get_all_channels&JsHttpRequest=1-xml"
-            try:
-                response = get_session().get(
-                    url, headers=headers, cookies=cookies, timeout=TIMEOUTS["channels"]
-                )
-                response.raise_for_status()
-                data = response.json()
-
-                if isinstance(data, dict):
-                    js_data = data.get("js", {})
-                    if isinstance(js_data, list):
-                        raw_channels = js_data
-                    elif isinstance(js_data, dict):
-                        raw_channels = (
-                            js_data.get("data") or js_data.get("channels") or []
-                        )
-                    else:
-                        return []
-                elif isinstance(data, list):
-                    raw_channels = data
-                else:
-                    return []
-
-                if raw_channels:
-                    channels = []
-                    for ch in raw_channels:
-                        logo = ch.get("logo") or ""
-                        if logo and RE_BOX_CHARS.search(logo):
-                            logo = ""
-                        channels.append(
-                            {
-                                "id": ch.get("id"),
-                                "name": clean_category_title(ch.get("name")),
-                                "cmd": ch.get("cmd"),
-                                "logo": logo,
-                                "tv_genre_id": ch.get("tv_genre_id"),
-                            }
-                        )
-                    _channels_memory_cache[server] = {
-                        "channels": channels,
-                        "timestamp": current_time,
-                    }
-                    save_channels_cache(server, channels)
-                    xbmc.log(
-                        f"[Channels] Fetched and cached {len(channels)} channels for {server}",
-                        level=xbmc.LOGINFO,
-                    )
-            except Exception as e:
-                xbmc.log(
-                    f"[Channels] Failed to fetch channels: {e}", level=xbmc.LOGERROR
-                )
-                return []
-
+    # 2. Lazy Full Fetch
     if not channels:
-        return []
+        xbmc.log(f"[Channels] Lazy loading full channel list for {server}", level=xbmc.LOGINFO)
+        dp = xbmcgui.DialogProgress()
+        dp.create("HubLive", "Se descarcă grila de canale...")
+        
+        token, headers, cookies, portal_url = get_server_auth(server)
+        if not token or not portal_url:
+            dp.close()
+            return []
 
-    # Return all channels if no category filter
-    if category_id is None:
-        xbmc.log(
-            f"[Channels] Returning all {len(channels)} channels (no filter)",
-            level=xbmc.LOGINFO,
-        )
-        return channels
+        url = f"{portal_url}/portal.php"
+        params = {"type": "itv", "action": "get_all_channels", "token": token, "JsHttpRequest": "1-xml"}
+        
+        try:
+            res = get_session().get(url, params=params, headers=headers, cookies=cookies, timeout=TIMEOUTS["channels"])
+            res.raise_for_status()
+            data = res.json()
+            
+            raw_channels = []
+            if isinstance(data, dict):
+                js_data = data.get("js", {})
+                if isinstance(js_data, list):
+                    raw_channels = js_data
+                elif isinstance(js_data, dict):
+                    raw_channels = js_data.get("data") or js_data.get("channels") or []
+            elif isinstance(data, list):
+                raw_channels = data
 
-    # Filter by category using tv_genre_id
-    filtered = [
-        ch for ch in channels if str(ch.get("tv_genre_id", "")) == str(category_id)
-    ]
-    xbmc.log(
-        f"[Channels] Filtered {len(filtered)} channels for cat_id={category_id}",
-        level=xbmc.LOGINFO,
-    )
-    return filtered
+            if raw_channels:
+                channels = []
+                for ch in raw_channels:
+                    logo = ch.get("logo") or ""
+                    if logo and RE_BOX_CHARS.search(logo): logo = ""
+                    channels.append({
+                        "id": ch.get("id"),
+                        "name": clean_category_title(ch.get("name")),
+                        "cmd": ch.get("cmd"),
+                        "logo": logo,
+                        "tv_genre_id": ch.get("tv_genre_id"),
+                    })
+                
+                _channels_memory_cache[server] = {"channels": channels, "timestamp": current_time}
+                save_channels_cache(server, channels)
+            
+            dp.close()
+        except Exception as e:
+            xbmc.log(f"[Channels] Lazy fetch failed: {e}", level=xbmc.LOGERROR)
+            dp.close()
+            return []
+
+    if not channels: return []
+    if category_id is None: return channels
+    return [ch for ch in channels if str(ch.get("tv_genre_id", "")) == str(category_id)]
 
 
 # Token provider for EPG Manager — delegates to the unified per-server auth cache
@@ -1269,6 +1344,74 @@ if is_epg_enabled():
 FAVORITES_FILE = os.path.join(
     xbmcvfs.translatePath(_ADDON.getAddonInfo("profile")), "favorites_{server}.json"
 )
+
+
+def list_global_favorites():
+    """List favorite channels from all servers, filtering by online status."""
+    xbmcplugin.setPluginCategory(_HANDLE, "Favorite")
+    xbmcplugin.setContent(_HANDLE, "videos")
+
+    servers_config = reload_servers_config()
+    available_servers = servers_config.get("servers", [])
+    server_ids = {srv.get("id") for srv in available_servers}
+    
+    # Try to get statuses from session cache
+    server_statuses = get_session_server_statuses()
+    
+    all_favorites = []
+    
+    for srv in available_servers:
+        srv_id = srv.get("id")
+        srv_name = srv.get("name", srv_id)
+        
+        # Skip if server is offline in current session
+        if server_statuses and not server_statuses.get(srv_id, False):
+            continue
+            
+        favorites_file = FAVORITES_FILE.format(server=srv_id)
+        if os.path.exists(favorites_file):
+            try:
+                with open(favorites_file, "r", encoding="utf-8") as f:
+                    favorites = json_loads(f)
+                    for fav in favorites:
+                        fav["_server_id"] = srv_id
+                        fav["_server_name"] = srv_name
+                        all_favorites.append(fav)
+            except:
+                pass
+
+    if not all_favorites:
+        li = xbmcgui.ListItem(label="[COLOR yellow]Nu există canale favorite (sau serverele sunt OFF).[/COLOR]")
+        xbmcplugin.addDirectoryItem(handle=_HANDLE, url="", listitem=li, isFolder=False)
+        xbmcplugin.endOfDirectory(_HANDLE)
+        return
+
+    for fav in all_favorites:
+        display_label = f"{fav['name']} - [COLOR cyan]{fav['_server_name']}[/COLOR]"
+        li = xbmcgui.ListItem(label=display_label)
+        
+        logo = fav.get("logo", "")
+        if logo:
+            li.setArt({"thumb": logo, "icon": logo})
+            
+        li.setProperty("IsPlayable", "true")
+        
+        # InfoTag for Kodi 21
+        video_info = li.getVideoInfoTag()
+        video_info.setTitle(fav["name"])
+
+        url = f"{_BASE_URL}?mode=play&stream_id={fav['stream_id']}&name={quote_plus(fav['name'])}&server={fav['_server_id']}"
+        if fav['_server_id'] == "server2" and fav.get("url_template"):
+            url += f"&url_template={quote_plus(fav['url_template'])}"
+
+        # Context menu
+        li.addContextMenuItems([
+            ("Remove from Favorites", f"RunPlugin({_BASE_URL}?mode=remove_from_favorites&stream_id={fav['stream_id']}&server={fav['_server_id']})")
+        ])
+
+        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=False)
+
+    xbmcplugin.endOfDirectory(_HANDLE)
 
 
 def list_favorites(server="server1"):
@@ -1463,7 +1606,495 @@ def parse_m3u_channels(m3u_file, server="server1"):
     return channels
 
 
-def list_channels(server="server1", category=None, category_id=None, from_server=False):
+def main_menu():
+    """Render the main menu with Mega Search, LiveTV Romania, World, Sport, Filme, Seriale, Favorites, and Server Check."""
+    items = [
+        (
+            "[COLOR gold]Mega Cautare[/COLOR]",
+            "mega_search_menu",
+            "DefaultAddonsSearch.png",
+        ),
+        ("LiveTV Romania", "romania", "DefaultTVShows.png"),
+        ("LiveTV World", "world", "DefaultAddonPVRClient.png"),
+        ("LiveTV Sport", "sport", "DefaultAddonGame.png"),
+        ("Filme", "vod", "DefaultMovies.png"),
+        ("Seriale", "series", "DefaultTVShows.png"),
+        ("[COLOR gold]Favorite[/COLOR]", "global_favorites", "DefaultFavourites.png"),
+        ("[COLOR yellow]Verificare Servere[/COLOR]", "check", "DefaultNetwork.png"),
+        ("[COLOR cyan]Setari[/COLOR]", "settings_menu", "DefaultAddonService.png"),
+    ]
+
+    for label, main_mode, icon in items:
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({"icon": icon, "thumb": icon})
+
+        if main_mode == "check":
+            url = (
+                f"{_BASE_URL}?mode=select_server&main_mode=verificare&force_check=true"
+            )
+        elif main_mode == "settings_menu":
+            url = f"{_BASE_URL}?mode=settings_menu&is_main=true"
+        elif main_mode == "mega_search_menu":
+            url = f"{_BASE_URL}?mode=mega_search_menu"
+        elif main_mode == "global_favorites":
+            url = f"{_BASE_URL}?mode=global_favorites"
+        else:
+            url = f"{_BASE_URL}?mode=select_server&main_mode={main_mode}"
+
+        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=True)
+
+    xbmcplugin.endOfDirectory(_HANDLE)
+
+
+def mega_search_menu():
+    """Render the Mega Search submenu."""
+    items = [
+        ("Cauta Live", "live", "DefaultAddonPVRClient.png"),
+        ("Cauta Filme", "vod", "DefaultMovies.png"),
+        ("Cauta Seriale", "series", "DefaultTVShows.png"),
+    ]
+
+    for label, search_type, icon in items:
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({"icon": icon, "thumb": icon})
+        url = f"{_BASE_URL}?mode=mega_search_input&search_type={search_type}"
+        # isFolder=False to prevent history stack issues
+        xbmcplugin.addDirectoryItem(
+            handle=_HANDLE, url=url, listitem=li, isFolder=False
+        )
+
+    xbmcplugin.endOfDirectory(_HANDLE)
+
+
+def get_session_server_statuses():
+    """Get server statuses from Kodi window property (session cache)."""
+    try:
+        window = xbmcgui.Window(10000)
+        data = window.getProperty("hublive_server_statuses")
+        if data:
+            return json_loads(data)
+    except:
+        pass
+    return None
+
+
+def set_session_server_statuses(statuses):
+    """Save server statuses to Kodi window property."""
+    try:
+        window = xbmcgui.Window(10000)
+        window.setProperty("hublive_server_statuses", json_dumps(statuses))
+    except:
+        pass
+
+
+def select_server_dialog(main_mode, force_check=False):
+    """Show a dialog to select a server and return the selected server ID.
+    Uses session cache for statuses unless force_check is True.
+    """
+    servers_config = reload_servers_config()
+    available_servers = servers_config.get("servers", [])
+
+    if not available_servers:
+        xbmcgui.Dialog().ok("Error", "No servers configured in servers.json")
+        return None
+
+    # Try to get statuses from session cache
+    server_statuses = get_session_server_statuses()
+
+    # Determine if we need to perform a check
+    should_check = force_check or (
+        is_server_check_enabled() and server_statuses is None
+    )
+
+    if should_check:
+        # Perform parallel check
+        server_statuses = _check_all_servers_online(available_servers)
+        # Update session cache
+        set_session_server_statuses(server_statuses)
+
+    # Safe capitalize for title
+    title_suffix = main_mode.capitalize() if main_mode else "Verificare"
+
+    labels = []
+    for srv in available_servers:
+        srv_name = srv.get("name", srv.get("id", "Unknown"))
+        srv_id = srv.get("id")
+
+        if server_statuses is not None:
+            is_online = server_statuses.get(srv_id, False)
+            status = (
+                "[COLOR green]● ON[/COLOR]" if is_online else "[COLOR red]● OFF[/COLOR]"
+            )
+            labels.append(f"{srv_name}  {status}")
+        else:
+            labels.append(srv_name)
+
+    selection = xbmcgui.Dialog().select(f"Alege Server - {title_suffix}", labels)
+
+    if selection >= 0:
+        return available_servers[selection].get("id")
+
+    return None
+
+
+def fetch_stalker_paginated(type_param, category_id, server="server1"):
+    """Helper to fetch all pages for a given Stalker category."""
+    token, headers, cookies, portal_url = get_server_auth(server)
+    if not token or not portal_url:
+        return []
+
+    base_url = f"{portal_url}/portal.php"
+    param_key = "category" if type_param in ["vod", "series"] else "genre"
+
+    all_items = []
+    current_page = 1
+    total_pages = 1
+
+    while current_page <= total_pages:
+        params = {
+            "type": type_param,
+            "action": "get_ordered_list",
+            param_key: category_id,
+            "JsHttpRequest": "1-xml",
+            "p": current_page,
+        }
+
+        try:
+            response = get_session().get(
+                base_url,
+                params=params,
+                headers=headers,
+                cookies=cookies,
+                timeout=TIMEOUTS["channels"],
+            )
+            response.raise_for_status()
+            data = response.json()
+            js_data = data.get("js", {})
+
+            # Update total pages on first request
+            if current_page == 1:
+                total_items = int(js_data.get("total_items", 0))
+                items_first_page = js_data.get("data", [])
+                if not items_first_page:
+                    break
+
+                items_per_page = len(items_first_page)
+                if items_per_page > 0:
+                    total_pages = (total_items + items_per_page - 1) // items_per_page
+
+                xbmc.log(
+                    f"[Stalker] Total items: {total_items}, Pages: {total_pages} for {type_param} cat {category_id}",
+                    level=xbmc.LOGINFO,
+                )
+
+            page_items = js_data.get("data", [])
+            if not page_items:
+                break
+
+            all_items.extend(page_items)
+            current_page += 1
+
+            # Safety break to avoid infinite loops if server misbehaves
+            if current_page > 100:
+                break
+
+        except Exception as e:
+            xbmc.log(
+                f"[Stalker] Pagination error at page {current_page}: {e}",
+                level=xbmc.LOGERROR,
+            )
+            break
+
+    return all_items
+
+
+def fetch_vod_items(category_id, server="server1"):
+    """Fetch VOD items for a specific category from server using pagination."""
+    return fetch_stalker_paginated("vod", category_id, server)
+
+
+def fetch_series_items(category_id, server="server1"):
+    """Fetch Series items for a specific category from server using pagination."""
+    return fetch_stalker_paginated("series", category_id, server)
+
+
+def list_vod_items(category_id, server="server1"):
+    """List VOD items for a specific category."""
+    items = fetch_vod_items(category_id, server)
+    if not items:
+        xbmcgui.Dialog().notification("Info", "No VOD items found in this category.")
+        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+        return
+
+    for item in items:
+        name = item.get("name", "Unknown")
+        movie_id = item.get("id")
+        li = xbmcgui.ListItem(label=name)
+        li.setInfo(
+            "video",
+            {"title": name, "plot": item.get("description"), "year": item.get("year")},
+        )
+        li.setProperty("IsPlayable", "true")
+        url = f"{_BASE_URL}?mode=play_vod&movie_id={movie_id}&server={server}"
+        xbmcplugin.addDirectoryItem(
+            handle=_HANDLE, url=url, listitem=li, isFolder=False
+        )
+
+    xbmcplugin.endOfDirectory(_HANDLE)
+
+
+def list_series_items(category_id, server="server1"):
+    """List Series items for a specific category."""
+    items = fetch_series_items(category_id, server)
+    if not items:
+        xbmcgui.Dialog().notification("Info", "No series found in this category.")
+        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+        return
+
+    for item in items:
+        name = item.get("name", "Unknown")
+        series_id = item.get("id")
+        li = xbmcgui.ListItem(label=name)
+        li.setInfo(
+            "video",
+            {"title": name, "plot": item.get("description"), "year": item.get("year")},
+        )
+        # For series, clicking an item should lead to seasons
+        # series_id might need splitting if it contains colons like in stalker_kodi.py
+        movie_id = str(series_id).split(":")[0]
+        url = f"{_BASE_URL}?mode=list_seasons&movie_id={movie_id}&server={server}"
+        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=True)
+
+    xbmcplugin.endOfDirectory(_HANDLE)
+
+
+def fetch_seasons(movie_id, server="server1"):
+    """Fetch seasons for a series."""
+    token, headers, cookies, portal_url = get_server_auth(server)
+    if not token or not portal_url:
+        return []
+
+    url = f"{portal_url}/portal.php?type=series&action=get_ordered_list&movie_id={movie_id}&JsHttpRequest=1-xml"
+    try:
+        response = get_session().get(
+            url, headers=headers, cookies=cookies, timeout=TIMEOUTS["channels"]
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data.get("js", {}).get("data", [])
+    except Exception as e:
+        xbmc.log(f"[Series] Failed to fetch seasons: {e}", level=xbmc.LOGERROR)
+        return []
+
+
+def list_seasons(movie_id, server="server1"):
+    """List seasons for a series."""
+    seasons = fetch_seasons(movie_id, server)
+    if not seasons:
+        xbmcgui.Dialog().notification("Info", "No seasons found for this series.")
+        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+        return
+
+    for season in seasons:
+        li = xbmcgui.ListItem(label=season.get("name", "Unknown Season"))
+        url = f"{_BASE_URL}?mode=list_episodes&movie_id={movie_id}&season_id={season.get('id')}&server={server}"
+        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=True)
+
+    xbmcplugin.endOfDirectory(_HANDLE)
+
+
+def fetch_episodes(movie_id, season_id, server="server1"):
+    """Fetch episodes for a season."""
+    token, headers, cookies, portal_url = get_server_auth(server)
+    if not token or not portal_url:
+        return []
+
+    url = f"{portal_url}/portal.php?type=series&action=get_ordered_list&movie_id={movie_id}&season_id={season_id}&JsHttpRequest=1-xml"
+    try:
+        response = get_session().get(
+            url, headers=headers, cookies=cookies, timeout=TIMEOUTS["channels"]
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data.get("js", {}).get("data", [])
+    except Exception as e:
+        xbmc.log(f"[Series] Failed to fetch episodes: {e}", level=xbmc.LOGERROR)
+        return []
+
+
+def list_episodes(movie_id, season_id, server="server1"):
+    """List episodes for a season."""
+    episodes_data = fetch_episodes(movie_id, season_id, server)
+    if not episodes_data or not isinstance(episodes_data, list):
+        xbmcgui.Dialog().notification("Info", "No episodes found for this season.")
+        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+        return
+
+    # In Stalker, episodes_data[0]['series'] is usually a list of episode numbers
+    # and episodes_data[0]['cmd'] is the base command for the season.
+    if len(episodes_data) > 0:
+        season_info = episodes_data[0]
+        episodes_list = season_info.get("series", [])
+        season_cmd = season_info.get("cmd")
+
+        for ep_num in episodes_list:
+            label = f"Episodul {ep_num}"
+            li = xbmcgui.ListItem(label=label)
+            li.setProperty("IsPlayable", "true")
+            url = f"{_BASE_URL}?mode=play_series&cmd={quote_plus(str(season_cmd))}&episode={ep_num}&server={server}"
+            xbmcplugin.addDirectoryItem(
+                handle=_HANDLE, url=url, listitem=li, isFolder=False
+            )
+
+    xbmcplugin.endOfDirectory(_HANDLE)
+
+
+def play_vod(movie_id, server="server1"):
+    """Play a VOD movie."""
+    token, headers, cookies, portal_url = get_server_auth(server)
+    if not token or not portal_url:
+        return
+
+    cmd = f"movie {movie_id}"
+    url = f"{portal_url}/portal.php?type=vod&action=create_link&cmd={quote_plus(cmd)}&JsHttpRequest=1-xml"
+    try:
+        response = get_session().get(
+            url, headers=headers, cookies=cookies, timeout=TIMEOUTS["play"]
+        )
+        response.raise_for_status()
+        data = response.json()
+        returned_url = data.get("js", {}).get("cmd")
+
+        if returned_url:
+            final_url = returned_url
+            if "play_token=" in returned_url:
+                try:
+                    play_token = returned_url.split("play_token=")[1].split("&")[0]
+                    mac = cookies.get("mac", "")
+                    # Ensure mac is available
+                    if not mac:
+                        # Try to get mac from settings/config if not in cookies
+                        servers_config = reload_servers_config()
+                        for s in servers_config.get("servers", []):
+                            if s.get("id") == server and s.get("macs"):
+                                mac = s["macs"][0]
+                                break
+
+                    final_url = f"{portal_url}/play/movie.php?mac={mac}&stream={movie_id}.mkv&play_token={play_token}&type=movie"
+                except IndexError:
+                    pass
+
+            xbmc.log(f"[VOD] Playing URL: {final_url}", level=xbmc.LOGINFO)
+            li = xbmcgui.ListItem(path=final_url)
+            xbmcplugin.setResolvedUrl(_HANDLE, True, listitem=li)
+        else:
+            xbmcgui.Dialog().notification(
+                "Eroare", "Nu s-a putut genera link-ul de redare."
+            )
+    except Exception as e:
+        xbmc.log(f"[VOD] Play failed: {e}", level=xbmc.LOGERROR)
+
+
+def play_series(cmd, episode_num, server="server1"):
+    """Play a series episode."""
+    token, headers, cookies, portal_url = get_server_auth(server)
+    if not token or not portal_url:
+        return
+
+    # cmd for series is usually like "movie 1234"
+    url = f"{portal_url}/portal.php?type=vod&action=create_link&cmd={quote_plus(str(cmd))}&series={episode_num}&JsHttpRequest=1-xml"
+    try:
+        response = get_session().get(
+            url, headers=headers, cookies=cookies, timeout=TIMEOUTS["play"]
+        )
+        response.raise_for_status()
+        data = response.json()
+        stream_url = data.get("js", {}).get("cmd")
+
+        if stream_url:
+            if stream_url.startswith("ffmpeg "):
+                stream_url = stream_url.split(" ", 1)[1]
+
+            xbmc.log(f"[Series] Playing URL: {stream_url}", level=xbmc.LOGINFO)
+            li = xbmcgui.ListItem(path=stream_url)
+            xbmcplugin.setResolvedUrl(_HANDLE, True, listitem=li)
+        else:
+            xbmcgui.Dialog().notification(
+                "Eroare", "Nu s-a putut genera link-ul de redare."
+            )
+    except Exception as e:
+        xbmc.log(f"[Series] Play failed: {e}", level=xbmc.LOGERROR)
+
+
+def list_vod_categories(server="server1"):
+    """List VOD categories from server."""
+    categories = fetch_vod_categories(server)
+    if not categories:
+        xbmcgui.Dialog().notification("Info", "No VOD categories found.")
+        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+        return
+
+    # Set plugin category and content
+    xbmcplugin.setPluginCategory(_HANDLE, "Filme")
+    xbmcplugin.setContent(_HANDLE, "videos")
+
+    # Add "Search" button at the top - Action item, not a folder to prevent history stack issues
+    search_button = xbmcgui.ListItem(label="[COLOR yellow]Cauta Film[/COLOR]")
+    search_button.setArt(
+        {"thumb": "DefaultAddonsSearch.png", "icon": "DefaultAddonsSearch.png"}
+    )
+    search_button.setProperty("IsPlayable", "false")
+    search_button_url = f"{_BASE_URL}?mode=search_input_vod&server={server}"
+    xbmcplugin.addDirectoryItem(
+        handle=_HANDLE, url=search_button_url, listitem=search_button, isFolder=False
+    )
+
+    for cat in categories:
+        li = xbmcgui.ListItem(label=cat.get("title", "Unknown"))
+        url = f"{_BASE_URL}?mode=list_vod_items&category_id={cat.get('id')}&server={server}"
+        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=True)
+
+    xbmcplugin.endOfDirectory(_HANDLE)
+
+
+def list_series_categories(server="server1"):
+    """List Series categories from server."""
+    categories = fetch_series_categories(server)
+    if not categories:
+        xbmcgui.Dialog().notification("Info", "No Series categories found.")
+        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+        return
+
+    # Set plugin category and content
+    xbmcplugin.setPluginCategory(_HANDLE, "Seriale")
+    xbmcplugin.setContent(_HANDLE, "videos")
+
+    # Add "Search" button at the top - Action item, not a folder
+    search_button = xbmcgui.ListItem(label="[COLOR yellow]Cauta Serial[/COLOR]")
+    search_button.setArt(
+        {"thumb": "DefaultAddonsSearch.png", "icon": "DefaultAddonsSearch.png"}
+    )
+    search_button.setProperty("IsPlayable", "false")
+    search_button_url = f"{_BASE_URL}?mode=search_input_series&server={server}"
+    xbmcplugin.addDirectoryItem(
+        handle=_HANDLE, url=search_button_url, listitem=search_button, isFolder=False
+    )
+
+    for cat in categories:
+        li = xbmcgui.ListItem(label=cat.get("title", "Unknown"))
+        url = f"{_BASE_URL}?mode=list_series_items&category_id={cat.get('id')}&server={server}"
+        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=True)
+
+    xbmcplugin.endOfDirectory(_HANDLE)
+
+
+def list_channels(
+    server="server1",
+    category=None,
+    category_id=None,
+    from_server=False,
+    main_mode=None,
+):
     """List channel categories from server."""
     # Check if portal URL exists
     portal_url = get_portal_url_for_server(server)
@@ -1484,6 +2115,13 @@ def list_channels(server="server1", category=None, category_id=None, from_server
         category_id = params.get("cat_id")
     if not from_server:
         from_server = params.get("from_server") == "true"
+    if main_mode is None:
+        main_mode = params.get("main_mode")
+
+    xbmc.log(
+        f"[List] Listing channels for server={server}, main_mode={main_mode}",
+        level=xbmc.LOGINFO,
+    )
 
     # If a category is selected, list channels in that category
     if category:
@@ -1493,22 +2131,24 @@ def list_channels(server="server1", category=None, category_id=None, from_server
             server=server,
             category_id=category_id,
             from_server=from_server,
+            main_mode=main_mode,
         )
     else:
         # List all available categories
-        list_categories([], server=server)
+        list_categories([], server=server, main_mode=main_mode)
 
 
-def list_categories(channels, server="server1"):
+def list_categories(channels, server="server1", main_mode=None):
     """List all available channel categories with Get Full EPG button."""
-    # Add "Search" button at the top
+    # Add "Search" button at the top - Action item, not a folder
     search_button = xbmcgui.ListItem(label="[COLOR yellow]Cauta[/COLOR]")
     search_button.setArt(
         {"icon": "DefaultAddonsSearch.png", "thumb": "DefaultAddonsSearch.png"}
     )
-    search_button_url = f"{_BASE_URL}?mode=search&server={server}"
+    search_button.setProperty("IsPlayable", "false")
+    search_button_url = f"{_BASE_URL}?mode=search_input&server={server}&main_mode={main_mode if main_mode else ''}"
     xbmcplugin.addDirectoryItem(
-        handle=_HANDLE, url=search_button_url, listitem=search_button, isFolder=True
+        handle=_HANDLE, url=search_button_url, listitem=search_button, isFolder=False
     )
 
     # Add "Favorites" button at the top
@@ -1516,7 +2156,7 @@ def list_categories(channels, server="server1"):
     favorites_button.setArt(
         {"icon": "DefaultFavourites.png", "thumb": "DefaultFavourites.png"}
     )
-    favorites_button_url = f"{_BASE_URL}?mode=favorites&server={server}"
+    favorites_button_url = f"{_BASE_URL}?mode=favorites&server={server}&main_mode={main_mode if main_mode else ''}"
     xbmcplugin.addDirectoryItem(
         handle=_HANDLE,
         url=favorites_button_url,
@@ -1533,7 +2173,7 @@ def list_categories(channels, server="server1"):
         epg_button.setArt(
             {"icon": "DefaultAddonPVRClient.png", "thumb": "DefaultAddonPVRClient.png"}
         )
-        epg_button_url = f"{_BASE_URL}?mode=get_full_epg&server={server}"
+        epg_button_url = f"{_BASE_URL}?mode=get_full_epg&server={server}&main_mode={main_mode if main_mode else ''}"
         xbmcplugin.addDirectoryItem(
             handle=_HANDLE, url=epg_button_url, listitem=epg_button, isFolder=True
         )
@@ -1545,9 +2185,15 @@ def list_categories(channels, server="server1"):
     if server_type in ["stalker", "stalker_v2"]:
         all_server_cats = fetch_server_categories(server)
         if all_server_cats:
-            server_cat_list = get_romanian_categories(all_server_cats)
+            if main_mode == "world":
+                server_cat_list = all_server_cats
+            elif main_mode == "sport":
+                server_cat_list = get_sport_categories(all_server_cats)
+            else:
+                server_cat_list = get_romanian_categories(all_server_cats)
+
             xbmc.log(
-                f"[Categories] Using server categories for {server}: {len(server_cat_list)} found",
+                f"[Categories] Using server categories for {server}: {len(server_cat_list)} found (mode: {main_mode})",
                 level=xbmc.LOGINFO,
             )
 
@@ -1566,6 +2212,7 @@ def list_categories(channels, server="server1"):
                 server=server,
                 category_id=cat["id"],
                 from_server=True,
+                main_mode=main_mode,
             )
             return
 
@@ -1580,7 +2227,10 @@ def list_categories(channels, server="server1"):
             )
 
         # Sort by custom order
-        categories_to_show.sort(key=lambda x: get_category_sort_key(x["display"]))
+        if main_mode != "world":
+            categories_to_show.sort(key=lambda x: get_category_sort_key(x["display"]))
+        else:
+            categories_to_show.sort(key=lambda x: x["display"])
 
         for cat_info in categories_to_show:
             li = xbmcgui.ListItem(label=cat_info["display"])
@@ -1588,7 +2238,7 @@ def list_categories(channels, server="server1"):
             li.setArt({"icon": icon, "thumb": icon})
 
             # Use original category name for server query
-            category_url = f"{_BASE_URL}?category={quote_plus(cat_info['original'])}&server={server}&cat_id={cat_info['id']}&from_server=true"
+            category_url = f"{_BASE_URL}?category={quote_plus(cat_info['original'])}&server={server}&cat_id={cat_info['id']}&from_server=true&main_mode={main_mode if main_mode else ''}"
 
             xbmcplugin.addDirectoryItem(
                 handle=_HANDLE, url=category_url, listitem=li, isFolder=True
@@ -1626,6 +2276,7 @@ def list_channels_in_category(
     server="server1",
     category_id=None,
     from_server=False,
+    main_mode=None,
 ):
     """List channels within a specific category."""
     favorites_file = FAVORITES_FILE.format(server=server)
@@ -1640,7 +2291,7 @@ def list_channels_in_category(
     if from_server and category_id:
         # Fetch channels from server by category
         xbmc.log(
-            f"[Categories] Fetching channels for category ID: {category_id}",
+            f"[Categories] Fetching channels for category ID: {category_id} (mode: {main_mode})",
             level=xbmc.LOGINFO,
         )
         server_channels = fetch_channels_by_category_from_server(category_id, server)
@@ -1658,9 +2309,17 @@ def list_channels_in_category(
                     logo = ""
 
                 stream_id_match = RE_STREAM_ID.search(cmd)
-                stream_id = (
-                    stream_id_match.group(1) if stream_id_match else f"server_{idx}"
-                )
+                if stream_id_match:
+                    stream_id = stream_id_match.group(1)
+                else:
+                    # Fallback 1: Use direct 'id' field if numeric
+                    srv_id_field = str(ch.get("id", ""))
+                    if srv_id_field and srv_id_field.isdigit():
+                        stream_id = srv_id_field
+                    else:
+                        # Fallback 2: Try to find ANY number in the cmd
+                        any_digit_match = re.search(r"(\d+)", cmd)
+                        stream_id = any_digit_match.group(1) if any_digit_match else f"unknown_{idx}"
 
                 channels_in_category.append(
                     {
@@ -1690,7 +2349,7 @@ def list_channels_in_category(
     change_mac_button.setArt(
         {"icon": "DefaultIconInfo.png", "thumb": "DefaultIconInfo.png"}
     )
-    change_mac_url = f"{_BASE_URL}?mode=change_mac&category={quote_plus(selected_category)}&server={server}"
+    change_mac_url = f"{_BASE_URL}?mode=change_mac&category={quote_plus(selected_category)}&server={server}&main_mode={main_mode if main_mode else ''}"
     xbmcplugin.addDirectoryItem(
         handle=_HANDLE, url=change_mac_url, listitem=change_mac_button, isFolder=False
     )
@@ -2330,7 +2989,7 @@ def play_stream(stream_id, name, server="server1", url_template=None):
     )
 
 
-def show_settings_menu(server="server1"):
+def show_settings_menu(server="server1", is_main=False):
     """Show settings submenu."""
     # Setari addon
     settings_item = xbmcgui.ListItem(label="Setari addon")
@@ -2342,18 +3001,26 @@ def show_settings_menu(server="server1"):
         handle=_HANDLE, url=settings_url, listitem=settings_item, isFolder=False
     )
 
-    # Sterge cache (pt. acest server)
-    clear_cache_item = xbmcgui.ListItem(label="Sterge cache (pt. acest server)")
-    clear_cache_item.setArt(
-        {"icon": "DefaultAddonRepository.png", "thumb": "DefaultAddonRepository.png"}
-    )
-    clear_cache_url = f"{_BASE_URL}?mode=clear_cache&server={server}"
-    xbmcplugin.addDirectoryItem(
-        handle=_HANDLE, url=clear_cache_url, listitem=clear_cache_item, isFolder=False
-    )
+    if not is_main:
+        # Sterge cache (pt. acest server)
+        clear_cache_item = xbmcgui.ListItem(label="Sterge cache (pt. acest server)")
+        clear_cache_item.setArt(
+            {
+                "icon": "DefaultAddonRepository.png",
+                "thumb": "DefaultAddonRepository.png",
+            }
+        )
+        clear_cache_url = f"{_BASE_URL}?mode=clear_cache&server={server}"
+        xbmcplugin.addDirectoryItem(
+            handle=_HANDLE,
+            url=clear_cache_url,
+            listitem=clear_cache_item,
+            isFolder=False,
+        )
 
-    # Sterge tot cache
-    clear_all_cache_item = xbmcgui.ListItem(label="Sterge tot cache")
+    # Sterge tot cache (Clear Cache)
+    label_clear = "Sterge tot cache" if not is_main else "Clear Cache"
+    clear_all_cache_item = xbmcgui.ListItem(label=label_clear)
     clear_all_cache_item.setArt(
         {"icon": "DefaultAddonRepository.png", "thumb": "DefaultAddonRepository.png"}
     )
@@ -2537,6 +3204,15 @@ def router(params):
         server = params.get("server")
         mode = params.get("mode")
 
+        # If no server specified and no mode, show main menu
+        if server is None and mode is None:
+            main_menu()
+            return
+
+        # Always reload servers from JSON config (fresh on each request)
+        servers_config = reload_servers_config()
+        available_servers = servers_config.get("servers", [])
+
         # Handle clear_all_cache mode early (doesn't require server)
         if mode == "clear_all_cache":
             xbmc.log("[Router] Processing clear_all_cache mode", level=xbmc.LOGINFO)
@@ -2544,9 +3220,104 @@ def router(params):
             xbmc.executebuiltin("Container.Refresh")
             return
 
-        # Always reload servers from JSON config (fresh on each request)
-        servers_config = reload_servers_config()
-        available_servers = servers_config.get("servers", [])
+        # Handle select_server mode
+        if mode == "select_server":
+            main_mode = params.get("main_mode")
+            force_check = params.get("force_check") == "true"
+            selected_server = select_server_dialog(main_mode, force_check=force_check)
+
+            if selected_server:
+                if main_mode == "vod":
+                    list_vod_categories(server=selected_server)
+                elif main_mode == "series":
+                    list_series_categories(server=selected_server)
+                else:
+                    list_channels(server=selected_server, main_mode=main_mode)
+            else:
+                # If user cancelled dialog, we must end the directory listing to stop the spinner
+                xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+            return
+
+        # Handle VOD and Series specific modes
+        if mode == "list_vod_items":
+            list_vod_items(params.get("category_id"), server=server)
+            return
+        elif mode == "list_series_items":
+            list_series_items(params.get("category_id"), server=server)
+            return
+        elif mode == "list_seasons":
+            list_seasons(params.get("movie_id"), server=server)
+            return
+        elif mode == "list_episodes":
+            list_episodes(
+                params.get("movie_id"), params.get("season_id"), server=server
+            )
+            return
+        elif mode == "play_vod":
+            play_vod(params.get("movie_id"), server=server)
+            return
+        elif mode == "play_series":
+            play_series(params.get("cmd"), params.get("episode"), server=server)
+            return
+
+        # Handle modes that don't strictly require a pre-selected server or handle it themselves
+        if mode == "settings_menu":
+            is_main = params.get("is_main") == "true"
+            show_settings_menu(server=server if server else "server1", is_main=is_main)
+            return
+        elif mode == "settings":
+            _ADDON.openSettings()
+            xbmc.executebuiltin("Container.Refresh")
+            return
+        elif mode == "favorites":
+            list_favorites(server=server if server else "server1")
+            return
+        elif mode == "mega_search_menu":
+            mega_search_menu()
+            return
+        elif mode == "mega_search_input":
+            mega_search_input(params.get("search_type"))
+            return
+        elif mode == "mega_search_results":
+            show_mega_search_results(params.get("query"), params.get("search_type"))
+            return
+        elif mode == "global_favorites":
+            list_global_favorites()
+            return
+        elif mode == "search_input":
+            search_input_dialog(server=server, main_mode=params.get("main_mode"))
+            return
+        elif mode == "search_results":
+            # Display search results (can be called with query or search_query param)
+            query = params.get("query") or params.get("search_query")
+            if query:
+                show_search_results(query, server=server)
+            else:
+                # No query, show search input dialog
+                search_input_dialog(server=server)
+            return
+        elif mode == "search_input_vod":
+            search_input_dialog_vod(server=server)
+            return
+        elif mode == "search_results_vod":
+            # Display VOD search results
+            query = params.get("query") or params.get("search_query")
+            if query:
+                show_vod_search_results(query, server=server)
+            else:
+                search_input_dialog_vod(server=server)
+            return
+        elif mode == "search_input_series":
+            search_input_dialog_series(server=server)
+            return
+        elif mode == "search_results_series":
+            # Display Series search results
+            query = params.get("query") or params.get("search_query")
+            if query:
+                show_series_search_results(query, server=server)
+            else:
+                search_input_dialog_series(server=server)
+            return
 
         # On-demand server check (triggered by the 'Verificare servere' button)
         if mode == "check_servers":
@@ -2558,7 +3329,7 @@ def router(params):
             _list_servers_page(available_servers, server_statuses)
             return
 
-        # If no server specified, show server selection from JSON
+        # If no server specified, fallback to first server or list servers page
         if server is None:
             if len(available_servers) > 1:
                 if is_server_check_enabled():
@@ -2628,33 +3399,27 @@ def router(params):
             _list_servers_page(available_servers, server_statuses)
             return
 
-        if mode is None:
+        if mode is None or mode == "list_channels":
             list_channels(
                 server=server,
                 category=params.get("category"),
                 category_id=params.get("cat_id"),
                 from_server=params.get("from_server") == "true",
+                main_mode=params.get("main_mode"),
             )
         elif mode == "get_full_epg":
             get_full_epg()
-        elif mode == "search":
-            corrected_search_channels(server=server)
         elif mode == "change_mac":
             change_mac(params.get("category"), server=server)
-        elif mode == "settings_menu":
-            show_settings_menu(server=server)
-        elif mode == "settings":
-            _ADDON.openSettings()
-            xbmc.executebuiltin("Container.Refresh")
         elif mode == "clear_cache":
-            clear_all_cache(server=server)
+            clear_all_cache(server=server if server else "server1")
             xbmc.executebuiltin("Container.Refresh")
         elif mode == "clear_all_cache":
             xbmc.log("[Router] Processing clear_all_cache mode", level=xbmc.LOGINFO)
             clear_all_cache_for_all_servers()
             xbmc.executebuiltin("Container.Refresh")
         elif mode == "favorites":
-            list_favorites(server=server)
+            list_favorites(server=server if server else "server1")
 
     except KeyError as e:
         xbmc.log(
@@ -2679,92 +3444,433 @@ def router(params):
             epg_manager.stop()
 
 
-def corrected_search_channels(server="server1"):
-    """Search for channels by name."""
-    # Get search term from keyboard
-    search_term = xbmcgui.Dialog().input("Cauta canal", type=xbmcgui.INPUT_ALPHANUM)
-    if not search_term:
+def mega_search_input(search_type):
+    """Show keyboard for mega search and then update to results."""
+    xbmc.executebuiltin("Dialog.Close(all,true)")
+    labels = {"live": "Canal Live", "vod": "Film", "series": "Serial"}
+    search_term = xbmcgui.Dialog().input(
+        f"Mega Cautare {labels.get(search_type)}", type=xbmcgui.INPUT_ALPHANUM
+    )
+
+    if search_term:
+        url = f"{_BASE_URL}?mode=mega_search_results&query={quote_plus(search_term)}&search_type={search_type}"
+        xbmc.executebuiltin(f"Container.Update({url})")
+
+
+def show_mega_search_results(query, search_type):
+    """Search on all servers concurrently and display unified results."""
+    xbmc.log(
+        f"[MegaSearch] Starting with query='{query}', search_type='{search_type}'",
+        level=xbmc.LOGINFO,
+    )
+
+    if not query:
+        xbmc.log("[MegaSearch] No query provided, exiting", level=xbmc.LOGWARNING)
         xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
         return
 
-    # Get all channels from cache/server
-    channels = fetch_channels_by_category_from_server(None, server)
-    if not channels:
+    servers_config = reload_servers_config()
+    available_servers = servers_config.get("servers", [])
+    xbmc.log(
+        f"[MegaSearch] Found {len(available_servers)} servers: {[s.get('id') for s in available_servers]}",
+        level=xbmc.LOGINFO,
+    )
+
+    if not available_servers:
         xbmcgui.Dialog().notification(
-            "Eroare", "Nu s-au putut obtine canalele", xbmcgui.NOTIFICATION_ERROR
+            "Eroare", "Niciun server configurat.", xbmcgui.NOTIFICATION_ERROR
         )
         xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
         return
 
-    # Load favorites for context menu
+    # Set content type
+    content_map = {"live": "videos", "vod": "movies", "series": "tvshows"}
+    xbmcplugin.setContent(_HANDLE, content_map.get(search_type, "videos"))
+    xbmcplugin.setPluginCategory(_HANDLE, f"Mega Cautare: {query}")
+
+    dp = xbmcgui.DialogProgress()
+    dp.create(
+        "Mega Cautare",
+        f"Se cauta pe [COLOR yellow]{len(available_servers)}[/COLOR] servere...",
+    )
+
+    all_results = []
+    type_param_map = {"live": "itv", "vod": "vod", "series": "series"}
+    stalker_type = type_param_map.get(search_type, "itv")
+
+    def worker(srv):
+        srv_name = srv.get("name", srv.get("id"))
+        srv_id = srv.get("id")
+        xbmc.log(
+            f"[MegaSearch] Searching '{query}' on {srv_id} (type={stalker_type})",
+            level=xbmc.LOGINFO,
+        )
+        try:
+            results = fetch_stalker_search(stalker_type, query, server=srv_id)
+            xbmc.log(
+                f"[MegaSearch] Got {len(results) if results else 0} results from {srv_id}",
+                level=xbmc.LOGINFO,
+            )
+            if results:
+                for item in results:
+                    item["_server_name"] = srv_name
+                    item["_server_id"] = srv_id
+                return results
+        except Exception as e:
+            xbmc.log(
+                f"[MegaSearch] Worker failed for {srv_id}: {e}", level=xbmc.LOGWARNING
+            )
+        return []
+
+    # Run searches in parallel
+    with ThreadPoolExecutor(max_workers=min(len(available_servers), 10)) as executor:
+        future_to_srv = {executor.submit(worker, srv): srv for srv in available_servers}
+
+        completed = 0
+        total = len(available_servers)
+
+        for future in as_completed(future_to_srv):
+            if dp.iscanceled():
+                break
+
+            res = future.result()
+            if res:
+                all_results.extend(res)
+
+            completed += 1
+            progress = int((completed / total) * 100)
+            srv = future_to_srv[future]
+            dp.update(
+                progress,
+                f"Finalizat: [COLOR yellow]{srv.get('name')}[/COLOR] ({completed}/{total})",
+            )
+
+    dp.close()
+
+    # Fallback to local search for live channels if no results from API
+    if not all_results and search_type == "live":
+        xbmc.log(
+            f"[MegaSearch] No results from API, trying local search for live",
+            level=xbmc.LOGINFO,
+        )
+        search_term_lower = query.lower()
+        for srv in available_servers:
+            srv_id = srv.get("id")
+            srv_name = srv.get("name", srv_id)
+            try:
+                all_channels = fetch_channels_by_category_from_server(None, srv_id)
+                if all_channels:
+                    for item in all_channels:
+                        name = item.get("name", "")
+                        if name and search_term_lower in name.lower():
+                            item["_server_name"] = srv_name
+                            item["_server_id"] = srv_id
+                            all_results.append(item)
+            except Exception as e:
+                xbmc.log(
+                    f"[MegaSearch] Local search failed for {srv_id}: {e}",
+                    level=xbmc.LOGWARNING,
+                )
+
+    if not all_results:
+        xbmc.log(f"[MegaSearch] No results found for '{query}'", level=xbmc.LOGINFO)
+        li = xbmcgui.ListItem(
+            label=f'[COLOR red]Nu s-a gasit nimic pentru "{query}" pe niciun server.[/COLOR]'
+        )
+        xbmcplugin.addDirectoryItem(handle=_HANDLE, url="", listitem=li, isFolder=False)
+        xbmcplugin.endOfDirectory(_HANDLE)
+        return
+
+    # Process results
+    for item in all_results:
+        name = item.get("name", "Unknown")
+        srv_name = item.get("_server_name")
+        srv_id = item.get("_server_id")
+
+        display_label = f"{name} - [COLOR cyan]{srv_name}[/COLOR]"
+        li = xbmcgui.ListItem(label=display_label)
+
+        # Art and Info
+        logo = item.get("logo") or ""
+        if logo:
+            li.setArt({"thumb": logo, "icon": logo})
+
+        desc = item.get("description", "")
+        year = item.get("year", "")
+
+        video_info = li.getVideoInfoTag()
+        video_info.setTitle(name)
+        video_info.setPlot(desc)
+        if year and year.isdigit():
+            video_info.setYear(int(year))
+
+        # URL Construction based on type
+        if search_type == "live":
+            cmd = item.get("cmd", "")
+            # Try to get stream_id from cmd first (reliable for Stalker)
+            stream_id_match = RE_STREAM_ID.search(cmd)
+            if stream_id_match:
+                stream_id = stream_id_match.group(1)
+            else:
+                # Fallback to direct id
+                stream_id = item.get("id")
+
+            if not stream_id:
+                continue
+
+            url = f"{_BASE_URL}?mode=play&stream_id={stream_id}&name={quote_plus(name)}&server={srv_id}"
+            li.setProperty("IsPlayable", "true")
+            is_folder = False
+        elif search_type == "vod":
+            movie_id = item.get("id")
+            url = f"{_BASE_URL}?mode=play_vod&movie_id={movie_id}&server={srv_id}"
+            li.setProperty("IsPlayable", "true")
+            is_folder = False
+        else:  # series
+            series_id = item.get("id")
+            movie_id = str(series_id).split(":")[0] if series_id else ""
+            url = f"{_BASE_URL}?mode=list_seasons&movie_id={movie_id}&server={srv_id}"
+            is_folder = True
+
+        xbmcplugin.addDirectoryItem(
+            handle=_HANDLE, url=url, listitem=li, isFolder=is_folder
+        )
+
+    xbmcplugin.endOfDirectory(_HANDLE)
+
+
+def search_input_dialog(server="server1", main_mode=None):
+    """Show keyboard and display search results directly."""
+    # Close any open dialogs first
+    xbmc.executebuiltin("Dialog.Close(all,true)")
+
+    search_term = xbmcgui.Dialog().input("Cauta canal", type=xbmcgui.INPUT_ALPHANUM)
+    if search_term:
+        # End current directory first
+        xbmcplugin.endOfDirectory(_HANDLE)
+        xbmc.sleep(200)
+        # Use Container.Update to replace current directory with search results
+        search_url = f"{_BASE_URL}?mode=search_results&query={quote_plus(search_term)}&server={server}"
+        xbmc.executebuiltin(f"Container.Update({search_url})")
+    else:
+        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+
+
+def search_input_dialog_vod(server="server1"):
+    """Show keyboard and display VOD search results directly."""
+    xbmc.executebuiltin("Dialog.Close(all,true)")
+    search_term = xbmcgui.Dialog().input("Cauta film", type=xbmcgui.INPUT_ALPHANUM)
+    if search_term:
+        xbmcplugin.endOfDirectory(_HANDLE)
+        xbmc.sleep(200)
+        search_url = f"{_BASE_URL}?mode=search_results_vod&query={quote_plus(search_term)}&server={server}"
+        xbmc.executebuiltin(f"Container.Update({search_url})")
+    else:
+        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+
+
+def search_input_dialog_series(server="server1"):
+    """Show keyboard and display Series search results directly."""
+    xbmc.executebuiltin("Dialog.Close(all,true)")
+    search_term = xbmcgui.Dialog().input("Cauta serial", type=xbmcgui.INPUT_ALPHANUM)
+    if search_term:
+        xbmcplugin.endOfDirectory(_HANDLE)
+        xbmc.sleep(200)
+        search_url = f"{_BASE_URL}?mode=search_results_series&query={quote_plus(search_term)}&server={server}"
+        xbmc.executebuiltin(f"Container.Update({search_url})")
+    else:
+        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+
+
+def fetch_stalker_search(type_param, query, server="server1"):
+    """Fetch search results directly from Stalker server with robustness."""
+    xbmc.log(
+        f"[Stalker] Search request: server={server}, type={type_param}, query={query}",
+        level=xbmc.LOGINFO,
+    )
+
+    token, headers, cookies, portal_url = get_server_auth(server)
+    if not token or not portal_url:
+        xbmc.log(
+            f"[Stalker] No auth for {server}, returning empty", level=xbmc.LOGWARNING
+        )
+        return []
+
+    # Use params for robust URL construction
+    url = f"{portal_url}/portal.php"
+    params = {
+        "type": type_param,
+        "action": "search",
+        "q": query,
+        "token": token,
+        "JsHttpRequest": "1-xml",
+    }
+
+    try:
+        session = get_session()
+        # Clear existing cookies since threads are reused in ThreadPoolExecutor
+        session.cookies.clear()
+
+        response = session.get(
+            url,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            timeout=TIMEOUTS["channels"],
+        )
+
+        if response.status_code != 200:
+            xbmc.log(
+                f"[Stalker] Server {server} returned status {response.status_code} for {type_param} search",
+                level=xbmc.LOGWARNING,
+            )
+            return []
+
+        raw_text = response.text
+        if not raw_text or len(raw_text.strip()) < 5:
+            xbmc.log(f"[Stalker] Response too short from {server} for {type_param}: '{raw_text[:100] if raw_text else 'empty'}'", level=xbmc.LOGWARNING)
+            
+            # Fallback for VOD/Series: try get_ordered_list with search param
+            if type_param in ["vod", "series"]:
+                xbmc.log(f"[Stalker] Trying fallback get_ordered_list search for {type_param} on {server}", level=xbmc.LOGINFO)
+                fallback_params = {
+                    "type": type_param,
+                    "action": "get_ordered_list",
+                    "search": query,
+                    "token": token,
+                    "JsHttpRequest": "1-xml"
+                }
+                try:
+                    response = session.get(url, params=fallback_params, headers=headers, cookies=cookies, timeout=TIMEOUTS["channels"])
+                    if response.status_code == 200 and response.text and len(response.text.strip()) >= 5:
+                        raw_text = response.text
+                        xbmc.log(f"[Stalker] Fallback search successful for {server}", level=xbmc.LOGINFO)
+                    else:
+                        return []
+                except:
+                    return []
+            else:
+                return []
+
+        xbmc.log(
+            f"[Stalker] Raw response from {server}: {raw_text[:200]}",
+            level=xbmc.LOGINFO,
+        )
+
+        # Stalker portals often return garbage text before/after the JSON object
+        if "{" in raw_text:
+            raw_text = raw_text[raw_text.find("{") :]
+        if "}" in raw_text:
+            raw_text = raw_text[: raw_text.rfind("}") + 1]
+            
+        try:
+            data = json_loads(raw_text)
+
+            results = []
+            if isinstance(data, dict):
+                js_data = data.get("js", {})
+                if isinstance(js_data, dict):
+                    # Try js -> data (standard) or js -> data -> data (paginated)
+                    res_data = js_data.get("data", [])
+                    if isinstance(res_data, dict):
+                        results = res_data.get("data", [])
+                    else:
+                        results = res_data
+                elif isinstance(js_data, list):
+                    results = js_data
+            elif isinstance(data, list):
+                results = data
+
+            if not isinstance(results, list):
+                results = []
+
+            return results
+        except ValueError as e:
+            xbmc.log(f"[Stalker] JSON decode failed for {server}: {e}", level=xbmc.LOGERROR)
+            return []
+
+    except Exception as e:
+        xbmc.log(
+            f"[Stalker] Search failed for {server} ({type_param}): {e}",
+            level=xbmc.LOGWARNING,
+        )
+        return []
+
+
+def show_search_results(query, server="server1"):
+    """Display search results for channels using direct server search."""
+    if not query:
+        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+        return
+
+    # Use direct server search
+    matching_channels = fetch_stalker_search("itv", query, server)
+
+    if not matching_channels:
+        # Fallback to local search if direct search returns nothing (some portals are picky)
+        all_channels = fetch_channels_by_category_from_server(None, server)
+        search_term_lower = query.lower()
+        matching_channels = [
+            ch for ch in all_channels if search_term_lower in ch.get("name", "").lower()
+        ]
+
+    # Set plugin category and content
+    xbmcplugin.setPluginCategory(_HANDLE, f"Cautare: {query}")
+    xbmcplugin.setContent(_HANDLE, "videos")
+
+    # Load favorites
     favorites_file = FAVORITES_FILE.format(server=server)
     try:
         with open(favorites_file, "r", encoding="utf-8") as f:
             favorites = json_loads(f)
-    except (FileNotFoundError, json.JSONDecodeError):
+    except:
         favorites = []
     favorite_stream_ids = {fav["stream_id"] for fav in favorites}
 
-    # Filter channels based on search term
-    search_term_lower = search_term.lower()
-    matching_channels = []
-    for ch in channels:
-        stream_id_match = RE_STREAM_ID.search(ch.get("cmd", ""))
-        stream_id = stream_id_match.group(1) if stream_id_match else None
-        if stream_id and search_term_lower in ch.get("name", "").lower():
-            matching_channels.append(
-                {
-                    "stream_id": stream_id,
-                    "name": ch.get("name"),
-                    "logo": ch.get("logo"),
-                    "cmd": ch.get("cmd"),
-                }
-            )
+    for ch in matching_channels:
+        name = ch.get("name", "Unknown")
+        logo = ch.get("logo") or ""
+        cmd = ch.get("cmd", "")
 
-    # Create list items for matching channels
-    for channel in matching_channels:
-        # Build channel label with current program
-        channel_label = channel["name"]
+        stream_id_match = RE_STREAM_ID.search(cmd)
+        stream_id = stream_id_match.group(1) if stream_id_match else ch.get("id")
 
-        # Add current program to label if EPG available and enabled
-        if is_epg_enabled() and channel["stream_id"] in epg_data:
-            epg_items = epg_data[channel["stream_id"]]
+        if not stream_id:
+            continue
+
+        channel_label = name
+        plot = ""
+        if is_epg_enabled() and stream_id in epg_data:
+            epg_items = epg_data[stream_id]
             current_prog = get_current_program(epg_items)
             if current_prog:
-                channel_label = f"{channel['name']} - {current_prog}"
+                channel_label = f"{name} - {current_prog}"
+            plot = format_epg_tooltip(epg_items)
 
         li = xbmcgui.ListItem(label=channel_label)
-
-        # Set thumbnail from tvg-logo if available
-        if channel["logo"]:
-            li.setArt({"thumb": channel["logo"], "icon": channel["logo"]})
+        if logo:
+            li.setArt({"thumb": logo, "icon": logo})
 
         li.setProperty("IsPlayable", "true")
 
-        # Set EPG data if available and enabled
-        if is_epg_enabled() and channel["stream_id"] in epg_data:
-            epg_items = epg_data[channel["stream_id"]]
-            plot = format_epg_tooltip(epg_items)
-            li.setInfo("video", {"plot": plot})
+        # Kodi 21 InfoTags
+        video_info = li.getVideoInfoTag()
+        video_info.setTitle(name)
+        video_info.setPlot(plot)
 
-        # Create URL to play this specific channel
-        url = f"{_BASE_URL}?mode=play&stream_id={channel['stream_id']}&name={quote_plus(channel['name'])}&server={server}"
-        if server == "server2" and channel.get("url"):
-            url += f"&url_template={quote_plus(channel['url'])}"
+        url = f"{_BASE_URL}?mode=play&stream_id={stream_id}&name={quote_plus(name)}&server={server}&search_query={quote_plus(query)}"
 
-        # Add context menu for favorites
+        # Context menu
         context_menu = []
-        if channel["stream_id"] in favorite_stream_ids:
+        if stream_id in favorite_stream_ids:
             context_menu.append(
                 (
                     "Remove from Favorites",
-                    f"RunPlugin({_BASE_URL}?mode=remove_from_favorites&stream_id={channel['stream_id']}&server={server})",
+                    f"RunPlugin({_BASE_URL}?mode=remove_from_favorites&stream_id={stream_id}&server={server})",
                 )
             )
         else:
-            add_fav_url = f"{_BASE_URL}?mode=add_to_favorites&stream_id={channel['stream_id']}&name={quote_plus(channel['name'])}&logo={quote_plus(channel['logo'])}&server={server}"
-            if server == "server2" and channel.get("url"):
-                add_fav_url += f"&url_template={quote_plus(channel['url'])}"
+            add_fav_url = f"{_BASE_URL}?mode=add_to_favorites&stream_id={stream_id}&name={quote_plus(name)}&logo={quote_plus(logo)}&server={server}"
             context_menu.append(("Add to Favorites", f"RunPlugin({add_fav_url})"))
         li.addContextMenuItems(context_menu)
 
@@ -2772,12 +3878,91 @@ def corrected_search_channels(server="server1"):
             handle=_HANDLE, url=url, listitem=li, isFolder=False
         )
 
-    # Show a message if no results found
     if not matching_channels:
         li = xbmcgui.ListItem(
-            label=f'[COLOR red]No channels found for "{search_term}"[/COLOR]'
+            label=f'[COLOR red]Nu am gasit niciun canal pentru "{query}"[/COLOR]'
         )
-        li.setProperty("IsPlayable", "false")
+        xbmcplugin.addDirectoryItem(handle=_HANDLE, url="", listitem=li, isFolder=False)
+
+    xbmcplugin.endOfDirectory(_HANDLE)
+
+
+def show_vod_search_results(query, server="server1"):
+    """Display VOD search results using direct server search."""
+    if not query:
+        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+        return
+
+    matching_items = fetch_stalker_search("vod", query, server)
+
+    # Set plugin category and content
+    xbmcplugin.setPluginCategory(_HANDLE, f"Cautare Filme: {query}")
+    xbmcplugin.setContent(_HANDLE, "movies")
+
+    for item in matching_items:
+        name = item.get("name", "Unknown")
+        movie_id = item.get("id")
+        year = item.get("year", "")
+        description = item.get("description", "")
+
+        li = xbmcgui.ListItem(label=f"{name} ({year})")
+        li.setProperty("IsPlayable", "true")
+
+        # Kodi 21 InfoTags
+        video_info = li.getVideoInfoTag()
+        video_info.setTitle(name)
+        video_info.setPlot(description)
+        video_info.setYear(int(year) if year and year.isdigit() else 0)
+
+        url = f"{_BASE_URL}?mode=play_vod&movie_id={movie_id}&server={server}&search_query={quote_plus(query)}"
+        xbmcplugin.addDirectoryItem(
+            handle=_HANDLE, url=url, listitem=li, isFolder=False
+        )
+
+    if not matching_items:
+        li = xbmcgui.ListItem(
+            label=f'[COLOR red]Nu am gasit niciun film pentru "{query}"[/COLOR]'
+        )
+        xbmcplugin.addDirectoryItem(handle=_HANDLE, url="", listitem=li, isFolder=False)
+
+    xbmcplugin.endOfDirectory(_HANDLE)
+
+
+def show_series_search_results(query, server="server1"):
+    """Display Series search results using direct server search."""
+    if not query:
+        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+        return
+
+    matching_items = fetch_stalker_search("series", query, server)
+
+    # Set plugin category and content
+    xbmcplugin.setPluginCategory(_HANDLE, f"Cautare Seriale: {query}")
+    xbmcplugin.setContent(_HANDLE, "tvshows")
+
+    for item in matching_items:
+        name = item.get("name", "Unknown")
+        series_id = item.get("id")
+        year = item.get("year", "")
+        description = item.get("description", "")
+
+        li = xbmcgui.ListItem(label=f"{name} ({year})")
+
+        # Kodi 21 InfoTags
+        video_info = li.getVideoInfoTag()
+        video_info.setTitle(name)
+        video_info.setPlot(description)
+        video_info.setYear(int(year) if year and year.isdigit() else 0)
+
+        # For series, clicking an item should lead to seasons
+        movie_id = str(series_id).split(":")[0] if series_id else ""
+        url = f"{_BASE_URL}?mode=list_seasons&movie_id={movie_id}&server={server}&search_query={quote_plus(query)}"
+        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=True)
+
+    if not matching_items:
+        li = xbmcgui.ListItem(
+            label=f'[COLOR red]Nu am gasit niciun serial pentru "{query}"[/COLOR]'
+        )
         xbmcplugin.addDirectoryItem(handle=_HANDLE, url="", listitem=li, isFolder=False)
 
     xbmcplugin.endOfDirectory(_HANDLE)

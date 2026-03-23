@@ -87,9 +87,3 @@ class BaseDialog(kodi_utils.window_xml_dialog):
 	def sleep(self, time):
 		kodi_utils.sleep(time)
 
-	def set_home_property(self, prop, value):
-		kodi_utils.set_property('pov_home_window.%s' % prop, value)
-
-	def get_home_property(self, prop):
-		return kodi_utils.get_property('pov_home_window.%s' % prop)
-

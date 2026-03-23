@@ -72,11 +72,11 @@ class TVShows:
 				'mode': 'build_season_list', 'tmdb_id': tmdb_id
 			})
 			extras_params = build_url({
-				'mode': 'extras_menu_choice', 'media_type': 'tvshow',
+				'mode': 'extras_menu_choice', 'mediatype': 'tvshow',
 				'tmdb_id': tmdb_id, 'is_widget': self.is_widget
 			})
 			options_params = build_url({
-				'mode': 'options_menu_choice', 'media_type': 'tvshow',
+				'mode': 'options_menu_choice', 'mediatype': 'tvshow',
 				'tmdb_id': tmdb_id, 'is_widget': self.is_widget
 			})
 			recommended_params = build_url({
@@ -84,19 +84,19 @@ class TVShows:
 				'tmdb_id': tmdb_id
 			})
 			trakt_manager_params = build_url({
-				'mode': 'trakt_manager_choice', 'media_type': 'tvshow',
+				'mode': 'trakt_manager_choice', 'mediatype': 'tvshow',
 				'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id
 			})
 			mdbl_manager_params = build_url({
-				'mode': 'mdbl_manager_choice', 'media_type': 'tvshow',
+				'mode': 'mdbl_manager_choice', 'mediatype': 'tvshow',
 				'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id
 			})
 			tmdb_manager_params = build_url({
-				'mode': 'tmdb_manager_choice', 'media_type': 'tvshow',
+				'mode': 'tmdb_manager_choice', 'mediatype': 'tvshow',
 				'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id
 			})
 			fav_manager_params = build_url({
-				'mode': 'favourites_choice', 'media_type': 'tvshow',
+				'mode': 'favorites_choice', 'mediatype': 'tvshow',
 				'tmdb_id': tmdb_id, 'title': title
 			})
 			cm_append((self.cm_sort['options'], options_str, run_plugin % options_params))
@@ -108,7 +108,7 @@ class TVShows:
 			cm_append((self.cm_sort['trakt'], traktmanager_str, run_plugin % trakt_manager_params))
 			cm_append((self.cm_sort['mdblist'], mdblmanager_str, run_plugin % mdbl_manager_params))
 			cm_append((self.cm_sort['tmdblist'], tmdbmanager_str, run_plugin % tmdb_manager_params))
-			cm_append((self.cm_sort['favourites'], favmanager_str, run_plugin % fav_manager_params))
+			cm_append((self.cm_sort['favorites'], favmanager_str, run_plugin % fav_manager_params))
 			if not playcount: cm_append((
 				self.cm_sort['mark'], watched_str % self.watched_title, run_plugin % build_url({
 					'mode': 'mark_as_watched_unwatched_tvshow', 'action': 'mark_as_watched', 'year': year,
@@ -164,11 +164,11 @@ class TVShows:
 		except: pass
 
 class Menu(TVShows):
-	personal_dict = {'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'), 'favourites_tvshows': ('caches.favourites_cache', 'get_favourites'), 'watched_tvshows': ('caches.watched_cache', 'get_watched_items')}
+	personal_dict = {'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'), 'favorites_tvshows': ('caches.favorites_cache', 'get_favorites'), 'watched_tvshows': ('caches.watched_cache', 'get_watched_items')}
 	tmdb_special_key_dict = {'tmdb_tv_networks': 'network_id', 'tmdb_tv_year': 'year', 'tmdb_tvanime_year': 'year'}
 	tmdb_main = ('tmdb_tv_popular', 'tmdb_tv_premieres', 'tmdb_tv_upcoming', 'tmdb_tvanime_popular', 'tmdb_tvanime_premieres')
 	trakt_main = ('trakt_tv_trending', 'trakt_tv_trending_recent', 'trakt_tv_most_watched', 'trakt_tvanime_trending', 'trakt_tvanime_most_watched')
-	tmdb_personal = ('tmdb_watchlist', 'tmdb_favorite', 'tmdb_recommendations')
+	tmdb_personal = ('tmdb_watchlist', 'tmdb_favorites', 'tmdb_recommendations')
 	trakt_personal = ('trakt_collection', 'trakt_watchlist', 'trakt_favorites', 'trakt_droplist', 'trakt_collection_lists')
 	mdblist_personal = ('mdblist_collection', 'mdblist_watchlist', 'mdblist_droplist')
 	similar = ('tmdb_tv_similar', 'tmdb_tv_recommendations')
@@ -282,7 +282,7 @@ class Menu(TVShows):
 				url_params = {
 					'mode': 'build_navigate_to_page', 'current_page': page_no, 'total_pages': self.total_pages,
 					'query': params_get('search_name', ''), 'actor_id': params_get('actor_id', ''),
-					'transfer_mode': mode, 'transfer_action': self.action, 'media_type': 'TV Shows'
+					'transfer_mode': mode, 'transfer_action': self.action, 'mediatype': 'TV Shows'
 				}
 				kodi_utils.add_dir(__handle__, url_params, jumpto_str, item_jump, isFolder=False)
 			kodi_utils.add_items(__handle__, self.worker())

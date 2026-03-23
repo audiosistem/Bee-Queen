@@ -14,7 +14,7 @@ EXPIRES_1_HOURS, MAX_LIST_ITEMS = 1, 250_000
 get_setting, logger, js2date = kodi_utils.get_setting, kodi_utils.logger, jsondate_to_datetime
 review_provider_id = {1: 'Trakt', 2: 'TMDb', 3: 'RT', 4: 'Metacritics'}
 rank_map = {'0': 'mild', '1': 'mild', '2': 'moderate', '3': 'moderate', '4': 'severe', '5': 'severe'}
-guide_map = {'Nudity': 'Sex & Nudity', 'Violence': 'Violence & Gore', 'Profanity': 'Profanity', 'Alcohol': 'Alcohol, Drugs & Smoking'}
+guide_map = {'Nudity': 'sexual_content', 'Violence': 'violence', 'Profanity': 'profanity', 'Alcohol': 'alcohol_drugs'}
 base_url = 'https://api.mdblist.com/%s'
 timeout = 5.05
 session = requests.Session()
@@ -31,31 +31,32 @@ def call_mdblist(path, params=None, json=None, method=None):
 	except requests.exceptions.RequestException as e:
 		logger('mdblist error', str(e))
 
-def mdbl_parentsguide(imdb_id, media_type):
+def mdbl_parentsguide(imdb_id, mediatype):
 	def _process(url):
 		items = []
 		append = items.append
 		html = requests.get(url, timeout=timeout).text
 		for key, val in guide_map.items():
 			try:
-				if not (match := re.search(rf"{key}\:\ \d", html, re.S)): continue
+				match = re.search(rf"{key}\:\ \d", html, re.S)
+				if not match: continue
 				rank = rank_map[match.group().split(': ')[-1]]
 				append({'title': val, 'ranking': rank, 'listings': []})
 			except: pass
 		return items
-	media_type = 'show' if media_type == 'tvshow' else 'movie'
-	string = 'mdbl_%s_parentsguide_%s' % (media_type, imdb_id)
-	url = 'https://www.mdblist.com/%s/%s' % (media_type, imdb_id)
+	mediatype = 'show' if mediatype == 'tvshow' else 'movie'
+	string = 'mdbl_%s_parentsguide_%s' % (mediatype, imdb_id)
+	url = 'https://www.mdblist.com/%s/%s' % (mediatype, imdb_id)
 	return cache_function(_process, string, url)
 
-def mdbl_media_info(imdb_id, media_type):
+def mdbl_media_info(imdb_id, mediatype):
 	if not get_setting('mdblist.token'): return
-	media_type = 'show' if media_type == 'tvshow' else 'movie'
-	string = 'mdbl_%s_mediainfo_%s' % (media_type, imdb_id)
-	url = '%s/%s/%s?append_to_response=review' % ('imdb', media_type, imdb_id)
+	mediatype = 'show' if mediatype == 'tvshow' else 'movie'
+	string = 'mdbl_%s_mediainfo_%s' % (mediatype, imdb_id)
+	url = '%s/%s/%s?append_to_response=review' % ('imdb', mediatype, imdb_id)
 	return cache_function(call_mdblist, string, url)
 
-def mdblist_droplist(media_type, page_no, letter):
+def mdblist_droplist(mediatype, page_no, letter):
 	results = mdbl_get_hidden_items('dropped')
 	return [{'imdb_id': '', 'id': i} for i in results], 1
 
@@ -74,30 +75,30 @@ def mdbl_get_hidden_items(list_type):
 	url = 'sync/dropped'
 	return mdbl_cache.cache_mdbl_object(_process, string, url)
 
-def hide_unhide_mdbl_items(action, media_type, media_id, list_type):
+def hide_unhide_mdbl_items(action, mediatype, media_id, list_type):
 	if not action in ('hide', 'unhide'):
 		try:
 			hidden_data = set(map(str, mdbl_get_hidden_items('dropped')))
 			action = 'unhide' if action in hidden_data else 'hide'
 		except: return kodi_utils.notification(32574)
-	media_type = 'movies' if media_type in ['movie', 'movies'] else 'shows'
-	key = 'tmdb' if media_type == 'movies' else 'imdb'
+	mediatype = 'movies' if mediatype in ['movie', 'movies'] else 'shows'
+	key = 'tmdb' if mediatype == 'movies' else 'imdb'
 	url = 'sync/dropped' if action == 'hide' else 'sync/dropped/remove'
-	data = {media_type: [{'ids': {key: media_id}}]}
+	data = {mediatype: [{'ids': {key: media_id}}]}
 	call_mdblist(url, json=data, method='post')
 	mdbl_sync_activities()
 	kodi_utils.container_refresh()
 
-def mdblist_collection(media_type, page_no, letter):
+def mdblist_collection(mediatype, page_no, letter):
 	string = 'mdbl_collection'
 	url = 'sync/collection'
 	original_list = mdbl_cache.cache_mdbl_object(mdbl_collection_watchlist_items, string, url)
-	if media_type == 'all':
+	if mediatype == 'all':
 		original_list = original_list['movies'] + original_list['shows']
 		for i in original_list: i.update({'id': i['movie' if 'movie' in i else 'show']['ids']['tmdb']})
 		return original_list
-	original_list = original_list[media_type]
-	key = 'movie' if media_type == 'movies' else 'show'
+	original_list = original_list[mediatype]
+	key = 'movie' if mediatype == 'movies' else 'show'
 	for i in original_list: i.update({
 		'id': i[key]['ids']['tmdb'], 'imdb_id': i[key]['ids']['imdb'],
 		'title': i[key]['title'], 'release_year': i[key]['year']
@@ -112,14 +113,14 @@ def mdblist_collection(media_type, page_no, letter):
 	else: final_list, total_pages = original_list, 1
 	return final_list, total_pages
 
-def mdblist_watchlist(media_type, page_no, letter):
+def mdblist_watchlist(mediatype, page_no, letter):
 	string = 'mdbl_watchlist'
 	url = 'watchlist/items'
 	original_list = mdbl_cache.cache_mdbl_object(mdbl_collection_watchlist_items, string, url)
-	if media_type == 'all':
+	if mediatype == 'all':
 		original_list = original_list['movies'] + original_list['shows']
 		return original_list
-	original_list = original_list[media_type]
+	original_list = original_list[mediatype]
 	if not settings.show_unaired_watchlist():
 		current_date = get_datetime()
 		str_format = '%Y-%m-%d'
@@ -199,12 +200,8 @@ def get_mdbl_list_contents(list_type, list_id):
 	return mdbl_cache.cache_mdbl_object(call_mdblist, string, url)
 
 def mdbl_get_lists(list_type):
-	if list_type == 'external':
-		string = 'mdbl_external'
-		url = 'external/lists/user'
-	else:
-		string = 'mdbl_my_lists'
-		url = 'lists/user'
+	if list_type == 'external': string, url = 'mdbl_external', 'external/lists/user'
+	else: string, url = 'mdbl_my_lists', 'lists/user'
 	return mdbl_cache.cache_mdbl_object(call_mdblist, string, url)
 
 def make_new_mdbl_list(params):

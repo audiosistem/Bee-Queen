@@ -16,19 +16,19 @@ window_xml_up_action, window_xml_down_action = xbmcgui.ACTION_MOVE_UP, xbmcgui.A
 
 navigator_db   = 'special://profile/addon_data/plugin.video.pov/navigator.db'
 watched_db     = 'special://profile/addon_data/plugin.video.pov/watched.db'
-favourites_db  = 'special://profile/addon_data/plugin.video.pov/favourites.db'
+favorites_db   = 'special://profile/addon_data/plugin.video.pov/watched.db'
 views_db       = 'special://profile/addon_data/plugin.video.pov/views.db'
 trakt_db       = 'special://profile/addon_data/plugin.video.pov/traktcache.db'
 mdbl_db        = 'special://profile/addon_data/plugin.video.pov/mdblcache.db'
 maincache_db   = 'special://profile/addon_data/plugin.video.pov/maincache.db'
-metacache_db   = 'special://profile/addon_data/plugin.video.pov/metacache1.db'
+metacache_db   = 'special://profile/addon_data/plugin.video.pov/metacache.db'
 debridcache_db = 'special://profile/addon_data/plugin.video.pov/debridcache.db'
 external_db    = 'special://profile/addon_data/plugin.video.pov/providerscache.db'
 databases_path = 'special://profile/addon_data/plugin.video.pov/'
 packages_path  = 'special://home/addons/packages/'
 
-current_dbs           = ('settings.xml', 'debridcache.db', 'favourites.db', 'maincache.db', 'metacache1.db', 'fenomundesirables.db',
-						'navigator.db', 'providerscache.db', 'traktcache.db', 'mdblcache.db', 'views.db', 'watched.db', 'fenomcache.db')
+current_dbs           = ('settings.xml', 'debridcache.db', 'watched.db', 'maincache.db', 'metacache.db', 'fenomundesirables.db',
+						'navigator.db', 'providerscache.db', 'traktcache.db', 'mdblcache.db', 'views.db', 'fenomcache.db')
 myvideos_db_paths     = {19: '119', 20: '121', 21: '131', 22: '139'}
 
 def logger(heading, function):
