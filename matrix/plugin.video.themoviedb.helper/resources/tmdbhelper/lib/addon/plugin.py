@@ -35,10 +35,6 @@ def get_plugin_category(info_model, plural=''):
     return plugin_category.format(localized=localized, plural=plural)
 
 
-def get_version():
-    return ADDON.getAddonInfo('version')
-
-
 def get_language():
     if ADDON.getSettingInt('language'):
         return LANGUAGES[ADDON.getSettingInt('language')]
@@ -75,7 +71,7 @@ CONVERSION_TABLE = {
     'tmdb': {
         'movie': {'plural': lambda: get_localized(342), 'container': 'movies', 'trakt': 'movie', 'dbtype': 'movie'},
         'tv': {'plural': lambda: get_localized(20343), 'container': 'tvshows', 'trakt': 'show', 'dbtype': 'tvshow'},
-        'person': {'plural': lambda: get_localized(32172), 'container': 'actors', 'dbtype': 'person'},
+        'person': {'plural': lambda: get_localized(32172), 'container': 'actors', 'dbtype': 'video'},  # Actors needs video type for info dialog
         'collection': {'plural': lambda: get_localized(32187), 'container': 'sets', 'dbtype': 'set'},
         'review': {'plural': lambda: get_localized(32188)},
         'keyword': {'plural': lambda: get_localized(21861), 'dbtype': 'keyword'},
@@ -156,15 +152,3 @@ class GlobalSettingsDict(dict):
             args = (key, )
         self[key] = func(*args)
         return self[key]
-
-
-class KeyGetter:
-
-    def __init__(self, dictionary):
-        self.dictionary = dictionary
-
-    def get_key(self, key):
-        try:
-            return self.dictionary[key]
-        except (KeyError, TypeError, IndexError):
-            return

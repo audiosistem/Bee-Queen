@@ -1,4 +1,4 @@
-from jurialmunkey.ftools import threaded_cached_property
+from tmdbhelper.lib.files.ftools import cached_property
 from tmdbhelper.lib.addon.logger import kodi_log
 import jurialmunkey.dialog as jurialmunkey_dialog
 """ Top level module only import plugin/constants/logger """
@@ -24,12 +24,12 @@ class DialogProgressSyncBG:
     now_value = 0
     heading = ''
 
-    @threaded_cached_property
+    @cached_property
     def dialog_progress_bg_enabled(self):
         from tmdbhelper.lib.addon.plugin import get_setting
         return get_setting('sync_notifications')
 
-    @threaded_cached_property
+    @cached_property
     def dialog_progress_bg(self):
         if not self.dialog_progress_bg_enabled:
             return
@@ -82,24 +82,3 @@ class ProgressDialog(jurialmunkey_dialog.ProgressDialog):
     @staticmethod
     def kodi_log(msg, level=0):
         kodi_log(msg, level)
-
-
-class ProgressDialogPersistant(object):
-    """ ContextManager for DialogProgressBG use in with statement """
-
-    def __init__(self, *args, **kwargs):
-        self._dialog = ProgressDialog(*args, **kwargs)
-        self.closing = False
-
-    def update(self, *args, **kwargs):
-        return self._dialog.update(*args, **kwargs)
-
-    def close(self):
-        return self._dialog.close()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.closing or exc_type or exc_val or exc_tb:
-            self.close()

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.video.veziaici.net"
        name="VeziAici.net"
-       version="1.4"
+       version="1.4.1"
        provider-name="1 x Geamanu x MiniMi">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
@@ -13,7 +13,7 @@
              library="addon.py">
     <provides>video</provides>
   </extension>
-  <!--<extension point="xbmc.service" library="service.py" />-->
+  <extension point="xbmc.service" library="service.py" />
   <extension point="xbmc.addon.metadata">
     <summary lang="en">Watch Romanian shows and series from VeziAici.net</summary>
     <description lang="en">This addon allows you to browse and watch content from VeziAici.net, including Romanian shows and series.</description>

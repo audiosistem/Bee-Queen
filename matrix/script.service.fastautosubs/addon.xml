@@ -3,7 +3,7 @@
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>
-    <extension point="xbmc.service" library="service.py"/>
+    <!--<extension point="xbmc.service" library="service.py"/>-->
     <extension point="xbmc.addon.metadata">
         <summary lang="en_GB">Smart background subtitle downloader</summary>
         <description lang="en_GB">[B][COLOR FF009900]Automatically downloads subtitles in the background from Subs.ro and falls back to standard search for others.[/COLOR][/B]</description>
