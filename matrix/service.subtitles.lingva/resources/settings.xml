@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+    <category label="Subtitrări">
+       <setting id="subs_languages" type="enum" label="Limba subtitrare" values="Română|Engleză|Spaniolă|Franceză|Germană|Italiană|Maghiară|Portugheză|Rusă|Turcă|Bulgară|Greacă|Poloneză|Cehă|Olandeză" default="0" />
+              
+       <!-- Secțiune Wyzie API -->
+       <setting label="[COLOR lightblue]Configurare Wyzie API[/COLOR]" type="lsep" />
+       <setting id="wyzie_api_key" type="text" label="Cheie API Wyzie" default="" />
+       <setting label="Obține cheia de la: sub.wyzie.io/redeem" type="lsep" />
+	   
+       <!-- Activare/Dezactivare robot -->
+       <setting id="robot_activat" type="bool" label="Activează Robot Traducător" default="true" />
+
+    </category>
+</settings>
