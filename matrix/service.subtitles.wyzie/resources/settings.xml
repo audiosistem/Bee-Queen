@@ -19,14 +19,14 @@
        <setting id="max_workers_count" type="enum" label="Viteză Gemini" values="1|2|3" default="0" visible="eq(-1,2) + eq(-2,true)" />
 
        <!-- CHEI ROBOT 1 (Dacă robot_selectat e 0) -->
-       <setting id="api_key_r1_1" type="text" label="R1 - Cheia 1" default="AIzaSyCEYe59xoog4g8GvqPOrBOP-veGVY8IFqI" option="hidden" visible="eq(-2,0) + eq(-3,true)" />
+       <setting id="api_key_r1_1" type="text" label="R1 - Cheia 1" default="" visible="eq(-2,0) + eq(-3,true)" />
        <setting id="api_key_r1_2" type="text" label="R1 - Cheia 2" default="" visible="eq(-3,0) + eq(-4,true)" />
        <setting id="api_key_r1_3" type="text" label="R1 - Cheia 3" default="" visible="eq(-4,0) + eq(-5,true)" />
        <setting id="api_key_r1_4" type="text" label="R1 - Cheia 4" default="" visible="eq(-5,0) + eq(-6,true)" />
        <setting id="api_key_r1_5" type="text" label="R1 - Cheia 5" default="" visible="eq(-6,0) + eq(-7,true)" />
 
        <!-- CHEI ROBOT 3 (Dacă robot_selectat e 2) -->
-       <setting id="api_key_r3_1" type="text" label="R3 - Cheia 1" default="AIzaSyA2Os3xNPnMgclq1anF7ABx_Eo64OfJUP0" option="hidden" visible="eq(-7,2) + eq(-8,true)" />
+       <setting id="api_key_r3_1" type="text" label="R3 - Cheia 1" default="" visible="eq(-7,2) + eq(-8,true)" />
        <setting id="api_key_r3_2" type="text" label="R3 - Cheia 2" default="" visible="eq(-8,2) + eq(-9,true)" />
        <setting id="api_key_r3_3" type="text" label="R3 - Cheia 3" default="" visible="eq(-9,2) + eq(-10,true)" />
        <setting id="api_key_r3_4" type="text" label="R3 - Cheia 4" default="" visible="eq(-10,2) + eq(-11,true)" />
