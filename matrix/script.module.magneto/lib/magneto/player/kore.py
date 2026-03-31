@@ -17,8 +17,8 @@ window_xml_selection_actions, window_xml_closing_actions, window_xml_context_act
 addon_object = xbmcaddon.Addon()
 addon_info = addon_object.getAddonInfo
 addon_path = addon_info('path')
-userdata_path = translatePath(addon_info('profile'))
 addon_icon = translatePath(addon_info('icon'))
+userdata_path = translatePath(addon_info('profile'))
 default_addon_fanart = translatePath(addon_info('fanart'))
 empty_poster = addon_icon
 int_window_prop = 'magneto.internal_results.%s'

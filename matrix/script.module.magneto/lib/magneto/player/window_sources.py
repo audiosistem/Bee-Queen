@@ -185,7 +185,8 @@ class SourcesResults(BaseDialog):
 			if not (i.getProperty('quality') in duplicates or duplicates.add(i.getProperty('quality')))
 			and not i.getProperty('quality') == ''
 		]
-		if any(i in prerelease_values for i in qualities): qualities = [i for i in qualities if not i in prerelease_values] + [prerelease_key]
+		if any(i in prerelease_values for i in qualities):
+			qualities = [i for i in qualities if not i in prerelease_values] + [prerelease_key]
 		qualities.sort(key=quality_choices.index)
 		qualities = [('Show [B]%s[/B] Only' % i, 'quality_%s' % i) for i in qualities]
 		data = qualities

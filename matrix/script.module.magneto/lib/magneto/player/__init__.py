@@ -34,7 +34,7 @@ def videoplayer(url, listitem, close_action=None):
 	if callable(close_action): close_action()
 	return player
 
-class MagnetoPlayer():
+class MagnetoPlayer:
 	def __init__(self):
 		self.params = {}
 		self.sources, self.remove_scrapers = [], ['external']
