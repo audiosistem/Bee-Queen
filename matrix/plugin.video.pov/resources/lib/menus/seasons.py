@@ -25,8 +25,8 @@ class Seasons:
 		self.current_date = get_datetime_function()
 		self.meta_user_info = settings.metadata_user_info()
 		self.watched_indicators = settings.watched_indicators()
+		self.watched_title = settings.watched_title(self.watched_indicators)
 		self.watched_info = get_watched_info_tv(self.watched_indicators)
-		self.watched_title = ('POV', 'Trakt', 'MDBList')[self.watched_indicators]
 		self.show_unaired = settings.show_unaired()
 		self.is_widget = kodi_utils.external_browse()
 		self.image_resolution = self.meta_user_info['image_resolution']

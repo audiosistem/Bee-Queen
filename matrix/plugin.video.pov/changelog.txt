@@ -1,4 +1,12 @@
-  removal pending: download, tmdblist, sync_kodi_library_watchstatus
+  removal pending: download, tmdblist
+
+  [COLOR dodgerblue][B]Version 6.04[/B][/COLOR]
+- Subtitles require free api key from Wyzie Subs - https://sub.wyzie.io
+- Moved mediafusion to standalone source.
+- Replaced mediafusion with meteor in aiostreams source.
+- Removed trakt_official_status due to reported issues with the kodi official trakt addon.
+  Trakt is removing seconds server-side, which should prevent double markings.
+- Removed sync_kodi_library_watchstatus.
 
   [COLOR dodgerblue][B]Version 6.03[/B][/COLOR]
 - Added Recently Added/Random under Trakt Watchlist menu.

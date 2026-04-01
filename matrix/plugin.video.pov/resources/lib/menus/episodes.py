@@ -37,6 +37,7 @@ class Episodes:
 		self.adjust_hours = date_offset_info()
 		self.meta_user_info = settings.metadata_user_info()
 		self.watched_indicators = settings.watched_indicators()
+		self.watched_title = settings.watched_title(self.watched_indicators)
 		self.watched_info = get_watched_info(self.watched_indicators)
 		self.bookmarks = get_bookmarks(self.watched_indicators, 'episode')
 		self.ignore_articles = settings.ignore_articles()
@@ -47,7 +48,6 @@ class Episodes:
 		self.display_title, self.date_format = single_ep_display_title(), single_ep_format()
 		self.is_widget = kodi_utils.external_browse()
 		self.widget_hide_watched = self.is_widget and self.meta_user_info['widget_hide_watched']
-		self.watched_title = ('POV', 'Trakt', 'MDBList')[self.watched_indicators]
 		self.art_provider = (*settings.get_art_provider(), poster_empty, fanart_empty)
 		self.container_update = 'ActivateWindow(Videos,%s,return)' if self.is_widget else 'Container.Update(%s)'
 
@@ -255,9 +255,8 @@ class Menu(Episodes):
 				self.list_type = 'in_progress'
 				self.list = get_in_progress_episodes()
 			elif 'next_episode' in mode:
-				watched_info = get_watched_info_tv(self.watched_indicators)
 				self.list_type = 'next_episode_pov'
-				self.list = get_next_episodes(watched_info)
+				self.list = get_next_episodes(self.watched_indicators)
 				self.next_episode_filters()
 			elif 'my_calendar' in mode:
 				recently_aired = params_get('recently_aired')

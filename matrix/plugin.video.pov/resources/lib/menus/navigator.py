@@ -150,7 +150,6 @@ class Navigator:
 		# use 'new_page' to pass the type of list to be processed when using 'trakt_collection_lists'...
 		t_str, col_str = ls(32037), ls(32499)
 		tcol_str = '%s %s' % (t_str, col_str)
-		n_ins = _in_str % (tcol_str.upper(), '')
 		mrec_str, mran_str = '%s %s' % (ls(32498), mov_str), '%s %s' % (ls(32504), mov_str)
 		tvrec_str, tvran_str = '%s %s' % (ls(32498), tv_str), '%s %s' % (ls(32504), tv_str)
 		n_ins = _in_str % (col_str.upper(), '')
@@ -165,7 +164,6 @@ class Navigator:
 	def trakt_watchlists(self):
 		t_str, watchlist_str = ls(32037), ls(32500)
 		trakt_watchlist_str = '%s %s' % (t_str, watchlist_str)
-		n_ins = _in_str % (trakt_watchlist_str.upper(), '')
 		mrec_str, mran_str = '%s %s' % (ls(32498), mov_str), '%s %s' % (ls(32504), mov_str)
 		tvrec_str, tvran_str, ra_str = '%s %s' % (ls(32498), tv_str), '%s %s' % (ls(32504), tv_str), '%s %s' % (ls(32505), ls(32506))
 		n_ins = _in_str % (watchlist_str.upper(), '')

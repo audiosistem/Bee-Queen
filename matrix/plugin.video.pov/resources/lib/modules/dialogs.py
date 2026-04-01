@@ -81,7 +81,7 @@ def trakt_manager_choice(params):
 	add_str, rem_str = 'Add to %s?' % choice[1], 'Remove from %s?' % choice[1]
 	if 'dropped' in choice[0]:
 		return trakt_api.hide_unhide_trakt_items(params['tmdb_id'], 'shows', params['imdb_id'], 'dropped')
-	if 'collection' in choice[0] or 'favorites' in choice[0] or 'watchlist' in choice[0]:
+	if 'watchlist' in choice[0] or 'favorites' in choice[0] or 'collection' in choice[0]:
 		list_items = trakt_api.trakt_fetch_collection_watchlist(choice[0], params['mediatype'])
 		action = False if int(params['tmdb_id']) in {i['media_ids']['tmdb'] for i in list_items} else True
 		data = [{'ids': {'tmdb': int(params['tmdb_id'])}}]
@@ -174,7 +174,7 @@ def tmdb_manager_choice(params):
 		return function({**params, 'list_id': choice[0]})
 	add_str, rem_str = 'Add to %s?' % choice[1], 'Remove from %s?' % choice[1]
 	params['mediatype'] = 'tv' if params['mediatype'] == 'tvshow' else 'movie'
-	if 'favorites' in choice[0] or 'watchlist' in choice[0]:
+	if 'watchlist' in choice[0] or 'favorites' in choice[0]:
 		if 'watchlist' == choice[0]:
 			list_items = tmdb_api.all_list_items(tmdb_api.watchlist, params['mediatype'])
 		else: list_items = tmdb_api.all_list_items(tmdb_api.favorites, params['mediatype'])

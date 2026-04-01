@@ -33,6 +33,7 @@ class Movies:
 		self.current_date = get_datetime_function()
 		self.meta_user_info = settings.metadata_user_info()
 		self.watched_indicators = settings.watched_indicators()
+		self.watched_title = settings.watched_title(self.watched_indicators)
 		self.watched_info = get_watched_info_function(self.watched_indicators)
 		self.bookmarks = get_bookmarks(self.watched_indicators, 'movie')
 		self.include_year_in_title = settings.include_year_in_title('movie')
@@ -41,7 +42,6 @@ class Movies:
 		self.is_widget = kodi_utils.external_browse()
 		self.widget_hide_watched = self.is_widget and self.meta_user_info['widget_hide_watched']
 		if not self.exit_list_params: self.exit_list_params = get_infolabel('Container.FolderPath')
-		self.watched_title = ('POV', 'Trakt', 'MDBList')[self.watched_indicators]
 		self.art_provider = (*settings.get_art_provider(), poster_empty, fanart_empty)
 
 	def build_movie_content(self, position, tag):
@@ -58,6 +58,8 @@ class Movies:
 			rootname, title, year = meta_get('rootname'), meta_get('title'), meta_get('year')
 			display = rootname if self.include_year_in_title else title
 			tmdb_id, imdb_id = meta_get('tmdb_id'), meta_get('imdb_id')
+			try: tags = [i for i in (imdb_id, string(tmdb_id)) if i]
+			except: tags = []
 			play_params = build_url({
 				'mode': 'play_media', 'mediatype': 'movie', 'tmdb_id': tmdb_id
 			})
@@ -147,7 +149,7 @@ class Movies:
 				videoinfo.setResumePoint(*set_resumetime(resumetime, progress, videoinfo.getDuration()))
 				videoinfo.setStudios((meta_get('studio'),))
 				videoinfo.setTagLine(meta_get('tagline'))
-				videoinfo.setTags((imdb_id, string(tmdb_id)))
+				videoinfo.setTags(tags)
 				videoinfo.setTrailer(meta_get('trailer'))
 				videoinfo.setVotes(meta_get('votes'))
 				videoinfo.setWriters(meta_get('writer').split(', '))

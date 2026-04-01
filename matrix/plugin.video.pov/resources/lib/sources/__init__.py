@@ -314,7 +314,7 @@ class Sources:
 						name = item['name'].replace('.', ' ').replace('-', ' ').upper()
 						line1 = item.get('scrape_provider'), item.get('cache_provider'), item.get('provider')
 						line2 = item.get('size_label', ''), item.get('extraInfo', '')
-						if source_index: line2 = ('[B]%02d[/B]' % (source_index + count), *line2)
+						if not source_index is None: line2 = ('[B]%02d[/B]' % (source_index + count), *line2)
 						line1 = ' | '.join(i for i in line1 if i and not i == 'external').upper()
 						line2 = ' | '.join(i for i in line2 if i)
 						if self.progress_dialog: self.progress_dialog.update(format_line % (line1, line2, name), percent)
@@ -332,7 +332,7 @@ class Sources:
 				items = [i for i in results if not 'Uncached' in i.get('cache_provider', '')]
 				if self.filters_ignored: notification(32686)
 			else:
-				source_index = results.index(source) if source in results else 0
+				source_index = results.index(source) if source in results else None
 				if source_index: items = [
 					i for i in results[source_index:]
 					if not 'Uncached' in i.get('cache_provider', '')

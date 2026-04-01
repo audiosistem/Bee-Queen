@@ -94,7 +94,7 @@ def get_imdb(params):
 		""" thanks https://github.com/tveronesi """
 		trivia, blunders, reviews, parentsguide = [], [], [], []
 		try:
-			headers = {'Content-Type': 'application/json', 'x-imdb-user-country': 'en'}
+			headers = {'User-Agent': session.headers['User-Agent'], 'Content-Type': 'application/json', 'x-imdb-user-country': 'EN'}
 			data = {'query': imdb_extended_query % url}
 			result = session.post(graphql_url, json=data, headers=headers, timeout=timeout)
 			if not result.ok: result.raise_for_status()
@@ -126,7 +126,7 @@ def get_imdb(params):
 				for i in result['parentsGuide']['categories']
 			)
 			except: pass
-		except requests.exceptions.RequestException as e:
+		except requests.RequestException as e:
 			from modules.kodi_utils import logger
 			logger('imdb error', str(e))
 		except: pass

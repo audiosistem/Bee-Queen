@@ -19,9 +19,9 @@
 		<setting id="provider.torrentdownload" label="torrentdownload" type="bool" default="false" />
 		<setting id="provider.torrentio" label="torrentio" type="bool" default="true" />
 		<setting id="provider.torrentsdb" label="torrentsdb" type="bool" default="false" />
-		<setting id="provider.aiostreams" label="aiostreams (comet/mediafusion)" type="bool" default="false" />
+		<setting id="provider.aiostreams" label="aiostreams (comet/meteor)" type="bool" default="false" />
 			<setting id="aiostreams.url" label="aiostreams instance" type="enum" default="0" values="Kuu-lection|Midnightignite" subsetting="true" visible="eq(-1,true)" />
-		<setting id="provider.meteor" label="meteor" type="bool" default="false" />
+		<setting id="provider.mediafusion" label="mediafusion" type="bool" default="false" />
 		<setting id="provider.torz" label="stremthru torz" type="bool" default="false" />
 			<setting id="torz.url" label="torz instance" type="enum" default="0" values="Kuu-lection|Munif|Midnightignite" subsetting="true" visible="eq(-1,true)" />
 		<setting id="provider.zilean" label="zilean" type="bool" default="false" />
@@ -181,7 +181,6 @@
 		<setting id="mdbl_indicators_active" label="mdbl_indicators_active" type="text" default="false" visible="false" />
 		<setting id="watched_indicators" label="Watched Status Provider" type="enum" default="0" values="POV|Trakt|MDBList" visible="eq(-2,true)|eq(-1,true)" />
 		<setting id="amble.indicators" label="Authorize Trakt or MDBList for More options" type="text" enable="false" visible="eq(-3,false)+eq(-2,false)" />
-		<setting id="sync_kodi_library_watchstatus" label="Set Watched in Kodi Library when Watched in POV" type="bool" default="false" />
 		<!-- Content and Sorting -->
 		<setting label="Next Episodes" type="lsep" />
 		<setting id="nextep.sort_type" label="Sort Type" type="enum" default="0" values="Recently Watched|Airdate|Title" />
@@ -251,10 +250,11 @@
 		<setting id="volumecheck.enabled" label="Check Playback Volume Before Start of Playback" type="bool" default="false" />
 			<setting id="volumecheck.percent" label="Set Max. Percent Starting Volume (0-100)" type="number" default="50" subsetting="true" visible="eq(-1,true)" />
 		<!-- Subtitles -->
-		<setting label="Subtitles" type="lsep" />
+		<setting label="Subtitles (Wyzie Subs - https://sub.wyzie.io)" type="lsep" />
 		<setting id="subtitles.subs_action" label="Download Subtitles Action" type="enum" default="2" values="Auto|Select|Off" />
-			<setting id="subtitles.language" label="Subtitle Language" type="select" default="English" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu|Vietnamese" subsetting="true" visible="!eq(-1,2)" />
-			<setting id="subtitles.auto_enable" label="Force Enable Local Subs" type="bool" default="true" subsetting="true" visible="!eq(-2,2)" />
+			<setting id="subtitles.apikey" label="API Key" type="text" default="" subsetting="true" visible="!eq(-1,2)" />
+			<setting id="subtitles.language" label="Subtitle Language" type="select" default="English" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu|Vietnamese" subsetting="true" visible="!eq(-2,2)" />
+			<setting id="subtitles.auto_enable" label="Force Enable Local Subs" type="bool" default="true" subsetting="true" visible="!eq(-3,2)" />
 	</category>
 	<!-- Results -->
 	<category label="Results">

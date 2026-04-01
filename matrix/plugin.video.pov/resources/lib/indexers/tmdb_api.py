@@ -25,7 +25,7 @@ def get_tmdb(url):
 		result = response.json() if 'json' in response.headers.get('Content-Type', '') else response.text
 		if not response.ok: response.raise_for_status()
 		return result
-	except requests.exceptions.RequestException as e:
+	except requests.RequestException as e:
 		logger('tmdb error', str(e))
 
 def tmdb_keyword_id(query):
@@ -459,7 +459,7 @@ def list_request(url, params=None, data=None, method=None):
 		result = response.json() if 'json' in response.headers.get('Content-Type', '') else response.text
 		if not response.ok: response.raise_for_status()
 		return result
-	except requests.exceptions.RequestException as e:
+	except requests.RequestException as e:
 		logger('tmdb error', str(e))
 
 def list_details(list_id, page=1):

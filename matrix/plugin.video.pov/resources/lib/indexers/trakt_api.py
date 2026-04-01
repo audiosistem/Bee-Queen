@@ -22,7 +22,10 @@ retry = requests.adapters.Retry(total=None, status=1, status_forcelist=(429, 502
 session.mount('https://api.trakt.tv', requests.adapters.HTTPAdapter(pool_maxsize=100, max_retries=retry))
 
 def call_trakt(path, params=None, data=None, with_auth=True, method=None, pagination=False, page=1):
-	headers = {'trakt-api-key': V2_API_KEY, 'trakt-api-version': '2', 'Content-Type': 'application/json'}
+	headers = {
+		'User-Agent': session.headers['User-Agent'], 'Content-Type': 'application/json',
+		'trakt-api-key': V2_API_KEY, 'trakt-api-version': '2'
+	}
 	if with_auth is True and (token := settings.trakt_token()): headers['Authorization'] = 'Bearer %s' % token
 	if pagination: params['page'] = page
 	try:
@@ -43,7 +46,7 @@ def call_trakt(path, params=None, data=None, with_auth=True, method=None, pagina
 				if get_setting('trakt.reverse') == 'true': result.reverse()
 		if pagination: result = result, response.headers.get('X-Pagination-Page-Count', page)
 		return result
-	except requests.exceptions.RequestException as e:
+	except requests.RequestException as e:
 		logger('trakt error', str(e))
 
 def get_trakt(params):
@@ -311,7 +314,7 @@ def _get_trakt_paginated_list(url):
 def trakt_get_lists(list_type):
 	if list_type == 'liked_lists': string, path_insert = 'trakt_liked_lists', 'likes/lists'
 	else: string, path_insert = 'trakt_my_lists', 'lists'
-	url = {'path': 'users/me/%s', 'path_insert': path_insert, 'with_auth': True}
+	url = {'path': 'users/me/%s', 'path_insert': path_insert, 'params': {'limit': 100}, 'with_auth': True}
 	return trakt_cache.cache_trakt_object(get_trakt, string, url)
 
 def make_new_trakt_list(params):
@@ -421,6 +424,7 @@ def trakt_indicators_movies():
 	insert_list = []
 	insert_append = insert_list.append
 	result = [(i,) for i in call_trakt('sync/watched/movies')] # TaskPool requires tuple
+	if not result: return
 #	threads = list(make_thread_list(_process, result, Thread))
 	for i in TaskPool().tasks(_process, result, Thread): i.join()
 	trakt_cache.TraktCache().set_bulk_movie_watched(insert_list)
@@ -441,6 +445,7 @@ def trakt_indicators_tv():
 	insert_list = []
 	insert_append = insert_list.append
 	result = [(i,) for i in call_trakt('sync/watched/shows')] # TaskPool requires tuple
+	if not result: return
 #	threads = list(make_thread_list(_process, result, Thread))
 	for i in TaskPool().tasks(_process, result, Thread): i.join()
 	trakt_cache.TraktCache().set_bulk_tvshow_watched(insert_list)
@@ -456,9 +461,9 @@ def trakt_progress_movies(progress_info):
 	insert_list = []
 	insert_append = insert_list.append
 	progress_items = [i for i in progress_info if i['type'] == 'movie' and i['progress'] > 1]
-	if progress_items:
-		threads = list(make_thread_list(_process, progress_items, Thread))
-		[i.join() for i in threads]
+	if not progress_items: return
+	threads = list(make_thread_list(_process, progress_items, Thread))
+	[i.join() for i in threads]
 	trakt_cache.TraktCache().set_bulk_movie_progress(insert_list)
 
 def trakt_progress_tv(progress_info):
@@ -481,28 +486,13 @@ def trakt_progress_tv(progress_info):
 	tmdb_list = []
 	tmdb_list_append = tmdb_list.append
 	progress_items = [i for i in progress_info if i['type'] == 'episode' and i['progress'] > 1]
-	if progress_items:
-		all_shows = [i['show'] for i in progress_items]
-		all_shows = [i for n, i in enumerate(all_shows) if i not in all_shows[n + 1:]] # remove duplicates
-		threads = list(make_thread_list(_process_tmdb_ids, all_shows, Thread))
-		[i.join() for i in threads]
+	if not progress_items: return
+	all_shows = [i['show'] for i in progress_items]
+	all_shows = [i for n, i in enumerate(all_shows) if i not in all_shows[n + 1:]] # remove duplicates
+	threads = list(make_thread_list(_process_tmdb_ids, all_shows, Thread))
+	[i.join() for i in threads]
 	insert_list = list(_process())
 	trakt_cache.TraktCache().set_bulk_tvshow_progress(insert_list)
-
-def trakt_official_status(mediatype):
-	if not kodi_utils.addon_installed('script.trakt'): return True
-	trakt_addon = kodi_utils.addon('script.trakt')
-	try: authorization = trakt_addon.getSetting('authorization')
-	except: authorization = ''
-	if authorization == '': return True
-	try: exclude_http = trakt_addon.getSetting('ExcludeHTTP')
-	except: exclude_http = ''
-	if exclude_http in ('true', ''): return True
-	media_setting = 'scrobble_movie' if mediatype in ('movie', 'movies') else 'scrobble_episode'
-	try: scrobble = trakt_addon.getSetting(media_setting)
-	except: scrobble = ''
-	if scrobble in ('false', ''): return True
-	return False
 
 def trakt_get_my_calendar(recently_aired, current_date):
 	def _process(dummy):
@@ -563,12 +553,12 @@ def trakt_calendar_days(recently_aired, current_date):
 	return start, finish
 
 def trakt_get_activity():
-	url = {'path': 'sync/%s', 'path_insert': 'last_activities', 'with_auth': True, 'pagination': False}
-	return get_trakt(url)
+	url = 'sync/last_activities'
+	return call_trakt(url)
 
 def trakt_playback_progress():
-	url = {'path': 'sync/%s', 'path_insert': 'playback', 'with_auth': True, 'pagination': False}
-	return get_trakt(url)
+	url = 'sync/playback'
+	return call_trakt(url)
 
 def trakt_sync_activities_thread(*args, **kwargs):
 	Thread(target=trakt_sync_activities, args=args, kwargs=kwargs).start()

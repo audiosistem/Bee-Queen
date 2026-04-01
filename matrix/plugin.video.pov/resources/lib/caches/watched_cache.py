@@ -1,9 +1,8 @@
-import json
 from datetime import datetime
 from threading import Thread
 from indexers import metadata
 from indexers.mdblist_api import mdbl_watched_unwatched, mdbl_progress
-from indexers.trakt_api import trakt_watched_unwatched, trakt_official_status, trakt_progress
+from indexers.trakt_api import trakt_watched_unwatched, trakt_progress
 from caches.mdbl_cache import clear_mdbl_collection_watchlist_data
 from caches.trakt_cache import clear_trakt_collection_watchlist_data
 from modules import kodi_utils, settings, utils
@@ -30,15 +29,23 @@ def set_PRAGMAS(dbcon):
 def get_database(watched_indicators):
 	return indicators_dict[watched_indicators]
 
-def get_next_episodes(watched_info):
-	seen = set()
-	watched_info = [i for i in watched_info if not i[0] is None]
-	watched_info.sort(key=lambda x: (x[0], x[1], x[2]), reverse=True)
-	return [
-		{'media_ids': {'tmdb': int(i[0])}, 'season': int(i[1]), 'episode': int(i[2]), 'last_played': i[4]}
-		for i in watched_info
-		if not (i[0] in seen or seen.add(i[0]))
-	]
+def get_next_episodes(watched_indicators):
+	dbcon = _database_connect(get_database(watched_indicators))
+	dbcur = set_PRAGMAS(dbcon)
+	dbcur.execute("""
+		SELECT media_id, season, episode, title, last_played
+		FROM (
+			SELECT *, ROW_NUMBER() OVER (
+				PARTITION BY media_id ORDER BY season DESC, episode DESC
+			) AS r
+			FROM watched_status
+			WHERE db_type = ? AND media_id IS NOT NULL
+		) AS t
+		WHERE r = 1
+	""", ('episode',))
+	data = dbcur.fetchall()
+	episode_list = [{'media_ids': {'tmdb': int(i[0])}, 'season': int(i[1]), 'episode': int(i[2]), 'last_played': i[4]} for i in data]
+	return episode_list
 
 def get_resumetime(bookmarks, tmdb_id, season='', episode=''):
 	try: resume_point, curr_time, resume_id = detect_bookmark(bookmarks, tmdb_id, season, episode)
@@ -82,8 +89,6 @@ def set_bookmark(mediatype, tmdb_id, curr_time, total_time, title, season='', ep
 			dbcur = set_PRAGMAS(dbcon)
 			dbcur.execute("""INSERT OR REPLACE INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
 						(mediatype, tmdb_id, season, episode, str(resume_point), str(curr_time), last_played, 0, title))
-		if settings.sync_kodi_library_watchstatus():
-			set_bookmark_kodi_library(mediatype, tmdb_id, curr_time, total_time, season, episode)
 		kodi_utils.container_refresh()
 	except: pass
 
@@ -156,9 +161,9 @@ def get_in_progress_movies(dummy_arg, page_no, letter):
 	limit = settings.page_limit()
 	dbcon = _database_connect(get_database(watched_indicators))
 	dbcur = set_PRAGMAS(dbcon)
-	dbcur.execute("""SELECT media_id, last_played, title FROM progress WHERE db_type = ?""", ('movie',))
+	dbcur.execute("""SELECT media_id, title, last_played FROM progress WHERE db_type = ?""", ('movie',))
 	data = dbcur.fetchall()
-	data = [{'media_id': i[0], 'title': i[2], 'last_played': i[1]} for i in data if not i[0] == '']
+	data = [{'media_id': i[0], 'title': i[1], 'last_played': i[2]} for i in data if not i[0] == '']
 	if settings.lists_sort_order('progress') == 0: original_list = sort_for_article(data, 'title', settings.ignore_articles())
 	else: original_list = sorted(data, key=lambda x: x['last_played'], reverse=True)
 	if paginate: final_list, total_pages = paginate_list(original_list, page_no, letter, limit)
@@ -267,16 +272,12 @@ def mark_as_watched_unwatched_movie(params):
 	refresh, from_playback = params.get('refresh', 'true') == 'true', params.get('from_playback', 'false') == 'true'
 	watched_indicators = settings.watched_indicators()
 	if watched_indicators == 1:
-		if from_playback and trakt_official_status(mediatype) is False: kodi_utils.sleep(3000)
-		elif not trakt_watched_unwatched(action, 'movies', tmdb_id):
-			return kodi_utils.notification(32574)
+		if not trakt_watched_unwatched(action, 'movies', tmdb_id): return kodi_utils.notification(32574)
 		clear_trakt_collection_watchlist_data('watchlist', mediatype)
 	elif watched_indicators == 2:
 		if not mdbl_watched_unwatched(action, 'movies', tmdb_id): return kodi_utils.notification(32574)
 		clear_mdbl_collection_watchlist_data('watchlist')
 	mark_as_watched_unwatched(watched_indicators, mediatype, tmdb_id, action, title=title)
-	if settings.sync_kodi_library_watchstatus():
-		mark_as_watched_unwatched_kodi_library(mediatype, action, title, year)
 	if refresh: kodi_utils.container_refresh()
 
 def mark_as_watched_unwatched_tvshow(params):
@@ -316,7 +317,6 @@ def mark_as_watched_unwatched_tvshow(params):
 		clear_mdbl_collection_watchlist_data('watchlist')
 	batch_mark_as_watched_unwatched(watched_indicators, insert_list, action)
 	kodi_utils.progressDialogBG.close()
-	if settings.sync_kodi_library_watchstatus(): batch_mark_kodi_library(action, insert_list, title, year)
 	kodi_utils.container_refresh()
 
 def mark_as_watched_unwatched_season(params):
@@ -352,7 +352,6 @@ def mark_as_watched_unwatched_season(params):
 		clear_mdbl_collection_watchlist_data('watchlist')
 	batch_mark_as_watched_unwatched(watched_indicators, insert_list, action)
 	kodi_utils.progressDialogBG.close()
-	if settings.sync_kodi_library_watchstatus(): batch_mark_kodi_library(action, insert_list, title, year)
 	kodi_utils.container_refresh()
 
 def mark_as_watched_unwatched_episode(params):
@@ -365,8 +364,7 @@ def mark_as_watched_unwatched_episode(params):
 	refresh, from_playback = params.get('refresh', 'true') == 'true', params.get('from_playback', 'false') == 'true'
 	watched_indicators = settings.watched_indicators()
 	if watched_indicators == 1:
-		if from_playback and trakt_official_status(mediatype) is False: kodi_utils.sleep(3000)
-		elif not trakt_watched_unwatched(action, mediatype, tmdb_id, tvdb_id, season, episode):
+		if not trakt_watched_unwatched(action, mediatype, tmdb_id, tvdb_id, season, episode):
 			return kodi_utils.notification(32574)
 		clear_trakt_collection_watchlist_data('watchlist', 'tvshow')
 	elif watched_indicators == 2:
@@ -374,8 +372,6 @@ def mark_as_watched_unwatched_episode(params):
 			return kodi_utils.notification(32574)
 		clear_mdbl_collection_watchlist_data('watchlist')
 	mark_as_watched_unwatched(watched_indicators, mediatype, tmdb_id, action, season, episode, title)
-	if settings.sync_kodi_library_watchstatus():
-		mark_as_watched_unwatched_kodi_library(mediatype, action, title, year, season, episode)
 	if refresh: kodi_utils.container_refresh()
 
 def mark_as_watched_unwatched(watched_indicators, mediatype='', tmdb_id='', action='', season='', episode='', title=''):
@@ -411,11 +407,6 @@ def make_batch_insert(action, mediatype, tmdb_id, season, episode, last_played, 
 	if action == 'mark_as_watched': return (mediatype, tmdb_id, season, episode, last_played, title)
 	else: return (mediatype, tmdb_id, season, episode)
 
-def batch_mark_kodi_library(action, insert_list, title, year):
-	in_library = get_library_video('tvshow', title, year)
-	if not in_library: return
-	if batch_mark_episodes_as_watched_unwatched_kodi_library(action, in_library, insert_list): kodi_utils.notification(32787)
-
 def clear_local_bookmarks():
 	try:
 		dbcon = _database_connect(kodi_utils.get_video_database_path())
@@ -423,160 +414,5 @@ def clear_local_bookmarks():
 		file_ids = dbcur.execute("""SELECT idFile FROM files WHERE strFilename LIKE 'plugin.video.pov%'""").fetchall()
 		for i in ('bookmark', 'streamdetails', 'files'):
 			dbcur.executemany("""DELETE FROM %s WHERE idFile = ?""" % i, file_ids)
-	except: pass
-
-def get_library_video(mediatype, title, year, season=None, episode=None):
-	try:
-		years = range(int(year)-1, int(year)+2)
-		filters = [{"field": "year", "operator": "is", "value": str(i)} for i in years]
-		properties = ["imdbnumber", "title", "originaltitle", "file"] if mediatype == 'movie' else ["title", "year"]
-		params = {"filter": {"or": filters}, "properties": properties}
-		if mediatype == 'movie':
-			r = execJSONRPC(json.dumps({"jsonrpc": "2.0", "method": "VideoLibrary.GetMovies", "params": params, "id": 1}))
-			r = json.loads(r)['result']['movies']
-			try:
-				r = [i for i in r if clean_file_name(title).lower() in clean_file_name(i['title']).lower()][0]
-				return r
-			except:
-				return None
-		elif mediatype  == 'tvshow':
-			r = execJSONRPC(json.dumps({"jsonrpc": "2.0", "method": "VideoLibrary.GetTVShows", "params": params, "id": 1}))
-			r = json.loads(r)['result']['tvshows']
-			try:
-				r = [
-					i for i in r
-					if clean_file_name(title).lower()
-					in (clean_file_name(i['title']).lower() if not ' (' in i['title'] else clean_file_name(i['title']).lower().split(' (')[0])
-				][0]
-				return r
-			except:
-				return None
-	except: pass
-
-def set_bookmark_kodi_library(mediatype, tmdb_id, curr_time, total_time, season='', episode=''):
-	meta_user_info = settings.metadata_user_info()
-	try:
-		if mediatype == 'movie': info = metadata.movie_meta('tmdb_id', tmdb_id, meta_user_info, get_datetime())
-		else: info = metadata.tvshow_meta('tmdb_id', tmdb_id, meta_user_info, get_datetime())
-		title, year = info['title'], info['year']
-		years = range(int(year)-1, int(year)+2)
-		filters = [{"field": "year", "operator": "is", "value": str(i)} for i in years]
-		params = {"filter": {"or": filters}, "properties": ["title"]}
-		method = 'VideoLibrary.GetMovies' if mediatype == 'movie' else 'VideoLibrary.GetTVShows'
-		r = execJSONRPC(json.dumps({"jsonrpc": "2.0", "method": method, "params": params, "id": 1}))
-		r = json.loads(r)['result']['movies'] if mediatype == 'movie' else json.loads(r)['result']['tvshows']
-		if mediatype == 'movie': r = [i for i in r if clean_file_name(title).lower() in clean_file_name(i['title']).lower()][0]
-		else:
-			r = [
-				i for i in r
-				if clean_file_name(title).lower()
-				in (clean_file_name(i['title']).lower() if not ' (' in i['title'] else clean_file_name(i['title']).lower().split(' (')[0])
-			][0]
-		if mediatype == 'episode':
-			filters = [{"field": "season", "operator": "is", "value": str(season)}, {"field": "episode", "operator": "is", "value": str(episode)}]
-			params = {"filter": {"and": filters}, "properties": ["file"], "tvshowid": r['tvshowid']}
-			r = execJSONRPC(json.dumps({"jsonrpc": "2.0", "method": "VideoLibrary.GetEpisodes", "params": params, "id": 1}))
-			r = json.loads(r)['result']['episodes'][0]
-		if mediatype == 'movie': method, id_name, library_id = 'VideoLibrary.SetMovieDetails', 'movieid', r['movieid']
-		else: method, id_name, library_id = 'VideoLibrary.SetEpisodeDetails', 'episodeid', r['episodeid']
-		query = {"jsonrpc": "2.0", "id": "setResumePoint", "method": method, "params": {id_name: library_id, "resume": {"position": curr_time, "total": total_time}}}
-		execJSONRPC(json.dumps(query))
-	except: pass
-
-def get_bookmark_kodi_library(mediatype, tmdb_id, season='', episode=''):
-	resume = '0'
-	meta_user_info = settings.metadata_user_info()
-	try:
-		if mediatype == 'movie': info = metadata.movie_meta('tmdb_id', tmdb_id, meta_user_info, get_datetime())
-		else: info = metadata.tvshow_meta('tmdb_id', tmdb_id, meta_user_info, get_datetime())
-		title, year = info['title'], info['year']
-		years = range(int(year)-1, int(year)+2)
-		filters = [{"field": "year", "operator": "is", "value": str(i)} for i in years]
-		properties = ["title", "resume"] if mediatype == 'movie' else ["title"]
-		params = {"filter": {"or": filters}, "properties": properties}
-		method = 'VideoLibrary.GetMovies' if mediatype == 'movie' else 'VideoLibrary.GetTVShows'
-		r = execJSONRPC(json.dumps({"jsonrpc": "2.0", "method": method, "params": params, "id": 1}))
-		r = json.loads(r)['result']['movies'] if mediatype == 'movie' else json.loads(r)['result']['tvshows']
-		if mediatype == 'movie': r = [i for i in r if clean_file_name(title).lower() in clean_file_name(i['title']).lower()][0]
-		else:
-			r = [
-				i for i in r
-				if clean_file_name(title).lower()
-				in (clean_file_name(i['title']).lower() if not ' (' in i['title'] else clean_file_name(i['title']).lower().split(' (')[0])
-			][0]
-		if mediatype == 'episode':
-			filters = [{"field": "season", "operator": "is", "value": str(season)}, {"field": "episode", "operator": "is", "value": str(episode)}]
-			params = {"filter": {"and": filters}, "properties": ["file"], "tvshowid": r['tvshowid']}
-			r = execJSONRPC(json.dumps({"jsonrpc": "2.0", "method": "VideoLibrary.GetEpisodes", "params": params, "id": 1}))
-			r = json.loads(r)['result']['episodes'][0]
-		if mediatype == 'movie': method, id_name, library_id, results_key = 'VideoLibrary.GetMovieDetails', 'movieid', r['movieid'], 'moviedetails'
-		else: method, id_name, library_id, results_key = 'VideoLibrary.GetEpisodeDetails', 'episodeid', r['episodeid'], 'episodedetails'
-		query = {"jsonrpc": "2.0", "id": "getResumePoint", "method": method, "params": {id_name: library_id, "properties": ["title", "resume"]}}
-		r = json.loads(execJSONRPC(json.dumps(query)))
-		resume = r["result"][results_key]["resume"]["position"]
-		return resume
-	except: pass
-
-def mark_as_watched_unwatched_kodi_library(mediatype, action, title, year, season=None, episode=None):
-	try:
-		playcount = 1 if action == 'mark_as_watched' else 0
-		years = range(int(year)-1, int(year)+2)
-		filters = [{"field": "year", "operator": "is", "value": str(i)} for i in years]
-		params = {"filter": {"or": filters}, "properties": ["title"]}
-		method = 'VideoLibrary.GetMovies' if mediatype == 'movie' else 'VideoLibrary.GetTVShows'
-		r = execJSONRPC(json.dumps({"jsonrpc": "2.0", "method": method, "params": params, "id": 1}))
-		r = json.loads(r)['result']['movies'] if mediatype == 'movie' else json.loads(r)['result']['tvshows']
-		if mediatype == 'movie': r = [i for i in r if clean_file_name(title).lower() in clean_file_name(i['title']).lower()][0]
-		else:
-			r = [
-				i for i in r
-				if clean_file_name(title).lower()
-				in (clean_file_name(i['title']).lower() if not ' (' in i['title'] else clean_file_name(i['title']).lower().split(' (')[0])
-			][0]
-		if mediatype == 'episode':
-			filters = [{"field": "season", "operator": "is", "value": str(season)}, {"field": "episode", "operator": "is", "value": str(episode)}]
-			params = {"filter": {"and": filters}, "properties": ["file"], "tvshowid": r['tvshowid']}
-			r = execJSONRPC(json.dumps({"jsonrpc": "2.0", "method": "VideoLibrary.GetEpisodes", "params": params, "id": 1}))
-			r = json.loads(r)['result']['episodes'][0]
-		if mediatype == 'movie': method, id_name, library_id = 'VideoLibrary.SetMovieDetails', 'movieid', r['movieid']
-		else: method, id_name, library_id = 'VideoLibrary.SetEpisodeDetails', 'episodeid', r['episodeid']
-		query = {"jsonrpc": "2.0", "method": method, "params": {id_name: library_id, "playcount": playcount}, "id": 1}
-		execJSONRPC(json.dumps(query))
-		query = {"jsonrpc": "2.0", "id": "setResumePoint", "method": method, "params": {id_name: library_id, "resume": {"position": 0,}}}
-		execJSONRPC(json.dumps(query))
-	except: pass
-
-def batch_mark_episodes_as_watched_unwatched_kodi_library(action, show_info, episode_list):
-	playcount = 1 if action == 'mark_as_watched' else 0
-	tvshowid = str(show_info['tvshowid'])
-	ep_ids, action_list = [], []
-	ep_ids_append, action_append = ep_ids.append, action_list.append
-	progressDialogBG.create(ls(32577), '')
-	try:
-		for item in episode_list:
-			try:
-				season = item[2]
-				episode = item[3]
-				filters = [{"field": "season", "operator": "is", "value": str(season)}, {"field": "episode", "operator": "is", "value": str(episode)}]
-				params = {"filter": {"and": filters}, "properties": ["file", "playcount"], "tvshowid": tvshowid}
-				r = execJSONRPC(json.dumps({"jsonrpc": "2.0", "method": "VideoLibrary.GetEpisodes", "params": params, "id": 1}))
-				r = json.loads(r)['result']['episodes'][0]
-				ep_ids_append((r['episodeid'], r['playcount']))
-			except: pass
-		for count, item in enumerate(ep_ids, 1):
-			try:
-				ep_id = item[0]
-				current_playcount = item[1]
-				if int(current_playcount) != playcount:
-					sleep(50)
-					display = ls(32856)
-					progressDialogBG.update(int(float(count) / float(len(ep_ids)) * 100), ls(32577), display)
-					query = {"jsonrpc": "2.0", "method": "VideoLibrary.SetEpisodeDetails", "params": {"episodeid": ep_id, "playcount": playcount}, "id": 1}
-					action_append(query)
-				else: pass
-			except: pass
-		r = execJSONRPC(json.dumps(action_list))
-		progressDialogBG.close()
-		return r
 	except: pass
 

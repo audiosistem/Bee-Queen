@@ -259,9 +259,6 @@ def single_ep_display_title():
 def single_ep_format():
 	return {0: '%d-%m-%Y', 1: '%Y-%m-%d', 2: '%m-%d-%Y'}[int(get_setting('single_ep_format', '1'))]
 
-def sync_kodi_library_watchstatus():
-	return get_setting('sync_kodi_library_watchstatus') == 'true'
-
 def thumb_fanart():
 	return get_setting('thumb_fanart') == 'true'
 
@@ -290,12 +287,14 @@ def watched_indicators():
 	if get_setting('trakt_user') == '' and get_setting('mdblist_user') == '': return 0
 	return int(get_setting('watched_indicators', '0'))
 
+def watched_title(watched_indicators):
+	return ('POV', 'Trakt', 'MDBList')[watched_indicators]
+
 def widget_hide_watched():
 	return get_setting('widget_hide_watched') == 'true'
 
-default_internal_scrapers, cloud_scrapers = (
-	'ad_cloud', 'pm_cloud', 'rd_cloud', 'tb_cloud', 'oc_cloud', 'torboxnews', 'easynews'
-), ('ad_cloud', 'pm_cloud', 'rd_cloud', 'tb_cloud', 'oc_cloud')
+cloud_scrapers = ('ad_cloud', 'pm_cloud', 'rd_cloud', 'tb_cloud', 'oc_cloud')
+default_internal_scrapers = (*cloud_scrapers, 'torboxnews', 'easynews')
 
 def active_internal_scrapers():
 	settings = ['provider.external', 'provider.easynews']
