@@ -200,7 +200,7 @@ Added support for Kodi v19 (Matrix)
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.program.bq" name="BQ" version="1.3" provider-name="AS">
+</addon><addon id="plugin.program.bq" name="BQ" version="1.4" provider-name="AS">
     <requires>
         <import addon="script.module.kodi-six" />
     </requires>
@@ -809,7 +809,7 @@ In addition to what livestreams allowed you to do, you can now,
     <screenshot>resources/screenshot-02.jpg</screenshot>
   </assets>
 </extension>
-</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.61">
+</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.62">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -1045,18 +1045,9 @@ In addition to what livestreams allowed you to do, you can now,
 			<screenshot>resources/screenshots/screenshot003.jpg</screenshot>
 		</assets>
 		<news>
-[B]Update - v6.7.61 - Mar 30th, 2026 [/B]
---[Change] Made changes to the trakt force sync to no longer delete database and added individual option to do it.
---[Fix] Fix for Trakt sync error causing endless sync when user has no liked lists.
---[Fix] Made a change to mark episode as watched using a thread to stop blocking other processses.
---[Fix] Moved prescrape variables to homescreen properties instead of player window properties to avoid race conditions.
---[Fix] Real-Debrid error notifications (internal_error, connection errors) are now suppressed during background pre-resolve so they no longer pop up on-screen mid-playback.
---[Fix] Fixed Real-Debrid server notifications setting being ignored.
---[Fix] Changes for playnext total time remaining calculation.
---[Fix] Changes to the way json is read back from kodi.
---[Fix] Changes for those using reuselanguageInvoker
---[Fix] Changes for trakt key and storage.
---[Change] Changed the way online services popup and scrobble services popup looked. motivated by pov so credit to kfw.
+[B]Update - v6.7.62 - April 1st, 2026 [/B]
+--[Change] Made changes to allow users to set number of batches to use for Trakt. Settings: General &gt; Performance
+--[Fix] Fixed issue with old hidden shows causing dropped not to sync from Trakt. You will need to "Drop" any shows previously hidden.
 		</news>
 	</extension>
 
@@ -2885,7 +2876,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
     <news>0.1.3:
 - Fix non-UTF-8 byte string decoding in Python 2.</news>
   </extension>
-</addon><addon id="script.module.magneto" version="6.02.07" name="Magneto Module" provider-name="Magneto">
+</addon><addon id="script.module.magneto" version="6.04.01" name="Magneto Module" provider-name="Magneto">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -2893,7 +2884,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
 	<extension point="xbmc.python.pluginsource" library="lib/router.py">
 		<provides>executable video</provides>
 	</extension>
-	
+	<extension point="xbmc.service" library="lib/service.py" />
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>

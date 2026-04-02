@@ -70,7 +70,7 @@ class source:
 				file_title = file['description'].replace('┈➤', '\n').split('\n')
 				file_info = [x for x in file_title if _INFO.search(x)][0]
 
-				name = source_utils.clean_name(file_title[0])
+				name = source_utils.clean_name(file['behaviorHints']['filename'])
 
 				if not source_utils.check_title(title, aliases, name.replace('.(Archie.Bunker', ''), hdlr, year): continue
 				name_info = source_utils.info_from_name(name, title, year, hdlr, episode_title)
@@ -86,8 +86,8 @@ class source:
 
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
-					size = re.findall(r'((?:\d+\,\d+\.\d+|\d+\.\d+|\d+\,\d+|\d+)\s*(?:GB|GiB|Gb|MB|MiB|Mb))', file_info)[-1]
-					dsize, isize = source_utils._size(size)
+					size = float(file['behaviorHints']['videoSize'])
+					dsize, isize = source_utils.convert_size(size)
 					info.insert(0, isize)
 				except: dsize = 0
 				info = ' | '.join(info)
@@ -127,7 +127,7 @@ class source:
 				file_title = file['description'].replace('┈➤', '\n').split('\n')
 				file_info = [x for x in file_title if _INFO.search(x)][0]
 
-				name = source_utils.clean_name(file_title[0])
+				name = source_utils.clean_name(file['behaviorHints']['filename'])
 
 				episode_start, episode_end = 0, 0
 				if not search_series:
@@ -155,8 +155,8 @@ class source:
 
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
-					size = re.findall(r'((?:\d+\,\d+\.\d+|\d+\.\d+|\d+\,\d+|\d+)\s*(?:GB|GiB|Gb|MB|MiB|Mb))', file_info)[-1]
-					dsize, isize = source_utils._size(size)
+					size = float(file['behaviorHints']['videoSize'])
+					dsize, isize = source_utils.convert_size(size)
 					info.insert(0, isize)
 				except: dsize = 0
 				info = ' | '.join(info)
@@ -175,7 +175,57 @@ class source:
 
 	def _headers(self):
 		return {'encoded_user_data': (
-			'eyJlbmFibGVfY2F0YWxvZ3MiOiBmYWxzZSwgIm1heF9zdHJlYW1zX3Blcl9yZXNvbHV0aW9uIjogOTks'
-			'ICJ0b3JyZW50X3NvcnRpbmdfcHJpb3JpdHkiOiBbXSwgImNlcnRpZmljYXRpb25fZmlsdGVyIjogWyJE'
-			'aXNhYmxlIl0sICJudWRpdHlfZmlsdGVyIjogWyJEaXNhYmxlIl19'
+			'ewogICJzZWxlY3RlZF9jYXRhbG9ncyI6IFtdLAogICJzZWxlY3RlZF9yZXNvbHV0aW9ucyI6IFsK'
+			'ICAgICI0ayIsICAgICIyMTYwcCIsICIxMDgwcCIsICI3MjBwIiwgICI1NzZwIiwgICI0ODBwIiwg'
+			'ICIzNjBwIiwgICIyNDBwIiwgIjE0NDBwIiwgbnVsbAogIF0sCiAgImVuYWJsZV9jYXRhbG9ncyI6'
+			'IGZhbHNlLAogICJlbmFibGVfaW1kYl9tZXRhZGF0YSI6IGZhbHNlLAogICJtYXhfc2l6ZSI6ICJp'
+			'bmYiLAogICJtaW5fc2l6ZSI6IDAsCiAgIm1heF9zdHJlYW1zX3Blcl9yZXNvbHV0aW9uIjogMjAs'
+			'CiAgIm51ZGl0eV9maWx0ZXIiOiBbIkRpc2FibGUiXSwKICAiY2VydGlmaWNhdGlvbl9maWx0ZXIi'
+			'OiBbIkRpc2FibGUiXSwKICAibGFuZ3VhZ2Vfc29ydGluZyI6IFsKICAgICJFbmdsaXNoIiwgICAg'
+			'IlRhbWlsIiwgICAgICAiSGluZGkiLCAgICAgICJNYWxheWFsYW0iLCAgIkthbm5hZGEiLAogICAg'
+			'IlRlbHVndSIsICAgICAiQ2hpbmVzZSIsICAgICJSdXNzaWFuIiwgICAgIkFyYWJpYyIsICAgICAi'
+			'SmFwYW5lc2UiLAogICAgIktvcmVhbiIsICAgICAiVGFpd2FuZXNlIiwgICJMYXRpbm8iLCAgICAg'
+			'IkZyZW5jaCIsICAgICAiU3BhbmlzaCIsCiAgICAiUG9ydHVndWVzZSIsICJJdGFsaWFuIiwgICAg'
+			'Ikdlcm1hbiIsICAgICAiVWtyYWluaWFuIiwgICJQb2xpc2giLAogICAgIkN6ZWNoIiwgICAgICAi'
+			'VGhhaSIsICAgICAgICJJbmRvbmVzaWFuIiwgIlZpZXRuYW1lc2UiLCAiRHV0Y2giLAogICAgIkJl'
+			'bmdhbGkiLCAgICAiVHVya2lzaCIsICAgICJHcmVlayIsICAgICAgIlN3ZWRpc2giLCAgICAiUm9t'
+			'YW5pYW4iLAogICAgIkh1bmdhcmlhbiIsICAiRmlubmlzaCIsICAgICJOb3J3ZWdpYW4iLCAgIkRh'
+			'bmlzaCIsICAgICAiSGVicmV3IiwKICAgICJMaXRodWFuaWFuIiwgIlB1bmphYmkiLCAgICAiTWFy'
+			'YXRoaSIsICAgICJHdWphcmF0aSIsICAgIkJob2pwdXJpIiwKICAgICJOZXBhbGkiLCAgICAgIlVy'
+			'ZHUiLCAgICAgICAiVGFnYWxvZyIsICAgICJGaWxpcGlubyIsICAgIk1hbGF5IiwKICAgICJNb25n'
+			'b2xpYW4iLCAgIkFybWVuaWFuIiwgICAiR2VvcmdpYW4iLCAgIG51bGwKICBdLAogICJxdWFsaXR5'
+			'X2ZpbHRlciI6IFsKICAgICJCbHVSYXkvVUhEIiwgICAiV0VCL0hEIiwgICAgICAgIkRWRC9UVi9T'
+			'QVQiLCAgICJDQU0vU2NyZWVuZXIiLAogICAgIlVua25vd24iCiAgXSwKICAiaGRyX2ZpbHRlciI6'
+			'IFsiSERSMTAiLCAiSERSMTArIiwgIkRvbGJ5IFZpc2lvbiIsICJITEciLCAiU0RSIiwgIlVua25v'
+			'd24iXSwKICAibGl2ZV9zZWFyY2hfc3RyZWFtcyI6IGZhbHNlLAogICJpbmNsdWRlX2FuaW1lIjog'
+			'dHJ1ZSwKICAiZW5hYmxlX3VzZW5ldF9zdHJlYW1zIjogZmFsc2UsCiAgInByZWZlcl91c2VuZXRf'
+			'b3Zlcl90b3JyZW50IjogZmFsc2UsCiAgImVuYWJsZV90ZWxlZ3JhbV9zdHJlYW1zIjogZmFsc2Us'
+			'CiAgImVuYWJsZV9hY2VzdHJlYW1fc3RyZWFtcyI6IGZhbHNlLAogICJtYXhfc3RyZWFtcyI6IDEw'
+			'MCwKICAic3RyZWFtX3R5cGVfZ3JvdXBpbmciOiAic2VwYXJhdGUiLAogICJzdHJlYW1fdHlwZV9v'
+			'cmRlciI6IFsKICAgICJ0b3JyZW50IiwgICAidXNlbmV0IiwgICAgInRlbGVncmFtIiwgICJodHRw'
+			'IiwgICAgICAiYWNlc3RyZWFtIiwgInlvdXR1YmUiCiAgXSwKICAicHJvdmlkZXJfZ3JvdXBpbmci'
+			'OiAibWl4ZWQiLAogICJzdHJlYW1fbmFtZV9maWx0ZXJfbW9kZSI6ICJkaXNhYmxlZCIsCiAgInN0'
+			'cmVhbV9uYW1lX2ZpbHRlcl9wYXR0ZXJucyI6IFtdLAogICJzdHJlYW1fbmFtZV9maWx0ZXJfdXNl'
+			'X3JlZ2V4IjogZmFsc2UsCiAgInRvcnJlbnRfc29ydGluZ19wcmlvcml0eSI6IFsKICAgIHsia2V5'
+			'IjogImNhY2hlZCIsICAgICAiZGlyZWN0aW9uIjogImRlc2MifSwKICAgIHsia2V5IjogInJlc29s'
+			'dXRpb24iLCAiZGlyZWN0aW9uIjogImRlc2MifSwKICAgIHsia2V5IjogInF1YWxpdHkiLCAgICAi'
+			'ZGlyZWN0aW9uIjogImRlc2MifSwKICAgIHsia2V5IjogImxhbmd1YWdlIiwgICAiZGlyZWN0aW9u'
+			'IjogImRlc2MifSwKICAgIHsia2V5IjogInNpemUiLCAgICAgICAiZGlyZWN0aW9uIjogImRlc2Mi'
+			'fSwKICAgIHsia2V5IjogInNlZWRlcnMiLCAgICAiZGlyZWN0aW9uIjogImRlc2MifSwKICAgIHsi'
+			'a2V5IjogImNyZWF0ZWRfYXQiLCAiZGlyZWN0aW9uIjogImRlc2MifQogIF0sCiAgInN0cmVhbV90'
+			'ZW1wbGF0ZSI6IHsKICAgICJ0aXRsZSI6ICJ7aWYgc3RyZWFtLnR5cGUgPSB0b3JyZW50fVvwn6ey'
+			'e3NlcnZpY2Uuc2hvcnROYW1lfXtpZiBzZXJ2aWNlLmNhY2hlZH3imqF7L2lmfV17ZWxpZiBzdHJl'
+			'YW0udHlwZSA9IHVzZW5ldH1b8J+TsHtzZXJ2aWNlLnNob3J0TmFtZX1de2Vsc2V9W/CflJddey9p'
+			'Zn0ge2FkZG9uLm5hbWV9IHtpZiBzdHJlYW0ucmVzb2x1dGlvbn17c3RyZWFtLnJlc29sdXRpb259'
+			'ey9pZn0iLAogICAgImRlc2NyaXB0aW9uIjogIntpZiBzdHJlYW0ucXVhbGl0eX17c3RyZWFtLnF1'
+			'YWxpdHl9IHsvaWZ9e2lmIHN0cmVhbS5jb2RlY317c3RyZWFtLmNvZGVjfSB7L2lmfXtpZiBzdHJl'
+			'YW0uaGRyX2Zvcm1hdHN9e3N0cmVhbS5oZHJfZm9ybWF0c3xqb2luKCcgJyl9IHsvaWZ9XG57aWYg'
+			'c3RyZWFtLnNpemUgPiAwffCfkr4ge3N0cmVhbS5zaXplfGJ5dGVzfSB7L2lmfXtpZiBzdHJlYW0u'
+			'c2VlZGVycyA+IDB98J+RpCB7c3RyZWFtLnNlZWRlcnN9ey9pZn1cbntpZiBzdHJlYW0ubGFuZ3Vh'
+			'Z2VfZmxhZ3N9e3N0cmVhbS5sYW5ndWFnZV9mbGFnc3xqb2luKCcgJyl9ey9pZn1cbuKame+4jyB7'
+			'c3RyZWFtLnNvdXJjZX0iCiAgfSwKICAiaW5kZXhlcl9jb25maWciOiB7CiAgICAicHJvd2xhcnIi'
+			'ICAgICAgICAgOiB7ImVuYWJsZWQiOiBmYWxzZSwgInVzZV9nbG9iYWwiOiBmYWxzZX0sCiAgICAi'
+			'amFja2V0dCIgICAgICAgICAgOiB7ImVuYWJsZWQiOiBmYWxzZSwgInVzZV9nbG9iYWwiOiB0cnVl'
+			'fSwKICAgICJ0b3J6bmFiX2VuZHBvaW50cyI6IFtdLAogICAgIm5ld3puYWJfaW5kZXhlcnMiIDog'
+			'W10KICB9LAogICJ0ZWxlZ3JhbV9jb25maWciOiBudWxsCn0='
 		)}

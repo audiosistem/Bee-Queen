@@ -23,15 +23,15 @@ def menuoptions():
     )
     call = dialog.select('[B]BQ[/B]', [
             '[B]ClickSud[/B]',
-            '[B]FlixTor[/B]',
+            '[B]FlixZone[/B]',
             '[B]AZMovies[/B]',
             '[B]Stream4U[/B]',
             '[B]YESMovies[/B]',
             '[B]VexMovies[/B]',
-            '[B]MoviesJoy[/B]',
+            '[B]7xstream[/B]',
             '[B]MyFlixer[/B]',
             '[B]Sflix[/B]',
-            '[B]1HD[/B]',
+            '[B]Moontv[/B]',
             '[B]Cancel & Close[/B]',
         ]
     )
@@ -76,8 +76,8 @@ def function1(): # Web.app
         return webbrowser.open(link)
 
 
-def function2(): # FlixTor
-    link = 'https://flixtor.guru'
+def function2(): # FlixZone
+    link = 'https://flixzone.co/home'
     if myplatform == 'android':
         return xbmc.executebuiltin(mycommand % link)
     else:
@@ -116,8 +116,8 @@ def function6(): # VexMovies
         return webbrowser.open(link)
 
 
-def function7(): # MoviesJoy
-    link = 'https://moviesjoy.pw'
+def function7(): # 7xstream
+    link = 'https://cinema.7xstream.tv'
     if myplatform == 'android':
         return xbmc.executebuiltin(mycommand % link)
     else:
@@ -141,7 +141,7 @@ def function9(): # Sflix
 
 
 def function10(): # 1HD
-    link = 'https://1hd.to/home'
+    link = 'https://moontv.to/home'
     if myplatform == 'android':
         return xbmc.executebuiltin(mycommand % link)
     else:
