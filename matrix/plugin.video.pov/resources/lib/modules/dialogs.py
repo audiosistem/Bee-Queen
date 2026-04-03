@@ -113,7 +113,7 @@ def mdbl_manager_choice(params):
 	]
 	choices += [(i.lower(), '[I]%s[/I]' % i, '') for i in (ls(32499), ls(32500))]
 	if params['mediatype'] == 'tvshow': choices += [('dropped', 'Toggle Dropped', '')]
-	list_items = [{'line1': item[1], 'line2': item[2],'icon': icon} for item in choices]
+	list_items = [{'line1': item[1], 'line2': item[2], 'icon': icon} for item in choices]
 	kwargs = {'items': json.dumps(list_items), 'heading': heading, 'multi_line': 'true'}
 	choice = select_dialog([(i[0], i[1]) for i in choices], **kwargs)
 	if choice is None: return
@@ -477,7 +477,7 @@ def build_navigate_to_page(params):
 	def _builder(use_alphabet):
 		for i in start_list:
 			if use_alphabet: line1, line2 = i.upper(), ls(32821) % (mediatype, i.upper())
-			else: line1, line2 = '%s %s' % (ls(32022), i), ls(32822) % i
+			else: line1, line2 = '%s %s' % ('Page', i), ls(32822) % i
 			yield {'line1': line1, 'line2': line2, 'icon': icon}
 	if use_alphabet:
 		start_list = [chr(i) for i in range(97,123)]

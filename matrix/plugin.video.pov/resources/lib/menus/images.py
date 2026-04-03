@@ -18,7 +18,7 @@ class Images:
 		elif self.mode == 'slideshow_image': return self.slideshow_image()
 		elif self.mode == 'delete_image': return self.delete_image()
 		if len(self.list_items) == 0 and not self.params.get('in_progress') == 'true':
-			return notification(32490)
+			return notification(32760)
 		if not 'in_progress' in params: self.open_window_xml()
 		else: return self.list_items, self.next_page_params
 

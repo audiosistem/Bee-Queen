@@ -1067,7 +1067,7 @@ msgid "Cancelled"
 msgstr ""
 
 msgctxt "#32740"
-msgid "Subtitles Rate Limited. Retrying in 10 secs.."
+msgid "Subtitles Rate Limited. Retrying in 10 secs..."
 msgstr ""
 
 msgctxt "#32742"

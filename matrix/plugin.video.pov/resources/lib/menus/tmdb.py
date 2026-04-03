@@ -134,12 +134,12 @@ def edit_tmdb_list(params):
 	if   'name' in choice:
 		name = kodi_utils.dialog.input('New List Name', defaultt=params['name'])
 		params['name'] = name.strip() or params['name']
-	elif choice in ('poster', 'fanart'):
-		art = artwork_choice_tmdb_list(choice, params['list_id'], params['name'], image_resolution, default_icon)
-		params[choice] = params[choice] if art is None else art
 	elif 'public' in choice:
 		text = 'Make %s Private?' % params['name']
 		params['public'] = 'true' if not kodi_utils.confirm_dialog(text=text, top_space=True) else 'false'
+	elif choice in ('poster', 'fanart'):
+		art = artwork_choice_tmdb_list(choice, params['list_id'], params['name'], image_resolution, default_icon)
+		params[choice] = params[choice] if art is None else art
 	else:
 		data = {
 			'name': params['name'],

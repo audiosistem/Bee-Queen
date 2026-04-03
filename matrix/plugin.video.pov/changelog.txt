@@ -1,6 +1,7 @@
   removal pending: download, tmdblist
 
   [COLOR dodgerblue][B]Version 6.04[/B][/COLOR]
+- Changed subtitles search parameters: utf-8 only, added sources.
 - Subtitles require free api key from Wyzie Subs - https://sub.wyzie.io
 - Moved mediafusion to standalone source.
 - Replaced mediafusion with meteor in aiostreams source.

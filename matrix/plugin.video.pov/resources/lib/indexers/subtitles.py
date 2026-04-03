@@ -1,15 +1,16 @@
 import os
 import requests
-from datetime import timedelta
+from datetime import datetime, timedelta
 from caches.main_cache import MainCache
 from modules.meta_lists import language_choices
 from modules import kodi_utils
-# from modules.kodi_utils import logger
+# logger = kodi_utils.logger
 
 ls, get_setting = kodi_utils.local_string, kodi_utils.get_setting
 search_url = 'https://sub.wyzie.io/search'
+timeout = 20.0
 action_dict = {'0': 'auto', '1': 'select', '2': 'off'}
-timeout = 5.05
+api_sources = ('opensubtitles', 'subdl', 'subf2m', 'gestdown', 'yify')
 
 def _get(url, params=None, stream=False, retry=False):
 	response = requests.get(url, params=params, stream=stream, timeout=timeout)
@@ -21,24 +22,48 @@ def _get(url, params=None, stream=False, retry=False):
 
 class Subtitles(kodi_utils.xbmc_player):
 	def subtitles_download(self, url):
-		params = {'key': self.apikey}
-		response = _get(url, params=params, stream=True, retry=True)
+		response = _get(url, stream=True, retry=True)
 		return response if response.ok else response.reason
 
 	def subtitles_search(self):
-		cache_name = 'subtitles_wyzie_%s' % self.imdb_id
-		params = {'format': 'srt', 'key': self.apikey, 'id': self.imdb_id}
-		if self.season:
-			cache_name += '_%s_%s' % (self.season, self.episode)
-			params.update({'season': self.season, 'episode': self.episode})
+		params = {
+			'encoding': 'utf-8',
+			'format': 'srt',
+			'source': ','.join(api_sources),
+			'key': self.apikey,
+			'id': self.imdb_id
+		}
+		if self.season: params.update({'season': self.season, 'episode': self.episode})
 		maincache = MainCache()
-		cache = maincache.get(cache_name)
+		current_time = maincache._get_timestamp(datetime.now())
+		cache = maincache.get_memory_cache(self.sub_filename, current_time)
 		if cache: return cache
 		response = _get(search_url, params=params, retry=True)
 		if not response.ok: return response.reason
 		response = response.json()
-		if response: maincache.set(cache_name, response, expiration=timedelta(hours=24))
+		expires = maincache._get_timestamp(datetime.now() + timedelta(hours=24))
+		if response: maincache.set_memory_cache(response, self.sub_filename, expires)
 		return response
+
+	def subtitles_select(self, result):
+		def _builder():
+			for i in result:
+				line1 = i['display'].upper(), ' (SDH)' if i['isHearingImpaired'] else ''
+				line2 = i.get('origin') or 'N/A', i['source'].upper(), i.get('release') or i['media']
+				listitem = kodi_utils.make_listitem()
+				listitem.setLabel('%s%s' % line1)
+				listitem.setLabel2('%s - %s[CR]%s' % line2)
+				listitem.setArt({'icon': i['flagUrl'].replace('24.png', '64.png')})
+				yield listitem
+		try: video_path = self.getPlayingFile()
+		except: video_path = ''
+		video_path = next(iter(video_path.split('|')), video_path)
+		video_path = os.path.basename(video_path)
+		heading = '%s - %s' % (ls(32246).upper(), video_path)
+		self.pause()
+		chosen_sub = kodi_utils.dialog.select(heading, list(_builder()), useDetails=True)
+		self.pause()
+		return chosen_sub
 
 	def _video_file_subs(self):
 		try: available_sub_language = self.getSubtitles()
@@ -57,37 +82,17 @@ class Subtitles(kodi_utils.xbmc_player):
 		return subtitle
 
 	def _searched_subs(self):
-		search_language = kodi_utils.convert_language(self.language1, format='short')
 		result = self.subtitles_search()
 		if isinstance(result, str): return kodi_utils.notification('Subtitles Error: %s' % result)
 		if not result: return kodi_utils.notification(32793, icon=self.poster)
+		search_language = kodi_utils.convert_language(self.language1, format='short')
 		result.sort(key=lambda k: k['display'], reverse=False)
 		result.sort(key=lambda k: k['language'] == search_language, reverse=True)
-		if self.subs_action == 'select' and len(result) > 1:
-			try: video_path = self.getPlayingFile()
-			except: video_path = ''
-			if '|' in video_path: video_path = video_path.split('|')[0]
-			video_path = os.path.basename(video_path)
-			heading = '%s - %s' % (ls(32246).upper(), video_path)
-			def _builder():
-				for i in result:
-					line1 = i['display'].upper(), ' (SDH)' if i['isHearingImpaired'] else ''
-					line2 = i.get('origin') or 'N/A', i['source'].upper(), i.get('release') or i['media']
-					listitem = kodi_utils.make_listitem()
-					listitem.setLabel('%s%s' % line1)
-					listitem.setLabel2('%s - %s[CR]%s' % line2)
-					listitem.setArt({'icon': i['flagUrl'].replace('24.png', '64.png')})
-					yield listitem
-			self.pause()
-			chosen_sub = kodi_utils.dialog.select(heading, list(_builder()), useDetails=True)
-			self.pause()
+		if self.subs_action == 'select' and len(result) > 1: chosen_sub = self.subtitles_select(result)
 		else: chosen_sub = next((i for i, _ in enumerate(result) if _['language'] == search_language), -1)
 		if chosen_sub < 0: return kodi_utils.notification(32736, icon=self.poster)
 		chosen_sub = result[chosen_sub]
-		try: lang = kodi_utils.convert_language(chosen_sub['language'])
-		except: lang = chosen_sub['language']
-		final_filename = self.sub_filename + '_%s.%s' % (lang, chosen_sub['format'])
-		final_path = '%s%s' % (self.subtitle_path, final_filename)
+		final_path = '%s%s' % (self.subtitle_path, self.search_filename)
 		response = self.subtitles_download(chosen_sub['url'])
 		if isinstance(response, str): return kodi_utils.notification('Subtitles Error: %s' % response)
 		try: content = response.text
