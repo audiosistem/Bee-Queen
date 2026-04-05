@@ -1,565 +1,151 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from tmdbhelper.lib.files.database import DataBase
+from tmdbhelper.lib.files.dbdata import Database
+from tmdbhelper.lib.items.database.tabledef import (
+    BASEITEM_COLUMNS,
+    MOVIE_COLUMNS,
+    TVSHOW_COLUMNS,
+    SEASON_COLUMNS,
+    EPISODE_COLUMNS,
+    BELONGS_COLUMNS,
+    COLLECTION_COLUMNS,
+    RATINGS_COLUMNS,
+    PERSON_COLUMNS,
+    CERTIFICATION_COLUMNS,
+    VIDEO_COLUMNS,
+    GENRE_COLUMNS,
+    LANGUAGE_COLUMNS,
+    LANGUAGES_COLUMNS,
+    COUNTRY_COLUMNS,
+    COUNTRIES_COLUMNS,
+    STUDIO_COLUMNS,
+    NETWORK_COLUMNS,
+    COMPANY_COLUMNS,
+    BROADCASTER_COLUMNS,
+    CREWMEMBER_COLUMNS,
+    CASTMEMBER_COLUMNS,
+    CUSTOM_COLUMNS,
+    PROVIDER_COLUMNS,
+    SERVICE_COLUMNS,
+    ART_COLUMNS,
+    FANART_TV_COLUMNS,
+    DEFAULT_ART_COLUMNS,
+    USER_ART_COLUMNS,
+    UNIQUE_ID_COLUMNS,
+    TRANSLATION_COLUMNS,
+    SIMPLECACHE_COLUMNS,
+    LACTIVITIES_COLUMNS,
+)
 
 
-class ItemDetailsDataBase(DataBase):
+class ItemDetailsDatabase(Database):
+    cache_filename = 'ItemDetails.db'
 
-    baseitem_columns = {
-        'id': {
-            'data': 'TEXT PRIMARY KEY',
-            'indexed': True
-        },
-        'mediatype': {
-            'data': 'TEXT',
-        },
-        'expiry': {
-            'data': 'INTEGER',
-            'indexed': True
-        },
+    def __init__(self):
+        super().__init__(filename=self.cache_filename)
+
+    # DB version must be max of table_version
+    database_version = 40
+
+    database_changes = {
+        21: (),
+        22: (),
+        23: (),
+        24: (),
+        25: (),
+        26: (),
+        27: (),
+        28: (),
+        29: (),
+        30: (),
+        31: (
+            'DROP TABLE IF EXISTS simplecache',
+            'DROP TABLE IF EXISTS lactivities',
+        ),
+        32: (),
+        33: (),
+        34: (),
+        35: (),
+        36: (),
+        37: (),
+        38: (),
+        39: (
+            'DROP TABLE IF EXISTS baseitem',
+            'DROP TABLE IF EXISTS belongs',
+            'DROP TABLE IF EXISTS collection',
+            'DROP TABLE IF EXISTS movie',
+            'DROP TABLE IF EXISTS tvshow',
+            'DROP TABLE IF EXISTS season',
+            'DROP TABLE IF EXISTS episode',
+            'DROP TABLE IF EXISTS ratings',
+            'DROP TABLE IF EXISTS person',
+            'DROP TABLE IF EXISTS genre',
+            'DROP TABLE IF EXISTS language',
+            'DROP TABLE IF EXISTS languages',
+            'DROP TABLE IF EXISTS country',
+            'DROP TABLE IF EXISTS countries',
+            'DROP TABLE IF EXISTS studio',
+            'DROP TABLE IF EXISTS company',
+            'DROP TABLE IF EXISTS network',
+            'DROP TABLE IF EXISTS broadcaster',
+            'DROP TABLE IF EXISTS video',
+            'DROP TABLE IF EXISTS certification',
+            'DROP TABLE IF EXISTS crewmember',
+            'DROP TABLE IF EXISTS castmember',
+            'DROP TABLE IF EXISTS provider',
+            'DROP TABLE IF EXISTS service',
+            'DROP TABLE IF EXISTS custom',
+            'DROP TABLE IF EXISTS art',
+            'DROP TABLE IF EXISTS fanart_tv',
+            'DROP TABLE IF EXISTS user_art',
+            'DROP TABLE IF EXISTS unique_id',
+            'DROP TABLE IF EXISTS translation',
+        ),
+        40: (
+            'DROP TABLE IF EXISTS ratings',
+        )
     }
 
-    movie_columns = {
-        'id': {
-            'data': 'TEXT PRIMARY KEY',
-            'foreign_key': 'baseitem(id)',
-        },
-        'tmdb_id': {
-            'data': 'INTEGER',
-        },
-        'year': {
-            'data': 'INTEGER',
-        },
-        'plot': {
-            'data': 'TEXT',
-        },
-        'title': {
-            'data': 'TEXT',
-        },
-        'originaltitle': {
-            'data': 'TEXT',
-        },
-        'duration': {
-            'data': 'INTEGER',
-        },
-        'tagline': {
-            'data': 'TEXT',
-        },
-        'premiered': {
-            'data': 'TEXT',
-        },
-        'status': {
-            'data': 'TEXT',
-        },
-    }
-
-    tvshow_columns = {
-        'id': {
-            'data': 'TEXT PRIMARY KEY',
-            'foreign_key': 'baseitem(id)',
-        },
-        'tmdb_id': {
-            'data': 'INTEGER',
-        },
-        'year': {
-            'data': 'INTEGER',
-        },
-        'plot': {
-            'data': 'TEXT',
-        },
-        'title': {
-            'data': 'TEXT',
-        },
-        'originaltitle': {
-            'data': 'TEXT',
-        },
-        'duration': {
-            'data': 'INTEGER',
-        },
-        'tagline': {
-            'data': 'TEXT',
-        },
-        'premiered': {
-            'data': 'TEXT',
-        },
-        'status': {
-            'data': 'TEXT',
-        },
-    }
-
-    season_columns = {
-        'id': {
-            'data': 'TEXT PRIMARY KEY',
-            'foreign_key': 'baseitem(id)',
-        },
-        'season': {
-            'data': 'INTEGER',
-        },
-        'year': {
-            'data': 'INTEGER',
-        },
-        'plot': {
-            'data': 'TEXT',
-        },
-        'title': {
-            'data': 'TEXT',
-        },
-        'originaltitle': {
-            'data': 'TEXT',
-        },
-        'premiered': {
-            'data': 'TEXT',
-        },
-        'status': {
-            'data': 'TEXT',
-        },
-        'tvshow_id': {
-            'data': 'TEXT',
-            'foreign_key': 'tvshow(id)',
-            'indexed': True
-        },
-    }
-
-    episode_columns = {
-        'id': {
-            'data': 'TEXT PRIMARY KEY',
-            'foreign_key': 'baseitem(id)',
-        },
-        'episode': {
-            'data': 'INTEGER',
-        },
-        'year': {
-            'data': 'INTEGER',
-        },
-        'plot': {
-            'data': 'TEXT',
-        },
-        'title': {
-            'data': 'TEXT',
-        },
-        'originaltitle': {
-            'data': 'TEXT',
-        },
-        'premiered': {
-            'data': 'TEXT',
-        },
-        'duration': {
-            'data': 'INTEGER',
-        },
-        'status': {
-            'data': 'TEXT',
-        },
-        'season_id': {
-            'data': 'TEXT',
-            'foreign_key': 'season(id)',
-            'indexed': True
-        },
-        'tvshow_id': {
-            'data': 'TEXT',
-            'foreign_key': 'tvshow(id)',
-            'indexed': True
-        },
-    }
-
-    ratings_columns = {
-        'parent_id': {
-            'data': 'TEXT PRIMARY KEY',
-            'foreign_key': 'baseitem(id)',
-        },
-        'top250': {
-            'data': 'INTEGER',
-        },
-        'tmdb_rating': {
-            'data': 'INTEGER',
-        },
-        'tmdb_votes': {
-            'data': 'INTEGER',
-        },
-        'imdb_rating': {
-            'data': 'INTEGER',
-        },
-        'imdb_votes': {
-            'data': 'INTEGER',
-        },
-        'rottentomatoes_rating': {
-            'data': 'INTEGER',
-        },
-        'rottentomatoes_usermeter': {
-            'data': 'INTEGER',
-        },
-        'rottentomatoes_userreviews': {
-            'data': 'INTEGER',
-        },
-        'rottentomatoes_reviewtotal': {
-            'data': 'INTEGER',
-        },
-        'rottentomatoes_reviewsfresh': {
-            'data': 'INTEGER',
-        },
-        'rottentomatoes_reviewsrotten': {
-            'data': 'INTEGER',
-        },
-        'rottentomatoes_consensus': {
-            'data': 'TEXT',
-        },
-        'metacritic_rating': {
-            'data': 'INTEGER',
-        },
-        'trakt_rating': {
-            'data': 'INTEGER',
-        },
-        'trakt_votes': {
-            'data': 'INTEGER',
-        },
-        'letterboxd_rating': {
-            'data': 'INTEGER',
-        },
-        'letterboxd_votes': {
-            'data': 'INTEGER',
-        },
-        'mdblist_rating': {
-            'data': 'INTEGER',
-        },
-        'mdblist_votes': {
-            'data': 'INTEGER',
-        },
-        'awards': {
-            'data': 'TEXT',
-        },
-        'goldenglobe_wins': {
-            'data': 'INTEGER',
-        },
-        'goldenglobe_nominations': {
-            'data': 'INTEGER',
-        },
-        'oscar_wins': {
-            'data': 'INTEGER',
-        },
-        'oscar_nominations': {
-            'data': 'INTEGER',
-        },
-        'award_wins': {
-            'data': 'INTEGER',
-        },
-        'award_nominations': {
-            'data': 'INTEGER',
-        },
-        'emmy_wins': {
-            'data': 'INTEGER',
-        },
-        'emmy_nominations': {
-            'data': 'INTEGER',
-        },
-    }
-
-    person_columns = {
-        'tmdb_id': {
-            'data': 'INTEGER PRIMARY KEY',
-        },
-        'name': {
-            'data': 'TEXT',
-        },
-        'thumb': {
-            'data': 'TEXT',
-        },
-        'known_for_department': {
-            'data': 'TEXT',
-        },
-        'gender': {
-            'data': 'INTEGER',
-        },
-        'biography': {
-            'data': 'TEXT',
-        },
-    }
-
-    certification_columns = {
-        'name': {
-            'data': 'TEXT',
-        },
-        'iso_country': {
-            'data': 'TEXT',
-            'unique': True,
-            'indexed': True,
-        },
-        'iso_language': {
-            'data': 'TEXT',
-            'unique': True
-        },
-        'release_date': {
-            'data': 'TEXT',
-            'unique': True,
-            'indexed': True,
-        },
-        'release_type': {
-            'data': 'TEXT',
-            'unique': True,
-            'indexed': True,
-        },
-        'parent_id': {
-            'data': 'TEXT',
-            'foreign_key': 'baseitem(id)',
-            'indexed': True,
-            'unique': True
-        },
-    }
-
-    video_columns = {
-        'name': {
-            'data': 'TEXT',
-        },
-        'iso_country': {
-            'data': 'TEXT',
-            'indexed': True,
-        },
-        'iso_language': {
-            'data': 'TEXT',
-            'indexed': True,
-        },
-        'release_date': {
-            'data': 'TEXT',
-            'indexed': True,
-        },
-        'path': {
-            'data': 'TEXT',
-        },
-        'content': {
-            'data': 'TEXT',
-            'indexed': True,
-        },
-        'parent_id': {
-            'data': 'TEXT',
-            'foreign_key': 'baseitem(id)',
-            'indexed': True,
-        },
-    }
-
-    genre_columns = {
-        'name': {
-            'data': 'TEXT',
-        },
-        'tmdb_id': {
-            'data': 'INTEGER',
-            'unique': True
-        },
-        'parent_id': {
-            'data': 'TEXT',
-            'foreign_key': 'baseitem(id)',
-            'indexed': True,
-            'unique': True
-        },
-    }
-
-    country_columns = {
-        'name': {
-            'data': 'TEXT',
-        },
-        'iso_country': {
-            'data': 'TEXT',
-            'unique': True
-        },
-        'parent_id': {
-            'data': 'TEXT',
-            'foreign_key': 'baseitem(id)',
-            'indexed': True,
-            'unique': True
-        },
-    }
-
-    studio_columns = {
-        'tmdb_id': {
-            'data': 'INTEGER',
-            'unique': True,
-            'foreign_key': 'company(tmdb_id)',
-        },
-        'parent_id': {
-            'data': 'TEXT',
-            'foreign_key': 'baseitem(id)',
-            'indexed': True,
-            'unique': True
-        },
-    }
-
-    network_columns = {
-        'tmdb_id': {
-            'data': 'INTEGER',
-            'unique': True,
-            'foreign_key': 'company(tmdb_id)',
-        },
-        'parent_id': {
-            'data': 'TEXT',
-            'foreign_key': 'baseitem(id)',
-            'indexed': True,
-            'unique': True
-        },
-    }
-
-    company_columns = {
-        'tmdb_id': {
-            'data': 'INTEGER PRIMARY KEY',
-            'indexed': True
-        },
-        'name': {
-            'data': 'TEXT',
-        },
-        'logo': {
-            'data': 'TEXT',
-        },
-        'country': {
-            'data': 'TEXT',
-        },
-    }
-
-    crewmember_columns = {
-        'tmdb_id': {
-            'data': 'INTEGER',
-            'foreign_key': 'person(tmdb_id)',
-            'indexed': True,
-            'unique': True
-        },
-        'role': {
-            'data': 'TEXT',
-        },
-        'department': {
-            'data': 'TEXT',
-        },
-        'parent_id': {
-            'data': 'TEXT',
-            'foreign_key': 'baseitem(id)',
-            'indexed': True,
-            'unique': True
-        },
-    }
-
-    castmember_columns = {
-        'tmdb_id': {
-            'data': 'INTEGER',
-            'foreign_key': 'person(tmdb_id)',
-            'indexed': True,
-            'unique': True
-        },
-        'role': {
-            'data': 'TEXT',
-        },
-        'ordering': {
-            'data': 'INTEGER',
-        },
-        'parent_id': {
-            'data': 'TEXT',
-            'foreign_key': 'baseitem(id)',
-            'indexed': True,
-            'unique': True
-        },
-    }
-
-    custom_columns = {
-        'key': {
-            'data': 'TEXT',
-        },
-        'value': {
-            'data': 'TEXT',
-        },
-        'parent_id': {
-            'data': 'TEXT',
-            'foreign_key': 'baseitem(id)',
-            'indexed': True
-        },
-    }
-
-    provider_columns = {
-        'tmdb_id': {
-            'data': 'INTEGER',
-            'foreign_key': 'service(tmdb_id)',
-            'unique': True
-        },
-        'availability': {
-            'data': 'TEXT',
-        },
-        'parent_id': {
-            'data': 'TEXT',
-            'foreign_key': 'baseitem(id)',
-            'indexed': True,
-            'unique': True
-        },
-    }
-
-    service_columns = {
-        'tmdb_id': {
-            'data': 'INTEGER PRIMARY KEY',
-            'indexed': True
-        },
-        'display_priority': {
-            'data': 'INTEGER',
-        },
-        'name': {
-            'data': 'TEXT',
-        },
-        'iso_country': {
-            'data': 'TEXT',
-        },
-        'logo': {
-            'data': 'TEXT',
-        },
-    }
-
-    art_columns = {
-        'aspect_ratio': {
-            'data': 'TEXT',
-            'indexed': True
-        },
-        'height': {
-            'data': 'INTEGER',
-        },
-        'width': {
-            'data': 'INTEGER',
-        },
-        'iso_language': {
-            'data': 'TEXT',
-            'indexed': True
-        },
-        'icon': {
-            'data': 'TEXT',
-        },
-        'type': {
-            'data': 'TEXT',
-            'indexed': True
-        },
-        'extension': {
-            'data': 'TEXT',
-            'indexed': True
-        },
-        'vote_average': {
-            'data': 'INTEGER',
-            'indexed': True
-        },
-        'vote_count': {
-            'data': 'INTEGER',
-        },
-        'parent_id': {
-            'data': 'TEXT',
-            'foreign_key': 'baseitem(id)',
-            'indexed': True
-        },
-    }
-
-    unique_id_columns = {
-        'key': {
-            'data': 'TEXT',
-        },
-        'value': {
-            'data': 'TEXT',
-        },
-        'parent_id': {
-            'data': 'TEXT',
-            'foreign_key': 'baseitem(id)',
-            'indexed': True
-        },
-    }
+    baseitem_columns = BASEITEM_COLUMNS
+    movie_columns = MOVIE_COLUMNS
+    tvshow_columns = TVSHOW_COLUMNS
+    season_columns = SEASON_COLUMNS
+    episode_columns = EPISODE_COLUMNS
+    belongs_columns = BELONGS_COLUMNS
+    collection_columns = COLLECTION_COLUMNS
+    ratings_columns = RATINGS_COLUMNS
+    person_columns = PERSON_COLUMNS
+    certification_columns = CERTIFICATION_COLUMNS
+    video_columns = VIDEO_COLUMNS
+    genre_columns = GENRE_COLUMNS
+    language_columns = LANGUAGE_COLUMNS
+    languages_columns = LANGUAGES_COLUMNS
+    country_columns = COUNTRY_COLUMNS
+    countries_columns = COUNTRIES_COLUMNS
+    studio_columns = STUDIO_COLUMNS
+    network_columns = NETWORK_COLUMNS
+    company_columns = COMPANY_COLUMNS
+    broadcaster_columns = BROADCASTER_COLUMNS
+    crewmember_columns = CREWMEMBER_COLUMNS
+    castmember_columns = CASTMEMBER_COLUMNS
+    custom_columns = CUSTOM_COLUMNS
+    provider_columns = PROVIDER_COLUMNS
+    service_columns = SERVICE_COLUMNS
+    art_columns = ART_COLUMNS
+    fanart_tv_columns = FANART_TV_COLUMNS
+    user_art_columns = USER_ART_COLUMNS
+    default_art_columns = DEFAULT_ART_COLUMNS
+    unique_id_columns = UNIQUE_ID_COLUMNS
+    translation_columns = TRANSLATION_COLUMNS
+    simplecache_columns = SIMPLECACHE_COLUMNS
+    lactivities_columns = LACTIVITIES_COLUMNS
 
     @property
     def database_tables(self):
         return {
             'baseitem': self.baseitem_columns,
+            'belongs': self.belongs_columns,
+            'collection': self.collection_columns,
             'movie': self.movie_columns,
             'tvshow': self.tvshow_columns,
             'season': self.season_columns,
@@ -567,10 +153,14 @@ class ItemDetailsDataBase(DataBase):
             'ratings': self.ratings_columns,
             'person': self.person_columns,
             'genre': self.genre_columns,
+            'language': self.language_columns,
+            'languages': self.languages_columns,
             'country': self.country_columns,
+            'countries': self.countries_columns,
             'studio': self.studio_columns,
-            'network': self.network_columns,
             'company': self.company_columns,
+            'network': self.network_columns,
+            'broadcaster': self.broadcaster_columns,
             'video': self.video_columns,
             'certification': self.certification_columns,
             'crewmember': self.crewmember_columns,
@@ -579,40 +169,11 @@ class ItemDetailsDataBase(DataBase):
             'service': self.service_columns,
             'custom': self.custom_columns,
             'art': self.art_columns,
+            'fanart_tv': self.fanart_tv_columns,
+            'default_art': self.default_art_columns,
+            'user_art': self.user_art_columns,
             'unique_id': self.unique_id_columns,
+            'translation': self.translation_columns,
+            'simplecache': self.simplecache_columns,
+            'lactivities': self.lactivities_columns,
         }
-
-    def create_database_execute(self, connection):
-
-        def create_column_data(columns):
-            return [f'{k} {v["data"]}' for k, v in columns.items()]
-
-        def create_column_fkey(columns):
-            return [f'FOREIGN KEY({k}) REFERENCES {v["foreign_key"]} ON DELETE CASCADE' for k, v in columns.items() if 'foreign_key' in v]
-
-        def create_column_uids(columns):
-            keys = [k for k, v in columns.items() if v.get('unique')]
-            if not keys:
-                return []
-            return ['UNIQUE ({})'.format(', '.join(keys))]
-
-        for table, columns in self.database_tables.items():
-            query = []
-            query += create_column_data(columns)
-            query += create_column_fkey(columns)
-            query += create_column_uids(columns)
-            query = 'CREATE TABLE IF NOT EXISTS {table}({query})'.format(table=table, query=', '.join(query))
-            try:
-                connection.execute(query)
-            except Exception as error:
-                self.kodi_log(f'CACHE: Exception while initializing _database: {error}\n{self._sc_name} - {query}', 1)
-
-        for table, columns in self.database_tables.items():
-            for column, v in columns.items():
-                if not v.get('indexed'):
-                    continue
-                query = 'CREATE INDEX {table}_{column}_x ON {table}({column})'.format(table=table, column=column)
-                try:
-                    connection.execute(query)
-                except Exception as error:
-                    self.kodi_log(f'CACHE: Exception while initializing _database: {error}\n{self._sc_name} - {query}', 1)
