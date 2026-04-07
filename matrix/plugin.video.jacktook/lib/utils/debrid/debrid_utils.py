@@ -4,7 +4,8 @@ import copy
 import json
 import requests
 from threading import Lock
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import urljoin
 
 from lib.clients.debrid.alldebrid import AllDebridHelper
 from lib.clients.debrid.debrider import DebriderHelper
@@ -12,7 +13,7 @@ from lib.clients.debrid.easydebrid import EasyDebridHelper
 from lib.clients.debrid.premiumize import PremiumizeHelper
 from lib.clients.debrid.torbox import TorboxHelper
 from lib.clients.debrid.realdebrid import RealDebridHelper
-from lib.utils.kodi.utils import get_setting, kodilog, notification
+from lib.utils.kodi.utils import get_setting, kodilog, notification, translation
 from lib.utils.torrent.torrserver_utils import extract_torrent_metadata
 from lib.utils.general.utils import (
     USER_AGENT_HEADER,
@@ -21,6 +22,7 @@ from lib.utils.general.utils import (
     IndexerType,
     get_cached,
     get_info_hash_from_magnet,
+    info_hash_to_magnet,
     is_ad_enabled,
     is_debrider_enabled,
     is_ed_enabled,
@@ -31,6 +33,7 @@ from lib.utils.general.utils import (
     set_cached,
 )
 from lib.domain.torrent import TorrentStream
+from lib.utils.kodi.logging import summarize_locator_for_log
 
 from xbmcgui import Dialog
 from xbmc import LOGDEBUG
@@ -55,6 +58,13 @@ DEBRID_CHECKS = {
 
 PACK_DIRECT_DEBRID_TYPES = {DebridType.RD, DebridType.TB, DebridType.AD}
 
+SUPPORTED_CLOUD_TRANSFER_DEBRIDS = (
+    DebridType.RD,
+    DebridType.AD,
+    DebridType.TB,
+    DebridType.DB,
+)
+
 
 def get_debrid_helper(debrid_type: str):
     helper_cls = DEBRID_HELPERS.get(debrid_type)
@@ -62,6 +72,61 @@ def get_debrid_helper(debrid_type: str):
         notification(f"Unknown debrid type: {debrid_type}")
         raise ValueError(f"Unknown debrid type: {debrid_type}")
     return helper_cls()
+
+
+def get_enabled_cloud_transfer_debrids() -> List[str]:
+    return [
+        debrid_type
+        for debrid_type in SUPPORTED_CLOUD_TRANSFER_DEBRIDS
+        if DEBRID_CHECKS.get(debrid_type, lambda: False)()
+    ]
+
+
+def choose_debrid_for_transfer(preferred_debrid: str = "") -> Optional[str]:
+    enabled_debrids = get_enabled_cloud_transfer_debrids()
+    if not enabled_debrids:
+        notification(translation(90364))
+        return None
+
+    if preferred_debrid in enabled_debrids:
+        return preferred_debrid
+
+    if len(enabled_debrids) == 1:
+        return enabled_debrids[0]
+
+    selected = Dialog().select(translation(90363), enabled_debrids)
+    if selected < 0:
+        return None
+    return enabled_debrids[selected]
+
+
+def add_source_to_debrid(info_hash: str, preferred_debrid: str = "") -> Optional[str]:
+    if not info_hash:
+        notification(translation(90361))
+        return None
+
+    debrid_type = choose_debrid_for_transfer(preferred_debrid)
+    if not debrid_type:
+        return None
+
+    try:
+        if debrid_type == DebridType.RD:
+            RealDebridHelper().add_magnet(info_hash)
+        elif debrid_type == DebridType.AD:
+            AllDebridHelper().client.add_magnet(info_hash_to_magnet(info_hash))
+        elif debrid_type == DebridType.TB:
+            TorboxHelper().add_torbox_torrent(info_hash)
+        elif debrid_type == DebridType.DB:
+            DebriderHelper().add_magnet(info_hash)
+        else:
+            raise ValueError(f"Unsupported debrid cloud transfer type: {debrid_type}")
+
+        notification(translation(90362) % debrid_type)
+        return debrid_type
+    except Exception as exc:
+        kodilog(f"Failed to add source to debrid cloud: {exc}")
+        notification(str(exc))
+        return None
 
 
 def check_debrid_cached(
@@ -232,35 +297,83 @@ def extract_info_hash(res: TorrentStream) -> Optional[str]:
     return None
 
 
-def get_magnet_from_uri(uri):
+def get_magnet_from_uri(uri: str) -> Tuple[str, str, str]:
     kodilog(f"get_magnet_from_uri: Checking URI: {uri}", level=LOGDEBUG)
     magnet = ""
     info_hash = ""
+    torrent_url = ""
 
     if not is_url(uri):
-        return magnet, info_hash
+        return magnet, info_hash, torrent_url
 
     try:
-        res = requests.get(
-            uri, allow_redirects=True, timeout=10, headers=USER_AGENT_HEADER
-        )
-        kodilog(
-            f"get_magnet_from_uri: GET request to {uri} (final url: {res.url}) returned status code: {res.status_code}"
-        )
-        if res.status_code == 200:
-            kodilog(f"get_magnet_from_uri: Processing content from {uri}")
-            if res.url.startswith("magnet:"):
-                magnet = res.url
-                info_hash = get_info_hash_from_magnet(magnet).lower()
-                return magnet, info_hash
+        current_uri = uri
+        for redirect_count in range(5):
+            res = requests.get(
+                current_uri,
+                allow_redirects=False,
+                timeout=10,
+                headers=USER_AGENT_HEADER,
+            )
+            kodilog(
+                "get_magnet_from_uri: GET request to {} returned status code: {}".format(
+                    summarize_locator_for_log(current_uri),
+                    res.status_code,
+                )
+            )
 
-            magnet = extract_torrent_metadata(res.content)
-            kodilog(f"get_magnet_from_uri: Extracted magnet: {magnet}")
-            if magnet:
-                info_hash = get_info_hash_from_magnet(magnet).lower()
+            if 300 <= res.status_code < 400:
+                location = res.headers.get("Location", "")
+                if not location:
+                    break
+
+                kodilog(
+                    "get_magnet_from_uri: Redirect {} -> {}".format(
+                        summarize_locator_for_log(current_uri),
+                        summarize_locator_for_log(location),
+                    )
+                )
+
+                if location.startswith("magnet:?"):
+                    magnet = location
+                    info_hash = get_info_hash_from_magnet(magnet).lower()
+                    return magnet, info_hash, torrent_url
+
+                current_uri = urljoin(current_uri, location)
+                continue
+
+            if res.status_code == 200:
+                kodilog(
+                    "get_magnet_from_uri: Processing content from {}".format(
+                        summarize_locator_for_log(current_uri)
+                    )
+                )
+                if res.url.startswith("magnet:"):
+                    magnet = str(res.url or "")
+                    info_hash = get_info_hash_from_magnet(magnet).lower()
+                    return magnet, info_hash, torrent_url
+
+                magnet = extract_torrent_metadata(res.content)
+                kodilog(
+                    "get_magnet_from_uri: Extracted magnet: {}".format(
+                        summarize_locator_for_log(magnet)
+                    )
+                )
+                if magnet:
+                    info_hash = get_info_hash_from_magnet(magnet).lower()
+                    torrent_url = current_uri
+                    kodilog(
+                        "get_magnet_from_uri: Preserving torrent URL for playback: {}".format(
+                            summarize_locator_for_log(torrent_url)
+                        )
+                    )
+                    return "", info_hash, torrent_url
+                return str(magnet or ""), str(info_hash or ""), str(torrent_url or "")
+
+            break
     except Exception as e:
         kodilog(f"get_magnet_from_uri: Exception occurred for uri: {uri}: {e}")
-    return magnet, info_hash
+    return str(magnet or ""), str(info_hash or ""), str(torrent_url or "")
 
 
 def get_debrid_direct_url(debrid_type, data) -> Optional[Dict[str, Any]]:

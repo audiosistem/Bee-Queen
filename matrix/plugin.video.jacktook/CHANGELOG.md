@@ -1,3 +1,53 @@
+## 1.7.1
+- Localization: Add Russian language support and expand/update translations for Spanish, Russian, and Portuguese.
+- UI: Replace remaining hardcoded dialog text with translated strings.
+- AllDebrid: Keep the authorization dialog open during reauthorization when a previous token exists.
+- Playback: Make the skip intro/recap popup interactive so the user can manually trigger the skip action.
+- Stremio: Show `Local URL` instead of `Pastebin Link` in Manage from Phone QR dialogs.
+- Updater: Clarify automatic update action handling and preserve explicit `Ask`, `Notify`, and `None` modes.
+
+Spanish:
+- Localizacion: Añadido soporte para ruso y ampliadas/actualizadas las traducciones de espanol, ruso y portugues.
+- UI: Sustituidos los textos de dialogos que quedaban hardcodeados por cadenas traducidas.
+- AllDebrid: Mantiene abierto el dialogo de autorizacion durante la reautorizacion cuando existe un token previo.
+- Reproduccion: Hace interactivo el popup de saltar intro/recap para que el usuario pueda ejecutar manualmente el salto.
+- Stremio: Muestra `URL local` en lugar de `Pastebin Link` en los dialogos QR de Manage from Phone.
+- Actualizador: Aclara el manejo de acciones de actualizacion automatica y mantiene los modos explicitos `Ask`, `Notify` y `None`.
+
+## 1.7.0
+- Torrents: Add source actions to send torrents directly to Debrid cloud or TorrServer from the source select menu.
+- Torbox: Add Cloud downloads browsing.
+- Downloads: Fix `Download video` routing so source downloads start correctly.
+- Filters: Fix unknown source filtering and add a separate toggle for unknown quality results.
+- Debrid: Block direct playback of packed releases (zip, rar, etc) across debrid providers.
+- Fix: Update TMDBHelper json when outdated.
+- TMDB: Fix the Collections menu circular import crash.
+- Fix Prowlarr client search failing when receiving season and episode from TMDBHelper.
+
+Spanish:
+- Torrents: Añadidas acciones en la seleccion de fuentes para enviar torrents directamente a la nube de Debrid o a TorrServer.
+- Torbox: Añadida navegacion de descargas en Cloud.
+- Descargas: Corregido el enrutado de `Download video` para que las descargas desde fuentes se inicien correctamente.
+- Filtros: Corregido el filtrado de fuentes desconocidas y añadido un ajuste independiente para calidad desconocida.
+- Debrid: Bloqueada la reproducción directa de lanzamientos empaquetados (zip, rar, etc) en los proveedores de debrid.
+- Corregida la actualización del json de TMDBHelper cuando está desactualizado.
+- TMDB: Corregido el fallo por importacion circular en el menu de Collections.
+- Corregido el fallo en la búsqueda del cliente de Prowlarr al recibir temporada y episodio de TMDBHelper.
+
+## 1.6.0
+- Search: Add English TMDB title fallback for Jackett and Prowlarr when localized titles return no matches.
+- Playback: Handle magnet redirects and torrent URLs from indexers more reliably.
+- Search: Fix result sorting across all sort modes.
+- Search: Clarify the final no-results notification when no playable sources remain.
+- UI: Hide peers and seeders metadata when a source is already cached.
+
+Spanish:
+- Busqueda: Anadido fallback al titulo en ingles de TMDB para Jackett y Prowlarr cuando los titulos localizados no devuelven coincidencias.
+- Reproduccion: Mejorado el manejo de redirecciones magnet y URLs torrent de indexadores.
+- Busqueda: Corregida la ordenacion de resultados en todos los modos de ordenacion.
+- Busqueda: Aclarada la notificacion final cuando no quedan fuentes reproducibles.
+- UI: Ocultados los metadatos de peers y seeders cuando una fuente ya esta en cache.
+
 ## 1.5.3
 - Trakt: Add 'Continue Watching' option for movies to easily resume playback.
 - Trakt: Fix Unprocessable Entity (422) error when scrobbling items with no playback progress.

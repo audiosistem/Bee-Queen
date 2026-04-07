@@ -49,6 +49,10 @@ def auto_play(mediatype):
 def filter_status(filter_type):
 	return int(get_setting('filter_%s' % filter_type, '0'))
 
+def priority_language():
+	if get_setting('results.language_filter') == 'true': return get_setting('results.language', '')
+	return False
+
 def quality_filter(setting):
 	return get_setting('%s' % setting).split(', ')
 

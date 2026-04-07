@@ -3,7 +3,8 @@ from typing import Dict, List, Any, Optional
 
 from lib.api.debrid.alldebrid import AllDebrid
 from lib.api.debrid.base import ProviderException
-from lib.utils.kodi.utils import dialog_text, get_setting, kodilog, notification
+from lib.clients.debrid.common import get_file_name, get_packed_release_message
+from lib.utils.kodi.utils import dialog_text, get_setting, kodilog, notification, translation
 from lib.utils.general.utils import (
     DebridType,
     IndexerType,
@@ -84,7 +85,7 @@ class AllDebridHelper:
                 f.get("l")
                 for f in flat_files
                 if any(
-                    (f.get("n") or "").lower().endswith(ext)
+                    get_file_name(f).lower().endswith(ext)
                     for ext in supported_video_extensions()[:-1]
                 )
             ]
@@ -146,15 +147,15 @@ class AllDebridHelper:
 
         # Filter only supported video files
         files = [
-            (f.get("l"), f.get("n"))
+            (f.get("l"), get_file_name(f))
             for f in flat_files
             if any(
-                (f.get("n") or "").lower().endswith(ext)
+                get_file_name(f).lower().endswith(ext)
                 for ext in supported_video_extensions()[:-1]
             )
         ]
         if not files:
-            notification("No valid files found in torrent")
+            notification(get_packed_release_message("AllDebrid"))
             raise
 
         info = {"files": files}
@@ -186,4 +187,4 @@ class AllDebridHelper:
             f"[B]Days Remaining:[/B] {days_remaining}",
             f"[B]Fidelity Points:[/B] {user['fidelityPoints']}",
         ]
-        dialog_text("All-Debrid", "\n".join(body))
+        dialog_text(translation(90658), "\n".join(body))

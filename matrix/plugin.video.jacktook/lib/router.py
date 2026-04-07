@@ -34,6 +34,7 @@ _DEBRID_ACTIONS = frozenset(
         "debrider_remove_auth",
         "debrider_info",
         "get_rd_downloads",
+        "get_tb_downloads",
         "cloud",
         "cloud_details",
         "pm_auth",
@@ -67,6 +68,7 @@ _WEBDAV_ACTIONS = frozenset(
 _DOWNLOAD_ACTIONS = frozenset(
     {
         "download_video",
+        "handle_download_file",
         "handle_cancel_download",
         "handle_delete_file",
         "downloads_menu",
@@ -400,6 +402,7 @@ def _route_debrid(action, params):
         debrider_remove_auth,
         debrider_info,
         get_rd_downloads,
+        get_tb_downloads,
         cloud,
         cloud_details,
         pm_auth,
@@ -420,6 +423,7 @@ def _route_debrid(action, params):
         "debrider_remove_auth": debrider_remove_auth,
         "debrider_info": debrider_info,
         "get_rd_downloads": get_rd_downloads,
+        "get_tb_downloads": get_tb_downloads,
         "cloud": cloud,
         "cloud_details": cloud_details,
         "pm_auth": pm_auth,
@@ -499,15 +503,22 @@ def _route_webdav(action, params):
 
 
 def _route_downloads(action, params):
-    if action in ("download_video", "handle_cancel_download", "handle_delete_file"):
+    if action in (
+        "download_video",
+        "handle_download_file",
+        "handle_cancel_download",
+        "handle_delete_file",
+    ):
         from lib.downloader import (
             download_video,
+            handle_download_file,
             handle_cancel_download,
             handle_delete_file,
         )
 
         actions = {
             "download_video": download_video,
+            "handle_download_file": handle_download_file,
             "handle_cancel_download": handle_cancel_download,
             "handle_delete_file": handle_delete_file,
         }

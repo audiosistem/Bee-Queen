@@ -12,7 +12,7 @@ get_setting, sleep, notification = kore.get_setting, kore.sleep, kore.notificati
 hide_busy_dialog, close_all_dialog = kore.hide_busy_dialog, kore.close_all_dialog
 active_internal_scrapers, auto_play = settings.active_internal_scrapers, settings.auto_play
 results_format, filter_status = settings.results_format, settings.filter_status
-scraping_settings, scraping_timeout = settings.scraping_settings, settings.scraping_timeout
+priority_language, scraping_settings = settings.priority_language, settings.scraping_settings
 default_internal_scrapers = ('aiostreams',)
 sd_check, main_line = ('SD', '480p', '360p', 'CAM', 'TELE', 'SYNC'), '%s[CR]%s[CR]%s'
 quality_ranks = {'4K': 1, '1080p': 2, '720p': 3, 'SD': 4, 'SCR': 5, 'CAM': 5, 'TELE': 5}
@@ -51,17 +51,19 @@ class MagnetoPlayer:
 		hide_busy_dialog()
 		if params: self.params = params
 		params_get = self.params.get
-		self.mediatype, self.tmdb_id, self.imdb_id = params_get('mediatype'), params_get('tmdb_id'), params_get('imdb_id')
-		self.custom_title, self.custom_year = params_get('custom_title', None), params_get('custom_year', None)
-		self.custom_season, self.custom_episode = params_get('custom_season', None), params_get('custom_episode', None)
-		if 'autoplay' in self.params: self.autoplay = params_get('autoplay', 'false') == 'true'
-		else: self.autoplay = auto_play(self.mediatype)
+		self.tmdb_id, self.imdb_id = params_get('tmdb_id'), params_get('imdb_id')
 		self.season = int(params_get('season')) if 'season' in self.params else ''
 		self.episode = int(params_get('episode')) if 'episode' in self.params else ''
+		self.custom_title, self.custom_year = params_get('custom_title', None), params_get('custom_year', None)
+		self.custom_season, self.custom_episode = params_get('custom_season', None), params_get('custom_episode', None)
+		self.mediatype = 'episode' if self.episode else 'movie' # params_get('mediatype')
+		if 'autoplay' in self.params: self.autoplay = params_get('autoplay', 'false') == 'true'
+		else: self.autoplay = auto_play(self.mediatype) # params_get('mediatype')
 		self._grab_meta()
 		self.active_internal_scrapers = active_internal_scrapers()
+		self.priority_language = priority_language()
 		self.scraper_settings = scraping_settings()
-		self.scraper_timeout = scraping_timeout()
+		self.scraper_timeout = settings.scraping_timeout()
 		self.sleep_time = 100
 		self.filter_hevc, self.hevc_filter_key = filter_status('hevc'), '[B]HEVC[/B]'
 		self.filter_av1, self.av1_filter_key = filter_status('av1'), '[B]AV1[/B]'
@@ -152,6 +154,7 @@ class MagnetoPlayer:
 			window_id=window_number,
 			results=results,
 			meta=self.meta,
+			priority_language=self.priority_language,
 			scraper_settings=self.scraper_settings
 		)
 		if not chosen_item: return self._kill_progress_dialog()
@@ -334,7 +337,10 @@ class MagnetoPlayer:
 
 	def resolve_sources(self, item):
 		logger('aiostreams', f"resolve_sources\n{json.dumps(item, indent=2)}")
-		return item.get('url')
+		headers = item.get('requestHeaders')
+		if headers: url = '|'.join((item.get('url'), kore.urlencode(headers)))
+		else: url = item.get('url')
+		return url
 
 	def play_cancelled(self):
 #		kore.xbmcplugin.setResolvedUrl(int(sys.argv[1]), False, listitem=make_listitem())
@@ -343,18 +349,20 @@ class MagnetoPlayer:
 	def play_file(self, results, source=None):
 		if not source: source = results[0]
 		src_idx = next((i for i, _ in enumerate(results, 1) if _ == source), 1)
-		provider = source['scrape_provider']
+		provider = (i for i in (source.get('service'), source['addon'] or source['scrape_provider']) if i)
+		provider = ' | '.join(provider)
 		provider_text = provider.upper()
 		display_name = source['filename'].upper()
-		try: size_label = f"{source['size'] / 1024 ** 3:.2f} GB"
+		try: size_label = f"{source['size'] / 1073741824:.2f} GB"
 		except: size_label = 'N/A'
 		extraInfo = source.get('quality'), source.get('encode'), *source['visualTags'], *source['subtitles']
-		extraInfo = ' | '.join(i for i in (extraInfo) if i) or 'N/A'
+		extraInfo = ' | '.join(i.upper() for i in extraInfo if i) or 'N/A'
 		extra_info = '[B]%s[/B] | [B]%s[/B] | %s' %  (source.get('resolution', 'SD'), size_label, extraInfo)
 		resolve_display = '[B]%02d.[/B] [B]%s[/B]' % (src_idx, provider_text)
 		resolve_display = main_line % (resolve_display, extra_info, display_name)
 		res = self.sources_sd, self.sources_720p, self.sources_1080p, self.sources_4k, self.sources_total
 		self.progress_dialog.update_scraper(*res, resolve_display, 0)
+		sleep(200) # needed to update window before curl url check pause
 		self.url = self.resolve_sources(source) or notification('Invalid playback url')
 		if not self.url: return self.play_cancelled()
 		listitem = self.get_listitem()

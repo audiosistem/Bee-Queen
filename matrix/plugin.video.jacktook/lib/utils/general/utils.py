@@ -1171,7 +1171,7 @@ def clear_history_by_type(type="all", update=False):
         msg = translation(90110)
     else:
         msg = translation(90111)
-    confirmed = Dialog().yesno("Clear History", msg)
+    confirmed = Dialog().yesno(translation(90112), msg)
     if confirmed:
         keys = []
         if type == "lth":
@@ -1230,6 +1230,7 @@ def pre_process(
     builder = PreProcessBuilder(results).remove_duplicates()
     if mode == "tv" and not skip_episode_filter:
         builder.filter_sources(episode_name, episode, season)
+    builder.filter_by_source()
     builder.filter_by_quality()
     if get_setting("filter_size_enabled"):
         builder.filter_by_size()
@@ -1488,7 +1489,8 @@ def show_log_export_dialog(params):
 
             dialog = Dialog()
             choice = dialog.select(
-                "Kodi Logs", ["Show Logs", "Export to paste.kodi.tv"]
+                translation(90566),
+                [translation(90567), translation(90568)],
             )
             if choice == 1:
                 paste_url = export_to_kodi_paste(content)
@@ -1496,7 +1498,7 @@ def show_log_export_dialog(params):
                 copy2clip(paste_url)
                 progressDialog = QRProgressDialog("qr_dialog.xml", ADDON_PATH)
                 progressDialog.setup(
-                    "Kodi Logs Exported",
+                            translation(90569),
                     qr_code,
                     paste_url,
                     is_debrid=False,
@@ -1512,13 +1514,13 @@ def show_log_export_dialog(params):
                             pass
                         sleep(1000 * count)
                 else:
-                    notification("Failed to export logs.")
+                    notification(translation(90601))
             else:
-                dialog_text("Kodi Logs", content)
+                dialog_text(translation(90566), content)
         except Exception as e:
-            notification(f"Error reading log: {e}")
+            notification(translation(90602) % e)
     else:
-        notification("Kodi log file not found.")
+        notification(translation(90603))
 
 
 def extract_publish_date(date):
@@ -1643,3 +1645,19 @@ def safe_json_loads(value, default=None):
         return json.loads(value)
     except (json.JSONDecodeError, TypeError, ValueError):
         return default
+
+
+def normalize_tv_data(tv_data):
+    if not isinstance(tv_data, dict):
+        return {}
+
+    normalized = dict(tv_data)
+
+    for key in ("season", "episode"):
+        value = _coerce_int(normalized.get(key))
+        if value is None:
+            normalized.pop(key, None)
+        else:
+            normalized[key] = value
+
+    return normalized

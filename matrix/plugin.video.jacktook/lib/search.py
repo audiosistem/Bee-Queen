@@ -22,6 +22,7 @@ from lib.utils.general.utils import (
     set_content_type,
     set_watched_title,
     clean_auto_play_undesired,
+    normalize_tv_data,
     safe_json_loads,
 )
 from lib.utils.debrid.debrid_utils import check_debrid_cached
@@ -40,6 +41,103 @@ from lib.gui.search_status_window import SearchTaskManager, SearchStatusWindow
 
 import xbmc
 from xbmcgui import Dialog
+
+
+def _clean_title_candidate(value) -> str:
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _unique_title_candidates(candidates: List[str]) -> List[str]:
+    unique = []
+    seen = set()
+
+    for candidate in candidates:
+        cleaned = _clean_title_candidate(candidate)
+        if not cleaned:
+            continue
+        key = cleaned.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(cleaned)
+
+    return unique
+
+
+def _extract_english_tmdb_title(details, mode: str) -> str:
+    translations = getattr(details, "translations", None)
+    entries = getattr(translations, "translations", translations)
+    if not entries:
+        return ""
+
+    title_key = "title" if mode == "movies" else "name"
+
+    for entry in entries:
+        if getattr(entry, "iso_639_1", "") != "en":
+            continue
+
+        data = getattr(entry, "data", None)
+        if not data:
+            continue
+
+        return _clean_title_candidate(getattr(data, title_key, ""))
+
+    return ""
+
+
+def _build_title_fallback_queries(query: str, ids: dict, mode: str) -> List[str]:
+    candidates = [query]
+    if not ids:
+        return _unique_title_candidates(candidates)
+
+    tmdb_id = ids.get("tmdb_id")
+    if not tmdb_id or mode not in ("movies", "tv"):
+        return _unique_title_candidates(candidates)
+
+    try:
+        from lib.clients.tmdb.utils.utils import get_tmdb_media_details
+
+        details = get_tmdb_media_details(tmdb_id, mode)
+    except Exception as e:
+        kodilog(f"Failed to load TMDB titles for fallback: {e}")
+        details = None
+
+    if not details:
+        return _unique_title_candidates(candidates)
+
+    candidates.append(_extract_english_tmdb_title(details, mode))
+    candidates.append(
+        getattr(details, "original_title", "") or getattr(details, "original_name", "")
+    )
+
+    return _unique_title_candidates(candidates)
+
+
+def _perform_search_with_title_fallback(
+    indexer_key,
+    dialog,
+    query: str,
+    ids: dict,
+    mode: str,
+    *args,
+    **kwargs,
+):
+    queries = _build_title_fallback_queries(query, ids, mode)
+
+    for attempt, candidate in enumerate(queries, start=1):
+        if attempt > 1:
+            kodilog(
+                f"Retrying {indexer_key} search with fallback title {candidate!r}",
+                level=xbmc.LOGINFO,
+            )
+
+        results = _perform_search(indexer_key, dialog, candidate, mode, *args, **kwargs)
+        if results:
+            return results
+
+    return []
 
 
 def _handle_super_quick_play(params: dict) -> bool:
@@ -148,7 +246,7 @@ def run_search_entry(params: dict):
     mode = params.get("mode", "")
     media_type = params.get("media_type", "")
     ids = safe_json_loads(params.get("ids"))
-    tv_data = safe_json_loads(params.get("tv_data"))
+    tv_data = normalize_tv_data(safe_json_loads(params.get("tv_data")))
     direct = params.get("direct", False)
     rescrape = params.get("rescrape", False)
 
@@ -189,7 +287,7 @@ def run_search_entry(params: dict):
     )
 
     if not final_results:
-        notification("No cached results found")
+        notification(translation(90358))
         cancel_playback()
         return
 
@@ -350,8 +448,18 @@ def _submit_search_tasks(
         if get_setting("prowlarr_enabled"):
             indexers_ids = get_setting("prowlarr_indexer_ids")
             tasks.append(
-                submit_performer(
-                    Indexer.PROWLARR, dialog, query, mode, season, episode, indexers_ids
+                executor.submit(
+                    _perform_search_with_title_fallback,
+                    Indexer.PROWLARR,
+                    dialog,
+                    query,
+                    ids,
+                    mode,
+                    season,
+                    episode,
+                    indexers_ids,
+                    show_dialog=show_dialog,
+                    scoped_addon_url=scoped_addon_url,
                 )
             )
         add_task_if_enabled(
@@ -359,9 +467,10 @@ def _submit_search_tasks(
             tasks,
             "jackett_enabled",
             Indexer.JACKETT,
-            _perform_search,
+            _perform_search_with_title_fallback,
             dialog,
             query,
+            ids,
             mode,
             season,
             episode,
@@ -511,23 +620,29 @@ def _submit_search_tasks_managed(
         )
         if get_setting("prowlarr_enabled"):
             indexers_ids = get_setting("prowlarr_indexer_ids")
-            submit_performer_managed(
+            manager.submit_task(
                 "Prowlarr",
+                Indexer.PROWLARR,
+                _perform_search_with_title_fallback,
                 Indexer.PROWLARR,
                 dialog,
                 query,
+                ids,
                 mode,
                 season,
                 episode,
                 indexers_ids,
+                show_dialog=False,
+                scoped_addon_url=scoped_addon_url,
             )
         add_task_if_enabled_managed(
             manager,
             "jackett_enabled",
             Indexer.JACKETT,
-            _perform_search,
+            _perform_search_with_title_fallback,
             dialog,
             query,
+            ids,
             mode,
             season,
             episode,

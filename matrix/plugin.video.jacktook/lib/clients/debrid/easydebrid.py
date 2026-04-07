@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 from lib.api.debrid.easydebrid import EasyDebrid
-from lib.utils.kodi.utils import dialog_text, get_setting, notification
+from lib.clients.debrid.common import get_file_name, get_packed_release_message
+from lib.utils.kodi.utils import dialog_text, get_setting, notification, translation
 from lib.utils.general.utils import (
     DebridType,
     IndexerType,
@@ -69,11 +70,11 @@ class EasyDebridHelper:
         torrent_files = [
             item
             for item in torrent_files
-            if any(item["filename"].lower().endswith(x) for x in extensions)
+            if any(get_file_name(item).lower().endswith(x) for x in extensions)
         ]
 
         if not torrent_files:
-            notification("No valid files found in torrent")
+            notification(get_packed_release_message("EasyDebrid"))
             return
 
         if len(torrent_files) > 1:
@@ -129,4 +130,4 @@ class EasyDebridHelper:
             f"[B]Expires:[/B] {expires}",
             f"[B]Days Remaining:[/B] {days_remaining}",
         ]
-        dialog_text("Easy-Debrid", "\n".join(body))
+        dialog_text(translation(90657), "\n".join(body))

@@ -1,3 +1,4 @@
+import re
 import json
 from threading import Thread
 from . import kore
@@ -7,11 +8,14 @@ from .window_base import BaseDialog
 empty_poster, addon_fanart = kore.empty_poster, kore.get_addon_fanart()
 hide_busy_dialog, dialog, get_icon = kore.hide_busy_dialog, kore.dialog, kore.get_icon
 select_dialog, notification = kore.select_dialog, kore.notification
-
-info_quality_dict, info_icons_dict, resume_dict = {
+debrid_dict, resume_dict = {
+	'realdebrid': 'rd', 'alldebrid': 'ad', 'premiumize': 'pm', 'torbox': 'tb',
+	'offcloud': 'oc', 'easydebrid': 'ed', 'debrider': 'db', 'debridlink': 'dl'
+}, {10: 'resume', 11: 'start_over', 12: 'cancel'}
+info_quality_dict, info_icons_dict = {
 	'4k': get_icon('flag_4k'), '1080p': get_icon('flag_1080p'), '720p': get_icon('flag_720p'),
 	'sd': get_icon('flag_sd'), 'cam': get_icon('flag_sd'), 'tele': get_icon('flag_sd'), 'scr': get_icon('flag_sd')
-}, {'aiostreams': get_icon('premium')}, {10: 'resume', 11: 'start_over', 12: 'cancel'}
+}, {'aiostreams': get_icon('premium')}
 extra_info_choices, quality_choices = (
 	('PACK', 'PACK'), ('DOLBY VISION', 'D/VISION'), ('HIGH DYNAMIC RANGE (HDR)', 'HDR'), ('HYBRID', 'HYBRID'), ('AV1', 'AV1'),
 	('HEVC (X265)', 'HEVC'), ('REMUX', 'REMUX'), ('BLURAY', 'BLURAY'), ('SDR', 'SDR'), ('3D', '3D'), ('DOLBY ATMOS', 'ATMOS'), ('DOLBY TRUEHD', 'TRUEHD'),
@@ -20,6 +24,7 @@ extra_info_choices, quality_choices = (
 	('2CH AUDIO', '2CH'), ('DVD SOURCE', 'DVD'), ('WEB SOURCE', 'WEB'), ('MULTIPLE LANGUAGES', 'MULTI-LANG'), ('SUBTITLES', 'SUBS')
 ), ('4K', '1080P', '720P', 'SD', 'CAM/SCR/TELE')
 poster_lists, prerelease_values, prerelease_key = ('list', 'medialist'), ('CAM', 'SCR', 'TELE'), 'CAM/SCR/TELE'
+priority_label = '[COLOR firebrick][B]%s[/B][/COLOR]'
 string, upper, lower = str, str.upper, str.lower
 resume_timeout = 10000
 
@@ -31,6 +36,7 @@ class SourcesResults(BaseDialog):
 		self.filter_window_id = 2100
 		self.results = kwargs.get('results')
 		self.info_highlights_dict = kwargs.get('scraper_settings')
+		self.priority_language = kwargs.get('priority_language')
 		self.meta = kwargs.get('meta')
 		self.meta_get = self.meta.get
 		self.make_poster = self.window_format in poster_lists
@@ -83,9 +89,10 @@ class SourcesResults(BaseDialog):
 					list_items = [{'line1': item[0], 'icon': self.poster} for item in extra_info_choices]
 					kwargs = {'items': json.dumps(list_items), 'heading': 'Filter Results', 'multi_choice': 'true'}
 					choice = select_dialog(extra_info_choices, **kwargs)
-					if choice == None: return
+					if choice is None: return
 					choice = [i[1] for i in choice]
 					filtered_list = [i for i in self.item_list if all(x in i.getProperty('extraInfo') for x in choice)]
+			elif filter_type == 'results': return self.results_info(self.get_listitem(self.window_id))
 			if not filtered_list: return notification('No Results', 2000)
 			self.set_filter(filtered_list)
 
@@ -96,13 +103,7 @@ class SourcesResults(BaseDialog):
 			if self.filter_applied: return self.clear_filter()
 			self.selected = (None, '')
 			return self.close()
-		if action == self.info_action:
-			self.open_window(
-				('magneto.player.window_sources', 'SourcesInfo'),
-				'sources_info.xml',
-				item=chosen_listitem,
-				art={'poster': self.meta_get('poster'), 'fanart': self.meta_get('fanart')}
-			)
+		if action == self.info_action: self.results_info(chosen_listitem)
 		elif action in self.selection_actions:
 			chosen_source = json.loads(chosen_listitem.getProperty('source'))
 			self.selected = ('play', chosen_source)
@@ -111,12 +112,7 @@ class SourcesResults(BaseDialog):
 #			source = json.loads(chosen_listitem.getProperty('source'))
 #			choice = self.context_menu(source)
 #			if choice == 'results_info':
-			return self.open_window(
-				('magneto.player.window_sources', 'SourcesInfo'),
-				'sources_info.xml',
-				item=chosen_listitem,
-				art={'poster': self.meta_get('poster'), 'fanart': self.meta_get('fanart')}
-			)
+			return self.results_info(chosen_listitem)
 
 	def make_items(self, filtered_list=None):
 		def builder(results):
@@ -127,7 +123,10 @@ class SourcesResults(BaseDialog):
 					quality = (get('resolution') or 'sd').replace('2160p', '4K')
 					if not upper(quality) in quality_choices: quality = 'SD'
 					name = get('folderName') or get('filename')
-					try: size_label = f"{get('size', 0) / 1024 ** 3:.2f} GB"
+					languages = get('languages')
+					if languages and self.priority_language:
+						languages = [priority_label % i if _language.match(i) else i for i in item['languages']]
+					try: size_label = f"{get('size', 0) / 1073741824:.2f} GB"
 					except: size_label = '0.00 GB'
 					basic_quality, quality_icon = self.get_quality_and_path(lower(quality))
 					extraInfo = ' | '.join(i for i in (
@@ -142,17 +141,21 @@ class SourcesResults(BaseDialog):
 					extraInfo2 = ' | '.join(i for i in (
 						*item['audioTags'],
 						*item['audioChannels'],
-						*item['languages']
+						*languages
 					) if i) or '--'
-					if get('library'): source = 'LIBRARY'
-					else: source = get('indexer') or get('addon') or 'N/A'
+					service = get('service')
+					debrid = upper(debrid_dict.get(service) or service or '')
+					if debrid and get('cached'): debrid += '+'
+					addon = upper(get('addon') or '')
+					source = 'library' if get('library') else get('indexer') or addon or 'N/A'
 					source_site = upper(source)
 					provider, provider_icon = self.get_provider_and_path(lower(scrape_provider))
 					listitem = self.make_listitem()
 					listitem.setProperties({
 						'highlight': self.info_highlights_dict[basic_quality],
 						'source_type': 'DIRECT',
-						'provider': upper(provider),
+						'provider': debrid or addon or provider,
+						'addon': addon,
 						'name': upper(name),
 						'source_site': source_site,
 						'provider_icon': provider_icon,
@@ -168,6 +171,7 @@ class SourcesResults(BaseDialog):
 					yield listitem
 				except: pass
 		try:
+			_language = re.compile(rf"(multi|{self.priority_language})", flags=re.I)
 			if filtered_list: return list(builder(filtered_list))
 			self.item_list = list(builder(self.results))
 			self.total_results = string(len(self.item_list))
@@ -190,7 +194,11 @@ class SourcesResults(BaseDialog):
 		qualities.sort(key=quality_choices.index)
 		qualities = [('Show [B]%s[/B] Only' % i, 'quality_%s' % i) for i in qualities]
 		data = qualities
-		data.extend([('Filter by [B]Title[/B]...', 'special_title'), ('Filter by [B]Info[/B]...', 'special_extraInfo')])
+		data.extend([
+			('Filter by [B]Title[/B]...', 'special_title'),
+			('Filter by [B]Info[/B]...', 'special_extraInfo'),
+			('Result [B]Info[/B]...', 'results_info')
+		])
 		self.filter_list = list(builder(data))
 
 	def set_properties(self):
@@ -211,6 +219,14 @@ class SourcesResults(BaseDialog):
 		kwargs = {'items': json.dumps(list_items)}
 		choice = select_dialog([i[1] for i in choices], **kwargs)
 		return choice
+
+	def results_info(self, chosen_listitem):
+		return self.open_window(
+			('magneto.player.window_sources', 'SourcesInfo'),
+			'sources_info.xml',
+			item=chosen_listitem,
+			art={'poster': self.meta_get('poster'), 'fanart': self.meta_get('fanart')}
+		)
 
 	def set_filter(self, filtered_list):
 		self.filter_applied = True
@@ -368,7 +384,7 @@ class SourcesInfo(BaseDialog):
 		self.setProperty('hash', self.item_get_property('hash'))
 		self.setProperty('poster', self.art.get('poster', ''))
 		self.setProperty('fanart', self.art.get('fanart', ''))
-		self.setProperty('provider', provider)
+		self.setProperty('provider', self.item_get_property('addon'))
 		self.setProperty('quality', quality)
 		self.setProperty('provider_icon', provider_path)
 		self.setProperty('quality_icon', quality_path)

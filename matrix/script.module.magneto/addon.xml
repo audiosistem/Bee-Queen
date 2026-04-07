@@ -1,4 +1,4 @@
-<addon id="script.module.magneto" version="6.04.01" name="Magneto Module" provider-name="Magneto">
+<addon id="script.module.magneto" version="6.04.02" name="Magneto Module" provider-name="Magneto">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -6,7 +6,7 @@
 	<extension point="xbmc.python.pluginsource" library="lib/router.py">
 		<provides>executable video</provides>
 	</extension>
-	<extension point="xbmc.service" library="lib/service.py" />
+	<!--<extension point="xbmc.service" library="lib/service.py" />-->
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>

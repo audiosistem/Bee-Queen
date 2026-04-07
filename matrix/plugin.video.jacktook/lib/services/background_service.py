@@ -1,5 +1,6 @@
 from threading import Thread
 from time import time
+import os
 
 import xbmc
 import xbmcaddon
@@ -19,6 +20,7 @@ from lib.utils.kodi.utils import (
     get_setting,
     kodilog,
     set_property_no_fallback,
+    translation,
     translatePath,
 )
 
@@ -32,8 +34,8 @@ class CheckKodiVersion:
         kodilog("Checking Kodi version...")
         if get_kodi_version() < 20:
             dialog_ok(
-                heading="Jacktook",
-                line1="Kodi 20 or above required. Please update Kodi to use thid addon-",
+                heading=xbmcaddon.Addon().getAddonInfo("name"),
+                line1=translation(90559),
             )
 
 
@@ -82,6 +84,11 @@ def TMDBHelperAutoInstall():
         "plugin.video.tmdb.bingie.helper",
     ]
 
+    source_content = _read_text_file(jacktook_select_path)
+    if source_content is None:
+        kodilog("Unable to read bundled jacktook.select.json", level=xbmc.LOGERROR)
+        return
+
     for addon_id in target_addons:
         try:
             _ = xbmcaddon.Addon(addon_id)
@@ -96,20 +103,41 @@ def TMDBHelperAutoInstall():
             f"special://home/addons/{addon_id}/resources/players/jacktook.select.json"
         )
 
-        if xbmcvfs.exists(tmdb_helper_path):
+        target_content = _read_text_file(tmdb_helper_path)
+        if target_content == source_content:
             continue
+
+        target_dir = os.path.dirname(translatePath(tmdb_helper_path))
+        if target_dir and not xbmcvfs.exists(target_dir):
+            xbmcvfs.mkdirs(target_dir)
+
+        if xbmcvfs.exists(tmdb_helper_path):
+            xbmcvfs.delete(tmdb_helper_path)
 
         ok = xbmcvfs.copy(jacktook_select_path, tmdb_helper_path)
         if ok:
             kodilog(
-                f"Installed jacktook.select.json file to {addon_id}!",
+                f"Installed or updated jacktook.select.json file for {addon_id}!",
                 level=xbmc.LOGINFO,
             )
         else:
             kodilog(
-                f"Error installing jacktook.select.json file to {addon_id}!",
+                f"Error installing jacktook.select.json file for {addon_id}!",
                 level=xbmc.LOGERROR,
             )
+
+
+def _read_text_file(path):
+    translated_path = translatePath(path)
+    if not translated_path or not os.path.exists(translated_path):
+        return None
+
+    try:
+        with open(translated_path, "r", encoding="utf-8") as file_obj:
+            return file_obj.read()
+    except OSError as error:
+        kodilog(f"Failed to read {path}: {error}", level=xbmc.LOGERROR)
+        return None
 
 
 class DownloaderSetup:
