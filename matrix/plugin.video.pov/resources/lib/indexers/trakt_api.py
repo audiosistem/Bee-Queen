@@ -425,8 +425,9 @@ def trakt_indicators_movies():
 	insert_append = insert_list.append
 	result = [(i,) for i in call_trakt('sync/watched/movies')] # TaskPool requires tuple
 	if not result: return
-#	threads = list(make_thread_list(_process, result, Thread))
 	for i in TaskPool().tasks(_process, result, Thread): i.join()
+#	threads = list(make_thread_list(_process, result, Thread))
+#	[i.join() for i in threads]
 	trakt_cache.TraktCache().set_bulk_movie_watched(insert_list)
 
 def trakt_indicators_tv():
@@ -446,8 +447,9 @@ def trakt_indicators_tv():
 	insert_append = insert_list.append
 	result = [(i,) for i in call_trakt('sync/watched/shows')] # TaskPool requires tuple
 	if not result: return
-#	threads = list(make_thread_list(_process, result, Thread))
 	for i in TaskPool().tasks(_process, result, Thread): i.join()
+#	threads = list(make_thread_list(_process, result, Thread))
+#	[i.join() for i in threads]
 	trakt_cache.TraktCache().set_bulk_tvshow_watched(insert_list)
 
 def trakt_progress_movies(progress_info):

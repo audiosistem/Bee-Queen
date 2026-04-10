@@ -683,7 +683,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.04.02" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.04.03" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -699,10 +699,7 @@ In addition to what livestreams allowed you to do, you can now,
 		<summary>What you like to watch.[CR]</summary>
 		<description lang="en">This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</description>
 		<news>INFO: For latest changes see Changelog within add-on.</news>
-		<assets>
-           <icon>pov.png</icon>
-           <fanart>pov_fanart.png</fanart>
-        </assets>
+		<assets><icon>pov.png</icon><fanart>pov_fanart.png</fanart></assets>
 	</extension>
 </addon><addon id="plugin.video.rotv123" name="Rotv123" version="1.3.4" provider-name="1X,AS,Derzis si Geamanu">
     <requires>
@@ -796,7 +793,7 @@ In addition to what livestreams allowed you to do, you can now,
     <screenshot>resources/screenshot-02.jpg</screenshot>
   </assets>
 </extension>
-</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.62">
+</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.65">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -1032,9 +1029,10 @@ In addition to what livestreams allowed you to do, you can now,
 			<screenshot>resources/screenshots/screenshot003.jpg</screenshot>
 		</assets>
 		<news>
-[B]Update - v6.7.62 - April 1st, 2026 [/B]
---[Change] Made changes to allow users to set number of batches to use for Trakt. Settings: General &gt; Performance
---[Fix] Fixed issue with old hidden shows causing dropped not to sync from Trakt. You will need to "Drop" any shows previously hidden.
+[B]Update - v6.7.65 - April 8th, 2026 [/B]
+--[Change] Set simkl to use percent watched on "start" when resuming.
+--[Fix] Bug fix for real debrid cloud scraper.
+--[Fix] Bug for for double marking from trakt.
 		</news>
 	</extension>
 
@@ -1115,7 +1113,7 @@ In addition to what livestreams allowed you to do, you can now,
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.2+beta.2.unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
+</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.2+unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.27.1" />
@@ -1232,13 +1230,27 @@ In addition to what livestreams allowed you to do, you can now,
         <disclaimer lang="vi_VN">Plugin này không được xác nhận bởi Google</disclaimer>
         <disclaimer lang="zh_CN">此插件未被谷歌认可</disclaimer>
         <disclaimer lang="zh_TW">此附加元件未由Google支持</disclaimer>
-    <news>## v7.4.2+beta.2
+    <news>## v7.4.2
 ### Fixed
 - Ensure updated context is used in client instance when rerouting to existing provider handler methods
 - Fix required ID potentially not being passed to YouTubeDataClient.(add|remove)_video_from_playlist()
+- Skip unplayable live manifests
+- Handle inconsistent error codes and names used in Python 2
+- Simplify byte range to timestamp conversion for compatibility with Python 2
+- Fix unnecessarily reloading listing when adding items to Bookmarks
 
 ### Changed
-- Update parsing of plugin urls for path params and ID lists</news></extension>
+- Update parsing of plugin urls for path params and ID lists
+- Rework addon debug log settings (Addon &gt; Settings &gt; Advanced &gt; Debug &gt; Enable debug logging)
+  - Allowable values:
+    - Disabled (addon logging output disabled)
+    - Auto (default, addon logging output enabled if Kodi debug logging enabled)
+    - Always enabled (addon logging output enabled)
+    - Verbose (additional addon logging output enabled)
+- Various other improvement to addon logging
+
+### New
+- Update Setup Wizard to account for user possibly using mismatched watch history settings</news></extension>
 </addon><addon id="program.optiklean" name="OptiKlean" provider-name="DigiTalking" version="2.2.0">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -2909,7 +2921,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
     <news>0.1.3:
 - Fix non-UTF-8 byte string decoding in Python 2.</news>
   </extension>
-</addon><addon id="script.module.magneto" version="6.04.02" name="Magneto Module" provider-name="Magneto">
+</addon><addon id="script.module.magneto" version="6.04.03" name="Magneto Module" provider-name="Magneto">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -2917,7 +2929,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
 	<extension point="xbmc.python.pluginsource" library="lib/router.py">
 		<provides>executable video</provides>
 	</extension>
-	
+	<extension point="xbmc.service" library="lib/service.py" />
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>

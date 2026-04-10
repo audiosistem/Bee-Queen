@@ -89,7 +89,8 @@ class Subtitles(kodi_utils.xbmc_player):
 		result.sort(key=lambda k: k['display'], reverse=False)
 		result.sort(key=lambda k: k['language'] == search_language, reverse=True)
 		if self.subs_action == 'select' and len(result) > 1: chosen_sub = self.subtitles_select(result)
-		else: chosen_sub = next((i for i, _ in enumerate(result) if _['language'] == search_language), -1)
+		else: chosen_sub = next((i for i, _ in enumerate(result) if _['language'] == search_language), None)
+		if chosen_sub is None: return kodi_utils.notification(32793, icon=self.poster)
 		if chosen_sub < 0: return kodi_utils.notification(32736, icon=self.poster)
 		chosen_sub = result[chosen_sub]
 		final_path = '%s%s' % (self.subtitle_path, self.search_filename)

@@ -10,6 +10,7 @@ movie_external_id, tvshow_external_id = tmdb_api.movie_external_id, tmdb_api.tvs
 subtract_dates_function, jsondate_to_datetime_function = subtract_dates, jsondate_to_datetime
 tmdb_image_base, writer_credits = tmdb_api.tmdb_image_base, ('Author', 'Writer', 'Screenplay', 'Characters')
 backup_resolutions = {'poster': 'w780', 'fanart': 'w1280', 'still': 'original', 'profile': 'h632'}
+rpdb_url = 'https://api.ratingposterdb.com/%s/%s/poster-default/%s.jpg?fallback=true'
 rpdb_themes = {'0': '', '1': '&theme=rounded-blocks', '2': '&theme=blocks'}
 alt_titles_test, trailers_test = ('US', 'GB', 'UK', ''), ('Trailer', 'Teaser')
 finished_show_check, empty_value_check = ('Ended', 'Canceled'), ('', 'None', None)
@@ -507,9 +508,8 @@ def rpdb_get(mediatype, media_id, api_key, theme):
 		if not api_key or not media_id: raise Exception
 		if media_id.startswith('tt'): id_type = 'imdb'
 		else: id_type, media_id = 'tmdb', '%s-%s' % (mediatype, media_id)
-		rpdb_url = 'https://api.ratingposterdb.com/%s/%s/poster-default/%s.jpg?fallback=true'
-		if theme in ('1', '2'): rpdb_url += rpdb_themes[theme]
-		rpdb_url = rpdb_url % (api_key, id_type, media_id)
-	except: rpdb_url = ''
-	return rpdb_url
+		if theme in ('1', '2'): base_url = '%s%s' % (rpdb_url, rpdb_themes[theme])
+		else: base_url = rpdb_url
+		return base_url % (api_key, id_type, media_id)
+	except: pass
 

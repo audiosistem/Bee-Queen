@@ -23,8 +23,8 @@ class source:
 			"https://mediafusion.stremio.ru",
 			"https://mediafusionfortheweebs.midnightignite.me"
 		)[int(getSetting('mediafusion.url', '0'))]
-		self.movieSearch_link = '/stream/movie/%s.json'
-		self.tvSearch_link = '/stream/series/%s:%s:%s.json'
+		self.movieSearch_link = '/%s/stream/movie/%s.json'
+		self.tvSearch_link = '/%s/stream/series/%s:%s:%s.json'
 		self.min_seeders = 0
 
 	def sources(self, data, hostDict):
@@ -42,13 +42,13 @@ class source:
 				season = data['season']
 				episode = data['episode']
 				hdlr = 'S%02dE%02d' % (int(season), int(episode))
-				url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, episode))
+				url = '%s%s' % (self.base_link, self.tvSearch_link % (self._token(), imdb, season, episode))
 			else:
 				hdlr = year
-				url = '%s%s' % (self.base_link, self.movieSearch_link % imdb)
+				url = '%s%s' % (self.base_link, self.movieSearch_link % (self._token(), imdb))
 			# log_utils.log('url = %s' % url)
 			try:
-				results = client.request(url, headers=self._headers(), timeout=self.timeout)
+				results = client.request(url, timeout=self.timeout)
 				files = jsloads(results)['streams']
 			except:
 				files = []
@@ -65,8 +65,7 @@ class source:
 
 		for file in files:
 			try:
-				if 'url' in file: hash = re.search(r'\b\w{40}\b', file['url']).group()
-				else: hash = file['infoHash']
+				hash = file['infoHash']
 				file_title = file['description'].replace('┈➤', '\n').split('\n')
 				file_info = [x for x in file_title if _INFO.search(x)][0]
 
@@ -86,8 +85,8 @@ class source:
 
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
-					size = float(file['behaviorHints']['videoSize'])
-					dsize, isize = source_utils.convert_size(size)
+					size = re.search(r'((?:\d+\,\d+\.\d+|\d+\.\d+|\d+\,\d+|\d+)\s*(?:GB|GiB|Gb|MB|MiB|Mb))', file_info).group(0)
+					dsize, isize = source_utils._size(size)
 					info.insert(0, isize)
 				except: dsize = 0
 				info = ' | '.join(info)
@@ -111,7 +110,7 @@ class source:
 			imdb = data['imdb']
 			year = data['year']
 			season = data['season']
-			url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, data['episode']))
+			url = '%s%s' % (self.base_link, self.tvSearch_link % (self._token(), imdb, season, data['episode']))
 			files = self._queue.get(timeout=self.timeout + 1)
 			_INFO = re.compile(r'💾.*')
 			undesirables = source_utils.get_undesirables()
@@ -122,8 +121,7 @@ class source:
 
 		for file in files:
 			try:
-				if 'url' in file: hash = re.search(r'\b\w{40}\b', file['url']).group()
-				else: hash = file['infoHash']
+				hash = file['infoHash']
 				file_title = file['description'].replace('┈➤', '\n').split('\n')
 				file_info = [x for x in file_title if _INFO.search(x)][0]
 
@@ -155,8 +153,8 @@ class source:
 
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
-					size = float(file['behaviorHints']['videoSize'])
-					dsize, isize = source_utils.convert_size(size)
+					size = re.search(r'((?:\d+\,\d+\.\d+|\d+\.\d+|\d+\,\d+|\d+)\s*(?:GB|GiB|Gb|MB|MiB|Mb))', file_info).group(0)
+					dsize, isize = source_utils._size(size)
 					info.insert(0, isize)
 				except: dsize = 0
 				info = ' | '.join(info)
@@ -173,59 +171,14 @@ class source:
 				source_utils.scraper_error('MEDIAFUSION')
 		return sources
 
-	def _headers(self):
-		return {'encoded_user_data': (
-			'ewogICJzZWxlY3RlZF9jYXRhbG9ncyI6IFtdLAogICJzZWxlY3RlZF9yZXNvbHV0aW9ucyI6IFsK'
-			'ICAgICI0ayIsICAgICIyMTYwcCIsICIxMDgwcCIsICI3MjBwIiwgICI1NzZwIiwgICI0ODBwIiwg'
-			'ICIzNjBwIiwgICIyNDBwIiwgIjE0NDBwIiwgbnVsbAogIF0sCiAgImVuYWJsZV9jYXRhbG9ncyI6'
-			'IGZhbHNlLAogICJlbmFibGVfaW1kYl9tZXRhZGF0YSI6IGZhbHNlLAogICJtYXhfc2l6ZSI6ICJp'
-			'bmYiLAogICJtaW5fc2l6ZSI6IDAsCiAgIm1heF9zdHJlYW1zX3Blcl9yZXNvbHV0aW9uIjogMjAs'
-			'CiAgIm51ZGl0eV9maWx0ZXIiOiBbIkRpc2FibGUiXSwKICAiY2VydGlmaWNhdGlvbl9maWx0ZXIi'
-			'OiBbIkRpc2FibGUiXSwKICAibGFuZ3VhZ2Vfc29ydGluZyI6IFsKICAgICJFbmdsaXNoIiwgICAg'
-			'IlRhbWlsIiwgICAgICAiSGluZGkiLCAgICAgICJNYWxheWFsYW0iLCAgIkthbm5hZGEiLAogICAg'
-			'IlRlbHVndSIsICAgICAiQ2hpbmVzZSIsICAgICJSdXNzaWFuIiwgICAgIkFyYWJpYyIsICAgICAi'
-			'SmFwYW5lc2UiLAogICAgIktvcmVhbiIsICAgICAiVGFpd2FuZXNlIiwgICJMYXRpbm8iLCAgICAg'
-			'IkZyZW5jaCIsICAgICAiU3BhbmlzaCIsCiAgICAiUG9ydHVndWVzZSIsICJJdGFsaWFuIiwgICAg'
-			'Ikdlcm1hbiIsICAgICAiVWtyYWluaWFuIiwgICJQb2xpc2giLAogICAgIkN6ZWNoIiwgICAgICAi'
-			'VGhhaSIsICAgICAgICJJbmRvbmVzaWFuIiwgIlZpZXRuYW1lc2UiLCAiRHV0Y2giLAogICAgIkJl'
-			'bmdhbGkiLCAgICAiVHVya2lzaCIsICAgICJHcmVlayIsICAgICAgIlN3ZWRpc2giLCAgICAiUm9t'
-			'YW5pYW4iLAogICAgIkh1bmdhcmlhbiIsICAiRmlubmlzaCIsICAgICJOb3J3ZWdpYW4iLCAgIkRh'
-			'bmlzaCIsICAgICAiSGVicmV3IiwKICAgICJMaXRodWFuaWFuIiwgIlB1bmphYmkiLCAgICAiTWFy'
-			'YXRoaSIsICAgICJHdWphcmF0aSIsICAgIkJob2pwdXJpIiwKICAgICJOZXBhbGkiLCAgICAgIlVy'
-			'ZHUiLCAgICAgICAiVGFnYWxvZyIsICAgICJGaWxpcGlubyIsICAgIk1hbGF5IiwKICAgICJNb25n'
-			'b2xpYW4iLCAgIkFybWVuaWFuIiwgICAiR2VvcmdpYW4iLCAgIG51bGwKICBdLAogICJxdWFsaXR5'
-			'X2ZpbHRlciI6IFsKICAgICJCbHVSYXkvVUhEIiwgICAiV0VCL0hEIiwgICAgICAgIkRWRC9UVi9T'
-			'QVQiLCAgICJDQU0vU2NyZWVuZXIiLAogICAgIlVua25vd24iCiAgXSwKICAiaGRyX2ZpbHRlciI6'
-			'IFsiSERSMTAiLCAiSERSMTArIiwgIkRvbGJ5IFZpc2lvbiIsICJITEciLCAiU0RSIiwgIlVua25v'
-			'd24iXSwKICAibGl2ZV9zZWFyY2hfc3RyZWFtcyI6IGZhbHNlLAogICJpbmNsdWRlX2FuaW1lIjog'
-			'dHJ1ZSwKICAiZW5hYmxlX3VzZW5ldF9zdHJlYW1zIjogZmFsc2UsCiAgInByZWZlcl91c2VuZXRf'
-			'b3Zlcl90b3JyZW50IjogZmFsc2UsCiAgImVuYWJsZV90ZWxlZ3JhbV9zdHJlYW1zIjogZmFsc2Us'
-			'CiAgImVuYWJsZV9hY2VzdHJlYW1fc3RyZWFtcyI6IGZhbHNlLAogICJtYXhfc3RyZWFtcyI6IDEw'
-			'MCwKICAic3RyZWFtX3R5cGVfZ3JvdXBpbmciOiAic2VwYXJhdGUiLAogICJzdHJlYW1fdHlwZV9v'
-			'cmRlciI6IFsKICAgICJ0b3JyZW50IiwgICAidXNlbmV0IiwgICAgInRlbGVncmFtIiwgICJodHRw'
-			'IiwgICAgICAiYWNlc3RyZWFtIiwgInlvdXR1YmUiCiAgXSwKICAicHJvdmlkZXJfZ3JvdXBpbmci'
-			'OiAibWl4ZWQiLAogICJzdHJlYW1fbmFtZV9maWx0ZXJfbW9kZSI6ICJkaXNhYmxlZCIsCiAgInN0'
-			'cmVhbV9uYW1lX2ZpbHRlcl9wYXR0ZXJucyI6IFtdLAogICJzdHJlYW1fbmFtZV9maWx0ZXJfdXNl'
-			'X3JlZ2V4IjogZmFsc2UsCiAgInRvcnJlbnRfc29ydGluZ19wcmlvcml0eSI6IFsKICAgIHsia2V5'
-			'IjogImNhY2hlZCIsICAgICAiZGlyZWN0aW9uIjogImRlc2MifSwKICAgIHsia2V5IjogInJlc29s'
-			'dXRpb24iLCAiZGlyZWN0aW9uIjogImRlc2MifSwKICAgIHsia2V5IjogInF1YWxpdHkiLCAgICAi'
-			'ZGlyZWN0aW9uIjogImRlc2MifSwKICAgIHsia2V5IjogImxhbmd1YWdlIiwgICAiZGlyZWN0aW9u'
-			'IjogImRlc2MifSwKICAgIHsia2V5IjogInNpemUiLCAgICAgICAiZGlyZWN0aW9uIjogImRlc2Mi'
-			'fSwKICAgIHsia2V5IjogInNlZWRlcnMiLCAgICAiZGlyZWN0aW9uIjogImRlc2MifSwKICAgIHsi'
-			'a2V5IjogImNyZWF0ZWRfYXQiLCAiZGlyZWN0aW9uIjogImRlc2MifQogIF0sCiAgInN0cmVhbV90'
-			'ZW1wbGF0ZSI6IHsKICAgICJ0aXRsZSI6ICJ7aWYgc3RyZWFtLnR5cGUgPSB0b3JyZW50fVvwn6ey'
-			'e3NlcnZpY2Uuc2hvcnROYW1lfXtpZiBzZXJ2aWNlLmNhY2hlZH3imqF7L2lmfV17ZWxpZiBzdHJl'
-			'YW0udHlwZSA9IHVzZW5ldH1b8J+TsHtzZXJ2aWNlLnNob3J0TmFtZX1de2Vsc2V9W/CflJddey9p'
-			'Zn0ge2FkZG9uLm5hbWV9IHtpZiBzdHJlYW0ucmVzb2x1dGlvbn17c3RyZWFtLnJlc29sdXRpb259'
-			'ey9pZn0iLAogICAgImRlc2NyaXB0aW9uIjogIntpZiBzdHJlYW0ucXVhbGl0eX17c3RyZWFtLnF1'
-			'YWxpdHl9IHsvaWZ9e2lmIHN0cmVhbS5jb2RlY317c3RyZWFtLmNvZGVjfSB7L2lmfXtpZiBzdHJl'
-			'YW0uaGRyX2Zvcm1hdHN9e3N0cmVhbS5oZHJfZm9ybWF0c3xqb2luKCcgJyl9IHsvaWZ9XG57aWYg'
-			'c3RyZWFtLnNpemUgPiAwffCfkr4ge3N0cmVhbS5zaXplfGJ5dGVzfSB7L2lmfXtpZiBzdHJlYW0u'
-			'c2VlZGVycyA+IDB98J+RpCB7c3RyZWFtLnNlZWRlcnN9ey9pZn1cbntpZiBzdHJlYW0ubGFuZ3Vh'
-			'Z2VfZmxhZ3N9e3N0cmVhbS5sYW5ndWFnZV9mbGFnc3xqb2luKCcgJyl9ey9pZn1cbuKame+4jyB7'
-			'c3RyZWFtLnNvdXJjZX0iCiAgfSwKICAiaW5kZXhlcl9jb25maWciOiB7CiAgICAicHJvd2xhcnIi'
-			'ICAgICAgICAgOiB7ImVuYWJsZWQiOiBmYWxzZSwgInVzZV9nbG9iYWwiOiBmYWxzZX0sCiAgICAi'
-			'amFja2V0dCIgICAgICAgICAgOiB7ImVuYWJsZWQiOiBmYWxzZSwgInVzZV9nbG9iYWwiOiB0cnVl'
-			'fSwKICAgICJ0b3J6bmFiX2VuZHBvaW50cyI6IFtdLAogICAgIm5ld3puYWJfaW5kZXhlcnMiIDog'
-			'W10KICB9LAogICJ0ZWxlZ3JhbV9jb25maWciOiBudWxsCn0='
-		)}
+	def _token(self):
+		return (
+			'D-BGDTpQROy1Roy9aa15SRYsSgbPEJbdWnJkeiVoGT6LmPJ65Irqe7C5rYgtRWeOZxH8SOO7NFpD'
+			'Mh19hsqS4plk1R273gU3uGWg0Qxvyh-D8-ieWTC33P34NccWnZsz-Y_ZpJlBcvr8FItcbfuFttRk'
+			'1Irj_-1JGotw-9savyyC2muo6zuLy68klyiV70zr65euA8VgLi7MlAdU5_LF1UHOy6dutbvYvfVI'
+			'-7gt3CHhY7DP7IiLb5cfB-mNnmBdP2J3jwMG3x5ac-Rx0Ao-ltMcjZMZum8zVWg6VwkQdqxokEX2'
+			'D1nSMPLWsnj-2UwFO6ov-sD1IeFg8G2loXRbcQk7x91YMNr_Rvj2-11_OwbZutjCOdVs2K52NCbu'
+			'ENRjEfS8dn_8XZtBEaJL7ZEEkW7wT_XbzPQ-pWqPPAwh_1jN4xkzE0isa1K7tDGfiRWOtqeH3JED'
+			'txyS9-849sVncm4i-TozXOpyVsqNHtxUyWChYZB3WXIymlNCmmer1halPECScs9TH1XywdX2m2SR'
+			'9u7jra2SKkd6wDacHR639MQag'
+		)

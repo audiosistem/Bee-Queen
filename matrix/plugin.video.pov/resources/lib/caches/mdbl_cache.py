@@ -5,7 +5,7 @@ from modules.utils import chunks
 timeout = 20
 SELECT = 'SELECT id FROM mdbl_data'
 DELETE = 'DELETE FROM mdbl_data WHERE id = ?'
-DELETE_LIKE = 'DELETE FROM mdbl_data WHERE id LIKE "%s"'
+DELETE_LIKE = 'DELETE FROM mdbl_data WHERE id LIKE %s'
 WATCHED_INSERT = 'INSERT OR IGNORE INTO watched_status VALUES (?, ?, ?, ?, ?, ?)'
 WATCHED_DELETE = 'DELETE FROM watched_status WHERE db_type = ?'
 PROGRESS_INSERT = 'INSERT OR IGNORE INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'

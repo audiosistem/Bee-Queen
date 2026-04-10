@@ -4,7 +4,7 @@ from modules.utils import sort_for_article, paginate_list
 # from modules.kodi_utils import logger
 
 INSERT_FAV = 'INSERT INTO favorites VALUES (?, ?, ?)'
-DELETE_FAV = 'DELETE FROM favorites where db_type = ? and tmdb_id = ?'
+DELETE_FAV = 'DELETE FROM favorites WHERE db_type = ? and tmdb_id = ?'
 SELECT_FAV = 'SELECT tmdb_id, title FROM favorites WHERE db_type = ?'
 CLEAR_FAV = 'DELETE FROM favorites WHERE db_type = ?'
 

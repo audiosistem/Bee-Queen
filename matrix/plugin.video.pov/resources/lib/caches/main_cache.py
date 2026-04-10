@@ -5,7 +5,7 @@ from caches import BaseCache, maincache_db, get_property, set_property, clear_pr
 BASE_GET = 'SELECT data, expires FROM maincache WHERE id = ? AND expires > ?'
 BASE_SET = 'INSERT OR REPLACE INTO maincache (id, data, expires) VALUES (?, ?, ?)'
 BASE_DELETE = 'DELETE FROM maincache WHERE id = ?'
-LIKE_SELECT = 'SELECT id from maincache where id LIKE %s'
+LIKE_SELECT = 'SELECT id FROM maincache WHERE id LIKE %s'
 LIKE_DELETE = 'DELETE FROM maincache WHERE id LIKE %s'
 DELETE = 'DELETE FROM maincache WHERE id = ?'
 ALL_LIST_ADD = ' OR id LIKE '

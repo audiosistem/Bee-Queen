@@ -38,7 +38,7 @@ def authorize():
 			item.setArt({'icon': '%s%s' % (icon_path, api.icon)})
 			yield(item)
 	icon_path, services = kodi_utils.media_path(), (
-		('trakt', Trakt), ('mdblist', MDBList), ('tmdblist', TMDbList),
+		('trakt', Trakt), ('mdblist', MDBList), ('tmdblist', TMDBList),
 		('real-debrid', RealDebrid), ('premiumize.me', Premiumize), ('alldebrid', AllDebrid),
 		('torbox', TorBox), ('offcloud', Offcloud), ('easynews', EasyNews)
 	)
@@ -476,7 +476,7 @@ class MDBList:
 		clear_cache('mdblist', silent=True)
 		return True
 
-class TMDbList:
+class TMDBList:
 	icon = 'tmdb.png'
 	def __init__(self):
 		self.read = get_setting('tmdb_read_token')

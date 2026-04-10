@@ -1,4 +1,5 @@
 [COLOR red][B]Version 6.04[/B][/COLOR]
+- Fix for goofy mediafusion sometimes ignoring 'encoded_user_data' header.
 - Added debrid and cached status tag to Magneto Player results.
 - Added Hightlight Priority Language Magneto AIOStreams settings.
 - Fix for mediafusion format change causing no results.

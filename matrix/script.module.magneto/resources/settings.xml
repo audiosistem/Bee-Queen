@@ -27,14 +27,14 @@
     <setting label="Indexers" type="lsep" />
     <setting id="provider.bitmagnet" type="bool" label="BITMAGNET (Pack capable)" default="false" />
     <setting id="provider.comet" type="bool" label="COMET (Pack capable)" default="false" />
-        <setting id="comet.url" label="comet instance" type="enum" default="0" values="Kuu-lection|Midnightignite" subsetting="true" visible="eq(-1,true)" />
+        <setting id="comet.url" label="comet instance" type="enum" default="0" values="Kuu-lection|Goldy|Midnightignite" subsetting="true" visible="eq(-1,true)" />
     <setting id="provider.mediafusion" type="bool" label="MEDIAFUSION (Pack capable)" default="false" />
         <setting id="mediafusion.url" label="mediafusion instance" type="enum" default="0" values="Kuu-lection|Midnightignite" subsetting="true" visible="eq(-1,true)" />
     <setting id="provider.meteor" type="bool" label="METEOR (Pack capable)" default="false" />
-    <setting id="provider.torz" type="bool" label="STREMTHRU TORZ P2P (Pack capable)" default="false" />
-        <setting id="torz.url" label="torz instance" type="enum" default="0" values="Kuu-lection|Munif|Midnightignite" subsetting="true" visible="eq(-1,true)" />
     <setting id="provider.torrentio" type="bool" label="TORRENTIO (Pack capable)" default="true" />
     <setting id="provider.torrentsdb" type="bool" label="TORRENTSDB (Pack capable)" default="false" />
+    <setting id="provider.torz" type="bool" label="STREMTHRU TORZ P2P (Pack capable)" default="false" />
+        <setting id="torz.url" label="torz instance" type="enum" default="0" values="Kuu-lection|Munif|Midnightignite" subsetting="true" visible="eq(-1,true)" />
     <setting id="provider.zilean" type="bool" label="ZILEAN (Pack capable)" default="true" />
         <setting id="zilean.url" label="zilean instance" type="enum" default="0" values="Kuu-lection|Midnightignite" subsetting="true" visible="eq(-1,true)" />
     <setting id="provider.dmm" type="bool" label="DMM (Pack capable)" default="false" />

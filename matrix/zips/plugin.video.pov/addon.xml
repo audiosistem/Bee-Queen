@@ -1,4 +1,4 @@
-<addon id="plugin.video.pov" version="6.04.02" name="POV" provider-name="kodifitzwell">
+<addon id="plugin.video.pov" version="6.04.03" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -14,10 +14,7 @@
 		<summary>What you like to watch.[CR]</summary>
 		<description lang="en">This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</description>
 		<news>INFO: For latest changes see Changelog within add-on.</news>
-		<assets>
-           <icon>pov.png</icon>
-           <fanart>pov_fanart.png</fanart>
-        </assets>
+		<assets><icon>pov.png</icon><fanart>pov_fanart.png</fanart></assets>
 	</extension>
 </addon>
 

@@ -37,10 +37,14 @@ _reauth_lock = Lock()
 _reauth_failed = False
 _REAUTH_BUSY_PROP = 'umbrella.trakt.reauth.busy'
 _TRAKT_TOKEN_PROP = 'umbrella.trakt.access_token'
+_last_request_time = 0.0
 control.homeWindow.setProperty(_TRAKT_TOKEN_PROP, getSetting('trakt.user.token') or '')
 
 def getTrakt(url, post=None, extended=False, silent=False, reauth_attempts=0):
 	try:
+		global _last_request_time
+		if time.time() - _last_request_time > 300:  # flush stale pooled connections after 5 min idle
+			session.close()
 		if not url.startswith(BASE_URL): url = urljoin(BASE_URL, url)
 		headers['trakt-api-key'] = traktClientID()
 		if post: post = jsdumps(post)
@@ -49,10 +53,20 @@ def getTrakt(url, post=None, extended=False, silent=False, reauth_attempts=0):
 			# avoiding stale getSetting() cache causing repeat 401s on retry.
 			current_token = control.homeWindow.getProperty(_TRAKT_TOKEN_PROP) or getSetting('trakt.user.token')
 			headers['Authorization'] = 'Bearer %s' % current_token
-		if post:
-			response = session.post(url, data=post, headers=headers, timeout=20)
-		else:
-			response = session.get(url, headers=headers, timeout=20)
+		for _attempt in range(2):
+			try:
+				if post:
+					response = session.post(url, data=post, headers=headers, timeout=20)
+				else:
+					response = session.get(url, headers=headers, timeout=20)
+				_last_request_time = time.time()
+				break
+			except requests.exceptions.ConnectionError:
+				if _attempt == 0 and not post:  # Only retry GETs; retrying POSTs risks double-submission to /sync/history
+					log_utils.log('getTrakt: connection reset, retrying with fresh connection...', level=log_utils.LOGDEBUG)
+					session.close()
+				else:
+					raise
 		status_code = str(response.status_code)
 		error_handler(url, response, status_code, silent=silent)
 		if response and status_code in ('200', '201'):

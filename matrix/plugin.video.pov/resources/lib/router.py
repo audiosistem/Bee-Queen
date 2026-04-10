@@ -312,7 +312,7 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 		except: pass
 		try: reuseLanguageInvokerCheck()
 		except: pass
-		for i in self.threads: i.start()
+		for i in getattr(self, 'threads', ()): i.start()
 		try: autoRun()
 		except: pass
 		try: clearSubs()
@@ -358,7 +358,9 @@ def checkSettingsFile():
 	return logger('POV', 'CheckSettingsFile Service Finished')
 
 def databaseMaintenance():
+	from caches.meta_cache import cache_prefetch
 	from modules.cache import clean_databases
+	cache_prefetch()
 	current_time = int(time.time())
 	next_clean = current_time + 259200 # 3 days
 	due_clean = int(get_setting('database.maintenance.due', '0'))

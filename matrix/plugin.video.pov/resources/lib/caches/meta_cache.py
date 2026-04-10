@@ -22,9 +22,11 @@ class MetaCache(BaseCache):
 	db_file = metacache_db
 
 	def _set_PRAGMAS(self):
-		self.dbcur.execute("""PRAGMA synchronous = OFF""")
-		self.dbcur.execute("""PRAGMA journal_mode = OFF""")
-		self.dbcur.execute("""PRAGMA mmap_size = 268435456""")
+		self.dbcur.executescript("""
+			PRAGMA synchronous = OFF;
+			PRAGMA journal_mode = OFF;
+			PRAGMA mmap_size = 268435456;
+		""")
 
 	def get(self, mediatype, id_type, media_id):
 		meta = None
@@ -142,4 +144,16 @@ def cache_function(function, prop_string, url, expiration=96, json=False):
 	else: result = function(url)
 	metacache.set_function(prop_string, result, expiration=timedelta(hours=expiration))
 	return result
+
+def cache_prefetch(limit=500):
+	metacache = MetaCache()
+	for db_type, tmdb_id, meta, expires in metacache.dbcur.execute("""
+		SELECT db_type, tmdb_id, meta, expires
+		FROM metadata
+		WHERE tmdb_id IS NOT NULL
+		ORDER BY expires DESC
+		LIMIT ?
+	""", (limit,)):
+		try: metacache.set_memory_cache(db_type, 'tmdb_id', eval(meta), expires, tmdb_id)
+		except: pass
 
