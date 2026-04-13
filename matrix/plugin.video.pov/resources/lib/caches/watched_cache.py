@@ -9,10 +9,9 @@ from modules import kodi_utils, settings, utils
 # logger = kodi_utils.logger
 
 timeout = 20
-ls, sleep = kodi_utils.local_string, kodi_utils.sleep
-progressDialogBG, execJSONRPC = kodi_utils.progressDialogBG, kodi_utils.execJSONRPC
+ls, sleep, progressDialogBG = kodi_utils.local_string, kodi_utils.sleep, kodi_utils.progressDialogBG
 get_datetime, adjust_premiered_date = utils.get_datetime, utils.adjust_premiered_date
-sort_for_article, make_thread_list, TaskPool = utils.sort_for_article, utils.make_thread_list, utils.TaskPool
+sort_for_article, make_thread_list = utils.sort_for_article, utils.make_thread_list
 clean_file_name, paginate_list = utils.clean_file_name, utils.paginate_list
 WATCHED_DB, TRAKT_DB, MDBL_DB = kodi_utils.watched_db, kodi_utils.trakt_db, kodi_utils.mdbl_db
 indicators_dict = {0: WATCHED_DB, 1: TRAKT_DB, 2: MDBL_DB}
@@ -28,23 +27,6 @@ def set_PRAGMAS(dbcon):
 
 def get_database(watched_indicators):
 	return indicators_dict[watched_indicators]
-
-def get_next_episodes(watched_indicators):
-	dbcon = _database_connect(get_database(watched_indicators))
-	dbcur = set_PRAGMAS(dbcon)
-	data = dbcur.execute("""
-		SELECT media_id, season, episode, title, last_played
-		FROM (
-			SELECT *, ROW_NUMBER() OVER (
-				PARTITION BY media_id ORDER BY season DESC, episode DESC
-			) AS r
-			FROM watched_status
-			WHERE db_type = ? AND media_id IS NOT NULL
-		) AS t
-		WHERE r = 1
-	""", ('episode',))
-	episode_list = [{'media_ids': {'tmdb': int(i[0])}, 'season': int(i[1]), 'episode': int(i[2]), 'last_played': i[4]} for i in data]
-	return episode_list
 
 def get_resumetime(bookmarks, tmdb_id, season='', episode=''):
 	try: resume_point, curr_time, resume_id = detect_bookmark(bookmarks, tmdb_id, season, episode)
@@ -210,7 +192,7 @@ def get_in_progress_tvshows(dummy_arg, page_no, letter, paginate=None):
 	watched_info = get_watched_info_tv(watched_indicators)
 	watched_info.sort(key=lambda x: (x[0], x[4]), reverse=True)
 	prelim_data = [({'media_id': i[0], 'title': i[3], 'last_played': i[4]},) for i in watched_info if not (i[0] in duplicates or duplicates_add(i[0]))]
-	for i in TaskPool().tasks(_process, prelim_data, Thread): i.join()
+	for i in utils.TaskPool().tasks(_process, prelim_data, Thread): i.join()
 #	threads = list(make_thread_list(_process, prelim_data, Thread))
 #	[i.join() for i in threads]
 	if settings.lists_sort_order('progress') == 0: original_list = sort_for_article(data, 'title', settings.ignore_articles())
@@ -231,8 +213,24 @@ def get_in_progress_episodes():
 	data = dbcur.fetchall()
 	if settings.lists_sort_order('progress') == 0: data = sort_for_article(data, 5, settings.ignore_articles())
 	else: data.sort(key=lambda k: k[4], reverse=True)
-	episode_list = [{'media_ids': {'tmdb': i[0]}, 'season': int(i[1]), 'episode': int(i[2]), 'resume_point': float(i[3])} for i in data]
-	return episode_list
+	return [{'media_ids': {'tmdb': i[0]}, 'season': int(i[1]), 'episode': int(i[2]), 'resume_point': float(i[3])} for i in data]
+
+def get_next_episodes():
+	watched_indicators = settings.watched_indicators()
+	dbcon = _database_connect(get_database(watched_indicators))
+	dbcur = set_PRAGMAS(dbcon)
+	data = dbcur.execute("""
+		SELECT CAST(media_id AS INT), CAST(season as INT), CAST(episode AS INT), title, last_played
+		FROM (
+			SELECT *, ROW_NUMBER() OVER (
+				PARTITION BY media_id ORDER BY season DESC, episode DESC
+			) AS r
+			FROM watched_status
+			WHERE db_type = ? AND media_id IS NOT NULL
+		) AS t
+		WHERE r = 1
+	""", ('episode',))
+	return [{'media_ids': {'tmdb': i[0]}, 'season': i[1], 'episode': i[2], 'last_played': i[4]} for i in data]
 
 def get_watched_items(mediatype, page_no, letter, paginate=None):
 	paginate = settings.paginate() if paginate is None else paginate
@@ -251,7 +249,7 @@ def get_watched_items(mediatype, page_no, letter, paginate=None):
 		data = []
 		data_append = data.append
 		prelim_data = [({'media_id': i[0], 'title': i[3], 'last_played': i[4]},) for i in watched_info if not (i[0] in duplicates or duplicates_add(i[0]))]
-		for i in TaskPool().tasks(_process, prelim_data, Thread): i.join()
+		for i in utils.TaskPool().tasks(_process, prelim_data, Thread): i.join()
 #		threads = list(make_thread_list(_process, prelim_data, Thread))
 #		[i.join() for i in threads]
 	else:

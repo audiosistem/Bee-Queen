@@ -305,7 +305,7 @@ class Sources:
 
 	def play_file(self, results, source=None, autoplay=False, background=False):
 		def _process():
-			for count, item in enumerate(items, 1):
+			for count, item in enumerate(items[:10], 1):
 				if not background:
 					try:
 						if monitor.abortRequested(): break
@@ -313,11 +313,12 @@ class Sources:
 						percent = int(((total_items := len(items))-count)/total_items*100)
 						name = item['name'].replace('.', ' ').replace('-', ' ').upper()
 						line1 = item.get('scrape_provider'), item.get('cache_provider'), item.get('provider')
+						if not source_index is None: line1 = ('[B]%02d[/B]' % (source_index + count), *line1)
 						line2 = item.get('size_label', ''), item.get('extraInfo', '')
-						if not source_index is None: line2 = ('[B]%02d[/B]' % (source_index + count), *line2)
 						line1 = ' | '.join(i for i in line1 if i and not i == 'external').upper()
 						line2 = ' | '.join(i for i in line2 if i)
-						if self.progress_dialog: self.progress_dialog.update(format_line % (line1, line2, name), percent)
+						if self.progress_dialog:
+							self.progress_dialog.update(format_line % (line1, line2, name), percent)
 						else: progressDialogBG.update(percent, name)
 					except: pass
 				if 'unrestricted_link' in item:
@@ -331,13 +332,10 @@ class Sources:
 				source_index = 0
 				items = [i for i in results if not 'Uncached' in i.get('cache_provider', '')]
 				if self.filters_ignored: notification(32686)
-			else:
-				source_index = results.index(source) if source in results else None
-				if source_index: items = [
-					i for i in results[source_index:]
-					if not 'Uncached' in i.get('cache_provider', '')
-				][:40]
-				else: items = [source]
+			elif source in results:
+				source_index = results.index(source)
+				items = [i for i in results[source_index:] if not 'Uncached' in i.get('cache_provider', '')]
+			else: source_index, items = None, [source]
 			if background: return True if items else None
 			if self.full_screen:
 				self._make_progress_dialog()

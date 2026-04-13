@@ -87,6 +87,8 @@ class RealDebridAPI:
 		url = 'unrestrict/link'
 		post_data = {'link': link}
 		result = self._post(url, post_data)
+		if result['download'].lower().endswith(('.rar','.zip')):
+			raise Exception('link error\n%s' % result['download'])
 		try: return result['download']
 		except: return None
 

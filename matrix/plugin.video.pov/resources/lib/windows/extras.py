@@ -476,7 +476,7 @@ class Extras(BaseDialog):
 		return '%s: %s' % (ls(32635), next_aired)
 
 	def get_next_episode(self):
-		ep_list = ws.get_next_episodes(self.watched_indicators)
+		ep_list = ws.get_next_episodes()
 		try: info = [i for i in ep_list if i['media_ids']['tmdb'] == self.tmdb_id][0]
 		except: return ''
 		current_season = info['season']

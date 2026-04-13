@@ -136,6 +136,18 @@ class MetaCache(BaseCache):
 			self.dbcur.execute("""VACUUM""")
 		except: pass
 
+	def prefetch(self, limit=500):
+		for db_type, tmdb_id, meta, expires in self.dbcur.execute("""
+			SELECT db_type, tmdb_id, meta, expires
+			FROM metadata
+			WHERE tmdb_id IS NOT NULL
+			ORDER BY expires DESC
+			LIMIT ?
+		""", (limit,)):
+			try: self.set_memory_cache(db_type, 'tmdb_id', eval(meta), expires, tmdb_id)
+			except: pass
+		for i in (self.dbcur, self.dbcon): i.close()
+
 def cache_function(function, prop_string, url, expiration=96, json=False):
 	metacache = MetaCache()
 	data = metacache.get_function(prop_string)
@@ -144,16 +156,4 @@ def cache_function(function, prop_string, url, expiration=96, json=False):
 	else: result = function(url)
 	metacache.set_function(prop_string, result, expiration=timedelta(hours=expiration))
 	return result
-
-def cache_prefetch(limit=500):
-	metacache = MetaCache()
-	for db_type, tmdb_id, meta, expires in metacache.dbcur.execute("""
-		SELECT db_type, tmdb_id, meta, expires
-		FROM metadata
-		WHERE tmdb_id IS NOT NULL
-		ORDER BY expires DESC
-		LIMIT ?
-	""", (limit,)):
-		try: metacache.set_memory_cache(db_type, 'tmdb_id', eval(meta), expires, tmdb_id)
-		except: pass
 

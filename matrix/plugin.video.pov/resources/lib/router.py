@@ -8,8 +8,8 @@ get_property, set_property, clear_property = kodi_utils.get_property, kodi_utils
 get_setting, set_setting, make_settings_dict = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.make_settings_dict
 parse_qsl, get_infolabel, external_browse = kodi_utils.parse_qsl, kodi_utils.get_infolabel, kodi_utils.external_browse
 
-def runmode(cls, params, mode):
-	call = getattr(cls(params), mode, None)
+def runmode(cls, mode):
+	call = getattr(cls, mode, None)
 	return call() if callable(call) else None
 
 class Router:
@@ -29,13 +29,13 @@ class Router:
 		mode = params_get('mode', 'navigator.main')
 		if 'navigator.' in mode:
 			from menus.navigator import Navigator
-			runmode(Navigator, params, mode.split('.')[1])
+			runmode(Navigator(params), mode.split('.')[1])
 		elif 'menu_editor.' in mode:
 			from modules.menu_editor import MenuEditor
-			runmode(MenuEditor, params, mode.split('.')[1])
+			runmode(MenuEditor(params), mode.split('.')[1])
 		elif 'discover.' in mode:
 			from menus.discover import Discover
-			runmode(Discover, params, mode.split('.')[1])
+			runmode(Discover(params), mode.split('.')[1])
 		elif mode == 'media_play':
 			from modules.kodi_utils import player, close_all_dialog
 			close_all_dialog()
@@ -358,9 +358,9 @@ def checkSettingsFile():
 	return logger('POV', 'CheckSettingsFile Service Finished')
 
 def databaseMaintenance():
-	from caches.meta_cache import cache_prefetch
+	from caches.meta_cache import MetaCache
 	from modules.cache import clean_databases
-	cache_prefetch()
+	MetaCache().prefetch()
 	current_time = int(time.time())
 	next_clean = current_time + 259200 # 3 days
 	due_clean = int(get_setting('database.maintenance.due', '0'))

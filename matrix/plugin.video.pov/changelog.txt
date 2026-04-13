@@ -1,6 +1,7 @@
   removal pending: download, tmdblist
 
   [COLOR dodgerblue][B]Version 6.04[/B][/COLOR]
+- Fix for Real Debrid nonsense.
 - Moved comet to standalone source.
 - Removed aiostreams.
 - Changed subtitles search parameters: utf-8 only, added sources.

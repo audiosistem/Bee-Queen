@@ -256,7 +256,7 @@ class Menu(Episodes):
 				self.list = get_in_progress_episodes()
 			elif 'next_episode' in mode:
 				self.list_type = 'next_episode_pov'
-				self.list = get_next_episodes(self.watched_indicators)
+				self.list = get_next_episodes()
 				self.next_episode_filters()
 			elif 'my_calendar' in mode:
 				recently_aired = params_get('recently_aired')
