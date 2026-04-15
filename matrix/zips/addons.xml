@@ -507,7 +507,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
       <fanart>resources/fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.hublive" name="HubLive" version="1.4" provider-name="1X si Geamanu">
+</addon><addon id="plugin.video.hublive" name="HubLive" version="1.4.5" provider-name="1X si Geamanu">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
@@ -515,6 +515,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
   <extension point="xbmc.python.pluginsource" library="main.py">
     <provides>video</provides>
   </extension>
+  <extension point="xbmc.service" library="service.py" start="startup" />
   <extension point="xbmc.addon.metadata">
     <summary lang="en_GB">Hub Live Plugin</summary>
     <description lang="en_GB">Plays a premium M3U list with dynamic token generation.</description>
@@ -1113,7 +1114,7 @@ In addition to what livestreams allowed you to do, you can now,
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.2+unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
+</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.3+beta.1.unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.27.1" />
@@ -1230,27 +1231,23 @@ In addition to what livestreams allowed you to do, you can now,
         <disclaimer lang="vi_VN">Plugin này không được xác nhận bởi Google</disclaimer>
         <disclaimer lang="zh_CN">此插件未被谷歌认可</disclaimer>
         <disclaimer lang="zh_TW">此附加元件未由Google支持</disclaimer>
-    <news>## v7.4.2
+    <news>## v7.4.3+beta.1
 ### Fixed
-- Ensure updated context is used in client instance when rerouting to existing provider handler methods
-- Fix required ID potentially not being passed to YouTubeDataClient.(add|remove)_video_from_playlist()
-- Skip unplayable live manifests
-- Handle inconsistent error codes and names used in Python 2
-- Simplify byte range to timestamp conversion for compatibility with Python 2
-- Fix unnecessarily reloading listing when adding items to Bookmarks
+- Updates to resolve inconsistent Python2 string encoding/decoding
+- Ensure parameters to Kodi builtin functions are parsed as string literals
+- Allow trailing slashes in url of html pages served by internal http server
 
 ### Changed
-- Update parsing of plugin urls for path params and ID lists
-- Rework addon debug log settings (Addon &gt; Settings &gt; Advanced &gt; Debug &gt; Enable debug logging)
-  - Allowable values:
-    - Disabled (addon logging output disabled)
-    - Auto (default, addon logging output enabled if Kodi debug logging enabled)
-    - Always enabled (addon logging output enabled)
-    - Verbose (additional addon logging output enabled)
-- Various other improvement to addon logging
+- Open confirmation dialog, with a link for further information, when sign in process fails
+- Update API config page html
+- Improve handling of API key settings changes
+- Detect and notify when API requests cannot be completed
+- Use consistent language for signing in/out
 
 ### New
-- Update Setup Wizard to account for user possibly using mismatched watch history settings</news></extension>
+- Add button in API settings to view address of API config page
+- Fallback to playing channel uploads if no live stream is available
+- Add fallback method to load playlists when v3 API request cannot be made</news></extension>
 </addon><addon id="program.optiklean" name="OptiKlean" provider-name="DigiTalking" version="2.2.0">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
