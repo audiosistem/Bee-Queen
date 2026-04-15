@@ -24,6 +24,11 @@ PROFILE_DIR = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('profile')),
 if not xbmcvfs.exists(PROFILE_DIR):
     xbmcvfs.mkdirs(PROFILE_DIR)
 
+MENU_ICONS = {
+    'select_m3u_list': 'DefaultPlaylist.png',
+    'force_refresh_m3u_lists': 'DefaultAddonUpdates.png',
+}
+
 def get_pastebin_url():
     pastebin_url_file = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'pastebin_url.txt')
     if xbmcvfs.exists(pastebin_url_file):
@@ -104,6 +109,7 @@ def get_first_pvr_simple_instance_id():
         return None
 
 def add_dir(name, params, icon='DefaultFolder.png', is_folder=True):
+    icon = icon or MENU_ICONS.get(params.get('mode'), 'DefaultFolder.png')
     url = build_url(params)
     li = xbmcgui.ListItem(clean_title(name))
     li.setArt({'icon': icon, 'thumb': icon})
@@ -195,7 +201,7 @@ def list_m3u_lists_menu():
 
     for idx, m3u_list in enumerate(m3u_lists):
         name = m3u_list.get('name', f"List {idx+1}")
-        icon = m3u_list.get('icon', '')
+        icon = m3u_list.get('icon') or 'DefaultPlaylist.png'
         
         url = build_url({'mode': 'select_m3u_list', 'list_index': idx})
         li = xbmcgui.ListItem(clean_title(name))
@@ -215,7 +221,7 @@ def list_m3u_lists_menu():
     #     add_dir("[- Remove M3U List]", {'mode': 'remove_m3u_list'})
 
     # Add force refresh link
-    add_dir("[Force Refresh M3U Lists]", {'mode': 'force_refresh_m3u_lists'})
+    add_dir("[Force Refresh M3U Lists]", {'mode': 'force_refresh_m3u_lists'}, icon='DefaultAddonUpdates.png')
 
     end_of_directory()
 
@@ -421,14 +427,14 @@ def select_m3u_list(list_index):
             groups[group].append(channel)
 
         # Add "All Channels" option
-        add_dir("All Channels", {'mode': 'list_channels', 'list_index': list_index, 'group': 'all'})
+        add_dir("All Channels", {'mode': 'list_channels', 'list_index': list_index, 'group': 'all'}, icon='DefaultTVShows.png')
 
         # Add "Search" option
-        add_dir("Search", {'mode': 'open_search_menu', 'list_index': list_index}, is_folder=False)
+        add_dir("Search", {'mode': 'open_search_menu', 'list_index': list_index}, icon='DefaultAddonsSearch.png', is_folder=False)
 
         # Add group folders
         for group_name in sorted(groups.keys()):
-            add_dir(group_name, {'mode': 'list_channels', 'list_index': list_index, 'group': group_name})
+            add_dir(group_name, {'mode': 'list_channels', 'list_index': list_index, 'group': group_name}, icon='DefaultTVShows.png')
         
         end_of_directory()
     else:
@@ -462,8 +468,8 @@ def list_channels(list_index, group='all'):
         li = xbmcgui.ListItem(clean_title(channel['title']))
         li.setInfo(type='Video', infoLabels={'title': clean_title(channel['title'])})
         li.setProperty('IsPlayable', 'true')
-        if channel['tvg_logo']:
-            li.setArt({'icon': channel['tvg_logo'], 'thumb': channel['tvg_logo']})
+        icon = channel['tvg_logo'] or 'DefaultTVShows.png'
+        li.setArt({'icon': icon, 'thumb': icon})
         
         # Add context menu for channel info (optional)
         # commands = [('Channel Info', f'RunPlugin({build_url({"mode": "channel_info", "title": channel["title"]})})')]
@@ -519,8 +525,8 @@ def search_channels(list_index, query):
         li = xbmcgui.ListItem(clean_title(channel['title']))
         li.setInfo(type='Video', infoLabels={'title': clean_title(channel['title'])})
         li.setProperty('IsPlayable', 'true')
-        if channel['tvg_logo']:
-            li.setArt({'icon': channel['tvg_logo'], 'thumb': channel['tvg_logo']})
+        icon = channel['tvg_logo'] or 'DefaultTVShows.png'
+        li.setArt({'icon': icon, 'thumb': icon})
         
         xbmcplugin.addDirectoryItem(handle=ADDON_HANDLE, url=channel['url'], listitem=li, isFolder=False)
 

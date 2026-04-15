@@ -14,6 +14,16 @@ _base_url = sys.argv[0]
 
 _addon = xbmcaddon.Addon('plugin.video.hub')
 
+MENU_ICONS = {
+    'xtremeiptvplayer': 'DefaultAddonPVRClient.png',
+    'stalker': 'DefaultTVShows.png',
+    'edemplayer': 'DefaultAddonPVRClient.png',
+    'm3uplayer': 'DefaultPlaylist.png',
+    'radio_ro': 'DefaultMusicSongs.png',
+    'alteliste': 'DefaultFolder.png',
+    'settings': 'DefaultAddonService.png',
+}
+
 def get_params():
     """Get the plugin parameters"""
     paramstring = sys.argv[2][1:]
@@ -44,6 +54,8 @@ def main_menu():
 def add_menu_item(name, action):
     """Function to add a menu item"""
     li = xbmcgui.ListItem(label=name)
+    icon = MENU_ICONS.get(action, 'DefaultFolder.png')
+    li.setArt({'icon': icon, 'thumb': icon})
     if action == 'settings':
         url = f'{_base_url}?action={action}'
         li.setProperty('IsPlayable', 'false') # Settings is not a playable item
@@ -71,13 +83,14 @@ def router(params):
         try:
             # Temporarily add the project root to sys.path to allow absolute imports from 'sources'
             project_root = os.path.dirname(__file__)
-            sys.path.insert(0, project_root)
-            xbmc.log(f"main.py: sys.path before import: {sys.path}", level=xbmc.LOGINFO)
+            path_inserted = False
+            original_cwd = None
+            original_argv = None
+            if project_root not in sys.path:
+                sys.path.insert(0, project_root)
+                path_inserted = True
 
             module = importlib.import_module(full_module_name)
-            
-            # Restore sys.path
-            sys.path.remove(project_root)
 
             # Temporarily change the current working directory to the module's directory
             # This is important for modules that rely on relative paths for resources
@@ -92,9 +105,6 @@ def router(params):
             sys.argv = [f'plugin://plugin.video.hub/sources/{action}/', str(_handle), sys.argv[2]]
             
             module.router(get_params()) # Call the sub-plugin's router
-            
-            sys.argv = original_argv # Restore original sys.argv
-            os.chdir(original_cwd) # Restore original current working directory
 
         except ImportError as e:
             xbmc.log(f"Error loading module {full_module_name}: {e}", level=xbmc.LOGERROR)
@@ -102,6 +112,13 @@ def router(params):
         except Exception as e:
             xbmc.log(f"Error in module {full_module_name}: {e}", level=xbmc.LOGERROR)
             xbmcgui.Dialog().notification('Error', f'Error in module {action}', xbmcgui.NOTIFICATION_ERROR)
+        finally:
+            if original_argv is not None:
+                sys.argv = original_argv
+            if original_cwd is not None:
+                os.chdir(original_cwd)
+            if path_inserted and project_root in sys.path:
+                sys.path.remove(project_root)
 
 if __name__ == '__main__':
     router(get_params())

@@ -23,6 +23,14 @@ if not xbmcvfs.exists(PROFILE_DIR):
     xbmcvfs.mkdirs(PROFILE_DIR)
 SCRIPT_DIR = os.path.dirname(__file__)
 
+MENU_ICONS = {
+    'list_profiles': 'DefaultNetwork.png',
+    'search': 'DefaultAddonsSearch.png',
+    'switch_profile': 'DefaultNetwork.png',
+    'force_refresh_edem_profiles': 'DefaultAddonUpdates.png',
+    'show_channels': 'DefaultTVShows.png',
+}
+
 def get_pastebin_url():
     pastebin_url_file = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'pastebin_url.txt')
     if xbmcvfs.exists(pastebin_url_file):
@@ -138,6 +146,11 @@ def write_profiles(profiles):
 
 def list_profiles():
     xbmcplugin.setPluginCategory(ADDON_HANDLE, "Profiles")
+    
+    # Add force refresh and verify links at the top
+    add_dir("[Verify All Profiles]", {'mode': 'verify_all_profiles'}, icon='DefaultAddonUpdates.png')
+    add_dir("[Force Refresh Edem Profiles]", {'mode': 'force_refresh_edem_profiles'}, icon='DefaultAddonUpdates.png')
+
     profiles = read_profiles()
     active_profile_unique_string = ADDON.getSetting('edem_active_profile_unique_string')
 
@@ -146,20 +159,35 @@ def list_profiles():
         xbmcplugin.endOfDirectory(ADDON_HANDLE)
         return
 
+    # Load validation cache if available
+    validation_cache = {}
+    valid_cache_path = os.path.join(PROFILE_DIR, 'edem_valid_cache.json')
+    if xbmcvfs.exists(valid_cache_path):
+        try:
+            with xbmcvfs.File(valid_cache_path, 'r') as f:
+                validation_cache = json.loads(f.read())
+        except Exception:
+            pass
+
     for profile in profiles:
         name = profile.get('name')
+        unique_string = profile.get('unique_string')
         display_name = name
-        if profile.get('unique_string') == active_profile_unique_string:
+        
+        # Append validation status from cache
+        if unique_string in validation_cache:
+            status = validation_cache[unique_string]
+            if status == "VALID" or status is True:
+                display_name += " [COLOR green][Valid][/COLOR]"
+            elif status == "OCCUPIED":
+                display_name += " [COLOR orange][Occupied][/COLOR]"
+            elif status == "INVALID" or status is False:
+                display_name += " [COLOR red][Invalid][/COLOR]"
+                
+        if unique_string == active_profile_unique_string:
             display_name += " (Active)"
-        add_dir(display_name, {'mode': 'switch_profile', 'name': name})
-
-    # Removed add/remove profile options as per user request
-    # add_dir("[+ Add New Profile]", {'mode': 'add_profile'})
-    # if profiles:
-    #     add_dir("[- Remove a Profile]", {'mode': 'remove_profile'})
-
-    # Add force refresh link
-    add_dir("[Force Refresh Edem Profiles]", {'mode': 'force_refresh_edem_profiles'})
+            
+        add_dir(display_name, {'mode': 'switch_profile', 'name': name}, icon='DefaultNetwork.png')
 
     xbmcplugin.endOfDirectory(ADDON_HANDLE)
 
@@ -198,14 +226,34 @@ def switch_profile(name):
 # --- Domain Checker Functions ---
 def check_domain_availability(base_domain):
     active_unique_string = ADDON.getSetting('edem_active_profile_unique_string')
+    
+    # If no active profile, try to find a fallback unique string from the local m3u8 file
     if not active_unique_string:
-        return False
+        m3u8_file_path = os.path.join(SCRIPT_DIR, 'edem_en.m3u8')
+        try:
+            with open(m3u8_file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                match = re.search(r'/iptv/([A-Z0-9]+)/', content)
+                if match:
+                    active_unique_string = match.group(1)
+        except Exception:
+            pass
+            
+    if not active_unique_string:
+        # Last resort fallback (usually Edem IDs are 14 chars)
+        active_unique_string = "B5MWVF2B66GG8B" 
+
     test_path = f"/iptv/{active_unique_string}/2523/index.m3u8"
     test_url = f"http://{base_domain}{test_path}"
     try:
-        with urllib.request.urlopen(test_url, timeout=5) as response:
-            return 200 <= response.getcode() < 300
-    except (urllib.error.URLError, Exception):
+        response = requests.get(test_url, timeout=5)
+        if response.status_code == 200:
+            content = response.text
+            # For domain checking, we only care if it's an Edem server that responds 
+            # with a playlist. Even if it returns /404/ (invalid ID), the server itself is working.
+            return "#EXTM3U" in content
+        return False
+    except Exception:
         return False
 
 def find_working_domain():
@@ -276,6 +324,115 @@ def update_m3u8_domain(m3u8_file_path, old_domain, new_domain):
             f.write(updated_content)
     except Exception:
         pass
+
+def verify_id(unique_string):
+    """Checks if an Edem ID is valid across known domains."""
+    domains_file_path = os.path.join(SCRIPT_DIR, 'domenii.txt')
+    domains = []
+    
+    # Try to find the current domain from the m3u8 file
+    m3u8_file_path = os.path.join(SCRIPT_DIR, 'edem_en.m3u8')
+    try:
+        with open(m3u8_file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.startswith('http'):
+                    match = re.match(r'http[s]?://([^/]+)', line.strip())
+                    if match:
+                        domains.append(match.group(1))
+                        break
+    except Exception:
+        pass
+        
+    # Add domains from domenii.txt
+    try:
+        with open(domains_file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                domain = line.strip()
+                if domain and not domain.startswith('#'):
+                    domains.append(re.sub(r'http[s]?://', '', domain).strip())
+    except Exception:
+        pass
+
+    # Deduplicate domains
+    unique_domains = []
+    for d in domains:
+        if d not in unique_domains:
+            unique_domains.append(d)
+    
+    # Limit to top 5 domains for speed
+    for domain in unique_domains[:5]:
+        test_path = f"/iptv/{unique_string}/2523/index.m3u8"
+        test_url = f"http://{domain}{test_path}"
+        try:
+            response = requests.get(test_url, timeout=5)
+            if response.status_code == 200:
+                content = response.text
+                if "#EXTM3U" in content:
+                    if "/404/" in content:
+                        return "INVALID", domain
+                    elif "/405/" in content:
+                        return "OCCUPIED", domain
+                    else:
+                        return "VALID", domain
+        except Exception:
+            continue
+    return "INVALID", None
+
+def verify_all_profiles():
+    """Verifies all profiles from the pastebin and shows results."""
+    profiles = read_profiles()
+    if not profiles:
+        xbmcgui.Dialog().notification('Info', 'No Edem profiles to verify.', xbmcgui.NOTIFICATION_INFO)
+        return
+    
+    progress = xbmcgui.DialogProgress()
+    progress.create('Edem Verifier', 'Verifying Edem IDs...')
+    
+    results = []
+    valid_count = 0
+    occupied_count = 0
+    invalid_count = 0
+    validation_cache = {}
+    
+    for i, profile in enumerate(profiles):
+        if progress.iscanceled():
+            break
+        
+        name = profile.get('name')
+        unique_string = profile.get('unique_string')
+        
+        progress.update(int((i / len(profiles)) * 100), f"Checking {name}... (ID: {unique_string})")
+        
+        status_code, domain = verify_id(unique_string)
+        validation_cache[unique_string] = status_code
+        
+        if status_code == "VALID":
+            status = "[COLOR green]Valid[/COLOR]"
+            valid_count += 1
+        elif status_code == "OCCUPIED":
+            status = "[COLOR orange]Occupied[/COLOR]"
+            occupied_count += 1
+        else:
+            status = "[COLOR red]Invalid[/COLOR]"
+            invalid_count += 1
+            
+        results.append(f"{name}: {status} ({unique_string})")
+        
+    progress.close()
+    
+    # Save cache
+    valid_cache_path = os.path.join(PROFILE_DIR, 'edem_valid_cache.json')
+    try:
+        with xbmcvfs.File(valid_cache_path, 'w') as f:
+            f.write(json.dumps(validation_cache))
+    except Exception:
+        pass
+    
+    result_text = f"Total Profiles: {len(profiles)}\nValid: {valid_count} | Occupied: {occupied_count} | Invalid: {invalid_count}\n\n" + "\n".join(results)
+    xbmcgui.Dialog().textviewer('Edem Verification Results', result_text)
+    
+    # Refresh the directory to show the newly added valid/invalid markers
+    xbmc.executebuiltin('Container.Refresh()')
 
 # --- Plugin Functions ---
 def get_params():
@@ -364,14 +521,15 @@ def add_dir(name, params, icon=None):
         url = f"{BASE_URL}?action={action_param}"
 
     li = xbmcgui.ListItem(name)
+    icon = icon or MENU_ICONS.get(params.get('mode'), 'DefaultFolder.png')
     if icon:
         li.setArt({'thumb': icon, 'icon': icon, 'fanart': icon})
     xbmcplugin.addDirectoryItem(handle=ADDON_HANDLE, url=url, listitem=li, isFolder=True)
 
 def main_menu(server):
     xbmcplugin.setPluginCategory(ADDON_HANDLE, "Main Menu")
-    add_dir('Manage Profiles', {'mode': 'list_profiles'})
-    add_dir('Search Channels', {'mode': 'search'})
+    add_dir('Manage Profiles', {'mode': 'list_profiles'}, icon='DefaultNetwork.png')
+    add_dir('Search Channels', {'mode': 'search'}, icon='DefaultAddonsSearch.png')
 
     m3u8_file = os.path.join(SCRIPT_DIR, 'edem_en.m3u8')
     groups = get_groups(m3u8_file)
@@ -387,7 +545,7 @@ def main_menu(server):
     reordered_groups.extend(sorted(groups))
     
     for group in reordered_groups:
-        add_dir(group, {'mode': 'show_channels', 'group': group})
+        add_dir(group, {'mode': 'show_channels', 'group': group}, icon='DefaultTVShows.png')
         
     xbmcplugin.endOfDirectory(ADDON_HANDLE)
 
@@ -419,6 +577,8 @@ def router(params):
         remove_profile()
     elif mode == 'switch_profile':
         switch_profile(params['name'])
+    elif mode == 'verify_all_profiles':
+        verify_all_profiles()
     elif mode == 'force_refresh_edem_profiles': # NEW
         force_refresh_edem_profiles() # NEW
     elif mode == 'search':
@@ -436,7 +596,8 @@ def router(params):
                 if results:
                     for channel in results:
                         li = xbmcgui.ListItem(label=channel['name'])
-                        li.setArt({'thumb': channel['logo'], 'icon': channel['logo']})
+                        icon = channel['logo'] or 'DefaultTVShows.png'
+                        li.setArt({'thumb': icon, 'icon': icon})
                         li.setProperty('IsPlayable', 'true')
                         xbmcplugin.addDirectoryItem(handle=ADDON_HANDLE, url=channel['url'], listitem=li, isFolder=False)
                 else:
@@ -453,7 +614,8 @@ def router(params):
         
         for channel in channels:
             li = xbmcgui.ListItem(label=channel['name'])
-            li.setArt({'thumb': channel['logo'], 'icon': channel['logo']})
+            icon = channel['logo'] or 'DefaultTVShows.png'
+            li.setArt({'thumb': icon, 'icon': icon})
             li.setProperty('IsPlayable', 'true')
             xbmcplugin.addDirectoryItem(handle=ADDON_HANDLE, url=channel['url'], listitem=li, isFolder=False)
             

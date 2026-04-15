@@ -15,6 +15,8 @@ import json
 import zlib
 import base64
 import logging
+import hashlib
+import random
 
 # Set a common User-Agent to avoid being blocked
 HEADERS = {'User-Agent': 'VLC/3.0.20 (Windows; x86_64)'}
@@ -29,6 +31,39 @@ PROFILE_DIR = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('profile')),
 if not xbmcvfs.exists(PROFILE_DIR):
     xbmcvfs.mkdirs(PROFILE_DIR)
 
+MENU_ICONS = {
+    'list_profiles': 'DefaultNetwork.png',
+    'list_favorite_profiles': 'DefaultFavourites.png',
+    'force_refresh_profiles': 'DefaultAddonUpdates.png',
+    'open_search_menu': 'DefaultAddonsSearch.png',
+    'search_items': 'DefaultAddonsSearch.png',
+    'verify_romanian_channels': 'DefaultAddonLibrary.png',
+    'list_romanian_categories': 'DefaultTVShows.png',
+}
+
+def log_debug(message):
+    xbmc.log(f"[xtream] {message}", level=xbmc.LOGINFO)
+
+def describe_payload(payload, limit=300):
+    try:
+        if isinstance(payload, dict):
+            preview = {
+                'type': 'dict',
+                'keys': list(payload.keys())[:10],
+            }
+            text = json.dumps(preview, ensure_ascii=True)
+        elif isinstance(payload, list):
+            sample = payload[:2]
+            text = json.dumps({'type': 'list', 'len': len(payload), 'sample': sample}, ensure_ascii=True)
+        else:
+            text = json.dumps({'type': type(payload).__name__, 'value': str(payload)}, ensure_ascii=True)
+    except Exception:
+        text = repr(payload)
+
+    if len(text) > limit:
+        return text[:limit] + '...'
+    return text
+
 # Settings
 def get_pastebin_url():
     pastebin_url_file = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'pastebin_url.txt')
@@ -42,12 +77,17 @@ def get_pastebin_url():
             return data['url']
     return ""
 
-PASTEBIN_PROFILES_URL = get_pastebin_url()
-PASTEBIN_CACHE_FILE = os.path.join(PROFILE_DIR, 'pastebin_profiles_cache.json')
-PASTEBIN_CACHE_DURATION = 3600 # 1 hour in seconds
+XTREAM_PROFILES_URL = 'https://github.com/michaz1988/michaz1988.github.io/releases/download/EPG/xtreamlist.json'
+XTREAM_JSON_CACHE_FILE = os.path.join(PROFILE_DIR, 'xtream_profiles_json_cache.json')
+XTREAM_PASTEBIN_CACHE_FILE = os.path.join(PROFILE_DIR, 'xtream_profiles_pastebin_cache.json')
+PROFILES_CACHE_DURATION = 3600 # 1 hour in seconds
+XTREAM_RO_STATUS_FILE = os.path.join(PROFILE_DIR, 'xtream_ro_status.json')
+XTREAM_FAVORITES_FILE = os.path.join(PROFILE_DIR, 'xtream_favorites.json')
 SERVER_URL = ADDON.getSetting('xtreme_url')
 USERNAME = ADDON.getSetting('xtreme_username')
 PASSWORD = ADDON.getSetting('xtreme_password')
+RE_BOX_CHARS = re.compile(r"[\u2500-\u259F\u2500-\u257F]")
+RE_CATEGORY_PREFIX = re.compile(r"^[\|\-\s]+ro[\|\s\:\-\[\(]?", re.IGNORECASE)
 
 def build_url(query):
     # Ensure 'action' is the first parameter
@@ -74,6 +114,17 @@ def get_api_url(action, params=None):
     current_password = ADDON.getSetting('xtreme_password')
 
     base = f"{SERVER_URL}/player_api.php?username={current_username}&password={current_password}&action={action}"
+    if params:
+        base += "&" + urlencode(params)
+    return base
+
+def get_profile_api_url(server_url, username, password, action=None, params=None):
+    if not server_url:
+        return None
+
+    base = f"{server_url}/player_api.php?username={username}&password={password}"
+    if action:
+        base += f"&action={action}"
     if params:
         base += "&" + urlencode(params)
     return base
@@ -112,68 +163,139 @@ def decode_xml_data(encoded_data):
     return zlib.decompress(decoded_data)
 
 # --- Profile/Account Management ---
-def read_profiles():
+def get_profile_source_mode():
+    return ADDON.getSetting('xtreme_profile_source') or '0'
+
+def read_profiles_from_json():
     # Try to read from cache first
-    if xbmcvfs.exists(PASTEBIN_CACHE_FILE):
+    if xbmcvfs.exists(XTREAM_JSON_CACHE_FILE):
         try:
-            cache_mod_time = os.path.getmtime(PASTEBIN_CACHE_FILE)
-            if (time.time() - cache_mod_time) < PASTEBIN_CACHE_DURATION:
-                with xbmcvfs.File(PASTEBIN_CACHE_FILE, 'r') as f:
+            cache_mod_time = os.path.getmtime(XTREAM_JSON_CACHE_FILE)
+            if (time.time() - cache_mod_time) < PROFILES_CACHE_DURATION:
+                with xbmcvfs.File(XTREAM_JSON_CACHE_FILE, 'r') as f:
                     encoded_data = f.read()
                     return decode_data(encoded_data.encode('utf-8'))
         except (IOError, ValueError, OSError, zlib.error):
             pass # Cache invalid or corrupted, proceed to fetch
 
-    # Fetch from pastebin
+    # Fetch from xtream JSON source
     try:
-        response = SESSION.get(PASTEBIN_PROFILES_URL, timeout=10)
+        response = SESSION.get(XTREAM_PROFILES_URL, timeout=15)
         response.raise_for_status()
-        content = decode_remote_data(response.text.strip()) # Get entire content as a single string
+        data = response.json()
+        profiles = []
+        seen = set()
 
-        # Try to parse the content as JSON, as it might be wrapped
+        for source in data.get('urls', []):
+            server_base_url = str(source.get('url', '')).strip().rstrip('/')
+            if not server_base_url:
+                continue
+
+            parsed_url = urlparse(server_base_url)
+            server_base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+            region = str(source.get('region', '')).strip()
+
+            for credentials in source.get('userpasses', []):
+                username = str(credentials.get('user', '')).strip()
+                password = str(credentials.get('pass', '')).strip()
+                if not username or not password:
+                    continue
+
+                profile_key = (server_base_url.lower(), username.lower())
+                if profile_key in seen:
+                    continue
+                seen.add(profile_key)
+
+                profile_name = f"{parsed_url.netloc} ({username})"
+                profiles.append({
+                    "name": profile_name,
+                    "server": server_base_url,
+                    "user": username,
+                    "pass": password,
+                    "region": region,
+                })
+
+        # Cache the fetched profiles
+        try:
+            with xbmcvfs.File(XTREAM_JSON_CACHE_FILE, 'w') as f:
+                encoded_data = encode_data(profiles)
+                f.write(encoded_data.decode('utf-8'))
+        except (IOError, ValueError) as e:
+            xbmcgui.Dialog().notification('Error', f'Failed to cache Xtream profiles: {e}', xbmcgui.NOTIFICATION_ERROR)
+
+        return profiles
+    except (requests.exceptions.RequestException, ValueError, TypeError, json.JSONDecodeError) as e:
+        xbmcgui.Dialog().notification('Error', f"Failed to fetch profiles from Xtream JSON: {e}", xbmcgui.NOTIFICATION_ERROR)
+        return []
+
+def read_profiles_from_pastebin():
+    if xbmcvfs.exists(XTREAM_PASTEBIN_CACHE_FILE):
+        try:
+            cache_mod_time = os.path.getmtime(XTREAM_PASTEBIN_CACHE_FILE)
+            if (time.time() - cache_mod_time) < PROFILES_CACHE_DURATION:
+                with xbmcvfs.File(XTREAM_PASTEBIN_CACHE_FILE, 'r') as f:
+                    encoded_data = f.read()
+                    return decode_data(encoded_data.encode('utf-8'))
+        except (IOError, ValueError, OSError, zlib.error):
+            pass
+
+    try:
+        response = SESSION.get(get_pastebin_url(), timeout=10)
+        response.raise_for_status()
+        content = decode_remote_data(response.text.strip())
+
         try:
             data_json = json.loads(content)
             content = data_json.get("data", "")
         except (json.JSONDecodeError, TypeError):
-            # If it's not valid JSON or not a string, use the content as is
             pass
 
         profiles = []
-        
-        # Use regex to find all Xtream IPTV entries
-        # Pattern: full Xtream IPTV URL with username, password, type, and output
+        seen = set()
         xtream_pattern = r"(https?://[^\s]+?/get.php\?username=[^\s]+?&password=[^\s]+)"
-        
+
         for match in re.finditer(xtream_pattern, content):
-            full_url = match.group(1) # Captured full URL
-            
+            full_url = match.group(1)
             parsed_url = urlparse(full_url)
             server_base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
             query_params = parse_qs(parsed_url.query)
-            
-            username = query_params.get('username', [''])[0]
-            password = query_params.get('password', [''])[0]
 
-            profile_name = f"{parsed_url.netloc} ({username})" # Use domain:port (username) as the profile name
+            username = query_params.get('username', [''])[0].strip()
+            password = query_params.get('password', [''])[0].strip()
+            if not username or not password:
+                continue
+
+            profile_key = (server_base_url.lower(), username.lower())
+            if profile_key in seen:
+                continue
+            seen.add(profile_key)
+
+            profile_name = f"{parsed_url.netloc} ({username})"
             profiles.append({
                 "name": profile_name,
                 "server": server_base_url,
                 "user": username,
-                "pass": password
+                "pass": password,
+                "region": "",
             })
-        
-        # Cache the fetched profiles
+
         try:
-            with xbmcvfs.File(PASTEBIN_CACHE_FILE, 'w') as f:
+            with xbmcvfs.File(XTREAM_PASTEBIN_CACHE_FILE, 'w') as f:
                 encoded_data = encode_data(profiles)
                 f.write(encoded_data.decode('utf-8'))
         except (IOError, ValueError) as e:
-            xbmcgui.Dialog().notification('Error', f'Failed to cache pastebin profiles: {e}', xbmcgui.NOTIFICATION_ERROR)
+            xbmcgui.Dialog().notification('Error', f'Failed to cache legacy Xtream profiles: {e}', xbmcgui.NOTIFICATION_ERROR)
 
         return profiles
-    except requests.exceptions.RequestException as e:
-        xbmcgui.Dialog().notification('Error', f"Failed to fetch profiles from pastebin: {e}", xbmcgui.NOTIFICATION_ERROR)
+    except (requests.exceptions.RequestException, ValueError, TypeError, json.JSONDecodeError) as e:
+        xbmcgui.Dialog().notification('Error', f"Failed to fetch profiles from legacy pastebin: {e}", xbmcgui.NOTIFICATION_ERROR)
         return []
+
+def read_profiles():
+    profile_source_mode = get_profile_source_mode()
+    if profile_source_mode == '1':
+        return read_profiles_from_pastebin()
+    return read_profiles_from_json()
 
 
 def write_profiles(profiles):
@@ -183,35 +305,113 @@ def write_profiles(profiles):
     xbmcgui.Dialog().notification('Info', 'Profile writing is disabled.', xbmcgui.NOTIFICATION_INFO)
     return False
 
+def get_profile_dns(profile):
+    server_url = profile.get('server', '')
+    parsed = urlparse(server_url)
+    return (parsed.hostname or profile.get('name') or parsed.netloc or server_url or 'Unknown').strip()
+
+def group_profiles_by_dns(profiles):
+    grouped = {}
+    for profile in profiles:
+        dns = get_profile_dns(profile)
+        dns_key = dns.lower()
+        if dns_key not in grouped:
+            grouped[dns_key] = {'dns': dns, 'profiles': []}
+        grouped[dns_key]['profiles'].append(profile)
+
+    grouped_list = list(grouped.values())
+    grouped_list.sort(key=lambda group: (-len(group['profiles']), group['dns'].lower()))
+    return grouped_list
+
+def get_group_profiles(group_dns):
+    profiles = read_profiles()
+    matching_profiles = [
+        profile for profile in profiles
+        if get_profile_dns(profile).lower() == (group_dns or '').lower()
+    ]
+    matching_profiles.sort(key=lambda profile: (profile.get('user') or '').lower())
+    return matching_profiles
+
+def choose_profile_from_group(group_dns, heading):
+    matching_profiles = get_group_profiles(group_dns)
+    if not matching_profiles:
+        xbmcgui.Dialog().notification('Error', 'Could not find users for this portal.', xbmcgui.NOTIFICATION_ERROR)
+        return None
+
+    if len(matching_profiles) == 1:
+        return matching_profiles[0]
+
+    active_profile_server = ADDON.getSetting('xtreme_url')
+    active_profile_user = ADDON.getSetting('xtreme_username')
+    labels = []
+    for profile in matching_profiles:
+        server_url = profile.get('server', '')
+        parsed = urlparse(server_url)
+        port_suffix = f":{parsed.port}" if parsed.port else ""
+        username = profile.get('user') or 'Unknown User'
+        label = f"{username} [{parsed.scheme}://{parsed.hostname or parsed.netloc}{port_suffix}]"
+        if profile.get('server') == active_profile_server and profile.get('user') == active_profile_user:
+            label += " (Active)"
+        labels.append(label)
+
+    selected_index = xbmcgui.Dialog().select(heading, labels)
+    if selected_index < 0:
+        return None
+    return matching_profiles[selected_index]
+
 def list_profiles():
     xbmcplugin.setPluginCategory(ADDON_HANDLE, "Profiles")
     profiles = read_profiles()
     active_profile_server = ADDON.getSetting('xtreme_url')
     active_profile_user = ADDON.getSetting('xtreme_username')
+    profile_source_mode = get_profile_source_mode()
+    favorite_profiles = load_favorite_profiles()
 
     if not profiles:
-        xbmcgui.Dialog().notification('Info', 'No profiles found from pastebin.', xbmcgui.NOTIFICATION_INFO)
+        source_label = 'Legacy Pastebin' if profile_source_mode == '1' else 'Xtream JSON'
+        xbmcgui.Dialog().notification('Info', f'No profiles found from {source_label}.', xbmcgui.NOTIFICATION_INFO)
         xbmcplugin.endOfDirectory(ADDON_HANDLE)
         return
 
-    for profile in profiles:
-        name = profile.get('name')
-        display_name = name
-        # Check if the server URL matches, as user/pass might be empty
-        if profile.get('server') == active_profile_server and profile.get('user') == active_profile_user:
-            display_name += " (Active)"
-        
-        url = build_url({'mode': 'switch_profile', 'name': name})
-        li = xbmcgui.ListItem(display_name)
+    source_label = 'Legacy Pastebin' if profile_source_mode == '1' else 'Xtream JSON'
+    add_dir(f"[Source] {source_label} - {len(profiles)} users", {'mode': 'list_profiles'}, icon='DefaultNetwork.png')
 
-        # Construct the m3u_plus_url and add context menu
-        server = profile.get('server', '')
-        user = profile.get('user', '')
-        pwd = profile.get('pass', '')
-        if server and user and pwd:
-            m3u_plus_url = f"{server}/get.php?username={user}&password={pwd}&type=m3u_plus"
-            command = f"RunPlugin({build_url({'mode': 'add_to_pvr', 'url': m3u_plus_url})})"
-            li.addContextMenuItems([('Add to PVR IPTV Simple Client', command)])
+    grouped_profiles = group_profiles_by_dns(profiles)
+
+    for group in grouped_profiles:
+        dns = group['dns']
+        group_profiles = group['profiles']
+        is_active_group = any(
+            profile.get('server') == active_profile_server and
+            profile.get('user') == active_profile_user
+            for profile in group_profiles
+        )
+
+        display_name = dns
+        if len(group_profiles) > 1:
+            display_name += f" ({len(group_profiles)} users)"
+        if is_active_group:
+            display_name += " (Active)"
+
+        url = build_url({'mode': 'select_profile_group', 'group_dns': dns})
+        li = xbmcgui.ListItem(display_name)
+        li.setArt({'icon': 'DefaultNetwork.png', 'thumb': 'DefaultNetwork.png'})
+        context_menu = [
+            ('Add user to PVR IPTV Simple Client', f'RunPlugin({build_url({"mode": "add_group_to_pvr", "group_dns": dns})})')
+        ]
+
+        if len(group_profiles) == 1:
+            profile = group_profiles[0]
+            server = profile.get('server', '')
+            user = profile.get('user', '')
+            if is_profile_favorite(server, user, favorite_profiles):
+                context_menu.insert(0, ('Remove from Favorite', f'RunPlugin({build_url({"mode": "remove_profile_from_favorites", "server": server, "user": user})})'))
+            else:
+                context_menu.insert(0, ('Add to Favorite', f'RunPlugin({build_url({"mode": "add_profile_to_favorites", "server": server, "user": user, "password": profile.get("pass", ""), "name": profile.get("name", "")})})'))
+        else:
+            context_menu.insert(0, ('Add User to Favorite', f'RunPlugin({build_url({"mode": "add_favorite_from_group", "group_dns": dns})})'))
+
+        li.addContextMenuItems(context_menu)
 
         xbmcplugin.addDirectoryItem(handle=ADDON_HANDLE, url=url, listitem=li, isFolder=True)
 
@@ -221,7 +421,7 @@ def list_profiles():
     #     add_dir("[- Remove a Profile]", {'mode': 'remove_profile'})
 
     # NEW: Add force refresh link
-    add_dir("[Force Refresh Profiles]", {'mode': 'force_refresh_profiles'})
+    add_dir("[Force Refresh Profiles]", {'mode': 'force_refresh_profiles'}, icon='DefaultAddonUpdates.png')
 
     xbmcplugin.endOfDirectory(ADDON_HANDLE)
 
@@ -234,29 +434,481 @@ def remove_profile():
     return
 
 def force_refresh_profiles():
-    if xbmcvfs.exists(PASTEBIN_CACHE_FILE):
+    cache_files = [XTREAM_JSON_CACHE_FILE, XTREAM_PASTEBIN_CACHE_FILE]
+    cleared_any = False
+    for cache_file in cache_files:
+        if not xbmcvfs.exists(cache_file):
+            continue
         try:
-            xbmcvfs.delete(PASTEBIN_CACHE_FILE)
-            xbmcgui.Dialog().notification('Success', 'Profile cache cleared. Refreshing...', xbmcgui.NOTIFICATION_INFO)
+            xbmcvfs.delete(cache_file)
+            cleared_any = True
         except Exception as e:
             xbmcgui.Dialog().notification('Error', f'Failed to clear cache: {e}', xbmcgui.NOTIFICATION_ERROR)
+            return
+
+    if cleared_any:
+        xbmcgui.Dialog().notification('Success', 'Profile caches cleared. Refreshing...', xbmcgui.NOTIFICATION_INFO)
     else:
         xbmcgui.Dialog().notification('Info', 'No profile cache found. Refreshing...', xbmcgui.NOTIFICATION_INFO)
     
     xbmc.executebuiltin('Container.Update(plugin://plugin.video.hub/?action=xtremeiptvplayer)')
 
-def switch_profile(name):
-    profiles = read_profiles()
-    profile_to_activate = next((p for p in profiles if p.get('name') == name), None)
+def list_favorite_profiles():
+    xbmcplugin.setPluginCategory(ADDON_HANDLE, "Favorite")
+    favorites = load_favorite_profiles()
+    active_profile_server = ADDON.getSetting('xtreme_url')
+    active_profile_user = ADDON.getSetting('xtreme_username')
 
-    if profile_to_activate:
-        ADDON.setSetting('xtreme_url', profile_to_activate['server'])
-        ADDON.setSetting('xtreme_username', profile_to_activate['user'])
-        ADDON.setSetting('xtreme_password', profile_to_activate['pass'])
-        xbmcgui.Dialog().notification('Profile Switched', f"Activated profile: {name}", xbmcgui.NOTIFICATION_INFO)
-        xbmc.executebuiltin('Container.Update(plugin://plugin.video.hub/?action=xtremeiptvplayer)') # Refresh the menu to show the main menu
+    if not favorites:
+        xbmcgui.Dialog().notification('Info', 'No favorite playlists found.', xbmcgui.NOTIFICATION_INFO)
+        xbmcplugin.endOfDirectory(ADDON_HANDLE)
+        return
+
+    favorites = sorted(favorites, key=lambda item: ((item.get('dns') or '').lower(), (item.get('user') or '').lower()))
+    for favorite in favorites:
+        server = favorite.get('server', '')
+        user = favorite.get('user', '')
+        password = favorite.get('pass', '')
+        dns = favorite.get('dns') or favorite.get('name') or server
+        display_name = f"{dns} - {user}"
+        if server == active_profile_server and user == active_profile_user:
+            display_name += " (Active)"
+
+        li = xbmcgui.ListItem(display_name)
+        li.setProperty('IsPlayable', 'false')
+        li.setArt({'icon': 'DefaultFavourites.png', 'thumb': 'DefaultFavourites.png'})
+        li.addContextMenuItems([
+            ('Remove from Favorite', f'RunPlugin({build_url({"mode": "remove_profile_from_favorites", "server": server, "user": user, "refresh_mode": "favorites"})})')
+        ])
+        url = build_url({'mode': 'switch_profile', 'server': server, 'user': user, 'password': password, 'name': favorite.get('name', '')})
+        xbmcplugin.addDirectoryItem(handle=ADDON_HANDLE, url=url, listitem=li, isFolder=False)
+
+    xbmcplugin.endOfDirectory(ADDON_HANDLE)
+
+def add_profile_to_favorites(server_url, username, password, name=None, refresh_mode='profiles'):
+    if not server_url or not username:
+        xbmcgui.Dialog().notification('Error', 'Missing profile details.', xbmcgui.NOTIFICATION_ERROR)
+        return
+
+    favorites = load_favorite_profiles()
+    if is_profile_favorite(server_url, username, favorites):
+        xbmcgui.Dialog().notification('Info', 'Playlist already in Favorite.', xbmcgui.NOTIFICATION_INFO)
     else:
+        favorites.append(build_profile_favorite_entry(server_url, username, password, name))
+        save_favorite_profiles(favorites)
+        xbmcgui.Dialog().notification('Favorite', 'Playlist added to Favorite.', xbmcgui.NOTIFICATION_INFO)
+
+    if refresh_mode == 'favorites':
+        xbmc.executebuiltin('Container.Refresh')
+    else:
+        xbmc.executebuiltin('Container.Update(plugin://plugin.video.hub/?action=xtremeiptvplayer&mode=list_profiles)')
+
+def remove_profile_from_favorites(server_url, username, refresh_mode='profiles'):
+    favorite_key = get_profile_favorite_key(server_url, username)
+    favorites = load_favorite_profiles()
+    filtered = [favorite for favorite in favorites if favorite.get('favorite_key') != favorite_key]
+
+    if len(filtered) == len(favorites):
+        xbmcgui.Dialog().notification('Info', 'Playlist was not in Favorite.', xbmcgui.NOTIFICATION_INFO)
+    else:
+        save_favorite_profiles(filtered)
+        xbmcgui.Dialog().notification('Favorite', 'Playlist removed from Favorite.', xbmcgui.NOTIFICATION_INFO)
+
+    if refresh_mode == 'favorites':
+        xbmc.executebuiltin('Container.Refresh')
+    else:
+        xbmc.executebuiltin('Container.Update(plugin://plugin.video.hub/?action=xtremeiptvplayer&mode=list_profiles)')
+
+def add_favorite_from_group(group_dns):
+    selected_profile = choose_profile_from_group(group_dns, f"Add Favorite - {group_dns}")
+    if not selected_profile:
+        xbmc.executebuiltin('Container.Refresh')
+        return
+
+    add_profile_to_favorites(
+        selected_profile.get('server'),
+        selected_profile.get('user'),
+        selected_profile.get('pass'),
+        selected_profile.get('name'),
+    )
+
+def select_profile_group(group_dns):
+    selected_profile = choose_profile_from_group(group_dns, f"Select User - {group_dns}")
+    if not selected_profile:
+        xbmc.executebuiltin('Container.Refresh')
+        return
+
+    switch_profile(selected_profile.get('name'))
+
+def add_group_to_pvr(group_dns):
+    selected_profile = choose_profile_from_group(group_dns, f"Add to PVR - {group_dns}")
+    if not selected_profile:
+        xbmc.executebuiltin('Container.Refresh')
+        return
+
+    server = selected_profile.get('server', '')
+    user = selected_profile.get('user', '')
+    pwd = selected_profile.get('pass', '')
+    if not server or not user or not pwd:
+        xbmcgui.Dialog().notification('Error', 'Missing server credentials for selected user.', xbmcgui.NOTIFICATION_ERROR)
+        return
+
+    m3u_plus_url = f"{server}/get.php?username={user}&password={pwd}&type=m3u_plus"
+    add_to_pvr(m3u_plus_url)
+
+def build_xtream_stream_url(server_url, username, password, stream_type, stream_id, extension):
+    path_segment = 'movie' if stream_type == 'vod' else stream_type
+    return f"{server_url}/{path_segment}/{username}/{password}/{stream_id}.{extension}"
+
+def test_xtream_stream_url(stream_url):
+    response = None
+    try:
+        response = SESSION.get(stream_url, timeout=10, stream=True, allow_redirects=False)
+        return response.status_code in (200, 206, 301, 302, 303, 307, 308)
+    except requests.RequestException:
+        return False
+    finally:
+        if response is not None:
+            response.close()
+
+def validate_xtream_profile(server_url, username, password):
+    dp = xbmcgui.DialogProgress()
+    dp.create('Xtream IPTV', 'Verific profilul selectat...')
+
+    try:
+        dp.update(15, 'Testez player_api...')
+        auth_url = get_profile_api_url(server_url, username, password)
+        if not auth_url:
+            return False, 'Missing server URL.'
+
+        auth_response = SESSION.get(auth_url, timeout=15)
+        auth_response.raise_for_status()
+        auth_data = auth_response.json()
+
+        if not isinstance(auth_data, dict):
+            return False, 'Invalid player_api response.'
+
+        user_info = auth_data.get('user_info')
+        if isinstance(user_info, dict) and str(user_info.get('auth', '1')) not in ('1', 'True', 'true'):
+            return False, 'player_api authentication failed.'
+
+        dp.update(45, 'Incarc streamuri pentru test...')
+        candidate_streams = []
+        stream_sources = [
+            ('get_live_streams', 'live', 'ts'),
+            ('get_vod_streams', 'vod', 'mp4'),
+        ]
+
+        for action, stream_type, default_extension in stream_sources:
+            stream_api_url = get_profile_api_url(server_url, username, password, action)
+            response = SESSION.get(stream_api_url, timeout=20)
+            response.raise_for_status()
+            items = response.json()
+            if not isinstance(items, list):
+                continue
+
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                stream_id = item.get('stream_id')
+                if not stream_id:
+                    continue
+                extension = item.get('container_extension') or default_extension
+                candidate_streams.append({
+                    'stream_type': stream_type,
+                    'stream_id': stream_id,
+                    'extension': extension,
+                    'name': item.get('name') or str(stream_id),
+                })
+
+            if candidate_streams:
+                break
+
+        if not candidate_streams:
+            return False, 'No test streams available for this profile.'
+
+        random.shuffle(candidate_streams)
+        test_candidates = candidate_streams[:3]
+
+        for index, candidate in enumerate(test_candidates, start=1):
+            dp.update(60 + (index * 10), f"Testez stream random {index}/{len(test_candidates)}...")
+            stream_url = build_xtream_stream_url(
+                server_url,
+                username,
+                password,
+                candidate['stream_type'],
+                candidate['stream_id'],
+                candidate['extension'],
+            )
+            if test_xtream_stream_url(stream_url):
+                log_debug(f"Xtream profile validation succeeded with stream '{candidate['name']}'")
+                return True, None
+
+        return False, 'Random stream test failed.'
+    except (requests.RequestException, ValueError, TypeError) as e:
+        log_debug(f"Xtream profile validation error: {e}")
+        return False, str(e)
+    finally:
+        dp.close()
+
+def switch_profile(name=None, server_url=None, username=None, password=None):
+    profiles = read_profiles()
+    profile_to_activate = None
+
+    if name:
+        profile_to_activate = next((p for p in profiles if p.get('name') == name), None)
+
+    if not profile_to_activate and server_url and username:
+        profile_to_activate = next(
+            (p for p in profiles if p.get('server') == server_url and p.get('user') == username),
+            None
+        )
+
+    if not profile_to_activate and server_url and username:
+        parsed = urlparse(server_url)
+        profile_to_activate = {
+            'name': name or f"{parsed.netloc} ({username})",
+            'server': server_url,
+            'user': username,
+            'pass': password or '',
+        }
+
+    if not profile_to_activate:
         xbmcgui.Dialog().notification('Error', 'Could not find profile to activate.', xbmcgui.NOTIFICATION_ERROR)
+        return
+
+    is_valid, failure_reason = validate_xtream_profile(
+        profile_to_activate['server'],
+        profile_to_activate['user'],
+        profile_to_activate['pass'],
+    )
+    if not is_valid:
+        xbmcgui.Dialog().notification(
+            'Xtream IPTV',
+            f'Profile check failed: {failure_reason or "Unknown error"}',
+            xbmcgui.NOTIFICATION_ERROR
+        )
+        xbmc.executebuiltin('Container.Update(plugin://plugin.video.hub/?action=xtremeiptvplayer&mode=list_profiles)')
+        return
+
+    ADDON.setSetting('xtreme_url', profile_to_activate['server'])
+    ADDON.setSetting('xtreme_username', profile_to_activate['user'])
+    ADDON.setSetting('xtreme_password', profile_to_activate['pass'])
+    xbmcgui.Dialog().notification('Profile Switched', f"Activated profile: {profile_to_activate['name']}", xbmcgui.NOTIFICATION_INFO)
+    xbmc.executebuiltin('Container.Update(plugin://plugin.video.hub/?action=xtremeiptvplayer)') # Refresh the menu to show the main menu
+
+def clean_category_title(title):
+    if not title:
+        return ""
+
+    cleaned = RE_BOX_CHARS.sub("", str(title))
+    cleaned = cleaned.replace("✰", "")
+    cleaned = cleaned.strip(r"|-[]:() ")
+    return cleaned.strip()
+
+def get_romanian_categories(server_categories):
+    if not server_categories:
+        return []
+
+    romanian_prefixes = [
+        "ro",
+        "ro|",
+        "ro :",
+        "ro-",
+        "ro ",
+        "ro\u2503",
+        "ro\u2502",
+        "ro\u2551",
+        "ro\u2550",
+        "ro\u2588",
+        "\u2503ro",
+        "\u2502ro",
+        "\u2551ro",
+        "\u2550ro",
+        "\u2588ro",
+        "ro[",
+        "ro]",
+        "[ro]",
+        "[ro[",
+        "ro(",
+        "ro)",
+        "ro:",
+        "|eu| romania",
+        "romania",
+        "roumanie",
+        "romanie",
+        "✰ romania",
+        "✰romania",
+    ]
+
+    romanian_cats = []
+    prefixes_lower = [prefix.lower() for prefix in romanian_prefixes]
+
+    for cat in server_categories:
+        title = clean_category_title(cat.get("category_name") or cat.get("title") or "").strip()
+        title_lower = title.lower()
+
+        is_romanian = False
+        for prefix in prefixes_lower:
+            if title_lower.startswith(prefix):
+                is_romanian = True
+                break
+
+        if not is_romanian and RE_CATEGORY_PREFIX.match(title_lower):
+            is_romanian = True
+
+        if not is_romanian and title_lower.startswith("ro"):
+            if len(title_lower) == 2 or title_lower[2] in " |:-":
+                is_romanian = True
+
+        if is_romanian:
+            romanian_cats.append(cat)
+
+    return romanian_cats
+
+def get_active_profile_key(server_url=None, username=None):
+    server_value = server_url or ADDON.getSetting('xtreme_url')
+    user_value = username or ADDON.getSetting('xtreme_username')
+    if not server_value or not user_value:
+        return None
+
+    raw_key = f"{server_value}|{user_value}"
+    return hashlib.md5(raw_key.encode('utf-8')).hexdigest()
+
+def load_ro_status_cache():
+    if not xbmcvfs.exists(XTREAM_RO_STATUS_FILE):
+        return {}
+
+    try:
+        with xbmcvfs.File(XTREAM_RO_STATUS_FILE, 'r') as f:
+            raw_data = f.read()
+        if not raw_data:
+            return {}
+        return json.loads(raw_data)
+    except (ValueError, TypeError):
+        return {}
+
+def save_ro_status_cache(cache_data):
+    with xbmcvfs.File(XTREAM_RO_STATUS_FILE, 'w') as f:
+        f.write(json.dumps(cache_data))
+
+def get_active_profile_ro_status():
+    profile_key = get_active_profile_key()
+    if not profile_key:
+        return None
+    return load_ro_status_cache().get(profile_key)
+
+def load_favorite_profiles():
+    if not xbmcvfs.exists(XTREAM_FAVORITES_FILE):
+        return []
+
+    try:
+        with xbmcvfs.File(XTREAM_FAVORITES_FILE, 'r') as f:
+            raw_data = f.read()
+        if not raw_data:
+            return []
+        data = json.loads(raw_data)
+        return data if isinstance(data, list) else []
+    except (ValueError, TypeError):
+        return []
+
+def save_favorite_profiles(favorites):
+    with xbmcvfs.File(XTREAM_FAVORITES_FILE, 'w') as f:
+        f.write(json.dumps(favorites))
+
+def get_profile_favorite_key(server_url, username):
+    return get_active_profile_key(server_url, username)
+
+def is_profile_favorite(server_url, username, favorites=None):
+    favorites = favorites if favorites is not None else load_favorite_profiles()
+    favorite_key = get_profile_favorite_key(server_url, username)
+    return any(
+        favorite.get('favorite_key') == favorite_key
+        for favorite in favorites
+    )
+
+def build_profile_favorite_entry(server_url, username, password, name=None):
+    parsed = urlparse(server_url or '')
+    dns = parsed.hostname or parsed.netloc or server_url
+    return {
+        'favorite_key': get_profile_favorite_key(server_url, username),
+        'server': server_url,
+        'user': username,
+        'pass': password,
+        'name': name or dns,
+        'dns': dns,
+        'added_at': int(time.time()),
+    }
+
+def normalize_category_list(raw_categories):
+    log_debug(f"normalize_category_list payload={describe_payload(raw_categories)}")
+
+    if isinstance(raw_categories, list):
+        normalized = [category for category in raw_categories if isinstance(category, dict)]
+        log_debug(f"normalize_category_list list -> {len(normalized)} dict entries")
+        return normalized
+
+    if isinstance(raw_categories, dict):
+        for key in ('categories', 'live_categories', 'vod_categories', 'series_categories'):
+            nested = raw_categories.get(key)
+            if isinstance(nested, list):
+                normalized = [category for category in nested if isinstance(category, dict)]
+                log_debug(f"normalize_category_list nested key '{key}' -> {len(normalized)} dict entries")
+                return normalized
+
+        dict_values = [value for value in raw_categories.values() if isinstance(value, dict)]
+        if dict_values:
+            log_debug(f"normalize_category_list dict values -> {len(dict_values)} dict entries")
+            return dict_values
+
+    log_debug("normalize_category_list -> 0 entries")
+    return []
+
+def verify_romanian_channels():
+    api_url = get_api_url('get_live_categories')
+    if not api_url:
+        xbmcgui.Dialog().ok('Xtream IPTV', 'Please configure a portal and user first.')
+        return
+
+    dp = xbmcgui.DialogProgress()
+    dp.create('Xtream IPTV', 'Verific categorii Live TV pentru canale romanesti...')
+
+    try:
+        response = SESSION.get(api_url, timeout=15)
+        response.raise_for_status()
+        raw_categories = response.json()
+        log_debug(f"verify_romanian_channels raw categories={describe_payload(raw_categories)}")
+        categories = normalize_category_list(raw_categories)
+        romanian_categories = get_romanian_categories(categories)
+
+        cache_data = load_ro_status_cache()
+        profile_key = get_active_profile_key()
+        if profile_key:
+            cache_data[profile_key] = {
+                'has_ro_channels': bool(romanian_categories),
+                'category_count': len(romanian_categories),
+                'checked_at': int(time.time()),
+            }
+            save_ro_status_cache(cache_data)
+
+        if romanian_categories:
+            xbmcgui.Dialog().notification(
+                'Xtream IPTV',
+                f'Gasite {len(romanian_categories)} categorii Live TV cu canale RO.',
+                xbmcgui.NOTIFICATION_INFO
+            )
+        else:
+            xbmcgui.Dialog().notification(
+                'Xtream IPTV',
+                'Nu au fost gasite categorii Live TV cu canale RO.',
+                xbmcgui.NOTIFICATION_INFO
+            )
+    except (requests.RequestException, ValueError, TypeError) as e:
+        xbmcgui.Dialog().ok('Xtream IPTV', f'Error verifying Romanian channels: {e}')
+    finally:
+        dp.close()
+
+    xbmc.executebuiltin('Container.Update(plugin://plugin.video.hub/?action=xtremeiptvplayer)')
 
 def restart_pvr_addon(addon_id):
     """
@@ -449,11 +1101,16 @@ def parse_epg_xml():
 
 def main_menu():
     xbmcplugin.setPluginCategory(ADDON_HANDLE, "Main Menu")
-    add_dir('Manage Profiles', {'mode': 'list_profiles'})
-    add_dir('Search', {'mode': 'open_search_menu'})
-    add_dir('Live TV', {'mode': 'list_categories', 'type': 'live'})
-    add_dir('VOD', {'mode': 'list_categories', 'type': 'vod'})
-    add_dir('Series', {'mode': 'list_categories', 'type': 'series'})
+    add_dir('Manage Profiles', {'mode': 'list_profiles'}, icon='DefaultNetwork.png')
+    add_dir('Favorite', {'mode': 'list_favorite_profiles'}, icon='DefaultFavourites.png')
+    add_dir('Verifica Canale Romania', {'mode': 'verify_romanian_channels'}, icon='DefaultAddonLibrary.png')
+    add_dir('Search', {'mode': 'open_search_menu'}, icon='DefaultAddonsSearch.png')
+    ro_status = get_active_profile_ro_status() or {}
+    add_dir('Live TV', {'mode': 'list_categories', 'type': 'live'}, icon='DefaultTVShows.png')
+    if ro_status.get('has_ro_channels'):
+        add_dir('Canale Romania', {'mode': 'list_romanian_categories'}, icon='DefaultTVShows.png')
+    add_dir('VOD', {'mode': 'list_categories', 'type': 'vod'}, icon='DefaultMovies.png')
+    add_dir('Series', {'mode': 'list_categories', 'type': 'series'}, icon='DefaultAddonVideo.png')
     xbmcplugin.endOfDirectory(ADDON_HANDLE, cacheToDisc=False)
 
 def list_categories(category_type):
@@ -465,15 +1122,63 @@ def list_categories(category_type):
     try:
         response = SESSION.get(api_url, timeout=15)
         response.raise_for_status()
-        categories = response.json()
+        raw_categories = response.json()
+        log_debug(f"list_categories({category_type}) raw categories={describe_payload(raw_categories)}")
+        categories = normalize_category_list(raw_categories)
     except (requests.RequestException, ValueError) as e:
         xbmcgui.Dialog().notification('API Error', str(e), xbmcgui.NOTIFICATION_ERROR)
         return
 
+    if not categories:
+        log_debug(f"list_categories({category_type}) no usable categories after normalization")
+        xbmcgui.Dialog().notification('API Error', f"Unexpected response for {category_type} categories.", xbmcgui.NOTIFICATION_ERROR)
+        return
+
     xbmcplugin.setPluginCategory(ADDON_HANDLE, category_type.title())
     for category in categories:
-        params = {'mode': 'list_items', 'type': category_type, 'category_id': category['category_id']}
-        add_dir(category['category_name'], params)
+        category_id = category.get('category_id')
+        category_name = category.get('category_name') or category.get('title') or 'Unknown'
+        if not category_id:
+            continue
+        params = {'mode': 'list_items', 'type': category_type, 'category_id': category_id}
+        if category_type == 'live':
+            icon = 'DefaultTVShows.png'
+        elif category_type == 'vod':
+            icon = 'DefaultMovies.png'
+        else:
+            icon = 'DefaultAddonVideo.png'
+        add_dir(category_name, params, icon=icon)
+    xbmcplugin.endOfDirectory(ADDON_HANDLE, cacheToDisc=False)
+
+def list_romanian_categories():
+    api_url = get_api_url('get_live_categories')
+    if not api_url:
+        xbmcgui.Dialog().ok('Xtream IPTV', 'Please configure a portal and user first.')
+        return
+
+    try:
+        response = SESSION.get(api_url, timeout=15)
+        response.raise_for_status()
+        raw_categories = response.json()
+        log_debug(f"list_romanian_categories raw categories={describe_payload(raw_categories)}")
+        categories = normalize_category_list(raw_categories)
+        romanian_categories = get_romanian_categories(categories)
+    except (requests.RequestException, ValueError, TypeError) as e:
+        xbmcgui.Dialog().notification('API Error', str(e), xbmcgui.NOTIFICATION_ERROR)
+        return
+
+    if not romanian_categories:
+        xbmcgui.Dialog().ok('Xtream IPTV', 'No Romanian Live TV categories found.')
+        return
+
+    xbmcplugin.setPluginCategory(ADDON_HANDLE, "Canale Romania")
+    for category in romanian_categories:
+        category_id = category.get('category_id')
+        category_name = category.get('category_name') or category.get('title') or 'Unknown'
+        if not category_id:
+            continue
+        params = {'mode': 'list_items', 'type': 'live', 'category_id': category_id}
+        add_dir(category_name, params, icon='DefaultTVShows.png')
     xbmcplugin.endOfDirectory(ADDON_HANDLE, cacheToDisc=False)
 
 def list_items(item_type, category_id):
@@ -493,11 +1198,13 @@ def list_items(item_type, category_id):
         response = SESSION.get(api_url, timeout=15)
         response.raise_for_status()
         items = response.json()
+        log_debug(f"list_items({item_type}, {category_id}) raw items={describe_payload(items)}")
     except (requests.RequestException, ValueError) as e:
         xbmcgui.Dialog().notification('API Error', str(e), xbmcgui.NOTIFICATION_ERROR)
         return
 
     if not isinstance(items, list):
+        log_debug(f"list_items({item_type}, {category_id}) unexpected items payload")
         xbmcgui.Dialog().notification('API Error', f"Unexpected response for {item_type} streams.", xbmcgui.NOTIFICATION_ERROR)
         return
 
@@ -622,6 +1329,19 @@ def add_dir(name, params, icon=None):
     clean_name = clean_title(name)
     url = build_url(params)
     li = xbmcgui.ListItem(clean_name)
+    if not icon:
+        mode = params.get('mode')
+        item_type = params.get('type')
+        if mode in MENU_ICONS:
+            icon = MENU_ICONS[mode]
+        elif item_type == 'live':
+            icon = 'DefaultTVShows.png'
+        elif item_type == 'vod':
+            icon = 'DefaultMovies.png'
+        elif item_type == 'series':
+            icon = 'DefaultAddonVideo.png'
+        else:
+            icon = 'DefaultFolder.png'
     if icon:
         li.setArt({'thumb': icon, 'icon': icon, 'fanart': icon})
     xbmcplugin.addDirectoryItem(handle=ADDON_HANDLE, url=url, listitem=li, isFolder=True)
@@ -635,15 +1355,24 @@ def add_item(name, params, icon=None, plot=None):
         info_labels['plot'] = plot
     li.setInfo(type='Video', infoLabels=info_labels)
     li.setProperty('IsPlayable', 'true')
-    if icon:
-        li.setArt({'thumb': icon, 'icon': icon, 'fanart': icon})
+    if not icon:
+        item_type = params.get('type')
+        if item_type == 'live':
+            icon = 'DefaultTVShows.png'
+        elif item_type in ('movie', 'vod'):
+            icon = 'DefaultMovies.png'
+        elif item_type == 'series':
+            icon = 'DefaultAddonVideo.png'
+        else:
+            icon = 'DefaultVideo.png'
+    li.setArt({'thumb': icon, 'icon': icon, 'fanart': icon})
     xbmcplugin.addDirectoryItem(handle=ADDON_HANDLE, url=url, listitem=li, isFolder=False)
 
 def open_search_menu():
     xbmcplugin.setPluginCategory(ADDON_HANDLE, "Search")
-    add_dir('Search Movies', {'mode': 'search_items', 'type': 'vod'})
-    add_dir('Search Series', {'mode': 'search_items', 'type': 'series'})
-    add_dir('Search Live TV', {'mode': 'search_items', 'type': 'live'})
+    add_dir('Search Movies', {'mode': 'search_items', 'type': 'vod'}, icon='DefaultAddonsSearch.png')
+    add_dir('Search Series', {'mode': 'search_items', 'type': 'series'}, icon='DefaultAddonsSearch.png')
+    add_dir('Search Live TV', {'mode': 'search_items', 'type': 'live'}, icon='DefaultAddonsSearch.png')
     xbmcplugin.endOfDirectory(ADDON_HANDLE, cacheToDisc=False)
 
 def search_items(item_type):
@@ -707,34 +1436,59 @@ def router(params):
 
     # If no mode is set, decide where to go.
     if mode is None:
-        # If no server is configured in settings, go to profile manager.
         if not ADDON.getSetting('xtreme_url'):
-            profiles = read_profiles() # Read profiles to check if any exist
-            if profiles:
-                # Activate the first profile by default if no server is set
-                switch_profile(profiles[0]['name'])
-            else:
-                list_profiles() # If no profiles, still show list_profiles (which will show "No profiles found")
+            list_profiles()
         else:
             main_menu()
     elif mode == 'list_profiles':
         list_profiles()
+    elif mode == 'list_favorite_profiles':
+        list_favorite_profiles()
     elif mode == 'add_profile':
         add_profile()
     elif mode == 'remove_profile':
         remove_profile()
+    elif mode == 'select_profile_group':
+        select_profile_group(params.get('group_dns'))
     elif mode == 'switch_profile':
-        switch_profile(params['name'])
+        switch_profile(
+            params.get('name'),
+            params.get('server'),
+            params.get('user'),
+            params.get('password'),
+        )
     elif mode == 'add_to_pvr':
         add_to_pvr(params['url'])
+    elif mode == 'add_group_to_pvr':
+        add_group_to_pvr(params.get('group_dns'))
+    elif mode == 'add_profile_to_favorites':
+        add_profile_to_favorites(
+            params.get('server'),
+            params.get('user'),
+            params.get('password'),
+            params.get('name'),
+            params.get('refresh_mode', 'profiles'),
+        )
+    elif mode == 'remove_profile_from_favorites':
+        remove_profile_from_favorites(
+            params.get('server'),
+            params.get('user'),
+            params.get('refresh_mode', 'profiles'),
+        )
+    elif mode == 'add_favorite_from_group':
+        add_favorite_from_group(params.get('group_dns'))
     elif mode == 'force_refresh_profiles':
         force_refresh_profiles()
+    elif mode == 'verify_romanian_channels':
+        verify_romanian_channels()
     elif mode == 'open_search_menu':
         open_search_menu()
     elif mode == 'search_items':
         search_items(params['type'])
     elif mode == 'list_categories':
         list_categories(params['type'])
+    elif mode == 'list_romanian_categories':
+        list_romanian_categories()
     elif mode == 'list_items':
         list_items(params['type'], params['category_id'])
     elif mode == 'list_episodes':

@@ -23,6 +23,7 @@
         <setting id="stalker_mac_address" type="text" label="MAC Address" default="00:1A:79:"/>
         <setting id="stalker_portal_url" type="text" label="Portal URL" default=""/>
         <setting id="stalker_serial_number" type="text" label="Serial Number" default=""/>
+        <setting id="stalker_profile_source" type="enum" label="Profile Source" values="Valid MACs JSON|Pastebin Profiles" default="0"/>
     </category>
 
     <!-- Radio RO Player Settings -->
@@ -37,6 +38,7 @@
 
     <!-- Xtreme IPTV Player Settings -->
     <category label="Xtreme IPTV Player">
+        <setting id="xtreme_profile_source" type="enum" label="Profile Source" values="Xtream JSON|Legacy Pastebin" default="0"/>
         <setting id="xtreme_username" type="text" label="Username" default=""/>
         <setting id="xtreme_password" type="text" label="Password" default=""/>
         <setting id="xtreme_url" type="text" label="Server URL" default=""/>

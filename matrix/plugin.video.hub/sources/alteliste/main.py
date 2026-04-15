@@ -14,10 +14,20 @@ xbmc.log("alteliste/main.py: Script started", level=xbmc.LOGINFO)
 _BASE_URL = 'plugin://plugin.video.hub/'
 _HANDLE = int(sys.argv[1])
 
+MENU_ICONS = {
+    'ro-md': 'DefaultTVShows.png',
+    'iptv-org': 'DefaultAddonVideo.png',
+    'world': 'DefaultCountry.png',
+    'tvrplus': 'DefaultAddonVideo.png',
+    'freetv': 'DefaultTVShows.png',
+    'iptv_zilla': 'DefaultPlaylist.png',
+}
+
 def add_dir(name, params, icon=None):
     """Add a directory item."""
     url = f'{_BASE_URL}?{urlencode(params)}'
     list_item = xbmcgui.ListItem(label=name)
+    icon = icon or MENU_ICONS.get(params.get('mode'), 'DefaultFolder.png')
     if icon:
         list_item.setArt({'thumb': icon, 'icon': icon, 'fanart': icon})
     xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=list_item, isFolder=True)
@@ -31,8 +41,8 @@ def add_item(name, params, thumb=None, fanart=None, plot=None):
         info_labels['plot'] = plot
     list_item.setInfo(type='Video', infoLabels=info_labels)
     list_item.setProperty('IsPlayable', 'true')
-    if thumb:
-        list_item.setArt({'thumb': thumb, 'icon': thumb, 'fanart': fanart})
+    icon = thumb or 'DefaultTVShows.png'
+    list_item.setArt({'thumb': icon, 'icon': icon, 'fanart': fanart or icon})
     xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=list_item, isFolder=False)
 
 def end_of_directory():
