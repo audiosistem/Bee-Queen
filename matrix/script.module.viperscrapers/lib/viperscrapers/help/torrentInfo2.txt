@@ -1,0 +1,42 @@
+Below is a list of supplied torrent scrapers grouped by request method, with additional info.
+Priority rating=postion it takes in scraper order, fastest to slowest.
+--------------------------------------------
+api torrents (fast, priority=1-2)
+- aiostreams (priority=1) Elfhosted
+- bitlord (priority=1)
+- comet (priority=1) Elfhosted
+- knightcrawler (priority=1) Elfhosted
+- mediafusion (priority=1) Elfhosted 
+- piratebay (priority=2)
+- torrentio (priority=1) Multiple sourced
+- ytsmx (priority=2) uses imdb_id query, movies only site
+- zilean (priority=1) Elfhosted 
+
+--------------------------------------------
+single request html parsed sites(medium speed, priority=3-5):
+- bitsearch (priority=3) added 11-19-21
+- ext.to (priority=3) v2 challenge as of 2-15-21, proxy in use as of 3-2-22
+- eztv (priority=4) shows only, site does not do pack files
+- knaben (priority=3) newly added torrent aggregator 06/27/23
+- kickass2 (priority=4) timeout least twice a week
+- limetorrents (priority=3) uses cfscrape
+- nyaa (priority=5) anime
+- torrentdownload (priority=3)
+- torrentgalaxy (priority=4) uses cfscrape
+- torrentquest (priority=3) mirror of magnetdl
+- torrentz2 (priority=4) 
+
+--------------------------------------------
+Two request html parsed sites (slow, priority=6-9):
+- 1337x (priority=8)
+- isohunt2 (priority=7)
+- torlock (priority=7) modified for new site design and address 06/27/23
+- torrentfunk (priority=7)
+- torrentproject2 (priority=6) new as of 7-02-21
+- yourbittorrent (priority=9)
+
+--------------------------------------------
+The following scrapers sit behind CloudFlare and 
+use the "cloudscraper" module by Venomous:
+- limetorrents (torrent)
+- torrentgalaxy (torrent)
