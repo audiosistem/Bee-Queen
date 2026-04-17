@@ -312,7 +312,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
 
     </news>
   </extension>
-</addon><addon id="plugin.video.blacklodge" name="Blacklodge" provider-name="bob" version="1.06.26g">
+</addon><addon id="plugin.video.blacklodge" name="[COLOR goldenrod]Blacklodge[/COLOR]" provider-name="bob" version="1.06.26g">
     <requires>
         <import addon="resource.images.blacklodge.artwork" />
         <import addon="script.module.requests" />
@@ -1075,10 +1075,11 @@ In addition to what livestreams allowed you to do, you can now,
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.vixmovie" name="VixMovie" version="1.7" provider-name="1x,Geamanu,apoyotech">
+</addon><addon id="plugin.video.vixmovie" name="VixMovie" version="1.9" provider-name="1x,Geamanu,apoyotech">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.requests" version="2.25.1" />
+    <import addon="inputstream.adaptive" version="19.0.0" />
     <import addon="plugin.video.themoviedb.helper" />
   </requires>
   <extension point="xbmc.python.pluginsource" library="addon.py">
@@ -1671,6 +1672,24 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
 		</assets>
 	</extension>
+</addon><addon id="repository.derzis" name="Derzis Repo" version="1.0.0" provider-name="derzis">
+    <extension point="xbmc.addon.repository" name="Derzis Repo">
+        <dir>
+            <repopath>https://derzis.xyz/repo/</repopath>
+            <info compressed="false">https://derzis.xyz/repo/addons.xml</info>
+            <checksum>https://derzis.xyz/repo/addons.xml.md5</checksum>
+            <datadir zip="true">https://derzis.xyz/repo/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Derzis Kodi Repository</summary>
+        <description lang="en">A collection of Kodi video addons by derzis</description>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
 </addon><addon id="repository.diggz" name="Diggz Repository" version="24" provider-name="Diggz">
     <extension point="xbmc.addon.repository" name="Diggz Repository">
         <dir minversion="20.90.0" maxversion="22.9.9">
@@ -2851,6 +2870,24 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
+</addon><addon id="script.module.gearsscrapers" version="1.3.0" name="Gears Scrapers" provider-name="gearsscrapers">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0" />
+		<import addon="script.module.requests" />
+	</requires>
+	<extension point="xbmc.python.pluginsource" library="lib/default.py">
+		<provides>executable</provides>
+	</extension>
+	<extension point="xbmc.service" library="lib/service.py" />
+	<extension point="xbmc.python.module" library="lib" />
+	<extension point="xbmc.addon.metadata">
+		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+		<summary>gearsscrapers</summary>
+		<description>A module to query magnet providers.[CR][CR]This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</description>
+		<disclaimer>The author does not host or own any content found within this addon. The author is not responsible for the content found using this addon. The author is not responsible for the use of this addon.</disclaimer>
+		<assets><icon>icon.png</icon></assets>
+		<assets><fanart>fanart.jpg</fanart></assets>
+	</extension>
 </addon><addon id="script.module.idna" name="idna" version="3.10.0" provider-name="Kim Davies">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+
+<category label="Scrapers Test"> <!-- Health -->
+    <setting type="action" label="Test All Torrent Providers" action="RunPlugin(plugin://script.module.gearsscrapers/?action=healthCheck)" />
+    <setting type="sep" />
+    <setting type="action" label="Clean Settings file" option="close" action="RunPlugin(plugin://script.module.gearsscrapers/?action=cleanSettings)" />
+    <setting type="action" label="Show Changelog" action="RunPlugin(plugin://script.module.gearsscrapers/?action=ShowChangelog)" />
+    <setting type="sep" />
+    <setting id="debug.enabled" type="bool" label="Enable Debug" default="false" />
+    <setting id="debug.location" type="enum" label="Logging Location" default="0" values="Kodi Log|Addon Log" enable="eq(-1,true)" />
+    <setting id="debug.reversed" type="bool" label="Write gearsscrapers log in reverse order" default="false" visible="eq(-2,true)+eq(-1,1)" />
+    <setting type="action" label="Clear gearsscrapers log file" visible="eq(-3,true)+eq(-2,1)" action="RunPlugin(plugin://script.module.gearsscrapers/?action=tools_clearLogFile)" />
+    <setting type="action" label="View gearsscrapers log file" visible="eq(-4,true)+eq(-3,1)" action="RunPlugin(plugin://script.module.gearsscrapers/?action=tools_viewLogFile&amp;name=gearsscrapers)" />
+    <setting type="action" label="Upload gearsscrapers log file to pastebin" visible="eq(-5,true)+eq(-4,1)" action="RunPlugin(plugin://script.module.gearsscrapers/?action=tools_uploadLogFile)" />
+</category>
+
+<category label="Undesirables"> <!-- Undesirables -->
+    <setting id="filter.foreign.single.audio" type="bool" label="Remove identified Foreign single audio sources" default="false" />
+    <setting id="filter.undesirables" type="bool" label="Remove Undesirables" default="false" />
+        <setting type="action" label="Manage Default Undesirables" subsetting="true" enable="eq(-1,true)" action="RunPlugin(plugin://script.module.gearsscrapers/?action=undesirablesSelect)" />
+        <setting type="action" label="Define Extra Undesirables (Comma Separated)" subsetting="true" enable="eq(-2,true)" action="RunPlugin(plugin://script.module.gearsscrapers/?action=undesirablesInput)" />
+        <setting type="action" label="Remove Extra Undesirables" subsetting="true" enable="eq(-3,true)" action="RunPlugin(plugin://script.module.gearsscrapers/?action=undesirablesUserRemove)" />
+        <setting type="action" label="Clear ALL Extra Undesirables" subsetting="true" enable="eq(-4,true)" action="RunPlugin(plugin://script.module.gearsscrapers/?action=undesirablesUserRemoveAll)" />
+    <setting type="action" label="[COLOR cyan]-- undesirables filter Help --[/COLOR]" action="RunPlugin(plugin://script.module.gearsscrapers/?action=ShowHelp&amp;name=undesirablesFilter)" />
+</category>
+
+<category label="Sources">
+	<setting label="[COLORghostwhite]Recomended Providers[/COLOR]" type="lsep" />
+	<setting id="provider.comet" type="bool" label="[COLORcyan]COMET[/COLOR]" default="true" />
+    <setting id="provider.mediafusion" type="bool" label="[COLORcyan]MEDIAFUSION[/COLOR]" default="true" />
+    <setting id="provider.torrentio" type="bool" label="[COLORcyan]TORRENTIO[/COLOR]" default="true" />
+	<setting id="provider.torz" type="bool" label="[COLORcyan]TORZ[/COLOR]" default="false" />
+	<setting id="provider.meteor" type="bool" label="[COLORcyan]METEOR[/COLOR]" default="true" />
+	<setting label="[COLORghostwhite]Secondary Providers[/COLOR]" type="lsep" />
+	<setting id="provider.aiostreams" type="bool" label="[COLORgoldenrod]AIOSTREAMS[/COLOR]" default="false" />
+	<setting id="provider.bitmagnet" type="bool" label="[COLORgoldenrod]BITMAGNET[/COLOR]" default="false" />
+	<setting id="provider.dmm" type="bool" label="[COLORgoldenrod]DMM[/COLOR]" default="false" />
+    <setting id="provider.torrentsdb" type="bool" label="[COLORgoldenrod]TORRENTSDB[/COLOR]" default="true" />
+	<setting id="provider.torrentdownload" type="bool" label="[COLORgoldenrod]TORRENTDL[/COLOR]" default="false" />
+	<setting id="provider.1337x" type="bool" label="[COLORgoldenrod]$NUMBER[1337]X[/COLOR]" default="false" />
+	<setting id="provider.eztv" type="bool" label="[COLORgoldenrod]EZTV[/COLOR]" default="false" />
+	<setting id="provider.nyaa" type="bool" label="[COLORgoldenrod]NYAA[/COLOR]" default="false" />
+	<setting id="provider.kickass2" type="bool" label="[COLORgoldenrod]KICKASS[/COLOR]" default="false" />
+	<setting id="provider.piratebay" type="bool" label="[COLORgoldenrod]PIRATEBAY[/COLOR]" default="true" />
+	<setting id="provider.zilean" type="bool" label="[COLORgoldenrod]ZILEAN[/COLOR]" default="false" />
+	
+</category>
+	
+</settings>
