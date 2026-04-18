@@ -496,6 +496,21 @@ def trakt_progress_tv(progress_info):
 	insert_list = list(_process())
 	trakt_cache.TraktCache().set_bulk_tvshow_progress(insert_list)
 
+def trakt_official_status(mediatype):
+	if not kodi_utils.addon_installed('script.trakt'): return True
+	trakt_addon = kodi_utils.addon('script.trakt')
+	try: authorization = trakt_addon.getSetting('authorization')
+	except: authorization = ''
+	if authorization == '': return True
+	try: exclude_http = trakt_addon.getSetting('ExcludeHTTP')
+	except: exclude_http = ''
+	if exclude_http in ('true', ''): return True
+	media_setting = 'scrobble_movie' if mediatype in ('movie', 'movies') else 'scrobble_episode'
+	try: scrobble = trakt_addon.getSetting(media_setting)
+	except: scrobble = ''
+	if scrobble in ('false', ''): return True
+	return False
+
 def trakt_get_my_calendar(recently_aired, current_date):
 	def _process(dummy):
 		data = get_trakt(url)

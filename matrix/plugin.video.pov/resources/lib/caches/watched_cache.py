@@ -2,7 +2,7 @@ from datetime import datetime
 from threading import Thread
 from indexers import metadata
 from indexers.mdblist_api import mdbl_watched_unwatched, mdbl_progress
-from indexers.trakt_api import trakt_watched_unwatched, trakt_progress
+from indexers.trakt_api import trakt_watched_unwatched, trakt_progress, trakt_official_status
 from caches.mdbl_cache import clear_mdbl_collection_watchlist_data
 from caches.trakt_cache import clear_trakt_collection_watchlist_data
 from modules import kodi_utils, settings, utils
@@ -137,6 +137,7 @@ def get_watched_info_movie(watched_indicators):
 			SELECT media_id, title, last_played
 			FROM watched_status
 			WHERE db_type = ?
+			ORDER BY last_played DESC
 		""", ('movie',))
 		info = dbcur.fetchall()
 	except: pass
@@ -151,6 +152,7 @@ def get_watched_info_tv(watched_indicators):
 			SELECT media_id, season, episode, title, last_played
 			FROM watched_status
 			WHERE db_type = ?
+			ORDER BY last_played DESC
 		""", ('episode',))
 		info = dbcur.fetchall()
 	except: pass
@@ -166,11 +168,12 @@ def get_in_progress_movies(dummy_arg, page_no, letter):
 		SELECT media_id, title, last_played
 		FROM progress
 		WHERE db_type = ?
+		ORDER BY last_played DESC
 	""", ('movie',))
 	data = dbcur.fetchall()
 	data = [{'media_id': i[0], 'title': i[1], 'last_played': i[2]} for i in data if not i[0] == '']
 	if settings.lists_sort_order('progress') == 0: original_list = sort_for_article(data, 'title', settings.ignore_articles())
-	else: original_list = sorted(data, key=lambda x: x['last_played'], reverse=True)
+#	else: original_list = sorted(data, key=lambda x: x['last_played'], reverse=True)
 	if paginate: final_list, total_pages = paginate_list(original_list, page_no, letter, limit)
 	else: final_list, total_pages = original_list, 1
 	return final_list, total_pages
@@ -190,7 +193,7 @@ def get_in_progress_tvshows(dummy_arg, page_no, letter, paginate=None):
 	limit = settings.page_limit()
 	meta_user_info = settings.metadata_user_info()
 	watched_info = get_watched_info_tv(watched_indicators)
-	watched_info.sort(key=lambda x: (x[0], x[4]), reverse=True)
+#	watched_info.sort(key=lambda x: (x[0], x[4]), reverse=True)
 	prelim_data = [({'media_id': i[0], 'title': i[3], 'last_played': i[4]},) for i in watched_info if not (i[0] in duplicates or duplicates_add(i[0]))]
 	for i in utils.TaskPool().tasks(_process, prelim_data, Thread): i.join()
 #	threads = list(make_thread_list(_process, prelim_data, Thread))
@@ -209,10 +212,11 @@ def get_in_progress_episodes():
 		SELECT media_id, season, episode, resume_point, last_played, title
 		FROM progress
 		WHERE db_type = ?
+		ORDER BY last_played DESC
 	""", ('episode',))
 	data = dbcur.fetchall()
 	if settings.lists_sort_order('progress') == 0: data = sort_for_article(data, 5, settings.ignore_articles())
-	else: data.sort(key=lambda k: k[4], reverse=True)
+#	else: data.sort(key=lambda k: k[4], reverse=True)
 	return [{'media_ids': {'tmdb': i[0]}, 'season': int(i[1]), 'episode': int(i[2]), 'resume_point': float(i[3])} for i in data]
 
 def get_next_episodes():
@@ -252,11 +256,14 @@ def get_watched_items(mediatype, page_no, letter, paginate=None):
 		for i in utils.TaskPool().tasks(_process, prelim_data, Thread): i.join()
 #		threads = list(make_thread_list(_process, prelim_data, Thread))
 #		[i.join() for i in threads]
+		data.sort(key=lambda x: x['last_played'], reverse=True)
 	else:
 		watched_info = get_watched_info_movie(watched_indicators)
 		data = [{'media_id': i[0], 'title': i[1], 'last_played': i[2]} for i in watched_info]
-	if settings.lists_sort_order('watched') == 0: original_list = sort_for_article(data, 'title', settings.ignore_articles())
-	else: original_list = sorted(data, key=lambda x: x['last_played'], reverse=True)
+	if settings.lists_sort_order('watched') == 0:
+		original_list = sort_for_article(data, 'title', settings.ignore_articles())
+	else: original_list = data
+#	else: original_list = sorted(data, key=lambda x: x['last_played'], reverse=True)
 	if paginate: final_list, total_pages = paginate_list(original_list, page_no, letter, limit)
 	else: final_list, total_pages = original_list, 1
 	return final_list, total_pages
@@ -299,7 +306,9 @@ def mark_as_watched_unwatched_movie(params):
 	refresh, from_playback = params.get('refresh', 'true') == 'true', params.get('from_playback', 'false') == 'true'
 	watched_indicators = settings.watched_indicators()
 	if watched_indicators == 1:
-		if not trakt_watched_unwatched(action, 'movies', tmdb_id): return kodi_utils.notification(32574)
+		if from_playback and trakt_official_status(mediatype) is False: kodi_utils.sleep(3000)
+		elif not trakt_watched_unwatched(action, 'movies', tmdb_id):
+			return kodi_utils.notification(32574)
 		clear_trakt_collection_watchlist_data('watchlist', mediatype)
 	elif watched_indicators == 2:
 		if not mdbl_watched_unwatched(action, 'movies', tmdb_id): return kodi_utils.notification(32574)
@@ -391,7 +400,8 @@ def mark_as_watched_unwatched_episode(params):
 	refresh, from_playback = params.get('refresh', 'true') == 'true', params.get('from_playback', 'false') == 'true'
 	watched_indicators = settings.watched_indicators()
 	if watched_indicators == 1:
-		if not trakt_watched_unwatched(action, mediatype, tmdb_id, tvdb_id, season, episode):
+		if from_playback and trakt_official_status(mediatype) is False: kodi_utils.sleep(3000)
+		elif not trakt_watched_unwatched(action, mediatype, tmdb_id, tvdb_id, season, episode):
 			return kodi_utils.notification(32574)
 		clear_trakt_collection_watchlist_data('watchlist', 'tvshow')
 	elif watched_indicators == 2:
