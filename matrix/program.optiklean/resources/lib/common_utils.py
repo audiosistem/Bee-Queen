@@ -18,6 +18,37 @@ addon = xbmcaddon.Addon()
 addon_id = addon.getAddonInfo('id')
 
 
+def _translate_if_special(path):
+    return xbmcvfs.translatePath(path) if path.startswith("special://") else path
+
+
+def _get_path_size_bytes(local_path):
+    if os.path.isfile(local_path):
+        return os.path.getsize(local_path)
+    if not os.path.isdir(local_path):
+        return 0
+
+    total_bytes = 0
+    for root, _, files in os.walk(local_path):
+        for file_name in files:
+            try:
+                total_bytes += os.path.getsize(os.path.join(root, file_name))
+            except (OSError, IOError):
+                continue
+    return total_bytes
+
+
+def _split_rotated_entries(current_content):
+    entries = []
+    parts = current_content.split(f'\n{addon.getLocalizedString(31009)}')
+    for index, part in enumerate(parts):
+        if index == 0 and part.strip():
+            entries.append(part.strip())
+        elif part.strip():
+            entries.append(f"{addon.getLocalizedString(31009)}{part.strip()}")
+    return entries
+
+
 def get_kodi_version():
     """
     Get Kodi's major version number (e.g., 19, 20, 21, 22).
@@ -99,33 +130,14 @@ def get_size(path, unit='MB'):
         Size in specified unit (float)
     """
     try:
-        # Convert Kodi special paths to local filesystem paths
-        local_path = xbmcvfs.translatePath(path) if path.startswith("special://") else path
+        local_path = _translate_if_special(path)
         
         if not os.path.exists(local_path):
             return 0.0
-            
-        if os.path.isfile(local_path):
-            # Single file - get size directly
-            total_bytes = os.path.getsize(local_path)
-        elif os.path.isdir(local_path):
-            # Directory - use os.walk for accurate recursive size
-            total_bytes = 0
-            for root, dirs, files in os.walk(local_path):
-                for file in files:
-                    try:
-                        file_path = os.path.join(root, file)
-                        total_bytes += os.path.getsize(file_path)
-                    except (OSError, IOError):
-                        continue
-        else:
-            return 0.0
         
-        # Convert to requested unit
-        if unit.upper() == 'KB':
-            return round(total_bytes / 1024, 2)
-        else:  # Default to MB
-            return round(total_bytes / (1024 * 1024), 2)
+        total_bytes = _get_path_size_bytes(local_path)
+        divisor = 1024 if unit.upper() == 'KB' else (1024 * 1024)
+        return round(total_bytes / divisor, 2)
         
     except Exception as e:
         xbmc.log(f"OptiKlean: Error calculating size for {path}: {e}", xbmc.LOGWARNING)
@@ -250,25 +262,11 @@ def write_log_with_rotation(log_files_dict, log_key, content, max_entries=8):
             return
     
     entries = []
-    
-    # Read existing entries if file exists
+
     if xbmcvfs.exists(log_path):
         try:
             with xbmcvfs.File(log_path, 'r') as f:
-                current_content = f.read()
-            
-            # Split content based on "Date and time:" which marks the end of each entry
-            parts = current_content.split(f'\n{addon.getLocalizedString(31009)}')
-            
-            # Reconstruct complete entries
-            for i, part in enumerate(parts):
-                if i == 0 and part.strip():
-                    # First part without prefix
-                    entries.append(part.strip())
-                elif part.strip():
-                    # Subsequent parts, add the prefix
-                    entries.append(f"{addon.getLocalizedString(31009)}{part.strip()}")
-                    
+                entries = _split_rotated_entries(f.read())
         except Exception as e:
             xbmc.log(f"OptiKlean: Error reading existing log: {str(e)}", xbmc.LOGWARNING)
     

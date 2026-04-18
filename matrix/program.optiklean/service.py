@@ -10,6 +10,14 @@ import xbmcaddon
 import xbmcvfs
 
 try:
+    from resources.lib.update_state import get_restart_pending_state
+except ImportError as e:
+    xbmc.log(f"OptiKlean: Fallita importazione update_state: {str(e)}", xbmc.LOGERROR)
+
+    def get_restart_pending_state():
+        return {}
+
+try:
     from autoupdater import AutoUpdater
 except ImportError as e:
     xbmc.log(f"OptiKlean: Fallita importazione autoupdater: {str(e)}", xbmc.LOGERROR)
@@ -27,9 +35,20 @@ addon = xbmcaddon.Addon()
 addon_id = addon.getAddonInfo('id')
 addon_path = xbmcvfs.translatePath(addon.getAddonInfo('path'))
 sys.path.append(addon_path)
+CLEANING_TYPES = (
+    "clear_cache_and_temp",
+    "clear_unused_thumbnails",
+    "clear_addon_leftovers",
+    "clear_kodi_packages",
+    "optimize_databases",
+)
 
 # Path to addon_data for storing logs
 addon_data_folder = xbmcvfs.translatePath(f"special://profile/addon_data/{addon.getAddonInfo('id')}/")
+
+
+def is_restart_pending():
+    return bool(get_restart_pending_state())
 
 
 def run_scheduled_maintenance(monitor):
@@ -68,53 +87,51 @@ class OptiKleanMonitor(xbmc.Monitor):
     def check_first_run(self):
         """Controlla se qualsiasi opzione attiva non ha file JSON e attiva la manutenzione automatica se necessaria"""
         try:
+            if is_restart_pending():
+                xbmc.log("OptiKlean: Restart pending attivo, salto la prima manutenzione automatica", xbmc.LOGWARNING)
+                return
+
             if run_automatic_maintenance is None:
                 return
 
-            cleaning_types = [
-                "clear_cache_and_temp",
-                "clear_unused_thumbnails",
-                "clear_addon_leftovers",
-                "clear_kodi_packages",
-                "optimize_databases"
-            ]
+            if not self._needs_first_run():
+                return
 
-            needs_first_run = False
-
-            for cleaning in cleaning_types:
-                enabled = self.addon.getSettingBool(f"{cleaning}_enable")
-                if not enabled:
-                    continue
-
-                last_run_file = os.path.join(
-                    xbmcvfs.translatePath(self.addon.getAddonInfo('profile')),
-                    f"last_{cleaning}.json"
-                )
-
-                if not xbmcvfs.exists(last_run_file):
-                    xbmc.log(f"OptiKlean: Primo avvio rilevato per '{cleaning}' abilitato ma senza file JSON", xbmc.LOGINFO)
-                    needs_first_run = True
-                    break
-
-            if needs_first_run:
-                xbmc.log("OptiKlean: rilevato primo avvio per le opzioni abilitate", xbmc.LOGINFO)
-                
-                while not self.abortRequested() and not self.startup_complete:
-                    if self.waitForAbort(5):
-                        return
-
-                if not self.abortRequested():
-                    xbmc.log("OptiKlean: avvio prima manutenzione automatica", xbmc.LOGINFO)
-                    if run_scheduled_maintenance(self):
-                        self.maintenance_executed = True
-                        check_and_run_update(self, settle_before_check=True)
+            xbmc.log("OptiKlean: rilevato primo avvio per le opzioni abilitate", xbmc.LOGINFO)
+            if self._wait_for_startup_complete():
+                xbmc.log("OptiKlean: avvio prima manutenzione automatica", xbmc.LOGINFO)
+                if run_scheduled_maintenance(self):
+                    self.maintenance_executed = True
+                    check_and_run_update(self, settle_before_check=True)
 
         except Exception as e:
             xbmc.log(f"OptiKlean: Errore in check_first_run: {str(e)}", xbmc.LOGERROR)
 
+    def _needs_first_run(self):
+        profile_path = xbmcvfs.translatePath(self.addon.getAddonInfo('profile'))
+        for cleaning in CLEANING_TYPES:
+            if not self.addon.getSettingBool(f"{cleaning}_enable"):
+                continue
+
+            last_run_file = os.path.join(profile_path, f"last_{cleaning}.json")
+            if not xbmcvfs.exists(last_run_file):
+                xbmc.log(f"OptiKlean: Primo avvio rilevato per '{cleaning}' abilitato ma senza file JSON", xbmc.LOGINFO)
+                return True
+        return False
+
+    def _wait_for_startup_complete(self):
+        while not self.abortRequested() and not self.startup_complete:
+            if self.waitForAbort(5):
+                return False
+        return not self.abortRequested()
+
     def onSettingsChanged(self):
         """Gestisci cambio impostazioni"""
         try:
+            if is_restart_pending():
+                xbmc.log("OptiKlean: Restart pending attivo, ignoro il refresh impostazioni", xbmc.LOGWARNING)
+                return
+
             xbmc.log("OptiKlean: impostazioni cambiate", xbmc.LOGINFO)
             
             # Assicurati che la cartella del profilo esista
@@ -153,6 +170,9 @@ class OptiKleanMonitor(xbmc.Monitor):
             xbmc.log("OptiKlean: Interazione utente rilevata", xbmc.LOGDEBUG)
 
 def check_and_run_update(monitor, settle_before_check=False):
+    if is_restart_pending():
+        return
+
     if (
         monitor.maintenance_executed
         and monitor.updater
@@ -177,6 +197,8 @@ if __name__ == '__main__':
         xbmc.log(f"OptiKlean: Error during startup safety cleanup: {str(e)}", xbmc.LOGWARNING)
 
     monitor = OptiKleanMonitor()
+    if is_restart_pending():
+        xbmc.log("OptiKlean: Restart pending attivo, il servizio sospende le operazioni normali fino al riavvio", xbmc.LOGWARNING)
     xbmc.sleep(5000)  # 5 secondi di attesa iniziale
 
     wait_time = 3
@@ -185,9 +207,19 @@ if __name__ == '__main__':
     update_check_counter = 0  # Contatore per controlli update periodici
     
     while not monitor.abortRequested():
-        xbmc.log(f"OptiKlean: Avvio completo: {monitor.startup_complete}, Manutenzione automatica eseguita: {monitor.maintenance_executed}", xbmc.LOGDEBUG)
+        restart_pending = is_restart_pending()
+        xbmc.log(
+            f"OptiKlean: Avvio completo: {monitor.startup_complete}, "
+            f"Manutenzione automatica eseguita: {monitor.maintenance_executed}, "
+            f"Restart pending: {restart_pending}",
+            xbmc.LOGDEBUG,
+        )
         if monitor.waitForAbort(wait_time):
             break
+
+        if restart_pending:
+            wait_time = 60
+            continue
         
         # Monitoraggio impostazioni in background ogni 10 minuti (600 secondi)
         settings_check_counter += wait_time

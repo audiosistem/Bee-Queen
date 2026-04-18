@@ -2092,3 +2092,19 @@ msgstr "Orphan artwork cleanup (video + music)"
 msgctxt "#31281"
 msgid "Deleted {count} folders ({total_mb:.2f} MB freed)"
 msgstr "Deleted {count} folders ({total_mb:.2f} MB freed)"
+
+msgctxt "#31282"
+msgid "Restart required"
+msgstr "Restart required"
+
+msgctxt "#31283"
+msgid "OptiKlean has been updated. Restart Kodi before using the addon."
+msgstr "OptiKlean has been updated. Restart Kodi before using the addon."
+
+msgctxt "#31284"
+msgid "Restart postponed. OptiKlean will stay unavailable until Kodi is restarted."
+msgstr "Restart postponed. OptiKlean will stay unavailable until Kodi is restarted."
+
+msgctxt "#31285"
+msgid "Installed update: {summary}"
+msgstr "Installed update: {summary}"

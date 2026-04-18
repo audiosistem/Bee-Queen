@@ -8,6 +8,7 @@ import shutil
 import json
 import time
 import stat
+from urllib.parse import urlparse
 from datetime import datetime
 
 import xbmcvfs
@@ -33,6 +34,32 @@ addon_id = addon.getAddonInfo('id')
 addon_path = xbmcvfs.translatePath(addon.getAddonInfo("path"))
 media_path = f"{addon_path}/resources/media/"
 logo_path = f"{media_path}logo.png"
+
+BACKUP_MARKER_FILE = ".optiklean_backup"
+NETWORK_PROTOCOLS = frozenset({"smb", "nfs", "ftp", "sftp", "http", "https"})
+DATABASE_SPECIAL_PATH = "special://profile/Database/"
+HOME_ADDONS_SPECIAL_PATH = "special://home/addons/"
+PROFILE_ADDON_DATA_SPECIAL_PATH = "special://profile/addon_data/"
+PROFILE_SPECIAL_PATH = "special://profile/"
+HOME_SPECIAL_PATH = "special://home/"
+USERDATA_SPECIAL_PATH = "special://userdata/"
+KEYMAPS_SPECIAL_PATH = "special://userdata/keymaps/"
+ADDONS_ARCHIVE_PREFIX = "addons/"
+GUI_SETTINGS_FILE = "guisettings.xml"
+SOURCES_FILE = "sources.xml"
+PROFILES_FILE = "profiles.xml"
+ADVANCED_SETTINGS_FILE = "advancedsettings.xml"
+PASSWORDS_FILE = "passwords.xml"
+SKIN_PREFIX = "skin."
+OPTIKLEAN_ADDON_DATA_PATH = f"{PROFILE_ADDON_DATA_SPECIAL_PATH}{addon_id}/"
+
+# Default metadata for legacy backups that have no embedded metadata
+_LEGACY_BACKUP_METADATA = {
+    "optiklean_backup": True,
+    "os_info": "Unknown",
+    "architecture": {"arch": "Unknown", "variant": "Unknown", "display": "Unknown"},
+    "native_addons": [],
+}
 
 def get_kodi_version():
     """Ottiene la versione principale di Kodi (es. 19, 20, 21)"""
@@ -368,81 +395,59 @@ def check_arm_compatibility(backup_arch, backup_variant, current_arch, current_v
     # Stesse varianti o nessun addon nativo - compatibili
     return {"compatible": True, "reason": f"ARM compatibility check passed: {backup_variant} → {backup_variant}"}
 
+def _xbmcvfs_recursive_delete(path):
+    """Recursively delete a path using xbmcvfs (used as fallback when os.path is blind to it)."""
+    try:
+        dirs, files = xbmcvfs.listdir(path)
+        for file in files:
+            xbmcvfs.delete(safe_path_join(path, file))
+        for dir_name in dirs:
+            _xbmcvfs_recursive_delete(safe_path_join(path, dir_name))
+        xbmcvfs.rmdir(path)
+    except OSError as e:
+        xbmc.log(f"OptiKlean: Error in recursive delete: {str(e)}", xbmc.LOGWARNING)
+
 def _cleanup_temp_restore(addon_data_path):
     # Pulizia temp_restore
     temp_extract_path = safe_path_join(addon_data_path, "temp_restore")
-    
-    # Usa os.path.exists() invece di xbmcvfs.exists() per Android
-    xbmcvfs_exists = xbmcvfs.exists(temp_extract_path)
-    os_exists = os.path.exists(temp_extract_path)
 
-    # Usa os.path.exists() come verifica primaria
+    os_exists = os.path.exists(temp_extract_path)
+    xbmcvfs_exists = xbmcvfs.exists(temp_extract_path)
+
+    if not os_exists and not xbmcvfs_exists:
+        xbmc.log(f"OptiKlean: temp_restore directory does not exist (both checks returned False): {temp_extract_path}", xbmc.LOGINFO)
+        return
+
     if os_exists:
         try:
             xbmc.log(f"OptiKlean: Starting cleanup of temp_restore directory: {temp_extract_path}", xbmc.LOGINFO)
-            
-            if os.path.exists(temp_extract_path):
-                xbmc.log(f"OptiKlean: Using shutil.rmtree for: {temp_extract_path}", xbmc.LOGINFO)
-                shutil.rmtree(temp_extract_path)
-                xbmc.log("OptiKlean: Successfully cleaned temp_restore using shutil", xbmc.LOGINFO)
-            else:
-                # Fallback a xbmcvfs (se necessario)
-                xbmc.log(f"OptiKlean: Using recursive delete for: {temp_extract_path}", xbmc.LOGINFO)
-                def recursive_delete(path):
-                    try:
-                        dirs, files = xbmcvfs.listdir(path)
-                        
-                        for file in files:
-                            file_path = safe_path_join(path, file)
-                            xbmcvfs.delete(file_path)
-                        
-                        for dir_name in dirs:
-                            dir_path = safe_path_join(path, dir_name)
-                            recursive_delete(dir_path)
-                            xbmcvfs.rmdir(dir_path)
-                    except Exception as e:
-                        xbmc.log(f"OptiKlean: Error in recursive delete: {str(e)}", xbmc.LOGWARNING)
-                
-                recursive_delete(temp_extract_path)
-                xbmcvfs.rmdir(temp_extract_path)
-                xbmc.log("OptiKlean: Successfully cleaned temp_restore using recursive method", xbmc.LOGINFO)
-                
-        except Exception as e:
+            shutil.rmtree(temp_extract_path)
+            xbmc.log("OptiKlean: Successfully cleaned temp_restore using shutil", xbmc.LOGINFO)
+        except OSError as e:
             xbmc.log(f"OptiKlean: Error cleaning temp_restore: {str(e)}", xbmc.LOGWARNING)
-    elif xbmcvfs_exists:
-        # Fallback: se os.path.exists() dice False ma xbmcvfs.exists() dice True
-        # Prova comunque la pulizia con xbmcvfs
+    else:
+        # Fallback: os.path is blind but xbmcvfs sees it
         try:
             xbmc.log(f"OptiKlean: Attempting cleanup with xbmcvfs fallback: {temp_extract_path}", xbmc.LOGINFO)
-            
-            def recursive_delete(path):
-                try:
-                    dirs, files = xbmcvfs.listdir(path)
-                    
-                    for file in files:
-                        file_path = safe_path_join(path, file)
-                        xbmcvfs.delete(file_path)
-                    
-                    for dir_name in dirs:
-                        dir_path = safe_path_join(path, dir_name)
-                        recursive_delete(dir_path)
-                        xbmcvfs.rmdir(dir_path)
-                except Exception as e:
-                    xbmc.log(f"OptiKlean: Error in recursive delete: {str(e)}", xbmc.LOGWARNING)
-            
-            recursive_delete(temp_extract_path)
-            xbmcvfs.rmdir(temp_extract_path)
+            _xbmcvfs_recursive_delete(temp_extract_path)
             xbmc.log("OptiKlean: Successfully cleaned temp_restore using xbmcvfs fallback method", xbmc.LOGINFO)
-            
-        except Exception as e:
+        except OSError as e:
             xbmc.log(f"OptiKlean: Error cleaning temp_restore with xbmcvfs fallback: {str(e)}", xbmc.LOGWARNING)
-    
-    else:
-        xbmc.log(f"OptiKlean: temp_restore directory does not exist (both checks returned False): {temp_extract_path}", xbmc.LOGINFO)
 
 def is_network_path(path):
-    """Check if path is a network/remote path"""
-    return any(path.lower().startswith(proto) for proto in ['smb://', 'nfs://', 'ftp://', 'sftp://', 'http://', 'https://'])
+    """Check if path is a network/remote path."""
+    if not path or not isinstance(path, str):
+        return False
+    try:
+        parsed = urlparse(path.strip())
+    except ValueError:
+        return False
+    if parsed.scheme.lower() not in NETWORK_PROTOCOLS:
+        return False
+    # Reject embedded credentials to avoid accidental credential exposure
+    if parsed.username or parsed.password:
+        return False
+    return bool(parsed.netloc)
 
 def verify_backup_path_availability(backup_path):
     """
@@ -692,25 +697,25 @@ def get_backup_metadata(zip_path):
             if xbmcvfs.copy(zip_path, temp_file):
                 try:
                     with zipfile.ZipFile(xbmcvfs.translatePath(temp_file), 'r') as zipf:
-                        if '.optiklean_backup' in zipf.namelist():
-                            marker_content = zipf.read('.optiklean_backup').decode('utf-8')
+                        if BACKUP_MARKER_FILE in zipf.namelist():
+                            marker_content = zipf.read(BACKUP_MARKER_FILE).decode('utf-8')
                             try:
                                 return json.loads(marker_content)
                             except json.JSONDecodeError:
                                 # Backup legacy - solo stringa semplice
-                                return {"optiklean_backup": True, "os_info": "Unknown", "architecture": {"arch": "Unknown", "variant": "Unknown", "display": "Unknown"}, "native_addons": []}
+                                return dict(_LEGACY_BACKUP_METADATA)
                 finally:
                     xbmcvfs.delete(temp_file)
         else:
             # Percorso locale
             with zipfile.ZipFile(xbmcvfs.translatePath(zip_path), 'r') as zipf:
-                if '.optiklean_backup' in zipf.namelist():
-                    marker_content = zipf.read('.optiklean_backup').decode('utf-8')
+                if BACKUP_MARKER_FILE in zipf.namelist():
+                    marker_content = zipf.read(BACKUP_MARKER_FILE).decode('utf-8')
                     try:
                         return json.loads(marker_content)
                     except json.JSONDecodeError:
                         # Backup legacy - solo stringa semplice
-                        return {"optiklean_backup": True, "os_info": "Unknown", "architecture": {"arch": "Unknown", "variant": "Unknown", "display": "Unknown"}, "native_addons": []}
+                        return dict(_LEGACY_BACKUP_METADATA)
     except Exception as e:
         xbmc.log(f"OptiKlean: Error reading backup metadata: {e}", xbmc.LOGWARNING)
     
@@ -820,7 +825,7 @@ def is_valid_optiklean_backup(zip_path):
             if xbmcvfs.copy(zip_path, temp_file):
                 try:
                     with zipfile.ZipFile(xbmcvfs.translatePath(temp_file), 'r') as zipf:
-                        result = '.optiklean_backup' in zipf.namelist()
+                        result = BACKUP_MARKER_FILE in zipf.namelist()
                     xbmcvfs.delete(temp_file)
                     return result
                 except (zipfile.BadZipFile, zipfile.LargeZipFile, OSError, IOError) as e:
@@ -831,8 +836,8 @@ def is_valid_optiklean_backup(zip_path):
         else:
             # Local path - use standard method
             with zipfile.ZipFile(xbmcvfs.translatePath(zip_path), 'r') as zipf:
-                return '.optiklean_backup' in zipf.namelist()
-    except (zipfile.BadZipFile, zipfile.LargeZipFile, OSError, IOError, Exception) as e:
+                return BACKUP_MARKER_FILE in zipf.namelist()
+    except (zipfile.BadZipFile, zipfile.LargeZipFile, OSError, IOError) as e:
         xbmc.log(f"OptiKlean: Error validating backup file {zip_path}: {e}", xbmc.LOGWARNING)
         return False
 
@@ -1200,11 +1205,11 @@ def collect_database_items_for_backup():
     backup_items = []
     backed_up_items = []
     
-    db_path = xbmcvfs.translatePath("special://profile/Database/")
+    db_path = xbmcvfs.translatePath(DATABASE_SPECIAL_PATH)
     
     if xbmcvfs.exists(db_path):
         try:
-            dirs, files = xbmcvfs.listdir(db_path)
+            _, files = xbmcvfs.listdir(db_path)
             for db_file in files:
                 if db_file.endswith('.db'):
                     # Escludi i database delle texture (cache non critica, rigenerata automaticamente)
@@ -1222,9 +1227,9 @@ def collect_database_items_for_backup():
 def collect_skin_items_for_backup():
     """Comprehensive skin backup with all component prefixes """
     # Get translated paths
-    addons_path = xbmcvfs.translatePath("special://home/addons/")
-    addon_data_path = xbmcvfs.translatePath("special://profile/addon_data/")
-    userdata_path = xbmcvfs.translatePath("special://profile/")
+    addons_path = xbmcvfs.translatePath(HOME_ADDONS_SPECIAL_PATH)
+    addon_data_path = xbmcvfs.translatePath(PROFILE_ADDON_DATA_SPECIAL_PATH)
+    userdata_path = xbmcvfs.translatePath(PROFILE_SPECIAL_PATH)
     
     backup_items = []
     backed_up_items = []
@@ -1234,21 +1239,21 @@ def collect_skin_items_for_backup():
     xbmc.log(f"OptiKlean: Addon data path: {addon_data_path} (exists: {os.path.exists(addon_data_path)})", xbmc.LOGINFO)
 
     # 1. Include guisettings.xml with verification
-    gui_settings_file = os.path.join(userdata_path, "guisettings.xml")
+    gui_settings_file = os.path.join(userdata_path, GUI_SETTINGS_FILE)
     if os.path.exists(gui_settings_file):
         try:
             with open(gui_settings_file, 'rb') as f:
                 f.read(1)  # Test file access
-            backup_items.append((gui_settings_file, "guisettings.xml"))
+            backup_items.append((gui_settings_file, GUI_SETTINGS_FILE))
             backed_up_items.append("GUI settings")
-            xbmc.log("OptiKlean: Verified guisettings.xml for backup", xbmc.LOGINFO)
+            xbmc.log(f"OptiKlean: Verified {GUI_SETTINGS_FILE} for backup", xbmc.LOGINFO)
         except Exception as e:
-            xbmc.log(f"OptiKlean: Failed to access guisettings.xml: {str(e)}", xbmc.LOGERROR)
+            xbmc.log(f"OptiKlean: Failed to access {GUI_SETTINGS_FILE}: {str(e)}", xbmc.LOGERROR)
 
     # 2. Complete list of all skin-related prefixes
     skin_prefixes = (
         # Core skin components
-        "skin.",
+        SKIN_PREFIX,
         "script.skin.",
         "script.skinhelper.",
         "script.skinshortcuts",
@@ -1324,10 +1329,10 @@ def collect_skin_items_for_backup():
                         continue
 
                     # Add to backup
-                    backup_items.append((addon_dir, f"addons/{folder}"))
+                    backup_items.append((addon_dir, f"{ADDONS_ARCHIVE_PREFIX}{folder}"))
                     
                     # Classify for logging
-                    if folder.startswith("skin."):
+                    if folder.startswith(SKIN_PREFIX):
                         item_type = "Skin"
                     elif folder.startswith("script.skinhelper"):
                         item_type = "Skin Helper"
@@ -1355,7 +1360,7 @@ def collect_skin_items_for_backup():
                 # 1. Matches skin pattern AND
                 # 2. Either has corresponding addon OR is a skin data folder
                 if any(folder.startswith(p) for p in skin_prefixes) and \
-                   (folder in skin_addons or folder.startswith("skin.")):
+                   (folder in skin_addons or folder.startswith(SKIN_PREFIX)):
                     
                     data_dir = os.path.join(addon_data_path, folder)
                     if os.path.exists(data_dir):
@@ -1385,8 +1390,8 @@ def collect_skin_items_for_backup():
 
 def collect_all_user_addons():
     """Raccoglie tutti gli addon utente per il backup completo"""
-    addons_path = xbmcvfs.translatePath("special://home/addons/")
-    addon_data_path = xbmcvfs.translatePath("special://profile/addon_data/")
+    addons_path = xbmcvfs.translatePath(HOME_ADDONS_SPECIAL_PATH)
+    addon_data_path = xbmcvfs.translatePath(PROFILE_ADDON_DATA_SPECIAL_PATH)
        
     all_user_addons = []
     
@@ -1430,8 +1435,8 @@ def collect_all_user_addons():
 
 def select_addons_for_backup(backup_mode="both"):
     """Select addons for backup based on specified type"""
-    addons_path = xbmcvfs.translatePath("special://home/addons/")
-    addon_data_path = xbmcvfs.translatePath("special://profile/addon_data/")
+    addons_path = xbmcvfs.translatePath(HOME_ADDONS_SPECIAL_PATH)
+    addon_data_path = xbmcvfs.translatePath(PROFILE_ADDON_DATA_SPECIAL_PATH)
 
     addon_list = []
     display_list = []
@@ -1455,11 +1460,11 @@ def select_addons_for_backup(backup_mode="both"):
             has_addon = os.path.isdir(addon_dir)
             has_data = os.path.isdir(data_dir)
             
-            if backup_mode == "addons" and not has_addon:
-                continue
-            elif backup_mode == "addon_data" and not has_data:
-                continue
-            elif backup_mode == "both" and not (has_addon or has_data):
+            if (
+                (backup_mode == "addons" and not has_addon)
+                or (backup_mode == "addon_data" and not has_data)
+                or (backup_mode == "both" and not (has_addon or has_data))
+            ):
                 continue
                 
             addon_size_kb = get_size_kb(addon_dir) if has_addon else 0.0
@@ -1472,16 +1477,23 @@ def select_addons_for_backup(backup_mode="both"):
                 else:
                     return f"{kb/1024:.2f} {addon.getLocalizedString(31014)}"
             
+            data_label = (
+                f"{folder} ({format_size(data_size_kb)} {addon.getLocalizedString(31010)})"
+                if data_size_kb is not None
+                else f"{folder} ({addon.getLocalizedString(31011)})"
+            )
+
             if backup_mode == "addons":
                 label = f"{folder} ({format_size(addon_size_kb)})"
             elif backup_mode == "addon_data":
-                if data_size_kb is not None:
-                    label = f"{folder} ({format_size(data_size_kb)} {addon.getLocalizedString(31010)})"
-                else:
-                    label = f"{folder} ({addon.getLocalizedString(31011)})"
+                label = data_label
             else:
                 label = f"{folder} ({format_size(addon_size_kb)} {addon.getLocalizedString(31012)}"
-                label += f", {format_size(data_size_kb)} {addon.getLocalizedString(31010)})" if data_size_kb is not None else f", {addon.getLocalizedString(31011)})"            
+                label += (
+                    f", {format_size(data_size_kb)} {addon.getLocalizedString(31010)})"
+                    if data_size_kb is not None
+                    else f", {addon.getLocalizedString(31011)})"
+                )
             
             display_list.append(label)
             addon_list.append(folder)
@@ -1602,7 +1614,7 @@ def create_temp_backup(backup_items, progress_callback=None, backup_metadata=Non
                         "native_addons": []
                     }, indent=2)
                 
-                backup_zip.writestr('.optiklean_backup', backup_marker)
+                backup_zip.writestr(BACKUP_MARKER_FILE, backup_marker)
 
         if cancelled:
             if os.path.exists(temp_zip_local):
@@ -1651,7 +1663,7 @@ def add_to_zip_recursive(zip_file, source_path, archive_path):
         return False
 
 def perform_backup(mode):
-    addon_data_path = xbmcvfs.translatePath("special://profile/addon_data/program.optiklean/")
+    addon_data_path = xbmcvfs.translatePath(OPTIKLEAN_ADDON_DATA_PATH)
     prompt_status_path = safe_path_join(addon_data_path, "backup_path_prompt_status.json")
 
     # Define maps at the start for use in both notification and log
@@ -1702,15 +1714,15 @@ def perform_backup(mode):
                 with xbmcvfs.File(prompt_status_path, 'r') as f:
                     data = json.loads(f.read())
                     if data.get("use_default", False):
-                        backup_dest = xbmcvfs.translatePath("special://home/")
+                        backup_dest = xbmcvfs.translatePath(HOME_SPECIAL_PATH)
                     else:
                         backup_dest = xbmcgui.Dialog().browse(0, addon.getLocalizedString(30304), "files")
                         if not backup_dest:
                             xbmcgui.Dialog().notification("OptiKlean", addon.getLocalizedString(30207), xbmcgui.NOTIFICATION_WARNING, 3000)
                             return
-            except (IOError, OSError, json.JSONDecodeError, KeyError, Exception) as e:
+            except (IOError, OSError, json.JSONDecodeError, KeyError) as e:
                 xbmc.log(f"OptiKlean: Error reading backup path prompt status: {e}", xbmc.LOGWARNING)
-                backup_dest = xbmcvfs.translatePath("special://home/")
+                backup_dest = xbmcvfs.translatePath(HOME_SPECIAL_PATH)
         else:
             # First time - ask user
             choice = xbmcgui.Dialog().yesno(
@@ -1726,12 +1738,12 @@ def perform_backup(mode):
                 # Save the custom path
                 addon.setSetting("backup_path", backup_dest)
             else:  # User chose NO - use default
-                backup_dest = xbmcvfs.translatePath("special://home/")
+                backup_dest = xbmcvfs.translatePath(HOME_SPECIAL_PATH)
                 # Save preference to not ask again
                 try:
                     with xbmcvfs.File(prompt_status_path, 'w') as f:
                         f.write(json.dumps({"use_default": True}))
-                except (IOError, OSError, json.JSONDecodeError, Exception) as e:
+                except (IOError, OSError, json.JSONDecodeError) as e:
                     xbmc.log(f"OptiKlean: Error writing backup path prompt status: {e}", xbmc.LOGWARNING)
 
     # Verifica del percorso di backup fino a validazione o cancellazione
@@ -1800,9 +1812,9 @@ def perform_backup(mode):
     zip_name = f"kodi_backup_{mode}_{timestamp}.zip"
     dest_zip = safe_path_join(backup_dest, zip_name)
 
-    addons_path = xbmcvfs.translatePath("special://home/addons/")
-    db_path = xbmcvfs.translatePath("special://profile/Database/")
-    userdata_path = xbmcvfs.translatePath("special://profile/")
+    addons_path = xbmcvfs.translatePath(HOME_ADDONS_SPECIAL_PATH)
+    db_path = xbmcvfs.translatePath(DATABASE_SPECIAL_PATH)
+    userdata_path = xbmcvfs.translatePath(PROFILE_SPECIAL_PATH)
 
     backup_items = []
     result = addon.getLocalizedString(31017)
@@ -1818,8 +1830,8 @@ def perform_backup(mode):
                 return
             
             # Get Kodi paths (use xbmcvfs for consistency)
-            addons_path = xbmcvfs.translatePath("special://home/addons/")
-            addon_data_root = xbmcvfs.translatePath("special://profile/addon_data/")
+            addons_path = xbmcvfs.translatePath(HOME_ADDONS_SPECIAL_PATH)
+            addon_data_root = xbmcvfs.translatePath(PROFILE_ADDON_DATA_SPECIAL_PATH)
             
             xbmc.log(f"OptiKlean: Addons path: {addons_path}", xbmc.LOGDEBUG)
             xbmc.log(f"OptiKlean: Addon data path: {addon_data_root}", xbmc.LOGDEBUG)
@@ -1827,14 +1839,14 @@ def perform_backup(mode):
             for addon_id in selected_addons:
                 # Handle addon code backup
                 if mode in ["addons", "both"]:
-                    addon_path = xbmcvfs.translatePath(f"special://home/addons/{addon_id}")
+                    addon_path = xbmcvfs.translatePath(f"{HOME_ADDONS_SPECIAL_PATH}{addon_id}")
                     
                     xbmc.log(f"OptiKlean: DEBUG - Checking addon path: '{addon_path}'", xbmc.LOGDEBUG)
                     
                     # Use os.path.isdir() like in select_addons_for_backup() for consistency
                     if os.path.isdir(addon_path):
                         # Use forward slashes for archive path (ZIP standard)
-                        archive_path = f"addons/{addon_id}"
+                        archive_path = f"{ADDONS_ARCHIVE_PREFIX}{addon_id}"
                         backup_items.append((addon_path, archive_path))
                         backed_up_items.append(f"Addon: {addon_id}")
                         xbmc.log(f"OptiKlean: Found addon: {addon_id}", xbmc.LOGINFO)
@@ -1844,7 +1856,7 @@ def perform_backup(mode):
                 # Handle addon data backup
                 if mode in ["addon_data", "both"]:
                     # Use the same reliable method as select_addons_for_backup()
-                    data_path = xbmcvfs.translatePath(f"special://profile/addon_data/{addon_id}")
+                    data_path = xbmcvfs.translatePath(f"{PROFILE_ADDON_DATA_SPECIAL_PATH}{addon_id}")
                     xbmc.log(f"OptiKlean: DEBUG - Checking data path: '{data_path}'", xbmc.LOGDEBUG)
                     
                     # Use os.path.isdir() like in select_addons_for_backup() for consistency
@@ -1868,31 +1880,31 @@ def perform_backup(mode):
             backed_up_items.extend(db_backed_up)
 
         elif mode == "sources":
-            sources_file = safe_path_join(userdata_path, "sources.xml")
+            sources_file = safe_path_join(userdata_path, SOURCES_FILE)
             if xbmcvfs.exists(sources_file):
-                backup_items.append((sources_file, "sources.xml"))
+                backup_items.append((sources_file, SOURCES_FILE))
 
         elif mode == "gui_settings":
-            gui_settings_file = safe_path_join(userdata_path, "guisettings.xml")
+            gui_settings_file = safe_path_join(userdata_path, GUI_SETTINGS_FILE)
             if xbmcvfs.exists(gui_settings_file):
-                backup_items.append((gui_settings_file, "guisettings.xml"))
+                backup_items.append((gui_settings_file, GUI_SETTINGS_FILE))
 
         elif mode == "profiles":
-            profiles_file = safe_path_join(userdata_path, "profiles.xml")
+            profiles_file = safe_path_join(userdata_path, PROFILES_FILE)
             if xbmcvfs.exists(profiles_file):
-                backup_items.append((profiles_file, "profiles.xml"))
+                backup_items.append((profiles_file, PROFILES_FILE))
 
         elif mode == "advanced_settings":
-            advanced_settings_file = safe_path_join(userdata_path, "advancedsettings.xml")
+            advanced_settings_file = safe_path_join(userdata_path, ADVANCED_SETTINGS_FILE)
             if xbmcvfs.exists(advanced_settings_file):
-                backup_items.append((advanced_settings_file, "advancedsettings.xml"))
+                backup_items.append((advanced_settings_file, ADVANCED_SETTINGS_FILE))
             else:
                 xbmcgui.Dialog().notification("OptiKlean", addon.getLocalizedString(30209), logo_path, 3000)
                 result = addon.getLocalizedString(31032)
                 return
 
         elif mode == "keymaps":
-            keymaps_folder = xbmcvfs.translatePath("special://userdata/keymaps/")
+            keymaps_folder = xbmcvfs.translatePath(KEYMAPS_SPECIAL_PATH)
             if xbmcvfs.exists(keymaps_folder):
                 try:
                     dirs, files = xbmcvfs.listdir(keymaps_folder)
@@ -1963,9 +1975,9 @@ def perform_backup(mode):
                 return
 
         elif mode == "passwords":
-            passwords_file = safe_path_join(userdata_path, "passwords.xml")
+            passwords_file = safe_path_join(userdata_path, PASSWORDS_FILE)
             if xbmcvfs.exists(passwords_file):
-                backup_items.append((passwords_file, "passwords.xml"))
+                backup_items.append((passwords_file, PASSWORDS_FILE))
                 backed_up_items.append("Network passwords")
             else:
                 xbmcgui.Dialog().notification("OptiKlean", addon.getLocalizedString(30216), logo_path, 3000)
@@ -1978,8 +1990,8 @@ def perform_backup(mode):
             
             # Simula la selezione di TUTTI gli addon utente (senza richiedere input utente)
             # Riusa la logica esistente di select_addons_for_backup() senza dialog
-            addons_path = xbmcvfs.translatePath("special://home/addons/")
-            addon_data_path = xbmcvfs.translatePath("special://profile/addon_data/")
+            addons_path = xbmcvfs.translatePath(HOME_ADDONS_SPECIAL_PATH)
+            addon_data_path = xbmcvfs.translatePath(PROFILE_ADDON_DATA_SPECIAL_PATH)
             
             try:
                 # 1. ADDONS + ADDON DATA
@@ -1987,14 +1999,14 @@ def perform_backup(mode):
                 
                 # Ora aggiungi tutti gli addon selezionati al backup
                 for addon_id in all_user_addons:
-                    addon_path = xbmcvfs.translatePath(f"special://home/addons/{addon_id}")
+                    addon_path = xbmcvfs.translatePath(f"{HOME_ADDONS_SPECIAL_PATH}{addon_id}")
                     
                     if os.path.isdir(addon_path):
-                        backup_items.append((addon_path, f"addons/{addon_id}"))
+                        backup_items.append((addon_path, f"{ADDONS_ARCHIVE_PREFIX}{addon_id}"))
                         backed_up_items.append(f"Addon: {addon_id}")
                     
                     # Handle addon data backup
-                    data_path = xbmcvfs.translatePath(f"special://profile/addon_data/{addon_id}")
+                    data_path = xbmcvfs.translatePath(f"{PROFILE_ADDON_DATA_SPECIAL_PATH}{addon_id}")
                     if os.path.isdir(data_path):
                         backup_items.append((data_path, f"addon_data/{addon_id}"))
                         backed_up_items.append(f"Data: {addon_id}")
@@ -2011,11 +2023,11 @@ def perform_backup(mode):
             
             # 3. TUTTI I FILE DI CONFIGURAZIONE - Espanso per includere tutto
             config_files = [
-                ("sources.xml", "sources.xml"),
-                ("guisettings.xml", "guisettings.xml"), 
-                ("profiles.xml", "profiles.xml"),
-                ("advancedsettings.xml", "advancedsettings.xml"),
-                ("passwords.xml", "passwords.xml")
+                (SOURCES_FILE, SOURCES_FILE),
+                (GUI_SETTINGS_FILE, GUI_SETTINGS_FILE),
+                (PROFILES_FILE, PROFILES_FILE),
+                (ADVANCED_SETTINGS_FILE, ADVANCED_SETTINGS_FILE),
+                (PASSWORDS_FILE, PASSWORDS_FILE),
             ]
             
             for filename, archive_name in config_files:
@@ -2025,7 +2037,7 @@ def perform_backup(mode):
                     backed_up_items.append(f"Config: {filename}")
             
             # 4. KEYMAPS (se esistono) - Riusa logica esistente
-            keymaps_folder = xbmcvfs.translatePath("special://userdata/keymaps/")
+            keymaps_folder = xbmcvfs.translatePath(KEYMAPS_SPECIAL_PATH)
             if xbmcvfs.exists(keymaps_folder):
                 try:
                     dirs, files = xbmcvfs.listdir(keymaps_folder)
@@ -2061,7 +2073,7 @@ def perform_backup(mode):
             if mode in ["addons", "addon_data", "both"]:
                 xbmc.log(f"- Selected addons: {selected_addons if 'selected_addons' in locals() else 'N/A'}", xbmc.LOGWARNING)
                 xbmc.log(f"- Addons path exists: {xbmcvfs.exists(addons_path)}", xbmc.LOGWARNING)
-                xbmc.log(f"- Addon data path exists: {xbmcvfs.exists(xbmcvfs.translatePath('special://profile/addon_data/'))}", xbmc.LOGWARNING)
+                xbmc.log(f"- Addon data path exists: {xbmcvfs.exists(xbmcvfs.translatePath(PROFILE_ADDON_DATA_SPECIAL_PATH))}", xbmc.LOGWARNING)
             
             xbmcgui.Dialog().notification(
                 "OptiKlean", 
@@ -2183,7 +2195,7 @@ def perform_backup(mode):
                     xbmc.log(f"OptiKlean: Backup copied to {dest_zip}", xbmc.LOGINFO)
                     transfer_success = True
                 else:
-                    raise Exception(addon.getLocalizedString(31028))
+                    raise OSError(addon.getLocalizedString(31028))
             else:
                 # LOCAL TRANSFER - try shutil first
                 dest_local = xbmcvfs.translatePath(dest_zip)
@@ -2191,13 +2203,13 @@ def perform_backup(mode):
                     shutil.move(temp_local_path, dest_local)
                     xbmc.log(f"OptiKlean: Backup moved to {dest_local}", xbmc.LOGINFO)
                     transfer_success = True
-                except (shutil.Error, OSError) as e:
+                except OSError as e:
                     # Fallback to xbmcvfs if shutil fails
                     xbmc.log(f"OptiKlean: shutil.move failed, trying xbmcvfs: {str(e)}", xbmc.LOGWARNING)
                     if xbmcvfs.copy(temp_zip, dest_zip):
                         transfer_success = True
                     else:
-                        raise Exception(addon.getLocalizedString(31029))
+                        raise OSError(addon.getLocalizedString(31029))
 
         except Exception as e:
             result = addon.getLocalizedString(31023).format(error=str(e))
@@ -2214,7 +2226,7 @@ def perform_backup(mode):
                         # For network transfers or failed transfers, delete the temp file
                         os.remove(temp_local_path)
                         xbmc.log(f"OptiKlean: Temp backup file cleaned up: {temp_local_path}", xbmc.LOGDEBUG)
-            except Exception as e:
+            except OSError as e:
                 xbmc.log(f"OptiKlean: Temp cleanup failed: {str(e)}", xbmc.LOGWARNING)
             progress.close()
 
@@ -2259,7 +2271,7 @@ def perform_backup(mode):
         write_log_local(log_key, log_content, append=False)
 
 def perform_restore():
-    addon_data_path = xbmcvfs.translatePath("special://profile/addon_data/program.optiklean/")
+    addon_data_path = xbmcvfs.translatePath(OPTIKLEAN_ADDON_DATA_PATH)
     
     # Inizializza le variabili per il log
     backup_file = "—"
@@ -2271,6 +2283,7 @@ def perform_restore():
     cleanup_temp_backup = False
     temp_backup_file = None
     backup_file_original = "—"
+    safe_backup_display_name = "—"
     restarting_kodi = False
     backup_file_deleted = False
     skip_native_addons = False
@@ -2329,70 +2342,60 @@ def perform_restore():
         with zipfile.ZipFile(temp_backup_local, 'r') as backup_zip:
             file_list = backup_zip.namelist()
             
-            if '.optiklean_backup' in file_list:
+            if BACKUP_MARKER_FILE in file_list:
                 try:
-                    marker_content = backup_zip.read('.optiklean_backup').decode('utf-8')
+                    marker_content = backup_zip.read(BACKUP_MARKER_FILE).decode('utf-8')
                     backup_metadata = json.loads(marker_content)
                 except (json.JSONDecodeError, UnicodeDecodeError) as e:
                     xbmc.log(f"OptiKlean: Error reading backup metadata: {e}", xbmc.LOGWARNING)
-                    backup_metadata = {
-                        "optiklean_backup": True,
-                        "os_info": "Unknown",
-                        "architecture": {"arch": "Unknown", "variant": "Unknown", "display": "Unknown"},
-                        "native_addons": []
-                    }
+                    backup_metadata = dict(_LEGACY_BACKUP_METADATA)
 
         if not backup_metadata:
-            backup_metadata = {
-                "optiklean_backup": True,
-                "os_info": "Unknown",
-                "architecture": {"arch": "Unknown", "variant": "Unknown", "display": "Unknown"},
-                "native_addons": []
-            }
+            backup_metadata = dict(_LEGACY_BACKUP_METADATA)
         
         # Determina il tipo di backup
-        has_addons = any(f.startswith('addons/') for f in file_list)
+        has_addons = any(f.startswith(ADDONS_ARCHIVE_PREFIX) for f in file_list)
         has_addon_data = any(f.startswith('addon_data/') for f in file_list)
         has_databases = any(f.startswith('Database/') for f in file_list)
-        has_sources = 'sources.xml' in file_list
-        has_gui_settings = 'guisettings.xml' in file_list
-        has_profiles = 'profiles.xml' in file_list
-        has_advanced_settings = 'advancedsettings.xml' in file_list
-        has_passwords = 'passwords.xml' in file_list
+        has_sources = SOURCES_FILE in file_list
+        has_gui_settings = GUI_SETTINGS_FILE in file_list
+        has_profiles = PROFILES_FILE in file_list
+        has_advanced_settings = ADVANCED_SETTINGS_FILE in file_list
+        has_passwords = PASSWORDS_FILE in file_list
         has_keymaps = any(f.startswith('keymaps/') for f in file_list)
         
-        has_skin_addons = any(f.startswith('addons/skin.') for f in file_list)
-        has_skin_helpers = any(f.startswith('addons/script.skin') for f in file_list)
-        has_skin_backgrounds = any(f.startswith('addons/resource.images.skinbackgrounds.') for f in file_list)
-        has_skin_resources = any(f.startswith('addons/resource.images.studios.') or 
-                               f.startswith('addons/resource.images.moviegenreicons.') or
-                               f.startswith('addons/resource.images.weathericons.') or
-                               f.startswith('addons/resource.images.recordlabels.') or
-                               f.startswith('addons/resource.images.musicgenreicons.') or
-                               f.startswith('addons/resource.images.countryflags.') or
-                               f.startswith('addons/resource.images.languageflags.') or
-                               f.startswith('addons/resource.images.moviecountryicons.') or
-                               f.startswith('addons/resource.images.tvshowgenreicons.') or
-                               f.startswith('addons/resource.images.studiopacks.') or
-                               f.startswith('addons/resource.images.skinicons.') or
-                               f.startswith('addons/resource.images.skinfanart.') or
-                               f.startswith('addons/resource.images.skinlogos.') or
-                               f.startswith('addons/resource.images.skinposters.') or
-                               f.startswith('addons/resource.images.skinwidgets.') or
-                               f.startswith('addons/resource.uisounds.') or
-                               f.startswith('addons/resource.font.') for f in file_list)
-        has_advanced_skin_scripts = any(f.startswith('addons/script.skinhelper.') or
-                                      f.startswith('addons/script.colorbox.') or
-                                      f.startswith('addons/script.embuary.') or
-                                      f.startswith('addons/script.arctic.') or
-                                      f.startswith('addons/script.aura.') or
-                                      f.startswith('addons/script.titan.') or
-                                      f.startswith('addons/script.confluence.') or
-                                      f.startswith('addons/script.estuary.') or
-                                      f.startswith('addons/script.nexus.') or
-                                      f.startswith('addons/script.amber.') for f in file_list)
-        has_skin_settings_combo = ('guisettings.xml' in file_list and 
-                                 (has_skin_addons or has_skin_helpers or has_skin_resources or has_advanced_skin_scripts))
+        has_skin_addons = any(f.startswith(f"{ADDONS_ARCHIVE_PREFIX}{SKIN_PREFIX}") for f in file_list)
+        has_skin_helpers = any(f.startswith(f"{ADDONS_ARCHIVE_PREFIX}script.skin") for f in file_list)
+        has_skin_backgrounds = any(f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.skinbackgrounds.") for f in file_list)
+        has_skin_resources = any(f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.studios.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.moviegenreicons.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.weathericons.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.recordlabels.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.musicgenreicons.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.countryflags.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.languageflags.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.moviecountryicons.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.tvshowgenreicons.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.studiopacks.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.skinicons.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.skinfanart.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.skinlogos.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.skinposters.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.images.skinwidgets.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.uisounds.") or
+                               f.startswith(f"{ADDONS_ARCHIVE_PREFIX}resource.font.") for f in file_list)
+        has_advanced_skin_scripts = any(f.startswith(f"{ADDONS_ARCHIVE_PREFIX}script.skinhelper.") or
+                                      f.startswith(f"{ADDONS_ARCHIVE_PREFIX}script.colorbox.") or
+                                      f.startswith(f"{ADDONS_ARCHIVE_PREFIX}script.embuary.") or
+                                      f.startswith(f"{ADDONS_ARCHIVE_PREFIX}script.arctic.") or
+                                      f.startswith(f"{ADDONS_ARCHIVE_PREFIX}script.aura.") or
+                                      f.startswith(f"{ADDONS_ARCHIVE_PREFIX}script.titan.") or
+                                      f.startswith(f"{ADDONS_ARCHIVE_PREFIX}script.confluence.") or
+                                      f.startswith(f"{ADDONS_ARCHIVE_PREFIX}script.estuary.") or
+                                      f.startswith(f"{ADDONS_ARCHIVE_PREFIX}script.nexus.") or
+                                      f.startswith(f"{ADDONS_ARCHIVE_PREFIX}script.amber.") for f in file_list)
+        has_skin_settings_combo = (GUI_SETTINGS_FILE in file_list and
+                                  (has_skin_addons or has_skin_helpers or has_skin_resources or has_advanced_skin_scripts))
         is_skin_backup = has_skin_addons or has_skin_helpers or has_skin_backgrounds or has_skin_resources or has_advanced_skin_scripts or has_skin_settings_combo
         
         is_full_backup = (
@@ -2590,7 +2593,7 @@ def perform_restore():
                 xbmc.log(f"OptiKlean: Unknown compatibility, proceeding: {compatibility.get('reason', '')}", xbmc.LOGINFO)
         
         # Controllo spazio
-        destination_path = xbmcvfs.translatePath("special://home/")
+        destination_path = xbmcvfs.translatePath(HOME_SPECIAL_PATH)
         free_space = get_free_space_mb(destination_path)
         
         if free_space is None:
@@ -2626,19 +2629,19 @@ def perform_restore():
         destination_dirs_to_prepare = []
 
         if has_addons:
-            addons_base = xbmcvfs.translatePath("special://home/addons/").replace('/', os.sep)
+            addons_base = xbmcvfs.translatePath(HOME_ADDONS_SPECIAL_PATH).replace('/', os.sep)
             destination_dirs_to_prepare.append(addons_base)
             
         if has_addon_data:
-            addon_data_base = xbmcvfs.translatePath("special://profile/addon_data/").replace('/', os.sep)
+            addon_data_base = xbmcvfs.translatePath(PROFILE_ADDON_DATA_SPECIAL_PATH).replace('/', os.sep)
             destination_dirs_to_prepare.append(addon_data_base)
             
         if has_databases:
-            db_base = xbmcvfs.translatePath("special://profile/Database/").replace('/', os.sep)
+            db_base = xbmcvfs.translatePath(DATABASE_SPECIAL_PATH).replace('/', os.sep)
             destination_dirs_to_prepare.append(db_base)
             
         if has_keymaps:
-            keymaps_base = xbmcvfs.translatePath("special://userdata/keymaps/").replace('/', os.sep)
+            keymaps_base = xbmcvfs.translatePath(KEYMAPS_SPECIAL_PATH).replace('/', os.sep)
             destination_dirs_to_prepare.append(keymaps_base)
 
         # Rimuovi permessi sola lettura
@@ -2654,7 +2657,7 @@ def perform_restore():
         failed_files = []
         
         # File di configurazione vanno in userdata (special://profile/)
-        userdata_path = xbmcvfs.translatePath("special://profile/")
+        userdata_path = xbmcvfs.translatePath(PROFILE_SPECIAL_PATH)
 
         # FASE 2: Estrazione file - approccio diretto come OpenWizard
         with zipfile.ZipFile(temp_backup_local, 'r') as backup_zip:
@@ -2668,15 +2671,15 @@ def perform_restore():
                 if any(p == '..' for p in parts):
                     return None, None
 
-                if normalized.startswith('addons/'):
-                    return xbmcvfs.translatePath("special://home/"), normalized
+                if normalized.startswith(ADDONS_ARCHIVE_PREFIX):
+                    return xbmcvfs.translatePath(HOME_SPECIAL_PATH), normalized
                 if normalized.startswith('addon_data/'):
-                    return xbmcvfs.translatePath("special://profile/"), normalized
+                    return xbmcvfs.translatePath(PROFILE_SPECIAL_PATH), normalized
                 if normalized.startswith('Database/'):
-                    return xbmcvfs.translatePath("special://profile/"), normalized
+                    return xbmcvfs.translatePath(PROFILE_SPECIAL_PATH), normalized
                 if normalized.startswith('keymaps/'):
-                    return xbmcvfs.translatePath("special://userdata/"), normalized
-                if normalized in ['sources.xml', 'guisettings.xml', 'profiles.xml', 'advancedsettings.xml', 'passwords.xml']:
+                    return xbmcvfs.translatePath(USERDATA_SPECIAL_PATH), normalized
+                if normalized in [SOURCES_FILE, GUI_SETTINGS_FILE, PROFILES_FILE, ADVANCED_SETTINGS_FILE, PASSWORDS_FILE]:
                     return userdata_path, normalized
 
                 return None, None
@@ -2690,7 +2693,7 @@ def perform_restore():
                     break
                 
                 # Skip marker file
-                if file_path == '.optiklean_backup':
+                if file_path == BACKUP_MARKER_FILE:
                     continue
                 
                 # Skip directory entries (terminano con /)
@@ -2698,7 +2701,7 @@ def perform_restore():
                     continue
                 
                 # Skip native addons se richiesto
-                if skip_native_addons and file_path.startswith('addons/'):
+                if skip_native_addons and file_path.startswith(ADDONS_ARCHIVE_PREFIX):
                     addon_path_parts = file_path.split('/')
                     if len(addon_path_parts) > 1:
                         addon_id = addon_path_parts[1]
@@ -2969,67 +2972,66 @@ def perform_restore():
     finally:
         if restarting_kodi:
             xbmc.log("OptiKlean: Skipping cleanup - Kodi is restarting", xbmc.LOGINFO)
-            return
+        else:
+            # Pulizia temp restore
+            _cleanup_temp_restore(addon_data_path)
 
-        # Pulizia temp restore
-        _cleanup_temp_restore(addon_data_path)
-
-        # Pulizia temp backup file
-        if cleanup_temp_backup and temp_backup_file:
+            # Pulizia temp backup file
+            if cleanup_temp_backup and temp_backup_file:
+                try:
+                    if temp_backup_file != backup_file_original and xbmcvfs.exists(temp_backup_file):
+                        xbmcvfs.delete(temp_backup_file)
+                        xbmc.log("OptiKlean: Cleaned up temporary backup file", xbmc.LOGINFO)
+                except Exception as e:
+                    xbmc.log(f"OptiKlean: Error cleaning temp backup: {str(e)}", xbmc.LOGWARNING)
+            
+            # Scrivi log finale
             try:
-                if temp_backup_file != backup_file_original and xbmcvfs.exists(temp_backup_file):
-                    xbmcvfs.delete(temp_backup_file)
-                    xbmc.log("OptiKlean: Cleaned up temporary backup file", xbmc.LOGINFO)
+                safe_backup_original = str(backup_file_original).replace('\x00', '').strip()[:500] if backup_file_original else "—"
+                safe_restore_type = str(restore_type).replace('\x00', '').strip()[:100]
+                safe_result = str(result).replace('\x00', '').strip()[:200]
+                
+                if backup_file_deleted:
+                    safe_result += f" {addon.getLocalizedString(30996)}"
+                
+                log_content = (
+                    f"{addon.getLocalizedString(30972):<17}: {safe_restore_type}\n"
+                    f"{addon.getLocalizedString(30973):<17}: {safe_backup_display_name}\n"
+                    f"{addon.getLocalizedString(30974):<17}: {safe_backup_original}\n"
+                    f"{addon.getLocalizedString(30969):<17}: {size_mb} MB\n"
+                    f"{addon.getLocalizedString(30975):<17}: {items_restored}\n"
+                    f"{addon.getLocalizedString(30970):<17}: {safe_result}\n"
+                )
+                
+                if failed_files:
+                    log_content += f"\n{addon.getLocalizedString(30976).format(count=len(failed_files))}:\n"
+                    for file_path, error in failed_files:
+                        log_content += f"• {file_path}: {error}\n"
+                
+                # Aggiungi dettagli addon nativi reinstallati
+                if native_install_results:
+                    log_content += f"\n{addon.getLocalizedString(31258)}:\n"  # "Native addons reinstallation:"
+                    if native_install_results['success']:
+                        log_content += f"  {addon.getLocalizedString(31249)}\n"  # "Successfully installed:"
+                        for addon_id in native_install_results['success']:
+                            log_content += f"    [OK] {addon_id}\n"
+                    if native_install_results['already_installed']:
+                        log_content += f"  {addon.getLocalizedString(31250)}\n"  # "Already installed:"
+                        for addon_id in native_install_results['already_installed']:
+                            log_content += f"    [-] {addon_id}\n"
+                    if native_install_results['not_in_repo']:
+                        log_content += f"  {addon.getLocalizedString(31255)}\n"  # "Not available in repository:"
+                        for addon_id in native_install_results['not_in_repo']:
+                            log_content += f"    [X] {addon_id}\n"
+                    if native_install_results['failed']:
+                        log_content += f"  {addon.getLocalizedString(31251)}\n"  # "Failed to install:"
+                        for addon_id, reason in native_install_results['failed']:
+                            log_content += f"    [X] {addon_id} ({reason})\n"
+                
+                write_log_local("restore_backup", log_content)
+                xbmc.log("OptiKlean: Restore log written successfully", xbmc.LOGINFO)
             except Exception as e:
-                xbmc.log(f"OptiKlean: Error cleaning temp backup: {str(e)}", xbmc.LOGWARNING)
-        
-        # Scrivi log finale
-        try:
-            safe_backup_original = str(backup_file_original).replace('\x00', '').strip()[:500] if backup_file_original else "—"
-            safe_restore_type = str(restore_type).replace('\x00', '').strip()[:100]
-            safe_result = str(result).replace('\x00', '').strip()[:200]
-            
-            if backup_file_deleted:
-                safe_result += f" {addon.getLocalizedString(30996)}"
-            
-            log_content = (
-                f"{addon.getLocalizedString(30972):<17}: {safe_restore_type}\n"
-                f"{addon.getLocalizedString(30973):<17}: {safe_backup_display_name}\n"
-                f"{addon.getLocalizedString(30974):<17}: {safe_backup_original}\n"
-                f"{addon.getLocalizedString(30969):<17}: {size_mb} MB\n"
-                f"{addon.getLocalizedString(30975):<17}: {items_restored}\n"
-                f"{addon.getLocalizedString(30970):<17}: {safe_result}\n"
-            )
-            
-            if failed_files:
-                log_content += f"\n{addon.getLocalizedString(30976).format(count=len(failed_files))}:\n"
-                for file_path, error in failed_files:
-                    log_content += f"• {file_path}: {error}\n"
-            
-            # Aggiungi dettagli addon nativi reinstallati
-            if native_install_results:
-                log_content += f"\n{addon.getLocalizedString(31258)}:\n"  # "Native addons reinstallation:"
-                if native_install_results['success']:
-                    log_content += f"  {addon.getLocalizedString(31249)}\n"  # "Successfully installed:"
-                    for addon_id in native_install_results['success']:
-                        log_content += f"    [OK] {addon_id}\n"
-                if native_install_results['already_installed']:
-                    log_content += f"  {addon.getLocalizedString(31250)}\n"  # "Already installed:"
-                    for addon_id in native_install_results['already_installed']:
-                        log_content += f"    [-] {addon_id}\n"
-                if native_install_results['not_in_repo']:
-                    log_content += f"  {addon.getLocalizedString(31255)}\n"  # "Not available in repository:"
-                    for addon_id in native_install_results['not_in_repo']:
-                        log_content += f"    [X] {addon_id}\n"
-                if native_install_results['failed']:
-                    log_content += f"  {addon.getLocalizedString(31251)}\n"  # "Failed to install:"
-                    for addon_id, reason in native_install_results['failed']:
-                        log_content += f"    [X] {addon_id} ({reason})\n"
-            
-            write_log_local("restore_backup", log_content)
-            xbmc.log("OptiKlean: Restore log written successfully", xbmc.LOGINFO)
-        except Exception as e:
-            xbmc.log(f"OptiKlean: Error writing restore log: {str(e)}", xbmc.LOGERROR)
+                xbmc.log(f"OptiKlean: Error writing restore log: {str(e)}", xbmc.LOGERROR)
 
 def complete_pending_restore(addon_data_path):
     """

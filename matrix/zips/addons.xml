@@ -1249,7 +1249,7 @@ In addition to what livestreams allowed you to do, you can now,
 - Add button in API settings to view address of API config page
 - Fallback to playing channel uploads if no live stream is available
 - Add fallback method to load playlists when v3 API request cannot be made</news></extension>
-</addon><addon id="program.optiklean" name="OptiKlean" provider-name="DigiTalking" version="2.2.0">
+</addon><addon id="program.optiklean" name="OptiKlean" provider-name="DigiTalking" version="2.3.0">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
     </requires>

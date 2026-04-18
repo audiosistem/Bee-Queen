@@ -14,6 +14,7 @@ import shutil
 from datetime import datetime
 from resources.lib import backup_restore
 from resources.lib import common_utils
+from resources.lib.update_state import get_restart_pending_state
 
 import xbmc
 import xbmcaddon
@@ -40,6 +41,87 @@ addon_path = xbmcvfs.translatePath(addon.getAddonInfo("path"))
 media_path = f"{addon_path}/resources/media/"
 fanart_path = f"{media_path}fanart.jpg"
 logo_path = f"{media_path}logo.png"
+
+CLEANING_TYPES = (
+    "clear_cache_and_temp",
+    "clear_unused_thumbnails",
+    "clear_addon_leftovers",
+    "clear_kodi_packages",
+    "optimize_databases",
+)
+PROTECTED_TEMP_FILES = (
+    'kodi.log',
+    'kodi.old.log',
+    'commoncache.db',
+    'commoncache.socket',
+)
+PROTECTED_TEMP_FOLDERS = ("temp", "archive_cache")
+DEBUG_CANCELLED_MESSAGE = "OptiKlean DEBUG: Operation canceled by user"
+AUTOMATIC_LOG_UPDATED_MESSAGE = "OptiKlean: Updated automatic cleaning logs after manual execution"
+ERROR_IN_PREFIX = "Error in"
+DATABASE_SPECIAL_PATH = "special://database/"
+DETAILS_WINDOW_XML = "DetailsWindow.xml"
+SIZE_CACHE_TTL_SECONDS = 60
+ADDON_NAME = "OptiKlean"
+
+
+def _try_restart_kodi():
+    try:
+        xbmc.executebuiltin("RestartApp")
+        return
+    except Exception:
+        pass
+    try:
+        xbmc.executebuiltin("Quit")
+    except Exception:
+        pass
+
+
+def _localized(string_id, fallback=""):
+    try:
+        return addon.getLocalizedString(string_id) or fallback
+    except Exception:
+        return fallback
+
+
+def _build_restart_pending_message(state):
+    version = str(state.get("version", "") or "").strip()
+    commit_id = str(state.get("commit_id", "") or "").strip()
+    summary = version if version and version.lower() != "unknown" else commit_id[:8]
+    parts = [
+        _localized(31283, "OptiKlean has been updated. Restart Kodi before using the addon."),
+    ]
+    if summary:
+        parts.append(
+            _localized(31285, "Installed update: {summary}").format(summary=summary)
+        )
+    parts.append(_localized(31173, "Would you like to restart Kodi now?"))
+    return "[CR][CR]".join(part for part in parts if part)
+
+
+def _handle_restart_pending_mode(interactive=True):
+    state = get_restart_pending_state()
+    if not state:
+        return False
+
+    xbmc.log("OptiKlean: Restart pending attivo, blocco l'apertura dell'addon fino al riavvio", xbmc.LOGWARNING)
+    if not interactive:
+        return True
+
+    if xbmcgui.Dialog().yesno(
+        _localized(31282, "Restart required"),
+        _build_restart_pending_message(state),
+    ):
+        _try_restart_kodi()
+    else:
+        xbmcgui.Dialog().ok(
+            ADDON_NAME,
+            _localized(
+                31284,
+                "Restart postponed. OptiKlean will stay unavailable until Kodi is restarted.",
+            ),
+        )
+    return True
 
 def ensure_path_format(path):
     """
@@ -135,46 +217,148 @@ def get_folder_size(folder_path):
     return common_utils.get_folder_size(folder_path)
 
 
-def format_size(bytes):
+def format_size(size_bytes):
     """Formatta i bytes in una stringa leggibile (KB, MB, GB)"""
-    return common_utils.format_size(bytes)
+    return common_utils.format_size(size_bytes)
 
 
+def _get_datetime_display_format():
+    date_format = xbmc.getRegion('dateshort')
+    time_format = xbmc.getRegion('time').replace('%H', 'HH').replace('%I', 'hh').replace('%M', 'mm')
+    format_map = {
+        'DD': '%d', 'MM': '%m', 'YYYY': '%Y',
+        'hh': '%I', 'mm': '%M', 'ss': '%S', 'HH': '%H',
+        'AP': '%p' if '%p' in xbmc.getRegion('time') else '',
+    }
+
+    py_date_format = date_format
+    py_time_format = time_format
+    for source_token, target_token in format_map.items():
+        py_date_format = py_date_format.replace(source_token, target_token)
+        py_time_format = py_time_format.replace(source_token, target_token)
+    return f"{py_date_format} {py_time_format}"
+
+
+def _build_next_run_info(cleaning, interval_days, full_format):
+    last_run_file = os.path.join(addon_data_folder, f"last_{cleaning}.json")
+    if not xbmcvfs.exists(last_run_file):
+        return "\n(first run pending)"
+
+    try:
+        data = _read_json_file(last_run_file, {})
+        last_run_timestamp = data.get('timestamp', 0)
+        last_run_human = data.get('human_readable', '')
+        if last_run_timestamp > 0:
+            last_run_local = datetime.fromtimestamp(last_run_timestamp).strftime(full_format)
+            next_run = datetime.fromtimestamp(last_run_timestamp + (interval_days * 86400))
+            next_run_local = next_run.strftime(full_format)
+            day_label = "day" if interval_days == 1 else "days"
+            return (
+                f" (set on {last_run_local})\n"
+                f"next run time: {next_run_local} (every {interval_days} {day_label})"
+            )
+        if last_run_human:
+            return f" (set on {last_run_human})\nnext run time: unknown"
+    except Exception as error:
+        xbmc.log(f"OptiKlean: Error reading {last_run_file}: {str(error)}", xbmc.LOGERROR)
+    return "\n(last run time unknown)"
+
+
+def _read_monitored_setting_state(prefix):
+    current_enable = addon.getSettingBool(f"{prefix}_enable")
+    current_interval = addon.getSettingInt(f"{prefix}_interval")
+    last_run_file = os.path.join(addon_data_folder, f"last_{prefix}.json")
+    if xbmcvfs.exists(last_run_file):
+        data = _read_json_file(last_run_file, {})
+        last_enable = data.get("enabled", False)
+        last_interval = data.get("interval", 7)
+    else:
+        last_enable = not current_enable
+        last_interval = current_interval + 1
+    return current_enable, current_interval, last_enable, last_interval, last_run_file
+
+
+def _sync_monitored_setting(prefix):
+    current_enable, current_interval, last_enable, last_interval, last_run_file = _read_monitored_setting_state(prefix)
+    if current_enable == last_enable and current_interval == last_interval:
+        return False
+
+    if current_enable:
+        update_last_run(prefix)
+        return True
+
+    if xbmcvfs.exists(last_run_file):
+        xbmcvfs.delete(last_run_file)
+        xbmc.log(f"OptiKlean: Eliminato file {last_run_file} perché disabilitato", xbmc.LOGINFO)
+    return True
+
+
+def _get_progress_percentage(progress_dialog, fallback=0):
+    if not progress_dialog:
+        return fallback
+    try:
+        return progress_dialog.getPercentage()
+    except AttributeError:
+        return fallback
+
+
+def _update_progress_dialog(progress_dialog, message):
+    if progress_dialog:
+        progress_dialog.update(_get_progress_percentage(progress_dialog), message)
+
+
+def _create_results_dict(include_total_size=False):
+    results = {
+        "deleted": [],
+        "locked": [],
+        "errors": [],
+        "protected": [],
+    }
+    if include_total_size:
+        results["total_size"] = 0
+    return results
+
+
+def _log_debug(message, level=xbmc.LOGINFO):
+    xbmc.log(f"OptiKlean DEBUG: {message}", level)
+
+
+def _format_file_size(size):
+    """Format a file size in bytes to a human-readable MB/KB/B string."""
+    if size >= 1048576:
+        return f"{size / 1048576:.2f}MB"
+    if size >= 1024:
+        return f"{size / 1024:.2f}KB"
+    return f"{size}B"
+
+
+
+def _delete_file_once(file_path):
+    if xbmcvfs.delete(file_path):
+        _log_debug(f"Successfully deleted file: {file_path}")
+        return DELETE_SUCCESS, ""
+    _log_debug(f"xbmcvfs.delete returned False for {file_path}")
+    return DELETE_ERROR, "Failed to delete (unknown error)"
+
+
+def _handle_delete_file_os_error(error, attempt, retry_count, retry_delay, file_path):
+    if error.errno in (errno.EACCES, errno.EPERM, errno.EBUSY, errno.EAGAIN):
+        _log_debug(f"File locked (attempt {attempt+1}): {file_path} - {error}")
+        if attempt < retry_count:
+            time.sleep(retry_delay)
+            return None, None, True
+        return DELETE_LOCKED, f"File locked: {error}", False
+    _log_debug(f"OS error deleting file: {file_path} - {error}")
+    return DELETE_ERROR, f"Error: {error}", False
 def update_automatic_settings_log():
     """Genera/Aggiorna il log delle impostazioni automatiche con stato e prossima esecuzione"""
 
     log_path = os.path.join(addon_data_folder, "automatic_cleaning_settings.log")
-    cleaning_types = [
-        "clear_cache_and_temp",
-        "clear_unused_thumbnails",
-        "clear_addon_leftovers",
-        "clear_kodi_packages",
-        "optimize_databases"
-    ]
-
-    # Ottieni il formato data/ora dalle impostazioni regionali di Kodi
-    date_format = xbmc.getRegion('dateshort')
-    time_format = xbmc.getRegion('time').replace('%H', 'HH').replace('%I', 'hh').replace('%M', 'mm')
-
-    # Mappa per convertire i pattern regionali in formato Python
-    format_map = {
-        'DD': '%d', 'MM': '%m', 'YYYY': '%Y',
-        'hh': '%I', 'mm': '%M', 'ss': '%S', 'HH': '%H',
-        'AP': '%p' if '%p' in xbmc.getRegion('time') else ''
-    }
-
-    # Converti i formati regionali in formato Python
-    py_date_format = date_format
-    py_time_format = time_format
-    for k, v in format_map.items():
-        py_date_format = py_date_format.replace(k, v)
-        py_time_format = py_time_format.replace(k, v)
-
-    full_format = f"{py_date_format} {py_time_format}"
+    full_format = _get_datetime_display_format()
 
     log_content = addon.getLocalizedString(31166) + "\n\n"
 
-    for cleaning in cleaning_types:
+    for cleaning in CLEANING_TYPES:
         enabled = addon.getSettingBool(f"{cleaning}_enable")
         interval_days = addon.getSettingInt(f"{cleaning}_interval")
 
@@ -182,33 +366,7 @@ def update_automatic_settings_log():
             log_content += f"Automatic {cleaning.replace('_', ' ')} -> disabled\n"
             continue
 
-        # Leggi il file JSON dell'ultima esecuzione
-        last_run_file = os.path.join(addon_data_folder, f"last_{cleaning}.json")
-        next_run_info = ""
-
-        if xbmcvfs.exists(last_run_file):
-            try:
-                data = _read_json_file(last_run_file, {})
-                last_run_timestamp = data.get('timestamp', 0)
-                last_run_human = data.get('human_readable', '')
-
-                if last_run_timestamp > 0:
-                    last_run_local = datetime.fromtimestamp(last_run_timestamp).strftime(full_format)
-                    next_run = datetime.fromtimestamp(last_run_timestamp + (interval_days * 86400))
-                    next_run_local = next_run.strftime(full_format)
-                    day_label = "day" if interval_days == 1 else "days"
-                    next_run_info = (
-                        f" (set on {last_run_local})\n"
-                        f"next run time: {next_run_local} (every {interval_days} {day_label})"
-                    )
-                elif last_run_human:
-                    next_run_info = f" (set on {last_run_human})\nnext run time: unknown"
-            except Exception as e:
-                xbmc.log(f"OptiKlean: Error reading {last_run_file}: {str(e)}", xbmc.LOGERROR)
-                next_run_info = "\n(last run time unknown)"
-        else:
-            next_run_info = "\n(first run pending)"
-
+        next_run_info = _build_next_run_info(cleaning, interval_days, full_format)
         log_content += f"Automatic {cleaning.replace('_', ' ')} -> enabled{next_run_info}\n\n"
 
     # Scrivi il file di log usando xbmcvfs
@@ -240,38 +398,11 @@ def update_last_run(cleaning_type):
 def monitor_settings_changes():
     """Monitora le modifiche alle impostazioni e aggiorna il log quando cambiano"""
     try:
-        settings_to_monitor = [
-            ("clear_cache_and_temp", "enable", "interval"),
-            ("clear_unused_thumbnails", "enable", "interval"),
-            ("clear_addon_leftovers", "enable", "interval"),
-            ("clear_kodi_packages", "enable", "interval"),
-            ("optimize_databases", "enable", "interval")
-        ]
-
         settings_changed = False
 
-        for prefix, enable_suffix, interval_suffix in settings_to_monitor:
-            current_enable = addon.getSettingBool(f"{prefix}_{enable_suffix}")
-            current_interval = addon.getSettingInt(f"{prefix}_{interval_suffix}")
-
-            last_run_file = os.path.join(addon_data_folder, f"last_{prefix}.json")
-
-            if xbmcvfs.exists(last_run_file):
-                data = _read_json_file(last_run_file, {})
-                last_enable = data.get("enabled", False)
-                last_interval = data.get("interval", 7)
-            else:
-                last_enable = not current_enable
-                last_interval = current_interval + 1
-
-            if (current_enable != last_enable) or (current_interval != last_interval):
+        for prefix in CLEANING_TYPES:
+            if _sync_monitored_setting(prefix):
                 settings_changed = True
-                if current_enable:
-                    update_last_run(prefix)
-                else:
-                    if xbmcvfs.exists(last_run_file):
-                        xbmcvfs.delete(last_run_file)
-                        xbmc.log(f"OptiKlean: Eliminato file {last_run_file} perché disabilitato", xbmc.LOGINFO)
 
         if settings_changed:
             update_automatic_settings_log()
@@ -366,49 +497,36 @@ def delete_file(file_path, retry_count=2, retry_delay=0.5, progress_dialog=None)
         tuple: (status, error_message)
         status can be: "success", "locked", or "error"
     """
-    xbmc.log(f"OptiKlean DEBUG: Attempting to delete file: {file_path}", xbmc.LOGINFO)
+    _log_debug(f"Attempting to delete file: {file_path}")
     
     if not xbmcvfs.exists(file_path):
-        xbmc.log(f"OptiKlean DEBUG: File doesn't exist: {file_path}", xbmc.LOGINFO)
+        _log_debug(f"File doesn't exist: {file_path}")
         return DELETE_SUCCESS, ""
     
-    # Aggiorna la dialog di progresso se fornita
     if progress_dialog:
         filename = file_path.split('/')[-1] if file_path else ""
-        # Fix: use getPercentage() instead of getPercent()
-        try:
-            percent = progress_dialog.getPercentage()
-        except AttributeError:
-            # Fallback for older Kodi versions
-            percent = 0
-        progress_dialog.update(percent, f"Processing: {filename}")
+        _update_progress_dialog(progress_dialog, f"Processing: {filename}")
     
-    # Rest of the function remains unchanged
     for attempt in range(retry_count + 1):
         try:
-            xbmc.log(f"OptiKlean DEBUG: Delete attempt {attempt+1}/{retry_count+1} for {file_path}", xbmc.LOGINFO)
-            if xbmcvfs.delete(file_path):
-                xbmc.log(f"OptiKlean DEBUG: Successfully deleted file: {file_path}", xbmc.LOGINFO)
-                return DELETE_SUCCESS, ""
-            else:
-                xbmc.log(f"OptiKlean DEBUG: xbmcvfs.delete returned False for {file_path}", xbmc.LOGINFO)
-                return DELETE_ERROR, "Failed to delete (unknown error)"
-        except OSError as e:
-            # Controlla i codici di errore comuni per file bloccati
-            if e.errno in (errno.EACCES, errno.EPERM, errno.EBUSY, errno.EAGAIN):
-                xbmc.log(f"OptiKlean DEBUG: File locked (attempt {attempt+1}): {file_path} - {e}", xbmc.LOGINFO)
-                if attempt < retry_count:
-                    time.sleep(retry_delay)
-                    continue
-                return DELETE_LOCKED, f"File locked: {e}"
-            else:
-                xbmc.log(f"OptiKlean DEBUG: OS error deleting file: {file_path} - {e}", xbmc.LOGINFO)
-                return DELETE_ERROR, f"Error: {e}"
-        except Exception as e:
-            xbmc.log(f"OptiKlean DEBUG: Unexpected error deleting file: {file_path} - {e}", xbmc.LOGINFO)
-            return DELETE_ERROR, f"Unexpected error: {e}"
+            _log_debug(f"Delete attempt {attempt+1}/{retry_count+1} for {file_path}")
+            return _delete_file_once(file_path)
+        except OSError as error:
+            status, message, should_retry = _handle_delete_file_os_error(
+                error,
+                attempt,
+                retry_count,
+                retry_delay,
+                file_path,
+            )
+            if should_retry:
+                continue
+            return status, message
+        except Exception as error:
+            _log_debug(f"Unexpected error deleting file: {file_path} - {error}")
+            return DELETE_ERROR, f"Unexpected error: {error}"
     
-    xbmc.log(f"OptiKlean DEBUG: File appears to be locked after all retry attempts: {file_path}", xbmc.LOGINFO)
+    _log_debug(f"File appears to be locked after all retry attempts: {file_path}")
     return DELETE_LOCKED, "File appears to be locked by another process"
 
 
@@ -423,12 +541,7 @@ def is_safe_to_delete(file_path, temp_path=None, addon_id=None, critical_cache_a
     :return: True if safe to delete, False if protected
     """
     # Files always protected in temp folder
-    temp_protected_files = [
-        'kodi.log',
-        'kodi.old.log',
-        'commoncache.db',
-        'commoncache.socket'
-    ]
+    temp_protected_files = PROTECTED_TEMP_FILES
     
     # Check if in temp folder
     is_temp_file = temp_path and temp_path in file_path
@@ -463,19 +576,9 @@ def is_safe_to_delete(file_path, temp_path=None, addon_id=None, critical_cache_a
 
 
 # Funzione per verificare se una cartella deve essere esclusa dalla pulizia
-def is_excluded_folder(folder_path, temp_path=None):
+def is_excluded_folder(_folder_path):
     """Verifica se una cartella deve essere esclusa dalla pulizia"""
-    # Lista di cartelle da escludere - inizialmente vuota
-    excluded_folders = []
-    
-    # Estrai il nome della cartella dal percorso
-    folder_name = folder_path.rstrip('/').split('/')[-1]
-    
-    # Controllo se è una cartella esclusa
-    if folder_name in excluded_folders:
-        return True
-    
-    return False
+    return False  # placeholder: no folders excluded at this time
 
 
 # Funzione per verificare se il percorso è una cache critica da preservare
@@ -530,14 +633,7 @@ def delete_directory_recursive(directory_path, progress_dialog=None, parent_resu
             file_path = xbmcvfs.makeLegalFilename(ensure_path_format(directory_path) + file)
             xbmc.log(f"OptiKlean DEBUG: Attempting to delete file: {file_path}", xbmc.LOGINFO)
             
-            # Aggiorna progresso se fornito
-            if progress_dialog:
-                # Fix: use getPercentage() with fallback
-                try:
-                    percent = progress_dialog.getPercentage()
-                except AttributeError:
-                    percent = 0
-                progress_dialog.update(percent, f"Deleting file: {file}")
+            _update_progress_dialog(progress_dialog, f"Deleting file: {file}")
             
             # Elimina il file
             status, error = delete_file(file_path, progress_dialog=progress_dialog)
@@ -558,14 +654,7 @@ def delete_directory_recursive(directory_path, progress_dialog=None, parent_resu
             folder_path = xbmcvfs.makeLegalFilename(ensure_path_format(directory_path) + folder)
             xbmc.log(f"OptiKlean DEBUG: Processing subfolder: {folder_path}", xbmc.LOGINFO)
             
-            # Aggiorna progresso se fornito
-            if progress_dialog:
-                # Fix: use getPercentage() with fallback
-                try:
-                    percent = progress_dialog.getPercentage()
-                except AttributeError:
-                    percent = 0
-                progress_dialog.update(percent, f"Processing folder: {folder}")
+            _update_progress_dialog(progress_dialog, f"Processing folder: {folder}")
             
             # Chiamata ricorsiva per eliminare la sottocartella
             subfolder_result = delete_directory_recursive(folder_path, progress_dialog, parent_results)
@@ -630,7 +719,7 @@ def delete_files_in_folder(
         # Processa prima i file
         for index, item in enumerate(files):
             if progress_dialog and progress_dialog.iscanceled():
-                xbmc.log("OptiKlean DEBUG: Operation canceled by user", xbmc.LOGINFO)
+                xbmc.log(DEBUG_CANCELLED_MESSAGE, xbmc.LOGINFO)
                 break
 
             item_path = xbmcvfs.makeLegalFilename(ensure_path_format(folder) + item)
@@ -660,7 +749,7 @@ def delete_files_in_folder(
         # Poi processa le cartelle
         for index, item in enumerate(dirs, start=len(files)):
             if progress_dialog and progress_dialog.iscanceled():
-                xbmc.log("OptiKlean DEBUG: Operation canceled by user", xbmc.LOGINFO)
+                xbmc.log(DEBUG_CANCELLED_MESSAGE, xbmc.LOGINFO)
                 break
 
             item_path = xbmcvfs.makeLegalFilename(ensure_path_format(folder) + item)
@@ -672,7 +761,7 @@ def delete_files_in_folder(
                 progress_dialog.update(percent, f"Processing folder: {item}")
             
             # Controlla se è una cartella esclusa
-            if is_excluded_folder(item_path, temp_path):
+            if is_excluded_folder(item_path):
                 xbmc.log(f"OptiKlean DEBUG: Folder excluded from processing: {item_path}", xbmc.LOGINFO)
                 results["protected"].append(f"Excluded folder (protected): {item_path}")
                 continue
@@ -733,22 +822,115 @@ def map_directory_structure(folder_path):
     return structure if structure['accessible'] else None
 
 
-def clear_kodi_temp_folder(temp_path, progress_dialog=None, critical_cache_addons=None, safe_check=True):
+def _process_temp_subfolder(folder, temp_path, safe_check, progress_dialog, parent_results):
+    """Process a subfolder of Kodi temp during clear_kodi_temp_folder."""
+    full_path = folder['path']
+    xbmc.log(f"OptiKlean DEBUG: Processing folder: {full_path}", xbmc.LOGINFO)
+    
+    # Skip excluded folders
+    if is_excluded_folder(full_path):
+        xbmc.log(f"OptiKlean DEBUG: Excluded folder skipped: {full_path}", xbmc.LOGINFO)
+        parent_results["protected"].append(f"Excluded folder: {full_path}")
+        return True
+        
+    # Get folder name and relative path
+    folder_name = full_path.rstrip('/').split('/')[-1]
+          
+    if (folder_name in PROTECTED_TEMP_FOLDERS):
+        xbmc.log(f"OptiKlean DEBUG: Protected folder in temp - processing contents only: {full_path}", xbmc.LOGINFO)
+        
+        # Process files in this folder
+        for file_name in folder['files']:
+            if progress_dialog and progress_dialog.iscanceled():
+                return False
+                
+            file_path = os.path.join(full_path, file_name)
+            xbmc.log(f"OptiKlean DEBUG: Processing file: {file_path}", xbmc.LOGINFO)
+            
+            if safe_check and not is_safe_to_delete(file_path, temp_path):
+                xbmc.log(f"OptiKlean DEBUG: Protected file skipped: {file_path}", xbmc.LOGINFO)
+                parent_results["protected"].append(file_path)
+                continue
+            
+            # Get file size BEFORE deletion
+            file_size = get_file_size(file_path) or 0
+                
+            status, error = delete_file(file_path, progress_dialog=progress_dialog)
+            if status == DELETE_SUCCESS:
+                parent_results["deleted"].append((file_path, file_size))  # Store as tuple
+                parent_results["total_size"] += file_size
+                xbmc.log(f"OptiKlean DEBUG: Successfully deleted file: {file_path} (size: {file_size} bytes)", xbmc.LOGINFO)
+            elif status == DELETE_LOCKED:
+                parent_results["locked"].append(file_path)
+            else:
+                parent_results["errors"].append(f"{file_path} ({error})")
+        
+        # Process all subfolders recursively
+        for subfolder in folder['subfolders']:
+            _process_temp_subfolder(subfolder, temp_path, safe_check, progress_dialog, parent_results)
+        
+        return True            
+
+    # Process files in this folder (for non-protected folders)
+    for file_name in folder['files']:
+        if progress_dialog and progress_dialog.iscanceled():
+            return False
+            
+        file_path = os.path.join(full_path, file_name)
+        xbmc.log(f"OptiKlean DEBUG: Processing file: {file_path}", xbmc.LOGINFO)
+        
+        # Only check protected files if safe_check is True (for non-root files)
+        if safe_check and not is_safe_to_delete(file_path, temp_path):
+            xbmc.log(f"OptiKlean DEBUG: Protected file skipped: {file_path}", xbmc.LOGINFO)
+            parent_results["protected"].append(file_path)
+            continue
+
+        # Get file size BEFORE deletion
+        file_size = get_file_size(file_path) or 0
+        
+        status, error = delete_file(file_path, progress_dialog=progress_dialog)
+
+        if status == DELETE_SUCCESS:
+            parent_results["deleted"].append((file_path, file_size))  # Store as tuple
+            parent_results["total_size"] += file_size
+            xbmc.log(f"OptiKlean DEBUG: Successfully deleted file: {file_path} (size: {file_size} bytes)", xbmc.LOGINFO)
+        elif status == DELETE_LOCKED:
+            parent_results["locked"].append(file_path)
+        else:
+            parent_results["errors"].append(f"{file_path} ({error})")
+    
+    # Process all subfolders recursively
+    for subfolder in folder['subfolders']:
+        _process_temp_subfolder(subfolder, temp_path, safe_check, progress_dialog, parent_results)
+        
+    # Try to delete the folder itself if empty
+    try:
+        dirs, files = xbmcvfs.listdir(full_path)
+        if not dirs and not files:
+            if xbmcvfs.rmdir(full_path):
+                parent_results["deleted"].append((f"Deleted folder: {full_path}", 0))  # Store as tuple with size 0
+                xbmc.log(f"OptiKlean DEBUG: Successfully deleted folder: {full_path}", xbmc.LOGINFO)
+            else:
+                parent_results["errors"].append(f"Failed to delete folder: {full_path}")
+                xbmc.log(f"OptiKlean DEBUG: Failed to delete folder: {full_path} (may not be empty)", xbmc.LOGINFO)
+        else:
+            remaining = len(dirs) + len(files)
+            parent_results["errors"].append(f"Folder not empty: {full_path} ({remaining} items remaining)")
+            xbmc.log(f"OptiKlean DEBUG: Folder not empty, contains {remaining} items: {full_path}", xbmc.LOGINFO)
+    except Exception as e:
+        parent_results["errors"].append(f"Error deleting folder {full_path}: {str(e)}")
+        xbmc.log(f"OptiKlean DEBUG: Exception deleting folder {full_path}: {str(e)}", xbmc.LOGERROR)
+        
+    return True
+
+
+def clear_kodi_temp_folder(temp_path, progress_dialog=None, safe_check=True):
     """
     Clears the Kodi temp folder while preserving log files and critical caches
     Returns dictionary with results (deleted, locked, errors, protected)
     """
-    results = {
-        "deleted": [],
-        "locked": [],
-        "errors": [],
-        "protected": [],
-        "total_size": 0
-    }
+    results = _create_results_dict(include_total_size=True)
 
-    # Folders that are created by Kodi itself everytime so don't need to be deleted
-    protected_folders = ["temp", "archive_cache"]  # These are in special://temp/
-    
     temp_path = ensure_path_format(temp_path)
     xbmc.log(f"OptiKlean DEBUG: Starting clear_kodi_temp_folder for {temp_path} with safe_check={safe_check}", xbmc.LOGINFO)
     
@@ -791,112 +973,12 @@ def clear_kodi_temp_folder(temp_path, progress_dialog=None, critical_cache_addon
             else:
                 results["errors"].append(f"{file_path} ({error})")
     
-        # Then process all subfolders recursively
-        def process_folder(folder, parent_results):
-            full_path = folder['path']
-            xbmc.log(f"OptiKlean DEBUG: Processing folder: {full_path}", xbmc.LOGINFO)
-            
-            # Skip excluded folders
-            if is_excluded_folder(full_path, temp_path):
-                xbmc.log(f"OptiKlean DEBUG: Excluded folder skipped: {full_path}", xbmc.LOGINFO)
-                parent_results["protected"].append(f"Excluded folder: {full_path}")
-                return True
-                
-            # Get folder name and relative path
-            folder_name = full_path.rstrip('/').split('/')[-1]
-                  
-            if (folder_name in protected_folders):
-                xbmc.log(f"OptiKlean DEBUG: Protected folder in temp - processing contents only: {full_path}", xbmc.LOGINFO)
-                
-                # Process files in this folder
-                for file_name in folder['files']:
-                    if progress_dialog and progress_dialog.iscanceled():
-                        return False
-                        
-                    file_path = os.path.join(full_path, file_name)
-                    xbmc.log(f"OptiKlean DEBUG: Processing file: {file_path}", xbmc.LOGINFO)
-                    
-                    if safe_check and not is_safe_to_delete(file_path, temp_path):
-                        xbmc.log(f"OptiKlean DEBUG: Protected file skipped: {file_path}", xbmc.LOGINFO)
-                        parent_results["protected"].append(file_path)
-                        continue
-                    
-                    # Get file size BEFORE deletion
-                    file_size = get_file_size(file_path) or 0
-                        
-                    status, error = delete_file(file_path, progress_dialog=progress_dialog)
-                    if status == DELETE_SUCCESS:
-                        parent_results["deleted"].append((file_path, file_size))  # Store as tuple
-                        parent_results["total_size"] += file_size
-                        xbmc.log(f"OptiKlean DEBUG: Successfully deleted file: {file_path} (size: {file_size} bytes)", xbmc.LOGINFO)
-                    elif status == DELETE_LOCKED:
-                        parent_results["locked"].append(file_path)
-                    else:
-                        parent_results["errors"].append(f"{file_path} ({error})")
-                
-                # Process all subfolders recursively
-                for subfolder in folder['subfolders']:
-                    process_folder(subfolder, parent_results)
-                
-                return True            
 
-            # Process files in this folder (for non-protected folders)
-            for file_name in folder['files']:
-                if progress_dialog and progress_dialog.iscanceled():
-                    return False
-                    
-                file_path = os.path.join(full_path, file_name)
-                xbmc.log(f"OptiKlean DEBUG: Processing file: {file_path}", xbmc.LOGINFO)
-                
-                # Only check protected files if safe_check is True (for non-root files)
-                if safe_check and not is_safe_to_delete(file_path, temp_path):
-                    xbmc.log(f"OptiKlean DEBUG: Protected file skipped: {file_path}", xbmc.LOGINFO)
-                    parent_results["protected"].append(file_path)
-                    continue
-
-                # Get file size BEFORE deletion
-                file_size = get_file_size(file_path) or 0
-                
-                status, error = delete_file(file_path, progress_dialog=progress_dialog)
-
-                if status == DELETE_SUCCESS:
-                    parent_results["deleted"].append((file_path, file_size))  # Store as tuple
-                    parent_results["total_size"] += file_size
-                    xbmc.log(f"OptiKlean DEBUG: Successfully deleted file: {file_path} (size: {file_size} bytes)", xbmc.LOGINFO)
-                elif status == DELETE_LOCKED:
-                    parent_results["locked"].append(file_path)
-                else:
-                    parent_results["errors"].append(f"{file_path} ({error})")
-            
-            # Process all subfolders recursively
-            for subfolder in folder['subfolders']:
-                process_folder(subfolder, parent_results)
-                
-            # Try to delete the folder itself if empty
-            try:
-                dirs, files = xbmcvfs.listdir(full_path)
-                if not dirs and not files:
-                    if xbmcvfs.rmdir(full_path):
-                        parent_results["deleted"].append((f"Deleted folder: {full_path}", 0))  # Store as tuple with size 0
-                        xbmc.log(f"OptiKlean DEBUG: Successfully deleted folder: {full_path}", xbmc.LOGINFO)
-                    else:
-                        parent_results["errors"].append(f"Failed to delete folder: {full_path}")
-                        xbmc.log(f"OptiKlean DEBUG: Failed to delete folder: {full_path} (may not be empty)", xbmc.LOGINFO)
-                else:
-                    remaining = len(dirs) + len(files)
-                    parent_results["errors"].append(f"Folder not empty: {full_path} ({remaining} items remaining)")
-                    xbmc.log(f"OptiKlean DEBUG: Folder not empty, contains {remaining} items: {full_path}", xbmc.LOGINFO)
-            except Exception as e:
-                parent_results["errors"].append(f"Error deleting folder {full_path}: {str(e)}")
-                xbmc.log(f"OptiKlean DEBUG: Exception deleting folder {full_path}: {str(e)}", xbmc.LOGERROR)
-                
-            return True
-        
         # Process all top-level folders (this will recursively process their contents)
         for folder in folder_structure['subfolders']:
             if progress_dialog and progress_dialog.iscanceled():
                 break
-            process_folder(folder, results)
+            _process_temp_subfolder(folder, temp_path, safe_check, progress_dialog, results)
         
     except Exception as e:
         results["errors"].append(f"General error in clear_kodi_temp_folder: {str(e)}")
@@ -904,6 +986,45 @@ def clear_kodi_temp_folder(temp_path, progress_dialog=None, critical_cache_addon
     
     xbmc.log(f"OptiKlean DEBUG: Completed clear_kodi_temp_folder. Results: deleted={len(results['deleted'])}, locked={len(results['locked'])}, errors={len(results['errors'])}, protected={len(results['protected'])}", xbmc.LOGINFO)
     return results
+
+
+def _process_addon_temp_folder(folder, addons_temp_path, results, progress):
+    """Process one subfolder of the addons temp directory; returns bytes freed."""
+    size_freed = 0
+    full_path = folder['path']
+    xbmc.log(f"OptiKlean DEBUG: Processing folder: {full_path}", xbmc.LOGINFO)
+
+    for file_name in folder['files']:
+        if progress.iscanceled():
+            return size_freed
+
+        file_path = os.path.join(full_path, file_name)
+        xbmc.log(f"OptiKlean DEBUG: Processing file: {file_path}", xbmc.LOGINFO)
+
+        if not is_safe_to_delete(file_path, addons_temp_path):
+            xbmc.log(f"OptiKlean DEBUG: Protected file skipped: {file_path}", xbmc.LOGINFO)
+            results["protected"].append(file_path)
+            continue
+
+        file_size = get_file_size(file_path) or 0
+        status, error = delete_file(file_path, progress_dialog=progress)
+
+        if status == DELETE_SUCCESS:
+            results["deleted"].append((file_path, file_size))
+            results["total_size"] += file_size
+            size_freed += file_size
+            xbmc.log(f"OptiKlean DEBUG: Successfully deleted file: {file_path} (size: {file_size} bytes)", xbmc.LOGINFO)
+        elif status == DELETE_LOCKED:
+            results["locked"].append(file_path)
+            xbmc.log(f"OptiKlean DEBUG: File is locked: {file_path}", xbmc.LOGINFO)
+        else:
+            results["errors"].append(f"{file_path} ({error})")
+            xbmc.log(f"OptiKlean DEBUG: Error deleting file: {file_path} - {error}", xbmc.LOGERROR)
+
+    for subfolder in folder['subfolders']:
+        size_freed += _process_addon_temp_folder(subfolder, addons_temp_path, results, progress)
+
+    return size_freed
 
 
 def clear_cache_and_temp(auto_mode=False, skip_auto_delay=False):
@@ -954,7 +1075,7 @@ def clear_cache_and_temp(auto_mode=False, skip_auto_delay=False):
     ]
     
     progress = xbmcgui.DialogProgress()
-    progress.create("OptiKlean", addon.getLocalizedString(31055))  # "Preparing to clear cache..."
+    progress.create(ADDON_NAME, addon.getLocalizedString(31055))  # "Preparing to clear cache..."
     
     try:
         # Opzione 0: Clear Kodi temp folder (preserving logs)
@@ -967,9 +1088,7 @@ def clear_cache_and_temp(auto_mode=False, skip_auto_delay=False):
             xbmc.log(f"OptiKlean: Using temp path: {temp_path}", xbmc.LOGINFO)
             
             # Use safe_check=False to delete all files except protected ones
-            results = clear_kodi_temp_folder(temp_path, progress, 
-                                          critical_cache_addons=critical_cache_addons,
-                                          safe_check=True)
+            results = clear_kodi_temp_folder(temp_path, progress, safe_check=True)
                                           
             total_freed_all_options += results.get("total_size", 0)
             
@@ -1127,7 +1246,7 @@ def clear_cache_and_temp(auto_mode=False, skip_auto_delay=False):
                                             size_kb = addon_size_freed / 1024
                                             log_content += addon.getLocalizedString(31108).format(count=len(addon_deleted), size=size_kb) + "\n"
                                             for file_name, file_size in addon_deleted:
-                                                size_str = f"{file_size/1024:.2f}KB" if file_size >= 1024 else f"{file_size}B"
+                                                size_str = _format_file_size(file_size)
                                                 log_content += f"    - {file_name} ({size_str})\n"
                                         
                                         if addon_protected:
@@ -1268,7 +1387,7 @@ def clear_cache_and_temp(auto_mode=False, skip_auto_delay=False):
                                                 size_kb = addon_size_freed / 1024
                                                 log_content += addon.getLocalizedString(31108).format(count=len(deleted), size=size_kb) + "\n"
                                                 for file_name, file_size in deleted:
-                                                    size_str = f"{file_size/1024:.2f}KB" if file_size >= 1024 else f"{file_size}B"
+                                                    size_str = _format_file_size(file_size)
                                                     log_content += f"    - {file_name} ({size_str})\n"
                                             
                                             if protected:
@@ -1342,50 +1461,13 @@ def clear_cache_and_temp(auto_mode=False, skip_auto_delay=False):
                         "total_size": 0
                     }
                     
-                    def process_folder(folder, parent_results):
-                        nonlocal option3_size_freed
-                        full_path = folder['path']
-                        xbmc.log(f"OptiKlean DEBUG: Processing folder: {full_path}", xbmc.LOGINFO)
-                        
-                        # Process files in this folder
-                        for file_name in folder['files']:
-                            if progress.iscanceled():
-                                return False
-                                
-                            file_path = os.path.join(full_path, file_name)
-                            xbmc.log(f"OptiKlean DEBUG: Processing file: {file_path}", xbmc.LOGINFO)
-                            
-                            if not is_safe_to_delete(file_path, addons_temp_path):
-                                xbmc.log(f"OptiKlean DEBUG: Protected file skipped: {file_path}", xbmc.LOGINFO)
-                                parent_results["protected"].append(file_path)
-                                continue
-                            
-                            file_size = get_file_size(file_path) or 0
-                            status, error = delete_file(file_path, progress_dialog=progress)
 
-                            if status == DELETE_SUCCESS:
-                                parent_results["deleted"].append((file_path, file_size))
-                                parent_results["total_size"] += file_size
-                                option3_size_freed += file_size
-                                xbmc.log(f"OptiKlean DEBUG: Successfully deleted file: {file_path} (size: {file_size} bytes)", xbmc.LOGINFO)
-                            elif status == DELETE_LOCKED:
-                                parent_results["locked"].append(file_path)
-                                xbmc.log(f"OptiKlean DEBUG: File is locked: {file_path}", xbmc.LOGINFO)
-                            else:
-                                parent_results["errors"].append(f"{file_path} ({error})")
-                                xbmc.log(f"OptiKlean DEBUG: Error deleting file: {file_path} - {error}", xbmc.LOGERROR)
-                        
-                        # Process all subfolders recursively
-                        for subfolder in folder['subfolders']:
-                            process_folder(subfolder, parent_results)
-                        
-                        return True
                     
                     # Process all top-level folders
                     for folder in folder_structure['subfolders']:
                         if progress.iscanceled():
                             break
-                        process_folder(folder, results)
+                        option3_size_freed += _process_addon_temp_folder(folder, addons_temp_path, results, progress)
                     
                     # Process files in root folder
                     for file_name in folder_structure['files']:
@@ -1425,7 +1507,7 @@ def clear_cache_and_temp(auto_mode=False, skip_auto_delay=False):
                             if isinstance(item, tuple):
                                 file_path, file_size = item
                                 filename = os.path.basename(file_path)
-                                size_str = f"{file_size/1024:.2f}KB" if file_size >= 1024 else f"{file_size}B"
+                                size_str = _format_file_size(file_size)
                                 log_content += f"- {filename} ({size_str})\n"
                             else:
                                 # Handle folder deletion messages
@@ -1446,7 +1528,7 @@ def clear_cache_and_temp(auto_mode=False, skip_auto_delay=False):
                         log_content += f"Errors ({len(results['errors'])}):\n"
                         for error in results["errors"]:
                             # Try to extract filename from error messages
-                            if "Error in" in error:
+                            if ERROR_IN_PREFIX in error:
                                 path_part = error.split(':')[0].strip()
                                 filename = os.path.basename(path_part)
                                 log_content += f"- {filename}: {error.split(':', 1)[1].strip()}\n"
@@ -1470,7 +1552,7 @@ def clear_cache_and_temp(auto_mode=False, skip_auto_delay=False):
         if selected:
             total_mb = total_freed_all_options / (1024 * 1024)
             notification_msg = addon.getLocalizedString(31056).format(total_mb=total_mb)  # "Clear cache and temp completed! ({total_mb:.2f} MB freed)"
-            xbmcgui.Dialog().notification("OptiKlean", notification_msg, logo_path, 3000)
+            xbmcgui.Dialog().notification(ADDON_NAME, notification_msg, logo_path, 3000)
 
             # Aggiorna i log delle impostazioni automatiche solo se:
             # 1. Non è in modalità automatica
@@ -1480,14 +1562,14 @@ def clear_cache_and_temp(auto_mode=False, skip_auto_delay=False):
                 try:
                     update_last_run("clear_cache_and_temp")
                     update_automatic_settings_log()
-                    xbmc.log("OptiKlean: Updated automatic cleaning logs after manual execution", xbmc.LOGINFO)
+                    xbmc.log(AUTOMATIC_LOG_UPDATED_MESSAGE, xbmc.LOGINFO)
                 except Exception as e:
                     xbmc.log(f"OptiKlean: Error updating automatic logs: {str(e)}", xbmc.LOGERROR)
         
     except Exception as e:
         error_msg = f"Unexpected error during cleanup: {str(e)}"
         xbmc.log(error_msg, xbmc.LOGERROR)
-        xbmcgui.Dialog().notification("OptiKlean", addon.getLocalizedString(31057), xbmcgui.NOTIFICATION_ERROR, 5000)  # "Error during cleanup, see log"
+        xbmcgui.Dialog().notification(ADDON_NAME, addon.getLocalizedString(31057), xbmcgui.NOTIFICATION_ERROR, 5000)  # "Error during cleanup, see log"
                 
     finally:
         progress.close()
@@ -1640,6 +1722,563 @@ def get_kodi_major_version():
     return common_utils.get_kodi_version()
 
 
+def _clear_older_thumbnails(db_path, thumb_paths, progress_dialog, start_progress, end_progress, days_threshold=30):
+    """
+    Elimina le thumbnails più vecchie di X giorni usando la tabella sizes del database delle texture
+    e rimuove anche le righe corrispondenti dal database
+    """
+    # Calcola il timestamp di soglia (X giorni fa)
+    threshold_timestamp = int(time.time()) - (days_threshold * 86400)
+    # Converti in formato datetime per il confronto SQL
+    threshold_datetime = datetime.fromtimestamp(threshold_timestamp).strftime("%Y-%m-%d %H:%M:%S")
+    
+    texture_db = find_texture_database(db_path)
+    if not texture_db:
+        xbmc.log("OptiKlean DEBUG: Texture database not found for older thumbnails cleanup", xbmc.LOGERROR)
+        return [], [], [], 0, 0, 0
+    
+    deleted = []
+    locked = []
+    errors = []
+    total_size_freed = 0
+    deleted_db_sizes = 0
+    deleted_db_texture = 0
+    
+    try:
+        # Connetti al database delle texture
+        conn = sqlite3.connect(texture_db)
+        cursor = conn.cursor()
+        
+        # Verifica la struttura del database
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [row[0] for row in cursor.fetchall()]
+        
+        xbmc.log(f"OptiKlean DEBUG: Available tables in texture database: {tables}", xbmc.LOGINFO)
+        
+        if 'sizes' not in tables or 'texture' not in tables:
+            xbmc.log("OptiKlean DEBUG: Required tables (sizes, texture) not found in database", xbmc.LOGERROR)
+            conn.close()
+            return [], [], [], 0, 0, 0
+        
+        # Verifica le colonne delle tabelle
+        cursor.execute("PRAGMA table_info(sizes)")
+        sizes_columns = [col[1] for col in cursor.fetchall()]
+        cursor.execute("PRAGMA table_info(texture)")
+        texture_columns = [col[1] for col in cursor.fetchall()]
+        
+        xbmc.log(f"OptiKlean DEBUG: Sizes table columns: {sizes_columns}", xbmc.LOGINFO)
+        xbmc.log(f"OptiKlean DEBUG: Texture table columns: {texture_columns}", xbmc.LOGINFO)
+        
+        # Verifica che le colonne necessarie esistano
+        required_sizes_cols = ['idtexture', 'lastusetime']
+        required_texture_cols = ['id', 'cachedurl']
+        
+        if not all(col in sizes_columns for col in required_sizes_cols):
+            xbmc.log(f"OptiKlean DEBUG: Missing required columns in sizes table. Required: {required_sizes_cols}, Found: {sizes_columns}", xbmc.LOGERROR)
+            conn.close()
+            return [], [], [], 0, 0, 0
+            
+        if not all(col in texture_columns for col in required_texture_cols):
+            xbmc.log(f"OptiKlean DEBUG: Missing required columns in texture table. Required: {required_texture_cols}, Found: {texture_columns}", xbmc.LOGERROR)
+            conn.close()
+            return [], [], [], 0, 0, 0
+        
+        # Query per trovare le thumbnails più vecchie di X giorni
+        # Facciamo un JOIN tra sizes e texture per ottenere direttamente cachedurl
+        query = """
+            SELECT t.id, t.cachedurl, s.lastusetime
+            FROM sizes s
+            INNER JOIN texture t ON s.idtexture = t.id
+            WHERE s.lastusetime < ?
+        """
+        
+        xbmc.log(f"OptiKlean DEBUG: Executing query with threshold: {threshold_datetime}", xbmc.LOGINFO)
+        cursor.execute(query, (threshold_datetime,))
+        old_thumbnails = cursor.fetchall()
+        
+        xbmc.log(f"OptiKlean DEBUG: Found {len(old_thumbnails)} thumbnails older than {days_threshold} days", xbmc.LOGINFO)
+        
+        if len(old_thumbnails) == 0:
+            xbmc.log("OptiKlean DEBUG: No old thumbnails found", xbmc.LOGINFO)
+            conn.close()
+            return [], [], [], 0, 0, 0
+        
+        # Processa ogni thumbnail trovata
+        for index, (texture_id, cachedurl, lastusetime) in enumerate(old_thumbnails):
+            if progress_dialog and progress_dialog.iscanceled():
+                xbmc.log("OptiKlean DEBUG: User canceled old thumbnails cleanup", xbmc.LOGINFO)
+                break
+                
+            # Calcola progresso nell'intervallo assegnato
+            progress_range = end_progress - start_progress
+            percent = start_progress + int((index / len(old_thumbnails)) * progress_range) if len(old_thumbnails) > 0 else end_progress
+            
+            if progress_dialog:
+                progress_dialog.update(percent, f"Processing old thumbnail {index+1}/{len(old_thumbnails)}")
+            
+            # Calcola l'età in giorni per il log
+            try:
+                last_use_dt = datetime.strptime(lastusetime, "%Y-%m-%d %H:%M:%S")
+                days_old = (datetime.now() - last_use_dt).days
+            except Exception as e:
+                xbmc.log(f"OptiKlean DEBUG: Error parsing lastusetime '{lastusetime}': {str(e)}", xbmc.LOGWARNING)
+                days_old = -1
+            
+            xbmc.log(f"OptiKlean DEBUG: Processing thumbnail ID {texture_id}, cachedurl: {cachedurl}, last used: {lastusetime} ({days_old} days ago)", xbmc.LOGINFO)
+            
+            # Cerca il file thumbnail nei percorsi possibili
+            thumbnail_found = False
+            file_deleted = False
+            file_size = 0
+            
+            for base_path in thumb_paths:
+                # Costruisci il percorso completo: base_path + cachedurl
+                # cachedurl è già nel formato "4/4bfd5855.jpg"
+                thumb_file_path = xbmcvfs.makeLegalFilename(f"{base_path}{cachedurl}")
+                
+                if xbmcvfs.exists(thumb_file_path):
+                    thumbnail_found = True
+                    xbmc.log(f"OptiKlean DEBUG: Found thumbnail file: {thumb_file_path}", xbmc.LOGINFO)
+                    
+                    # Ottieni dimensione prima della cancellazione
+                    file_size = get_file_size(thumb_file_path) or 0
+                    
+                    # Elimina il file
+                    status, error = delete_file(thumb_file_path)
+                    
+                    if status == DELETE_SUCCESS:
+                        deleted.append((thumb_file_path, file_size))
+                        total_size_freed += file_size
+                        file_deleted = True
+                        xbmc.log(f"OptiKlean DEBUG: Deleted old thumbnail: {cachedurl} ({days_old} days old, size: {file_size} bytes)", xbmc.LOGINFO)
+                    elif status == DELETE_LOCKED:
+                        locked.append(thumb_file_path)
+                        xbmc.log(f"OptiKlean DEBUG: Locked old thumbnail: {cachedurl}", xbmc.LOGINFO)
+                    else:
+                        errors.append(f"{thumb_file_path} ({error})")
+                        xbmc.log(f"OptiKlean DEBUG: Error deleting old thumbnail: {cachedurl} - {error}", xbmc.LOGERROR)
+                    break
+            
+            # Elimina le righe dal database indipendentemente dal fatto che il file fisico sia stato trovato/eliminato
+            # Questo perché il file potrebbe essere già stato eliminato manualmente ma le righe nel database rimangono
+            try:
+                # Elimina dalla tabella sizes
+                cursor.execute("DELETE FROM sizes WHERE idtexture=?", (texture_id,))
+                deleted_sizes_rows = cursor.rowcount
+                deleted_db_sizes += deleted_sizes_rows
+                
+                # Elimina dalla tabella texture
+                cursor.execute("DELETE FROM texture WHERE id=?", (texture_id,))
+                deleted_texture_rows = cursor.rowcount
+                deleted_db_texture += deleted_texture_rows
+                
+                xbmc.log(f"OptiKlean DEBUG: Deleted database entries for texture ID {texture_id}: {deleted_sizes_rows} from sizes, {deleted_texture_rows} from texture", xbmc.LOGINFO)
+                
+            except sqlite3.Error as db_error:
+                error_msg = f"Database deletion error for texture ID {texture_id}: {str(db_error)}"
+                errors.append(error_msg)
+                xbmc.log(f"OptiKlean DEBUG: {error_msg}", xbmc.LOGERROR)
+            
+            if not thumbnail_found:
+                xbmc.log(f"OptiKlean DEBUG: Thumbnail file not found on disk: {cachedurl} (database entry will still be removed)", xbmc.LOGDEBUG)
+        
+        # Commit delle modifiche al database e ottimizzazione
+        try:
+            conn.commit()
+            xbmc.log("OptiKlean DEBUG: Database changes committed", xbmc.LOGINFO)
+            
+            # Ottimizza il database per ridurre le dimensioni fisiche
+            if progress_dialog:
+                progress_dialog.update(end_progress - 5, "Optimizing database...")
+            
+            cursor.execute("VACUUM")
+            xbmc.log("OptiKlean DEBUG: Database vacuumed successfully", xbmc.LOGINFO)
+            
+        except sqlite3.Error as db_error:
+            error_msg = f"Database commit/vacuum error: {str(db_error)}"
+            errors.append(error_msg)
+            xbmc.log(f"OptiKlean DEBUG: {error_msg}", xbmc.LOGERROR)
+        
+        conn.close()
+        
+        xbmc.log(f"OptiKlean DEBUG: Old thumbnails cleanup completed. Files deleted: {len(deleted)}, Locked: {len(locked)}, Errors: {len(errors)}, Size freed: {total_size_freed} bytes, DB entries removed: {deleted_db_sizes} from sizes, {deleted_db_texture} from texture", xbmc.LOGINFO)
+        
+        return deleted, locked, errors, total_size_freed, deleted_db_sizes, deleted_db_texture
+        
+    except sqlite3.Error as e:
+        if 'conn' in locals():
+            conn.close()
+        xbmc.log(f"OptiKlean DEBUG: Database error in clear_older_thumbnails_internal: {str(e)}", xbmc.LOGERROR)
+        return [], [], [], 0, 0, 0
+    except Exception as e:
+        if 'conn' in locals():
+            conn.close()
+        xbmc.log(f"OptiKlean DEBUG: Error in clear_older_thumbnails_internal: {str(e)}", xbmc.LOGERROR)
+        return [], [], [], 0, 0, 0
+
+
+def _clear_orphan_artwork(db_path, thumb_paths, progress_dialog, start_progress, end_progress):
+    """
+    Trova ed elimina le artwork orfane dalla cache delle texture.
+    Un'artwork è orfana quando esiste nella tabella 'art' del database video/music
+    ma il media a cui fa riferimento (movie, tvshow, episode, album, artist, etc.) non esiste più.
+    Disponibile solo per Kodi 22+.
+    
+    Scansiona:
+    - Video database: movie, tvshow, episode, season, musicvideo, actor, set
+    - Music database: album, artist, song
+    """
+    xbmc.log("OptiKlean DEBUG: Starting orphan artwork cleanup (extended)", xbmc.LOGINFO)
+    
+    deleted = []
+    locked = []
+    errors = []
+    total_size_freed = 0
+    deleted_db_entries = 0
+    
+    # Trova i database
+    video_db = find_video_database(db_path)
+    music_db = find_music_database(db_path)
+    texture_db = find_texture_database(db_path)
+    
+    if not video_db and not music_db:
+        xbmc.log("OptiKlean DEBUG: No video or music database found for orphan artwork cleanup", xbmc.LOGERROR)
+        return [], [], [], 0, 0
+    
+    if not texture_db:
+        xbmc.log("OptiKlean DEBUG: Texture database not found for orphan artwork cleanup", xbmc.LOGERROR)
+        return [], [], [], 0, 0
+    
+    orphan_artwork = []
+    
+    # ========== FASE 1: Scansiona Video Database ==========
+    if video_db:
+        try:
+            video_conn = sqlite3.connect(video_db)
+            video_cursor = video_conn.cursor()
+            
+            # Verifica che la tabella art esista
+            video_cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='art'")
+            if video_cursor.fetchone():
+                progress_dialog.update(start_progress, addon.getLocalizedString(31270))  # "Scanning video database..."
+                
+                # Query per trovare artwork orfane nel video database
+                video_orphan_queries = [
+                    ("movie", "movie", "idMovie"),
+                    ("tvshow", "tvshow", "idShow"),
+                    ("episode", "episode", "idEpisode"),
+                    ("season", "seasons", "idSeason"),
+                    ("musicvideo", "musicvideo", "idMVideo"),
+                    ("actor", "actor", "actor_id"),
+                    ("set", "sets", "idSet"),
+                ]
+                
+                for media_type, table_name, id_column in video_orphan_queries:
+                    try:
+                        # Verifica che la tabella esista
+                        video_cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'")
+                        if not video_cursor.fetchone():
+                            xbmc.log(f"OptiKlean DEBUG: Table {table_name} not found, skipping", xbmc.LOGDEBUG)
+                            continue
+                        
+                        # Trova artwork orfane per questo tipo di media
+                        query = f"""
+                            SELECT art.art_id, art.url 
+                            FROM art 
+                            WHERE art.media_type = ? 
+                            AND art.media_id NOT IN (SELECT {id_column} FROM {table_name})
+                        """
+                        video_cursor.execute(query, (media_type,))
+                        results = video_cursor.fetchall()
+                        
+                        for art_id, url in results:
+                            orphan_artwork.append((art_id, url, media_type, "video"))
+                            xbmc.log(f"OptiKlean DEBUG: Found video orphan artwork: id={art_id}, type={media_type}", xbmc.LOGDEBUG)
+                        
+                    except sqlite3.Error as e:
+                        xbmc.log(f"OptiKlean DEBUG: Error querying video {media_type}: {str(e)}", xbmc.LOGWARNING)
+                        continue
+                
+                xbmc.log(f"OptiKlean DEBUG: Found {len(orphan_artwork)} orphan artwork entries in video database", xbmc.LOGINFO)
+            else:
+                xbmc.log("OptiKlean DEBUG: Art table not found in video database", xbmc.LOGINFO)
+            
+            video_conn.close()
+            
+        except sqlite3.Error as e:
+            xbmc.log(f"OptiKlean DEBUG: Error connecting to video database: {str(e)}", xbmc.LOGWARNING)
+            if 'video_conn' in locals():
+                video_conn.close()
+    
+    # ========== FASE 2: Scansiona Music Database ==========
+    music_orphan_count = 0
+    if music_db:
+        try:
+            music_conn = sqlite3.connect(music_db)
+            music_cursor = music_conn.cursor()
+            
+            # Verifica che la tabella art esista nel music database
+            music_cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='art'")
+            if music_cursor.fetchone():
+                progress_dialog.update(start_progress + 5, addon.getLocalizedString(31279))  # "Scanning music database..."
+                
+                # Query per trovare artwork orfane nel music database
+                music_orphan_queries = [
+                    ("album", "album", "idAlbum"),
+                    ("artist", "artist", "idArtist"),
+                    ("song", "song", "idSong"),
+                ]
+                
+                for media_type, table_name, id_column in music_orphan_queries:
+                    try:
+                        # Verifica che la tabella esista
+                        music_cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'")
+                        if not music_cursor.fetchone():
+                            xbmc.log(f"OptiKlean DEBUG: Table {table_name} not found in music db, skipping", xbmc.LOGDEBUG)
+                            continue
+                        
+                        # Trova artwork orfane per questo tipo di media
+                        query = f"""
+                            SELECT art.art_id, art.url 
+                            FROM art 
+                            WHERE art.media_type = ? 
+                            AND art.media_id NOT IN (SELECT {id_column} FROM {table_name})
+                        """
+                        music_cursor.execute(query, (media_type,))
+                        results = music_cursor.fetchall()
+                        
+                        for art_id, url in results:
+                            orphan_artwork.append((art_id, url, media_type, "music"))
+                            music_orphan_count += 1
+                            xbmc.log(f"OptiKlean DEBUG: Found music orphan artwork: id={art_id}, type={media_type}", xbmc.LOGDEBUG)
+                        
+                    except sqlite3.Error as e:
+                        xbmc.log(f"OptiKlean DEBUG: Error querying music {media_type}: {str(e)}", xbmc.LOGWARNING)
+                        continue
+                
+                xbmc.log(f"OptiKlean DEBUG: Found {music_orphan_count} orphan artwork entries in music database", xbmc.LOGINFO)
+            else:
+                xbmc.log("OptiKlean DEBUG: Art table not found in music database", xbmc.LOGINFO)
+            
+            music_conn.close()
+            
+        except sqlite3.Error as e:
+            xbmc.log(f"OptiKlean DEBUG: Error connecting to music database: {str(e)}", xbmc.LOGWARNING)
+            if 'music_conn' in locals():
+                music_conn.close()
+    
+    xbmc.log(f"OptiKlean DEBUG: Total orphan artwork found: {len(orphan_artwork)} (video + music)", xbmc.LOGINFO)
+    
+    if not orphan_artwork:
+        return [], [], [], 0, 0
+    
+    # ========== FASE 3: Elimina file e voci database ==========
+    try:
+        progress_dialog.update(start_progress + 10, addon.getLocalizedString(31271))  # "Deleting orphan artwork..."
+        
+        # Connetti ai database
+        texture_conn = sqlite3.connect(texture_db)
+        texture_cursor = texture_conn.cursor()
+        
+        # Riconnetti ai database video e music per le eliminazioni
+        video_conn = None
+        video_cursor = None
+        music_conn = None
+        music_cursor = None
+        
+        if video_db:
+            video_conn = sqlite3.connect(video_db)
+            video_cursor = video_conn.cursor()
+        
+        if music_db:
+            music_conn = sqlite3.connect(music_db)
+            music_cursor = music_conn.cursor()
+        
+        progress_range = end_progress - start_progress - 20
+        processed = 0
+        total_orphans = len(orphan_artwork)
+        
+        for art_id, url, media_type, db_source in orphan_artwork:
+            if progress_dialog.iscanceled():
+                break
+            
+            processed += 1
+            percent = start_progress + 10 + int((processed / total_orphans) * progress_range)
+            progress_dialog.update(percent, f"Processing orphan artwork {processed}/{total_orphans}...")
+            
+            try:
+                # Cerca il file nella cache delle texture
+                texture_cursor.execute("SELECT id, cachedurl FROM texture WHERE url = ?", (url,))
+                texture_row = texture_cursor.fetchone()
+                
+                if texture_row:
+                    texture_id, cachedurl = texture_row
+                    
+                    # Trova il file nella cache
+                    for base_path in thumb_paths:
+                        cached_file_path = xbmcvfs.makeLegalFilename(f"{base_path}{cachedurl}")
+                        if xbmcvfs.exists(cached_file_path):
+                            # Ottieni la dimensione prima di eliminare
+                            file_size = get_file_size(cached_file_path) or 0
+                            
+                            status, error = delete_file(cached_file_path)
+                            if status == DELETE_SUCCESS:
+                                deleted.append((cached_file_path, file_size))
+                                total_size_freed += file_size
+                                xbmc.log(f"OptiKlean DEBUG: Deleted orphan artwork file: {cached_file_path}", xbmc.LOGDEBUG)
+                            elif status == DELETE_LOCKED:
+                                locked.append(cached_file_path)
+                            else:
+                                errors.append(f"{cached_file_path} ({error})")
+                            break
+                    
+                    # Rimuovi dalla tabella texture
+                    try:
+                        texture_cursor.execute("DELETE FROM sizes WHERE idtexture = ?", (texture_id,))
+                        texture_cursor.execute("DELETE FROM texture WHERE id = ?", (texture_id,))
+                    except sqlite3.Error as del_err:
+                        xbmc.log(f"OptiKlean DEBUG: Error removing texture entry: {str(del_err)}", xbmc.LOGWARNING)
+                
+                # Rimuovi dalla tabella art del database corretto (video o music)
+                if db_source == "video" and video_cursor:
+                    video_cursor.execute("DELETE FROM art WHERE art_id = ?", (art_id,))
+                    deleted_db_entries += 1
+                elif db_source == "music" and music_cursor:
+                    music_cursor.execute("DELETE FROM art WHERE art_id = ?", (art_id,))
+                    deleted_db_entries += 1
+                
+            except Exception as e:
+                errors.append(f"Error processing art_id {art_id}: {str(e)}")
+                xbmc.log(f"OptiKlean DEBUG: Error processing orphan artwork: {str(e)}", xbmc.LOGERROR)
+        
+        # Commit e vacuum
+        try:
+            texture_conn.commit()
+            if video_conn:
+                video_conn.commit()
+            if music_conn:
+                music_conn.commit()
+            
+            texture_cursor.execute("VACUUM")
+            if video_cursor:
+                video_cursor.execute("VACUUM")
+            if music_cursor:
+                music_cursor.execute("VACUUM")
+            xbmc.log("OptiKlean DEBUG: Databases vacuumed after orphan artwork cleanup", xbmc.LOGINFO)
+        except sqlite3.Error as e:
+            xbmc.log(f"OptiKlean DEBUG: Error during commit/vacuum: {str(e)}", xbmc.LOGWARNING)
+        
+        texture_conn.close()
+        if video_conn:
+            video_conn.close()
+        if music_conn:
+            music_conn.close()
+        
+        xbmc.log(f"OptiKlean DEBUG: Orphan artwork cleanup completed. Files deleted: {len(deleted)}, DB entries: {deleted_db_entries}, Size freed: {total_size_freed} bytes", xbmc.LOGINFO)
+        
+        return deleted, locked, errors, total_size_freed, deleted_db_entries
+        
+    except sqlite3.Error as e:
+        if 'texture_conn' in locals() and texture_conn:
+            texture_conn.close()
+        if 'video_conn' in locals() and video_conn:
+            video_conn.close()
+        if 'music_conn' in locals() and music_conn:
+            music_conn.close()
+        xbmc.log(f"OptiKlean DEBUG: Database error in clear_orphan_artwork_internal: {str(e)}", xbmc.LOGERROR)
+        return [], [], [], 0, 0
+    except Exception as e:
+        if 'texture_conn' in locals() and texture_conn:
+            texture_conn.close()
+        if 'video_conn' in locals() and video_conn:
+            video_conn.close()
+        if 'music_conn' in locals() and music_conn:
+            music_conn.close()
+        xbmc.log(f"OptiKlean DEBUG: Error in clear_orphan_artwork_internal: {str(e)}", xbmc.LOGERROR)
+        return [], [], [], 0, 0
+
+
+def _count_thumbnail_files(folder_path):
+    """Recursively counts all files in a thumbnail folder using xbmcvfs."""
+    folder_path = ensure_path_format(folder_path)
+    count = 0
+    try:
+        dirs, files = xbmcvfs.listdir(folder_path)
+        count += len(files)
+        for d in dirs:
+            count += _count_thumbnail_files(ensure_path_format(folder_path + d))
+    except Exception as e:
+        xbmc.log(f"OptiKlean DEBUG: Error counting files in {folder_path}: {str(e)}", xbmc.LOGWARNING)
+    return count
+
+
+def _scan_and_delete_thumbnails(folder_path, valid_thumbs, progress_dialog, total_files, current_index, start_prog, end_prog):
+    """
+    Recursively scans folder_path and deletes files not in valid_thumbs.
+    Returns: (deleted, locked, errors, processed_files, total_size_freed)
+      - deleted: list of (file_path, file_size) tuples
+      - locked: list of file_path strings
+      - errors: list of error message strings
+      - processed_files: number of files examined
+      - total_size_freed: bytes freed
+    """
+    folder_path = ensure_path_format(folder_path)
+    deleted = []
+    locked = []
+    errors = []
+    processed_files = 0
+    total_size_freed = 0
+
+    try:
+        dirs, files = xbmcvfs.listdir(folder_path)
+    except Exception as e:
+        xbmc.log(f"OptiKlean DEBUG: Error listing {folder_path}: {str(e)}", xbmc.LOGWARNING)
+        return deleted, locked, errors, processed_files, total_size_freed
+
+    for file_name in files:
+        if progress_dialog and progress_dialog.iscanceled():
+            return deleted, locked, errors, processed_files, total_size_freed
+
+        file_path = xbmcvfs.makeLegalFilename(f"{folder_path}{file_name}")
+        processed_files += 1
+
+        if total_files > 0:
+            prog = start_prog + int(((current_index + processed_files) / total_files) * (end_prog - start_prog))
+            _update_progress_dialog(progress_dialog, f"Checking {file_name}...")
+            if progress_dialog:
+                progress_dialog.update(min(prog, end_prog))
+
+        if file_path in valid_thumbs:
+            continue
+
+        file_size = get_file_size(file_path) or 0
+        status, error = delete_file(file_path, progress_dialog=progress_dialog)
+
+        if status == DELETE_SUCCESS:
+            deleted.append((file_path, file_size))
+            total_size_freed += file_size
+        elif status == DELETE_LOCKED:
+            locked.append(file_path)
+        else:
+            errors.append(f"{ERROR_IN_PREFIX} {file_path}: {error}")
+
+    for dir_name in dirs:
+        if progress_dialog and progress_dialog.iscanceled():
+            return deleted, locked, errors, processed_files, total_size_freed
+
+        sub_path = ensure_path_format(f"{folder_path}{dir_name}")
+        del_, lock_, err_, proc_, size_ = _scan_and_delete_thumbnails(
+            sub_path, valid_thumbs, progress_dialog, total_files, current_index + processed_files, start_prog, end_prog
+        )
+        deleted.extend(del_)
+        locked.extend(lock_)
+        errors.extend(err_)
+        processed_files += proc_
+        total_size_freed += size_
+
+    return deleted, locked, errors, processed_files, total_size_freed
+
+
 # Funzione per cancellare le thumbnails non più utilizzate
 def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
     xbmc.log("OptiKlean DEBUG: Starting clear_unused_thumbnails", xbmc.LOGINFO)
@@ -1678,10 +2317,10 @@ def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
             selected = [0, 1]
     
     progress = xbmcgui.DialogProgress()
-    progress.create("OptiKlean", addon.getLocalizedString(31076))  # "Preparing thumbnails cleanup..."
+    progress.create(ADDON_NAME, addon.getLocalizedString(31076))  # "Preparing thumbnails cleanup..."
     
     # Inizializza variabili comuni
-    db_path = ensure_path_format(xbmcvfs.translatePath("special://database/"))
+    db_path = ensure_path_format(xbmcvfs.translatePath(DATABASE_SPECIAL_PATH))
     standard_thumb_path = ensure_path_format(xbmcvfs.translatePath("special://userdata/Thumbnails/"))
     alt_thumb_path = ensure_path_format(xbmcvfs.translatePath("special://thumbnails/"))
 
@@ -1711,482 +2350,10 @@ def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
             error_msg += f"\n{addon.getLocalizedString(31104).format(time=execution_time)}\n"  # "Running time: {time}s"
             write_log("clear_older_thumbnails", error_msg)
         
-        xbmcgui.Dialog().notification("OptiKlean", addon.getLocalizedString(31058), xbmcgui.NOTIFICATION_ERROR, 3000)  # "Thumbnails folder not found."
+        xbmcgui.Dialog().notification(ADDON_NAME, addon.getLocalizedString(31058), xbmcgui.NOTIFICATION_ERROR, 3000)  # "Thumbnails folder not found."
         return
 
-    def clear_older_thumbnails_internal(thumb_paths, progress_dialog, start_progress, end_progress, days_threshold=30):
-        """
-        Elimina le thumbnails più vecchie di X giorni usando la tabella sizes del database delle texture
-        e rimuove anche le righe corrispondenti dal database
-        """
-        # Calcola il timestamp di soglia (X giorni fa)
-        threshold_timestamp = int(time.time()) - (days_threshold * 86400)
-        # Converti in formato datetime per il confronto SQL
-        threshold_datetime = datetime.fromtimestamp(threshold_timestamp).strftime("%Y-%m-%d %H:%M:%S")
-        
-        texture_db = find_texture_database(db_path)
-        if not texture_db:
-            xbmc.log("OptiKlean DEBUG: Texture database not found for older thumbnails cleanup", xbmc.LOGERROR)
-            return [], [], [], 0, 0, 0
-        
-        deleted = []
-        locked = []
-        errors = []
-        total_size_freed = 0
-        deleted_db_sizes = 0
-        deleted_db_texture = 0
-        
-        try:
-            # Connetti al database delle texture
-            conn = sqlite3.connect(texture_db)
-            cursor = conn.cursor()
-            
-            # Verifica la struttura del database
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            tables = [row[0] for row in cursor.fetchall()]
-            
-            xbmc.log(f"OptiKlean DEBUG: Available tables in texture database: {tables}", xbmc.LOGINFO)
-            
-            if 'sizes' not in tables or 'texture' not in tables:
-                xbmc.log("OptiKlean DEBUG: Required tables (sizes, texture) not found in database", xbmc.LOGERROR)
-                conn.close()
-                return [], [], [], 0, 0, 0
-            
-            # Verifica le colonne delle tabelle
-            cursor.execute("PRAGMA table_info(sizes)")
-            sizes_columns = [col[1] for col in cursor.fetchall()]
-            cursor.execute("PRAGMA table_info(texture)")
-            texture_columns = [col[1] for col in cursor.fetchall()]
-            
-            xbmc.log(f"OptiKlean DEBUG: Sizes table columns: {sizes_columns}", xbmc.LOGINFO)
-            xbmc.log(f"OptiKlean DEBUG: Texture table columns: {texture_columns}", xbmc.LOGINFO)
-            
-            # Verifica che le colonne necessarie esistano
-            required_sizes_cols = ['idtexture', 'lastusetime']
-            required_texture_cols = ['id', 'cachedurl']
-            
-            if not all(col in sizes_columns for col in required_sizes_cols):
-                xbmc.log(f"OptiKlean DEBUG: Missing required columns in sizes table. Required: {required_sizes_cols}, Found: {sizes_columns}", xbmc.LOGERROR)
-                conn.close()
-                return [], [], [], 0, 0, 0
-                
-            if not all(col in texture_columns for col in required_texture_cols):
-                xbmc.log(f"OptiKlean DEBUG: Missing required columns in texture table. Required: {required_texture_cols}, Found: {texture_columns}", xbmc.LOGERROR)
-                conn.close()
-                return [], [], [], 0, 0, 0
-            
-            # Query per trovare le thumbnails più vecchie di X giorni
-            # Facciamo un JOIN tra sizes e texture per ottenere direttamente cachedurl
-            query = """
-                SELECT t.id, t.cachedurl, s.lastusetime
-                FROM sizes s
-                INNER JOIN texture t ON s.idtexture = t.id
-                WHERE s.lastusetime < ?
-            """
-            
-            xbmc.log(f"OptiKlean DEBUG: Executing query with threshold: {threshold_datetime}", xbmc.LOGINFO)
-            cursor.execute(query, (threshold_datetime,))
-            old_thumbnails = cursor.fetchall()
-            
-            xbmc.log(f"OptiKlean DEBUG: Found {len(old_thumbnails)} thumbnails older than {days_threshold} days", xbmc.LOGINFO)
-            
-            if len(old_thumbnails) == 0:
-                xbmc.log("OptiKlean DEBUG: No old thumbnails found", xbmc.LOGINFO)
-                conn.close()
-                return [], [], [], 0, 0, 0
-            
-            # Processa ogni thumbnail trovata
-            for index, (texture_id, cachedurl, lastusetime) in enumerate(old_thumbnails):
-                if progress_dialog and progress_dialog.iscanceled():
-                    xbmc.log("OptiKlean DEBUG: User canceled old thumbnails cleanup", xbmc.LOGINFO)
-                    break
-                    
-                # Calcola progresso nell'intervallo assegnato
-                progress_range = end_progress - start_progress
-                percent = start_progress + int((index / len(old_thumbnails)) * progress_range) if len(old_thumbnails) > 0 else end_progress
-                
-                if progress_dialog:
-                    progress_dialog.update(percent, f"Processing old thumbnail {index+1}/{len(old_thumbnails)}")
-                
-                # Calcola l'età in giorni per il log
-                try:
-                    last_use_dt = datetime.strptime(lastusetime, "%Y-%m-%d %H:%M:%S")
-                    days_old = (datetime.now() - last_use_dt).days
-                except Exception as e:
-                    xbmc.log(f"OptiKlean DEBUG: Error parsing lastusetime '{lastusetime}': {str(e)}", xbmc.LOGWARNING)
-                    days_old = -1
-                
-                xbmc.log(f"OptiKlean DEBUG: Processing thumbnail ID {texture_id}, cachedurl: {cachedurl}, last used: {lastusetime} ({days_old} days ago)", xbmc.LOGINFO)
-                
-                # Cerca il file thumbnail nei percorsi possibili
-                thumbnail_found = False
-                file_deleted = False
-                file_size = 0
-                
-                for base_path in thumb_paths:
-                    # Costruisci il percorso completo: base_path + cachedurl
-                    # cachedurl è già nel formato "4/4bfd5855.jpg"
-                    thumb_file_path = xbmcvfs.makeLegalFilename(f"{base_path}{cachedurl}")
-                    
-                    if xbmcvfs.exists(thumb_file_path):
-                        thumbnail_found = True
-                        xbmc.log(f"OptiKlean DEBUG: Found thumbnail file: {thumb_file_path}", xbmc.LOGINFO)
-                        
-                        # Ottieni dimensione prima della cancellazione
-                        file_size = get_file_size(thumb_file_path) or 0
-                        
-                        # Elimina il file
-                        status, error = delete_file(thumb_file_path)
-                        
-                        if status == DELETE_SUCCESS:
-                            deleted.append((thumb_file_path, file_size))
-                            total_size_freed += file_size
-                            file_deleted = True
-                            xbmc.log(f"OptiKlean DEBUG: Deleted old thumbnail: {cachedurl} ({days_old} days old, size: {file_size} bytes)", xbmc.LOGINFO)
-                        elif status == DELETE_LOCKED:
-                            locked.append(thumb_file_path)
-                            xbmc.log(f"OptiKlean DEBUG: Locked old thumbnail: {cachedurl}", xbmc.LOGINFO)
-                        else:
-                            errors.append(f"{thumb_file_path} ({error})")
-                            xbmc.log(f"OptiKlean DEBUG: Error deleting old thumbnail: {cachedurl} - {error}", xbmc.LOGERROR)
-                        break
-                
-                # Elimina le righe dal database indipendentemente dal fatto che il file fisico sia stato trovato/eliminato
-                # Questo perché il file potrebbe essere già stato eliminato manualmente ma le righe nel database rimangono
-                try:
-                    # Elimina dalla tabella sizes
-                    cursor.execute("DELETE FROM sizes WHERE idtexture=?", (texture_id,))
-                    deleted_sizes_rows = cursor.rowcount
-                    deleted_db_sizes += deleted_sizes_rows
-                    
-                    # Elimina dalla tabella texture
-                    cursor.execute("DELETE FROM texture WHERE id=?", (texture_id,))
-                    deleted_texture_rows = cursor.rowcount
-                    deleted_db_texture += deleted_texture_rows
-                    
-                    xbmc.log(f"OptiKlean DEBUG: Deleted database entries for texture ID {texture_id}: {deleted_sizes_rows} from sizes, {deleted_texture_rows} from texture", xbmc.LOGINFO)
-                    
-                except sqlite3.Error as db_error:
-                    error_msg = f"Database deletion error for texture ID {texture_id}: {str(db_error)}"
-                    errors.append(error_msg)
-                    xbmc.log(f"OptiKlean DEBUG: {error_msg}", xbmc.LOGERROR)
-                
-                if not thumbnail_found:
-                    xbmc.log(f"OptiKlean DEBUG: Thumbnail file not found on disk: {cachedurl} (database entry will still be removed)", xbmc.LOGDEBUG)
-            
-            # Commit delle modifiche al database e ottimizzazione
-            try:
-                conn.commit()
-                xbmc.log("OptiKlean DEBUG: Database changes committed", xbmc.LOGINFO)
-                
-                # Ottimizza il database per ridurre le dimensioni fisiche
-                if progress_dialog:
-                    progress_dialog.update(end_progress - 5, "Optimizing database...")
-                
-                cursor.execute("VACUUM")
-                xbmc.log("OptiKlean DEBUG: Database vacuumed successfully", xbmc.LOGINFO)
-                
-            except sqlite3.Error as db_error:
-                error_msg = f"Database commit/vacuum error: {str(db_error)}"
-                errors.append(error_msg)
-                xbmc.log(f"OptiKlean DEBUG: {error_msg}", xbmc.LOGERROR)
-            
-            conn.close()
-            
-            xbmc.log(f"OptiKlean DEBUG: Old thumbnails cleanup completed. Files deleted: {len(deleted)}, Locked: {len(locked)}, Errors: {len(errors)}, Size freed: {total_size_freed} bytes, DB entries removed: {deleted_db_sizes} from sizes, {deleted_db_texture} from texture", xbmc.LOGINFO)
-            
-            return deleted, locked, errors, total_size_freed, deleted_db_sizes, deleted_db_texture
-            
-        except sqlite3.Error as e:
-            if 'conn' in locals():
-                conn.close()
-            xbmc.log(f"OptiKlean DEBUG: Database error in clear_older_thumbnails_internal: {str(e)}", xbmc.LOGERROR)
-            return [], [], [], 0, 0, 0
-        except Exception as e:
-            if 'conn' in locals():
-                conn.close()
-            xbmc.log(f"OptiKlean DEBUG: Error in clear_older_thumbnails_internal: {str(e)}", xbmc.LOGERROR)
-            return [], [], [], 0, 0, 0
 
-    def clear_orphan_artwork_internal(progress_dialog, start_progress, end_progress):
-        """
-        Trova ed elimina le artwork orfane dalla cache delle texture.
-        Un'artwork è orfana quando esiste nella tabella 'art' del database video/music
-        ma il media a cui fa riferimento (movie, tvshow, episode, album, artist, etc.) non esiste più.
-        Disponibile solo per Kodi 22+.
-        
-        Scansiona:
-        - Video database: movie, tvshow, episode, season, musicvideo, actor, set
-        - Music database: album, artist, song
-        """
-        xbmc.log("OptiKlean DEBUG: Starting orphan artwork cleanup (extended)", xbmc.LOGINFO)
-        
-        deleted = []
-        locked = []
-        errors = []
-        total_size_freed = 0
-        deleted_db_entries = 0
-        
-        # Trova i database
-        video_db = find_video_database(db_path)
-        music_db = find_music_database(db_path)
-        texture_db = find_texture_database(db_path)
-        
-        if not video_db and not music_db:
-            xbmc.log("OptiKlean DEBUG: No video or music database found for orphan artwork cleanup", xbmc.LOGERROR)
-            return [], [], [], 0, 0
-        
-        if not texture_db:
-            xbmc.log("OptiKlean DEBUG: Texture database not found for orphan artwork cleanup", xbmc.LOGERROR)
-            return [], [], [], 0, 0
-        
-        orphan_artwork = []
-        
-        # ========== FASE 1: Scansiona Video Database ==========
-        if video_db:
-            try:
-                video_conn = sqlite3.connect(video_db)
-                video_cursor = video_conn.cursor()
-                
-                # Verifica che la tabella art esista
-                video_cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='art'")
-                if video_cursor.fetchone():
-                    progress_dialog.update(start_progress, addon.getLocalizedString(31270))  # "Scanning video database..."
-                    
-                    # Query per trovare artwork orfane nel video database
-                    video_orphan_queries = [
-                        ("movie", "movie", "idMovie"),
-                        ("tvshow", "tvshow", "idShow"),
-                        ("episode", "episode", "idEpisode"),
-                        ("season", "seasons", "idSeason"),
-                        ("musicvideo", "musicvideo", "idMVideo"),
-                        ("actor", "actor", "actor_id"),
-                        ("set", "sets", "idSet"),
-                    ]
-                    
-                    for media_type, table_name, id_column in video_orphan_queries:
-                        try:
-                            # Verifica che la tabella esista
-                            video_cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'")
-                            if not video_cursor.fetchone():
-                                xbmc.log(f"OptiKlean DEBUG: Table {table_name} not found, skipping", xbmc.LOGDEBUG)
-                                continue
-                            
-                            # Trova artwork orfane per questo tipo di media
-                            query = f"""
-                                SELECT art.art_id, art.url 
-                                FROM art 
-                                WHERE art.media_type = ? 
-                                AND art.media_id NOT IN (SELECT {id_column} FROM {table_name})
-                            """
-                            video_cursor.execute(query, (media_type,))
-                            results = video_cursor.fetchall()
-                            
-                            for art_id, url in results:
-                                orphan_artwork.append((art_id, url, media_type, "video"))
-                                xbmc.log(f"OptiKlean DEBUG: Found video orphan artwork: id={art_id}, type={media_type}", xbmc.LOGDEBUG)
-                            
-                        except sqlite3.Error as e:
-                            xbmc.log(f"OptiKlean DEBUG: Error querying video {media_type}: {str(e)}", xbmc.LOGWARNING)
-                            continue
-                    
-                    xbmc.log(f"OptiKlean DEBUG: Found {len(orphan_artwork)} orphan artwork entries in video database", xbmc.LOGINFO)
-                else:
-                    xbmc.log("OptiKlean DEBUG: Art table not found in video database", xbmc.LOGINFO)
-                
-                video_conn.close()
-                
-            except sqlite3.Error as e:
-                xbmc.log(f"OptiKlean DEBUG: Error connecting to video database: {str(e)}", xbmc.LOGWARNING)
-                if 'video_conn' in locals():
-                    video_conn.close()
-        
-        # ========== FASE 2: Scansiona Music Database ==========
-        music_orphan_count = 0
-        if music_db:
-            try:
-                music_conn = sqlite3.connect(music_db)
-                music_cursor = music_conn.cursor()
-                
-                # Verifica che la tabella art esista nel music database
-                music_cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='art'")
-                if music_cursor.fetchone():
-                    progress_dialog.update(start_progress + 5, addon.getLocalizedString(31279))  # "Scanning music database..."
-                    
-                    # Query per trovare artwork orfane nel music database
-                    music_orphan_queries = [
-                        ("album", "album", "idAlbum"),
-                        ("artist", "artist", "idArtist"),
-                        ("song", "song", "idSong"),
-                    ]
-                    
-                    for media_type, table_name, id_column in music_orphan_queries:
-                        try:
-                            # Verifica che la tabella esista
-                            music_cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'")
-                            if not music_cursor.fetchone():
-                                xbmc.log(f"OptiKlean DEBUG: Table {table_name} not found in music db, skipping", xbmc.LOGDEBUG)
-                                continue
-                            
-                            # Trova artwork orfane per questo tipo di media
-                            query = f"""
-                                SELECT art.art_id, art.url 
-                                FROM art 
-                                WHERE art.media_type = ? 
-                                AND art.media_id NOT IN (SELECT {id_column} FROM {table_name})
-                            """
-                            music_cursor.execute(query, (media_type,))
-                            results = music_cursor.fetchall()
-                            
-                            for art_id, url in results:
-                                orphan_artwork.append((art_id, url, media_type, "music"))
-                                music_orphan_count += 1
-                                xbmc.log(f"OptiKlean DEBUG: Found music orphan artwork: id={art_id}, type={media_type}", xbmc.LOGDEBUG)
-                            
-                        except sqlite3.Error as e:
-                            xbmc.log(f"OptiKlean DEBUG: Error querying music {media_type}: {str(e)}", xbmc.LOGWARNING)
-                            continue
-                    
-                    xbmc.log(f"OptiKlean DEBUG: Found {music_orphan_count} orphan artwork entries in music database", xbmc.LOGINFO)
-                else:
-                    xbmc.log("OptiKlean DEBUG: Art table not found in music database", xbmc.LOGINFO)
-                
-                music_conn.close()
-                
-            except sqlite3.Error as e:
-                xbmc.log(f"OptiKlean DEBUG: Error connecting to music database: {str(e)}", xbmc.LOGWARNING)
-                if 'music_conn' in locals():
-                    music_conn.close()
-        
-        xbmc.log(f"OptiKlean DEBUG: Total orphan artwork found: {len(orphan_artwork)} (video + music)", xbmc.LOGINFO)
-        
-        if not orphan_artwork:
-            return [], [], [], 0, 0
-        
-        # ========== FASE 3: Elimina file e voci database ==========
-        try:
-            progress_dialog.update(start_progress + 10, addon.getLocalizedString(31271))  # "Deleting orphan artwork..."
-            
-            # Connetti ai database
-            texture_conn = sqlite3.connect(texture_db)
-            texture_cursor = texture_conn.cursor()
-            
-            # Riconnetti ai database video e music per le eliminazioni
-            video_conn = None
-            video_cursor = None
-            music_conn = None
-            music_cursor = None
-            
-            if video_db:
-                video_conn = sqlite3.connect(video_db)
-                video_cursor = video_conn.cursor()
-            
-            if music_db:
-                music_conn = sqlite3.connect(music_db)
-                music_cursor = music_conn.cursor()
-            
-            progress_range = end_progress - start_progress - 20
-            processed = 0
-            total_orphans = len(orphan_artwork)
-            
-            for art_id, url, media_type, db_source in orphan_artwork:
-                if progress_dialog.iscanceled():
-                    break
-                
-                processed += 1
-                percent = start_progress + 10 + int((processed / total_orphans) * progress_range)
-                progress_dialog.update(percent, f"Processing orphan artwork {processed}/{total_orphans}...")
-                
-                try:
-                    # Cerca il file nella cache delle texture
-                    texture_cursor.execute("SELECT id, cachedurl FROM texture WHERE url = ?", (url,))
-                    texture_row = texture_cursor.fetchone()
-                    
-                    if texture_row:
-                        texture_id, cachedurl = texture_row
-                        
-                        # Trova il file nella cache
-                        for base_path in thumb_paths:
-                            cached_file_path = xbmcvfs.makeLegalFilename(f"{base_path}{cachedurl}")
-                            if xbmcvfs.exists(cached_file_path):
-                                # Ottieni la dimensione prima di eliminare
-                                file_size = get_file_size(cached_file_path) or 0
-                                
-                                status, error = delete_file(cached_file_path)
-                                if status == DELETE_SUCCESS:
-                                    deleted.append((cached_file_path, file_size))
-                                    total_size_freed += file_size
-                                    xbmc.log(f"OptiKlean DEBUG: Deleted orphan artwork file: {cached_file_path}", xbmc.LOGDEBUG)
-                                elif status == DELETE_LOCKED:
-                                    locked.append(cached_file_path)
-                                else:
-                                    errors.append(f"{cached_file_path} ({error})")
-                                break
-                        
-                        # Rimuovi dalla tabella texture
-                        try:
-                            texture_cursor.execute("DELETE FROM sizes WHERE idtexture = ?", (texture_id,))
-                            texture_cursor.execute("DELETE FROM texture WHERE id = ?", (texture_id,))
-                        except sqlite3.Error as del_err:
-                            xbmc.log(f"OptiKlean DEBUG: Error removing texture entry: {str(del_err)}", xbmc.LOGWARNING)
-                    
-                    # Rimuovi dalla tabella art del database corretto (video o music)
-                    if db_source == "video" and video_cursor:
-                        video_cursor.execute("DELETE FROM art WHERE art_id = ?", (art_id,))
-                        deleted_db_entries += 1
-                    elif db_source == "music" and music_cursor:
-                        music_cursor.execute("DELETE FROM art WHERE art_id = ?", (art_id,))
-                        deleted_db_entries += 1
-                    
-                except Exception as e:
-                    errors.append(f"Error processing art_id {art_id}: {str(e)}")
-                    xbmc.log(f"OptiKlean DEBUG: Error processing orphan artwork: {str(e)}", xbmc.LOGERROR)
-            
-            # Commit e vacuum
-            try:
-                texture_conn.commit()
-                if video_conn:
-                    video_conn.commit()
-                if music_conn:
-                    music_conn.commit()
-                
-                texture_cursor.execute("VACUUM")
-                if video_cursor:
-                    video_cursor.execute("VACUUM")
-                if music_cursor:
-                    music_cursor.execute("VACUUM")
-                xbmc.log("OptiKlean DEBUG: Databases vacuumed after orphan artwork cleanup", xbmc.LOGINFO)
-            except sqlite3.Error as e:
-                xbmc.log(f"OptiKlean DEBUG: Error during commit/vacuum: {str(e)}", xbmc.LOGWARNING)
-            
-            texture_conn.close()
-            if video_conn:
-                video_conn.close()
-            if music_conn:
-                music_conn.close()
-            
-            xbmc.log(f"OptiKlean DEBUG: Orphan artwork cleanup completed. Files deleted: {len(deleted)}, DB entries: {deleted_db_entries}, Size freed: {total_size_freed} bytes", xbmc.LOGINFO)
-            
-            return deleted, locked, errors, total_size_freed, deleted_db_entries
-            
-        except sqlite3.Error as e:
-            if 'texture_conn' in locals() and texture_conn:
-                texture_conn.close()
-            if 'video_conn' in locals() and video_conn:
-                video_conn.close()
-            if 'music_conn' in locals() and music_conn:
-                music_conn.close()
-            xbmc.log(f"OptiKlean DEBUG: Database error in clear_orphan_artwork_internal: {str(e)}", xbmc.LOGERROR)
-            return [], [], [], 0, 0
-        except Exception as e:
-            if 'texture_conn' in locals() and texture_conn:
-                texture_conn.close()
-            if 'video_conn' in locals() and video_conn:
-                video_conn.close()
-            if 'music_conn' in locals() and music_conn:
-                music_conn.close()
-            xbmc.log(f"OptiKlean DEBUG: Error in clear_orphan_artwork_internal: {str(e)}", xbmc.LOGERROR)
-            return [], [], [], 0, 0
 
     try:
         # Esegui Clear unused thumbnails se selezionato
@@ -2206,7 +2373,7 @@ def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
                 log_content_unused += f"\nRunning time: {execution_time}s\n"
                 write_log("clear_unused_thumbnails", log_content_unused)
                 if not auto_mode:
-                    xbmcgui.Dialog().notification("OptiKlean", addon.getLocalizedString(31156), xbmcgui.NOTIFICATION_ERROR, 3000)
+                    xbmcgui.Dialog().notification(ADDON_NAME, addon.getLocalizedString(31156), xbmcgui.NOTIFICATION_ERROR, 3000)
                 if len(selected) == 1:  # Se è l'unica opzione selezionata, esci
                     return
             else:
@@ -2235,19 +2402,9 @@ def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
 
                 progress.update(20, addon.getLocalizedString(31204))  # "Counting thumbnails..."
 
-                def count_files(path):
-                    total = 0
-                    try:
-                        dirs, files = xbmcvfs.listdir(path)
-                        total += len(files)
-                        for d in dirs:
-                            sub_path = xbmcvfs.makeLegalFilename(f"{path}/{d}")
-                            total += count_files(sub_path)
-                    except Exception as e:
-                        xbmc.log(f"OptiKlean DEBUG: Error counting files in {path}: {str(e)}", xbmc.LOGERROR)
-                    return total
 
-                total_files = sum(count_files(p) for p in thumb_paths)
+
+                total_files = sum(_count_thumbnail_files(p) for p in thumb_paths)
 
                 # Determina l'intervallo di progresso per questa operazione
                 start_prog = 30
@@ -2256,62 +2413,11 @@ def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
                 progress.update(start_prog, addon.getLocalizedString(31205))  # "Deleting unused thumbnails..."
                 deleted, locked, errors, processed_files, total_size_freed = [], [], [], 0, 0
 
-                def recursive_thumbnail_cleanup(thumb_path, valid_thumbs, progress_dialog, total_files, processed_files, start_progress, end_progress):
-                    xbmc.log(f"OptiKlean DEBUG: Entering recursive_thumbnail_cleanup for path: {thumb_path}", xbmc.LOGINFO)
-                    deleted = []
-                    locked = []
-                    errors = []
-                    size_freed = 0
-                    
-                    try:
-                        dirs, files = xbmcvfs.listdir(thumb_path)
-                        
-                        for file in files:
-                            if progress_dialog and progress_dialog.iscanceled():
-                                return deleted, locked, errors, processed_files, size_freed
 
-                            file_path = xbmcvfs.makeLegalFilename(f"{thumb_path}/{file}")
-                            processed_files += 1
-                            
-                            # Calcola il progresso nell'intervallo assegnato
-                            progress_range = end_progress - start_progress
-                            percent = start_progress + int((processed_files / total_files) * progress_range) if total_files > 0 else end_progress
-                            progress_dialog.update(percent, f"Checking: {file[:20]}...")
-                            
-                            if file_path not in valid_thumbs:
-                                # Get file size BEFORE deletion
-                                file_size = get_file_size(file_path) or 0
-                                status, error = delete_file(file_path)
-                                if status == DELETE_SUCCESS:
-                                    deleted.append((file_path, file_size))
-                                    size_freed += file_size
-                                    xbmc.log(f"OptiKlean DEBUG: Deleted {file_path} (size: {file_size} bytes)", xbmc.LOGINFO)
-                                elif status == DELETE_LOCKED:
-                                    locked.append(file_path)
-                                    xbmc.log(f"OptiKlean DEBUG: File locked: {file_path}", xbmc.LOGINFO)
-                                else:
-                                    errors.append(f"{file_path} ({error})")
-                                    xbmc.log(f"OptiKlean DEBUG: Error deleting {file_path}: {error}", xbmc.LOGERROR)
-
-                        for dir_name in dirs:
-                            sub_path = xbmcvfs.makeLegalFilename(f"{thumb_path}/{dir_name}")
-                            sub_deleted, sub_locked, sub_errors, processed_files, sub_size = recursive_thumbnail_cleanup(
-                                sub_path, valid_thumbs, progress_dialog, total_files, processed_files, start_progress, end_progress
-                            )
-                            deleted.extend(sub_deleted)
-                            locked.extend(sub_locked)
-                            errors.extend(sub_errors)
-                            size_freed += sub_size
-
-                    except Exception as e:
-                        xbmc.log(f"OptiKlean DEBUG: Exception in recursive_thumbnail_cleanup: {str(e)}", xbmc.LOGERROR)
-                        errors.append(f"Error in {thumb_path}: {str(e)}")
-
-                    return deleted, locked, errors, processed_files, size_freed
 
                 current_index = 0
                 for path in thumb_paths:
-                    del_, lock_, err_, proc_, size_ = recursive_thumbnail_cleanup(
+                    del_, lock_, err_, proc_, size_ = _scan_and_delete_thumbnails(
                         path, valid_thumbs, progress, total_files, current_index, start_prog, end_prog
                     )
                     deleted.extend(del_)
@@ -2334,12 +2440,7 @@ def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
                     log_content_unused += addon.getLocalizedString(31158) + "\n"
                     for file_path, file_size in deleted:
                         filename = os.path.basename(file_path)
-                        if file_size >= 1024 * 1024:
-                            size_str = f"{file_size/(1024*1024):.2f}MB"
-                        elif file_size >= 1024:
-                            size_str = f"{file_size/1024:.2f}KB"
-                        else:
-                            size_str = f"{file_size}B"
+                        size_str = _format_file_size(file_size)
                         log_content_unused += f"    - {filename} ({size_str})\n"
                     log_content_unused += "\n"
 
@@ -2352,7 +2453,7 @@ def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
                 if errors:
                     log_content_unused += addon.getLocalizedString(31101) + "\n"
                     for error in errors:
-                        if "Error in" in error:
+                        if ERROR_IN_PREFIX in error:
                             parts = error.split(':')
                             if len(parts) > 1:
                                 path_part = parts[0].strip()
@@ -2382,8 +2483,8 @@ def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
             
             progress.update(start_prog, addon.getLocalizedString(31206))  # "Deleting thumbnails older than 30 days..."
             
-            deleted_older, locked_older, errors_older, total_size_freed_older, deleted_db_sizes, deleted_db_texture = clear_older_thumbnails_internal(
-                thumb_paths, progress, start_prog, end_prog, 30
+            deleted_older, locked_older, errors_older, total_size_freed_older, deleted_db_sizes, deleted_db_texture = _clear_older_thumbnails(
+                db_path, thumb_paths, progress, start_prog, end_prog, 30
             )
             
             # Calculate total size freed in MB
@@ -2399,12 +2500,7 @@ def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
                 log_content_older += addon.getLocalizedString(31164) + "\n"
                 for file_path, file_size in deleted_older:
                     filename = os.path.basename(file_path)
-                    if file_size >= 1024 * 1024:
-                        size_str = f"{file_size/(1024*1024):.2f}MB"
-                    elif file_size >= 1024:
-                        size_str = f"{file_size/1024:.2f}KB"
-                    else:
-                        size_str = f"{file_size}B"
+                    size_str = _format_file_size(file_size)
                     log_content_older += f"    - {filename} ({size_str})\n"
                 log_content_older += "\n"
 
@@ -2417,7 +2513,7 @@ def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
             if errors_older:
                 log_content_older += addon.getLocalizedString(31101) + "\n"
                 for error in errors_older:
-                    if "Error in" in error:
+                    if ERROR_IN_PREFIX in error:
                         parts = error.split(':')
                         if len(parts) > 1:
                             path_part = parts[0].strip()
@@ -2450,8 +2546,8 @@ def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
                 start_prog = 30
             end_prog = 100
             
-            deleted_orphan, locked_orphan, errors_orphan, total_size_freed_orphan, deleted_db_orphan = clear_orphan_artwork_internal(
-                progress, start_prog, end_prog
+            deleted_orphan, locked_orphan, errors_orphan, total_size_freed_orphan, deleted_db_orphan = _clear_orphan_artwork(
+                db_path, thumb_paths, progress, start_prog, end_prog
             )
             
             # Calculate total size freed in MB
@@ -2466,12 +2562,7 @@ def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
                 log_content_orphan += addon.getLocalizedString(31275) + "\n"  # "Deleted orphan artwork files:"
                 for file_path, file_size in deleted_orphan:
                     filename = os.path.basename(file_path)
-                    if file_size >= 1024 * 1024:
-                        size_str = f"{file_size/(1024*1024):.2f}MB"
-                    elif file_size >= 1024:
-                        size_str = f"{file_size/1024:.2f}KB"
-                    else:
-                        size_str = f"{file_size}B"
+                    size_str = _format_file_size(file_size)
                     log_content_orphan += f"    - {filename} ({size_str})\n"
                 log_content_orphan += "\n"
 
@@ -2503,7 +2594,7 @@ def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
             try:
                 update_last_run("clear_unused_thumbnails")
                 update_automatic_settings_log()
-                xbmc.log("OptiKlean: Updated automatic cleaning logs after manual execution", xbmc.LOGINFO)
+                xbmc.log(AUTOMATIC_LOG_UPDATED_MESSAGE, xbmc.LOGINFO)
             except Exception as e:
                 xbmc.log(f"OptiKlean: Error updating automatic logs: {str(e)}", xbmc.LOGERROR)
 
@@ -2562,7 +2653,7 @@ def clear_unused_thumbnails(auto_mode=False, skip_auto_delay=False):
             notification_msg = addon.getLocalizedString(31182)
         
         xbmc.log("OptiKlean DEBUG: Finished clear_unused_thumbnails function", xbmc.LOGINFO)
-        xbmcgui.Dialog().notification("OptiKlean", notification_msg, logo_path, 5000)
+        xbmcgui.Dialog().notification(ADDON_NAME, notification_msg, logo_path, 5000)
 
 
 def delete_folder(folder_path, progress_dialog=None):
@@ -2751,7 +2842,7 @@ def delete_folder(folder_path, progress_dialog=None):
 def clear_addon_leftovers(auto_mode=False, skip_auto_delay=False):
     start_time = time.perf_counter()
     progress = xbmcgui.DialogProgress()
-    progress.create("OptiKlean", addon.getLocalizedString(31197))  # "Reading addon information..."
+    progress.create(ADDON_NAME, addon.getLocalizedString(31197))  # "Reading addon information..."
     log_content = addon.getLocalizedString(31165) + "\n\n"
     xbmc.log("OptiKlean DEBUG: Starting clear_addon_leftovers", xbmc.LOGINFO)
 
@@ -2859,7 +2950,7 @@ def clear_addon_leftovers(auto_mode=False, skip_auto_delay=False):
             try:
                 update_last_run("clear_addon_leftovers")
                 update_automatic_settings_log()
-                xbmc.log("OptiKlean: Updated automatic cleaning logs after manual execution", xbmc.LOGINFO)
+                xbmc.log(AUTOMATIC_LOG_UPDATED_MESSAGE, xbmc.LOGINFO)
             except Exception as e:
                 xbmc.log(f"OptiKlean: Error updating automatic logs: {str(e)}", xbmc.LOGERROR)
 
@@ -2891,7 +2982,7 @@ def clear_addon_leftovers(auto_mode=False, skip_auto_delay=False):
 
     # Deletion process
     progress = xbmcgui.DialogProgress()
-    progress.create("OptiKlean", addon.getLocalizedString(31198))  # "Removing selected addons..."
+    progress.create(ADDON_NAME, addon.getLocalizedString(31198))  # "Removing selected addons..."
     total_selected = len(selected_display_names)
     deleted_folders = []
     locked_folders = []
@@ -2901,7 +2992,7 @@ def clear_addon_leftovers(auto_mode=False, skip_auto_delay=False):
 
     for index, display_name in enumerate(selected_display_names):
         if progress.iscanceled():
-            xbmc.log("OptiKlean DEBUG: Operation canceled by user", xbmc.LOGINFO)
+            xbmc.log(DEBUG_CANCELLED_MESSAGE, xbmc.LOGINFO)
             break
 
         folder_path = folder_map[display_name]
@@ -2986,7 +3077,7 @@ def clear_addon_leftovers(auto_mode=False, skip_auto_delay=False):
         try:
             update_last_run("clear_addon_leftovers")
             update_automatic_settings_log()
-            xbmc.log("OptiKlean: Updated automatic cleaning logs after manual execution", xbmc.LOGINFO)
+            xbmc.log(AUTOMATIC_LOG_UPDATED_MESSAGE, xbmc.LOGINFO)
         except Exception as e:
             xbmc.log(f"OptiKlean: Error updating automatic logs: {str(e)}", xbmc.LOGERROR)
 
@@ -3001,7 +3092,7 @@ def clear_kodi_packages(auto_mode=False, skip_auto_delay=False):
     
     start_time = time.perf_counter()
     progress = xbmcgui.DialogProgress()
-    progress.create("OptiKlean", addon.getLocalizedString(31199))  # "Preparing to clear packages..."
+    progress.create(ADDON_NAME, addon.getLocalizedString(31199))  # "Preparing to clear packages..."
     
     packages_path = xbmcvfs.translatePath("special://home/addons/packages")
     xbmc.log(f"OptiKlean DEBUG: Using packages path: {packages_path}", xbmc.LOGINFO)
@@ -3032,7 +3123,7 @@ def clear_kodi_packages(auto_mode=False, skip_auto_delay=False):
         log_content += error_msg + "\n"
         progress.close()
         write_log("clear_kodi_packages", log_content)
-        xbmcgui.Dialog().notification("OptiKlean", addon.getLocalizedString(31059), xbmcgui.NOTIFICATION_ERROR, 3000)  # "Packages folder not found"
+        xbmcgui.Dialog().notification(ADDON_NAME, addon.getLocalizedString(31059), xbmcgui.NOTIFICATION_ERROR, 3000)  # "Packages folder not found"
         return
     
     # Hybrid file listing with robust path handling
@@ -3040,7 +3131,7 @@ def clear_kodi_packages(auto_mode=False, skip_auto_delay=False):
         norm_path = xbmcvfs.translatePath(os.path.normpath(path))
         try:
             xbmc.log(f"OptiKlean DEBUG: Attempting xbmcvfs.listdir for: {norm_path}", xbmc.LOGINFO)
-            dirs, files = xbmcvfs.listdir(norm_path)
+            _, files = xbmcvfs.listdir(norm_path)
             zip_files = [f for f in files if f.lower().endswith('.zip')]
             xbmc.log(f"OptiKlean DEBUG: Found {len(zip_files)} zip files via xbmcvfs", xbmc.LOGINFO)
             return zip_files
@@ -3064,14 +3155,14 @@ def clear_kodi_packages(auto_mode=False, skip_auto_delay=False):
         progress.close()
         log_content += addon.getLocalizedString(31118) + "\n"  # "No package files found to delete."
         write_log("clear_kodi_packages", log_content)
-        xbmcgui.Dialog().notification("OptiKlean", addon.getLocalizedString(31060), logo_path, 3000)  # "No packages found"
+        xbmcgui.Dialog().notification(ADDON_NAME, addon.getLocalizedString(31060), logo_path, 3000)  # "No packages found"
         # Aggiorna i log delle impostazioni automatiche anche se non ci sono pacchetti
         xbmc.log(f"OptiKlean DEBUG: auto_mode={auto_mode}, clear_kodi_packages_enable={addon.getSettingBool('clear_kodi_packages_enable')}", xbmc.LOGINFO)
         if not auto_mode and addon.getSettingBool("clear_kodi_packages_enable"):
             try:
                 update_last_run("clear_kodi_packages")
                 update_automatic_settings_log()
-                xbmc.log("OptiKlean: Updated automatic cleaning logs after manual execution", xbmc.LOGINFO)
+                xbmc.log(AUTOMATIC_LOG_UPDATED_MESSAGE, xbmc.LOGINFO)
             except Exception as e:
                 xbmc.log(f"OptiKlean: Error updating automatic logs: {str(e)}", xbmc.LOGERROR)
         return
@@ -3118,7 +3209,7 @@ def clear_kodi_packages(auto_mode=False, skip_auto_delay=False):
     
     for index, package_file in enumerate(package_files):
         if progress.iscanceled():
-            xbmc.log("OptiKlean DEBUG: Operation canceled by user", xbmc.LOGINFO)
+            xbmc.log(DEBUG_CANCELLED_MESSAGE, xbmc.LOGINFO)
             log_content += "\n" + addon.getLocalizedString(31119) + "\n"
             break
             
@@ -3185,7 +3276,7 @@ def clear_kodi_packages(auto_mode=False, skip_auto_delay=False):
         summary = addon.getLocalizedString(31154)
     if locked_items:
         summary += f" ({len(locked_items)} locked)"
-    xbmcgui.Dialog().notification("OptiKlean", summary, logo_path, 3000)
+    xbmcgui.Dialog().notification(ADDON_NAME, summary, logo_path, 3000)
     xbmc.log(f"OptiKlean DEBUG: Package cleanup completed. {summary}", xbmc.LOGINFO)
 
     # Aggiorna i log delle impostazioni automatiche solo se:
@@ -3196,7 +3287,7 @@ def clear_kodi_packages(auto_mode=False, skip_auto_delay=False):
         try:
             update_last_run("clear_kodi_packages")
             update_automatic_settings_log()
-            xbmc.log("OptiKlean: Updated automatic cleaning logs after manual execution", xbmc.LOGINFO)
+            xbmc.log(AUTOMATIC_LOG_UPDATED_MESSAGE, xbmc.LOGINFO)
         except Exception as e:
             xbmc.log(f"OptiKlean: Error updating automatic logs: {str(e)}", xbmc.LOGERROR)
 
@@ -3223,7 +3314,7 @@ def optimize_databases(auto_mode=False, skip_auto_delay=False):
 
     start_time = time.perf_counter()
     # Percorsi base
-    std_db_path = xbmcvfs.translatePath("special://database/")
+    std_db_path = xbmcvfs.translatePath(DATABASE_SPECIAL_PATH)
     backup_path_setting = addon.getSetting("backup_path")
     # Se backup_path configurato → {backup_path}/db_backups/
     # Se vuoto → {addon_profile}/db_backups/
@@ -3250,7 +3341,7 @@ def optimize_databases(auto_mode=False, skip_auto_delay=False):
 
     # Progress dialog
     progress = xbmcgui.DialogProgress()
-    progress.create("OptiKlean", addon.getLocalizedString(31200))  # "Preparing database optimization..."
+    progress.create(ADDON_NAME, addon.getLocalizedString(31200))  # "Preparing database optimization..."
     
     # Create backup directory if it doesn't exist
     try:
@@ -3333,7 +3424,7 @@ def optimize_databases(auto_mode=False, skip_auto_delay=False):
             xbmc.log(f"OptiKlean DEBUG: Exception restoring backup: {db_identifier} - {str(e)}", xbmc.LOGERROR)
             return False, str(e)
 
-    def cleanup_backup_file(backup_file_path, db_identifier):
+    def cleanup_backup_file(backup_file_path, _db_identifier):
         """
         Rimuove il file di backup se non più necessario
         Returns: (success, error_message)
@@ -3389,7 +3480,7 @@ def optimize_databases(auto_mode=False, skip_auto_delay=False):
         progress.close()
         log_content += addon.getLocalizedString(31123) + "\n"
         write_log("optimize_databases", log_content)
-        xbmcgui.Dialog().notification("OptiKlean", addon.getLocalizedString(31063), logo_path, 3000)
+        xbmcgui.Dialog().notification(ADDON_NAME, addon.getLocalizedString(31063), logo_path, 3000)
         return
 
     # Teniamo traccia dei database elaborati per la verifica successiva
@@ -3523,7 +3614,7 @@ def optimize_databases(auto_mode=False, skip_auto_delay=False):
             xbmc.log("OptiKlean DEBUG: User chose to restore corrupted database backups", xbmc.LOGINFO)
             
             progress = xbmcgui.DialogProgress()
-            progress.create("OptiKlean", addon.getLocalizedString(31085))
+            progress.create(ADDON_NAME, addon.getLocalizedString(31085))
             
             restored_databases = []
             restore_errors = []
@@ -3577,7 +3668,7 @@ def optimize_databases(auto_mode=False, skip_auto_delay=False):
                 notification_msg = addon.getLocalizedString(31069).format(count=len(restored_databases))
                 if restore_errors:
                     notification_msg += f" ({len(restore_errors)} errors)"
-                xbmcgui.Dialog().notification("OptiKlean", notification_msg, logo_path, 5000)
+                xbmcgui.Dialog().notification(ADDON_NAME, notification_msg, logo_path, 5000)
         else:
             # L'utente ha scelto di non ripristinare
             xbmc.log("OptiKlean DEBUG: User chose not to restore corrupted database backups", xbmc.LOGINFO)
@@ -3708,7 +3799,7 @@ def optimize_databases(auto_mode=False, skip_auto_delay=False):
     else:
         notification_msg = addon.getLocalizedString(31080)
     
-    xbmcgui.Dialog().notification("OptiKlean", notification_msg, logo_path, 5000)
+    xbmcgui.Dialog().notification(ADDON_NAME, notification_msg, logo_path, 5000)
 
     # Aggiorna i log delle impostazioni automatiche solo se:
     # 1. Non è in modalità automatica
@@ -3717,7 +3808,7 @@ def optimize_databases(auto_mode=False, skip_auto_delay=False):
         try:
             update_last_run("optimize_databases")
             update_automatic_settings_log()
-            xbmc.log("OptiKlean: Updated automatic cleaning logs after manual execution", xbmc.LOGINFO)
+            xbmc.log(AUTOMATIC_LOG_UPDATED_MESSAGE, xbmc.LOGINFO)
         except Exception as e:
             xbmc.log(f"OptiKlean: Error updating automatic logs: {str(e)}", xbmc.LOGERROR)
 
@@ -3756,6 +3847,13 @@ def show_backup_dialog():
         backup_restore.perform_backup(mode)
 
 
+def _show_support_url_dialog(url, heading_id=30307):
+    xbmcgui.Dialog().ok(
+        heading=addon.getLocalizedString(heading_id),
+        message=f"{addon.getLocalizedString(30402)}\n\n{url}"
+    )
+
+
 def show_support():
     """Mostra la finestra di dialogo personalizzata per il supporto"""
     telegram_url = "https://t.me/ItalianSpaghettiGeeks"
@@ -3780,11 +3878,11 @@ def show_support():
             except Exception as e:
                 xbmc.log(f"OptiKlean: Error initializing support dialog - {str(e)}", xbmc.LOGERROR)
         
-        def onClick(self, controlId):
+        def onClick(self, control_id):
             try:
-                if controlId == 9000:  # Pulsante Chiudi
+                if control_id == 9000:  # Pulsante Chiudi
                     self.close()
-                elif controlId == 9003:  # Pulsante URL Telegram
+                elif control_id == 9003:  # Pulsante URL Telegram
                     self.open_telegram_url()
             except Exception as e:
                 xbmc.log(f"OptiKlean: Error in support dialog click handler - {str(e)}", xbmc.LOGERROR)
@@ -3818,21 +3916,16 @@ def show_support():
                     xbmc.executebuiltin(f'System.Exec("open {browser_url}")')
                 elif xbmc.getCondVisibility("System.Platform.IOS"):
                     # iOS: limitazioni di sicurezza - mostra dialog con URL
-                    xbmcgui.Dialog().ok(
-                        heading=addon.getLocalizedString(30307),  # "Support"
-                        message=f"{addon.getLocalizedString(30402)}\n\n{browser_url}"  # "Visit support group:" + URL
-                    )
+                    _show_support_url_dialog(browser_url)
                     return
                 elif xbmc.getCondVisibility("System.Platform.Android"):
                     # Android: usa intent browser come fallback
                     xbmc.executebuiltin(f'StartAndroidActivity("","android.intent.action.VIEW","","{browser_url}")')
-                else:
-                    # Fallback generico: mostra una notifica con l'URL
-                    xbmcgui.Dialog().ok(
-                        heading=addon.getLocalizedString(30307),  # "Support"
-                        message=f"{addon.getLocalizedString(30402)}\n\n{browser_url}"  # "Visit support group:" + URL
-                    )
                     return
+
+                # Fallback generico: mostra una notifica con l'URL
+                _show_support_url_dialog(browser_url)
+                return
                 
             except Exception as e:
                 xbmc.log(f"OptiKlean: Error opening Telegram URL: {str(e)}", xbmc.LOGERROR)
@@ -3856,10 +3949,7 @@ def show_support():
     except Exception as e:
         xbmc.log(f"OptiKlean: Error showing support dialog - {str(e)}", xbmc.LOGERROR)
         # Fallback alla dialog standard
-        xbmcgui.Dialog().ok(
-            heading=addon.getLocalizedString(30307),  # "Support"
-            message=f"{addon.getLocalizedString(30402)}\n\n{telegram_url}"  # "Visit support group:" + URL
-        )
+        _show_support_url_dialog(telegram_url)
 
 
 # Funzione per visualizzare i log
@@ -3997,7 +4087,7 @@ def run_automatic_maintenance(skip_auto_delay=False):
     # Show notification if any action was executed
     if actions_executed:
         msg = "Auto-clean: " + ", ".join(actions_executed)
-        xbmc.executebuiltin(f'Notification(OptiKlean, {msg}, 4000)')
+        xbmcgui.Dialog().notification(ADDON_NAME, msg, logo_path, 4000)
         xbmc.log(f"OptiKlean: Completed cleanings - {msg}", xbmc.LOGINFO)
         
         # Aggiorna il log delle impostazioni dopo le pulizie
@@ -4012,8 +4102,8 @@ def run_automatic_maintenance(skip_auto_delay=False):
 class BaseWindow(xbmcgui.WindowXML):
     """Classe base comune per le finestre dell'addon con funzioni condivise"""
     
-    def __init__(self, xmlFilename, scriptPath, defaultSkin='default', defaultRes='1080i'):
-        super().__init__(xmlFilename, scriptPath, defaultSkin, defaultRes)
+    def __init__(self, xml_filename, script_path, default_skin='default', default_res='1080i'):
+        super().__init__(xml_filename, script_path, default_skin, default_res)
     
     def onAction(self, action):
         """Gestisce le azioni comuni (come ESC, Back, etc.)"""
@@ -4024,8 +4114,8 @@ class BaseWindow(xbmcgui.WindowXML):
 class DetailsWindow(BaseWindow):
     """Classe per gestire la finestra dei dettagli delle cartelle"""
     
-    def __init__(self, xmlFilename, scriptPath, defaultSkin='default', defaultRes='1080i'):
-        super().__init__(xmlFilename, scriptPath, defaultSkin, defaultRes)
+    def __init__(self, xml_filename, script_path, default_skin='default', default_res='1080i'):
+        super().__init__(xml_filename, script_path, default_skin, default_res)
         self.folder_path = ""
         self.exclude_folders = []
         self.total_size = 0
@@ -4169,27 +4259,29 @@ class DetailsWindow(BaseWindow):
                 xbmcgui.Dialog().ok(addon.getLocalizedString(31168), addon.getLocalizedString(31169))
                 self.close()
     
-    def onClick(self, controlId):
+    def onClick(self, control_id):
         """Gestisce i click sui controlli"""
-        if controlId == 9000:  # Close button (X)
+        if control_id == 9000:  # Close button (X)
             self.close()
 
 
 class AllInOnePanelWindow(BaseWindow):
     """Classe per gestire la finestra All in One Panel"""
     
-    def __init__(self, xmlFilename, scriptPath, defaultSkin='default', defaultRes='1080i'):
-        super().__init__(xmlFilename, scriptPath, defaultSkin, defaultRes)
+    def __init__(self, xml_filename, script_path, default_skin='default', default_res='1080i'):
+        super().__init__(xml_filename, script_path, default_skin, default_res)
         xbmc.log("OptiKlean: AllInOnePanelWindow initialized", xbmc.LOGINFO)
         
         # Inizializza i percorsi
-        self.db_path = xbmcvfs.translatePath("special://database/")
+        self.db_path = xbmcvfs.translatePath(DATABASE_SPECIAL_PATH)
         self.thumbnails_path = xbmcvfs.translatePath("special://profile/thumbnails/")
         self.addon_dir = xbmcvfs.translatePath("special://home/addons/")
         self.addon_data_dir = xbmcvfs.translatePath("special://profile/addon_data/")
         self.packages_path = xbmcvfs.translatePath("special://home/addons/packages/")
         self.temp_path = xbmcvfs.translatePath("special://home/addons/temp/")
         self.temp_folder = xbmcvfs.translatePath("special://temp/")
+        self._sizes_cache = None
+        self._sizes_cache_time = 0
     
     def calculate_unused_thumbnails_size(self):
         """Calcola la dimensione delle thumbnails inutilizzate analizzando il database delle texture"""
@@ -4203,13 +4295,12 @@ class AllInOnePanelWindow(BaseWindow):
             return 0
         
         try:
-            import sqlite3
             conn = sqlite3.connect(texture_db)
             cursor = conn.cursor()
             
             # Query per ottenere tutte le thumbnail dal database
             cursor.execute("SELECT cachedurl FROM texture")
-            db_thumbs = set(row[0] for row in cursor.fetchall())
+            db_thumbs = {row[0] for row in cursor.fetchall()}
             conn.close()
             
             # Controlla thumbnails sul disco (self.thumbnails_path è già special://thumbnails/)
@@ -4295,8 +4386,14 @@ class AllInOnePanelWindow(BaseWindow):
         
         return total_size
     
-    def calculate_sizes(self):
+    def calculate_sizes(self, force_refresh=False):
         """Calcola le dimensioni di tutti i componenti pulibili"""
+        if force_refresh:
+            self._sizes_cache = None
+            self._sizes_cache_time = 0
+        elif self._sizes_cache and (time.time() - self._sizes_cache_time) < SIZE_CACHE_TTL_SECONDS:
+            return dict(self._sizes_cache)
+
         sizes = {
             'addons': 0,
             'addon_data': 0,
@@ -4367,17 +4464,17 @@ class AllInOnePanelWindow(BaseWindow):
             xbmc.log(f"OptiKlean: Error in calculate_sizes: {str(e)}", xbmc.LOGERROR)
         
         # Salva in cache
-        import time as time_module
         self._sizes_cache = sizes
-        self._sizes_cache_time = time_module.time()
+        self._sizes_cache_time = time.time()
         
         return sizes
 
     def refresh_data(self):
         """Ricalcola e aggiorna tutti i valori nella UI"""
+        progress = None
         try:
             progress = xbmcgui.DialogProgress()
-            progress.create("OptiKlean", addon.getLocalizedString(31202))  # "Refreshing data..."
+            progress.create(ADDON_NAME, addon.getLocalizedString(31202))  # "Refreshing data..."
             
             progress.update(10, addon.getLocalizedString(31215))  # "Preparing to recalculate sizes..."
             
@@ -4411,14 +4508,14 @@ class AllInOnePanelWindow(BaseWindow):
             
         except Exception as e:
             xbmc.log(f"OptiKlean: Error in refresh_data: {str(e)}", xbmc.LOGERROR)
-            if 'progress' in locals():
+            if progress:
                 progress.close()
 
     def show_addons_details(self):
         """Mostra la finestra dei dettagli degli addons"""
         try:
             details_window = DetailsWindow(
-                'DetailsWindow.xml',
+                DETAILS_WINDOW_XML,
                 addon.getAddonInfo('path'),
                 'default',
                 '1080i'
@@ -4440,7 +4537,7 @@ class AllInOnePanelWindow(BaseWindow):
         """Mostra la finestra dei dettagli dell'addon data"""
         try:
             details_window = DetailsWindow(
-                'DetailsWindow.xml',
+                DETAILS_WINDOW_XML,
                 addon.getAddonInfo('path'),
                 'default',
                 '1080i'
@@ -4462,7 +4559,7 @@ class AllInOnePanelWindow(BaseWindow):
         """Mostra la finestra dei dettagli dei packages"""
         try:
             details_window = DetailsWindow(
-                'DetailsWindow.xml',
+                DETAILS_WINDOW_XML,
                 addon.getAddonInfo('path'),
                 'default',
                 '1080i'
@@ -4542,35 +4639,35 @@ class AllInOnePanelWindow(BaseWindow):
         except Exception as e:
             xbmc.log(f"OptiKlean: Error in AllInOnePanelWindow.onInit: {str(e)}", xbmc.LOGERROR)
     
-    def onClick(self, controlId):
+    def onClick(self, control_id):
         """Gestisce i click sui controlli"""
         try:
-            if controlId == 9000:  # Close button
+            if control_id == 9000:  # Close button
                 self.close()
             
-            elif controlId == 101:  # Details Addons button (icona lente)
+            elif control_id == 101:  # Details Addons button (icona lente)
                 self.show_addons_details()
-            elif controlId == 102:  # Details Addon Data button (icona lente)
+            elif control_id == 102:  # Details Addon Data button (icona lente)
                 self.show_addon_data_details()
-            elif controlId == 103:  # Details Packages button (icona lente)
+            elif control_id == 103:  # Details Packages button (icona lente)
                 self.show_packages_details()
             
             # mantieni anche i vecchi id se usati altrove
-            elif controlId == 8001:  # Addons details button
+            elif control_id == 8001:  # Addons details button
                 self.show_addons_details()
-            elif controlId == 8003:  # Addon data details button
+            elif control_id == 8003:  # Addon data details button
                 self.show_addon_data_details()
-            elif controlId == 8005:  # Packages details button
+            elif control_id == 8005:  # Packages details button
                 self.show_packages_details()
             
-            elif controlId == 201:  # Clean all button
+            elif control_id == 201:  # Clean all button
                 if xbmcgui.Dialog().yesno(
                     addon.getLocalizedString(31172),  # "Confirmation"
                     addon.getLocalizedString(31201)   # "Running full cleanup..."
                 ):
                     # Run all cleanup tasks
                     progress = xbmcgui.DialogProgress()
-                    progress.create("OptiKlean", addon.getLocalizedString(31201))
+                    progress.create(ADDON_NAME, addon.getLocalizedString(31201))
                     
                     try:
                         # Execute cleanup functions
@@ -4602,12 +4699,12 @@ class AllInOnePanelWindow(BaseWindow):
                             5000
                         )
                     finally:
-                        if 'progress' in locals():
+                        if 'progress' in locals() and progress:
                             progress.close()
                             
-            elif controlId == 8021:  # Refresh button
+            elif control_id == 8021:  # Refresh button
                 self.refresh_data()
-            elif controlId == 202:  # Restart Kodi button
+            elif control_id == 202:  # Restart Kodi button
                 if xbmcgui.Dialog().yesno(
                     addon.getLocalizedString(31172),  # "Confirmation"
                     addon.getLocalizedString(31173)   # "Would you like to restart Kodi now?"
@@ -4628,7 +4725,7 @@ def show_all_in_one_panel():
         xml_full_path = os.path.join(addon_path, "resources", "skins", "default", "1080i", xml_file)
         if not xbmcvfs.exists(xml_full_path):
             xbmc.log(f"OptiKlean ERROR: File XML non trovato: {xml_full_path}", xbmc.LOGERROR)
-            xbmcgui.Dialog().notification("OptiKlean", addon.getLocalizedString(31170), xbmcgui.NOTIFICATION_ERROR, 5000)
+            xbmcgui.Dialog().notification(ADDON_NAME, addon.getLocalizedString(31170), xbmcgui.NOTIFICATION_ERROR, 5000)
             return
         
         xbmc.log(f"OptiKlean: Aprendo finestra XML da: {xml_full_path}", xbmc.LOGINFO)
@@ -4648,38 +4745,46 @@ def open_addon_settings():
     addon.openSettings()
 
 
-# Gestione dei parametri per eseguire l'azione selezionata
-if __name__ == '__main__':
+def _parse_action_params():
+    if len(sys.argv) <= 2 or not sys.argv[2].startswith('?'):
+        return {}
+    return {
+        pair.split('=')[0]: pair.split('=')[1]
+        for pair in sys.argv[2][1:].split('&')
+        if '=' in pair
+    }
+
+
+def _run_requested_action(action):
+    action_handlers = {
+        "clear_cache_and_temp": clear_cache_and_temp,
+        "clear_unused_thumbnails": clear_unused_thumbnails,
+        "clear_addon_leftovers": clear_addon_leftovers,
+        "clear_kodi_packages": clear_kodi_packages,
+        "optimize_databases": optimize_databases,
+        "all_in_one_panel": show_all_in_one_panel,
+        "backup_and_restore": show_backup_dialog,
+        "view_logs": view_logs,
+        "show_support": show_support,
+        "open_addon_settings": open_addon_settings,
+    }
+    action_handlers.get(action, show_menu)()
+
+
+def _run_entrypoint():
     # Controlla per il parametro "autorun" da service.py (fallback)
-    if len(sys.argv) > 1 and sys.argv[1] == 'autorun':
+    is_autorun = len(sys.argv) > 1 and sys.argv[1] == 'autorun'
+    if _handle_restart_pending_mode(interactive=not is_autorun):
+        return
+
+    if is_autorun:
         xbmc.log("OptiKlean: Rilevato parametro autorun", xbmc.LOGINFO)
         run_automatic_maintenance()
     else:
-        # Elaborazione normale dei parametri del menu
-        params = {}
-        if len(sys.argv) > 2 and sys.argv[2].startswith('?'):
-            params = dict(pair.split('=') for pair in sys.argv[2][1:].split('&') if '=' in pair)
-        action = params.get("action")
-        
-        if action == "clear_cache_and_temp":
-            clear_cache_and_temp()
-        elif action == "clear_unused_thumbnails":
-            clear_unused_thumbnails()
-        elif action == "clear_addon_leftovers":
-            clear_addon_leftovers()
-        elif action == "clear_kodi_packages":
-            clear_kodi_packages()
-        elif action == "optimize_databases":
-            optimize_databases()
-        elif action == "all_in_one_panel":
-            show_all_in_one_panel()
-        elif action == "backup_and_restore":
-            show_backup_dialog()
-        elif action == "view_logs":
-            view_logs()
-        elif action == "show_support":
-            show_support()
-        elif action == "open_addon_settings":
-            open_addon_settings()
-        else:
-            show_menu()
+        action = _parse_action_params().get("action")
+        _run_requested_action(action)
+
+
+# Gestione dei parametri per eseguire l'azione selezionata
+if __name__ == '__main__':
+    _run_entrypoint()
