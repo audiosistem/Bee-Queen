@@ -184,7 +184,7 @@ class tvshows:
 
 
     def search_term_menu(self, select):
-        navigator.navigator().addDirectoryItem('New Search...', 'tvshows_searchterm&select=%s' % select, 'search.png', 'DefaultTVShows.png')
+        navigator.navigator().addDirectoryItem('Νέα αναζήτηση...', 'tvshows_searchterm&select=%s' % select, 'search.png', 'DefaultTVShows.png')
         dbcon = database.connect(control.searchFile)
         dbcur = dbcon.cursor()
         try:
@@ -1173,7 +1173,7 @@ class tvshows:
         indicators = playcount.getTVShowIndicators()#refresh=True) if action == 'tvshows' else playcount.getTVShowIndicators()
         watchedMenu = '[I]Watched in Trakt[/I]' if trakt.getTraktIndicatorsInfo() == True else '[I]Watched in Scrubs[/I]'
         unwatchedMenu = '[I]Unwatched in Trakt[/I]' if trakt.getTraktIndicatorsInfo() == True else '[I]Unwatched in Scrubs[/I]'
-        nextMenu = '[I]Next Page[/I]'
+        nextMenu = '[I]Επόμενη Σελίδα[/I]'
         try:
             favitems = favorites.getFavorites('tvshow')
             favitems = [i[0] for i in favitems]

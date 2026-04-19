@@ -184,7 +184,7 @@ class movies:
 
 
     def search_term_menu(self, select):
-        navigator.navigator().addDirectoryItem('New Search...', 'movies_searchterm&select=%s' % select, 'search.png', 'DefaultMovies.png')
+        navigator.navigator().addDirectoryItem('Νέα αναζήτηση...', 'movies_searchterm&select=%s' % select, 'search.png', 'DefaultMovies.png')
         dbcon = database.connect(control.searchFile)
         dbcur = dbcon.cursor()
         try:
@@ -1166,7 +1166,7 @@ class movies:
         playbackMenu = 'Select Source' if control.setting('hosts.mode') == '2' else 'Auto Play'
         watchedMenu = 'Watched in Trakt' if trakt.getTraktIndicatorsInfo() == True else 'Watched in Scrubs'
         unwatchedMenu = 'Unwatched in Trakt' if trakt.getTraktIndicatorsInfo() == True else 'Unwatched in Scrubs'
-        nextMenu = '[I]Next Page[/I]'
+        nextMenu = '[I]Επόμενη Σελίδα[/I]'
         try:
             favitems = favorites.getFavorites('movie')
             favitems = [i[0] for i in favitems]

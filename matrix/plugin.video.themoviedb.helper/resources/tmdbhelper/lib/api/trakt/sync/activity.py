@@ -1,15 +1,18 @@
-from tmdbhelper.lib.files.ftools import cached_property
+from tmdbhelper.lib.api.trakt.sync.property_mixins import SyncDataParentProperties
+from jurialmunkey.ftools import cached_property
 from tmdbhelper.lib.files.futils import json_loads as data_loads
 from tmdbhelper.lib.files.futils import json_dumps as data_dumps
 from tmdbhelper.lib.addon.tmdate import set_timestamp, get_timestamp
-from tmdbhelper.lib.addon.consts import LASTACTIVITIES_DATA
+from tmdbhelper.lib.addon.consts import LASTACTIVITIES_DATA, LASTACTIVITIES_EXPIRY
 from tmdbhelper.lib.files.locker import mutexlock
 
 
-LASTACTIVITIES_EXPIRY = 600
+class SyncLastActivitiesSyndDataProperties(SyncDataParentProperties):
+    def __init__(self, instance_syncdata):
+        self.instance_syncdata = instance_syncdata
 
 
-class SyncLastActivities:
+class SyncLastActivities(SyncLastActivitiesSyndDataProperties):
     @property
     def mutex_lockname(self):
         return f'{self.cache._db_file}.sync_last_activities.lockfile'
@@ -29,21 +32,6 @@ class SyncLastActivities:
     @cached_property
     def json_sync(self):
         return self.get_json_sync()
-
-    def __init__(self, class_instance_syncdata):
-        self.class_instance_syncdata = class_instance_syncdata
-
-    @property
-    def cache(self):
-        return self.class_instance_syncdata.cache
-
-    @property
-    def window(self):
-        return self.class_instance_syncdata.window
-
-    @property
-    def get_response_json(self):
-        return self.class_instance_syncdata.get_response_json
 
     def get_json(self):
         return self.json_prop or self.json_data or {}

@@ -1,4 +1,5 @@
 from tmdbhelper.lib.addon.thread import SafeThread
+from jurialmunkey.ftools import cached_property
 
 
 CRONJOB_POLL_TIME = 600
@@ -15,47 +16,59 @@ class CronJobMonitor(SafeThread):
         self.update_monitor = parent.update_monitor
 
     def _on_startup(self):
-        self._do_delete_old_databases()
         self._do_recache_kodidb()
         self._do_trakt_authorization()
 
     def _on_poll(self):
+        self._do_database_maintenance()
+        self._do_delete_old_databases()
         self._do_library_update_check()
-        self._do_reset_trakt_lastactivities()
+        self._do_delete_old_log_files()
 
-    @property
+    @cached_property
     def trakt_api(self):
-        try:
-            return self._trakt_api
-        except AttributeError:
-            from tmdbhelper.lib.api.trakt.api import TraktAPI
-            self._trakt_api = TraktAPI()
-            return self._trakt_api
+        from tmdbhelper.lib.api.trakt.api import TraktAPI
+        return TraktAPI()
 
-    @staticmethod
-    def _do_delete_old_databases():
-        from tmdbhelper.lib.script.method.maintenance import clean_old_databases
-        clean_old_databases()
+    @cached_property
+    def database_maintenance(self):
+        from tmdbhelper.lib.script.method.maintenance import DatabaseMaintenance
+        return DatabaseMaintenance()
 
-    @staticmethod
-    def _do_recache_kodidb():
-        from tmdbhelper.lib.script.method.maintenance import recache_kodidb
-        recache_kodidb(notification=False)
+    def _do_database_maintenance(self):
+        self.database_maintenance.vacuum()
+
+    def _do_delete_old_databases(self):
+        self.database_maintenance.delete_legacy_folders()
+
+    def _do_recache_kodidb(self):
+        self.database_maintenance.recache_kodidb(notification=False)
+
+    def _do_delete_old_log_files_in_folder(self, folder, regex, days=-7):
+        from tmdbhelper.lib.files.futils import get_files_in_folder, get_write_path, delete_file
+        from tmdbhelper.lib.addon.tmdate import get_todays_date
+        date = get_todays_date(str_fmt="%Y-%m-%d", days=days)
+        for file in get_files_in_folder(get_write_path(folder, make_dir=False), regex=regex):
+            if file > date:
+                continue
+            delete_file(folder, file)
+
+    def _do_delete_old_log_files(self):
+        for folder, regex in (
+            ('log_tagger', r".*\.json$"),
+            ('log_library', r".*\.json$"),
+            ('timer_report', r".*\.txt$"),
+        ):
+            self._do_delete_old_log_files_in_folder(folder, regex)
 
     def _do_trakt_authorization(self):
-        from jurialmunkey.parser import boolean
         from jurialmunkey.window import get_property
-        self.trakt_api.authorize(confirmation=True)
+        self.trakt_api.authorize()
         self.update_monitor.waitForAbort(1)
-        if not boolean(get_property('TraktIsAuth')):
+        if not get_property('TraktIsAuth', is_type=float):
             return
         from tmdbhelper.lib.script.method.trakt import get_stats
         get_stats()
-
-    def _do_reset_trakt_lastactivities(self):
-        from jurialmunkey.window import get_property
-        from tmdbhelper.lib.addon.consts import LASTACTIVITIES_DATA
-        get_property(LASTACTIVITIES_DATA, clear_property=True)
 
     def _do_library_update(self):
         from tmdbhelper.lib.addon.plugin import executebuiltin

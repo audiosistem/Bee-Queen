@@ -5,7 +5,7 @@ from tmdbhelper.lib.monitor.cronjob import CronJobMonitor
 from tmdbhelper.lib.monitor.player import PlayerMonitor
 from tmdbhelper.lib.monitor.update import UpdateMonitor
 from tmdbhelper.lib.monitor.imgmon import ImagesMonitor
-from tmdbhelper.lib.monitor.poller import Poller, POLL_MIN_INCREMENT, POLL_MID_INCREMENT
+from tmdbhelper.lib.monitor.poller import Poller, POLL_MIN_INCREMENT, POLL_MAX_INCREMENT
 from tmdbhelper.lib.addon.thread import SafeThread
 from threading import Lock
 
@@ -21,19 +21,24 @@ class ServiceMonitor(Poller):
         self.update_monitor = UpdateMonitor()
         self.player_monitor = PlayerMonitor()
 
-        self.cron_job = CronJobMonitor(self, update_hour=get_setting('library_autoupdate_hour', 'int'))
-        self.cron_job.setName('Cron Thread')
-        self.cron_job.start()
-
-        self.images_monitor = ImagesMonitor(self)
-        self.images_monitor.setName('Image Thread')
-        self.images_monitor.start()
+        self.run_cron_job()
+        self.run_images_monitor()
 
         self.listitem_funcs = ListItemMonitorFunctions(self)
 
         get_property('ServiceStarted', 'True')
 
         self.poller()
+
+    def run_cron_job(self):
+        self.cron_job = CronJobMonitor(self, update_hour=get_setting('library_autoupdate_hour', 'int'))
+        self.cron_job.setName('Cron Thread')
+        self.cron_job.start()
+
+    def run_images_monitor(self):
+        self.images_monitor = ImagesMonitor(self)
+        self.images_monitor.setName('Image Thread')
+        self.images_monitor.start()
 
     def _on_listitem(self):
         self.listitem_funcs.on_listitem()
@@ -43,27 +48,31 @@ class ServiceMonitor(Poller):
         self.listitem_funcs.on_scroll()
         self._on_idle(POLL_MIN_INCREMENT)
 
-    def _on_player(self):
-        if self.player_monitor.isPlayingVideo():
-            self.player_monitor.update_time()
-            self.player_monitor.update_artwork()
+    def _on_fullscreen(self):
+        self.player_monitor.on_fullscreen()
+        self._on_idle(POLL_MAX_INCREMENT)
 
     def _on_context(self):
         self.listitem_funcs.on_context_listitem()
-        self._on_idle(POLL_MID_INCREMENT)
+        self._on_idle(POLL_MIN_INCREMENT)
 
     def _on_clear(self):
         """
         IF we've got properties to clear lets clear them and then jump back in the loop
-        Otherwise we should sit for a second so we aren't constantly polling
         """
-        if self.listitem_funcs.properties or self.listitem_funcs.index_properties:
-            return self.listitem_funcs.clear_properties()
-        self._on_idle(POLL_MID_INCREMENT)
+        self.listitem_funcs.reset_current_item()  # Reset current item so that it will retrigger lookup on return to previous window
+        self.listitem_funcs.clear_properties()
+        self._on_idle(POLL_MIN_INCREMENT)
 
     def _on_exit(self):
-        self.cron_job.exit = True
-        self.images_monitor.exit = True
+        try:
+            self.cron_job.exit = True
+        except AttributeError:
+            pass
+        try:
+            self.images_monitor.exit = True
+        except AttributeError:
+            pass
         if not self.update_monitor.abortRequested():
             get_property('ServiceStarted', clear_property=True)
             get_property('ServiceStop', clear_property=True)

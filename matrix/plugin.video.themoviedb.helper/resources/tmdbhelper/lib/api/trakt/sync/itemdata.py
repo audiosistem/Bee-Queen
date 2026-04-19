@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from tmdbhelper.lib.files.ftools import cached_property
+from jurialmunkey.ftools import cached_property
 
 
 class SyncItemData:
@@ -57,16 +57,16 @@ class SyncItemData:
             return 'movie'
 
     """
-    trakt_id
+    trakt_slug
     """
     @cached_property
-    def trakt_id(self):
-        return self.get_trakt_id()
+    def trakt_slug(self):
+        return self.get_trakt_slug()
 
-    def get_trakt_id(self):
+    def get_trakt_slug(self):
         if self.parent_item_type not in self.item:
             return
-        return self.item[self.parent_item_type]['ids']['trakt']
+        return self.item[self.parent_item_type]['ids']['slug']
 
     """
     item_id
@@ -268,6 +268,16 @@ class SyncItemData:
         return self.item.get('next_episode_id')
 
     """
+    next_episode_aired_at
+    """
+    @cached_property
+    def next_episode_aired_at(self):
+        return self.get_next_episode_aired_at()
+
+    def get_next_episode_aired_at(self):
+        return self.item.get('next_episode_aired_at')
+
+    """
     upnext_episode_id
     """
     @cached_property
@@ -285,10 +295,13 @@ class SyncItemData:
         return self.get_premiered()
 
     def get_premiered(self):
-        if 'show' in self.item.keys():
-            return self.item['show'].get('first_aired')
-        if 'movie' in self.item.keys():
-            return self.item['movie'].get('released')
+        try:
+            if 'show' in self.item.keys():
+                return self.item['show']['first_aired'][:10]
+            if 'movie' in self.item.keys():
+                return self.item['movie']['released'][:10]
+        except (AttributeError, KeyError, TypeError):
+            return
 
     """
     year
@@ -412,31 +425,19 @@ class SyncItem:
 
     _additional_keys = (
         'item_type', 'tmdb_type', 'tmdb_id', 'season_number', 'episode_number',
-        'trakt_id', 'premiered', 'year', 'title', 'status', 'country', 'certification', 'runtime',
+        'trakt_slug', 'premiered', 'year', 'title', 'status', 'country', 'certification', 'runtime',
         'trakt_rating', 'trakt_votes',
     )
 
     def __init__(self, item_type, meta, keys, key_prefix=None):
-        self._meta = meta
-        self._base_keys = keys
-        self._item_type = item_type
-        self._key_prefix = key_prefix
+        self.meta = meta
+        self.base_keys = keys
+        self.item_type = item_type
+        self.key_prefix = key_prefix
 
-    @property
-    def meta(self):
-        return self._meta
-
-    @property
-    def item_type(self):
-        return self._item_type
-
-    @property
-    def key_prefix(self):
-        return self._key_prefix
-
-    @property
-    def base_keys(self):
-        return self._base_keys
+    @cached_property
+    def data(self):
+        return self.get_data()
 
     @property
     def additional_keys(self):
@@ -455,10 +456,6 @@ class SyncItem:
     @property
     def table_keys(self):
         return (*self.base_table_keys, *self.additional_keys)
-
-    @cached_property
-    def data(self):
-        return self.get_data()
 
     def get_data(self):
         data = {}
@@ -517,4 +514,3 @@ class SyncItem:
             data[item_data.item_id] = [getattr(item_data, k) for k in self.keys]
 
         return data
-
