@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="service.subtitles.wyzie" name="Wyzie Subtitles" version="1.1.1" provider-name="Wyzie">
+    <requires>
+        <import addon="xbmc.python" version="3.0.1"/>
+        <import addon="script.module.requests" version="2.25.1"/>
+        <import addon="resource.images.languageflags.colour" version="0.0.1"/>
+    </requires>
+    <extension point="xbmc.subtitle.module" library="service.py" languages="Romanian"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="ro">Subtitrări Wyzie (IMDB/TMDB)</summary>
+        <platform>all</platform>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
+    </extension>
+</addon>
