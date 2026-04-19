@@ -8,16 +8,6 @@ get_timestamp = jurialmunkey_tmdate.get_timestamp
 set_timestamp = jurialmunkey_tmdate.set_timestamp
 
 
-def get_time_difference(timestamp=None):
-    now = time.time()
-    tmp = timestamp or now
-    return tmp - now
-
-
-def get_datetime_from_epoch(timestamp_in_seconds_from_epoch):
-    return datetime.datetime.fromtimestamp(timestamp_in_seconds_from_epoch)
-
-
 def get_datetime_combine(*args, **kwargs):
     return datetime.datetime.combine(*args, **kwargs)
 
@@ -32,10 +22,6 @@ def get_datetime_utcnow_isoformat():
 
 def get_datetime_now():
     return datetime.datetime.now()
-
-
-def get_datetime_utcnow():
-    return datetime.datetime.utcnow()
 
 
 def get_datetime_today():
@@ -74,21 +60,18 @@ def format_date(time_str, str_fmt="%A", time_fmt="%Y-%m-%d", time_lim=10, utc_co
 
 
 def date_in_range(date_str, days=1, start_date=0, date_fmt="%Y-%m-%dT%H:%M:%S", date_lim=19, utc_convert=False):
-    datetime_object = convert_timestamp(date_str, date_fmt, date_lim, utc_convert=utc_convert)
-    return datetime_in_range(datetime_object, days=days, start_date=start_date)
-
-
-def datetime_in_range(datetime_object, days=1, start_date=0):
-    if not datetime_object:
-        return
     date_a = datetime.date.today() + datetime.timedelta(days=start_date)
+    if not date_a:
+        return
     date_z = date_a + datetime.timedelta(days=days)
-    mydate = datetime_object.date()
-    if mydate < date_a:
+    if not date_z:
         return
-    if mydate >= date_z:
+    mydate = convert_timestamp(date_str, date_fmt, date_lim, utc_convert=utc_convert)
+    if not mydate:
         return
-    return datetime_object
+    mydate = mydate.date()
+    if mydate >= date_a and mydate < date_z:
+        return date_str
 
 
 def get_region_date(date_obj, region_fmt='dateshort', del_fmt=':%S'):

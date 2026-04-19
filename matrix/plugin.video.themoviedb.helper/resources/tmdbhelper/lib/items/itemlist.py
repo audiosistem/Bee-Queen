@@ -1,7 +1,6 @@
 from jurialmunkey.parser import get_params
-from jurialmunkey.ftools import cached_property
-from tmdbhelper.lib.addon.plugin import PLUGINPATH, convert_trakt_type, convert_type, get_setting
 from tmdbhelper.lib.items.filters import is_excluded
+from tmdbhelper.lib.addon.plugin import PLUGINPATH, convert_trakt_type, convert_type, get_setting
 from tmdbhelper.lib.items.pages import PaginatedItems
 from collections import namedtuple
 
@@ -35,26 +34,40 @@ class ItemMapping():
 class ItemMappingBasic(ItemMapping):
     """ Mapping for individual items in a list of items """
 
-    @cached_property
+    @property
     def unique_ids(self):
-        return self.get_unique_ids()
+        try:
+            return self._unique_ids
+        except AttributeError:
+            return self.get_unique_ids()
 
-    @cached_property
+    @property
     def infolabels(self):
-        return self.get_infolabels()
+        try:
+            return self._infolabels
+        except AttributeError:
+            return self.get_infolabels()
 
     def get_unique_ids(self, unique_ids=None):
         unique_ids = unique_ids or {}
         unique_ids['tmdb'] = self.item.get('id')
         unique_ids['imdb'] = self.item.get('imdb_id')
-        return unique_ids
+        if self.item_type in ('season', 'episode'):
+            unique_ids['tvshow.tmdb'] = self.item.get('id')
+        self._unique_ids = unique_ids
+        return self._unique_ids
 
     def get_infolabels(self, infolabels=None):
-        infolabels = {}
+        infolabels = infolabels or {}
         infolabels['title'] = self.item.get('title')
         infolabels['year'] = self.item.get('release_year')
         infolabels['mediatype'] = self.dbtype
-        return infolabels
+        if self.item_type in ('season', 'episode'):
+            infolabels['season'] = self.item.get('season')
+        if self.item_type == 'episode':
+            infolabels['episode'] = self.item.get('episode')
+        self._infolabels = infolabels
+        return self._infolabels
 
     def get_item(self):
         base_item = {}
@@ -64,37 +77,6 @@ class ItemMappingBasic(ItemMapping):
         base_item['params'] = get_params(self.item, self.tmdb_type, definition=self.params_def)
         base_item['path'] = PLUGINPATH
         return base_item
-
-
-class ItemMappingBasicSeason(ItemMappingBasic):
-    def get_unique_ids(self, unique_ids=None):
-        unique_ids = super().get_unique_ids()
-        unique_ids['tvshow.tmdb'] = self.item.get('id')
-        return unique_ids
-
-    def get_infolabels(self, infolabels=None):
-        infolabels = super().get_infolabels()
-        infolabels['season'] = self.item.get('season')
-        return infolabels
-
-
-class ItemMappingBasicEpisode(ItemMappingBasicSeason):
-    def get_infolabels(self, infolabels=None):
-        infolabels = super().get_infolabels()
-        infolabels['episode'] = self.item.get('episode')
-        return infolabels
-
-
-def ItemMappingBasicFactory(item, item_type=None, params_def=None):
-    routes = {
-        'season': ItemMappingBasicSeason,
-        'episode': ItemMappingBasicEpisode,
-    }
-    try:
-        route = routes[item_type]
-    except KeyError:
-        route = ItemMappingBasic
-    return route(item, item_type=item_type, params_def=params_def)
 
 
 class ItemMappingTrakt(ItemMapping):
@@ -114,7 +96,7 @@ class ItemMappingTrakt(ItemMapping):
         return base_item
 
 
-class ItemListPaginationBasic():
+class ListPagination():
     """ Paginates and configures items in a list. Base class for inheritance """
 
     def __init__(self, meta, page=1, limit: int = None):
@@ -122,18 +104,28 @@ class ItemListPaginationBasic():
         self.page = page
         self.limit = limit or (20 * max(get_setting('pagemulti_trakt', 'int'), 1))
 
-    @cached_property
+    @property
     def paginated_items(self):
-        if self.limit is None:
-            return PaginatedItemsTuple(self.meta, [])
-        return PaginatedItems(self.meta, page=self.page, limit=self.limit)
+        try:
+            return self._paginated_items
+        except AttributeError:
+            self.update_pagination()
+            return self._paginated_items
 
     @property
     def next_page(self):
         return self.paginated_items.next_page
 
+    def get_updated_pagination(self):
+        if self.limit is None:
+            return PaginatedItemsTuple(self.meta, [])
+        return PaginatedItems(self.meta, page=self.page, limit=self.limit)
 
-class ItemListPagination(ItemListPaginationBasic):
+    def update_pagination(self):
+        self._paginated_items = self.get_updated_pagination()
+
+
+class ItemListPagination(ListPagination):
     """ Paginates and configures items in a list of items """
 
     def __init__(
@@ -175,31 +167,43 @@ class ItemListPagination(ItemListPaginationBasic):
     def item_maker(self):
         if self.trakt_style:
             return ItemMappingTrakt
-        return ItemMappingBasicFactory
+        return ItemMappingBasic
 
-    @cached_property
+    @property
     def paginated_items_dict(self):
-        paginated_items_dict = {'items': []}
-        paginated_items_dict_items_append = paginated_items_dict['items'].append
+        try:
+            return self._paginated_items_dict
+        except AttributeError:
+            self.update_pagination()
+            return self._paginated_items_dict
 
-        for i in self.paginated_items.items:
-            item_type = i.get('mediatype', None)
+    def update_pagination(self):
+        self._paginated_items = self.get_updated_pagination()
 
-            if self.permitted_types and item_type not in self.permitted_types:
+        configured = {'items': []}
+        configured_items_append = configured['items'].append
+
+        # from tmdbhelper.lib.files.futils import dumps_to_file
+        # dumps_to_file(self._paginated_items.items, 'log_data', 'sync_data.json', join_addon_data=True)
+
+        for i in self._paginated_items.items:
+            i_type = i.get('mediatype', None)
+
+            if self.permitted_types and i_type not in self.permitted_types:
                 continue
 
             if self.filters and is_excluded(i, **self.filters):
                 continue
 
-            item = self.item_maker(i, item_type=item_type, params_def=self.params_def).get_item()
+            item = self.item_maker(i, item_type=i_type, params_def=self.params_def).get_item()
 
             if not item:
                 continue
 
             # Also add item to a list only containing that item type
             # Useful if we need to only get one type of item from a mixed list (e.g. only "movies")
-            paginated_items_dict.setdefault(f'{item_type}s', []).append(item)
-            paginated_items_dict_items_append(item)
+            configured.setdefault(f'{i_type}s', []).append(item)
+            configured_items_append(item)
 
-        paginated_items_dict['next_page'] = self.next_page
-        return paginated_items_dict
+        self._paginated_items_dict = configured
+        self._paginated_items_dict['next_page'] = self.next_page

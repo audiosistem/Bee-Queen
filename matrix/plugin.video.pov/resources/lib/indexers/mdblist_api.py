@@ -76,12 +76,12 @@ def mdbl_get_hidden_items(list_type):
 	return mdbl_cache.cache_mdbl_object(_process, string, url)
 
 def hide_unhide_mdbl_items(action, mediatype, media_id, list_type):
-	if not action in ('hide', 'unhide'):
+	if action not in ('hide', 'unhide'):
 		try:
-			hidden_data = set(map(str, mdbl_get_hidden_items('dropped')))
-			action = 'unhide' if action in hidden_data else 'hide'
+			hidden_data = mdbl_get_hidden_items('dropped')
+			action = 'unhide' if int(action) in hidden_data else 'hide'
 		except: return kodi_utils.notification(32574)
-	mediatype = 'movies' if mediatype in ['movie', 'movies'] else 'shows'
+	mediatype = 'movies' if mediatype in ('movie', 'movies') else 'shows'
 	key = 'tmdb' if mediatype == 'movies' else 'imdb'
 	url = 'sync/dropped' if action == 'hide' else 'sync/dropped/remove'
 	data = {mediatype: [{'ids': {key: media_id}}]}

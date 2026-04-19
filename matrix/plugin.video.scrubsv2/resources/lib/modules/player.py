@@ -370,7 +370,7 @@ class subtitles:
             pw = control.setting('os.pass')
             server = xmlrpc_client.Server('http://api.opensubtitles.org/xml-rpc', verbose=0)
             token = server.LogIn(un, pw, 'en', 'XBMC_Subtitles_Unofficial_v5.2.14')['token']
-            sublanguageid = ','.join(langs) ; imdbid = re.sub('[^0-9]', '', imdb)
+            sublanguageid = ','.join(langs) ; imdbid = re.sub(r'[^0-9]', '', imdb)
             if not (season == None or episode == None):
                 result = server.SearchSubtitles(token, [{'sublanguageid': sublanguageid, 'imdbid': imdbid, 'season': season, 'episode': episode}])['data']
                 fmt = ['hdtv']
@@ -380,7 +380,7 @@ class subtitles:
                     vidPath = xbmc.Player().getPlayingFile()
                 except:
                     vidPath = ''
-                fmt = re.split('\.|\(|\)|\[|\]|\s|\-', vidPath)
+                fmt = re.split(r'\.|\(|\)|\[|\]|\s|\-', vidPath)
                 fmt = [i.lower() for i in fmt]
                 fmt = [i for i in fmt if i in quality]
             filter = []
@@ -418,8 +418,7 @@ class subtitles:
                     control.execute('Dialog.Close(all,true)')
                     #xbmc.sleep(3000)
                     control.sleep(3000)
-                    control.infoDialog(subname, heading='Κατέβηκαν Υπότιτλοι {}'.format(str(lang).upper()), time=6000)
-
+                    control.infoDialog(subname, heading='{} subtitles downloaded'.format(str(lang).upper()), time=6000)
         except:
             pass
 

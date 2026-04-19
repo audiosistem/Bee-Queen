@@ -2,7 +2,7 @@ from tmdbhelper.lib.files.bcache import BasicCache
 from tmdbhelper.lib.addon.logger import kodi_log
 
 
-SEARCH_HISTORY = 'SearchHistory.db'
+SEARCH_HISTORY = 'search_history.db'
 
 
 def get_search_history(tmdb_type=None):

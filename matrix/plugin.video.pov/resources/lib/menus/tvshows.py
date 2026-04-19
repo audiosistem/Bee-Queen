@@ -1,7 +1,5 @@
 import sys
 from threading import Thread
-from indexers.mdblist_api import mdbl_get_hidden_items
-from indexers.trakt_api import trakt_get_hidden_items
 from indexers.metadata import tvshow_meta, art_infodict, movie_show_infodict
 from caches.watched_cache import get_watched_info_tv, get_watched_status_tvshow
 from modules import kodi_utils, settings
@@ -62,7 +60,7 @@ class TVShows:
 			rootname, title, year = meta_get('rootname'), meta_get('title'), meta_get('year')
 			display = rootname if self.include_year_in_title else title
 			tmdb_id, tvdb_id, imdb_id = meta_get('tmdb_id'), meta_get('tvdb_id'), meta_get('imdb_id')
-			try: tags = [i for i in (imdb_id, string(tmdb_id), string(tvdb_id)) if not i in ('', 'None', None)]
+			try: tags = [i for i in (imdb_id, string(tmdb_id), string(tvdb_id)) if i not in ('', 'None', None)]
 			except: tags = []
 			if self.all_episodes and self.all_episodes == 1 and total_seasons > 1: url_params = build_url({
 				'mode': 'build_season_list', 'tmdb_id': tmdb_id
@@ -229,16 +227,6 @@ class Menu(TVShows):
 				self.list = [i['media_id'] for i in data]
 				if total_pages > 2: self.total_pages = total_pages
 				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1), 'new_letter': letter}
-				if self.watched_indicators == 1:
-					try:
-						hidden_data = trakt_get_hidden_items('dropped')
-						self.list = [i for i in self.list if not int(i) in hidden_data]
-					except: pass
-				if self.watched_indicators == 2:
-					try:
-						hidden_data = mdbl_get_hidden_items('dropped')
-						self.list = [i for i in self.list if not int(i) in hidden_data]
-					except: pass
 			elif self.action in Menu.similar:
 				tmdb_id = self.params['tmdb_id']
 				data = function(tmdb_id, page_no)

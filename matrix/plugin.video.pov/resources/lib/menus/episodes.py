@@ -1,8 +1,7 @@
 import sys
 from threading import Thread
 from indexers.metadata import tvshow_meta, season_episodes_meta, art_infodict, episode_infodict, info_tagger
-from indexers.mdblist_api import mdbl_get_hidden_items
-from indexers.trakt_api import trakt_fetch_collection_watchlist, trakt_get_hidden_items, trakt_get_my_calendar, trakt_my_anime_calendar, trakt_anime_calendar
+from indexers.trakt_api import trakt_fetch_collection_watchlist, trakt_get_my_calendar, trakt_my_anime_calendar, trakt_anime_calendar
 from caches.watched_cache import get_resumetime, set_resumetime, get_watched_status_episode, get_watched_info_tv, get_bookmarks, get_next_episodes, get_in_progress_episodes
 from modules import kodi_utils, settings
 #from modules.utils import jsondate_to_datetime, adjust_premiered_date, make_day, get_datetime, title_key, date_difference, make_thread_list_enumerate
@@ -202,10 +201,7 @@ class Menu(Episodes):
 		self.nextep_unaired_color, self.nextep_unwatched_color = nextep_disp_settings['unaired_color'], nextep_disp_settings['unwatched_color']
 		self.nextep_include_airdate, self.nextep_include_unaired = nextep_disp_settings['include_airdate'], self.nextep_settings['include_unaired']
 		if self.watched_indicators == 1:
-			try:
-				hidden_data = trakt_get_hidden_items('dropped')
-				self.list = [i for i in self.list if not i['media_ids']['tmdb'] in hidden_data]
-			except: pass
+			self.resformat, self.resinsert = '%Y-%m-%dT%H:%M:%S.000Z', '2000-01-01T00:00:00.000Z'
 #			if self.nextep_settings['include_unwatched']:
 #				try: unwatched = [
 #					{'media_ids': i['media_ids'], 'season': 1, 'episode': 0, 'unwatched': True}
@@ -213,12 +209,7 @@ class Menu(Episodes):
 #				]
 #				except: unwatched = []
 #				if unwatched: self.list += unwatched
-			self.resformat, self.resinsert = '%Y-%m-%dT%H:%M:%S.000Z', '2000-01-01T00:00:00.000Z'
 		elif self.watched_indicators == 2:
-			try:
-				hidden_data = mdbl_get_hidden_items('dropped')
-				self.list = [i for i in self.list if not i['media_ids']['tmdb'] in hidden_data]
-			except: pass
 			self.resformat, self.resinsert = '%Y-%m-%dT%H:%M:%SZ', '2000-01-01T00:00:00Z'
 		else: self.resformat, self.resinsert = '%Y-%m-%d %H:%M:%S', '2000-01-01 00:00:00'
 

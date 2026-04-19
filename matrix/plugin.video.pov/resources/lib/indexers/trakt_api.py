@@ -164,12 +164,12 @@ def trakt_get_hidden_items(list_type):
 	return trakt_cache.cache_trakt_object(_process, string, url)
 
 def hide_unhide_trakt_items(action, mediatype, media_id, list_type):
-	if not action in ('hide', 'unhide'):
+	if action not in ('hide', 'unhide'):
 		try:
-			hidden_data = set(map(str, trakt_get_hidden_items('dropped')))
-			action = 'unhide' if action in hidden_data else 'hide'
+			hidden_data = trakt_get_hidden_items('dropped')
+			action = 'unhide' if int(action) in hidden_data else 'hide'
 		except: return kodi_utils.notification(32574)
-	mediatype = 'movies' if mediatype in ['movie', 'movies'] else 'shows'
+	mediatype = 'movies' if mediatype in ('movie', 'movies') else 'shows'
 	key = 'tmdb' if mediatype == 'movies' else 'imdb'
 	url = 'users/hidden/%s' % list_type if action == 'hide' else 'users/hidden/%s/remove' % list_type
 	data = {mediatype: [{'ids': {key: media_id}}]}
@@ -478,7 +478,7 @@ def trakt_progress_tv(progress_info):
 				tmdb_id, title = item[0], item[1]
 				if not tmdb_id: continue
 				for p_item in progress_items:
-					if not p_item['show']['title'] == title: continue
+					if p_item['show']['title'] != title: continue
 					season, episode = p_item['episode']['season'], p_item['episode']['number']
 					if season > 0: yield (
 						'episode', str(tmdb_id), season, episode, str(round(p_item['progress'], 1)),
@@ -518,7 +518,7 @@ def trakt_get_my_calendar(recently_aired, current_date):
 			{'sort_title': '%s s%s e%s' % (i['show']['title'], str(i['episode']['season']).zfill(2), str(i['episode']['number']).zfill(2)),
 			'media_ids': i['show']['ids'], 'season': i['episode']['season'], 'episode': i['episode']['number'], 'first_aired': i['first_aired']}
 			for i in data
-			if i['episode']['season'] > 0 and not 'anime' in i['show']['genres']
+			if i['episode']['season'] > 0 and 'anime' not in i['show']['genres']
 		]
 		data = [i for n, i in enumerate(data) if i not in data[n + 1:]] # remove duplicates
 		return data

@@ -16,7 +16,7 @@ except:
 
 sysaddon = sys.argv[0]
 syshandle = int(sys.argv[1])
-control.moderator()
+#control.moderator()
 
 tmdbCredentials = tmdb_utils.getTMDbCredentialsInfo()
 traktCredentials = trakt.getTraktCredentialsInfo()
@@ -27,12 +27,14 @@ kodi_version = control.getKodiVersion()
 
 class navigator:
     def root(self):
-        self.addDirectoryItem('Ταινίες', 'movies_menu', 'movies.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Σειρές', 'tvshows_menu', 'tvshows.png', 'DefaultTVShows.png')
-        self.addDirectoryItem('Εργαλεία', 'tools_menu', 'tools.png', 'DefaultAddonProgram.png')
+        self.addDirectoryItem('Movies', 'movies_menu', 'movies.png', 'DefaultMovies.png')
+        self.addDirectoryItem('TV Shows', 'tvshows_menu', 'tvshows.png', 'DefaultTVShows.png')
+        if (traktIndicators == True and not control.setting('episode.widget.alt') == '0') or (traktIndicators == False and not control.setting('episode.widget') == '0'):
+            self.addDirectoryItem(self.episode_widget(), 'episode_widget', 'latest-episodes.png', 'DefaultRecentlyAddedEpisodes.png')
         if not control.setting('lists.widget') == '0':
-            self.addDirectoryItem('Επιλογές μου', 'mylists_menu', 'mymovies.png', 'DefaultSets.png')
-    #    self.addDirectoryItem('Επιπλέον ...', 'moreplugs_menu', 'tools.png', 'DefaultSets.png')
+            self.addDirectoryItem('My Stuff', 'mylists_menu', 'mymovies.png', 'DefaultSets.png')
+        self.addDirectoryItem('More Stuff', 'moreplugs_menu', 'tools.png', 'DefaultSets.png')
+        self.addDirectoryItem('Tools', 'tools_menu', 'tools.png', 'DefaultAddonProgram.png')
         if not control.setting('dev.widget') == 'false':
             self.addDirectoryItem('Dev Tools', 'devtools_menu', 'tools.png', 'DefaultAddonProgram.png')
         self.endDirectory(cached=False)
@@ -70,47 +72,17 @@ class navigator:
 
 
     def movies(self):
-#        self.addDirectoryItem('Explore TMDb', 'movies_tmdb_menu', 'tmdb.png', 'DefaultMovies.png')
-#        self.addDirectoryItem('Explore Trakt', 'movies_trakt_menu', 'trakt.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Αναζήτηση', 'search_movies_menu', 'search.png', 'DefaultFolder.png')
-        self.addDirectoryItem('Είδη', 'movies_tmdb_genres', 'genres.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Έτος', 'movies_tmdb_years', 'years.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Δεκαετία', 'movies_tmdb_decades', 'years.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Γλώσσα', 'movies_tmdb_languages', 'languages.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Στους κινηματογράφους', 'movies&url=tmdb_in_theatres', 'in-theaters.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Παίζουν τώρα', 'movies&url=tmdb_now_playing', 'latest-movies.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Πιο δημοφιλή', 'movies&url=tmdb_popular', 'most-popular.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Με υψηλή βαθμολογία', 'movies&url=tmdb_toprated', 'highly-rated.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Ανερχόμενες', 'movies&url=tmdb_upcoming', 'highly-rated.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Ημερήσια τάση', 'movies&url=tmdb_trending_day', 'highly-rated.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Εβδομαδιαία τάση', 'movies&url=tmdb_trending_week', 'highly-rated.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Προτεινόμενα', 'movies&url=tmdb_featured', 'featured.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Πρεμιέρα', 'movies&url=tmdb_premiere', 'latest-movies.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Προβολές', 'movies&url=tmdb_views', 'most-voted.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Καταλληλότητα', 'movies_tmdb_certifications', 'certificates.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Δημοφιλείς εταιρείες', 'movies_tmdb_popular_companies', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Δημοφιλείς λέξεις-κλειδιά', 'movies_tmdb_popular_keywords', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Δημοφιλή πρόσωπα', 'movies_tmdb_popular_people', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Συλλογές', 'movies_tmdb_collections_menu', 'tmdb.png', 'DefaultVideoPlaylists.png')
-        self.addDirectoryItem('Λίστες ταινιών', 'movies_tmdb_userlists_menu', 'tmdb.png', 'DefaultVideoPlaylists.png')
-        self.addDirectoryItem('Πιο δημοφιλή', 'movies&url=trakt_popular', 'trakt.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Προτεινόμενα', 'movies&url=trakt_featured', 'trakt.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Box Office', 'movies&url=trakt_boxoffice', 'trakt.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Τάσεις', 'movies&url=trakt_trending', 'trakt.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Αναμενόμενες', 'movies&url=trakt_anticipated', 'trakt.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Ταινίες', 'movies_trakt_moviemosts', 'trakt.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Επιπλέον ...', 'moreplugs_menu', 'channels.png', 'DefaultSets.png')
+        self.addDirectoryItem('Explore TMDb', 'movies_tmdb_menu', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Explore Trakt', 'movies_trakt_menu', 'trakt.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Search Tools', 'search_movies_menu', 'search.png', 'DefaultFolder.png')
         self.endDirectory()
 
 
     def tvshows(self):
-        self.addDirectoryItem('Αναζήτηση', 'search_tvshows_menu', 'search.png', 'DefaultFolder.png')
-        if (traktIndicators == True and not control.setting('episode.widget.alt') == '0') or (traktIndicators == False and not control.setting('episode.widget') == '0'):
-            self.addDirectoryItem(self.episode_widget(), 'episode_widget', 'latest-episodes.png', 'DefaultRecentlyAddedEpisodes.png')
         self.addDirectoryItem('Explore TMDb', 'tvshows_tmdb_menu', 'tmdb.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Explore Trakt', 'tvshows_trakt_menu', 'trakt.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Explore TVmaze', 'tvshows_tvmaze_menu', 'networks.png', 'DefaultTVShows.png')
-        self.addDirectoryItem('Επιπλέον ...', 'moreplugs_menu', 'channels.png', 'DefaultSets.png')
+        self.addDirectoryItem('Search Tools', 'search_tvshows_menu', 'search.png', 'DefaultFolder.png')
         self.endDirectory()
 
 
@@ -143,8 +115,8 @@ class navigator:
         self.addDirectoryItem('On The Air', 'tvshows&url=tmdb_active', 'returning-tvshows.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Popular', 'tvshows&url=tmdb_popular', 'most-popular.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Top Rated', 'tvshows&url=tmdb_toprated', 'highly-rated.png', 'DefaultTVShows.png')
-        self.addDirectoryItem('Trending Daily', 'tvshows&url=tmdb_trending_day', 'highly-rated.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Trending Weekly', 'tvshows&url=tmdb_trending_week', 'highly-rated.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Trending Daily', 'tvshows&url=tmdb_trending_day', 'highly-rated.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('Trending Weekly', 'tvshows&url=tmdb_trending_week', 'highly-rated.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Featured', 'tvshows&url=tmdb_featured', 'featured.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Premiere', 'tvshows&url=tmdb_premiere', 'new-tvshows.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Views', 'tvshows&url=tmdb_views', 'most-voted.png', 'DefaultTVShows.png')
@@ -172,7 +144,7 @@ class navigator:
 
 
     def tvTrakt(self):
-        self.addDirectoryItem('Most Popular', 'tvshows&url=trakt_popular', 'most-popular.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Most Popular', 'tvshows&url=trakt_popular', 'most-popular.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Featured', 'tvshows&url=trakt_featured', 'featured.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Trending', 'tvshows&url=trakt_trending', 'people-watching.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Anticipated', 'tvshows&url=trakt_anticipated', 'new-tvshows.png', 'DefaultTVShows.png')
@@ -182,31 +154,31 @@ class navigator:
 
 
     def tmdbMovieCollections(self):
-        self.addDirectoryItem('Όλες', 'movies_tmdb_collections&url=all', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Είδη', 'movies_tmdb_collections_genres_menu', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Αλφαβητικά', 'movies_tmdb_collections_alphabetical_menu', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: All', 'movies_tmdb_collections&url=all', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: Alphabetical', 'movies_tmdb_collections_alphabetical_menu', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: Genres', 'movies_tmdb_collections_genres_menu', 'tmdb.png', 'DefaultMovies.png')
         self.endDirectory()
 
 
     def tmdbMovieCollectionsAlphabetical(self):
-        self.addDirectoryItem('#-Am', 'movies_tmdb_collections&url=page1', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Am-Be', 'movies_tmdb_collections&url=page2', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Be-Ch', 'movies_tmdb_collections&url=page3', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Ch-De', 'movies_tmdb_collections&url=page4', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('De-Es', 'movies_tmdb_collections&url=page5', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Es-Gi', 'movies_tmdb_collections&url=page6', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Gl-Ho', 'movies_tmdb_collections&url=page7', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Ho-Ki', 'movies_tmdb_collections&url=page8', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Ki-Ma', 'movies_tmdb_collections&url=page9', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Mc-Ni', 'movies_tmdb_collections&url=page10', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Ni-Ps', 'movies_tmdb_collections&url=page11', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Pu-Se', 'movies_tmdb_collections&url=page12', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Se-St', 'movies_tmdb_collections&url=page13', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('St-Th', 'movies_tmdb_collections&url=page14', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Th-Th', 'movies_tmdb_collections&url=page15', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Th-Th', 'movies_tmdb_collections&url=page16', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Th-Un', 'movies_tmdb_collections&url=page17', 'tmdb.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Un-Zu', 'movies_tmdb_collections&url=page18', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 1 (#-Am)', 'movies_tmdb_collections&url=page1', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 2 (Am-Be)', 'movies_tmdb_collections&url=page2', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 3 (Be-Ch)', 'movies_tmdb_collections&url=page3', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 4 (Ch-De)', 'movies_tmdb_collections&url=page4', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 5 (De-Es)', 'movies_tmdb_collections&url=page5', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 6 (Es-Gi)', 'movies_tmdb_collections&url=page6', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 7 (Gl-Ho)', 'movies_tmdb_collections&url=page7', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 8 (Ho-Ki)', 'movies_tmdb_collections&url=page8', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 9 (Ki-Ma)', 'movies_tmdb_collections&url=page9', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 10 (Mc-Ni)', 'movies_tmdb_collections&url=page10', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 11 (Ni-Ps)', 'movies_tmdb_collections&url=page11', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 12 (Pu-Se)', 'movies_tmdb_collections&url=page12', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 13 (Se-St)', 'movies_tmdb_collections&url=page13', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 14 (St-Th)', 'movies_tmdb_collections&url=page14', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 15 (Th-Th)', 'movies_tmdb_collections&url=page15', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 16 (Th-Th)', 'movies_tmdb_collections&url=page16', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 17 (Th-Un)', 'movies_tmdb_collections&url=page17', 'tmdb.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections List: 18 (Un-Zu)', 'movies_tmdb_collections&url=page18', 'tmdb.png', 'DefaultMovies.png')
         self.endDirectory()
 
 
@@ -384,27 +356,27 @@ class navigator:
 
     def search_movies(self):
         movies_setting_label = self.search_setting_widget('search.movies.source')
-        self.addDirectoryItem('Ταινίες (%s)' % movies_setting_label, 'movies_search&select=movies', 'search.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Πρόσωπα (TMDb)', 'movies_search&select=people', 'people-search.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Λέξεις-κλειδιά (TMDb)', 'movies_search&select=keywords', 'search.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Εταιρείες (TMDb)', 'movies_search&select=companies', 'search.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Συλλογές (TMDb)', 'movies_search&select=collections', 'search.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Movies (%s)' % movies_setting_label, 'movies_search&select=movies', 'search.png', 'DefaultMovies.png')
+        self.addDirectoryItem('People (TMDb)', 'movies_search&select=people', 'people-search.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Keywords (TMDb)', 'movies_search&select=keywords', 'search.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Companies (TMDb)', 'movies_search&select=companies', 'search.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Collections (TMDb)', 'movies_search&select=collections', 'search.png', 'DefaultMovies.png')
         self.endDirectory()
 
 
     def search_tvshows(self):
         tvshows_setting_label = self.search_setting_widget('search.tvshows.source')
-        self.addDirectoryItem('Σειρές (%s)' % tvshows_setting_label, 'tvshows_search&select=tvshow', 'search.png', 'DefaultTVShows.png')
-        self.addDirectoryItem('Πρόσωπα (TMDb)', 'tvshows_search&select=people', 'people-search.png', 'DefaultTVShows.png')
-        self.addDirectoryItem('Λέξεις-κλειδιά (TMDb)', 'tvshows_search&select=keywords', 'search.png', 'DefaultTVShows.png')
-        self.addDirectoryItem('Εταιρείες (TMDb)', 'tvshows_search&select=companies', 'search.png', 'DefaultTVShows.png')
-        self.addDirectoryItem('Συλλογές (TMDb)', 'tvshows_search&select=collections', 'search.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('TV Shows (%s)' % tvshows_setting_label, 'tvshows_search&select=tvshow', 'search.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('People (TMDb)', 'tvshows_search&select=people', 'people-search.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('Keywords (TMDb)', 'tvshows_search&select=keywords', 'search.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('Companies (TMDb)', 'tvshows_search&select=companies', 'search.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('Collections (TMDb)', 'tvshows_search&select=collections', 'search.png', 'DefaultTVShows.png')
         self.endDirectory()
 
 
     def favorites(self):
-        self.addDirectoryItem('Αγαπημένες ταινίες', 'movieFavorites', 'highly-rated.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Αγαπημένες σειρές', 'tvFavorites', 'highly-rated.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('Movie Favorites', 'movieFavorites', 'highly-rated.png', 'DefaultMovies.png')
+        self.addDirectoryItem('TV Show Favorites', 'tvFavorites', 'highly-rated.png', 'DefaultTVShows.png')
         self.endDirectory()
 
 
