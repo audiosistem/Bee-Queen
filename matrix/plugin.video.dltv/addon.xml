@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
-<addon id="plugin.video.dltv" name="DLTV" version="1.0.11" provider-name="Arkane14">
+<addon id="plugin.video.dltv" name="DLTV" version="1.0.20" provider-name="Arkane14">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" />
@@ -19,6 +19,6 @@
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
         </assets>
-        <news>v1.0.11: schedule refresh triggers Container.Refresh after clearing cache</news>
+        <news>v1.0.20: Fix ch.773 — route via lovecdn player; fix CHEVY AES+header scan false positives; fix stall recovery for non-premium channels</news>
     </extension>
 </addon>

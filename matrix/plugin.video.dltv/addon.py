@@ -61,6 +61,9 @@ _s_chevy_proxy = addon.getSetting('chevy_proxy_url').strip()
 CHEVY_PROXY = _s_chevy_proxy if _s_chevy_proxy else 'https://chevy.soyspace.cyou'
 _s_chevy_lookup = addon.getSetting('chevy_lookup_url').strip()
 CHEVY_LOOKUP = _s_chevy_lookup if _s_chevy_lookup else 'https://chevy.vovlacosa.sbs'
+# Hardcoded fallbacks — never overwritten by Discovery (used when discovered servers are down)
+_CHEVY_PROXY_BUILTIN = 'https://chevy.soyspace.cyou'
+_CHEVY_LOOKUP_BUILTIN = 'https://chevy.vovlacosa.sbs'
 _s_ksohls = addon.getSetting('ksohls_base_url').strip()
 _KSOHLS_BASE = _s_ksohls if _s_ksohls else 'https://www.ksohls.ru'
 PLAYER_REFERER = _KSOHLS_BASE + '/'
@@ -117,7 +120,12 @@ _PAGE_CACHE_FILE = os.path.join(_KODI_TEMP, 'dltv_page_cache.json')
 
 
 def _aes128_cbc_decrypt(data, key, iv):
-    """AES-128-CBC decrypt. Tries pycryptodome, cryptography, Windows CryptoAPI."""
+    """AES-128-CBC decrypt. Tries pycryptodome, cryptography, Windows CryptoAPI.
+    CHEVY segments may not be padded to a 16-byte boundary — truncate to the
+    largest multiple of 16 so block cipher backends don't reject the data."""
+    rem = len(data) % 16
+    if rem:
+        data = data[:-rem]
     # Backend 1: pycryptodome
     try:
         from Crypto.Cipher import AES
@@ -209,12 +217,16 @@ def _aes128_cbc_decrypt(data, key, iv):
     return data
 
 
-def _fetch_stream_key(key_id, channel_key, state, key_cache, force_refresh=False):
+def _fetch_stream_key(key_id, channel_key, state, key_cache, force_refresh=False, key_ns=None):
     """Fetch AES-128 decryption key from CDN, caching result per session.
 
     force_refresh=True: bypass CHEVY's server-side cache (used on stale key retry).
     Adds Cache-Control: no-cache headers + ?_nc=<ts> URL cache-buster so CHEVY
     re-fetches from the upstream CDN key server instead of serving cached bytes.
+
+    key_ns: namespace extracted from the key URI in the m3u8 (e.g. 'premium773').
+    When provided, used directly instead of server_key from m3u8 URL path.
+    CHEVY key URIs use channel_key as namespace, not server_key.
 
     Key server is derived from state['m3u8_url'] (same host as CHEVY proxy) so that
     when CHEVY_PROXY != CHEVY_LOOKUP (different server deployments), the correct
@@ -223,17 +235,28 @@ def _fetch_stream_key(key_id, channel_key, state, key_cache, force_refresh=False
     if key_id in key_cache and not force_refresh:
         return key_cache[key_id]
     try:
-        # Derive key host from m3u8 URL: keys live on the same server as the proxy
+        # Derive key host from m3u8 URL
+        # m3u8 URL pattern: https://{host}/proxy/{server_key}/{channel_key}/mono.css
+        # Key URL pattern:  https://{host}/key/{key_ns}/{key_id}
+        # key_ns comes from the key URI in the m3u8 (most authoritative).
+        # Fallback: server_key from m3u8 URL path.
         m3u8_url = state.get('m3u8_url', '')
         _key_host_m = re.match(r'(https?://[^/]+)', m3u8_url)
         key_host = _key_host_m.group(1) if _key_host_m else CHEVY_LOOKUP
-        url = f'{key_host}/key/{channel_key}/{key_id}'
+        if key_ns:
+            _srv_key = key_ns
+        else:
+            _srv_key_m = re.search(r'/proxy/([^/]+)/', m3u8_url)
+            _srv_key = _srv_key_m.group(1) if _srv_key_m else channel_key
+        url = f'{key_host}/key/{_srv_key}/{key_id}'
         ts = int(time.time())
         channel_salt = state.get('channel_salt') or ''
         fp = _compute_fingerprint()
+        # Use viewembed page URL as Referer when available (CHEVY key endpoint checks it)
+        _key_referer = state.get('player_referer') or m3u8_url or PLAYER_REFERER
         hdrs = {
             'User-Agent': _AUTH_UA,
-            'Referer': m3u8_url or PLAYER_REFERER,  # m3u8 URL is the natural referer for key requests
+            'Referer': _key_referer,
         }
         if channel_salt and channel_salt != 'noauth':
             nonce = _compute_pow_nonce(channel_key, channel_salt, key_id, ts)
@@ -250,7 +273,7 @@ def _fetch_stream_key(key_id, channel_key, state, key_cache, force_refresh=False
             hdrs['Pragma'] = 'no-cache'
         r = _get_session().get(url, headers=hdrs, timeout=3)
         key = r.content
-        log(f'[StreamProxy] key {key_id}: {len(key)}B from {key_host} force={force_refresh}')
+        log(f'[StreamProxy] key {key_id}: {len(key)}B url={url} ref={_key_referer[:50]} force={force_refresh} hex={key.hex()}')
         key_cache[key_id] = key
         return key
     except Exception as e:
@@ -259,9 +282,13 @@ def _fetch_stream_key(key_id, channel_key, state, key_cache, force_refresh=False
 
 
 def _is_placeholder(url):
-    """CHEVY stores real MPEG-TS segments with fake .jpg/.png extensions on S3/R2/image CDNs.
-    Confirmed by AES decryption: all produce valid 0x47 MPEG-TS. Always return False."""
-    return False
+    """Return True for CDN domains/paths confirmed to serve AI-generated placeholder images,
+    never real HLS video. CHEVY uses these when a channel has no real stream.
+    Other image-sounding CDNs (S3, R2, fooocus, visualgpt) are NOT listed: CHEVY stores
+    real AES-encrypted TS on those (confirmed by decryption)."""
+    _PH_DOMAINS = ('cdn.gptimage15.com', 'x-design-release.stariicloud.com')
+    _PH_PATHS = ('/image-to-video/', '/ai_agent/')
+    return any(d in url for d in _PH_DOMAINS) or any(p in url for p in _PH_PATHS)
 
 
 def _apply_m3u8_filter(content):
@@ -786,6 +813,7 @@ def _extract_creds_with_js(page_text, page_url, base_url, sess):
         try:
             log(f'[EPlayerAuth] Fetching external JS: {src[:100]}')
             rjs = sess.get(src, headers={'User-Agent': _AUTH_UA, 'Referer': page_url}, timeout=4)
+            log(f'[EPlayerAuth] JS content ({src[-40:]}): {rjs.text[:600]}')
             at = _extract_credential(rjs.text, 'authToken')
             cs = _extract_credential(rjs.text, 'channelSalt')
             if at and cs:
@@ -925,13 +953,15 @@ def _state_file(channel_key):
     return os.path.join(_KODI_TEMP, f'dltv_{channel_key}.json')
 
 
-def _set_channel_state(channel_key, auth_token, channel_salt, m3u8_url):
+def _set_channel_state(channel_key, auth_token, channel_salt, m3u8_url, player_referer=None):
     state = {
         'auth_token': auth_token,
         'channel_salt': channel_salt,
         'm3u8_url': m3u8_url,
         'fetched_at': time.time(),
     }
+    if player_referer:
+        state['player_referer'] = player_referer
     with _proxy_lock:
         _channel_creds[channel_key] = state
     # Reset stall/timeout/throttle/dedup counters — fresh session, stale counts must not carry over
@@ -1021,7 +1051,13 @@ class _EPlayerProxyHandler(BaseHTTPRequestHandler):
         if m:
             self._handle_stream(m.group(1))
             return
-        m = re.match(r'^/key/([^/]+)/(\d+)', self.path)
+        # New 3-component format: /key/{channel_key}/{orig_srv}/{key_id}
+        m = re.match(r'^/key/([^/]+)/([^/]+)/(\d+)$', self.path)
+        if m:
+            self._handle_key(m.group(1), m.group(3), orig_srv_key=m.group(2))
+            return
+        # Legacy 2-component format: /key/{channel_key}/{key_id}
+        m = re.match(r'^/key/([^/]+)/(\d+)$', self.path)
         if m:
             self._handle_key(m.group(1), m.group(2))
             return
@@ -1077,10 +1113,11 @@ class _EPlayerProxyHandler(BaseHTTPRequestHandler):
                 'Cache-Control': 'no-cache',
                 'Pragma': 'no-cache',
             }
-            for _m3u8_attempt in range(2):
+            _m3u8_url = state['m3u8_url']
+            for _m3u8_attempt in range(3):
                 try:
                     _tout = 5 if _m3u8_attempt > 0 else 3
-                    r = _get_session().get(state['m3u8_url'], headers=m3u8_hdrs, timeout=_tout)
+                    r = _get_session().get(_m3u8_url, headers=m3u8_hdrs, timeout=_tout)
                     with _stall_lock:
                         _m3u8_timeouts.pop(channel_key, None)  # reset on success
                     break
@@ -1088,7 +1125,7 @@ class _EPlayerProxyHandler(BaseHTTPRequestHandler):
                     if _m3u8_attempt == 0:
                         log(f'[EPlayerProxy] m3u8 timeout for {channel_key}, retrying')
                         time.sleep(1)
-                    else:
+                    elif _m3u8_attempt == 1:
                         # Count consecutive timeouts; give up gracefully after 5
                         with _stall_lock:
                             _tc = _m3u8_timeouts.get(channel_key, 0) + 1
@@ -1106,10 +1143,26 @@ class _EPlayerProxyHandler(BaseHTTPRequestHandler):
                             self.wfile.write(_M3U8_ENDLIST)
                             return
                         raise
+                    else:
+                        raise
                 except Exception as _e:
                     log(f'[EPlayerProxy] m3u8 conn error (attempt {_m3u8_attempt+1}): {_e}')
                     if _m3u8_attempt == 0:
                         time.sleep(0.1)
+                    elif _m3u8_attempt == 1:
+                        # Connection error — try substituting a builtin CHEVY host if discovered one is down
+                        _cur_host = re.match(r'https?://[^/]+', _m3u8_url)
+                        _builtin_host = re.match(r'https?://[^/]+', _CHEVY_PROXY_BUILTIN)
+                        if _cur_host and _builtin_host and _cur_host.group() != _builtin_host.group():
+                            _fallback_url = _m3u8_url.replace(_cur_host.group(), _builtin_host.group(), 1)
+                            log(f'[EPlayerProxy] m3u8 fallback to builtin: {_fallback_url[:80]}')
+                            _m3u8_url = _fallback_url
+                            try:
+                                os.remove(_DISCOVERY_CACHE_FILE)
+                            except Exception:
+                                pass
+                        else:
+                            raise
                     else:
                         raise
 
@@ -1296,9 +1349,14 @@ class _EPlayerProxyHandler(BaseHTTPRequestHandler):
 
             def _rewrite_key(mo):
                 uri = mo.group(1)
-                km = re.search(r'/key/[^/]+/(\d+)', uri)
+                # Capture original srv_key (the component before key_id) to preserve it
+                # in the proxy path. Prevents mismatch when m3u8 URL srv_key ≠ key URI srv_key
+                # (e.g. viewembed channels: m3u8 at /proxy/nfs/eurosport2fr/ but key at /key/eurosport2fr/).
+                km = re.search(r'/key/([^/]+)/(\d+)', uri)
                 if km:
-                    return f'URI="http://127.0.0.1:{port}/key/{channel_key}/{km.group(1)}"'
+                    orig_srv = km.group(1)
+                    key_id = km.group(2)
+                    return f'URI="http://127.0.0.1:{port}/key/{channel_key}/{orig_srv}/{key_id}"'
                 return mo.group(0)
 
             content = re.sub(r'URI="([^"]+)"', _rewrite_key, content)
@@ -1687,6 +1745,7 @@ class _EPlayerProxyHandler(BaseHTTPRequestHandler):
 
                 # Parse AES-128 key info
                 current_key_id = None
+                current_key_ns = None   # namespace from key URI (e.g. 'premium773', not server_key)
                 current_iv = None
                 seq_m = _SEQ_RX.search(content)
                 base_seq = int(seq_m.group(1)) if seq_m else 0
@@ -1695,9 +1754,10 @@ class _EPlayerProxyHandler(BaseHTTPRequestHandler):
                         _uri_m = re.search(r'URI="([^"]+)"', _line)
                         _iv_m = re.search(r'IV=0x([0-9a-fA-F]+)', _line)
                         if _uri_m:
-                            _km = re.search(r'/key/[^/]+/(\d+)', _uri_m.group(1))
+                            _km = re.search(r'/key/([^/]+)/(\d+)', _uri_m.group(1))
                             if _km:
-                                current_key_id = _km.group(1)
+                                current_key_ns = _km.group(1)
+                                current_key_id = _km.group(2)
                         if _iv_m:
                             current_iv = bytes.fromhex(_iv_m.group(1).zfill(32))
                         break
@@ -1778,7 +1838,15 @@ class _EPlayerProxyHandler(BaseHTTPRequestHandler):
                             _reauth_started_at[0] = time.time()
                             threading.Thread(target=_bg_reauth, daemon=True).start()
                             continue
-                    # No reauth result yet — don't sleep, just re-poll M3U8 immediately
+                    # No reauth result yet.
+                    # For non-premium channels (e.g. viewembed CHEVY like eurosport2fr),
+                    # there is no re-auth mechanism — reset the stall timer so the loop
+                    # can process new CDN segments instead of being stuck in this handler.
+                    # The stall epoch (_stall_epoch_start) is NOT reset here, so if the
+                    # CDN truly stops delivering content, _stall_total eventually reaches
+                    # _STALL_EPOCH_MAX and ends the stream.
+                    if not _PREMIUM_KEY_RX.match(channel_key):
+                        _last_content_time = time.time()
                     continue
 
                 # Dual dedup: skip if seq seen (URL rotation) OR url seen (seq renumbering)
@@ -1836,40 +1904,94 @@ class _EPlayerProxyHandler(BaseHTTPRequestHandler):
                     log(f'[StreamProxy] seg fetched len={len(body)} first8={body[:8].hex()} url={seg_url[-60:]}')
 
                     # Detect CHEVY plain-TS-with-header mode: segments are NOT AES encrypted,
-                    # CHEVY prepends a variable-length header before the actual TS data.
-                    # Find the first 0x47 sync byte aligned at 188-byte TS packet boundaries.
+                    # CHEVY prepends a variable-length header (fake PNG) before the actual TS data.
+                    # Use 3 consecutive sync bytes; scan full body (PNG wrappers can exceed 1024B).
                     _chevy_offset = None
-                    for _off in range(min(1024, len(body) - 376)):
-                        if body[_off] == 0x47 and body[_off + 188] == 0x47:
-                            _chevy_offset = _off
-                            break
-                    if _chevy_offset is not None and _chevy_offset > 0:
+                    if body and body[0] != 0x47 and len(body) > 564:
+                        for _off in range(len(body) - 564):
+                            if (body[_off] == 0x47 and body[_off + 188] == 0x47
+                                    and body[_off + 376] == 0x47):
+                                _chevy_offset = _off
+                                break
+                    # Validate plain-TS result:
+                    # 1. At least 300KB must remain after the offset.
+                    # 2. First 2 TS packets must have no transport_error_indicator and no scrambling.
+                    #    False positives in AES ciphertext almost always have error bits or scrambling
+                    #    set in the random byte that lands at the TS flags position.
+                    _MIN_PLAIN_TS = 300 * 1024
+                    _plain_ts_valid = (
+                        _chevy_offset is not None and _chevy_offset > 0
+                        and len(body) - _chevy_offset >= _MIN_PLAIN_TS
+                        # packet 1: no error (bit7 of byte 1), not scrambled (bits7-6 of byte 3)
+                        and body[_chevy_offset + 1] & 0x80 == 0
+                        and body[_chevy_offset + 3] & 0xC0 == 0
+                        # packet 2: same checks
+                        and body[_chevy_offset + 189] & 0x80 == 0
+                        and body[_chevy_offset + 191] & 0xC0 == 0
+                    )
+                    if _plain_ts_valid:
                         log(f'[StreamProxy] CHEVY plain-TS header detected, skip {_chevy_offset}B')
                         body = body[_chevy_offset:]
                     elif current_key_id and iv:
                         # Fallback: try AES-128 decryption
-                        key = _fetch_stream_key(current_key_id, channel_key, state, key_cache)
+                        key = _fetch_stream_key(current_key_id, channel_key, state, key_cache,
+                                                key_ns=current_key_ns)
                         if key:
+                            log(f'[StreamProxy] AES decrypt: len={len(body)} len%16={len(body)%16} iv={iv.hex()} key_ns={current_key_ns}')
                             _raw = body
                             body = _aes128_cbc_decrypt(body, key, iv)
-                            # TS sync byte check: 0x47 = valid MPEG-TS
-                            # If wrong, the CDN rotated the key value → purge cache and retry
-                            if body and body[0] != 0x47 and current_key_id in key_cache:
-                                log(f'[StreamProxy] stale key {current_key_id}, re-fetching (cache-bust)')
-                                del key_cache[current_key_id]
-                                key = _fetch_stream_key(current_key_id, channel_key, state, key_cache,
-                                                        force_refresh=True)
-                                if key:
-                                    body = _aes128_cbc_decrypt(_raw, key, iv)
-                            # Still corrupt after retry → drop (sender will emit null packets)
+
+                            def _find_ts_off(buf):
+                                """Scan buf for 3 consecutive valid TS sync bytes.
+                                Returns offset or None. Validates error/scrambling flags."""
+                                if not buf or len(buf) <= 564:
+                                    return None
+                                for _o in range(len(buf) - 564):
+                                    if (buf[_o] == 0x47
+                                            and buf[_o + 188] == 0x47
+                                            and buf[_o + 376] == 0x47
+                                            and buf[_o + 1] & 0x80 == 0      # no transport error p1
+                                            and buf[_o + 3] & 0xC0 == 0      # not scrambled p1
+                                            and buf[_o + 189] & 0x80 == 0    # no transport error p2
+                                            and buf[_o + 191] & 0xC0 == 0):  # not scrambled p2
+                                        return _o
+                                return None
+
+                            # CHEVY format: [fake header N bytes] + [real TS].
+                            # Try AES+header scan on first decrypt (cached key) BEFORE
+                            # doing any stale-key re-fetch.  This avoids a wasteful
+                            # extra HTTP request per segment and — critically — avoids
+                            # getting a different random key from CHEVY when the
+                            # reCAPTCHA whitelist has expired.
+                            _dec_off = _find_ts_off(body) if body and body[0] != 0x47 else None
+                            if _dec_off is not None and _dec_off > 0:
+                                log(f'[StreamProxy] AES+header: strip {_dec_off}B after decrypt, seq={seg_seq}')
+                                body = body[_dec_off:]
+                            elif body and body[0] != 0x47:
+                                # Scan also failed → key might be truly stale → re-fetch once
+                                if current_key_id in key_cache:
+                                    log(f'[StreamProxy] stale key {current_key_id}, re-fetching (cache-bust)')
+                                    del key_cache[current_key_id]
+                                    key2 = _fetch_stream_key(current_key_id, channel_key, state, key_cache,
+                                                             force_refresh=True, key_ns=current_key_ns)
+                                    if key2 and key2 != key:
+                                        body = _aes128_cbc_decrypt(_raw, key2, iv)
+                                        _dec_off2 = _find_ts_off(body) if body and body[0] != 0x47 else None
+                                        if _dec_off2 is not None and _dec_off2 > 0:
+                                            log(f'[StreamProxy] AES+header (retry): strip {_dec_off2}B, seq={seg_seq}')
+                                            body = body[_dec_off2:]
                             if body and body[0] != 0x47:
                                 seen_seqs.add(seg_seq)
                                 seen_urls.add(seg_url)
                                 _aes_fail_streak += 1
-                                log(f'[StreamProxy] AES mismatch, drop seq={seg_seq} (streak={_aes_fail_streak})')
-                                # M9: always force stall detection on AES mismatch (was if >= 1, always true)
-                                log(f'[StreamProxy] AES key rotated — forcing stall')
-                                _last_content_time = time.time() - _stall_wait
+                                log(f'[StreamProxy] AES mismatch, drop seq={seg_seq} (streak={_aes_fail_streak}) first32={body[:32].hex()}')
+                                if _aes_fail_streak >= 3:
+                                    log(f'[StreamProxy] AES key rotated — forcing stall (streak={_aes_fail_streak})')
+                                    _last_content_time = time.time() - _stall_wait
+                                else:
+                                    # Isolated bad segment — reset stall timer so segment
+                                    # download/decrypt time doesn't accidentally trigger stall
+                                    _last_content_time = time.time()
                                 continue
 
                     seen_seqs.add(seg_seq)
@@ -1909,7 +2031,7 @@ class _EPlayerProxyHandler(BaseHTTPRequestHandler):
                 pass
         _sender_t.join(timeout=10)
 
-    def _handle_key(self, channel_key, key_id):
+    def _handle_key(self, channel_key, key_id, orig_srv_key=None):
         state = _get_channel_state(channel_key)
         if not state or not state.get('m3u8_url'):
             # Proxy runs in old process — fetch credentials on demand
@@ -1927,13 +2049,24 @@ class _EPlayerProxyHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         try:
-            # Derive key host from m3u8 URL (same server as proxy)
+            # Derive key host from m3u8 URL
+            # m3u8 URL pattern: https://{host}/proxy/{server_key}/{channel_key}/mono.css
+            # Key URL pattern:  https://{host}/key/{server_key}/{key_id}
             m3u8_url = state.get('m3u8_url', '')
             _key_host_m = re.match(r'(https?://[^/]+)', m3u8_url)
             key_host = _key_host_m.group(1) if _key_host_m else CHEVY_LOOKUP
-            key_url = f'{key_host}/key/{channel_key}/{key_id}'
+            if orig_srv_key:
+                # Use the srv_key from the original m3u8 key URI (most authoritative).
+                # Avoids mismatch when m3u8 path srv_key ≠ key URI srv_key
+                # (e.g. /proxy/nfs/eurosport2fr/ but key URI /key/eurosport2fr/{id}).
+                _srv_key = orig_srv_key
+            else:
+                _srv_key_m = re.search(r'/proxy/([^/]+)/', m3u8_url)
+                _srv_key = _srv_key_m.group(1) if _srv_key_m else channel_key
+            key_url = f'{key_host}/key/{_srv_key}/{key_id}'
             channel_salt = state.get('channel_salt') or ''
-            hdrs = {'User-Agent': _AUTH_UA, 'Referer': m3u8_url or PLAYER_REFERER}
+            _key_referer = state.get('player_referer') or m3u8_url or PLAYER_REFERER
+            hdrs = {'User-Agent': _AUTH_UA, 'Referer': _key_referer}
             if channel_salt and channel_salt != 'noauth':
                 ts = int(time.time())
                 fp = _compute_fingerprint()
@@ -2377,6 +2510,19 @@ class _EPlayerProxyHandler(BaseHTTPRequestHandler):
                         time.sleep(0.1)
         try:
             if body is not None:
+                # Strip CHEVY PNG wrapper: plain TS wrapped in a fake PNG file.
+                # PNG magic = \x89PNG; TS sync = 0x47. Use 3 consecutive sync bytes for reliable detection.
+                # Scan only when body starts with PNG signature (avoids wasteful scan of AES data).
+                _PNG_SIG = b'\x89PNG'
+                if body and body[:4] == _PNG_SIG and len(body) > 564:
+                    for _off in range(len(body) - 564):
+                        if (body[_off] == 0x47 and body[_off + 188] == 0x47
+                                and body[_off + 376] == 0x47):
+                            log(f'[EPlayerProxy] seg stripped CHEVY header {_off}B, size {len(body)}→{len(body)-_off}B')
+                            body = body[_off:]
+                            break
+                    else:
+                        log(f'[EPlayerProxy] seg PNG wrapper but no TS sync found in {len(body)}B')
                 log(f'[EPlayerProxy] seg ok: {len(body)}B first8={body[:8].hex()}')
                 # Mark this segment as downloaded so the m3u8 dedup won't include it again
                 _ch = _seg_url_to_channel.get(seg_url)
@@ -4214,6 +4360,33 @@ def _try_player_page(channel_id, player_url, watch_url, sess):
                 ri = sess.get(iframe_url, headers={'User-Agent': UA, 'Referer': player_url}, timeout=8)
                 if ri.status_code != 200:
                     continue
+                # ── ligue1live.xyz: wrapper page with nested iframe ──────────────
+                if 'ligue1live.xyz' in iframe_url:
+                    _ll_inner_m = re.search(r'<iframe\s[^>]*src=["\']([^"\']+)["\']', ri.text)
+                    if _ll_inner_m:
+                        _ll_inner_url = _ll_inner_m.group(1)
+                        log(f'[AnyPlayer] ligue1live nested iframe: {_ll_inner_url[:80]}')
+                        try:
+                            _ll_r = sess.get(_ll_inner_url, headers={'User-Agent': UA, 'Referer': iframe_url}, timeout=8)
+                            if _ll_r.status_code == 200:
+                                for _ll_mi in _AP_M3U8_RX.finditer(_ll_r.text):
+                                    _ll_cand = _ll_mi.group(1)
+                                    try:
+                                        _ll_rp = sess.get(_ll_cand, headers={'User-Agent': UA}, timeout=4)
+                                        if _ll_rp.status_code == 200 and '#EXTM3U' in _ll_rp.text[:200]:
+                                            log(f'[AnyPlayer] ligue1live m3u8 OK: {_ll_cand[:80]}')
+                                            return (_ll_cand, None)
+                                    except Exception:
+                                        pass
+                                _ll_su = _AP_STREAM_URL_RX.search(_ll_r.text)
+                                if _ll_su:
+                                    _ll_url = _ll_su.group(1).replace('\\/', '/')
+                                    log(f'[AnyPlayer] ligue1live streamUrl: {_ll_url[:80]}')
+                                    return (_ll_url, None)
+                            else:
+                                log(f'[AnyPlayer] ligue1live inner HTTP {_ll_r.status_code}')
+                        except Exception as _ll_e:
+                            log(f'[AnyPlayer] ligue1live inner error: {_ll_e}')
                 for mi in _AP_M3U8_RX.finditer(ri.text):
                     candidate = mi.group(1)
                     if 'blogspot.com' in candidate or 'r-strm.' in candidate:
@@ -4221,6 +4394,33 @@ def _try_player_page(channel_id, player_url, watch_url, sess):
                     try:
                         rp = sess.get(candidate, headers={'User-Agent': UA}, timeout=4)
                         if rp.status_code == 200 and '#EXTM3U' in rp.text[:200]:
+                            # Probe first segment to verify segments are accessible
+                            _seg_lines = [ln.strip() for ln in rp.text.splitlines()
+                                          if ln.strip() and not ln.startswith('#')]
+                            _seg_ok = True
+                            if _seg_lines:
+                                _su = _seg_lines[0]
+                                if not _su.startswith('http'):
+                                    _su = candidate.rsplit('/', 1)[0] + '/' + _su
+                                try:
+                                    _sr = sess.get(_su, headers={'User-Agent': UA,
+                                                                  'Range': 'bytes=0-0'}, timeout=3)
+                                    if _sr.status_code == 403:
+                                        # Some CDNs reject Range requests — retry without Range
+                                        try:
+                                            _sr2 = sess.get(_su, headers={'User-Agent': UA}, timeout=3)
+                                            if _sr2.status_code >= 400:
+                                                log(f'[AnyPlayer] iframe m3u8 seg fail ({_sr2.status_code} norange): {candidate[:60]}')
+                                                _seg_ok = False
+                                        except Exception:
+                                            pass  # network error — assume segment OK
+                                    elif _sr.status_code >= 400:
+                                        log(f'[AnyPlayer] iframe m3u8 seg fail ({_sr.status_code}): {candidate[:60]}')
+                                        _seg_ok = False
+                                except Exception:
+                                    pass  # network error — assume segment OK
+                            if not _seg_ok:
+                                continue
                             log(f'[AnyPlayer] iframe m3u8 OK: {candidate[:80]}')
                             return (candidate, None)
                         log(f'[AnyPlayer] iframe m3u8 skip ({rp.status_code}): {candidate[:60]}')
@@ -4274,6 +4474,128 @@ def _try_player_page(channel_id, player_url, watch_url, sess):
                             if url.startswith('https://'):
                                 log(f'[AnyPlayer] wiki.js fid={fid} host={wiki_host}: {url[:80]}')
                                 return (url, f'https://{wiki_host}')
+
+                # ── viewembed / CHEVY-template player (CHANNEL_KEY variable) ──
+                m_ck2 = re.search(r"CHANNEL_KEY\s*=\s*['\"]([a-z0-9_-]+)['\"]", ri.text, re.IGNORECASE)
+                if m_ck2:
+                    vkey = m_ck2.group(1)
+                    srv_list = []
+                    m_sarr = re.search(r"M3U8_SERVER\b[^=\[]*=\s*\[([^\]]+)\]", ri.text)
+                    if not m_sarr:
+                        m_sarr = re.search(r"\bservers?\s*=\s*\[([^\]]+)\]", ri.text, re.IGNORECASE)
+                    if m_sarr:
+                        srv_list = [f'https://{s}' for s in re.findall(r"['\"]([a-z0-9._-]+\.[a-z]{2,})['\"]", m_sarr.group(1))]
+                    for _ds in (CHEVY_PROXY, CHEVY_LOOKUP):
+                        if _ds and _ds not in srv_list:
+                            srv_list.append(_ds)
+                    for srv in srv_list:
+                        try:
+                            sl_r = sess.get(f'{srv}/server_lookup?channel_id={vkey}',
+                                            headers={'User-Agent': UA, 'Referer': iframe_url}, timeout=4)
+                            if sl_r.status_code == 200:
+                                _sk = sl_r.json().get('server_key', 'zeko')
+                                cand = f'{srv}/proxy/{_sk}/{vkey}/mono.css'
+                                rp = sess.get(cand, headers={'User-Agent': UA, 'Referer': iframe_url}, timeout=5)
+                                if rp.status_code == 200 and '#EXTM3U' in rp.text[:200]:
+                                    # Probe first segment: skip if it's a PNG placeholder (no TS data).
+                                    # AES-encrypted segments appear as random bytes — body[:4] won't be \x89PNG.
+                                    # Use _is_placeholder() on segment URLs first (catches cdn.gptimage15.com
+                                    # even when segments are AES-encrypted), then fall back to byte probe.
+                                    _ve_seg_ok = True
+                                    _ve_segs = [l.strip() for l in rp.text.splitlines()
+                                                if l.strip() and not l.strip().startswith('#')]
+                                    if _ve_segs and all(_is_placeholder(s) for s in _ve_segs):
+                                        log(f'[AnyPlayer] viewembed {vkey} all segs are placeholder CDN @ {srv[:40]} — skip')
+                                        _ve_seg_ok = False
+                                    elif _ve_segs:
+                                        _ve_su = _ve_segs[0]
+                                        if not _ve_su.startswith('http'):
+                                            _ve_su = cand.rsplit('/', 1)[0] + '/' + _ve_su
+                                        try:
+                                            _ve_sr = sess.get(_ve_su, headers={'User-Agent': UA,
+                                                                                'Range': 'bytes=0-2047'},
+                                                              timeout=4)
+                                            if _ve_sr.status_code in (200, 206):
+                                                _ve_body = _ve_sr.content
+                                                if _ve_body[:4] == b'\x89PNG':
+                                                    # Check for TS sync within the fetched bytes
+                                                    _ve_ts = any(
+                                                        _ve_body[_o] == 0x47
+                                                        and _o + 188 < len(_ve_body)
+                                                        and _ve_body[_o + 188] == 0x47
+                                                        for _o in range(len(_ve_body) - 188)
+                                                    )
+                                                    if not _ve_ts:
+                                                        log(f'[AnyPlayer] viewembed {vkey} seg is PNG placeholder @ {srv[:40]} — skip')
+                                                        _ve_seg_ok = False
+                                        except Exception as _ve_e:
+                                            log(f'[AnyPlayer] viewembed seg probe error: {_ve_e}')
+                                    if _ve_seg_ok:
+                                        # Cross-channel guard: viewembed key doesn't match this channel.
+                                        # e.g. eurosport2fr served for premium773 gives wrong content.
+                                        # Skip this iframe so AnyPlayer can try other paths (e.g. lovecdn).
+                                        if vkey != f'premium{channel_id}':
+                                            log(f'[AnyPlayer] viewembed cross-channel {vkey} ≠ premium{channel_id} — skip')
+                                            break  # exit srv loop, continue iframe loop → returns None
+                                        # Try to extract CHEVY auth credentials from the viewembed page.
+                                        # viewembed.ru embeds the same channelSalt/authToken as ksohls.ru.
+                                        _ve_at, _ve_cs = _extract_creds_with_js(ri.text, ri.url,
+                                                                                  'https://viewembed.ru',
+                                                                                  _get_session())
+                                        if _ve_at and _ve_cs:
+                                            log(f'[AnyPlayer] viewembed CHEVY creds extracted for {vkey}')
+                                            _set_channel_state(vkey, _ve_at, _ve_cs, cand,
+                                                               player_referer=ri.url)
+                                        else:
+                                            # 1. Try sibling from already-auth'd channel in this session
+                                            _sib_at, _sib_cs = None, None
+                                            with _proxy_lock:
+                                                for _sc_state in _channel_creds.values():
+                                                    _sc = _sc_state.get('channel_salt', '')
+                                                    _sa = _sc_state.get('auth_token', '')
+                                                    if _sc and _sc != 'noauth' and _sa and _sa != 'noauth':
+                                                        _sib_cs = _sc
+                                                        _sib_at = _sa
+                                                        break
+                                            # 2. If no sibling yet, proactively fetch creds from a known
+                                            #    channel on the same CHEVY server (channel_salt is server-wide)
+                                            if not _sib_at:
+                                                for _probe_id in (495, 118, 121, 772):
+                                                    try:
+                                                        _sib_at, _sib_cs = _fetch_auth_credentials(_probe_id)
+                                                        if _sib_at and _sib_cs:
+                                                            log(f'[AnyPlayer] viewembed CHEVY probed sibling id={_probe_id} for {vkey}')
+                                                            break
+                                                    except Exception:
+                                                        pass
+                                            if _sib_at and _sib_cs:
+                                                log(f'[AnyPlayer] viewembed CHEVY using sibling salt for {vkey}')
+                                                _set_channel_state(vkey, _sib_at, _sib_cs, cand,
+                                                                   player_referer=ri.url)
+                                            else:
+                                                # Open browser → reCAPTCHA whitelist → CHEVY serves stable keys
+                                                import webbrowser as _wb
+                                                log(f'[AnyPlayer] viewembed reCAPTCHA: opening browser {ri.url[:80]}')
+                                                xbmcgui.Dialog().notification(
+                                                    'DLTV', 'Auth navigateur (8s)...',
+                                                    xbmcgui.NOTIFICATION_INFO, 8000)
+                                                try:
+                                                    _wb.open(ri.url)
+                                                except Exception as _wb_e:
+                                                    log(f'[AnyPlayer] browser open error: {_wb_e}')
+                                                time.sleep(8)
+                                                log(f'[AnyPlayer] viewembed CHEVY no auth for {vkey} — noauth+whitelist')
+                                                _set_channel_state(vkey, 'noauth', 'noauth', cand,
+                                                                   player_referer=ri.url)
+                                        _ensure_m3u8_proxy()
+                                        _ve_port = _actual_proxy_port or M3U8_PROXY_PORT
+                                        log(f'[AnyPlayer] viewembed CHEVY key={vkey} server={srv[:40]}')
+                                        return (f'http://127.0.0.1:{_ve_port}/m3u8/{vkey}', None)
+                                log(f'[AnyPlayer] viewembed {vkey} m3u8 HTTP {rp.status_code} @ {srv[:40]}')
+                            else:
+                                log(f'[AnyPlayer] viewembed server_lookup HTTP {sl_r.status_code} @ {srv[:40]}')
+                        except Exception as _e_ve:
+                            log(f'[AnyPlayer] viewembed {srv[:40]} error: {_e_ve}')
 
             except Exception as e:
                 log(f'[AnyPlayer] iframe error {iframe_url[:60]}: {e}')
@@ -4378,24 +4700,36 @@ def resolve_stream_url(channel_id, forced_key=None):
                 return f'{CHEVY_PROXY}/proxy/top1/cdn/{channel_key}/mono.css'
             return f'{CHEVY_PROXY}/proxy/{server_key}/{channel_key}/mono.css'
     server_key = 'zeko'
-    for attempt in range(2):
+    _lookup_url = CHEVY_LOOKUP
+    _proxy_url = CHEVY_PROXY
+    for attempt in range(3):
         try:
             resp = _get_session().get(
-                f'{CHEVY_LOOKUP}/server_lookup?channel_id={channel_key}',
+                f'{_lookup_url}/server_lookup?channel_id={channel_key}',
                 headers={'User-Agent': UA, 'Referer': PLAYER_REFERER},
                 timeout=4
             )
             server_key = resp.json().get('server_key', 'zeko')
             with _server_key_cache_lock:
                 _server_key_cache[channel_id] = (server_key, time.time())
+            _proxy_url = CHEVY_PROXY if _lookup_url == CHEVY_LOOKUP else _CHEVY_PROXY_BUILTIN
             break
         except Exception as e:
             log(f'[resolve_stream_url] server_lookup failed (attempt {attempt+1}): {e}')
             if attempt == 0:
-                time.sleep(0.5)
+                time.sleep(0.3)
+            elif attempt == 1 and _lookup_url != _CHEVY_LOOKUP_BUILTIN:
+                # Discovered server is down — try builtin fallback and invalidate cache
+                log(f'[resolve_stream_url] falling back to builtin CHEVY server')
+                _lookup_url = _CHEVY_LOOKUP_BUILTIN
+                _proxy_url = _CHEVY_PROXY_BUILTIN
+                try:
+                    os.remove(_DISCOVERY_CACHE_FILE)
+                except Exception:
+                    pass
     if server_key == 'top1/cdn':
-        return f'{CHEVY_PROXY}/proxy/top1/cdn/{channel_key}/mono.css'
-    return f'{CHEVY_PROXY}/proxy/{server_key}/{channel_key}/mono.css'
+        return f'{_proxy_url}/proxy/top1/cdn/{channel_key}/mono.css'
+    return f'{_proxy_url}/proxy/{server_key}/{channel_key}/mono.css'
 
 def PlayStream(link):
     try:
@@ -4430,22 +4764,50 @@ def PlayStream(link):
         m3u8_url = None
 
         if forced_cdn == '__anyplayer__':
+            _cross_channel_url = None
             ap_result = get_any_player_stream(channel_id)
             if ap_result:
+                _ap_url_tmp, _ = ap_result
+                # Cross-channel viewembed: EPlayerProxy URL for a different channel key
+                # (e.g. eurosport2fr for premium773). The viewembed channel has auth state
+                # (salt/nonce/sig) set up — route via /stream/ so the key is fetched with auth.
+                # CHEVY returns a random dummy key without auth → decryption always fails.
+                _ap_ck = _ap_url_tmp.rsplit('/m3u8/', 1)[-1] if '/m3u8/' in _ap_url_tmp else None
+                if _ap_ck and '127.0.0.1' in _ap_url_tmp and _ap_ck != channel_key:
+                    log(f'[PlayStream] AnyPlayer cross-channel ({_ap_ck} ≠ {channel_key}) — routing /stream/ with viewembed auth')
+                    _ensure_m3u8_proxy()
+                    _cross_channel_url = f'http://127.0.0.1:{_actual_proxy_port or M3U8_PROXY_PORT}/stream/{_ap_ck}'
+                    ap_result = None
+            if _cross_channel_url:
+                m3u8_url = _cross_channel_url
+                log(f'[PlayStream] Using cross-channel TS stream proxy: {m3u8_url}')
+            elif ap_result:
                 real_m3u8_url, player_origin = ap_result
                 log(f'[PlayStream] AnyPlayer URL: {real_m3u8_url} (origin={player_origin})')
                 use_player6 = True
             else:
-                # AnyPlayer failed — fall back to CHEVY no-auth proxy
-                log('[PlayStream] AnyPlayer failed — falling back to CHEVY no-auth proxy')
-                real_m3u8_url = resolve_stream_url(channel_id, None)
-                log(f'[PlayStream] Primary M3U8 URL (noauth fallback): {real_m3u8_url}')
-                # auth_token/channel_salt stay None → hits the else branch below
-                # but skip redundant AnyPlayer retry by going straight to no-auth
-                _set_channel_state(channel_key, 'noauth', 'noauth', real_m3u8_url)
-                _ensure_m3u8_proxy()
-                m3u8_url = f'http://127.0.0.1:{_actual_proxy_port or M3U8_PROXY_PORT}/m3u8/{channel_key}'
-                log(f'[PlayStream] Using m3u8 proxy (no-auth): {m3u8_url}')
+                # AnyPlayer failed — try ksohls auth before noauth (noauth often returns placeholder images)
+                log('[PlayStream] AnyPlayer failed — trying ksohls auth before noauth fallback')
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as _ex2:
+                    _f_url = _ex2.submit(resolve_stream_url, channel_id, None)
+                    _f_auth = _ex2.submit(_fetch_auth_credentials, channel_id)
+                    real_m3u8_url = _f_url.result()
+                    auth_token, channel_salt = _f_auth.result()
+                if not auth_token:
+                    auth_token, channel_salt = get_stream_page_url(channel_id)
+                if auth_token and channel_salt and auth_token != 'noauth':
+                    log(f'[PlayStream] AnyPlayer failed but ksohls auth OK — using CHEVY stream proxy')
+                    _set_channel_state(channel_key, auth_token, channel_salt, real_m3u8_url)
+                    _ensure_m3u8_proxy()
+                    m3u8_url = f'http://127.0.0.1:{_actual_proxy_port or M3U8_PROXY_PORT}/stream/{channel_key}'
+                    log(f'[PlayStream] Using TS stream proxy (auth): {m3u8_url}')
+                else:
+                    log(f'[PlayStream] Auth also failed — falling back to CHEVY no-auth TS proxy')
+                    log(f'[PlayStream] Primary M3U8 URL (noauth fallback): {real_m3u8_url}')
+                    _set_channel_state(channel_key, 'noauth', 'noauth', real_m3u8_url)
+                    _ensure_m3u8_proxy()
+                    m3u8_url = f'http://127.0.0.1:{_actual_proxy_port or M3U8_PROXY_PORT}/stream/{channel_key}'
+                    log(f'[PlayStream] Using TS stream proxy (no-auth): {m3u8_url}')
 
         elif forced_cdn == '__streampage__':
             # StreamPage uses enviromentalspace.cyou auth + CHEVY CDN (TS proxy path)
@@ -4505,8 +4867,22 @@ def PlayStream(link):
                 # Auth unavailable — try AnyPlayer first (handles channels like ch.121 where
                 # CHEVY key endpoint returns a dummy key, making noauth m3u8 proxy unusable).
                 log('[PlayStream] Auth unavailable — trying AnyPlayer fallback before noauth proxy')
+                _cross_channel_url = None
                 ap_result = get_any_player_stream(channel_id)
                 if ap_result:
+                    _ap_url_tmp, _ = ap_result
+                    # Cross-channel viewembed: route via /stream/ for the viewembed channel
+                    # so key is fetched with auth (CHEVY returns random key without auth).
+                    _ap_ck = _ap_url_tmp.rsplit('/m3u8/', 1)[-1] if '/m3u8/' in _ap_url_tmp else None
+                    if _ap_ck and '127.0.0.1' in _ap_url_tmp and _ap_ck != channel_key:
+                        log(f'[PlayStream] AnyPlayer cross-channel ({_ap_ck} ≠ {channel_key}) — routing /stream/ with viewembed auth')
+                        _ensure_m3u8_proxy()
+                        _cross_channel_url = f'http://127.0.0.1:{_actual_proxy_port or M3U8_PROXY_PORT}/stream/{_ap_ck}'
+                        ap_result = None
+                if _cross_channel_url:
+                    m3u8_url = _cross_channel_url
+                    log(f'[PlayStream] Using cross-channel TS stream proxy: {m3u8_url}')
+                elif ap_result:
                     real_m3u8_url, player_origin = ap_result
                     log(f'[PlayStream] AnyPlayer fallback OK: {real_m3u8_url} (origin={player_origin})')
                     if player_origin:
@@ -4520,13 +4896,13 @@ def PlayStream(link):
                         log(f'[PlayStream] Using AnyPlayer fallback stream directly')
                     use_player6 = True
                 else:
-                    log('[PlayStream] AnyPlayer fallback failed — using m3u8 proxy (noauth)')
+                    log('[PlayStream] AnyPlayer fallback failed — using TS stream proxy (noauth)')
                     _set_channel_state(channel_key, 'noauth', 'noauth', real_m3u8_url)
                     _ensure_m3u8_proxy()
-                    m3u8_url = f'http://127.0.0.1:{_actual_proxy_port or M3U8_PROXY_PORT}/m3u8/{channel_key}'
-                    log(f'[PlayStream] Using m3u8 proxy (no-auth): {m3u8_url}')
+                    m3u8_url = f'http://127.0.0.1:{_actual_proxy_port or M3U8_PROXY_PORT}/stream/{channel_key}'
+                    log(f'[PlayStream] Using TS stream proxy (no-auth): {m3u8_url}')
 
-        _is_ts_proxy = not use_player6 and f'/stream/{channel_key}' in m3u8_url
+        _is_ts_proxy = not use_player6 and '127.0.0.1' in m3u8_url and '/stream/' in m3u8_url
         _is_m3u8_proxy = not use_player6 and f'/m3u8/{channel_key}' in m3u8_url
         liz = xbmcgui.ListItem(f'Channel {channel_id}', path=m3u8_url)
         liz.setContentLookup(False)
@@ -4547,6 +4923,12 @@ def PlayStream(link):
             liz.setMimeType('video/MP2T')
         elif '/lovecdn/' in m3u8_url:
             # lovecdn HLS via ffmpegdirect (fallback, not currently used)
+            liz.setMimeType('application/vnd.apple.mpegurl')
+            liz.setProperty('inputstream', 'inputstream.ffmpegdirect')
+            liz.setProperty('inputstream.ffmpegdirect.is_realtime_stream', 'true')
+            liz.setProperty('inputstream.ffmpegdirect.open_mode', 'ffmpeg')
+        elif use_player6 and '127.0.0.1' in m3u8_url and '/m3u8/' in m3u8_url:
+            # EPlayerProxy URL returned from AnyPlayer (e.g. viewembed CHEVY) — ffmpegdirect via proxy
             liz.setMimeType('application/vnd.apple.mpegurl')
             liz.setProperty('inputstream', 'inputstream.ffmpegdirect')
             liz.setProperty('inputstream.ffmpegdirect.is_realtime_stream', 'true')
@@ -4888,6 +5270,19 @@ def ExtraChannels_Play(url, name='Extra Channel', logo=ICON):
 
 
 # ── Auto-discover server URLs: load cache if fresh, refresh in background if stale ──
+def _proxy_host_reachable(url, timeout=1.5):
+    """Quick TCP connectivity check — returns True if the proxy host accepts connections."""
+    try:
+        from urllib.parse import urlparse as _up
+        import socket as _sock
+        _p = _up(url)
+        _port = _p.port or (443 if _p.scheme == 'https' else 80)
+        _c = _sock.create_connection((_p.hostname, _port), timeout=timeout)
+        _c.close()
+        return True
+    except Exception:
+        return False
+
 try:
     _disco_fresh = False
     if os.path.exists(_DISCOVERY_CACHE_FILE):
@@ -4895,17 +5290,30 @@ try:
             with open(_DISCOVERY_CACHE_FILE) as _f:
                 _d = json.load(_f)
             if _d.get('proxy') and _d.get('lookup') and _d.get('ksohls'):
-                CHEVY_PROXY = _d['proxy']
-                CHEVY_LOOKUP = _d['lookup']
-                _KSOHLS_BASE = _d['ksohls']
-                PLAYER_REFERER = _KSOHLS_BASE + '/'
-                _SEG_HEADERS['Origin'] = _KSOHLS_BASE
-                _SEG_HEADERS['Referer'] = PLAYER_REFERER
-                addon.setSetting('chevy_proxy_url', CHEVY_PROXY)
-                addon.setSetting('chevy_lookup_url', CHEVY_LOOKUP)
-                addon.setSetting('ksohls_base_url', _KSOHLS_BASE)
-                _disco_fresh = True
-                log(f'[Discovery] Cache OK: ksohls={_KSOHLS_BASE} proxy={CHEVY_PROXY}')
+                # Validate cached proxy is still reachable before committing to it
+                if _proxy_host_reachable(_d['proxy']):
+                    CHEVY_PROXY = _d['proxy']
+                    CHEVY_LOOKUP = _d['lookup']
+                    _KSOHLS_BASE = _d['ksohls']
+                    PLAYER_REFERER = _KSOHLS_BASE + '/'
+                    _SEG_HEADERS['Origin'] = _KSOHLS_BASE
+                    _SEG_HEADERS['Referer'] = PLAYER_REFERER
+                    addon.setSetting('chevy_proxy_url', CHEVY_PROXY)
+                    addon.setSetting('chevy_lookup_url', CHEVY_LOOKUP)
+                    addon.setSetting('ksohls_base_url', _KSOHLS_BASE)
+                    _disco_fresh = True
+                    log(f'[Discovery] Cache OK: ksohls={_KSOHLS_BASE} proxy={CHEVY_PROXY}')
+                else:
+                    log(f'[Discovery] Cached proxy unreachable ({_d["proxy"]}) — resetting to builtin servers')
+                    try:
+                        os.remove(_DISCOVERY_CACHE_FILE)
+                    except Exception:
+                        pass
+                    # Reset globals and addon settings to builtin defaults
+                    CHEVY_PROXY = _CHEVY_PROXY_BUILTIN
+                    CHEVY_LOOKUP = _CHEVY_LOOKUP_BUILTIN
+                    addon.setSetting('chevy_proxy_url', '')
+                    addon.setSetting('chevy_lookup_url', '')
     if not _disco_fresh:
         threading.Thread(target=_discover_server_urls, daemon=True).start()
 except Exception as _e:

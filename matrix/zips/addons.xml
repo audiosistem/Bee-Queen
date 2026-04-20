@@ -395,7 +395,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.dltv" name="DLTV" version="1.0.11" provider-name="Arkane14">
+</addon><addon id="plugin.video.dltv" name="DLTV" version="1.0.20" provider-name="Arkane14">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />
@@ -415,7 +415,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
         </assets>
-        <news>v1.0.11: schedule refresh triggers Container.Refresh after clearing cache</news>
+        <news>v1.0.20: Fix ch.773 — route via lovecdn player; fix CHEVY AES+header scan false positives; fix stall recovery for non-premium channels</news>
     </extension>
 </addon><addon id="plugin.video.dscmovieshub" version="1.2.0" name="[COLOR teal]DSCMoviesHub[/COLOR]" provider-name="DSCMoviesHub">
     <requires>
@@ -595,6 +595,36 @@ In addition to what livestreams allowed you to do, you can now,
 			<fanart>fanart.jpg</fanart>
 		</assets>
 	</extension>
+</addon><addon id="plugin.video.looptv" name="Loop TV" version="26+matrix.2" provider-name="Munkee - RACC">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.pycryptodome" />
+    <import addon="script.module.pyamf" />
+    <import addon="script.module.kodi-six" />
+    <import addon="script.module.future" />
+    <import addon="script.module.requests" />
+    <import addon="script.module.routing" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="addon.py">
+    <provides>all</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <reuselanguageinvoker>true</reuselanguageinvoker>
+    <summary lang="en_gb">tvOne</summary>
+    <description lang="en_gb">tvOne</description>
+    <disclaimer lang="en_gb" />
+    <language />
+    <platform>all</platform>
+    <license>GPL-3.0</license>
+    <forum />
+    <website />
+    <email />
+    <source />
+    <assets>
+		<icon>icon.png</icon>
+		<fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
 </addon><addon id="plugin.video.macvod" version="1.995" name="[COLORyellow]XC MAC M3U[/COLOR]" provider-name="1x|iNKuBo|bee">
 <requires>    		
     	<import addon="script.module.resolveurl" />
@@ -684,24 +714,6 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.04.06" name="POV" provider-name="kodifitzwell">
-	<requires>
-		<import addon="xbmc.python" version="3.0.0" />
-		<import addon="script.module.requests" />
-	</requires>
-	<extension point="xbmc.python.pluginsource" library="resources/lib/entry.py">
-		<provides>video</provides>
-	</extension>
-	
-	<extension point="xbmc.addon.metadata">
-		<reuselanguageinvoker>true</reuselanguageinvoker>
-		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
-		<disclaimer lang="en">The author of this addon does not host any of the content which is found and has no affiliation with any of the content providers.[CR]The author is in no way affiliated with Kodi, Team Kodi, or the XBMC Foundation.</disclaimer>
-		<summary>What you like to watch.[CR]</summary>
-		<description lang="en">This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</description>
-		<news>INFO: For latest changes see Changelog within add-on.</news>
-		<assets><icon>pov.png</icon><fanart>pov_fanart.png</fanart></assets>
-	</extension>
 </addon><addon id="plugin.video.rotv123" name="Rotv123" version="1.3.4" provider-name="1X,AS,Derzis si Geamanu">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -724,35 +736,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.scrubsv2" version="5.1.43" name="[COLOR orange]Scrubs v2[/COLOR]" provider-name="JewBMX">
-    <requires>
-        <import addon="script.module.six" />
-        <import addon="script.module.kodi-six" />
-        <import addon="script.module.simplejson" />
-        <import addon="script.module.requests" />
-        <import addon="script.module.resolveurl" />
-        <import addon="script.scrubsv2.artwork" optional="true" />
-        <import addon="script.trakt" optional="true" />
-        <import addon="plugin.video.json_iptv" optional="true" />
-        <import addon="plugin.video.youtube" optional="true" />
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="main.py">
-        <provides>video</provides>
-    </extension>
-    <extension library="service.py" point="xbmc.service" start="startup" />
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en">A Clean Source To Dirty Things...</summary>
-        <description lang="en">Movies, Tv Shows, Anime, and What Not. [CR] See Changelog For Changes. [CR] You enable/disable the ones you dont like and let me handle the broken providers. [CR] How it should be :)</description>
-        <disclaimer lang="en">The author is not responsible for the use of this addon. The author is not responsible for the content found using this addon. The author does not host or own any content found within this addon.[CR]The author is in no way affiliated with Kodi, Team Kodi, or the XBMC Foundation.[CR]This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</disclaimer>
-        <license>Free the People!, Free the World!!</license>
-        <platform>all</platform>
-        <assets>
-            <icon>resources/images/icon.png</icon>
-            <fanart>resources/images/fanart.jpg</fanart>
-        </assets>
-        <news>Total CleanUp of Providers : Checked and Cleaned as of July 2024. [CR] Check ChangeLog For More Details.</news>
-    </extension>
-</addon><addon id="plugin.video.themoviedb.helper" version="6.15.1" name="TMDb Helper" provider-name="jurialmunkey">
+</addon><addon id="plugin.video.themoviedb.helper" version="6.15.3" name="TMDb Helper" provider-name="jurialmunkey">
 <requires>
   <import addon="xbmc.python" version="3.0.1" />
   <import addon="script.module.requests" version="2.9.1" />
@@ -766,7 +750,7 @@ In addition to what livestreams allowed you to do, you can now,
   <provides>video</provides>
 </extension>
 <extension point="xbmc.python.script" library="resources/script.py" />
-
+<extension point="xbmc.service" library="resources/service.py" />
 <extension point="xbmc.python.module" library="resources/modules" />
 <extension point="xbmc.addon.metadata">
   <reuselanguageinvoker>false</reuselanguageinvoker>

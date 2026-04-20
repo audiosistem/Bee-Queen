@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addon id="plugin.video.themoviedb.helper"
-version="6.15.1"
+version="6.15.3"
 name="TMDb Helper"
 provider-name="jurialmunkey">
 <requires>
@@ -16,7 +16,7 @@ provider-name="jurialmunkey">
   <provides>video</provides>
 </extension>
 <extension point="xbmc.python.script" library="resources/script.py" />
-<!--<extension point="xbmc.service" library="resources/service.py" />-->
+<extension point="xbmc.service" library="resources/service.py" />
 <extension point="xbmc.python.module" library="resources/modules"/>
 <extension point="xbmc.addon.metadata">
   <reuselanguageinvoker>false</reuselanguageinvoker>
