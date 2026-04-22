@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+    <category label="General">
+        <setting label="[B][COLOR orange]Provideri[/COLOR][/B]" type="lsep" />
+        <setting id="subtitle_source" type="enum" label="Provider subtitrări"
+                 values="[B][COLOR cyan]Wyzie[/COLOR][/B]|[B][COLOR cyan]OpenSubtitles[/COLOR][/B]|[B][COLOR cyan]SubHero[/COLOR][/B]|[B][COLOR cyan]Fast (Toate 3)[/COLOR][/B]"
+                 default="3" />
+				 
+        <setting id="subs_languages" type="enum" label="Limba subtitrare"
+                 values="[B][COLOR yellow]Română[/COLOR][/B]|[B][COLOR yellow]Engleză[/COLOR][/B]|[B][COLOR yellow]Spaniolă[/COLOR][/B]|[B][COLOR yellow]Franceză[/COLOR][/B]|[B][COLOR yellow]Germană[/COLOR][/B]|[B][COLOR yellow]Italiană[/COLOR][/B]|[B][COLOR yellow]Maghiară[/COLOR][/B]|[B][COLOR yellow]Portugheză[/COLOR][/B]|[B][COLOR yellow]Rusă[/COLOR][/B]|[B][COLOR yellow]Turcă[/COLOR][/B]|[B][COLOR yellow]Bulgară[/COLOR][/B]|[B][COLOR yellow]Greacă[/COLOR][/B]|[B][COLOR yellow]Poloneză[/COLOR][/B]|[B][COLOR yellow]Cehă[/COLOR][/B]|[B][COLOR yellow]Olandeză[/COLOR][/B]"
+                 default="0" />
+
+        <setting id="show_all_langs" type="bool" label="Afișează [B]TOATE[/B] limbile disponibile" default="false" />
+        <setting label="[I][COLOR gray]Când e activ: vezi toate subtitrările, poți traduce din orice limbă.[/COLOR][/I]" type="lsep" />
+
+        <setting id="filter_sdh" type="bool" label="Filtrează subtitrările [B]SDH[/B] (Hearing Impaired)" default="true" />
+		
+        <setting label="[B][COLOR orange]Robot[/COLOR][/B]" type="lsep" />
+
+        <setting id="robot_activat" type="bool" label="[B][COLOR lime]Activează Robot Traducător[/COLOR][/B]" default="true" />
+        <setting id="robot_selectat" type="enum" label="[B]Motor Traducere (Robot)[/B]"
+                 values="[B][COLOR cyan]Gemini (Recomandat)[/COLOR][/B]|[B][COLOR cyan]Lingva (Gratuit, Fără API)[/COLOR][/B]|[B][COLOR cyan]Google Translate (API)[/COLOR][/B]"
+                 default="1" />
+
+    </category>
+	
+    <category label="API KEYS">
+
+        <!-- Secțiune Wyzie API -->
+        <setting label="[B][COLOR orange]Configurare Wyzie API[/COLOR][/B]" type="lsep" />
+        <setting id="wyzie_api_key" type="text" label="Cheie API Wyzie pentru cautare" default="" />
+        <setting label="[I]Obține cheia de la:  [B][COLOR cyan]sub.wyzie.io/redeem[/COLOR][/B][/I]" type="lsep" />
+
+		<setting type="sep2"/>
+
+        <setting label="[B][COLOR orange]Google AI Studio API KEYS (Gemini)[/COLOR][/B]" type="lsep" />
+        <setting id="api_key_1" type="text" label="Cheie Gemini API 1" default="" option="hidden" />
+        <setting id="api_key_2" type="text" label="Cheie Gemini API 2" default="" option="hidden" />
+        <setting id="api_key_3" type="text" label="Cheie Gemini API 3" default="" option="hidden" />
+        <setting id="api_key_4" type="text" label="Cheie Gemini API 4" default="" option="hidden" />
+        <setting id="api_key_5" type="text" label="Cheie Gemini API 5" default="" option="hidden" />
+        <setting label="[I]Obține chei de la:  [B][COLOR cyan]aistudio.google.com → Get API Key[/COLOR][/B][/I]" type="lsep" />
+		<setting type="sep2"/>
+
+
+        <setting label="[B][COLOR orange]Google Translate API KEYS[/COLOR][/B]" type="lsep" />
+
+        <setting id="api_key_r1_1" type="text" label="Cheie Google API 1" default="" option="hidden" />
+        <setting id="api_key_r1_2" type="text" label="Cheie Google API 2" default="" option="hidden" />
+        <setting id="api_key_r1_3" type="text" label="Cheie Google API 3" default="" option="hidden" />
+        <setting id="api_key_r1_4" type="text" label="Cheie Google API 4" default="" option="hidden" />
+        <setting id="api_key_r1_5" type="text" label="Cheie Google API 5" default="" option="hidden" />
+
+    </category>
+    <category label="Salvare">
+        <setting label="[B][COLOR orange]Salvare Traduceri[/COLOR][/B]" type="lsep" />
+        <setting id="save_translations" type="bool"
+                 label="Salvează traducerile permanent"
+                 default="true" />
+        <setting label="[I][COLOR gray]Traducerile complete se salvează în 'Subtitrari traduse'.[/COLOR][/I]"
+                 type="lsep" />
+
+        <setting id="clean_saved" type="action"
+                 label="Șterge TOATE subtitrările salvate"
+                 action="RunScript(service.subtitles.substudio,clean_saved)" />
+    </category>
+
+    <category label="Log">
+        <setting label="[B][COLOR orange]Debug[/COLOR][/B]" type="lsep" />
+        <setting id="debug_logging" type="bool" label="Loguri detaliate (Debug)" default="false" />
+        
+        <!-- Tracker ascuns pentru curățarea fișierului de gunoaie -->
+        <setting id="last_run_version" type="text" default="" visible="false" />
+    </category>
+</settings>
