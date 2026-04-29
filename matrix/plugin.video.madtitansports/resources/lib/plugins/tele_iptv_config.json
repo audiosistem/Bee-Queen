@@ -1,0 +1,29 @@
+{
+    "tg_message": "https://t.me/YourChannel/1?embed=1",
+    "exclude_groups": [
+        "xxx",
+        "adult",
+        "18+"
+    ],
+    "total_result_limit": 20,
+    "per_address_limit": 5,
+    "num_posts": 25,
+    "exclude_names": [
+        "BR:",
+        "ARG:",
+        "MEX:"
+    ],
+    "stream_check_enabled": true,
+    "stream_check_candidates": 5,
+    "test_channel_keywords": [
+        "espn",
+        "sky sports",
+        "tnt",
+        "nba",
+        "nfl",
+        "tsn",
+        "fox sports",
+        "nbc sports"
+    ],
+    "debug_logging": false
+}

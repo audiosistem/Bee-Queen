@@ -1,0 +1,57 @@
+[COLOR yellow][B]A massive thank you to Loki for many coding edits.[/B][/COLOR]
+
+[COLOR yellow][B]v0.2.9[/B]
+*Improved search performance. First search may take up to 30–40 seconds while building cache. All subsequent searches are near-instant (1–2 seconds).
+
+[COLOR yellow][B]v0.2.8[/B]
+*Fixed search reopening keyboard after playback
+
+[COLOR yellow][B]v0.2.7[/B]
+*Added unified search for Classic TV Shows and Latest Content Added
+
+[COLOR yellow][B]v0.2.6[/B]
+*Fixed Trakt again
+
+[COLOR yellow][B]v0.2.5[/B]
+*Fixed Trakt not ticking watched content
+
+[COLOR yellow][B]v0.2.4[/B]
+*Fixed Some Errors While Scraping
+*Added Torbox Debrid
+
+[COLOR yellow][B]v0.2.3[/B]
+* Fixed RD, AD, Premiumize
+* Added Option to Play Trailers Before a Movie
+* Fixed Trakt TV
+* Fixed the Season Watched Marking
+Note: If you see inline Error When Scrapers are in
+Action, There is Nothing Wrong, It is looking for
+All Links, Also You May See Index Out of Range
+This is Nothing to be Concerned About
+
+[COLOR yellow][B]v0.2.2[/B]
+* Removed Just Click It
+
+[COLOR yellow][B]v0.2.1[/B]
+* Fixed Broken Links
+
+[COLOR yellow][B]v0.2.0[/B]
+* Added Fanart for Standup Comedy
+
+[COLOR yellow][B]v0.1.9[/B]
+* Fixed Popup Error
+
+[COLOR yellow][B]v0.1.8[/B]
+* Updated Scrapers
+
+[COLOR yellow][B]v0.1.7[/B]
+* Fixed many broken links
+
+[COLOR yellow][B]v0.1.6[/B]
+* Updated Scrapers
+
+[COLOR yellow][B]v0.1.5[/B]
+* Code Cleanup
+
+[COLOR yellow][B]v0.1.4[/B]
+* fixed TMDB API

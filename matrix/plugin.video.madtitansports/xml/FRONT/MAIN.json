@@ -1,0 +1,166 @@
+{
+    "items": [
+        
+        
+        
+        
+        
+        {
+            "type": "dir",
+            "title": "[COLORblue][B]Watch Wrestling Live and Replays [/COLOR][/B] - [COLORyellow]NEW[/COLOR]",
+           
+            "sportjetextractors": "WatchProWrestling",
+            "thumbnail":"",
+            "fanart":""
+        },
+        
+        {
+            "type": "dir",
+            "title": "[COLORyellow][B]PPV[/COLOR][/B]  ",
+            "magnetic_tv": "season|PPV|appAixUSjENO2TX9W|PPV",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/Picsart_22-05-12_07-03-17-262.png",
+            "fanart":"https://mgmgrand.mgmresorts.com/content/dam/MGM/mgm-grand/hotel/mgm-grand/exterior/mgm-grand-hotel-mgm-grand-exterior-hero-shot-@2x.jpg"
+        },
+        {
+            "type": "dir",
+            "title": "[COLORred][B][I]NBA[/COLOR][/I] [/B]",
+            "magnetic_tv": "season|NBA|appAixUSjENO2TX9W|NBA",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/Picsart_22-05-12_06-33-11-405.png",
+            "fanart":"https://cdn.choosechicago.com/uploads/2019/08/BullsIntros-Expires-8.1.21-Credit-Chicago-Bulls-e1566185997535.jpg"
+        },
+
+        
+        
+        {
+            "type": "dir",
+            "title": "[COLORred][B]MLB[/COLOR]  [/B]",
+            "magnetic_tv": "season|MLB|appAixUSjENO2TX9W|MLB",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/Picsart_22-05-12_06-38-55-209.png",
+            "fanart":"https://ssl.tzoo-img.com/images/tzoo.88776.0.841320.PittsburghPirates-cp.jpg"
+        },
+
+        {
+            "type": "dir",
+            "title": "[COLORred][B]NFL[/COLOR]  [/B]",
+            "link": "https://magnetic1.ratpack.appboxes.co/MAD_TITAN_SPORTS/SPORTS/NFL/NFL.json",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/Picsart_22-05-12_06-35-24-778.png",
+            "fanart":"https://cdn11.bigcommerce.com/s-k5xb3d5nlu/images/stencil/2048x2048/products/90/321/Dallas_Cowboys_New_01_13x19_LR_5308_DalCow01-13x19-StadiumArtCom-1028px__68647.1520291490.jpg?c=2"
+        },
+        {
+            "type": "dir",
+            "title": "[COLORred][B]NHL[/COLOR]  [/B]",
+            "magnetic_tv": "season|NHL|appAixUSjENO2TX9W|NHL",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/NHL%20ICON.png",
+            "fanart":"https://arenadigest.com/wp-content/uploads/2018/02/Little-Caesars-Arena-Red-Wings-1-1024x576.jpg"
+        },
+        {
+            "type": "dir",
+            "title": "[COLORred][B]NCAAF[/COLOR]  [/B]",
+            "magnetic_tv": "season|NCAAF|appAixUSjENO2TX9W|NCAAF",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/Picsart_22-05-12_07-13-54-576.png",
+            "fanart":"https://i.pinimg.com/originals/97/e4/b6/97e4b6d7e7245d405a3d08d13c71429e.png"
+        },
+        {
+            "type": "dir",
+            "title": "[COLORred][B]NCAAB[/COLOR]  [/B]",
+            "magnetic_tv": "season|NCAAB|appAixUSjENO2TX9W|NCAAB",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/Picsart_22-05-12_07-14-54-343.png",
+            "fanart":"https://dbukjj6eu5tsf.cloudfront.net/goduke.com/images/2018/4/10/ACWHRZBJSFRYDUO.20180410141730.jpg"
+        },
+        {
+            "type": "dir",
+            "title": "[COLORred][B]Wrestling Events[/COLOR]  [/B]",
+            "magnetic_tv": "season|Wrestling|appAixUSjENO2TX9W|Wrestling",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/Picsart_22-05-12_06-44-26-249.png",
+            "fanart":"https://cdn.civitatis.com/mexico/ciudad-de-mexico/galeria/arena-mexico.jpg"
+        },
+        {
+            "type": "dir",
+            "title": "[COLORred][B]Boxing[/COLOR]  [/B]",
+            "magnetic_tv": "season|Boxing|appAixUSjENO2TX9W|Boxing",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/boxing.png"
+            
+        },
+        {
+            "type": "dir",
+            "title": "[COLORred][B]Soccer-[/COLOR]Footy  [/B]",
+            "magnetic_tv": "season|SOCCER|appAixUSjENO2TX9W|SOCCER",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/Picsart_22-05-12_06-47-51-253.png",
+            "fanart":"https://wallpaper-mania.com/wp-content/uploads/2018/09/High_resolution_wallpaper_background_ID_77701983478.jpg"
+        },
+        {
+            "type": "dir",
+            "title": "[COLORred][B]MLS[/COLOR]  [/B]",
+            "magnetic_tv": "season|MLS|appAixUSjENO2TX9W|MLS",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/mls.png",
+            "fanart":""
+        },
+        {
+            "type": "dir",
+            "title": "[COLORred][B]DARTS[/COLOR][/B]",
+            "magnetic_tv": "season|Darts|appAixUSjENO2TX9W|Darts",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/Picsart_22-05-12_07-04-41-147.png",
+            "fanart":"https://i.guim.co.uk/img/media/e895c575c35dc84626f3606b82cfbeff1e883af4/0_38_4339_2605/master/4339.jpg?width=1200&height=1200&quality=85&auto=format&fit=crop&s=7a30924aafb6ef5f7abdcac67fcd5f70"
+        },
+
+        {
+            "type": "dir",
+            "title": "[COLORyellow][B]TENNIS[/COLOR][/B]",
+            "magnetic_tv": "season|TENNIS|appAixUSjENO2TX9W|TENNIS",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/TENNIS.png",
+            "fanart":"https://cdn.cheapoguides.com/wp-content/uploads/sites/2/2019/09/tennis-iStock-1093339590-1024x657.jpg"
+        },
+        {
+            "type": "dir",
+            "title": "[COLORyellow][B]GOLF[/COLOR][/B]",
+            "magnetic_tv": "season|GOLF|appAixUSjENO2TX9W|GOLF",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/Picsart_22-05-12_07-07-36-496.png",
+            "fanart":"https://wallpaper-mania.com/wp-content/uploads/2018/09/High_resolution_wallpaper_background_ID_77701949892.jpg"
+        },
+        {
+            "type": "dir",
+            "title": "[COLORyellow][B]CRICKET[/COLOR][/B]",
+            "magnetic_tv": "season|Cricket|appAixUSjENO2TX9W|Cricket",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/Picsart_22-05-12_07-06-13-616.png",
+            "fanart":"https://www.teahub.io/photos/full/27-276067_hd-wallpaper-of-cricket.jpg"
+        },
+        {
+            "type": "dir",
+            "title": "[COLORyellow][B]Rugby[/COLOR][/B]",
+            "magnetic_tv": "season|Rugby|appAixUSjENO2TX9W|Rugby",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/Picsart_22-05-12_07-09-17-525.png",
+            "fanart":"https://images.unsplash.com/photo-1529663297269-6d349ec39b57?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1yZWxhdGVkfDJ8fHxlbnwwfHx8fA%3D%3D&w=1000&q=80"
+        },
+        {
+            "type": "dir",
+            "title": "[COLORyellow][B]Motor Sports[/COLOR][/B]",
+            "magnetic_tv": "season|Motorsport|appAixUSjENO2TX9W|Motorsport",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/MOTOR%20SPORTS.png",
+            "fanart":"https://i0.wp.com/circuitprodigital.com/wp-content/uploads/DamianCudlinValenciaTestPr12QMMF_06.jpg"
+        },
+        {
+            "type": "dir",
+            "title": "[COLORyellow][B]Snooker[/COLOR][/B]",
+            "magnetic_tv": "season|Snooker|appAixUSjENO2TX9W|Snooker",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/Picsart_22-05-12_07-10-36-501.png",
+            "fanart":"https://www.womenssnooker.com/wp-content/uploads/0-hiendsnooker-6-1024x682.jpg"
+        },
+        {
+            "type": "dir",
+            "title": "[COLORred][B]Horse[/COLOR] Racing [/B]",
+            "magnetic_tv": "season|Horse Racing|appAixUSjENO2TX9W|Horse Racing",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/horse.png"
+            
+        },
+        {
+            "type": "dir",
+            "title": "[COLORred][B]Extreme Sports[/COLOR] And Other Odd Balls[/B]",
+            "magnetic_tv": "season|Extreme Sports|appAixUSjENO2TX9W|Extreme Sports",
+            "thumbnail":"https://magnetic.website/menu%20icons/wolfgirl%20mad%20titan%20sports%20icons/extreme.png"
+            
+        }
+        
+        
+
+    ]
+}

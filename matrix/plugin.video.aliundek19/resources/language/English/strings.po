@@ -1,0 +1,1271 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Mando\n"
+"Report-Msgid-Bugs-To: http://trac.xbmc.org/\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: 2017-09-27 10:42+0300\n"
+"Last-Translator: A. Dambledore\n"
+"Language-Team: Eng2Heb\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);\n"
+"X-Generator: Poedit 2.0.4\n"
+
+#English
+msgctxt "#32001"
+msgid "[COLOR aqua]Play the next episode - [/COLOR]"
+msgstr "Play the next episode - "
+
+msgctxt "#32002"
+msgid "[COLOR aqua] Episode -[/COLOR]"
+msgstr " Episode -"
+
+msgctxt "#32003"
+msgid "[COLOR aqua]Play current episode - [/COLOR]"
+msgstr "Play current episode - "
+
+msgctxt "#32004"
+msgid "[COLOR aqua]Open season's episodes[/COLOR]"
+msgstr "Open season's episodes"
+
+msgctxt "#32005"
+msgid "[COLOR aqua]Open season selection[/COLOR]"
+msgstr "Open season selection"
+
+msgctxt "#32006"
+msgid "[COLOR aqua]Play the next episode - [/COLOR]"
+msgstr "Play the next episode - "
+
+msgctxt "#32007"
+msgid "[COLOR aqua]Play the next episode - [/COLOR]"
+msgstr "Play the next episode - "
+
+msgctxt "#32008"
+msgid "[COLOR aqua]Play previous episode - [/COLOR]"
+msgstr "Play previous episode - "
+
+msgctxt "#32009"
+msgid "[COLOR aqua]Start over[/COLOR]"
+msgstr "Start over"
+
+msgctxt "#32010"
+msgid "% Please Wait "
+msgstr "% Please Wait "
+
+msgctxt "#32011"
+msgid "[COLOR aqua]Welcome to version -[/COLOR]"
+msgstr "Welcome to version -"
+
+msgctxt "#32012"
+msgid "[COLOR aqua]Popular[/COLOR]"
+msgstr "Popular"
+
+msgctxt "#32013"
+msgid "[COLOR aqua]On The Air[/COLOR]"
+msgstr "On The Air"
+
+msgctxt "#32014"
+msgid "[COLOR aqua]New Tv Shows[/COLOR]"
+msgstr "New Tv Shows"
+
+msgctxt "#32015"
+msgid "[COLOR aqua]New Episodes[/COLOR]"
+msgstr "New Episodes"
+
+msgctxt "#32016"
+msgid "[COLOR aqua]Genre[/COLOR]"
+msgstr "Genre"
+
+msgctxt "#32017"
+msgid "[COLOR aqua]Years[/COLOR]"
+msgstr "Years"
+
+msgctxt "#32018"
+msgid "[COLOR aqua]Networks[/COLOR]"
+msgstr "Networks"
+
+msgctxt "#32019"
+msgid "[COLOR aqua]Advance Content selection[/COLOR]"
+msgstr "Advance Content selection"
+
+msgctxt "#32020"
+msgid "[COLOR yellow][B]Search[/B][/COLOR]"
+msgstr "Search"
+
+msgctxt "#32021"
+msgid "[COLOR snow][B]Search History[/B][/COLOR]"
+msgstr "Search History"
+
+msgctxt "#32022"
+msgid "[COLOR aqua]Last Link Played[/COLOR]"
+msgstr "Last Link Played"
+
+msgctxt "#32023"
+msgid "[COLOR aqua]Series Tracker[/COLOR]"
+msgstr "Series Tracker"
+
+msgctxt "#32024"
+msgid "[COLOR aqua]Movies Scrapers[/COLOR]"
+msgstr "Movie World"
+
+msgctxt "#32025"
+msgid "[COLOR aqua]TV Shows Scrapers[/COLOR]"
+msgstr "TV World"
+
+msgctxt "#32026"
+msgid "[COLOR aqua]Trakt World - No Account Needed[/COLOR]"
+msgstr "Trakt World - No Account Needed"
+
+msgctxt "#32027"
+msgid "[COLOR aqua]Trakt[/COLOR]"
+msgstr "Trakt"
+
+msgctxt "#32028"
+msgid "[COLOR aqua]Clear Cache and Whats New[/COLOR]"
+msgstr "---Whats New---"
+
+msgctxt "#32029"
+msgid "[COLOR aqua]Settings[/COLOR]"
+msgstr "Settings"
+
+msgctxt "#32030"
+msgid "[COLOR aqua]Resume Watching[/COLOR]"
+msgstr "Resume Watching"
+
+msgctxt "#32031"
+msgid "[COLOR aqua]My RD History[/COLOR]"
+msgstr "My RD History"
+
+msgctxt "#32032"
+msgid "[COLOR aqua]RD Torrents[/COLOR]"
+msgstr "RD Torrents"
+
+msgctxt "#32033"
+msgid "[COLOR aqua]Actor[/COLOR]"
+msgstr "Actor"
+
+msgctxt "#32034"
+msgid "[COLOR aqua]Scraper Check[/COLOR]"
+msgstr "Scraper Check"
+
+msgctxt "#32035"
+msgid "[COLOR aqua]In Theaters[/COLOR]"
+msgstr "In Theaters"
+
+msgctxt "#32036"
+msgid "[COLOR aqua]Popular Movies[/COLOR]"
+msgstr "Popular Movies"
+
+msgctxt "#32037"
+msgid "[COLOR aqua]3-D Movies[/COLOR]"
+msgstr "3-D Movies"
+
+msgctxt "#32038"
+msgid "[COLOR aqua]Genre[/COLOR]"
+msgstr "Genre"
+
+msgctxt "#32039"
+msgid "[COLOR aqua]Years[/COLOR]"
+msgstr "Years"
+
+msgctxt "#32040"
+msgid "[COLOR aqua]Studio[/COLOR]"
+msgstr "Studio"
+
+msgctxt "#32041"
+msgid "[COLOR aqua]Advance Content Selection[/COLOR]"
+msgstr "Advance Content Selection"
+
+msgctxt "#32042"
+msgid "[COLOR aqua]Search Movie[/COLOR]"
+msgstr "Search Movie"
+
+msgctxt "#32043"
+msgid "[COLOR aqua]Search History[/COLOR]"
+msgstr "Search History"
+
+msgctxt "#32044"
+msgid "[COLOR aqua]History[/COLOR]"
+msgstr "History"
+
+msgctxt "#32045"
+msgid "[COLOR aqua]Classic Movies[/COLOR]"
+msgstr "Classic Movies"
+
+msgctxt "#32046"
+msgid "[COLOR aqua]Western Movies[/COLOR]"
+msgstr "Western Movies"
+
+msgctxt "#32047"
+msgid "[COLOR aqua]3-D Movies (Free)[/COLOR]"
+msgstr "3-D Movies (Free)"
+
+msgctxt "#32048"
+msgid "[COLOR aqua]Movie Lists[/COLOR]"
+msgstr "Movie Lists"
+
+msgctxt "#32049"
+msgid "[COLOR aqua]Tv Lists[/COLOR]"
+msgstr "Tv Lists"
+
+msgctxt "#32050"
+msgid "[COLOR aqua]Tv Calendar[/COLOR]"
+msgstr "Tv Calendar"
+
+msgctxt "#32051"
+msgid "[COLOR aqua]Progress[/COLOR]"
+msgstr "Progress"
+
+msgctxt "#32052"
+msgid "[COLOR aqua]Episodes Watchlist[/COLOR]"
+msgstr "Episodes Watchlist"
+
+msgctxt "#32053"
+msgid "[COLOR aqua]Series Watchlist[/COLOR]"
+msgstr "Series Watchlist"
+
+msgctxt "#32054"
+msgid "[COLOR aqua]TV Collection[/COLOR]"
+msgstr "TV Collection"
+
+msgctxt "#32055"
+msgid "[COLOR aqua]Shows Watchlist[/COLOR]"
+msgstr "Shows Watchlist"
+
+msgctxt "#32056"
+msgid "[COLOR aqua]Shows Recommendations[/COLOR]"
+msgstr "Shows Recommendations"
+
+msgctxt "#32057"
+msgid "[COLOR aqua]Movies Watchlist[/COLOR]"
+msgstr "Movies Watchlist"
+
+msgctxt "#32058"
+msgid "[COLOR aqua]Movies Recommendations[/COLOR]"
+msgstr "Movies Recommendations"
+
+msgctxt "#32059"
+msgid "[COLOR aqua]Watched Movies[/COLOR]"
+msgstr "Watched Movies"
+
+msgctxt "#32060"
+msgid "[COLOR aqua]Watched Shows[/COLOR]"
+msgstr "Watched Shows"
+
+msgctxt "#32061"
+msgid "[COLOR aqua]Movies Collection[/COLOR]"
+msgstr "Movies Collection"
+
+msgctxt "#32062"
+msgid "[COLOR aqua]Liked Lists[/COLOR]"
+msgstr "Liked Lists"
+
+msgctxt "#32063"
+msgid "[COLOR aqua]Resume Watching Movies[/COLOR]"
+msgstr "Resume Watching Movies"
+
+msgctxt "#32064"
+msgid "[COLOR aqua]Resume Watching Episodes[/COLOR]"
+msgstr "Resume Watching Episodes"
+
+msgctxt "#32065"
+msgid "People watching This %s now: "
+msgstr "People watching This %s now: "
+
+msgctxt "#32066"
+msgid "[COLOR aqua]show[/COLOR]"
+msgstr "show"
+
+msgctxt "#32067"
+msgid "Watchers: [COLOR lightblue]"
+msgstr "Watchers: [COLOR lightblue]"
+
+msgctxt "#32068"
+msgid "[/COLOR],Plays: [COLOR lightblue]"
+msgstr "[/COLOR],Plays: [COLOR lightblue]"
+
+msgctxt "#32069"
+msgid "'[/COLOR]\nVotes: [COLOR lightblue]'"
+msgstr "'[/COLOR]\nVotes: [COLOR lightblue]'"
+
+msgctxt "#32070"
+msgid " [COLOR aqua]Checking Cached [/COLOR]"
+msgstr " Checking Cached "
+
+msgctxt "#32071"
+msgid "[COLOR aqua]Updating links , check cached[/COLOR]"
+msgstr "Updating links , check cached"
+
+msgctxt "#32072"
+msgid "[COLOR aqua] Please wait [/COLOR]"
+msgstr " Please wait "
+
+msgctxt "#32073"
+msgid "[COLOR aqua]Searching[/COLOR]"
+msgstr "Searching"
+
+msgctxt "#32074"
+msgid "[COLOR aqua]Loading files[/COLOR]"
+msgstr "Loading files"
+
+msgctxt "#32075"
+msgid "[COLOR aqua]Remaining: [/COLOR]"
+msgstr "Remaining: "
+
+msgctxt "#32076"
+msgid "[COLOR aqua]Checking one click[/COLOR]"
+msgstr "Checking one click"
+
+msgctxt "#32077"
+msgid "[COLOR aqua]Playing[/COLOR]"
+msgstr "Playing"
+
+msgctxt "#32078"
+msgid "[COLOR aqua]Rest[/COLOR]"
+msgstr "Rest"
+
+msgctxt "#32079"
+msgid "[COLOR aqua]Closing[/COLOR]"
+msgstr "Closing"
+
+msgctxt "#32080"
+msgid "[COLOR aqua]Updating links , check cached[/COLOR]"
+msgstr "Updating links , check cached"
+
+msgctxt "#32081"
+msgid "[COLOR aqua]Getting sources[/COLOR]"
+msgstr "Getting sources"
+
+msgctxt "#32082"
+msgid "[COLOR aqua]Collecting sources[/COLOR]"
+msgstr "Collecting sources"
+
+msgctxt "#32083"
+msgid "[COLOR aqua]Saving next episode[/COLOR]"
+msgstr "Saving next episode"
+
+msgctxt "#32084"
+msgid "[COLOR aqua]Organizing[/COLOR]"
+msgstr "Organizing"
+
+msgctxt "#32085"
+msgid "[COLOR aqua]No links found[/COLOR]"
+msgstr "No links found"
+
+msgctxt "#32086"
+msgid "[COLOR aqua]Building menu[/COLOR]"
+msgstr "Building menu"
+
+msgctxt "#32087"
+msgid "[COLOR aqua]Open filtered links[/COLOR]"
+msgstr "Open filtered links"
+
+msgctxt "#32088"
+msgid "[COLOR aqua]Open rejected links[/COLOR]"
+msgstr "Open rejected links"
+
+msgctxt "#32089"
+msgid "[COLOR aqua]All: [/COLOR]"
+msgstr "All: "
+
+msgctxt "#32090"
+msgid "[COLOR aqua], Dup.: [/COLOR]"
+msgstr ", Dup.: "
+
+msgctxt "#32091"
+msgid "[COLOR yellow] Cached: "
+msgstr "[COLOR yellow] Cached: "
+
+msgctxt "#32092"
+msgid "[COLOR aqua]Cleared[/COLOR]"
+msgstr "Cleared"
+
+msgctxt "#32093"
+msgid "[COLOR aqua]Collecting[/COLOR]"
+msgstr "Collecting"
+
+msgctxt "#32094"
+msgid "[COLOR aqua]playing[/COLOR]"
+msgstr "playing"
+
+msgctxt "#32095"
+msgid "[COLOR aqua]Resume from [/COLOR]"
+msgstr "Resume from "
+
+msgctxt "#32096"
+msgid "[COLOR aqua]Marked as watched[/COLOR]"
+msgstr "Marked as watched"
+
+msgctxt "#32097"
+msgid "[COLOR aqua]Watched removed[/COLOR]"
+msgstr "Watched removed"
+
+msgctxt "#32098"
+msgid "[COLOR aqua]No trailer[/COLOR]"
+msgstr "No trailer"
+
+msgctxt "#32099"
+msgid "[COLOR aqua]TV shows[/COLOR]"
+msgstr "TV shows"
+
+msgctxt "#32100"
+msgid "[COLOR aqua]Movie[/COLOR]"
+msgstr "Movie"
+
+msgctxt "#32101"
+msgid "[COLOR aqua]Season [/COLOR]"
+msgstr "Season "
+
+msgctxt "#32102"
+msgid "[COLOR aqua]-Episode [/COLOR]"
+msgstr "-Episode "
+
+msgctxt "#32103"
+msgid "[/COLOR]\n[COLOR gold] out of "
+msgstr "[/COLOR]\n[COLOR gold] out of "
+
+msgctxt "#32104"
+msgid "[COLOR aqua] episode for this season[/COLOR]\n"
+msgstr " episode for this season[/COLOR]\n"
+
+msgctxt "#32105"
+msgid "[COLOR aqua]This show was over or canceled[/COLOR]"
+msgstr "This show was over or canceled"
+
+msgctxt "#32106"
+msgid "[COLOR aqua]Next episode at [/COLOR]"
+msgstr "Next episode at "
+
+msgctxt "#32107"
+msgid "[COLOR aqua] Unknown [/COLOR]"
+msgstr " Unknown "
+
+msgctxt "#32108"
+msgid "[COLOR aqua] Season's Episodes  [/COLOR]\n"
+msgstr " Season's Episodes  [/COLOR]\n"
+
+msgctxt "#32109"
+msgid "[COLOR aqua]Ended[/COLOR]"
+msgstr "Ended"
+
+msgctxt "#32110"
+msgid "[COLOR aqua]Movie[/COLOR]"
+msgstr "Movie"
+
+msgctxt "#32111"
+msgid "[COLOR aqua]Canceled[/COLOR]"
+msgstr "Canceled"
+
+msgctxt "#32112"
+msgid "[COLOR aqua]Sync complete[/COLOR]"
+msgstr "Sync complete"
+
+msgctxt "#32113"
+msgid "[COLOR aqua] Aired at [/COLOR]"
+msgstr " Aired at "
+
+msgctxt "#32114"
+msgid "[COLOR aqua]Sync trakt[/COLOR]"
+msgstr "Sync trakt"
+
+msgctxt "#32115"
+msgid "[COLOR aqua]Clear history[/COLOR]"
+msgstr "Clear history"
+
+msgctxt "#32116"
+msgid "[COLOR aqua]Loading[/COLOR]"
+msgstr "Loading"
+
+msgctxt "#32117"
+msgid "[COLOR aqua]Removed[/COLOR]"
+msgstr "Removed"
+
+msgctxt "#32118"
+msgid "[COLOR aqua]Clear Resume points[/COLOR]"
+msgstr "Clear Resume points"
+
+msgctxt "#32119"
+msgid "[COLOR aqua]Are you sure there is no way back...?[/COLOR]"
+msgstr "Are you sure there is no way back...?"
+
+msgctxt "#32120"
+msgid "[COLOR aqua]Remove from series tracker[/COLOR]"
+msgstr "Remove from series tracker"
+
+msgctxt "#32121"
+msgid "[COLOR aqua]Are you sure you want to remove [/COLOR]"
+msgstr "Are you sure you want to remove "
+
+msgctxt "#32122"
+msgid "[COLOR aqua] from series tracker?[/COLOR]"
+msgstr " from series tracker?"
+
+msgctxt "#32123"
+msgid "[COLOR aqua]Mark as unwatched[/COLOR]"
+msgstr "Mark as unwatched"
+
+msgctxt "#32124"
+msgid "[COLOR aqua]Movies[/COLOR]"
+msgstr "Movies"
+
+msgctxt "#32125"
+msgid "[COLOR aqua]People Watching [Movies][/COLOR]"
+msgstr "People Watching [Movies]"
+
+msgctxt "#32126"
+msgid "[COLOR aqua]Popular [Movies][/COLOR]"
+msgstr "Popular [Movies]"
+
+msgctxt "#32127"
+msgid "[COLOR aqua]Most Played [Movies][/COLOR]"
+msgstr "Most Played [Movies]"
+
+msgctxt "#32128"
+msgid "[COLOR aqua]Most Watched [Movies][/COLOR]"
+msgstr "Most Watched [Movies]"
+
+msgctxt "#32129"
+msgid "[COLOR aqua]Most Collected [Movies][/COLOR]"
+msgstr "Most Collected [Movies]"
+
+msgctxt "#32130"
+msgid "[COLOR aqua]Most Anticipated [Movies][/COLOR]"
+msgstr "Most Anticipated [Movies]"
+
+msgctxt "#32131"
+msgid "[COLOR aqua]Most Grossing Weekly [Movies][/COLOR]"
+msgstr "Most Grossing Weekly [Movies]"
+
+msgctxt "#32132"
+msgid "[COLOR aqua]People Watching [TV][/COLOR]"
+msgstr "People Watching [TV]"
+
+msgctxt "#32133"
+msgid "[COLOR aqua]Popular [TV][/COLOR]"
+msgstr "Popular [TV]"
+
+msgctxt "#32134"
+msgid "[COLOR aqua]Most Played [TV][/COLOR]"
+msgstr "Most Played [TV]"
+
+msgctxt "#32135"
+msgid "[COLOR aqua]Most Collected [TV][/COLOR]"
+msgstr "Most Collected [TV]"
+
+msgctxt "#32136"
+msgid "[COLOR aqua]Most Anticipated [TV][/COLOR]"
+msgstr "Most Anticipated [TV]"
+
+msgctxt "#32137"
+msgid "[COLOR aqua]Lists[/COLOR]"
+msgstr "Lists"
+
+msgctxt "#32138"
+msgid "[COLOR aqua]Trending Lists [TV][/COLOR]"
+msgstr "Trending Lists [TV]"
+
+msgctxt "#32139"
+msgid "[COLOR aqua]Popular Lists [TV][/COLOR]"
+msgstr "Popular Lists [TV]"
+
+msgctxt "#32140"
+msgid "[COLOR aqua]Global lock[/COLOR]"
+msgstr "Global lock"
+
+msgctxt "#32141"
+msgid "[COLOR aqua]lock all displays of the addon?[/COLOR]"
+msgstr "lock all displays of the addon?"
+
+msgctxt "#32142"
+msgid "[COLOR aqua]Updated to [/COLOR]"
+msgstr "Updated to "
+
+msgctxt "#32143"
+msgid "[COLOR aqua]Won\'t sync with trakt[/COLOR]"
+msgstr "Won\'t sync with trakt"
+
+msgctxt "#32144"
+msgid "[COLOR aqua]Lists[/COLOR]"
+msgstr "Lists"
+
+msgctxt "#32145"
+msgid "[COLOR aqua]Next page[/COLOR]"
+msgstr "Next page"
+
+msgctxt "#32146"
+msgid "[COLOR aqua]Remove[/COLOR]"
+msgstr "Remove"
+
+msgctxt "#32147"
+msgid "[COLOR aqua]from history[/COLOR]"
+msgstr "from history"
+
+msgctxt "#32148"
+msgid "[COLOR aqua]Search Actor[/COLOR]"
+msgstr "Search Actor"
+
+msgctxt "#32149"
+msgid "[COLOR aqua]Choose[/COLOR]"
+msgstr "Choose"
+
+msgctxt "#32150"
+msgid "[COLOR aqua]Override local DB?[/COLOR]"
+msgstr "Override local DB?"
+
+msgctxt "#32151"
+msgid "[COLOR aqua]Sending[/COLOR]"
+msgstr "Sending"
+
+msgctxt "#32153"
+msgid "[COLOR aqua]Error posting the kodi.log file[/COLOR]"
+msgstr "Error posting the kodi.log file"
+
+msgctxt "#32154"
+msgid "[COLOR aqua]Error posting the old log file[/COLOR]"
+msgstr "Error posting the old log file"
+
+msgctxt "#32155"
+msgid "[COLOR aqua]Error posting the crashlog file[/COLOR]"
+msgstr "Error posting the crashlog file"
+
+msgctxt "#32156"
+msgid "[COLOR aqua]Reading log[/COLOR]"
+msgstr "Reading log"
+
+msgctxt "#32157"
+msgid "[COLOR aqua]Cleaning log[/COLOR]"
+msgstr "Cleaning log"
+
+msgctxt "#32158"
+msgid "[COLOR aqua]Do you want to view your[/COLOR]"
+msgstr "Do you want to view your"
+
+msgctxt "#32159"
+msgid "[COLOR aqua]or upload it to[/COLOR]"
+msgstr "or upload it to"
+
+msgctxt "#32160"
+msgid "[COLOR aqua]Log uploader[/COLOR]"
+msgstr "Log uploader"
+
+msgctxt "#32161"
+msgid "[COLOR aqua]Remove from series tracker[/COLOR]"
+msgstr "Remove from series tracker"
+
+msgctxt "#32162"
+msgid "[COLOR aqua]Queue item[/COLOR]"
+msgstr "Queue item"
+
+msgctxt "#32163"
+msgid "[COLOR aqua]Lists[/COLOR]"
+msgstr "Lists"
+
+
+msgctxt "#32164"
+msgid "[COLOR aqua]Trakt watched[/COLOR]"
+msgstr "Trakt watched"
+
+msgctxt "#32165"
+msgid "[COLOR aqua]Trakt unwatched[/COLOR]"
+msgstr "Trakt unwatched"
+
+msgctxt "#32166"
+msgid "[COLOR aqua]Info[/COLOR]"
+msgstr "Info"
+
+msgctxt "#32167"
+msgid "[COLOR aqua]Play trailer[/COLOR]"
+msgstr "Play trailer"
+
+msgctxt "#32168"
+msgid "[COLOR aqua]Settings[/COLOR]"
+msgstr "Settings"
+
+msgctxt "#32169"
+msgid "[COLOR aqua]Queue item[/COLOR]"
+msgstr "Queue item"
+
+msgctxt "#32170"
+msgid "[COLOR aqua]Trakt manager[/COLOR]"
+msgstr "Trakt manager"
+
+msgctxt "#32171"
+msgid "[COLOR aqua]Trakt watched[/COLOR]"
+msgstr "Trakt watched"
+
+msgctxt "#32172"
+msgid "[COLOR aqua]Trakt unwatched[/COLOR]"
+msgstr "Trakt unwatched"
+
+msgctxt "#32173"
+msgid "[COLOR aqua]Remove resume time[/COLOR]"
+msgstr "Remove resume time"
+
+msgctxt "#32174"
+msgid "[COLOR aqua]Browse series[/COLOR]"
+msgstr "Browse series"
+
+msgctxt "#32175"
+msgid "[COLOR aqua]Remove resume point[/COLOR]"
+msgstr "Remove resume point"
+
+msgctxt "#32176"
+msgid "[COLOR aqua]Clear Cache[/COLOR]"
+msgstr "Clear Cache"
+
+msgctxt "#32177"
+msgid "[COLOR aqua]Set view type[/COLOR]"
+msgstr "Set view type"
+
+msgctxt "#32178"
+msgid "[COLOR aqua]Scrape 3-D[/COLOR]"
+msgstr "Scrape 3-D"
+
+msgctxt "#32179"
+msgid "[COLOR aqua]Set view type[/COLOR]"
+msgstr "Set view type"
+
+msgctxt "#32180"
+msgid "[COLOR aqua]Remove from history[/COLOR]"
+msgstr "Remove from history"
+
+msgctxt "#32181"
+msgid "[COLOR aqua]From year[/COLOR]"
+msgstr "From year"
+
+msgctxt "#32182"
+msgid "[COLOR aqua]To year[/COLOR]"
+msgstr "To year"
+
+msgctxt "#32183"
+msgid "[COLOR aqua] No results[/COLOR]"
+msgstr " No results"
+
+msgctxt "#32184"
+msgid "[COLOR aqua]Page[/COLOR]"
+msgstr "Page"
+
+msgctxt "#32185"
+msgid "[COLOR aqua]Out of[/COLOR]"
+msgstr "Out of"
+
+msgctxt "#32186"
+msgid "[COLOR aqua]Results[/COLOR]"
+msgstr "Results"
+
+msgctxt "#32187"
+msgid "[COLOR aqua] Aired At [/COLOR]"
+msgstr " Aired At "
+
+msgctxt "#32188"
+msgid "[COLOR aqua]Add to [B]Collection[/B][/COLOR]"
+msgstr "Add to [B]Collection[/B]"
+
+msgctxt "#32189"
+msgid [COLOR aqua]"Remove from [B]Collection[/B][/COLOR]"
+msgstr "Remove from [B]Collection[/B]"
+
+msgctxt "#32190"
+msgid "[COLOR aqua]Add to [B]Watchlist[/B][/COLOR]"
+msgstr "Add to [B]Watchlist[/B]"
+
+msgctxt "#32191"
+msgid "[COLOR aqua]Remove from [B]Watchlist[/B][/COLOR]"
+msgstr "Remove from [B]Watchlist[/B]"
+
+msgctxt "#32192"
+msgid "[COLOR aqua]Add to [B]new List[/B][/COLOR]"
+msgstr "Add to [B]new List[/B]"
+
+msgctxt "#32193"
+msgid "[COLOR aqua]Sending Req.[/COLOR]"
+msgstr "Sending Req."
+
+msgctxt "#32194"
+msgid "[COLOR aqua]"Add to [/COLOR]"
+msgstr ""Add to "
+
+msgctxt "#32195"
+msgid "[COLOR aqua]Remove from [/COLOR]"
+msgstr "Remove from "
+
+msgctxt "#32196"
+msgid "[COLOR aqua]Sending selection[/COLOR]"
+msgstr "Sending selection"
+
+msgctxt "#32197"
+msgid "[COLOR aqua]Clear[/COLOR]"
+msgstr "Clear"
+
+msgctxt "#32198"
+msgid "[COLOR aqua]Resume points[/COLOR]"
+msgstr "Resume points"
+
+msgctxt "#32199"
+msgid "[COLOR aqua]All times[/COLOR]"
+msgstr "All times"
+
+msgctxt "#32200"
+msgid "[COLOR aqua]Yearly[/COLOR]"
+msgstr "Yearly"
+
+msgctxt "#32201"
+msgid "[COLOR aqua]Monthly[/COLOR]"
+msgstr "Monthly"
+
+msgctxt "#32202"
+msgid "[COLOR aqua]Weekly[/COLOR]"
+msgstr "Weekly"
+
+msgctxt "#32203"
+msgid "[COLOR aqua]Ended or canceled[/COLOR]"
+msgstr "Ended or canceled"
+
+msgctxt "#32204"
+msgid "[COLOR aqua]Enable debrid service[/COLOR]"
+msgstr "Enable debrid service"
+
+msgctxt "#32205"
+msgid "[COLOR aqua]Theme[/COLOR]"
+msgstr "Theme"
+
+msgctxt "#32206"
+msgid "[COLOR aqua]TMDB pages to scan (Each page is 20 results)[/COLOR]"
+msgstr "TMDB pages to scan (Each page is 20 results)"
+
+msgctxt "#32207"
+msgid "[COLOR aqua]Order networks by[/COLOR]"
+msgstr "Order networks by"
+
+msgctxt "#32208"
+msgid "[COLOR aqua]Popular[/COLOR]"
+msgstr "Popular"
+
+msgctxt "#32209"
+msgid "[COLOR aqua]Release date[/COLOR]"
+msgstr "Release date"
+
+msgctxt "#32210"
+msgid "[COLOR aqua]Votes[/COLOR]"
+msgstr "Votes"
+
+msgctxt "#32211"
+msgid "[COLOR aqua]Show progress[/COLOR]"
+msgstr "Show progress"
+
+msgctxt "#32212"
+msgid "[COLOR aqua]Filter out sources more then GB[/COLOR]"
+msgstr "Filter out sources more then GB"
+
+msgctxt "#32213"
+msgid "[COLOR aqua]Hours held in cache[/COLOR]"
+msgstr "Hours held in cache"
+
+msgctxt "#32214"
+msgid "Mark Trakt watched after % of movie/tv show"
+msgstr "Mark Trakt watched after % of movie/tv show"
+
+msgctxt "#32215"
+msgid "[COLOR aqua]New sources menu[/COLOR]"
+msgstr "New sources menu"
+
+msgctxt "#32216"
+msgid "[COLOR aqua]Use display lock[/COLOR]"
+msgstr "Use display lock"
+
+msgctxt "#32217"
+msgid "[COLOR aqua]Tmdb adult filter[/COLOR]"
+msgstr "Tmdb adult filter"
+
+msgctxt "#32218"
+msgid "[COLOR aqua]Clear Trakt[/COLOR]"
+msgstr "Clear Trakt"
+
+msgctxt "#32219"
+msgid "[COLOR aqua]*** Sync track to DB ***[/COLOR]"
+msgstr "*** Sync track to DB ***"
+
+msgctxt "#32220"
+msgid "[COLOR aqua]Upload Log[/COLOR]"
+msgstr "Upload Log"
+
+msgctxt "#32221"
+msgid "[COLOR aqua]Filters[/COLOR]"
+msgstr "Filters"
+
+msgctxt "#32222"
+msgid "[COLOR aqua]Quality[/COLOR]"
+msgstr "Quality"
+
+msgctxt "#32223"
+msgid "[COLOR aqua]Maximum quality[/COLOR]"
+msgstr "Maximum quality"
+
+msgctxt "#32224"
+msgid "[COLOR aqua]Minimum quality[/COLOR]"
+msgstr "Minimum quality"
+
+msgctxt "#32225"
+msgid "[COLOR aqua]Encoding[/COLOR]"
+msgstr "Encoding"
+
+msgctxt "#32226"
+msgid "[COLOR aqua]Encoding filter[/COLOR]"
+msgstr "Encoding filter"
+
+msgctxt "#32227"
+msgid "[COLOR aqua]Show 3d Sources[/COLOR]"
+msgstr "Show 3d Sources"
+
+msgctxt "#32228"
+msgid "[COLOR aqua]Show hevc sources[/COLOR]"
+msgstr "Show hevc sources"
+
+msgctxt "#32229"
+msgid "[COLOR aqua]Show low quality Sources (CAM)[/COLOR]"
+msgstr "Show low quality Sources (CAM)"
+
+msgctxt "#32230"
+msgid "[COLOR aqua]Filter non english (not 100%)[/COLOR]"
+msgstr "Filter non english (not 100%)"
+
+msgctxt "#32231"
+msgid "[COLOR aqua]Debrid[/COLOR]"
+msgstr "Debrid"
+
+msgctxt "#32232"
+msgid "[COLOR aqua]Enable debrid service[/COLOR]"
+msgstr "Enable debrid service"
+
+msgctxt "#32233"
+msgid "[COLOR aqua]Choose debrid service[/COLOR]"
+msgstr "Choose debrid service"
+
+msgctxt "#32234"
+msgid "[COLOR aqua]Clear Real-Debrid[/COLOR]"
+msgstr "Clear Real-Debrid"
+
+msgctxt "#32235"
+msgid "[COLOR aqua]Re-auth Real-Debrid[/COLOR]"
+msgstr "Re-auth Real-Debrid"
+
+msgctxt "#32236"
+msgid "[COLOR aqua]Clear Premiumize[/COLOR]"
+msgstr "Clear Premiumize"
+
+msgctxt "#32237"
+msgid "[COLOR aqua]Re-auth Premiumize[/COLOR]"
+msgstr "Re-auth Premiumize"
+
+msgctxt "#32238"
+msgid "[COLOR aqua]Enable debrid service[/COLOR]"
+msgstr "Enable debrid service"
+
+msgctxt "#32239"
+msgid "[COLOR aqua]Clear All-Debrid Auth[/COLOR]"
+msgstr "Clear All-Debrid Auth"
+
+msgctxt "#32240"
+msgid "[COLOR aqua]Re-Auth All-Debrid[/COLOR]"
+msgstr "Re-Auth All-Debrid"
+
+msgctxt "#32241"
+msgid "[COLOR aqua]Next Up[/COLOR]"
+msgstr "Next Up"
+
+msgctxt "#32242"
+msgid "[COLOR aqua]Auto play if no choice is made[/COLOR]"
+msgstr "Auto play if no choice is made"
+
+msgctxt "#32243"
+msgid "[COLOR aqua]Show next episode ... second before the end[/COLOR]"
+msgstr "Show next episode ... second before the end"
+
+msgctxt "#32244"
+msgid "[COLOR aqua]Activate next episode ... second before the end[/COLOR]"
+msgstr "Activate next episode ... second before the end"
+
+msgctxt "#32245"
+msgid "[COLOR aqua]Next up movie enabled[/COLOR]"
+msgstr "Next up movie enabled"
+
+msgctxt "#32246"
+msgid "[COLOR aqua]Show recommended movie ... second before the end[/COLOR]"
+msgstr "Show recommended movie ... second before the end"
+
+msgctxt "#32247"
+msgid "[COLOR aqua]Context Menu[/COLOR]"
+msgstr "Context Menu"
+
+msgctxt "#32248"
+msgid "[COLOR aqua]Cast[/COLOR]"
+msgstr "Cast"
+
+msgctxt "#32249"
+msgid "[COLOR aqua]One Click Play[/COLOR]"
+msgstr "One Click Play"
+
+msgctxt "#32250"
+msgid "[COLOR aqua]Any[/COLOR]"
+msgstr "Any"
+
+msgctxt "#32251"
+msgid "[COLOR aqua]Sources[/COLOR]"
+msgstr "Sources"
+
+msgctxt "#32252"
+msgid "[COLOR aqua]Max time for scraping[/COLOR]"
+msgstr "Max time for scraping"
+
+msgctxt "#32253"
+msgid "[COLOR aqua]Enable all[/COLOR]"
+msgstr "Enable all"
+
+msgctxt "#32254"
+msgid "[COLOR aqua]Disable all[/COLOR]"
+msgstr "Disable all"
+
+msgctxt "#32255"
+msgid "[COLOR aqua]Fav. scrapers[/COLOR]"
+msgstr "Fav. scrapers"
+
+msgctxt "#32256"
+msgid "[COLOR aqua]Externals[/COLOR]"
+msgstr "Externals"
+
+msgctxt "#32257"
+msgid "[COLOR aqua]Enable Furk Scraper[/COLOR]"
+msgstr "Enable Furk Scraper"
+
+msgctxt "#32258"
+msgid "[COLOR aqua]Login[/COLOR]"
+msgstr "Login"
+
+msgctxt "#32259"
+msgid "[COLOR aqua]Password[/COLOR]"
+msgstr "Password"
+
+msgctxt "#32260"
+msgid "[COLOR aqua]Furk API Key (optional)[/COLOR]"
+msgstr "Furk API Key (optional)"
+
+msgctxt "#32261"
+msgid "[COLOR aqua]Search Moderation Level[/COLOR]"
+msgstr "Search Moderation Level"
+
+msgctxt "#32262"
+msgid "[COLOR aqua]No[/COLOR]"
+msgstr "No"
+
+msgctxt "#32263"
+msgid "[COLOR aqua]Yes[/COLOR]"
+msgstr "Yes"
+
+msgctxt "#32264"
+msgid "[COLOR aqua]Full[/COLOR]"
+msgstr "Full"
+
+msgctxt "#32265"
+msgid "[COLOR aqua]Enable Easynews Scraper[/COLOR]"
+msgstr "Enable Easynews Scraper"
+
+msgctxt "#32266"
+msgid "[COLOR aqua]Quality vs Speed[/COLOR]"
+msgstr "Quality vs Speed"
+
+msgctxt "#32267"
+msgid "[COLOR aqua]More details on scraper results(Slower)[/COLOR]"
+msgstr "More details on scraper results(Slower)"
+
+msgctxt "#32268"
+msgid "[COLOR aqua]Basic details on scraper results(Faster)[/COLOR]"
+msgstr "Basic details on scraper results(Faster)"
+
+msgctxt "#32269"
+msgid "[COLOR aqua]Main Menu[/COLOR]"
+msgstr "Main Menu"
+
+msgctxt "#32270"
+msgid "[COLOR aqua]Episode Ends in[/COLOR]"
+msgstr "Episode Ends in"
+
+msgctxt "#32271"
+msgid "[COLOR aqua]Close[/COLOR]"
+msgstr "Close"
+
+msgctxt "#32272"
+msgid "[COLOR aqua]Watch[/COLOR]"
+msgstr "Watch"
+
+msgctxt "#32273"
+msgid "[COLOR aqua]Send[/COLOR]"
+msgstr "Send"
+
+msgctxt "#32274"
+msgid "[COLOR aqua]Wait...Auto Auth...[/COLOR]"
+msgstr "Wait...Auto Auth..."
+
+msgctxt "#32275"
+msgid "[COLOR aqua]Main Menu[/COLOR]"
+msgstr "Main Menu"
+
+msgctxt "#32276"
+msgid "[COLOR aqua]Auto Auth...[/COLOR]"
+msgstr "Auto Auth..."
+
+msgctxt "#32277"
+msgid "[COLOR aqua]Login[/COLOR]"
+msgstr "Login"
+
+msgctxt "#32278"
+msgid "[COLOR aqua]Code[/COLOR]"
+msgstr "Code"
+
+msgctxt "#32279"
+msgid "[COLOR aqua]Allow Acess [/COLOR]"
+msgstr "Allow Acess "
+
+msgctxt "#32280"
+msgid "[COLOR aqua]Waiting for RD[/COLOR]"
+msgstr "Waiting for RD"
+
+msgctxt "#32281"
+msgid "[COLOR aqua]Authentication is completed[/COLOR]"
+msgstr "Authentication is completed"
+
+msgctxt "#32282"
+msgid "[COLOR aqua]Auth[/COLOR]"
+msgstr "Auth"
+
+msgctxt "#32283"
+msgid "[COLOR aqua]Open this link in a browser: [/COLOR]"
+msgstr "Open this link in a browser: "
+
+msgctxt "#32284"
+msgid "[COLOR aqua]Enter the code: [/COLOR]"
+msgstr "Enter the code: "
+
+msgctxt "#32285"
+msgid "[COLOR aqua]This code has been copied to your clipboard[/COLOR]"
+msgstr "This code has been copied to your clipboard"
+
+msgctxt "#32286"
+msgid "[COLOR aqua]Rd Failed Try Auth. again[/COLOR]"
+msgstr "Rd Failed Try Auth. again"
+
+msgctxt "#32287"
+msgid "[COLOR aqua]addMagnet Single[/COLOR]"
+msgstr "addMagnet Single"
+
+msgctxt "#32288"
+msgid "[COLOR aqua]Sending Q[/COLOR]"
+msgstr "Sending Q"
+
+msgctxt "#32289"
+msgid "[COLOR aqua]RD Failed in torrent[/COLOR]"
+msgstr "RD Failed in torrent"
+
+msgctxt "#32290"
+msgid "[COLOR aqua]torrentSelect[/COLOR]"
+msgstr "torrentSelect"
+
+msgctxt "#32291"
+msgid "[COLOR aqua]torrentInfo[/COLOR]"
+msgstr "torrentInfo"
+
+msgctxt "#32292"
+msgid "[COLOR aqua]unrestrict_link[/COLOR]"
+msgstr "unrestrict_link"
+
+msgctxt "#32293"
+msgid "[COLOR aqua]deleteTorrent[/COLOR]"
+msgstr "deleteTorrent"
+
+msgctxt "#32294"
+msgid "[COLOR aqua]No streamable link found_1[/COLOR]"
+msgstr "No streamable link found_1"
+
+msgctxt "#32295"
+msgid "[COLOR aqua]Theaters[/COLOR]"
+msgstr "Theaters"
+
+msgctxt "#32296"
+msgid "[COLOR aqua]Sync[/COLOR]"
+msgstr "Sync"
+
+msgctxt "#32297"
+msgid "[COLOR aqua]Cancel[/COLOR]"
+msgstr "Cancel"
+
+msgctxt "#32298"
+msgid "[COLOR aqua]Code [/COLOR]"
+msgstr "Code "
+
+msgctxt "#32299"
+msgid "[COLOR aqua]Tv Shows[/COLOR]"
+msgstr "Tv Shows"
+
+msgctxt "#32300"
+msgid "[COLOR aqua]Encoding[/COLOR]"
+msgstr "Encoding"
+
+msgctxt "#32301"
+msgid "[COLOR aqua]Movies[/COLOR]"
+msgstr "Movies"
+
+msgctxt "#32302"
+msgid "[COLOR aqua]Open collection[/COLOR]"
+msgstr "Open collection"
+
+msgctxt "#32303"
+msgid "[COLOR aqua]Show open collection option[/COLOR]"
+msgstr "Show open collection option"
+
+msgctxt "#32304"
+msgid "[COLOR aqua]Trakt manager[/COLOR]"
+msgstr "Trakt manager"
+
+msgctxt "#32305"
+msgid "[COLOR aqua]Re-auth All-Debrid[/COLOR]"
+msgstr "Re-auth All-Debrid"
+
+
+msgctxt "#32306"
+msgid "[COLOR aqua]Watched status from trakt(slower)[/COLOR]"
+msgstr "Watched status from trakt(slower)"
+
+msgctxt "#32307"
+msgid "[COLOR aqua]Recently Updated Shows(week)[/COLOR]"
+msgstr "Recently Updated Shows(week)"
+
+msgctxt "#32308"
+msgid "[COLOR aqua]Recently Updated Shows(month)[/COLOR]"
+msgstr "Recently Updated Shows(month)"
+
+msgctxt "#32309"
+msgid "[COLOR aqua]My IMDB"
+msgstr "My IMDB"
+
+
+msgctxt "#32310"
+msgid "[COLOR aqua]No subs[/COLOR]"
+msgstr "No subs"
+
+
+msgctxt "#32311"
+msgid "[COLOR aqua]Trakt progress in Series Tracker style[/COLOR]"
+msgstr "Trakt progress in Series Tracker style"
+
+msgctxt "#32312"
+msgid "[COLOR aqua]Show ended series in progress[/COLOR]"
+msgstr "Show ended series in progress"
+
+msgctxt "#32313"
+msgid "[COLOR aqua]Keywords movies[/COLOR]"
+msgstr "Keywords movies"
+
+msgctxt "#32999"
+msgid "[COLOR yellow]Auth Trakt[/COLOR]"
+msgstr "Keywords movies"

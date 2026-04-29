@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.madtitansports" name="Mad Titan [COLORyellow]Sports[/COLOR] V2.0" version="2.0.28" provider-name="Titans Team">
+  <requires>
+<import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" />
+    <import addon="script.module.routing"/>
+    <import addon="script.module.unidecode" />
+    <import addon="script.module.inputstreamhelper" />
+    <import addon="script.module.resolveurl"/>
+    <import addon="script.module.microjenscrapers" />
+    <import addon="script.module.tzlocal" />
+    <import addon="script.module.jetextractors"  />
+    <import addon="script.module.pytz" />
+    <import addon="plugin.video.jetproxy" optional="true" />
+    <import addon="inputstream.ffmpegdirect" />
+    <!-- <import addon="pvr.iptvsimple" optional="true" /> -->
+    <import addon="inputstream.adaptive" />
+    <import addon="script.module.pyamf" />
+    <!-- <import addon="script.module.pycryptodome" optional="true" /> -->
+    <import addon="script.module.tabulate" />    <!--<import addon="name" />-->
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Sports,Live tv,Movies,TV Shows. Thanks to The Jen Team for all the hard work.</summary>
+    <platform>all</platform>
+    <language>en</language>
+    <license>GPL-2.0-or-later</license>
+	<assets>
+		<icon>icon.png</icon>
+		<fanart>fanart.jpg</fanart>
+  </assets>
+  </extension>
+</addon>

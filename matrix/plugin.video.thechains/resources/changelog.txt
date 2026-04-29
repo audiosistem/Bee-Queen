@@ -1,0 +1,26 @@
+[COLORcyan][B]THE CHAINS VER 5.4.4[/B]
+
+* Artwork Update.
+* Clear Thumbnails After Update.
+* More Sections Added To Non Debrid.
+* Size Of Addon Reduced.
+* Scrapers Fixed.
+* New Artwork Added.
+* Non Debrid Section Added To Main Menu.
+* Dead Scrapers Removed Or Fixed.
+* New Sections Added To One Click.
+* New Sections Added Retrowave.
+* New Sections Added To Killer Frequency. 
+* You can now set up multiple premium accounts directly within Chains 🎉
+  This means:
+* Run more than one premium setup at the same time
+* Faster access across different services
+* Better flexibility when switching between accounts
+* Ideal for users managing multiple profiles or shared setups
+
+* How it helps you:
+No more being limited to a single premium account — you can now stack and manage multiple with ease, all inside Chains. This opens up smoother streaming, fewer interruptions, and a more efficient overall experience.
+
+[COLORred]* Notes:[/COLOR]
+* This feature is NOT supported with TorBox at the moment.
+* If Using Non Debrid Section Turn Debrid Services Off In Settings

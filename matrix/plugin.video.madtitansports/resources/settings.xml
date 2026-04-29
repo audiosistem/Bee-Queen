@@ -1,0 +1,88 @@
+<settings>   
+
+    
+
+    <!-- General Settings - future features for playlisters and developers -->
+
+    <category label="Settings">
+
+        <setting id="use_cache" type="bool" label="Use Cache" visible="true" default="false" />
+
+        <setting id="time_cache" type="number" label="[COLOR khaki]    Cache Update Interval [I][COLOR white](minutes)[/I][/COLOR]" subsetting="true" visible="eq(-1,true)" option="int" default=60 />
+
+        <setting id="clear_cache" type="action" label="[COLOR khaki]    Clear Cache [/COLOR]" subsetting="true" visible="eq(-2,true)" option="close" action="PlayMedia(plugin://$ID/clear_cache)"/>
+
+        <setting id="full_meta" type="bool" label="Enable Full Meta For TMDB Lists" visible="true" default="true" />
+
+        <setting id="item_meta" type="bool" label="[COLOR khaki]    Fetch Metadata For Manually Made Lists [I][COLOR white](Slow Loading)[/I][/COLOR]" subsetting="true" visible="eq(-1,true)" default="false" />
+
+        <setting id="open.Osettings" subsetting="false" type="action" label="[COLOR deepskyblue]Open MicroJen Scrapers Settings[/COLOR]" option="close" action="RunPlugin(plugin://script.module.microjenscrapers/?mode=microjenscrapersettings)" />
+
+        <!-- <setting id="debrid.only" type="bool" label="Debrid Sources Only" default="true" /> -->
+
+    </category>
+
+    
+
+    <!-- TMDB api key and access token included for test purposes only -->    
+
+    <!-- Developers and Playlisters need to either include their own -->    
+
+    <!-- or leave blank for users to use theirs -->    
+
+    <!-- This key and token will be deactivated in near future -->  
+
+    <!-- which will stop this function from working -->      
+
+    <category label="TMDB">
+
+        <setting id="tmdb.api_key" type="text" label="API Key" option="hidden" visible="false" default="0a66c52089e5b0756f86589d928a2c06"/>
+
+        <setting id="tmdb.access_token" type="text" label="Access Token" option="hidden" visible="false" default="eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIwYTY2YzUyMDg5ZTViMDc1NmY4NjU4OWQ5MjhhMmMwNiIsInN1YiI6IjYxZmQ0NWQ3Y2U5OTdhMDA0NDYxMGRmZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.Zezp0YNMzgRnxeZV9Jada2j9mNoRqLNjOeE3rNI_mzQ" />
+
+    </category>
+
+    <category label="Trakt">
+
+        <setting id="trakt.client_id" type="text" label="Client ID" option="hidden" visible="false" default="af6a59b4eadd2b50c1cd99a0281ac9ebceb1726af06cef9861d1e213cadf66fa"/>
+
+        <setting id="trakt.client_secret" type="text" label="Client Secret" option="hidden" visible="false" default="8a7cb62e468aa137fab9aabe95b6e8455c4c41b58445de19885eb17174c64b95"/>
+
+        <setting id="trakt.access_token" type="text" label="Access Token" visible="false" default=""/>
+
+        <setting id="trakt.refresh_token" type="text" label="Refresh Token" visible="false" default=""/>
+
+        <setting id="trakt.user_id" type="text" label="User ID" visible="false" default=""/>
+
+        <setting id="trakt.authorize" type="action" label="Authorize" svisible="true" option="close" action="PlayMedia(plugin://$ID/trakt/authorize)"/>
+
+        <setting id="trakt.clear" type="action" label="Clear Trakt Authorization" svisible="true" option="close" action="PlayMedia(plugin://$ID/trakt/clear)"/>
+
+    </category>
+
+    
+
+    <!-- initial settings  -->
+
+    <category label="Home Page">
+
+        <setting id="root_xml" type="text" label="Root XML Location" default="file://main.xml" visible="false"/>
+
+        <setting id="message_xml_url" type="text" label="News File Location" default="file://news.xml" visible="false"/>
+
+    </category>
+
+    
+
+    <!-- Dev Mode - future features for playlisters and developers -->
+
+    <category label="Dev Mode">
+
+        <setting id="debug" type="bool" label="Enable Debugging Mode" default="false" visible="true"/>        
+
+    </category>
+
+
+
+</settings>
+

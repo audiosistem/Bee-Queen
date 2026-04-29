@@ -1,0 +1,75 @@
+v1.6.2
+-Fixed Trakt.
+
+v1.6.1
+-Fixed YTS.
+
+v1.6.0
+-Fixed PM.
+
+v1.5.9
+-Works On Kodi 22.
+
+v1.5.8
+-Fixed Trakt.
+
+v1.5.7
+-Minor Update.
+
+v1.5.6
+-Fixed Scrapers.
+
+v1.5.5
+-Fixed RD Error.
+
+v1.5.4
+-Fixed RD TV Shows.
+
+v1.5.3
+-Added Chains Lists.
+
+v1.5.2
+-Fixed AD.
+
+v1.5.1
+-Fixed RD.
+
+v1.5.0
+-Fixed Broken Lists.
+
+v1.4.9
+-Fixed Broken Lists.
+
+v1.4.8
+-Fixed Popular TV Shows.
+
+v1.4.7
+-Fixed Scrapers.
+
+v1.4.6
+-Fixed Trakt.
+
+v1.4.5
+-Fixed Scrapers.
+
+v1.4.4
+-Fixed Subtitles.
+
+v1.4.3
+-Minor Update.
+
+v1.4.2
+-Popular Lists.
+
+v1.4.1
+-Fixed Eztv.
+-Trakt Lists.
+
+v1.4.0
+-Scrapers Update.
+
+v1.0.0
+-Credits to AAAA And Loki.
+
+
+

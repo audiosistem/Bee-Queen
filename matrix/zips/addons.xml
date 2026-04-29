@@ -312,6 +312,63 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
 
     </news>
   </extension>
+</addon><addon id="plugin.video.aliundek19" name="[COLOR aqua]Aliunde K19[/COLOR]" provider-name="Aliunde" version="0.2.9">
+    <requires>
+	    <import addon="script.module.six" version="0.0.1" />
+		<import addon="script.module.requests" />
+        <import addon="script.module.resolveurl" />
+    </requires>
+    <extension library="default.py" point="xbmc.python.pluginsource">
+        <provides>video</provides>
+    </extension>
+	<extension library="resources/modules/" point="xbmc.python.module" />
+    <extension library="resources/sources/" point="xbmc.python.module" />
+    <extension library="resources/" point="xbmc.python.module" />
+    <extension point="xbmc.addon.metadata">
+        <reuselanguageinvoker>true</reuselanguageinvoker>
+	<reuselanguageinvoker>true</reuselanguageinvoker>
+        <summary lang="en">Classic TV Shows and Movies with a mixture of new content, 1 Click Links</summary>
+        <description lang="en">Aliunde K19[CR]Fork of shadow, Full Credits to AA and Loki.[CR]Thank you to Narcacist for Assistance.[CR][COLOR yellow]NEWS: Play from here now works in One Click Links.[CR]Option added "Clear section watched" in the context menu.[/COLOR][CR]Please do NOT post this add-on on Youtube, Facebook, Blogs or anywhere on the internet, thank you.</description>
+        <platform>all</platform>
+        <license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+        <forum />
+        <website />
+        <source />
+        <disclaimer lang="en">The author of this add-on does not host any of the content which is found and has no affiliation with any of the content providers. This add-on simply searches websites for content. Use at your own risk!</disclaimer>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+        <news>
+
+        </news>
+    </extension>
+</addon><addon id="plugin.video.blacklightning" name="Black Lightning" provider-name="" version="2.4.2">
+  <requires>
+        <import addon="script.module.six" version="0.0.1" />
+		<import addon="script.module.requests" />
+		<import addon="script.module.resolveurl" />
+		<import addon="script.module.beautifulsoup4" />
+		<import addon="plugin.video.youtube" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+  </extension>
+  <extension library="resources/modules/" point="xbmc.python.module" />
+  <extension library="resources/sources/" point="xbmc.python.module" />
+  <extension library="resources/" point="xbmc.python.module" />
+  <extension point="xbmc.addon.metadata">
+	<reuselanguageinvoker>true</reuselanguageinvoker>
+    <summary lang="en" />
+    <description lang="en">For cMan 1972-2025</description>
+	
+    <platform>all</platform>
+	<assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
+  
 </addon><addon id="plugin.video.blacklodge" name="[COLOR goldenrod]Blacklodge[/COLOR]" provider-name="bob" version="1.06.26g">
     <requires>
         <import addon="resource.images.blacklodge.artwork" />
@@ -484,6 +541,31 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
         </assets>
         <news />
     </extension>
+</addon><addon id="plugin.video.ghost" name="Ghost" version="1.6.2" provider-name="Ghost">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+	<import addon="script.module.requests" />
+    <import addon="script.module.resolveurl" />	
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+  </extension>
+  <extension library="resources/modules/" point="xbmc.python.module" />
+  <extension library="resources/sources/" point="xbmc.python.module" />
+  <extension library="resources/" point="xbmc.python.module" />
+  <extension point="xbmc.addon.metadata">
+	<reuselanguageinvoker>true</reuselanguageinvoker>
+    <summary lang="en">Ghost Addon</summary>
+    <description lang="en">All in one addon</description>
+	
+    <platform>all</platform>
+	<assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+			<screenshot>screenshot.jpg</screenshot>
+    </assets>
+  </extension>
+  
 </addon><addon id="plugin.video.hub" name="HUB" version="1.4.0" provider-name="1X">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -652,6 +734,39 @@ In addition to what livestreams allowed you to do, you can now,
 		<language>en</language>
 	</extension>	
 	
+</addon><addon id="plugin.video.madtitansports" name="Mad Titan [COLORyellow]Sports[/COLOR] V2.0" version="2.0.28" provider-name="Titans Team">
+  <requires>
+<import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" />
+    <import addon="script.module.routing" />
+    <import addon="script.module.unidecode" />
+    <import addon="script.module.inputstreamhelper" />
+    <import addon="script.module.resolveurl" />
+    <import addon="script.module.microjenscrapers" />
+    <import addon="script.module.tzlocal" />
+    <import addon="script.module.jetextractors" />
+    <import addon="script.module.pytz" />
+    <import addon="plugin.video.jetproxy" optional="true" />
+    <import addon="inputstream.ffmpegdirect" />
+    
+    <import addon="inputstream.adaptive" />
+    <import addon="script.module.pyamf" />
+    
+    <import addon="script.module.tabulate" />    
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Sports,Live tv,Movies,TV Shows. Thanks to The Jen Team for all the hard work.</summary>
+    <platform>all</platform>
+    <language>en</language>
+    <license>GPL-2.0-or-later</license>
+	<assets>
+		<icon>icon.png</icon>
+		<fanart>fanart.jpg</fanart>
+  </assets>
+  </extension>
 </addon><addon id="plugin.video.ontv" name="OnTV" version="1.0.2" provider-name="OnTV">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -754,13 +869,100 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.themoviedb.helper" version="6.15.3" name="TMDb Helper" provider-name="jurialmunkey">
+</addon><addon id="plugin.video.scrubsv2" version="5.1.57" name="[COLOR orange]Scrubs v2[/COLOR]" provider-name="JewBMX, [COLOR red]The Red Wizard[/COLOR]">
+    <requires>
+        <import addon="script.module.six" />
+        <import addon="script.module.kodi-six" />
+        <import addon="script.module.simplejson" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.resolveurl" />
+        <import addon="script.scrubsv2.artwork" optional="true" />
+        <import addon="script.trakt" optional="true" />
+        <import addon="plugin.video.youtube" optional="true" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension library="service.py" point="xbmc.service" start="startup" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Free and non-Debrid Movies, TV Shows and Anime</summary>
+        <description lang="en">Free and non-Debrid Movies, TV Shows and Anime. Additional sources in Tools &gt; Settings &gt; Provider Settings (returning false positives, but they might work depending on your IP address)[CR][COLOR red]*** The final Red Wizard version of[/COLOR] [COLOR orange]Scrubs v2[/COLOR] [COLOR red]***[/COLOR][CR][COLOR gold]Please go to[/COLOR] [COLOR red]https://repo.redwizard.xyz/[/COLOR] [COLOR gold]and install[/COLOR] [COLOR red]Gratis Red[/COLOR] [COLOR gold]from[/COLOR] [COLOR red]The Red Repo (repository.redwizard)[/COLOR] [COLOR gold]for future updates!!![/COLOR][CR][COLOR blue]Many thanks to The Alpha![/COLOR]</description>
+        <disclaimer lang="en">The author is not responsible for the use of this addon. The author is not responsible for the content found using this addon. The author does not host or own any content found within this addon.[CR]The author is in no way affiliated with Kodi, Team Kodi, or the XBMC Foundation.[CR]This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</disclaimer>
+        <license>Free the People! Free the World!!</license>
+        <platform>all</platform>
+        <assets>
+            <icon>resources/images/icon.png</icon>
+            <fanart>resources/images/fanart.jpg</fanart>
+        </assets>
+        <news>2026-01-23
+- TVmaze New Episodes and Calendar added to TV Shows menu
+- More Stuff removed from main menu
+- TV Passport added to main menu
+- Redundant Settings removed: Episodes Widget, Disable Notifications, Show Changelog After Updates, What's New
+- Old changelog.txt now whatisnew.txt</news>
+    </extension>
+</addon><addon id="plugin.video.the-loop" name="The Loop" version="7.9" provider-name="Munkee">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" />
+    <import addon="script.module.routing" />
+    <import addon="script.module.unidecode" />
+    <import addon="script.module.tzlocal" />
+    <import addon="script.module.jetextractors" />
+    <import addon="script.module.inputstreamhelper" />
+    <import addon="script.module.resolveurl" />
+    <import addon="script.module.pytz" />
+    <import addon="script.module.pyamf" />
+    <import addon="script.module.pycryptodome" optional="true" />
+    <import addon="script.module.microjenscrapers" optional="true" />
+    
+    <import addon="plugin.video.looptv" />
+    <import addon="plugin.video.dailymotion_com" />    
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.service" library="service.py" />
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">The Loop rewritten on a smaller MicroJen Codebase. A Massive thanks to all The Jen Crew for their valuable contributions in bringing this project together. Stay In The Loop</summary>
+    <platform>all</platform>
+    <language>en</language>
+    <license>GPL-2.0-or-later</license>
+	<assets>
+		<icon>icon.png</icon>
+		<fanart>fanart.jpg</fanart>
+  </assets>
+  </extension>
+</addon><addon id="plugin.video.thechains" name="The Chains" version="5.4.4" provider-name="The Chains">
+  <requires>
+	<import addon="script.module.requests" /> 
+    <import addon="script.module.resolveurl" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+  </extension>
+  <extension library="resources/modules/" point="xbmc.python.module" />
+  <extension library="resources/sources/" point="xbmc.python.module" />
+  <extension library="resources/" point="xbmc.python.module" />
+  <extension point="xbmc.addon.metadata">
+	<reuselanguageinvoker>true</reuselanguageinvoker>
+    <summary lang="en">The Chains</summary>
+    <description lang="en">All the media as fast as possible</description>
+	
+    <platform>all</platform>
+	<assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
+  
+</addon><addon id="plugin.video.themoviedb.helper" version="6.15.5" name="TMDb Helper" provider-name="jurialmunkey">
 <requires>
   <import addon="xbmc.python" version="3.0.1" />
   <import addon="script.module.requests" version="2.9.1" />
   <import addon="script.module.pil" version="1.1.7" />
   <import addon="script.module.addon.signals" version="0.0.6" />
-  <import addon="script.module.jurialmunkey" version="0.2.31" />
+  <import addon="script.module.jurialmunkey" version="0.2.35" />
   <import addon="script.module.infotagger" version="0.0.5" />
   <import addon="script.module.qrcode" version="6.1.0" />
 </requires>
@@ -2923,6 +3125,29 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
     </assets>
   </extension>
 
+</addon><addon id="script.module.jetextractors" name="JetExtractors" version="3.3.8" provider-name="THE TEAM">
+	<requires>
+		<import addon="script.module.requests" />
+		<import addon="script.module.beautifulsoup4" />
+		<import addon="script.module.dateutil" />
+		<import addon="script.module.soupsieve" />
+		<import addon="script.module.pyairtable" />
+		<import addon="script.module.pyamf" />
+		<import addon="script.module.pycryptodome" optional="true" />
+		<import addon="script.module.pyjsparser" />
+	</requires>
+	<extension point="xbmc.python.module" library="lib" />
+	<extension point="xbmc.addon.metadata">
+		<platform>all</platform>
+		<summary lang="en">Jet Extractors</summary>
+		<description lang="en">Jet Extractors</description>
+		<disclaimer lang="en" />
+		<license>MIT</license>
+		<assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+		</assets>
+	</extension>
 </addon><addon id="script.module.jurialmunkey" name="jurialmunkey common" provider-name="jurialmunkey" version="0.2.33">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
@@ -2974,6 +3199,32 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
 		<disclaimer>The author does not host or own any content found within this addon. The author is not responsible for the content found using this addon. The author is not responsible for the use of this addon.</disclaimer>
 		<assets><icon>resources/magneto.png</icon></assets>
 	</extension>
+</addon><addon id="script.module.microjenscrapers" name="MicroJen Scraper Module" version="1.4" provider-name="MicroJen Community">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.beautifulsoup4" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.six" />
+        <import addon="script.module.kodi-six" />
+        <import addon="script.module.simplejson" />
+    </requires>
+    <extension point="xbmc.python.module" library="lib" />
+    <extension point="xbmc.python.pluginsource" library="lib/default.py">
+        <provides>executable</provides>
+    </extension>
+        <extension point="xbmc.addon.metadata">
+            <platform>all</platform>
+            <summary lang="en">MicroJen Scrapers Module</summary>
+            <description>Scrape common video host for URL's to be playable in Kodi, simplifying addon development of video plugins requiring multi video hosts. [CR]Massive thanks and respect to Crucial Minds for permission to use the Base Code and to The Jen Crew for their valuable contributions in bringing this project together.</description>
+                <disclaimer lang="en">The author is not responsible for the use of this addon. The author is not responsible for the content found using this addon. The author does not host or own any content found within this addon.[CR]The author is in no way affiliated with Kodi, Team Kodi, or the XBMC Foundation.[CR]This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</disclaimer>
+    <platform>all</platform>
+    <license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+    <assets>
+        <icon>icon.png</icon>
+        <fanart>fanart.jpg</fanart>
+    </assets>
+    <news />
+    </extension>
 </addon><addon id="script.module.mutagen" name="Mutagen" version="1.47.0" provider-name="Christoph Reiter">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -3226,6 +3477,22 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
     <platform>all</platform>
     <website>https://facelessuser.github.io/soupsieve/</website>
     <source>https://github.com/facelessuser/soupsieve</source>
+    <assets>
+      <icon>resources/icon.png</icon>
+    </assets>
+  </extension>
+</addon><addon id="script.module.tabulate" name="Tabulate" version="0.9.1.2">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+  </requires>
+  <extension point="xbmc.python.module" library="lib" />
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Pretty-print tabular data</summary>
+    <description lang="en_GB">Pretty-print tabular data</description>
+    <license>MIT</license>
+    <platform>all</platform>
+    <website>https://github.com/astanin/python-tabulate</website>
+    <source>https://github.com/astanin/python-tabulate</source>
     <assets>
       <icon>resources/icon.png</icon>
     </assets>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.blacklightning" name="Black Lightning" provider-name="" version="2.4.2">
+  <requires>
+        <import addon="script.module.six" version="0.0.1"/>
+		<import addon="script.module.requests"/>
+		<import addon="script.module.resolveurl" />
+		<import addon="script.module.beautifulsoup4"/>
+		<import addon="plugin.video.youtube" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+            library="default.py">
+        <provides>video</provides>
+  </extension>
+  <extension library="resources/modules/" point="xbmc.python.module" />
+  <extension library="resources/sources/" point="xbmc.python.module" />
+  <extension library="resources/" point="xbmc.python.module" />
+  <extension point="xbmc.addon.metadata">
+	<reuselanguageinvoker>true</reuselanguageinvoker>
+    <summary lang="en"></summary>
+    <description lang="en">For cMan 1972-2025</description>
+	
+    <platform>all</platform>
+	<assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
+  
+</addon>

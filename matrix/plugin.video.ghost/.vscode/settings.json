@@ -1,0 +1,7 @@
+{
+  "python.analysis.pythonVersion": "3.11",
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingImports": "none",
+    "reportMissingModuleSource": "none"
+  }
+}

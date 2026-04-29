@@ -1,0 +1,153 @@
+{
+    "items": [    
+        {
+            "title": "Trending Movies",
+            "type": "dir",
+            "link": "trakt/movies/trending"
+        },
+        {
+            "title": "Popular Movies",
+            "type": "dir",
+            "link": "trakt/movies/popular"
+        },
+        {
+            "title": "Recommended Movies",
+            "type": "dir",
+            "link": "trakt/movies/recommended"
+        },
+        {
+            "title": "Most Played Movies",
+            "type": "dir",
+            "link": "trakt/movies/played"
+        },
+        {
+            "title": "Most Collected Movies",
+            "type": "dir",
+            "link": "trakt/movies/collected"
+        },
+
+        {
+            "title": "Trending TV Shows",
+            "type": "dir",
+            "link": "trakt/shows/trending"
+        },
+        {
+            "title": "Popular TV Shows",
+            "type": "dir",
+            "link": "trakt/shows/popular"
+        },
+        {
+            "title": "Recommended TV Shows",
+            "type": "dir",
+            "link": "trakt/shows/recommended"
+        },
+        {
+            "title": "Most Played TV Shows",
+            "type": "dir",
+            "link": "trakt/shows/played"
+        },
+        {
+            "title": "Most Collected TV Shows",
+            "type": "dir",
+            "link": "trakt/shows/self/collected"
+        },
+
+        {
+            "title": "User Movies Collection",
+            "type": "dir",
+            "link": "trakt/user/jetjet7171/collection/movies"
+        },
+        {
+            "title": "User TV Shows Collection",
+            "type": "dir",
+            "link": "trakt/user/jetjet7171/collection/shows"
+        },
+        {
+            "title": "User Lists",
+            "type": "dir",
+            "link": "trakt/user/jetjet7171/lists"
+        },
+        {
+            "title": "User Watched Movies",
+            "type": "dir",
+            "link": "trakt/user/jetjet7171/watched/movies"
+        },
+        {
+            "title": "User Watched Shows",
+            "type": "dir",
+            "link": "trakt/user/jetjet7171/watched/shows"
+        },
+        {
+            "title": "User Watchlist",
+            "type": "dir",
+            "link": "trakt/user/jetjet7171/watchlist"
+        },
+        {
+            "title": "User Movies Watchlist",
+            "type": "dir",
+            "link": "trakt/user/jetjet7171/watchlist/movies"
+        },
+        {
+            "title": "User Shows Watchlist",
+            "type": "dir",
+            "link": "trakt/user/jetjet7171/watchlist/shows"
+        },
+
+        {
+            "title": "Personal Movies Collection",
+            "type": "dir",
+            "link": "trakt/user/self/collection/movies"
+        },
+        {
+            "title": "Personal TV Shows Collection",
+            "type": "dir",
+            "link": "trakt/user/self/collection/shows"
+        },
+        {
+            "title": "Personal Lists",
+            "type": "dir",
+            "link": "trakt/user/self/lists"
+        },
+        {
+            "title": "Personal Movie Recommendations",
+            "type": "dir",
+            "link": "trakt/recommendations/movies"
+        },
+        {
+            "title": "Personal Show Recommendations",
+            "type": "dir",
+            "link": "trakt/recommendations/shows"
+        },
+        {
+            "title": "Personal Watched Movies",
+            "type": "dir",
+            "link": "trakt/user/self/watched/movies"
+        },
+        {
+            "title": "Personal Watched Shows",
+            "type": "dir",
+            "link": "trakt/user/self/watched/shows"
+        },
+        {
+            "title": "Personal Watchlist",
+            "type": "dir",
+            "link": "trakt/user/self/watchlist"
+        },
+        {
+            "title": "Personal Movies Watchlist",
+            "type": "dir",
+            "link": "trakt/user/self/watchlist/movies"
+        },
+        {
+            "title": "Personal Shows Watchlist",
+            "type": "dir",
+            "link": "trakt/user/self/watchlist/shows"
+        },
+
+        {
+            "title": "List Slug Test",
+            "type": "dir",
+            "link": "trakt/user/justin/list/imdb-top-rated-movies"
+        }
+    ]
+}

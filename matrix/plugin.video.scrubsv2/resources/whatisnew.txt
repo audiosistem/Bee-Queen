@@ -1,0 +1,11 @@
+
+[B][COLOR red]*** The final Red Wizard version of[/COLOR] [COLOR orange]Scrubs v2[/COLOR] [COLOR red]***[/B][/COLOR][CR][CR][COLOR gold]Please go to[/COLOR] [COLOR red]https://repo.redwizard.xyz/[/COLOR] [COLOR gold]and install[/COLOR] [B][COLOR red]Gratis Red[/COLOR][/B] [COLOR gold]from[/COLOR] [COLOR red]The Red Repo (repository.redwizard)[/COLOR] [COLOR gold]for future updates!!![/COLOR]
+
+[COLOR blue]Many thanks to The Alpha![/COLOR]
+
+[B]- 5.1.55/5.1.56/5.1.57[/B] Menu and Settings updates.
+ * TVmaze New Episodes and Calendar added to TV Shows menu.
+ * More Stuff removed from main menu.
+ * TV Passport added to main menu.
+ * Redundant Settings removed: Episodes Widget, Disable Notifications, Show Changelog After Updates, What's New.
+ * Old changelog.txt now whatisnew.txt.

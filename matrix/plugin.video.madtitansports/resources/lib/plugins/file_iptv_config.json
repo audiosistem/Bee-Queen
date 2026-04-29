@@ -1,0 +1,35 @@
+{
+    "servers_txt": "http://magnetic.website/MAD_TITAN_SPORTS/Keep_m3u_json/zone1.txt",
+    "exclude_groups": [
+        "xxx",
+        "adult",
+        "18+"
+    ],
+    "total_result_limit": 1000,
+    "per_address_limit": 1000,
+    "recheck_hours": 12,
+    "min_connections": 2,
+    "max_servers_per_update": 50,
+    "stream_check_enabled": true,
+    "stream_check_candidates": 5,
+    "test_channel_keywords": [
+        "espn",
+        "sky sports",
+        "tnt",
+        "nba",
+        "nfl",
+        "tsn",
+        "fox sports",
+        "nbc sports"
+    ],
+    "m3u_sources": [],
+    "exclude_names": [
+        "BR:",
+        "ARG:",
+        "MEX:"
+    ],
+    "proxy_mode": "auto",
+    "auto_update_enabled": false,
+    "last_auto_update_ts": 0,
+    "debug_logging": false
+}

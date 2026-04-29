@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<addon id="plugin.video.scrubsv2" version="5.1.57" name="[COLOR orange]Scrubs v2[/COLOR]" provider-name="JewBMX, [COLOR red]The Red Wizard[/COLOR]">
+    <requires>
+        <import addon="script.module.six" />
+        <import addon="script.module.kodi-six" />
+        <import addon="script.module.simplejson" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.resolveurl" />
+        <import addon="script.scrubsv2.artwork" optional="true" />
+        <import addon="script.trakt" optional="true" />
+        <import addon="plugin.video.youtube" optional="true" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension library="service.py" point="xbmc.service" start="startup" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Free and non-Debrid Movies, TV Shows and Anime</summary>
+        <description lang="en">Free and non-Debrid Movies, TV Shows and Anime. Additional sources in Tools > Settings > Provider Settings (returning false positives, but they might work depending on your IP address)[CR][COLOR red]*** The final Red Wizard version of[/COLOR] [COLOR orange]Scrubs v2[/COLOR] [COLOR red]***[/COLOR][CR][COLOR gold]Please go to[/COLOR] [COLOR red]https://repo.redwizard.xyz/[/COLOR] [COLOR gold]and install[/COLOR] [COLOR red]Gratis Red[/COLOR] [COLOR gold]from[/COLOR] [COLOR red]The Red Repo (repository.redwizard)[/COLOR] [COLOR gold]for future updates!!![/COLOR][CR][COLOR blue]Many thanks to The Alpha![/COLOR]</description>
+        <disclaimer lang="en">The author is not responsible for the use of this addon. The author is not responsible for the content found using this addon. The author does not host or own any content found within this addon.[CR]The author is in no way affiliated with Kodi, Team Kodi, or the XBMC Foundation.[CR]This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</disclaimer>
+        <license>Free the People! Free the World!!</license>
+        <platform>all</platform>
+        <assets>
+            <icon>resources/images/icon.png</icon>
+            <fanart>resources/images/fanart.jpg</fanart>
+        </assets>
+        <news>2026-01-23
+- TVmaze New Episodes and Calendar added to TV Shows menu
+- More Stuff removed from main menu
+- TV Passport added to main menu
+- Redundant Settings removed: Episodes Widget, Disable Notifications, Show Changelog After Updates, What's New
+- Old changelog.txt now whatisnew.txt</news>
+    </extension>
+</addon>

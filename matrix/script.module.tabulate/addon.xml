@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="script.module.tabulate" name="Tabulate" version="0.9.1.2">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+  </requires>
+  <extension point="xbmc.python.module" library="lib" />
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Pretty-print tabular data</summary>
+    <description lang="en_GB">Pretty-print tabular data</description>
+    <license>MIT</license>
+    <platform>all</platform>
+    <website>https://github.com/astanin/python-tabulate</website>
+    <source>https://github.com/astanin/python-tabulate</source>
+    <assets>
+      <icon>resources/icon.png</icon>
+    </assets>
+  </extension>
+</addon>
