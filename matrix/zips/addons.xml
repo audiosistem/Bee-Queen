@@ -3070,6 +3070,23 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
       <icon>icon.png</icon>
     </assets>
   </extension>
+</addon><addon id="script.module.dnspython" name="DNS Python" version="1.12.1" provider-name="dnspython">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+  </requires>
+  <extension point="xbmc.python.module" library="lib" />
+  <extension point="xbmc.addon.metadata">
+	<summary>A Pure Python DNS module</summary>
+	<description>A Pure Python DNS module</description>
+	<disclaimer lang="en" />
+	<language>en</language>
+    <platform>all</platform>
+	<license>BSD-style license</license>
+	<forum />
+	<website>http://www.dnspython.org/</website>
+	<email />
+	<source>https://github.com/Arias800/script.module.dnspython/</source>
+  </extension>
 </addon><addon id="script.module.future" name="future" version="1.0.0+matrix.1" provider-name="Ed Schofield">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
