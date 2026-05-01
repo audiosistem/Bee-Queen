@@ -1,0 +1,26 @@
+{
+  "active": false,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "(https?://maxstream.video/(?:[^/]+/)?([a-zA-Z0-9]+))",
+        "url": "\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "maxstream",
+  "name": "MaxStream",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ],
+  "cloudflare": true
+}

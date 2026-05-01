@@ -1,0 +1,25 @@
+{
+  "active": false,
+  "find_videos": {
+    "ignore_urls": ["https://embed.mystream.to/span"],
+    "patterns": [
+      {
+        "pattern": "my?stream\\.(?:\\w+\\.)?[^/ <>]+/(?:external|watch/|embed-)?([0-9a-zA-Z_]+)",
+        "url": "https://embed.mystream.to/\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "mystream",
+  "name": "MyStream",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

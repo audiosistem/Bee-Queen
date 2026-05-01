@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <defaultcontrol always="true">5001</defaultcontrol>
+    <animation effect="slide" start="580,0" end="0,0" time="260" tween="cubic" easing="out">WindowOpen</animation>
+    <animation effect="fade" start="100" end="0" time="180">WindowClose</animation>
+
+    <controls>
+
+        <!-- ── Panel shadow ── -->
+        <control type="image">
+            <left>1356</left><top>36</top><width>540</width><height>204</height>
+            <texture colordiffuse="55000000">white.png</texture>
+        </control>
+
+        <!-- ── Panel background ── -->
+        <control type="image">
+            <left>1360</left><top>28</top><width>532</width><height>200</height>
+            <texture border="12" colordiffuse="F2111111">panel_rounded.png</texture>
+        </control>
+
+        <!-- ── Red top accent bar ── -->
+        <control type="image">
+            <left>1360</left><top>28</top><width>532</width><height>3</height>
+            <texture colordiffuse="FFE50914">white.png</texture>
+        </control>
+
+        <!-- ── "EPISOD URMĂTOR" header ── -->
+        <control type="label">
+            <left>1380</left><top>44</top><width>492</width><height>22</height>
+            <font>font10</font>
+            <textcolor>FF888888</textcolor>
+            <label>EPISOD URMĂTOR</label>
+        </control>
+
+        <!-- ── Show name ── -->
+        <control type="label">
+            <left>1380</left><top>68</top><width>492</width><height>28</height>
+            <font>font13</font>
+            <textcolor>FFAAAAAA</textcolor>
+            <label>$INFO[Window(Home).Property(samus.next_show)]</label>
+        </control>
+
+        <!-- ── Episode code + title ── -->
+        <control type="label">
+            <left>1380</left><top>96</top><width>492</width><height>32</height>
+            <font>font14</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <label>[B]$INFO[Window(Home).Property(samus.next_ep)][/B]</label>
+        </control>
+
+        <!-- ── Countdown text ── -->
+        <control type="label">
+            <left>1380</left><top>132</top><width>492</width><height>22</height>
+            <font>font10</font>
+            <textcolor>FF666666</textcolor>
+            <label>$INFO[Window(Home).Property(samus.countdown_text)]</label>
+        </control>
+
+        <!-- ── Button: Redă acum (ID 5001) ── -->
+        <control type="button" id="5001">
+            <left>1380</left><top>158</top><width>200</width><height>36</height>
+            <font>font13</font>
+            <textcolor>FF111111</textcolor>
+            <focusedcolor>FF111111</focusedcolor>
+            <align>center</align>
+            <scrolling>false</scrolling>
+            <texturenofocus border="8" colordiffuse="CCFFFFFF">panel_rounded.png</texturenofocus>
+            <texturefocus   border="8" colordiffuse="FFFFFFFF">panel_rounded.png</texturefocus>
+            <label>[B]▶  Redă acum[/B]</label>
+            <onright>5002</onright>
+        </control>
+
+        <!-- ── Button: Anulează (ID 5002) ── -->
+        <control type="button" id="5002">
+            <left>1596</left><top>158</top><width>156</width><height>36</height>
+            <font>font13</font>
+            <textcolor>FF888888</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <align>center</align>
+            <scrolling>false</scrolling>
+            <texturenofocus border="8" colordiffuse="33FFFFFF">panel_rounded.png</texturenofocus>
+            <texturefocus   border="8" colordiffuse="66FFFFFF">panel_rounded.png</texturefocus>
+            <label>Anulează</label>
+            <onleft>5001</onleft>
+        </control>
+
+        <!-- ── Progress bar background ── -->
+        <control type="image">
+            <left>1360</left><top>225</top><width>532</width><height>3</height>
+            <texture colordiffuse="22FFFFFF">white.png</texture>
+        </control>
+
+        <!-- ── Progress bar (red, shrinks) ── -->
+        <control type="progress" id="5010">
+            <left>1360</left><top>225</top><width>532</width><height>3</height>
+            <texturebg   colordiffuse="00000000">white.png</texturebg>
+            <texturemid  colordiffuse="FFE50914">white.png</texturemid>
+            <textureend  colordiffuse="FFE50914">white.png</textureend>
+        </control>
+
+    </controls>
+</window>

@@ -1,0 +1,10 @@
+{
+	"id": "streamtime",
+	"name": "StreamTime",
+	"language": ["ita"],
+	"active": false,
+	"thumbnail": "streamtime.png",
+	"banner": "streamtime.png",
+	"categories": ["tvshow", "movie"],
+	"settings": []
+}

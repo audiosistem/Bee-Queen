@@ -1,0 +1,67 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [
+      "http://uploaded.net/file/ref"
+    ],
+    "patterns": [
+      {
+        "pattern": "(?:ul|uploaded).(?:net|to)/(?:file/|f/)?([a-zA-Z0-9]+)",
+        "url": "http://uploaded.net/file/\\1"
+      },
+      {
+        "pattern": "(?:ul|uploaded).(?:net|to)/folder/([a-zA-Z0-9]+)",
+        "url": "http://uploaded.net/folder/\\1"
+      }
+    ]
+  },
+  "free": false,
+  "id": {
+    "value": [
+      "uploadedto",
+      "ul.to",
+      "uploaded"
+    ]
+  },
+  "name": "Uploaded",
+  "premium": [
+    "uploadedto",
+    "realdebrid",
+    "alldebrid"
+  ],
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    },
+    {
+      "default": false,
+      "enabled": true,
+      "id": "premium",
+      "label": "Activar cuenta premium",
+      "type": "bool",
+      "visible": true
+    },
+    {
+      "default": "",
+      "enabled": "eq(-1,true)",
+      "id": "user",
+      "label": "@30014",
+      "type": "text",
+      "visible": true
+    },
+    {
+      "default": "",
+      "enabled": "eq(-2,true)+!eq(-1,'')",
+      "hidden": true,
+      "id": "password",
+      "label": "@30015",
+      "type": "text",
+      "visible": true
+    }
+  ]
+}

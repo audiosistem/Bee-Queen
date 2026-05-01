@@ -1,0 +1,13 @@
+{
+    "id": "la7",
+    "name": "La7",
+    "active": true,
+    "language": ["ita"],
+    "thumbnail": "la7.png",
+    "banner": "la7.png",
+    "categories": ["movie", "tvshow", "documentary", "live"],
+    "not_active": ["include_in_newest"],
+    "default_off": ["include_in_global_search"],
+    "settings": [],
+    "cloudflare": true
+}

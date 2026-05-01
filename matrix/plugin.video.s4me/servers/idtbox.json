@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "https://idtbox.com/(?:embed-|)([A-z0-9]+)",
+        "url": "https://idtbox.com/embed-\\1.html"
+      }
+    ]
+  },
+  "free": true,
+  "id": "idtbox",
+  "name": "ID Tbox",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

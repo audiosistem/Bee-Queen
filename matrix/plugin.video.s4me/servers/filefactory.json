@@ -1,0 +1,29 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "(filefactory.com/file/[a-z0-9]+(?:/n/.*?\\.(?:avi|mp4|rar|mkv))?)",
+        "url": "http://www.\\1"
+      }
+    ]
+  },
+  "free": false,
+  "id": "filefactory",
+  "name": "FileFactory",
+  "premium": [
+    "realdebrid",
+    "alldebrid"
+  ],
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

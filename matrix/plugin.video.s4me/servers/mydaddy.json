@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "(?:http:|)//mydaddy.cc/video/([A-z0-9]+)",
+        "url": "http://mydaddy.cc/video/\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "mydaddy",
+  "name": "mydaddy",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

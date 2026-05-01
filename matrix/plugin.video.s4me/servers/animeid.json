@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "(s[0-9]+\\.animeid.tv/\\?vid=[A-z0-9-_]+)",
+        "url": "https://\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "animeid",
+  "name": "AnimeID",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

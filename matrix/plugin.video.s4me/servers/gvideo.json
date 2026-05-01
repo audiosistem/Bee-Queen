@@ -1,0 +1,45 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "(?s)https://youtube.googleapis.com.*?docid=([A-z0-9-_=]+)",
+        "url": "http://docs.google.com/get_video_info?docid=\\1"
+      },
+      {
+        "pattern": "(?s)http://docs.google.com/get_video_info.*?docid=([A-z0-9-_=]+)",
+        "url": "http://docs.google.com/get_video_info?docid=\\1"
+      },
+      {
+        "pattern": "http(?:s:|:)//drive.google.com/(?:uc|open)\\?id=([A-z0-9-_=]+)",
+        "url": "http://docs.google.com/get_video_info?docid=\\1"
+      },
+      {
+        "pattern": "(?s)(?:https|http)://(?:docs|drive).google.com/file/d/([^/]+)/(?:preview|edit|view)",
+        "url": "http://docs.google.com/get_video_info?docid=\\1"
+      },
+      {
+        "pattern": "(?s)https://(lh.).googleusercontent.com/([A-z0-9-_=]+)",
+        "url": "https://\\1.googleusercontent.com/\\2"
+      }
+    ]
+  },
+  "free": true,
+  "id": "gvideo",
+  "name": "G Video",
+  "premium": [
+    "realdebrid",
+    "alldebrid"
+  ],
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

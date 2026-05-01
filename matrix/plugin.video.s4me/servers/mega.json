@@ -1,0 +1,44 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "(mega.co.nz/\\#\\![A-Za-z0-9\\-\\_]+\\![A-Za-z0-9\\-\\_]+)",
+        "url": "https://\\1"
+      },
+      {
+        "pattern": "(mega.co.nz/\\#F\\![A-Za-z0-9\\-\\_]+\\![A-Za-z0-9\\-\\_]+)",
+        "url": "https://\\1"
+      },
+      {
+        "pattern": "(mega.nz/(?:embed|)\\#\\![A-Za-z0-9\\-\\_]+\\![A-Za-z0-9\\-\\_]+)",
+        "url": "https://\\1"
+      },
+      {
+        "pattern": "mega.nz/file/([^\\#]+)\\#([A-Za-z0-9-_]+)",
+        "url": "https://mega.nz/#!\\1!\\2"
+      },
+      {
+        "pattern": "(mega.nz/\\#F\\![A-Za-z0-9\\-\\_]+\\![A-Za-z0-9\\-\\_]+)",
+        "url": "https://\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "mega",
+  "name": "Mega",
+  "premium": [
+    "realdebrid"
+  ],
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

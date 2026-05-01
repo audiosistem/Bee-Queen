@@ -1,0 +1,41 @@
+{
+  "active": false,
+  "find_videos": {
+  	"ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "((?:katfile|nitroflare|filerio|mexa|rockfile).(?:net|to|com|in|sh|co)/[^\\s]+)",
+        "url": "https://\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "unsupported",
+  "name": "unsupported",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": false
+    },
+    {
+      "default": 0,
+      "enabled": false,
+      "id": "favorites_servers_list",
+      "label": "@60655",
+      "lvalues": [
+        "No",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "type": "list",
+      "visible": false
+    }
+  ]
+}

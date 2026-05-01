@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+       {
+        "pattern": "vudeo.net/(?:embed-)?([a-z0-9-.]+)",
+        "url": "https://vudeo.net/\\1.html"
+      }
+    ]
+  },
+  "free": true,
+  "id": "vudeo",
+  "name": "Vudeo",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

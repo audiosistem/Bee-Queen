@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "upstream.to/((?:embed-)?[a-z0-9]+)",
+        "url": "https://upstream.to/\\1.html"
+      }
+    ]
+  },
+  "free": true,
+  "id": "upstream",
+  "name": "UP Stream",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "badshare.io/(?:plugins/mediaplayer/site/_embed.php\\?u=|)([A-z0-9]+)",
+        "url": "https://badshare.io/\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "badshare",
+  "name": "BadShare",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

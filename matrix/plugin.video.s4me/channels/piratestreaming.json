@@ -1,0 +1,11 @@
+{
+    "id": "piratestreaming",
+    "name": "Pirate Streaming",
+    "active": false,
+    "language": ["ita"],
+    "thumbnail": "piratestreaming.png",
+    "bannermenu": "piratestreaming.png",
+    "categories": ["anime","movie","tvshow"],
+    "settings": [],
+    "cloudflare": true
+}

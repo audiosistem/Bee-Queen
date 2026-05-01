@@ -794,6 +794,30 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="plugin.video.samus" name="Samus" version="0.0.20mod" provider-name="derzis">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.pycryptodome" />
+        <import addon="script.module.beautifulsoup4" />
+        <import addon="script.module.resolveurl" />
+        <import addon="script.module.torrserver" />
+        <import addon="script.module.libtorrent" />
+        <import addon="inputstream.adaptive" />
+        <import addon="script.module.yt-dlp" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Samus</summary>
+        <description>Samus video addon</description>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.webp</fanart>
+        </assets>
+    </extension>
 </addon><addon id="plugin.video.scrubsv2" version="5.1.57" name="[COLOR orange]Scrubs v2[/COLOR]" provider-name="JewBMX, [COLOR red]The Red Wizard[/COLOR]">
     <requires>
         <import addon="script.module.six" />
@@ -1172,7 +1196,7 @@ In addition to what livestreams allowed you to do, you can now,
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.vixmovie" name="VixMovie" version="1.9" provider-name="1x,Geamanu,apoyotech">
+</addon><addon id="plugin.video.vixmovie" name="VixMovie" version="2.2" provider-name="1x,Geamanu,apoyotech">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.requests" version="2.25.1" />
@@ -1182,6 +1206,7 @@ In addition to what livestreams allowed you to do, you can now,
   <extension point="xbmc.python.pluginsource" library="addon.py">
     <provides>video</provides>
   </extension>
+  
   <extension point="xbmc.addon.metadata">
     <summary lang="en_GB">VixMovie Video Plugin</summary>
     <description lang="en_GB">Watch movies from VixMovie source.</description>

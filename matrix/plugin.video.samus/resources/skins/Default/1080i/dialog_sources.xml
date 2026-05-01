@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <defaultcontrol always="true">1300</defaultcontrol>
+    <animation effect="slide" start="0,1080" end="0,0" time="280">WindowOpen</animation>
+    <animation effect="fade" start="100" end="0" time="80">WindowClose</animation>
+
+    <controls>
+
+        <!-- ═══════════════════════════════════════
+             BACKGROUND
+             ═══════════════════════════════════════ -->
+
+        <!-- Solid black base -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="FF080808">white.png</texture>
+        </control>
+
+        <!-- Fanart (~8% opacity) -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <aspectratio>scale</aspectratio>
+            <texture colordiffuse="14FFFFFF">$INFO[Window.Property(info.fanart)]</texture>
+            <visible>!String.IsEmpty(Window.Property(info.fanart))</visible>
+        </control>
+
+        <!-- Dark vignette overlay (94% opaque) -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="F0080808">white.png</texture>
+        </control>
+
+        <!-- Thin red accent bar at top -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>3</height>
+            <texture colordiffuse="FFCC2222">white.png</texture>
+        </control>
+
+        <!-- ═══════════════════════════════════════
+             HEADER
+             ═══════════════════════════════════════ -->
+
+        <!-- Logo (when available) -->
+        <control type="image">
+            <left>50</left><top>25</top><width>400</width><height>75</height>
+            <aspectratio>left</aspectratio>
+            <texture>$INFO[Window.Property(info.logo)]</texture>
+            <visible>!String.IsEmpty(Window.Property(info.logo))</visible>
+        </control>
+
+        <!-- Title text (fallback when no logo) -->
+        <control type="label">
+            <left>50</left><top>14</top><width>1220</width><height>38</height>
+            <font>font14</font><textcolor>white</textcolor>
+            <label>$INFO[Window.Property(info.title)]</label>
+            <visible>String.IsEmpty(Window.Property(info.logo))</visible>
+        </control>
+
+
+        <!-- ═══════════════════════════════════════
+             FILTER BUTTONS
+             ═══════════════════════════════════════ -->
+
+        <!-- Quality button (ID 1300) -->
+        <control type="button" id="1300">
+            <left>470</left><top>50</top><width>210</width><height>38</height>
+            <font>font13</font>
+            <textcolor>FFAAAAAA</textcolor>
+            <focusedcolor>white</focusedcolor>
+            <align>center</align>
+            <texturenofocus border="8" colordiffuse="FF1A1A1A">panel_rounded.png</texturenofocus>
+            <texturefocus   border="8" colordiffuse="FFCC2222">panel_rounded.png</texturefocus>
+            <label>$INFO[Window.Property(filter_quality_label)]</label>
+            <ondown>1000</ondown>
+            <onright>1400</onright>
+        </control>
+
+        <!-- Quality breakdown counter -->
+        <control type="label">
+            <left>930</left><top>53</top><width>860</width><height>22</height>
+            <font>font10</font>
+            <label>$INFO[Window.Property(quality_summary)]</label>
+        </control>
+
+        <!-- Loading spinner (top-right, visible while sources are loading) -->
+        <control type="image">
+            <left>1856</left><top>22</top><width>44</width><height>44</height>
+            <texture>spinner.gif</texture>
+            <visible>String.IsEqual(Window.Property(loading),1)</visible>
+        </control>
+
+        <!-- Provider button (ID 1400) -->
+        <control type="button" id="1400">
+            <left>698</left><top>50</top><width>210</width><height>38</height>
+            <font>font13</font>
+            <textcolor>FFAAAAAA</textcolor>
+            <focusedcolor>white</focusedcolor>
+            <align>center</align>
+            <texturenofocus border="8" colordiffuse="FF1A1A1A">panel_rounded.png</texturenofocus>
+            <texturefocus   border="8" colordiffuse="FFCC2222">panel_rounded.png</texturefocus>
+            <label>$INFO[Window.Property(filter_provider_label)]</label>
+            <ondown>1000</ondown>
+            <onleft>1300</onleft>
+        </control>
+
+        <!-- ═══════════════════════════════════════
+             SOURCE LIST
+             ═══════════════════════════════════════ -->
+
+        <control type="list" id="1000">
+            <left>50</left>
+            <top>102</top>
+            <width>1240</width>
+            <height>958</height>
+            <pagecontrol>60</pagecontrol>
+            <itemgap>6</itemgap>
+            <onup>1300</onup>
+            <onright>60</onright>
+
+            <!-- ─── Normal layout ─── -->
+            <itemlayout height="120">
+
+                <!-- Card background -->
+                <control type="image">
+                    <left>0</left><top>2</top>
+                    <width>1240</width><height>116</height>
+                    <colordiffuse>FF1E1E1E</colordiffuse>
+                    <texture border="16">panel_rounded.png</texture>
+                </control>
+
+                <!-- Quality badge background -->
+                <control type="image">
+                    <left>8</left><top>10</top>
+                    <width>150</width><height>100</height>
+                    <colordiffuse>FF2A2A2A</colordiffuse>
+                    <texture border="16">panel_rounded.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(quality))</visible>
+                </control>
+
+                <!-- Quality text -->
+                <control type="label">
+                    <left>8</left><top>30</top><width>150</width><height>44</height>
+                    <font>font16</font><textcolor>FFBB8800</textcolor>
+                    <align>center</align>
+                    <label>$INFO[ListItem.Property(quality)]</label>
+                </control>
+
+                <!-- Provider tag under quality -->
+                <control type="label">
+                    <left>8</left><top>82</top><width>150</width><height>22</height>
+                    <font>font10</font><textcolor>FF555555</textcolor>
+                    <align>center</align>
+                    <label>$INFO[ListItem.Property(provider)]</label>
+                </control>
+
+                <!-- Release title -->
+                <control type="label">
+                    <left>170</left><top>14</top><width>1058</width><height>30</height>
+                    <font>font13</font><textcolor>FF999999</textcolor>
+                    <label>$INFO[ListItem.Property(release_title)]</label>
+                </control>
+
+                <!-- Tech line: codec | HDR | audio | source -->
+                <control type="label">
+                    <left>170</left><top>50</top><width>1058</width><height>26</height>
+                    <font>font10</font><textcolor>FF555555</textcolor>
+                    <label>$INFO[ListItem.Property(tech_line)]</label>
+                </control>
+
+                <!-- Stats line: seeds | size -->
+                <control type="label">
+                    <left>170</left><top>80</top><width>1058</width><height>26</height>
+                    <font>font10</font><textcolor>FF555555</textcolor>
+                    <label>$INFO[ListItem.Property(stats_line)]</label>
+                </control>
+
+            </itemlayout>
+
+            <!-- ─── Focused layout ─── -->
+            <focusedlayout height="120">
+
+                <!-- Card bg: red border when list focused -->
+                <control type="image">
+                    <left>0</left><top>2</top>
+                    <width>1240</width><height>116</height>
+                    <colordiffuse>FFCC2222</colordiffuse>
+                    <texture border="16">panel_rounded.png</texture>
+                    <visible>Control.HasFocus(1000)</visible>
+                </control>
+                <!-- Inner fill -->
+                <control type="image">
+                    <left>2</left><top>4</top>
+                    <width>1236</width><height>112</height>
+                    <colordiffuse>FF1E1E1E</colordiffuse>
+                    <texture border="14">panel_rounded.png</texture>
+                    <visible>Control.HasFocus(1000)</visible>
+                </control>
+
+                <!-- Card bg: no focus -->
+                <control type="image">
+                    <left>0</left><top>2</top>
+                    <width>1240</width><height>116</height>
+                    <colordiffuse>FF1E1E1E</colordiffuse>
+                    <texture border="16">panel_rounded.png</texture>
+                    <visible>!Control.HasFocus(1000)</visible>
+                </control>
+
+                <!-- Quality badge bg -->
+                <control type="image">
+                    <left>8</left><top>10</top>
+                    <width>150</width><height>100</height>
+                    <colordiffuse>FF2A2A2A</colordiffuse>
+                    <texture border="16">panel_rounded.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(quality))</visible>
+                </control>
+
+                <!-- Quality text -->
+                <control type="label">
+                    <left>8</left><top>30</top><width>150</width><height>44</height>
+                    <font>font16</font><textcolor>FFDD9900</textcolor>
+                    <align>center</align>
+                    <label>$INFO[ListItem.Property(quality)]</label>
+                </control>
+
+                <!-- Provider tag -->
+                <control type="label">
+                    <left>8</left><top>82</top><width>150</width><height>22</height>
+                    <font>font10</font><textcolor>FF666666</textcolor>
+                    <align>center</align>
+                    <label>$INFO[ListItem.Property(provider)]</label>
+                </control>
+
+                <!-- Release title — scrolling when focused -->
+                <control type="label">
+                    <left>170</left><top>14</top><width>1058</width><height>30</height>
+                    <font>font13</font><textcolor>white</textcolor>
+                    <scroll>true</scroll>
+                    <label>$INFO[ListItem.Property(release_title)]</label>
+                    <visible>Control.HasFocus(1000)</visible>
+                </control>
+                <control type="label">
+                    <left>170</left><top>14</top><width>1058</width><height>30</height>
+                    <font>font13</font><textcolor>FF999999</textcolor>
+                    <label>$INFO[ListItem.Property(release_title)]</label>
+                    <visible>!Control.HasFocus(1000)</visible>
+                </control>
+
+                <!-- Tech line -->
+                <control type="label">
+                    <left>170</left><top>50</top><width>1058</width><height>26</height>
+                    <font>font10</font><textcolor>FFBBBBBB</textcolor>
+                    <label>$INFO[ListItem.Property(tech_line)]</label>
+                    <visible>Control.HasFocus(1000)</visible>
+                </control>
+                <control type="label">
+                    <left>170</left><top>50</top><width>1058</width><height>26</height>
+                    <font>font10</font><textcolor>FF555555</textcolor>
+                    <label>$INFO[ListItem.Property(tech_line)]</label>
+                    <visible>!Control.HasFocus(1000)</visible>
+                </control>
+
+                <!-- Stats line -->
+                <control type="label">
+                    <left>170</left><top>80</top><width>1058</width><height>26</height>
+                    <font>font10</font><textcolor>FFBBBBBB</textcolor>
+                    <label>$INFO[ListItem.Property(stats_line)]</label>
+                    <visible>Control.HasFocus(1000)</visible>
+                </control>
+                <control type="label">
+                    <left>170</left><top>80</top><width>1058</width><height>26</height>
+                    <font>font10</font><textcolor>FF555555</textcolor>
+                    <label>$INFO[ListItem.Property(stats_line)]</label>
+                    <visible>!Control.HasFocus(1000)</visible>
+                </control>
+
+            </focusedlayout>
+        </control>
+
+        <!-- ═══════════════════════════════════════
+             SCROLLBAR
+             ═══════════════════════════════════════ -->
+        <control type="scrollbar" id="60">
+            <left>1298</left><top>102</top><width>12</width><height>958</height>
+            <onleft>1000</onleft>
+            <texturesliderbackground colordiffuse="FF111111">white.png</texturesliderbackground>
+            <texturesliderbar        colordiffuse="FF333333">white.png</texturesliderbar>
+            <texturesliderbarfocus   colordiffuse="FFCC2222">white.png</texturesliderbarfocus>
+            <orientation>vertical</orientation>
+        </control>
+
+        <!-- ═══════════════════════════════════════
+             POSTER (right column)
+             ═══════════════════════════════════════ -->
+
+        <!-- Poster card background -->
+        <control type="image">
+            <left>1326</left><top>102</top><width>554</width><height>958</height>
+            <colordiffuse>FF0E0E0E</colordiffuse>
+            <texture border="16">panel_rounded.png</texture>
+        </control>
+
+        <!-- Poster image -->
+        <control type="image" id="200">
+            <left>1326</left><top>102</top><width>554</width><height>958</height>
+            <aspectratio>scale</aspectratio>
+            <texture>$INFO[Window.Property(info.poster)]</texture>
+            <visible>!String.IsEmpty(Window.Property(info.poster))</visible>
+        </control>
+
+        <!-- Poster corner mask (cuts rounded corners) -->
+        <control type="image">
+            <left>1326</left><top>102</top><width>554</width><height>958</height>
+            <texture border="16">panel_corner_mask.png</texture>
+        </control>
+
+    </controls>
+</window>

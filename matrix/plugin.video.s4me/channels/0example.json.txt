@@ -1,0 +1,107 @@
+Rev:0.2
+Update: 03-10-2019
+#####################
+
+Promemoria da cancellare pena la non visibilità del canale in S4Me!!
+
+#####################
+
+
+le voci in settings sono state inserite per l'unico scopo
+di velocizzare la scrittura del file
+Vanno lasciate solo quelle voci il cui funzionamento sul 
+canale non vanno attivate.
+"not_active": ["include_in_newest"], VA INSERITO nei canali che NON hanno nessuna voce newest.
+Ovviamente va mantenuto tutto il codice di quell'id tra le {}
+se vanno cancellati tutti deve rimanere la voce:
+"settings": []
+##################### Cancellare fino a qui!
+{
+    "id": "nome del file .json",
+    "name": "Nome del canale visualizzato in S4Me",
+    "language": ["ita", "sub-ita"],
+    "active": false,
+    "thumbnail": "",
+    "banner": "",
+    "categories": ["movie", "tvshow", "anime", "vos", "documentary"],
+    "not_active": ["include_in_newest"],
+    "settings": [
+		{
+		  "id": "include_in_global_search",
+		  "type": "bool",
+		  "label": "@70728",
+		  "default": false,
+		  "enabled": false,
+		  "visible": false
+		},
+		{
+		  "id": "include_in_newest_peliculas",
+		  "type": "bool",
+		  "label": "@70727",
+		  "default": false,
+		  "enabled": false,
+		  "visible": false
+        },    
+		{
+		  "id": "include_in_newest_series",
+		  "type": "bool",
+		  "label": "@70727",
+		  "default": false,
+		  "enabled": false,
+		  "visible": false
+		},    
+		{
+		  "id": "include_in_newest_anime",
+		  "type": "bool",
+		  "label": "@70727",
+		  "default": false,
+		  "enabled": false,
+		  "visible": false
+		},
+        {
+		  "id": "checklinks",
+		  "type": "bool",
+		  "label": "Verifica se i link esistono",
+		  "default": false,
+		  "enabled": false,
+		  "visible": false
+        },
+        {
+		  "id": "checklinks_number",
+		  "type": "list",
+		  "label": "Numero di link da verificare",
+		  "default": 2,
+		  "enabled": false,
+		  "visible": "eq(-1,false)",
+		  "lvalues": [ "3", "5", "10", "15", "20" ]
+        },
+        {
+		  "id": "filter_languages",
+		  "type": "list",
+		  "label": "@30019",
+		  "default": 0,
+		  "enabled": false,
+		  "visible": false,
+		  "lvalues": ["Non Filtrare"]
+        }
+  ],
+  
+  "renumber": [
+        {
+		  "id": "autorenumber", 
+		  "type": "bool", 
+		  "label": "@70712", 
+		  "default": false, 
+		  "enabled": false, 
+		  "visible": false
+        },
+        {
+		  "id": "autorenumber_mode",
+		  "type": "bool",
+		  "label": "@70688",
+		  "default": false,
+		  "enabled": false,
+          "visible": "eq(-1,false)"
+        }
+  ]
+}

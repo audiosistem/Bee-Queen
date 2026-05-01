@@ -1,0 +1,11 @@
+{
+    "id": "ilcorsaronero",
+    "name": "ilCorSaRoNeRo",
+    "active": true,
+    "language": ["ita"],
+    "thumbnail": "ilcorsaronero.png",
+    "banner": "ilcorsaronero.png",
+    "categories": ["movie", "tvshow", "music", "torrent"],
+    "not_active": ["include_in_newest"],
+    "settings": []
+}

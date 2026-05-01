@@ -1,0 +1,5 @@
+<settings version="2">
+    <setting id="skip_burst_search" default="true">true</setting>
+    <setting id="greeting_enabled">false</setting>
+    <setting id="do_not_disturb" default="true">true</setting>
+</settings>

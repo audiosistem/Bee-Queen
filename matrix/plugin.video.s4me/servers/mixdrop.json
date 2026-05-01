@@ -1,0 +1,37 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "m1xdro?o?ps?.[^/]+/(?:f|e|emb)/([a-z0-9]+)",
+        "url": "https://m1xdrop.net/e/\\1"
+      },
+      {
+        "pattern": "(mixdro?ps?.[^/]+/player\\.php\\?id=[a-z0-9-]+)",
+        "url": "https://\\1"
+      },
+      {
+        "pattern": "(md[3bfyz][a-z0-9]*\\.[a-z0-9]+/(?:f|e)/[a-z0-9]+)",
+        "url": "https://\\1"
+      },
+	  {
+	  "pattern": "mixdro?o?ps?.[^/]+/(?:f|e|emb)/([a-z0-9]+)",
+        "url": "https://mixdrop.ag/e/\\1"
+	  }
+    ]
+  },
+  "free": true,
+  "id": "mixdrop",
+  "name": "MixDrop",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

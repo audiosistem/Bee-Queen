@@ -1,0 +1,59 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "([a-z0-9]+\\.1fichier.com)",
+        "url": "https://1fichier.com/?\\1"
+      },
+      {
+        "pattern": "1fichier.com/\\?([a-z0-9]+)",
+        "url": "https://1fichier.com/?\\1"
+      }
+    ]
+  },
+  "free": false,
+  "id": "onefichier",
+  "name": "1fichier",
+  "premium": [
+    "onefichier",
+    "realdebrid",
+    "alldebrid"
+  ],
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    },
+    {
+      "default": false,
+      "enabled": true,
+      "id": "premium",
+      "label": "Activar cuenta premium",
+      "type": "bool",
+      "visible": true
+    },
+    {
+      "default": "",
+      "enabled": "eq(-1,true)",
+      "id": "user",
+      "label": "@30014",
+      "type": "text",
+      "visible": true
+    },
+    {
+      "default": "",
+      "enabled": "eq(-2,true)+!eq(-1,'')",
+      "hidden": true,
+      "id": "password",
+      "label": "@30015",
+      "type": "text",
+      "visible": true
+    }
+  ]
+}

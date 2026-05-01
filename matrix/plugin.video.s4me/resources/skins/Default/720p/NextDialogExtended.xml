@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+    <defaultcontrol always="true">20</defaultcontrol>
+    <onload>Dialog.Close(fullscreeninfo,true)</onload>
+    <onload>Dialog.Close(videoosd,true)</onload>
+    <controls>
+        <control type="group">
+            <animation type="WindowOpen" reversible="false">
+                <effect type="fade" start="0" end="100" time="400" />
+                <effect type="slide" start="115,0" end="0,0" time="400" />
+            </animation>
+            <animation type="WindowClose" reversible="false">
+                <effect type="fade" start="100" end="0" time="300" />
+                <effect type="slide" start="0,0" end="115,0" time="300" />
+            </animation>
+            <control type="group">
+                <right>30</right>
+                <bottom>30</bottom>
+                <height>220</height>
+                <width>326</width>
+                <!-- Background -->
+                <control type="image">
+                    <top>0</top>
+					<right>0</right>
+                    <width>326</width>
+                    <height>180</height>
+                    <texture>$INFO[Window.Property(next_img)]</texture>
+                    <aspectratio>scale</aspectratio>
+                </control>
+                <control type="grouplist" id="20">
+                    <orientation>vertical</orientation>
+                    <height>220</height>
+                    <width>326</width>
+                    <itemgap>0</itemgap>
+                    <right>0</right>
+                    <control type="button" id="3012">
+                        <label></label>
+                        <height>180</height>
+                        <width>326</width>
+                        <right>0</right>
+                        <font>font30_title</font>
+                        <textoffsety>20</textoffsety>
+                        <textcolor>FFFFFFFF</textcolor>
+                        <focusedcolor>FFFFFFFF</focusedcolor>
+                        <selectedcolor>FFFFFFFF</selectedcolor>
+                        <shadowcolor>22000000</shadowcolor>
+                        <aligny>top</aligny>
+                        <align>center</align>
+                        <texturefocus border="10">NextDialog/background-play.png</texturefocus>
+                        <texturenofocus border="10" colordiffuse="00232323">white.png</texturenofocus>
+                        <pulseonselect>no</pulseonselect>
+                    </control>
+                    <control type="button" id="3013">
+                        <label>$ADDON[plugin.video.s4me  60396]</label>
+                        <height>40</height>
+                        <width>326</width>
+                        <font>font30_title</font>
+                        <textoffsetx>20</textoffsetx>
+                        <textcolor>80FFFFFF</textcolor>
+                        <focusedcolor>FFFFFFFF</focusedcolor>
+                        <selectedcolor>FFFFFFFF</selectedcolor>
+                        <shadowcolor>22000000</shadowcolor>
+                        <aligny>center</aligny>
+                        <align>center</align>
+                        <texturefocus border="10" colordiffuse="FF0082C2">white.png</texturefocus>
+                        <texturenofocus border="10"  colordiffuse="FF232323">white.png</texturenofocus>
+                        <pulseonselect>no</pulseonselect>
+                    </control>
+                </control>
+                    <control type="label">
+                    <bottom>60</bottom>
+                    <height>40</height>
+                    <aligny>center</aligny>
+                    <visible>true</visible>
+                    <align>center</align>
+                    <scroll>true</scroll>
+                    <scrollspeed>50</scrollspeed>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <shadowcolor>FF000000</shadowcolor>
+                    <info>Window.Property(title)</info>
+                    <font>font30_title</font>
+                </control>
+                <control type="label">
+                    <bottom>40</bottom>
+                    <height>40</height>
+                    <aligny>center</aligny>
+                    <visible>true</visible>
+                    <align>center</align>
+                    <scroll>true</scroll>
+                    <scrollspeed>50</scrollspeed>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <shadowcolor>FF000000</shadowcolor>
+                    <info>Window.Property(ep_title)</info>
+                    <font>font20_title</font>
+                </control>
+                <control type="label">
+                    <top>20</top>
+                    <right>25</right>
+                    <height>auto</height>
+                    <aligny>top</aligny>
+                    <visible>true</visible>
+                    <align>right</align>
+                    <scroll>true</scroll>
+                    <scrollspeed>50</scrollspeed>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <shadowcolor>FF000000</shadowcolor>
+                    <info>Player.TimeRemaining(secs),,</info>
+                    <font>font30_title</font>
+                </control>
+            </control>
+        </control>
+    </controls>
+</window>

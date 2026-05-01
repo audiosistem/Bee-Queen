@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "goodstream.uno/(?:video/embed/)?([a-zA-Z0-9]+)",
+        "url": "https://goodstream.uno/video/embed/\\1/680x420"
+      }
+    ]
+  },
+  "free": true,
+  "id": "goodstream",
+  "name": "GoodStream",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+    "id": "ilgeniodellostreaming",
+    "name": "IlGenioDelloStreaming",
+    "active": false,
+    "language": ["ita", "sub-ita"],
+    "thumbnail": "ilgeniodellostreaming.png",
+    "banner": "ilgeniodellostreaming.png",
+    "categories": ["movie", "tvshow", "anime", "vos"],
+    "settings": ["include_in_newest_anime"]
+}

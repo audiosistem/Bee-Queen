@@ -1,0 +1,34 @@
+{
+  "active": true,
+  "find_videos": {
+    "patterns": [
+      {
+        "pattern": "(vshare.io/v/[a-zA-Z0-9/-]+)",
+        "url": "http://\\1"
+      },
+      {
+        "pattern": "(vshare.eu/embed-[a-zA-Z0-9/-]+.html)",
+        "url": "http://\\1"
+      },
+      {
+        "pattern": "(vshare.eu/[a-zA-Z0-9/-]+.htm)",
+        "url": "http://\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": [
+    "vshare"
+  ],
+  "name": "VideoShare",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

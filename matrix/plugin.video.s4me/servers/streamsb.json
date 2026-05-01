@@ -1,0 +1,36 @@
+{
+    "active": true,
+    "find_videos": {
+        "ignore_urls": [],
+        "patterns": [{
+                "pattern": "(?:streamsb|sblanh|sblona|sbembed|sbembed1|sbplay1|sbplay|pelistop|tubesb|playersb|embedsb|watchsb|streamas|sbfast|sbfull|viewsb|sbvideo|cloudemb|sbplay2|japopav|javplaya|ssbstream|sbthe|sbspeed|sbanh|sblongvu|sbchill|sbhight|sbbrisk|likessb|kharabnahk)\\.\\w{2,5}/(?:embed-|d/|e/)?([A-z0-9]+)",
+                "url": "https://streamas.cloud/d/\\1.html"
+            },
+            {
+                "pattern": "(?:cloudemb.com)/([A-z0-9]+)",
+                "url": "https://streamas.cloud/d/\\1.html"
+            },
+            {
+                "pattern": "animeworld.biz/(?:embed-|d/|e/)?([A-z0-9]+)",
+                "url": "https://streamas.cloud/d/\\1.html"
+            }
+        ]
+    },
+    "free": true,
+    "id": "streamsb",
+    "name": "StreamSB",
+    "settings": [{
+        "default": false,
+        "enabled": true,
+        "id": "black_list",
+        "label": "@70708",
+        "type": "bool",
+        "visible": true
+    },{
+        "default": 16,
+        "enabled": true,
+        "id": "number",
+        "type": "int",
+        "visible": false
+    }]
+}

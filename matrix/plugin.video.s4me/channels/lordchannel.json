@@ -1,0 +1,10 @@
+{
+  "id": "lordchannel",
+  "name": "LordChannel",
+  "active": false,
+  "language": ["ita", "sub-ita"],
+  "thumbnail": "lordchannel.png",
+  "banner": "lordchannel.png",
+  "categories": ["anime", "tvshow", "movie"],
+  "settings": []
+}

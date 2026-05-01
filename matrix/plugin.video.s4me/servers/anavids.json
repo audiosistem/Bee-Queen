@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "((?:anavids|vidspeeds|liivideo|liiivideo|allviids|vidbm|vidroba|vidbom|anafasts)).com(?:\\:\\d+)?/((?:embed-)?[0-9a-zA-Z]+)",
+        "url": "https://\\1.com/\\2.html"
+      }
+    ]
+  },
+  "free": true,
+  "id": "anavids",
+  "name": "AnaVids",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

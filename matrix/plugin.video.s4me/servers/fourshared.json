@@ -1,0 +1,39 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [
+      "http://www.4shared.com/flash/player.swf"
+    ],
+    "patterns": [
+      {
+        "pattern": "(http://www.4shared.com/embed/[A-Z0-9a-z]+/[A-Z0-9a-z]+)",
+        "url": "\\1"
+      },
+      {
+        "pattern": "file=(http\\://[a-z0-9]+.4shared.com/img/.*?\\.flv)",
+        "url": "\\1"
+      },
+      {
+        "pattern": "(http://www.4shared.com.*?)",
+        "url": "\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "fourshared",
+  "name": "4shared",
+  "premium": [
+    "realdebrid",
+    "alldebrid"
+  ],
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

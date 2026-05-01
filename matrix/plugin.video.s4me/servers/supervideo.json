@@ -1,0 +1,29 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "supervideo\\.[a-z0-9]+?/embed-([a-z0-9]{12}).html",
+        "url": "https://supervideo.cc/e/\\1"
+      },
+      {
+        "pattern": "supervideo\\.[a-z0-9]+/(?:e/)?([a-z0-9]{12})",
+        "url": "https://supervideo.cc/e/\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "supervideo",
+  "name": "SuperVideo",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

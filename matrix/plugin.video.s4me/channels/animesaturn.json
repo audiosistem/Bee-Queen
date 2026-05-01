@@ -1,0 +1,10 @@
+{
+    "id": "animesaturn",
+    "name": "AnimeSaturn",
+    "active": true,
+    "language": ["ita"],
+    "thumbnail": "animesaturn.png",
+    "banner": "animesaturn.png",
+    "categories": ["anime"],
+    "settings": []
+}

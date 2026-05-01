@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "sendvid.com/(?:embed/|)([a-zA-Z0-9]+)",
+        "url": "https://sendvid.com/embed/\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "sendvid",
+  "name": "sendvid",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

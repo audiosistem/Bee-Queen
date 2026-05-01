@@ -1,0 +1,29 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "https://cinemaupload.com/embed/([a-zA-Z0-9]+)",
+        "url": "https://embed.cload.video/embed/\\1/"
+      },
+      {
+        "pattern": "(embed.cload.video/(?:embed|intermediate)/\\w+)",
+        "url": "https://\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "cinemaupload",
+  "name": "CinemaUpload",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "https://videobin.co/(?:embed-|)([A-z0-9]+)",
+        "url": "https://videobin.co/embed-\\1.html"
+      }
+    ]
+  },
+  "free": true,
+  "id": "videobin",
+  "name": "VideoBin",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

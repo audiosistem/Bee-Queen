@@ -1,0 +1,47 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "/video_ext.php\\?oid=([^&]+)(?:&|)id=([^&]+)(?:&|)hash=([a-z0-9]+)",
+        "url": "https://vk.com/video_ext.php?oid=\\1&id=\\2&hash=\\3"
+      },
+      {
+        "pattern": "(vk\\.[a-z]+\\/video[0-9]+_[0-9]+)",
+        "url": "https://\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "vk",
+  "name": "VK",
+  "premium": [
+    "realdebrid"
+  ],
+  "settings": [
+    {
+      "id": "vkemail",
+      "type": "text",
+      "label": "E-mail",
+      "enabled": true,
+      "visible": true
+    },
+    {
+      "id": "vkpassword",
+      "type": "text",
+      "hidden": true,
+      "label": "@30015",
+      "enabled": "!eq(-1,'')",
+      "visible": true
+    },
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

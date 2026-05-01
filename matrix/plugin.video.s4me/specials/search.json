@@ -1,0 +1,50 @@
+{
+  "id": "search",
+  "name": "search",
+  "active": false,
+  "thumbnail": "",
+  "banner": "",
+  "categories": [],
+  "settings": [
+    {
+      "id": "last_search",
+      "type": "bool",
+      "label": "@60678",
+      "default": true,
+      "enabled": true,
+      "visible": true
+    },
+    {
+      "id": "saved_searches_limit",
+      "type": "list",
+      "label": "@60677",
+      "default": 0,
+      "enabled": true,
+      "visible": true,
+      "lvalues": [
+        "10",
+        "20",
+        "30",
+        "40"
+      ]
+    },
+    {
+      "id": "result_mode",
+      "type": "list",
+      "label": "@60657",
+      "default": 0,
+      "enabled": true,
+      "visible": true,
+      "lvalues": ["@60675","@60676"]
+    },
+    {
+      "id": "thread_number",
+      "type": "list",
+      "label": "@60673",
+      "default": 0,
+      "enabled": true,
+      "visible": true,
+      "lvalues": ["auto","1","2","4","6","8","16","24","32","64"]
+    }
+  ]
+}

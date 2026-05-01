@@ -1,0 +1,11 @@
+{
+    "id": "mondoserietv",
+    "name": "MondoSerieTV",
+    "active": false,
+    "language": ["ita"],
+    "thumbnail": "mondoserietv.png",
+    "bannermenu": "mondoserietv.png",
+    "categories": ["movie","anime","tvshow","documentary"],
+    "not_active":["include_in_newest_anime","include_in_newest_documentary"],
+    "settings": []
+}

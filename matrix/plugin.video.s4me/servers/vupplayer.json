@@ -1,0 +1,25 @@
+{
+  "active": false,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "(?:vupload.com|vup.to)/((?:embed-|e/)?[a-z0-9]+)",
+        "url": "https://vupload.com/\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "vupplayer",
+  "name": "VUP",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

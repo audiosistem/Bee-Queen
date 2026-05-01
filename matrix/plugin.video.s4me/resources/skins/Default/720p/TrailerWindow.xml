@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<window>
+    <depth>0.52</depth>
+    <coordinates>
+        <left>0</left>
+        <top>0</top>
+    </coordinates>
+    <controls>
+        <!-- CLOSE BUTTON / BACKGROUND -->
+        <control type="button">
+            <left>0</left>
+            <top>0</top>
+            <width>100%</width>
+            <height>100%</height>
+            <texturefocus colordiffuse="FF232323">white.png</texturefocus>
+            <texturenofocus colordiffuse="FF232323">white.png</texturenofocus>
+            <animation effect="fade" time="200">WindowOpen</animation>
+            <animation effect="fade" time="200">WindowClose</animation>
+            <onclick>Action(close)</onclick>
+        </control>
+        <!-- GROUP CONTROLS -->
+        <control type="group">
+            <left>0</left>
+            <top>0</top>
+            <animation type="WindowOpen" reversible="false">
+                <effect type="slide" start="0,100" end="0,0" delay="160" time="160" />
+                <effect type="fade" delay="160" end="100" time="100" />
+            </animation>
+            <animation type="WindowClose" reversible="false">
+                <effect type="slide" start="0,0" end="0,100" delay="160" time="160" />
+                <effect type="fade" delay="160" start="100" end="0" time="100" />
+            </animation>
+
+            <!-- BACKGROUND -->
+            <control type="image" id='30000'>
+                <width>1280</width>
+                <height>720</height>
+                <texture colordiffuse="FF888888"/>
+            </control>
+            <!-- COUNT -->
+            <control type="textbox" id='30001'>
+                <left>1190</left>
+                <top>650</top>
+                <width>50</width>
+                <height>30</height>
+                <font>font13</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <shadowcolor>00000000</shadowcolor>
+                <label></label>
+                <align>right</align>
+                <aligny>center</aligny>
+            </control>
+
+            <!-- TRAILERS -->
+            <control type="wraplist" id="30500">
+                <top>-177</top>
+                <width>1280</width>
+                <height>897</height>
+                <viewtype>wrap</viewtype>
+                <orientation>vertical</orientation>
+                <focusposition>1</focusposition>
+                <scrolltime tween="sine" easing="out">300</scrolltime>
+                <itemlayout height="358" width="600">
+                    <!-- Poster -->
+                    <control type="image">
+                        <top>10</top>
+                        <left>0</left>
+                        <width>600</width>
+                        <height>338</height>
+                        <texture colordiffuse="FF888888">$INFO[ListItem.Property(thumbnail)]</texture>
+                        <aspectratio>scale</aspectratio>
+                    </control>
+                </itemlayout>
+                <focusedlayout height="358" width="600">
+                    <!-- Title -->
+                    <control type="textbox">
+                        <left>640</left>
+                        <top>164</top>
+                        <width>600</width>
+                        <height>30</height>
+                        <font>font13</font>
+                        <textcolor>FFFFFFFF</textcolor>
+                        <shadowcolor>00000000</shadowcolor>
+                        <label>[B]$INFO[ListItem.Label][/B]</label>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                    </control>
+                    <!-- Poster -->
+                    <control type="image">
+                        <top>10</top>
+                        <left>0</left>
+                        <width>600</width>
+                        <height>338</height>
+                        <texture>$INFO[ListItem.Property(thumbnail)]</texture>
+                        <aspectratio>scale</aspectratio>
+                    </control>
+                </focusedlayout>
+            </control>
+
+            <!-- <control type="button" id="30008">
+                <top>15</top>
+                <right>15</right>
+                <height>50</height>
+                <texturenofocus colordiffuse="AAFFFFFF">Infoplus/search.png</texturenofocus>
+                <texturefocus colordiffuse="FFFFFFFF">Infoplus/search.png</texturefocus>
+                <onup>30501</onup>
+                <ondown>30500</ondown>
+                <onleft>30007</onleft>
+                <onright>30007</onright>
+            </control> -->
+
+        </control>
+        <!-- GROUP CONTROLS END -->
+    </controls>
+</window>

@@ -1,0 +1,29 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "http://www.facebook.com/v/([\\d]+)",
+        "url": "http://www.facebook.com/video/external_video.php?v=\\1"
+      },
+      {
+        "pattern": "(http://video.ak.facebook.com/.*?\\.mp4)",
+        "url": "\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "facebook",
+  "name": "facebook",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

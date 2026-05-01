@@ -1,0 +1,12 @@
+{
+    "id": "paramount",
+    "name": "Paramount Network",
+    "active": false,
+    "language": ["ita"],
+    "thumbnail": "paramount.png",
+    "banner": "paramount.png",
+    "categories": ["movie", "tvshow", "documentary", "live"],
+    "not_active": ["include_in_newest"],
+    "default_off": ["include_in_global_search"],
+    "settings": []
+}

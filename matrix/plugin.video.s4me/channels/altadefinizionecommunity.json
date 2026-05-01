@@ -1,0 +1,37 @@
+{
+    "id": "altadefinizionecommunity",
+    "name": "Altadefinizione Community",
+    "language": ["ita", "sub-ita"],
+    "active": false,
+    "thumbnail": "altadefinizionecommunity.png",
+    "banner": "",
+    "categories": ["movie", "tvshow", "vos"],
+    "not_active": ["include_in_newest"],
+    "settings": [
+        {
+      "default": "",
+      "enabled": true,
+      "id": "username",
+      "label": "username",
+      "type": "text",
+      "visible": true
+    },
+    {
+      "default": "",
+      "enabled": true,
+      "id": "password",
+      "label": "password",
+      "type": "text",
+      "visible": true
+    },
+    {
+      "id": "order",
+      "type": "list",
+      "label": "Ordine di Visualizzazione",
+      "default": 0,
+      "enabled": true,
+      "visible": true,
+      "lvalues": [ "Nessuno", "I più visti", "I più votati", "I più votati dell'ultimo mese", "Titolo A-Z", "Voto IMDB più alto"]
+    }
+  ]
+}

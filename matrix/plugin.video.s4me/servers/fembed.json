@@ -1,0 +1,23 @@
+{
+    "active": true,
+    "find_videos": {
+        "ignore_urls": [],
+        "patterns": [{
+            "pattern": "((?:fembed|divload|cercafilm|sonline|verystream|animeworld|tantifilm|animepertutticdn).([^/]+)/(?:f|v)/[A-z0-9_-]+)",
+            "url": "https://\\1"
+        }]
+    },
+    "free": true,
+    "id": "fembed",
+    "name": "Fembed",
+    "settings": [{
+            "default": false,
+            "enabled": true,
+            "id": "black_list",
+            "label": "@70708",
+            "type": "bool",
+            "visible": true
+        }
+    ],
+    "version": 1
+}

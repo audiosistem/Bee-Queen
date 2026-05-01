@@ -1,0 +1,95 @@
+{
+  "id": "tvmoviedb",
+  "name": "TvMovieDB",
+  "active": false,
+  "language": ["*"],
+  "thumbnail": "https://i.imgur.com/5CETVTV.jpg",
+  "categories": [
+    "movie",
+    "tvshow",
+    "anime"
+  ],
+  "settings": [
+    {
+      "id": "tmdb",
+      "type": "list",
+      "label": "@70418",
+      "default": 0,
+      "enabled": true,
+      "visible": true,
+      "lvalues": [
+        "auto",
+        "@70419",
+        "@70420",
+        "@70421",
+        "@70422",
+        "@70423",
+        "@70424",
+        "@70425",
+        "@70014"
+      ]
+    },
+    {
+      "id": "tmdb_alternativo",
+      "type": "list",
+      "label": "@70426",
+      "default": 6,
+      "enabled": true,
+      "visible": true,
+      "lvalues": [
+        "@70419",
+        "@70420",
+        "@70421",
+        "@70422",
+        "@70423",
+        "@70424",
+        "@70425",
+        "@70014"
+      ]
+    },
+    {
+      "id": "imdb",
+      "type": "list",
+      "label": "@70427",
+      "default": 0,
+      "enabled": true,
+      "visible": true,
+      "lvalues": [
+        "auto",
+        "@70419",
+        "@70420",
+        "@70421",
+        "@70422",
+        "@70423",
+        "@70424",
+        "@70425",
+        "@70014"
+      ]
+    },
+    {
+      "id": "usuariomal",
+      "type": "text",
+      "label": "@70441",
+      "default": "",
+      "enabled": true,
+      "visible": true
+    },
+    {
+      "id": "passmal",
+      "type": "text",
+      "label": "@70442",
+      "default": "",
+      "enabled": true,
+      "hidden": true,
+      "visible": true
+    },
+    {
+      "id": "adult_mal",
+      "type": "bool",
+      "label": "@70443",
+      "default": false,
+      "enabled": true,
+      "visible": true
+    }
+  ]
+}

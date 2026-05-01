@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <animation effect="fade" start="0" end="100" time="150">WindowOpen</animation>
+    <animation effect="fade" start="100" end="0" time="100">WindowClose</animation>
+    <coordinates>
+        <left>0</left>
+        <top>0</top>
+        <width>1920</width>
+        <height>1080</height>
+    </coordinates>
+
+    <controls>
+
+        <!-- Background -->
+        <control type="group">
+            <width>1920</width>
+            <height>1080</height>
+            <control type="image">
+                <texture colordiffuse="FF000000">white.png</texture>
+            </control>
+            <control type="image">
+                <texture background="true">$INFO[Window(Home).Property(resolving.fanart)]</texture>
+                <aspectratio>scale</aspectratio>
+                <colordiffuse>33ffffff</colordiffuse>
+                <animation effect="fade" start="0" end="100" time="500">WindowOpen</animation>
+            </control>
+        </control>
+
+        <control type="group">
+            <animation type="WindowOpen" reversible="false">
+                <effect type="fade" end="100" time="400" />
+            </animation>
+
+            <!-- Top-left label -->
+            <control type="label">
+                <left>50</left>
+                <top>36</top>
+                <width>700</width>
+                <height>36</height>
+                <font>font13</font>
+                <textcolor>FF888888</textcolor>
+                <label>[B]SAMUS[/B] | SE REZOLVĂ SURSA</label>
+            </control>
+
+            <!-- Movie title -->
+            <control type="label">
+                <top>300</top>
+                <width>1920</width>
+                <height>80</height>
+                <font>font20</font>
+                <textcolor>white</textcolor>
+                <align>center</align>
+                <label>[B]$INFO[Window(Home).Property(resolving.title)][/B]</label>
+            </control>
+
+            <!-- Spinner GIF (centered) -->
+            <control type="image">
+                <centerleft>50%</centerleft>
+                <centertop>50%</centertop>
+                <width>120</width>
+                <height>120</height>
+                <texture background="true">spinner.gif</texture>
+            </control>
+
+            <!-- Status text -->
+            <control type="label">
+                <top>650</top>
+                <width>1920</width>
+                <height>50</height>
+                <font>font13</font>
+                <align>center</align>
+                <textcolor>FF888888</textcolor>
+                <label>$INFO[Window(Home).Property(resolving.status)]</label>
+            </control>
+
+        </control>
+    </controls>
+</window>

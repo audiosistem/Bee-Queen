@@ -1,0 +1,30 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "(?:www.)?ok.../(?:videoembed|video)/(\\d+)",
+        "url": "http://ok.ru/videoembed/\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": {
+    "value": [
+      "okru",
+      "ok.ru"
+    ]
+  },
+  "name": "OKru",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

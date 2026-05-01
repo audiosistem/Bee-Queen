@@ -1,0 +1,26 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "cloudvideo.tv/(?:embed-|)([a-z0-9]+)(?:.html|)",
+        "url": "https://cloudvideo.tv/embed-\\1.html"
+      }
+    ]
+  },
+  "free": true,
+  "id": "cloudvideo",
+  "name": "Cloudvideo",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}
+  

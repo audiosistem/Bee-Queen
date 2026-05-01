@@ -1,0 +1,29 @@
+{
+  "id": "community",
+  "name": "Community",
+  "active": true,
+  "language": ["*"],
+  "thumbnail": "",
+  "banner": "",
+  "fanart": "",
+  "categories": [],
+  "settings": [
+    {
+      "id": "pagination",
+      "type": "list",
+      "label": "Pagination",
+      "default": 2,
+      "enabled": true,
+      "visible": true,
+      "lvalues": ["@70708", "20", "40", "60", "80", "100"]
+    },
+    {
+      "id": "show_seasons",
+      "type": "bool",
+      "label": "Show Seasons",
+      "default": false,
+      "enabled": true,
+      "visible": true
+    }
+  ]
+}

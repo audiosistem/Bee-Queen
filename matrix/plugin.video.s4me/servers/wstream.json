@@ -1,0 +1,51 @@
+{
+    "id": "wstream",
+    "name": "Wstream",
+    "active": false,
+    "free": true,
+    
+    "find_videos": {
+        "patterns": [
+            {
+                "pattern": "(?:wstream\\.video|wstream\\.icu|krask\\.xyz)(?!<)(?:=|/)(?:video[a-zA-Z0-9.?_]*|embed[a-zA-Z0-9]*|)?(?!api|swembedid|swvideoid)(?:-|/|=)?(?:[a-z0-9A-Z]+/)?([a-z0-9A-Z]+)",
+                "url": "http://wstream.video/video.php?file_code=\\1"
+            },
+            {
+                "pattern": "(?:wstream\\.video|wstream\\.icu|krask\\.xyz)/((?:api/vcmod/fastredirect/streaming[a-z]*\\.php\\?id=|swembedid|swvideoid/)[$0-9]+)",
+                "url": "http://wstream.video/\\1"
+            },
+            {
+                "pattern": "https://nored.icu/swembedid/([0-9]+)",
+                "url": "http://nored.icu/swembedid/\\1"
+            }
+        ],
+        "ignore_urls": []
+    },
+    "settings": [
+        {
+            "default": false,
+            "enabled": true,
+            "id": "black_list",
+            "label": "$ADDON[plugin.video.s4me 70708]",
+            "type": "bool",
+            "visible": true
+        },
+        {
+            "default": 0,
+            "enabled": true,
+            "id": "favorites_servers_list",
+            "label": "$ADDON[plugin.video.s4me 60655]",
+            "lvalues": [
+                "No",
+                "1",
+                "2",
+                "3",
+                "4",
+                "5"
+            ],
+            "type": "list",
+            "visible": false
+        }
+    ],
+    "cloudflare": true
+}

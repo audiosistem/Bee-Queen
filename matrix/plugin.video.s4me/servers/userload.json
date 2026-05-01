@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "userload.co/(?:embed|f)/([a-z0-9]+)",
+        "url": "https://userload.co/e/\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "userload",
+  "name": "userload",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "active": true,
+  "find_videos": {
+    "patterns": [
+      {
+        "pattern": "ninjastream\\.to/(?:watch|download)/([0-9a-zA-Z]+)",
+        "url": "https://ninjastream.to/watch/\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id":"ninjastream",
+  "name": "NinjaStream",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

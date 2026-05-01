@@ -1,0 +1,53 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "filesmonster.com/download(.*?)",
+        "url": "http://filesmonster.com/download\\1"
+      }
+    ]
+  },
+  "free": false,
+  "id": "filesmonster",
+  "name": "filesmonster",
+  "premium": [
+    "filesmonster"
+  ],
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    },
+    {
+      "default": false,
+      "enabled": true,
+      "id": "premium",
+      "label": "Activar cuenta premium",
+      "type": "bool",
+      "visible": true
+    },
+    {
+      "default": "",
+      "enabled": "eq(-1,true)",
+      "id": "user",
+      "label": "@30014",
+      "type": "text",
+      "visible": true
+    },
+    {
+      "default": "",
+      "enabled": "eq(-2,true)+!eq(-1,'')",
+      "hidden": true,
+      "id": "password",
+      "label": "@30015",
+      "type": "text",
+      "visible": true
+    }
+  ]
+}

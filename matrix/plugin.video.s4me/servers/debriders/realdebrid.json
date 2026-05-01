@@ -1,0 +1,24 @@
+{
+  "active": true,
+  "free": false,
+  "id": "realdebrid",
+  "name": "Real-Debrid",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "premium",
+      "label": "@70272",
+      "type": "bool",
+      "visible": true
+    },
+    {
+      "default": "",
+      "enabled": "eq(-1,true)",
+      "id": "token",
+      "label": "Token (autentificación alternativa)",
+      "type": "text",
+      "visible": true
+    }
+  ]
+}

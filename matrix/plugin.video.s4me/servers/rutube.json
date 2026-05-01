@@ -1,0 +1,28 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "(http://rutube.ru/play/embed/[a-zA-Z0-9]+.p=[a-zA-Z0-9-]+)",
+        "url": "\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "rutube",
+  "name": "RUTube",
+  "premium": [
+    "alldebrid"
+  ],
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

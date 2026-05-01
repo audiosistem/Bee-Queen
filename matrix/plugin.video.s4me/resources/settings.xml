@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <!-- General -->
+    <category label="70168">
+        <setting label="70786" type="lsep"/>
+        <setting id="autostart" type="bool" label="70706" default="false"/>
+        <setting label="70579" type="lsep"/>
+        <setting id="addon_update_enabled" type="bool" label="70581" default="true"/>
+        <setting id="addon_update_message" type="bool" label="70582" visible="eq(-1,true)" default="true"/>
+        <setting id="addon_update_timer" type="slider" option="int" range="1,1,24" label="707416" visible="eq(-2,true)" default="1"/>
+        <setting label="70787" type="lsep"/>
+        <setting id="resolver_dns" type="bool" label="707408" default="true" enable="true" visible="true"/>
+        <setting id="resolver_dns_provider" type="select" label="707409" default="Cloudflare" values="Cloudflare|Google" visible="eq(-1,true)"/>
+        <setting id="checkdns" type="bool" default="true" visible="false"/>
+        <setting label="70788" type="lsep"/>
+        <setting id="debug" type="bool" label="30003" default="false"/>
+        <setting id="chrome_ua_version" type="text" default="120.0.6099.225" visible="False"/>
+    </category>
+
+    <!-- Playback -->
+    <category label="70753">
+        <setting id="player_mode" type="select" lvalues="30026|30027|30028|30029" label="30044" default="1"/>
+        <setting id="default_action" type="select" lvalues="30006|30007|30008" label="30005" default="0"/>
+        <setting id="autoplay" type="bool" label="70562" default="false" visible="true"/>
+        <setting id="servers_favorites" visible="true" type="action" label="60551" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAic2VydmVyc19mYXZvcml0ZXMiLA0KICAgICJjaGFubmVsIjogInNldHRpbmciDQp9==)"/>
+        <setting id="servers_blacklist" visible="true" type="action" label="60550" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAic2VydmVyc19ibGFja2xpc3QiLA0KICAgICJjaGFubmVsIjogInNldHRpbmciDQp9==)"/>
+        <setting id="window_type" type="select" lvalues="60622|60623" label="60621" default="0"/>
+        <setting id="resume_menu" type="select" lvalues="30048|30049" label="30047" default="0"/>
+        <!-- <setting id="hide_servers" type="bool" label="70747" default="false" visible="eq(-1,true)" subsetting="true"/> -->
+        <setting id="checklinks" type="bool" label="30020" default="false"/>
+        <setting id="checklinks_number" type="slider" option="int" range="5,5,20" label="30021" default="5" visible="eq(-1,true)" subsetting="true"/>
+    </category>
+
+    <!-- Videolibrary -->
+    <category label="30131">
+        <setting label="30501" type="lsep"/>
+        <!-- <setting id="videolibrarypath" type="action" label="30067" action="RunPlugin(plugin://plugin.video.s4me/?ew0KCSJjaGFubmVsIjoibW92ZV92aWRlb2xpYnJhcnkiLA0KCSJhY3Rpb24iOiJzZXRfdmlkZW9saWJyYXJ5X3BhdGgiDQp9)" default="special://profile/addon_data/plugin.video.s4me/videolibrary"/> -->
+        <setting id="videolibrarypath" type="folder" label="30067" default="" option="writeable"/>
+        <setting id="folder_tvshows" type="text" label="70118" default="Serie TV"/>
+        <setting id="folder_movies" type="text" label="70119" default="Film"/>
+        <setting id="videolibrary_kodi" type="bool" label="70120" default="false"/>
+        <setting label="59997" type="lsep"/>
+        <setting id="videolibrary_max_quality" type="bool" label="70729" default="false" visible="true"/>
+        <setting id="next_ep" type="select" label="70748" lvalues="70832|70833|70732|70834" default="1"/>
+        <setting id="next_ep_type" type="select" label="70754" lvalues="70755|70756|70757" default="0" visible="!eq(-1,0)" subsetting="true"/>
+        <setting id="next_ep_seconds" type="slider" option="int" range="20,10,240" label="70749" default="40" visible="!eq(-2,0)" subsetting="true"/>
+        <setting id="watched_setting" type="slider" option="int" range="20,5,90" label="60634" default="80"/>
+        <setting id="trakt_sync" type="bool" label="70109" default="false"/>
+        <setting label="30030" type="lsep"/>
+        <setting id="vidolibrary_preferences" type="action" label="60542" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAiY2hhbm5lbF9jb25maWciLA0KICAgICJjaGFubmVsIjogInZpZGVvbGlicmFyeSINCn0==)"/>
+        <setting id="vidolibrary_update" type="action" label="60568" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAidXBkYXRlX3ZpZGVvbGlicmFyeSIsDQogICAgImNoYW5uZWwiOiAidmlkZW9saWJyYXJ5Ig0KfQ==)"/>
+        <setting id="vidolibrary_export" type="action" label="80000" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAiZXhwb3J0X3ZpZGVvbGlicmFyeSIsDQogICAgImNoYW5uZWwiOiAiYmFja3VwIg0KfQ==)"/>
+        <setting id="vidolibrary_import" type="action" label="80001" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAiaW1wb3J0X3ZpZGVvbGlicmFyeSIsDQogICAgImNoYW5uZWwiOiAiYmFja3VwIg0KfQ==)"/>
+        <setting id="vidolibrary_delete" type="action" label="80036" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAiZGVsZXRlX3ZpZGVvbGlicmFyeSIsDQogICAgImNoYW5uZWwiOiAidmlkZW9saWJyYXJ5Ig0KfQ==)"/>
+        <setting id="vidolibrary_restore" type="action" label="60567" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAicmVzdG9yZV90b29scyIsDQogICAgImNoYW5uZWwiOiAic2V0dGluZyINCn0=)"/>
+    </category>
+
+    <!-- Channels -->
+    <category label="30118" >
+        <setting id="channel_language" type="select" values="auto|all|ita" label="30019" default="all"/>
+        <setting id="channels_onoff" type="action" label="60545" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAiY29uZl90b29scyIsDQogICAgImNoYW5uZWwiOiAic2V0dGluZyIsDQoJImV4dHJhIjogImNoYW5uZWxzX29ub2ZmIg0KfQ==)"/>
+        <setting id="channels_config" type="action" label="60537" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAiY2hhbm5lbHNfbWVudSIsDQogICAgImNoYW5uZWwiOiAic2hvcnRjdXRzIg0KfQ==)"/>
+        <setting id="channels_check" type="action" label="60549" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAiY2hlY2tfY2hhbm5lbHMiLA0KICAgICJjaGFubmVsIjogInNob3J0Y3V0cyINCn0==)"/>
+    </category>
+
+    <!-- Servers -->
+    <category label="70145" >
+        <setting id="resolve_priority" type="select" label="70110" lvalues="70164|70165|70166" default="0"/>
+        <setting id="resolve_stop" type="bool" label="70111" default="true"/>
+        <setting id="hidepremium" type="bool" label="70112" default="false"/>
+        <setting id="httptools_timeout" type="slider" option="int" range="0,1,30" label="70580" default="5"/>
+        <setting label="70145" type="lsep"/>
+        <setting id="favorites_servers" type="bool" label="60551" default="false" visible="false"/>
+        <setting id="quality_priority" type="bool" label="30069" default="false" visible="false"/>
+
+        <setting id="servers_config" type="action" label="60538" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAic2VydmVyc19tZW51IiwNCiAgICAiY2hhbm5lbCI6ICJzaG9ydGN1dHMiDQp9==)"/>
+        <setting id="debriders_config" type="action" label="60552" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAic2VydmVyc19tZW51IiwNCiAgICAiY2hhbm5lbCI6ICJzaG9ydGN1dHMiLA0KCSJ0eXBlIjogImRlYnJpZGVycyINCn0==)"/>
+        <setting label="70578" type="lsep"/>
+        <!-- <setting id="torrent_config" type="action" label="70253" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiJzZXR0aW5nX3RvcnJlbnQiLA0KICAgICJjaGFubmVsIjoic2V0dGluZyINCn0=)"/> -->
+        <setting id="elementum_on_seed" type="bool" label="70805" default="false"/>
+        <setting id="elementum_install" type="action" label="70785" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiJkb3dubG9hZCIsDQogICAgImNoYW5uZWwiOiJlbGVtZW50dW1fZG93bmxvYWQiDQp9)"/>
+    </category>
+
+    <!-- Search -->
+    <category label="60423">
+        <setting label="60422" type="lsep"/>
+        <setting id="new_search" type="bool" label="Usa la nuova ricerca globale" default="true" visible="true"/>
+        <setting id="last_search" type="bool" label="60678" default="true" visible="true"/>
+        <setting id="saved_searches_limit" type="slider" option="int" range="10,10,40" label="60677" default="10" visible="eq(-1,0)" subsetting="true"/>
+        <setting id="result_mode" type="select" label="60657" lvalues="60675|60676" default="0"/>
+        <setting id="thread_number" type="slider" label="60673" option="int" range="0,1,64" default="0"/>
+        <setting id="search_channels" type="action" label="59994" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiJzZXR0aW5nX2NoYW5uZWxfbmV3IiwNCiAgICAiY2hhbm5lbCI6InNlYXJjaCINCn0=)"/>
+        <setting label="70154" type="lsep"/>
+        <setting id="tmdb_active" default="true" visible="false"/>
+<!--        <setting id="tmdb_threads" type="slider" option="int" range="5,5,30" label="70155" default="20"/>-->
+        <setting id="tmdb_plus_info" type="bool" label="70156" default="false"/>
+        <setting id="episode_info" type="bool" label="60292" default="false"/>
+        <setting id="tmdb_cache" type="bool" label="70157" default="true"/>
+        <setting id="tmdb_cache_expire" type="select" lvalues="70158|70159|70160|70161|70170" label="70162" enable="eq(-1,true)" default="4"/>
+        <setting id="tmdb_clean_db_cache" type="action" label="70163" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAic2NyaXB0Ig0KfQ==)" />
+        <setting label="Lista activa" type="text" id="lista_activa" default="addonfavorites-default.json" visible="false"/>
+    </category>
+
+    <!-- Downloads -->
+    <category label="30153">
+        <setting id="downloadenabled" type="bool" label="70689" default="false"/>
+        <setting id="downloadpath" type="folder" label="30017" visible="eq(-1,true)" default="" option="writeable"/>
+        <!-- <setting id="library_add" type="bool" label="70230" default="false"/>
+        <setting id="library_move" type="bool" label="70231" default="false" visible="eq(-1,true)" subsetting="true"/> -->
+        <setting id="downloadlistpath" type="folder" label="30018" visible="eq(-2,true)" default="" option="writeable"/>
+        <setting id="library_move" type="bool" label="70231" visible="eq(-3,true)" default="true"/>
+        <setting id="browser" type="bool" label="70232" visible="eq(-4,true)" default="true"/>
+        <setting id="server_speed" type="bool" label="70242" visible="eq(-5,true)" default="true"/>
+        <setting id="language" type="select" label="70246" values="ITA|Sub-ITA" visible="eq(-6,true)" default="ITA"/>
+        <setting id="quality" type="select" label="70240" lvalues="70241|70763|70764|70765" visible="eq(-7,true)" default="0"/>
+        <setting id="download_adv" type="action" label="30030" visible="eq(-7,true)" action="RunPlugin(plugin://plugin.video.s4me/?ew0KCSJhY3Rpb24iOiJjaGFubmVsX2NvbmZpZyIsDQoJImNvbmZpZyI6ImRvd25sb2FkcyIsDQogICAgImNoYW5uZWwiOiJzZXR0aW5nIg0KfQ==)"/>
+    </category>
+
+    <!-- News -->
+    <category label="60327">
+        <setting label="60525" type="lsep"/>
+        <setting id="news_films" type="action" label="60509" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiJzZXR0aW5nX2NoYW5uZWwiLA0KICAgICJjaGFubmVsIjoibmV3cyIsDQoJImV4dHJhIjoicGVsaWN1bGFzIg0KfQ==)"/>
+        <setting id="news_series" type="action" label="60511" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiJzZXR0aW5nX2NoYW5uZWwiLA0KICAgICJjaGFubmVsIjoibmV3cyIsDQoJImV4dHJhIjoic2VyaWVzIg0KfQ==)"/>
+        <setting id="news_anime" type="action" label="60512" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiJzZXR0aW5nX2NoYW5uZWwiLA0KICAgICJjaGFubmVsIjoibmV3cyIsDQoJImV4dHJhIjoiYW5pbWUiDQp9)"/>
+        <setting id="news_documentaries" type="action" label="60513" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiJzZXR0aW5nX2NoYW5uZWwiLA0KICAgICJjaGFubmVsIjoibmV3cyIsDQoJImV4dHJhIjoiZG9jdW1lbnRhbGVzIg0KfQ==)"/>
+        <setting id="news_options" type="action" label="60415" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiJzZXR0aW5ncyIsDQogICAgImNoYW5uZWwiOiJuZXdzIg0KfQ==)"/>
+    </category>
+
+    <!-- Customization -->
+    <category label="70126">
+        <!-- Homepage -->
+        <setting label="70716" type="lsep"/>
+        <setting id="enable_news_menu" label="30130" type="bool" default="true"/>
+        <setting id="enable_channels_menu" label="30118" type="bool" default="true"/>
+        <setting id="enable_search_menu" label="30103" type="bool" default="true"/>
+        <setting id="enable_onair_menu" label="50001" type="bool" default="true"/>
+        <setting id="enable_link_menu" label="70527" type="bool" default="true"/>
+        <setting id="enable_fav_menu" label="30102" type="bool" default="true"/>
+        <setting id="enable_library_menu" label="30131" type="bool" default="true"/>
+        <setting label="30000" type="lsep"/>
+        <setting id="touch_view" label='30002' type="bool" default="false"/>
+        <setting id="viewchange_notify" label='70514' type="bool" default="false"/>
+        <!-- View Mode (hidden)-->
+        <setting id="skin_name" label='Skin Name' type="text" default="skin.estuary" visible="false"/>
+        <setting id="view_mode_home" type="action" label="70009" default= "Default, 0" visible="false"/>
+        <setting id="view_mode_menu" type="action" label="70009" default= "Default, 0" visible="false"/>
+        <setting id="view_mode_channels" type="action" label="30118" default= "Default, 0" visible="false"/>
+        <setting id="view_mode_channel" type="action" label="30118" default= "Default, 0" visible="false"/>
+        <setting id="view_mode_movie" type="action" label="30122" default= "Default, 0" visible="false"/>
+        <setting id="view_mode_tvshow" type="action" label="30123" default= "Default, 0" visible="false"/>
+        <setting id="view_mode_season" type="action" label="30140" default= "Default, 0" visible="false"/>
+        <setting id="view_mode_episode" type="action" label="70362" default= "Default, 0" visible="false"/>
+        <setting id="view_mode_server" type="action" label="70145" default= "Default, 0" visible="false"/>
+        <setting id="view_mode_musicvideo" type="action" label="70145" default= "Default, 0" visible="false"/>
+        <!-- Contextual -->
+        <setting label="30024" type="lsep"/>
+        <setting id="quick_menu" type="bool" label="60360" default="true"/>
+        <!-- <setting id="side_menu" type="bool" label="70737" default="false"/> -->
+<!--        <setting id="s4me_menu" type="bool" label="60026" default="true"/>-->
+        <setting id="infoplus" type="bool" label="70151" default="false"/>
+        <!-- <setting id="infoplus_set" type="bool" label="70128" visible="eq(-1,true)" default="false" subsetting="true"/> -->
+        <!-- <setting id="extended_info" type="bool" label="70152" default="false"/> -->
+        <!-- Shortcut -->
+		<setting label="30998" type="lsep"/>
+		<setting id="shortcut_key" type="action" label="30999" action="RunPlugin(plugin://plugin.video.s4me/?ew0KICAgICJhY3Rpb24iOiAia2V5bWFwIg0KfQ==)"/>
+        <setting id="delete_key" type="action" label="31000" action="RunPlugin(plugin://plugin.video.s4me/?ewogICAgImFjdGlvbiI6ICJkZWxldGVfa2V5Igp9==)"/>
+		<!-- Others -->
+        <setting label="70149" type="lsep"/>
+        <setting id="icon_set" type="select" label="70108" values="default|light|dark|mike" default="default"/>
+        <setting id="only_channel_icons" type="bool" label="30009" default="false"/>
+        <setting id="enable_custom_theme" type="bool" label="70564" default="false"/>
+        <setting id="custom_theme" type="folder" label="70565" default="" visible="eq(-1,true)"/>
+        <setting id="video_thumbnail_type" type="select" label="70131" lvalues="70132|70133" default="1"/>
+    </category>
+</settings>

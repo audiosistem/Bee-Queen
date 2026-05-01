@@ -1,0 +1,87 @@
+<settings>
+    <category label="Redare" id="playback">
+        <setting id="resolver_timeout" type="number" label="Timeout rezolvare surse (secunde)" default="10" />
+        <setting id="history_enabled" type="bool" label="Activează istoricul vizionărilor" default="true" />
+        <setting id="autoplay_next" type="bool" label="Auto-play episod următor (seriale)" default="true" />
+        <setting id="autoplay_countdown" type="number" label="Pornire automată cu N secunde înainte de final" default="60" visible="eq(-1,true)" />
+    </category>
+    <category label="Surse" id="sources">
+        <setting id="use_vidify" type="bool" label="Vidify" default="true" />
+        <setting id="use_primewire" type="bool" label="Primewire" default="false" />
+        <setting id="use_vidsrc" type="bool" label="VidSrcSu (deprecated)" default="false" />
+        <setting id="use_vidzee" type="bool" label="VidZee" default="true" />
+        <setting id="use_twoembed" type="bool" label="2Embed" default="true" />
+        <setting id="use_primesrc" type="bool" label="Vidsrcme.ru" default="true" />
+        <setting id="use_primesrcme" type="bool" label="PrimeSrc.me" default="true" />
+        <setting id="use_vidlink" type="bool" label="VidLink" default="true" />
+        <setting id="use_videasy" type="bool" label="Videasy" default="true" />
+        <setting id="use_vsembed" type="bool" label="VSEmbed" default="true" />
+        <setting id="use_yflix" type="bool" label="YFlix" default="true" />
+        <setting id="use_deseneledublate" type="bool" label="DeseneRO (dublate română, broken)" default="false" />
+        <setting id="use_hexa" type="bool" label="Hexa (broken)" default="false" />
+        <setting id="use_smashystream" type="bool" label="SmashyStream (broken)" default="false" />
+        <setting id="use_thrax" type="bool" label="Thrax" default="true" />
+        <setting id="use_flixer" type="bool" label="Flixer" default="true" />
+        <setting id="use_vixsrc" type="bool" label="VixSrc" default="true" />
+        <setting id="use_hdhub" type="bool" label="HDHub" default="true" />
+        <setting id="use_webstreamr" type="bool" label="Webstreamr" default="true" />
+        <setting id="use_vidrock" type="bool" label="VidRock" default="true" />
+        <setting id="use_nebulastreams" type="bool" label="NebulaStreams" default="true" />
+        <setting id="use_flixnest" type="bool" label="FlixNest" default="true" />
+        <setting id="use_cinepro" type="bool" label="CinePro" default="true" />
+        <setting id="use_pulpwatch" type="bool" label="PulpWatch" default="true" />
+        <setting id="use_filmehd" type="bool" label="FilmeHD.one" default="true" />
+        <setting id="use_hydrahd" type="bool" label="HydraHD" default="false" />
+        <setting id="use_yastream" type="bool" label="Yastream (Asian)" default="true" />
+        <setting id="use_nhdapi" type="bool" label="NHDAPI (FlixHQ/HollyMovieHD)" default="false" />
+        <setting id="flixnest_url" type="text" label="FlixNest URL (cu token opțional)" default="https://flixnest.app/flix-streams" visible="eq(-1,true)" />
+        <setting id="use_stremify" type="bool" label="Stremify" default="false" />
+        <setting id="stremify_url" type="text" label="Stremify URL (manifest.json)" default="https://stremify.hayd.uk/YnVpbHQtaW4sZnJlbWJlZCxmcmVuY2hjbG91ZCxtZWluZWNsb3VkLGtpbm9raXN0ZSxjaW5laGRwbHVzLHZlcmhkbGluayxldXJvc3RyZWFtaW5nLGd1YXJkYWhkLHZpc2lvbmNpbmUsd2VjaW1hLGFrd2FtLGRyYW1hY29vbCxkcmFtYWNvb2xfY2F0YWxvZw==/manifest.json" visible="eq(-1,true)" />
+        <setting id="use_streamimdb" type="bool" label="StreamIMDb" default="true" />
+        <setting id="use_multiembed" type="bool" label="MultiEmbed" default="true" />
+        <setting id="use_vidbingeto" type="bool" label="VidBinge.to (vidora.stream)" default="true" />
+        <setting id="use_moviesapi" type="bool" label="MoviesAPI (flixcdn.cyou)" default="true" />
+        <setting id="use_consumet" type="bool" label="Consumet (FlixHQ via API)" default="false" />
+        <setting id="consumet_url" type="text" label="Consumet URL (instanță proprie)" default="https://api.consumet.org" visible="eq(-1,true)" />
+        <setting id="use_nuvio" type="bool" label="Nuvio" default="false" />
+        <setting id="use_vega" type="bool" label="Vega" default="false" />
+        <setting id="use_rogflix" type="bool" label="Rogflix" default="false" />
+        <setting id="use_aiostreams" type="bool" label="AIO Streams" default="false" />
+        <setting id="aiostreams_url" type="text" label="AIO Streams URL (implicit: aiostreams.stremio.ru)" default="https://aiostreams.stremio.ru" visible="eq(-1,true)" />
+        <!-- ACTIVAT: Filtrul de calitate rămâne activ pentru a afișa rezoluțiile -->
+        <setting id="use_quality_filter" type="bool" label="Filtru calitate (dialog înainte de selecție)" default="true" />
+    </category>
+    <category label="Torrents" id="torrents">
+        <setting id="torrent_engine" type="labelenum" label="Motor torrent" values="TorrServer|libtorrent" default="TorrServer" />
+        <setting id="torrserver_mode" type="labelenum" label="Mod TorrServer" values="Extern (manual)|Auto (incorporat)" default="Extern (manual)" visible="eq(-1,0)" />
+        <setting id="use_torrentio" type="bool" label="Torrentio" default="false" />
+        <setting id="use_torrentdb" type="bool" label="TorrentDB" default="false" />
+        <setting id="torrentdb_url" type="text" label="TorrentDB URL (implicit: torrentsdb.com)" default="https://torrentsdb.com" visible="eq(-1,true)" />
+        <setting id="use_mediafusion" type="bool" label="MediaFusion" default="false" />
+        <setting id="use_comet" type="bool" label="Comet" default="false" />
+        <setting id="use_perflix" type="bool" label="Peerflix" default="false" />
+        <setting id="use_uindex" type="bool" label="UIndex" default="false" />
+        <setting id="use_pelispanda" type="bool" label="PelisPanda (torrente ES/EN)" default="false" />
+    </category>
+    <category label="Subtitrări">
+        <!-- DEZACTIVAT: Căutarea internă a fost oprită pentru a folosi alt serviciu -->
+        <setting id="subs_enabled" type="bool" label="Caută automat subtitrări (vdrk + Wyzie)" default="false" />
+        <setting id="subs_languages" type="text" label="Limbi pentru subtitrări" default="ro,en" />
+        <setting id="subs_format" type="enum" label="Format preferat" values="srt|vtt|ssa" default="srt" />
+        <setting id="subs_encoding" type="labelenum" label="Encoding subtitrări" values="utf-8|latin-1|cp1252" default="utf-8" />
+        <setting id="subs_folder" type="lsep" />
+        <setting id="subs_save_folder" type="labelenum" label="Salvează subtitrările în" values="intern (userdata/subs)|extern (alege folder)" default="intern" />
+        <setting id="subs_custom_path" type="file" label="Folder extern pentru subtitrări" visible="eq(-1,1)" />
+    </category>
+    <category label="Conturi" id="accounts">
+        <setting id="api_key" type="text" label="TMDb API Key" default="69ef972e0d191aff7ab5b8e396619cb2" />
+        <setting id="language" type="labelenum" label="Limbă TMDb" values="ro|en|fr|de|it" default="ro" />
+        <setting id="provider_region" type="enum" label="Țară pentru furnizori TMDb" values="RO|US|GB|DE|FR|All" default="RO" />
+        <setting id="use_adult" type="bool" label="Conținut adult (TMDb)" default="false" />
+        <setting id="trakt_client_id" type="text" label="Trakt Client ID" default="2d29a7597164bb74e1d463bc4ebf8dc8b528f2beea715068de1744e88f80f764" />
+        <setting id="trakt_client_secret" type="text" label="Trakt Client Secret" default="f71fa83d63e64a06a9cecf676a0f5e0485c4f2c1b5a48946d26c4630cef159fb" />
+        <setting id="trakt_access_token" type="text" label="Trakt Access Token (completat automat)" default="" />
+        <setting id="trakt_refresh_token" type="text" label="Trakt Refresh Token (completat automat)" default="" />
+        <setting id="trakt_expires_at" type="text" label="Trakt expiră la (timestamp)" default="0" />
+    </category>
+</settings>

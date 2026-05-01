@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [],
+    "patterns": [
+      {
+        "pattern": "okstream.cc/(?:e)?/([0-9a-zA-Z]+)",
+        "url": "https://www.okstream.cc/e/\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id":"okstream",
+  "name": "OkStream",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": ["https://deltabit.co/api"],
+    "patterns": [
+      {
+        "pattern": "https://deltabit.co/([A-z0-9]+)",
+        "url": "https://deltabit.co/\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "deltabit",
+  "name": "Deltabit",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

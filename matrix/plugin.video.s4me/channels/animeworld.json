@@ -1,0 +1,29 @@
+{
+    "id": "animeworld",
+    "name": "AnimeWorld",
+    "active": true,
+    "language": ["ita", "sub-ita"],
+    "thumbnail": "animeworld.png",
+    "banner": "animeworld.png",
+    "categories": ["anime", "vos"],
+    "settings": [
+        {
+            "id": "lang",
+            "type": "list",
+            "label": "Lingua di Ricerca",
+            "default": 0,
+            "enabled": true,
+            "visible": true,
+            "lvalues": [ "Tutte", "Ita", "Sub-Ita"]
+        },
+        {
+            "id": "order",
+            "type": "list",
+            "label": "Ordine di Visualizzazione",
+            "default": 0,
+            "enabled": true,
+            "visible": true,
+            "lvalues": [ "Standard", "Ultime Aggiunte", "Lista A-Z", "Lista A-Z", "Più Vecchi", "Più Recenti", "Più Visti" ]
+        }
+    ]
+}

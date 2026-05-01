@@ -1,0 +1,64 @@
+{
+	"settings": [
+		{
+		  "id": "include_in_global_search",
+		  "type": "bool",
+		  "label": "@70728",
+		  "default": true,
+		  "enabled": true,
+		  "visible": true
+		},
+		{
+      "id": "include_in_newest_peliculas",
+      "type": "bool",
+      "label": "@70727",
+      "default": true,
+      "enabled": true,
+      "visible": true
+    },    
+		{
+				"id": "include_in_newest_series",
+				"type": "bool",
+				"label": "@70727",
+				"default": true,
+				"enabled": true,
+				"visible": true
+		},    
+		{
+				"id": "include_in_newest_anime",
+				"type": "bool",
+				"label": "@70727",
+				"default": true,
+				"enabled": true,
+				"visible": true
+		},
+		{
+      "id": "checklinks",
+      "type": "bool",
+      "label": "Verifica se i link esistono",
+      "default": false,
+      "enabled": true,
+      "visible": true
+    },
+    {
+      "id": "checklinks_number",
+      "type": "list",
+      "label": "Numero di link da verificare",
+      "default": 2,
+      "enabled": true,
+      "visible": "eq(-1,true)",
+      "lvalues": [ "5", "10", "15", "20" ]
+    }
+  ],
+  
+  "renumber": [
+    {
+      "id": "autorenumber", 
+      "type": "bool", 
+      "label": "@70712", 
+      "default": false, 
+      "enabled": true, 
+      "visible": true
+    }
+  ]
+}

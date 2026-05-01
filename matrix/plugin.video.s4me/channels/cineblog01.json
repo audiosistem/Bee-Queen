@@ -1,0 +1,10 @@
+{
+	"id": "cineblog01",
+	"name": "CB01",
+	"language": ["ita", "sub-ita"],
+	"active": true,
+	"thumbnail": "cb01.png",
+	"banner": "cb01.png",
+	"categories": ["tvshow", "movie", "vos", "documentary"],
+	"settings": []
+}

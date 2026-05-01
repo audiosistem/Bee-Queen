@@ -1,0 +1,35 @@
+{
+  "active": true,
+  "find_videos": {
+    "ignore_urls": [
+      "yourupload.com/embed/embed"
+    ],
+    "patterns": [
+      {
+        "pattern": "yourupload.com/(?:embed|watch)/([A-z0-9]+)",
+        "url": "https://www.yourupload.com/embed/\\1"
+      },
+      {
+        "pattern": "embed[./]yourupload.com(?:/|.php\\?url=)([A-z0-9]+)",
+        "url": "https://www.yourupload.com/embed/\\1"
+      },
+      {
+        "pattern": "(yourupload.com/download\\?file=[A-z0-9]+)",
+        "url": "https://www.\\1"
+      }
+    ]
+  },
+  "free": true,
+  "id": "yourupload",
+  "name": "YourUpload",
+  "settings": [
+    {
+      "default": false,
+      "enabled": true,
+      "id": "black_list",
+      "label": "@70708",
+      "type": "bool",
+      "visible": true
+    }
+  ]
+}

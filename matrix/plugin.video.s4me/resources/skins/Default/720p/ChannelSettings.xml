@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<window>
+    <allowoverlays>false</allowoverlays>
+    <animation type="WindowOpen" reversible="false">
+      <effect type="slide" start="0,200" end="0,0" center="640,225" delay="160" tween="cubic" time="200" />
+      <effect type="fade" delay="160" end="100" time="240" />
+    </animation>
+    <animation type="WindowClose" reversible="false">
+      <effect type="slide" start="0,0" end="0,200" center="640,225" easing="in" tween="cubic" time="200" />
+      <effect type="fade" start="100" end="0" time="240" />
+    </animation>
+    <controls>
+      <!-- Background -->
+      <control type="group" id="10001">
+        <left>0</left>
+        <top>0</top>
+        <width>100%</width>
+        <height>100%</height>
+        <control type="image">
+          <width>100%</width>
+          <height>100%</height>
+          <texture colordiffuse="FF232323">white.png</texture>
+        </control>
+        <!-- Divider -->
+        <control type="image">
+          <top>80</top>
+          <right>0</right>
+          <width>100%</width>
+          <height>1</height>
+          <texture colordiffuse="33FFFFFF">white.png</texture>
+        </control>
+        <!-- Header -->
+        <control type="label" id="10002">
+          <top>20</top>
+          <left>70</left>
+          <height>40</height>
+          <width>80%</width>
+          <font>font30_title</font>
+          <textcolor>FFFFFFFF</textcolor>
+          <align>left</align>
+          <aligny>center</aligny>
+          <label>$ADDON[plugin.video.s4me 70000]</label>
+        </control>
+        <!-- CLOSE BUTTON -->
+        <control type="button" id="10003">
+          <right>30</right>
+          <top>20</top>
+          <width>40</width>
+          <height>40</height>
+          <texturefocus colordiffuse="FFFFFFFF">close.png</texturefocus>
+          <texturenofocus colordiffuse="55FFFFFF">close.png</texturenofocus>
+        </control>
+        <!-- OK -->
+        <control type="button" id="10004">
+          <left>60</left>
+          <top>120</top>
+          <width>200</width>
+          <height>60</height>
+          <textwidth>110</textwidth>
+          <textcolor>FFFFFFFF</textcolor>
+          <texturefocus colordiffuse="FF0081C2">white.png</texturefocus>
+          <texturenofocus colordiffuse="FF191919">white.png</texturenofocus>
+          <align>center</align>
+          <aligny>center</aligny>
+          <label>$ADDON[plugin.video.s4me 70001]</label>
+        </control>
+        <!-- CANCEL -->
+        <control type="button" id="10005">
+          <left>60</left>
+          <top>190</top>
+          <width>200</width>
+          <height>60</height>
+          <textwidth>110</textwidth>
+          <textcolor>FFFFFFFF</textcolor>
+          <texturefocus colordiffuse="FF0081C2">white.png</texturefocus>
+          <texturenofocus colordiffuse="FF191919">white.png</texturenofocus>
+          <align>center</align>
+          <aligny>center</aligny>
+          <label>$ADDON[plugin.video.s4me 70002]</label>
+        </control>
+        <!-- DEFAULT -->
+        <control type="button" id="10006">
+          <left>60</left>
+          <top>260</top>
+          <width>200</width>
+          <height>60</height>
+          <textwidth>110</textwidth>
+          <textcolor>FFFFFFFF</textcolor>
+          <texturefocus colordiffuse="FF0081C2">white.png</texturefocus>
+          <texturenofocus colordiffuse="FF191919">white.png</texturenofocus>
+          <align>center</align>
+          <aligny>center</aligny>
+          <label>$ADDON[plugin.video.s4me 70003]</label>
+        </control>
+        <!-- Parameters -->
+        <control type="group" id="10007">
+          <top>120</top>
+          <left>300</left>
+          <width>900</width>
+          <height>680</height>
+          <control type="label" id="100010">
+            <top>0</top>
+            <left>0</left>
+            <width>900</width>
+            <height>580</height>
+            <font>font20</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <align>center</align>
+            <aligny>center</aligny>
+            <label>$ADDON[plugin.video.s4me 70004]</label>
+          </control>
+        </control>
+        <!-- Scrollbar -->
+        <control type="image" id="10008">
+          <top>120</top>
+          <right>0</right>
+          <width>10</width>
+          <height>540</height>
+          <texture border="2" colordiffuse="FF232323">white.png</texture>
+        </control>
+        <control type="image" id="10009">
+          <top>120</top>
+          <right>0</right>
+          <width>10</width>
+          <height>540</height>
+          <texture border="2" colordiffuse="33FFFFFF">white.png</texture>
+        </control>
+      </control>
+    </controls>
+</window>
