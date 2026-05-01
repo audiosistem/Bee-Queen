@@ -72,7 +72,7 @@ class AllDebridAPI:
 		url = 'v4/magnet/delete'
 		params = {'id': transfer_id}
 		result = self._get(url, params)
-		return True if not result is None and not 'error' in result else False
+		return True if result is not None and 'error' not in result else False
 
 	def unrestrict_link(self, link):
 		url = 'v4/link/unlock'
@@ -119,12 +119,12 @@ class AllDebridAPI:
 	def downloads(self):
 		url = 'v4/user/history'
 		string = 'pov_ad_downloads'
-		return cache_object(self._get, string, url, False, 0.5)
+		return cache_object(self._get, string, url, 0.5)
 
 	def user_cloud(self, completed=True):
 		url = 'v4.1/magnet/status'
 		string = 'pov_ad_user_cloud'
-		result = cache_object(self._get, string, url, False, 0.5)
+		result = cache_object(self._get, string, url, 0.5)
 		if completed: result['magnets'] = [i for i in result['magnets'] if i['statusCode'] == 4]
 		return result
 

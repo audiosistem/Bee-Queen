@@ -38,7 +38,7 @@ class Menu(Debrid):
 		items.sort(key=lambda k: k['type'], reverse=True)
 		for count, item in enumerate(items, 1):
 			try:
-				if not ('link' in item and item['link'].lower().endswith(tuple(extensions))) and not item['type'] == 'folder': continue
+				if not ('link' in item and item['link'].lower().endswith(tuple(extensions))) and item['type'] != 'folder': continue
 				cm = []
 				cm_append = cm.append
 				file_type = item['type']
@@ -107,7 +107,7 @@ class Menu(Debrid):
 				listitem.setLabel(display)
 				listitem.addContextMenuItems(cm)
 				listitem.setArt(default_art)
-				if not status == 'finished': listitem.setInfo('video', {'plot': message}) if KODI_VERSION < 20 else listitem.getVideoInfoTag().setPlot(message)
+				if status != 'finished': listitem.setInfo('video', {'plot': message}) if KODI_VERSION < 20 else listitem.getVideoInfoTag().setPlot(message)
 				yield (url, listitem, is_folder)
 			except: pass
 

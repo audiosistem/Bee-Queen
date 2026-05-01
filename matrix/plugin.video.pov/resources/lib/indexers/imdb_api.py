@@ -22,31 +22,31 @@ def people_get_imdb_id(actor_name, actor_tmdbID=None):
 	url = 'https://sg.media-imdb.com/suggests/%s/%s.json' % (name[0], name.replace(' ', '%20'))
 	string = 'imdb_people_get_imdb_id_%s' % name
 	params = {'url': url, 'action': 'imdb_people_id', 'actor_tmdbID': actor_tmdbID, 'name': name}
-	return cache_object(get_imdb, string, params, False, 8736)[0]
+	return cache_object(get_imdb, string, params, 8736)[0]
 
 def imdb_extended_info(imdb_id):
 	url = imdb_id
 	string = 'imdb_extended_info_%s' % imdb_id
 	params = {'url': url, 'action': 'imdb_extended_info'}
-	return cache_object(get_imdb, string, params, False, 168)[0]
+	return cache_object(get_imdb, string, params, 168)[0]
 
 def imdb_tagged_images(imdb_id):
 	url = '%s/names/%s/images' % (api_url, imdb_id)
 	string = 'imdb_images_tagged_%s' % imdb_id
 	params = {'url': url, 'action': 'imdb_tagged_images'}
-	return cache_object(get_imdb, string, params, False, 168)[0]
+	return cache_object(get_imdb, string, params, 168)[0]
 
 def imdb_parentsguide(imdb_id):
 	url = '%s/titles/%s/parentsGuide' % (api_url, imdb_id)
 	string = 'imdb_parentsguide_%s' % imdb_id
 	params = {'url': url, 'action': 'imdb_parentsguide'}
-	return cache_object(get_imdb, string, params, False, 168)[0]
+	return cache_object(get_imdb, string, params, 168)[0]
 
 def imdb_movie_year(imdb_id):
 	url = 'https://v2.sg.media-imdb.com/suggestion/t/%s.json' % imdb_id
 	string = 'imdb_movie_year_%s' % imdb_id
 	params = {'url': url, 'action': 'imdb_movie_year'}
-	return cache_object(get_imdb, string, params, False, 720)[0]
+	return cache_object(get_imdb, string, params, 720)[0]
 
 def get_imdb(params):
 	imdb_list = []
@@ -76,7 +76,7 @@ def get_imdb(params):
 			params = {'pageSize': 50}
 			result = session.get(url, params=params, timeout=timeout)
 			result = result.json()['images']
-			imdb_list = [i for i in result if not i['type'] in ('still_frame', 'poster', 'product')]
+			imdb_list = [i for i in result if i['type'] not in ('still_frame', 'poster', 'product')]
 		except: pass
 	elif action == 'imdb_parentsguide':
 		try:

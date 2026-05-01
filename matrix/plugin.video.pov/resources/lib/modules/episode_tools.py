@@ -1,8 +1,6 @@
 import json
-from datetime import date
 from random import choice
 from threading import Thread
-import _strptime  # fix bug in python import
 from windows import open_window
 from indexers.metadata import tvshow_meta, season_episodes_meta, all_episodes_meta
 from modules import kodi_utils, settings
@@ -18,7 +16,7 @@ def get_random_episode(tmdb_id, continual=False):
 	meta = tvshow_meta('tmdb_id', tmdb_id, meta_user_info, current_date)
 	try:
 		episodes_data = [i for i in all_episodes_meta(meta, meta_user_info, Thread) if i['premiered']]
-		episodes_data = [i for i in episodes_data if not i['season'] == 0 and adjust_premiered_date(i['premiered'], adjust_hours)[0] <= current_date]
+		episodes_data = [i for i in episodes_data if i['season'] != 0 and adjust_premiered_date(i['premiered'], adjust_hours)[0] <= current_date]
 	except: episodes_data = []
 	if not episodes_data: return None
 	if continual:
@@ -28,7 +26,7 @@ def get_random_episode(tmdb_id, continual=False):
 			episode_history = json.loads(kodi_utils.get_property('pov_random_episode_history'))
 			if tmdb_key in episode_history: episode_list = episode_history[tmdb_key]
 		except: pass
-		episodes_data = [i for i in episodes_data if not i in episode_list] or episodes_data
+		episodes_data = [i for i in episodes_data if i not in episode_list] or episodes_data
 	chosen_episode = choice(episodes_data)
 	if continual:
 		episode_list.append(chosen_episode)
@@ -53,43 +51,38 @@ def get_random_episode(tmdb_id, continual=False):
 	return meta, url_params
 
 def nextep_playback_info(meta):
-	def _build_next_episode_play():
+	adjust_hours, current_date = settings.date_offset(), get_datetime()
+	meta_get = meta.get
+	tmdb_id, current_season, current_episode = meta_get('tmdb_id'), int(meta_get('season')), int(meta_get('episode'))
+	season_data = meta_get('season_data')
+	try:
+		curr_season_data = [i for i in season_data if i['season_number'] == current_season][0]
+		season = current_season if current_episode < curr_season_data['episode_count'] else current_season + 1
+		episode = current_episode + 1 if current_episode < curr_season_data['episode_count'] else 1
 		ep_data = season_episodes_meta(season, meta, settings.metadata_user_info())
-		if not ep_data: return 'no_next_episode'
+		if not ep_data: return meta, 'no_next_episode'
 		ep_data = [i for i in ep_data if i['episode'] == episode][0]
-		airdate = ep_data['premiered']
-		d = airdate.split('-')
-		episode_date = date(int(d[0]), int(d[1]), int(d[2]))
+		episode_date, premiered = adjust_premiered_date(ep_data['premiered'], adjust_hours)
 		if current_date < episode_date: return 'no_next_episode'
 		custom_title = meta_get('custom_title')
 		title = custom_title or meta_get('title')
 		display_name = '%s - %dx%.2d' % (title, int(season), int(episode))
 		meta.update({
 			'mediatype': 'episode', 'rootname': display_name, 'season': season, 'episode': episode,
-			'premiered': airdate, 'ep_name': ep_data['title'], 'plot': ep_data['plot']
+			'premiered': premiered, 'ep_name': ep_data['title'], 'plot': ep_data['plot']
 		})
 		url_params = {
 			'mode': 'play_media', 'mediatype': 'episode', 'season': season, 'episode': episode,
 			'tmdb_id': tmdb_id, 'tvshowtitle': meta_get('rootname')
 		}
 		if custom_title: url_params['custom_title'] = custom_title
-		return url_params
-	meta_get = meta.get
-	tmdb_id, current_season, current_episode = meta_get('tmdb_id'), int(meta_get('season')), int(meta_get('episode'))
-	try:
-		current_date = get_datetime()
-		season_data = meta_get('season_data')
-		curr_season_data = [i for i in season_data if i['season_number'] == current_season][0]
-		season = current_season if current_episode < curr_season_data['episode_count'] else current_season + 1
-		episode = current_episode + 1 if current_episode < curr_season_data['episode_count'] else 1
-		nextep_info = _build_next_episode_play()
-	except: nextep_info = 'error'
-	return meta, nextep_info
+	except: url_params = 'error'
+	return meta, url_params
 
 def execute_scrape_nextep(meta):
 	nextep_meta, nextep_params = nextep_playback_info(meta)
 	if nextep_params == 'error': return kodi_utils.notification(32574)
-	elif nextep_params == 'no_next_episode': return
+	if nextep_params == 'no_next_episode': return
 	if not Sources.background_prep(nextep_params): return kodi_utils.notification(32760)
 	Sources.nextep_callback(nextep_params)
 	action = open_window(('windows.next_episode', 'NextEpisode'), 'next_episode.xml', meta=nextep_meta, function='next_ep')

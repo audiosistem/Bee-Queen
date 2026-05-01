@@ -85,8 +85,7 @@ def clear_trakt_hidden_data(list_type):
 	except: pass
 
 def clear_trakt_collection_watchlist_data(list_type, mediatype):
-	if mediatype == 'movies': mediatype = 'movie'
-	if mediatype in ('tvshows', 'shows'): mediatype = 'tvshow'
+	mediatype = 'movie' if mediatype in ('movie', 'movies') else 'tvshow'
 	string = 'trakt_%s_%s' % (list_type, mediatype)
 	try:
 		dbcur = TraktCache().dbcur

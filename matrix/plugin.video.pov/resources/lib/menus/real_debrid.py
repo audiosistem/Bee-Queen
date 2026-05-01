@@ -2,7 +2,7 @@ import sys
 from debrids.real_debrid_api import RealDebridAPI as Debrid
 from modules import kodi_utils
 from modules.source_utils import supported_video_extensions
-from modules.utils import clean_file_name, clean_title, normalize, jsondate_to_datetime
+from modules.utils import clean_file_name, normalize, jsondate_to_datetime
 # from modules.kodi_utils import logger
 
 get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting

@@ -39,7 +39,7 @@ class Seasons:
 			season_data = meta_get('season_data')
 			if season_data:
 				if 'season' in params: season_data = [i for i in season_data if i['season_number'] == params['season']]
-				if not show_specials(): season_data = [i for i in season_data if not i['season_number'] == 0]
+				if not show_specials(): season_data = [i for i in season_data if i['season_number'] != 0]
 				season_data.sort(key=lambda k: k['season_number'])
 			else: season_data = []
 			running_ep_count = total_aired_eps
@@ -112,7 +112,7 @@ class Seasons:
 			all_episodes = True if params.get('season') == 'all' else False
 			if all_episodes:
 				episodes_data = all_episodes_meta(meta, self.meta_user_info, Thread)
-				if not show_specials(): episodes_data = [i for i in episodes_data if not i['season'] == 0]
+				if not show_specials(): episodes_data = [i for i in episodes_data if i['season'] != 0]
 			else: episodes_data = season_meta_function(params['season'], meta, self.meta_user_info)
 			for item in episodes_data:
 				try:

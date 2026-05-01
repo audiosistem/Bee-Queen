@@ -64,7 +64,7 @@ class Source:
 		from modules.source_utils import supported_video_extensions, seas_ep_filter, extras_filter
 		try:
 			extensions = supported_video_extensions()
-			extras_filtering_list = tuple(i for i in extras_filter() if not i in title.lower())
+			extras_filtering_list = tuple(i for i in extras_filter() if i not in title.lower())
 			if self.debrid in ('real-debrid', 'alldebrid'): args = self.url, self.hash, True
 			else: args = self.url, self.hash
 			files = api.parse_magnet_pack(*args)
@@ -218,7 +218,7 @@ class DebridCheck:
 		try:
 			self.cached_list.extend(i[0] for i in self.cached_hashes if i[1] == self.debrid and i[2] == 'True')
 			unchecked_filter = {h[0] for h in self.cached_hashes if h[1] == self.debrid}
-			unchecked_hashes = [i for i in self.hash_list if not i in unchecked_filter]
+			unchecked_hashes = [i for i in self.hash_list if i not in unchecked_filter]
 			if not unchecked_hashes: return
 			if self.debrid in ('rd', 'ad'): checked_hashes = self.external_check_cache(unchecked_hashes)
 			else: checked_hashes = self.function().check_cache(unchecked_hashes)
@@ -236,6 +236,7 @@ class DebridCheck:
 			except:
 				for i in unchecked_hashes: process_append((i, 'False'))
 			if hashes_to_cache: Thread(target=self.cache_write, args=(hashes_to_cache,)).start()
+		except: pass
 		finally: return self.cached_list
 
 	def external_check_cache(self, unchecked_hashes):

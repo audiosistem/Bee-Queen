@@ -47,7 +47,7 @@ class OffcloudAPI:
 		url = 'https://offcloud.com/cloud/remove/%s' % request_id
 		params = {'key': self.token}
 		result = self._get(url, params=params)
-		return True if not result is None and result['success'] else False
+		return True if result is not None and result['success'] else False
 
 	def unrestrict_link(self, link):
 		return link
@@ -93,7 +93,7 @@ class OffcloudAPI:
 	def user_cloud(self, completed=True):
 		url = 'cloud/history'
 		string = 'pov_oc_user_cloud'
-		result = cache_object(self._get, string, url, False, 0.5)
+		result = cache_object(self._get, string, url, 0.5)
 		if completed: result = [i for i in result if i['status'] == 'downloaded']
 		return result
 

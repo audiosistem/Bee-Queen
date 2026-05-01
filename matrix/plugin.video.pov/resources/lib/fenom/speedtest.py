@@ -27,7 +27,7 @@ def get_movie_source(module):
 			raise Exception('%s: %s fatal error' % (heading.upper(), module.name.upper()))
 		for result in module.results:
 			quality = result.get('quality')
-			if not quality in module.metrics: module.metrics['SD'] += 1
+			if quality not in module.metrics: module.metrics['SD'] += 1
 			else: module.metrics[quality] = module.metrics.get(quality, 0) + 1
 	except Exception as e: log(str(e), 1)
 	return module
@@ -91,8 +91,8 @@ def magneto():
 	dialog.update(100, 'Processing Results...')
 	modules.sort(key=lambda k: k.elapsed)
 	results = [i for i in modules if i.results]
-	modules = results + [i for i in modules if not i in results]
-	items = list(_make_items(modules))
+	results.extend(i for i in modules if i not in results)
+	items = list(_make_items(results))
 	dialog.close()
 	select(f"{heading} - {data['rootname']}", items, useDetails=True)
 

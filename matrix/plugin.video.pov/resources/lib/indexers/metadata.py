@@ -11,7 +11,7 @@ subtract_dates_function, jsondate_to_datetime_function = subtract_dates, jsondat
 tmdb_image_base, writer_credits = tmdb_api.tmdb_image_base, ('Author', 'Writer', 'Screenplay', 'Characters')
 backup_resolutions = {'poster': 'w780', 'fanart': 'w1280', 'still': 'original', 'profile': 'h632'}
 rpdb_url = 'https://api.ratingposterdb.com/%s/%s/poster-default/%s.jpg?fallback=true'
-rpdb_themes = {'0': '', '1': '&theme=rounded-blocks', '2': '&theme=blocks'}
+rpdb_themes = {'1': '&theme=rounded-blocks', '2': '&theme=blocks'}
 alt_titles_test, trailers_test = ('US', 'GB', 'UK', ''), ('Trailer', 'Teaser')
 finished_show_check, empty_value_check = ('Ended', 'Canceled'), ('', 'None', None)
 youtube_url, date_format = 'plugin://plugin.video.youtube/play/?video_id=%s', '%Y-%m-%d'
@@ -71,7 +71,7 @@ def movie_show_infodict(meta):
 		obj['originaltitle'] = meta.get('original_title')
 	obj['tag'] = [
 		str(tag) for i in ('imdb_id', 'tmdb_id', 'tvdb_id')
-		if not (tag := meta.get(i)) in ('', 'None', None)
+		if (tag := meta.get(i)) not in ('', 'None', None)
 	]
 	return obj
 
@@ -96,7 +96,7 @@ def info_tagger(listitem, meta=None):
 	if not meta: return infotag
 	for key, val in videoinfomethods:
 		try:
-			if not key in meta or not (arg := meta[key]): continue
+			if key not in meta or not (arg := meta[key]): continue
 			if   key == 'premiered' and 'episode' in meta: val = 'setFirstAired'
 			if   key in {'episode', 'season', 'year'}: arg = int(arg)
 			elif key in {'director', 'genre', 'studio', 'writer'}: arg = arg.split(', ')
@@ -310,7 +310,7 @@ def build_movie_meta(data, user_info):
 	plot, tagline, premiered = data_get('overview', ''), data_get('tagline', ''), data_get('release_date', '')
 	poster_path, backdrop_path = data_get('poster_path'), data_get('backdrop_path')
 	logo_path = next((i['file_path'] for i in data['images'].get('logos', []) if i['file_path'].endswith('png')), None)
-	if not language in 'en,en-US':
+	if language not in 'en,en-US':
 		try:
 			path = (i['file_path'] for i in data['images']['logos'] if str(i['iso_639_1']) in language and i['file_path'].endswith('png'))
 			logo_path = next(path)
@@ -333,7 +333,7 @@ def build_movie_meta(data, user_info):
 	rootname = '%s (%s)' % (title, year)
 	companies = data_get('production_companies')
 	if companies:
-		if not len(companies) == 1:
+		if len(companies) != 1:
 			try:
 				studio = [i['name'] for i in companies if i['logo_path'] not in empty_value_check][0]
 				if not studio: studio = [i['name'] for i in companies][0]
@@ -411,7 +411,7 @@ def build_tvshow_meta(data, user_info):
 	season_data, total_seasons, total_aired_eps = data_get('seasons'), data_get('number_of_seasons'), data_get('number_of_episodes')
 	poster_path, backdrop_path = data_get('poster_path'), data_get('backdrop_path')
 	logo_path = next((i['file_path'] for i in data['images'].get('logos', []) if i['file_path'].endswith('png')), None)
-	if not language in 'en,en-US':
+	if language not in 'en,en-US':
 		try:
 			path = (i['file_path'] for i in data['images']['logos'] if str(i['iso_639_1']) in language and i['file_path'].endswith('png'))
 			logo_path = next(path)
@@ -434,7 +434,7 @@ def build_tvshow_meta(data, user_info):
 	rootname = '%s (%s)' % (title, year)
 	networks = data_get('networks')
 	if networks:
-		if not len(networks) == 1:
+		if len(networks) != 1:
 			try:
 				studio = [i['name'] for i in networks if i['logo_path'] not in empty_value_check][0]
 				if not studio: studio = [i['name'] for i in networks][0]
@@ -484,7 +484,7 @@ def build_tvshow_meta(data, user_info):
 	else: ei_created_by = 'N/A'
 	ei_next_ep = data_get('next_episode_to_air')
 	ei_last_ep = data_get('last_episode_to_air')
-	if ei_last_ep and not status in finished_show_check:
+	if ei_last_ep and status not in finished_show_check:
 		aired_eps = [i['episode_count'] for i in season_data if 0 < i['season_number'] < ei_last_ep['season_number']]
 		total_aired_eps = ei_last_ep['episode_number'] + sum(aired_eps)
 	extra_info = {
@@ -508,7 +508,7 @@ def rpdb_get(mediatype, media_id, api_key, theme):
 		if not api_key or not media_id: raise Exception
 		if media_id.startswith('tt'): id_type = 'imdb'
 		else: id_type, media_id = 'tmdb', '%s-%s' % (mediatype, media_id)
-		if theme in ('1', '2'): base_url = '%s%s' % (rpdb_url, rpdb_themes[theme])
+		if theme in rpdb_themes: base_url = '%s%s' % (rpdb_url, rpdb_themes[theme])
 		else: base_url = rpdb_url
 		return base_url % (api_key, id_type, media_id)
 	except: pass

@@ -44,7 +44,8 @@ def set_resumetime(resumetime, progress, duration):
 	return resumetime or progress * duration / 100, duration
 
 def detect_bookmark(bookmarks, tmdb_id, season='', episode=''):
-	return [(i[1], i[2], i[5]) for i in bookmarks if i[0] == str(tmdb_id) and i[3] == season and i[4] == episode][0]
+	return bookmarks.get(f"{tmdb_id}_{season}_{episode}") or (0, 0, 0)
+#	return [(i[1], i[2], i[5]) for i in bookmarks if i[0] == str(tmdb_id) and i[3] == season and i[4] == episode][0]
 
 def get_bookmarks(watched_indicators, mediatype):
 	try:
@@ -55,7 +56,8 @@ def get_bookmarks(watched_indicators, mediatype):
 			FROM progress
 			WHERE db_type = ?
 		""", (mediatype,))
-		return result.fetchall()
+		return {f"{i[0]}_{i[3]}_{i[4]}": (i[1], i[2], i[5]) for i in result}
+#		return result.fetchall()
 	except: pass
 
 def set_bookmark(mediatype, tmdb_id, curr_time, total_time, title, season='', episode=''):
@@ -116,7 +118,7 @@ def batch_erase_bookmark(watched_indicators, insert_list, action):
 			tmdb_id = insert_list[0][1]
 			bookmarks = get_bookmarks(watched_indicators, mediatype)
 			for i in insert_list:
-				try: resume_point, curr_time, resume_id = detect_bookmark(bookmarks, tmdb_id, i[2], i[3])
+				try: resume_id = detect_bookmark(bookmarks, tmdb_id, i[2], i[3])[2]
 				except: continue
 				process_list_append(('clear_progress', i[0], i[1], 0, i[2], i[3], resume_id))
 			if process_list: threads = list(make_thread_list(_process, process_list, Thread))
@@ -244,7 +246,7 @@ def get_next_episodes():
 				PARTITION BY media_id ORDER BY season DESC, episode DESC
 			) AS r
 			FROM watched_status
-			WHERE db_type = ? AND media_id IS NOT NULL
+			WHERE db_type = ?
 		) AS t
 		WHERE r = 1
 	""", ('episode',))
@@ -400,7 +402,7 @@ def mark_as_watched_unwatched_season(params):
 		for count, item in enumerate(ep_data, 1):
 			season_number = item['season']
 			ep_number = item['episode']
-			display = 'S%.2dE%.2d' % (season_number, ep_number)
+			display = 'S%.2dE%.2d' % (int(season_number), int(ep_number))
 			kodi_utils.progressDialogBG.update(int(float(count)/float(total)*100), wait_str, display)
 			episode_date, premiered = adjust_premiered_date(item['premiered'], adjust_hours)
 			if not episode_date or current_date < episode_date: continue
@@ -486,9 +488,8 @@ def clear_local_bookmarks():
 		file_ids = dbcur.execute("""
 			SELECT idFile FROM files WHERE strFilename LIKE 'plugin.video.pov%'
 		""").fetchall()
-		for i in ('bookmark', 'streamdetails', 'files'):
-			dbcur.executemany("""
-				DELETE FROM %s WHERE idFile = ?
-			""" % i, file_ids)
+		for i in ('bookmark', 'streamdetails', 'files'): dbcur.executemany("""
+			DELETE FROM %s WHERE idFile = ?
+		""" % i, file_ids)
 	except: pass
 

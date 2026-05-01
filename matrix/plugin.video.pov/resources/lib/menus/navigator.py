@@ -502,7 +502,7 @@ class Navigator:
 		listitem = make_listitem()
 		listitem.setLabel(f"{prefix}{url_params['name']}")
 		listitem.setArt({'icon': icon, 'poster': icon, 'thumb': icon, 'fanart': fanart, 'banner': icon, 'landscape': icon})
-		if not 'exclude_external' in url_params:
+		if 'exclude_external' not in url_params:
 			cm = []
 			cm_append = cm.append
 			if not list_name: list_name = f"{prefix}{url_params['name']}"

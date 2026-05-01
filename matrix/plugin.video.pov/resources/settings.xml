@@ -210,8 +210,8 @@
 			<setting id="nav_jump" label="Jump To... List Navigation" type="enum" default="0" values="Disable|Page" subsetting="true" visible="eq(-2,true)" />
 		<setting id="show_specials" label="Show TV Show Specials When Available" type="bool" default="false" />
 		<setting id="use_season_title" label="Use Season Titles When Available" type="bool" default="false" />
-		<setting id="show_unaired" label="Include Unaired Episodes" type="bool" default="true" />
 		<setting id="thumb_fanart" label="Use Episode Thumbnails For Background When Available" type="bool" default="false" />
+		<setting id="show_unaired" label="Include Unaired Episodes" type="bool" default="true" />
 		<setting id="show_unaired_watchlist" label="Include Unaired Items in Watchlists" type="bool" default="true" />
 		<!-- Sorting -->
 		<setting label="Sorting" type="lsep" />

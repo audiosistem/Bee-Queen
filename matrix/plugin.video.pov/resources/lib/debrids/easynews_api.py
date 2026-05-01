@@ -29,7 +29,7 @@ class EasyNewsAPI:
 	def search(self, query, expiration=48):
 		url, self.params = self._translate_search(query)
 		string = 'pov_EASYNEWS_SEARCH_' + urlencode(self.params)
-		return cache_object(self._process_search, string, url, json=False, expiration=expiration)
+		return cache_object(self._process_search, string, url, expiration)
 
 	def account(self):
 		from modules.dom_parser import parseDOM

@@ -68,7 +68,7 @@ class Subtitles(kodi_utils.xbmc_player):
 	def _video_file_subs(self):
 		try: available_sub_language = self.getSubtitles()
 		except: available_sub_language = ''
-		if not available_sub_language == self.language1: return False
+		if available_sub_language != self.language1: return False
 		if self.auto_enable == 'true': self.showSubtitles(True)
 		kodi_utils.notification(32852, icon=self.poster)
 		return True
@@ -107,7 +107,7 @@ class Subtitles(kodi_utils.xbmc_player):
 		self.auto_enable = get_setting('subtitles.auto_enable')
 		self.language1 = language_choices[get_setting('subtitles.language')]
 		self.subs_action = action_dict[get_setting('subtitles.subs_action', '2')]
-		if not self.subs_action in ('auto', 'select'): return
+		if self.subs_action not in ('auto', 'select'): return
 		self.imdb_id, self.season, self.episode, self.poster = imdb_id, season, episode, poster
 		self.subtitle_path = 'special://temp/'
 		if season: self.sub_filename = 'POVSubs_%s_%s_%s' % (self.imdb_id, self.season, self.episode)

@@ -25,7 +25,7 @@ class source(Debrid):
 			self._scrape_cloud()
 			if not self.scrape_results: return internal_results(self.scrape_provider, self.sources)
 			self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
-			extras_filtering_list = tuple(i for i in extras_filter if not i in title.lower())
+			extras_filtering_list = tuple(i for i in extras_filter if i not in title.lower())
 			for item in self.scrape_results:
 				try:
 					if not item['filename'].lower().endswith(tuple(extensions)): continue
@@ -64,7 +64,7 @@ class source(Debrid):
 			for item in cloud_files:
 				normalized = normalize(item['fileName'])
 				folder_name = clean_title(normalized)
-				if folder_name and not self.folder_query in folder_name: continue
+				if folder_name and self.folder_query not in folder_name: continue
 				append(i := Thread(target=self._scrape_folders, args=(item,)))
 				i.start()
 			[i.join() for i in threads]

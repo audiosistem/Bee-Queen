@@ -1,6 +1,5 @@
 import json
 from windows import BaseDialog
-from indexers.tmdb_api import tmdb_popular_people
 from menus.people import person_data_dialog
 from modules.settings import download_directory
 from modules.kodi_utils import media_path, show_busy_dialog, hide_busy_dialog, local_string as ls, get_property, set_property
@@ -94,7 +93,7 @@ class ThumbImageViewer(BaseDialog):
 	def reset_after_delete(self, choice, position):
 		set_property('pov_delete_image_finished', 'false')
 		self.execute_code(choice)
-		while not get_property('pov_delete_image_finished') == 'true': self.sleep(10)
+		while get_property('pov_delete_image_finished') != 'true': self.sleep(10)
 		self.win.reset()
 		self.list_items = self.ImagesInstance.browser_image(download_directory('image'), return_items=True)
 		self.make_page()

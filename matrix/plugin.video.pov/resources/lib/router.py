@@ -1,5 +1,5 @@
-import time
 from threading import Thread
+from datetime import datetime
 from modules import kodi_utils, settings
 
 logger, path_exists, translate_path = kodi_utils.logger, kodi_utils.path_exists, kodi_utils.translate_path
@@ -361,7 +361,7 @@ def databaseMaintenance():
 	from caches.meta_cache import MetaCache
 	from modules.cache import clean_databases
 	MetaCache().prefetch()
-	current_time = int(time.time())
+	current_time = int(datetime.now().timestamp())
 	next_clean = current_time + 259200 # 3 days
 	due_clean = int(get_setting('database.maintenance.due', '0'))
 	if current_time < due_clean: return
@@ -385,7 +385,7 @@ def reuseLanguageInvokerCheck():
 	text = '[B]Reuse Language Invoker[/B] SETTING/XML mismatch[CR]POV will reload your profile to refresh the addon.xml'
 	item, refresh = next(root.iter('reuselanguageinvoker'), None), False
 	if item is None: kodi_utils.notification(text.split('[CR]')[0])
-	if not item is None and not item.text == current_addon_setting:
+	if item is not None and item.text != current_addon_setting:
 		item.text = current_addon_setting
 		tree.write(addon_xml)
 		refresh = True
@@ -415,14 +415,14 @@ def traktMonitor():
 	logger('POV', 'TraktMonitor Service Starting')
 	trakt_service_string = 'TraktMonitor Service Update %s - %s'
 	update_string = 'Next Update in %s minutes...'
-	if not get_property('pov_traktmonitor_first_run') == 'true':
+	if get_property('pov_traktmonitor_first_run') != 'true':
 		for i in ('user_lists', 'liked_lists', 'my_lists'): clear_trakt_list_contents_data(i)
 		clear_tmdbl_cache()
 		set_property('pov_traktmonitor_first_run', 'true')
 	while not monitor.abortRequested():
 		while is_playing() or get_visibility('Container().isUpdating') or get_property('pov_pause_services') == 'true':
 			monitor.waitForAbort(10)
-		if not get_property('pov_traktmonitor_first_run') == 'true':
+		if get_property('pov_traktmonitor_first_run') != 'true':
 			monitor.waitForAbort(5)
 		value, interval = settings.trakt_sync_interval()
 		next_update_string = update_string % value
@@ -473,12 +473,11 @@ def premAccntNotification():
 	):
 		try:
 			if not get_setting(user): continue
-			if limit := int(get_setting(expires, '7')):
-				module = 'debrids.%s' % module
-				cls = getattr(import_module(module), cls)
-				days_remaining = cls().days_remaining()
-				if not days_remaining is None and days_remaining <= limit:
-					kodi_utils.notification('%s expires in %s days' % (cls.__name__, days_remaining))
+			if (limit := int(get_setting(expires, '7'))) < 1: continue
+			module = import_module('debrids.%s' % module)
+			days_remaining = getattr(module, cls)().days_remaining()
+			if days_remaining is None or days_remaining > limit: continue
+			kodi_utils.notification('%s expires in %s days' % (cls, days_remaining))
 		except: pass
 	return logger('POV', 'Debrid Account Expiry Notification Service Finished')
 

@@ -32,7 +32,7 @@ def person_search(query):
 		for item in actors:
 			try:
 				name, gender = '%s' % item['name'], gender_dict[item['gender']]
-				if not item['name'] == item['original_name']: name += ' - %s' % item['original_name']
+				if item['name'] != item['original_name']: name += ' - %s' % item['original_name']
 				if gender: name += ' (%s)' % gender
 				known_for_list = item['known_for']
 				plot = '[CR]'.join(i['title'] for i in known_for_list if 'title' in i and i['title'])

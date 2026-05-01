@@ -1,7 +1,7 @@
 import sys
 from threading import Thread
 from indexers.metadata import tvshow_meta, season_episodes_meta, art_infodict, episode_infodict, info_tagger
-from indexers.trakt_api import trakt_fetch_collection_watchlist, trakt_get_my_calendar, trakt_my_anime_calendar, trakt_anime_calendar
+from indexers.trakt_api import trakt_fetch_collection_watchlist, trakt_get_my_calendar, trakt_get_my_anime_calendar, trakt_anime_calendar
 from caches.watched_cache import get_resumetime, set_resumetime, get_watched_status_episode, get_watched_info_tv, get_bookmarks, get_next_episodes, get_in_progress_episodes
 from modules import kodi_utils, settings
 #from modules.utils import jsondate_to_datetime, adjust_premiered_date, make_day, get_datetime, title_key, date_difference, make_thread_list_enumerate
@@ -259,7 +259,7 @@ class Menu(Episodes):
 					self.list_type = 'trakt_calendar'
 					self.list = sorted(self.list, key=lambda k: k['sort_title'])
 			elif 'my_anime_calendar' in mode:
-				self.list = trakt_my_anime_calendar(get_datetime())
+				self.list = trakt_get_my_anime_calendar(get_datetime())
 				self.list_type = 'trakt_calendar'
 				self.list = sorted(self.list, key=lambda k: k['sort_title'])
 			elif 'anime_calendar' in mode:

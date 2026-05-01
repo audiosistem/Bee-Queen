@@ -1,4 +1,4 @@
-from caches import BaseCache, favorites_db, container_refresh
+from caches import BaseCache, favorites_db
 from modules import settings
 from modules.utils import sort_for_article, paginate_list
 # from modules.kodi_utils import logger
@@ -20,7 +20,6 @@ class Favorites(BaseCache):
 	def remove_from_favorites(self, mediatype, tmdb_id, title):
 		try:
 			self.dbcur.execute(DELETE_FAV, (mediatype, str(tmdb_id)))
-			container_refresh()
 			return True
 		except: return False
 

@@ -16,7 +16,6 @@ DELETE_FUNCTION = 'DELETE FROM function_cache WHERE string_id = ?'
 DELETE_ALL = 'DELETE FROM %s'
 movie_show, id_types = ('movie', 'tvshow'), ('tmdb_id', 'imdb_id', 'tvdb_id')
 prop_dict = {'meta': 'pov_meta_%s_%s_%s', 'meta_season': 'pov_meta_season_%s'}
-string = str
 
 class MetaCache(BaseCache):
 	db_file = metacache_db
@@ -31,7 +30,7 @@ class MetaCache(BaseCache):
 	def get(self, mediatype, id_type, media_id):
 		meta = None
 		try:
-			media_id = string(media_id)
+			media_id = str(media_id)
 			current_time = self._get_timestamp(datetime.now())
 			meta = self.get_memory_cache(mediatype, id_type, media_id, current_time)
 			if meta: raise Exception('memory cache true')
@@ -48,10 +47,10 @@ class MetaCache(BaseCache):
 	def set(self, mediatype, id_type, meta, expiration=30, tmdb_id=None):
 		try:
 			if mediatype in movie_show:
-				media_id, command = string(meta[id_type]), SET_MOVIE_SHOW
-				args = mediatype, string(meta['tmdb_id']), meta['imdb_id'], string(meta['tvdb_id']), repr(meta)
+				media_id, command = str(meta[id_type]), SET_MOVIE_SHOW
+				args = mediatype, str(meta['tmdb_id']), meta['imdb_id'], str(meta['tvdb_id']), repr(meta)
 			else:
-				media_id, command = string(tmdb_id), SET_SEASON
+				media_id, command = str(tmdb_id), SET_SEASON
 				args = media_id, repr(meta)
 			expires = self._get_timestamp(datetime.now() + timedelta(days=expiration))
 			self.dbcur.execute(command, (*args, expires))
@@ -60,7 +59,7 @@ class MetaCache(BaseCache):
 
 	def delete(self, mediatype, id_type, media_id, meta=None, dbcon=None):
 		try:
-			media_id = string(media_id)
+			media_id = str(media_id)
 			if mediatype in movie_show:
 				self.dbcur.execute(DELETE_MOVIE_SHOW % id_type, (mediatype, media_id))
 				for item in id_types: self.delete_memory_cache(mediatype, item, meta[item])
@@ -73,7 +72,7 @@ class MetaCache(BaseCache):
 	def get_memory_cache(self, mediatype, id_type, media_id, current_time):
 		result = None
 		try:
-			media_id = string(media_id)
+			media_id = str(media_id)
 			if mediatype in movie_show: prop_string = prop_dict.get('meta') % (mediatype, id_type, media_id)
 			else: prop_string = prop_dict.get('meta_season') % media_id
 			cachedata = get_property(prop_string)
@@ -85,7 +84,7 @@ class MetaCache(BaseCache):
 
 	def set_memory_cache(self, mediatype, id_type, meta, expires, media_id):
 		try:
-			media_id = string(media_id)
+			media_id = str(media_id)
 			if mediatype in movie_show:
 				cachedata, prop_string = (expires, meta), prop_dict.get('meta') % (mediatype, id_type, media_id)
 			else: cachedata, prop_string = (expires, meta), prop_dict.get('meta_season') % media_id
@@ -108,7 +107,7 @@ class MetaCache(BaseCache):
 		except: pass
 		return result
 
-	def set_function(self, prop_string, result, expiration=timedelta(days=1)):
+	def set_function(self, prop_string, result, expiration):
 		try:
 			expires = self._get_timestamp(datetime.now() + expiration)
 			self.dbcur.execute(SET_FUNCTION, (prop_string, repr(result), expires))
@@ -117,7 +116,7 @@ class MetaCache(BaseCache):
 	def delete_all_seasons_memory_cache(self, media_id, total_seasons=None):
 		if not total_seasons: total_seasons = 101
 		for item in range(1, total_seasons):
-			clear_property('%s_%s' % (prop_dict.get('meta_season') % string(media_id), string(item)))
+			clear_property('%s_%s' % (prop_dict.get('meta_season') % str(media_id), str(item)))
 
 	def delete_all(self):
 		try:
@@ -125,7 +124,7 @@ class MetaCache(BaseCache):
 			all_entries = self.dbcur.fetchall()
 			for i in all_entries:
 				try:
-					mediatype, tmdb_id = string(i[0]), string(i[1])
+					mediatype, tmdb_id = str(i[0]), str(i[1])
 					if mediatype == 'tvshow':
 						total_seasons = eval(i[2]).get('total_seasons')
 						self.delete_all_seasons_memory_cache(tmdb_id, total_seasons)
@@ -154,6 +153,7 @@ def cache_function(function, prop_string, url, expiration=96, json=False):
 	if data: return data
 	if json: result = function(url).json()
 	else: result = function(url)
-	metacache.set_function(prop_string, result, expiration=timedelta(hours=expiration))
+	if isinstance(expiration, int): expiration = timedelta(hours=expiration)
+	metacache.set_function(prop_string, result, expiration)
 	return result
 

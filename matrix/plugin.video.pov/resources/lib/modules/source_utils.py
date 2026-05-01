@@ -67,7 +67,7 @@ def internal_sources(active_sources, mediatype, prescrape=False):
 		try:
 			module_name = item.split('.')[0]
 			if module_name in ('__init__',): continue
-			if not module_name in active_sources: continue
+			if module_name not in active_sources: continue
 			if prescrape and not check_prescrape_sources(module_name, mediatype): continue
 			module = manual_function_import('scrapers.%s' % module_name, 'source')
 			append(('internal', module, module_name))
@@ -173,7 +173,7 @@ def get_filename_match(title, url, name=None):
 
 def supported_video_extensions():
 	supported_video_extensions = kodi_utils.supported_media().split('|')
-	return [i for i in supported_video_extensions if not i in ('','.iso','.zip')]
+	return [i for i in supported_video_extensions if i not in ('','.iso','.zip')]
 
 def seas_ep_query_list(season, episode):
 	season = int(season)

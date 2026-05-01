@@ -134,7 +134,7 @@ class MenuEditor:
 		list_type = 'edited' if edited else'default'
 		current_list = edited or default
 		if default == new_contents: return kodi_utils.notification(32983, 1500)
-		new_entry = [i for i in new_contents if not i in default][0]
+		new_entry = [i for i in new_contents if i not in default][0]
 		new_entry_translated_name = ls(new_entry.get('name'))
 		if not kodi_utils.confirm_dialog(text='%s[CR]%s' % (ls(32727) % new_entry_translated_name, ls(32728))): return kodi_utils.notification(32736, 1500)
 		item_position = self._menu_select(current_list, new_entry_translated_name, position_list=True)
@@ -176,7 +176,7 @@ class MenuEditor:
 
 	def _get_removed_items(self, active_list):
 		default_list_items, list_items = navigator_cache.get_main_lists(active_list)
-		return [i for i in default_list_items if not i in list_items]
+		return [i for i in default_list_items if i not in list_items]
 
 	def _get_external_name_input(self, current_name):
 		new_name = kodi_utils.dialog.input('POV', defaultt=current_name)

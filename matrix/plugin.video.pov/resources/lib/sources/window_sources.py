@@ -68,14 +68,14 @@ class SourceResults(BaseDialog):
 			if chosen_listitem.getProperty('tikiskins.perform_full_search') == 'true':
 				self.selected = ('perform_full_search', '')
 				return self.close()
-			if not 'UNCACHED' in chosen_listitem.getProperty('tikiskins.source_type'):
+			if 'UNCACHED' not in chosen_listitem.getProperty('tikiskins.source_type'):
 				self.selected = ('play', json.loads(chosen_listitem.getProperty('source')))
 				return self.close()
 			source = json.loads(chosen_listitem.getProperty('source'))
 			magnet_url = str(source.get('url')).startswith('magnet')
 			if magnet_url: link = Source(source, self.meta).manual_add_magnet_to_cloud()
 			else: link = Source(source, self.meta).manual_add_nzb_to_cloud()
-			if not link is None:
+			if link is not None:
 				source['unrestricted_link'] = link
 				self.selected = ('play', source)
 				return self.close()
@@ -95,13 +95,13 @@ class SourceResults(BaseDialog):
 				self.open_window(('sources.window_sources', 'ResultsInfo'), 'sources_info.xml', **kwargs)
 			elif 'seekable_easynews' in choice:
 				link = Source(source, self.meta).resolve_internal_sources(True)
-				if not link is None:
+				if link is not None:
 					source['unrestricted_link'] = link
 					self.selected = ('play', source)
 					return self.close()
 			elif 'browse_packs' in choice:
 				link = Source(source, self.meta).browse_packs(highlight)
-				if not link == 'cancel':
+				if link != 'cancel':
 					source['unrestricted_link'] = link
 					self.selected = ('play', source)
 					return self.close()
@@ -237,7 +237,7 @@ class SourceResults(BaseDialog):
 				i.getProperty(filter_property)
 				for i in self.item_list
 				if not (i.getProperty(filter_property) in duplicates or duplicates.add(i.getProperty(filter_property)))
-				and not i.getProperty(filter_property) == ''
+				and i.getProperty(filter_property) != ''
 			]
 			provider_choices.sort(key=choice_sorter.index)
 			list_items = [{'line1': item} for item in provider_choices]
@@ -364,7 +364,7 @@ class ResultsContextMenu(BaseDialog):
 				'name': self.meta.get('rootname', ''), 'provider': cache_provider, 'url': None,
 				'magnet_url': magnet_url, 'info_hash': info_hash, 'highlight': self.highlight
 			}))
-		if not scrape_provider == 'folders':
+		if scrape_provider != 'folders':
 			append(self.make_contextmenu_item(down_file_str, run_plugin_str, {
 				'mode': 'downloader', 'action': 'meta.single', 'source': source, 'meta': meta_json,
 				'name': self.meta.get('rootname', ''), 'provider': scrape_provider, 'url': None

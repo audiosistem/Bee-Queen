@@ -163,7 +163,7 @@ class Sources:
 
 	def prepare_internal_scrapers(self):
 		if self.active_external and len(self.active_internal_scrapers) == 1: return
-		active_internal_scrapers = [i for i in self.active_internal_scrapers if not i in self.remove_scrapers]
+		active_internal_scrapers = [i for i in self.active_internal_scrapers if i not in self.remove_scrapers]
 		self.internal_scraper_names = active_internal_scrapers[:]
 		self.active_internal_scrapers = active_internal_scrapers
 
@@ -186,10 +186,10 @@ class Sources:
 #			if not self.debrid_torrent_enabled: self.exclude_list.extend(scraper_names('torrents'))
 			external_providers = magneto_sources(ret_all=self.disabled_ignored)
 			self.external_providers = [
-				i for i in external_providers if not i[0] in self.exclude_list
+				i for i in external_providers if i[0] not in self.exclude_list
 				and (i[1].hasEpisodes if self.mediatype == 'episode' else i[1].hasMovies)
 			]
-			if not self.mediatype == 'episode': return
+			if self.mediatype != 'episode': return
 			self.external_providers = [(i[0], i[1], '') for i in self.external_providers]
 			season_packs, show_packs = pack_enable_check(self.meta, self.season, self.episode)
 			if not season_packs: return
@@ -313,9 +313,9 @@ class Sources:
 						percent = int(((total_items := len(items))-count)/total_items*100)
 						name = item['name'].replace('.', ' ').replace('-', ' ').upper()
 						line1 = item.get('scrape_provider'), item.get('cache_provider'), item.get('provider')
-						if not source_index is None: line1 = ('[B]%02d[/B]' % (source_index + count), *line1)
+						if source_index is not None: line1 = ('[B]%02d[/B]' % (source_index + count), *line1)
 						line2 = item.get('size_label', ''), item.get('extraInfo', '')
-						line1 = ' | '.join(i for i in line1 if i and not i == 'external').upper()
+						line1 = ' | '.join(i for i in line1 if i and i != 'external').upper()
 						line2 = ' | '.join(i for i in line2 if i)
 						if self.progress_dialog:
 							self.progress_dialog.update(format_line % (line1, line2, name), percent)
@@ -325,16 +325,16 @@ class Sources:
 					link = item['unrestricted_link']
 					sleep(500)
 				else: link = Source(item, self.meta).resolve_sources()
-				if not link is None: yield link
+				if link is not None: yield link
 		try:
 			self._kill_progress_dialog()
 			if autoplay:
 				source_index = 0
-				items = [i for i in results if not 'Uncached' in i.get('cache_provider', '')]
+				items = [i for i in results if 'Uncached' not in i.get('cache_provider', '')]
 				if self.filters_ignored: notification(32686)
 			elif source in results:
 				source_index = results.index(source)
-				items = [i for i in results[source_index:] if not 'Uncached' in i.get('cache_provider', '')]
+				items = [i for i in results[source_index:] if 'Uncached' not in i.get('cache_provider', '')]
 			else: source_index, items = None, [source]
 			if background: return True if items else None
 			if self.full_screen:
@@ -351,7 +351,7 @@ class Sources:
 
 	def filter_results(self, results):
 		results = [i for i in results if i['quality'] in self.quality_filter]
-		if not self.include_3D_results: results = [i for i in results if not '3D' in i['extraInfo']]
+		if not self.include_3D_results: results = [i for i in results if '3D' not in i['extraInfo']]
 		if not self.size_filter: return results
 		if self.size_filter == 1:
 			duration = self.meta['duration'] or (3600 if self.mediatype == 'episode' else 5400)
@@ -387,7 +387,7 @@ class Sources:
 			if self.priority_language == 'Spanish': language += 'latino', 'lat', 'esp'
 			pattern = r'\b(%s)\b' % '|'.join(i for i in language if i)
 			sort_first = [i for i in results if re.search(pattern, i.get('name_info', ''), re.I)]
-			sort_last = [i for i in results if not i in sort_first]
+			sort_last = [i for i in results if i not in sort_first]
 			results = sort_first + sort_last
 		except: pass
 		return results
@@ -398,21 +398,21 @@ class Sources:
 			results.sort(key=lambda k: 'Uncached' in k.get('cache_provider', ''), reverse=False)
 			return results
 #		uncached = [i for i in results if 'Uncached' in i.get('cache_provider', '')]
-#		cached = [i for i in results if not i in uncached]
+#		cached = [i for i in results if i not in uncached]
 #		return cached + uncached
-		return [i for i in results if not 'Uncached' in i.get('cache_provider', '')]
+		return [i for i in results if 'Uncached' not in i.get('cache_provider', '')]
 
 	def _special_filter(self, results, key, enable_setting):
 		if enable_setting == 1:
 			if key == dolby_vision_filter_key and self.hybrid_allowed:
-				results = [i for i in results if all(x in i['extraInfo'] for x in (key, hdr_filter_key)) or not key in i['extraInfo']]
-			else: results = [i for i in results if not key in i['extraInfo']]
+				results = [i for i in results if all(x in i['extraInfo'] for x in (key, hdr_filter_key)) or key not in i['extraInfo']]
+			else: results = [i for i in results if key not in i['extraInfo']]
 		elif enable_setting == 2 and self.autoplay:
 			priority_list = [i for i in results if key in i['extraInfo']]
-			remainder_list = [i for i in results if not i in priority_list]
+			remainder_list = [i for i in results if i not in priority_list]
 			results = priority_list + remainder_list
 		elif enable_setting == 3:
-			results.sort(key=lambda k: key in k['extraInfo'] and not 'Uncached' in k.get('cache_provider', ''), reverse=True)
+			results.sort(key=lambda k: key in k['extraInfo'] and 'Uncached' not in k.get('cache_provider', ''), reverse=True)
 		return results
 
 	def _sort_first(self, results):
@@ -422,7 +422,7 @@ class Sources:
 			if not sort_first_scrapers: return results
 			sort_first = [i for i in results if i['scrape_provider'] in sort_first_scrapers]
 			sort_first.sort(key=lambda k: k['quality_rank'])
-			sort_last = [i for i in results if not i in sort_first]
+			sort_last = [i for i in results if i not in sort_first]
 			results = sort_first + sort_last
 		except: pass
 		return results
@@ -474,7 +474,7 @@ class Sources:
 		if alternative_titles: aliases = [{'title': i, 'country': ''} for i in alternative_titles]
 		if country_codes: aliases.extend([{'title': '%s %s' % (title, i), 'country': ''} for i in country_codes])
 		normalized = ({'title': normalize(i['title']), 'country': i['country']} for i in aliases)
-		aliases.extend(i for i in normalized if not i in aliases)
+		aliases.extend(i for i in normalized if i not in aliases)
 		return aliases
 
 	def _get_search_year(self, meta):
@@ -587,7 +587,7 @@ class Manager:
 			for name, hashes in ((fut.name, fut.result() if fut.done() else []) for fut in self.threads):
 				status = ('Unchecked %s' if name in ('real-debrid', 'alldebrid') else 'Uncached %s') % name
 				self.final_sources.extend({**i, 'cache_provider': name, 'debrid': name} for i in torrent_sources if i['hash'] in hashes)
-				self.final_sources.extend({**i, 'cache_provider': status, 'debrid': name} for i in torrent_sources if not i['hash'] in hashes)
+				self.final_sources.extend({**i, 'cache_provider': status, 'debrid': name} for i in torrent_sources if i['hash'] not in hashes)
 		except: notification(32574)
 		finally: tpe.shutdown(False)
 		return self.final_sources
@@ -660,7 +660,7 @@ class Manager:
 			set_property('%s.internal_results' % i.name, 'checked')
 			self.processed_internal_scrapers_append(i.name)
 			_process_quality_count(internal_sources)
-		return [i.name for i in self.internal_scrapers if not i.name in self.processed_internal_scrapers]
+		return [i.name for i in self.internal_scrapers if i.name not in self.processed_internal_scrapers]
 
 	def _make_progress_dialog(self):
 		if self.progress_dialog: return
@@ -735,7 +735,7 @@ class ExternalSource:
 			sources = self.process_sources(provider, sources)
 			epc.set(provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check, sources, expiry_hours)
 		if sources:
-			if pack == season_display: sources = [i for i in sources if not 'episode_start' in i or i['episode_start'] <= self.episode <= i['episode_end']]
+			if pack == season_display: sources = [i for i in sources if 'episode_start' not in i or i['episode_start'] <= self.episode <= i['episode_end']]
 			elif pack == show_display: sources = [i for i in sources if i['last_season'] >= self.season]
 			self.sources.extend(sources)
 
@@ -763,7 +763,7 @@ class ExternalSource:
 						'external': True, 'provider': provider, 'scrape_provider': self.scrape_provider, 'URLName': URLName,
 						'extraInfo': extraInfo, 'quality': quality, 'size_label': size_label, 'size': round(size, 2)
 					})
-					if not quality in self.resolutions: self.resolutions['SD'] += 1
+					if quality not in self.resolutions: self.resolutions['SD'] += 1
 					else: self.resolutions[quality] += 1
 					self.resolutions['total'] += 1
 				except: pass

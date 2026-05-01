@@ -109,7 +109,7 @@ class PremiumizeAPI:
 	def download_link_magnet_zip(self, magnet_url, info_hash):
 		try:
 #			result = self.create_transfer(magnet_url)
-#			if not 'status' in result or result['status'] != 'success': return None
+#			if 'status' not in result or result['status'] != 'success': return None
 #			transfer_id = result['id']
 			transfer_id = self.create_transfer(magnet_url)
 			if not transfer_id: return None
@@ -127,25 +127,25 @@ class PremiumizeAPI:
 		else: url = 'item/rename'
 		data = {'id': file_id , 'name': new_name}
 		result = self._post(url, data)
-		return True if not result is None and result['status'] == 'success' else False
+		return True if result is not None and result['status'] == 'success' else False
 
 	def delete_object(self, object_type, object_id):
 		url = '%s/delete' % object_type
 		data = {'id': object_id}
 		result = self._post(url, data)
-		return True if not result is None and result['status'] == 'success' else False
+		return True if result is not None and result['status'] == 'success' else False
 
 	def get_item_details(self, item_id):
 		string = 'pov_pm_item_details_%s' % item_id
 		url = 'item/details'
 		data = {'id': item_id}
 		args = [url, data]
-		return cache_object(self._post, string, args, False, 24)
+		return cache_object(self._post, string, args, 24)
 
 	def downloads(self):
 		url = 'transfer/list'
 		string = 'pov_pm_downloads'
-		return cache_object(self._get, string, url, False, 0.5)
+		return cache_object(self._get, string, url, 0.5)
 
 	def user_cloud(self, folder_id=None):
 		if folder_id:
@@ -154,7 +154,7 @@ class PremiumizeAPI:
 		else:
 			url = 'folder/list'
 			string = 'pov_pm_user_cloud_root'
-		return cache_object(self._get, string, url, False, 0.5)
+		return cache_object(self._get, string, url, 0.5)
 
 	def clear_cache(*args):
 		from modules.kodi_utils import clear_property, path_exists, database_connect, maincache_db

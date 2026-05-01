@@ -111,14 +111,14 @@ class People(BaseDialog):
 				_id = more_from_movies_id
 				data = self.movie_data
 				if self.exclude_non_acting:
-					try: data = [i for i in data if not 99 in i['genre_ids'] and not i['character'].lower() in roles_exclude]
+					try: data = [i for i in data if 99 not in i['genre_ids'] and i['character'].lower() not in roles_exclude]
 					except: pass
 			elif mediatype == 'tvshow':
 				list_type = mediatype
 				_id = more_from_tvshows_id
 				data = self.tvshow_data
 				if self.exclude_non_acting:
-					try: data = [i for i in data if not any(x in genres_exclude for x in i['genre_ids']) and not i['character'].lower() in roles_exclude]
+					try: data = [i for i in data if not any(x in genres_exclude for x in i['genre_ids']) and i['character'].lower() not in roles_exclude]
 					except: pass
 			else:#director
 				list_type = 'movie'

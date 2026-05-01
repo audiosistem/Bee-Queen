@@ -201,7 +201,8 @@ def integrity_check():
 		check_databases()
 		clear_cache('trakt', silent=True)
 		status = 'repaired'
-	finally: return status
+	except Exception as e: kodi_utils.logger('trakt integrity error', str(e))
+	return status
 
 def trakt_account_info():
 	from datetime import timedelta

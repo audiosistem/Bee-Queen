@@ -1,6 +1,6 @@
 import sys
-from urllib.parse import unquote
 from datetime import timedelta
+from urllib.parse import unquote
 from caches.main_cache import MainCache
 from modules import kodi_utils, settings
 # from modules.kodi_utils import logger
@@ -54,7 +54,7 @@ def get_search_term(params):
 	mediatype = params.get('mediatype', '')
 	search_type = params.get('search_type', 'media_title')
 	params_query = params.get('query', '')
-	if not search_type in query_dict:
+	if search_type not in query_dict:
 		if mediatype == 'movie':
 			string, url_params = 'movie_queries', {'mode': 'build_movie_list', 'action': 'tmdb_movies_search'}
 		else: string, url_params = 'tvshow_queries', {'mode': 'build_tvshow_list', 'action': 'tmdb_tv_search'}

@@ -25,7 +25,7 @@ class source(Debrid):
 			self.search(self.mediatype, info.get('imdb_id'), self.season, self.episode)
 			if not self.scrape_results: return internal_results(self.scrape_provider, self.sources)
 			self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
-			extras_filtering_list = tuple(i for i in extras_filter if not i in title.lower())
+			extras_filtering_list = tuple(i for i in extras_filter if i not in title.lower())
 			for item in self.scrape_results:
 				try:
 					if self.user_engines_only and not item['user_search']: continue

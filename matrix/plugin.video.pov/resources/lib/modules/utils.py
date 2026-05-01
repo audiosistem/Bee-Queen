@@ -4,8 +4,8 @@ import random
 import hashlib
 import unicodedata
 import _strptime  # fix bug in python import
-from queue import SimpleQueue
 from html import unescape
+from queue import SimpleQueue
 from importlib import import_module
 from datetime import datetime, timedelta, date
 from modules.kodi_utils import local_string as ls, get_setting, logger
@@ -87,31 +87,30 @@ def jsondate_to_datetime(jsondate_object, resformat, remove_time=False):
 def get_datetime(string=False, dt=False):
 	d = datetime.now()
 	if dt: return d
-	if string: return d.strftime('%Y-%m-%d')
-	return datetime.date(d)
+	if string: return str(d.date())
+	return d.date()
 
 def adjust_premiered_date(orig_date, adjust_hours):
 	if not orig_date: return None, None
 	orig_date += ' 20:00:00'
 	datetime_object = jsondate_to_datetime(orig_date, '%Y-%m-%d %H:%M:%S')
 	adjusted_datetime = datetime_object + timedelta(hours=adjust_hours)
-	adjusted_string = adjusted_datetime.strftime('%Y-%m-%d')
-	return adjusted_datetime.date(), adjusted_string
+	adjusted_date = adjusted_datetime.date()
+	return adjusted_date, str(adjusted_date)
 
 def make_day(today, date, date_format, use_words=True):
 	day_diff = (date - today).days
 	try: day = date.strftime(date_format)
 	except ValueError: day = date.strftime('%Y-%m-%d')
-	if use_words:
-		if day_diff == -1: day = ls(32848).upper()
-		elif day_diff == 0: day = ls(32849).upper()
-		elif day_diff == 1: day = ls(32850).upper()
-		elif 1 < day_diff < 7: day = ls(days_translate[date.strftime('%A')])
+	if not use_words: return day
+	if day_diff == -1: day = ls(32848).upper()
+	elif day_diff == 0: day = ls(32849).upper()
+	elif day_diff == 1: day = ls(32850).upper()
+	elif 1 < day_diff < 7: day = ls(days_translate[date.strftime('%A')])
 	return day
 
 def subtract_dates(date1, date2):
 	return (date1 - date2).days
-	return day
 
 def datetime_workaround(data, str_format):
 	try: datetime_object = datetime.strptime(data, str_format)
@@ -175,7 +174,7 @@ def clean_title(title):
 
 def byteify(data, ignore_dicts=False):
 	try:
-		if isinstance(data, unicode): return data.encode('utf-8')
+		if isinstance(data, str): return data.encode('utf-8')
 		if isinstance(data, list): return [byteify(item, ignore_dicts=True) for item in data]
 		if isinstance(data, dict) and not ignore_dicts:
 			return dict([(byteify(key, ignore_dicts=True), byteify(value, ignore_dicts=True)) for key, value in data.iteritems()])
@@ -290,7 +289,7 @@ def paginate_list(item_list, page, letter, limit=20):
 		title_list = [i['title'].lower() for i in item_list]
 		start_list = [chr(i) for i in range(97, 123)]
 		letter_index = start_list.index(letter)
-		base_list = [element for element in list(chain.from_iterable([val for val in zip_longest(start_list[letter_index:], start_list[:letter_index][::-1])])) if element != None]
+		base_list = [element for element in list(chain.from_iterable([val for val in zip_longest(start_list[letter_index:], start_list[:letter_index][::-1])])) if element is not None]
 		for i in base_list:
 			start_index = _get_start_index(i)
 			if start_index: break

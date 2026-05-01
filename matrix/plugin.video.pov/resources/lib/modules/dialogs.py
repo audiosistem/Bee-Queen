@@ -374,12 +374,14 @@ def favorites_choice(params):
 		if not favorites.clear_favorites(mediatype): notification(32574)
 	else:
 		mediatype, tmdb_id, title = params['mediatype'], params['tmdb_id'], params['title']
-		current_favorites = favorites.get_favorites(mediatype)
-		if any(i['tmdb_id'] == tmdb_id for i in current_favorites): action, text = favorites.remove_from_favorites, '%s POV %s?' % (ls(32603), ls(32453))
+		current_favorites, refresh = favorites.get_favorites(mediatype), False
+		if tmdb_id in {i['tmdb_id'] for i in current_favorites}:
+			action, refresh = favorites.remove_from_favorites, True
+			text = '%s POV %s?' % (ls(32603), ls(32453))
 		else: action, text = favorites.add_to_favorites, '%s POV %s?' % (ls(32602), ls(32453))
 		if not confirm_dialog(text='%s[CR][CR]%s' % (title, text)): return
-		if action(mediatype, tmdb_id, title): notification(32576)
-		else: notification(32574)
+		notification(32576) if action(mediatype, tmdb_id, title) else notification(32574)
+		if refresh: container_refresh()
 
 def options_menu(params, meta=None):
 	def _builder():
@@ -581,7 +583,7 @@ def scrape_from_episode_group(meta, season, episode):
 		episodes.index(i) for i in episodes
 		if i['season_number'] == int(season) and i['episode_number'] == int(episode)
 	), None)
-	if not index is None:
+	if index is not None:
 		heading = episodes[index]['name']
 		episodes, preselect = episodes[index:] + episodes[:index], [0]
 	else: heading, preselect = meta['title'], []

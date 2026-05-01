@@ -555,7 +555,7 @@ class TMDBList:
 		params = {'session_id': session_id}
 		response = requests.get(self.base_url('3/account'), params=params, headers=self.headers, timeout=timeout)
 		result = response.json()
-		if not 'id' in result: return
+		if 'id' not in result: return
 		username, session_account_id = str(result['username']), str(result['id'])
 		set_setting('tmdb.username', username)
 		set_setting('tmdb.session_id', session_id)

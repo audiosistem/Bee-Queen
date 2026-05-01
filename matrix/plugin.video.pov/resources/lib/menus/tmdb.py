@@ -124,7 +124,7 @@ def edit_tmdb_list(params):
 	list_items = [
 		{'line1': i[1], 'line2': i[0], 'icon':
 		tmdb_image_base % (image_resolution['poster' if i[0] == 'poster' else 'fanart'], i[1])
-		if i[0] in ('poster', 'fanart') and not i[1] in ('clear', 'None') else
+		if i[0] in ('poster', 'fanart') and i[1] not in ('clear', 'None') else
 		default_icon}
 		for i in choices
 	]
@@ -147,7 +147,7 @@ def edit_tmdb_list(params):
 			'backdrop_path': '' if params['fanart'] == 'clear' else params['fanart'],
 			'public': 'true' if params.get('public') in ('true', '1') else 'false',
 		}
-		data = {k: v for k, v in data.items() if not v in ('None', None)}
+		data = {k: v for k, v in data.items() if v not in ('None', None)}
 		if tmdb_api.list_update(params['list_id'], data)['success']:
 			tmdb_api.clear_tmdbl_cache()
 			kodi_utils.container_refresh()

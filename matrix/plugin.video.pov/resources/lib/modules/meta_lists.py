@@ -172,13 +172,13 @@ meta_colors = (
 )
 
 media_lists = (
-	"'tmdb%'",
-	"'trakt%'",
-	"'mdb%'",
-	"'imdb%'",
-	"'pov%'",
-	"'POV%'",
-	"'subtitles%'",
-	"'https%'"
+	'tmdb%',
+	'trakt%',
+	'mdb%',
+	'imdb%',
+	'pov%',
+	'POV%',
+	'subtitles%',
+	'https%'
 )
 

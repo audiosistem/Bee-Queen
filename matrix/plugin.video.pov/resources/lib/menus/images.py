@@ -1,6 +1,5 @@
 import os
 import json
-from threading import Thread
 from windows import open_window
 from indexers.tmdb_api import tmdb_people_full_info, tmdb_popular_people, tmdb_image_base
 from indexers.imdb_api import people_get_imdb_id, imdb_tagged_images
@@ -17,9 +16,9 @@ class Images:
 		elif self.mode == 'browser_image': self.browser_image(params['folder_path'])
 		elif self.mode == 'slideshow_image': return self.slideshow_image()
 		elif self.mode == 'delete_image': return self.delete_image()
-		if len(self.list_items) == 0 and not self.params.get('in_progress') == 'true':
+		if len(self.list_items) == 0 and self.params.get('in_progress') != 'true':
 			return notification(32760)
-		if not 'in_progress' in params: self.open_window_xml()
+		if 'in_progress' not in params: self.open_window_xml()
 		else: return self.list_items, self.next_page_params
 
 	def open_window_xml(self):

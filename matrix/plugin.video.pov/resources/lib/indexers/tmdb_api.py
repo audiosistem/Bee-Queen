@@ -54,7 +54,7 @@ def tmdb_media_videos(mediatype, tmdb_id):
 def tmdb_movies_discover(query, page_no):
 	string = query % page_no
 	url = query % page_no
-	return cache_object(get_tmdb, string, url, json=False)
+	return cache_object(get_tmdb, string, url)
 
 def tmdb_movies_collection(collection_id):
 	string = 'tmdb_movies_collection_%s' % collection_id
@@ -140,7 +140,7 @@ def tmdb_movies_search_collections(query, page_no):
 
 def tmdb_tv_discover(query, page_no):
 	string = url = query % page_no
-	return cache_object(get_tmdb, string, url, json=False)
+	return cache_object(get_tmdb, string, url)
 
 def tmdb_tv_title_year(title, year=None):
 	if year:
@@ -258,7 +258,7 @@ def tmdb_tvanime_year(year, page_no):
 def tmdb_popular_people(page_no):
 	string = 'tmdb_popular_people_%s' % page_no
 	url = '%s/person/popular?api_key=%s&language=en-US&page=%s' % (base_url, tmdb_api_key(), page_no)
-	return cache_object(get_tmdb, string, url, False)
+	return cache_object(get_tmdb, string, url)
 
 def tmdb_people_full_info(actor_id, language=None):
 	if not language: language = get_language()
@@ -284,14 +284,14 @@ def tmdb_image_params(language):
 def movie_details(tmdb_id, language, tmdb_api=None):
 	try:
 		url = '%s/movie/%s?api_key=%s&language=%s&append_to_response=%s' % (base_url, tmdb_id, get_tmdb_api(tmdb_api), language, movies_append)
-		if not language in 'en,en-US': url += '&include_image_language=%s' % tmdb_image_params(language)
+		if language not in 'en,en-US': url += '&include_image_language=%s' % tmdb_image_params(language)
 		return get_tmdb(url)
 	except: return None
 
 def tvshow_details(tmdb_id, language, tmdb_api=None):
 	try:
 		url = '%s/tv/%s?api_key=%s&language=%s&append_to_response=%s' % (base_url, tmdb_id, get_tmdb_api(tmdb_api), language, tvshows_append)
-		if not language in 'en,en-US': url += '&include_image_language=%s' % tmdb_image_params(language)
+		if language not in 'en,en-US': url += '&include_image_language=%s' % tmdb_image_params(language)
 		return get_tmdb(url)
 	except: return None
 
@@ -453,7 +453,7 @@ def list_request(url, params=None, data=None, method=None):
 	access_token = get_setting('tmdb.token')
 	headers = {'Authorization': f"Bearer {access_token}"}
 	method = method or 'get'
-	list_timeout=timeout ** 2 if not method in ('get',) else timeout
+	list_timeout=timeout ** 2 if method not in ('get',) else timeout
 	try:
 		response = session.request(method, url, params=params, json=data, headers=headers, timeout=list_timeout)
 		result = response.json() if 'json' in response.headers.get('Content-Type', '') else response.text
@@ -465,7 +465,7 @@ def list_request(url, params=None, data=None, method=None):
 def list_details(list_id, page=1):
 	string = 'tmdblist_detail_%s_%s' % (list_id, page)
 	url = '%s/list/%s?page=%s' % (list_url, list_id, page)
-	return cache_object(list_request, string, url, json=False)
+	return cache_object(list_request, string, url)
 
 def list_add_items(list_id, items=None):
 	url = '%s/list/%s/items' % (list_url, list_id)
@@ -500,28 +500,28 @@ def list_delete(list_id):
 def user_lists(page=1, account_id=''):
 	string = 'tmdblist_user_lists_%s' % page
 	url = '%s/account/%s/lists?page=%s' % (list_url, account_id, page)
-	return cache_object(list_request, string, url, json=False)
+	return cache_object(list_request, string, url)
 
 @_account_id
 def watchlist(mediatype, page=1, account_id=''):
 	string = 'tmdblist_watchlist_%s_%s_%s' % (account_id, mediatype, page)
 	url = '%s/account/%s/%s/watchlist' % (list_url, account_id, mediatype)
 	url += '?page=%slanguage=en-US&sort_by=created_at.desc' % page
-	return cache_object(list_request, string, url, json=False)
+	return cache_object(list_request, string, url)
 
 @_account_id
 def favorites(mediatype, page=1, account_id=''):
 	string = 'tmdblist_favorites_%s_%s_%s' % (account_id, mediatype, page)
 	url = '%s/account/%s/%s/favorites' % (list_url, account_id, mediatype)
 	url += '?page=%slanguage=en-US&sort_by=created_at.desc' % page
-	return cache_object(list_request, string, url, json=False)
+	return cache_object(list_request, string, url)
 
 @_account_id
 def recommendations(mediatype, page=1, account_id=''):
 	string = 'tmdblist_recommendations_%s_%s_%s' % (account_id, mediatype, page)
 	url = '%s/account/%s/%s/recommendations' % (list_url, account_id, mediatype)
 	url += '?page=%slanguage=en-US' % page
-	return cache_object(list_request, string, url, json=False)
+	return cache_object(list_request, string, url)
 
 def tmdb_clean_watchlist(silent=False):
 	if not get_setting('tmdb.token'): return

@@ -195,11 +195,11 @@ class Downloader:
 			ext = '.zip'
 		elif self.action == 'image':
 			ext = os.path.splitext(urlparse(self.url).path)[1][1:]
-			if not ext in image_extensions: ext = 'jpg'
+			if ext not in image_extensions: ext = 'jpg'
 			ext = '.%s' % ext
 		else:
 			ext = os.path.splitext(urlparse(self.url).path)[1][1:]
-			if not ext in video_extensions: ext = 'mp4'
+			if ext not in video_extensions: ext = 'mp4'
 			ext = '.%s' % ext
 		self.extension = ext
 

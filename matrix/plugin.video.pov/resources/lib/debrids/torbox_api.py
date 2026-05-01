@@ -26,7 +26,7 @@ class TorBoxAPI:
 		except session.custom_errors: return kodi_utils.notification('%s timeout' % __name__)
 		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
 		response = response.json() if 'json' in response.headers.get('Content-Type', '') else response
-		if 'data' in response and 'success' in response and not 'control' in path: response = response['data']
+		if 'data' in response and 'success' in response and 'control' not in path: response = response['data']
 		return response
 
 	def _get(self, url, params=None):
@@ -68,19 +68,19 @@ class TorBoxAPI:
 		data = {'torrent_id': request_id, 'operation': 'delete'}
 		url = 'torrents/controltorrent'
 		result = self._post(url, json=data)
-		return True if not result is None and result['success'] else False
+		return True if result is not None and result['success'] else False
 
 	def delete_usenet(self, request_id):
 		data = {'usenet_id': request_id, 'operation': 'delete'}
 		url = 'usenet/controlusenetdownload'
 		result = self._post(url, json=data)
-		return True if not result is None and result['success'] else False
+		return True if result is not None and result['success'] else False
 
 	def delete_webdl(self, request_id):
 		data = {'webdl_id': request_id, 'operation': 'delete'}
 		url = 'webdl/controlwebdownload'
 		result = self._post(url, json=data)
-		return True if not result is None and result['success'] else False
+		return True if result is not None and result['success'] else False
 
 	def unrestrict_link(self, file_id):
 		try: user_ip = requests.get(ip_url, timeout=2.0).text
@@ -152,7 +152,7 @@ class TorBoxAPI:
 		from modules.source_utils import supported_video_extensions, seas_ep_filter, extras_filter
 		try:
 			extensions = supported_video_extensions()
-			extras_filtering_list = tuple(i for i in extras_filter() if not i in title.lower())
+			extras_filtering_list = tuple(i for i in extras_filter() if i not in title.lower())
 			if not nzb_info:
 				nzb_id = self.create_transfer(nzb_url)
 				nzb_files = self.nzb_info(nzb_id)
@@ -180,7 +180,7 @@ class TorBoxAPI:
 	def user_cloud(self, request_id=None, check_cache=True, completed=True):
 		string = 'pov_tb_user_cloud_info_%s' % request_id if request_id else 'pov_tb_user_cloud'
 		url = 'torrents/mylist?id=%s' % request_id if request_id else 'torrents/mylist'
-		if check_cache: result = cache_object(self._get, string, url, False, 0.5)
+		if check_cache: result = cache_object(self._get, string, url, 0.5)
 		else: result = self._get(url)
 		if not request_id and completed: result = [i for i in result if i['download_finished'] and i['files']]
 		return result
@@ -188,7 +188,7 @@ class TorBoxAPI:
 	def user_cloud_usenet(self, request_id=None, check_cache=True, completed=True):
 		string = 'pov_tb_user_cloud_usenet_info_%s' % request_id if request_id else 'pov_tb_user_cloud_usenet'
 		url = 'usenet/mylist?id=%s' % request_id if request_id else 'usenet/mylist'
-		if check_cache: result = cache_object(self._get, string, url, False, 0.5)
+		if check_cache: result = cache_object(self._get, string, url, 0.5)
 		else: result = self._get(url)
 		if not request_id and completed: result = [i for i in result if i['download_finished'] and i['files']]
 		return result
@@ -196,7 +196,7 @@ class TorBoxAPI:
 	def user_cloud_webdl(self, request_id=None, check_cache=True, completed=True):
 		string = 'pov_tb_user_cloud_webdl_info_%s' % request_id if request_id else 'pov_tb_user_cloud_webdl'
 		url = 'webdl/mylist?id=%s' % request_id if request_id else 'webdl/mylist'
-		if check_cache: result = cache_object(self._get, string, url, False, 0.5)
+		if check_cache: result = cache_object(self._get, string, url, 0.5)
 		else: result = self._get(url)
 		if not request_id and completed: result = [i for i in result if i['download_finished'] and i['files']]
 		return result
