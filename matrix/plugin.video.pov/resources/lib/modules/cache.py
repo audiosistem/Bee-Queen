@@ -33,6 +33,7 @@ def check_databases():
 	dbcon.close()
 	dbcon = database_connect(favorites_db) # Favorites
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS favorites (db_type text, tmdb_id text, title text, unique (db_type, tmdb_id))""")
+	dbcon.execute("""CREATE TABLE IF NOT EXISTS dropped (db_type text, tmdb_id text, title text, unique (db_type, tmdb_id))""")
 	dbcon.close()
 	dbcon = database_connect(views_db) # Views
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS views (view_type text, view_id text, unique (view_type))""")

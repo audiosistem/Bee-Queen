@@ -44,9 +44,8 @@ class OffcloudAPI:
 		return result
 
 	def delete_torrent(self, request_id):
-		url = 'https://offcloud.com/cloud/remove/%s' % request_id
-		params = {'key': self.token}
-		result = self._get(url, params=params)
+		url = 'cloud/remove/%s' % request_id
+		result = self._get(url)
 		return True if result is not None and result['success'] else False
 
 	def unrestrict_link(self, link):

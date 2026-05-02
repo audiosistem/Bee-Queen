@@ -157,7 +157,7 @@ class Movies:
 		except: pass
 
 class Menu(Movies):
-	personal_dict = {'in_progress_movies': ('caches.watched_cache', 'get_in_progress_movies'), 'favorites_movies': ('caches.favorites_cache', 'get_favorites'), 'watched_movies': ('caches.watched_cache', 'get_watched_items')}
+	personal_dict = {'watched_movies': ('caches.watched_cache', 'get_watched_items'), 'in_progress_movies': ('caches.watched_cache', 'get_in_progress_movies'), 'favorites_movies': ('caches.favorites_cache', 'get_favorites')}
 	tmdb_special_key_dict = {'tmdb_movies_networks': 'company', 'tmdb_movies_year': 'year', 'tmdb_moviesanime_year': 'year'}
 	tmdb_main = ('tmdb_movies_popular', 'tmdb_movies_latest_releases', 'tmdb_movies_premieres', 'tmdb_movies_upcoming', 'tmdb_movies_blockbusters', 'tmdb_moviesanime_popular', 'tmdb_moviesanime_latest_releases')
 	trakt_main = ('trakt_movies_trending', 'trakt_movies_trending_recent', 'trakt_movies_most_watched', 'trakt_moviesanime_trending', 'trakt_moviesanime_most_watched')
@@ -235,7 +235,7 @@ class Menu(Movies):
 					if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1), 'new_letter': letter}
 				except: pass
 			elif self.action in Menu.personal_dict:
-				data, total_pages = function('movie', page_no, letter)
+				data, total_pages = function(self.watched_info, 'movie', page_no, letter)
 				self.list = [i['media_id'] for i in data]
 				if total_pages > 2: self.total_pages = total_pages
 				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1), 'new_letter': letter}

@@ -164,7 +164,7 @@ class TVShows:
 		except: pass
 
 class Menu(TVShows):
-	personal_dict = {'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'), 'favorites_tvshows': ('caches.favorites_cache', 'get_favorites'), 'watched_tvshows': ('caches.watched_cache', 'get_watched_items')}
+	personal_dict = {'watched_tvshows': ('caches.watched_cache', 'get_watched_items'), 'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'), 'favorites_tvshows': ('caches.favorites_cache', 'get_favorites'), 'dropped_tvshows': ('caches.favorites_cache', 'get_dropped')}
 	tmdb_special_key_dict = {'tmdb_tv_networks': 'network_id', 'tmdb_tv_year': 'year', 'tmdb_tvanime_year': 'year'}
 	tmdb_main = ('tmdb_tv_popular', 'tmdb_tv_premieres', 'tmdb_tv_upcoming', 'tmdb_tvanime_popular', 'tmdb_tvanime_premieres')
 	trakt_main = ('trakt_tv_trending', 'trakt_tv_trending_recent', 'trakt_tv_most_watched', 'trakt_tvanime_trending', 'trakt_tvanime_most_watched')
@@ -223,7 +223,7 @@ class Menu(TVShows):
 					if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1), 'new_letter': letter}
 				except: pass
 			elif self.action in Menu.personal_dict:
-				data, total_pages = function('tvshow', page_no, letter)
+				data, total_pages = function(self.watched_info, 'tvshow', page_no, letter)
 				self.list = [i['media_id'] for i in data]
 				if total_pages > 2: self.total_pages = total_pages
 				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1), 'new_letter': letter}

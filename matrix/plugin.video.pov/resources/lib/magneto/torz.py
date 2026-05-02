@@ -17,8 +17,8 @@ class source:
 	def __init__(self):
 		self.language = ['en']
 		self.base_link = (
-			"https://stremthru.stremio.ru",
 			"https://stremthru.13377001.xyz",
+			"https://stremthru.stremio.ru",
 			"https://stremthrufortheweebs.midnightignite.me"
 		)[int(getSetting('torz.url', '0'))]
 		self.movieSearch_link = '/v0/torrents'

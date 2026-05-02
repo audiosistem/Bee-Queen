@@ -754,7 +754,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.05.02" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.05.03" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -794,6 +794,47 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="plugin.video.s4me" name="Stream4Me" version="1.7.8" provider-name="S4Me Team">
+  <requires>
+    
+    <import addon="metadata.themoviedb.org" optional="true" />
+    <import addon="metadata.tvshows.themoviedb.org" optional="true" />
+    
+    
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="kodi.context.item">
+    <menu id="kodi.core.main">
+      <item library="contextmenu.py">
+        <label>90001</label>
+        <visible>!String.StartsWith(ListItem.FileNameAndPath, plugin://plugin.video.s4me/) + [ String.IsEqual(ListItem.dbtype, tvshow) | String.IsEqual(ListItem.dbtype, movie) | String.IsEqual(ListItem.dbtype, season) | String.IsEqual(ListItem.dbtype, episode) ]</visible>
+      </item>
+    </menu>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">Stream4Me is a Kodi add-on to search and watch contents on the web.</summary>
+    <summary lang="it">Stream4Me è un addon per Kodi per cercare e guardare contenuti sul web.</summary>
+    <assets>
+      <icon>resources/media/logo.png</icon>
+      <fanart>resources/media/fanart.jpg</fanart>
+      <screenshot>resources/media/screenshot-1.png</screenshot>
+      <screenshot>resources/media/screenshot-2.png</screenshot>
+      <screenshot>resources/media/screenshot-3.png</screenshot>
+    </assets>
+      <news>- Riaperto addon
+</news>
+    <description lang="it">Naviga velocemente sul web e guarda i contenuti presenti</description>
+    <disclaimer>[COLOR red]The owners and submitters to this addon do not host or distribute any of the content displayed by these addons nor do they have any affiliation with the content providers.[/COLOR]
+    [COLOR yellow]Kodi © is a registered trademark of the XBMC Foundation. We are not connected to or in any other way affiliated with Kodi, Team Kodi, or the XBMC Foundation. Furthermore, any software, addons, or products offered by us will receive no support in official Kodi channels, including the Kodi forums and various social networks.[/COLOR]</disclaimer>
+    <platform>all</platform>
+    <license>GNU GPL v3</license>
+    <website>https://stream4me.github.io/</website>
+    <source>https://github.com/stream4me/addon</source>
+  </extension>
+  <extension point="xbmc.service" library="service.py" start="login|startup">
+  </extension>
 </addon><addon id="plugin.video.samus" name="Samus" version="0.0.20mod" provider-name="derzis">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -3734,7 +3775,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
       <icon>icon.png</icon>
     </assets>
     </extension>
-</addon><addon id="service.subtitles.subsro" name="[B][COLOR FFFDBD01]Subs.ro[/COLOR][/B]" version="2.5.28" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="service.subtitles.subsro" name="[B][COLOR FFFDBD01]Subs.ro[/COLOR][/B]" version="2.5.29" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" version="2.22.0" />
@@ -3750,79 +3791,6 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
     <platform>all</platform>
     <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
     <website>https://subs.ro</website>
-    <news>
-2.5.22
-- Refactorizare completa si FullSync cu TMDB Movies si MRSP Lite
-
-2.5.20
-- Excludere fisiere .txt de la listare
-
-2.5.19
-- Adaugat logo la notificari
-
-2.5.18
-- Mici imbunatatiri
-
-2.5.17
-- Reparat bug arhive ZIP cu nume lungi in Win
-
-2.5.16
-- Imbunatatire cautare IMDb si TMDb
-- Cautare manuala imbunatatita
-
-2.5.14-15
-- Reparat cateva buguri mici
-
-2.5.13
-- Vedem numele traducatorului in notificare.
-
-2.5.12
-- Info mai clar in setari
-
-2.5.11
-- Reparat cateva buguri mici
-
-2.5.10
-- Boom shakalaka
-- Auto-descarcare subtitrari in fundal. Necesita scriptul Fast AutoSubs
-
-2.5.9
-- Afiseaza numele traducatorului sub streag
-- Reparat cateva buguri mici
-
-2.5.8
-- Listare automata daca e doar o arhiva.
-
-2.5.7
-- Imbunatatire extragere arhive RAR
-
-2.5.6
-- Ajustare culori
-
-2.5.5
-- Imbunatatit extragere arhive ZIP mai complexe
-
-2.5.4
-- Boom shakalaka
-- Merg arhivele RAR pe Android
-
-2.5.3
-Filtrare mai corecta
-
-2.5.2
-Îmbunătățiri vizuale UI
-
-2.5.1
-Mărime redusă a pachetului pentru o instalare mai rapidă
-
-2.5.0
-- Reparat un bug care impiedica filtrarea corecta a subtitrarilor pe episod.
-- Imbunatatita logica de cautare pentru a functiona cu add-on-uri externe (ex: MRSP, Elementum, TMDB Helper).
-- Adaugat suport pentru extragerea arhivelor RAR pe toate platformele (Windows, OSMC, Android) prin unelte externe.
-- Curatare automata a fisierelor temporare la fiecare rulare.
-- Imbunatatita lizibilitatea textului in lista de rezultate.
-- Adaugat suport pentru cautare cand in nume apar coduri de tara (US, UK).
-- Remediată extragerea subtitrărilor din arhivele RAR</news>
     <assets>
       <icon>icon.png</icon>
 	  <fanart>icon.png</fanart>

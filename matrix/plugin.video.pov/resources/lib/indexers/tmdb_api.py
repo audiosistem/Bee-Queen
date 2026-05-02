@@ -527,22 +527,20 @@ def tmdb_clean_watchlist(silent=False):
 	if not get_setting('tmdb.token'): return
 	if not silent and not kodi_utils.confirm_dialog(): return
 	try:
-		from caches.watched_cache import get_watched_items, get_in_progress_tvshows
-		watchlist_ids = []
+		from caches.watched_cache import get_watched_info_movie, get_watched_info_tv
+		from modules.settings import watched_indicators
+		watched_indicators = watched_indicators()
+		watchlist_ids, items = [], []
 		watchlist_ids += all_list_items(watchlist, 'movie')
 		watchlist_ids += all_list_items(watchlist, 'tv')
 		watchlist_ids = [str(i['id']) for i in watchlist_ids]
-		m = get_watched_items('movie', 1, 'None', False)
-		t = get_watched_items('tvshow', 1, 'None', False)
-		p = get_in_progress_tvshows('tvshow', 1, 'None', False)
-		items = []
 		items += [
 			{'watchlist': False, 'media_type': 'movie', 'media_id': i['media_id']}
-			for i in m[0] if i['media_id'] in watchlist_ids
+			for i in get_watched_info_movie(watched_indicators) if i['media_id'] in watchlist_ids
 		]
 		items += [
 			{'watchlist': False, 'media_type': 'tv', 'media_id': i['media_id']}
-			for i in t[0] + p[0] if i['media_id'] in watchlist_ids
+			for i in get_watched_info_tv(watched_indicators) if i['media_id'] in watchlist_ids
 		]
 		if not items: return '0 items to remove.'
 		threads = TaskPool(40).tasks(add_to_watchlist_favorites, [(i, 'watchlist') for i in items], Thread)

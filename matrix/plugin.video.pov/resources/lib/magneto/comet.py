@@ -17,8 +17,8 @@ class source:
 	def __init__(self):
 		self.language = ['en']
 		self.base_link = (
-			"https://comet.stremio.ru",
 			"https://comet.feels.legal",
+			"https://comet.stremio.ru",
 			"https://cometfortheweebs.midnightignite.me"
 		)[int(getSetting('comet.url', '0'))]
 		self.movieSearch_link = '/stream/movie/%s.json'

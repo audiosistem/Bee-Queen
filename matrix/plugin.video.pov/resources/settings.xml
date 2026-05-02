@@ -19,10 +19,10 @@
 		<setting id="provider.torrentsdb" label="torrentsdb" type="bool" default="false" />
 		<setting id="provider.bitmagnet" label="bitmagnet" type="bool" default="false" />
 		<setting id="provider.comet" label="comet" type="bool" default="false" />
-			<setting id="comet.url" label="comet instance" type="enum" default="0" values="Kuu-lection|Goldy|Midnightignite" subsetting="true" visible="eq(-1,true)" />
+			<setting id="comet.url" label="comet instance" type="enum" default="0" values="Goldy|Kuu-lection|Midnightignite" subsetting="true" visible="eq(-1,true)" />
 		<setting id="provider.mediafusion" label="mediafusion" type="bool" default="false" />
 		<setting id="provider.torz" label="stremthru torz" type="bool" default="false" />
-			<setting id="torz.url" label="torz instance" type="enum" default="0" values="Kuu-lection|Munif|Midnightignite" subsetting="true" visible="eq(-1,true)" />
+			<setting id="torz.url" label="torz instance" type="enum" default="0" values="Munif|Kuu-lection|Midnightignite" subsetting="true" visible="eq(-1,true)" />
 		<setting id="provider.zilean" label="zilean" type="bool" default="false" />
 			<setting id="zilean.url" label="zilean instance" type="enum" default="0" values="Kuu-lection|Midnightignite" subsetting="true" visible="eq(-1,true)" />
 		<setting id="provider.dmm" label="dmm" type="bool" default="false" />
