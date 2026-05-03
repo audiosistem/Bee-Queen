@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<settings>
+    <category label="My Free Flow">
+        <setting label="Trakt Account" type="lsep"/>
+        <setting label="Authorise / Re-authorise Trakt" type="action" action="RunPlugin(plugin://plugin.video.freeflow/?mode=trakt_auth)"/>
+        <setting label="Sign out of Trakt" type="action" action="RunPlugin(plugin://plugin.video.freeflow/?mode=trakt_signout)"/>
+        <setting label="Open My Free Flow" type="action" action="RunPlugin(plugin://plugin.video.freeflow/?mode=myfreeflow)"/>
+    </category>
+    <category label="Debug">
+        <setting id="debug_logging" type="bool" label="Enable comprehensive debug logging" default="true"/>
+        <setting label="Logs are written to Kodi log AND the addon profile" type="lsep"/>
+        <setting label="View Debug Log" type="action" action="RunPlugin(plugin://plugin.video.freeflow/?mode=view_debuglog)"/>
+        <setting label="Clear Debug Log" type="action" action="RunPlugin(plugin://plugin.video.freeflow/?mode=clear_debuglog)"/>
+    </category>
+    <category label="General">
+        <setting id="show_splash" type="bool" label="Show splash screen when opening Free Flow" default="true"/>
+    </category>
+    <category label="Downloads">
+        <setting id="download_folder" type="folder" label="Download folder" default="special://home/downloads/"/>
+        <setting label="Open Downloads" type="action" action="RunPlugin(plugin://plugin.video.freeflow/?mode=downloads)"/>
+        <setting label="Host API keys (bypasses captchas)" type="lsep"/>
+        <setting id="ddl_api_key" type="text" label="ddownload.com premium API key" default="" option="hidden"/>
+    </category>
+</settings>

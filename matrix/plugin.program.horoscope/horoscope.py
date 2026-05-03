@@ -1,10 +1,11 @@
+import sys
+from urllib.parse import parse_qsl
 import xbmcvfs
 import xbmcplugin
 import xbmcgui
 import xbmcaddon
-import sys
 import requests
-from urllib.parse import parse_qsl
+
 from bs4 import BeautifulSoup
 from plugin import m
 

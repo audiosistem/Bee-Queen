@@ -27,6 +27,7 @@ class Myaddon:
         self.cache_file = self.addon_data + 'cache.db'
         self.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'
         self.headers = {"User-Agent": self.user_agent}
+        self.kodi_ver = float(xbmc.getInfoLabel("System.BuildVersion")[:4])
     
     def log(self, message: str):
         return xbmc.log(message, xbmc.LOGINFO)
@@ -105,9 +106,9 @@ class Myaddon:
         liz=xbmcgui.ListItem(name)
         liz.setArt({'fanart': fanart, 'icon': icon, 'thumb': icon, 'poster': icon})
         if infolabels:
-            liz.setInfo('video', infolabels)
+            self.set_info(liz, infolabels)
         else:
-            liz.setInfo('video', {'title': name, 'plot': description})
+            self.set_info(liz, {'title': name, 'plot': description})
         if cast:
             liz.setCast(cast)
         if context_menu:
@@ -118,5 +119,44 @@ class Myaddon:
             liz.setMimeType('application/vnd.apple.mpegurl')
             liz.setContentLookup(False) 
         xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u,listitem=liz, isFolder=isFolder)
+    
+    def set_info(self, liz: xbmcgui.ListItem, infolabels: dict, cast: list=None):
+        if cast is None:
+            cast = []
+        if self.kodi_ver < 20:
+            liz.setInfo("video", infolabels)
+            if cast:
+                liz.setCast(cast)
+        else:
+            i = liz.getVideoInfoTag()
+            i.setMediaType(infolabels.get("mediatype", "video"))
+            i.setTitle(infolabels.get("title", "Unknown"))
+            i.setPlot(infolabels.get("plot", infolabels.get("title", "")))
+            i.setTagLine(infolabels.get("tagline", ""))
+            i.setPremiered(infolabels.get("premiered", ""))
+            i.setGenres(infolabels.get("genre", []))
+            i.setMpaa(infolabels.get("mpaa", ""))
+            i.setDirectors(infolabels.get("director", []))
+            i.setWriters(infolabels.get("writer", []))
+            i.setRating(infolabels.get("rating", 0))
+            i.setVotes(infolabels.get("votes", 0))
+            i.setStudios(infolabels.get("studio", []))
+            i.setCountries(infolabels.get("country", []))
+            i.setSet(infolabels.get("set", ""))
+            i.setTvShowStatus(infolabels.get("status", ""))
+            i.setDuration(infolabels.get("duration", 0))
+            i.setTrailer(infolabels.get("trailer", ""))
+            cast_list = []
+            for actor in cast:
+                name = actor.get("name", "")
+                role = actor.get("role", "")
+                thumbnail = actor.get("thumbnail", "")
+                actor = xbmc.Actor(
+                    name=name,
+                    role=role,
+                    thumbnail=thumbnail
+                )
+                cast_list.append(actor)
+            i.setCast(cast_list)
 
 m = Myaddon()

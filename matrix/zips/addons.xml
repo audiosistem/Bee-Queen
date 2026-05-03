@@ -218,7 +218,7 @@ Added support for Kodi v19 (Matrix)
             <icon>resources/icon.png</icon>
         </assets>
     </extension>
-</addon><addon id="plugin.program.horoscope" name="Horoscope" version="0.0.8" provider-name="Slam">
+</addon><addon id="plugin.program.horoscope" name="Horoscope" version="0.0.9" provider-name="Slam">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -440,6 +440,31 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.180">
+    <requires>
+        <import addon="script.module.six" />
+        <import addon="script.module.kodi-six" />
+        <import addon="script.module.resolveurl" version="5.0.00" />
+        <import addon="script.module.resolveurl.xxx" version="2.0.1" />
+        <import addon="script.common.plugin.cache" />
+        <import addon="script.module.websocket" version="0.50.0" />
+        <import addon="script.module.inputstreamhelper" />
+        <import addon="script.module.requests" />
+    </requires>
+    <extension library="default.py" point="xbmc.python.pluginsource">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <license>GPL 2.0</license>
+        <summary lang="en_GB">Cumination, the culmination of adult sites on Kodi</summary>
+        <description lang="en_GB">Cumination, the culmination of adult sites on Kodi</description>
+        <disclaimer lang="en_GB">The author does not host or distribute any of the content displayed by this addon. The author does not have any affiliation with the sites offered. Click on About from the contextmenu on each site to check for contact details.</disclaimer>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
 </addon><addon id="plugin.video.dltv" name="DLTV" version="1.0.20" provider-name="Arkane14">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -529,6 +554,34 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <fanart>resources/images/fanart.jpg</fanart>
         </assets>
         <news />
+    </extension>
+</addon><addon id="plugin.video.freeflow" name="[COLORblue]Free Flow[/COLOR]" version="1.0.6" provider-name="Chains">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" version="2.22.0" />
+        <import addon="script.module.resolveurl" version="5.1.0" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.service" library="service.py" start="login" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Free Flow - Movies, Shows and More by Chains</summary>
+        <description lang="en_GB">Free Flow is a video addon by Chains that streams Movies, TV Shows, WWE, Documentaries, Kids and more. Sources are read from Chains and resolved via ResolveURL. Posters are fetched from TMDB when missing. Includes full Trakt.tv integration: Trending, Popular, Anticipated, Recommendations, Watchlist, Collection, History, Liked Lists and personal Custom Lists with add / remove / create from the context menu.</description>
+        <disclaimer lang="en_GB">This addon does not host any content. All sources are linked from the open web.</disclaimer>
+        <platform>all</platform>
+        <license>GPL-3.0</license>
+        <forum />
+        <website />
+        <source />
+        <news>v1.7.1 - Fixed empty episode/season lists under Shows (single &lt;link&gt; items now play).
+v1.7.0 - Built-in ddownload.com resolver (no ResolveURL needed for that host). New Downloads section on the root menu with a "Download to device" context-menu entry on every playable item - shows live progress dialog, saves to a configurable folder (default special://home/downloads/), and lets you replay, delete or re-download items offline.
+v1.6.1 - Comprehensive Debug logging (default ON). Logs every HTTP/Trakt request, scan cycle, router action and exception to both Kodi log and Settings -&gt; Debug -&gt; View Debug Log.
+v1.6.0 - My Free Flow + full Trakt integration</news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
     </extension>
 </addon><addon id="plugin.video.ghost" name="Ghost" version="1.6.2" provider-name="Ghost">
   <requires>
@@ -915,7 +968,7 @@ In addition to what livestreams allowed you to do, you can now,
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.themoviedb.helper" version="6.15.5" name="TMDb Helper" provider-name="jurialmunkey">
+</addon><addon id="plugin.video.themoviedb.helper" version="6.15.6" name="TMDb Helper" provider-name="jurialmunkey">
 <requires>
   <import addon="xbmc.python" version="3.0.1" />
   <import addon="script.module.requests" version="2.9.1" />
@@ -935,14 +988,17 @@ In addition to what livestreams allowed you to do, you can now,
   <reuselanguageinvoker>false</reuselanguageinvoker>
   <summary lang="de_DE">TMDb Helfer</summary>
   <summary lang="en_GB">TMDb Helper</summary>
+  <summary lang="es_ES">Asistente TMDb</summary>
   <summary lang="zh_CN">TMDb 助手</summary>
   <description lang="de_DE">TMDb Helper liefert Details über Filme, Fernsehsendungen und Schauspieler aus TMDb. Benutzer können auf eine Vielzahl von Listen aus TMDb TVDb MDbList und Trakt zugreifen.</description>
   <description lang="en_GB">TMDb Helper provides details about movies, tvshows and actors from TMDb. Users can access a variety of lists from TMDb TVDb MDbList and Trakt.</description>
+  <description lang="es_ES">TMDb Helper proporciona detalles sobre películas, series y actores de TMDb. Los usuarios pueden acceder a una variedad de listas de TMDb, TVDb, MDbList y Trakt.</description>
   <description lang="pl_PL">TMDb Helper dostarcza szczegółowych informacji o filmach, serialach i aktorach z serwisu TMDb. Użytkownicy mają dostęp do szeregu list z serwisów TMDb, TVDb, MDbList i Trakt.</description>
   <description lang="sv_SE">TMDb Helper tillhandahåller information om filmer, tv-serier och skådespelare från TMDb. Användare kan få tillgång till en mängd olika listor från TMDb, TVDb, MDbList och Trakt.</description>
   <description lang="zh_CN">TMDb 助手从 TMDb（影视数据库） 获取电影、电视剧及演员的详细信息。用户可访问来自 TMDb、TVDb、MDbList 和 Trakt 的各类影视列表。</description>
   <disclaimer lang="de_DE">Daten bereitgestellt von TMDb TVDb MDbList OMDb FanartTV und Trakt. Einige der Informationen werden von TheTVDB.com bereitgestellt. Bitte erwäge sie zu unterstützen. https://thetvdb.com/subscribe</disclaimer>
   <disclaimer lang="en_GB">Data provided by TMDb TVDb MDbList OMDb FanartTV and Trakt. Some of the information is provided by TheTVDB.com. Please consider supporting them. https://thetvdb.com/subscribe</disclaimer>
+  <disclaimer lang="es_ES">Datos proporcionados por TMDb, TVDb, MDbList, OMDb, FanartTV y Trakt. Parte de la información es suministrada por TheTVDB.com. Por favor, considera apoyarles. https://thetvdb.com/subscribe</disclaimer>
   <disclaimer lang="pl_PL">Dane dostarczane przez TMDb TVDb MDbList OMDb FanartTV i Trakt. Niektóre informacje pochodzą z serwisu TheTVDB.com. Prosimy o rozważenie wsparcia tych serwisów. https://thetvdb.com/subscribe</disclaimer>
   <disclaimer lang="sv_SE">Data tillhandahållen av TMDb TVDb MDbList OMDb FanartTV och Trakt. En del av informationen tillhandahålls av TheTVDB.com. Stöd dem gärna. https://thetvdb.com/subscribe</disclaimer>
   <disclaimer lang="zh_CN">数据由 TMDb、TVDb、MDbList、OMDb、FanartTV 和 Trakt 提供。部分信息由 TheTVDB.com 提供，建议您支持他们。订阅链接：https://thetvdb.com/subscribe</disclaimer>
@@ -1394,7 +1450,7 @@ In addition to what livestreams allowed you to do, you can now,
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.3+beta.1.unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
+</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.3+beta.3.unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.27.1" />
@@ -1426,7 +1482,7 @@ In addition to what livestreams allowed you to do, you can now,
         <summary lang="cs_CZ">Plugin pro YouTube</summary>
         <summary lang="da_DK">Plugin til YouTube</summary>
         <summary lang="de_DE">Plugin für YouTube</summary>
-        <summary lang="el_GR">Πρόσθετο YouTube</summary>
+        <summary lang="el_GR">Πρόσθετο για το YouTube</summary>
         <summary lang="en_GB">Plugin for YouTube</summary>
         <summary lang="eo">Aldonaĵo por YouTube</summary>
         <summary lang="es_ES">Complemento para YouTube</summary>
@@ -1511,23 +1567,9 @@ In addition to what livestreams allowed you to do, you can now,
         <disclaimer lang="vi_VN">Plugin này không được xác nhận bởi Google</disclaimer>
         <disclaimer lang="zh_CN">此插件未被谷歌认可</disclaimer>
         <disclaimer lang="zh_TW">此附加元件未由Google支持</disclaimer>
-    <news>## v7.4.3+beta.1
+    <news>## v7.4.3+beta.3
 ### Fixed
-- Updates to resolve inconsistent Python2 string encoding/decoding
-- Ensure parameters to Kodi builtin functions are parsed as string literals
-- Allow trailing slashes in url of html pages served by internal http server
-
-### Changed
-- Open confirmation dialog, with a link for further information, when sign in process fails
-- Update API config page html
-- Improve handling of API key settings changes
-- Detect and notify when API requests cannot be completed
-- Use consistent language for signing in/out
-
-### New
-- Add button in API settings to view address of API config page
-- Fallback to playing channel uploads if no live stream is available
-- Add fallback method to load playlists when v3 API request cannot be made</news></extension>
+- Fix regressions with accessing http urls</news></extension>
 </addon><addon id="program.optiklean" name="OptiKlean" provider-name="DigiTalking" version="2.3.0">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -3170,7 +3212,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="script.module.gearsscrapers" version="1.3.0" name="Gears Scrapers" provider-name="gearsscrapers">
+</addon><addon id="script.module.gearsscrapers" version="1.3.1" name="Gears Scrapers" provider-name="gearsscrapers">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />

@@ -19,7 +19,7 @@ class source:
 	_queue = queue.SimpleQueue()
 	def __init__(self):
 		self.language = ['en']
-		self.base_link = "https://stremthru.13377001.xyz"
+		self.base_link = "https://stremthrufortheweebs.midnightignite.me"
 		self.movieSearch_link = '/v0/torrents?sid=%s'
 		self.tvSearch_link = '/v0/torrents?sid=%s:%s:%s'
 		self.min_seeders = 0
