@@ -116,13 +116,13 @@ class Sources:
 			if self.active_external:
 				self.meta.update({'full_screen': self.full_screen, 'scrape_timeout': self.timeout})
 				self.external_args = (
-					self.meta,
 					self.external_providers,
 					self.debrid_torrent_enabled,
 #					self.internal_scraper_names,
 					self.threads,
 					self.prescrape_sources,
 					self.display_uncached_torrents,
+					self.meta,
 					self.progress_dialog,
 					self.disabled_ignored
 				)
@@ -533,8 +533,8 @@ class Manager:
 		return wrapper
 
 	def __init__(
-		self, meta, source_dict, debrid_torrents, internal_scrapers, prescrape_sources,
-		display_uncached_torrents, progress_dialog, disabled_ignored=False
+		self, source_dict, debrid_torrents, internal_scrapers, prescrape_sources,
+		display_uncached_torrents, meta, progress_dialog, disabled_ignored=False
 	):
 		self.meta = meta
 		self.background, self.full_screen = self.meta.get('background', False), self.meta.get('full_screen', False)
@@ -552,7 +552,6 @@ class Manager:
 		self.timeout = int(self.meta.get('scrape_timeout', '10')) - 1
 		self.int_dialog_highlight = get_setting('int_dialog_highlight', 'dodgerblue')
 		self.ext_dialog_highlight = get_setting('ext_dialog_highlight', 'magenta')
-		self.finish_early = get_setting('search.finish.early')
 		self.int_total = total_format % (self.int_dialog_highlight, '%s')
 		self.ext_total = total_format % (self.ext_dialog_highlight, '%s')
 		self.internal_resolutions = dict.fromkeys(resolutions.split(), 0)
@@ -626,8 +625,6 @@ class Manager:
 					else: line3 = string1 % ', '.join(alive_threads).upper()
 					if self.progress_dialog: self.progress_dialog.update(format_line % (line1, line2, line3), progress)
 					else: progressDialogBG.update(progress, line3)
-					finish_early = debrid_check is False and self.finish_early and len(self.sources) > len_threads // 0.1
-					if finish_early: break
 				except: pass
 			sleep(self.sleep_time)
 

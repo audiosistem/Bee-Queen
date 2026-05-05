@@ -1,4 +1,4 @@
-from router import logger, POVMonitor
+from entry import logger, POVMonitor
 
 if __name__ == '__main__':
 	logger('POV', 'Main Monitor Service Starting')

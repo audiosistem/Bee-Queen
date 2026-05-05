@@ -125,7 +125,7 @@ class Premiumize:
 	icon = 'premiumize.png'
 	def __init__(self):
 		self.token = get_setting('pm.token')
-		self.client_id = '663882072'
+		self.client_id = '384733001'
 
 	def base_url(self, path):
 		return 'https://www.premiumize.me/%s' % path

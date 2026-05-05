@@ -7,8 +7,7 @@ from modules import kodi_utils, settings
 from modules.utils import manual_function_import, get_datetime, TaskPool, chunks
 # logger = kodi_utils.logger
 
-movie_meta_function, get_datetime_function, default_duration = movie_meta, get_datetime, 5400
-get_watched_function, get_watched_info_function = get_watched_status_movie, get_watched_info_movie
+movie_meta_function, default_duration = movie_meta, 5400
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
 string, ls, build_url, get_infolabel = str, kodi_utils.local_string, kodi_utils.build_url, kodi_utils.get_infolabel
 run_plugin, container_refresh, container_update = 'RunPlugin(%s)', 'Container.Refresh(%s)', 'Container.Update(%s)'
@@ -30,11 +29,11 @@ class Movies:
 		self.exit_list_params = self.params.get('exit_list_params')
 		self.items, self.new_page, self.total_pages = [], {}, None
 		self.append = self.items.append
-		self.current_date = get_datetime_function()
+		self.current_date = get_datetime()
 		self.meta_user_info = settings.metadata_user_info()
 		self.watched_indicators = settings.watched_indicators()
 		self.watched_title = settings.watched_title(self.watched_indicators)
-		self.watched_info = get_watched_info_function(self.watched_indicators)
+		self.watched_info = get_watched_info_movie(self.watched_indicators)
 		self.bookmarks = get_bookmarks(self.watched_indicators, 'movie')
 		self.include_year_in_title = settings.include_year_in_title('movie')
 		self.open_extras = settings.extras_open_action('movie')
@@ -49,7 +48,7 @@ class Movies:
 			meta = movie_meta_function(self.id_type, tag, self.meta_user_info, self.current_date)
 			meta_get = meta.get
 			if not meta or meta_get('blank_entry', False): return
-			playcount, overlay = get_watched_function(self.watched_info, string(meta['tmdb_id']))
+			playcount, overlay = get_watched_status_movie(self.watched_info, string(meta['tmdb_id']))
 			if self.widget_hide_watched and playcount: return
 			meta.update({'playcount': playcount, 'overlay': overlay})
 			resumetime, progress = get_resumetime(self.bookmarks, string(meta['tmdb_id']))
@@ -157,7 +156,7 @@ class Movies:
 		except: pass
 
 class Menu(Movies):
-	personal_dict = {'watched_movies': ('caches.watched_cache', 'get_watched_items'), 'in_progress_movies': ('caches.watched_cache', 'get_in_progress_movies'), 'favorites_movies': ('caches.favorites_cache', 'get_favorites')}
+	personal_dict = {'watched_movies': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_movies': ('caches.watched_cache', 'get_in_progress_items'), 'favorites_movies': ('caches.favorites_cache', 'get_favorites')}
 	tmdb_special_key_dict = {'tmdb_movies_networks': 'company', 'tmdb_movies_year': 'year', 'tmdb_moviesanime_year': 'year'}
 	tmdb_main = ('tmdb_movies_popular', 'tmdb_movies_latest_releases', 'tmdb_movies_premieres', 'tmdb_movies_upcoming', 'tmdb_movies_blockbusters', 'tmdb_moviesanime_popular', 'tmdb_moviesanime_latest_releases')
 	trakt_main = ('trakt_movies_trending', 'trakt_movies_trending_recent', 'trakt_movies_most_watched', 'trakt_moviesanime_trending', 'trakt_moviesanime_most_watched')
@@ -235,7 +234,8 @@ class Menu(Movies):
 					if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1), 'new_letter': letter}
 				except: pass
 			elif self.action in Menu.personal_dict:
-				data, total_pages = function(self.watched_info, 'movie', page_no, letter)
+				watched_info = self.bookmarks if self.action == 'in_progress_movies' else self.watched_info
+				data, total_pages = function(watched_info, 'movie', page_no, letter)
 				self.list = [i['media_id'] for i in data]
 				if total_pages > 2: self.total_pages = total_pages
 				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1), 'new_letter': letter}

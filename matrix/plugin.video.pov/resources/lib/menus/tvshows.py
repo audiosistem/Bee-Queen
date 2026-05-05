@@ -7,8 +7,7 @@ from modules import kodi_utils, settings
 from modules.utils import manual_function_import, get_datetime, TaskPool
 # logger = kodi_utils.logger
 
-tv_meta_function, get_datetime_function = tvshow_meta, get_datetime
-get_watched_function, get_watched_info_function = get_watched_status_tvshow, get_watched_info_tv
+tv_meta_function = tvshow_meta
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
 string, ls, build_url, get_infolabel = str, kodi_utils.local_string, kodi_utils.build_url, kodi_utils.get_infolabel
 run_plugin, container_refresh, container_update = 'RunPlugin(%s)', 'Container.Refresh(%s)', 'Container.Update(%s)'
@@ -30,11 +29,11 @@ class TVShows:
 		self.exit_list_params = self.params.get('exit_list_params')
 		self.items, self.new_page, self.total_pages = [], {}, None
 		self.append = self.items.append
-		self.current_date = get_datetime_function()
+		self.current_date = get_datetime()
 		self.meta_user_info = settings.metadata_user_info()
 		self.watched_indicators = settings.watched_indicators()
 		self.watched_title = settings.watched_title(self.watched_indicators)
-		self.watched_info = get_watched_info_function(self.watched_indicators)
+		self.watched_info = get_watched_info_tv(self.watched_indicators)
 		self.all_episodes = settings.default_all_episodes()
 		self.include_year_in_title = settings.include_year_in_title('tvshow')
 		self.open_extras = settings.extras_open_action('tvshow')
@@ -50,7 +49,9 @@ class TVShows:
 			meta = tv_meta_function(self.id_type, tag, self.meta_user_info, self.current_date)
 			meta_get = meta.get
 			if not meta or meta_get('blank_entry', False): return
-			playcount, overlay, total_watched, total_unwatched = get_watched_function(self.watched_info, string(meta['tmdb_id']), meta.get('total_aired_eps'))
+			playcount, overlay, total_watched, total_unwatched = get_watched_status_tvshow(
+				self.watched_info, string(meta['tmdb_id']), meta_get('total_aired_eps')
+			)
 			if self.widget_hide_watched and playcount: return
 			meta.update({'playcount': playcount, 'overlay': overlay})
 			total_seasons, total_aired_eps = meta_get('total_seasons'), meta_get('total_aired_eps')
@@ -164,7 +165,7 @@ class TVShows:
 		except: pass
 
 class Menu(TVShows):
-	personal_dict = {'watched_tvshows': ('caches.watched_cache', 'get_watched_items'), 'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'), 'favorites_tvshows': ('caches.favorites_cache', 'get_favorites'), 'dropped_tvshows': ('caches.favorites_cache', 'get_dropped')}
+	personal_dict = {'watched_tvshows': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'), 'favorites_tvshows': ('caches.favorites_cache', 'get_favorites'), 'dropped_tvshows': ('caches.favorites_cache', 'get_dropped')}
 	tmdb_special_key_dict = {'tmdb_tv_networks': 'network_id', 'tmdb_tv_year': 'year', 'tmdb_tvanime_year': 'year'}
 	tmdb_main = ('tmdb_tv_popular', 'tmdb_tv_premieres', 'tmdb_tv_upcoming', 'tmdb_tvanime_popular', 'tmdb_tvanime_premieres')
 	trakt_main = ('trakt_tv_trending', 'trakt_tv_trending_recent', 'trakt_tv_most_watched', 'trakt_tvanime_trending', 'trakt_tvanime_most_watched')

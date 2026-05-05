@@ -30,6 +30,7 @@ packages_path  = 'special://home/addons/packages/'
 
 current_dbs           = ('settings.xml', 'debridcache.db', 'watched.db', 'maincache.db', 'metacache.db', 'fenomundesirables.db',
 						'navigator.db', 'providerscache.db', 'traktcache.db', 'mdblcache.db', 'views.db', 'fenomcache.db')
+indicators_dict       = {0: watched_db, 1: trakt_db, 2: mdbl_db}
 myvideos_db_paths     = {19: '119', 20: '121', 21: '131', 22: '139'}
 
 def logger(heading, function):

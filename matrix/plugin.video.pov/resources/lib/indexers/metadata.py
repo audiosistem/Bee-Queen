@@ -7,7 +7,6 @@ EXPIRES_2_DAYS, EXPIRES_4_DAYS, EXPIRES_7_DAYS, EXPIRES_14_DAYS, EXPIRES_182_DAY
 movie_data, tvshow_data = tmdb_api.movie_details, tmdb_api.tvshow_details
 season_episodes_details, tmdb_english_translation = tmdb_api.season_episodes_details, tmdb_api.english_translation
 movie_external_id, tvshow_external_id = tmdb_api.movie_external_id, tmdb_api.tvshow_external_id
-subtract_dates_function, jsondate_to_datetime_function = subtract_dates, jsondate_to_datetime
 tmdb_image_base, writer_credits = tmdb_api.tmdb_image_base, ('Author', 'Writer', 'Screenplay', 'Characters')
 backup_resolutions = {'poster': 'w780', 'fanart': 'w1280', 'still': 'original', 'profile': 'h632'}
 rpdb_url = 'https://api.ratingposterdb.com/%s/%s/poster-default/%s.jpg?fallback=true'
@@ -145,7 +144,7 @@ def tvshow_meta(id_type, media_id, user_info, current_date):
 	metacache = MetaCache()
 	metacache_get, metacache_set = metacache.get, metacache.set
 	meta = metacache_get('tvshow', id_type, media_id)
-	if meta: return meta
+	if meta: return _adjust_total_aired_eps(meta, current_date)
 	try:
 		tmdb_api, language = user_info['tmdb_api'], user_info['language']
 		if id_type == 'tmdb_id':
@@ -165,6 +164,11 @@ def tvshow_meta(id_type, media_id, user_info, current_date):
 			if eng_all_trailers: data['videos']['results'] = eng_all_trailers
 		meta = build_tvshow_meta(data, user_info)
 		metacache_set('tvshow', id_type, meta, tvshow_expiry(current_date, meta))
+	except: pass
+	return _adjust_total_aired_eps(meta, current_date)
+
+def _adjust_total_aired_eps(meta, current_date):
+	try: meta['total_aired_eps'] += meta['extra_info']['next_episode_to_air']['air_date'] == str(current_date)
 	except: pass
 	return meta
 
@@ -267,7 +271,7 @@ def english_translation(mediatype, media_id, user_info):
 
 def movie_expiry(current_date, meta):
 	try:
-		difference = subtract_dates_function(current_date, jsondate_to_datetime_function(meta['premiered'], date_format, remove_time=True))
+		difference = subtract_dates(current_date, jsondate_to_datetime(meta['premiered'], date_format, remove_time=True))
 		if difference < 0: expiration = abs(difference) + 1
 		elif difference <= 14: expiration = EXPIRES_7_DAYS
 		elif difference <= 30: expiration = EXPIRES_14_DAYS
@@ -278,11 +282,11 @@ def movie_expiry(current_date, meta):
 def tvshow_expiry(current_date, meta):
 	try:
 		if meta['status'] in finished_show_check: return EXPIRES_182_DAYS
-		next_episode_to_air = meta['extra_info'].get('next_episode_to_air')
-		if not next_episode_to_air: return EXPIRES_7_DAYS
-		expiration = subtract_dates_function(jsondate_to_datetime_function(next_episode_to_air['air_date'], date_format, remove_time=True), current_date)
+		next_episode_to_air = meta['extra_info']['next_episode_to_air']
+		expiration = subtract_dates(jsondate_to_datetime(next_episode_to_air['air_date'], date_format, remove_time=True), current_date)
+		expiration = max(expiration, 0) + 1
 	except: return EXPIRES_4_DAYS
-	return max(expiration, EXPIRES_4_DAYS)
+	return expiration
 
 def get_title(meta, language=None):
 	if 'custom_title' in meta: return meta['custom_title']

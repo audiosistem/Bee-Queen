@@ -12,28 +12,6 @@ DELETE_DROP = 'DELETE FROM dropped WHERE db_type = ? and tmdb_id = ?'
 SELECT_DROP = 'SELECT tmdb_id, title FROM dropped WHERE db_type = ?'
 CLEAR_DROP = 'DELETE FROM dropped WHERE db_type = ?'
 
-def get_favorites(watched_info, mediatype, page_no, letter):
-	paginate = settings.paginate()
-	limit = settings.page_limit()
-	data = Favorites().get(mediatype)
-	data = sort_for_article(data, 'title', settings.ignore_articles())
-	original_list = [{'media_id': i['tmdb_id'], 'title': i['title']} for i in data]
-	if paginate: return paginate_list(original_list, page_no, letter, limit)
-	return original_list, 1
-
-def get_dropped(watched_info, mediatype, page_no, letter):
-	paginate = settings.paginate()
-	limit = settings.page_limit()
-	data = Dropped().get(mediatype)
-	data = sort_for_article(data, 'title', settings.ignore_articles())
-	original_list = [{'media_id': i['tmdb_id'], 'title': i['title']} for i in data]
-	if paginate: return paginate_list(original_list, page_no, letter, limit)
-	return original_list, 1
-
-def get_hidden_items(list_type):
-	data = Dropped().get(list_type)
-	return [int(i['tmdb_id']) for i in data]
-
 class Favorites(BaseCache):
 	db_file = favorites_db
 
@@ -89,4 +67,26 @@ class Dropped(BaseCache):
 			self.dbcur.execute("""VACUUM""")
 			return True
 		except: return False
+
+def get_favorites(watched_info, mediatype, page_no, letter):
+	paginate = settings.paginate()
+	limit = settings.page_limit()
+	data = Favorites().get(mediatype)
+	data = sort_for_article(data, 'title', settings.ignore_articles())
+	original_list = [{'media_id': i['tmdb_id'], 'title': i['title']} for i in data]
+	if paginate: return paginate_list(original_list, page_no, letter, limit)
+	return original_list, 1
+
+def get_dropped(watched_info, mediatype, page_no, letter):
+	paginate = settings.paginate()
+	limit = settings.page_limit()
+	data = Dropped().get(mediatype)
+	data = sort_for_article(data, 'title', settings.ignore_articles())
+	original_list = [{'media_id': i['tmdb_id'], 'title': i['title']} for i in data]
+	if paginate: return paginate_list(original_list, page_no, letter, limit)
+	return original_list, 1
+
+def get_hidden_items(list_type):
+	data = Dropped().get(list_type)
+	return [int(i['tmdb_id']) for i in data]
 

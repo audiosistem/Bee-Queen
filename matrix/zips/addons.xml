@@ -440,7 +440,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.180">
+</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.181">
     <requires>
         <import addon="script.module.six" />
         <import addon="script.module.kodi-six" />
@@ -808,12 +808,12 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.05.03" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.05.04" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
 	</requires>
-	<extension point="xbmc.python.pluginsource" library="resources/lib/entry.py">
+	<extension point="xbmc.python.pluginsource" library="resources/lib/router.py">
 		<provides>video</provides>
 	</extension>
 	<extension point="xbmc.service" library="resources/lib/service.py" />

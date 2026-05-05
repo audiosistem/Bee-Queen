@@ -5,7 +5,7 @@ from modules import kodi_utils
 
 ls, get_setting = kodi_utils.local_string, kodi_utils.get_setting
 user_agent = 'POV/%s' % kodi_utils.get_addoninfo('version')
-client_id = '663882072'
+client_id = '384733001'
 base_url = 'https://www.premiumize.me/api/'
 timeout = 10.0
 session = requests.Session()

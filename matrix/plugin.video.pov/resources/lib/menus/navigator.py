@@ -371,13 +371,9 @@ class Navigator:
 	def because_you_watched(self):
 		from caches.watched_cache import get_watched_info_movie, get_watched_info_tv
 		def _convert_pov_watched_episodes_info(watched_indicators):
-			seen = set()
 			_watched = get_watched_info_tv(watched_indicators)
 #			_watched.sort(key=lambda x: (x[0], x[1], x[2]), reverse=True)
-			return {
-				k: (v[0][0], v[0][3], v[0][4], [(v[0][1], v[0][2])])
-				for k, v in _watched.items() if not (k in seen or seen.add(k))
-			}
+			return {k: (v[0][0], v[0][1], v[0][2], v[0][3], v[0][4]) for k, v in _watched.items()}
 		watched_indicators = ks.watched_indicators()
 		mediatype = self.params_get('menu_type')
 		function = get_watched_info_movie if mediatype == 'movie' else _convert_pov_watched_episodes_info
@@ -389,9 +385,7 @@ class Navigator:
 		for item in recently_watched:
 			tmdb_id = item[0]
 			if mediatype == 'movie': name = because_ins % item[1]
-			else:
-				season, episode = item[3][-1]
-				name = because_ins % '%s - %sx%s' % (item[1], season, episode)
+			else: name = because_ins % '%s - %sx%s' % (item[1], item[3], item[4])
 			self._add_item({'mode': mode, 'action': action, 'tmdb_id': tmdb_id, 'exclude_external': 'true', 'name': name}, 'because_you_watched.png')
 		self._end_directory()
 

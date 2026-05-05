@@ -52,7 +52,8 @@ class MetaCache(BaseCache):
 			else:
 				media_id, command = str(tmdb_id), SET_SEASON
 				args = media_id, repr(meta)
-			expires = self._get_timestamp(datetime.now() + timedelta(days=expiration))
+			expires = datetime.now() + timedelta(days=expiration)
+			expires = self._get_timestamp(datetime.combine(expires, datetime.min.time()))
 			self.dbcur.execute(command, (*args, expires))
 		except: return
 		self.set_memory_cache(mediatype, id_type, meta, expires, media_id)
@@ -115,7 +116,7 @@ class MetaCache(BaseCache):
 
 	def delete_all_seasons_memory_cache(self, media_id, total_seasons=None):
 		if not total_seasons: total_seasons = 101
-		for item in range(1, total_seasons):
+		for item in range(total_seasons + 1):
 			clear_property('%s_%s' % (prop_dict.get('meta_season') % str(media_id), str(item)))
 
 	def delete_all(self):

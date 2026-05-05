@@ -265,7 +265,6 @@
 		<setting id="torrent.display.uncached" label="Display Uncached Torrents" type="bool" default="false" />
 		<setting id="search.enable.yearcheck" label="Check Year Before Search" type="bool" default="false" />
 		<setting id="ignore_results_filter" label="Ignore All Filters When No Results Available" type="bool" default="true" />
-		<setting id="search.finish.early" label="Stop Search Early if Most Sources Finished" type="bool" default="false" />
 		<setting id="scrapers.timeout.1" label="Scraper Timeout" type="number" default="10" />
 		<!-- Language -->
 		<setting label="Language" type="lsep" />
