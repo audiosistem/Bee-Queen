@@ -17,7 +17,7 @@ _APIKEY  = 'https://core.vidzee.wtf/api-key'
 _UA      = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36'
 _HEADERS = {'User-Agent': _UA, 'Referer': f'{_BASE}/', 'Origin': _BASE, 'Accept-Encoding': 'gzip, deflate'}
 _LABEL   = '[V]'
-_SERVERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+_SERVERS      = [0, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 _FALLBACK_KEYS = ['qrincywincyspider', 'ifyouscrapeyouaregay']
 
 
@@ -74,8 +74,12 @@ def _fetch_server(tmdb_id, media_type, season, episode, sr, G):
         xbmc.log(f'[Samus/Vidzee] server {sr}: {e}', xbmc.LOGERROR)
         return [], []
 
+    if data.get('error'):
+        return [], []
+
     sources = []
     server_name = data.get('serverInfo', {}).get('name', f'S{sr}')
+    playback_ua = data.get('headers', {}).get('User-Agent') or _UA
 
     raw_items = data.get('url') or []
     if not raw_items and data.get('link') and isinstance(data['link'], str):
@@ -90,7 +94,8 @@ def _fetch_server(tmdb_id, media_type, season, episode, sr, G):
             continue
         lang = item.get('lang', '')
         title_line = f'{server_name} [{lang}]' if lang else server_name
-        playback_url = f'{decrypted}|User-Agent={_UA}&Referer=https://core.vidzee.wtf/&Origin=https://core.vidzee.wtf'
+        referer = 'https://player.vidzee.wtf/' if 'workers.dev' in decrypted else 'https://core.vidzee.wtf/'
+        playback_url = f'{decrypted}|User-Agent={playback_ua}&Referer={referer}&Origin=https://player.vidzee.wtf'
         sources.append({
             'url': playback_url,
             'provider': _LABEL,

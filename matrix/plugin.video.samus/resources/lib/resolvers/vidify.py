@@ -1,211 +1,157 @@
 # -*- coding: utf-8 -*-
+"""Vidify — pro.vidify.top embed → cloudnestra.com rcp → prorcp → m3u8"""
 import re
-import json
+import base64
 import requests
-from typing import List, Dict
+import xbmc
+from urllib.parse import urlparse
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
-    "Referer": "https://vidify.top/",
-    "Accept": "*/*",
-    "Accept-Language": "ro-RO,ro;q=0.5",
-    "Cache-Control": "no-cache",
-    "Pragma": "no-cache"
-}
+_LABEL = '[V]'
+_BASE  = 'https://pro.vidify.top'
+_UA    = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+          '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36')
+_CDN_DOMAINS = [
+    'neonhorizonworkshops.com',
+    'wanderlynest.com',
+    'orchidpixelgardens.com',
+    'cloudnestra.com',
+]
 
-def get_tv_episode_streams_from_hyper(tmdb_id: str, season_number: int, episode_number: int) -> List[Dict]:
-    url = f"https://vidify.top/hyper.php?id={tmdb_id}&season={season_number}&episode={episode_number}"
+
+def _cdn_name(url):
+    h = urlparse(url).netloc
+    parts = h.split('.')
+    return parts[-2] if len(parts) >= 2 else (h or 'Vidify')
+
+
+def _infer_quality(url):
+    u = url.lower()
+    if re.search(r'(2160|4k|uhd)', u):  return '4K'
+    if '1080' in u:                      return '1080p'
+    if '720'  in u:                      return '720p'
+    if '480'  in u:                      return '480p'
+    if '360'  in u:                      return '360p'
+    return 'auto'
+
+
+def _session():
+    s = requests.Session()
+    s.headers.update({'User-Agent': _UA, 'Accept-Language': 'en-US,en;q=0.9'})
+    return s
+
+
+def _resolve_cdn(tmpl):
+    seen = set()
+    out = []
+    for domain in _CDN_DOMAINS:
+        url = re.sub(r'\{v\d+\}', domain, tmpl)
+        if url not in seen:
+            seen.add(url)
+            out.append(url)
+    return out
+
+
+def _decode_server(b64):
+    padded = b64 + '=' * (-len(b64) % 4)
+    url = base64.b64decode(padded).decode('utf-8', errors='ignore').strip('\x00')
+    # double-encoded uneori
+    if url.startswith('aHR0'):
+        url = base64.b64decode(url + '=' * (-len(url) % 4)).decode('utf-8', errors='ignore')
+    return url if url.startswith('http') else None
+
+
+def _follow_rcp(sess, rcp_url, referer):
     try:
-        response = requests.get(url, headers=HEADERS)
-        response.raise_for_status()
+        r2 = sess.get(rcp_url, headers={'Referer': referer, 'Accept': 'text/html'},
+                      timeout=15, verify=False)
+        if not r2.ok or len(r2.text) < 100:
+            return []
+        if 'turnstile' in r2.text.lower():
+            xbmc.log(f'{_LABEL} Turnstile pe {rcp_url[:60]}', xbmc.LOGWARNING)
+            return []
+
+        src_m = re.search(r"src:\s*['\"](/(?:prorcp|srcrcp)/[^'\"]+)['\"]", r2.text)
+        if not src_m:
+            return []
+
+        from urllib.parse import urlparse
+        base = f"{urlparse(rcp_url).scheme}://{urlparse(rcp_url).netloc}"
+        r3 = sess.get(base + src_m.group(1),
+                      headers={'Referer': base + '/', 'Accept': '*/*'},
+                      timeout=15, verify=False)
+        if not r3.ok:
+            return []
+
+        file_m = re.search(r'file:\s*["\']([^"\']+)["\']', r3.text)
+        if not file_m:
+            direct = re.findall(r'["\']?(https?://[^\s"\'<>]+\.m3u8[^\s"\'<>]*)["\']?', r3.text)
+            return direct[:3]
+
+        raw_urls = [u.strip() for u in file_m.group(1).split(' or ')]
+        direct   = [u for u in raw_urls if '{v' not in u and '.m3u8' in u]
+        templates = list(dict.fromkeys(u for u in raw_urls if '{v' in u and '.m3u8' in u))
+
+        sources = list(dict.fromkeys(direct))
+        for tmpl in templates:
+            for resolved in _resolve_cdn(tmpl):
+                if resolved not in sources:
+                    sources.append(resolved)
+        return sources
+
     except Exception as e:
-        print(f"[HYPER] Eroare la request: {e}")
+        xbmc.log(f'{_LABEL} rcp eroare: {e}', xbmc.LOGWARNING)
         return []
 
-    match = re.search(r"const\s+mediaData\s*=\s*(\{.*?\});", response.text, re.DOTALL)
-    if not match:
-        print("[HYPER] Nu s-a găsit mediaData în răspuns")
-        return []
 
+def get_sources(tmdb_id, media_type='movie', season=None, episode=None, imdb_id=None):
+    if media_type == 'tv' and (season is None or episode is None):
+        return []
     try:
-        media_data = json.loads(match.group(1))
+        sess = _session()
+        if media_type == 'tv':
+            embed_url = f'{_BASE}/embed/tv/{tmdb_id}/{season}/{episode}'
+        else:
+            embed_url = f'{_BASE}/embed/movie/{tmdb_id}'
+
+        r = sess.get(embed_url, headers={'Accept': 'text/html', 'Referer': _BASE + '/'},
+                     timeout=15, verify=False)
+        if not r.ok or len(r.text) < 1000:
+            xbmc.log(f'{_LABEL} embed fail tmdb={tmdb_id}', xbmc.LOGWARNING)
+            return []
+
+        servers = re.findall(r'data-server=["\']([^"\']+)["\']', r.text)
+        if not servers:
+            xbmc.log(f'{_LABEL} niciun data-server pentru tmdb={tmdb_id}', xbmc.LOGWARNING)
+            return []
+
+        all_m3u8 = []
+        for b64 in servers:
+            rcp_url = _decode_server(b64)
+            if not rcp_url:
+                continue
+            for url in _follow_rcp(sess, rcp_url, embed_url):
+                if url not in all_m3u8:
+                    all_m3u8.append(url)
+
     except Exception as e:
-        print(f"[HYPER] Eroare la parsare mediaData: {e}")
+        xbmc.log(f'{_LABEL} eroare: {e}', xbmc.LOGERROR)
         return []
 
-    results = []
-    for item in media_data.get("qualityOptions", []):
-        if item.get("url"):
-            results.append({
-                "server": "hyper",
-                "season": season_number,
-                "episode": episode_number,
-                "label": item.get("html"),
-                "url": item.get("url"),
-                "direct": True
-            })
+    sources = [{
+        'url':        f'{u}|User-Agent={_UA}&Referer=https://cloudnestra.com/',
+        'quality':    '1080p',
+        'title_line': _cdn_name(u),
+        'direct':     True,
+    } for u in all_m3u8]
 
-    return results
+    xbmc.log(f'{_LABEL} {len(sources)} surse pentru tmdb={tmdb_id}', xbmc.LOGINFO)
+    return sources
 
-def get_tv_episode_streams_from_multi(imdb_id: str, season_number: int, episode_number: int, quality: str = "high") -> List[Dict]:
-    base_url = "https://8streamapi-production-1993.up.railway.app"
-    headers = HEADERS.copy()
-    headers["Origin"] = "https://vidify.top"
-    headers["Content-Type"] = "application/json"
 
-    try:
-        response = requests.get(f"{base_url}/api/v1/mediaInfo?id={imdb_id}", headers=headers, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-    except Exception as e:
-        print(f"[Vidify-MULTI] Eroare mediaInfo: {e}")
-        return []
+# Alias-uri pentru compatibilitate cu player.py
+def get_vidify_movie_sources(tmdb_id, imdb_id=None):
+    return get_sources(tmdb_id, 'movie')
 
-    if not data.get("success") or "data" not in data:
-        return []
 
-    playlist = data["data"].get("playlist", [])
-    decryption_key = data["data"].get("key")
-    results = []
-
-    for season in playlist:
-        if str(season.get("id")) != str(season_number):
-            continue
-        for episode in season.get("folder", []):
-            if str(episode.get("episode")) != str(episode_number):
-                continue
-            for source in episode.get("folder", []):
-                if not isinstance(source, dict) or not source.get("file"):
-                    continue
-
-                payload = {
-                    "file": source["file"],
-                    "key": decryption_key,
-                    "quality": quality
-                }
-
-                try:
-                    stream_response = requests.post(f"{base_url}/api/v1/getStream", headers=headers, data=json.dumps(payload), timeout=10)
-                    stream_response.raise_for_status()
-                    stream_data = stream_response.json()
-                except Exception as e:
-                    print(f"[Vidify-MULTI] Eroare getStream: {e}")
-                    continue
-
-                if not stream_data.get("success"):
-                    continue
-
-                stream_url = stream_data.get("data", {}).get("link")
-                if stream_url:
-                    results.append({
-                        "label": f"MULTI - {source.get('title')}",
-                        "url": stream_url,
-                        "headers": HEADERS,
-                        "direct": True
-                    })
-
-    return results
-
-def resolve(tmdb_id: str, imdb_id: str, season: int, episode: int, quality: str = "high") -> List[Dict]:
-    print(f"🔎 Caut surse pentru TMDb: {tmdb_id}, IMDb: {imdb_id}, S{season}E{episode}")
-    hyper_sources = get_tv_episode_streams_from_hyper(tmdb_id, season, episode)
-    multi_sources = get_tv_episode_streams_from_multi(imdb_id, season, episode, quality)
-    combined = hyper_sources + multi_sources
-    unique = list({item['url']: item for item in combined}.values())
-    return unique
-
-def get_vidify_tv_episode_sources(tmdb_id: str, imdb_id: str, season: int, episode: int, quality: str = "high") -> List[Dict]:
-    return resolve(tmdb_id, imdb_id, season, episode, quality)
-
-def get_vidify_movie_sources(tmdb_id: str, imdb_id: str, quality: str = "high") -> List[Dict]:
-    def extract_from_hyper(tmdb_id: str) -> List[Dict]:
-        url = f"https://vidify.top/hyper.php?id={tmdb_id}"
-        try:
-            response = requests.get(url, headers=HEADERS, timeout=10)
-            response.raise_for_status()
-        except Exception as e:
-            print(f"[Vidify-HYPER] Eroare la request: {e}")
-            return []
-
-        match = re.search(r"const\s+mediaData\s*=\s*(\{.*?\});", response.text, re.DOTALL)
-        if not match:
-            print("[Vidify-HYPER] Nu s-a găsit mediaData")
-            return []
-
-        try:
-            media_data = json.loads(match.group(1))
-        except Exception as e:
-            print(f"[Vidify-HYPER] Eroare parsare mediaData: {e}")
-            return []
-
-        return [
-            {
-                "server": "hyper",
-                "label": src.get("html") or "Hyper",
-                "url": src.get("url"),
-                "direct": True
-            }
-            for src in media_data.get("qualityOptions", [])
-            if src.get("url")
-        ]
-
-    def extract_from_multi(imdb_id: str, quality: str = "high") -> List[Dict]:
-        base_url = "https://8streamapi-production-1993.up.railway.app"
-        headers = HEADERS.copy()
-        headers["Origin"] = "https://vidify.top"
-        headers["Content-Type"] = "application/json"
-
-        try:
-            response = requests.get(f"{base_url}/api/v1/mediaInfo?id={imdb_id}", headers=headers, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-        except Exception as e:
-            print(f"[Vidify-MULTI] Eroare mediaInfo: {e}")
-            return []
-
-        if not data.get("success") or "data" not in data:
-            return []
-
-        playlist = data["data"].get("playlist", [])
-        decryption_key = data["data"].get("key")
-        results = []
-
-        for item in playlist:
-            if not isinstance(item, dict) or not item.get("file"):
-                continue
-
-            payload = {
-                "file": item["file"],
-                "key": decryption_key,
-                "quality": quality
-            }
-
-            try:
-                stream_response = requests.post(f"{base_url}/api/v1/getStream", headers=headers, data=json.dumps(payload), timeout=10)
-                stream_response.raise_for_status()
-                stream_data = stream_response.json()
-            except Exception as e:
-                print(f"[Vidify-MULTI] Eroare getStream: {e}")
-                continue
-
-            if not stream_data.get("success"):
-                continue
-
-            stream_url = stream_data.get("data", {}).get("link")
-            if stream_url:
-                results.append({
-                    "server": "multi",
-                    "label": item.get("title") or "Multi",
-                    "url": stream_url,
-                    "headers": HEADERS,
-                    "direct": True
-                })
-
-        return results
-
-    print(f"[Vidify] Caut surse pentru FILM TMDb: {tmdb_id}, IMDb: {imdb_id}")
-    hyper = extract_from_hyper(tmdb_id)
-    multi = extract_from_multi(imdb_id, quality)
-    combined = hyper + multi
-    unique = list({item["url"]: item for item in combined}.values())
-    return unique
+def get_vidify_tv_episode_sources(tmdb_id, imdb_id=None, season=None, episode=None):
+    return get_sources(tmdb_id, 'tv', season, episode)

@@ -146,7 +146,7 @@ class Sources:
 					meta = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetMovies", "params": {"filter":{"or": [{"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}]}, "properties" : ["title", "originaltitle", "uniqueid", "year", "premiered", "genre", "studio", "country", "runtime", "rating", "votes", "mpaa", "director", "writer", "cast", "plot", "plotoutline", "tagline", "thumbnail", "art", "file"]}, "id": 1}' % (year, str(int(year) + 1), str(int(year) - 1)))
 					meta = jsloads(meta)['result']['movies']
 					try:
-						meta = [i for i in meta if i.get('uniqueid', []).get('imdb', '') == imdb]
+						meta = [i for i in meta if i.get('uniqueid', {}).get('imdb', '') == imdb]
 					except:
 						if self.debuglog:
 							log_utils.log('Get Meta Failed in checkLibMeta: %s' % str(meta), level=log_utils.LOGDEBUG)
@@ -172,7 +172,7 @@ class Sources:
 					# do not add IMDBNUMBER as tmdb scraper puts their id in the key value
 					show_meta = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetTVShows", "params": {"filter":{"or": [{"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}]}, "properties" : ["title", "originaltitle", "uniqueid", "mpaa", "year", "genre", "runtime", "thumbnail", "file"]}, "id": 1}' % (year, str(int(year)+1), str(int(year)-1)))
 					show_meta = jsloads(show_meta)['result']['tvshows']
-					show_meta = [i for i in show_meta if i.get('uniqueid', []).get('imdb', '') == imdb]
+					show_meta = [i for i in show_meta if i.get('uniqueid', {}).get('imdb', '') == imdb]
 					if show_meta: show_meta = show_meta[0]
 					else: raise Exception()
 					tvshowid = show_meta['tvshowid']
@@ -322,7 +322,7 @@ class Sources:
 				meta = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetMovies", "params": {"filter":{"or": [{"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}]}, "properties" : ["title", "originaltitle", "uniqueid", "year", "premiered", "genre", "studio", "country", "runtime", "rating", "votes", "mpaa", "director", "writer", "cast", "plot", "plotoutline", "tagline", "thumbnail", "art", "file"]}, "id": 1}' % (self.year, str(int(self.year) + 1), str(int(self.year) - 1)))
 				meta = jsloads(meta)['result']['movies']
 				try:
-					meta = [i for i in meta if i.get('uniqueid', []).get('imdb', '') == self.imdb]
+					meta = [i for i in meta if i.get('uniqueid', {}).get('imdb', '') == self.imdb]
 				except:
 					if self.debuglog:
 						log_utils.log('Get Meta Failed in checkLibMeta: %s' % str(meta), level=log_utils.LOGDEBUG)
@@ -348,7 +348,7 @@ class Sources:
 				# do not add IMDBNUMBER as tmdb scraper puts their id in the key value
 				show_meta = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetTVShows", "params": {"filter":{"or": [{"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}]}, "properties" : ["title", "originaltitle", "uniqueid", "mpaa", "year", "genre", "runtime", "thumbnail", "file"]}, "id": 1}' % (self.year, str(int(self.year)+1), str(int(self.year)-1)))
 				show_meta = jsloads(show_meta)['result']['tvshows']
-				show_meta = [i for i in show_meta if i.get('uniqueid', []).get('imdb', '') == self.imdb]
+				show_meta = [i for i in show_meta if i.get('uniqueid', {}).get('imdb', '') == self.imdb]
 				if show_meta: show_meta = show_meta[0]
 				else: raise Exception()
 				tvshowid = show_meta['tvshowid']
@@ -386,7 +386,7 @@ class Sources:
 			if getSetting('uncached.seeder.sort') == 'true':
 				uncached_items = sorted(uncached_items, key=lambda k: k['seeders'], reverse=True)
 				uncached_items = self.sort_byQuality(source_list=uncached_items)
-			if items == uncached_items:
+			if items == uncached_items and not self.uncached_chosen:
 				from resources.lib.windows.uncached_results import UncachedResultsXML
 				window = UncachedResultsXML('uncached_results.xml', control.addonPath(control.addonId()), uncached=uncached_items, meta=self.meta)
 			else:
@@ -394,13 +394,24 @@ class Sources:
 				window = SourceResultsXML('source_results.xml', control.addonPath(control.addonId()), results=items, uncached=uncached_items, meta=self.meta)
 			action, chosen_source = window.run()
 			del window
-			if action == 'play_Item' and self.uncached_chosen != True:
+			if action == 'play_Item':
 				return self.playItem(title, items, chosen_source.getProperty('umbrella.source_dict'), self.meta)
 			else:
 				homeWindow.clearProperty('umbrella.window_keep_alive')
 				try: self.window.close()
 				except: pass
-				control.cancelPlayback()
+				if self.enable_playnext:
+					# During continuous playback Kodi holds a valid plugin handle.
+					# Resolving with False triggers "Playback Failed". Resolve with
+					# True + empty offscreen item instead so no error dialog appears.
+					control.playlist.clear()
+					try: control.player.stop()
+					except: pass
+					from sys import argv
+					control.resolve(int(argv[1]), True, control.item(offscreen=True))
+					control.closeOk()
+				else:
+					control.cancelPlayback()
 		except:
 			log_utils.error('Error sourceSelect(): ')
 			control.cancelPlayback()
@@ -493,7 +504,16 @@ class Sources:
 						except: pass
 						del progressDialog
 					from resources.lib.modules import player
-					player.Player().play_source(title, self.year, self.season, self.episode, self.imdb, self.tmdb, self.tvdb, self.url, meta)
+					player.Player().play_source(
+						title,
+						getattr(self, 'year', meta.get('year') if isinstance(meta, dict) else None),
+						getattr(self, 'season', meta.get('season') if isinstance(meta, dict) else None),
+						getattr(self, 'episode', meta.get('episode') if isinstance(meta, dict) else None),
+						getattr(self, 'imdb', meta.get('imdb', '') if isinstance(meta, dict) else ''),
+						getattr(self, 'tmdb', meta.get('tmdb', '') if isinstance(meta, dict) else ''),
+						getattr(self, 'tvdb', meta.get('tvdb', '') if isinstance(meta, dict) else ''),
+						self.url, meta
+					)
 					return self.url
 				except: log_utils.error()
 			try: progressDialog.close()
@@ -1039,6 +1059,8 @@ class Sources:
 				self.sources = [i for i in self.sources if i['quality'] != 'SD']
 		if getSetting('remove.3D.sources') == 'true':
 			self.sources = [i for i in self.sources if '3D' not in i.get('info', '')]
+		if getSetting('remove.aiupscaled.sources') == 'true':
+			self.sources = [i for i in self.sources if ' AI-UPSCALED ' not in i.get('info', '')]
 		if getSetting('remove.audio.opus') == 'true':   #start of audio codec filters
 			self.sources = [i for i in self.sources if ' OPUS ' not in i.get('info', '')]
 		if getSetting('remove.audio.atmos') == 'true': 
@@ -1745,26 +1767,11 @@ class Sources:
 		return self.sources
 
 	def ad_cache_chk_list(self, torrent_List, hashList):
-		#if len(torrent_List) == 0: return
+		if len(torrent_List) == 0: return
 		try:
-			# from resources.lib.debrid.alldebrid import AllDebrid
-			# cached = AllDebrid().check_cache(hashList)
-			# if not cached: return None
-			# cached = cached['magnets']
-			count = 0
 			for i in torrent_List:
 				if 'package' in i: i.update({'source': 'unchecked (pack) torrent'})
 				else: i.update({'source': 'unchecked'})
-				# if 'error' in cached[count]: # list index out of range
-				# 	count += 1
-				# 	continue
-				# if cached[count]['instant'] is False:
-				# 	if 'package' in i: i.update({'source': 'uncached (pack) torrent'})
-				# 	else: i.update({'source': 'uncached torrent'})
-				# else:
-				# 	if 'package' in i: i.update({'source': 'cached (pack) torrent'})
-				# 	else: i.update({'source': 'cached torrent'})
-				count += 1
 			return torrent_List
 		except: log_utils.error()
 

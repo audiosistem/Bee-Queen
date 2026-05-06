@@ -13,7 +13,8 @@ SUB_LANGUAGES = addon.getSetting('subs_languages') or 'ro'
 SUB_FORMAT = addon.getSetting('subs_format') or 'srt'
 SUB_ENCODING = addon.getSetting('subs_encoding') or 'utf-8'
 
-_WYZIE_URL    = 'https://sub.wyzie.ru/search'
+_WYZIE_URL    = 'https://sub.wyzie.io/search'
+_WYZIE_KEY    = 'wyzie-9c717eeb19ce0aed4df716f2e3d4fea6'
 _VDRK_BASE    = 'https://sub.vdrk.site'
 _VDRK_HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Referer': 'https://vidrock.net/', 'Origin': 'https://vidrock.net', 'Accept-Encoding': 'gzip, deflate'}
 
@@ -105,7 +106,8 @@ def search_subtitles(imdb_id, season=None, episode=None):
             'id': imdb_id,
             'language': lang,
             'format': SUB_FORMAT,
-            'encoding': SUB_ENCODING
+            'encoding': SUB_ENCODING,
+            'key': _WYZIE_KEY,
         }
         if season and episode:
             params['season'] = season

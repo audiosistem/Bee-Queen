@@ -1289,10 +1289,8 @@ def router(argv2):
 		# 	from resources.lib.debrid.easydebrid import EasyDebrid as debrid_function
 		elif caller == 'TorBox':
 			from resources.lib.debrid.torbox import TorBox as debrid_function
-		success = debrid_function().add_uncached_torrent(url, pack=pack)
-		if success:
-			from resources.lib.modules import sources
-			sources.Sources().playItem(title, params.get('items'), source, params.get('meta'))
+		rd_inst = debrid_function()
+		rd_inst.add_uncached_torrent(url, pack=pack)
 
 	elif action == 'rescrapeAuto':
 		from resources.lib.modules import sources

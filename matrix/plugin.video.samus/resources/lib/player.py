@@ -14,30 +14,30 @@ import resolveurl
 import threading
 from resources.lib import subtitles, db
 from resources.lib.tmdb import movies, tv
-from resources.lib.resolvers import vidify, vidsrc, vidzee, twoembed, primesrc
+from resources.lib.resolvers import vidify, vidzee, twoembed, primesrc
 from resources.lib.resolvers import torrentio, torrentdb, mediafusion, comet, perflix, uindex, thrax
 from resources.lib.resolvers import okru as okru_resolver
 from resources.lib.resolvers import flixer, vixsrc as vixsrc_resolver, hdhub
-from resources.lib.resolvers import nuvio, vega, rogflix, aiostreams as aiostreams_resolver, webstreamr, vidrock, stremify as stremify_resolver, nebulastreams, flixnest, cinepro
+from resources.lib.resolvers import webstreamr, vidrock, stremify as stremify_resolver, nebulastreams, flixnest
 from resources.lib.resolvers import pulpwatch as pulpwatch_resolver
 from resources.lib.resolvers import filmehd as filmehd_resolver
 from resources.lib.resolvers import hydrahd as hydrahd_resolver
 from resources.lib.resolvers import yastream as yastream_resolver
 from resources.lib.resolvers import nhdapi as nhdapi_resolver
 from resources.lib.resolvers import primesrcme as primesrcme_resolver
+from resources.lib.resolvers import vidmoly as vidmoly_resolver
+from resources.lib.resolvers import telegram as telegram_resolver
 from resources.lib.resolvers import vidlink as vidlink_resolver
 from resources.lib.resolvers import videasy as videasy_resolver
-from resources.lib.resolvers import hexa as hexa_resolver
-from resources.lib.resolvers import smashystream as smashystream_resolver
 from resources.lib.resolvers import vsembed as vsembed_resolver
 from resources.lib.resolvers import yflix as yflix_resolver
-from resources.lib.resolvers import deseneledublate as dro_resolver
 from resources.lib.resolvers import multiembed as multiembed_resolver
 from resources.lib.resolvers import vidbingeto as vidbingeto_resolver
 from resources.lib.resolvers import moviesapi as moviesapi_resolver
-from resources.lib.resolvers import consumet as consumet_resolver
 from resources.lib.resolvers import pelispanda as pelispanda_resolver
 from resources.lib.resolvers import streamimdb as streamimdb_resolver
+from resources.lib.resolvers import sooti as sooti_resolver
+from resources.lib.resolvers import moviebox as moviebox_resolver
 from resources.lib.tmdb.api import get_external_ids
 from resources.lib.dialogs import enrich_source, sort_sources, show_source_dialog, run_resolving_dialog
 try:
@@ -57,7 +57,6 @@ _AUTOPLAY_CACHE_FILE = os.path.join(profile_path, 'autoplay_cache.json')
 # Singleton TorrentEngine (libtorrent) — creat la primul torrent, reutilizat
 _lt_engine: TorrentEngine | None = None
 _lt_engine_lock = threading.Lock()
-_lt_engine_fresh = False  # True dacă engine-ul tocmai a fost creat (DHT nebootstrat)
 _lt_cleanup_player = None  # referință persistentă la _TorrentCleanup (evită GC)
 _ts_local_server = None   # instanță LocalServer (TorrServer incorporat)
 
@@ -65,7 +64,6 @@ _ts_local_server = None   # instanță LocalServer (TorrServer incorporat)
 _RT = {
     'flixnest':     5,
     'nebulastreams': 8,
-    'cinepro':      8,
     'pulpwatch':    8,
     'filmehd':      7,
     'yflix':        6,
@@ -355,12 +353,30 @@ def threaded_resolver(target, args=(), result=None, index=0, timeout=None):
     return t
 
 
+_PROVIDER_NAMES = {
+    '[V]':     'Vidify',       '[ES]':    'Stremio',      '[Z]':     'VidZee',
+    '[2E]':    '2Embed',       '[TIO]':   'Torrentio',    '[TDB]':   'TorrentDB',
+    '[MF]':    'MediaFusion',  '[CMT]':   'Comet',        '[PFX]':   'Peerflix',
+    '[UDX]':   'UIndex',       '[THX]':   'Thrax',        '[PSC]':   'Vidsrcme.ru',
+    '[FLX]':   'Flixer',       '[VXS]':   'VixSrc',       '[HDB]':   'HDHub',
+    '[WSR]':   'WebStreamr',   '[VDR]':   'VidRock',      '[STF]':   'Stremify',
+    '[NBS]':   'NebulaStreams', '[FNS]':   'FlixNest',     '[PLW]':   'PulpWatch',
+    '[FHD]':   'FilmeHD',      '[HHD]':   'HydraHD',      '[YAS]':   'Yastream',
+    '[NHD]':   'NHDAPI',       '[PSM]':   'PrimeSrc.me',  '[VDL]':   'VidLink',
+    '[VDY]':   'Videasy',      '[VSE]':   'VSEmbed',      '[YFX]':   'YFlix',
+    '[MEB]':   'MultiEmbed',   '[VBT]':   'VidBinge',     '[MAPI]':  'MoviesAPI',
+    '[PPD]':   'PelisPanda',   '[SIMDB]': 'StreamIMDb',   '[SOT]':   'Sooti',
+    '[MBX]':   'MovieBox',
+}
+
+
 def _build_sources(results, prefixes, tmdb_title=None):
     """Convert raw resolver results into a flat sources list."""
     sources = []
     for group, label_prefix in zip(results, prefixes):
         if not group:
             continue
+        display_prefix = _PROVIDER_NAMES.get(label_prefix, label_prefix)
         if label_prefix == '[ES]':
             for entry in group.get('sources', []):
                 if 'files' in entry:
@@ -370,7 +386,7 @@ def _build_sources(results, prefixes, tmdb_title=None):
                             continue
                         label = file.get('quality', 'Unknown')
                         sources.append({
-                            'label': f"{label_prefix} {label}",
+                            'label': f"{display_prefix} {label}",
                             'url': file_url + "|User-Agent=Mozilla/5.0&Referer=https://embed.su/&Origin=https://embed.su/",
                             'direct': True,
                         })
@@ -380,7 +396,7 @@ def _build_sources(results, prefixes, tmdb_title=None):
                 if not url:
                     continue
                 entry = {
-                    'label': f"{label_prefix} {src.get('label', '')}".strip(),
+                    'label': f"{display_prefix} {src.get('label', '')}".strip(),
                     'title_line': src.get('label', ''),
                     'provider': label_prefix,
                     'url': url,
@@ -404,7 +420,7 @@ def _build_sources(results, prefixes, tmdb_title=None):
                 # PPD poate returna și embed-uri (url, direct=False) pe lângă torrente
                 if not src.get('is_torrent') and src.get('url'):
                     parts = [p for p in [quality, display_title] if p]
-                    label = f"{label_prefix} {' | '.join(parts)}" if parts else label_prefix
+                    label = f"{display_prefix} {' | '.join(parts)}" if parts else display_prefix
                     sources.append({
                         'label': label,
                         'title_line': display_title,
@@ -424,7 +440,7 @@ def _build_sources(results, prefixes, tmdb_title=None):
                 if meta:
                     parts.append(' '.join(meta))
 
-                label = f"{label_prefix} {' | '.join(parts)}" if parts else label_prefix
+                label = f"{display_prefix} {' | '.join(parts)}" if parts else display_prefix
 
                 sources.append({
                     'label': label,
@@ -438,7 +454,7 @@ def _build_sources(results, prefixes, tmdb_title=None):
                     'quality': quality,
                     'is_torrent': True,
                 })
-        elif label_prefix in ('[FLX]', '[VXS]', '[HDB]', '[V]', '[NUV]', '[VGA]', '[RFL]', '[AIO]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[CPR]', '[PLW]', '[YAS]', '[NHD]', '[VDL]', '[VDY]', '[HXA]', '[SMY]', '[VSE]', '[YFX]', '[SIMDB]'):
+        elif label_prefix in ('[FLX]', '[VXS]', '[HDB]', '[V]', '[Z]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[PLW]', '[YAS]', '[NHD]', '[VDL]', '[VDY]', '[VSE]', '[YFX]', '[SIMDB]', '[SOT]', '[MBX]'):
             for src in group:
                 url = src.get('url')
                 if not url:
@@ -452,7 +468,7 @@ def _build_sources(results, prefixes, tmdb_title=None):
                     title_line = raw_title
                     server_name = None
                 parts = [p for p in [quality, title_line] if p]
-                label = f"{label_prefix} {' | '.join(parts)}" if parts else label_prefix
+                label = f"{display_prefix} {' | '.join(parts)}" if parts else display_prefix
                 entry = {
                     'label': label,
                     'title_line': title_line,
@@ -471,35 +487,27 @@ def _build_sources(results, prefixes, tmdb_title=None):
                 url = src.get('url') or src.get('link')
                 if not url:
                     continue
-                if label_prefix == '[P]':
-                    host_raw = src.get('host_display') or src.get('host') or ''
-                    name = host_raw.split('.')[0] if host_raw else 'Unknown'
-                    quality = src.get('quality', '')
-                    parts = [p for p in [quality, name] if p]
-                    label = ' | '.join(parts) if parts else 'Unknown'
+                quality = src.get('quality', '')
+                label = src.get('label') or src.get('title_line') or src.get('host') or url or 'Unknown'
+                if label_prefix == '[Z]' and 'vidzee.wtf' in url:
+                    url += "|User-Agent=Mozilla/5.0&Referer=https://core.vidzee.wtf/&Origin=https://core.vidzee.wtf/"
+                    direct = True
+                elif label_prefix == '[PSC]' and '.m3u8' in url:
+                    url += "|User-Agent=Mozilla/5.0&Referer=https://cloudnestra.com/"
+                    direct = True
+                elif label_prefix == '[2E]':
+                    url += "|User-Agent=Mozilla/5.0&Referer=https://player4u.xyz/embed"
                     direct = False
+                elif label_prefix in ('[FHD]', '[HHD]', '[PSM]'):
+                    direct = src.get('direct', False)
                 else:
-                    label = src.get('label') or src.get('title_line') or src.get('host') or url or 'Unknown'
-                    if label_prefix == '[VS]':
-                        direct = src.get('direct', True)
-                    elif label_prefix == '[Z]' and 'vidzee.wtf' in url:
-                        url += "|User-Agent=Mozilla/5.0&Referer=https://core.vidzee.wtf/&Origin=https://core.vidzee.wtf/"
-                        direct = True
-                    elif label_prefix == '[PSC]' and '.m3u8' in url:
-                        url += "|User-Agent=Mozilla/5.0&Referer=https://cloudnestra.com/"
-                        direct = True
-                    elif label_prefix == '[2E]':
-                        url += "|User-Agent=Mozilla/5.0&Referer=https://player4u.xyz/embed"
-                        direct = False
-                    elif label_prefix in ('[FHD]', '[HHD]', '[PSM]', '[DRO]'):
-                        direct = src.get('direct', False)
-                    else:
-                        direct = True
+                    direct = True
                 sources.append({
-                    'label': f"{label_prefix} {label}",
+                    'label': f"{display_prefix} {label}",
                     'title_line': label,
                     'provider': label_prefix,
                     'url': url,
+                    'quality': quality,
                     'direct': direct,
                 })
     return sources
@@ -698,6 +706,22 @@ def _play_source(handle, selected, li, item_data=None, history_meta=None, resume
                     return False
                 xbmc.log(f'[PSM] embed URL: {embed}', xbmc.LOGINFO)
                 url = embed
+            if not is_direct and (url.startswith('tg://') or 't.me/' in url):
+                dlg.set_status('Se rezolvă Telegram (Thrax)...')
+                stream_url = telegram_resolver.resolve_via_thrax(url)
+                if not stream_url:
+                    xbmc.log(f'[TG] Thrax nu a returnat URL pentru {url}', xbmc.LOGWARNING)
+                    return False
+                url = stream_url
+                is_direct = True
+            if not is_direct and vidmoly_resolver.is_vidmoly_url(url):
+                dlg.set_status('Se rezolvă Vidmoly (Thrax)...')
+                m3u8 = vidmoly_resolver.resolve_via_thrax(url)
+                if not m3u8:
+                    xbmc.log(f'[VML] Thrax nu a returnat URL pentru {url}', xbmc.LOGWARNING)
+                    return False
+                url = m3u8
+                is_direct = True
             if not is_direct and 'ok.ru/' in url:
                 dlg.set_status('Se rezolvă ok.ru...')
                 okru_result = okru_resolver.resolve(url)
@@ -820,101 +844,85 @@ def play_movie(handle, tmdb_id):
     if sources:
         xbmc.log(f'[Samus] Cache surse film: {len(sources)} pentru tmdb_id={tmdb_id}', xbmc.LOGINFO)
     else:
-        results = [None] * 46
+        results = [None] * 37
         threads = []
 
-        if addon.getSettingBool('use_vidzee'):
-            threads.append(threaded_resolver(vidzee.get_sources, (tmdb_id, "movie"), results, 0))
-        if addon.getSettingBool('use_vidsrc'):
-            threads.append(threaded_resolver(vidsrc.get_vidsrc_sources, (tmdb_id,), results, 2))
         if addon.getSettingBool('use_vidify'):
-            threads.append(threaded_resolver(vidify.get_vidify_movie_sources, (tmdb_id, imdb_id), results, 4))
+            threads.append(threaded_resolver(vidify.get_vidify_movie_sources, (tmdb_id, imdb_id), results, 0))
+        if addon.getSettingBool('use_vidzee'):
+            threads.append(threaded_resolver(vidzee.get_sources, (tmdb_id, "movie"), results, 2))
         if addon.getSettingBool('use_twoembed'):
-            threads.append(threaded_resolver(twoembed.get_twoembed_sources, (tmdb_id,), results, 5))
+            threads.append(threaded_resolver(twoembed.get_twoembed_sources, (tmdb_id,), results, 3))
         if addon.getSettingBool('use_torrentio') and imdb_id:
-            threads.append(threaded_resolver(torrentio.get_movie_sources, (imdb_id,), results, 6))
+            threads.append(threaded_resolver(torrentio.get_movie_sources, (imdb_id,), results, 4))
         if addon.getSettingBool('use_torrentdb') and imdb_id:
-            threads.append(threaded_resolver(torrentdb.get_movie_sources, (imdb_id,), results, 7))
+            threads.append(threaded_resolver(torrentdb.get_movie_sources, (imdb_id,), results, 5))
         if addon.getSettingBool('use_mediafusion') and imdb_id:
-            threads.append(threaded_resolver(mediafusion.get_movie_sources, (imdb_id,), results, 8))
+            threads.append(threaded_resolver(mediafusion.get_movie_sources, (imdb_id,), results, 6))
         if addon.getSettingBool('use_comet') and imdb_id:
-            threads.append(threaded_resolver(comet.get_movie_sources, (imdb_id,), results, 9))
+            threads.append(threaded_resolver(comet.get_movie_sources, (imdb_id,), results, 7))
         if addon.getSettingBool('use_perflix') and imdb_id:
-            threads.append(threaded_resolver(perflix.get_movie_sources, (imdb_id,), results, 10))
+            threads.append(threaded_resolver(perflix.get_movie_sources, (imdb_id,), results, 8))
         if addon.getSettingBool('use_uindex'):
-            threads.append(threaded_resolver(uindex.get_movie_sources, (title, year, original_title), results, 11))
+            threads.append(threaded_resolver(uindex.get_movie_sources, (title, year, original_title), results, 9))
         if addon.getSettingBool('use_thrax'):
-            threads.append(threaded_resolver(thrax.get_movie_sources, (tmdb_id,), results, 12))
+            threads.append(threaded_resolver(thrax.get_movie_sources, (tmdb_id,), results, 10))
         if addon.getSettingBool('use_primesrc'):
-            threads.append(threaded_resolver(primesrc.get_primesrc_sources, (tmdb_id,), results, 13))
+            threads.append(threaded_resolver(primesrc.get_primesrc_sources, (tmdb_id,), results, 11))
         if addon.getSettingBool('use_flixer'):
-            threads.append(threaded_resolver(flixer.get_sources, (tmdb_id, 'movie'), results, 14))
+            threads.append(threaded_resolver(flixer.get_sources, (tmdb_id, 'movie'), results, 12))
         if addon.getSettingBool('use_vixsrc'):
-            threads.append(threaded_resolver(vixsrc_resolver.get_sources, (tmdb_id, 'movie'), results, 15))
+            threads.append(threaded_resolver(vixsrc_resolver.get_sources, (tmdb_id, 'movie'), results, 13))
         if addon.getSettingBool('use_hdhub') and imdb_id:
-            threads.append(threaded_resolver(hdhub.get_sources, (imdb_id, 'movie'), results, 16))
-        if addon.getSettingBool('use_nuvio') and imdb_id:
-            threads.append(threaded_resolver(nuvio.get_sources, (imdb_id, 'movie'), results, 17))
-        if addon.getSettingBool('use_vega') and imdb_id:
-            threads.append(threaded_resolver(vega.get_sources, (imdb_id, 'movie'), results, 18))
-        if addon.getSettingBool('use_rogflix') and imdb_id:
-            threads.append(threaded_resolver(rogflix.get_sources, (imdb_id, 'movie'), results, 19))
-        if addon.getSettingBool('use_aiostreams') and imdb_id:
-            threads.append(threaded_resolver(aiostreams_resolver.get_sources, (imdb_id, 'movie'), results, 20))
+            threads.append(threaded_resolver(hdhub.get_sources, (imdb_id, 'movie'), results, 14))
         if addon.getSettingBool('use_webstreamr') and imdb_id:
-            threads.append(threaded_resolver(webstreamr.get_sources, (imdb_id, 'movie'), results, 21))
+            threads.append(threaded_resolver(webstreamr.get_sources, (imdb_id, 'movie'), results, 15))
         if addon.getSettingBool('use_vidrock'):
-            threads.append(threaded_resolver(vidrock.get_sources, (tmdb_id, 'movie'), results, 22))
+            threads.append(threaded_resolver(vidrock.get_sources, (tmdb_id, 'movie'), results, 16))
         if addon.getSettingBool('use_stremify') and imdb_id:
-            threads.append(threaded_resolver(stremify_resolver.get_sources, (imdb_id, 'movie'), results, 23))
+            threads.append(threaded_resolver(stremify_resolver.get_sources, (imdb_id, 'movie'), results, 17))
         if addon.getSettingBool('use_nebulastreams') and imdb_id:
-            threads.append(threaded_resolver(nebulastreams.get_sources, (imdb_id, 'movie'), results, 24, timeout=_RT['nebulastreams']))
+            threads.append(threaded_resolver(nebulastreams.get_sources, (imdb_id, 'movie'), results, 18, timeout=_RT['nebulastreams']))
         if addon.getSettingBool('use_flixnest') and imdb_id:
-            threads.append(threaded_resolver(flixnest.get_sources, (imdb_id, 'movie'), results, 25, timeout=_RT['flixnest']))
-        if addon.getSettingBool('use_cinepro') and imdb_id:
-            threads.append(threaded_resolver(cinepro.get_sources, (imdb_id, 'movie'), results, 26, timeout=_RT['cinepro']))
+            threads.append(threaded_resolver(flixnest.get_sources, (imdb_id, 'movie'), results, 19, timeout=_RT['flixnest']))
         if addon.getSettingBool('use_pulpwatch'):
-            threads.append(threaded_resolver(pulpwatch_resolver.get_sources, (tmdb_id, 'movie'), results, 27, timeout=_RT['pulpwatch']))
+            threads.append(threaded_resolver(pulpwatch_resolver.get_sources, (tmdb_id, 'movie'), results, 20, timeout=_RT['pulpwatch']))
         if addon.getSettingBool('use_filmehd'):
-            threads.append(threaded_resolver(filmehd_resolver.get_sources, (tmdb_id, 'movie'), results, 28, timeout=_RT['filmehd']))
+            threads.append(threaded_resolver(filmehd_resolver.get_sources, (tmdb_id, 'movie'), results, 21, timeout=_RT['filmehd']))
         if addon.getSettingBool('use_hydrahd'):
-            threads.append(threaded_resolver(hydrahd_resolver.get_sources, (tmdb_id, 'movie', None, None, imdb_id), results, 29, timeout=_RT['hydrahd']))
+            threads.append(threaded_resolver(hydrahd_resolver.get_sources, (tmdb_id, 'movie', None, None, imdb_id), results, 22, timeout=_RT['hydrahd']))
         if addon.getSettingBool('use_yastream') and imdb_id:
-            threads.append(threaded_resolver(yastream_resolver.get_sources, (tmdb_id, 'movie', None, None, imdb_id), results, 30, timeout=_RT['yastream']))
+            threads.append(threaded_resolver(yastream_resolver.get_sources, (tmdb_id, 'movie', None, None, imdb_id), results, 23, timeout=_RT['yastream']))
         if addon.getSettingBool('use_nhdapi'):
-            threads.append(threaded_resolver(nhdapi_resolver.get_sources, (tmdb_id, 'movie'), results, 31))
+            threads.append(threaded_resolver(nhdapi_resolver.get_sources, (tmdb_id, 'movie'), results, 24))
         if addon.getSettingBool('use_primesrcme'):
-            threads.append(threaded_resolver(primesrcme_resolver.get_sources, (tmdb_id, 'movie'), results, 32))
+            threads.append(threaded_resolver(primesrcme_resolver.get_sources, (tmdb_id, 'movie'), results, 25))
         if addon.getSettingBool('use_vidlink'):
-            threads.append(threaded_resolver(vidlink_resolver.get_sources, (tmdb_id, 'movie'), results, 33))
+            threads.append(threaded_resolver(vidlink_resolver.get_sources, (tmdb_id, 'movie'), results, 26))
         if addon.getSettingBool('use_videasy'):
-            threads.append(threaded_resolver(videasy_resolver.get_sources, (tmdb_id, 'movie'), results, 34, timeout=_RT['videasy']))
-        if addon.getSettingBool('use_hexa'):
-            threads.append(threaded_resolver(hexa_resolver.get_sources, (tmdb_id, 'movie'), results, 35))
-        if addon.getSettingBool('use_smashystream') and imdb_id:
-            threads.append(threaded_resolver(smashystream_resolver.get_sources, (imdb_id, 'movie'), results, 36))
+            threads.append(threaded_resolver(videasy_resolver.get_sources, (tmdb_id, 'movie'), results, 27, timeout=_RT['videasy']))
         if addon.getSettingBool('use_vsembed'):
-            threads.append(threaded_resolver(vsembed_resolver.get_sources, (tmdb_id, 'movie'), results, 37, timeout=_RT['vsembed']))
+            threads.append(threaded_resolver(vsembed_resolver.get_sources, (tmdb_id, 'movie'), results, 28, timeout=_RT['vsembed']))
         if addon.getSettingBool('use_yflix'):
-            threads.append(threaded_resolver(yflix_resolver.get_sources, (tmdb_id, 'movie'), results, 38, timeout=_RT['yflix']))
-        if addon.getSettingBool('use_deseneledublate'):
-            threads.append(threaded_resolver(dro_resolver.get_sources, (tmdb_id, 'movie'), results, 39))
+            threads.append(threaded_resolver(yflix_resolver.get_sources, (tmdb_id, 'movie'), results, 29, timeout=_RT['yflix']))
         if addon.getSetting('use_multiembed') != 'false':
-            threads.append(threaded_resolver(multiembed_resolver.get_sources, (tmdb_id, 'movie'), results, 40))
+            threads.append(threaded_resolver(multiembed_resolver.get_sources, (tmdb_id, 'movie'), results, 30))
         if addon.getSetting('use_vidbingeto') != 'false':
-            threads.append(threaded_resolver(vidbingeto_resolver.get_sources, (tmdb_id, 'movie'), results, 41))
+            threads.append(threaded_resolver(vidbingeto_resolver.get_sources, (tmdb_id, 'movie'), results, 31))
         if addon.getSetting('use_moviesapi') != 'false':
-            threads.append(threaded_resolver(moviesapi_resolver.get_sources, (tmdb_id, 'movie'), results, 42))
-        if addon.getSetting('use_consumet') != 'false':
-            threads.append(threaded_resolver(consumet_resolver.get_sources, (tmdb_id, 'movie'), results, 43))
+            threads.append(threaded_resolver(moviesapi_resolver.get_sources, (tmdb_id, 'movie'), results, 32))
         if addon.getSetting('use_pelispanda') != 'false':
-            threads.append(threaded_resolver(pelispanda_resolver.get_sources, (tmdb_id, 'movie', title, year, None, None, original_title), results, 44))
+            threads.append(threaded_resolver(pelispanda_resolver.get_sources, (tmdb_id, 'movie', title, year, None, None, original_title), results, 33))
         if addon.getSetting('use_streamimdb') != 'false' and imdb_id:
-            threads.append(threaded_resolver(streamimdb_resolver.get_sources, (imdb_id, 'movie'), results, 45))
+            threads.append(threaded_resolver(streamimdb_resolver.get_sources, (imdb_id, 'movie'), results, 34))
+        if addon.getSettingBool('use_sooti') and imdb_id:
+            threads.append(threaded_resolver(sooti_resolver.get_sources, (imdb_id, 'movie'), results, 35))
+        if addon.getSettingBool('use_moviebox'):
+            threads.append(threaded_resolver(moviebox_resolver.get_sources, (tmdb_id, 'movie'), results, 36))
         # Wait briefly so the fastest resolvers (THX, vidzee, primesrc) can finish first
         _wait_for_resolvers(threads, budget=1.5)
 
-        prefixes = ['[V]', '[P]', '[VS]', '[ES]', '[Z]', '[2E]', '[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[THX]', '[PSC]', '[FLX]', '[VXS]', '[HDB]', '[NUV]', '[VGA]', '[RFL]', '[AIO]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[CPR]', '[PLW]', '[FHD]', '[HHD]', '[YAS]', '[NHD]', '[PSM]', '[VDL]', '[VDY]', '[HXA]', '[SMY]', '[VSE]', '[YFX]', '[DRO]', '[MEB]', '[VBT]', '[MAPI]', '[CNS]', '[PPD]', '[SIMDB]']
+        prefixes = ['[V]', '[ES]', '[Z]', '[2E]', '[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[THX]', '[PSC]', '[FLX]', '[VXS]', '[HDB]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[PLW]', '[FHD]', '[HHD]', '[YAS]', '[NHD]', '[PSM]', '[VDL]', '[VDY]', '[VSE]', '[YFX]', '[MEB]', '[VBT]', '[MAPI]', '[PPD]', '[SIMDB]', '[SOT]', '[MBX]']
         _processed = set()
 
         def _drain_new():
@@ -965,7 +973,7 @@ def play_movie(handle, tmdb_id):
     h = db.history_get(tmdb_id, 'movie')
     if h and h['position'] > 60 and h['percent'] < 85:
         if xbmcgui.Dialog().yesno(
-            'Continuă vizionarea',
+            'Continuă..',
             f'Ai rămas la [B]{_fmt_time(h["position"])}[/B].',
             nolabel='De la început', yeslabel='Continuă',
         ):
@@ -1139,98 +1147,82 @@ def _fetch_tv_sources(tv_id, imdb_id, season, episode, details):
         return cached
 
     original_name = details.get('original_name') or None
-    results = [None] * 45
+    results = [None] * 37
     threads = []
-    if addon.getSettingBool('use_vidzee'):
-        threads.append(threaded_resolver(vidzee.get_sources, (tv_id, "tv", season, episode), results, 0))
-    if addon.getSettingBool('use_vidsrc'):
-        threads.append(threaded_resolver(vidsrc.get_vidsrc_tv_sources, (tv_id, season, episode), results, 2))
     if addon.getSettingBool('use_vidify'):
-        threads.append(threaded_resolver(vidify.get_vidify_tv_episode_sources, (tv_id, imdb_id, season, episode), results, 4))
+        threads.append(threaded_resolver(vidify.get_vidify_tv_episode_sources, (tv_id, imdb_id, season, episode), results, 0))
+    if addon.getSettingBool('use_vidzee'):
+        threads.append(threaded_resolver(vidzee.get_sources, (tv_id, "tv", season, episode), results, 2))
     if addon.getSettingBool('use_twoembed'):
-        threads.append(threaded_resolver(twoembed.get_twoembed_sources, (tv_id, season, episode), results, 5))
+        threads.append(threaded_resolver(twoembed.get_twoembed_sources, (tv_id, season, episode), results, 3))
     if addon.getSettingBool('use_torrentio') and imdb_id:
-        threads.append(threaded_resolver(torrentio.get_tv_sources, (imdb_id, season, episode), results, 6))
+        threads.append(threaded_resolver(torrentio.get_tv_sources, (imdb_id, season, episode), results, 4))
     if addon.getSettingBool('use_torrentdb') and imdb_id:
-        threads.append(threaded_resolver(torrentdb.get_tv_sources, (imdb_id, season, episode), results, 7))
+        threads.append(threaded_resolver(torrentdb.get_tv_sources, (imdb_id, season, episode), results, 5))
     if addon.getSettingBool('use_mediafusion') and imdb_id:
-        threads.append(threaded_resolver(mediafusion.get_tv_sources, (imdb_id, season, episode), results, 8))
+        threads.append(threaded_resolver(mediafusion.get_tv_sources, (imdb_id, season, episode), results, 6))
     if addon.getSettingBool('use_comet') and imdb_id:
-        threads.append(threaded_resolver(comet.get_tv_sources, (imdb_id, season, episode), results, 9))
+        threads.append(threaded_resolver(comet.get_tv_sources, (imdb_id, season, episode), results, 7))
     if addon.getSettingBool('use_perflix') and imdb_id:
-        threads.append(threaded_resolver(perflix.get_tv_sources, (imdb_id, season, episode), results, 10))
+        threads.append(threaded_resolver(perflix.get_tv_sources, (imdb_id, season, episode), results, 8))
     if addon.getSettingBool('use_uindex'):
-        threads.append(threaded_resolver(uindex.get_tv_sources, (details.get('name', ''), season, episode, original_name), results, 11))
+        threads.append(threaded_resolver(uindex.get_tv_sources, (details.get('name', ''), season, episode, original_name), results, 9))
     if addon.getSettingBool('use_thrax'):
-        threads.append(threaded_resolver(thrax.get_tv_sources, (tv_id, season, episode), results, 12))
+        threads.append(threaded_resolver(thrax.get_tv_sources, (tv_id, season, episode), results, 10))
     if addon.getSettingBool('use_primesrc'):
-        threads.append(threaded_resolver(primesrc.get_primesrc_tv_sources, (tv_id, season, episode), results, 13))
+        threads.append(threaded_resolver(primesrc.get_primesrc_tv_sources, (tv_id, season, episode), results, 11))
     if addon.getSettingBool('use_flixer'):
-        threads.append(threaded_resolver(flixer.get_sources, (tv_id, 'tv', season, episode), results, 14))
+        threads.append(threaded_resolver(flixer.get_sources, (tv_id, 'tv', season, episode), results, 12))
     if addon.getSettingBool('use_vixsrc'):
-        threads.append(threaded_resolver(vixsrc_resolver.get_sources, (tv_id, 'tv', season, episode), results, 15))
+        threads.append(threaded_resolver(vixsrc_resolver.get_sources, (tv_id, 'tv', season, episode), results, 13))
     if addon.getSettingBool('use_hdhub') and imdb_id:
-        threads.append(threaded_resolver(hdhub.get_sources, (imdb_id, 'tv', season, episode), results, 16))
-    if addon.getSettingBool('use_nuvio') and imdb_id:
-        threads.append(threaded_resolver(nuvio.get_sources, (imdb_id, 'tv', season, episode), results, 17))
-    if addon.getSettingBool('use_vega') and imdb_id:
-        threads.append(threaded_resolver(vega.get_sources, (imdb_id, 'tv', season, episode), results, 18))
-    if addon.getSettingBool('use_rogflix') and imdb_id:
-        threads.append(threaded_resolver(rogflix.get_sources, (imdb_id, 'tv', season, episode), results, 19))
-    if addon.getSettingBool('use_aiostreams') and imdb_id:
-        threads.append(threaded_resolver(aiostreams_resolver.get_sources, (imdb_id, 'tv', season, episode), results, 20))
+        threads.append(threaded_resolver(hdhub.get_sources, (imdb_id, 'tv', season, episode), results, 14))
     if addon.getSettingBool('use_webstreamr') and imdb_id:
-        threads.append(threaded_resolver(webstreamr.get_sources, (imdb_id, 'tv', season, episode), results, 21))
+        threads.append(threaded_resolver(webstreamr.get_sources, (imdb_id, 'tv', season, episode), results, 15))
     if addon.getSettingBool('use_vidrock'):
-        threads.append(threaded_resolver(vidrock.get_sources, (tv_id, 'tv', season, episode), results, 22))
+        threads.append(threaded_resolver(vidrock.get_sources, (tv_id, 'tv', season, episode), results, 16))
     if addon.getSettingBool('use_stremify') and imdb_id:
-        threads.append(threaded_resolver(stremify_resolver.get_sources, (imdb_id, 'tv', season, episode), results, 23))
+        threads.append(threaded_resolver(stremify_resolver.get_sources, (imdb_id, 'tv', season, episode), results, 17))
     if addon.getSettingBool('use_nebulastreams') and imdb_id:
-        threads.append(threaded_resolver(nebulastreams.get_sources, (imdb_id, 'tv', season, episode), results, 24))
+        threads.append(threaded_resolver(nebulastreams.get_sources, (imdb_id, 'tv', season, episode), results, 18))
     if addon.getSettingBool('use_flixnest') and imdb_id:
-        threads.append(threaded_resolver(flixnest.get_sources, (imdb_id, 'tv', season, episode), results, 25))
-    if addon.getSettingBool('use_cinepro') and imdb_id:
-        threads.append(threaded_resolver(cinepro.get_sources, (imdb_id, 'tv', season, episode), results, 26))
+        threads.append(threaded_resolver(flixnest.get_sources, (imdb_id, 'tv', season, episode), results, 19))
     if addon.getSettingBool('use_pulpwatch'):
-        threads.append(threaded_resolver(pulpwatch_resolver.get_sources, (tv_id, 'tv', season, episode), results, 27, timeout=_RT['pulpwatch']))
+        threads.append(threaded_resolver(pulpwatch_resolver.get_sources, (tv_id, 'tv', season, episode), results, 20, timeout=_RT['pulpwatch']))
     if addon.getSettingBool('use_filmehd'):
-        threads.append(threaded_resolver(filmehd_resolver.get_sources, (tv_id, 'tv', season, episode), results, 28, timeout=_RT['filmehd']))
+        threads.append(threaded_resolver(filmehd_resolver.get_sources, (tv_id, 'tv', season, episode), results, 21, timeout=_RT['filmehd']))
     if addon.getSettingBool('use_hydrahd'):
-        threads.append(threaded_resolver(hydrahd_resolver.get_sources, (tv_id, 'tv', season, episode, imdb_id), results, 29, timeout=_RT['hydrahd']))
+        threads.append(threaded_resolver(hydrahd_resolver.get_sources, (tv_id, 'tv', season, episode, imdb_id), results, 22, timeout=_RT['hydrahd']))
     if addon.getSettingBool('use_yastream') and imdb_id:
-        threads.append(threaded_resolver(yastream_resolver.get_sources, (tv_id, 'tv', season, episode, imdb_id), results, 30, timeout=_RT['yastream']))
+        threads.append(threaded_resolver(yastream_resolver.get_sources, (tv_id, 'tv', season, episode, imdb_id), results, 23, timeout=_RT['yastream']))
     if addon.getSettingBool('use_nhdapi'):
-        threads.append(threaded_resolver(nhdapi_resolver.get_sources, (tv_id, 'tv', season, episode), results, 31))
+        threads.append(threaded_resolver(nhdapi_resolver.get_sources, (tv_id, 'tv', season, episode), results, 24))
     if addon.getSettingBool('use_primesrcme'):
-        threads.append(threaded_resolver(primesrcme_resolver.get_sources, (tv_id, 'tv', season, episode), results, 32))
+        threads.append(threaded_resolver(primesrcme_resolver.get_sources, (tv_id, 'tv', season, episode), results, 25))
     if addon.getSettingBool('use_vidlink'):
-        threads.append(threaded_resolver(vidlink_resolver.get_sources, (tv_id, 'tv', season, episode), results, 33))
+        threads.append(threaded_resolver(vidlink_resolver.get_sources, (tv_id, 'tv', season, episode), results, 26))
     if addon.getSettingBool('use_videasy'):
-        threads.append(threaded_resolver(videasy_resolver.get_sources, (tv_id, 'tv', season, episode), results, 34, timeout=_RT['videasy']))
-    if addon.getSettingBool('use_hexa'):
-        threads.append(threaded_resolver(hexa_resolver.get_sources, (tv_id, 'tv', season, episode), results, 35))
-    if addon.getSettingBool('use_smashystream') and imdb_id:
-        threads.append(threaded_resolver(smashystream_resolver.get_sources, (imdb_id, 'tv', season, episode), results, 36))
+        threads.append(threaded_resolver(videasy_resolver.get_sources, (tv_id, 'tv', season, episode), results, 27, timeout=_RT['videasy']))
     if addon.getSettingBool('use_vsembed'):
-        threads.append(threaded_resolver(vsembed_resolver.get_sources, (tv_id, 'tv', season, episode), results, 37, timeout=_RT['vsembed']))
+        threads.append(threaded_resolver(vsembed_resolver.get_sources, (tv_id, 'tv', season, episode), results, 28, timeout=_RT['vsembed']))
     if addon.getSettingBool('use_yflix'):
-        threads.append(threaded_resolver(yflix_resolver.get_sources, (tv_id, 'tv', season, episode), results, 38, timeout=_RT['yflix']))
-    if addon.getSettingBool('use_deseneledublate'):
-        threads.append(threaded_resolver(dro_resolver.get_sources, (tv_id, 'tv', season, episode), results, 39))
+        threads.append(threaded_resolver(yflix_resolver.get_sources, (tv_id, 'tv', season, episode), results, 29, timeout=_RT['yflix']))
     if addon.getSetting('use_multiembed') != 'false':
-        threads.append(threaded_resolver(multiembed_resolver.get_sources, (tv_id, 'tv', season, episode), results, 40))
+        threads.append(threaded_resolver(multiembed_resolver.get_sources, (tv_id, 'tv', season, episode), results, 30))
     if addon.getSetting('use_vidbingeto') != 'false':
-        threads.append(threaded_resolver(vidbingeto_resolver.get_sources, (tv_id, 'tv', season, episode), results, 41))
+        threads.append(threaded_resolver(vidbingeto_resolver.get_sources, (tv_id, 'tv', season, episode), results, 31))
     if addon.getSetting('use_moviesapi') != 'false':
-        threads.append(threaded_resolver(moviesapi_resolver.get_sources, (tv_id, 'tv', season, episode), results, 42))
-    if addon.getSetting('use_consumet') != 'false':
-        threads.append(threaded_resolver(consumet_resolver.get_sources, (tv_id, 'tv', season, episode), results, 43))
+        threads.append(threaded_resolver(moviesapi_resolver.get_sources, (tv_id, 'tv', season, episode), results, 32))
     if addon.getSetting('use_pelispanda') != 'false':
-        threads.append(threaded_resolver(pelispanda_resolver.get_sources, (tv_id, 'tv', details.get('name', ''), None, season, episode, original_name), results, 44))
+        threads.append(threaded_resolver(pelispanda_resolver.get_sources, (tv_id, 'tv', details.get('name', ''), None, season, episode, original_name), results, 33))
     if addon.getSetting('use_streamimdb') != 'false' and imdb_id:
-        threads.append(threaded_resolver(streamimdb_resolver.get_sources, (imdb_id, 'tv', season, episode), results, 45))
+        threads.append(threaded_resolver(streamimdb_resolver.get_sources, (imdb_id, 'tv', season, episode), results, 34))
+    if addon.getSettingBool('use_sooti') and imdb_id:
+        threads.append(threaded_resolver(sooti_resolver.get_sources, (imdb_id, 'tv', season, episode), results, 35))
+    if addon.getSettingBool('use_moviebox'):
+        threads.append(threaded_resolver(moviebox_resolver.get_sources, (tv_id, 'tv', season, episode), results, 36))
     _wait_for_resolvers(threads)
-    prefixes = ['[V]', '[P]', '[VS]', '[ES]', '[Z]', '[2E]', '[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[THX]', '[PSC]', '[FLX]', '[VXS]', '[HDB]', '[NUV]', '[VGA]', '[RFL]', '[AIO]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[CPR]', '[PLW]', '[FHD]', '[HHD]', '[YAS]', '[NHD]', '[PSM]', '[VDL]', '[VDY]', '[HXA]', '[SMY]', '[VSE]', '[YFX]', '[DRO]', '[MEB]', '[VBT]', '[MAPI]', '[CNS]', '[PPD]', '[SIMDB]']
+    prefixes = ['[V]', '[ES]', '[Z]', '[2E]', '[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[THX]', '[PSC]', '[FLX]', '[VXS]', '[HDB]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[PLW]', '[FHD]', '[HHD]', '[YAS]', '[NHD]', '[PSM]', '[VDL]', '[VDY]', '[VSE]', '[YFX]', '[MEB]', '[VBT]', '[MAPI]', '[PPD]', '[SIMDB]', '[SOT]', '[MBX]']
     show_label = f"{details.get('name', '')} S{season:02d}E{episode:02d}"
     sources = _build_sources(results, prefixes, tmdb_title=show_label)
     for s in sources:
@@ -1373,7 +1365,7 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None):
     h = db.history_get(tv_id, 'tv', season=season, episode=episode)
     if h and h['position'] > 60 and h['percent'] < 85:
         if xbmcgui.Dialog().yesno(
-            'Continuă vizionarea',
+            'Continuă..',
             f'Ai rămas la [B]{_fmt_time(h["position"])}[/B].',
             nolabel='De la început', yeslabel='Continuă',
         ):

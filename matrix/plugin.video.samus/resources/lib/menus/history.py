@@ -19,7 +19,7 @@ def show_continue_watching():
         xbmcplugin.endOfDirectory(handle)
         return
 
-    xbmcplugin.setPluginCategory(handle, 'Continuă vizionarea')
+    xbmcplugin.setPluginCategory(handle, 'Continuă')
 
     for h in items:
         tmdb_id    = h['tmdb_id']

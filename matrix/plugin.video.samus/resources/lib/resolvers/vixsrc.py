@@ -73,7 +73,9 @@ def _extract(tmdb_id, media_type, season=None, episode=None):
     if not url_m:
         return _extract_fallback(page_url, html)
 
-    raw_url = url_m.group(1).replace('\\/', '/')
+    raw_url = re.sub(r'\\u([0-9a-fA-F]{4})',
+                     lambda m: chr(int(m.group(1), 16)),
+                     url_m.group(1).replace('\\/', '/'))
     stream_url = re.sub(r'(/playlist/[^/?]+)(?!\.m3u8)(?=[?#]|$)', r'\1.m3u8', raw_url)
 
     q = {'token': tk}

@@ -889,7 +889,7 @@ In addition to what livestreams allowed you to do, you can now,
   </extension>
   <extension point="xbmc.service" library="service.py" start="login|startup">
   </extension>
-</addon><addon id="plugin.video.samus" name="Samus" version="0.0.20mod" provider-name="derzis">
+</addon><addon id="plugin.video.samus" name="Samus" version="0.0.26" provider-name="derzis">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />
@@ -1013,7 +1013,7 @@ In addition to what livestreams allowed you to do, you can now,
     <screenshot>resources/screenshot-02.jpg</screenshot>
   </assets>
 </extension>
-</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.65">
+</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.69">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -1249,10 +1249,8 @@ In addition to what livestreams allowed you to do, you can now,
 			<screenshot>resources/screenshots/screenshot003.jpg</screenshot>
 		</assets>
 		<news>
-[B]Update - v6.7.65 - April 8th, 2026 [/B]
---[Change] Set simkl to use percent watched on "start" when resuming.
---[Fix] Bug fix for real debrid cloud scraper.
---[Fix] Bug for for double marking from trakt.
+[B]Update - v6.7.69 - April 30th, 2026 [/B]
+--[Change] Removed DMM Cache check due to users having issues with cached vs uncached.
 		</news>
 	</extension>
 
@@ -1450,7 +1448,7 @@ In addition to what livestreams allowed you to do, you can now,
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.3+beta.3.unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
+</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.3+unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.27.1" />
@@ -1567,9 +1565,28 @@ In addition to what livestreams allowed you to do, you can now,
         <disclaimer lang="vi_VN">Plugin này không được xác nhận bởi Google</disclaimer>
         <disclaimer lang="zh_CN">此插件未被谷歌认可</disclaimer>
         <disclaimer lang="zh_TW">此附加元件未由Google支持</disclaimer>
-    <news>## v7.4.3+beta.3
+    <news>## v7.4.3
 ### Fixed
-- Fix regressions with accessing http urls</news></extension>
+- Limit chunk size when reading stream proxy response
+- Fix regressions with accessing http urls
+- Improve handling of retries upon server error
+- Improve identification of post-live streams
+- Updates to resolve inconsistent Python2 string encoding/decoding
+- Ensure parameters to Kodi builtin functions are parsed as string literals
+- Allow trailing slashes in url of html pages served by internal http server
+
+### Changed
+- Rename Subscriptions to Subscribed Channels
+- Open confirmation dialog, with a link for further information, when sign in process fails
+- Update API config page html
+- Improve handling of API key settings changes
+- Detect and notify when API requests cannot be completed
+- Use consistent language for signing in/out
+
+### New
+- Add button in API settings to view address of API config page
+- Fallback to playing channel uploads if no live stream is available
+- Add fallback method to load playlists when v3 API request cannot be made</news></extension>
 </addon><addon id="program.optiklean" name="OptiKlean" provider-name="DigiTalking" version="2.3.0">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />

@@ -404,7 +404,7 @@ class RealDebrid:
 			torrent_id = self.add_magnet(magnet_url)
 			self.add_torrent_select(torrent_id,'all')
 			torrent_info = self.user_cloud_info_check(torrent_id)
-			if not torrent_info['links'] or 'error' in torrent_info: 
+			if not torrent_info['links'] or 'error' in torrent_info:
 				self.delete_torrent(torrent_id)
 				return None
 			control.sleep(1000)
@@ -449,7 +449,7 @@ class RealDebrid:
 					if not any(file_url.lower().endswith(x) for x in extensions):
 						file_url, failed_reason = None, 'RD returned unsupported file extension --> %s' % file_url
 				except:
-						file_url, failed_reason = None, 'RD returned unsupported file extension or error getting file extension.' 
+						file_url, failed_reason = None, 'RD returned unsupported file extension or error getting file extension.'
 				if not self.store_to_cloud: self.delete_torrent(torrent_id)
 			else:
 				self.delete_torrent(torrent_id)
@@ -556,7 +556,7 @@ class RealDebrid:
 			return True
 		if status == 'magnet_conversion': return _return_failed()
 		if any(x in status for x in stalled): return _return_failed(status)
-		if status == 'waiting_files_selection': 
+		if status == 'waiting_files_selection':
 			video_files = []
 			append = video_files.append
 			all_files = torrent_info['files']

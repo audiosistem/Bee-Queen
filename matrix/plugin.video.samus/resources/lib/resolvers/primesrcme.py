@@ -22,7 +22,7 @@ def resolve_via_thrax(url):
         xbmc.log(f'{_LABEL} resolve_via_thrax: key lipsă din {url}', xbmc.LOGWARNING)
         return None
     try:
-        r = requests.get(f'{_THRAX}/primesrcme/resolve', params={'key': key}, timeout=30,
+        r = requests.get(f'{_THRAX}/primesrcme/resolve', params={'key': key}, timeout=90,
                          headers={'Accept-Encoding': 'gzip, deflate'})
         if not r.ok:
             xbmc.log(f'{_LABEL} Thrax /primesrcme/resolve HTTP {r.status_code}', xbmc.LOGWARNING)
