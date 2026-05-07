@@ -3829,7 +3829,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
         </assets>
         <news>Changed the fanart to be a simple small image that has a matching color tone to the theme chosen.</news>
     </extension>
-</addon><addon id="script.service.fastautosubs" name="[B][COLOR FF00BFFF]Fast AutoSubs[/COLOR][/B]" version="1.0.12" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="script.service.fastautosubs" name="[B][COLOR FF00BFFF]Fast AutoSubs[/COLOR][/B]" version="1.0.13" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
     </requires>
