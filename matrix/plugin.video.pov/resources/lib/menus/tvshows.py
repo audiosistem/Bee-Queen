@@ -200,9 +200,9 @@ class Menu(TVShows):
 				if total_pages > page_no: self.new_page = {'new_page': string(data['page'] + 1)}
 			elif self.action in Menu.trakt_main:
 				self.id_type = 'trakt_dict'
-				data = function(page_no)
+				data, total_pages = function(page_no)
 				self.list = [i['show']['ids'] for i in data]
-				self.new_page = {'new_page': string(page_no + 1)}
+				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1)}
 			elif self.action in Menu.tmdb_personal:
 				data, total_pages = function('tv', page_no, letter)
 				self.list = [i['id'] for i in data]

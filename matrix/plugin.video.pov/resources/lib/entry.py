@@ -482,8 +482,10 @@ def premAccntNotification():
 	return logger('POV', 'Debrid Account Expiry Notification Service Finished')
 
 def checkUndesirablesDatabase():
-	from fenom.undesirables import Undesirables, add_new_default_keywords
 	logger('POV', 'CheckUndesirablesDatabase Service Starting')
+	path = 'special://home/addons/%s/resources/unwanted.json' % kodi_utils.get_addoninfo('id')
+	with kodi_utils.open_file(path) as file: set_property('pov_unwanted', str(file.read()))
+	from fenom.undesirables import Undesirables, add_new_default_keywords
 	old_database = Undesirables().check_database()
 	if old_database: add_new_default_keywords()
 	return logger('POV', 'CheckUndesirablesDatabase Service Finished')

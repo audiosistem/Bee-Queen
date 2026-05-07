@@ -232,14 +232,14 @@ def mdbl_watched_unwatched(action, media, media_id, tvdb_id=0, season=None, epis
 
 def mdbl_progress(action, media, media_id, percent, season=None, episode=None, resume_id=None, refresh_mdb=False):
 	if action == 'clear_progress':
-		url = 'scrobble/clear'
 		data = {'id': resume_id}
+		url = 'scrobble/clear'
 	else:
-		url = 'scrobble/pause'
 		try: media_id = int(media_id)
 		except: pass
 		if media in ('movie', 'movies'): data = {'movie': {'ids': {'tmdb': media_id}}, 'progress': float(percent)}
 		else: data = {'show': {'ids': {'tmdb': media_id}, 'season': {'number': int(season), 'episode': {'number': int(episode)}}}, 'progress': float(percent)}
+		url = 'scrobble/pause'
 	call_mdblist(url, json=data, method='post')
 	if refresh_mdb: mdbl_sync_activities()
 

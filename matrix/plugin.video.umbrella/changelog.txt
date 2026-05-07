@@ -1,2 +1,5 @@
-[B]Update - v6.7.69 - April 30th, 2026 [/B]
---[Change] Removed DMM Cache check due to users having issues with cached vs uncached.
+[B]Update - v6.7.70 - May 6th, 2026 [/B]
+--[Change] Changes made for page limit with new Trakt 250 limit.
+--[Change] Changes made in the resolve code for packs.
+--[Change] Changes made to avoid failded scrobble notification on a watched item.
+--[Change] Changes made to Trakt api to comply with new 250 pagination limit that starts in June. If you have large lists and large amounts of watch history I would switch to a different service.

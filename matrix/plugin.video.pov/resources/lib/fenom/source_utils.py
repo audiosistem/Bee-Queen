@@ -7,7 +7,7 @@ from string import printable
 from threading import Thread as thread
 from fenom import cleantitle
 from fenom.undesirables import Undesirables
-from fenom.control import homeWindow, setting as getSetting, setSetting
+from fenom.control import homeWindow, jsloads, setting as getSetting, setSetting
 
 
 RES_4K = ('2160', '216o', '.4k', 'ultrahd', 'ultra.hd', '.uhd.')
@@ -28,12 +28,8 @@ SUBS = ('subita', 'subfrench', 'subspanish', 'subtitula', 'swesub', 'nl.subs')
 ENG_CHECK = ('.eng.', '.en.', 'english', 'multi')
 SRT_CHECK = ('with.srt', '.avi', '.mkv', '.mp4')
 
-UNDESIRABLES = ['400p.octopus', '720p.octopus', '1080p.octopus', 'alexfilm', 'amedia', 'audiobook', 'baibako', 'bigsinema', 'bonus.disc', 'casstudio.tv', 'courage.bambey',
-				'.cbr', '.cbz', 'coldfilm', 'dilnix', 'dutchreleaseteam', 'e.book.collection', 'empire.minutemen', 'eniahd', '.exe', 'exkinoray', 'extras.only',
-				'gears.media', 'gearsmedia', 'good.people', 'gostfilm', 'hamsterstudio', 'hdrezka', 'hdtvrip', 'hurtom', 'idea.film', 'ideafilm', 'jaskier', 'kapatejl6', 'kb.1080p',
-				'kb.720p', 'kb.400p', 'kerob', 'kinokopilka', 'kravec', 'kuraj.bambey', 'lakefilm', 'lostfilm', 'megapeer', 'minutemen.empire', 'newstudio',
-				'omskbird', '.ost.', 'paravozik', 'profix.media', 'rifftrax', 'sample', 'soundtrack', 'subtitle.only', 'sunshinestudio', 'teaser', 'trailer', 'tumbler.studio',
-				'tvshows', 'ultradox', 'viruseproject', 'vostfr', 'vo.stfr', 'web.dlrip', 'webdlrip', 'wish666', 'pa.web.dl', '.p.web.dl', '.d.web.dl']
+try: UNDESIRABLES = jsloads(homeWindow.getProperty('pov_unwanted'))['undesirables']
+except: UNDESIRABLES = []
 # viruseproject has lots of uploads on glotorrents and site fixes the "&dn=???" portion in html title to reflect the true range the pack covers vs. assclowns incomplete pack file name used
 
 season_list = ('one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eigh', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen',
@@ -57,29 +53,8 @@ season_ordinal2_dict = {'1': '1st', '2': '2nd', '3': '3rd', '4': '4th', '5': '5t
 			'11': '11th', '12': '12th', '13': '13th', '14': '14th', '15': '15th', '16': '16th', '17': '17th', '18': '18th', '19': '19th',
 			'20': '20th', '21': '21st', '22': '22nd', '23': '23rd', '24': '24th', '25': '25th'}
 
-unwanted_tags = ('tamilrockers.com', 'www.tamilrockers.com', 'www.tamilrockers.ws', 'www.tamilrockers.pl',
-			'www-tamilrockers-cl', 'www.tamilrockers.cl', 'www.tamilrockers.li',
-			'www.tamilrockerrs.pl',
-			'www.tamilmv.bid', 'www.tamilmv.biz', 'www.1tamilmv.org',
-			'gktorrent-bz', 'gktorrent-com',
-			'www.torrenting.com', 'www.torrenting.org', 'www-torrenting-com', 'www-torrenting-org',
-			'katmoviehd.pw', 'katmoviehd-pw',
-			'www.torrent9.nz', 'www-torrent9-uno', 'torrent9-cz', 'torrent9.cz',
-			'agusiq-torrents-pl',
-			'oxtorrent-bz', 'oxtorrent-com', 'oxtorrent.com', 'oxtorrent-sh', 'oxtorrent-vc',
-			'www.movcr.tv', 'movcr-com', 'www.movcr.to',
-			'(imax)', 'imax',
-			'xtorrenty.org', 'nastoletni.wilkoak', 'www.scenetime.com', 'kst-vn',
-			'www.movierulz.vc', 'www-movierulz-ht', 'www.2movierulz.ac', 'www.2movierulz.ms',
-			'www.3movierulz.com', 'www.3movierulz.tv', 'www.3movierulz.ws', 'www.3movierulz.ms',
-			'www.7movierulz.pw', 'www.8movierulz.ws',
-			'mkvcinemas.live',
-			'www.bludv.tv', 'ramin.djawadi', 'extramovies.casa', 'extramovies.wiki',
-			'13+', '18+', 'taht.oyunlar', 'crazy4tv.com', 'karibu', '989pa.com',
-			'best-torrents-net', '1-3-3-8.com', 'ssrmovies.club',
-			'va:', 'zgxybbs-fdns-uk', 'www.tamilblasters.mx',
-			'www.1tamilmv.work', 'www.xbay.me',
-			'crazy4tv-com', '(es)')
+try: unwanted_tags = jsloads(homeWindow.getProperty('pov_unwanted'))['unwanted']
+except: unwanted_tags = []
 
 home_getProperty = homeWindow.getProperty
 

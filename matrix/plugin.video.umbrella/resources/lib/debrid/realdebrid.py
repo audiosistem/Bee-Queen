@@ -394,7 +394,7 @@ class RealDebrid:
 		from resources.lib.modules.source_utils import seas_ep_filter, extras_filter
 		# from resources.lib.cloud_scrapers.cloud_utils import cloud_check_title # alias and title checking no longer used
 		try:
-			#failed_reason, torrent_id, file_url, match = 'Unknown', None, None, False
+			failed_reason, torrent_id, file_url = 'Unknown', None, None
 			extensions = supported_video_extensions()
 			extras_filtering_list = extras_filter()
 			info_hash = info_hash.lower()

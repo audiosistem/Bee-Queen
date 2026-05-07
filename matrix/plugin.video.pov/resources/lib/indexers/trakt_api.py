@@ -22,6 +22,8 @@ retry = requests.adapters.Retry(total=None, status=1, status_forcelist=(429, 502
 session.mount('https://api.trakt.tv', requests.adapters.HTTPAdapter(pool_maxsize=100, max_retries=retry))
 
 def call_trakt(path, params=None, data=None, with_auth=True, method=None, pagination=False, page=1):
+	if isinstance(path, dict): return call_trakt(str(path.pop('path')), **path)
+	else: path = str(path)
 	headers = {'User-Agent': user_agent, 'trakt-api-key': V2_API_KEY, 'trakt-api-version': '2'}
 	if with_auth and (token := settings.trakt_token()): headers['Authorization'] = 'Bearer %s' % token
 	try:
@@ -35,26 +37,14 @@ def call_trakt(path, params=None, data=None, with_auth=True, method=None, pagina
 		)
 		result = response.json() if 'json' in response.headers.get('Content-Type', '') else response.text
 		if not response.ok: response.raise_for_status()
-		if 'X-Sort-By' in response.headers and 'X-Sort-How' in response.headers:
-			sort_by, sort_how = response.headers['X-Sort-By'], response.headers['X-Sort-How']
+		if (sort_by := response.headers.get('X-Sort-By')) and (sort_how := response.headers.get('X-Sort-How')):
 #			result = sort_list(sort_by, sort_how, result, settings.ignore_articles())
-			if isinstance(result, list) and sort_by in ('added', 'released') and sort_how in ('asc',):
-				if get_setting('trakt.reverse') == 'true': result.reverse()
-		if pagination: result = (result, response.headers.get('X-Pagination-Page-Count', page))
+			if sort_how in ('asc',) and sort_by in ('added', 'released'):
+				if isinstance(result, list) and get_setting('trakt.reverse') == 'true': result.reverse()
+		if pagination: result = (result, int(response.headers.get('X-Pagination-Page-Count', page)))
 		return result
 	except requests.RequestException as e:
 		logger('trakt error', str(e))
-
-def get_trakt(params):
-	result = call_trakt(
-		params['path'],
-		params=params.get('params', {}),
-		data=params.get('data'),
-		with_auth=params.get('with_auth', False),
-		method=params.get('method'),
-		pagination=params.get('pagination', True),
-	)
-	return result[0] if params.get('pagination', True) else result
 
 def trakt_refresh():
 	try:
@@ -83,76 +73,86 @@ def trakt_expires(func):
 	return wrapper
 
 def _get_trakt_paginated_list(url):
-	items = []
-	try:
-		params = {'limit': 1000, 'page': 1}
-		items, pages = call_trakt(url, params, pagination=True)
-		for page in range(2, int(pages) + 1):
+	def _process():
+		for page in range(2, pages + 1):
 			params['page'] = page
-			result = call_trakt(url, params)
+			result = call_trakt(url, params=params)
 			if result is None: break
-			items += result
+			yield result
+	items = []
+	params = {'limit': 1000, 'page': 1}
+	try:
+		items, pages = call_trakt(url, params=params, pagination=True)
+		if pages > 1: items.extend((x for i in _process() for x in i))
 	except: pass
 	return items
 
 def trakt_movies_trending(page_no):
+	params = {'limit': 20, 'page': page_no}
 	string = 'trakt_movies_trending_%s' % page_no
-	url = {'path': 'movies/trending', 'params': {'limit': 20, 'page': page_no}}
-	return cache_object(get_trakt, string, url, expiration=EXPIRES_2_DAYS)
+	url = {'path': 'movies/trending', 'params': params, 'with_auth': False, 'pagination': True}
+	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
 
 def trakt_movies_trending_recent(page_no):
 	year = get_datetime().year
-	years = '%s-%s' % (year-1, year)
+	params = {'limit': 20, 'page': page_no, 'years': '%s-%s' % (year-1, year)}
 	string = 'trakt_movies_trending_recent_%s' % page_no
-	url = {'path': 'movies/trending', 'params': {'years': years, 'limit': 20, 'page': page_no}}
-	return cache_object(get_trakt, string, url, expiration=EXPIRES_2_DAYS)
+	url = {'path': 'movies/trending', 'params': params, 'with_auth': False, 'pagination': True}
+	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
 
 def trakt_movies_most_watched(page_no):
+	params = {'limit': 20, 'page': page_no}
 	string = 'trakt_movies_most_watched_%s' % page_no
-	url = {'path': 'movies/watched/weekly', 'params': {'limit': 20, 'page': page_no}}
-	return cache_object(get_trakt, string, url, expiration=EXPIRES_2_DAYS)
+	url = {'path': 'movies/watched/weekly', 'params': params, 'with_auth': False, 'pagination': True}
+	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
 
 def trakt_tv_trending(page_no):
+	params = {'limit': 20, 'page': page_no}
 	string = 'trakt_tv_trending_%s' % page_no
-	url = {'path': 'shows/trending', 'params': {'limit': 20, 'page': page_no}}
-	return cache_object(get_trakt, string, url, expiration=EXPIRES_2_DAYS)
+	url = {'path': 'shows/trending', 'params': params, 'with_auth': False, 'pagination': True}
+	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
 
 def trakt_tv_trending_recent(page_no):
 	year = get_datetime().year
-	years = '%s-%s' % (year-1, year)
+	params = {'limit': 20, 'page': page_no, 'years': '%s-%s' % (year-1, year)}
 	string = 'trakt_tv_trending_recent_%s' % page_no
-	url = {'path': 'shows/trending', 'params': {'years': years, 'limit': 20, 'page': page_no}}
-	return cache_object(get_trakt, string, url, expiration=EXPIRES_2_DAYS)
+	url = {'path': 'shows/trending', 'params': params , 'with_auth': False, 'pagination': True}
+	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
 
 def trakt_tv_most_watched(page_no):
+	params = {'limit': 20, 'page': page_no}
 	string = 'trakt_tv_most_watched_%s' % page_no
-	url = {'path': 'shows/watched/weekly', 'params': {'limit': 20, 'page': page_no}}
-	return cache_object(get_trakt, string, url, expiration=EXPIRES_2_DAYS)
+	url = {'path': 'shows/watched/weekly', 'params': params, 'with_auth': False, 'pagination': True}
+	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
 
 def trakt_moviesanime_trending(page_no):
+	params = {'limit': 20, 'page': page_no, 'genres': 'anime'}
 	string = 'trakt_moviesanime_trending_%s' % page_no
-	url = {'path': 'movies/trending', 'params': {'genres': 'anime', 'limit': 100, 'page': page_no}}
-	return cache_object(get_trakt, string, url, expiration=EXPIRES_2_DAYS)
+	url = {'path': 'movies/trending', 'params': params, 'with_auth': False, 'pagination': True}
+	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
 
 def trakt_moviesanime_most_watched(page_no):
+	params = {'limit': 20, 'page': page_no, 'genres': 'anime'}
 	string = 'trakt_moviesanime_most_watched_%s' % page_no
-	url = {'path': 'movies/watched/all', 'params': {'genres': 'anime', 'limit': 20, 'page': page_no}}
-	return cache_object(get_trakt, string, url, expiration=EXPIRES_2_DAYS)
+	url = {'path': 'movies/watched/all', 'params': params, 'with_auth': False, 'pagination': True}
+	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
 
 def trakt_tvanime_trending(page_no):
+	params = {'limit': 20, 'page': page_no, 'genres': 'anime'}
 	string = 'trakt_tvanime_trending_%s' % page_no
-	url = {'path': 'shows/trending', 'params': {'genres': 'anime', 'limit': 20, 'page': page_no}}
-	return cache_object(get_trakt, string, url, expiration=EXPIRES_2_DAYS)
+	url = {'path': 'shows/trending', 'params': params, 'with_auth': False, 'pagination': True}
+	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
 
 def trakt_tvanime_most_watched(page_no):
+	params = {'limit': 20, 'page': page_no, 'genres': 'anime'}
 	string = 'trakt_tvanime_most_watched_%s' % page_no
-	url = {'path': 'shows/watched/all', 'params': {'genres': 'anime', 'limit': 20, 'page': page_no}}
-	return cache_object(get_trakt, string, url, expiration=EXPIRES_2_DAYS)
+	url = {'path': 'shows/watched/all', 'params': params, 'with_auth': False, 'pagination': True}
+	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
 
 def trakt_trending_popular_lists(list_type):
 	string = 'trakt_%s_user_lists' % list_type
-	url = {'path': 'lists/%s' % list_type, 'params': {'limit': 100}}
-	return cache_object(get_trakt, string, url)
+	url = {'path': 'lists/%s' % list_type, 'params': {'limit': 100}, 'with_auth': False}
+	return cache_object(call_trakt, string, url)
 
 def trakt_search_lists(search_title, page):
 	params = {'query': search_title, 'limit': 100, 'page': page}
@@ -160,8 +160,8 @@ def trakt_search_lists(search_title, page):
 
 def trakt_recommendations(mediatype):
 	string = 'trakt_recommendations_%s' % mediatype
-	url = {'path': '/recommendations/%s' % mediatype, 'params': {'limit': 50}, 'with_auth': True, 'pagination': False}
-	return trakt_cache.cache_trakt_object(get_trakt, string, url)
+	url = {'path': '/recommendations/%s' % mediatype, 'params': {'limit': 100}}
+	return trakt_cache.cache_trakt_object(call_trakt, string, url)
 
 def trakt_droplist(mediatype, page_no, letter):
 	results = trakt_get_hidden_items('dropped')
@@ -278,8 +278,8 @@ def get_trakt_list_contents(list_type, list_id, user, slug):
 def trakt_get_lists(list_type):
 	if list_type == 'liked_lists': string, path_insert = 'trakt_liked_lists', 'likes/lists'
 	else: string, path_insert = 'trakt_my_lists', 'lists'
-	url = {'path': 'users/me/%s' % path_insert, 'params': {'limit': 100}, 'with_auth': True}
-	return trakt_cache.cache_trakt_object(get_trakt, string, url)
+	url = {'path': 'users/me/%s' % path_insert, 'params': {'limit': 100}}
+	return trakt_cache.cache_trakt_object(call_trakt, string, url)
 
 def add_to_sync(list_type, data):
 	key = 'episodes' if list_type == 'collection' else 'shows'
@@ -387,13 +387,12 @@ def trakt_watched_unwatched(action, media, media_id, tvdb_id=0, season=None, epi
 
 def trakt_progress(action, media, media_id, percent, season=None, episode=None, resume_id=None, refresh_trakt=False):
 	if action == 'clear_progress':
-		url = 'sync/playback/%s' % resume_id
-		call_trakt(url, method='delete')
+		url, kwargs = 'sync/playback/%s' % resume_id, {'method': 'delete'}
 	else:
-		url = 'scrobble/pause'
 		if media in ('movie', 'movies'): data = {'movie': {'ids': {'tmdb': media_id}}, 'progress': float(percent)}
 		else: data = {'show': {'ids': {'tmdb': media_id}}, 'episode': {'season': int(season), 'number': int(episode)}, 'progress': float(percent)}
-		call_trakt(url, data=data)
+		url, kwargs = 'scrobble/pause', {'data': data}
+	call_trakt(url, **kwargs)
 	if refresh_trakt: trakt_sync_activities()
 
 def trakt_indicators_movies():
@@ -492,54 +491,6 @@ def trakt_official_status(mediatype):
 	if scrobble in ('false', ''): return True
 	return False
 
-def trakt_get_my_calendar(recently_aired, current_date):
-	def _process(dummy):
-		data = get_trakt(url)
-		data = [
-			{'sort_title': '%s s%s e%s' % (i['show']['title'], str(i['episode']['season']).zfill(2), str(i['episode']['number']).zfill(2)),
-			'media_ids': i['show']['ids'], 'season': i['episode']['season'], 'episode': i['episode']['number'], 'first_aired': i['first_aired']}
-			for i in data
-			if i['episode']['season'] > 0 and 'anime' not in i['show']['genres']
-		]
-		data = [i for n, i in enumerate(data) if i not in data[n + 1:]] # remove duplicates
-		return data
-	start, finish = trakt_calendar_days(recently_aired, current_date)
-	string = 'trakt_get_my_calendar_%s_%s' % (start, finish)
-	url = {'path': 'calendars/my/shows/%s/%s' % (start, finish), 'params': {'extended': 'full'}, 'with_auth': True, 'pagination': False}
-	return trakt_cache.cache_trakt_object(_process, string, url)
-
-def trakt_get_my_anime_calendar(current_date):
-	def _process(dummy):
-		data = get_trakt(url)
-		data = [
-			{'sort_title': '%s s%s e%s' % (i['show']['title'], str(i['episode']['season']).zfill(2), str(i['episode']['number']).zfill(2)),
-			'media_ids': i['show']['ids'], 'season': i['episode']['season'], 'episode': i['episode']['number'], 'first_aired': i['first_aired']}
-			for i in data
-			if i['episode']['season'] > 0
-		]
-		data = [i for n, i in enumerate(data) if i not in data[n + 1:]] # remove duplicates
-		return data
-	start, finish = trakt_calendar_days(False, current_date)
-	string = 'trakt_get_my_calendar_anime_%s_%s' % (start, finish)
-	url = {'path': 'calendars/my/shows/%s/%s' % (start, finish), 'params': {'genres': 'anime'}, 'with_auth': True, 'pagination': False}
-	return trakt_cache.cache_trakt_object(_process, string, url)
-
-def trakt_anime_calendar(current_date):
-	def _process(dummy):
-		data = get_trakt(url)
-		data = [
-			{'sort_title': '%s s%s e%s' % (i['show']['title'], str(i['episode']['season']).zfill(2), str(i['episode']['number']).zfill(2)),
-			'media_ids': i['show']['ids'], 'season': i['episode']['season'], 'episode': i['episode']['number'], 'first_aired': i['first_aired']}
-			for i in data
-			if i['episode']['season'] > 0
-		]
-		data = [i for n, i in enumerate(data) if i not in data[n + 1:]] # remove duplicates
-		return data
-	start, finish = trakt_calendar_days(False, current_date)
-	string = 'trakt_anime_calendar_%s_%s' % (start, finish)
-	url = {'path': 'calendars/all/shows/%s/%s' % (start, finish), 'params': {'genres': 'anime'}, 'with_auth': True, 'pagination': False}
-	return trakt_cache.cache_trakt_object(_process, string, url)
-
 def trakt_calendar_days(recently_aired, current_date):
 	from datetime import timedelta
 	if recently_aired: start, finish = (current_date - timedelta(days=7)).strftime('%Y-%m-%d'), '7'
@@ -549,6 +500,51 @@ def trakt_calendar_days(recently_aired, current_date):
 		start = (current_date - timedelta(days=previous_days)).strftime('%Y-%m-%d')
 		finish = str(previous_days + future_days)
 	return start, finish
+
+def trakt_get_my_calendar(recently_aired, current_date):
+	def _process(dummy):
+		data = [
+			{'sort_title': '%s s%s e%s' % (i['show']['title'], str(i['episode']['season']).zfill(2), str(i['episode']['number']).zfill(2)),
+			'media_ids': i['show']['ids'], 'season': i['episode']['season'], 'episode': i['episode']['number'], 'first_aired': i['first_aired']}
+			for i in call_trakt(url)
+			if i['episode']['season'] > 0 and 'anime' not in i['show']['genres']
+		]
+		data = [i for n, i in enumerate(data) if i not in data[n + 1:]] # remove duplicates
+		return data
+	start, finish = trakt_calendar_days(recently_aired, current_date)
+	string = 'trakt_get_my_calendar_%s_%s' % (start, finish)
+	url = {'path': 'calendars/my/shows/%s/%s' % (start, finish), 'params': {'extended': 'full'}}
+	return trakt_cache.cache_trakt_object(_process, string, url)
+
+def trakt_get_my_anime_calendar(current_date):
+	def _process(dummy):
+		data = [
+			{'sort_title': '%s s%s e%s' % (i['show']['title'], str(i['episode']['season']).zfill(2), str(i['episode']['number']).zfill(2)),
+			'media_ids': i['show']['ids'], 'season': i['episode']['season'], 'episode': i['episode']['number'], 'first_aired': i['first_aired']}
+			for i in call_trakt(url)
+			if i['episode']['season'] > 0
+		]
+		data = [i for n, i in enumerate(data) if i not in data[n + 1:]] # remove duplicates
+		return data
+	start, finish = trakt_calendar_days(False, current_date)
+	string = 'trakt_get_my_calendar_anime_%s_%s' % (start, finish)
+	url = {'path': 'calendars/my/shows/%s/%s' % (start, finish), 'params': {'genres': 'anime'}}
+	return trakt_cache.cache_trakt_object(_process, string, url)
+
+def trakt_anime_calendar(current_date):
+	def _process(dummy):
+		data = [
+			{'sort_title': '%s s%s e%s' % (i['show']['title'], str(i['episode']['season']).zfill(2), str(i['episode']['number']).zfill(2)),
+			'media_ids': i['show']['ids'], 'season': i['episode']['season'], 'episode': i['episode']['number'], 'first_aired': i['first_aired']}
+			for i in call_trakt(url)
+			if i['episode']['season'] > 0
+		]
+		data = [i for n, i in enumerate(data) if i not in data[n + 1:]] # remove duplicates
+		return data
+	start, finish = trakt_calendar_days(False, current_date)
+	string = 'trakt_anime_calendar_%s_%s' % (start, finish)
+	url = {'path': 'calendars/all/shows/%s/%s' % (start, finish), 'params': {'genres': 'anime'}, 'with_auth': False}
+	return trakt_cache.cache_trakt_object(_process, string, url)
 
 def trakt_playback_progress():
 	url = 'sync/playback'
