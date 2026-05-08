@@ -27,6 +27,7 @@ from resources.lib.resolvers import nhdapi as nhdapi_resolver
 from resources.lib.resolvers import primesrcme as primesrcme_resolver
 from resources.lib.resolvers import vidmoly as vidmoly_resolver
 from resources.lib.resolvers import telegram as telegram_resolver
+from resources.lib.resolvers import abysscdn as abysscdn_resolver
 from resources.lib.resolvers import vidlink as vidlink_resolver
 from resources.lib.resolvers import videasy as videasy_resolver
 from resources.lib.resolvers import vsembed as vsembed_resolver
@@ -721,6 +722,14 @@ def _play_source(handle, selected, li, item_data=None, history_meta=None, resume
                     xbmc.log(f'[VML] Thrax nu a returnat URL pentru {url}', xbmc.LOGWARNING)
                     return False
                 url = m3u8
+                is_direct = True
+            if not is_direct and abysscdn_resolver.is_abysscdn_url(url):
+                dlg.set_status('Se rezolvă AbyssCDN (Thrax)...')
+                stream_url = abysscdn_resolver.resolve_via_thrax(url)
+                if not stream_url:
+                    xbmc.log(f'[ABYSS] Thrax nu a returnat URL pentru {url}', xbmc.LOGWARNING)
+                    return False
+                url = stream_url
                 is_direct = True
             if not is_direct and 'ok.ru/' in url:
                 dlg.set_status('Se rezolvă ok.ru...')

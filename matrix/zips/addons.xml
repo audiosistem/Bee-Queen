@@ -506,7 +506,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.fenlight" name="FenLightAM" provider-name="AnonyMouse" version="2.2.03">
+</addon><addon id="plugin.video.fenlight" name="FenLightAM" provider-name="AnonyMouse" version="99.9.9">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.pil" version="1.1.7" />
@@ -889,7 +889,7 @@ In addition to what livestreams allowed you to do, you can now,
   </extension>
   <extension point="xbmc.service" library="service.py" start="login|startup">
   </extension>
-</addon><addon id="plugin.video.samus" name="Samus" version="0.0.26" provider-name="derzis">
+</addon><addon id="plugin.video.samus" name="Samus" version="0.0.28" provider-name="derzis">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />
@@ -3533,7 +3533,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="script.module.resolveurl" name="ResolveURL" version="5.1.194" provider-name="gujal">
+</addon><addon id="script.module.resolveurl" name="ResolveURL" version="5.2.197" provider-name="gujal">
     <requires>
         
         <import addon="script.module.six" />
@@ -3639,7 +3639,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="script.module.slyguy" name="SlyGuy Common" provider-name="SlyGuy" version="0.86.66">
+</addon><addon id="script.module.slyguy" name="SlyGuy Common" provider-name="SlyGuy" version="0.86.67">
   <requires>
     <import addon="slyguy.dependencies" version="0.0.30" />
     <import addon="repository.slyguy" version="0.0.9" />

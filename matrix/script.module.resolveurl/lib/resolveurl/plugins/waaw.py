@@ -36,16 +36,19 @@ class WaawResolver(ResolveUrl):
         'waaw.to', 'netu.to', 'hqq.to',
         'doplay.store', 'younetu.com', 'stbnetu.xyz', 'brightmindwave.com',
         'ncdn22.xyz', 'oyohd.one', 'player.sorozatok.me', 'vidmoly.cam',
-        '0gomovies.beer'
+        '0gomovies.beer', 'cdn1.vidcdn.co', 'str1.site', 'div.str1.site'
     ]
-    pattern = r'(?://|\.)((?:you|stb)?(?:waaw|netu|hqq|doplay|brightmindwave|ncdn22|oyohd|' \
-              r'player\.sorozatok|vidmoly|0gomovies)' \
-              r'\.(?:ac|tv|to|store|c[ao]m|xyz|one|me|beer))/' \
+    pattern = r'(?://|\.)((?:cdn\d+\.)?(?:div\.)?(?:you|stb)?(?:waaw|netu|hqq|doplay|brightmindwave|ncdn22|oyohd|' \
+              r'player\.sorozatok|vidmoly|0gomovies|vidcdn|co|str1)' \
+              r'\.(?:ac|tv|to|store|c[ao]m|xyz|one|me|beer|co|site))/' \
               r'(?:(?:watch_video|embed_player)\.php\?v=|.+?\?vid=|e/|f/)([a-zA-Z0-9]+)'
 
     def get_media_url(self, host, media_id, subs=False):
         web_url = self.get_url(host, media_id)
-        headers = {'User-Agent': common.FF_USER_AGENT}
+        headers = {
+            'User-Agent': common.FF_USER_AGENT,
+            'Referer': urllib_parse.urljoin(web_url, '/'),
+        }
         html = self.net.http_GET(web_url, headers=headers).content
         r = re.search(r"'videoid':\s*'([^']+)", html)
         if r:
