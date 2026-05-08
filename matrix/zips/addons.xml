@@ -506,7 +506,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.fenlight" name="FenLightAM" provider-name="AnonyMouse" version="99.9.9">
+</addon><addon id="plugin.video.fenlight" name="FenLightAM" provider-name="AnonyMouse" version="20.0.4">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.pil" version="1.1.7" />
