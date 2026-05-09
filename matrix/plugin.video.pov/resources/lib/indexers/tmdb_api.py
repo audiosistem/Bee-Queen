@@ -1,5 +1,6 @@
 import requests
 from threading import Thread
+from concurrent.futures import ThreadPoolExecutor
 from caches.main_cache import cache_object
 from caches.meta_cache import cache_function
 from modules import kodi_utils
@@ -12,7 +13,9 @@ get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting
 movies_append = 'external_ids,videos,credits,release_dates,alternative_titles,translations,images'
 tvshows_append = 'external_ids,videos,credits,content_ratings,alternative_titles,translations,images'
 eps_map = {1: 'Original air date', 2: 'Absolute', 3: 'DVD', 4: 'Digital', 5: 'Story arc', 6: 'Production', 7: 'TV'}
-tmdb_image_base = 'https://image.tmdb.org/t/p/%s%s'
+tmdb_image_base, tmdb_list_heading = 'https://image.tmdb.org/t/p/%s%s', 'TMDB Lists'
+list_obj = {'name': '', 'public': True, 'iso_3166_1': 'US', 'iso_639_1': 'en'}
+list_url = 'https://api.themoviedb.org/4'
 base_url = 'https://api.themoviedb.org/3'
 timeout = 3.05
 session = requests.Session()
@@ -379,30 +382,58 @@ def episode_group_details(group_id, tmdb_api=None):
 		return result
 	except: return []
 
+def list_request(url, params=None, data=None, method=None):
+	if isinstance(url, dict): return list_request(str(url.pop('path')), **url)
+	else: url = str(url)
+	if params and 'token' in params: token = params.pop('token')
+	else: token = get_setting('tmdb.token')
+	headers = {'Authorization': 'Bearer %s' % token}
+	method = method or 'get'
+	list_timeout=timeout ** 2 if method not in ('get',) else timeout
+	try:
+		response = session.request(method, url, params=params, json=data, headers=headers, timeout=list_timeout)
+		result = response.json() if 'json' in response.headers.get('Content-Type', '') else response.text
+		if not response.ok: response.raise_for_status()
+		return result
+	except requests.RequestException as e:
+		logger('tmdb error', str(e))
+
+def _get_tmdblist_paginated_list(url):
+	token, account_id = get_setting('tmdb.token'), get_setting('tmdb.account_id')
+	if 'account_id' in url: url = url.replace('account_id', account_id)
+	params = {'token': token, 'page': 1}
+	try:
+		result = list_request(url, params=params)
+		items, pages = result['results'], result['total_pages']
+	except: return []
+	if pages <= 1: return items
+	args = ({'path': url, 'params': {**params, 'page': page}} for page in range(2, pages + 1))
+	with ThreadPoolExecutor() as tpe: # keep max_workers as default, min(32, os.cpu_count() + 4)
+		for result in tpe.map(list_request, args): # ThreadPoolExecutor map preserves order
+			if isinstance(result, dict): items.extend(result['results'])
+	return items
+
 def tmdb_watchlist(mediatype, page, letter):
+	def first_aired(item):
+		if not item.get(premiered): return False
+		return js2date(item.get(premiered), str_format, remove_time=True) <= current_date
 	title, premiered = ('name', 'first_air_date') if mediatype == 'tv' else ('title', 'release_date')
-	original_list = all_list_items(watchlist, mediatype)
+	original_list = watchlist(mediatype)
 	if not show_unaired_watchlist():
 		current_date = get_datetime()
 		str_format = '%Y-%m-%d'
-		original_list = [i for i in original_list if i.get(premiered) and js2date(i.get(premiered), str_format, remove_time=True) <= current_date]
+		original_list = [i for i in original_list if first_aired(i)]
 	sort_key = lists_sort_order('watchlist')
 	if   sort_key == 2: original_list.sort(key=lambda k: k[premiered], reverse=True)
 	elif sort_key == 1: pass # api call for list specifies params created_at.desc
 	else: original_list = sort_for_article(original_list, title, ignore_articles())
-	if paginate():
-		limit = page_limit()
-		final_list, total_pages = paginate_list(original_list, page, letter, limit)
-	else: final_list, total_pages = original_list, 1
-	return final_list, total_pages
+	if paginate(): return paginate_list(original_list, page, letter, page_limit())
+	return original_list, 1
 
 def tmdb_favorites(mediatype, page, letter):
-	original_list = all_list_items(favorites, mediatype)
-	if paginate():
-		limit = page_limit()
-		final_list, total_pages = paginate_list(original_list, page, letter, limit)
-	else: final_list, total_pages = original_list, 1
-	return final_list, total_pages
+	original_list = favorites(mediatype)
+	if paginate(): return paginate_list(original_list, page, letter, page_limit())
+	return original_list, 1
 
 def tmdb_recommendations(mediatype, page, letter):
 	original_list = recommendations(mediatype, page)
@@ -416,56 +447,41 @@ def add_to_watchlist_favorites(item, list_type):
 	url = '%s/account/%s/%s' % (base_url, session_account_id, list_type)
 	return list_request(url, params=params, data=item, method='post')
 
-def _account_id(func):
-	def wrapper(*args, **kwargs):
-		kwargs['account_id'] = kwargs.get('account_id') or get_setting('tmdb.account_id')
-		result = func(*args, **kwargs)
-		return result
-	return wrapper
+def watchlist(mediatype):
+	string = 'tmdblist_watchlist_%s' % mediatype
+	url = '%s/account/%s/%s/watchlist' % (list_url, 'account_id', mediatype)
+	url += '?language=en-US&sort_by=created_at.desc'
+	return cache_object(_get_tmdblist_paginated_list, string, url)
 
-def all_list_items(func, *args):
-	def _process(f, *a):
-		r = f(*a)
-		results[a[-1]] = r['results']
-		return r['total_pages']
-	results, page, total_pages = {}, 1, 1
-	total_pages = _process(func, *args, page)
-	threads = TaskPool(40).tasks(_process, [(func, *args, i) for i in range(page + 1, total_pages + 1)], Thread)
-	[i.join() for i in threads]
-	results = [item for items in sorted(results.items()) for item in items[1]]
-	return results
+def favorites(mediatype):
+	string = 'tmdblist_favorites_%s' % mediatype
+	url = '%s/account/%s/%s/favorites' % (list_url, 'account_id', mediatype)
+	url += '?language=en-US&sort_by=created_at.desc'
+	return cache_object(_get_tmdblist_paginated_list, string, url)
 
-def all_user_lists():
-	sort = int(get_setting('tmdblist.sort_name', '0'))
-	results = all_list_items(user_lists)
-	try:
-		if   sort == 2: results.sort(key=lambda k: k['updated_at'], reverse=True)
-		elif sort == 1: results.sort(key=lambda k: k['number_of_items'], reverse=True)
-		else: results.sort(key=lambda k: k['name'].lower(), reverse=False)
-	except: pass
-	return results
-
-list_obj = {'description': '', 'name': '', 'iso_3166_1': 'US', 'iso_639_1': 'en', 'public': True}
-list_url = 'https://api.themoviedb.org/4'
-list_heading = 'TMDB Lists'
-
-def list_request(url, params=None, data=None, method=None):
-	access_token = get_setting('tmdb.token')
-	headers = {'Authorization': f"Bearer {access_token}"}
-	method = method or 'get'
-	list_timeout=timeout ** 2 if method not in ('get',) else timeout
-	try:
-		response = session.request(method, url, params=params, json=data, headers=headers, timeout=list_timeout)
-		result = response.json() if 'json' in response.headers.get('Content-Type', '') else response.text
-		if not response.ok: response.raise_for_status()
-		return result
-	except requests.RequestException as e:
-		logger('tmdb error', str(e))
-
-def list_details(list_id, page=1):
-	string = 'tmdblist_detail_%s_%s' % (list_id, page)
-	url = '%s/list/%s?page=%s' % (list_url, list_id, page)
+def recommendations(mediatype, page=1):
+	account_id = get_setting('tmdb.account_id')
+	string = 'tmdblist_recommendations_%s_%s_%s' % (account_id, mediatype, page)
+	url = '%s/account/%s/%s/recommendations' % (list_url, account_id, mediatype)
+	url += '?language=en-US&page=%s' % page
 	return cache_object(list_request, string, url)
+
+def user_lists():
+	sort = int(get_setting('tmdblist.sort_name', '0'))
+	string = 'tmdblist_user_lists'
+	url = '%s/account/%s/lists' % (list_url, 'account_id')
+	result = cache_object(_get_tmdblist_paginated_list, string, url)
+	try:
+		if   sort == 2: result.sort(key=lambda k: k['updated_at'], reverse=True)
+		elif sort == 1: result.sort(key=lambda k: k['number_of_items'], reverse=True)
+		else: result.sort(key=lambda k: k['name'].lower(), reverse=False)
+	except: pass
+	return result
+
+def list_details(list_id):
+	string = 'tmdblist_detail_%s' % list_id
+	url = '%s/list/%s' % (list_url, list_id)
+	return cache_object(_get_tmdblist_paginated_list, string, url)
 
 def list_add_items(list_id, items=None):
 	url = '%s/list/%s/items' % (list_url, list_id)
@@ -496,33 +512,6 @@ def list_delete(list_id):
 	url = '%s/list/%s' % (list_url, list_id)
 	return list_request(url, method='delete')
 
-@_account_id
-def user_lists(page=1, account_id=''):
-	string = 'tmdblist_user_lists_%s' % page
-	url = '%s/account/%s/lists?page=%s' % (list_url, account_id, page)
-	return cache_object(list_request, string, url)
-
-@_account_id
-def watchlist(mediatype, page=1, account_id=''):
-	string = 'tmdblist_watchlist_%s_%s_%s' % (account_id, mediatype, page)
-	url = '%s/account/%s/%s/watchlist' % (list_url, account_id, mediatype)
-	url += '?page=%slanguage=en-US&sort_by=created_at.desc' % page
-	return cache_object(list_request, string, url)
-
-@_account_id
-def favorites(mediatype, page=1, account_id=''):
-	string = 'tmdblist_favorites_%s_%s_%s' % (account_id, mediatype, page)
-	url = '%s/account/%s/%s/favorites' % (list_url, account_id, mediatype)
-	url += '?page=%slanguage=en-US&sort_by=created_at.desc' % page
-	return cache_object(list_request, string, url)
-
-@_account_id
-def recommendations(mediatype, page=1, account_id=''):
-	string = 'tmdblist_recommendations_%s_%s_%s' % (account_id, mediatype, page)
-	url = '%s/account/%s/%s/recommendations' % (list_url, account_id, mediatype)
-	url += '?page=%slanguage=en-US' % page
-	return cache_object(list_request, string, url)
-
 def tmdb_clean_watchlist(silent=False):
 	if not get_setting('tmdb.token'): return
 	if not silent and not kodi_utils.confirm_dialog(): return
@@ -531,8 +520,8 @@ def tmdb_clean_watchlist(silent=False):
 		from modules.settings import watched_indicators
 		watched_indicators = watched_indicators()
 		watchlist_ids, items = [], []
-		watchlist_ids += all_list_items(watchlist, 'movie')
-		watchlist_ids += all_list_items(watchlist, 'tv')
+		watchlist_ids += watchlist('movie')
+		watchlist_ids += watchlist('tv')
 		watchlist_ids = [str(i['id']) for i in watchlist_ids]
 		items += [
 			{'watchlist': False, 'media_type': 'movie', 'media_id': i['media_id']}
@@ -552,10 +541,10 @@ def tmdb_clean_watchlist(silent=False):
 
 def import_trakt_list(params):
 	from indexers.trakt_api import get_trakt_list_contents
-	send_str = 'Sending items to TMDB Watchlist...'
+	send_str = 'Sending items to TMDB...'
 	try:
 		progressBG = kodi_utils.progressDialogBG
-		progressBG.create(send_str, list_heading)
+		progressBG.create(send_str, tmdb_list_heading)
 		list_id, user, slug = params['trakt_list_id'], params['user'], params['list_slug']
 		items = get_trakt_list_contents(params.get('list_type'), list_id, user, slug)
 		len_items, wait = len(items), sum(1000 for i in chunks(items, 500))
@@ -577,7 +566,7 @@ def import_mdbl_list(params):
 	send_str = 'Sending list to TMDB...'
 	try:
 		progressBG = kodi_utils.progressDialogBG
-		progressBG.create(send_str, list_heading)
+		progressBG.create(send_str, tmdb_list_heading)
 		items = get_mdbl_list_contents(params['mdbl_list_id'], None)
 		len_items, wait = len(items), sum(1000 for i in chunks(items, 500))
 		for count, item in enumerate(items, 1):

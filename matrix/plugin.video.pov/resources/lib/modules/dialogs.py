@@ -142,14 +142,14 @@ def tmdb_manager_choice(params):
 	if not get_setting('tmdb.token', ''): return notification(32760)
 	from indexers import tmdb_api
 	image_resolution, tmdb_image_base = settings.get_resolution(), tmdb_api.tmdb_image_base
-	heading = ls(tmdb_api.list_heading).replace('[B]', '').replace('[/B]', '')
+	heading = ls(tmdb_api.tmdb_list_heading).replace('[B]', '').replace('[/B]', '')
 	icon = media_path('tmdb.png')
 	list_name = params.get('trakt_list_name') or params.get('mdbl_list_name') or ''
 	choices = []
 	choices += [
 		(str(item['id']), item['name'], '%s items' % item['number_of_items'],
 		 tmdb_image_base % (image_resolution['poster'], item['poster_path']) if item['poster_path'] else icon)
-		for item in tmdb_api.all_user_lists()
+		for item in tmdb_api.user_lists()
 	]
 	if not list_name:
 		choices += [(i.lower(), '[I]%s[/I]' % i, '', icon) for i in (ls(32453), ls(32500))]
@@ -166,7 +166,10 @@ def tmdb_manager_choice(params):
 		obj = tmdb_api.list_obj.copy()
 		obj['name'] = kodi_utils.dialog.input('New List Name', defaultt=list_name)
 		if not obj['name']: return tmdb_manager_choice(params)
-		if not tmdb_api.list_create(obj)['success']: return notification(32574)
+		show_busy_dialog()
+		try:
+			if not tmdb_api.list_create(obj)['success']: return notification(32574)
+		finally: hide_busy_dialog()
 		tmdb_api.clear_tmdbl_cache()
 		return tmdb_manager_choice(params)
 	if 'trakt_list_id' in params or 'mdbl_list_id' in params:
@@ -176,8 +179,8 @@ def tmdb_manager_choice(params):
 	params['mediatype'] = 'tv' if params['mediatype'] == 'tvshow' else 'movie'
 	if 'watchlist' in choice[0] or 'favorites' in choice[0]:
 		if 'watchlist' == choice[0]:
-			list_items = tmdb_api.all_list_items(tmdb_api.watchlist, params['mediatype'])
-		else: list_items = tmdb_api.all_list_items(tmdb_api.favorites, params['mediatype'])
+			list_items = tmdb_api.watchlist(params['mediatype'])
+		else: list_items = tmdb_api.favorites(params['mediatype'])
 		list_type = 'favorite' if choice[0] == 'favorites' else 'watchlist'
 		action = False if int(params['tmdb_id']) in {i['id'] for i in list_items} else True
 		data = {'media_type': params['mediatype'], 'media_id': params['tmdb_id'], list_type: action}

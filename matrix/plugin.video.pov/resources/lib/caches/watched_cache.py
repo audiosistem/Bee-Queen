@@ -13,11 +13,7 @@ from modules.utils import adjust_premiered_date, get_datetime, make_thread_list,
 # logger = kodi_utils.logger
 
 timeout = 20
-GET_MOVIE_SHOW = """
-	SELECT media_id, title, last_played, season, episode FROM watched_status
-	WHERE db_type = ? 
-	ORDER BY last_played DESC
-"""
+GET_MOVIE_SHOW = 'SELECT %s FROM watched_status WHERE db_type = ? ORDER BY last_played DESC'
 GET_BM = 'SELECT * FROM progress WHERE db_type = ? ORDER BY last_played DESC'
 SET_MOVIE_SHOW = 'INSERT OR IGNORE INTO watched_status VALUES (?, ?, ?, ?, ?, ?)'
 SET_BM = 'INSERT OR REPLACE INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
@@ -147,18 +143,20 @@ def get_next_episodes(watched_indicators):
 def get_watched_info_movie(watched_indicators):
 	info = {}
 	try:
+		command = GET_MOVIE_SHOW % ('media_id, title, last_played')
 		dbcon = _database_connect(get_database(watched_indicators))
 		dbcur = set_PRAGMAS(dbcon)
-		for i in dbcur.execute(GET_MOVIE_SHOW, ('movie',)): info[i[0]] = i
+		for i in dbcur.execute(command, ('movie',)): info[i[0]] = i
 	except: pass
 	return MappingProxyType(info)
 
 def get_watched_info_tv(watched_indicators):
 	info = {}
 	try:
+		command = GET_MOVIE_SHOW % ('media_id, title, last_played, season, episode')
 		dbcon = _database_connect(get_database(watched_indicators))
 		dbcur = set_PRAGMAS(dbcon)
-		for i in dbcur.execute(GET_MOVIE_SHOW, ('episode',)):
+		for i in dbcur.execute(command, ('episode',)):
 			if i[0] in info: info[i[0]] += (i,)
 			else: info[i[0]] = (i,)
 	except: pass
@@ -244,14 +242,15 @@ def get_watched_movie_tvshow(watched_info, mediatype, page_no, letter):
 
 def get_watched_status_movie(watched_info, tmdb_id):
 	try:
-		if tmdb_id in watched_info: return 1, 5
+		watched_info[tmdb_id]
+		return 1, 5
 	except: pass
 	return 0, 4
 
 def get_watched_status_tvshow(watched_info, tmdb_id, aired_eps):
 	playcount, overlay, watched, unwatched = 0, 4, 0, aired_eps
 	try:
-		if tmdb_id in watched_info: watched = len(watched_info[tmdb_id])
+		watched = len(watched_info[tmdb_id])
 		unwatched = aired_eps - watched
 		if watched >= aired_eps and aired_eps != 0: playcount, overlay = 1, 5
 	except: pass
@@ -260,8 +259,7 @@ def get_watched_status_tvshow(watched_info, tmdb_id, aired_eps):
 def get_watched_status_season(watched_info, tmdb_id, season, aired_eps):
 	playcount, overlay, watched, unwatched = 0, 4, 0, aired_eps
 	try:
-		if tmdb_id in watched_info:
-			watched = len([i for i in watched_info[tmdb_id] if i[3] == season])
+		watched = len([i for i in watched_info[tmdb_id] if i[3] == season])
 		unwatched = aired_eps - watched
 		if watched >= aired_eps and aired_eps != 0: playcount, overlay = 1, 5
 	except: pass
@@ -269,10 +267,8 @@ def get_watched_status_season(watched_info, tmdb_id, season, aired_eps):
 
 def get_watched_status_episode(watched_info, tmdb_id, season='', episode=''):
 	try:
-		if tmdb_id in watched_info:
-			watched = [i for i in watched_info[tmdb_id] if i[3] == season and i[4] == episode]
-		else: watched = None
-		if watched: return 1, 5
+		next(i for i in watched_info[tmdb_id] if i[3] == season and i[4] == episode)
+		return 1, 5
 	except: pass
 	return 0, 4
 

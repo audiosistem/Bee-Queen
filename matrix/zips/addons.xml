@@ -506,7 +506,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.fenlight" name="FenLightAM" provider-name="AnonyMouse" version="2.2.08">
+</addon><addon id="plugin.video.fenlight" name="FenLightAM" provider-name="AnonyMouse" version="2.2.04">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.pil" version="1.1.7" />
@@ -808,7 +808,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.05.05" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.05.06" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -816,7 +816,7 @@ In addition to what livestreams allowed you to do, you can now,
 	<extension point="xbmc.python.pluginsource" library="resources/lib/router.py">
 		<provides>video</provides>
 	</extension>
-	<extension point="xbmc.service" library="resources/lib/service.py" />
+	
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>

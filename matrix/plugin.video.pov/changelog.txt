@@ -1,12 +1,12 @@
   removal pending: download, tmdblist
 
   [COLOR dodgerblue][B]Version 6.05[/B][/COLOR]
+- Updated Trakt/TMDBList pagination.
 - Added Dropped TV Shows for local tracking.
   Access Dropped TV Shows from Favorites menu.
   Toggle Dropped from TV Shows Options... menu.
 - Changed default instances for comet/torz, seems more stable.
 - Updated Offcloud api: delete folder from cloud.
-- Updated Trakt pagination.
 
   [COLOR dodgerblue][B]Version 6.04[/B][/COLOR]
 - Re-added trakt_official_status at users request.
