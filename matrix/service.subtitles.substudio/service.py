@@ -51,6 +51,9 @@ except Exception: pass
 try: import loader
 except Exception: pass
 
+try: import utils
+except Exception: pass
+
 # ── HANDLE — protejat contra RunScript ───────────────────────────
 try:
     HANDLE = int(sys.argv[1]) if len(sys.argv) > 1 else 0
@@ -97,7 +100,8 @@ LANG_MAP = {
 
 NORM = {
     'eng':'en','spa':'es','fre':'fr','fra':'fr','ger':'de','ita':'it',
-    'dut':'nl','rum':'ro','ron':'ro','gre':'el','cze':'cs','pol':'pl',
+    'dut':'nl','rum':'ro','ron':'ro','ro':'ro', # Adăugat ron și ro pentru siguranță
+    'gre':'el','ell':'el','cze':'cs','pol':'pl',
     'hun':'hu','tur':'tr','bul':'bg','rus':'ru','por':'pt',
     'spa_la':'es','pb':'pt','pob':'pt','cat':'ca',
     'hrv':'hr','srp':'sr','slv':'sl','slo':'sk','ukr':'uk',
@@ -134,94 +138,124 @@ OS_REST_LANG = {
 # Variabilă globală pentru timeout-ul request-urilor (setată în search)
 RACE_TIMEOUT = 10.0
 
-def get_imdb_id_from_title(title, is_tv=False):
+def get_imdb_id_from_title(title, is_tv=False, kodi_year=None):
     """Găsește ID-ul IMDB folosind TMDB pe baza titlului și anului."""
     try:
+        # Elimină informațiile de sezon/episod din nume
         clean_name = re.sub(r'\s+S\d+E\d+.*|\s+Season.*', '', title, flags=re.IGNORECASE).strip()
-        
-        year_match = re.search(r'\((\d{4})\)', clean_name)
-        year = year_match.group(1) if year_match else None
-        
-        if year_match:
-            clean_name = clean_name[:year_match.start()].strip()
+
+        # Caută anul în text (ex: (2024), .2024., 2024)
+        year_match = re.search(r'[\(\.\s](\d{4})[\)\.\s]?', clean_name)
+        extracted_year = year_match.group(1) if year_match else None
+
+        if extracted_year:
+            clean_name = clean_name[:year_match.start()].strip(' .-_()')
+
+        # Stabilim anul final (Kodi are prioritate dacă există și e valid)
+        year = kodi_year if (kodi_year and str(kodi_year).isdigit() and int(kodi_year) > 1900) else extracted_year
+
+        # Elimină sufixe de țară comune (AU, UK, US) ca TMDB să nu fie încurcat
+        # dar salvăm sufixul pentru a alege corect rezultatul mai jos
+        country_hint = None
+        country_match = re.search(r'\b(AU|UK|US)\b', title, re.IGNORECASE)
+        if country_match:
+            country_hint = country_match.group(1).upper()
+            clean_name = re.sub(r'\s+(AU|UK|US)$', '', clean_name, flags=re.IGNORECASE).strip()
 
         if not clean_name:
             return None
 
         media_type = "tv" if is_tv else "movie"
         search_url = f"{BASE_URL_TMDB}/search/{media_type}"
-        params = {"api_key": TMDB_API_KEY, "query": clean_name}
-        
-        if year:
-            if is_tv: params["first_air_date_year"] = year
-            else: params["primary_release_year"] = year
 
-        r = requests.get(search_url, params=params, timeout=RACE_TIMEOUT).json()
-        
-        if r.get('results'):
-            tmdb_id = r['results'][0]['id']
+        def perform_tmdb_search(search_year):
+            params = {"api_key": TMDB_API_KEY, "query": clean_name}
+            if search_year:
+                if is_tv: params["first_air_date_year"] = search_year
+                else: params["primary_release_year"] = search_year
+            try:
+                r = requests.get(search_url, params=params, timeout=RACE_TIMEOUT).json()
+                return r.get('results', [])
+            except:
+                return []
+
+        # 1. Căutăm cu anul exact
+        results = perform_tmdb_search(year)
+
+        # 2. Fallback -1 an (Rezolvă problema "Fancy Dance 2024" care pe TMDB e 2023)
+        if not results and year:
+            _log_debug(f"Nu s-a găsit cu anul {year}, încercăm cu {int(year) - 1}")
+            results = perform_tmdb_search(str(int(year) - 1))
+
+        # 3. Fallback complet FĂRĂ an (pentru siguranță absolută)
+        if not results and year:
+            _log_debug("Nu s-a găsit cu an, facem fallback search complet fără an.")
+            results = perform_tmdb_search(None)
+
+        if results:
+            best_result = results[0]
+
+            # Dacă e serial și avem indiciu de țară (ex: Utopia AU), forțăm varianta corectă
+            if is_tv and country_hint:
+                for res in results:
+                    if country_hint in res.get('origin_country', []):
+                        best_result = res
+                        break
+
+            tmdb_id = best_result['id']
             ext_url = f"{BASE_URL_TMDB}/{media_type}/{tmdb_id}/external_ids"
             ext_r = requests.get(ext_url, params={"api_key": TMDB_API_KEY}, timeout=RACE_TIMEOUT).json()
             imdb_id = ext_r.get('imdb_id')
-            
-            _log_debug(f"Convertit {clean_name} ({year}) -> TMDB: {tmdb_id} -> IMDB: {imdb_id}")
+
+            _log_debug(f"Convertit '{clean_name}' (An: {year}) -> TMDB: {tmdb_id} -> IMDB: {imdb_id}")
             return imdb_id
+
     except Exception as e:
         if not RACE_STATE["finished"]: _log_error(f"TMDB Search Eroare: {str(e)}")
     return None
 
-def get_detailed_subtitle_names(imdb_id, target_lang=None, season=None, episode=None):
-    """Interoghează API-ul REST OpenSubtitles separat pt fiecare limbă necesară."""
+def get_detailed_subtitle_names(imdb_id, season=None, episode=None):
+    """Interoghează API-ul REST OpenSubtitles (full) și extrage NickName, Translator și Rank."""
     mapping = {}
     if not imdb_id:
         return mapping
     try:
         numeric_id = imdb_id.replace('tt', '')
-        
-        parts_base = []
+        path_parts = []
         if season and str(season) != '0' and episode and str(episode) != '0':
-            parts_base.append(f"episode-{episode}")
-        parts_base.append(f"imdbid-{numeric_id}")
+            path_parts.append(f"episode-{episode}")
+        path_parts.append(f"imdbid-{numeric_id}")
         if season and str(season) != '0':
-            parts_base.append(f"season-{season}")
+            path_parts.append(f"season-{season}")
             
-        langs_to_fetch = []
-        if target_lang:
-            for l in target_lang.split(','):
-                langs_to_fetch.append(OS_REST_LANG.get(l.strip(), 'eng'))
-        else:
-            langs_to_fetch = [None] # Pentru modul "Arată Toate"
-            
-        # FIX CRITIC: Facem o cerere curată pentru fiecare limbă în parte ca OS să nu dea eroare!
-        for lang in set(langs_to_fetch):
-            parts = list(parts_base)
-            if lang:
-                parts.append(f"sublanguageid-{lang}")
-            
-            rest_url = "https://rest.opensubtitles.org/search/" + "/".join(parts)
-            _log_debug(f"REST URL: {rest_url}")
-            
-            response = requests.get(rest_url, headers=HEADERS, timeout=RACE_TIMEOUT)
-            if response.ok:
-                data = response.json()
-                if isinstance(data, list):
-                    for item in data:
-                        file_name = item.get('SubFileName')
-                        if not file_name:
-                            continue
-                        
-                        extra_info = {
-                            'filename': file_name,
-                            'hi': str(item.get('SubHearingImpaired', '0')) == '1',
-                            'rating': str(item.get('SubRating', '0.0')),
-                            'uploader': item.get('UserNickName') or 'Unknown',
-                            'rank': item.get('UserRank') or ''
-                        }
+        rest_url = "https://rest.opensubtitles.org/search/" + "/".join(path_parts)
+        _log_debug(f"REST URL (Full Data): {rest_url}")
+        
+        response = requests.get(rest_url, headers=HEADERS, timeout=RACE_TIMEOUT)
+        if response.ok:
+            data = response.json()
+            if isinstance(data, list):
+                for item in data:
+                    nick = item.get('UserNickName') or ""
+                    trans = item.get('SubTranslator') or ""
+                    rank = item.get('UserRank') or ""
 
-                        for key in ('IDSubtitleFile', 'IDSubtitle'):
-                            val = str(item.get(key, ''))
-                            if val:
-                                mapping[val] = extra_info
+                    # Combinăm Nick și Translator
+                    author_parts = []
+                    if nick: author_parts.append(nick)
+                    if trans: author_parts.append(trans)
+                    author_final = " / ".join(author_parts) if author_parts else ""
+
+                    extra_info = {
+                        'filename': item.get('SubFileName', 'sub.srt'),
+                        'hi': str(item.get('SubHearingImpaired', '0')) == '1',
+                        'rating': str(item.get('SubRating', '0.0')),
+                        'uploader': author_final,
+                        'rank': rank
+                    }
+
+                    sid = str(item.get('IDSubtitle', ''))
+                    if sid: mapping[sid] = extra_info
     except Exception as e:
         if not RACE_STATE["finished"]: _log_error(f"OS REST Eroare: {str(e)}")
     return mapping
@@ -433,21 +467,71 @@ def search():
     else: 
         RACE_TIMEOUT = 25.0  # Mod dedicat (oferim timp agregatoarelor)
 
+    junk_ids = ('None', '', '0', 'VideoPlayer.TVShow.TMDbId', 'VideoPlayer.TMDbId', 'VideoPlayer.IMDBNumber')
+
     tmdb_id = xbmc.getInfoLabel("ListItem.Property(tmdb_id)") or xbmc.getInfoLabel("VideoPlayer.TMDbId")
     imdb_id = xbmc.getInfoLabel("VideoPlayer.IMDBNumber") or xbmc.getInfoLabel("ListItem.Property(imdb_id)")
-    
+
+    # --- NOU: Preluare inteligentă din "Window Properties" (Pentru TMDb Movies, Fen, Seren etc.) ---
+    home_window = xbmcgui.Window(10000)
+    if not imdb_id or str(imdb_id) in junk_ids:
+        imdb_id = home_window.getProperty("IMDb") or home_window.getProperty("imdb_id")
+    if not tmdb_id or str(tmdb_id) in junk_ids:
+        tmdb_id = home_window.getProperty("TMDb") or home_window.getProperty("tmdb_id")
+    # ------------------------------------------------------------------------------------------------
+
     s = xbmc.getInfoLabel("VideoPlayer.Season")
     e = xbmc.getInfoLabel("VideoPlayer.Episode")
     video_title = xbmc.getInfoLabel("VideoPlayer.TVShowTitle") or xbmc.getInfoLabel("VideoPlayer.OriginalTitle") or xbmc.getInfoLabel("VideoPlayer.Title")
     
-    junk_ids = ('None', '', '0', 'VideoPlayer.TVShow.TMDbId', 'VideoPlayer.TMDbId', 'VideoPlayer.IMDBNumber')
+    # 1. Extragere agresivă a anului din etichetele Kodi
+    kodi_year = xbmc.getInfoLabel("VideoPlayer.Year") or \
+                xbmc.getInfoLabel("ListItem.Year") or \
+                xbmc.getInfoLabel("ListItem.Premiered")
+                
+    if not kodi_year or len(str(kodi_year)) < 4:
+        kodi_year = home_window.getProperty("ListItem.Year")
+        
+    if kodi_year and len(str(kodi_year)) >= 4:
+        kodi_year = str(kodi_year)[:4]
+    else:
+        kodi_year = None
+
+    # 2. Extragere de rezervă (An, Țară și ID direct din link)
+    try:
+        file_path = unquote(xbmc.Player().getPlayingFile())
+        _log_debug(f"Verific link fisier pentru indicii: {file_path}")
+        
+        # --- NOU: Extragem ID-ul direct din interiorul URL-ului video dacă există (media_id=tt...) ---
+        if not imdb_id or str(imdb_id) in junk_ids:
+            match_imdb = re.search(r'(?:media_id|imdb|imdb_id|title)=([^&]+)', file_path, re.IGNORECASE)
+            if match_imdb and match_imdb.group(1).startswith('tt'):
+                imdb_id = match_imdb.group(1)
+                _log_debug(f"IMDb ID extras instant direct din link-ul video: {imdb_id}")
+        # -----------------------------------------------------------------------------------------------
+        
+        # Căutăm anul în formatul .2014. sau (2014) din link
+        if not kodi_year:
+            match_y = re.search(r'[\(\.\s](\d{4})[\)\.\s]', file_path)
+            if match_y:
+                kodi_year = match_y.group(1)
+                _log_debug(f"Anul {kodi_year} a fost extras din numele fișierului.")
+                
+        # Căutăm 'AU' (Australia) în nume dacă lipsește din titlul Kodi
+        if "au" in file_path.lower() and "au" not in video_title.lower():
+            if re.search(r'[\.\s_]au[\.\s_]', file_path, re.IGNORECASE):
+                video_title += " AU"
+                _log_debug("S-a adăugat automat sufixul 'AU' din denumirea fișierului.")
+    except Exception as e:
+        _log_debug(f"Eroare procesare nume fisier: {e}")
+    
     if str(tmdb_id) in junk_ids: tmdb_id = None
     if str(imdb_id) in junk_ids: imdb_id = None
     if imdb_id and not str(imdb_id).startswith('tt') and str(imdb_id).isdigit(): imdb_id = f"tt{imdb_id}"
 
     v_id = imdb_id or tmdb_id
     if not v_id and video_title:
-        fetched = get_imdb_id_from_title(video_title, is_tv=bool(s and s != "0"))
+        fetched = get_imdb_id_from_title(video_title, is_tv=bool(s and s != "0"), kodi_year=kodi_year)
         if fetched: v_id = imdb_id = fetched
 
     if not v_id and not video_title:
@@ -490,13 +574,17 @@ def search():
     # Regex blindat pentru SDH/HI care ocolește problema cu underscore-ul din Python!
     sdh_pattern = re.compile(r'(?:^|[^a-z0-9])(sdh|cc|hi|hearing[\s_]*impaired)(?:[^a-z0-9]|$)', re.IGNORECASE)
 
-    def fetch_wyzie(search_params, allowed_langs=None):
+    def fetch_wyzie(search_params):
         results = []
         try:
-            # Asigurăm interogarea tuturor surselor dinamice
+            # FIX: Adăugăm obligatoriu source=all pentru a prelua rezultatele din noul API
             search_params['source'] = 'all'
             
-            # FIX CRITIC: Adăugăm headers=HEADERS pentru a trece de scutul Anti-Bot (Cloudflare)
+            # Ne asigurăm că nu trimitem o limbă specifică pentru a trage toate rezultatele odată
+            if 'language' in search_params: del search_params['language']
+            
+            _log_debug(f"[WYZIE] Apel API: {base_url}?{urlencode(search_params)}")
+            
             r = requests.get(base_url, params=search_params, headers=HEADERS, timeout=RACE_TIMEOUT)
             
             if not r.ok: 
@@ -505,10 +593,7 @@ def search():
             
             for sub in r.json():
                 t_code = sub.get('language', 'en')
-                t_code_norm = NORM.get(t_code, t_code)
-                
-                if allowed_langs is not None and t_code_norm not in allowed_langs: 
-                    continue
+                t_code_norm = NORM.get(t_code.lower(), t_code.lower())
                 
                 url = sub.get('url', '')
                 if not url: continue
@@ -517,88 +602,72 @@ def search():
                 raw_fname = sub.get('release') or sub.get('fileName') or 'sub.srt'
                 clean_release = re.split(r'<br\s*/?>|\n', raw_fname, flags=re.IGNORECASE)[0]
                 clean_release = re.sub(r'[\\/*?:"<>|]', '', clean_release).strip()
-                
-                if not clean_release.lower().endswith('.srt'):
-                    clean_release += '.srt'
+                if not clean_release.lower().endswith('.srt'): clean_release += '.srt'
                 
                 # --- AFIȘARE DINAMICĂ A SURSEI ---
-                source_dynamic = sub.get('source', 'api')
-                fname_display = f"{clean_release} [B][COLOR FFB048B5][WZ][/COLOR][/B] [COLOR FF00BFFF]{source_dynamic}[/COLOR]"
+                source_dynamic = sub.get('source', 'api').upper()
+                fname_display = f"{clean_release} [B][COLOR FFB048B5][WZ][/COLOR][/B] [B][COLOR FF00BFFF][{source_dynamic}][/COLOR][/B]"
                 
                 # --- VERIFICARE HI/SDH/CC ---
-                check_str = f"{raw_fname} {sub.get('url','')} {sub.get('id','')}".lower()
-                is_sdh = sub.get('hearing_impaired', False) or bool(sdh_pattern.search(check_str))
+                check_str = f"{raw_fname} {url} {sub.get('id','')}".lower()
+                is_sdh = sub.get('isHearingImpaired', False) or sub.get('hearing_impaired', False) or bool(sdh_pattern.search(check_str))
 
-                is_chosen = (t_code_norm == NORM.get(l_code, l_code))
-
+                # ==========================================================
+                # NOU: GENERARE RATING ANTIGLONȚ (Protecție la null/None)
+                # ==========================================================
+                try:
+                    dl_count = int(sub.get('downloadCount') or 0)
+                except Exception:
+                    dl_count = 0
+                    
+                w_rating = 0.0
+                if dl_count >= 50000: w_rating = 10.0
+                elif dl_count >= 10000: w_rating = 8.0
+                elif dl_count >= 2000: w_rating = 6.0
+                elif dl_count >= 500: w_rating = 4.0
+                elif dl_count >= 50: w_rating = 2.0
+                
                 results.append({
-                    'language_name': _get_lang_name(t_code),
+                    'language_name': _get_lang_name(t_code_norm),
                     'filename': fname_display,
                     'url': url,
                     'l_code': t_code,
+                    'l_code_norm': t_code_norm,
                     'api_filename': clean_release,
-                    'is_chosen': is_chosen,
                     'is_local': False,
-                    'is_sdh': is_sdh
+                    'is_sdh': is_sdh,
+                    'rating': w_rating
                 })
-        except Exception as e: 
+        except Exception as e:
             _log_debug(f"[WYZIE] EROARE RETEA SAU PARSARE JSON: {e}")
         return results
 
+
     def wyzie_worker():
         worker_results = []
-        seen = set()
-        lock = threading.Lock()
-
-        def fetch_and_add(lang_code):
-            params = dict(bp)
-            if lang_code: params['language'] = lang_code
-            
-            # Logăm link-ul complet formatat pe care Wyzie îl primește:
-            full_url = f"{base_url}?{urlencode(params)}"
-            _log_debug(f"[WYZIE] Face cerere API către: {full_url}")
-            
-            for r in fetch_wyzie(params, None):
-                with lock:
-                    hash_key = f"{r['url']}_{r['filename']}"
-                    if hash_key not in seen:
-                        seen.add(hash_key)
-                        worker_results.append(r)
-
-        bp = {}
-        if wyzie_api_key: bp['key'] = wyzie_api_key
+        bp = {'key': wyzie_api_key}
         if v_id: bp['id'] = v_id
         elif video_title: bp['title'] = video_title
         if s and s != "0": bp['season'] = s; bp['episode'] = e
 
-        if show_all:
-            fetch_and_add(None)
-        else:
-            threads = []
-            t1 = threading.Thread(target=fetch_and_add, args=(l_code,))
-            threads.append(t1)
-            t1.start()
-            
-            if l_code != 'en': # CERE MEREU EN CA FALLBACK!
-                t2 = threading.Thread(target=fetch_and_add, args=('en',))
-                threads.append(t2)
-                t2.start()
-                
-            for t in threads:
-                t.join()
-
-        # Filtru local
+        # Facem UN SINGUR apel care aduce toate limbile
+        raw_list = fetch_wyzie(bp)
+        
+        target_norm = NORM.get(l_code, l_code)
+        
         final_results = []
-        for r in worker_results:
-            short_lang = NORM.get(r['l_code'], r['l_code'])
-            is_target = (short_lang == NORM.get(l_code, l_code))
-            is_fallback = (short_lang == 'en' and l_code != 'en')
+        for r in raw_list:
+            r_lang = r['l_code_norm']
             
+            is_target = (r_lang == target_norm)
+            is_fallback = (r_lang == 'en' and l_code != 'en')
+
+            # Dacă "Arată toate" e oprit, filtrăm doar RO și EN
             if show_all or is_target or is_fallback:
-                r['is_chosen'] = is_target
+                r['is_chosen'] = is_target # Prioritate la sortare pentru limba din setări
                 final_results.append(r)
                 
-        _log_debug(f"[WYZIE] S-au extras {len(worker_results)} rezultate brute. Au rămas după filtru: {len(final_results)}")
+        _log_debug(f"[WYZIE] S-au filtrat {len(final_results)} rezultate din {len(raw_list)} totale.")
         return final_results
 
     def os_worker():
@@ -616,17 +685,13 @@ def search():
             api_url = f"https://opensubtitles-v3.strem.io/subtitles/{media_type}/{query_id}.json"
             _log_debug(f"[OS] Face cerere API către: {api_url}")
             r = requests.get(api_url, headers=HEADERS, timeout=RACE_TIMEOUT)
-            if not r.ok: 
-                return results
+            if not r.ok: return results
 
-            subtitles = r.json().get('subtitles',[])
+            subtitles = r.json().get('subtitles', [])
             fallback_en = (l_code != 'en')
 
-            if show_all:
-                detailed_names = get_detailed_subtitle_names(current_imdb_id, target_lang=None, season=s, episode=e)
-            else:
-                lang_query = f"{l_code},en" if fallback_en else l_code
-                detailed_names = get_detailed_subtitle_names(current_imdb_id, target_lang=lang_query, season=s, episode=e)
+            # Preluăm harta detaliată (Uploader, Translator, Rank, Nume real)
+            detailed_names = get_detailed_subtitle_names(current_imdb_id, season=s, episode=e)
 
             seen = set()
             for sub in subtitles:
@@ -642,31 +707,31 @@ def search():
                 seen.add(url)
 
                 sub_id = str(sub.get('id', ''))
-                detailed_info = detailed_names.get(sub_id)
+                info = detailed_names.get(sub_id)
                 
-                if detailed_info:
-                    raw_fname = detailed_info['filename']
-                    hi_flag = detailed_info['hi']
-                    rating = detailed_info['rating']
-                    uploader = detailed_info['uploader']
-                    rank = detailed_info['rank']
+                if info:
+                    raw_fname = info['filename']
+                    hi_flag = info['hi']
+                    rating = info['rating']
+                    uploader = info['uploader']
+                    rank = info['rank']
                 else:
                     raw_fname = f"OpenSubtitles_{sub_id}.srt"
-                    hi_flag = False
-                    rating = "0.0"
-                    uploader = ""
-                    rank = ""
+                    hi_flag, rating, uploader, rank = False, "0.0", "", ""
 
                 fname_display = f"{raw_fname} [B][COLOR FFB048B5][OS][/COLOR][/B]"
                 
+                # --- LOGICĂ SDH (REINSTAURATĂ) ---
                 check_str = f"{raw_fname} {sub.get('url','')} {sub_id}".lower()
                 is_sdh = sub.get('hearing_impaired', False) or hi_flag or bool(sdh_pattern.search(check_str))
 
-                # Adăugăm doar numele de uploader în text, FĂRĂ steluțe grafice!
-                if uploader and uploader != "Unknown":
-                    rank_display = f" ({rank})" if rank else ""
-                    # fname_display += f" [COLOR gray]- {uploader}{rank_display}[/COLOR]"
-                    fname_display += f" [COLOR gray]- by [B][COLOR FF00BFFF]{uploader}[COLOR orange]{rank_display}[/COLOR][/B]"
+                # --- AFIȘARE UPLOADER + RANK ---
+                if uploader:
+                    rank_low = rank.lower()
+                    # Culori: orange pentru trusted/platinum, lime pentru admin/gold, blue pentru restul
+                    r_color = "orange" if "trusted" in rank_low or "platinum" in rank_low else "lime" if "admin" in rank_low or "gold" in rank_low else "00BFFF"
+                    rank_str = f" [COLOR {r_color}]({rank})[/COLOR]" if rank else ""
+                    fname_display += f" [COLOR gray]- by [B][COLOR FF00BFFF]{uploader}[/COLOR]{rank_str}[/B][/COLOR]"
 
                 results.append({
                     'language_name': _get_lang_name(sub_l_code),
@@ -677,14 +742,14 @@ def search():
                     'is_chosen': is_target,
                     'is_local': False,
                     'is_sdh': is_sdh,
-                    'rating': rating  # O păstrăm ascunsă pentru a o da lui Kodi
+                    'rating': rating
                 })
         except Exception as e: 
-            pass
+            _log_debug(f"[OS] Eroare: {e}")
         return results
 
     def subhero_worker():
-        nonlocal s, e, video_title, imdb_id # Facem variabilele externe vizibile!
+        nonlocal s, e, video_title, imdb_id
         results = []
         try:
             from urllib.parse import quote
@@ -700,64 +765,56 @@ def search():
                 config_dict = {"language": langs_str, "onlyReturnMatching": False}
                 config_encoded = quote(json.dumps(config_dict, separators=(',', ':')))
                 url = f"https://subhero.chromeknight.dev/{config_encoded}/subtitles/{v_type}/{v_id_sh}/manifest.json"
-                
-                _log_debug(f"[SUBHERO] Face cerere API către: {url}")
-                
                 try:
-                    # FIX CRITIC: Adăugăm headers=HEADERS pentru a bloca Timeout-ul de protecție!
                     r = requests.get(url, headers=HEADERS, timeout=RACE_TIMEOUT)
                     if r.ok: return r.json().get('subtitles', [])
-                    else: _log_debug(f"[SUBHERO] Răspuns API invalid. Cod: {r.status_code}")
-                except Exception as e: 
-                    _log_debug(f"[SUBHERO] Eroare rețea: {e}")
+                except: pass
                 return []
 
-            if show_all:
-                subs = fetch_sh("ro,en,es,fr,de,it,hu,pt,ru,tr,bg,el,pl,cs,nl,ar")
-            else:
-                search_langs = [NORM.get(l_code, l_code)]
-                if l_code != 'en': search_langs.append('en') # CERE MEREU EN CA FALLBACK!
-                subs = fetch_sh(",".join(search_langs))
+            subs = fetch_sh("ro,en,es,fr,de,it,hu,pt,ru,tr,bg,el,pl,cs,nl,ar") if show_all else fetch_sh(",".join([NORM.get(l_code, l_code), 'en']))
             
+            try: v_path = xbmc.Player().getPlayingFile().lower()
+            except: v_path = ""
+
             seen = set()
             for sub in subs or []:
-                s_lang = sub.get('lang', 'eng').lower()
-                short_lang = NORM.get(s_lang, s_lang[:2])
-                
-                is_target = (short_lang == NORM.get(l_code, l_code))
-                is_fallback = (short_lang == 'en' and l_code != 'en')
-                
-                if not (show_all or is_target or is_fallback): continue
-
                 url = sub.get('url', '')
                 if not url or url in seen: continue
                 seen.add(url)
+                
+                s_lang = sub.get('lang', 'eng').lower()
+                short_lang = NORM.get(s_lang, s_lang[:2])
                 
                 raw_release = sub.get('release') or sub.get('description') or 'Subtitle'
                 clean_release = re.split(r'<br\s*/?>|\n', raw_release, flags=re.IGNORECASE)[0]
                 clean_release = re.sub(r'[\\/*?:"<>|]', '', clean_release).strip()
                 if not clean_release.lower().endswith('.srt'): clean_release += '.srt'
 
-                fname_display = f"{clean_release} [B][COLOR FFB048B5][SH][/COLOR][/B]"
+                # --- LOGICĂ RATING INTELIGENTĂ PT SUBHERO ---
+                # Plecăm de la o notă de bază (4.0 = 2 stele)
+                sh_rating = 4.0
+                rel_low = clean_release.lower()
+                sync_tags = ['web-dl', 'webrip', 'bluray', 'brrip', 'x264', 'x265', 'hevc', '1080p', '720p', '2160p', 'hdtv']
                 
-                check_str = f"{raw_release} {sub.get('description','')} {sub.get('url','')} {sub.get('id','')}".lower()
-                is_sdh = sub.get('hearing_impaired', False) or bool(sdh_pattern.search(check_str))
+                # Calculăm câte tag-uri coincid cu fișierul video curent
+                matches = sum(1 for tag in sync_tags if tag in rel_low and tag in v_path)
+                if matches >= 3: sh_rating = 10.0  # 5 stele
+                elif matches >= 1: sh_rating = 8.0 # 4 stele
+                
+                is_sdh = sub.get('hearing_impaired', False) or bool(sdh_pattern.search(f"{raw_release} {url}".lower()))
 
                 results.append({
                     'language_name': _get_lang_name(short_lang),
-                    'filename': fname_display,
+                    'filename': f"{clean_release} [B][COLOR FFB048B5][SH][/COLOR][/B]",
                     'url': url,
                     'l_code': short_lang,
                     'api_filename': clean_release,
-                    'is_chosen': is_target,
+                    'is_chosen': (short_lang == NORM.get(l_code, l_code)),
                     'is_local': False,
-                    'is_sdh': is_sdh
+                    'is_sdh': is_sdh,
+                    'rating': sh_rating # Trimitem rating-ul calculat
                 })
-            
-            _log_debug(f"[SUBHERO] S-au găsit {len(subs or [])} în manifest. Au rămas după filtru: {len(results)}")
-        except Exception as e: 
-            _log_debug(f"[SUBHERO] EROARE in worker: {e}")
-            pass
+        except Exception: pass
         return results
 
     online_results = []
@@ -823,62 +880,45 @@ def search():
 
     try:
         video_path = xbmc.Player().getPlayingFile().lower()
-    except Exception:
+    except:
         video_path = ""
 
-    # Sortare: 1. Locale, 2. Limba aleasă, 3. Alfabetic
     all_results.sort(key=lambda x: (not x.get('is_local', False), not x['is_chosen'], x['language_name']))
 
     for res in all_results:
         li = xbmcgui.ListItem(label=res['language_name'])
         li.setLabel2(res['filename'])
         
-        # Setare steaguri țări
-        flag_code = l_code[:2] if res.get('is_local', False) else (res['l_code'][:2] if len(res['l_code']) >= 2 else res['l_code'])
-        li.setArt({'thumb': flag_code, 'icon': flag_code})
-
-        # ==========================================================
-        # 1. SYNC (Bifa de potrivire - calculează automat ca în celălalt addon)
-        # ==========================================================
-        is_local = res.get('is_local', False)
-        sub_name_lower = res.get('api_filename', '').lower()
-        sync_tags = ['amzn', 'web-dl', 'webrip', 'bluray', 'brrip', 'x264', 'x265', 'hevc', '1080p', '720p', '2160p', 'hdtv']
-        
-        # Verificăm câte tag-uri sunt comune între numele video-ului tău și numele subtitrării
-        m_score = sum(1 for tag in sync_tags if tag in sub_name_lower and tag in video_path)
-        
-        is_sync = "true" if (is_local or m_score > 0) else "false"
-        li.setProperty('sync', is_sync)
-
-        # ==========================================================
-        # 2. CC (Hearing Impaired Icon)
-        # ==========================================================
-        is_hi = "true" if res.get('is_sdh', False) else "false"
-        li.setProperty('hearing_imp', is_hi)
-        
-        # ==========================================================
-        # 3. RATING (Trimite steluțele spre skin-urile avansate)
-        # ==========================================================
-        try: rating_val = float(res.get('rating', 0.0) or 0.0)
-        except Exception: rating_val = 0.0
+        # --- LOGICĂ STELUȚE (Mapare 1-5 ca în sistemul Kodi) ---
+        try:
+            # Transformăm orice rating (string sau float) în float
+            val = float(res.get('rating', 0.0) or 0.0)
             
-        if rating_val > 0.0:
-            li.setProperty('rating', str(rating_val))
-            try: li.setRating('opensubtitles', rating_val, 10, True)
-            except AttributeError: pass
-            try: li.setInfo('video', {'rating': rating_val})
-            except AttributeError: pass
+            # Mapare manuală pe 5 stele pentru a evita rotunjirile greșite
+            if val <= 0.0: stars = "0"
+            elif val <= 2.0: stars = "1"
+            elif val <= 4.0: stars = "2"
+            elif val <= 6.0: stars = "3"
+            elif val <= 8.5: stars = "4"
+            else: stars = "5"
+        except:
+            stars = "0"
+            
+        # FIX: Folosim formatul exact din RegieLive (Nota la icon, steagul la thumb)
+        flag_code = l_code[:2] if res.get('is_local', False) else (res['l_code'][:2] if len(res['l_code']) >= 2 else res['l_code'])
+        li.setArt({'thumb': flag_code, 'icon': stars})
+        
+        # Proprietăți extra pentru skin-uri
+        li.setProperty('rating', stars)
+        li.setProperty('hearing_imp', "true" if res.get('is_sdh', False) else "false")
+        
+        # Calcul Sync
+        sub_name_lower = res.get('api_filename', '').lower()
+        sync_tags = ['amzn', 'web-dl', 'webrip', 'bluray', 'brrip', 'x264', 'x265', 'hevc', '1080p', '720p', '2160p']
+        m_score = sum(1 for tag in sync_tags if tag in sub_name_lower and tag in video_path)
+        li.setProperty('sync', "true" if (res.get('is_local', False) or m_score > 0) else "false")
 
-        li.setProperty('language', res['language_name'])
-
-        # ==========================================================
-        d_params = {
-            'action': 'download', 
-            'url': res['url'], 
-            'l_code': res['l_code'], 
-            'api_filename': res['api_filename'], 
-            'is_local': '1' if is_local else '0'
-        }
+        d_params = {'action': 'download', 'url': res['url'], 'l_code': res['l_code'], 'api_filename': res['api_filename'], 'is_local': '1' if res.get('is_local', False) else '0'}
         xbmcplugin.addDirectoryItem(handle=HANDLE, url=f"{sys.argv[0]}?{urlencode(d_params)}", listitem=li)
 
     xbmcplugin.endOfDirectory(HANDLE)
@@ -1122,12 +1162,16 @@ if __name__ == '__main__':
     # Rulăm curățenia în fundal rapid
     _cleanup_orphaned_settings()
 
-    # ── Verifică dacă e RunScript (clean_saved) ──────────────────
-    # RunScript trimite parametrii ca sys.argv[1], sys.argv[2], etc.
-    # NU ca query string
+    # ── Verifică dacă e RunScript (clean_saved, suport, log) ─────────
     for arg in sys.argv:
         if 'clean_saved' in str(arg):
             _clean_saved_folder()
+            sys.exit(0)
+        elif 'upload_log' in str(arg):
+            if utils is not None: utils.upload_logfile()
+            sys.exit(0)
+        elif 'show_donate' in str(arg):
+            if utils is not None: utils.show_donate_link()
             sys.exit(0)
 
     # ── Flow normal (subtitle module) ────────────────────────────

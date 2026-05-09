@@ -1,3 +1,20 @@
+[B][COLOR FF00BFFF]v1.0.23[/COLOR][/B]
+- Fix Wyzie & OS
+
+[B][COLOR FF00BFFF]v1.0.22[/COLOR][/B]
+- Implementare Upload Kodi Log pe Pastebin
+- Implementare afisare link Donatii pentru cine vrea sa sustina proiectul.
+
+[B][COLOR FF00BFFF]v1.0.21[/COLOR][/B]
+- Corectata identificarea filmelor care au anul de lansare decalat pe platforme (ex: filme de festival ca Fancy Dance).
+- Detectare imbunatatita pentru serialele cu acelasi nume (ex: Utopia AU vs UK)
+
+[B][COLOR FF00BFFF]v1.0.20[/COLOR][/B]
+- Posibilitatea de a alege dimensiunea pachetelor de traducere (300/500/700 linii) doar in modul „Gemini Slow”, cu primul pachet fix de 200 de linii pentru afisare rapidă.
+
+[B][COLOR FF00BFFF]v1.0.19[/COLOR][/B]
+- fix afisare rating subtitrare (stelute)
+
 [B][COLOR FF00BFFF]v1.0.18[/COLOR][/B]
 - fix log_info error
 
