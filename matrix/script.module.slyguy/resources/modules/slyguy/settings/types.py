@@ -643,7 +643,7 @@ class BaseSettings(object):
         self.remove(key)
         return value
 
-    def get_setting(self, key, default=None):
+    def get_setting(self, key, default=None, warned={}):
         if not self._migrated:
             self._migrated = True
             migrate(self)
@@ -654,9 +654,9 @@ class BaseSettings(object):
                 return setting
 
         setting = Dict(key, owner=ADDON_ID, default=default, override=False, inherit=False, visible=False)
-        self.SETTINGS[key] = setting
-        if ADDON_DEV and not key.startswith('userdata_'):
+        if ADDON_DEV and not key.startswith('userdata_') and key not in warned:
             log.warning("Setting '{}' not found. Created ad-hoc dict setting".format(key))
+            warned[key] = True
         return setting
 
     def reset(self):

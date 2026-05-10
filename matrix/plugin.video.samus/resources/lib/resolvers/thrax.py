@@ -5,9 +5,11 @@ import requests
 import xbmc
 
 _BASE = 'https://api.derzis.xyz'
+from resources.lib.resolvers._common import THRAX_KEY as _THRAX_KEY
 _HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'application/json',
+    'X-Thrax-Key': _THRAX_KEY,
 }
 
 

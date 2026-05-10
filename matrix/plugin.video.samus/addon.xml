@@ -1,4 +1,4 @@
-<addon id="plugin.video.samus" name="Samus" version="0.0.28" provider-name="derzis">
+<addon id="plugin.video.samus" name="Samus" version="0.0.29" provider-name="derzis">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />

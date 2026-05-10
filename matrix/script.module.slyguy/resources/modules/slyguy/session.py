@@ -197,7 +197,10 @@ class SessionAdapter(requests.adapters.HTTPAdapter):
             pool_key = pool_key._replace(key_server_hostname=self.session_data['resolver'][1].nameservers[0])
 
         pool = func(pool_key, request_context)
-        pool._new_conn = functools.partial(self._new_pool_conn, pool._new_conn)
+        # Guard against re-wrapping a cached pool — would otherwise accumulate partials
+        # and recurse without bound on _new_conn().
+        if not (isinstance(pool._new_conn, functools.partial) and pool._new_conn.func is self._new_pool_conn):
+            pool._new_conn = functools.partial(self._new_pool_conn, pool._new_conn)
         return pool
 
     def _new_pool_conn(self, func, *args, **kwargs):

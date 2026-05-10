@@ -889,7 +889,7 @@ In addition to what livestreams allowed you to do, you can now,
   </extension>
   <extension point="xbmc.service" library="service.py" start="login|startup">
   </extension>
-</addon><addon id="plugin.video.samus" name="Samus" version="0.0.28" provider-name="derzis">
+</addon><addon id="plugin.video.samus" name="Samus" version="0.0.29" provider-name="derzis">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />
@@ -3639,7 +3639,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="script.module.slyguy" name="SlyGuy Common" provider-name="SlyGuy" version="0.86.67">
+</addon><addon id="script.module.slyguy" name="SlyGuy Common" provider-name="SlyGuy" version="0.86.70">
   <requires>
     <import addon="slyguy.dependencies" version="0.0.30" />
     <import addon="repository.slyguy" version="0.0.9" />
@@ -3647,7 +3647,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
   <extension point="xbmc.python.pluginsource" library="default.py">
     <provides>executable</provides>
   </extension>
-  <extension point="xbmc.service" library="service.py" start="login" />
+  
   <extension point="xbmc.python.module" library="resources/modules" />
   <extension point="xbmc.addon.metadata">
     <description lang="en">Common code, proxy and settings required by all Slyguy add-ons</description>
@@ -3916,7 +3916,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon><addon id="service.subtitles.wyzie" name="Wyzie Subtitles" version="1.1.1" provider-name="Wyzie">
+</addon><addon id="service.subtitles.wyzie" name="Wyzie Subtitles" version="1.2.0a" provider-name="Wyzie">
     <requires>
         <import addon="xbmc.python" version="3.0.1" />
         <import addon="script.module.requests" version="2.25.1" />
@@ -3924,11 +3924,19 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
     </requires>
     <extension point="xbmc.subtitle.module" library="service.py" languages="Romanian" />
     <extension point="xbmc.addon.metadata">
-        <summary lang="ro">Subtitrări Wyzie (IMDB/TMDB)</summary>
+        <summary lang="ro">Subtitrări de pe Wyzie Subs cu Translator AI integrat</summary>
+        <summary lang="en_GB">Subtitles from Wyzie Subs with integrated AI Translator</summary>
+        <description lang="ro">Traducere automată folosind Google, Gemini, DeepL sau Lingva .</description>
+        <description lang="en_GB">Automatic translation using Google, Gemini, DeepL or Lingva.</description>
+        <disclaimer lang="ro">Acest addon traduce subtitrări folosind servicii AI externe.</disclaimer>
+        <disclaimer lang="en_GB">This addon translates subtitles using external AI services.</disclaimer>
+        <language>ro_RO en_GB</language>
         <platform>all</platform>
-    <assets>
-      <icon>icon.png</icon>
-    </assets>
+        <license>GPL-2.0-only</license>
+        <assets>
+            <icon>icon.png</icon>
+	        <fanart>fanart.png</fanart>			
+        </assets>
     </extension>
 </addon><addon id="slyguy.dependencies" name="SlyGuy Dependencies" provider-name="SlyGuy" version="0.0.30">
   <requires>

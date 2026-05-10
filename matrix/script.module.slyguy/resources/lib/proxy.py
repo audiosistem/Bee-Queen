@@ -851,8 +851,9 @@ class RequestHandler(BaseHTTPRequestHandler):
                     log.debug('Removed audio adapt set: {}'.format(adap_set.getAttribute('id')))
                     continue
 
-                is_audio_description = any([elem for elem in adap_set.getElementsByTagName('Accessibility') if elem.getAttribute('schemeIdUri') == 'urn:tva:metadata:cs:AudioPurposeCS:2007'])
-                #any([elem for elem in adap_set.getElementsByTagName('Role') if elem.getAttribute('schemeIdUri') == 'urn:mpeg:dash:role:2011' and elem.getAttribute('value') == 'description'])
+                is_audio_description = any([elem for elem in adap_set.getElementsByTagName('Accessibility') if elem.getAttribute('schemeIdUri') == 'urn:tva:metadata:cs:AudioPurposeCS:2007']) \
+                    or any([elem for elem in adap_set.getElementsByTagName('Role') if elem.getAttribute('schemeIdUri') == 'urn:mpeg:dash:role:2011' and elem.getAttribute('value') == 'description'])
+
                 if is_audio_description:
                     if not audio_description:
                         log.debug('Removed audio description adapt set: {}'.format(adap_set.getAttribute('id')))

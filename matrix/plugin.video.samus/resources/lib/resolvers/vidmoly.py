@@ -2,6 +2,7 @@
 import re
 import requests
 import xbmc
+from resources.lib.resolvers._common import THRAX_HEADERS as _THRAX_HEADERS
 
 _THRAX  = 'https://api.derzis.xyz'
 _LABEL  = '[VML]'
@@ -19,7 +20,7 @@ def resolve_via_thrax(url):
             f'{_THRAX}/vidmoly/resolve',
             params={'url': url},
             timeout=60,
-            headers={'Accept-Encoding': 'gzip, deflate'},
+            headers={**_THRAX_HEADERS, 'Accept-Encoding': 'gzip, deflate'},
         )
         if not r.ok:
             xbmc.log(f'{_LABEL} Thrax HTTP {r.status_code}', xbmc.LOGWARNING)

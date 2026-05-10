@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import requests
 import xbmc
+from resources.lib.resolvers._common import THRAX_HEADERS as _THRAX_HEADERS
 
 _THRAX = 'https://api.derzis.xyz'
 _LABEL = '[TG]'
@@ -14,7 +15,7 @@ def resolve_via_thrax(url):
             f'{_THRAX}/telegram/resolve',
             params={'url': url},
             timeout=15,
-            headers={'Accept-Encoding': 'gzip, deflate'},
+            headers={**_THRAX_HEADERS, 'Accept-Encoding': 'gzip, deflate'},
         )
         if not r.ok:
             xbmc.log(f'{_LABEL} Thrax HTTP {r.status_code}', xbmc.LOGWARNING)

@@ -2,6 +2,7 @@
 import requests
 import xbmc
 from urllib.parse import urlparse, parse_qs
+from resources.lib.resolvers._common import THRAX_HEADERS as _THRAX_HEADERS
 
 _BASE        = 'https://primesrc.me'
 _THRAX       = 'https://api.derzis.xyz'
@@ -23,7 +24,7 @@ def resolve_via_thrax(url):
         return None
     try:
         r = requests.get(f'{_THRAX}/primesrcme/resolve', params={'key': key}, timeout=90,
-                         headers={'Accept-Encoding': 'gzip, deflate'})
+                         headers={**_THRAX_HEADERS, 'Accept-Encoding': 'gzip, deflate'})
         if not r.ok:
             xbmc.log(f'{_LABEL} Thrax /primesrcme/resolve HTTP {r.status_code}', xbmc.LOGWARNING)
             return None
