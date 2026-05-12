@@ -1,6 +1,9 @@
   removal pending: download, tmdblist
 
   [COLOR dodgerblue][B]Version 6.05[/B][/COLOR]
+- Added temporary Settings/My Lists/Trakt/Reverse Added/Released Sort Direction.
+  Requires manual Clear Trakt Cache after setting change.
+- Removed higlighting for TMDBList private lists.
 - Change for Real Debrid infringing_file.
 - Updated Trakt/TMDBList pagination.
 - Added Dropped TV Shows for local tracking.
@@ -36,8 +39,6 @@
 - Added context menu sorting for single episode lists.
 - Moved torboxnews to internal scraper.
 - Updated MDBList with Dropped TV Shows.
-- Added temporary Settings/My Lists/Trakt/Reverse Added/Released Sort Direction.
-  Requires manual Clear Trakt Cache after setting change.
 - Code cleanup.
 
   [COLOR dodgerblue][B]Version 6.01[/B][/COLOR]

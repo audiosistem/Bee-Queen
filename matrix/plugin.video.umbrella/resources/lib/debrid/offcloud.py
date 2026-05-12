@@ -244,7 +244,7 @@ class Offcloud:
 		progressBG = control.progressDialogBG
 		progressBG.create('Offcloud', 'Clearing cloud files')
 		_unlimited = control.setting('dev.batch.unlimited') == 'true'
-		_bs = None if _unlimited else int(control.setting('dev.batch.size') or '10')
+		_bs = None if _unlimited else max(int(control.setting('dev.batch.size') or '10'), 1)
 		try:
 			with ThreadPoolExecutor(max_workers=_bs) as executor:
 				futures = {

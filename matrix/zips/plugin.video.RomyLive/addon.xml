@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.0+matrix" provider-name="RomyCupidon">  
+<addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.1+matrix" provider-name="RomyCupidon">  
 <requires>
     <import addon="xbmc.python" version="3.0.0"/>
     <import addon="script.module.requests"/>
     <import addon="script.module.simplejson"/>
 	<import addon="script.module.kodi-six" />
 	<import addon="script.module.resolveurl" version="5.0.00"/>
+	<import addon="inputstream.adaptive"/>
 </requires>  
 <extension point="xbmc.python.pluginsource" library="default.py">
 	<provides>video</provides>
@@ -16,7 +17,8 @@
 Oferă acces la filme, seriale și multiple categorii de TV live, organizate 
 într-o interfață modernă și intuitivă. Navigarea este rapidă, conținutul este 
 structurat eficient, iar experiența de utilizare este optimizată pentru 
-performanță și stabilitate pe toate dispozitivele compatibile Kodi.[/COLOR]
+performanță și stabilitate pe toate dispozitivele compatibile Kodi.
+În zona Adult se poate viziona conținutul doar introducând anul în care a fost rostit acest îndemn: «Domnule Gorbaciov, dărâmați acest zid!»”[/COLOR]
 
 Cu RomyLive+, ai tot conținutul preferat într-un singur loc.</description>
     <disclaimer lang="en"></disclaimer>

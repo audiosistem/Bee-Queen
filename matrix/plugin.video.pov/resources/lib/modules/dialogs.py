@@ -576,11 +576,12 @@ def scrape_with_custom_values(mediatype, meta, season=None, episode=None):
 def scrape_from_episode_group(meta, season, episode):
 	from indexers.tmdb_api import episode_groups, episode_group_details
 	from sources import Sources
-	user_info = settings.metadata_user_info()
 	tmdb_id, heading, poster = meta['tmdb_id'], meta['tvshowtitle'], meta['poster']
-	groups = episode_groups(tmdb_id, user_info['tmdb_api'])
+	groups = episode_groups(tmdb_id)
 	choices = [
-		(item['id'], '%s (%s)' % (item['name'], item['type']), '%s Groups, %s Episodes' % (item['group_count'], item['episode_count']))
+		(item['id'],
+		 '%s (%s)' % (item['name'], item['type']),
+		 '%s Groups, %s Episodes' % (item['group_count'], item['episode_count']))
 		for item in groups
 	]
 	if not choices: return notification(32760)
@@ -588,7 +589,7 @@ def scrape_from_episode_group(meta, season, episode):
 	kwargs = {'items': json.dumps(list_items), 'heading': heading, 'enumerate': 'true', 'multi_line': 'true'}
 	choice = select_dialog([i[0] for i in choices], **kwargs)
 	if choice is None: return
-	episodes = episode_group_details(choice, user_info['tmdb_api'])
+	episodes = episode_group_details(choice)
 	if not episodes: return notification(32760)
 	episodes = [
 		{**episode, 'custom_episode': episode['order'] + 1, 'custom_season': group['order'],

@@ -135,6 +135,7 @@
 		<setting id="trakt.expires" type="text" default="" visible="false" />
 		<setting id="trakt.token" type="text" default="" visible="false" />
 		<setting id="trakt_user" label="Username" type="text" default="" enable="false" />
+		<setting id="trakt.reverse" label="Reverse Added/Released Sort Direction" type="bool" default="false" />
 		<!-- MDBList -->
 		<setting label="MDBList" type="lsep" />
 		<setting id="mdblist.token" label="API Key" type="text" default="" visible="false" />
@@ -143,11 +144,11 @@
 		<setting label="TMDB Lists" type="lsep" />
 		<setting id="tmdb.session_id" type="text" default="" visible="false" />
 		<setting id="tmdb.session_account_id" type="text" default="" visible="false" />
-		<setting id="tmdb.username" label="Username" type="text" default="" enable="false" />
 		<setting id="tmdb.token" type="text" default="" visible="false" />
 		<setting id="tmdb.account_id" label="User" type="text" default="" enable="false" visible="false"/>
-		<setting id="tmdblist.sort_name" label="Sort List Names Type" type="enum" default="0" values="Title|Number of Items|Recently Updated" visible="!eq(-2,)" />
-		<setting id="tmdblist.watchlist_sync" label="Purge Watchlist on Trakt Refresh" type="bool" default="false" visible="!eq(-3,)" />
+		<setting id="tmdb.username" label="Username" type="text" default="" enable="false" />
+		<setting id="tmdblist.sort_name" label="Sort List Names Type" type="enum" default="0" values="Title|Number of Items|Recently Updated" visible="!eq(-1,)" />
+		<setting id="tmdblist.watchlist_sync" label="Purge Watchlist on Trakt Refresh" type="bool" default="false" visible="!eq(-2,)" />
 	</category>
 	<!-- General -->
 	<category label="General">
@@ -319,7 +320,6 @@
 		<!-- TMDb -->
 		<setting label="TMDb" type="lsep" />
 		<setting id="image_resolutions" label="TMDb Image Resolution" type="enum" default="2" values="Low|Medium|High|Original" />
-		<setting id="tmdb_api" label="API Key (optional)" type="text" default="d848316a33e79095beb945a2bd2d53b1" enable="true" option="hidden" />
 		<setting id="tmdb_read_token" type="text" default="eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJkODQ4MzE2YTMzZTc5MDk1YmViOTQ1YTJiZDJkNTNiMSIsIm5iZiI6MTcxMTQ3Mzg1NC45MzQsInN1YiI6IjY2MDMwNGJlYjAyZjVlMDE3ZDIxNDAzZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ._uRCLIwLIE2gOlH8q04gcM3ywIXpxuZ-uyel-UMRRg4" visible="false" />
 		<!-- Trakt -->
 		<setting id="trakt.client_id" type="text" default="6bc29124c3d9466e06a3ed19a7b5976fcb28311008401e1ce04cf08196f8b16a" visible="false" />

@@ -137,7 +137,7 @@ def get_all_pages(url, silent=False):
 			url = url.split('?limit=')[0]
 		
 		sep = '&' if '?' in url else '?'
-		limit = 250  # Trakt enforces a 250-item max across all paginated endpoints as of mid-June 2026
+		limit = 1000
 		page = 1
 		results = []
 		
@@ -174,13 +174,20 @@ def get_all_pages(url, silent=False):
 				if page == 1: return None
 				break
 			
-			# Check pagination headers first — authoritative even when the API caps the page
-			# size below the requested limit (e.g. Trakt's 250-item cap on /watched/ endpoints)
+			# If we got fewer items than the limit, we've reached the last page
+			if items_this_page < limit:
+				break
+			# If the API returned more items than the limit, it returned everything in one shot
+			if items_this_page > limit:
+				break
+
+			# Check pagination headers if available
 			if hasattr(response, 'headers'):
 				total_pages = response.headers.get('X-Pagination-Page-Count')
 				if total_pages:
 					try:
-						if page >= int(total_pages):
+						total_pages = int(total_pages)
+						if page >= total_pages:
 							break
 					except (ValueError, TypeError):
 						pass
@@ -192,15 +199,11 @@ def get_all_pages(url, silent=False):
 					except (ValueError, TypeError):
 						pass
 
-			# Fallback when no pagination headers: fewer items than requested means last page
-			if items_this_page < limit:
-				break
-
 			page += 1
 
-			# Safety limit to prevent infinite loops (max 1000 pages = 250,000 items at 250/page)
-			if page > 1000:
-				log_utils.log('TRAKT: get_all_pages reached safety limit of 1000 pages for URL: %s' % url, level=log_utils.LOGWARNING)
+			# Safety limit to prevent infinite loops (max 100 pages = 100,000 items at limit=1000)
+			if page > 100:
+				log_utils.log('TRAKT: get_all_pages reached safety limit of 100 pages for URL: %s' % url, level=log_utils.LOGWARNING)
 				break
 		
 		if page > 1:
@@ -215,7 +218,7 @@ def re_auth(headers):
 	global _reauth_failed
 	if _reauth_failed:
 		return False
-	# The expired token that triggered the 401 — used to detect if another thread already refreshed
+
 	expired_token = headers.get('Authorization', '').replace('Bearer ', '').strip()
 	with _reauth_lock:
 		if _reauth_failed:
@@ -225,13 +228,9 @@ def re_auth(headers):
 			if control.homeWindow.getProperty(_REAUTH_BUSY_PROP) != 'true':
 				break
 			control.sleep(500)
-		# Double-check: read the token from the shared homeWindow property.
-		# homeWindow properties are immediately visible across ALL Kodi processes (no caching).
-		# If the token changed since we got our 401, another process already refreshed.
 		current_token = control.homeWindow.getProperty(_TRAKT_TOKEN_PROP)
 		if current_token and expired_token and current_token != expired_token:
 			return True  # Another thread/process already refreshed — caller will retry with new token
-		# Claim cross-process busy flag before making the HTTP call
 		control.homeWindow.setProperty(_REAUTH_BUSY_PROP, 'true')
 		try:
 			authed_clientid = getSetting('trakt.authed.clientid')
@@ -283,8 +282,6 @@ def re_auth(headers):
 				setSetting('trakt.refreshtoken', refresh)
 				control.homeWindow.setProperty('umbrella.updateSettings', 'true')
 				setSetting('trakt.token.expires', expires)
-				# Publish new token immediately to homeWindow so other processes/threads
-				# see it in their double-check without waiting for xbmcaddon cache propagation.
 				control.homeWindow.setProperty(_TRAKT_TOKEN_PROP, token)
 				log_utils.log('Trakt Token Successfully Re-Authorized: expires on %s' % str(datetime.fromtimestamp(float(expires))), level=log_utils.LOGDEBUG)
 				return True
@@ -1119,7 +1116,7 @@ def syncMoviesLibrary(indicators):
 def watchedMovies():
 	try:
 		if not getTraktCredentialsInfo(): return
-		return get_all_pages('/users/me/watched/movies')
+		return get_all_pages('/users/me/watched/movies?extended=full')
 	except: log_utils.error()
 
 def watchedMoviesTime(imdb):
@@ -1220,7 +1217,7 @@ def syncTVShows(): # sync all watched shows ex. [({'imdb': 'tt12571834', 'tvdb':
 		indicators = []
 		seen_ids = set()
 		page = 1
-		limit = 250  # Trakt enforces a 250-item max across all paginated endpoints as of mid-June 2026
+		limit = 1000
 		while True:
 			response = getTrakt('/users/me/watched/shows?page=%d&limit=%d' % (page, limit))
 			if not response: break
@@ -1242,6 +1239,7 @@ def syncTVShows(): # sync all watched shows ex. [({'imdb': 'tt12571834', 'tvdb':
 						if ep_nums: episodes[s['number']] = _make_episode_ranges(ep_nums)
 					indicators.append((ids, aired, episodes))
 				except: pass
+			if len(page_results) < limit: break
 			if hasattr(response, 'headers'):
 				total_pages = response.headers.get('X-Pagination-Page-Count')
 				if total_pages:
@@ -1253,9 +1251,8 @@ def syncTVShows(): # sync all watched shows ex. [({'imdb': 'tt12571834', 'tvdb':
 					try:
 						if len(indicators) >= int(total_items): break
 					except: pass
-			if len(page_results) < limit: break
 			page += 1
-			if page > 1000: break
+			if page > 100: break
 		return indicators if indicators else None
 	except: log_utils.error()
 
@@ -1392,22 +1389,40 @@ def update_syncMovies(imdb, remove_id=False):
 	except: log_utils.error()
 
 def service_syncSeasons(): # season indicators and counts for watched shows ex. [['1', '2', '3'], {1: {'total': 8, 'watched': 8, 'unwatched': 0}, 2: {'total': 10, 'watched': 10, 'unwatched': 0}}]
+	def _compute_one(show_tuple):
+		try:
+			from resources.lib.indexers.tmdb import TVshows as _TMDbTVshows
+			ids = show_tuple[0]
+			episodes_dict = show_tuple[2] # {season_num: [(start_ep, end_ep), ...]}
+			imdb = ids.get('imdb', '') or ''
+			tvdb = str(ids.get('tvdb', '') or '')
+			tmdb_id = str(ids.get('tmdb', '') or '')
+			if not tmdb_id: return
+			tmdb_counts = cache.get(_TMDbTVshows().get_season_aired_counts, 96, tmdb_id) or {} # {str(season_num): aired_episode_count}
+			completed, counts = [], {}
+			for season_num, ranges in episodes_dict.items():
+				watched = sum(end - start + 1 for start, end in ranges)
+				total = tmdb_counts.get(str(season_num), 0)
+				unwatched = max(0, total - watched)
+				counts[season_num] = {'total': total, 'watched': watched, 'unwatched': unwatched}
+				if total > 0 and unwatched == 0:
+					completed.append('%01d' % int(season_num))
+			key = traktsync._hash_function(syncSeasons, (imdb, tvdb))
+			traktsync.cache_insert(key, repr([sorted(completed), counts]))
+		except: log_utils.error()
 	try:
-		indicators = traktsync.cache_existing(syncTVShows) # use cached data from service cachesyncTVShows() just written fresh
-		threads = []
-		for indicator in indicators:
-			imdb = indicator[0].get('imdb', '') if indicator[0].get('imdb') else ''
-			tvdb = str(indicator[0].get('tvdb', '')) if indicator[0].get('tvdb') else ''
-			trakt = str(indicator[0].get('trakt', '')) if indicator[0].get('trakt') else ''
-			threads.append(Thread(target=cachesyncSeasons, args=(imdb, tvdb, trakt))) # season indicators and counts for an entire show
+		watched_data = traktsync.cache_existing(syncTVShows) # use cached data from service cachesyncTVShows() just written fresh
+		if not watched_data: return
+		threads = [Thread(target=_compute_one, args=(show_tuple,)) for show_tuple in watched_data]
 		_unlimited = getSetting('dev.batch.unlimited') == 'true'
-		_bs = int(getSetting('dev.batch.size') or '10')
-		_chunk = len(threads) if _unlimited else _bs
+		_bs = max(int(getSetting('dev.batch.size') or '10'), 1)
+		_chunk = max(len(threads), 1) if _unlimited else _bs
 		for i in range(0, len(threads), _chunk):
 			if control.monitor.abortRequested(): break
 			batch = threads[i:i + _chunk]
 			[t.start() for t in batch]
 			[t.join() for t in batch]
+		traktsync.insert_syncSeasons_at()
 	except: log_utils.error()
 
 def markMovieAsWatched(imdb):
@@ -1674,12 +1689,6 @@ def scrobbleMovie(imdb, tmdb, watched_percent):
 	log_utils.log('Trakt Scrobble Movie Called. Received: imdb: %s tmdb: %s watched_percent: %s' % (imdb, tmdb, watched_percent), level=log_utils.LOGDEBUG)
 	try:
 		if not imdb.startswith('tt'): imdb = 'tt' + imdb
-		if watched_percent == 0:
-			# Silent session-close: item was already marked watched during playback (skip_scrobble).
-			# Use /scrobble/stop at 0% to terminate the open server session without recording a
-			# second watch or saving a resume point. No notification on success or failure.
-			getTrakt('/scrobble/stop', {"movie": {"ids": {"imdb": imdb}}, "progress": 0}, silent=True)
-			return
 		success = getTrakt('/scrobble/pause', {"movie": {"ids": {"imdb": imdb}}, "progress": watched_percent})
 		if success:
 			log_utils.log('Trakt Scrobble Movie Success: imdb: %s s' % (imdb), level=log_utils.LOGDEBUG)
@@ -1694,10 +1703,6 @@ def scrobbleEpisode(imdb, tmdb, tvdb, season, episode, watched_percent):
 	#log_utils.log('Trakt Scrobble Episode Called. Received: imdb: %s tmdb: %s season: %s episode: %s watched_percent: %s' % (imdb, tmdb, season, episode, watched_percent), level=log_utils.LOGDEBUG)
 	try:
 		season, episode = int('%01d' % int(season)), int('%01d' % int(episode))
-		if watched_percent == 0:
-			# Silent session-close: same skip_scrobble logic as scrobbleMovie.
-			getTrakt('/scrobble/stop', {"show": {"ids": {"tvdb": tvdb}}, "episode": {"season": season, "number": episode}, "progress": 0}, silent=True)
-			return
 		success = getTrakt('/scrobble/pause', {"show": {"ids": {"tvdb": tvdb}}, "episode": {"season": season, "number": episode}, "progress": watched_percent})
 		if success:
 			log_utils.log('Trakt Scrobble Episode Success: imdb: %s s' % (imdb), level=log_utils.LOGDEBUG)
@@ -1869,8 +1874,8 @@ def force_traktSync():
 	# Thread-spawning functions run sequentially to cap concurrency on low-end devices
 	sync_user_lists(forced=True)
 	sync_liked_lists(forced=True)
-	sync_popular_lists(forced=True)
-	sync_trending_lists(forced=True)
+	sync_popular_lists()  # use TTL-based check — these are public lists, not user-specific
+	sync_trending_lists() # use TTL-based check — these are public lists, not user-specific
 	sync_watched(forced=True)
 	control.hide()
 	control.trigger_widget_refresh() # refresh after watched sync, progress will refresh again when done
@@ -1902,7 +1907,7 @@ def sync_watchedProgress(activities=None, forced=False, trigger_refresh=True):
 		url = 'https://api.trakt.tv/users/me/watched/shows'
 		progressActivity = getProgressActivity(activities)
 		local_listCache = cache.timeout(episodes.Episodes().trakt_progress_list, url, trakt_user, lang, direct)
-		if forced or (progressActivity > local_listCache) or (int(time.time()) - local_listCache > 21600):
+		if forced or (progressActivity > local_listCache):
 			cache.get(episodes.Episodes().trakt_progress_list, 0, url, trakt_user, lang, direct)
 			if forced: log_utils.log('Forced - Trakt Progress List Sync Complete', __name__, log_utils.LOGDEBUG)
 			else:
@@ -1918,7 +1923,9 @@ def sync_watched(activities=None, forced=False): # writes to traktsync.db as of 
 			cachesyncTVShows()
 			traktsync.insert_syncSeasons_at()
 			log_utils.log('Forced - Trakt Watched Sync Complete (movies + shows)', __name__, log_utils.LOGINFO)
-			service_syncSeasons()
+			control.sleep(5000) # avoid memory pressure on embedded hardware after heavy initial sync
+			if not control.monitor.abortRequested():
+				service_syncSeasons()
 		else:
 			moviesWatchedActivity = getMoviesWatchedActivity(activities)
 			db_movies_last_watched = timeoutsyncMovies()
@@ -2016,8 +2023,8 @@ def sync_liked_lists(activities=None, forced=False):
 			for i in items:
 				threads.append(Thread(target=items_list, args=(i,)))
 			_unlimited = getSetting('dev.batch.unlimited') == 'true'
-			_bs = int(getSetting('dev.batch.size') or '10')
-			_chunk = len(threads) if _unlimited else _bs
+			_bs = max(int(getSetting('dev.batch.size') or '10'), 1)
+			_chunk = max(len(threads), 1) if _unlimited else _bs
 			for i in range(0, len(threads), _chunk):
 				batch = threads[i:i + _chunk]
 				[t.start() for t in batch]
@@ -2096,7 +2103,7 @@ def sync_watch_list(activities=None, forced=False):
 def sync_popular_lists(forced=False):
 	try:
 		from datetime import timedelta
-		link = '/lists/popular?limit=250'
+		link = '/lists/popular?limit=300'
 		list_link = '/users/%s/lists/%s/items/%s?page=1&limit=1'
 		official_link = '/lists/%s/items/%s?page=1&limit=1'
 		db_last_popularList = traktsync.last_sync('last_popularlist_at')
@@ -2141,8 +2148,8 @@ def sync_popular_lists(forced=False):
 			for i in items:
 				threads.append(Thread(target=items_list, args=(i,)))
 			_unlimited = getSetting('dev.batch.unlimited') == 'true'
-			_bs = int(getSetting('dev.batch.size') or '10')
-			_chunk = len(threads) if _unlimited else _bs
+			_bs = max(int(getSetting('dev.batch.size') or '10'), 1)
+			_chunk = max(len(threads), 1) if _unlimited else _bs
 			for i in range(0, len(threads), _chunk):
 				batch = threads[i:i + _chunk]
 				[t.start() for t in batch]
@@ -2154,7 +2161,7 @@ def sync_popular_lists(forced=False):
 def sync_trending_lists(forced=False):
 	try:
 		from datetime import timedelta
-		link = '/lists/trending?limit=250'
+		link = '/lists/trending?limit=300'
 		list_link = '/users/%s/lists/%s/items/%s?page=1&limit=1'
 		official_link = '/lists/%s/items/%s?page=1&limit=1'
 
@@ -2200,8 +2207,8 @@ def sync_trending_lists(forced=False):
 			for i in items:
 				threads.append(Thread(target=items_list, args=(i,)))
 			_unlimited = getSetting('dev.batch.unlimited') == 'true'
-			_bs = int(getSetting('dev.batch.size') or '10')
-			_chunk = len(threads) if _unlimited else _bs
+			_bs = max(int(getSetting('dev.batch.size') or '10'), 1)
+			_chunk = max(len(threads), 1) if _unlimited else _bs
 			for i in range(0, len(threads), _chunk):
 				batch = threads[i:i + _chunk]
 				[t.start() for t in batch]

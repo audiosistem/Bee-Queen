@@ -260,13 +260,14 @@ Added support for Kodi v19 (Matrix)
             <fanart>resources/fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.0+matrix" provider-name="RomyCupidon">  
+</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.1+matrix" provider-name="RomyCupidon">  
 <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
     <import addon="script.module.simplejson" />
 	<import addon="script.module.kodi-six" />
 	<import addon="script.module.resolveurl" version="5.0.00" />
+	<import addon="inputstream.adaptive" />
 </requires>  
 <extension point="xbmc.python.pluginsource" library="default.py">
 	<provides>video</provides>
@@ -277,7 +278,8 @@ Added support for Kodi v19 (Matrix)
 Oferă acces la filme, seriale și multiple categorii de TV live, organizate 
 într-o interfață modernă și intuitivă. Navigarea este rapidă, conținutul este 
 structurat eficient, iar experiența de utilizare este optimizată pentru 
-performanță și stabilitate pe toate dispozitivele compatibile Kodi.[/COLOR]
+performanță și stabilitate pe toate dispozitivele compatibile Kodi.
+În zona Adult se poate viziona conținutul doar introducând anul în care a fost rostit acest îndemn: «Domnule Gorbaciov, dărâmați acest zid!»”[/COLOR]
 
 Cu RomyLive+, ai tot conținutul preferat într-un singur loc.</description>
     <disclaimer lang="en" />
@@ -744,7 +746,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.05.07" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.05.08" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -949,7 +951,7 @@ In addition to what livestreams allowed you to do, you can now,
     <screenshot>resources/screenshot-02.jpg</screenshot>
   </assets>
 </extension>
-</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.70">
+</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.72">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -1165,7 +1167,7 @@ In addition to what livestreams allowed you to do, you can now,
 			</item>
 		</menu>
 	</extension>
-	<extension point="xbmc.service" library="service.py" start="startup" />
+	
 	<extension point="xbmc.python.module" library="resources/lib/" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
@@ -1185,11 +1187,10 @@ In addition to what livestreams allowed you to do, you can now,
 			<screenshot>resources/screenshots/screenshot003.jpg</screenshot>
 		</assets>
 		<news>
-[B]Update - v6.7.70 - May 6th, 2026 [/B]
---[Change] Changes made for page limit with new Trakt 250 limit.
---[Change] Changes made in the resolve code for packs.
---[Change] Changes made to avoid failded scrobble notification on a watched item.
---[Change] Changes made to Trakt api to comply with new 250 pagination limit that starts in June. If you have large lists and large amounts of watch history I would switch to a different service.
+[B]Update - v6.7.72 - May 11th, 2026 [/B]
+--[Fix] Made change where episode data is coming from tmdb instead of trakt to reduce calls to trakt.
+--[Fix] Change made for RD when infringing file is returned.
+--[Fix] Fix for crash during playback when using certain skins due to closeAll() causing the skin to attempt to access a destroyed window.
 		</news>
 	</extension>
 
@@ -3796,23 +3797,6 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
 	        <fanart>fanart.png</fanart>			
         </assets>
     </extension>
-</addon><addon id="slyguy.dependencies" name="SlyGuy Dependencies" provider-name="SlyGuy" version="0.0.30">
-  <requires>
-    <import addon="repository.slyguy" />
-  </requires>
-  <extension point="xbmc.python.module" library="resources/modules" />
-  <extension point="xbmc.addon.metadata">
-    <description lang="en">Dependencies required by all Slyguy add-ons</description>
-    <reuselanguageinvoker>true</reuselanguageinvoker>
-    <license />
-    <language />
-    <website />
-    <news>add ntplib for accurate epoch</news>
-    <assets>
-      <icon>icon.png</icon>
-      <fanart>fanart.jpg</fanart>
-    </assets>
-  </extension>
 </addon><addon id="vkkodi.repo" version="3.33" name="[B][COLOR yellow]Vikings - [COLOR orange]Repositorio Oficial! A Casa dos Melhores Add-ons BR[/COLOR][/COLOR][/B]" provider-name="Team Vikings">
   <requires>
     <import addon="xbmc.addon" version="12.0.0" />

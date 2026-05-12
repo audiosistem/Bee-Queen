@@ -14,6 +14,7 @@ import json
 from resources.lib.modules import trakt
 from resources.lib.modules import simkl
 from resources.lib.modules import mdblist
+from resources.lib.database import traktsync
 
 ZoneUtc = 'utc'
 ZoneLocal = 'local'
@@ -21,7 +22,7 @@ FormatDateTime = '%Y-%m-%d %H:%M:%S'
 FormatDate = '%Y-%m-%d'
 FormatTime = '%H:%M:%S'
 FormatTimeShort = '%H:%M'
-service_syncInterval = int(getSetting('background.service.syncInterval')) if getSetting('background.service.syncInterval') else 15
+service_syncInterval = int(getSetting('background.service.syncInterval')) if getSetting('background.service.syncInterval') else 30
 simkl_syncInterval = int(getSetting('simkl.service.syncInterval')) if getSetting('simkl.service.syncInterval') else 30
 mdblist_syncInterval = int(getSetting('mdblist.service.syncInterval')) if getSetting('mdblist.service.syncInterval') else 30
 
@@ -254,22 +255,32 @@ def services_syncs():
 		if control.monitor.abortRequested(): break
 		if internets and trakt.getTraktCredentialsInfo(): # run service in case user auth's trakt later
 			from resources.lib.modules import log_utils
-			log_utils.log('Trakt Sync Service is running.', 1)
-			activities = trakt.getTraktAsJson('/sync/last_activities', silent=True)
-			if not control.monitor.abortRequested():
-				if getSetting('bookmarks') == 'true' and getSetting('scrobble.source') == '1':
-					trakt.sync_playbackProgress(activities)
-				trakt.sync_watchedProgress(activities, trigger_refresh=False)
-			if not control.monitor.abortRequested():
-				if getSetting('indicators.alt') == '1':
-					trakt.sync_watched(activities) # writes to traktsync.db as of 1-19-2022
-				trakt.sync_user_lists(activities)
-				trakt.sync_liked_lists(activities)
-				trakt.sync_hidden_progress(activities)
-				trakt.sync_collection(activities)
-				trakt.sync_watch_list(activities)
-				trakt.sync_popular_lists()
-				trakt.sync_trending_lists()
+			if control.condVisibility('Player.HasVideo'):
+				log_utils.log('Trakt Sync: skipping — video is playing', 1)
+			else:
+				log_utils.log('Trakt Sync Service is running.', 1)
+				activities = trakt.getTraktAsJson('/sync/last_activities', silent=True)
+				all_activity_ts = activities.get('all', '') if activities else ''
+				all_ts = int(cleandate.iso_2_utc(all_activity_ts)) if all_activity_ts else 0
+				last_all_ts = traktsync.last_sync('last_all_activity')
+				if all_ts > 0 and all_ts <= last_all_ts:
+					log_utils.log('Trakt Sync: no changes since last sync, skipping all', 1)
+				else:
+					if all_ts > 0: traktsync.insert_service('last_all_activity', all_activity_ts)
+					if not control.monitor.abortRequested():
+						if getSetting('bookmarks') == 'true' and getSetting('scrobble.source') == '1':
+							trakt.sync_playbackProgress(activities)
+						trakt.sync_watchedProgress(activities, trigger_refresh=False)
+					if not control.monitor.abortRequested():
+						if getSetting('indicators.alt') == '1':
+							trakt.sync_watched(activities) # writes to traktsync.db as of 1-19-2022
+						trakt.sync_user_lists(activities)
+						trakt.sync_liked_lists(activities)
+						trakt.sync_hidden_progress(activities)
+						trakt.sync_collection(activities)
+						trakt.sync_watch_list(activities)
+						trakt.sync_popular_lists()
+						trakt.sync_trending_lists()
 		if control.monitor.abortRequested(): break
 		if internets and simkl.getSimKLCredentialsInfo():
 			current_time = time.time()

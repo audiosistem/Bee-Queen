@@ -447,7 +447,9 @@ class Player(xbmc.Player):
 		homeWindow.clearProperty(pname)
 		for i in range(0, 500):
 			if self.isPlayback():
-				control.closeAll()
+				# skip closeAll when window_monitor owns the source dialog — avoids "Window id does not exist" crash in skins with timers (e.g. Arctic Fuse 2)
+				if homeWindow.getProperty('umbrella.window_keep_alive') != 'true':
+					control.closeAll()
 				break
 			xbmc.sleep(200)
 

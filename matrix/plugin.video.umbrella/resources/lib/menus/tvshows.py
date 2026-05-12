@@ -1215,7 +1215,10 @@ class TVshows:
 		self.list = []
 		if ',return' in url: url = url.split(',return')[0]
 		if getSetting('trakt.paginate.lists') != 'true':
-			items = trakt.get_all_pages(url, silent=True)
+			if '/trending' in url or '/popular' in url:
+				items = trakt.getTraktAsJson(url)
+			else:
+				items = trakt.get_all_pages(url, silent=True)
 			next = ''
 		else:
 			items = trakt.getTraktAsJson(url)
@@ -1227,7 +1230,7 @@ class TVshows:
 				next = url.replace('?' + urlparse(url).query, '') + '?' + q
 				next = next + '&folderName=%s' % quote_plus(folderName)
 			except: next = ''
-		if not items: return
+		if not items: return self.list
 		watched_dates = trakt.getWatchedShowsLastWatchedDates()
 		for item in items: # rating and votes via TMDb, or I must use `extended=full and it slows down
 			try:
@@ -1758,7 +1761,10 @@ class TVshows:
 			except:
 				q = {'limit': self.page_limit, 'page': '1'}
 				index = 0
-			cache.get(self.trakt_tvshow_progress, 0, folderName)
+			if trakt.getProgressActivity() > cache.timeout(self.trakt_tvshow_progress, folderName):
+				self.list = cache.get(self.trakt_tvshow_progress, 0, folderName) or []
+			else:
+				self.list = cache.get(self.trakt_tvshow_progress, self.trakt_progress_hours, folderName) or []
 			self.sort(type='progress')
 			if self.list is None: self.list = []
 			if self.list:
@@ -1818,6 +1824,8 @@ class TVshows:
 			self.list = self.trakt_list(historyurl, self.trakt_user, folderName)
 			next = ''
 			for i in range(len(self.list)): self.list[i]['next'] = next
+			if not self.watched_progress:
+				self.list = [i for i in self.list if i.get('has_next_episode', True)]
 			self.worker()
 			if self.list is None: self.list = []
 			try:
@@ -2065,14 +2073,14 @@ class TVshows:
 	def trakt_tvshow_watched(self, create_directory=True, folderName=''):
 		self.list = []
 		try:
-			historyurl = 'https://api.trakt.tv/users/me/watched/shows?limit=1000&page=1'
+			historyurl = 'https://api.trakt.tv/users/me/watched/shows?extended=full&limit=1000&page=1'
 			self.list = self.trakt_list(historyurl, self.trakt_user, folderName)
 			next = ''
 			for i in range(len(self.list)): self.list[i]['next'] = next
 			self.worker()
 			if self.list is None: self.list = []
 		except:
-			
+
 			log_utils.error()
 		return self.list
 

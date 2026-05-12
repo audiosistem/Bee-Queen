@@ -354,8 +354,8 @@ class EasyNews:
 			clear_media_results_database()
 			return notification('Removed %s Authorization' % cls_name)
 
-		username = kodi_utils.dialog.input('EasyNews Username:')
-		password = kodi_utils.dialog.input('EasyNews Password:')
+		username = kodi_utils.dialog.input('EasyNews Username:').strip()
+		password = kodi_utils.dialog.input('EasyNews Password:').strip()
 		if not all((username, password)): return
 		api = EasyNewsAPI()
 		api.username, api.password = username, password
@@ -461,7 +461,7 @@ class MDBList:
 			clear_cache('mdblist', silent=True)
 			return notification('Removed %s Authorization' % cls_name)
 
-		api_key = kodi_utils.dialog.input('MDBList API Key:')
+		api_key = kodi_utils.dialog.input('MDBList API Key:').strip()
 		if not api_key: return
 		params = {'apikey': api_key}
 		response = requests.get(self.base_url('user'), params=params, timeout=timeout)

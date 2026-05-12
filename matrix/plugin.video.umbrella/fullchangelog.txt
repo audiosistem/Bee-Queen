@@ -1,3 +1,13 @@
+[B]Update - v6.7.72 - May 11th, 2026 [/B]
+--[Fix] Made change where episode data is coming from tmdb instead of trakt to reduce calls to trakt.
+--[Fix] Change made for RD when infringing file is returned.
+--[Fix] Fix for crash during playback when using certain skins due to closeAll() causing the skin to attempt to access a destroyed window.
+
+[B]Update - v6.7.71 - May 8th, 2026 [/B]
+--[Fix] Change to Torbox cloud scraper to respect timeout.
+--[Fix] Reverted Trakt back to 1,000 limit due to issues with crashing and freezing on lower limit.
+--[Fix] Made changes for Trakt api call to continue to use extended=full until trakt api changes to send fill information without that parameter.
+
 [B]Update - v6.7.70 - May 6th, 2026 [/B]
 --[Change] Changes made for page limit with new Trakt 250 limit.
 --[Change] Changes made in the resolve code for packs.

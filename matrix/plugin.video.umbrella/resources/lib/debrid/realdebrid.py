@@ -402,9 +402,11 @@ class RealDebrid:
 			elapsed_time, transfer_finished = 0, False
 			self.rd_check_max()
 			torrent_id = self.add_magnet(magnet_url)
+			if not torrent_id:
+				return None
 			self.add_torrent_select(torrent_id,'all')
 			torrent_info = self.user_cloud_info_check(torrent_id)
-			if not torrent_info['links'] or 'error' in torrent_info:
+			if not torrent_info or not torrent_info.get('links') or 'error' in torrent_info:
 				self.delete_torrent(torrent_id)
 				return None
 			control.sleep(1000)
@@ -653,7 +655,7 @@ class RealDebrid:
 
 			response = self._post(add_magnet_url, data)
 			log_utils.log('Real-Debrid: Sending MAGNET to cloud: %s' % magnet, __name__, log_utils.LOGDEBUG)
-			return response.get('id', "")
+			return response.get('id', "") if response else ""
 		except: log_utils.error('Real-Debrid Error: ADD MAGNET to cloud%s : ' % magnet)
 
 	def add_torrent_select(self, torrent_id, file_ids):

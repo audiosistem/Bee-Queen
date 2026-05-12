@@ -305,7 +305,7 @@ class Sources:
 
 	def play_file(self, results, source=None, autoplay=False, background=False):
 		def _process():
-			for count, item in enumerate(items[:10], 1):
+			for count, item in enumerate(items[:20], 1):
 				if not background:
 					try:
 						if monitor.abortRequested(): break
