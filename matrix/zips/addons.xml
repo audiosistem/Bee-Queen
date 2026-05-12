@@ -3178,22 +3178,6 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
     </assets>
   </extension>
 
-</addon><addon id="script.module.inputstreamhelper" name="InputStream Helper (Slyguy Wrapper)" provider-name="SlyGuy" version="99.0.12">
-	<requires>
-		<import addon="repository.slyguy.inputstreamhelper" />
-	</requires>
-  <extension point="xbmc.python.script" library="default.py">
-    <provides>executable</provides>
-  </extension>
-  <extension point="xbmc.python.module" library="lib" />
-  <extension point="xbmc.addon.metadata">
-    <description lang="en">Replaces Inputstream Helper with Slyguy DRM Helper</description>
-    <reuselanguageinvoker>true</reuselanguageinvoker>
-    <news />
-    <assets>
-      <icon>icon.png</icon>
-    </assets>
-  </extension>
 </addon><addon id="script.module.jetextractors" name="JetExtractors" version="3.3.8" provider-name="THE TEAM">
 	<requires>
 		<import addon="script.module.requests" />
