@@ -7,14 +7,14 @@ from modules import kodi_utils
 from modules.settings import tmdb_api_key, get_language, show_unaired_watchlist, ignore_articles, lists_sort_order, paginate, page_limit
 from modules.utils import paginate_list, sort_for_article, jsondate_to_datetime, get_datetime, chunks, TaskPool
 
-EXPIRES_4_HOURS, EXPIRES_2_DAYS, EXPIRES_1_WEEK, EXPIRES_1_MONTH = 4, 48, 168, 672
 ls, logger, js2date = kodi_utils.local_string, kodi_utils.logger, jsondate_to_datetime
 get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting
+EXPIRES_4_HOURS, EXPIRES_2_DAYS, EXPIRES_1_WEEK, EXPIRES_1_MONTH = 4, 48, 168, 672
+READ_TOKEN = get_setting('tmdb_read_token')
 movies_append = 'external_ids,videos,credits,release_dates,alternative_titles,translations,images'
 tvshows_append = 'external_ids,videos,credits,content_ratings,alternative_titles,translations,images'
 eps_map = {1: 'Original air date', 2: 'Absolute', 3: 'DVD', 4: 'Digital', 5: 'Story arc', 6: 'Production', 7: 'TV'}
 tmdb_image_base, tmdb_list_heading = 'https://image.tmdb.org/t/p/%s%s', 'TMDB Lists'
-list_obj = {'name': '', 'public': True, 'iso_3166_1': 'US', 'iso_639_1': 'en'}
 list_url = 'https://api.themoviedb.org/4'
 base_url = 'https://api.themoviedb.org/3'
 timeout = 3.05
@@ -500,9 +500,14 @@ def list_status(list_id, mediatype, media_id):
 	url = '%s/list/%s/item_status' % (list_url, list_id)
 	return list_request(url, params=params)
 
-def list_create(item):
+def list_create(list_name):
+	from urllib.parse import unquote
+	list_title = list_name or kodi_utils.dialog.input('POV')
+	if not list_title: return
+	list_name = unquote(list_title)
+	data = {'name': list_title, 'public': True, 'iso_3166_1': 'US', 'iso_639_1': 'en'}
 	url = '%s/list' % list_url
-	return list_request(url, data=item, method='post')
+	return list_request(url, data=data, method='post')
 
 def list_clear(list_id):
 	url = '%s/list/%s/clear' % (list_url, list_id)

@@ -421,26 +421,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
       <screenshot>resources/images/screenshot-3.jpg</screenshot>
     </assets>
   </extension>
-</addon><addon id="plugin.video.cinema_city_ro" version="1.0.6" name="[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO[/COLOR]" provider-name="[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO[/COLOR]">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0" />
-        <import addon="script.module.requests" version="2.22.0" />
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="cinema.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="ro">[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO - Streaming România -[/COLOR]</summary>
-        <description lang="ro">[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO[/COLOR]</description>
-        <disclaimer lang="ro">[COLOR blue]Cinema[/COLOR][COLOR yellow]_City[/COLOR][COLOR red]_RO este disponibil gratuit[/COLOR]</disclaimer>
-        <language>ro</language>
-        <platform>all</platform>
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
-        </assets>
-    </extension>
-</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.181">
+</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.182">
     <requires>
         <import addon="script.module.six" />
         <import addon="script.module.kodi-six" />
@@ -465,28 +446,6 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.dltv" name="DLTV" version="1.0.20" provider-name="Arkane14">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0" />
-        <import addon="script.module.requests" />
-        <import addon="script.module.inputstreamhelper" />
-        <import addon="inputstream.ffmpegdirect" />
-        <import addon="script.module.six" />
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="addon.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en">Live TV and Sports</summary>
-        <description lang="en">Live TV and Sports</description>
-        <platform>all</platform>
-        <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
-        </assets>
-        <news>v1.0.20: Fix ch.773 — route via lovecdn player; fix CHEVY AES+header scan false positives; fix stall recovery for non-premium channels</news>
-    </extension>
 </addon><addon id="plugin.video.dscmovieshub" version="1.2.0" name="[COLOR teal]DSCMoviesHub[/COLOR]" provider-name="DSCMoviesHub">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -505,30 +464,6 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
         </assets>
-    </extension>
-</addon><addon id="plugin.video.fenlight" name="FenLightAM" provider-name="AnonyMouse" version="2.2.04">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0" />
-        <import addon="script.module.pil" version="1.1.7" />
-        <import addon="script.module.requests" version="2.19.1" />
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="resources/lib/fenlight.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.service" library="resources/lib/service.py" />
-    <extension point="xbmc.python.module" library="resources/lib/" />
-    <extension point="xbmc.addon.metadata">
-        <reuselanguageinvoker>true</reuselanguageinvoker>
-        <summary lang="en">Access your content from Easynews and Debrid Clouds.</summary>
-        <description lang="en">This add-on is intended for advanced Kodi users only. You must own the content of any media you play through this addon. This is an English language only add-on.</description>
-        <platform>all</platform>
-		<disclaimer lang="en">The author of this addon does not host any of the content which is found and has no affiliation with any of the content providers.</disclaimer>
-        <license />
-        <assets>
-            <icon>resources/media/addon_icons/fenlight_icon_01.png</icon>
-            <fanart>resources/media/fenlight_fanart_01.jpg</fanart>
-        </assets>
-        <news>INFO: For latest changes see Changelog within Tools of add-on.</news>
     </extension>
 </addon><addon id="plugin.video.free99" version="2.0" name="[COLOR goldenrod]Free99[/COLOR]" provider-name="JewBMX, DIGGZ">
     <requires>
@@ -808,7 +743,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.05.06" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.05.07" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -2678,46 +2613,6 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="repository.slyguy" name="SlyGuy Repository" provider-name="SlyGuy" version="0.0.9">
-  <extension point="xbmc.addon.repository" name="SlyGuy Repository">
-    <dir>
-      <info compressed="false">https://slyguy.uk/.repo/repository.slyguy/addons.xml</info>
-      <checksum>https://slyguy.uk/.repo/repository.slyguy/addons.xml.md5</checksum>
-      <datadir zip="true">https://slyguy.uk/.repo/repository.slyguy/</datadir>
-    </dir>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <platform>all</platform>
-    <description lang="en">Addons by SlyGuy (slyguy.uk)</description>
-    <license />
-    <language />
-    <website />
-    <news />
-    <assets>
-      <icon>icon.png</icon>
-      <fanart>fanart.jpg</fanart>
-    </assets>
-  </extension>
-</addon><addon id="repository.slyguy.inputstreamhelper" name="SlyGuy InputStream Helper Wrapper Repository" provider-name="SlyGuy" version="0.0.1">
-  <extension point="xbmc.addon.repository" name="SlyGuy InputStream Helper Wrapper Repository">
-    <dir>
-      <info compressed="false">https://slyguy.uk/.repo/repository.slyguy.inputstreamhelper/addons.xml</info>
-      <checksum>https://slyguy.uk/.repo/repository.slyguy.inputstreamhelper/addons.xml.md5</checksum>
-      <datadir zip="true">https://slyguy.uk/.repo/repository.slyguy.inputstreamhelper/</datadir>
-    </dir>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <platform>all</platform>
-    <description lang="en">InputStream Helper Wrapper add-on by SlyGuy Repository</description>
-    <license />
-    <language />
-    <website />
-    <news />
-    <assets>
-      <icon>icon.png</icon>
-      <fanart>fanart.jpg</fanart>
-    </assets>
-  </extension>
 </addon><addon id="repository.thelab" name="TheLab Repository" version="23.9.10" provider-name="[COLORpurple]• [COLORorchid]Tech [COLORdarkorchid]E [COLORplum]Coyote [COLORpurple]•[/COLOR]">
     <extension point="xbmc.addon.repository" name="TheLab Repository">
         <dir minversion="20.0">
@@ -3637,28 +3532,6 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
     <source>https://github.com/benjaminp/six</source>
     <assets>
       <icon>resources/icon.png</icon>
-    </assets>
-  </extension>
-</addon><addon id="script.module.slyguy" name="SlyGuy Common" provider-name="SlyGuy" version="0.86.70">
-  <requires>
-    <import addon="slyguy.dependencies" version="0.0.30" />
-    <import addon="repository.slyguy" version="0.0.9" />
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="default.py">
-    <provides>executable</provides>
-  </extension>
-  
-  <extension point="xbmc.python.module" library="resources/modules" />
-  <extension point="xbmc.addon.metadata">
-    <description lang="en">Common code, proxy and settings required by all Slyguy add-ons</description>
-    <reuselanguageinvoker>true</reuselanguageinvoker>
-    <license />
-    <language />
-    <website />
-    <news>Support WebOS Widevine</news>
-    <assets>
-      <icon>icon.png</icon>
-      <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
 </addon><addon id="script.module.soupsieve" name="soupsieve" version="2.4.1" provider-name="Isaac Muse">

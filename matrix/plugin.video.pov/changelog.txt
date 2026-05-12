@@ -1,6 +1,7 @@
   removal pending: download, tmdblist
 
   [COLOR dodgerblue][B]Version 6.05[/B][/COLOR]
+- Change for Real Debrid infringing_file.
 - Updated Trakt/TMDBList pagination.
 - Added Dropped TV Shows for local tracking.
   Access Dropped TV Shows from Favorites menu.

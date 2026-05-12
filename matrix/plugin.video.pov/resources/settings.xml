@@ -320,7 +320,7 @@
 		<setting label="TMDb" type="lsep" />
 		<setting id="image_resolutions" label="TMDb Image Resolution" type="enum" default="2" values="Low|Medium|High|Original" />
 		<setting id="tmdb_api" label="API Key (optional)" type="text" default="d848316a33e79095beb945a2bd2d53b1" enable="true" option="hidden" />
-		<setting id="tmdb_read_token" label="key" type="text" default="eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJkODQ4MzE2YTMzZTc5MDk1YmViOTQ1YTJiZDJkNTNiMSIsIm5iZiI6MTcxMTQ3Mzg1NC45MzQsInN1YiI6IjY2MDMwNGJlYjAyZjVlMDE3ZDIxNDAzZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ._uRCLIwLIE2gOlH8q04gcM3ywIXpxuZ-uyel-UMRRg4" enable="true" option="hidden" visible="false" />
+		<setting id="tmdb_read_token" type="text" default="eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJkODQ4MzE2YTMzZTc5MDk1YmViOTQ1YTJiZDJkNTNiMSIsIm5iZiI6MTcxMTQ3Mzg1NC45MzQsInN1YiI6IjY2MDMwNGJlYjAyZjVlMDE3ZDIxNDAzZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ._uRCLIwLIE2gOlH8q04gcM3ywIXpxuZ-uyel-UMRRg4" visible="false" />
 		<!-- Trakt -->
 		<setting id="trakt.client_id" type="text" default="6bc29124c3d9466e06a3ed19a7b5976fcb28311008401e1ce04cf08196f8b16a" visible="false" />
 		<setting id="trakt.client_secret" type="text" default="99478842b17d44d7accafef45c6c1bbba235792753c195069ae149595cd3a919" visible="false" />

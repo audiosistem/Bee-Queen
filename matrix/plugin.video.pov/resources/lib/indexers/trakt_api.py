@@ -250,7 +250,8 @@ def trakt_fetch_collection_watchlist(list_type, mediatype):
 			 'title': i[key]['title'], 'media_ids': i[key]['ids']}
 			for i in _get_trakt_paginated_list(url)
 		]
-	if mediatype in ('movie', 'movies'): key, string_insert, path_insert = ('movie', 'movie', 'movies')
+	if mediatype in ('movie', 'movies'):
+		key, string_insert, path_insert = ('movie', 'movie', 'movies')
 	else: key, string_insert, path_insert = ('show', 'tvshow', 'shows')
 	premiered = 'released' if key == 'movie' else 'first_aired'
 	if list_type == 'collection':

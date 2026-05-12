@@ -115,13 +115,13 @@ class RealDebridAPI:
 		try:
 			extensions = supported_video_extensions()
 			torrent = self.add_magnet(magnet)
-			torrent_id = torrent['id']
+			torrent_id = torrent['id'] if 'id' in torrent else ''
 #			info = self.torrent_info(torrent_id)
 #			files = info['files']
 #			torrent_keys = [str(item['id']) for item in files if item['path'].lower().endswith(tuple(extensions))]
 #			torrent_keys = ','.join(torrent_keys)
 #			self.add_torrent_select(torrent_id, torrent_keys)
-			self.add_torrent_select(torrent_id, 'all')
+			if torrent_id: self.add_torrent_select(torrent_id, 'all')
 			return torrent_id
 		except:
 			self.delete_torrent(torrent_id)
