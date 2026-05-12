@@ -1,4 +1,5 @@
-import xbmc, xbmcaddon, xbmcgui, xbmcplugin,xbmcvfs
+import xbmcvfs
+import xbmcaddon
 import os
 
 ADDON = xbmcaddon.Addon(id='plugin.audio.mp3streams')
