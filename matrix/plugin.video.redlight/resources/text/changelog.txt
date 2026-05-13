@@ -1,0 +1,13 @@
+[COLOR red][B]*** Fork of FenLightAM ***[/B][/COLOR]
+
+* We will not revoke our Trakt or TMDb keys
+* We will not block any third party apps or skins
+* No politics
+* NO DRAMA!
+
+[COLOR red][B]Version 1.0.0[/B][/COLOR]
+- Redundant options removed from Tools and Settings menus
+- Code cleaned up
+
+[COLOR red][B]Version 0.0.1[/B][/COLOR]
+- Initial release
