@@ -288,7 +288,7 @@ def get_title(meta, language=None):
 			if meta['mediatype'] == 'movie': mediatype, key = 'movie', 'title'
 			else: mediatype, key = 'tv', 'name'
 			translations = tmdb_english_translation(mediatype, meta['tmdb_id'])
-			english_title = (i['data'][key] for i in translations if i['iso_639_1'] == 'en')
+			english_title = (i['data'][key] for i in translations or () if i['iso_639_1'] == 'en')
 			title = next(english_title, None) or meta['original_title']
 		except: pass
 	if '(' in title: title = title.split('(')[0]

@@ -18,14 +18,15 @@ movie_certifications, tvshow_certifications = (
 )
 
 languages = (
-	('Arabic', 'ar'),      ('Bosnian', 'bs'),      ('Bulgarian', 'bg'),     ('Chinese', 'zh'),
-	('Croatian', 'hr'),    ('Dutch', 'nl'),        ('English', 'en'),       ('Finnish', 'fi'),
-	('French', 'fr'),      ('German', 'de'),       ('Greek', 'el'),         ('Hebrew', 'he'),
-	('Hindi', 'hi'),       ('Hungarian', 'hu'),    ('Icelandic', 'is'),     ('Italian', 'it'),
-	('Japanese', 'ja'),    ('Korean', 'ko'),       ('Macedonian', 'mk'),    ('Norwegian', 'no'),
-	('Persian', 'fa'),     ('Polish', 'pl'),       ('Portuguese', 'pt'),    ('Punjabi', 'pa'),
-	('Romanian', 'ro'),    ('Russian', 'ru'),      ('Serbian', 'sr'),       ('Slovenian', 'sl'),
-	('Spanish', 'es'),     ('Swedish', 'sv'),      ('Turkish', 'tr'),       ('Ukrainian', 'uk')
+	('Arabic', 'ar'),        ('Bosnian', 'bs'),      ('Bulgarian', 'bg'),    ('Chinese', 'zh'),
+	('Croatian', 'hr'),      ('Dutch', 'nl'),        ('English', 'en'),      ('Finnish', 'fi'),
+	('French', 'fr'),        ('German', 'de'),       ('Greek', 'el'),        ('Hebrew', 'he'),
+	('Hindi', 'hi'),         ('Hungarian', 'hu'),    ('Icelandic', 'is'),    ('Indonesian', 'id'),
+	('Italian', 'it'),       ('Japanese', 'ja'),     ('Korean', 'ko'),       ('Macedonian', 'mk'),
+	('Malay', 'ms'),         ('Norwegian', 'no'),    ('Persian', 'fa'),      ('Polish', 'pl'),
+	('Portuguese', 'pt'),    ('Punjabi', 'pa'),      ('Romanian', 'ro'),     ('Russian', 'ru'),
+	('Serbian', 'sr'),       ('Slovenian', 'sl'),    ('Spanish', 'es'),      ('Swedish', 'sv'),
+	('Thai', 'th'),          ('Turkish', 'tr'),      ('Ukrainian', 'uk'),    ('Vietnamese', 'vi'),
 )
 
 meta_languages = (

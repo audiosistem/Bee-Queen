@@ -357,10 +357,11 @@ class EasyNews:
 		username = kodi_utils.dialog.input('EasyNews Username:').strip()
 		password = kodi_utils.dialog.input('EasyNews Password:').strip()
 		if not all((username, password)): return
-		api = EasyNewsAPI()
-		api.username, api.password = username, password
-		account_info, usage_info = api.account()
-		if not account_info or not usage_info: return notification(32574)
+#		Account web page strangely blocked for some users, will work with vpn
+#		api = EasyNewsAPI()
+#		api.username, api.password = username, password
+#		account_info, usage_info = api.account()
+#		if not account_info or not usage_info: return notification(32574)
 		set_setting('easynews_user', username)
 		set_setting('easynews_password', password)
 		set_setting('provider.easynews', 'true')
@@ -563,7 +564,8 @@ class TMDBList:
 		return True
 
 def refer_link(service):
-	url = {'realdebrid': 'https://tinyurl.com/2db65q28', 'torbox': 'https://tinyurl.com/2d2ra6jq'}[service]
+	url = kodi_utils.addon().getSetting('%s_refer_link' % service)
+	if not url: return notification(32574)
 	expires_in, expires_at = 20, 20 + time.monotonic()
 	try: qr_icon = qr_str % '&data=%s' % quote(url)
 	except: qr_icon = kodi_utils.media_path('%s.png' % service)

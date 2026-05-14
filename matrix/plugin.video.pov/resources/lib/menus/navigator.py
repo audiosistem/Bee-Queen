@@ -226,8 +226,7 @@ class Navigator:
 		self._add_item({'mode': 'navigator.set_view_modes',      'name': views_str               }, 'settings.png', n_ins)
 		self._add_item({'mode': 'navigator.shortcut_folders',    'name': shortcut_manager_str    }, 'settings.png', n_ins)
 		self._add_item({'mode': 'toggle_language_invoker',       'name': lang_inv_str            }, 'settings.png', n_ins, False)
-		self._add_item({'mode': 'refer_link', 'query': 'realdebrid',  'name': 'Real Debrid Referral Link'}, 'realdebrid.png', l_str, False)
-		self._add_item({'mode': 'refer_link', 'query': 'torbox',      'name': 'TorBox Referral Link'     }, 'torbox.png',     l_str, False)
+		self._add_item({'mode': 'refer_link', 'query': 'torbox', 'name': 'TorBox Referral Link'  }, 'torbox.png',   l_str, False)
 		self._end_directory()
 
 	def clear_info(self):

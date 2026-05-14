@@ -41,10 +41,11 @@
 			<setting id="pm_cloud.title_filter" label="Filter Results by Name" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-6,true)+!eq(-7,)" />
 			<setting id="check.pm_cloud" label="Check Before Full Search" type="bool" default="false" subsetting="true" visible="eq(-2,true)+eq(-7,true)+!eq(-8,)" />
 			<setting id="results.sort_pmcloud_first" label="Show Results at Top" type="bool" default="true" subsetting="true" visible="eq(-3,true)+eq(-8,true)+!eq(-9,)" />
-		<setting id="pm.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="8" option="int" range="1,1,10" visible="eq(-9,true)+!eq(-10,)" />
-		<setting id="pm.expires" label="Premium Expires Notification (days)" type="slider" default="0" option="int" range="0,1,7" visible="eq(-10,true)+!eq(-11,)" />
+		<setting id="pm.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="8" range="1,1,10" option="int" visible="eq(-9,true)+!eq(-10,)" />
+		<setting id="pm.expires" label="Premium Expires Notification (days)" type="slider" default="0" range="0,1,7" option="int" visible="eq(-10,true)+!eq(-11,)" />
 		<!-- TorBox-->
 		<setting label="TorBox" type="lsep" />
+		<setting id="torbox_refer_link" type="text" default="https://tinyurl.com/2d2ra6jq" visible="false" />
 		<setting id="tb.token" label="tb token" type="text" default="" visible="false" />
 		<setting id="tb.enabled" label="Enable" type="bool" default="true" visible="!eq(-1,)" />
 		<setting id="tb.account_id" label="Customer ID" type="text" default="" enable="false" visible="eq(-1,true)+!eq(-2,)" />
@@ -57,8 +58,8 @@
 			<setting id="tb_cloud.title_filter" label="Filter Results by Name" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-8,true)+!eq(-9,)" />
 			<setting id="check.tb_cloud" label="Check Before Full Search" type="bool" default="false" subsetting="true" visible="eq(-2,true)+eq(-9,true)+!eq(-10,)" />
 			<setting id="results.sort_tbcloud_first" label="Show Results at Top" type="bool" default="true" subsetting="true" visible="eq(-3,true)+eq(-10,true)+!eq(-11,)" />
-		<setting id="tb.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="9" option="int" range="1,1,10" visible="eq(-11,true)+!eq(-12,)" />
-		<setting id="tb.expires" label="Premium Expires Notification (days)" type="slider" default="0" option="int" range="0,1,7" visible="eq(-12,true)+!eq(-13,)" />
+		<setting id="tb.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="9" range="1,1,10" option="int" visible="eq(-11,true)+!eq(-12,)" />
+		<setting id="tb.expires" label="Premium Expires Notification (days)" type="slider" default="0" range="0,1,7" option="int" visible="eq(-12,true)+!eq(-13,)" />
 		<!-- Offcloud -->
 		<setting label="Offcloud" type="lsep" />
 		<setting id="oc.token" label="oc token" type="text" default="" visible="false" />
@@ -70,7 +71,7 @@
 			<setting id="oc_cloud.title_filter" label="Filter Results by Name" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-5,true)+!eq(-6,)" />
 			<setting id="check.oc_cloud" label="Check Before Full Search" type="bool" default="false" subsetting="true" visible="eq(-2,true)+eq(-6,true)+!eq(-7,)" />
 			<setting id="results.sort_occloud_first" label="Show Results at Top" type="bool" default="true" subsetting="true" visible="eq(-3,true)+eq(-7,true)+!eq(-8,)" />
-		<setting id="oc.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="9" option="int" range="1,1,10" visible="eq(-8,true)+!eq(-9,)" />
+		<setting id="oc.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="9" range="1,1,10" option="int" visible="eq(-8,true)+!eq(-9,)" />
 	</category>
 	<category label="My Services">
 		<!-- Real Debrid -->
@@ -88,8 +89,8 @@
 			<setting id="rd_cloud.title_filter" label="Filter Results by Name" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-6,true)+!eq(-7,)" />
 			<setting id="check.rd_cloud" label="Check Before Full Search" type="bool" default="false" subsetting="true" visible="eq(-2,true)+eq(-7,true)+!eq(-8,)" />
 			<setting id="results.sort_rdcloud_first" label="Show Results at Top" type="bool" default="true" subsetting="true" visible="eq(-3,true)+eq(-8,true)+!eq(-9,)" />
-		<setting id="rd.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="10" option="int" range="1,1,10" visible="eq(-9,true)+!eq(-10,)" />
-		<setting id="rd.expires" label="Premium Expires Notification (days)" type="slider" default="0" option="int" range="0,1,7" visible="eq(-10,true)+!eq(-11,)" />
+		<setting id="rd.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="10" range="1,1,10" option="int" visible="eq(-9,true)+!eq(-10,)" />
+		<setting id="rd.expires" label="Premium Expires Notification (days)" type="slider" default="0" range="0,1,7" option="int" visible="eq(-10,true)+!eq(-11,)" />
 		<!-- All Debrid -->
 		<setting label="All Debrid" type="lsep" />
 		<setting id="ad.token" label="ad token" type="text" default="" visible="false" />
@@ -102,8 +103,8 @@
 			<setting id="ad_cloud.title_filter" label="Filter Results by Name" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-6,true)+!eq(-7,)" />
 			<setting id="check.ad_cloud" label="Check Before Full Search" type="bool" default="false" subsetting="true" visible="eq(-2,true)+eq(-7,true)+!eq(-8,)" />
 			<setting id="results.sort_adcloud_first" label="Show Results at Top" type="bool" default="true" subsetting="true" visible="eq(-3,true)+eq(-8,true)+!eq(-9,)" />
-		<setting id="ad.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="9" option="int" range="1,1,10" visible="eq(-9,true)+!eq(-10,)" />
-		<setting id="ad.expires" label="Premium Expires Notification (days)" type="slider" default="0" option="int" range="0,1,7" visible="eq(-10,true)+!eq(-11,)" />
+		<setting id="ad.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="9" range="1,1,10" option="int" visible="eq(-9,true)+!eq(-10,)" />
+		<setting id="ad.expires" label="Premium Expires Notification (days)" type="slider" default="0" range="0,1,7" option="int" visible="eq(-10,true)+!eq(-11,)" />
 		<!-- Easynews -->
 		<setting label="Easynews" type="lsep" />
 		<setting id="provider.easynews" label="Enable" type="bool" default="false" visible="!eq(1,)+!eq(2,)" />
@@ -114,7 +115,7 @@
 			<setting id="easynews.lang_filters" label="Choose Languages To Include" type="action" default="eng" subsetting="true" visible="eq(-5,true)+!eq(-3,)+eq(-1,true)" action="RunPlugin(plugin://plugin.video.pov/?mode=set_language_filter_choice&amp;filter_setting=easynews.lang_filters)" />
 		<setting id="easynews_moderation" label="Exclude Adult Results" type="bool" default="true" visible="eq(-6,true)+!eq(-4,)" />
 		<setting id="check.easynews" label="Check Before Full Search" type="bool" default="false" visible="eq(-7,true)+!eq(-5,)" />
-		<setting id="en.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="7" option="int" range="1,1,10" visible="eq(-8,true)+!eq(-6,)" />
+		<setting id="en.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="7" range="1,1,10" option="int" visible="eq(-8,true)+!eq(-6,)" />
 		<!--setting id="easynews.api_version" label="API Version" type="enum" default="0" values="Version 2|Version 3" visible="!eq(-2,)" /-->
 	</category>
 	<!-- My Lists -->
@@ -127,7 +128,7 @@
 		<setting id="trakt.calendar_future_days" label="Show Future Days" type="number" default="7" />
 		<!-- Trakt Cache -->
 		<setting label="Trakt/MDBList Cache" type="lsep" />
-		<setting id="trakt.sync_interval" label="Refresh Data from Server every...(mins)" type="slider" default="30" option="int" range="5,5,480" />
+		<setting id="trakt.sync_interval" label="Refresh Data from Server every...(mins)" type="slider" default="30" range="5,5,480" option="int" />
 		<setting id="trakt.sync_refresh_widgets" label="Attempt to Refresh Widgets After Refresh" type="bool" default="false" />
 		<!-- Trakt -->
 		<setting label="Trakt" type="lsep" />
@@ -168,7 +169,7 @@
 		<setting id="image_download_directory" label="Image Files Directory" type="folder" default="special://profile/addon_data/plugin.video.pov/Image Downloads/" />
 		<!-- UTC Time Offset -->
 		<setting label="UTC Time Offset" type="lsep" />
-		<setting id="datetime.offset" label="UTC (+/-)" type="slider" default="0" option="int" range="-15,1,15" />
+		<setting id="datetime.offset" label="UTC (+/-)" type="slider" default="0" range="-15,1,15" option="int" />
 		<!-- Hidden -->
 		<setting id="database.maintenance.due" type="text" default="0" visible="false" />
 		<setting id="reuse_language_invoker" type="text" default="true" visible="false" />
@@ -230,23 +231,24 @@
 		<setting id="results_quality_movie" label="Limit Quality" type="action" default="SD, 720p, 1080p, 4K" visible="eq(-2,false)" action="RunPlugin(plugin://plugin.video.pov/?mode=set_quality_choice&amp;quality_setting=results_quality_movie)" />
 		<setting id="auto_resume_movie" label="Automatically Resume Playback" type="enum" default="0" values="Never|Always|Autoplay Only" />
 		<setting id="stingers.enable" label="Enable Credit Scene Notification (Movie Stingers)" type="bool" default="false" />
-			<setting id="stingers.threshold" label="Notification Threshold (Seconds After Start)" type="slider" default="10" option="int" range="10,10,60" subsetting="true" visible="eq(-1,true)" />
+			<setting id="stingers.threshold" label="Notification Threshold (Seconds After Start)" type="slider" default="10" range="10,10,60" option="int" subsetting="true" visible="eq(-1,true)" />
 		<setting label="Episodes" type="lsep" />
 		<setting id="autoscrape_next_episode" label="Autoscrape Next Episode (source select)" type="bool" default="false" />
-			<setting id="autoscrape_next_window_time" label="Show Notification Before End (secs)" type="slider" default="20" option="int" range="10,10,120" subsetting="true" visible="eq(-1,true)" />
+			<setting id="autoscrape_next_window_time" label="Show Notification Before End (secs)" type="slider" default="20" range="10,10,120" option="int" subsetting="true" visible="eq(-1,true)" />
 		<setting id="auto_play_episode" label="Auto Play" type="bool" default="false" />
 		<setting id="autoplay_quality_episode" label="Limit Auto Play Quality" type="action" default="SD, 720p, 1080p, 4K" visible="eq(-1,true)" action="RunPlugin(plugin://plugin.video.pov/?mode=set_quality_choice&amp;quality_setting=autoplay_quality_episode)" />
 		<setting id="autoplay_next_episode" label="Autoplay Next Episode" type="bool" default="false" visible="eq(-2,true)" />
 			<setting id="autoplay_next_show_window" label="Show Next Episode Window" type="bool" default="true" subsetting="true" visible="eq(-3,true)+eq(-1,true)" />
 			<setting id="autoplay_next_window_timer_method" label="Show Window Based On" type="enum" default="0" values="Time Remaining|Percentage Played" subsetting="true" visible="eq(-4,true)+eq(-2,true)+eq(-1,true)" />
-			<setting id="autoplay_next_window_time" label="Show Window Before End (secs)" type="slider" default="20" option="int" range="10,10,120" subsetting="true" visible="eq(-5,true)+eq(-3,true)+eq(-2,true)+eq(-1,0)" />
-			<setting id="autoplay_next_window_percentage" label="Show Window Before End (%)" type="slider" default="95" option="int" range="75,1,99" subsetting="true" visible="eq(-6,true)+eq(-4,true)+eq(-3,true)+eq(-2,1)" />
-			<setting id="autoplay_next_check_threshold" label="Episodes Watched Before Still Watching Check (0=Off)" type="slider" default="3" option="int" range="0,1,10" subsetting="true" visible="eq(-7,true)+eq(-5,true)" />
+			<setting id="autoplay_next_window_time" label="Show Window Before End (secs)" type="slider" default="20" range="10,10,120" option="int" subsetting="true" visible="eq(-5,true)+eq(-3,true)+eq(-2,true)+eq(-1,0)" />
+			<setting id="autoplay_next_window_percentage" label="Show Window Before End (%)" type="slider" default="95" range="75,1,99" option="int" subsetting="true" visible="eq(-6,true)+eq(-4,true)+eq(-3,true)+eq(-2,1)" />
+			<setting id="autoplay_next_check_threshold" label="Episodes Watched Before Still Watching Check (0=Off)" type="slider" default="3" range="0,1,10" option="int" subsetting="true" visible="eq(-7,true)+eq(-5,true)" />
 		<setting id="results_quality_episode" label="Limit Quality" type="action" default="SD, 720p, 1080p, 4K" visible="eq(-8,false)" action="RunPlugin(plugin://plugin.video.pov/?mode=set_quality_choice&amp;quality_setting=results_quality_episode)" />
 		<setting id="auto_resume_episode" label="Automatically Resume Playback" type="enum" default="0" values="Never|Always|Autoplay Only" />
 		<!-- Playback Volume -->
 		<setting label="Playback" type="lsep" />
 		<setting id="load_action" label="Loading Progress" type="enum" default="1" values="Background|Full-Screen" />
+		<setting id="limit_resolve" label="Limit Resolve Attempts (0 Limits to Selected Source)" type="slider" default="10" range="0,5,30" option="int" />
 		<setting id="volumecheck.enabled" label="Check Playback Volume Before Start of Playback" type="bool" default="false" />
 			<setting id="volumecheck.percent" label="Set Max. Percent Starting Volume (0-100)" type="number" default="50" subsetting="true" visible="eq(-1,true)" />
 		<!-- Subtitles -->
