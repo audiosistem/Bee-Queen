@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.hub" name="HUB" version="1.4.0" provider-name="1X">
+<addon id="plugin.video.hub" name="HUB" version="1.4.1" provider-name="1X">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
     <import addon="script.module.requests"/>
