@@ -657,36 +657,6 @@ In addition to what livestreams allowed you to do, you can now,
 			<fanart>fanart.jpg</fanart>
 		</assets>
 	</extension>
-</addon><addon id="plugin.video.looptv" name="Loop TV" version="26+matrix.2" provider-name="Munkee - RACC">
-  <requires>
-    <import addon="xbmc.python" version="3.0.0" />
-    <import addon="script.module.pycryptodome" />
-    <import addon="script.module.pyamf" />
-    <import addon="script.module.kodi-six" />
-    <import addon="script.module.future" />
-    <import addon="script.module.requests" />
-    <import addon="script.module.routing" />
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="addon.py">
-    <provides>all</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <reuselanguageinvoker>true</reuselanguageinvoker>
-    <summary lang="en_gb">tvOne</summary>
-    <description lang="en_gb">tvOne</description>
-    <disclaimer lang="en_gb" />
-    <language />
-    <platform>all</platform>
-    <license>GPL-3.0</license>
-    <forum />
-    <website />
-    <email />
-    <source />
-    <assets>
-		<icon>icon.png</icon>
-		<fanart>fanart.jpg</fanart>
-    </assets>
-  </extension>
 </addon><addon id="plugin.video.macvod" version="1.995" name="[COLORyellow]XC MAC M3U[/COLOR]" provider-name="1x|iNKuBo|bee">
 <requires>    		
     	<import addon="script.module.resolveurl" />
@@ -944,6 +914,38 @@ Many thanks to the developers who assisted with the TMDb Helper patch, restoring
 - Redundant Settings removed: Episodes Widget, Disable Notifications, Show Changelog After Updates, What's New
 - Old changelog.txt now whatisnew.txt</news>
     </extension>
+</addon><addon id="plugin.video.the-loop" name="The Loop" version="7.9" provider-name="Munkee">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" />
+    <import addon="script.module.routing" />
+    <import addon="script.module.unidecode" />
+    <import addon="script.module.tzlocal" />
+    <import addon="script.module.jetextractors" />
+    <import addon="script.module.inputstreamhelper" />
+    <import addon="script.module.resolveurl" />
+    <import addon="script.module.pytz" />
+    <import addon="script.module.pyamf" />
+    <import addon="script.module.pycryptodome" optional="true" />
+    <import addon="script.module.microjenscrapers" optional="true" />
+    
+    <import addon="plugin.video.looptv" />
+    <import addon="plugin.video.dailymotion_com" />    
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.service" library="service.py" />
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">The Loop rewritten on a smaller MicroJen Codebase. A Massive thanks to all The Jen Crew for their valuable contributions in bringing this project together. Stay In The Loop</summary>
+    <platform>all</platform>
+    <language>en</language>
+    <license>GPL-2.0-or-later</license>
+	<assets>
+		<icon>icon.png</icon>
+		<fanart>fanart.jpg</fanart>
+  </assets>
+  </extension>
 </addon><addon id="plugin.video.thechains" name="The Chains" version="5.4.4" provider-name="The Chains">
   <requires>
 	<import addon="script.module.requests" /> 
