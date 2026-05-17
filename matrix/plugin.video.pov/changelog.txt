@@ -1,6 +1,7 @@
   removal pending: download, tmdblist
 
   [COLOR dodgerblue][B]Version 6.05[/B][/COLOR]
+- Fix for format change in mediafusion results, next time will just remove it.
 - Updated MDBList pagination.
 - Added Limit Resolve Attempts (0 Limits to Selected Source) to Settings/Playback.
 - Fix for Easynews authorization.

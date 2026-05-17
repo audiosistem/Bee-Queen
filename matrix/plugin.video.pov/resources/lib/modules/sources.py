@@ -117,13 +117,12 @@ class Sources:
 			if self.active_external:
 				self.meta.update({'full_screen': self.full_screen, 'scrape_timeout': self.timeout})
 				self.external_args = (
+					self.meta,
 					self.external_providers,
 					self.debrid_torrent_enabled,
 #					self.internal_scraper_names,
 					self.threads,
 					self.prescrape_sources,
-					self.display_uncached_torrents,
-					self.meta,
 					self.progress_dialog,
 					self.disabled_ignored
 				)
@@ -241,6 +240,7 @@ class Sources:
 		self.filters_ignored = True
 		results = self.sort_results(self.orig_results)
 		results = self._sort_first(results)
+		if not results: return self._no_results()
 		return self.play_source(results)
 
 	def _no_results(self):
@@ -534,14 +534,13 @@ class Manager:
 		return wrapper
 
 	def __init__(
-		self, source_dict, debrid_torrents, internal_scrapers, prescrape_sources,
-		display_uncached_torrents, meta, progress_dialog, disabled_ignored=False
+		self, meta, source_dict, debrid_torrents, internal_scrapers,
+		prescrape_sources, progress_dialog, disabled_ignored=False
 	):
 		self.meta = meta
 		self.background, self.full_screen = self.meta.get('background', False), self.meta.get('full_screen', False)
 		self.source_dict, self.debrid_torrents = source_dict, debrid_torrents
 		self.internal_scrapers, self.prescrape_sources = internal_scrapers, prescrape_sources
-		self.display_uncached_torrents = display_uncached_torrents
 		self.disabled_ignored, self.progress_dialog = disabled_ignored, progress_dialog
 		self.internal_activated = len(self.internal_scrapers) > 0
 		self.internal_prescraped = len(self.prescrape_sources) > 0
@@ -585,9 +584,11 @@ class Manager:
 				self.threads.add(fut)
 			self.wait(debrid_check=True)
 			for name, hashes in ((fut.name, fut.result() if fut.done() else []) for fut in self.threads):
-				status = ('Unchecked %s' if name in ('real-debrid', 'alldebrid') else 'Uncached %s') % name
-				self.final_sources.extend({**i, 'cache_provider': name, 'debrid': name} for i in torrent_sources if i['hash'] in hashes)
-				self.final_sources.extend({**i, 'cache_provider': status, 'debrid': name} for i in torrent_sources if i['hash'] not in hashes)
+				if name in ('real-debrid', 'alldebrid'): uncached = 'Unchecked %s' % name
+				else: uncached = 'Uncached %s' % name
+				self.final_sources.extend(
+					{**i, 'cache_provider': name if i['hash'] in hashes else uncached, 'debrid': name}
+				for i in torrent_sources)
 		except: notification(32574)
 		finally: tpe.shutdown(False)
 		return self.final_sources

@@ -505,16 +505,15 @@ def tmdb_clean_watchlist(silent=False):
 		watchlist_ids += watchlist('tv')
 		watchlist_ids = [str(i['id']) for i in watchlist_ids]
 		items += [
-			{'watchlist': False, 'media_type': 'movie', 'media_id': i['media_id']}
-			for i in get_watched_info_movie(watched_indicators) if i['media_id'] in watchlist_ids
+			({'watchlist': False, 'media_type': 'movie', 'media_id': int(i)}, 'watchlist')
+			for i in get_watched_info_movie(watched_indicators) if i in watchlist_ids
 		]
 		items += [
-			{'watchlist': False, 'media_type': 'tv', 'media_id': i['media_id']}
-			for i in get_watched_info_tv(watched_indicators) if i['media_id'] in watchlist_ids
+			({'watchlist': False, 'media_type': 'tv', 'media_id': int(i)}, 'watchlist')
+			for i in get_watched_info_tv(watched_indicators) if i in watchlist_ids
 		]
 		if not items: return '0 items to remove.'
-		threads = TaskPool(40).tasks(add_to_watchlist_favorites, [(i, 'watchlist') for i in items], Thread)
-		[i.join() for i in threads]
+		for i in TaskPool(40).tasks(add_to_watchlist_favorites, items, Thread): i.join()
 		clear_tmdbl_cache()
 		if not silent: kodi_utils.notification(32576)
 		return '%d items removed.' % len(items)

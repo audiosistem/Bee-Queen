@@ -45,7 +45,7 @@
 		<setting id="pm.expires" label="Premium Expires Notification (days)" type="slider" default="0" range="0,1,7" option="int" visible="eq(-10,true)+!eq(-11,)" />
 		<!-- TorBox-->
 		<setting label="TorBox" type="lsep" />
-		<setting id="torbox_refer_link" type="text" default="https://tinyurl.com/2d2ra6jq" visible="false" />
+		<setting id="tb_refer_link" type="text" default="https://tinyurl.com/2d2ra6jq" visible="false" />
 		<setting id="tb.token" label="tb token" type="text" default="" visible="false" />
 		<setting id="tb.enabled" label="Enable" type="bool" default="true" visible="!eq(-1,)" />
 		<setting id="tb.account_id" label="Customer ID" type="text" default="" enable="false" visible="eq(-1,true)+!eq(-2,)" />
@@ -76,6 +76,7 @@
 	<category label="My Services">
 		<!-- Real Debrid -->
 		<setting label="Real Debrid" type="lsep" />
+		<setting id="rd_refer_link" type="text" default="https://tinyurl.com/2db65q28" visible="false" />
 		<setting id="rd.client_id" type="text" default="" visible="false" />
 		<setting id="rd.secret" type="text" default="" visible="false" />
 		<setting id="rd.refresh" type="text" default="" visible="false" />
