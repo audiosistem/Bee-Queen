@@ -504,29 +504,23 @@ def list_serialero_season_episodes(url, season_id, name):
 
 
 def play_serialero(url, title):
-    """Play a source from serialero.net."""
+    """Play a source from serialero.net. Auto-plays with fallback."""
     sources = get_serialero_sources(url)
     if not sources:
         xbmcgui.Dialog().notification("Error", "No sources found", xbmcgui.NOTIFICATION_ERROR)
         return
 
-    # If multiple sources, let user choose
-    if len(sources) > 1:
-        labels = [s["domain"] for s in sources]
-        selected = xbmcgui.Dialog().select("Select Source", labels)
-        if selected == -1:
-            return
-        source = sources[selected]
-    else:
-        source = sources[0]
+    # Filter out ok.ru
+    sources = [s for s in sources if not any(
+        dead in s.get("url", "") for dead in ["ok.ru", "odnoklassniki.ru"]
+    )]
 
-    # Resolve and play using the referer
-    result = resolve_url_wrapper(source["url"], referer=source.get("referer"))
-    if result:
-        list_item = create_listitem_with_stream(result, title)
-        xbmcplugin.setResolvedUrl(HANDLE, True, list_item)
-    else:
-        xbmcgui.Dialog().notification("Error", "Failed to resolve URL", xbmcgui.NOTIFICATION_ERROR)
+    if not sources:
+        xbmcgui.Dialog().notification(ADDON_NAME, "Nicio sursa disponibila", xbmcgui.NOTIFICATION_WARNING)
+        return
+
+    # Auto-play with fallback
+    _auto_play_with_fallback(sources, title, referer=url)
 
 
 def list_show_categories(shows_str, name, latest_url):
@@ -644,32 +638,68 @@ def list_episodes_for_season(episodes_json, season, name):
     xbmcplugin.endOfDirectory(HANDLE)
 
 
+def _auto_play_with_fallback(sources, name, referer=None, use_player=False):
+    """
+    Auto-play first source. If it fails to resolve, try next source automatically.
+    sources: list of dicts with 'url' and optionally 'domain' keys,
+             or list of tuples (name, url)
+    use_player: if True, use xbmc.Player().play() instead of setResolvedUrl
+                (needed when called from directory/folder context)
+    """
+    for idx, source in enumerate(sources):
+        video_url = source.get("url", "") if isinstance(source, dict) else source[1] if isinstance(source, tuple) else ""
+        domain = source.get("domain", "") if isinstance(source, dict) else source[0] if isinstance(source, tuple) else ""
+
+        if not video_url:
+            continue
+
+        log(f"[auto-play] Trying source {idx + 1}/{len(sources)}: {domain or video_url.split('/')[2]}")
+
+        # Try to resolve
+        resolved = resolve_url_wrapper(video_url, referer=referer)
+
+        if resolved:
+            log(f"[auto-play] Source {idx + 1} resolved successfully")
+
+            if not isinstance(resolved, StreamInfo):
+                manifest_type = "hls" if ".m3u8" in str(resolved) else ("dash" if ".mpd" in str(resolved) else "mp4")
+                resolved = StreamInfo(str(resolved), manifest_type=manifest_type)
+
+            list_item = create_listitem_with_stream(resolved, name or "Video")
+
+            if name:
+                xbmcgui.Window(10000).setProperty("VeziAici_Title", name)
+
+            if use_player:
+                xbmc.Player().play(resolved.url, list_item)
+            else:
+                xbmcplugin.setResolvedUrl(HANDLE, True, list_item)
+            return
+        else:
+            log(f"[auto-play] Source {idx + 1} failed, trying next...")
+
+    # All sources failed
+    log_error("[auto-play] All sources failed")
+    xbmcgui.Dialog().notification(ADDON_NAME, "Nicio sursa disponibila", xbmcgui.NOTIFICATION_WARNING)
+    if not use_player:
+        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+
+
 def list_sources(url, name):
-    """List video sources for an episode."""
+    """List video sources for an episode. Auto-plays with fallback."""
     sources = get_veziaici_sources(url)
 
-    for source in sources:
-        domain = source.get("domain", "Unknown")
-        video_url = source.get("url", "")
+    # Filter out ok.ru (mostly dead links)
+    sources = [s for s in sources if not any(
+        dead in s.get("url", "") for dead in ["ok.ru", "odnoklassniki.ru"]
+    )]
 
-        list_item = xbmcgui.ListItem(f"Sursa: {domain}")
-        list_item.setInfo("video", {"title": f"Sursa: {domain}"})
-        list_item.setProperty("IsPlayable", "true")
+    if not sources:
+        xbmcgui.Dialog().ok(ADDON_NAME, "Nu s-au gasit surse video valide.")
+        return
 
-        # Context menu for download
-        context_menu = [
-            ("Download", f"RunPlugin({build_url('download_source', url=video_url)})")
-        ]
-        list_item.addContextMenuItems(context_menu)
-
-        xbmcplugin.addDirectoryItem(
-            handle=HANDLE,
-            url=build_url("play_source", url=video_url, title=name, referer=url),
-            listitem=list_item,
-            isFolder=False,
-        )
-
-    xbmcplugin.endOfDirectory(HANDLE)
+    # Auto-play with fallback (use_player=True because this is a directory context)
+    _auto_play_with_fallback(sources, name, referer=url, use_player=True)
 
 
 def play_source(url, title, referer=None):
@@ -910,25 +940,19 @@ def list_turkish_series(url, page="1"):
 
 
 def list_turkish_sources(url, name):
-    """List sources for Turkish episode."""
+    """List sources for Turkish episode. Auto-plays with fallback."""
     sources = get_terasa_sources(url)
 
-    for idx, source in enumerate(sources):
-        domain = source.get("domain", f"Source {idx + 1}")
-        video_url = source.get("url", "")
+    # Filter out ok.ru
+    sources = [s for s in sources if not any(
+        dead in s.get("url", "") for dead in ["ok.ru", "odnoklassniki.ru"]
+    )]
 
-        list_item = xbmcgui.ListItem(f"Sursa {idx + 1}: {domain}")
-        list_item.setInfo("video", {"title": f"Sursa {idx + 1}: {domain}"})
-        list_item.setProperty("IsPlayable", "true")
+    if not sources:
+        xbmcgui.Dialog().ok(ADDON_NAME, "Nu s-au gasit surse video valide.")
+        return
 
-        xbmcplugin.addDirectoryItem(
-            handle=HANDLE,
-            url=build_url("play_source", url=video_url, title=name),
-            listitem=list_item,
-            isFolder=False,
-        )
-
-    xbmcplugin.endOfDirectory(HANDLE)
+    _auto_play_with_fallback(sources, name, use_player=True)
 
 
 # Korean/Asian series (blogul-lui-atanase.ro)
@@ -1174,30 +1198,19 @@ def list_movies(url, name, page="1"):
 
 
 def list_movie_sources(url, name):
-    """List sources for a movie."""
+    """List sources for a movie. Auto-plays with fallback."""
     sources = get_movie_sources(url)
 
-    for source in sources:
-        domain = source.get("domain", "Unknown")
-        video_url = source.get("url", "")
+    # Filter out ok.ru
+    sources = [s for s in sources if not any(
+        dead in s.get("url", "") for dead in ["ok.ru", "odnoklassniki.ru"]
+    )]
 
-        list_item = xbmcgui.ListItem(f"Sursa: {domain}")
-        list_item.setInfo("video", {"title": f"Sursa: {domain}"})
-        list_item.setProperty("IsPlayable", "true")
+    if not sources:
+        xbmcgui.Dialog().ok(ADDON_NAME, "Nu s-au gasit surse video valide.")
+        return
 
-        context_menu = [
-            ("Download", f"RunPlugin({build_url('download_source', url=video_url)})")
-        ]
-        list_item.addContextMenuItems(context_menu)
-
-        xbmcplugin.addDirectoryItem(
-            handle=HANDLE,
-            url=build_url("play_source", url=video_url, title=name),
-            listitem=list_item,
-            isFolder=False,
-        )
-
-    xbmcplugin.endOfDirectory(HANDLE)
+    _auto_play_with_fallback(sources, name, referer=url, use_player=True)
 
 
 # SerialeRomanesti (serialeromanesti.net)
@@ -1290,24 +1303,24 @@ def list_serialeromanesti_series(url, name, page="1"):
 
 
 def play_serialeromanesti(url, title):
-    """Play an episode from serialeromanesti.net."""
+    """Play an episode from serialeromanesti.net. Auto-plays with fallback."""
     sources = get_serialeromanesti_sources(url)
     
     if not sources:
         xbmcgui.Dialog().ok(ADDON_NAME, "Nu s-au gasit surse video.")
         return
-        
-    if len(sources) == 1:
-        play_source(sources[0]["url"], title, referer=sources[0].get("referer"))
+
+    # Filter out ok.ru
+    sources = [s for s in sources if not any(
+        dead in s.get("url", "") for dead in ["ok.ru", "odnoklassniki.ru"]
+    )]
+
+    if not sources:
+        xbmcgui.Dialog().ok(ADDON_NAME, "Nu s-au gasit surse video valide.")
         return
-        
-    # Multiple sources, let user select
-    source_names = [s.get("domain", "Unknown") for s in sources]
-    dialog = xbmcgui.Dialog()
-    selected = dialog.select("Selecteaza sursa", source_names)
-    
-    if selected >= 0:
-        play_source(sources[selected]["url"], title, referer=sources[selected].get("referer"))
+
+    # Auto-play with fallback
+    _auto_play_with_fallback(sources, title, referer=url)
 
 
 # SerialeCoreene.org
@@ -1465,18 +1478,87 @@ def list_serialecoreene_episodes(url, name):
 
 
 def play_serialecoreene_episode(url, name):
-    """Play episode from SerialeCoreene.org (handles redirects)."""
-    res = get_playable_url(url)
+    """Play episode from SerialeCoreene.org with source selection."""
+    import re
+    import requests
+    import base64
 
-    if not res:
-        xbmcgui.Dialog().ok(ADDON_NAME, "Nu s-a putut extrage sursa video.")
-        return
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://serialecoreene.org/',
+        }
 
-    video_url = res.get("url")
-    referer = res.get("referer")
-    
-    # Use centralized playback logic
-    play_source(video_url, name, referer=referer)
+        # Step 1: Fetch episode page
+        response = requests.get(url, headers=headers, timeout=15)
+        if response.status_code != 200:
+            xbmcgui.Dialog().ok(ADDON_NAME, "Nu s-a putut accesa pagina episodului.")
+            return
+
+        page_html = response.text
+
+        # Check for ?load= redirect
+        load_match = re.search(r'window\.location\.href\s*=\s*"\?load=([^"]+)"', page_html)
+        if load_match:
+            load_param = load_match.group(1)
+            redirect_url = f"{url}?load={load_param}"
+            response = requests.get(redirect_url, headers=headers, timeout=15)
+            if response.status_code != 200:
+                xbmcgui.Dialog().ok(ADDON_NAME, "Nu s-a putut accesa pagina redirectionata.")
+                return
+            page_html = response.text
+
+        # Step 2: Find shortcdn URL and get all sources
+        shortcdn_match = re.search(r'(https?://shortcdn\.org/[^\s"\'<>]+)', page_html)
+
+        sources = []
+        shortcdn_referer = url
+
+        if shortcdn_match:
+            shortcdn_url = shortcdn_match.group(1)
+            log(f"Found shortcdn: {shortcdn_url}")
+            r = requests.get(shortcdn_url, headers=headers, timeout=15)
+            if r.status_code == 200:
+                shortcdn_referer = shortcdn_url
+                # Extract all sources with their names from data-url attributes
+                server_pattern = re.findall(
+                    r'<a[^>]*data-url="([A-Za-z0-9+/=]+)"[^>]*>\s*([^<]+)\s*</a>',
+                    r.text
+                )
+                for encoded, server_name in server_pattern:
+                    try:
+                        decoded = base64.b64decode(encoded).decode('utf-8')
+                        if decoded.startswith('http'):
+                            # Exclude ok.ru links (mostly dead)
+                            if 'ok.ru' in decoded or 'odnoklassniki' in decoded:
+                                continue
+                            sources.append((server_name.strip(), decoded))
+                        elif decoded.startswith('?') and 'ad_level' not in decoded:
+                            full_url = shortcdn_url + decoded
+                            sources.append((server_name.strip(), full_url))
+                    except Exception:
+                        continue
+
+        if not sources:
+            # Fallback: try iframe directly
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(page_html, "html.parser")
+            iframe = soup.find("iframe", src=True)
+            if iframe:
+                video_url = iframe["src"]
+                if video_url.startswith("//"):
+                    video_url = "https:" + video_url
+                play_source(video_url, name, referer=url)
+            else:
+                xbmcgui.Dialog().ok(ADDON_NAME, "Nu s-a putut extrage sursa video.")
+            return
+
+        # Auto-play with fallback through all sources
+        _auto_play_with_fallback(sources, name, referer=shortcdn_referer)
+
+    except Exception as e:
+        log_error(f"Error in play_serialecoreene_episode: {e}")
+        xbmcgui.Dialog().ok(ADDON_NAME, f"Eroare: {e}")
 
 
 # Trakt integration

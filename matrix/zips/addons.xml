@@ -1315,7 +1315,7 @@ Many thanks to the developers who assisted with the TMDb Helper patch, restoring
 			<icon>icon.png</icon>
 		</assets>
 	</extension>
-</addon><addon id="plugin.video.veziaici.net" name="VeziAici.net" version="1.4.1" provider-name="1 x Geamanu x MiniMi">
+</addon><addon id="plugin.video.veziaici.net" name="VeziAici.net" version="1.4.2" provider-name="1 x Geamanu x MiniMi">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
