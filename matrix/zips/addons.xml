@@ -449,29 +449,6 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.dltv" name="DLTV" version="1.0.21" provider-name="Arkane14, derzis">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0" />
-        <import addon="script.module.requests" />
-        <import addon="script.module.inputstreamhelper" />
-        <import addon="inputstream.ffmpegdirect" />
-        <import addon="script.module.six" />
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="addon.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en">Live TV and Sports</summary>
-        <description lang="en">Live TV and Sports</description>
-        <platform>all</platform>
-        <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
-        </assets>
-        <news>v1.0.20: Fix ch.773 — route via lovecdn player; fix CHEVY AES+header scan false positives; fix stall recovery for non-premium channels</news>
-        <news>v1.0.21: added new base_url</news>
-    </extension>
 </addon><addon id="plugin.video.dscmovieshub" version="1.2.0" name="[COLOR teal]DSCMoviesHub[/COLOR]" provider-name="DSCMoviesHub">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
