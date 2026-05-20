@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="plugin.video.filmehd.org"
+       name="FilmeHD.org"
+       version="0.1.0"
+       provider-name="derzis">
+
+  <requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+    <import addon="script.module.requests" version="2.9.1"/>
+    <import addon="script.module.resolveurl" version="5.0.0"/>
+  </requires>
+
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+
+  <extension point="xbmc.addon.metadata">
+    <summary lang="ro">Filme și seriale HD online subtitrate</summary>
+    <description lang="ro">Browsează și vizionează filme și seriale de pe FilmeHD.org</description>
+    <platform>all</platform>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
+
+</addon>

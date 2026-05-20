@@ -15,7 +15,7 @@ _HEADERS     = {
 }
 
 
-def resolve_via_thrax(url):
+def resolve_via_thrax(url, tmdb_id=None):
     """Extrage key-ul din URL și îl rezolvă prin Thrax API (FlareSolverr server-side)."""
     qs = parse_qs(urlparse(url).query)
     key = (qs.get('key') or [''])[0]
@@ -23,7 +23,10 @@ def resolve_via_thrax(url):
         xbmc.log(f'{_LABEL} resolve_via_thrax: key lipsă din {url}', xbmc.LOGWARNING)
         return None
     try:
-        r = requests.get(f'{_THRAX}/primesrcme/resolve', params={'key': key}, timeout=90,
+        params = {'key': key}
+        if tmdb_id:
+            params['tmdb_id'] = tmdb_id
+        r = requests.get(f'{_THRAX}/primesrcme/resolve', params=params, timeout=90,
                          headers={**_THRAX_HEADERS, 'Accept-Encoding': 'gzip, deflate'})
         if not r.ok:
             xbmc.log(f'{_LABEL} Thrax /primesrcme/resolve HTTP {r.status_code}', xbmc.LOGWARNING)
@@ -98,6 +101,7 @@ def get_sources(tmdb_id, media_type='movie', season=None, episode=None):
             'quality':    quality,
             'title_line': title_line,
             'direct':     False,
+            'tmdb_id':    f'{tmdb_id}:{media_type}',
         })
 
     xbmc.log(f'{_LABEL} {len(sources)} surse pentru tmdb={tmdb_id}', xbmc.LOGINFO)

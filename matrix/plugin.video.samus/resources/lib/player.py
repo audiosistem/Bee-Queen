@@ -697,10 +697,10 @@ def _play_source(handle, selected, li, item_data=None, history_meta=None, resume
         else:
             url = selected['url']
             is_direct = selected['direct']
-            if selected.get('provider') == '[PSM]' and 'primesrc.me/api/v1/l' in url:
+            if 'primesrc.me/api/v1/l' in url:
                 dlg.set_status('Se rezolvă PrimeSrc (Cloudflare)...')
                 xbmc.log(f'[PSM] FlareSolverr → {url}', xbmc.LOGINFO)
-                data = primesrcme_resolver.resolve_via_thrax(url)
+                data = primesrcme_resolver.resolve_via_thrax(url, tmdb_id=selected.get('tmdb_id'))
                 embed = data.get('link') if data else None
                 if not embed:
                     xbmc.log(f'[PSM] FlareSolverr nu a returnat link pentru {url}', xbmc.LOGWARNING)
@@ -757,6 +757,26 @@ def _play_source(handle, selected, li, item_data=None, history_meta=None, resume
                             threading.Thread(target=_auto_enable_subtitles, daemon=True).start()
                 else:
                     xbmc.log(f'[OKRU] Rezolvare eșuată pentru {url}', xbmc.LOGWARNING)
+                    return False
+            if not is_direct and selected.get('provider') == 'vixsrc' and 'vixsrc.to/' in url:
+                dlg.set_status('Se rezolvă VixSrc...')
+                try:
+                    from urllib.parse import urlparse as _urlparse
+                    _p = _urlparse(url)
+                    _parts = [x for x in _p.path.strip('/').split('/') if x]
+                    _mtype = _parts[0] if _parts else 'movie'
+                    _tid = _parts[1] if len(_parts) > 1 else ''
+                    _s = int(_parts[2]) if len(_parts) > 2 else None
+                    _e = int(_parts[3]) if len(_parts) > 3 else None
+                    _res = vixsrc_resolver.get_sources(_tid, _mtype, season=_s, episode=_e)
+                    if _res:
+                        url = _res[0]['url']
+                        is_direct = True
+                    else:
+                        xbmc.log(f'[VixSrc] resolver nu a returnat surse pentru {url}', xbmc.LOGWARNING)
+                        return False
+                except Exception as _ex:
+                    xbmc.log(f'[VixSrc] eroare resolver: {_ex}', xbmc.LOGERROR)
                     return False
             if not is_direct:
                 dlg.set_status('Se rezolvă URL-ul...')

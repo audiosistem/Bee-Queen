@@ -468,6 +468,28 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="plugin.video.filmehd.org" name="FilmeHD.org" version="0.1.0" provider-name="derzis">
+
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" version="2.9.1" />
+    <import addon="script.module.resolveurl" version="5.0.0" />
+  </requires>
+
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+
+  <extension point="xbmc.addon.metadata">
+    <summary lang="ro">Filme și seriale HD online subtitrate</summary>
+    <description lang="ro">Browsează și vizionează filme și seriale de pe FilmeHD.org</description>
+    <platform>all</platform>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
+
 </addon><addon id="plugin.video.free99" version="2.0" name="[COLOR goldenrod]Free99[/COLOR]" provider-name="JewBMX, DIGGZ">
     <requires>
         <import addon="script.module.six" />
@@ -898,7 +920,7 @@ Many thanks to the developers who assisted with the TMDb Helper patch, restoring
   </extension>
   <extension point="xbmc.service" library="service.py" start="login|startup">
   </extension>
-</addon><addon id="plugin.video.samus" name="Samus" version="0.0.29" provider-name="derzis">
+</addon><addon id="plugin.video.samus" name="Samus" version="0.0.34" provider-name="derzis">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />
@@ -953,6 +975,30 @@ Many thanks to the developers who assisted with the TMDb Helper patch, restoring
 - TV Passport added to main menu
 - Redundant Settings removed: Episodes Widget, Disable Notifications, Show Changelog After Updates, What's New
 - Old changelog.txt now whatisnew.txt</news>
+    </extension>
+</addon><addon id="plugin.video.sport" name="Sport" version="1.9" provider-name="Creator: @TrainAgain2, @derzis">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" />
+        <import addon="inputstream.adaptive" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="addon.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="pt_BR"> Add-on para assistir esportes  </summary>
+        <summary lang="ro_RO"> Add-on pentru a viziona sporturi </summary>
+        <summary lang="en_GB"> Add-on to watch sports </summary>
+        <summary lang="es_ES"> Complemento para ver deportes </summary>
+        <description lang="pt_BR"> Assista transmissões ao vivo de diversos esportes diretamente no seu Kodi. Suporta Futebol, Motorsport, Lutas, NHL, Tênis, Basquete, Beisebol, Rugby e mais.</description>
+        <description lang="ro_RO"> Urmăriți transmisiuni live de diverse sporturi direct pe Kodi. Suportă Fotbal, Motorsport, Lupte, Hochei, Tenis, Baschet, Baseball, Rugby și multe altele.</description>
+        <description lang="en_GB"> Watch live streams of various sports directly on your Kodi. Supports Football, Motorsport, Fights, NHL, Tennis, Basketball, Baseball, Rugby and more.</description>
+        <description lang="es_ES"> Vea transmisiones en vivo de varios deportes directamente en su Kodi. Soporta Fútbol, Deportes de Motor, Luchas, Hockey, Tenis, Baloncesto, Béisbol, Rugby y más.</description>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
     </extension>
 </addon><addon id="plugin.video.the-loop" name="The Loop" version="7.9" provider-name="Munkee">
   <requires>
@@ -1325,7 +1371,7 @@ Many thanks to the developers who assisted with the TMDb Helper patch, restoring
   <extension point="xbmc.python.pluginsource" library="addon.py">
     <provides>video</provides>
   </extension>
-  <extension point="xbmc.service" library="service.py" />
+  
   <extension point="xbmc.addon.metadata">
     <summary lang="en">Watch Romanian shows and series from VeziAici.net</summary>
     <description lang="en">This addon allows you to browse and watch content from VeziAici.net, including Romanian shows and series.</description>
@@ -1335,7 +1381,7 @@ Many thanks to the developers who assisted with the TMDb Helper patch, restoring
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.vixmovie" name="VixMovie" version="2.2" provider-name="1x,Geamanu,apoyotech">
+</addon><addon id="plugin.video.vixmovie" name="VixMovie" version="2.3" provider-name="1x,Geamanu,apoyotech">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.requests" version="2.25.1" />
@@ -1491,7 +1537,7 @@ Many thanks to the developers who assisted with the TMDb Helper patch, restoring
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.3+unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
+</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.4+beta.1.unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.27.1" />
@@ -1608,28 +1654,12 @@ Many thanks to the developers who assisted with the TMDb Helper patch, restoring
         <disclaimer lang="vi_VN">Plugin này không được xác nhận bởi Google</disclaimer>
         <disclaimer lang="zh_CN">此插件未被谷歌认可</disclaimer>
         <disclaimer lang="zh_TW">此附加元件未由Google支持</disclaimer>
-    <news>## v7.4.3
+    <news>## v7.4.4+beta.1
 ### Fixed
-- Limit chunk size when reading stream proxy response
-- Fix regressions with accessing http urls
-- Improve handling of retries upon server error
-- Improve identification of post-live streams
-- Updates to resolve inconsistent Python2 string encoding/decoding
-- Ensure parameters to Kodi builtin functions are parsed as string literals
-- Allow trailing slashes in url of html pages served by internal http server
-
-### Changed
-- Rename Subscriptions to Subscribed Channels
-- Open confirmation dialog, with a link for further information, when sign in process fails
-- Update API config page html
-- Improve handling of API key settings changes
-- Detect and notify when API requests cannot be completed
-- Use consistent language for signing in/out
+- Limit retrying feeds that cannot be accessed
 
 ### New
-- Add button in API settings to view address of API config page
-- Fallback to playing channel uploads if no live stream is available
-- Add fallback method to load playlists when v3 API request cannot be made</news></extension>
+- Add option to play YouTube error notification video upon playback failure</news></extension>
 </addon><addon id="program.optiklean" name="OptiKlean" provider-name="DigiTalking" version="2.3.0">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />

@@ -31,7 +31,25 @@ def _parse(sources):
             continue
         provider = s.get('provider', '')
         quality = s.get('quality', '')
-        label = f"{quality} ({provider})" if quality else provider
+        server_name = s.get('server_name', '')
+        if provider == 'primesrcme' and not server_name:
+            from urllib.parse import urlparse
+            host = urlparse(url).hostname or ''
+            server_name = {
+                'bysejikuar.com': 'Filemoon', 'filemoon.sx': 'Filemoon',
+                'streamwish.to': 'Streamwish', 'wishembed.online': 'Streamwish',
+                'dood.watch': 'Dood', 'doodstream.com': 'Dood',
+                'voe.sx': 'Voe', 'voe-unblock.net': 'Voe',
+                'streamta.site': 'Streamtape', 'streamtape.com': 'Streamtape',
+                'vidmoly.me': 'Vidmoly', 'vidmoly.biz': 'Vidmoly',
+                'mixdrop.ag': 'Mixdrop', 'mixdrop.co': 'Mixdrop',
+                'filelions.to': 'Filelions', 'savefiles.com': 'Savefiles',
+                'luluvdoo.com': 'Luluvdoo', 'vinovo.to': 'Vinovo',
+                'vids.st': 'VidsST', 'streamplay.to': 'Streamplay',
+                'vidara.so': 'Vidara', 'upzur.com': 'UpZur', 'vidnest.io': 'VidNest',
+            }.get(host, '')
+        display = server_name if (provider == 'primesrcme' and server_name) else provider
+        label = f"{quality} ({display})" if quality else display
         subs = s.get('subtitles') or []
         if isinstance(subs, str):
             subs = [subs]
@@ -41,6 +59,7 @@ def _parse(sources):
             results.append({
                 'label':     label,
                 'url':       url,
+                'provider':  provider,
                 'direct':    True,
                 'quality':   quality,
                 'subtitles': subs,
@@ -49,6 +68,7 @@ def _parse(sources):
             results.append({
                 'label':     label,
                 'url':       url,
+                'provider':  provider,
                 'direct':    False,
                 'quality':   quality,
                 'subtitles': subs,
