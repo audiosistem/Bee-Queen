@@ -976,7 +976,7 @@ Many thanks to the developers who assisted with the TMDb Helper patch, restoring
 - Redundant Settings removed: Episodes Widget, Disable Notifications, Show Changelog After Updates, What's New
 - Old changelog.txt now whatisnew.txt</news>
     </extension>
-</addon><addon id="plugin.video.sport" name="Sport" version="1.9" provider-name="Creator: @TrainAgain2, @derzis">
+</addon><addon id="plugin.video.sport" name="Sport" version="3.0" provider-name="Creator: @TrainAgain2, @derzis">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />
