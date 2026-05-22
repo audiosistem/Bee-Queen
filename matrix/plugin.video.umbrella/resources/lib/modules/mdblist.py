@@ -7,6 +7,7 @@
 
 import requests
 import re
+import time
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from resources.lib.modules import control
@@ -28,14 +29,18 @@ def _mdb_ts(ts_str):
 	return ts_str
 
 getSetting = control.setting
-mdblist_api = getSetting('mdblist.api')
 mdblist_baseurl = 'https://api.mdblist.com'
-mdblist_top_list ='/lists/top?apikey='
-mdblist_user_list ='/lists/user/?apikey='
-mdblist_page_limit = '&limit=%s' % getSetting('page.item.limit')
+mdblist_top_list = '/lists/top'
+mdblist_user_list = '/lists/user/'
+mdblist_liked_list = '/lists/liked'
+mdblist_page_limit = '?limit=%s' % getSetting('page.item.limit')
+_CLIENT_ID = 'YVFS6WW6GT4c2LvaHxHGa8YlB6u9zGgL6KjtDsHg'
 session = requests.Session()
 retries = Retry(total=4, backoff_factor=0.3, status_forcelist=[429, 500, 502, 503, 504, 520, 521, 522, 524, 530])
 session.mount('https://api.mdblist.com', HTTPAdapter(max_retries=retries, pool_maxsize=100))
+_mdblist_token = getSetting('mdblist.token')
+if _mdblist_token:
+	session.headers.update({'Authorization': 'Bearer %s' % _mdblist_token})
 highlight_color = getSetting('highlight.color')
 artPath = control.artPath()
 iconLogos = getSetting('icon.logos') != 'Traditional'
@@ -45,7 +50,7 @@ headers['Content-Type'] = 'application/json'
 
 def getMDBTopList(self, listType):
 	try:
-		response = session.get(mdblist_baseurl + mdblist_top_list + mdblist_api, timeout=20)
+		response = session.get(mdblist_baseurl + mdblist_top_list, timeout=20)
 		if isinstance(response, dict):
 			return None
 		items = _map_top_list(response, listType)
@@ -111,9 +116,9 @@ def _map_list_items(response):
     return items
 
 def getMDBUserList(self, listType, addremove=False):
-    
+
     try:
-        response = session.get(mdblist_baseurl + mdblist_user_list + mdblist_api + mdblist_page_limit, timeout=20)
+        response = session.get(mdblist_baseurl + mdblist_user_list + mdblist_page_limit, timeout=20)
         if isinstance(response, dict): 
             log_utils.log(response.error, level=log_utils.LOGDEBUG)
             return None
@@ -149,10 +154,50 @@ def _map_user_list_items(response, listType, addremove=False):
                 items_append(item)
     return items
 
+def getMDBLikedLists(self, listType):
+    try:
+        data = get_request(mdblist_liked_list)
+        if data is None:
+            return None
+        if isinstance(data, dict):
+            for key in ('lists', 'liked', 'data', 'results', 'items'):
+                if key in data and isinstance(data[key], list):
+                    data = data[key]
+                    break
+            else:
+                log_utils.log('getMDBLikedLists: unexpected dict response keys=%s' % list(data.keys()), level=log_utils.LOGDEBUG)
+                return None
+        if not isinstance(data, list):
+            return None
+        icon = 'userlists.png' if iconLogos else 'mdblist.png'
+        iconPath = control.joinPath(artPath, icon)
+        items = []
+        for i in data:
+            if i.get('mediatype') == listType or i.get('mediatype') is None:
+                owner = i.get('user_name', '') or str(i.get('user_id', ''))
+                item = {}
+                item['label'] = i.get('name')
+                item['art'] = {'icon': f'{iconPath}'}
+                item['params'] = {
+                    'info': 'mdblist_likedlist',
+                    'list_name': i.get('name'),
+                    'list_id': i.get('id'),
+                    'list_count': i.get('items'),
+                    'plugin_category': i.get('name'),
+                    'list_owner': owner}
+                item['unique_ids'] = {
+                    'mdblist': i.get('id'),
+                    'slug': i.get('slug'),
+                    'user': owner}
+                items.append(item)
+        return items
+    except: log_utils.error('getMDBLikedLists Error: ')
+    return None
+
 def get_user_watchlist(listType):
     try:
         
-        response = session.get(f"{mdblist_baseurl}/watchlist/items?apikey={mdblist_api}", timeout=20)
+        response = session.get(f"{mdblist_baseurl}/watchlist/items", timeout=20)
         if isinstance(response, dict): 
             log_utils.log(response.error, level=log_utils.LOGDEBUG)
             return None
@@ -243,17 +288,17 @@ def manager(name, imdb=None, tvdb=None, tmdb=None, watched=None, season=None, ep
                     import json
                     post = json.dumps(post)
                 if items[select][1] == 'add':
-                    response = session.post(f"{mdblist_baseurl}/watchlist/items/add?apikey={mdblist_api}",data=post, headers=headers, timeout=20)
+                    response = session.post(f"{mdblist_baseurl}/watchlist/items/add", data=post, headers=headers, timeout=20)
                     action = 'add'
                     listid = 'MDBList Watchlist'
                 if items[select][1] == 'remove':
-                    response = session.post(f"{mdblist_baseurl}/watchlist/items/remove?apikey={mdblist_api}",data=post, headers=headers, timeout=20)
+                    response = session.post(f"{mdblist_baseurl}/watchlist/items/remove", data=post, headers=headers, timeout=20)
                     action = 'remove'
                     listid = 'MDBList Watchlist'
                 for count in range(len(lists)):
                     i = lists[count]
                     if i[1] == '%s' % items[select][1]:
-                        response = session.post(mdblist_baseurl + items[select][1] + '?apikey=' + mdblist_api, data=post, headers=headers, timeout=20)
+                        response = session.post(mdblist_baseurl + items[select][1], data=post, headers=headers, timeout=20)
                         match = re.search(r'/lists/(\d+)/', i[1])
                         list_id_num = int(match.group(1)) if match else None
                         listid = next((name for name, id in lists2 if id == list_id_num), 'Unknown List')
@@ -290,7 +335,7 @@ def manager(name, imdb=None, tvdb=None, tmdb=None, watched=None, season=None, ep
         
 def sync_watch_list(activities=None, forced=False):
     try:
-        link = f"{mdblist_baseurl}/watchlist/items?apikey={mdblist_api}"
+        link = f"{mdblist_baseurl}/watchlist/items"
         if forced:
             items = get_mdb_list_as_json(link,'movie')
             mdbsync.insert_watch_list(items, 'movies_watchlist')
@@ -363,7 +408,7 @@ def get_list_items_for_library(url):
 
 def getWatchListedActivity(activities=None):
     try:
-        link = f"{mdblist_baseurl}/sync/last_activities?apikey={mdblist_api}"
+        link = f"{mdblist_baseurl}/sync/last_activities"
         if activities: i = activities
         else: i = session.get(link, timeout=20)
         if not i: return 0
@@ -376,15 +421,92 @@ def getWatchListedActivity(activities=None):
     return 0
 
 def getMDBListCredentialsInfo():
-	return bool(getSetting('mdblist.api'))
+	return bool(getSetting('mdblist.token'))
 
 def getMDBListIndicatorsInfo():
 	return getSetting('indicators.alt') == '3'
 
+def mdblistAuth(fromSettings=0):
+	try:
+		response = session.post(
+			'https://api.mdblist.com/oauth/device-authorization/',
+			data={'client_id': _CLIENT_ID, 'scope': 'write'},
+			timeout=20)
+		if response.status_code != 200:
+			control.notification(title='MDBList', message='Authorization request failed')
+			if fromSettings: control.openSettings('8.4', 'plugin.video.umbrella')
+			return False
+		device_data = response.json()
+		device_code = device_data['device_code']
+		user_code = device_data['user_code']
+		verification_url = device_data.get('verification_url', 'https://mdblist.com/oauth/device/')
+		expires_in = int(device_data.get('expires_in', 300))
+		interval = int(device_data.get('interval', 5))
+		verification_url_display = control.lang(32513) % (highlightColor, verification_url)
+		user_code_display = control.lang(32514) % (highlightColor, user_code)
+		if control.setting('dialogs.useumbrelladialog') == 'true':
+			from resources.lib.modules import tools
+			mdb_qr = tools.make_qr(verification_url, 'mdblist_qr.png')
+			progressDialog = control.getProgressWindow('MDBList Authorization', mdb_qr, 1)
+			progressDialog.set_controls()
+			progressDialog.update(0, control.progress_line % (verification_url_display, user_code_display))
+		else:
+			progressDialog = control.progressDialog
+			progressDialog.create('MDBList Authorization',
+				control.progress_line % (verification_url_display, user_code_display))
+		access_token = None
+		refresh_token = ''
+		start = time.time()
+		try:
+			while not progressDialog.iscanceled():
+				time_passed = time.time() - start
+				if time_passed >= expires_in:
+					break
+				control.sleep(interval * 1000)
+				poll = session.post(
+					'https://api.mdblist.com/oauth/token/',
+					data={
+						'grant_type': 'urn:ietf:params:oauth:grant-type:device_code',
+						'device_code': device_code,
+						'client_id': _CLIENT_ID},
+					timeout=20)
+				if poll.status_code == 200:
+					access_token = poll.json().get('access_token', '')
+					refresh_token = poll.json().get('refresh_token', '')
+					break
+				progress = int(100 - 100 * time_passed / expires_in)
+				progressDialog.update(progress, control.progress_line % (verification_url_display, user_code_display))
+		finally:
+			progressDialog.close()
+		if not access_token:
+			control.notification(title='MDBList', message='Authorization failed or timed out')
+			if fromSettings: control.openSettings('8.4', 'plugin.video.umbrella')
+			return False
+		control.setSetting('mdblist.token', access_token)
+		if refresh_token:
+			control.setSetting('mdblist.refresh.token', refresh_token)
+		session.headers.update({'Authorization': 'Bearer %s' % access_token})
+		control.notification(title='MDBList', message='MDBList Authorized Successfully')
+		if fromSettings: control.openSettings('8.4', 'plugin.video.umbrella')
+		return True
+	except:
+		log_utils.error()
+		if fromSettings: control.openSettings('8.4', 'plugin.video.umbrella')
+		return False
+
+def mdblistRevoke(fromSettings=0):
+	try:
+		control.setSetting('mdblist.token', '')
+		control.setSetting('mdblist.refresh.token', '')
+		session.headers.pop('Authorization', None)
+		control.notification(title='MDBList', message='MDBList Authorization Revoked')
+	except: log_utils.error()
+	finally:
+		if fromSettings: control.openSettings('8.4', 'plugin.video.umbrella')
+
 def get_request(url, post=None, method='GET'):
 	try:
-		sep = '&' if '?' in url else '?'
-		full_url = f"{mdblist_baseurl}{url}{sep}apikey={mdblist_api}"
+		full_url = f"{mdblist_baseurl}{url}"
 		import json as _json
 		for _attempt in range(2):
 			try:
@@ -753,7 +875,7 @@ def removeWatchlistItems(media_type, imdb_list):
 		else:
 			post = _json.dumps({'shows': [{'imdb': i} for i in imdb_list]})
 			table = 'shows_watchlist'
-		response = session.post('%s/watchlist/items/remove?apikey=%s' % (mdblist_baseurl, mdblist_api), data=post, headers=headers, timeout=20)
+		response = session.post('%s/watchlist/items/remove' % mdblist_baseurl, data=post, headers=headers, timeout=20)
 		if response.status_code == 200:
 			mdbsync.delete_watchList_items(imdb_list, table, col_name='imdb')
 			control.trigger_widget_refresh()

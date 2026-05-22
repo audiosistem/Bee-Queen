@@ -42,8 +42,7 @@ def _get_mdbl_paginated_list(url):
 			if 'episodes' in result: items['episodes'] += result['episodes']
 			if 'items' in result: items['items'] += result['items']
 			if not result['pagination']['has_more']: break
-			if 'next_cursor' in result['pagination']:
-				params['cursor'] = result['pagination']['next_cursor']
+			params['cursor'] = result['pagination']['next_cursor']
 	except: pass
 	return items
 

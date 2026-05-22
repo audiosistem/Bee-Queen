@@ -33,7 +33,7 @@ class Seasons:
 		self.trakt_user = getSetting('trakt.user.name').strip()
 		self.traktCredentials = trakt.getTraktCredentialsInfo()
 		self.simklCredentials = simkl.getSimKLCredentialsInfo()
-		self.mdblist_authed = getSetting('mdblist.api') != ''
+		self.mdblist_authed = getSetting('mdblist.token') != ''
 		self.showunaired = getSetting('showunaired') == 'true'
 		self.unairedcolor = getSetting('unaired.identify')
 		self.showspecials = getSetting('tv.specials') == 'true'

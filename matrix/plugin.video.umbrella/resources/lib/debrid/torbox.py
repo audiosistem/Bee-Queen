@@ -25,12 +25,16 @@ class TorBox:
 	stats = '/user/me'
 	history = '/torrents/mylist'
 	history_usenet = '/usenet/mylist'
+	history_webdl = '/webdl/mylist'
 	explore = '/torrents/mylist?id=%s'
 	explore_usenet = '/usenet/mylist?id=%s'
+	explore_webdl = '/webdl/mylist?id=%s'
 	cache = '/torrents/checkcached'
 	cloud = '/torrents/createtorrent'
 	queued = '/torrents/getqueued'
 	removeQueued = '/torrents/controlqueued'
+	download_webdl = '/webdl/requestdl'
+	remove_webdl = '/webdl/controlwebdownload'
 
 	def __init__(self):
 		self.name = 'TorBox'
@@ -82,6 +86,10 @@ class TorBox:
 	def delete_usenet(self, request_id=''):
 		data = {'usenet_id': request_id, 'operation': 'delete'}
 		return self._POST(self.remove_usenet, json=data)
+
+	def delete_webdl(self, request_id=''):
+		data = {'webdl_id': request_id, 'operation': 'delete'}
+		return self._POST(self.remove_webdl, json=data)
 		
 	def unrestrict_link(self, file_id):
 		torrent_id, file_id = file_id.split(',')
@@ -93,6 +101,12 @@ class TorBox:
 		usenet_id, file_id = file_id.split(',')
 		params = {'token': self.api_key, 'usenet_id': usenet_id, 'file_id': file_id}
 		try: return self._GET(self.download_usenet, params=params)['data']
+		except: return None
+
+	def unrestrict_webdl(self, file_id):
+		webdl_id, file_id = file_id.split(',')
+		params = {'token': self.api_key, 'web_id': webdl_id, 'file_id': file_id}
+		try: return self._GET(self.download_webdl, params=params)['data']
 		except: return None
 
 	def check_cache_single(self, hash):
@@ -118,7 +132,7 @@ class TorBox:
 			extensions = supported_video_extensions()
 			extras_filtering_list = tuple(i for i in extras_filter() if not i in title.lower())
 			check = self.check_cache_single(info_hash)
-			match = info_hash in [i['hash'] for i in check['data']]
+			match = info_hash.lower() in [i['hash'].lower() for i in check['data']]
 			if not match: return None
 			torrent = self.add_magnet(magnet_url)
 			if not torrent['success']: return None
@@ -139,7 +153,6 @@ class TorBox:
 			file_key = selected_files[0]['link']
 			
 			file_url = self.unrestrict_link(file_key)
-			log_utils.log('TorBox Link: "%s"' % file_url)
 			if not self.store_to_cloud: Thread(target=self.delete_torrent, args=(torrent_id,)).start()
 			return file_url
 		except Exception as e:
@@ -249,20 +262,58 @@ class TorBox:
 		return False
 
 	def auth(self):
-		api_key = control.dialog.input('TorBox API Key:')
-		if not api_key: return
-		self.api_key = api_key
+		highlight_color = getSetting('highlight.color')
+		line = '%s\n%s\n%s'
 		try:
+			response = requests.get('%s/user/auth/device/start?app=Umbrella' % base_url, timeout=self.timeout)
+			response.raise_for_status()
+			result = response.json()
+			if not result.get('success'):
+				return control.notification(message='TorBox: Failed to start authorization', icon=tb_icon)
+			data = result['data']
+			device_code = data['device_code']
+			user_code = data['code']
+			verify_url = data.get('friendly_verification_url', data.get('verification_url', 'https://torbox.app/oauth/device'))
+			interval = int(data.get('interval', 5))
+			token_ttl = 600
+			expiry = token_ttl
+			if getSetting('dialogs.useumbrelladialog') == 'true':
+				from resources.lib.modules import tools
+				tb_qr = tools.make_qr(verify_url, 'tb_qr.png')
+				self.progressDialog = control.getProgressWindow('TorBox', tb_qr, 1 if tb_qr else 0)
+				self.progressDialog.set_controls()
+			else:
+				self.progressDialog = control.progressDialog
+				self.progressDialog.create('TorBox')
+			self.progressDialog.update(0, line % (getLS(32513) % (highlight_color, verify_url), getLS(32514) % (highlight_color, user_code), getLS(40390)))
+			access_token = None
+			while not access_token and token_ttl > 0 and not self.progressDialog.iscanceled():
+				control.sleep(interval * 1000)
+				token_ttl -= interval
+				progress_percent = 100 - int(float(expiry - token_ttl) / expiry * 100)
+				self.progressDialog.update(progress_percent, line % (getLS(32513) % (highlight_color, verify_url), getLS(32514) % (highlight_color, user_code), getLS(40390)))
+				try:
+					poll = requests.post('%s/user/auth/device/token' % base_url, json={'device_code': device_code}, timeout=self.timeout)
+					poll_result = poll.json()
+					if poll_result.get('success') and isinstance(poll_result.get('data'), dict):
+						access_token = poll_result['data'].get('access_token')
+				except: pass
+			self.progressDialog.close()
+			if not access_token:
+				return control.notification(message='TorBox: Authorization timed out or cancelled', icon=tb_icon)
+			self.api_key = access_token
 			r = self.account_info()
 			customer = r['data']['customer']
-			control.setSetting('torboxtoken', api_key)
+			control.setSetting('torboxtoken', access_token)
 			control.setSetting('torbox.username', customer)
-			control.notification(message='TorBox succesfully authorized', icon=tb_icon)
+			control.notification(message='TorBox successfully authorized', icon=tb_icon)
 			control.openSettings('9.6', 'plugin.video.umbrella')
 			return True
 		except:
-			control.openSettings('9.6', 'plugin.video.umbrella')
-			return control.notification(message='Error Authorizing TorBox', icon=tb_icon)
+			log_utils.error('TorBox auth: ')
+			try: self.progressDialog.close()
+			except: pass
+			control.notification(message='Error Authorizing TorBox', icon=tb_icon)
 
 	def remove_auth(self):
 		try:
@@ -273,6 +324,34 @@ class TorBox:
 			control.openSettings('9.6', 'plugin.video.umbrella')
 		except: log_utils.error()
 
+	def referral_link(self):
+		highlight_color = getSetting('highlight.color')
+		referral_url = 'https://torbox.app/subscription?referral=6463de7b-29aa-4efb-bc5b-3deda767faa6'
+		token_ttl = 15
+		expiry = token_ttl
+		progressDialog = None
+		try:
+			if getSetting('dialogs.useumbrelladialog') == 'true':
+				from resources.lib.modules import tools
+				tb_qr = tools.make_qr(referral_url, 'tb_referral_qr.png')
+				progressDialog = control.getProgressWindow(getLS(40671), tb_qr, 1 if tb_qr else 0)
+				progressDialog.set_controls()
+			else:
+				progressDialog = control.progressDialog
+				progressDialog.create(getLS(40671))
+			line = '%s\n%s' % ('[COLOR %s][B]Umbrella Torbox Referral Link[/B][/COLOR]' % highlight_color, referral_url)
+			progressDialog.update(0, line)
+			while token_ttl > 0 and not progressDialog.iscanceled():
+				control.sleep(1000)
+				token_ttl -= 1
+				progress_percent = int(float(expiry - token_ttl) / expiry * 100)
+				progressDialog.update(progress_percent, line)
+			progressDialog.close()
+		except:
+			log_utils.error('TorBox referral_link: ')
+			try: progressDialog.close()
+			except: pass
+
 	def account_info_to_dialog(self):
 		try:
 			control.busy()
@@ -281,7 +360,6 @@ class TorBox:
 			account_info = account_info['data']
 			items = []
 			items += ['[B]Email[/B]: %s' % account_info['email']]
-			items += ['[B]Customer[/B]: %s' % account_info['customer']]
 			items += ['[B]Plan[/B]: %s' % plans[account_info['plan']]]
 			items += ['[B]Expires[/B]: %s' % account_info['premium_expires_at']]
 			items += ['[B]Downloaded[/B]: %s' % account_info['total_downloaded']]
@@ -297,11 +375,16 @@ class TorBox:
 		url = self.explore_usenet % request_id if request_id else self.history_usenet
 		return self._GET(url)
 
+	def user_cloud_webdl(self, request_id=None):
+		url = self.explore_webdl % request_id if request_id else self.history_webdl
+		return self._GET(url)
+
 	def user_cloud_clear(self):
 		if not control.yesnoDialog(getLS(32056), '', ''): return
 		data = {'all': True, 'operation': 'delete'}
 		self._POST(self.remove, json=data)
 		self._POST(self.remove_usenet, json=data)
+		self._POST(self.remove_webdl, json=data)
 
 	def user_cloud_to_listItem(self, folder_id=None):
 		sysaddon, syshandle = 'plugin://plugin.video.umbrella/', int(argv[1])
@@ -310,9 +393,17 @@ class TorBox:
 		folder_str, deleteMenu = getLS(40046).upper(), getLS(40050)
 		file_str, downloadMenu = getLS(40047).upper(), getLS(40048)
 		folders = []
-		try: folders += [{**i, 'mediatype': 'torent'} for i in self.user_cloud()['data'] if i['download_finished']]
+		try:
+			torrent_response = self.user_cloud()
+			folders += [{**i, 'mediatype': 'torent'} for i in (torrent_response['data'] or []) if i.get('download_finished') or i.get('download_state') == 'completed']
 		except: pass
-		try: folders += [{**i, 'mediatype': 'usenet'} for i in self.user_cloud_usenet()['data'] if i['download_finished']]
+		try:
+			usenet_response = self.user_cloud_usenet()
+			folders += [{**i, 'mediatype': 'usenet'} for i in (usenet_response['data'] or []) if i.get('download_finished') or i.get('download_state') == 'completed']
+		except: pass
+		try:
+			webdl_response = self.user_cloud_webdl()
+			folders += [{**i, 'mediatype': 'webdl'} for i in (webdl_response['data'] or []) if i.get('download_finished') or i.get('download_state') == 'completed']
 		except: pass
 		folders.sort(key=lambda k: k['updated_at'], reverse=True)
 		for count, item in enumerate(folders, 1):
@@ -338,7 +429,9 @@ class TorBox:
 		quote_plus = requests.utils.quote
 		extensions = supported_video_extensions()
 		file_str, downloadMenu = getLS(40047).upper(), getLS(40048)
-		files = self.user_cloud_usenet(folder_id) if mediatype == 'usenet' else self.user_cloud(folder_id)
+		if mediatype == 'usenet': files = self.user_cloud_usenet(folder_id)
+		elif mediatype == 'webdl': files = self.user_cloud_webdl(folder_id)
+		else: files = self.user_cloud(folder_id)
 		video_files = [i for i in files['data']['files'] if i['short_name'].lower().endswith(tuple(extensions))]
 		for count, item in enumerate(video_files, 1):
 			try:
@@ -363,7 +456,9 @@ class TorBox:
 	def delete_user_torrent(self, request_id, mediatype, name, multi=False):
 		if multi == False:
 			if not control.yesnoDialog(getLS(40050) % '?\n' + name, '', ''): return
-		result = self.delete_usenet(request_id) if mediatype == 'usenet' else self.delete_torrent(request_id)
+		if mediatype == 'usenet': result = self.delete_usenet(request_id)
+		elif mediatype == 'webdl': result = self.delete_webdl(request_id)
+		else: result = self.delete_torrent(request_id)
 		if result['success']:
 			control.notification(message='TorBox: %s was removed' % name, icon=tb_icon)
 			if not multi: control.refresh()
@@ -387,15 +482,19 @@ class TorBox:
 		files = self.user_cloud().get('data', [])
 		que_files = self.queued_torrents().get('data', [])
 		usenet_files = self.user_cloud_usenet().get('data', [])
+		webdl_files = self.user_cloud_webdl().get('data', [])
 		all_files = [
 			{'type': 'torrent', 'id': req['id'], 'name': req['name']}
-			for req in files
+			for req in (files or [])
 		] + [
 			{'type': 'queue', 'id': req['id'], 'name': req['name']}
-			for req in que_files
+			for req in (que_files or [])
 		] + [
 			{'type': 'usenet', 'id': req['id'], 'name': req['name']}
-			for req in usenet_files
+			for req in (usenet_files or [])
+		] + [
+			{'type': 'webdl', 'id': req['id'], 'name': req['name']}
+			for req in (webdl_files or [])
 		]
 
 		total_files = len(all_files)
@@ -415,6 +514,8 @@ class TorBox:
 						futures[executor.submit(self.delete_torrent, req['id'])] = req
 					elif req['type'] == 'usenet':
 						futures[executor.submit(self.delete_usenet, req['id'])] = req
+					elif req['type'] == 'webdl':
+						futures[executor.submit(self.delete_webdl, req['id'])] = req
 
 				for completed_count, future in enumerate(as_completed(futures), 1):
 					req = futures[future]

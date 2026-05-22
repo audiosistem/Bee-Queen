@@ -1,3 +1,20 @@
+[B]Update - v6.7.75 - May 14th, 2026 [/B]
+--[Fix] Change for case sensitivity on hash comparison in Torbox. -credit to SoMe0nE-BG
+--[Change] Added option to add year in tv show title. Settings, TV Shows, Show Year in TV Show title
+
+[B]Update - v6.7.74 - May 14th, 2026 [/B]
+--[Change] Changes made for sorting. Quality, Provider, Size / Quality, Size, Provider / Provider, Quality, Size / Provider, Size, Quality / Size, Quality, Provider / Size, Provider, Quality. Thanks to Fen or POV for sort methods.
+--[Change] Change made to include year in folder name when downloading for shows.
+--[Change] Removed Torbox referral screen. Thank you to anyone who referred!
+
+[B]Update - v6.7.73 - May 13th, 2026 [/B]
+--[Change] Torbox moved to device auth. You will need to re-authorize.
+--[Change] Changed MDBList to use Device Auth now instead of apikey. Will need to re-authorize.
+--[Change] Added retry for Easynews. Also added option to enable/ disable seekable for easy news links in settings.
+--[Change] Added Torbox referral link to Torbox settings. Thank you to all who have referred.
+--[Change] Added "liked lists" from MDBList.
+--[Change] Moved Anime from getting list from imdb (no longer working) to use SIMKL trending daily file.
+
 [B]Update - v6.7.72 - May 11th, 2026 [/B]
 --[Fix] Made change where episode data is coming from tmdb instead of trakt to reduce calls to trakt.
 --[Fix] Change made for RD when infringing file is returned.

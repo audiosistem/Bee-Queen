@@ -1,0 +1,76 @@
+{
+    "items": [
+        { 
+            "type": "item", 
+            "title": "[COLOR orange]Pop Up Message[/COLOR]", 
+            "link": "message/file://search_info.xml", 
+            "thumbnail": "", 
+            "fanart": ""
+        }, 
+        {
+            "type": "dir",
+            "title": "[B][COLORkhaki]M3U Test[/COLOR][/B]",
+            "link": "https://iptv-org.github.io/iptv/index.m3u"
+        },
+        {
+            "type": "dir",
+            "title": "[B][COLORkhaki]Fluxus[/COLOR][/B]",
+            "link": "https://bitbucket.org/!api/2.0/snippets/fluxustv/KpaEKX/e5b158cbb964a9ca8b478a07e0e726154c948981/files/FTV-ENG"
+        }, 
+      {
+            "type": "dir",
+            "title": "[B][COLORkhaki]TMDB List[/COLOR][/B]",
+            "link": "tmdb/list/8190899"
+        },
+      {
+            "type": "dir",
+            "title": "[B][COLORkhaki]TMDB Top 250 Movies List[/COLOR][/B]",
+            "link": "tmdb/list/634"
+        },
+        {
+            "type": "dir",
+            "title": "[B][COLORkhaki]TMDB Now Playing Movies[/COLOR][/B]",
+            "link": "tmdb/movie/now_playing"
+        },        
+        {
+            "type": "dir",
+            "title": "[B][COLORkhaki]TMDB Popular Movies[/COLOR][/B]",
+            "link": "tmdb/movie/popular"
+        },
+        {
+            "type": "dir",
+            "title": "[B][COLORkhaki]TMDB Top Rated Movies[/COLOR][/B]",
+            "link": "tmdb/movie/top_rated"
+        },
+        {
+            "type": "dir",
+            "title": "[B][COLORkhaki]TMDB Upcoming Movies[/COLOR][/B]",
+            "link": "tmdb/movie/upcoming"
+        },
+        {
+            "type": "dir",
+            "title": "[B][COLORkhaki]TMDB Popular TV Shows[/COLOR][/B]",
+            "link": "tmdb/tv/popular"
+        },
+        {
+            "type": "dir",
+            "title": "[B][COLORkhaki]TMDB On the Air TV Shows[/COLOR][/B]",
+            "link": "tmdb/tv/on_the_air"
+        },
+        {
+            "type": "dir",
+            "title": "[B][COLORkhaki]TMDB Top Rated TV Shows[/COLOR][/B]",
+            "link": "tmdb/tv/top_rated"
+        },
+        {
+            "type": "item",
+            "title": "[B][COLOR orange]Clear Cache[/COLOR][/B]",
+            "link": "clear_cache"
+        }, 
+        {
+            "type": "item",
+            "title": "[B][COLOR orange]Settings[/COLOR][/B]",
+            "link": "settings"
+        }
+    ]
+}

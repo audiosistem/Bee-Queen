@@ -145,7 +145,7 @@ class Navigator:
 			self.addDirectoryItem(32487 if self.indexLabels else 32463, 'movieCertificates&url=tmdb_certification&folderName=%s' % quote_plus(getLS(32487 if self.indexLabels else 32463)), 'tmdb.png' if self.iconLogos else 'certificates.png', 'DefaultMovies.png')
 		if getMenuEnabled('navi.movie.collections'):
 			self.addDirectoryItem(32000, 'collections_Navigator&folderName=%s' % quote_plus(getLS(32000)), 'boxsets.png', 'DefaultSets.png')
-		if getMenuEnabled('navi.movie.mdblist.topList') and getSetting('mdblist.api') != '':
+		if getMenuEnabled('navi.movie.mdblist.topList') and getSetting('mdblist.token') != '':
 			self.addDirectoryItem(40084, 'mdbTopListMovies&folderName=%s' % quote_plus(getLS(40084)), 'mdblist.png' if self.iconLogos else 'movies.png', 'DefaultMovies.png')
 		if getMenuEnabled('navi.movie.trakt.popularList'):
 			self.addDirectoryItem(32417, 'movies_PublicLists&url=trakt_popularLists&folderName=%s' % quote_plus(getLS(32417)), 'trakt.png' if self.iconLogos else 'movies.png', 'DefaultMovies.png')
@@ -168,9 +168,10 @@ class Navigator:
 		self.addDirectoryItem(32039, 'movieUserlists&folderName=%s' % quote_plus(getLS(32039)), 'userlists.png', 'DefaultVideoPlaylists.png')
 		if self.favoriteMovie:
 			self.addDirectoryItem(getLS(40465), 'getFavouritesMovies&url=favourites_movies&folderName=%s' % (quote_plus(getLS(40465))), 'movies.png', 'DefaultMovies.png')
-		if getMenuEnabled('navi.movie.mdblist.userList') and getSetting('mdblist.api') != '':
+		if getMenuEnabled('navi.movie.mdblist.userList') and getSetting('mdblist.token') != '':
 			self.addDirectoryItem(40087, 'mdbUserListMovies&folderName=%s' % quote_plus(getLS(40087)), 'mdblist.png', 'DefaultMovies.png')
 			self.addDirectoryItem(40595,'mdbUserWatchListMovies&folderName=%s' % quote_plus(getLS(40595)), 'mdblist.png', 'DefaultMovies.png')
+			self.addDirectoryItem(40668, 'mdbLikedListMovies&folderName=%s' % quote_plus(getLS(40668)), 'mdblist.png', 'DefaultMovies.png')
 		# TMDb User Lists
 		if getSetting('tmdb.v4.accesstoken') != '':
 			self.addDirectoryItem('TMDb User Lists','tmdbUserListsMovies&folderName=%s' % quote_plus('TMDb User Lists'),'tmdb.png','DefaultMovies.png')
@@ -252,7 +253,7 @@ class Navigator:
 			self.addDirectoryItem(40661 if self.indexLabels else 32475, 'tvshows&url=tmdb_newshows&folderName=%s' % quote_plus(getLS(40661 if self.indexLabels else 32475)), 'tmdb.png' if self.iconLogos else 'new-tvshows.png', 'DefaultRecentlyAddedEpisodes.png')
 		if getMenuEnabled('navi.tv.tvmaze.calendar'):
 			self.addDirectoryItem(32450 if self.indexLabels else 32027, 'calendars&folderName=%s' % quote_plus(getLS(32450 if self.indexLabels else 32027)), 'tvmaze.png' if self.iconLogos else 'calendar.png', 'DefaultYear.png')
-		if getMenuEnabled('navi.tv.mdblist.topList') and getSetting('mdblist.api') != '':
+		if getMenuEnabled('navi.tv.mdblist.topList') and getSetting('mdblist.token') != '':
 			self.addDirectoryItem(40084, 'mdbTopListTV&folderName=%s' % quote_plus(getLS(40084)), 'mdblist.png' if self.iconLogos else 'tvshows.png', 'DefaultMovies.png')
 		if getMenuEnabled('navi.tv.trakt.popularList'):
 			self.addDirectoryItem(32417, 'tv_PublicLists&url=trakt_popularLists&folderName=%s' % quote_plus(getLS(32417)), 'trakt.png' if self.iconLogos else 'tvshows.png', 'DefaultMovies.png')
@@ -275,9 +276,10 @@ class Navigator:
 		if self.favoriteTVShows:
 			self.addDirectoryItem(getLS(40466), 'getFavouritesTVShows&url=favourites_tvshows&folderName=%s' % (quote_plus(getLS(40466))), 'tvshows.png', 'DefaultTVShows.png')
 		if self.favoriteEpisodes: self.addDirectoryItem(getLS(40467), 'getFavouritesEpisodes&folderName=%s' % (quote_plus(getLS(40467))), 'tvshows.png', 'DefaultTVShows.png')
-		if getMenuEnabled('navi.tv.mdblist.userList') and getSetting('mdblist.api') != '':
+		if getMenuEnabled('navi.tv.mdblist.userList') and getSetting('mdblist.token') != '':
 			self.addDirectoryItem(40087, 'mdbUserListTV&folderName=%s' % quote_plus(getLS(40087)), 'mdblist.png', 'DefaultMovies.png')
 			self.addDirectoryItem(40595,'mdbUserWatchListTVShows&folderName=%s' % quote_plus(getLS(40595)), 'mdblist.png', 'DefaultMovies.png')
+			self.addDirectoryItem(40668, 'mdbLikedListShows&folderName=%s' % quote_plus(getLS(40668)), 'mdblist.png', 'DefaultTVShows.png')
 		if self.mdblistCredentials and (self.mdblistIndicators or getSetting('mdblist.markwatched') == 'true'):
 			if getSetting('mdblist.progress.shows') != 'false':
 				self.addDirectoryItem(40645, 'mdblist_shows_progress&url=mdbprogress&folderName=%s' % quote_plus(getLS(40645)), 'mdblist.png', 'mdblist.png', queue=True)
@@ -478,6 +480,10 @@ class Navigator:
 
 	def mdblistTools(self, folderName=''):
 		if self.useContainerTitles: control.setContainerName(folderName)
+		if not self.mdblistCredentials:
+			self.addDirectoryItem(40669, 'mdblistAuth', 'mdblist.png', 'DefaultAddonService.png', isFolder=False)
+		else:
+			self.addDirectoryItem(40670, 'mdblistRevoke', 'mdblist.png', 'DefaultAddonService.png', isFolder=False)
 		self.addDirectoryItem(40638, 'movies_mdblistWatchlistManager', 'mdblist.png', 'DefaultAddonService.png', isFolder=False)
 		self.addDirectoryItem(40639, 'shows_mdblistWatchlistManager', 'mdblist.png', 'DefaultAddonService.png', isFolder=False)
 		self.addDirectoryItem(40637, 'tools_forceMDBListSync', 'mdblist.png', 'DefaultAddonService.png', isFolder=False)
@@ -625,7 +631,7 @@ class Navigator:
 		self.addDirectoryItem(33045, 'tvPerson', 'imdb.png' if self.iconLogos else 'people-search.png', 'DefaultAddonsSearch.png', isFolder=False)
 		if getSetting('easynews.user'):
 			self.addDirectoryItem('Easy News: Search', 'en_Search', 'search.png', 'DefaultAddonsSearch.png')
-		#if getSetting('mdblist.api') != '':
+		#if getSetting('mdblist.token') != '':
 			#self.addDirectoryItem(40088, 'mdbListSearch', 'mdblist.png' if self.iconLogos else 'search.png', 'DefaultAddonsSearch.png')
 		self.endDirectory()
 

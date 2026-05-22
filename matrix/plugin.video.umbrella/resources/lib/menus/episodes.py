@@ -51,7 +51,7 @@ class Episodes:
 		self.trakt_user = getSetting('trakt.user.name').strip()
 		self.traktCredentials = trakt.getTraktCredentialsInfo()
 		self.simklCredentials = simkl.getSimKLCredentialsInfo()
-		self.mdblist_authed = getSetting('mdblist.api') != ''
+		self.mdblist_authed = getSetting('mdblist.token') != ''
 		self.trakt_directProgressScrape = getSetting('trakt.directProgress.scrape') == 'true'
 		self.simkl_directProgressScrape = getSetting('simkl.directProgress.scrape') == 'true'
 		self.mdblist_directProgressScrape = getSetting('mdblist.directProgress.scrape') == 'true'

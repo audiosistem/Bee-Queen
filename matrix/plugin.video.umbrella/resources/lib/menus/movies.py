@@ -121,7 +121,7 @@ class Movies:
 			self.certification_link = 'https://www.imdb.com/search/title/?title_type=feature,tv_movie&num_votes=100,&production_status=released&certificates=%s&sort=%s&count=%s&start=1' % ('%s', self.imdb_sort(type='imdbmovies'), self.genre_limit)
 			self.imdbboxoffice_link = 'https://www.imdb.com/search/title/?title_type=feature,tv_movie&production_status=released&sort=boxoffice_gross_us,desc&count=%s&start=1' % self.genre_limit
 		self.imdblist_link = 'https://www.imdb.com/list/%s/?view=detail&sort=%s&title_type=movie,short,video,tvShort,tvMovie,tvSpecial&start=1' % ('%s', self.imdb_sort())
-		self.anime_link = 'https://www.imdb.com/search/title/?title_type=feature,tv_movie&keywords=anime-animation,anime'
+		self.anime_link = tmdb_base+'/3/discover/movie?api_key=%s&with_genres=16&with_original_language=ja&primary_release_date.lte=%s&sort_by=%s&page=1' % ('%s', self.today_date, self.tmdb_DiscoverSort())
 
 
 		self.trakt_link = 'https://api.trakt.tv'
@@ -163,7 +163,7 @@ class Movies:
 		self.trakt_genres = 'https://api.trakt.tv/genres/movies/'
 		self.trakt_popularLists_link = 'https://api.trakt.tv/lists/popular?limit=%s&page=1' % self.page_limit
 		self.trakt_trendingLists_link = 'https://api.trakt.tv/lists/trending?limit=%s&page=1' % self.page_limit
-		self.mbdlist_list_items = 'https://api.mdblist.com/lists/%s/items?apikey=%s&page=1' % ('%s', mdblist.mdblist_api)
+		self.mbdlist_list_items = 'https://api.mdblist.com/lists/%s/items?page=1'
 		self.simkltrendingtoday_link = 'https://api.simkl.com/movies/trending/today?client_id=%s&extended=tmdb' % '%s'
 		self.simkltrendingweek_link = 'https://api.simkl.com/movies/trending/week?client_id=%s&extended=tmdb' % '%s'
 		self.simkltrendingmonth_link = 'https://api.simkl.com/movies/trending/month?client_id=%s&extended=tmdb'% '%s'
@@ -187,7 +187,7 @@ class Movies:
 		self.lang = control.apiLanguage()['trakt']
 		self.prefer_fanArt = getSetting('prefer.fanarttv') == 'true'
 		self.simklCredentials = simkl.getSimKLCredentialsInfo()
-		self.mdblist_authed = getSetting('mdblist.api') != ''
+		self.mdblist_authed = getSetting('mdblist.token') != ''
 		from resources.lib.modules import tmdb4
 		self.tmdbv4Credentials = tmdb4.getTMDbV4CredentialsInfo()
 
@@ -356,6 +356,43 @@ class Movies:
 				list_url = self.mbdlist_list_items % (list_id)
 				label = '%s - (%s)' % (list_name, list_count)
 				self.list.append({'name': label, 'url': list_url, 'list_owner': list_owner, 'list_name': list_name, 'list_id': list_id, 'context': list_url, 'next': next, 'image': 'mdblist.png', 'icon': 'mdblist.png', 'action': 'movies&folderName=%s' % quote_plus(list_name)})
+			except:
+				from resources.lib.modules import log_utils
+				log_utils.error()
+		return self.list
+	def getMDBLikedLists(self, create_directory=True, folderName=''):
+		self.list = []
+		try:
+			self.list = cache.get(self.mbd_liked_lists, 0)
+			if self.list is None: self.list = []
+			if create_directory: self.addDirectory(self.list, folderName=folderName)
+			return self.list
+		except:
+			from resources.lib.modules import log_utils
+			log_utils.error()
+	def mbd_liked_lists(self):
+		try:
+			listType = 'movie'
+			items = mdblist.getMDBLikedLists(self, listType)
+			next = ''
+		except:
+			from resources.lib.modules import log_utils
+			log_utils.error()
+			items = []
+		for item in (items or []):
+			try:
+				list_name = item.get('params', {}).get('list_name', '')
+				list_id = item.get('params', {}).get('list_id', '')
+				list_owner = item.get('params', {}).get('list_owner', '')
+				list_count = item.get('params', {}).get('list_count', '')
+				list_url = self.mbdlist_list_items % (list_id)
+				if list_owner:
+					label = '%s by [COLOR %s]%s[/COLOR] - (%s)' % (list_name, self.highlight_color, list_owner, list_count)
+				else:
+					label = '%s - (%s)' % (list_name, list_count)
+				self.list.append({'name': label, 'url': list_url, 'list_owner': list_owner, 'list_name': list_name,
+					'list_id': list_id, 'context': list_url, 'next': next, 'image': 'mdblist.png', 'icon': 'mdblist.png',
+					'action': 'movies&folderName=%s' % quote_plus(list_name)})
 			except:
 				from resources.lib.modules import log_utils
 				log_utils.error()
@@ -658,6 +695,22 @@ class Movies:
 			for i in range(len(self.list)): self.list[i]['next'] = next
 			self.worker()
 			if create_directory: self.movieDirectory(self.list, folderName=folderName)
+			return self.list
+		except:
+			from resources.lib.modules import log_utils
+			log_utils.error()
+			if not self.list:
+				control.hide()
+				is_widget = 'plugin' not in control.infoLabel('Container.PluginName')
+				if self.notifications and is_widget != True: control.notification(title=32001, message=33049)
+
+	def getAnime(self, folderName=''):
+		self.list = []
+		try:
+			self.list = cache.get(simkl.simkl_anime_list, self.simkl_hours, 'movie', simkl._ANIME_TRENDING_MONTH)
+			if self.list is None: self.list = []
+			self.worker()
+			self.movieDirectory(self.list, folderName=folderName)
 			return self.list
 		except:
 			from resources.lib.modules import log_utils

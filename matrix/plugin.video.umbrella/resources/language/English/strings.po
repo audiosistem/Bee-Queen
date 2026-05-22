@@ -4912,6 +4912,9 @@ msgctxt "#40491"
 msgid "Title Check Results"
 msgstr ""
 
+msgctxt "#40492"
+msgid "EasyNews Seekable Links"
+msgstr ""
 
 msgctxt "#40493"
 msgid "Genres (Trakt)"
@@ -5599,4 +5602,52 @@ msgstr ""
 
 msgctxt "#40667"
 msgid "Remove AI Upscaled Sources"
+msgstr ""
+
+msgctxt "#40668"
+msgid "MDBList Liked Lists"
+msgstr ""
+
+msgctxt "#40669"
+msgid "Authorize MDBList"
+msgstr ""
+
+msgctxt "#40670"
+msgid "Revoke MDBList Authorization"
+msgstr ""
+
+msgctxt "#40671"
+msgid "Umbrella TorBox Referral Link"
+msgstr ""
+
+msgctxt "#40672"
+msgid "Source Sort Order"
+msgstr ""
+
+msgctxt "#40673"
+msgid "Quality, Provider, Size"
+msgstr ""
+
+msgctxt "#40674"
+msgid "Quality, Size, Provider"
+msgstr ""
+
+msgctxt "#40675"
+msgid "Provider, Quality, Size"
+msgstr ""
+
+msgctxt "#40676"
+msgid "Provider, Size, Quality"
+msgstr ""
+
+msgctxt "#40677"
+msgid "Size, Quality, Provider"
+msgstr ""
+
+msgctxt "#40678"
+msgid "Size, Provider, Quality"
+msgstr ""
+
+msgctxt "#40679"
+msgid "Show Year in TV Show Title"
 msgstr ""

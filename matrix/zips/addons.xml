@@ -61,6 +61,24 @@
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="plugin.audio.radio_de_light" name="Radio light" provider-name="fivebanger, Publish3r" version="1.0.2">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" version="2.18.4" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="addon.py">
+    <provides>audio</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Online radio and podcasts</summary>
+    <description lang="en_GB">Add-on to access broadcast streams provided by Radio.de.</description>
+    <disclaimer lang="en_GB">This add-on is not endorsed, certified or otherwise approved in any way by Radio.de. Use at your own risk.</disclaimer>
+    <platform>all</platform>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
 </addon><addon id="plugin.audio.radio_ro" name="Radio RO" version="1.2" provider-name="1x">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -424,7 +442,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
       <screenshot>resources/images/screenshot-3.jpg</screenshot>
     </assets>
   </extension>
-</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.182">
+</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.183">
     <requires>
         <import addon="script.module.six" />
         <import addon="script.module.kodi-six" />
@@ -808,7 +826,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.05.11" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.05.12" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -826,6 +844,30 @@ In addition to what livestreams allowed you to do, you can now,
 		<news>INFO: For latest changes see Changelog within add-on.</news>
 		<assets><icon>pov.png</icon><fanart>pov_fanart.png</fanart></assets>
 	</extension>
+</addon><addon id="plugin.video.ptfm" name="Play That Funky Music" version="1.0.3" provider-name="Metal Dude">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.requests" />
+    <import addon="script.module.routing" />
+    <import addon="script.module.unidecode" />
+    <import addon="script.module.inputstreamhelper" />
+    <import addon="script.module.resolveurl" />
+    <import addon="visualization.spectrum" optional="true" />
+    
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Play That Funky Music. Music of all sorts.</summary>
+    <platform>all</platform>
+    <language>en</language>
+    <license>GPL-2.0-or-later</license>
+	<assets>
+		<icon>icon.png</icon>
+		<fanart>fanart.jpg</fanart>
+  </assets>
+  </extension>
 </addon><addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]" version="1.0.0">
     <requires>
         <import addon="xbmc.python" version="3.0.1" />
@@ -1100,7 +1142,7 @@ Many thanks to the developers who assisted with the TMDb Helper patch, restoring
     <screenshot>resources/screenshot-02.jpg</screenshot>
   </assets>
 </extension>
-</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.72">
+</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.75">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -1316,7 +1358,7 @@ Many thanks to the developers who assisted with the TMDb Helper patch, restoring
 			</item>
 		</menu>
 	</extension>
-	
+	<extension point="xbmc.service" library="service.py" start="startup" />
 	<extension point="xbmc.python.module" library="resources/lib/" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
@@ -1336,10 +1378,9 @@ Many thanks to the developers who assisted with the TMDb Helper patch, restoring
 			<screenshot>resources/screenshots/screenshot003.jpg</screenshot>
 		</assets>
 		<news>
-[B]Update - v6.7.72 - May 11th, 2026 [/B]
---[Fix] Made change where episode data is coming from tmdb instead of trakt to reduce calls to trakt.
---[Fix] Change made for RD when infringing file is returned.
---[Fix] Fix for crash during playback when using certain skins due to closeAll() causing the skin to attempt to access a destroyed window.
+[B]Update - v6.7.75 - May 14th, 2026 [/B]
+--[Fix] Change for case sensitivity on hash comparison in Torbox. -credit to SoMe0nE-BG
+--[Change] Added option to add year in tv show title. Settings, TV Shows, Show Year in TV Show title
 		</news>
 	</extension>
 

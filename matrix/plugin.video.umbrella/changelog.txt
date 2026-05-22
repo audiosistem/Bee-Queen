@@ -1,4 +1,3 @@
-[B]Update - v6.7.72 - May 11th, 2026 [/B]
---[Fix] Made change where episode data is coming from tmdb instead of trakt to reduce calls to trakt.
---[Fix] Change made for RD when infringing file is returned.
---[Fix] Fix for crash during playback when using certain skins due to closeAll() causing the skin to attempt to access a destroyed window.
+[B]Update - v6.7.75 - May 14th, 2026 [/B]
+--[Fix] Change for case sensitivity on hash comparison in Torbox. -credit to /u/SoMe0nE-BG
+--[Change] Added option to add year in tv show title. Settings, TV Shows, Show Year in TV Show title

@@ -377,7 +377,7 @@ class lib_tools:
 		try:
 			items = []
 			isTraktEnabled = control.setting('trakt.user.token') != ''
-			isMDBListEnable = control.setting('mdblist.api') != ''
+			isMDBListEnable = control.setting('mdblist.token') != ''
 			isTMDbV4Enabled = control.setting('tmdb.v4.accesstoken') != ''
 			if not isTraktEnabled and not isMDBListEnable and not isTMDbV4Enabled:
 				control.notification(message=32113)
@@ -485,25 +485,24 @@ class lib_tools:
 		full_list = []
 		try:
 			if not control.player.isPlaying(): control.busy()
-			mdblist_api = control.setting('mdblist.api')
-			if not mdblist_api:
+			if not control.setting('mdblist.token'):
 				control.hide()
 				return full_list
 			from resources.lib.modules import mdblist
 			user_name = ''
 			user_slug = ''
 			try:
-				user_response = mdblist.session.get('%s/user?apikey=%s' % (mdblist.mdblist_baseurl, mdblist_api), timeout=10)
+				user_response = mdblist.session.get('%s/user' % mdblist.mdblist_baseurl, timeout=10)
 				if user_response.status_code == 200:
 					user_data = user_response.json()
 					user_name = user_data.get('name', '') or user_data.get('username', '')
 					user_slug = user_name.lower().replace(' ', '-')
 			except: pass
-			response = mdblist.session.get(mdblist.mdblist_baseurl + mdblist.mdblist_user_list + mdblist_api, timeout=20)
+			response = mdblist.session.get(mdblist.mdblist_baseurl + mdblist.mdblist_user_list, timeout=20)
 			if response.status_code != 200:
 				control.hide()
 				return full_list
-			list_item_url = 'https://api.mdblist.com/lists/%s/items?apikey=%s&page=1'
+			list_item_url = 'https://api.mdblist.com/lists/%s/items?page=1'
 			for i in response.json():
 				mediatype = i.get('mediatype')
 				if mediatype == 'movie':
@@ -516,7 +515,7 @@ class lib_tools:
 				list_name = i.get('name', '')
 				full_list.append({
 					'name': list_name,
-					'url': list_item_url % (list_id, mdblist_api),
+					'url': list_item_url % list_id,
 					'list_owner': user_name,
 					'list_owner_slug': user_slug,
 					'list_name': list_name,
@@ -526,6 +525,44 @@ class lib_tools:
 					'likes': 0,
 					'selected': '',
 				})
+			try:
+				liked_data = mdblist.get_request(mdblist.mdblist_liked_list)
+				if liked_data is not None:
+					if isinstance(liked_data, dict):
+						for key in ('lists', 'liked', 'data', 'results', 'items'):
+							if key in liked_data and isinstance(liked_data[key], list):
+								liked_data = liked_data[key]
+								break
+						else:
+							liked_data = []
+					if isinstance(liked_data, list):
+						for i in liked_data:
+							mediatype = i.get('mediatype')
+							if mediatype == 'movie':
+								action = 'movies'
+							elif mediatype == 'show':
+								action = 'tvshows'
+							else:
+								action = 'mixed'
+							list_id = i.get('id')
+							list_name = i.get('name', '')
+							owner = i.get('user_name', '') or str(i.get('user_id', ''))
+							display_name = '%s (by %s)' % (list_name, owner) if owner else list_name
+							full_list.append({
+								'name': display_name,
+								'url': list_item_url % list_id,
+								'list_owner': owner,
+								'list_owner_slug': '',
+								'list_name': list_name,
+								'list_id': str(list_id),
+								'list_count': i.get('items', 0),
+								'action': action,
+								'likes': 0,
+								'selected': '',
+							})
+			except:
+				from resources.lib.modules import log_utils
+				log_utils.error()
 			control.hide()
 		except:
 			full_list = []
@@ -917,7 +954,7 @@ class lib_tools:
 		try:
 			items = []
 			isTraktEnabled = control.setting('trakt.user.token') != ''
-			isMDBListEnabled = control.setting('mdblist.api') != ''
+			isMDBListEnabled = control.setting('mdblist.token') != ''
 			isTMDbV4Enabled = control.setting('tmdb.v4.accesstoken') != ''
 			if not isTraktEnabled and not isMDBListEnabled and not isTMDbV4Enabled:
 				control.notification(message=32113)

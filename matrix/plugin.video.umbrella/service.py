@@ -325,7 +325,7 @@ try:
 	_scr = control.setting('scrobble.source')
 	_trakt_authed = bool(control.setting('trakt.user.token') and control.setting('trakt.refreshtoken') and control.setting('trakt.user.name'))
 	_simkl_authed = bool(control.setting('simkltoken'))
-	_mdb_authed = bool(control.setting('mdblist.api'))
+	_mdb_authed = bool(control.setting('mdblist.token'))
 	_trakt_user = control.setting('trakt.user.name') or 'N/A'
 	_trakt_custom_id = bool(control.setting('trakt.clientid'))
 	log_utils.log('########   UMBRELLA SERVICE CONFIGURATION   ########', level=LOGINFO)

@@ -16,6 +16,9 @@ getSetting = control.setting
 en_icon = control.joinPath(control.artPath(), 'easynews.png')
 addonFanart = control.addonFanart()
 
+en_session = requests.Session()
+en_session.mount('https://', requests.adapters.HTTPAdapter(max_retries=1))
+
 SORT = {'s1': 'relevance', 's1d': '-', 's2': 'dsize', 's2d': '-', 's3': 'dtime', 's3d': '-'}
 SEARCH_PARAMS = {'st': 'adv', 'sb': 1, 'fex': 'm4v,3gp,mov,divx,xvid,wmv,avi,mpg,mpeg,mp4,mkv,avc,flv,webm', 'fty[]': 'VIDEO', 'spamf': 1, 'u': '1', 'gx': 1, 'pno': 1, 'sS': 3}
 SEARCH_PARAMS.update(SORT)
@@ -25,7 +28,8 @@ class EasyNews:
 	def __init__(self):
 		self.base_link = 'https://members.easynews.com'
 		self.search_link = '/2.0/search/solr-search/advanced'
-		# self.moderation = 1 if getSetting('easynews_moderation') == 'true' else 0
+		self.username = getSetting('easynews.user')
+		self.password = getSetting('easynews.password')
 		self.auth = self._get_auth()
 		self.account_link = 'https://account.easynews.com/editinfo.php'
 		self.usage_link = 'https://account.easynews.com/usageview.php'
@@ -171,8 +175,25 @@ class EasyNews:
 		sources = list(_process())
 		return sources
 
+	def unrestrict_link(self, url_dl):
+		try:
+			response = en_session.get(url_dl, auth=(self.username, self.password), stream=True, timeout=60.0)
+			if not response.ok: return None
+			chunk = next(response.iter_content(chunk_size=1048576), b'')
+			if len(chunk): return response.url
+		except:
+			from resources.lib.modules import log_utils
+			log_utils.error()
+		return None
+
 	def resolve_forPlayback(self, url):
 		from resources.lib.modules import player
+		base_url = url.split('|')[0]
+		resolved = self.unrestrict_link(base_url)
+		if resolved:
+			if getSetting('easynews.seekable') != 'true':
+				resolved += '|seekable=0'
+			return player.Player().play(resolved)
 		return player.Player().play(url)
 
 	def account(self):

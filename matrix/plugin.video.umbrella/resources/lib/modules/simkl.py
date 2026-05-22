@@ -252,6 +252,30 @@ def getSimklAsJson(url, post=None, silent=False):
 		return r
 	except: log_utils.error()
 
+_ANIME_TRENDING_TODAY = 'https://data.simkl.in/discover/trending/anime/today_500.json'
+_ANIME_TRENDING_MONTH = 'https://data.simkl.in/discover/trending/anime/month_500.json'
+
+def simkl_anime_list(media_type, url=None):
+	if url is None: url = _ANIME_TRENDING_TODAY
+	try:
+		response = requests.get(url, timeout=20)
+		if response.status_code != 200: return None
+		items = response.json()
+		if not items: return None
+		result = []
+		for item in items:
+			try:
+				anime_type = item.get('anime_type', '')
+				if media_type == 'movie' and anime_type != 'movie': continue
+				if media_type == 'tv' and anime_type not in ('tv', 'ona'): continue
+				ids = item.get('ids', {})
+				tmdb_id = str(ids.get('tmdb', '')) if ids.get('tmdb') else ''
+				if not tmdb_id: continue
+				result.append({'tmdb': tmdb_id, 'imdb': ids.get('imdb', '') or '', 'tvdb': str(ids.get('tvdb', '')) if ids.get('tvdb') else '', 'metacache': False, 'next': ''})
+			except: log_utils.error()
+		return result or None
+	except: log_utils.error()
+
 def simkl_list(url):
 	if not url: return
 	url = url % simklclientid

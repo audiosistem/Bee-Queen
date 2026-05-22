@@ -396,6 +396,10 @@ class Sources:
 			del window
 			if action == 'play_Item':
 				return self.playItem(title, items, chosen_source.getProperty('umbrella.source_dict'), self.meta)
+			elif action == 'play_EN_Seekable':
+				from resources.lib.modules import player
+				player.Player().play(chosen_source)
+				return
 			else:
 				homeWindow.clearProperty('umbrella.window_keep_alive')
 				try: self.window.close()
@@ -779,7 +783,21 @@ class Sources:
 					line2 = string1 % round(time() - start_time, 1)
 					if len(info) > 6: line3 = string3 % str(len(info))
 					elif len(info) > 0: line3 = string3 % (', '.join(info))
-					else: break
+					else:
+						source_4k = len([e for e in self.scraper_sources if e['quality'] == '4K'])
+						source_1080 = len([e for e in self.scraper_sources if e['quality'] == '1080p'])
+						source_720 = len([e for e in self.scraper_sources if e['quality'] == '720p'])
+						source_sd = len([e for e in self.scraper_sources if e['quality'] in ('SD', 'SCR', 'CAM')])
+						source_4k_label = total_format2 % source_4k if source_4k == 0 else total_format % (sdc, source_4k)
+						source_1080_label = total_format2 % source_1080 if source_1080 == 0 else total_format % (sdc, source_1080)
+						source_720_label = total_format2 % source_720 if source_720 == 0 else total_format % (sdc, source_720)
+						source_sd_label = total_format2 % source_sd if source_sd == 0 else total_format % (sdc, source_sd)
+						line1 = pdiag_format % (source_4k_label, source_1080_label, source_720_label, source_sd_label)
+						if progressDialog != control.progressDialog and progressDialog != control.progressDialogBG:
+							progressDialog.update(100, line1 + '[CR]' + line2 + '[CR]' + '')
+						elif progressDialog != control.progressDialogBG:
+							progressDialog.update(100, line1 + '[CR]' + line2 + '[CR]' + '')
+						break
 					current_time = time()
 					current_progress = current_time - start_time
 					#percent = int((current_progress / float(timeout)) * 100)
@@ -1226,22 +1244,35 @@ class Sources:
 		self.filter += local # library and video scraper sources
 		self.sources = self.filter
 
-		if getSetting('sources.group.sort') == '1':
-			torr_filter = []
-			torr_filter += [i for i in self.sources if 'torrent' in i['source']]  #torrents first
-			if getSetting('sources.size.sort') == 'true': torr_filter.sort(key=lambda k: round(k.get('size', 0)), reverse=True)
-			aact_filter = []
-			aact_filter += [i for i in self.sources if i['direct'] == True]  #account scrapers and local/library next
-			if getSetting('sources.size.sort') == 'true': aact_filter.sort(key=lambda k: round(k.get('size', 0)), reverse=True)
-			prem_filter = []
-			prem_filter += [i for i in self.sources if 'torrent' not in i['source'] and i['debridonly'] is True]  #prem.hosters last
-			if getSetting('sources.size.sort') == 'true': prem_filter.sort(key=lambda k: round(k.get('size', 0)), reverse=True)
-			self.sources = torr_filter
-			self.sources += aact_filter
-			self.sources += prem_filter
-		elif getSetting('sources.size.sort') == 'true':
-			reverse_sort = True if getSetting('sources.sizeSort.reverse') == 'false' else False
-			self.sources.sort(key=lambda k: round(k.get('size', 0), 2), reverse=reverse_sort)
+		quality_rank_maps = {
+			'0': {'4K': 0, '1080p': 1, '720p': 2, 'SCR': 3, 'SD': 4, 'CAM': 5},
+			'1': {'4K': 5, '1080p': 0, '720p': 1, 'SCR': 2, 'SD': 3, 'CAM': 4},
+			'2': {'4K': 5, '1080p': 4, '720p': 0, 'SCR': 1, 'SD': 2, 'CAM': 3},
+			'3': {'4K': 5, '1080p': 4, '720p': 3, 'SCR': 0, 'SD': 1, 'CAM': 2},
+		}
+		_preferred_q = getSetting('hosts.quality') or '0'
+		_qmap = quality_rank_maps.get(_preferred_q, quality_rank_maps['0'])
+		if self.prem_providers and isinstance(self.prem_providers[0], tuple):
+			_sorted_pp = sorted(self.prem_providers, key=lambda k: k[1])
+			_prov_list = [i[0] for i in _sorted_pp]
+		else:
+			_prov_list = list(self.prem_providers)
+		def _qrank(src): return _qmap.get(src.get('quality', 'SD'), 5)
+		def _prank(src):
+			key = src.get('debrid', '') or src.get('provider', '')
+			try: return _prov_list.index(key)
+			except: return 10**6
+		def _srank(src): return -round(float(src.get('size', 0)))
+		_sort_order = int(getSetting('sources.sort.order') or '0')
+		_sort_keys = (
+			lambda k: (_qrank(k), _prank(k), _srank(k)),
+			lambda k: (_qrank(k), _srank(k), _prank(k)),
+			lambda k: (_prank(k), _qrank(k), _srank(k)),
+			lambda k: (_prank(k), _srank(k), _qrank(k)),
+			lambda k: (_srank(k), _qrank(k), _prank(k)),
+			lambda k: (_srank(k), _prank(k), _qrank(k)),
+		)
+		self.sources.sort(key=_sort_keys[_sort_order])
 
 		if getSetting('source.prioritize.av1') == 'true': # filter to place AV1 sources first
 			filter = []
@@ -1269,18 +1300,10 @@ class Sources:
 			filter += [i for i in self.sources if i not in filter]
 			self.sources = filter
 
-		self.sources = self.sort_byQuality(source_list=self.sources)
-
 		filter = [] # filter to place cloud files first
 		filter += [i for i in self.sources if i['source'] == 'cloud']
 		filter += [i for i in self.sources if i not in filter]
 		self.sources = filter
-
-		if getSetting('source.prioritize.direct') == 'true': # filter to place plex sources first
-			filter = [] # filter to place cloud files first
-			filter += [i for i in self.sources if i['source'] == 'direct']
-			filter += [i for i in self.sources if i not in filter]
-			self.sources = filter
 
 		self.sources = self.sources[:4000]
 		control.hide()
@@ -1431,6 +1454,17 @@ class Sources:
 							return url
 						except: pass
 					else:
+						if item.get('provider') == 'easynews':
+							try:
+								from resources.lib.debrid.easynews import EasyNews
+								base_url = url.split('|')[0]
+								resolved = EasyNews().unrestrict_link(base_url)
+								if resolved:
+									if getSetting('easynews.seekable') != 'true':
+										resolved += '|seekable=0'
+									self.url = resolved
+									return resolved
+							except: log_utils.error()
 						self.url = url
 						return url
 				else: # hosters

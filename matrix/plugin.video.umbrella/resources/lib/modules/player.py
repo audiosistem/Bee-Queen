@@ -680,6 +680,11 @@ class Player(xbmc.Player):
 				self.playbackStopped_triggered = False
 				Bookmarks().reset(self.current_time, self.media_length, self.name, self.year)
 				_scrobble_source = getSetting('scrobble.source')
+				if _scrobble_source == '0':
+					_indicators_alt = getSetting('indicators.alt')
+					if _indicators_alt == '1' and self.traktCredentials: _scrobble_source = '1'
+					elif _indicators_alt == '2' and self.simklCredentials: _scrobble_source = '2'
+					elif _indicators_alt == '3' and self.mdblistCredentials: _scrobble_source = '3'
 				if self.traktCredentials and (_scrobble_source == '1' or getSetting('trakt.markwatched') == 'true'):
 					Bookmarks().set_scrobble(self.current_time, self.media_length, self.media_type, self.imdb, self.tmdb, self.tvdb, self.season, self.episode, already_watched=self.watched_during_playback)
 				if self.simklCredentials and (_scrobble_source == '2' or getSetting('simkl.markwatched') == 'true'):
@@ -710,6 +715,11 @@ class Player(xbmc.Player):
 			Bookmarks().reset(self.current_time, self.media_length, self.name, self.year)
 			self.libForPlayback()
 			_scrobble_source = getSetting('scrobble.source')
+			if _scrobble_source == '0':
+				_indicators_alt = getSetting('indicators.alt')
+				if _indicators_alt == '1' and self.traktCredentials: _scrobble_source = '1'
+				elif _indicators_alt == '2' and self.simklCredentials: _scrobble_source = '2'
+				elif _indicators_alt == '3' and self.mdblistCredentials: _scrobble_source = '3'
 			if not self.scrobble_sent:
 				if self.traktCredentials and (_scrobble_source == '1' or getSetting('trakt.markwatched') == 'true'):
 					Bookmarks().set_scrobble(self.current_time, self.media_length, self.media_type, self.imdb, self.tmdb, self.tvdb, self.season, self.episode, already_watched=self.watched_during_playback)

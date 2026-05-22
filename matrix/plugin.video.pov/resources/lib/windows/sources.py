@@ -138,10 +138,7 @@ class SourceResults(BaseDialog):
 						if 'cache_provider' in item:
 							if 'Uncached' in item['cache_provider']:
 								key = 'uncached'
-								if 'age' in item:
-									age = (get('age') or 'N/A').rstrip('d')
-									value = 'uncached (%s days)' % age
-								elif 'seeders' in item:
+								if 'seeders' in item:
 									seeders = get('seeders') or 0
 									value = 'uncached (%d seeders)' % seeders
 								else: value = 'uncached'

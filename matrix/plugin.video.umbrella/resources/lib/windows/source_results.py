@@ -104,6 +104,8 @@ class SourceResultsXML(BaseDialog):
 				debrid = chosen_source.getProperty('umbrella.debrid')
 				if (re_match(r'^CACHED.*TORRENT', source) or 'unchecked' in source_dict) and debrid != 'EasyDebrid':
 					cm_list += [('[B]Save to %s Cloud[/B]' % debrid, 'saveToCloud')]
+				if chosen_source.getProperty('umbrella.provider').upper() == 'EASYNEWS':
+					cm_list += [('[B]Play EasyNews Seekable[/B]', 'playENSeekable')]
 				chosen_cm_item = dialog.contextmenu([i[0] for i in cm_list])
 				if chosen_cm_item == -1: return
 				cm_action = cm_list[chosen_cm_item][1]
@@ -122,6 +124,7 @@ class SourceResultsXML(BaseDialog):
 					if 'tvshowtitle' in self.meta and 'season' in self.meta and 'episode' in self.meta:
 						sysname = quote_plus(self.meta.get('tvshowtitle'))
 						poster = self.meta.get('season_poster') or self.meta.get('poster')
+						if 'year' in self.meta: sysname += quote_plus(' (%s)' % self.meta['year'])
 						sysname += quote_plus(' S%02dE%02d' % (int(self.meta['season']), int(self.meta['episode'])))
 					elif 'year' in self.meta: sysname += quote_plus(' (%s)' % self.meta['year'])
 					try: new_sysname = quote_plus(chosen_source.getProperty('umbrella.name'))
@@ -135,6 +138,7 @@ class SourceResultsXML(BaseDialog):
 					if 'tvshowtitle' in self.meta and 'season' in self.meta and 'episode' in self.meta:
 						sysname = quote_plus(self.meta.get('tvshowtitle'))
 						poster = self.meta.get('season_poster') or self.meta.get('poster')
+						if 'year' in self.meta: sysname += quote_plus(' (%s)' % self.meta['year'])
 						sysname += quote_plus(' S%02dE%02d' % (int(self.meta['season']), int(self.meta['episode'])))
 					elif 'year' in self.meta: sysname += quote_plus(' (%s)' % self.meta['year'])
 					try: new_sysname = quote_plus(chosen_source.getProperty('umbrella.name'))
@@ -170,6 +174,14 @@ class SourceResultsXML(BaseDialog):
 						debrid_icon = easydebrid.ed_icon
 					result = transfer_function().create_transfer(magnet)
 					if result: notification(message='Sending MAGNET to the %s cloud' % debrid, icon=debrid_icon)
+				elif cm_action == 'playENSeekable':
+					from resources.lib.debrid.easynews import EasyNews
+					full_url = chosen_source.getProperty('umbrella.url')
+					base_url = full_url.split('|')[0]
+					resolved = EasyNews().unrestrict_link(base_url)
+					if resolved:
+						self.selected = ('play_EN_Seekable', resolved)
+						return self.close()
 			elif action in self.closing_actions:
 				self.selected = (None, '')
 				self.close()

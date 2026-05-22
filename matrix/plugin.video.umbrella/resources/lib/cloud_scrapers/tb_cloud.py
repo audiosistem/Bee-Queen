@@ -40,7 +40,8 @@ class source:
 			deadline = gettime() + 30
 			threads = [
 				Thread(target=self._scraper, args=(TorBox().user_cloud, folders, 'torent')),
-				Thread(target=self._scraper, args=(TorBox().user_cloud_usenet, folders, 'usenet'))
+				Thread(target=self._scraper, args=(TorBox().user_cloud_usenet, folders, 'usenet')),
+				Thread(target=self._scraper, args=(TorBox().user_cloud_webdl, folders, 'webdl'))
 			]
 			[i.start() for i in threads]
 			for t in threads:
@@ -58,11 +59,17 @@ class source:
 #				if not cloud_utils.cloud_check_title(title, aliases, folder_name): continue
 				mediatype = folder.get('mediatype', '')
 				request_id = folder.get('id', '')
-				folder_files = folder['files']
+				folder_files = folder.get('files')
+				if not folder_files:
+					torrent_func = TorBox().user_cloud_usenet if mediatype == 'usenet' else TorBox().user_cloud
+					result = torrent_func(request_id)
+					if not result or not isinstance(result.get('data'), dict): continue
+					folder_files = result['data'].get('files', [])
+				if not folder_files: continue
 			except:
 				from resources.lib.modules import log_utils
 				log_utils.error('TB_CLOUD: ')
-				return sources
+				continue
 
 			for file in folder_files:
 				try:
@@ -121,7 +128,7 @@ class source:
 				except:
 					from resources.lib.modules import log_utils
 					log_utils.error('TB_CLOUD: ')
-					return sources
+					continue
 		return sources
 
 	def year_query_list(self):
@@ -169,5 +176,13 @@ class source:
 			return None
 
 	def _scraper(self, function, results, mediatype):
-		try: results += [{**i, 'mediatype': mediatype} for i in function()['data'] if i['download_finished']]
-		except: pass
+		from resources.lib.modules import log_utils
+		try:
+			response = function()
+			log_utils.log('TB_CLOUD _scraper [%s] raw response: %s' % (mediatype, str(response)))
+			if not response: return
+			items = [{**i, 'mediatype': mediatype} for i in (response.get('data') or []) if i.get('download_finished') or i.get('download_state') == 'completed']
+			log_utils.log('TB_CLOUD _scraper [%s] filtered items: %d' % (mediatype, len(items)))
+			results += items
+		except Exception as e:
+			log_utils.log('TB_CLOUD _scraper [%s] exception: %s' % (mediatype, str(e)))

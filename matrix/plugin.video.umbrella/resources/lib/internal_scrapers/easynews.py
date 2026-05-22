@@ -16,6 +16,9 @@ SORT = {'s1': 'relevance', 's1d': '-', 's2': 'dsize', 's2d': '-', 's3': 'dtime',
 SEARCH_PARAMS = {'st': 'adv', 'sb': 1, 'fex': 'm4v,3gp,mov,divx,xvid,wmv,avi,mpg,mpeg,mp4,mkv,avc,flv,webm', 'fty[]': 'VIDEO', 'spamf': 1, 'u': '1', 'gx': 1, 'pno': 1, 'sS': 3}
 SEARCH_PARAMS.update(SORT)
 
+en_session = requests.Session()
+en_session.mount('https://', requests.adapters.HTTPAdapter(max_retries=1))
+
 
 class source:
 	priority = 21
@@ -52,7 +55,7 @@ class source:
 				hdlr = year
 				query = '%s' % re.sub(r'[^A-Za-z0-9\s\.-]+', '', title) # let "source_utils.check_title()" verify "release_title" contains a matching year in years list
 			url, params = self._translate_search(query)
-			results = requests.get(url, params=params, headers={'Authorization': auth}, timeout=20).json()
+			results = en_session.get(url, params=params, headers={'Authorization': auth}, timeout=20).json()
 			down_url = results.get('downURL')
 			dl_farm = results.get('dlFarm')
 			dl_port = results.get('dlPort')

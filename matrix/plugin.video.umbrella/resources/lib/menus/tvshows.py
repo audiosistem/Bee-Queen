@@ -41,6 +41,7 @@ class TVshows:
 		self.prefer_tmdbArt = getSetting('prefer.tmdbArt') == 'true'
 		self.unairedcolor = getSetting('unaired.identify')
 		self.showunaired = getSetting('showunaired') == 'true'
+		self.tvshows_show_year = getSetting('tvshows.show.year') == 'true'
 		self.highlight_color = control.setting('highlight.color')
 		self.date_time = datetime.now()
 		self.today_date = (self.date_time).strftime('%Y-%m-%d')
@@ -70,7 +71,6 @@ class TVshows:
 		self.certification_link = 'https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&release_date=,date[0]&certificates=%s&sort=%s&count=%s&start=1' % ('%s', self.imdb_sort(type='imdbshows'), self.genre_limit)
 		self.year_link = 'https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&num_votes=100,&production_status=released&year=%s,%s&sort=moviemeter,asc&count=%s&start=1' % ('%s', '%s', self.genre_limit)
 		self.imdblist_link = 'https://www.imdb.com/list/%s/?view=detail&sort=%s&title_type=tvSeries,tvMiniSeries&start=1' % ('%s', self.imdb_sort())
-		self.anime_link = 'https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&keywords=anime-animation,anime'
 
 		self.trakt_user = getSetting('trakt.user.name').strip()
 		self.traktCredentials = trakt.getTraktCredentialsInfo()
@@ -139,10 +139,11 @@ class TVshows:
 		if useLanguage: link_addon = '&with_original_language=%s' % self.lang
 		if useorigincountries: link_addon + '&with_origin_country=%s' % (getSetting('originCountry', 'US'))
 		self.tmdb_genre_link = tmdb_base+'/3/discover/tv?api_key=%s&with_genres=%s&include_null_first_air_dates=false&sort_by=%s&page=1' % ('%s', '%s', self.tmdb_DiscoverSort()) + link_addon
+		self.anime_link = tmdb_base+'/3/discover/tv?api_key=%s&with_genres=16&with_original_language=ja&include_null_first_air_dates=false&sort_by=%s&page=1' % ('%s', self.tmdb_DiscoverSort())
 		self.tmdb_year_link = tmdb_base+'/3/discover/tv?api_key=%s&language=en-US&include_null_first_air_dates=false&first_air_date_year=%s&sort_by=popularity.desc&vote_count.gte=20&page=1' % ('%s', '%s') + link_addon
 		self.tmdb_recommendations = tmdb_base+'/3/tv/%s/recommendations?api_key=%s&language=en-US&region=US&page=1'
 		self.tmdb_person_search = tmdb_base+'/3/search/person?api_key=%s&query=%s&language=en-US&page=1&include_adult=true' % ('%s','%s')
-		self.mbdlist_list_items = 'https://api.mdblist.com/lists/%s/items?apikey=%s&page=1' % ('%s', mdblist.mdblist_api)
+		self.mbdlist_list_items = 'https://api.mdblist.com/lists/%s/items?page=1'
 		self.simkltrendingtoday_link = 'https://api.simkl.com/tv/trending/today?client_id=%s&extended=tmdb' % '%s'
 		self.simkltrendingweek_link = 'https://api.simkl.com/tv/trending/week?client_id=%s&extended=tmdb' % '%s'
 		self.simkltrendingmonth_link = 'https://api.simkl.com/tv/trending/month?client_id=%s&extended=tmdb'% '%s'
@@ -165,7 +166,7 @@ class TVshows:
 		self.is_widget = 'plugin' not in control.infoLabel('Container.PluginName')
 		self.simkl_link = 'https://api.simkl.com'
 		self.prefer_fanArt = getSetting('prefer.fanarttv') == 'true'
-		self.mdblist_authed = getSetting('mdblist.api') != ''
+		self.mdblist_authed = getSetting('mdblist.token') != ''
 		from resources.lib.modules import tmdb4
 		self.tmdbv4Credentials = tmdb4.getTMDbV4CredentialsInfo()
 
@@ -286,6 +287,20 @@ class TVshows:
 			return self.list
 		except:
 			
+			log_utils.error()
+			if not self.list:
+				control.hide()
+				if self.notifications and self.is_widget != True: control.notification(title=32002, message=33049)
+
+	def getAnime(self, folderName=''):
+		self.list = []
+		try:
+			self.list = cache.get(simkl.simkl_anime_list, self.simkl_hours, 'anime')
+			if self.list is None: self.list = []
+			self.worker()
+			self.tvshowDirectory(self.list, folderName=folderName)
+			return self.list
+		except:
 			log_utils.error()
 			if not self.list:
 				control.hide()
@@ -1566,6 +1581,45 @@ class TVshows:
 				log_utils.error()
 		return self.list
 
+	def getMDBLikedLists(self, create_directory=True, folderName=''):
+		self.list = []
+		try:
+			self.list = cache.get(self.mbd_liked_lists, 0)
+			if self.list is None: self.list = []
+			if create_directory: self.addDirectory(self.list, folderName=folderName)
+			return self.list
+		except:
+			from resources.lib.modules import log_utils
+			log_utils.error()
+	def mbd_liked_lists(self):
+		try:
+			listType = 'show'
+			items = mdblist.getMDBLikedLists(self, listType)
+			next = ''
+		except:
+			from resources.lib.modules import log_utils
+			log_utils.error()
+			items = []
+		for item in (items or []):
+			try:
+				list_name = item.get('params', {}).get('list_name', '')
+				list_id = item.get('params', {}).get('list_id', '')
+				list_owner = item.get('params', {}).get('list_owner', '')
+				list_count = item.get('params', {}).get('list_count', '')
+				list_url = self.mbdlist_list_items % (list_id)
+				if list_owner:
+					label = '%s by [COLOR %s]%s[/COLOR] - (%s)' % (list_name, self.highlight_color, list_owner, list_count)
+				else:
+					label = '%s - (%s)' % (list_name, list_count)
+				folderN = quote_plus(list_name)
+				self.list.append({'name': label, 'url': list_url, 'list_owner': list_owner, 'list_name': list_name,
+					'list_id': list_id, 'context': list_url, 'next': next, 'image': 'mdblist.png', 'icon': 'mdblist.png',
+					'folderName': folderN, 'action': 'tvshows'})
+			except:
+				from resources.lib.modules import log_utils
+				log_utils.error()
+		return self.list
+
 	def tmdb_v4_userlists(self, create_directory=True, folderName=''):
 		self.list = []
 		try:
@@ -2233,6 +2287,7 @@ class TVshows:
 			try:
 				imdb, tmdb, tvdb, year, trailer = i.get('imdb', ''), i.get('tmdb', ''), i.get('tvdb', ''), i.get('year', ''), i.get('trailer', '')
 				title = label = i.get('tvshowtitle') or i.get('title')
+				if self.tvshows_show_year and year: label = '%s (%s)' % (label, year)
 				systitle = quote_plus(title)
 				if isProgress:
 					pass
