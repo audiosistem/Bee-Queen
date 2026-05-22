@@ -1,0 +1,32 @@
+<settings>
+    <category label="General">
+        <setting id="time_format" type="enum" label="Time format" values="12h|24h" default="0" />
+        <setting id="cache_ttl" type="enum" label="Channel cache duration" values="15 min|30 min|1 h|2 h|6 h|12 h" default="1" />
+    </category>
+    <category label="Playback">
+        <setting id="seg_proxy" type="text" label="Segment proxy (http://...)" default="" />
+    </category>
+    <category label="Network">
+        <setting id="custom_dns" type="text" label="Custom DNS (DNS server IP)" default="1.1.1.1" />
+        <setting id="seed_baseurl" type="text" label="Seed Base URL" default="https://dlhd.pk/" />
+    </category>
+    <category label="Servers">
+        <setting id="chevy_proxy_url" type="text" label="CHEVY Proxy URL" default="https://chevy.soyspace.cyou" />
+        <setting id="chevy_lookup_url" type="text" label="CHEVY Lookup URL" default="https://chevy.vovlacosa.sbs" />
+        <setting id="ksohls_base_url" type="text" label="Auth Player URL" default="" />
+    </category>
+    <category label="EPG">
+        <setting id="epg_fr" type="bool" label="French" default="true" />
+        <setting id="epg_uk" type="bool" label="English (UK)" default="false" />
+        <setting id="epg_ar" type="bool" label="Arabic" default="false" />
+        <setting id="epg_es" type="bool" label="Spanish" default="false" />
+        <setting id="epg_it" type="bool" label="Italian" default="false" />
+        <setting id="epg_de" type="bool" label="German" default="false" />
+        <setting id="epg_pt" type="bool" label="Portuguese" default="false" />
+        <setting id="epg_nl" type="bool" label="Dutch" default="false" />
+        <setting id="epg_tr" type="bool" label="Turkish" default="false" />
+        <setting id="epg_pl" type="bool" label="Polish" default="false" />
+        <setting id="epg_ro" type="bool" label="Romanian" default="false" />
+        <setting id="epg_ru" type="bool" label="Russian" default="false" />
+    </category>
+</settings>
