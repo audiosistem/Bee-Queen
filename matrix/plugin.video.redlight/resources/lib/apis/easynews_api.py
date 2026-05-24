@@ -6,6 +6,7 @@ from urllib.parse import quote, urlencode
 from caches.base_cache import connect_database
 from caches.main_cache import cache_object
 from caches.settings_cache import get_setting
+from modules.settings import easynews_refresh_credentials
 from modules.dom_parser import parseDOM
 from modules.utils import chunks, remove_accents
 from modules.kodi_utils import make_session
@@ -31,13 +32,24 @@ class EasyNewsAPI:
 		auth = 'Basic ' + base64.b64encode(user_info).decode('utf-8')
 		return auth
 
+	def _reload_credentials(self):
+		self.username = get_setting('redlight.easynews_user', 'empty_setting')
+		self.password = get_setting('redlight.easynews_password', 'empty_setting')
+		self.auth = self._get_auth()
+		self.auth_quoted = quote(self.auth)
+
+	def _maybe_reload_credentials(self):
+		if easynews_refresh_credentials(): self._reload_credentials()
+
 	def search(self, query, expiration=48):
+		self._maybe_reload_credentials()
 		self.query = query
 		url, self.params = self._translate_search()
 		string = 'EASYNEWS_SEARCH_' + urlencode(self.params)
 		return cache_object(self._process_search, string, url, json=False, expiration=expiration)
 
 	def search_images(self, query, page_no=1, expiration=48):
+		self._maybe_reload_credentials()
 		self.query = remove_accents(query)
 		self.base_process = self.process_image_files
 		url, self.params = self._translate_search(search_type='IMAGE')
@@ -168,6 +180,7 @@ class EasyNewsAPI:
 		except: return response
 
 	def resolve_easynews(self, url_dl, use_non_seekable=False):
+		self._maybe_reload_credentials()
 		headers = {'Authorization': self.auth}
 		response = session.get(url_dl, headers=headers, stream=True, timeout=20)
 		if not response.ok: return None

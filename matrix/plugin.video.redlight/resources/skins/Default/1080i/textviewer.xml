@@ -33,7 +33,7 @@
                     <left>105</left>
                     <width max="1115">auto</width>
                     <height>20</height>
-                    <font>font14</font> <!-- redlight_33 -->
+                    <font>font14</font> <!-- REDLIGHT_33 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <shadowcolor>FF000000</shadowcolor>
                     <align>center</align>
@@ -46,7 +46,7 @@
                     <top>114</top>
                     <width>1254</width>
                     <height>816</height>
-                    <font>font12</font> <!-- redlight_26 -->
+                    <font>font12</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <label>$INFO[Window.Property(text)]</label>
                     <pagecontrol>2060</pagecontrol>
@@ -58,7 +58,7 @@
                     <top>114</top>
                     <width>1254</width>
                     <height>826</height>
-                    <font>font14</font> <!-- redlight_33 -->
+                    <font>font14</font> <!-- REDLIGHT_33 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <label>$INFO[Window.Property(text)]</label>
                     <pagecontrol>2061</pagecontrol>

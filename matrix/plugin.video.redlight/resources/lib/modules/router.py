@@ -204,6 +204,9 @@ def routing(sys):
 		elif mode == 'torbox.delete':
 			from indexers.torbox import tb_delete
 			return tb_delete(params.get('folder_id'), params.get('media_type'))
+		elif mode == 'torbox.send_webdl':
+			from indexers.torbox import tb_send_webdl
+			tb_send_webdl()
 	elif 'tmdblist_api' in mode:
 		if mode == 'tmdblist_api.authenticate':
 			from apis.tmdblist_api import TMDbListAPI

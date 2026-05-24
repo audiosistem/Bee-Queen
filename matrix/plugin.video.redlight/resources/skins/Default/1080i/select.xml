@@ -47,7 +47,7 @@
                     <top>10</top>
                     <left>110</left>
                     <height>20</height>
-                    <font>font12</font> <!-- redlight_26 -->
+                    <font>font12</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <shadowcolor>FF000000</shadowcolor>
                     <align>center</align>
@@ -59,7 +59,7 @@
                     <top>10</top>
                     <left>110</left>
                     <height>20</height>
-                    <font>font12</font> <!-- redlight_26 -->
+                    <font>font12</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <shadowcolor>FF000000</shadowcolor>
                     <align>center</align>
@@ -112,7 +112,7 @@
                         <left>34</left>
                         <top>45</top>
                         <height>5</height>
-                        <font>font12</font> <!-- redlight_26 -->
+                        <font>font12</font> <!-- REDLIGHT_26 -->
                         <textcolor>FFCCCCCC</textcolor>
                         <aligny>center</aligny>
                         <label>[UPPERCASE]$INFO[ListItem.Property(line1)][/UPPERCASE]</label>
@@ -126,7 +126,7 @@
                         <control type="label">
                             <top>25</top>
                             <height>5</height>
-                            <font>font12</font> <!-- redlight_26 -->
+                            <font>font12</font> <!-- REDLIGHT_26 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <aligny>center</aligny>
                             <label>[UPPERCASE][B]$INFO[ListItem.Property(line1)][/B][/UPPERCASE]</label>
@@ -135,7 +135,7 @@
                         <control type="label">
                             <top>60</top>
                             <height>5</height>
-                            <font>font12</font> <!-- redlight_26 -->
+                            <font>font12</font> <!-- REDLIGHT_26 -->
                             <textcolor>FFA9A8A8</textcolor>
                             <aligny>center</aligny>
                             <label>[UPPERCASE][I]$INFO[ListItem.Property(line2)][/I][/UPPERCASE]</label>
@@ -166,7 +166,7 @@
                         <top>45</top>
                         <height>5</height>
                         <width max="632">auto</width>
-                        <font>font12</font> <!-- redlight_26 -->
+                        <font>font12</font> <!-- REDLIGHT_26 -->
                         <textcolor>FF1F2020</textcolor>
                         <aligny>center</aligny>
                         <label>[UPPERCASE]$INFO[ListItem.Property(line1)][/UPPERCASE]</label>
@@ -180,7 +180,7 @@
                         <control type="label">
                             <top>25</top>
                             <height>5</height>
-                            <font>font12</font> <!-- redlight_26 -->
+                            <font>font12</font> <!-- REDLIGHT_26 -->
                             <textcolor>FF1F2020</textcolor>
                             <aligny>center</aligny>
                             <label>[UPPERCASE][B]$INFO[ListItem.Property(line1)][/B][/UPPERCASE]</label>
@@ -189,7 +189,7 @@
                         <control type="label">
                             <top>60</top>
                             <height>5</height>
-                            <font>font12</font> <!-- redlight_26 -->
+                            <font>font12</font> <!-- REDLIGHT_26 -->
                             <textcolor>FF4a4347</textcolor>
                             <aligny>center</aligny>
                             <label>[UPPERCASE][I]$INFO[ListItem.Property(line2)][/I][/UPPERCASE]</label>
@@ -221,7 +221,7 @@
                     <onleft>2025</onleft>
                     <onright>2025</onright>
                     <label>OK</label>
-                    <font>font12</font> <!-- redlight_26 -->
+                    <font>font12</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <focusedcolor>FF1F2020</focusedcolor>
                     <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -239,7 +239,7 @@
                     <onleft>2025</onleft>
                     <onright>2025</onright>
                     <label>Cancel</label>
-                    <font>font12</font> <!-- redlight_26 -->
+                    <font>font12</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <focusedcolor>FF1F2020</focusedcolor>
                     <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -257,7 +257,7 @@
                     <onleft>2025</onleft>
                     <onright>2025</onright>
                     <label>Select All</label>
-                    <font>font12</font> <!-- redlight_26 -->
+                    <font>font12</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <focusedcolor>FF1F2020</focusedcolor>
                     <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -276,7 +276,7 @@
                     <onleft>2025</onleft>
                     <onright>2025</onright>
                     <label>Deselect All</label>
-                    <font>font12</font> <!-- redlight_26 -->
+                    <font>font12</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <focusedcolor>FF1F2020</focusedcolor>
                     <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>

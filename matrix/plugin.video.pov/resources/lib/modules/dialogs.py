@@ -260,11 +260,9 @@ def extras_lists_choice():
 	set_setting('extras.enabled_menus', ','.join(selection))
 
 def set_language_filter_choice(filter_setting):
-	from modules.meta_lists import language_choices
-	lang_choices = language_choices
-	lang_choices.pop('None')
-	dl = list(lang_choices.keys())
-	fl = list(lang_choices.values())
+	from modules.meta_lists import meta_languages
+	dl = list(k for k, v in meta_languages.items() if v['long'])
+	fl = list(v['long'] for v in meta_languages.values() if v['long'])
 	try: preselect = [fl.index(i) for i in get_setting(filter_setting).split(', ')]
 	except: preselect = []
 	list_items = [{'line1': item} for item in dl]
@@ -354,9 +352,9 @@ def color_choice(msg_dialog='POV', no_color=False):
 
 def meta_language_choice():
 	from modules.meta_lists import meta_languages
-	langs = meta_languages
-	list_items = [{'line1': i['name']} for i in langs]
-	kwargs = {'items': json.dumps(list_items), 'heading': ls(32145)}
+	langs = [{'iso': v['iso'], 'name': k} for k, v in meta_languages.items()]
+	list_items = [{'line1': i['name'], 'line2': i['iso']} for i in langs]
+	kwargs = {'items': json.dumps(list_items), 'heading': ls(32145), 'multi_line': 'true'}
 	list_choose = select_dialog(langs, **kwargs)
 	if list_choose is None: return None
 	chosen_language, chosen_language_display = list_choose['iso'], list_choose['name']

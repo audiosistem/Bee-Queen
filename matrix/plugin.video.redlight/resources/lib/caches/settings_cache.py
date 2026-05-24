@@ -95,8 +95,12 @@ def sync_settings(params={}):
 			for item in obsoletesettings_ids: settings_cache.remove_setting(item)
 	except: pass
 	if currentsettings:
+		if currentsettings.get('update.username', '').replace('-', '').lower() == 'theredwizard' \
+				and currentsettings.get('update.username') != 'The-Red-Wizard':
+			set_setting('update.username', 'The-Red-Wizard')
+			currentsettings['update.username'] = 'The-Red-Wizard'
 		c_settings = currentsettings.items()
-		for k, v  in c_settings: settings_cache.set_memory_cache(k, v)
+		for k, v in c_settings: settings_cache.set_memory_cache(k, v)
 	for item in d_settings:
 		setting_id = item['setting_id']
 		if setting_id in currentsettings: continue
@@ -205,8 +209,8 @@ def default_settings():
 #==================== Manage Updates
 {'setting_id': 'update.action', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Prompt', '1': 'Automatic', '2': 'Notification', '3': 'Off'}},
 {'setting_id': 'update.delay', 'setting_type': 'action', 'setting_default': '10', 'min_value': '10', 'max_value': '300'},
-{'setting_id': 'update.username', 'setting_type': 'string', 'setting_default': 'redlightAnonyMouse'},
-{'setting_id': 'update.location', 'setting_type': 'string', 'setting_default': 'redlightAnonyMouse.github.io'},
+{'setting_id': 'update.username', 'setting_type': 'string', 'setting_default': 'The-Red-Wizard'},
+{'setting_id': 'update.location', 'setting_type': 'string', 'setting_default': 'TheRedWizard.github.io'},
 #==================== Watched Indicators
 {'setting_id': 'watched_indicators', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Red Light', '1': 'Trakt'}},
 #======+============= Trakt Cache
@@ -331,6 +335,7 @@ def default_settings():
 #====================================META ACCOUNTS====================================#
 #=====================================================================================#
 #==================== Trakt
+#==================== Trakt
 {'setting_id': 'trakt.user', 'setting_type': 'string', 'setting_default': 'empty_setting'},
 {'setting_id': 'trakt.client', 'setting_type': 'string', 'setting_default': '30e6c73030cc41dbff996200ac3060cde689555ba207020e08a2175533b912c3'},
 {'setting_id': 'trakt.secret', 'setting_type': 'string', 'setting_default': '726f6b12a9f0079d5850a7bb0e15860725cd487cbfb54ce5471de217639465c5'},
@@ -406,7 +411,11 @@ def default_settings():
 {'setting_id': 'easynews_password', 'setting_type': 'string', 'setting_default': 'empty_setting'},
 {'setting_id': 'easynews.title_filter', 'setting_type': 'boolean', 'setting_default': 'true'},
 {'setting_id': 'easynews.filter_lang', 'setting_type': 'boolean', 'setting_default': 'false'},
-{'setting_id': 'easynews.lang_filters', 'setting_type': 'string', 'setting_default': '0'},
+{'setting_id': 'easynews.lang_filters', 'setting_type': 'string', 'setting_default': 'eng'},
+{'setting_id': 'easynews.refresh_credentials', 'setting_type': 'boolean', 'setting_default': 'true'},
+{'setting_id': 'easynews.lang_include_unknown', 'setting_type': 'boolean', 'setting_default': 'true'},
+{'setting_id': 'easynews.fallback_search', 'setting_type': 'boolean', 'setting_default': 'true'},
+{'setting_id': 'easynews.search_width', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Focused', '1': 'Balanced', '2': 'Broad'}},
 {'setting_id': 'check.easynews', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'autoplay.easynews', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'en.priority', 'setting_type': 'action', 'setting_default': '7', 'min_value': '1', 'max_value': '10'},

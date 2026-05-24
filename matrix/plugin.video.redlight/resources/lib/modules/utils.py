@@ -334,46 +334,54 @@ def unzip(zip_location, destination_location, destination_check, show_busy=True)
 def make_qrcode(url):
 	if url == None: return
 	import segno
+	from hashlib import sha1
 	from os import path
 	from modules.kodi_utils import addon_profile
 	try:
-		art_path = path.join(addon_profile(), 'qr.png')
+		qr_id = sha1(url.encode('utf-8')).hexdigest()[:12]
+		art_path = path.join(addon_profile(), 'qr_%s.png' % qr_id)
 		qrcode = segno.make(url, micro=False)
 		qrcode.save(art_path, scale=20)
 	except: return
 	return art_path
 
 def make_tinyurl(url):
+	if not url:
+		return ''
 	import requests
-	short_url = ''
 	try:
-		tiny_url = 'http://tinyurl.com/api-create.php'
-		response = requests.get(tiny_url, params={'url': url})
-		status = response.status_code
-		if status == 200:
-			short_url = response.text
-		else: pass
-	except: pass
-	return short_url
+		response = requests.get('https://tinyurl.com/api-create.php', params={'url': url}, timeout=15)
+		if response.status_code != 200:
+			return ''
+		short_url = (response.text or '').strip()
+		if short_url.lower().startswith('http'):
+			return short_url
+	except Exception:
+		pass
+	return ''
 
 def copy2clip(txt):
+	if not txt: return
 	if sys.platform == "win32":
 		try:
-			from subprocess import check_call
-			cmd = 'echo ' + txt.replace('&', '^&').strip() + '|clip'
-			return check_call(cmd, shell=True)
+			from subprocess import Popen, PIPE
+			p = Popen(['clip'], stdin=PIPE)
+			p.communicate(input=txt.strip().encode('utf-8'))
+			return p.returncode
 		except: return
 	if sys.platform == "darwin":
 		try:
-			from subprocess import check_call
-			cmd = 'echo ' + txt.strip() + '|pbcopy'
-			return check_call(cmd, shell=True)
+			from subprocess import Popen, PIPE
+			p = Popen(['pbcopy'], stdin=PIPE)
+			p.communicate(input=txt.strip().encode('utf-8'))
+			return p.returncode
 		except: return
 	if sys.platform == "linux":
 		try:
 			from subprocess import Popen, PIPE
 			p = Popen(['xsel', '-pi'], stdin=PIPE)
-			p.communicate(input=txt)
+			p.communicate(input=txt.strip().encode('utf-8'))
+			return p.returncode
 		except: return
 
 def image_from_db(image_url, delete=True):

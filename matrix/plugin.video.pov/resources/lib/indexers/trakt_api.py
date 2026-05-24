@@ -48,14 +48,15 @@ def call_trakt(path, params=None, data=None, with_auth=True, method=None, pagina
 		logger('trakt error', str(e))
 
 def _get_trakt_paginated_list(url):
-	params = {'limit': 1000, 'page': 1}
+	try: params = {'limit': 250 if get_setting('trakt.limit') == 'true' else 1000, 'page': 1}
+	except: params = {'limit': 250, 'page': 1}
 	try: items, pages = call_trakt(url, params=params, pagination=True)
 	except: return []
 	if pages <= 1: return items
 	args = ({'path': url, 'params': {**params, 'page': page}} for page in range(2, pages + 1))
 	with ThreadPoolExecutor() as tpe: # keep max_workers as default, min(32, os.cpu_count() + 4)
 		for result in tpe.map(call_trakt, args): # ThreadPoolExecutor map preserves order
-			if isinstance(result, list): items.extend(result)
+			if isinstance(result, list): items.extend(result) # caution, hides thread exceptions
 	return items
 
 def trakt_refresh():

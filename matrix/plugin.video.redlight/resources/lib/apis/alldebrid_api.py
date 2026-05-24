@@ -17,7 +17,7 @@ class AllDebridAPI:
 		self.token = get_setting('redlight.ad.token', 'empty_setting')
 		self.break_auth_loop = False
 		self.base_url = 'https://api.alldebrid.com/v4/'
-		self.user_agent = 'Red Light for Kodi'
+		self.user_agent = 'Red Light'
 
 	def auth(self):
 		self.token = ''
@@ -31,8 +31,8 @@ class AllDebridAPI:
 		qr_code = make_qrcode(auth_url) or ''
 		short_url = make_tinyurl(auth_url)
 		copy2clip(auth_url)
-		if short_url: p_dialog_insert = 'OR visit this URL: [B]%s[/B][CR]OR Enter this Code: [B]%s[/B]' % (short_url, user_code)
-		else: p_dialog_insert = 'OR Enter this Code: [B]%s[/B]' % user_code
+		if short_url: p_dialog_insert = '[CR]Full link copied to clipboard[CR]OR visit: [B]%s[/B][CR]OR Enter this Code: [B]%s[/B]' % (short_url, user_code)
+		else: p_dialog_insert = '[CR]Full link copied to clipboard[CR]OR Enter this Code: [B]%s[/B]' % user_code
 		sleep_interval = 5
 		content = 'Please Scan the QR Code%s[CR]' % p_dialog_insert
 		progressDialog = progress_dialog('All Debrid Authorize', qr_code)

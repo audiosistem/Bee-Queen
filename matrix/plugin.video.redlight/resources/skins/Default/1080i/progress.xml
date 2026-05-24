@@ -35,7 +35,7 @@
                     <left>0</left>
                     <width>1035</width>
                     <height>5</height>
-                    <font>font10</font> <!-- redlight_21 -->
+                    <font>font10</font> <!-- REDLIGHT_21 -->
                     <align>left</align>
                     <aligny>bottom</aligny>
                     <textcolor>B3CCCCCC</textcolor>
@@ -54,7 +54,7 @@
                     <left>5</left>
                     <height>20</height>
                     <align>center</align>
-                    <font>font12</font> <!-- redlight_26 -->
+                    <font>font12</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                 </control>
                 <control type="textbox" id="2001">
@@ -62,7 +62,7 @@
                     <left>20</left>
                     <width>580</width>
                     <height>250</height>
-                    <font>font13</font> <!-- redlight_30 -->
+                    <font>font13</font> <!-- REDLIGHT_30 -->
                     <align>center</align>
                     <aligny>center</aligny>
                     <textcolor>FFCCCCCC</textcolor>

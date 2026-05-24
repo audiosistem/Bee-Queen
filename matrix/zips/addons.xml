@@ -849,7 +849,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.05.12" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.05.13" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -891,7 +891,7 @@ In addition to what livestreams allowed you to do, you can now,
 		<fanart>fanart.jpg</fanart>
   </assets>
   </extension>
-</addon><addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]" version="1.0.0">
+</addon><addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]" version="1.1.2">
     <requires>
         <import addon="xbmc.python" version="3.0.1" />
         <import addon="script.module.pil" version="1.1.7" />
@@ -900,19 +900,19 @@ In addition to what livestreams allowed you to do, you can now,
     <extension point="xbmc.python.pluginsource" library="resources/lib/redlight.py">
         <provides>video</provides>
     </extension>
-    
+    <extension point="xbmc.service" library="resources/lib/service.py" />
     <extension point="xbmc.python.module" library="resources/lib/" />
     <extension point="xbmc.addon.metadata">
         <reuselanguageinvoker>true</reuselanguageinvoker>
-        <summary lang="en">[COLOR red]Fork of FenLightAM[/COLOR]</summary>
+        <summary lang="en">[COLOR red]Fork of FenLight[/COLOR]</summary>
         <description lang="en">[COLOR red]* We will not revoke our Trakt or TMDb keys
 * We will not block any third party apps or skins
 * No politics
 * NO DRAMA!
 
-I am grateful to Tikipeter and his various pseudonyms and aliases for creating and maintaining Fen and FenLightAM.
+I am grateful to Tikipeter and his various pseudonyms and aliases for creating and maintaining Fen and FenLight/FenLightAM.
 
-Many thanks to the developers who assisted with the TMDb Helper patch, restoring the icons and have encouraged me to release Red Light. They would prefer to remain anonymous ;) but they know who they are.[/COLOR]</description>
+Many thanks to those who assisted with the TMDb Helper patch and restoring the icons and encouraged me to release Red Light.[/COLOR]</description>
         <platform>all</platform>
 		<disclaimer lang="en">[COLOR red]The author of this add-on does not host any content and has no affiliation with the content providers[/COLOR]</disclaimer>
         <license />
@@ -3428,7 +3428,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
     <news>0.1.3:
 - Fix non-UTF-8 byte string decoding in Python 2.</news>
   </extension>
-</addon><addon id="script.module.magneto" version="6.04.03" name="Magneto Module" provider-name="Magneto">
+</addon><addon id="script.module.magneto" version="6.05.01" name="Magneto Module" provider-name="Magneto">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -3950,7 +3950,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
 	  <screenshot>resources/media/pic3.jpg</screenshot>
     </assets>
   </extension>
-</addon><addon id="service.subtitles.substudio" name="[B][COLOR FFB048B5]Sub[COLOR FF00BFFF]Studio[/COLOR][/B]" version="1.0.24" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="service.subtitles.substudio" name="[B][COLOR FFB048B5]Sub[COLOR FF00BFFF]Studio[/COLOR][/B]" version="1.0.27" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.22.0" />

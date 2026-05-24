@@ -7,7 +7,7 @@ from caches.settings_cache import get_setting
 from modules import kodi_utils as ku, settings as st, watched_status as ws
 # logger = ku.logger
 
-class redlightPlayer(xbmc.Player):
+class RedLightPlayer(xbmc.Player):
 	def __init__ (self):
 		xbmc.Player.__init__(self)
 

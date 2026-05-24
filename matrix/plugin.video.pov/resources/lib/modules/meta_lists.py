@@ -3,16 +3,20 @@ def years():
 	from datetime import datetime
 	return list(range(datetime.today().year, 1899, -1))
 
-movie_certifications, tvshow_certifications, media_lists = (
-	'G', 'PG', 'PG-13', 'R', 'NC-17', 'NR'
-), (
-	'tv-y', 'tv-y7', 'tv-g', 'tv-pg', 'tv-14', 'tv-ma'
-), (
-	'tmdb%', 'trakt%', 'mdb%', 'imdb%', 'pov%', 'POV%', 'subtitles%', 'https%'
-)
-
-movie_genres, tvshow_genres, oscar_winners = {
-	'Action': ['28', 'genre_action.png'],             'Adventure': ['12', 'genre_adventure.png'],       
+oscar_winners, movie_genres, tvshow_genres = (
+	1054867, 1064213, 872585, 545611, 776503, 581734, #2020s
+	496243, 490132, 399055, 376867, 314365, 194662, 76203, 68734, 74643, 45269, #2010s
+	12162, 12405, 6977, 1422, 1640, 70, 122, 1574, 453, 98, #2000s
+	14, 1934, 597, 409, 197, 13, 424, 33, 274, 581, #1990s
+	403, 380, 746, 792, 606, 279, 11050, 783, 9443, 16619, #1980s
+	12102, 11778, 703, 1366, 510, 240, 9277, 238, 1051, 11202, #1970s
+	3116, 17917, 10633, 874, 15121, 11113, 5769, 947, 1725, 284, #1960s
+	665, 17281, 826, 2897, 15919, 654, 11426, 27191, 2769, 705, #1950s
+	25430, 23383, 33667, 887, 28580, 17661, 27367, 289, 43266, 223, #1940s
+	770, 34106, 43278, 43277, 12311, 3078, 56164, 33680, 42861, 143, #1930s
+	65203, 28966, 631
+), {
+	'Action': ['28', 'genre_action.png'],             'Adventure': ['12', 'genre_adventure.png'],
 	'Animation': ['16', 'genre_animation.png'],       'Comedy': ['35', 'genre_comedy.png'],
 	'Crime': ['80', 'genre_crime.png'],               'Documentary': ['99', 'genre_documentary.png'],
 	'Drama': ['18', 'genre_drama.png'],               'Family': ['10751', 'genre_family.png'],
@@ -31,62 +35,57 @@ movie_genres, tvshow_genres, oscar_winners = {
 	'Reality': ['10764', 'genre_reality.png'],         'Sci-Fi & Fantasy': ['10765', 'genre_scifi.png'],
 	'Soap': ['10766', 'genre_soap.png'],               'Talk': ['10767', 'genre_talk.png'],
 	'War & Politics': ['10768', 'genre_war.png'],      'Western': ['37', 'genre_western.png']
-}, (
-	1054867, 1064213, 872585, 545611, 776503, 581734, 496243, 490132, 399055, 376867, 314365, 194662, 76203, 68734, 74643, 45269, 12162, 12405, 6977,
-	1422, 1640, 70, 122, 1574, 453, 98, 14, 1934, 597, 409, 197, 13, 424, 33, 274, 581, 403, 380, 746,
-	792, 606, 279, 11050, 783, 9443, 16619, 12102, 11778, 703, 1366, 510, 240, 9277, 238, 1051, 11202, 3116, 17917, 10633,
-	874, 15121, 11113, 5769, 947, 1725, 284, 665, 17281, 826, 2897, 15919, 654, 11426, 27191, 2769, 705, 25430, 23383, 33667,
-	887, 28580, 17661, 27367, 289, 43266, 223, 770, 34106, 43278, 43277, 12311, 3078, 56164, 33680, 42861, 143, 65203, 28966, 631
-)
+}
 
-meta_languages = (
-	{'name': 'Arabic Saudi Arabia', 'iso': 'ar-SA'},    {'name': 'Czech', 'iso': 'cs'},
-	{'name': 'Danish', 'iso': 'da'},                    {'name': 'German', 'iso': 'de'},
-	{'name': 'Greek', 'iso': 'el'},                     {'name': 'English', 'iso': 'en'},
-	{'name': 'Spanish', 'iso': 'es'},                   {'name': 'Spanish (Mexico)', 'iso': 'es-MX'},
-	{'name': 'Finnish', 'iso': 'fi'},                   {'name': 'French', 'iso': 'fr'},
-	{'name': 'Hebrew', 'iso': 'he'},                    {'name': 'Croatian', 'iso': 'hr'},
-	{'name': 'Hungarian', 'iso': 'hu'},                 {'name': 'Italian', 'iso': 'it'},
-	{'name': 'Japanese', 'iso': 'ja'},                  {'name': 'Korean', 'iso': 'ko'},
-	{'name': 'Dutch', 'iso': 'nl'},                     {'name': 'Norwegian', 'iso': 'no'},
-	{'name': 'Polish', 'iso': 'pl'},                    {'name': 'Portuguese', 'iso': 'pt'},
-	{'name': 'Portuguese (Brazil)', 'iso': 'pt-BR'},    {'name': 'Russian', 'iso': 'ru'},
-	{'name': 'Slovenian', 'iso': 'sl'},                 {'name': 'Swedish', 'iso': 'sv'},
-	{'name': 'Turkish', 'iso': 'tr'},                   {'name': 'Vietnamese', 'iso': 'vi'},
-	{'name': 'Chinese', 'iso': 'zh'}
-)
+movie_certifications = 'G', 'PG', 'PG-13', 'R', 'NC-17', 'NR'
+tvshow_certifications = 'tv-y', 'tv-y7', 'tv-g', 'tv-pg', 'tv-14', 'tv-ma'
+media_lists = 'tmdb%', 'trakt%', 'mdb%', 'imdb%', 'pov%', 'POV%', 'subtitles%', 'https%'
 
-languages = (
-	('Arabic', 'ar'),        ('Bosnian', 'bs'),      ('Bulgarian', 'bg'),    ('Chinese', 'zh'),
-	('Croatian', 'hr'),      ('Dutch', 'nl'),        ('English', 'en'),      ('Finnish', 'fi'),
-	('French', 'fr'),        ('German', 'de'),       ('Greek', 'el'),        ('Hebrew', 'he'),
-	('Hindi', 'hi'),         ('Hungarian', 'hu'),    ('Icelandic', 'is'),    ('Indonesian', 'id'),
-	('Italian', 'it'),       ('Japanese', 'ja'),     ('Korean', 'ko'),       ('Macedonian', 'mk'),
-	('Malay', 'ms'),         ('Norwegian', 'no'),    ('Persian', 'fa'),      ('Polish', 'pl'),
-	('Portuguese', 'pt'),    ('Punjabi', 'pa'),      ('Romanian', 'ro'),     ('Russian', 'ru'),
-	('Serbian', 'sr'),       ('Slovenian', 'sl'),    ('Spanish', 'es'),      ('Swedish', 'sv'),
-	('Thai', 'th'),          ('Turkish', 'tr'),      ('Ukrainian', 'uk'),    ('Vietnamese', 'vi'),
-)
-
-language_choices =  {
-	'None': None,            'Afrikaans': 'afr',     'Albanian': 'alb',              'Arabic': 'ara',
-	'Armenian': 'arm',       'Basque': 'baq',        'Bengali': 'ben',               'Bosnian': 'bos',
-	'Breton': 'bre',         'Bulgarian': 'bul',     'Burmese': 'bur',               'Catalan': 'cat',
-	'Chinese': 'chi',        'Croatian': 'hrv',      'Czech': 'cze',                 'Danish': 'dan',
-	'Dutch': 'dut',          'English': 'eng',       'Esperanto': 'epo',             'Estonian': 'est',
-	'Finnish': 'fin',        'French': 'fre',        'Galician': 'glg',              'Georgian': 'geo',
-	'German': 'ger',         'Greek': 'ell',         'Hebrew': 'heb',                'Hindi': 'hin',
-	'Hungarian': 'hun',      'Icelandic': 'ice',     'Indonesian': 'ind',            'Italian': 'ita',
-	'Japanese': 'jpn',       'Kazakh': 'kaz',        'Khmer': 'khm',                 'Korean': 'kor',
-	'Latvian': 'lav',        'Lithuanian': 'lit',    'Luxembourgish': 'ltz',         'Macedonian': 'mac',
-	'Malay': 'may',          'Malayalam': 'mal',     'Manipuri': 'mni',              'Mongolian': 'mon',
-	'Montenegrin': 'mne',    'Norwegian': 'nor',     'Occitan': 'oci',               'Persian': 'per',
-	'Polish': 'pol',         'Portuguese': 'por',    'Portuguese(Brazil)': 'pob',    'Romanian': 'rum',
-	'Russian': 'rus',        'Serbian': 'scc',       'Sinhalese': 'sin',             'Slovak': 'slo',
-	'Slovenian': 'slv',      'Spanish': 'spa',       'Swahili': 'swa',               'Swedish': 'swe',
-	'Syriac': 'syr',         'Tagalog': 'tgl',       'Tamil': 'tam',                 'Telugu': 'tel',
-	'Thai': 'tha',           'Turkish': 'tur',       'Ukrainian': 'ukr',             'Urdu': 'urd',
-	'Vietnamese': 'vie'
+meta_languages = {
+	'English':             {'iso': 'en', 'short': 'en', 'long': 'eng'},
+	'Arabic':              {'iso': 'ar', 'short': 'ar', 'long': 'ara'},
+	'Arabic Saudi Arabia': {'iso': 'ar-SA', 'short': '', 'long': ''},
+	'Bengali':             {'iso': 'bn', 'short': 'bn', 'long': 'ben'},
+	'Bulgarian':           {'iso': 'bg', 'short': 'bg', 'long': 'bul'},
+	'Chinese':             {'iso': 'zh', 'short': 'zh', 'long': 'chi'},
+	'Croatian':            {'iso': 'hr', 'short': 'hr', 'long': 'hrv'},
+	'Czech':               {'iso': 'cs', 'short': 'cs', 'long': 'cze'},
+	'Danish':              {'iso': 'da', 'short': 'da', 'long': 'dan'},
+	'Dutch':               {'iso': 'nl', 'short': 'nl', 'long': 'dut'},
+	'Finnish':             {'iso': 'fi', 'short': 'fi', 'long': 'fin'},
+	'French':              {'iso': 'fr', 'short': 'fr', 'long': 'fre'},
+	'German':              {'iso': 'de', 'short': 'de', 'long': 'ger'},
+	'Greek':               {'iso': 'el', 'short': 'el', 'long': 'ell'},
+	'Hebrew':              {'iso': 'he', 'short': 'he', 'long': 'heb'},
+	'Hindi':               {'iso': 'hi', 'short': 'hi', 'long': 'hin'},
+	'Hungarian':           {'iso': 'hu', 'short': 'hu', 'long': 'hun'},
+	'Icelandic':           {'iso': 'is', 'short': 'is', 'long': 'ice'},
+	'Indonesian':          {'iso': 'id', 'short': 'id', 'long': 'ind'},
+	'Italian':             {'iso': 'it', 'short': 'it', 'long': 'ita'},
+	'Japanese':            {'iso': 'ja', 'short': 'ja', 'long': 'jpn'},
+	'Korean':              {'iso': 'ko', 'short': 'ko', 'long': 'kor'},
+	'Malay':               {'iso': 'ms', 'short': 'ms', 'long': 'may'},
+	'Norwegian':           {'iso': 'no', 'short': 'no', 'long': 'nor'},
+	'Persian':             {'iso': 'fa', 'short': 'fa', 'long': 'per'},
+	'Polish':              {'iso': 'pl', 'short': 'pl', 'long': 'pol'},
+	'Portuguese':          {'iso': 'pt', 'short': 'pt', 'long': 'por'},
+	'Portuguese (Brazil)': {'iso': 'pt-BR', 'short': 'pb', 'long': 'pob'},
+	'Punjabi':             {'iso': 'pa', 'short': 'pa', 'long': 'pan'},
+	'Romanian':            {'iso': 'ro', 'short': 'ro', 'long': 'rum'},
+	'Russian':             {'iso': 'ru', 'short': 'ru', 'long': 'rus'},
+	'Serbian':             {'iso': 'sr', 'short': 'sr', 'long': 'scc'},
+	'Slovenian':           {'iso': 'sl', 'short': 'sl', 'long': 'slv'},
+	'Spanish':             {'iso': 'es', 'short': 'es', 'long': 'spa'},
+	'Spanish (Mexico)':    {'iso': 'es-MX', 'short': '', 'long': ''},
+	'Swedish':             {'iso': 'sv', 'short': 'sv', 'long': 'swe'},
+	'Tagalog':             {'iso': 'tl', 'short': 'tl', 'long': 'tgl'},
+	'Tamil':               {'iso': 'ta', 'short': 'ta', 'long': 'tam'},
+	'Telugu':              {'iso': 'te', 'short': 'te', 'long': 'tel'},
+	'Thai':                {'iso': 'th', 'short': 'th', 'long': 'tha'},
+	'Turkish':             {'iso': 'tr', 'short': 'tr', 'long': 'tur'},
+	'Ukrainian':           {'iso': 'uk', 'short': 'uk', 'long': 'ukr'},
+	'Urdu':                {'iso': 'ur', 'short': 'ur', 'long': 'urd'},
+	'Vietnamese':          {'iso': 'vi', 'short': 'vi', 'long': 'vie'}
 }
 
 regions = (

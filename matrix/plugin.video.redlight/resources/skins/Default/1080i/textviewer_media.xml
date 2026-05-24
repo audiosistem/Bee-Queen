@@ -42,7 +42,7 @@
                     <left>20</left>
                     <width>1100</width>
                     <height>690</height>
-                    <font>font14</font> <!-- redlight_33 -->
+                    <font>font14</font> <!-- REDLIGHT_33 -->
                     <align>center</align>
                     <aligny>center</aligny>
                     <textcolor>FFCCCCCC</textcolor>

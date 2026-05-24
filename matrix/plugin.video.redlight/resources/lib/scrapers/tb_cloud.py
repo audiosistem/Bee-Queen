@@ -23,6 +23,7 @@ class source:
 			self.folder_query = source_utils.clean_title(normalize(title))
 			self._scrape_cloud()
 			self._scrape_cloud_usenet()
+			self._scrape_cloud_webdl()
 			if not self.scrape_results: return source_utils.internal_results(self.scrape_provider, self.sources)
 			self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
 			def _process():
@@ -78,6 +79,29 @@ class source:
 				if not self.folder_query in source_utils.clean_title(normalize(item['name'])): continue
 				folder_id = item['id']
 				for file in item['files']:
+					if not file['short_name'].endswith(tuple(self.extensions)): continue
+					normalized = normalize(file['short_name'])
+					folder_name = source_utils.clean_title(normalized)
+					if self.media_type == 'movie':
+						if not any(x in normalized for x in year_query_list): continue
+					elif not source_utils.seas_ep_filter(self.season, self.episode, normalized): continue
+					file['folder_id'] = folder_id
+					file['direct_debrid_link'] = True
+					append(file)
+		except: return
+
+	def _scrape_cloud_webdl(self):
+		try:
+			append = self.scrape_results.append
+			year_query_list = self._year_query_list()
+			try: my_cloud_files_webdl = TorBox.user_cloud_webdl()
+			except: return self.sources
+			if not my_cloud_files_webdl: return
+			for item in my_cloud_files_webdl.get('data') or []:
+				if not item.get('download_finished'): continue
+				if not self.folder_query in source_utils.clean_title(normalize(item['name'])): continue
+				folder_id = item['id']
+				for file in item.get('files') or []:
 					if not file['short_name'].endswith(tuple(self.extensions)): continue
 					normalized = normalize(file['short_name'])
 					folder_name = source_utils.clean_title(normalized)

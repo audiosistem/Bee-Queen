@@ -1,7 +1,7 @@
 
 Discover is a feature that allows you to make custom lists using the filter values you provide. Only the filters you wish to use need to be assigned a value, the rest can be left blank. Once you've set your desired filters, select 'Save & Exit'.
 
-Your lists can be viewed by selecting them in the Discovery sections, and can also be added to any main Fen lists by using the Edit Main Menus feature.
+Your lists can be viewed by selecting them in the Discovery sections, and can also be added to any main Red Light lists by using the Edit Main Menus feature.
 
 There are many different lists you could make using different filters, below is an example:
 

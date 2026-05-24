@@ -382,12 +382,14 @@ class Sources:
 		return quality_ranks[quality]
 
 	def _sort_language_to_top(self, results):
-		from xbmc import convertLanguage as cl, ISO_639_1, ISO_639_2
+		from modules.meta_lists import meta_languages
 		try:
-			language = self.priority_language, cl(self.priority_language, ISO_639_2), cl(self.priority_language, ISO_639_1)
-			if self.priority_language == 'Spanish': language += 'latino', 'lat', 'esp'
-			pattern = r'\b(%s)\b' % '|'.join(i for i in language if i)
-			sort_first = [i for i in results if re.search(pattern, i.get('name_info', ''), re.I)]
+			tokens = meta_languages[self.priority_language].values()
+			tokens = [re.sub(r'\W', '', self.priority_language), *tokens]
+			if 'Spanish' in self.priority_language: tokens += 'latino', 'lat', 'esp'
+			if 'Brazil' in self.priority_language: tokens += 'portuguese', 'por', 'pt'
+			pattern = re.compile(r'\b(%s)\b' % '|'.join(i for i in tokens if i), re.I)
+			sort_first = [i for i in results if pattern.search(i.get('name_info', ''))]
 			sort_last = [i for i in results if i not in sort_first]
 			results = sort_first + sort_last
 		except: pass
@@ -625,7 +627,8 @@ class Manager:
 						line2 = diag_format % tuple(ext_totals)
 					if len_alive_threads > 5: line3 = string1 % str(len_threads-len_alive_threads)
 					else: line3 = string1 % ', '.join(alive_threads).upper()
-					if self.progress_dialog: self.progress_dialog.update(format_line % (line1, line2, line3), progress)
+					if self.progress_dialog:
+						self.progress_dialog.update(format_line % (line1, line2, line3), progress)
 					else: progressDialogBG.update(progress, line3)
 				except: pass
 			sleep(self.sleep_time)

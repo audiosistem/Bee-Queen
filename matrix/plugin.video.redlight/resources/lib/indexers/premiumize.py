@@ -102,7 +102,7 @@ def pm_transfers():
 	kodi_utils.set_view_mode('view.premium')
 
 def pm_rename(file_type, file_id, current_name):
-	new_name = kodi_utils.kodi_dialog().input('Fen', defaultt=current_name)
+	new_name = kodi_utils.kodi_dialog().input('RedLight', defaultt=current_name)
 	if not new_name: return
 	result = Premiumize.rename_cache_item(file_type, file_id, new_name)
 	if result == 'success':

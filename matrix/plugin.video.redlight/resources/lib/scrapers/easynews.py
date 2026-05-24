@@ -2,7 +2,7 @@
 from apis.easynews_api import EasyNews
 from modules import source_utils
 from modules.utils import clean_file_name, normalize
-from modules.settings import filter_by_name, easynews_language_filter
+from modules.settings import filter_by_name, easynews_language_filter, easynews_lang_include_unknown, easynews_fallback_search, easynews_search_width
 # from modules.kodi_utils import logger
 
 class source:
@@ -13,12 +13,16 @@ class source:
 	def results(self, info):
 		try:
 			filter_lang, lang_filters = easynews_language_filter()
+			include_unknown = easynews_lang_include_unknown()
 			filter_title = filter_by_name('easynews')
 			self.media_type, title, self.year, self.season, self.episode = info.get('media_type'), info.get('title'), int(info.get('year')), info.get('season'), info.get('episode')
 			self.search_title = clean_file_name(title).replace('&', 'and')
-			files = EasyNews.search(self._search_name(), info.get('expiry_times')[0])
-			if not files: return source_utils.internal_results(self.scrape_provider, self.sources)
 			self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
+			expiry = info.get('expiry_times')[0]
+			primary = self._search_name()
+			files = self._merge_searches(self._search_queries(), expiry)
+			if not files and easynews_fallback_search(): files = self._merge_searches(self._fallback_search_queries(primary), expiry, files)
+			if not files: return source_utils.internal_results(self.scrape_provider, self.sources)
 			extras = source_utils.extras()
 			def _process():
 				for item in files:
@@ -27,7 +31,7 @@ class source:
 						file_name = normalize(item['name'])
 						if any(x in file_name.lower() for x in extras): continue
 						if filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, self.season, self.episode): continue
-						if filter_lang and not any(i in lang_filters for i in item['language']) : continue
+						if filter_lang and not self._language_ok(item['language'], lang_filters, include_unknown): continue
 						display_name = clean_file_name(file_name).replace('html', ' ').replace('+', ' ').replace('-', ' ')
 						url_dl, size = item['url_dl'], round(float(int(item['rawSize']))/1073741824, 2)
 						video_quality, details = source_utils.get_file_info(name_info=source_utils.release_info_format(file_name),
@@ -45,6 +49,64 @@ class source:
 			logger('easynews scraper Exception', str(e))
 		source_utils.internal_results(self.scrape_provider, self.sources)
 		return self.sources
+
+	def _language_ok(self, language, lang_filters, include_unknown):
+		if not language: return include_unknown
+		if isinstance(language, (list, tuple)): parts = [str(i).lower() for i in language]
+		else: parts = [str(language).lower()]
+		return any(p in lang_filters for p in parts)
+
+	def _merge_searches(self, queries, expiry, files=None):
+		if files is None: files = []
+		seen = {i.get('url_dl') for i in files if i.get('url_dl')}
+		for query in queries:
+			for item in EasyNews.search(query, expiry) or []:
+				url = item.get('url_dl')
+				if url and url not in seen:
+					seen.add(url)
+					files.append(item)
+		return files
+
+	def _add_query(self, queries, seen, query):
+		if query and query not in seen:
+			seen.add(query)
+			queries.append(query)
+
+	def _search_queries(self):
+		primary = self._search_name()
+		seen = {primary}
+		queries = [primary]
+		width = easynews_search_width()
+		if width >= 1:
+			if self.media_type == 'movie': self._add_query(queries, seen, self.search_title)
+			else: self._add_query(queries, seen, '%s S%02d' % (self.search_title, self.season))
+		if width >= 2:
+			if self.media_type != 'movie': self._add_query(queries, seen, self.search_title)
+			for alias in self.aliases:
+				name = clean_file_name(alias).replace('&', 'and')
+				if name == self.search_title: continue
+				if self.media_type == 'movie':
+					self._add_query(queries, seen, '%s %d' % (name, self.year))
+					self._add_query(queries, seen, name)
+				else:
+					self._add_query(queries, seen, '%s S%02dE%02d' % (name, self.season, self.episode))
+					self._add_query(queries, seen, '%s S%02d' % (name, self.season))
+		return queries
+
+	def _fallback_search_queries(self, primary):
+		queries = []
+		seen = {primary}
+		for query in self._search_queries():
+			seen.add(query)
+		for alias in self.aliases:
+			name = clean_file_name(alias).replace('&', 'and')
+			if name == self.search_title: continue
+			if self.media_type == 'movie':
+				self._add_query(queries, seen, '%s %d' % (name, self.year))
+			else:
+				self._add_query(queries, seen, '%s S%02dE%02d' % (name, self.season, self.episode))
+				self._add_query(queries, seen, '%s S%02d' % (name, self.season))
+		return queries
 
 	def _quality_estimate(self, width):
 		if width > 1920: return '4K'

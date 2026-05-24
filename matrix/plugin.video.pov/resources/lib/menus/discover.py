@@ -218,7 +218,7 @@ class Discover:
 	def language(self):
 		key = 'language'
 		if self._action(key) in ('clear', None): return
-		languages_list = meta_lists.languages
+		languages_list = [(k, v['iso']) for k, v in meta_lists.meta_languages.items()]
 		language = self._selection_dialog([i[0] for i in languages_list], languages_list, heading_base % ls(32658))
 		if language is not None:
 			values = ('&with_original_language=%s' % str(language[1]), str(language[1]).upper())

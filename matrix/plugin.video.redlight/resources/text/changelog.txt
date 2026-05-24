@@ -1,13 +1,62 @@
-[COLOR red][B]*** Fork of FenLightAM ***[/B][/COLOR]
+[COLOR red][B]*** Fork of FenLight ***[/B][/COLOR]
 
 * We will not revoke our Trakt or TMDb keys
 * We will not block any third party apps or skins
 * No politics
 * NO DRAMA!
 
+[COLOR red][B]Version 1.1.2[/B][/COLOR]
+- Trakt: Collection, Watchlist, Personal/Liked lists, List items, Favorites, Watched History, and related calls now paginate (250 items per request) so lists above the old 1,000 cap will load in full. Ready for Trakt's lower per-page API limits.
+- After updating from a previous version, run [B]Tools > Database & Cache Maintenance > Clear Trakt Cache[/B]. Otherwise cached lists may still show the old 1,000 item limit until the cache expires.
+
+[COLOR red][B]Version 1.1.1[/B][/COLOR]
+- EasyNews: Search Width (Focused / Balanced / Broad) to run wider Solr queries; optional refresh credentials, include unknown-language results when filtering, and fallback alias/season searches when the primary query returns nothing.
+- EasyNews: clarified Filter Results by Name help text in Settings Manager.
+- Trakt, Personal and TMDb Lists: Removing an item that is not in the list dialog standardised and now shows "Item not in list", not Failed or Error Removing from List.
+- FenLightAM TMDb Lists bugs fixed.
+
+[COLOR red][B]Version 1.1.0[/B][/COLOR]
+- A small fix.
+
+[COLOR red][B]Version 1.0.9[/B][/COLOR]
+- Fixed online icons not loading on update. Please restart Kodi, python keeps old code in memory on a simple update.
+
+[COLOR red][B]Version 1.0.8[/B][/COLOR]
+- Menu and UI icons (flags, posters, etc.) load from GitHub (slimmer plugin). Addon icon and fanart remain bundled in the addon.
+- Backing out of Trakt or TMDb authorisations no longer show a failure message (same as Debrid services). Real errors still notify.
+
+[COLOR red][B]Version 1.0.7[/B][/COLOR]
+- Torbox authorisation now a QR code or auto copy/paste into browser (on same device), instead of an API.
+- Fixed Real Debrid copy/paste into browser, this was broken in FenLightAM. Clipboard copy now uses stdin instead of shell echo.
+- Now using unique QR image filenames to avoid stale/cached QR codes.
+- TinyURL now uses HTTPS and validates response.
+- Backing out of Debrid authorisations no longer show a failure message. Real errors still notify.
+- Wording in the Debrid authorisation dialogs rewritten and consistent, tailored to what each service supports.
+
+[COLOR red][B]Version 1.0.6[/B][/COLOR]
+- Fixed Torbox Cloud Storage files not playing. This was broken in FenLightAM.
+- Added "Send URL to WebDL" to My Services > Torbox.
+- Default Red Light fanart changed from local to special path.
+
+[COLOR red][B]Version 1.0.5[/B][/COLOR]
+- A few small fixes.
+
+[COLOR red][B]Version 1.0.4[/B][/COLOR]
+- Fixed Open External Scraper Settings.
+
+[COLOR red][B]Version 1.0.3[/B][/COLOR]
+- Fixed Torbox Cloud Storage (manually added web-links).
+- Fixed database error on first run.
+
+[COLOR red][B]Version 1.0.2[/B][/COLOR]
+- Fixed external playback error. Apologies, an oversight.
+
+[COLOR red][B]Version 1.0.1[/B][/COLOR]
+- Fixed Trakt list contents not appearing from Trakt list search. Clear Trakt cache if you experienced this issue.
+
 [COLOR red][B]Version 1.0.0[/B][/COLOR]
-- Redundant options removed from Tools and Settings menus
-- Code cleaned up
+- Redundant options removed from Tools and Settings menus.
+- Code cleaned up.
 
 [COLOR red][B]Version 0.0.1[/B][/COLOR]
-- Initial release
+- Initial release.

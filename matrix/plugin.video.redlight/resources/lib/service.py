@@ -56,6 +56,11 @@ class OnUpdateChanges:
 		except: pass
 		return kodi_utils.logger('Red Light', 'OnUpdateChanges Service Finished')
 
+	def fix_media_github_username(self):
+		stored = get_setting('redlight.update.username', '')
+		if stored.replace('-', '').lower() == 'theredwizard' and stored != 'The-Red-Wizard':
+			set_setting('update.username', 'The-Red-Wizard')
+
 class CustomWindowsPrepare:
 	def run(self):
 		kodi_utils.logger('Red Light', 'CustomWindowsPrepare Service Starting')
@@ -216,7 +221,7 @@ class AddonXMLCheck:
 		from indexers.dialogs import addon_icon_choice
 		addon_icon_choice({'set_icon': get_setting('addon_icon_choice_name', 'icon.png')})
 
-class redlightMonitor(Monitor):
+class RedLightMonitor(Monitor):
 	def __init__ (self):
 		Monitor.__init__(self)
 		self.startServices()
@@ -248,5 +253,5 @@ class redlightMonitor(Monitor):
 			kodi_utils.logger('OnNotificationActions', 'UNPAUSING Red Light Services Due to Device Awake')
 
 kodi_utils.logger('Red Light', 'Main Monitor Service Starting')
-redlightMonitor().waitForAbort()
+RedLightMonitor().waitForAbort()
 kodi_utils.logger('Red Light', 'Main Monitor Service Finished')

@@ -33,10 +33,8 @@ class Navigator:
 					('[B]Reload Menu[/B]', self.run_plugin % self.build_url({'mode': 'menu_editor.reload', 'active_list': self.list_name, 'position': count})),
 					('[B]Browse Removed items[/B]', self.run_plugin % self.build_url({'mode': 'menu_editor.browse', 'active_list': self.list_name, 'position': count})),
 					('[B]Add to Shortcut Folder[/B]', self.run_plugin % self.build_url({'mode': 'menu_editor.shortcut_folder_add_known', 'url': url}))]
-					icon = item.get('iconImage', '')
-					if not icon.startswith('http'):
-						icon = self.get_icon(icon)
-						item['iconImage'] = icon
+					icon = k.resolve_list_icon(item.get('iconImage', ''))
+					item['iconImage'] = icon
 					listitem = self.make_listitem()
 					listitem.setLabel(item.get('name', ''))
 					listitem.setArt({'icon': icon, 'poster': icon, 'thumb': icon, 'fanart': self.fanart, 'banner': icon, 'landscape': icon})
@@ -91,6 +89,7 @@ class Navigator:
 
 	def torbox(self):
 		self.add({'mode': 'torbox.tb_cloud'}, 'Cloud Storage', 'torbox')
+		self.add({'mode': 'torbox.send_webdl', 'isFolder': 'false'}, 'Send URL to WebDL', 'torbox')
 		self.add({'mode': 'torbox.tb_account_info', 'isFolder': 'false'}, 'Account Info', 'torbox')
 		self.end_directory()
 
@@ -464,10 +463,11 @@ class Navigator:
 			for count, item in enumerate(contents):
 				item_get = item.get
 				iconImage = item_get('iconImage', None)
-				icon = iconImage
 				if iconImage:
-					if iconImage.startswith('http') or 'plugin.video.redlight' in iconImage: original_image = True
-					else: original_image = False
+					if iconImage.startswith('http') and 'raw.githubusercontent.com' not in iconImage:
+						icon, original_image = iconImage, True
+					else:
+						icon, original_image = k.resolve_list_icon(iconImage), False
 				else: icon, original_image = folder_icon, False
 				cm_items = [
 				('[B]Move[/B]', self.run_plugin % self.build_url({'mode': 'menu_editor.shortcut_folder_edit', 'active_list': list_name, 'position': count, 'action': 'move'})),
@@ -570,7 +570,7 @@ class Navigator:
 		isFolder = url_params.get('isFolder', 'true') == 'true'
 		try:
 			if original_image: icon = iconImage
-			else: icon = self.get_icon(iconImage)
+			else: icon = k.resolve_list_icon(iconImage)
 		except: pass
 		url_params['iconImage'] = icon
 		url = self.build_url(url_params)

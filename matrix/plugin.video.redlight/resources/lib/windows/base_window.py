@@ -286,7 +286,7 @@ class FontUtils:
 		return False
 
 	def match_font(self, size, bold, fallback):
-		font_tag = 'redlight_%s%s' % (size, '_BOLD' if bold else '')
+		font_tag = 'REDLIGHT_%s%s' % (size, '_BOLD' if bold else '')
 		size_range = range(int(size * 0.75), int(size * 1.25))
 		compatibility_range = range(int(size * 0.50), int(size * 1.50))
 		compatibility_fonts = [i['name'] for i in self.skin_font_info if i['name'] == fallback and i['size'] in compatibility_range]
@@ -423,7 +423,7 @@ class ExtrasUtils:
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- redlight_33 -->
+				            <font>font14</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>{heading_label}</label>
 				            <visible>!Control.HasFocus({container_no})</visible>
@@ -431,7 +431,7 @@ class ExtrasUtils:
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- redlight_33 -->
+				            <font>font14</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>{highlight_label}</label>
 				            <visible>Control.HasFocus({container_no})</visible>
@@ -526,7 +526,7 @@ class ExtrasUtils:
 				        <control type="label">
 				            <width max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- redlight_33 -->
+				            <font>font14</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <align>left</align>
 				            <aligny>bottom</aligny>
@@ -552,7 +552,7 @@ class ExtrasUtils:
 				                    <left>20</left>
 				                    <width>540</width>
 				                    <height>308</height>
-				                    <font>font12</font> <!-- redlight_26 -->
+				                    <font>font12</font> <!-- REDLIGHT_26 -->
 				                    <align>center</align>
 				                    <aligny>top</aligny>
 				                    <textcolor>FFCCCCCC</textcolor>
@@ -571,7 +571,7 @@ class ExtrasUtils:
 				                    <left>20</left>
 				                    <width>540</width>
 				                    <height>308</height>
-				                    <font>font12</font> <!-- redlight_26 -->
+				                    <font>font12</font> <!-- REDLIGHT_26 -->
 				                    <align>center</align>
 				                    <aligny>top</aligny>
 				                    <textcolor>FF1F2020</textcolor>
@@ -622,7 +622,7 @@ class ExtrasUtils:
                         <control type="label">
                             <width max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- redlight_33 -->
+                            <font>font14</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <align>left</align>
                             <aligny>bottom</aligny>
@@ -642,7 +642,7 @@ class ExtrasUtils:
                             <left>15</left>
                             <width>1150</width>
                             <height>340</height>
-                            <font>font13</font> <!-- redlight_30 -->
+                            <font>font13</font> <!-- REDLIGHT_30 -->
                             <align>center</align>
                             <aligny>center</aligny>
                             <textcolor>FFCCCCCC</textcolor>
@@ -655,7 +655,7 @@ class ExtrasUtils:
                             <left>15</left>
                             <width>1150</width>
                             <height>340</height>
-                            <font>font13</font> <!-- redlight_30 -->
+                            <font>font13</font> <!-- REDLIGHT_30 -->
                             <align>center</align>
                             <aligny>center</aligny>
                             <textcolor>FF1F2020</textcolor>
@@ -702,7 +702,7 @@ class ExtrasUtils:
                         <left>1590</left>
                         <width max="300">auto</width>
                         <height>20</height>
-                        <font>font37</font> <!-- redlight_38 -->
+                        <font>font37</font> <!-- REDLIGHT_38 -->
                         <textcolor>FFCCCCCC</textcolor>
                         <align>right</align>
                         <aligny>center</aligny>
@@ -713,7 +713,7 @@ class ExtrasUtils:
                         <left>1540</left>
                         <width max="350">auto</width>
                         <height>20</height>
-                        <font>font10</font> <!-- redlight_21 -->
+                        <font>font10</font> <!-- REDLIGHT_21 -->
                         <textcolor>FFCCCCCC</textcolor>
                         <align>right</align>
                         <aligny>center</aligny>
@@ -735,7 +735,7 @@ class ExtrasUtils:
                     <control type="label">
                         <width max="600">auto</width>
                         <height>20</height>
-                        <font>font10</font> <!-- redlight_21 -->
+                        <font>font10</font> <!-- REDLIGHT_21 -->
                         <textcolor>FFCCCCCC</textcolor>
                         <align>right</align>
                         <aligny>bottom</aligny>
@@ -768,7 +768,7 @@ class ExtrasUtils:
                         <left>70</left>
                         <width max="1130">auto</width>
                         <height>30</height>
-                        <font>font60</font> <!-- redlight_60_BOLD -->
+                        <font>font60</font> <!-- REDLIGHT_60_BOLD -->
                         <textcolor>FFCCCCCC</textcolor>
                         <align>center</align>
                         <aligny>bottom</aligny>
@@ -786,7 +786,7 @@ class ExtrasUtils:
                     <control type="label">
                         <width max="1150">auto</width>
                         <height>25</height>
-                        <font>font14</font> <!-- redlight_33 -->
+                        <font>font14</font> <!-- REDLIGHT_33 -->
                         <textcolor>FFCCCCCC</textcolor>
                         <align>center</align>
                         <label>[I]$INFO[Window.Property(genre)][/I]</label>
@@ -807,7 +807,7 @@ class ExtrasUtils:
                         <control type="label" id="2001">
                             <width max="1026">auto</width>
                             <height>32</height>
-                            <font>font13</font> <!-- redlight_30 -->
+                            <font>font13</font> <!-- REDLIGHT_30 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <align>left</align>
                         </control>
@@ -816,7 +816,7 @@ class ExtrasUtils:
                         <top>105</top>
                         <width max="1150">auto</width>
                         <height>25</height>
-                        <font>font14</font> <!-- redlight_33 -->
+                        <font>font14</font> <!-- REDLIGHT_33 -->
                         <textcolor>FFCCCCCC</textcolor>
                         <align>center</align>
                     </control>
@@ -842,7 +842,7 @@ class ExtrasUtils:
                             <control type="label" id="4001">
                                 <width max="75">auto</width>
                                 <height>32</height>
-                                <font>font13</font> <!-- redlight_30 -->
+                                <font>font13</font> <!-- REDLIGHT_30 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
@@ -864,7 +864,7 @@ class ExtrasUtils:
                             <control type="label" id="4002">
                                 <width max="75">auto</width>
                                 <height>32</height>
-                                <font>font13</font> <!-- redlight_30 -->
+                                <font>font13</font> <!-- REDLIGHT_30 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
@@ -886,7 +886,7 @@ class ExtrasUtils:
                             <control type="label" id="4003">
                                 <width max="75">auto</width>
                                 <height>32</height>
-                                <font>font13</font> <!-- redlight_30 -->
+                                <font>font13</font> <!-- REDLIGHT_30 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
@@ -908,7 +908,7 @@ class ExtrasUtils:
                             <control type="label" id="4004">
                                 <width max="75">auto</width>
                                 <height>32</height>
-                                <font>font13</font> <!-- redlight_30 -->
+                                <font>font13</font> <!-- REDLIGHT_30 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
@@ -930,7 +930,7 @@ class ExtrasUtils:
                             <control type="label" id="4005">
                                 <width max="75">auto</width>
                                 <height>32</height>
-                                <font>font13</font> <!-- redlight_30 -->
+                                <font>font13</font> <!-- REDLIGHT_30 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
@@ -960,7 +960,7 @@ class ExtrasUtils:
                             <onup>{last_container}</onup>
                             <ondown>14</ondown>
                             <label>$INFO[Window.Property(button10.label)]</label>
-                            <font>font13</font> <!-- redlight_30 -->
+                            <font>font13</font> <!-- REDLIGHT_30 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <focusedcolor>FF1F2020</focusedcolor>
                             <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -977,7 +977,7 @@ class ExtrasUtils:
                             <onup>{last_container}</onup>
                             <ondown>15</ondown>
                             <label>$INFO[Window.Property(button11.label)]</label>
-                            <font>font13</font> <!-- redlight_30 -->
+                            <font>font13</font> <!-- REDLIGHT_30 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <focusedcolor>FF1F2020</focusedcolor>
                             <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -994,7 +994,7 @@ class ExtrasUtils:
                             <onup>{last_container}</onup>
                             <ondown>16</ondown>
                             <label>$INFO[Window.Property(button12.label)]</label>
-                            <font>font13</font> <!-- redlight_30 -->
+                            <font>font13</font> <!-- REDLIGHT_30 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <focusedcolor>FF1F2020</focusedcolor>
                             <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -1011,7 +1011,7 @@ class ExtrasUtils:
                             <onup>{last_container}</onup>
                             <ondown>17</ondown>
                             <label>$INFO[Window.Property(button13.label)]</label>
-                            <font>font13</font> <!-- redlight_30 -->
+                            <font>font13</font> <!-- REDLIGHT_30 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <focusedcolor>FF1F2020</focusedcolor>
                             <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -1030,7 +1030,7 @@ class ExtrasUtils:
                             <onup>10</onup>
                             <ondown>{first_container}</ondown>
                             <label>$INFO[Window.Property(button14.label)]</label>
-                            <font>font13</font> <!-- redlight_30 -->
+                            <font>font13</font> <!-- REDLIGHT_30 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <focusedcolor>FF1F2020</focusedcolor>
                             <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -1047,7 +1047,7 @@ class ExtrasUtils:
                             <onup>11</onup>
                             <ondown>{first_container}</ondown>
                             <label>$INFO[Window.Property(button15.label)]</label>
-                            <font>font13</font> <!-- redlight_30 -->
+                            <font>font13</font> <!-- REDLIGHT_30 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <focusedcolor>FF1F2020</focusedcolor>
                             <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -1063,7 +1063,7 @@ class ExtrasUtils:
                             <onup>12</onup>
                             <ondown>{first_container}</ondown>
                             <label>$INFO[Window.Property(button16.label)]</label>
-                            <font>font13</font> <!-- redlight_30 -->
+                            <font>font13</font> <!-- REDLIGHT_30 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <focusedcolor>FF1F2020</focusedcolor>
                             <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -1080,7 +1080,7 @@ class ExtrasUtils:
                             <onright>14</onright>
                             <ondown>{first_container}</ondown>
                             <label>$INFO[Window.Property(button17.label)]</label>
-                            <font>font13</font> <!-- redlight_30 -->
+                            <font>font13</font> <!-- REDLIGHT_30 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <focusedcolor>FF1F2020</focusedcolor>
                             <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -1111,7 +1111,7 @@ class ExtrasUtils:
                         <control type="label">
                             <width min="30" max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- redlight_33 -->
+                            <font>font14</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <label>[B]$INFO[Window.Property(more_from_collection.name)] $INFO[Window.Property(more_from_collection.number)][/B]</label>
                             <visible>!Control.HasFocus({container_no})</visible>
@@ -1119,7 +1119,7 @@ class ExtrasUtils:
                         <control type="label">
                             <width min="30" max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- redlight_33 -->
+                            <font>font14</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <label>[B]$INFO[Window.Property(more_from_collection.name)] | [/B]$INFO[ListItem.Property(name)]$INFO[ListItem.Property(release_date), • ]$INFO[ListItem.Property(vote_average), • ]</label>
                             <visible>Control.HasFocus({container_no})</visible>
@@ -1151,7 +1151,7 @@ class ExtrasUtils:
                                 <top>6</top>
                                 <width>218</width>
                                 <height>348</height>
-                                <font>font12</font> <!-- redlight_26 -->
+                                <font>font12</font> <!-- REDLIGHT_26 -->
                                 <align>center</align>
                                 <aligny>center</aligny>
                                 <textcolor>FFCCCCCC</textcolor>
@@ -1248,7 +1248,7 @@ class ExtrasUtils:
                         <control type="label">
                             <width min="30" max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- redlight_33 -->
+                            <font>font14</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <label>{heading_label}</label>
                             <visible>!Control.HasFocus({container_no})</visible>
@@ -1256,7 +1256,7 @@ class ExtrasUtils:
                         <control type="label">
                             <width min="30" max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- redlight_33 -->
+                            <font>font14</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <label>{highlight_label}</label>
                             <visible>Control.HasFocus({container_no})</visible>
@@ -1350,7 +1350,7 @@ class ExtrasUtils:
                         <control type="label">
                             <width max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- redlight_33 -->
+                            <font>font14</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <align>left</align>
                             <aligny>bottom</aligny>
@@ -1390,7 +1390,7 @@ class ExtrasUtils:
                                     <top>10</top>
                                     <width>220</width>
                                     <height>340</height>
-                                    <font>font12</font> <!-- redlight_26 -->
+                                    <font>font12</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>center</aligny>
                                     <textcolor>FFCCCCCC</textcolor>
@@ -1435,7 +1435,7 @@ class ExtrasUtils:
                                     <top>10</top>
                                     <width>220</width>
                                     <height>340</height>
-                                    <font>font12</font> <!-- redlight_26 -->
+                                    <font>font12</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>center</aligny>
                                     <textcolor>FF1F2020</textcolor>
@@ -1448,7 +1448,7 @@ class ExtrasUtils:
                                     <top>10</top>
                                     <width>220</width>
                                     <height>340</height>
-                                    <font>font12</font> <!-- redlight_26 -->
+                                    <font>font12</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>center</aligny>
                                     <textcolor>FFCCCCCC</textcolor>
@@ -1509,7 +1509,7 @@ class ExtrasUtils:
                         <control type="label">
                             <width max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- redlight_33 -->
+                            <font>font14</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <align>left</align>
                             <aligny>bottom</aligny>
@@ -1542,7 +1542,7 @@ class ExtrasUtils:
                                     <top>6</top>
                                     <width>224</width>
                                     <height>75</height>
-                                    <font>font12</font> <!-- redlight_26 -->
+                                    <font>font12</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>center</aligny>
                                     <textcolor>FFCCCCCC</textcolor>
@@ -1554,7 +1554,7 @@ class ExtrasUtils:
                                     <top>280</top>
                                     <width>224</width>
                                     <height>75</height>
-                                    <font>font12</font> <!-- redlight_26 -->
+                                    <font>font12</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>center</aligny>
                                     <textcolor>FFCCCCCC</textcolor>
@@ -1581,7 +1581,7 @@ class ExtrasUtils:
                                     <top>6</top>
                                     <width>224</width>
                                     <height>75</height>
-                                    <font>font12</font> <!-- redlight_26 -->
+                                    <font>font12</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>center</aligny>
                                     <textcolor>FF1F2020</textcolor>
@@ -1593,7 +1593,7 @@ class ExtrasUtils:
                                     <top>280</top>
                                     <width>224</width>
                                     <height>75</height>
-                                    <font>font12</font> <!-- redlight_26 -->
+                                    <font>font12</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>center</aligny>
                                     <textcolor>FF1F2020</textcolor>

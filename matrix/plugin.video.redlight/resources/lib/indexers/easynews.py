@@ -66,8 +66,8 @@ def resolve_easynews(params):
 	use_non_seekable = easynews_playback_method(query)
 	resolved_link = EasyNews.resolve_easynews(params['url_dl'], use_non_seekable)
 	if not direct_play: return resolved_link
-	from modules.player import redlightPlayer
-	redlightPlayer().run(resolved_link, 'video')
+	from modules.player import RedLightPlayer
+	RedLightPlayer().run(resolved_link, 'video')
 
 def account_info(params):
 	try:

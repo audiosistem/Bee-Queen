@@ -234,26 +234,50 @@ def tmdb_image_maker(list_name, list_id, image_type, custom_image, shuffle_sort_
 	kodi_utils.hide_busy_dialog()
 	return final_image
 
+def _tmdb_media_type(media_type):
+	if media_type in ('movie', 'movies'): return 'movie'
+	return 'tv'
+
+def _tmdb_list_remove_succeeded(data):
+	if not data: return False
+	results = data.get('results')
+	if isinstance(results, list):
+		if not results: return False
+		return any(isinstance(i, dict) and i.get('success') for i in results)
+	return bool(data.get('success'))
+
 def add_remove_watchfavs(media_type, media_id, list_type, status):
+	media_type = _tmdb_media_type(media_type)
 	data = tmdb_list_api.add_remove_from_watchfavs(media_type, media_id, list_type, status)
-	if not data.get('success'):
-		kodi_utils.notification('Error Adding to List')
+	if not data or not data.get('success'):
+		if not status: kodi_utils.notification(kodi_utils.LIST_ITEM_NOT_IN_LIST, 3000)
+		else: kodi_utils.notification('Error Adding to List', 3000)
 		return False
 	return True
 
 def add_to_tmdb_list(list_id, items):
 	data = tmdb_list_api.add_remove_from_list(list_id, items, 'post')
-	if not data.get('success'):
+	if not data or not data.get('success'):
 		kodi_utils.notification('Error Adding to List')
 		return False
 	return True
 
 def remove_from_tmdb_list(list_id, items):
-	data = tmdb_list_api.add_remove_from_list(list_id, items, 'delete')
-	if not data.get('success'):
-		kodi_utils.notification('Error Removing from List')
+	try:
+		payload = {'items': []}
+		for item in items.get('items', []):
+			if not isinstance(item, dict): continue
+			payload['items'].append({'media_type': _tmdb_media_type(item.get('media_type', '')), 'media_id': int(item.get('media_id'))})
+		if not payload['items']: raise ValueError('no_items')
+		data = tmdb_list_api.add_remove_from_list(list_id, payload, 'delete')
+		if not _tmdb_list_remove_succeeded(data):
+			kodi_utils.notification(kodi_utils.LIST_ITEM_NOT_IN_LIST, 3000, settle_ms=300)
+			return False
+		kodi_utils.notification('Success', 3000, settle_ms=300)
+		return True
+	except:
+		kodi_utils.notification(kodi_utils.LIST_ITEM_NOT_IN_LIST, 3000, settle_ms=300)
 		return False
-	return True
 
 def rename_tmdb_list(current_name, list_id):
 	list_name = kodi_utils.kodi_dialog().input('Please Choose a Name for the New List', defaultt=current_name)
@@ -270,11 +294,17 @@ def sort_order_tmdb_list():
 	return sort_order
 
 def check_item_status(list_id, media_type, media_id):
-	item_status = tmdb_list_api.item_status(list_id, media_type, media_id)
-	return item_status['success']
+	try:
+		item_status = tmdb_list_api.item_status(list_id, _tmdb_media_type(media_type), media_id)
+		return item_status.get('success', False) if item_status else False
+	except: return False
 
 def check_item_status_watchfav(list_id, media_type, media_id):
-	return int(media_id) in [i['id'] for i in tmdb_list_api.get_watchfavrecs_list_details(list_id, media_type)]
+	try:
+		media_type = _tmdb_media_type(media_type)
+		items = tmdb_list_api.get_watchfavrecs_list_details(list_id, media_type) or []
+		return int(media_id) in [i['id'] for i in items]
+	except: return False
 
 def make_new_tmdb_list(params):
 	suggested_list_name, chosen_list = '', None
@@ -321,7 +351,7 @@ def clear_tmdb_list(list_name, list_id):
 	return True
 
 def get_all_tmdb_lists(sort_order=None):
-	contents = tmdb_list_api.get_user_lists()
+	contents = tmdb_list_api.get_user_lists() or []
 	try:
 		if sort_order:
 			if sort_order in ('', '0', 'None'):

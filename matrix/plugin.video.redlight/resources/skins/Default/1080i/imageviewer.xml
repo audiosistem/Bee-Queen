@@ -74,7 +74,7 @@
                     <top>25</top>
                     <width>1770</width>
                     <height>20</height>
-                    <font>font10</font> <!-- redlight_21 -->
+                    <font>font10</font> <!-- REDLIGHT_21 -->
                     <textcolor>FFFFFFFF</textcolor>
                     <align>left</align>
                     <aligny>center</aligny>

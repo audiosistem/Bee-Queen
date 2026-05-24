@@ -1,6 +1,10 @@
   removal pending: download, tmdblist
 
   [COLOR dodgerblue][B]Version 6.05[/B][/COLOR]
+- Changed subtitles provider to SubMaker - https://submaker.elfhosted.com.
+  Submaker requires complete manifest url in settings, i.e. https://.../manifest.json
+- Added temporary Settings/My Lists/Trakt/Limit Trakt Requests for impending api
+  change mandating 250 maximum.  Disabled by default.
 - Updated torboxnews.  Users api key will be passed through TorBox whitelisted project.
   Do not use torboxnews if you have concerns about api key security.
 - Fix for format change in mediafusion results, next time will just remove it.

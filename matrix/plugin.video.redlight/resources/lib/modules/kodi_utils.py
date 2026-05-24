@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# TRUMP - UNFIT FOR OFFICE
 import xbmc, xbmcgui, xbmcplugin, xbmcvfs, xbmcaddon
 import os
 from urllib.parse import urlencode, unquote
@@ -121,21 +122,41 @@ def addon_icon_mini():
 														os.path.basename(translate_path(addon_info('icon'))))
 
 def addon_fanart():
-	return get_property('redlight.addon_fanart') or translate_path(addon_info('fanart'))
-
-def get_icon(image_name, image_folder='icons', image_type='png'):
-	local_path = os.path.join(
-		addon_info('path'),
-		'resources',
-		'media',
-		image_folder,
-		'%s.%s' % (image_name, image_type)
+	return (
+		get_property('redlight.addon_fanart')
+		or 'special://home/addons/plugin.video.redlight/resources/media/fanart.jpg'
 	)
 
+MEDIA_GITHUB_USER = 'The-Red-Wizard'
+MEDIA_GITHUB_REPO = 'TheRedWizard.github.io'
+MEDIA_GITHUB_RAW = 'https://raw.githubusercontent.com/%s/%s/main/packages/media' % (MEDIA_GITHUB_USER, MEDIA_GITHUB_REPO)
+LEGACY_MEDIA_GITHUB_RAW = 'https://raw.githubusercontent.com/TheRedWizard/TheRedWizard.github.io/main/packages/media'
+
+def media_github_credentials():
+	return MEDIA_GITHUB_USER, MEDIA_GITHUB_REPO
+
+def get_icon(image_name, image_folder='icons', image_type='png'):
+	local_path = os.path.join(addon_info('path'), 'resources', 'media', image_folder, '%s.%s' % (image_name, image_type))
 	if os.path.exists(local_path):
 		return local_path
+	return '%s/%s/%s.%s' % (MEDIA_GITHUB_RAW, image_folder, image_name, image_type)
 
-	return None
+def resolve_list_icon(icon, default_name='folder'):
+	if not icon:
+		return get_icon(default_name)
+	if icon.startswith('http'):
+		if icon.startswith(LEGACY_MEDIA_GITHUB_RAW):
+			return MEDIA_GITHUB_RAW + icon[len(LEGACY_MEDIA_GITHUB_RAW):]
+		return icon
+	icon_norm = icon.replace('\\', '/')
+	if icon_norm.startswith('special://') or 'plugin.video.redlight/resources/media/' in icon_norm:
+		for folder in ('icons', 'flags', 'network_icons', 'results', 'rpdb_posters', 'themes'):
+			if '/%s/' % folder in icon_norm:
+				name = os.path.splitext(os.path.basename(icon_norm))[0]
+				ext = os.path.splitext(icon_norm)[1].lstrip('.') or 'png'
+				return get_icon(name, folder, ext)
+		return get_icon(os.path.splitext(os.path.basename(icon_norm))[0])
+	return get_icon(icon)
 
 def get_addon_fanart():
 	return get_property('redlight.default_addon_fanart') or addon_fanart()
@@ -407,9 +428,12 @@ def open_settings():
 	from windows.base_window import open_window
 	open_window(('windows.settings_manager', 'SettingsManager'), 'settings_manager.xml')
 
-def external_playback_check(params):
-        #PB-FIX 1
-	return True
+def external_scraper_settings():
+	try:
+		external = get_property('redlight.external_scraper.module')
+		if external in ('empty_setting', ''): return
+		execute_builtin('Addon.OpenSettings(%s)' % external)
+	except: pass
 
 def progress_dialog(heading='', icon=None):
 	from threading import Thread
@@ -447,7 +471,11 @@ def show_text(heading, text=None, file=None, font_size='small', kodi_log=False):
 	text = ''.join(text)
 	return open_window(('windows.textviewer', 'TextViewer'), 'textviewer.xml', heading=heading, text=text, font_size=font_size)
 
-def notification(line1, time=5000, icon=None):
+LIST_ITEM_NOT_IN_LIST = 'Item not in list'
+
+def notification(line1, time=5000, icon=None, settle_ms=0):
+	# Brief delay helps Kodi show the toast after select/confirm dialogs close (rapid calls can drop it otherwise).
+	if settle_ms: sleep(settle_ms)
 	kodi_dialog().notification('Red Light', line1, icon or addon_icon(), time)
 
 def player_check(mode, params):
@@ -456,15 +484,11 @@ def player_check(mode, params):
 		from modules.sources import Sources
 		Sources().playback_prep(params)
 	elif mode == 'playback.video':
-		from modules.player import redlightPlayer
-		redlightPlayer().run(params.get('url', None), params.get('obj', None))
+		from modules.player import RedLightPlayer
+		RedLightPlayer().run(params.get('url', None), params.get('obj', None))
 	else: ok_dialog('External Playback Detected', 'Playback through external addons is not supported')
 
 def external_playback_check(params):
-	from modules.settings import playback_key
-	if not playback_key() in params:
-		ok_dialog('External Playback Detected', 'Playback through external addons is not supported')
-		return False
 	return True
 
 def timeIt(func):
@@ -494,30 +518,26 @@ def focus_index(index):
 	except: pass
 
 def get_all_icons():
+	import requests
 	from caches.main_cache import cache_object
+	username, location = media_github_credentials()
 	def _process(dummy):
 		try:
-			local_icons_dir = os.path.join(addon_info('path'), 'resources', 'media', 'icons')
-			if os.path.isdir(local_icons_dir):
-				local_results = sorted([f[:-4] for f in os.listdir(local_icons_dir) if f.lower().endswith('.png')])
-				if local_results: return local_results
-			import requests
 			results = requests.get('https://api.github.com/repos/%s/%s/contents/packages/media/icons' % (username, location))
 			results = [i['name'].replace('.png', '') for i in results.json()]
 			return results
-		except: return ['folder.png']
-	username, location = get_property('redlight.update.username'), get_property('redlight.update.location')
+		except: return ['folder']
 	return cache_object(_process, 'all_icons', 'foo', False, 168)
 
 def get_all_addon_icons():
 	import requests
 	from caches.main_cache import cache_object
+	username, location = media_github_credentials()
 	def _process(dummy):
 		try:
 			results = requests.get('https://api.github.com/repos/%s/%s/contents/packages/addon_icons' % (username, location))
-			return results
+			return results.json()
 		except: return []
-	username, location = get_property('redlight.update.username'), get_property('redlight.update.location')
 	return cache_object(_process, 'all_addon_icons', 'foo', True, 168)
 
 def upload_logfile(params):
