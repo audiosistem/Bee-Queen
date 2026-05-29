@@ -386,7 +386,7 @@ def _get_tmdblist_paginated_list(url):
 	args = ({'path': url, 'params': {**params, 'page': page}} for page in range(2, pages + 1))
 	with ThreadPoolExecutor() as tpe: # keep max_workers as default, min(32, os.cpu_count() + 4)
 		for result in tpe.map(get_tmdblist, args): # ThreadPoolExecutor map preserves order
-			if isinstance(result, dict): items.extend(result['results'])
+			if isinstance(result, dict): items.extend(result['results']) # caution, hides thread exceptions
 	return items
 
 def tmdb_watchlist(mediatype, page, letter):

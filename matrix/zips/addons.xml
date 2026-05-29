@@ -39,7 +39,7 @@
       <screenshot>resources/screenshot-3.jpg</screenshot>
     </assets>
   </extension>
-</addon><addon id="plugin.audio.mp3streams" name="MP3 Streams" version="2025.0.1" provider-name="Jon Bovi">
+</addon><addon id="plugin.audio.mp3streams" name="MP3 Streams" version="2026.05.26" provider-name="Jon Bovi, [COLOR crimson]King Krimson[/COLOR]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.future" />
@@ -55,7 +55,7 @@
         <platform>all</platform>
         <summary>A music streaming Collection.</summary>
         <description>MP3 Streams Kodi 19+</description>
-        <news>2025.0.1 - Fix Billboard Charts</news>
+        <news>2026.05.26 - Downloads, favorites, dialogs, navigation, see the changelog. 2025.0.1 - Fix Billboard Charts, 2022.0.2 - Fix errors loading pages. 2022.0.1 - Small fix, Kodi 20 ready. 2021.0.6 - Fixed issue with hanging  when skipping tracks. 2021.0.4 - Fixed Settings, 2021.0.3 - Bugfixes. Enjoy!</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
@@ -278,7 +278,7 @@ Added support for Kodi v19 (Matrix)
             <fanart>resources/fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.1+matrix" provider-name="RomyCupidon">  
+</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.6+matrix" provider-name="RomyCupidon">  
 <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
@@ -291,15 +291,14 @@ Added support for Kodi v19 (Matrix)
 	<provides>video</provides>
 </extension>   
 <extension point="xbmc.addon.metadata">
-	 <summary lang="en">TOT CONȚINUTUL ACESTUI ADDON A FOST EXTRAS DIN DOMENIUL GOOGLE. NU SUNT RESPONSABIL PENTRU SCOPURILE PROFITABILE ALE PĂRȚILOR TERȚE.</summary>
+	 <summary lang="en">TOT CONTINUTUL ACESTUI ADDON A FOST EXTRAS DIN DOMENIUL GOOGLE. NU SUNT RESPONSABIL PENTRU SCOPURILE PROFITABILE ALE PĂRTILOR TERTE.</summary>
     <description lang="en">[COLOR white]RomyLive+ este un plugin complet pentru Kodi, dedicat divertismentului online. 
 Oferă acces la filme, seriale și multiple categorii de TV live, organizate 
 într-o interfață modernă și intuitivă. Navigarea este rapidă, conținutul este 
 structurat eficient, iar experiența de utilizare este optimizată pentru 
-performanță și stabilitate pe toate dispozitivele compatibile Kodi.
-În zona Adult se poate viziona conținutul doar introducând anul în care a fost rostit acest îndemn: «Domnule Gorbaciov, dărâmați acest zid!»”[/COLOR]
+performanță și stabilitate pe toate dispozitivele compatibile Kodi.[/COLOR]
 
-Cu RomyLive+, ai tot conținutul preferat într-un singur loc.</description>
+Cu RomyLive+, ai tot continutul preferat într-un singur loc.</description>
     <disclaimer lang="en" />
 	<platform>all</platform>
 	<assets>
@@ -849,7 +848,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.05.13" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.05.14" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -857,7 +856,7 @@ In addition to what livestreams allowed you to do, you can now,
 	<extension point="xbmc.python.pluginsource" library="resources/lib/router.py">
 		<provides>video</provides>
 	</extension>
-	<extension point="xbmc.service" library="resources/lib/service.py" />
+	
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
@@ -891,7 +890,7 @@ In addition to what livestreams allowed you to do, you can now,
 		<fanart>fanart.jpg</fanart>
   </assets>
   </extension>
-</addon><addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]" version="1.1.2">
+</addon><addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]" version="1.1.8">
     <requires>
         <import addon="xbmc.python" version="3.0.1" />
         <import addon="script.module.pil" version="1.1.7" />
@@ -904,15 +903,13 @@ In addition to what livestreams allowed you to do, you can now,
     <extension point="xbmc.python.module" library="resources/lib/" />
     <extension point="xbmc.addon.metadata">
         <reuselanguageinvoker>true</reuselanguageinvoker>
-        <summary lang="en">[COLOR red]Fork of FenLight[/COLOR]</summary>
+        <summary lang="en">[COLOR red]The Red Light[/COLOR]</summary>
         <description lang="en">[COLOR red]* We will not revoke our Trakt or TMDb keys
 * We will not block any third party apps or skins
 * No politics
 * NO DRAMA!
 
-I am grateful to Tikipeter and his various pseudonyms and aliases for creating and maintaining Fen and FenLight/FenLightAM.
-
-Many thanks to those who assisted with the TMDb Helper patch and restoring the icons and encouraged me to release Red Light.[/COLOR]</description>
+I am grateful to Tikipeter and his various pseudonyms and aliases for creating and maintaining Fen and FenLight/FenLightAM[/COLOR]</description>
         <platform>all</platform>
 		<disclaimer lang="en">[COLOR red]The author of this add-on does not host any content and has no affiliation with the content providers[/COLOR]</disclaimer>
         <license />
@@ -1165,7 +1162,7 @@ Many thanks to those who assisted with the TMDb Helper patch and restoring the i
     <screenshot>resources/screenshot-02.jpg</screenshot>
   </assets>
 </extension>
-</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.75">
+</addon><addon id="plugin.video.umbrella" name="Umbrella" provider-name="Umbrella" version="6.7.77">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -1401,9 +1398,24 @@ Many thanks to those who assisted with the TMDb Helper patch and restoring the i
 			<screenshot>resources/screenshots/screenshot003.jpg</screenshot>
 		</assets>
 		<news>
-[B]Update - v6.7.75 - May 14th, 2026 [/B]
---[Fix] Change for case sensitivity on hash comparison in Torbox. -credit to SoMe0nE-BG
---[Change] Added option to add year in tv show title. Settings, TV Shows, Show Year in TV Show title
+[B]Update - v6.7.77 - May 26th, 2026 [/B]
+--[Fix] Small fix pushed for blank My TV Shows and My Movies menus.
+--[Change] Made Main menu, Movies, TV Shows, My Movies, and My TV Shows all dynamic menus that can be enabled, disabled, re-ordered, or custom shortcuts can be added.
+--[Change] Added option to prefer smaller file sizes in source select.
+--[Fix] Change made to prevent multiple threads when resolving rd from causing users to get rate limited. Threading using semaphore limit of 3.
+--[Fix] Downloads now pad single digits with a leading zero on folder name and file name.
+--[Change] Change to cloud scrapers to reduce number of false matches.
+--[Fix] Changes made for season pack on torbox when downloading being named file-hash instead of source file name.
+--[Fix] Changes made for local tracking and marking movies.
+--[Change] Change made so that dropping a show on trakt immediately updates.
+--[Change] Added a new setting to filter known infringing filenames from rd. Setting added to rd section in settings.
+--[Change] Added Finish Watching for MDBList for movies and shows. (if you do not want it, just hide it)
+--[Change] Added the ability to browse addons for shortcut creation.
+--[Change] Added the ability to select icons from skin, umbrella, or custom url when setting a custom shortcut.
+--[Change] Added shortcut folders. The option is under Tools.
+--[Change] Added ability to edit custom items. Label, icon, or path.
+--[Change] Added ability to use kodi built in functions as custom items. (Reload Skin or Exit Kodi)
+--[Fix] Change made for plex authorization.
 		</news>
 	</extension>
 
@@ -3823,7 +3835,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="script.module.viperscrapers" name="Viper Scrapers" version="1.5.2" provider-name="Jax">
+</addon><addon id="script.module.viperscrapers" name="Viper Scrapers" version="1.5.3" provider-name="Jax">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -3831,7 +3843,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
 	<extension point="xbmc.python.pluginsource" library="lib/default.py">
 		<provides>executable</provides>
 	</extension> 
-	<extension point="xbmc.service" library="lib/service.py" start="startup" />
+	
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>false</reuselanguageinvoker>
@@ -3844,7 +3856,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
 			<icon>icon.png</icon>
 			<fanart>fanart.jpg</fanart>
 		</assets>
-		<news>- 1.5.2 Patched Mediafusion</news>
+		<news>- 1.5.3 Patched Mediafusion</news>
 	</extension>
 </addon><addon id="script.module.web-pdb" name="Web-PDB" version="1.6.3" provider-name="Roman V.M.">
   <requires>

@@ -59,7 +59,7 @@ class Navigator:
 		if s.authorized_debrid_check('pm'): self.add({'mode': 'navigator.premiumize'}, 'Premiumize', 'premiumize')
 		if s.authorized_debrid_check('ad'): self.add({'mode': 'navigator.alldebrid'}, 'All Debrid', 'alldebrid')
 		if s.authorized_debrid_check('tb'): self.add({'mode': 'navigator.torbox'}, 'TorBox', 'torbox')
-		if s.easynews_authorized(): self.add({'mode': 'navigator.easynews'}, 'Easynews', 'easynews')
+		if s.easynews_authorized(): self.add({'mode': 'navigator.easynews'}, 'EasyNews', 'easynews')
 		self.end_directory()
 
 	def easynews(self):
@@ -89,6 +89,7 @@ class Navigator:
 
 	def torbox(self):
 		self.add({'mode': 'torbox.tb_cloud'}, 'Cloud Storage', 'torbox')
+		self.add({'mode': 'torbox.tb_history'}, 'History', 'torbox')
 		self.add({'mode': 'torbox.send_webdl', 'isFolder': 'false'}, 'Send URL to WebDL', 'torbox')
 		self.add({'mode': 'torbox.tb_account_info', 'isFolder': 'false'}, 'Account Info', 'torbox')
 		self.end_directory()
@@ -210,8 +211,8 @@ class Navigator:
 		self.add({'mode': 'navigator.search_history', 'action': 'tmdb_keyword_tvshow', 'name': 'Search History Keywords (TV Shows)'}, 'Search Keywords (TV Shows)', 'tmdb')
 		self.add({'mode': 'navigator.search_history', 'action': 'trakt_lists'}, 'Search Trakt User Lists', 'trakt')
 		if s.easynews_authorized():
-			self.add({'mode': 'navigator.search_history', 'action': 'easynews_video'}, 'Search Easynews Videos', 'easynews')
-			self.add({'mode': 'navigator.search_history', 'action': 'easynews_image'}, 'Search Easynews Images', 'easynews')
+			self.add({'mode': 'navigator.search_history', 'action': 'easynews_video'}, 'Search EasyNews Videos', 'easynews')
+			self.add({'mode': 'navigator.search_history', 'action': 'easynews_image'}, 'Search EasyNews Images', 'easynews')
 		self.end_directory()
 
 	def downloads(self):
@@ -251,11 +252,12 @@ class Navigator:
 		self.add({'mode': 'clear_cache', 'cache': 'trakt', 'isFolder': 'false'}, 'Clear Trakt Cache', 'settings')
 		self.add({'mode': 'clear_cache', 'cache': 'imdb', 'isFolder': 'false'}, 'Clear IMDb Cache', 'settings')
 		self.add({'mode': 'clear_cache', 'cache': 'internal_scrapers', 'isFolder': 'false'}, 'Clear Internal Scrapers Cache', 'settings')
+		self.add({'mode': 'clear_cache', 'cache': 'easynews_scrape', 'isFolder': 'false'}, 'Clear EasyNews Scrape Cache', 'settings')
+		self.add({'mode': 'search.clear_easynews_search_history', 'isFolder': 'false'}, 'Clear EasyNews Search History', 'settings')
 		self.add({'mode': 'clear_cache', 'cache': 'external_scrapers', 'isFolder': 'false'}, 'Clear External Scrapers Cache', 'settings')
 		self.add({'mode': 'clear_cache', 'cache': 'rd_cloud', 'isFolder': 'false'}, 'Clear Real Debrid Cache', 'settings')
 		self.add({'mode': 'clear_cache', 'cache': 'pm_cloud', 'isFolder': 'false'}, 'Clear Premiumize Cache', 'settings')
 		self.add({'mode': 'clear_cache', 'cache': 'ad_cloud', 'isFolder': 'false'}, 'Clear All Debrid Cache', 'settings')
-		self.add({'mode': 'clear_cache', 'cache': 'ed_cloud', 'isFolder': 'false'}, 'Clear Easy Debrid Cache', 'settings')
 		self.add({'mode': 'clear_cache', 'cache': 'tb_cloud', 'isFolder': 'false'}, 'Clear TorBox Cache', 'settings')
 		self.end_directory()
 

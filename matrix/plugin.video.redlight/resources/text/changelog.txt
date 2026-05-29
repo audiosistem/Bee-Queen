@@ -1,9 +1,39 @@
-[COLOR red][B]*** Fork of FenLight ***[/B][/COLOR]
+[COLOR red][B]Version 1.1.8[/B][/COLOR]
+- Fix rare scrape-screen lockup caused by thread exhaustion ("can't start new thread") by falling back to serial provider processing when new threads cannot be spawned.
+- Sources results window now fails safely if initialisation errors occur, preventing stuck scrape dialogs that required a Kodi restart.
+- Tools > Database & Cache Maintenance: added separate "Clear EasyNews Scrape Cache" and "Clear EasyNews Search History" actions.
+- "Clear All Cache (Excluding Favorites)" now also clears EasyNews search history.
+- Tools > Database & Cache Maintenance: removed obsolete "Clear Easy Debrid Cache" entry from menu and clear-all paths.
+- EasyNews: added "Exclude Adult Results" toggle (Safe Search) in settings.
+- Settings Manager: slowed help text autoscroll repeat timing to 7 seconds.
 
-* We will not revoke our Trakt or TMDb keys
-* We will not block any third party apps or skins
-* No politics
-* NO DRAMA!
+[COLOR red][B]Version 1.1.7[/B][/COLOR]
+- Subtitles: SubMaker now supports selectable Subtitle Language in Settings (default English).
+- Subtitles: Now a separate section in Settings > Playback.
+
+[COLOR red][B]Version 1.1.6[/B][/COLOR]
+- Subtitles: SubMaker added to Subtitles. Auto Enable Subtitles (default Off - as before). Local Subtitles or SubMaker (default Local). [B]To use SubMaker you need to enter your own SubMaker Manifest URL (https://submaker.elfhosted.com).[/B] Default language English. When SubMaker is selected, optional prefer Local Subs If Available (default On).
+
+[COLOR red][B]Version 1.1.5[/B][/COLOR]
+- Real Debrid: Limit parallel magnet resolves to 3 (semaphore) to reduce rate limiting when multiple sources resolve at once.
+- Real Debrid: Optional "Free active download slot" setting (default Off). When enabled, removes one active torrent before adding a new one if RD already has 5 active downloads.
+- Fix Autoplay Next Episode failing when the next episode scrape finishes after the current episode has ended.
+- Expand EasyNews settings help text for Refresh Credentials, Fallback Search, Search Width, and Check Before Full Search.
+- Settings Manager: pin INFO help panel below the settings list (matches list slide) and top-align description text for consistent placement.
+- Settings Manager: fix INFO text autoscroll (fixed textbox height; faster scroll timing).
+
+[COLOR red][B]Version 1.1.4[/B][/COLOR]
+- TorBox: "Include Uncached Results (TorBox)" added under External Scrapers (default Off). When enabled, Uncached TorBox sort with the same provider priority as Cached TorBox (grey highlight).
+- TorBox: "Notify when added torrents are ready in Cloud" added in Sources Accounts (default On).
+- TorBox: Added History under My Services.
+- TorBox: Fixed Download Pack not saving files locally.
+- All Debrid, Premiumize, Real Debrid and Torbox History menus now fetch fresh data each time they are opened.
+- All Debrid: My Services refresh on open. Cloud browse shows video files only.
+- All Debrid: Fixed Cloud Storage crash.
+- Premiumize: Fixed blank History or "No transfers" when transfers exist. Show In-Progress Transfers and clearer notifications when the list is empty or fails.
+
+[COLOR red][B]Version 1.1.3[/B][/COLOR]
+- TorBox: Fixed Download Pack picker failing with "No URL found for Download" due to a provider name mismatch in the pack file picker.
 
 [COLOR red][B]Version 1.1.2[/B][/COLOR]
 - Trakt: Collection, Watchlist, Personal/Liked lists, List items, Favorites, Watched History, and related calls now paginate (250 items per request) so lists above the old 1,000 cap will load in full. Ready for Trakt's lower per-page API limits.

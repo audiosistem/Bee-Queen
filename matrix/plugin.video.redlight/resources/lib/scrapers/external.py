@@ -105,24 +105,36 @@ class source:
 		return []
 
 	def process_movie_threads(self):
-		for i in self.source_dict:
-			provider, module = i[0], i[1]
-			threaded_object = Thread(target=self.get_movie_source, args=(provider, module), name=provider)
-			threaded_object.start()
-			self.threads_append(threaded_object)
-		self.threads_completed = True
+		try:
+			for i in self.source_dict:
+				provider, module = i[0], i[1]
+				threaded_object = Thread(target=self.get_movie_source, args=(provider, module), name=provider)
+				try:
+					threaded_object.start()
+					self.threads_append(threaded_object)
+				except RuntimeError:
+					# If the runtime cannot spawn more threads, finish remaining work serially.
+					self.get_movie_source(provider, module)
+		finally:
+			self.threads_completed = True
 
 	def process_episode_threads(self):
-		for i in self.source_dict:
-			provider, module = i[0], i[1]
-			try: pack_arg = i[2]
-			except: pack_arg = ''
-			if pack_arg: provider_display = '%s (%s)' % (i[0], i[2])
-			else: provider_display = provider
-			threaded_object = Thread(target=self.get_episode_source, args=(provider, module, pack_arg), name=provider_display)
-			threaded_object.start()
-			self.threads_append(threaded_object)
-		self.threads_completed = True
+		try:
+			for i in self.source_dict:
+				provider, module = i[0], i[1]
+				try: pack_arg = i[2]
+				except: pack_arg = ''
+				if pack_arg: provider_display = '%s (%s)' % (i[0], i[2])
+				else: provider_display = provider
+				threaded_object = Thread(target=self.get_episode_source, args=(provider, module, pack_arg), name=provider_display)
+				try:
+					threaded_object.start()
+					self.threads_append(threaded_object)
+				except RuntimeError:
+					# If the runtime cannot spawn more threads, finish remaining work serially.
+					self.get_episode_source(provider, module, pack_arg)
+		finally:
+			self.threads_completed = True
 
 	def get_movie_source(self, provider, module):
 		sources = external_cache.get(provider, self.media_type, self.tmdb_id, self.title, self.year, '', '')

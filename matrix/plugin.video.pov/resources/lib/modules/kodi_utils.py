@@ -25,6 +25,7 @@ maincache_db   = 'special://profile/addon_data/plugin.video.pov/maincache.db'
 metacache_db   = 'special://profile/addon_data/plugin.video.pov/metacache.db'
 debridcache_db = 'special://profile/addon_data/plugin.video.pov/debridcache.db'
 external_db    = 'special://profile/addon_data/plugin.video.pov/providerscache.db'
+scrapers_path  = 'special://home/addons/plugin.video.pov/resources/lib/scrapers/'
 databases_path = 'special://profile/addon_data/plugin.video.pov/'
 packages_path  = 'special://home/addons/packages/'
 

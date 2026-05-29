@@ -434,21 +434,21 @@ def tvshows(tvshowtitle, imdb, tvdb, season, watched):
 			from resources.lib.database import cache
 			try:
 				tmdb_result = cache.get(tmdb_indexer.TVshows().IdLookup, 96, imdb, tvdb)
-				tmdb_id = str(tmdb_result.get('id')) if tmdb_result else ''
+				tmdb_id = str(tmdb_result.get('id')) if isinstance(tmdb_result, dict) else ''
 				seasons_meta = cache.get(tmdb_indexer.TVshows().get_showSeasons_meta, 96, tmdb_id) if tmdb_id else {}
-				for s in (seasons_meta or {}).get('seasons', []):
+				for s in (seasons_meta if isinstance(seasons_meta, dict) else {}).get('seasons', []):
 					snum = s.get('season_number', 0)
 					if snum == 0: continue
 					if season and str(snum) != str(season): continue
 					for ep_num in range(1, s.get('episode_count', 0) + 1):
 						wc.change_watched('episode', imdb, '', season=snum, episode=ep_num, title=tvshowtitle, watched=int(watched))
 					wc.change_watched('season', imdb, '', season=snum, title=tvshowtitle, watched=int(watched))
-				if not season:
-					wc.change_watched('tvshow', imdb, '', title=tvshowtitle, watched=int(watched))
-				containerRefresh()
 			except:
 				from resources.lib.modules import log_utils
 				log_utils.error()
+			if not season:
+				wc.change_watched('tvshow', imdb, '', title=tvshowtitle, watched=int(watched))
+			containerRefresh()
 		if watch_history_service != '1' and getSetting('trakt.markwatched') == 'true' and traktCredentials:
 			if int(watched) == 5: trakt.watch(content_type=content_type, name=tvshowtitle, imdb=imdb, tvdb=tvdb, season=season, refresh=False)
 			else: trakt.unwatch(content_type=content_type, name=tvshowtitle, imdb=imdb, tvdb=tvdb, season=season, refresh=False)

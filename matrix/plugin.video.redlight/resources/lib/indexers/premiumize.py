@@ -59,44 +59,99 @@ def pm_cloud(folder_id=None, folder_name=None):
 	kodi_utils.set_view_mode('view.premium')
 
 def pm_transfers():
+	def _transfer_progress(status, progress):
+		status = str(status or '').lower()
+		if status in ('finished', 'seeding'):
+			return 100
+		try:
+			value = float(progress)
+			if 0 <= value <= 1:
+				return int(value * 100)
+			return min(int(value), 99)
+		except:
+			try:
+				return int(re.findall(r'(\d+)', str(progress or ''))[0][:3])
+			except:
+				return 0
+
+	def _is_folder_transfer(item):
+		file_id = item.get('file_id')
+		return file_id is None or file_id in ('', 'None')
+
 	def _builder():
 		for count, item in enumerate(transfer_files, 1):
 			try:
 				cm = []
-				file_id, status, progress, name = item['file_id'], item['status'], item['progress'], clean_file_name(item['name']).upper()
-				file_type = 'folder' if file_id is None else 'file'
-				if status == 'finished': progress = 100
-				else:
-					try: progress = re.findall(r'\.{0,1}(\d+)', str(progress))[0][:2]
-					except: progress = ''
-				if file_type == 'folder':
-					is_folder = True if status == 'finished' else False
-					display = '%02d | %s%% | [B]FOLDER[/B] | [I]%s [/I]' % (count, str(progress), name)
-					url_params = {'mode': 'premiumize.pm_cloud', 'id': item['folder_id'], 'folder_name': normalize(item['name'])}
+				cm_append = cm.append
+				status = str(item.get('status', '')).lower()
+				progress = _transfer_progress(status, item.get('progress'))
+				name = clean_file_name(item.get('name', 'Unknown')).upper()
+				folder_id = item.get('folder_id')
+				file_id = item.get('file_id')
+				ready = status in ('finished', 'seeding')
+				if _is_folder_transfer(item):
+					is_folder = bool(ready and folder_id)
+					display = '%02d | %d%% | [B]FOLDER[/B] | [I]%s [/I]' % (count, progress, name)
+					if is_folder:
+						url_params = {'mode': 'premiumize.pm_cloud', 'id': folder_id, 'folder_name': normalize(item.get('name', ''))}
+					else:
+						url_params = {'mode': 'premiumize.pm_transfers'}
 				else:
 					is_folder = False
-					details = Premiumize.get_item_details(file_id)
-					url_link, size = details['link'], details['size']
-					if url_link.startswith('/'): url_link = 'https' + url_link
-					display_size = float(int(size))/1073741824
-					display = '%02d | %s%% | [B]FILE[/B] | %.2f GB | [I]%s [/I]' % (count, str(progress), display_size, name)
-					url_params = {'mode': 'playback.video', 'url': url_link, 'obj': 'video'}
-					down_file_params = {'mode': 'downloader.runner', 'name': item['name'], 'url': url_link, 'media_type': 'cloud.premiumize', 'image': icon}
-					cm.append(('[B]Download File[/B]','RunPlugin(%s)' % kodi_utils.build_url(down_file_params)))
+					url_params = {'mode': 'premiumize.pm_transfers'}
+					if ready and file_id:
+						details = Premiumize.get_item_details(file_id, fresh=True)
+						if isinstance(details, dict) and details.get('link'):
+							url_link = details['link']
+							if url_link.startswith('/'):
+								url_link = 'https' + url_link
+							size = details.get('size', 0)
+							display_size = float(int(size)) / 1073741824
+							display = '%02d | %d%% | [B]FILE[/B] | %.2f GB | [I]%s [/I]' % (count, progress, display_size, name)
+							url_params = {'mode': 'playback.video', 'url': url_link, 'obj': 'video'}
+							down_file_params = {'mode': 'downloader.runner', 'name': item.get('name', ''), 'url': url_link, 'action': 'cloud.premiumize', 'image': icon}
+							cm_append(('[B]Download File[/B]', 'RunPlugin(%s)' % kodi_utils.build_url(down_file_params)))
+						else:
+							display = '%02d | %d%% | [B]FILE[/B] | [I]%s [/I]' % (count, progress, name)
+					else:
+						display = '%02d | %d%% | [B]FILE[/B] | [I]%s [/I]' % (count, progress, name)
 				url = kodi_utils.build_url(url_params)
 				listitem = kodi_utils.make_listitem()
 				listitem.setLabel(display)
-				listitem.addContextMenuItems(cm)
+				if cm:
+					listitem.addContextMenuItems(cm)
 				listitem.setArt({'icon': icon, 'poster': icon, 'thumb': icon, 'fanart': fanart, 'banner': icon})
-				info_tag = listitem.getVideoInfoTag(True)
-				info_tag.setPlot(' ')
+				plot = item.get('message') or status
+				if isinstance(plot, str) and plot.strip():
+					listitem.getVideoInfoTag(True).setPlot(plot)
 				yield (url, listitem, is_folder)
-			except: pass
+			except:
+				pass
 	icon, fanart = kodi_utils.get_icon('premiumize'), kodi_utils.get_addon_fanart()
-	try: transfer_files = Premiumize.transfers_list()['transfers']
-	except: transfer_files = []
+	transfer_files = []
+	api_error = None
+	try:
+		kodi_utils.show_busy_dialog()
+		result = Premiumize.transfers_list(fresh=True)
+		kodi_utils.hide_busy_dialog()
+		if not result:
+			api_error = 'Unable to load history'
+		elif str(result.get('status', '')).lower() != 'success':
+			api_error = result.get('message') or 'Unable to load history'
+		else:
+			transfer_files = result.get('transfers') or []
+	except:
+		kodi_utils.hide_busy_dialog()
+		api_error = 'Unable to load history'
+	if api_error:
+		return kodi_utils.notification('Premiumize: %s' % api_error, 4000)
+	items = list(_builder())
+	if not transfer_files:
+		kodi_utils.notification('Premiumize: No transfers in history', 2500)
+	elif not items:
+		kodi_utils.notification('Premiumize: Transfers found but could not be listed', 3500)
 	handle = int(sys.argv[1])
-	kodi_utils.add_items(handle, list(_builder()))
+	kodi_utils.add_items(handle, items)
 	kodi_utils.set_content(handle, 'files')
 	kodi_utils.end_directory(handle, cacheToDisc=False)
 	kodi_utils.set_view_mode('view.premium')

@@ -8,7 +8,7 @@ from urllib.request import Request, urlopen
 from urllib.parse import parse_qsl, urlparse, unquote
 from modules import kodi_utils
 from modules.sources import Sources
-from modules.settings import download_directory
+from modules.settings import download_directory, store_resolved_to_cloud
 from modules.source_utils import clean_title
 from modules.utils import clean_file_name, safe_string, remove_accents, normalize
 # logger = kodi_utils.logger
@@ -23,22 +23,24 @@ def runner(params):
 			Downloader(image_params).run()
 	elif action == 'meta.pack':
 		from modules.source_utils import find_season_in_release_title
-		provider = params['provider']
-		try:
-			debrid_files, debrid_function = Sources().debridPacks(provider, params['name'], params['magnet_url'], params['info_hash'], download=True)
-			pack_choices = [dict(params, **{'pack_files':item}) for item in debrid_files]
-			icon = {'Real-Debrid': 'realdebrid', 'Premiumize.me': 'premiumize', 'AllDebrid': 'alldebrid', 'Torbox': 'torbox'}[provider]
-		except: return kodi_utils.notification('No URL found for Download. Pick another Source.')
-		default_icon = kodi_utils.get_icon(icon)
-		chosen_list = select_pack_item(pack_choices, default_icon)
+		from modules.debrid import ExternalPackSource, downloader_provider_slug
+		source, meta = json.loads(params['source']), json.loads(params['meta'])
+		pack_source = ExternalPackSource(source, meta)
+		pack_result = pack_source.browse_packs(download=True)
+		if not pack_result:
+			return
+		pack_choices, pack_api = pack_result
+		provider = downloader_provider_slug(getattr(pack_source, 'debrid', '') or source.get('cache_provider', ''))
+		pack_items = [dict(params, **{'pack_files': item, 'provider': provider}) for item in pack_choices]
+		icon = {'real-debrid': 'realdebrid', 'premiumize.me': 'premiumize', 'alldebrid': 'alldebrid', 'torbox': 'torbox'}.get(provider, 'box_office')
+		chosen_list = select_pack_item(pack_items, kodi_utils.get_icon(icon))
 		if not chosen_list: return
-		show_package = json.loads(params['source']).get('package') == 'show'
-		meta  = json.loads(chosen_list[0].get('meta'))
+		show_package = source.get('package') == 'show'
 		image = meta.get('poster') or kodi_utils.get_icon('box_office')
 		default_name = '%s (%s)' % (clean_file_name(get_title(meta)), get_year(meta))
 		default_foldername = kodi_utils.kodi_dialog().input('Title', defaultt=default_name)
-		multi_downloads = []
-		multi_downloads_append = multi_downloads.append
+		threads = []
+		threads_append = threads.append
 		for item in chosen_list:
 			if show_package:
 				season = find_season_in_release_title(item['pack_files']['filename'])
@@ -46,11 +48,22 @@ def runner(params):
 					meta['season'] = season
 					item['meta'] = json.dumps(meta)
 					item['default_foldername'] = default_foldername
-			multi_downloads_append((Thread(target=Downloader(item).run), clean_file_name(item['pack_files']['filename'])))
-		download_threads_manager(multi_downloads, image)
+			threads_append(Thread(target=Downloader(item).run))
+		kodi_utils.notification('Multi File Pack Download Started...', 3500, image)
+		for thread in threads:
+			thread.start()
+		if provider == 'torbox' and pack_choices and not store_resolved_to_cloud('TorBox', True):
+			torrent_id = pack_choices[0].get('torrent_id')
+			if torrent_id:
+				def _cleanup():
+					for thread in threads:
+						thread.join()
+					try: pack_api.delete_torrent(torrent_id)
+					except: pass
+				Thread(target=_cleanup, daemon=True).start()
 	else: Downloader(params).run()
 
-def download_threads_manager(multi_downloads, image):
+def download_threads_manager(multi_downloads, image, pack_cleanup=None):
 	kodi_utils.notification('Multi File Pack Download Started...', 3500, image)
 	started_downloads = []
 	started_downloads_append = started_downloads.append
@@ -63,6 +76,11 @@ def download_threads_manager(multi_downloads, image):
 		remaining_downloads = [x[1] for x in multi_downloads if not x in started_downloads]
 		kodi_utils.set_property('redlight.active_queued_downloads', json.dumps(remaining_downloads))
 	kodi_utils.clear_property('redlight.active_queued_downloads')
+	if pack_cleanup:
+		torrent_id, debrid_function = pack_cleanup
+		if not store_resolved_to_cloud('TorBox', True):
+			try: debrid_function().delete_torrent(torrent_id)
+			except: pass
 
 def select_pack_item(pack_choices, icon):
 	list_items = [{'line1': '%.2f GB | %s' % (float(item['pack_files']['size'])/1073741824, clean_file_name(item['pack_files']['filename']).upper()), 'icon': icon} \
@@ -88,8 +106,8 @@ class Downloader:
 		self.params_get = self.params.get
 
 	def run(self):
+		kodi_utils.show_busy_dialog()
 		self.download_prep()
-		if not self.action == 'meta.pack': kodi_utils.show_busy_dialog()
 		self.get_url_and_headers()
 		if self.url in (None, 'None', ''): return self.return_notification(_notification='No URL found for Download. Pick another Source')
 		self.get_filename()
@@ -168,22 +186,33 @@ class Downloader:
 						url = TorBoxAPI().add_headers_to_url(url)
 				except: pass
 			elif self.action == 'meta.pack':
-				if self.provider == 'Real-Debrid':
+				debrid_function = None
+				if self.provider in ('real-debrid', 'Real-Debrid'):
 					from apis.real_debrid_api import RealDebridAPI as debrid_function
-				elif self.provider == 'Premiumize.me':
+				elif self.provider in ('premiumize.me', 'Premiumize.me'):
 					from apis.premiumize_api import PremiumizeAPI as debrid_function
-				elif self.provider == 'AllDebrid':
+				elif self.provider in ('alldebrid', 'AllDebrid'):
 					from apis.alldebrid_api import AllDebridAPI as debrid_function
-				elif self.provider == 'TorBox':
+				elif self.provider in ('torbox', 'TorBox', 'Torbox'):
 					from apis.torbox_api import TorBoxAPI as debrid_function
-				url = self.params_get('pack_files')['link']
-				if self.provider in ('Real-Debrid', 'AllDebrid'):
-					url = debrid_function().unrestrict_link(url)
-				elif self.provider == 'Premiumize.me':
-					url = debrid_function().add_headers_to_url(url)
-				elif self.provider == 'TorBox':
-					url = debrid_function().unrestrict_link(url)
-					url = debrid_function().add_headers_to_url(url)
+				link = self.params_get('pack_files', {}).get('link')
+				if not link:
+					url = None
+				elif debrid_function and self.provider in ('real-debrid', 'Real-Debrid'):
+					url = debrid_function().unrestrict_link(link)
+				elif debrid_function and self.provider in ('premiumize.me', 'Premiumize.me'):
+					url = debrid_function().add_headers_to_url(link)
+				elif debrid_function and self.provider in ('alldebrid', 'AllDebrid'):
+					url = debrid_function().unrestrict_link(link)
+				elif debrid_function and self.provider in ('torbox', 'TorBox', 'Torbox'):
+					api = debrid_function()
+					url = api.unrestrict_link(link)
+					if url:
+						url = api.add_headers_to_url(url)
+					else:
+						return self.return_notification(_notification='TorBox: Download link not ready. Wait until the torrent is finished in TorBox, then try Download Pack again.')
+				else:
+					url = None
 		else:
 			if self.action.startswith('cloud'):
 				if '_direct' in self.action:
@@ -280,6 +309,8 @@ class Downloader:
 		return True
 
 	def start_download(self):
+		if self.action == 'meta.pack':
+			kodi_utils.notification('Pack download started: %s' % self.final_name.replace('.', ' ').replace('_', ' '), 3000, self.image)
 		monitor_progress = self.action != 'image'
 		total, errors, count, resume, sleep_time  = 0, 0, 0, 0, 0
 		f = kodi_utils.open_file(self.final_destination, 'w')

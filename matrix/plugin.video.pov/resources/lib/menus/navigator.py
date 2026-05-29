@@ -276,17 +276,16 @@ class Navigator:
 		self._end_directory()
 
 	def log_utils(self):
-		pov_vstr, log_path = ku.get_addoninfo('version'), 'special://home/addons/%s/changelog.txt'
-		kl_loc, mt_str = 'special://logpath/kodi.log', log_path % 'plugin.video.pov'
+		pov_vstr, pov_istr = ku.get_addoninfo('version'), ku.get_addoninfo('id')
+		kl_loc, mt_str = 'special://logpath/kodi.log', 'special://home/addons/%s/changelog.txt' % pov_istr
 		pov_str, cl_str, lut_str, k_str, lv_str = ls(32036), ls(32508), ls(32777), ls(32538), ls(32509)
 		mh_str, klv_h, klu_h = '%s  [I](v.%s)[/I]' % (pov_str, pov_vstr), '%s %s' % (k_str, lv_str), ls(32853)
 		cl_n_ins, lu_n_ins, k_n_ins = _in_str % (cl_str.upper(), ''), _in_str % (lut_str.upper(), ''), _in_str % ('Kodi'.upper(), '')
-		clear_stream_str, clear_thumbs_str = 'Clear Stale Kodi Stream Details', 'Clear Stale Kodi Thumbnails'
 		self._add_item({'mode': 'show_text', 'heading': mh_str, 'file': mt_str, 'exclude_external': 'true',                    'name': mh_str}, 'lists.png', cl_n_ins, False)
 		self._add_item({'mode': 'show_text', 'heading': klv_h, 'file': kl_loc, 'kodi_log': 'true', 'exclude_external': 'true', 'name': klv_h }, 'lists.png', lu_n_ins, False)
 		self._add_item({'mode': 'upload_logfile', 'exclude_external': 'true',                                                  'name': klu_h }, 'lists.png', lu_n_ins, False)
-		self._add_item({'mode': 'clear_streams',                                                                     'name': clear_stream_str}, 'tools.png', k_n_ins, False)
-		self._add_item({'mode': 'clear_thumbnails',                                                                  'name': clear_thumbs_str}, 'tools.png', k_n_ins, False)
+		self._add_item({'mode': 'clear_streams',                                                    'name': 'Clear Stale Kodi Stream Details'}, 'tools.png', k_n_ins, False)
+		self._add_item({'mode': 'clear_thumbnails',                                                     'name': 'Clear Stale Kodi Thumbnails'}, 'tools.png', k_n_ins, False)
 		self._end_directory()
 
 	def years(self):

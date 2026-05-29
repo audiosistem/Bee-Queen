@@ -95,6 +95,32 @@ class TorBoxAPI:
 		url = 'webdl/mylist'
 		return cache_object(self._get, string, url, False, 0.03)
 
+	def clear_mylist_cache(self):
+		try:
+			from caches.base_cache import connect_database
+			dbcon = connect_database('maincache_db')
+			for string in ('tb_user_cloud', 'tb_user_cloud_usenet', 'tb_user_cloud_webdl'):
+				dbcon.execute("""DELETE FROM maincache WHERE id=?""", (string,))
+		except:
+			pass
+
+	def mylist_items(self, media_type, fresh=True):
+		paths = {'torrent': 'torrents/mylist', 'usenet': 'usenet/mylist', 'webdl': 'webdl/mylist'}
+		path = paths.get(media_type)
+		if not path:
+			return 'Unknown type', []
+		params = {'bypass_cache': True} if fresh else {}
+		response = self._get(path, data=params)
+		if not response or not isinstance(response, dict):
+			return 'Invalid response', []
+		if not response.get('success'):
+			err = response.get('detail') or response.get('error') or 'Request failed'
+			return str(err) if not isinstance(err, (list, dict)) else str(err), []
+		data = response.get('data') or []
+		if isinstance(data, dict):
+			data = [data]
+		return None, data
+
 	def user_cloud_info(self, request_id=''):
 		string = 'tb_user_cloud_%s' % request_id
 		url = 'torrents/mylist?id=%s' % request_id
@@ -122,6 +148,89 @@ class TorBoxAPI:
 	def torrent_info(self, request_id=''):
 		return self._get('torrents/mylist', data={'id': request_id})
 
+	def torrent_info_fresh(self, request_id=''):
+		return self._get('torrents/mylist', data={'id': request_id, 'bypass_cache': True})
+
+	@staticmethod
+	def _torrent_item_from_info(response):
+		if not response or not isinstance(response, dict) or not response.get('success'):
+			return None
+		data = response.get('data')
+		if isinstance(data, list):
+			return data[0] if data else None
+		return data if isinstance(data, dict) else None
+
+	@staticmethod
+	def _torrent_item_finished(item):
+		if not item:
+			return False
+		if item.get('download_finished'):
+			return True
+		if item.get('cached') in (True, 1, '1', 'true'):
+			return True
+		status = str(item.get('status', '')).lower()
+		return status in ('completed', 'cached', 'ready')
+
+	@staticmethod
+	def _torrent_file_label(item):
+		label = item.get('short_name') or item.get('name') or ''
+		if label and ('/' in label or '\\' in label):
+			label = label.replace('\\', '/').rsplit('/', 1)[-1]
+		return label or 'unknown'
+
+	@staticmethod
+	def _torrent_file_id(item):
+		for key in ('id', 'file_id'):
+			value = item.get(key)
+			if value is not None and str(value).strip() not in ('', 'None'):
+				return value
+		return None
+
+	def _torrent_id_from_create(self, response):
+		if not response or not response.get('success'):
+			return None
+		data = response.get('data')
+		if isinstance(data, dict):
+			for key in ('torrent_id', 'id'):
+				value = data.get(key)
+				if value is not None and str(value).strip() not in ('', 'None'):
+					return value
+		return None
+
+	def monitor_torrent_cloud_ready(self, torrent_id, title=''):
+		if not torrent_id:
+			return
+		Thread(target=self._monitor_torrent_cloud_ready, args=(torrent_id, title or ''), daemon=True).start()
+
+	def _monitor_torrent_cloud_ready(self, torrent_id, title):
+		from modules.kodi_utils import notification, sleep
+		from modules.settings import tb_notify_cloud_ready
+		if not tb_notify_cloud_ready():
+			return
+		try:
+			torrent_id = int(torrent_id)
+		except Exception:
+			return
+		interval_ms, max_attempts = 15000, 240
+		for attempt in range(max_attempts):
+			if attempt:
+				sleep(interval_ms)
+			item = self._torrent_item_from_info(self.torrent_info_fresh(torrent_id))
+			if not item:
+				continue
+			if self._torrent_item_finished(item):
+				from modules.utils import clean_file_name, normalize
+				label = title or item.get('name') or item.get('filename') or 'Torrent'
+				label = clean_file_name(normalize(label))[:80]
+				self.clear_cache()
+				notification('TorBox: Ready in Cloud — %s' % label, 6000)
+				return
+			status = str(item.get('status', '')).lower()
+			if status in ('error', 'failed') or 'stalled' in status:
+				notification('TorBox: Transfer failed — %s' % (title or item.get('status') or 'Error'), 5000)
+				return
+		notification('TorBox: Still downloading — check TorBox History', 4500)
+
 	def usenet_info(self, request_id=''):
 		return self._get('usenet/mylist', data={'id': request_id})
 
@@ -143,14 +252,33 @@ class TorBoxAPI:
 		return self._post('webdl/controlwebdownload', json=data)
 
 	# ----------- UNRESTRICT (request download URL) -----------
-	def unrestrict_link(self, file_id):
+	def unrestrict_link(self, file_id, max_attempts=12):
 		try:
-			torrent_id, file_id = file_id.split(',')
+			user_ip = ''
+			try: user_ip = requests.get('https://api.ipify.org', timeout=2).text.strip()
+			except Exception: pass
+			torrent_id, file_id = str(file_id).split(',', 1)
 			params = {'token': self.token, 'torrent_id': _to_int(torrent_id), 'file_id': _to_int(file_id)}
-			r = self._get('torrents/requestdl', data=params)
-			if r and r.get('success'): return r.get('data')
+			if user_ip: params['user_ip'] = user_ip
+			for attempt in range(max_attempts):
+				if attempt:
+					sleep(1500)
+				r = self._get('torrents/requestdl', data=params)
+				if isinstance(r, str) and r.strip():
+					return r.strip()
+				if not r or not isinstance(r, dict) or not r.get('success'):
+					continue
+				data = r.get('data')
+				if isinstance(data, dict):
+					for key in ('download', 'download_url', 'url', 'link'):
+						if data.get(key):
+							return str(data[key])
+					continue
+				if isinstance(data, str) and data.strip():
+					return data.strip()
 			return None
-		except Exception: return None
+		except Exception:
+			return None
 
 	def unrestrict_usenet(self, file_id):
 		try:
@@ -172,8 +300,7 @@ class TorBoxAPI:
 
 	# ----------- CREATE TRANSFERS -----------
 	def add_magnet(self, magnet):
-		# TorBox expects multipart-style form fields; lowercase booleans.
-		data = {'magnet': magnet, 'seed': '3', 'allow_zip': 'false'}
+		data = {'magnet': magnet, 'seed': 3, 'allow_zip': 'false'}
 		return self._post('torrents/createtorrent', data=data)
 
 	def add_webdl(self, link):
@@ -194,9 +321,8 @@ class TorBoxAPI:
 		return self._post('usenet/checkcached', params={'format': 'list'}, json={'hashes': hashlist})
 
 	def create_transfer(self, magnet_url):
-		result = self.add_magnet(magnet_url)
-		if not result or not result.get('success'): return ''
-		return (result.get('data') or {}).get('torrent_id', '')
+		torrent_id = self._torrent_id_from_create(self.add_magnet(magnet_url))
+		return str(torrent_id) if torrent_id is not None else ''
 
 	def create_webdl_transfer(self, link):
 		result = self.add_webdl(link)
@@ -211,12 +337,17 @@ class TorBoxAPI:
 			extras_filter = extras()
 			extras_filtering_list = tuple(i for i in extras_filter if i not in title.lower())
 			torrent = self.add_magnet(magnet_url)
-			if not torrent or not torrent.get('success'): return None
-			torrent_id = torrent['data']['torrent_id']
-			torrent_files = self.torrent_info(torrent_id)
-			files = torrent_files['data']['files']
-			selected_files = [{'url': '%d,%d' % (int(torrent_id), item['id']), 'filename': item['short_name'], 'size': item['size']}
-				for item in files if item['short_name'].lower().endswith(tuple(extensions))]
+			torrent_id = self._torrent_id_from_create(torrent)
+			if not torrent_id: return None
+			_item, files = self._wait_for_torrent_files(torrent_id)
+			if not files: return None
+			selected_files = []
+			for item in files:
+				file_id = self._torrent_file_id(item)
+				filename = self._torrent_file_label(item)
+				if file_id is None or not filename.lower().endswith(tuple(extensions)):
+					continue
+				selected_files.append({'url': '%d,%d' % (int(torrent_id), int(file_id)), 'filename': filename, 'size': item.get('size', 0)})
 			if not selected_files: return None
 			if season:
 				selected_files = [i for i in selected_files if seas_ep_filter(season, episode, i['filename'])]
@@ -227,28 +358,62 @@ class TorBoxAPI:
 			if not selected_files: return None
 			file_key = selected_files[0]['url']
 			file_url = self.unrestrict_link(file_key)
-			if not store_to_cloud: Thread(target=self.delete_torrent, args=(torrent_id,)).start()
+			if store_to_cloud:
+				self.monitor_torrent_cloud_ready(torrent_id, title)
+			else:
+				Thread(target=self.delete_torrent, args=(torrent_id,)).start()
 			return file_url
 		except Exception:
 			if torrent_id: self.delete_torrent(torrent_id)
 			return None
 
-	def display_magnet_pack(self, magnet_url, info_hash):
+	def _wait_for_torrent_files(self, torrent_id, max_attempts=45):
+		for attempt in range(max_attempts):
+			if attempt:
+				sleep(1000)
+			item = self._torrent_item_from_info(self.torrent_info_fresh(torrent_id))
+			if not item:
+				continue
+			files = item.get('files') or []
+			if files:
+				return item, files
+		return None, []
+
+	def parse_magnet_pack(self, magnet_url, info_hash):
+		'''POV-aligned pack listing: create_transfer then read files from mylist (no early delete).'''
 		torrent_id = None
 		try:
 			extensions = supported_video_extensions()
-			torrent = self.add_magnet(magnet_url)
-			if not torrent or not torrent.get('success'): return None
-			torrent_id = torrent['data']['torrent_id']
-			torrent_files = self.torrent_info(torrent_id)
-			files = torrent_files['data']['files']
-			pack_files = [{'link': '%d,%d' % (int(torrent_id), item['id']), 'filename': item['short_name'], 'size': item['size']}
-				for item in files if item['short_name'].lower().endswith(tuple(extensions))]
-			Thread(target=self.delete_torrent, args=(torrent_id,)).start()
+			torrent_id = self.create_transfer(magnet_url)
+			if not torrent_id:
+				return None
+			item = self._torrent_item_from_info(self.torrent_info_fresh(torrent_id))
+			files = (item or {}).get('files') or []
+			if not files:
+				_item, files = self._wait_for_torrent_files(torrent_id, max_attempts=12)
+			if not files:
+				return None
+			pack_files = []
+			for file_item in files:
+				file_id = self._torrent_file_id(file_item)
+				filename = self._torrent_file_label(file_item)
+				if file_id is None or not filename.lower().endswith(tuple(extensions)):
+					continue
+				pack_files.append({
+					'link': '%d,%d' % (int(torrent_id), int(file_id)),
+					'filename': filename,
+					'size': file_item.get('size', 0),
+					'torrent_id': torrent_id,
+				})
 			return pack_files or None
 		except Exception:
-			if torrent_id: self.delete_torrent(torrent_id)
+			if torrent_id:
+				try: self.delete_torrent(torrent_id)
+				except: pass
 			return None
+
+	def display_magnet_pack(self, magnet_url, info_hash):
+		return self.parse_magnet_pack(magnet_url, info_hash)
 
 	def _m2ts_check(self, folder_items):
 		for item in folder_items:

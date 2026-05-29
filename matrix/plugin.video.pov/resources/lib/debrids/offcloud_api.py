@@ -18,7 +18,7 @@ class OffcloudAPI:
 		session.headers.update(self.headers())
 
 	def _request(self, method, path, params=None, data=None):
-		url = (base_url + path) if not path.startswith('http') else path
+		url = base_url + path
 		try: response = session.request(method, url, params=params, json=data, timeout=timeout)
 		except session.custom_errors: return kodi_utils.notification('%s timeout' % __name__)
 		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")

@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.1+matrix" provider-name="RomyCupidon">  
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.6+matrix" provider-name="RomyCupidon">  
 <requires>
     <import addon="xbmc.python" version="3.0.0"/>
     <import addon="script.module.requests"/>
@@ -12,15 +12,14 @@
 	<provides>video</provides>
 </extension>   
 <extension point="xbmc.addon.metadata">
-	 <summary lang="en">TOT CONȚINUTUL ACESTUI ADDON A FOST EXTRAS DIN DOMENIUL GOOGLE. NU SUNT RESPONSABIL PENTRU SCOPURILE PROFITABILE ALE PĂRȚILOR TERȚE.</summary>
+	 <summary lang="en">TOT CONTINUTUL ACESTUI ADDON A FOST EXTRAS DIN DOMENIUL GOOGLE. NU SUNT RESPONSABIL PENTRU SCOPURILE PROFITABILE ALE PĂRTILOR TERTE.</summary>
     <description lang="en">[COLOR white]RomyLive+ este un plugin complet pentru Kodi, dedicat divertismentului online. 
 Oferă acces la filme, seriale și multiple categorii de TV live, organizate 
 într-o interfață modernă și intuitivă. Navigarea este rapidă, conținutul este 
 structurat eficient, iar experiența de utilizare este optimizată pentru 
-performanță și stabilitate pe toate dispozitivele compatibile Kodi.
-În zona Adult se poate viziona conținutul doar introducând anul în care a fost rostit acest îndemn: «Domnule Gorbaciov, dărâmați acest zid!»”[/COLOR]
+performanță și stabilitate pe toate dispozitivele compatibile Kodi.[/COLOR]
 
-Cu RomyLive+, ai tot conținutul preferat într-un singur loc.</description>
+Cu RomyLive+, ai tot continutul preferat într-un singur loc.</description>
     <disclaimer lang="en"></disclaimer>
 	<platform>all</platform>
 	<assets>

@@ -601,12 +601,12 @@ class Player(xbmc.Player):
 		self.preScrape_triggered = False
 		self.subtitletime = None
 		#control.sleep(200)
+		homeWindow.clearProperty('umbrella.window_keep_alive')
 		for i in range(0, 500):
 			if self.isPlayback():
 				#control.closeAll() #i cannot remember what this was for.
 				break
 			else: control.sleep(200)
-		homeWindow.clearProperty('umbrella.window_keep_alive')
 		if self.offset != '0' and self.playback_resumed is False:
 			control.sleep(200)
 			_resume_source = getSetting('scrobble.source')
@@ -696,7 +696,14 @@ class Player(xbmc.Player):
 				seekable = (int(self.current_time) > 180 and (watcher < int(self.markwatched_percentage)))
 				if watcher >= int(self.markwatched_percentage):
 					self.libForPlayback() # only write playcount to local lib
-					if _scrobble_source == '0' and getSetting('localnotify') == 'true': control.notification(title=self.title, message=getLS(35510))
+					if _scrobble_source == '0':
+						if getSetting('localnotify') == 'true': control.notification(title=self.title, message=getLS(35510))
+						if not self.watched_during_playback:
+							from resources.lib.database import watchedcache as _wc
+							if self.media_type == 'episode':
+								_wc.change_watched('episode', self.imdb, '', season=self.season, episode=self.episode, watched=5)
+							elif self.media_type == 'movie':
+								_wc.change_watched('movie', self.imdb, '', watched=5)
 				if getSetting('crefresh') == 'true' and seekable:
 					log_utils.log('container.refresh issued', level=log_utils.LOGDEBUG)
 					control.refresh() #not all skins refresh after playback stopped
@@ -728,7 +735,16 @@ class Player(xbmc.Player):
 				if self.mdblistCredentials and (_scrobble_source == '3' or getSetting('mdblist.markwatched') == 'true'):
 					Bookmarks().set_scrobble(self.current_time, self.media_length, self.media_type, self.imdb, self.tmdb, self.tvdb, self.season, self.episode, service='mdblist', title=self.title, tvshowtitle=self.title, year=self.year, already_watched=self.watched_during_playback)
 			self.scrobble_sent = True
-			if _scrobble_source == '0' and getSetting('localnotify') == 'true': control.notification(title=self.title, message=getLS(35510))
+			if _scrobble_source == '0':
+				if getSetting('localnotify') == 'true': control.notification(title=self.title, message=getLS(35510))
+				if not self.watched_during_playback and self.media_length > 0:
+					_pct = float(self.current_time / self.media_length) * 100
+					if _pct >= int(self.markwatched_percentage):
+						from resources.lib.database import watchedcache as _wc
+						if self.media_type == 'episode':
+							_wc.change_watched('episode', self.imdb, '', season=self.season, episode=self.episode, watched=5)
+						elif self.media_type == 'movie':
+							_wc.change_watched('movie', self.imdb, '', watched=5)
 			try:
 				playingfile = Player.isPlaying()
 			except:

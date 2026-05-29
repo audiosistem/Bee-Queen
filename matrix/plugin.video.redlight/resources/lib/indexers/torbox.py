@@ -53,6 +53,73 @@ def tb_cloud():
 	kodi_utils.set_view_mode('view.premium')
 
 
+def tb_history():
+	def _progress(item):
+		if item.get('download_finished'):
+			return 100
+		try:
+			value = float(item.get('progress', 0))
+			if 0 <= value <= 1:
+				return int(value * 100)
+			return min(int(value), 100)
+		except:
+			return 0
+
+	def _builder():
+		for count, item in enumerate(history_items, 1):
+			try:
+				cm = []
+				cm_append = cm.append
+				media_type = item['media_type']
+				type_label = item['type_label']
+				name = clean_file_name(normalize(item.get('name', 'Unknown'))).upper()
+				progress = _progress(item)
+				finished = bool(item.get('download_finished'))
+				display = '%02d | %d%% | [B]%s[/B] | [I]%s [/I]' % (count, progress, type_label, name)
+				delete_params = {'mode': 'torbox.delete', 'folder_id': item['id'], 'media_type': media_type}
+				cm_append(('[B]Delete[/B]', 'RunPlugin(%s)' % kodi_utils.build_url(delete_params)))
+				if finished:
+					url_params = {'mode': 'torbox.browse_tb_cloud', 'folder_id': item['id'], 'media_type': media_type}
+					is_folder = True
+				else:
+					url_params = {'mode': 'torbox.tb_history'}
+					is_folder = False
+				url = kodi_utils.build_url(url_params)
+				listitem = kodi_utils.make_listitem()
+				listitem.setLabel(display)
+				listitem.addContextMenuItems(cm)
+				listitem.setArt({'icon': icon, 'poster': icon, 'thumb': icon, 'fanart': fanart, 'banner': icon})
+				plot = item.get('status') or ('Ready' if finished else 'In progress')
+				if isinstance(plot, str) and plot.strip():
+					listitem.getVideoInfoTag(True).setPlot(plot)
+				yield (url, listitem, is_folder)
+			except Exception:
+				pass
+	icon, fanart = kodi_utils.get_icon('torbox'), kodi_utils.get_addon_fanart()
+	history_items, errors = [], []
+	kodi_utils.show_busy_dialog()
+	TorBox.clear_mylist_cache()
+	for media_type, type_label in (('torrent', 'TORRENT'), ('usenet', 'USENET'), ('webdl', 'WEB DL')):
+		err, items = TorBox.mylist_items(media_type, fresh=True)
+		if err:
+			errors.append('%s: %s' % (type_label, err))
+		else:
+			for item in items:
+				history_items.append({**item, 'media_type': media_type, 'type_label': type_label})
+	kodi_utils.hide_busy_dialog()
+	history_items.sort(key=lambda k: k.get('updated_at', ''), reverse=True)
+	if not history_items:
+		if errors:
+			kodi_utils.notification('TorBox: %s' % errors[0], 4000)
+		else:
+			kodi_utils.notification('TorBox: No transfers in history', 2500)
+	handle = int(sys.argv[1])
+	kodi_utils.add_items(handle, list(_builder()))
+	kodi_utils.set_content(handle, 'files')
+	kodi_utils.end_directory(handle, cacheToDisc=False)
+	kodi_utils.set_view_mode('view.premium')
+
+
 def browse_tb_cloud(folder_id, media_type):
 	def _builder():
 		for count, item in enumerate(video_files, 1):

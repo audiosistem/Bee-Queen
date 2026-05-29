@@ -170,14 +170,18 @@ def lists_sort_order(setting):
 	return int(get_setting('sort.%s' % setting, '0'))
 
 def metadata_user_info():
+	hide_watched = widget_hide_watched()
 	image_resolution = get_resolution()
 	meta_language = get_language()
-	hide_watched = widget_hide_watched()
+	if get_setting('mpaa.select', '0') != '0':
+		mpaa_region = get_setting('mpaa_region').upper()
+	else: mpaa_region = 'US'
 	rpdb_api, rpdb_theme = rpdb_api_key()
 	if rpdb_api: extra_rpdb_movies, extra_rpdb_series = get_rpdb_data()
 	else: extra_rpdb_movies, extra_rpdb_series = False, False
 	return {
-		'image_resolution': image_resolution , 'language': meta_language, 'widget_hide_watched': hide_watched,
+		'widget_hide_watched': hide_watched, 'image_resolution': image_resolution,
+		'language': meta_language, 'mpaa_region': mpaa_region,
 		'extra_rpdb_movies': extra_rpdb_movies, 'extra_rpdb_series': extra_rpdb_series,
 		'rpdb_theme': rpdb_theme, 'rpdb_api_key': rpdb_api
 	}

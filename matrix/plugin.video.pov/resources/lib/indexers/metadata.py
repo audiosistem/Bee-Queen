@@ -340,13 +340,12 @@ def build_movie_meta(data, user_info):
 		country_codes = [i['iso_3166_1'] for i in production_countries]
 	release_dates = data_get('release_dates')
 	if release_dates:
-		try: mpaa = [
-			x['certification']
+		try: mpaa = {
+			i['iso_3166_1']: next((x['certification'] for x in i['release_dates'] if x['certification']), '')
 			for i in release_dates['results']
-			for x in i['release_dates']
-			if i['iso_3166_1'] == 'US' and x['certification']
-		][0]
+		}.get(user_info['mpaa_region']) or ''
 		except: pass
+		if mpaa and user_info['mpaa_region'] != 'US': mpaa = f"{user_info['mpaa_region']} {mpaa}"
 	credits = data_get('credits')
 	if credits:
 		all_cast = credits.get('cast')
@@ -440,13 +439,13 @@ def build_tvshow_meta(data, user_info):
 		country = [i['name'] for i in production_countries]
 		country_codes = [i['iso_3166_1'] for i in production_countries]
 	content_ratings = data_get('content_ratings')
-	release_dates = data_get('release_dates')
 	if content_ratings:
-		try: mpaa = [i['rating'] for i in content_ratings['results'] if i['iso_3166_1'] == 'US'][0]
+		try: mpaa = {
+			i['iso_3166_1']: i['rating']
+			for i in content_ratings['results']
+		}.get(user_info['mpaa_region']) or ''
 		except: pass
-	elif release_dates:
-		try: mpaa = [i['release_dates'][0]['certification'] for i in release_dates['results'] if i['iso_3166_1'] == 'US'][0]
-		except: pass
+		if mpaa and user_info['mpaa_region'] != 'US': mpaa = f"{user_info['mpaa_region']} {mpaa}"
 	credits = data_get('credits')
 	if credits:
 		all_cast = credits.get('cast')

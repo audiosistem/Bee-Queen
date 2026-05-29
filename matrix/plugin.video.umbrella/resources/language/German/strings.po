@@ -199,7 +199,7 @@ msgid "[B]SETTINGS[/B] : General"
 msgstr "[B]EINSTELLUNGEN[/B] : Allgemein"
 
 msgctxt "#32044"
-msgid "[B]SETTINGS[/B] : Accounts"
+msgid "[B]SETTINGS[/B] : Accounts Debrid"
 msgstr "[B]EINSTELLUNGEN[/B] : Konten"
 
 msgctxt "#32045"
@@ -6746,4 +6746,104 @@ msgstr ""
 
 msgctxt "#40679"
 msgid "Show Year in TV Show Title"
+msgstr ""
+
+msgctxt "#40680"
+msgid "Filter Common Infringing Filenames"
+msgstr ""
+
+msgctxt "#40681"
+msgid "User Lists (MDBList)"
+msgstr ""
+
+msgctxt "#40682"
+msgid "Watchlist (MDBList)"
+msgstr ""
+
+msgctxt "#40683"
+msgid "Liked Lists (MDBList)"
+msgstr ""
+
+msgctxt "#40684"
+msgid "Progress Shows (MDBList)"
+msgstr ""
+
+msgctxt "#40685"
+msgid "Progress Episodes (MDBList)"
+msgstr ""
+
+msgctxt "#40686"
+msgid "Finish Watching (MDBList)"
+msgstr ""
+
+msgctxt "#40687"
+msgid "Finish Watching (Trakt)"
+msgstr ""
+
+msgctxt "#40688"
+msgid "Progress Episodes (Trakt)"
+msgstr ""
+
+msgctxt "#40689"
+msgid "Progress Shows (Trakt)"
+msgstr ""
+
+msgctxt "#40690"
+msgid "Watched Shows (Trakt)"
+msgstr ""
+
+msgctxt "#40691"
+msgid "Upcoming Progress (Trakt)"
+msgstr ""
+
+msgctxt "#40692"
+msgid "Recent Episodes (Trakt)"
+msgstr ""
+
+msgctxt "#40693"
+msgid "Upcoming Episodes (Trakt)"
+msgstr ""
+
+msgctxt "#40694"
+msgid "Season Premieres (Trakt)"
+msgstr ""
+
+msgctxt "#40695"
+msgid "History (Trakt)"
+msgstr ""
+
+msgctxt "#40696"
+msgid "Watchlist (Trakt)"
+msgstr ""
+
+msgctxt "#40697"
+msgid "Collection (Trakt)"
+msgstr ""
+
+msgctxt "#40698"
+msgid "My Liked Lists (Trakt)"
+msgstr ""
+
+msgctxt "#40699"
+msgid "User Lists"
+msgstr ""
+
+msgctxt "#40700"
+msgid "Watchlist"
+msgstr ""
+
+msgctxt "#40701"
+msgid "Liked Lists"
+msgstr ""
+
+msgctxt "#40702"
+msgid "Trending Today"
+msgstr ""
+
+msgctxt "#40703"
+msgid "Trending Weekly"
+msgstr ""
+
+msgctxt "#40704"
+msgid "Prefer Smaller File Sizes"
 msgstr ""

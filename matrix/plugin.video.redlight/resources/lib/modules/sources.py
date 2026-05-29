@@ -157,7 +157,13 @@ class Sources():
 		min_seeders = settings.uncached_min_seeders()
 		all_uncached_results = [i for i in results if 'Uncached' in i.get('cache_provider', '')]
 		self.uncached_results = [i for i in all_uncached_results if int(i.get('seeders', '0')) >= min_seeders]
-		results = [i for i in results if not i in all_uncached_results]
+		if settings.include_uncached_torbox():
+			tb_uncached_in_main = [i for i in self.uncached_results if 'TorBox' in i.get('cache_provider', '')]
+			strip_uncached = [i for i in all_uncached_results if i not in tb_uncached_in_main]
+			self.uncached_results = [i for i in self.uncached_results if i not in tb_uncached_in_main]
+		else:
+			strip_uncached = all_uncached_results
+		results = [i for i in results if i not in strip_uncached]
 		if self.ignore_scrape_filters: self.filters_ignored = True
 		else:
 			results = self.filter_results(results)
@@ -362,10 +368,14 @@ class Sources():
 
 	def display_results(self, results):
 		window_format, window_number = settings.results_format()
-		action, chosen_item = open_window(('windows.sources', 'SourcesResults'), 'sources_results.xml',
+		window_result = open_window(('windows.sources', 'SourcesResults'), 'sources_results.xml',
 				window_format=window_format, window_id=window_number, results=results, meta=self.meta, episode_group_label=self.episode_group_label,
 				scraper_settings=self.scraper_settings, prescrape=self.prescrape, filters_ignored=self.filters_ignored,
 				uncached_results=self.uncached_results, external_cache_check=self.external_cache_check)
+		if not window_result:
+			self._kill_progress_dialog()
+			return
+		action, chosen_item = window_result
 		if not action: self._kill_progress_dialog()
 		elif action == 'play': return self.play_file(results, chosen_item)
 		elif self.prescrape and action == 'perform_full_search':
@@ -507,8 +517,11 @@ class Sources():
 		else: return 1
 
 	def _sort_uncached_results(self, results):
+		if settings.include_uncached_torbox():
+			defer_uncached = [i for i in results if 'Uncached' in i.get('cache_provider', '') and 'TorBox' not in i.get('cache_provider', '')]
+			return [i for i in results if i not in defer_uncached] + defer_uncached
 		uncached = [i for i in results if 'Uncached' in i.get('cache_provider', '')]
-		cached = [i for i in results if not i in uncached]
+		cached = [i for i in results if i not in uncached]
 		return cached + uncached
 
 	def get_meta(self):
@@ -587,15 +600,17 @@ class Sources():
 		self.progress_dialog, self.progress_thread = None, None
 
 	def debridPacks(self, debrid_provider, name, magnet_url, info_hash, download=False):
-		kodi_utils.show_busy_dialog()
-		debrid_info = {'Real-Debrid': 'rd_browse', 'Premiumize.me': 'pm_browse', 'AllDebrid': 'ad_browse', 'TorBox': 'tb_browse'}[debrid_provider]
-		debrid_function = self.debrid_importer(debrid_info)
-		try: debrid_files = debrid_function().display_magnet_pack(magnet_url, info_hash)
-		except: debrid_files = None
-		kodi_utils.hide_busy_dialog()
-		if not debrid_files: return kodi_utils.notification('Error')
-		debrid_files.sort(key=lambda k: k['filename'].lower())
-		if download: return debrid_files, debrid_function
+		from modules.debrid import ExternalPackSource, normalize_debrid_provider
+		debrid_provider = normalize_debrid_provider(debrid_provider)
+		source = {'url': magnet_url, 'hash': info_hash, 'debrid': debrid_provider, 'cache_provider': debrid_provider, 'name': name}
+		pack_result = ExternalPackSource(source).browse_packs(download=download)
+		if not pack_result:
+			return None
+		debrid_info = {'Real-Debrid': 'rd_browse', 'Premiumize.me': 'pm_browse', 'AllDebrid': 'ad_browse', 'TorBox': 'tb_browse'}.get(debrid_provider)
+		if download:
+			debrid_files, _pack_api = pack_result
+			return debrid_files, self.debrid_importer(debrid_info)
+		debrid_files = pack_result
 		list_items = [{'line1': '%.2f GB | %s' % (float(item['size'])/1073741824, clean_file_name(item['filename']).upper())} for item in debrid_files]
 		kwargs = {'items': json.dumps(list_items), 'heading': name, 'enumerate': 'true', 'narrow_window': 'true'}
 		chosen_result = kodi_utils.select_dialog(debrid_files, **kwargs)
@@ -709,10 +724,11 @@ class Sources():
 			self.get_sources()
 
 	def still_watching_check(self):
-		watching_check = self.nextep_settings['watching_check']
+		watching_check = self.nextep_settings.get('watching_check', 0)
 		if watching_check == 0: return True
 		player = kodi_utils.kodi_player()
-		if not player.isPlayingVideo(): return False
+		if not player.isPlayingVideo():
+			return bool(self.background)
 		watch_count = self.meta.get('watch_count')
 		if watch_count == watching_check: still_watching, watch_count = self._make_still_watching_dialog('Are you still watching [B]%s[/B]?'), 0
 		else: still_watching = True
@@ -739,12 +755,13 @@ class Sources():
 		if not self.still_watching_check():
 			kodi_utils.notification('Cancel Autoplay', icon=self.meta.get('poster'))
 			return False
+		use_window = self.nextep_settings['use_window']
+		window_time = self.nextep_settings['window_time']
+		default_action = self.nextep_settings['default_action']
 		player = kodi_utils.kodi_player()
+		continue_nextep = False
 		if player.isPlayingVideo():
 			total_time = player.getTotalTime()
-			use_window, window_time, default_action = self.nextep_settings['use_window'], self.nextep_settings['window_time'], self.nextep_settings['default_action']
-			action = None if use_window else 'close'
-			continue_nextep = False
 			while player.isPlayingVideo():
 				try:
 					remaining_time = round(total_time - player.getTime())
@@ -753,25 +770,33 @@ class Sources():
 						break
 					kodi_utils.sleep(1000)
 				except: pass
-			if continue_nextep:
-				if use_window: action = self._make_nextep_dialog(default_action=default_action)
-				else: kodi_utils.notification('[B]Next Up:[/B] %s S%02dE%02d' \
-						% (self.meta.get('title'), self.meta.get('season'), self.meta.get('episode')), 6500, self.meta.get('poster'))
-				if not action: action = default_action
-				if action == 'cancel': return False
-				elif action == 'pause':
-					player.stop()
-					return False
-				elif action == 'play':
-					self._make_resolve_dialog()
-					player.stop()
-					return True
-				else:
-					while player.isPlayingVideo(): kodi_utils.sleep(100)
-					self._make_resolve_dialog()
-					return True
-			else: return False
-		else: return False
+		elif self.background:
+			continue_nextep = True
+		if not continue_nextep:
+			return False
+		action = None if use_window else 'close'
+		if use_window:
+			action = self._make_nextep_dialog(default_action=default_action)
+		else:
+			kodi_utils.notification('[B]Next Up:[/B] %s S%02dE%02d' \
+					% (self.meta.get('title'), self.meta.get('season'), self.meta.get('episode')), 6500, self.meta.get('poster'))
+		if not action:
+			action = default_action
+		if action == 'cancel':
+			return False
+		if action == 'pause':
+			if player.isPlayingVideo():
+				player.stop()
+			return False
+		if action == 'play':
+			self._make_resolve_dialog()
+			if player.isPlayingVideo():
+				player.stop()
+			return True
+		while player.isPlayingVideo():
+			kodi_utils.sleep(100)
+		self._make_resolve_dialog()
+		return True
 
 	def autoscrape_nextep_handler(self):
 		if settings.autoscrape_confirm():

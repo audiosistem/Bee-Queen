@@ -723,8 +723,7 @@ def hideItem(name, imdb=None, tvdb=None, season=None, episode=None, refresh=True
 	success = None
 	try:
 		control.busy()
-		if episode: post = {"shows": [{"ids": {"tvdb": tvdb}}]}
-		elif tvshow: post = {"shows": [{"ids": {"tvdb": tvdb}}]}
+		if tvdb: post = {"shows": [{"ids": {"tvdb": tvdb}}]}
 		else: post = {"movies": [{"ids": {"imdb": imdb}}]}
 		success = getTrakt('users/hidden/dropped', post=post)
 		if success:

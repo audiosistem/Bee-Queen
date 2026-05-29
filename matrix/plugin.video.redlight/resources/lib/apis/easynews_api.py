@@ -6,7 +6,7 @@ from urllib.parse import quote, urlencode
 from caches.base_cache import connect_database
 from caches.main_cache import cache_object
 from caches.settings_cache import get_setting
-from modules.settings import easynews_refresh_credentials
+from modules.settings import easynews_refresh_credentials, easynews_exclude_adult
 from modules.dom_parser import parseDOM
 from modules.utils import chunks, remove_accents
 from modules.kodi_utils import make_session
@@ -163,7 +163,7 @@ class EasyNewsAPI:
 		'fty[]': 'IMAGE', 'pby': 10000}
 		search_types_params = {'VIDEO': SEARCH_PARAMS, 'IMAGE': IMAGE_SEARCH_PARAMS}
 		params = search_types_params[search_type]
-		params['safeO'] = 0
+		params['safeO'] = 1 if easynews_exclude_adult() else 0
 		params['gps'] = self.query
 		url = self.base_url + self.search_link
 		return url, params

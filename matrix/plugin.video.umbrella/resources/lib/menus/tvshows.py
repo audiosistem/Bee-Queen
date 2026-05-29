@@ -1819,6 +1819,15 @@ class TVshows:
 				self.list = cache.get(self.trakt_tvshow_progress, 0, folderName) or []
 			else:
 				self.list = cache.get(self.trakt_tvshow_progress, self.trakt_progress_hours, folderName) or []
+			try:
+				hidden = traktsync.fetch_hidden_progress()
+				hidden_imdb = {str(i['imdb']) for i in hidden if i.get('imdb')}
+				hidden_tvdb = {str(i['tvdb']) for i in hidden if i.get('tvdb')}
+				self.list = [i for i in self.list if not (
+					(i.get('imdb') and i['imdb'] in hidden_imdb) or
+					(i.get('tvdb') and i['tvdb'] in hidden_tvdb)
+				)]
+			except: pass
 			self.sort(type='progress')
 			if self.list is None: self.list = []
 			if self.list:
@@ -1883,13 +1892,6 @@ class TVshows:
 			self.worker()
 			if self.list is None: self.list = []
 			try:
-				hidden = traktsync.fetch_hidden_progress()
-				hidden_imdb = {str(i['imdb']) for i in hidden if i.get('imdb')}
-				hidden_tvdb = {str(i['tvdb']) for i in hidden if i.get('tvdb')}
-				self.list = [i for i in self.list if not (
-					(i.get('imdb') and i['imdb'] in hidden_imdb) or
-					(i.get('tvdb') and i['tvdb'] in hidden_tvdb)
-				)] # removes dropped/hidden progress items
 				prior_week = int(re.sub(r'[^0-9]', '', (self.date_time - timedelta(days=7)).strftime('%Y-%m-%d')))
 				sorted_list = []
 				top_items = [i for i in self.list if i.get('premiered') and (int(re.sub(r'[^0-9]', '', str(i['premiered']))) >= prior_week)]
@@ -1897,7 +1899,7 @@ class TVshows:
 				sorted_list.extend([i for i in self.list if i not in top_items])
 				self.list = sorted_list
 			except:
-				
+
 				log_utils.error()
 			#if create_directory: self.tvshowDirectory(self.list)
 		except:

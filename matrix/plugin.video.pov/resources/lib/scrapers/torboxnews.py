@@ -48,12 +48,11 @@ class source:
 						'source': 'usenet', 'language': 'en', 'direct': False, 'debridonly': True,
 						'provider': 'torboxnews', 'hash': hash, 'url': url, 'name': normalized, 'name_info': details,
 						'quality': video_quality, 'info': size_label, 'size': size, 'seeders': seeders,
-						'tracker': item['indexer'] or self.scrape_provider
-					}) # source module definition
-					source.update({
-						'external': True, 'scrape_provider': 'external', 'URLName': URLName,
-						'extraInfo': details, 'size_label': size_label
-					}) # added by addon in process_sources
+						'tracker': item['indexer'] or self.scrape_provider,
+						# source module definition
+						'scrape_provider': 'external', 'external': True,
+						'URLName': URLName, 'extraInfo': details, 'size_label': size_label
+					})  # added by addon in process_sources
 					sources_append(source)
 				except: pass
 		except Exception as e:
@@ -77,46 +76,12 @@ class source:
 			kodi_utils.logger(f"{self.scrape_provider} error", str(e))
 		except: pass
 
-x_aiostreams_user_data, x_aiostreams_url = """\
-{
-  "sortCriteria": {"global": []},
-  "formatter"   : {"id": "torrentio"},
-  "deduplicator": {
-    "enabled": true,
-    "keys": ["filename", "infoHash"],
-    "multiGroupBehaviour": "aggressive",
-    "cached": "single_result",
-    "uncached": "per_service",
-    "p2p": "single_result",
-    "http": "disabled",
-    "live": "disabled",
-    "youtube": "disabled",
-    "external": "disabled",
-    "libraryBehaviour": "ignore",
-    "smartDetectRounding": 10,
-    "smartDetectAttributes": [
-      "size",      "resolution",    "quality", "visualTags",
-      "audioTags", "audioChannels", "encode",  "languages"
-    ]
-  },
-  "presets"     : [
-    {
-      "type"      : "torbox-search",
-      "instanceId": "86b",
-      "enabled"   : true,
-      "options"   : {
-        "name": "TorBox Search",
-        "timeout": %d,
-        "sources": ["usenet"],
-        "mediaTypes": [],
-        "userSearchEngines": true,
-        "onlyShowUserSearchResults": %s,
-        "useMultipleInstances": false
-      }
-    }
-  ],
-  "services"    : [
-    {"id": "torbox", "enabled": true, "credentials": {"apiKey": "%s"}}
-  ]
-}""", 'https://aiostreamsfortheweebsstable.midnightignite.me'
+x_aiostreams_user_data, x_aiostreams_url = (
+	'{"sortCriteria":{"global":[]},"deduplicator":{"enabled":false},"formatte'
+	'r":{"id":"torrentio"},"presets":[{"type":"torbox-search","instanceId":"v'
+	'0p","enabled":true,"options":{"timeout":%d,"name":"TorBoxSearch","source'
+	's":["usenet"],"mediaTypes":[],"useMultipleInstances":false,"userSearchEn'
+	'gines":true,"onlyShowUserSearchResults":%s}}],"services":[{"id":"torbox"'
+	',"enabled":true,"credentials":{"apiKey":"%s"}}]}'
+), 'https://aiostreamsfortheweebsstable.midnightignite.me'
 

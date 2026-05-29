@@ -219,6 +219,30 @@ class Episodes:
 			from resources.lib.modules import log_utils
 			log_utils.error()
 
+	def mdblist_unfinished(self, url=None, create_directory=True, folderName=''):
+		self.list = []
+		try:
+			from resources.lib.database import mdbsync
+			from resources.lib.modules import mdblist
+			items = mdbsync.fetch_bookmarks(imdb='', ret_all=True, ret_type='episodes')
+			if not items:
+				if create_directory: self.episodeDirectory(self.list, unfinished=True, next=False, folderName=folderName)
+				return self.list
+			cache_key = 'mdblistunfinished'
+			if mdblist.getWatchedActivity() > cache.timeout(self.trakt_episodes_list, cache_key, self.trakt_user, self.lang, items):
+				self.list = cache.get(self.trakt_episodes_list, 0, cache_key, self.trakt_user, self.lang, items)
+			else:
+				self.list = cache.get(self.trakt_episodes_list, self.trakt_unfinished_hours, cache_key, self.trakt_user, self.lang, items)
+			if self.list is None: self.list = []
+			self.list = sorted(self.list, key=lambda k: k['paused_at'], reverse=True)
+			if self.list and not self.showunaired:
+				self.list = [i for i in self.list if i.get('unaired', '') != 'true']
+			if create_directory: self.episodeDirectory(self.list, unfinished=True, next=False, folderName=folderName)
+			return self.list
+		except:
+			from resources.lib.modules import log_utils
+			log_utils.error()
+
 	def unfinishedManager(self):
 		try:
 			control.busy()
@@ -245,6 +269,11 @@ class Episodes:
 				if trakt.getProgressActivity() > cache.timeout(self.trakt_progress_list, url, self.trakt_user, self.lang, self.trakt_directProgressScrape, True):
 					self.list = cache.get(self.trakt_progress_list, 0, url, self.trakt_user, self.lang, self.trakt_directProgressScrape, True)
 				else: self.list = cache.get(self.trakt_progress_list, self.trakt_progress_hours, url, self.trakt_user, self.lang, self.trakt_directProgressScrape, True)
+				try:
+					hidden_prog = traktsync.fetch_hidden_progress()
+					hidden_tvdb_set = {str(i['tvdb']) for i in hidden_prog if i.get('tvdb')}
+					self.list = [i for i in (self.list or []) if i.get('tvdb') not in hidden_tvdb_set]
+				except: pass
 				try:
 					if not self.list: raise Exception()
 					for i in range(len(self.list)):
@@ -296,6 +325,11 @@ class Episodes:
 				if trakt.getProgressActivity() > cache.timeout(self.trakt_progress_list, api_url, self.trakt_user, self.lang, self.trakt_directProgressScrape):
 					self.list = cache.get(self.trakt_progress_list, 0, api_url, self.trakt_user, self.lang, self.trakt_directProgressScrape)
 				else: self.list = cache.get(self.trakt_progress_list, self.trakt_progress_hours, api_url, self.trakt_user, self.lang, self.trakt_directProgressScrape)
+				try:
+					hidden_prog = traktsync.fetch_hidden_progress()
+					hidden_tvdb_set = {str(i['tvdb']) for i in hidden_prog if i.get('tvdb')}
+					self.list = [i for i in (self.list or []) if i.get('tvdb') not in hidden_tvdb_set]
+				except: pass
 				self.sort(type='progress')
 				if self.list is None: self.list = []
 				# place new season ep1's at top of list for 1 week
@@ -834,14 +868,6 @@ class Episodes:
 				items.append(values)
 				
 			except: pass
-		try:
-			hidden = traktsync.fetch_hidden_progress()
-			hidden = [str(i['tvdb']) for i in hidden]
-			items = [i for i in items if i['tvdb'] not in hidden] # removes hidden progress items
-		except:
-			from resources.lib.modules import log_utils
-			log_utils.error()
-
 		def items_list(i):
 			values = i
 			imdb, tmdb, tvdb = i.get('imdb'), i.get('tmdb'), i.get('tvdb')

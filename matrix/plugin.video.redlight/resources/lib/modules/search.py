@@ -64,8 +64,8 @@ def clear_search():
 	('Clear People Search History', 'people_queries'),
 	('Clear Keywords Movie Search History', 'keyword_tmdb_movie_queries'),
 	('Clear Keywords TV Show Search History', 'keyword_tmdb_tvshow_queries'),
-	('Clear Easynews Search History', 'easynews_video_queries'),
-	('Clear Easynews Search History', 'easynews_image_queries'),
+	('Clear EasyNews Search History', 'easynews_video_queries'),
+	('Clear EasyNews Search History', 'easynews_image_queries'),
 	('Clear Trakt List Search History', 'trakt_list_queries')]
 	try:
 		list_items = [{'line1': item[0]} for item in clear_history_list]
@@ -78,6 +78,12 @@ def clear_search():
 def clear_all(setting_id, refresh='false'):
 	main_cache.set(setting_id, '', expiration=365)
 	notification('Success', 2500)
+	if refresh == 'true': kodi_refresh()
+
+def clear_easynews_search_history(refresh='false', silent=False):
+	main_cache.set('easynews_video_queries', '', expiration=365)
+	main_cache.set('easynews_image_queries', '', expiration=365)
+	if not silent: notification('Success', 2500)
 	if refresh == 'true': kodi_refresh()
 
 	

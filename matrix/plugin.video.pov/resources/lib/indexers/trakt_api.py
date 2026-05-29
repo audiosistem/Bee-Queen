@@ -30,7 +30,7 @@ def call_trakt(path, params=None, data=None, with_auth=True, method=None, pagina
 	try:
 		response = session.request(
 			'post' if data is not None else method or 'get',
-			path if path.startswith('http') else base_url % path,
+			base_url % path,
 			params=None if data is not None else params,
 			json=data if data else None,
 			headers=headers,

@@ -780,6 +780,20 @@ class Movies:
 			from resources.lib.modules import log_utils
 			log_utils.error()
 
+	def mdblist_unfinished(self, url=None, idx=True, create_directory=True, folderName=''):
+		self.list = []
+		try:
+			from resources.lib.database import mdbsync
+			self.list = mdbsync.fetch_bookmarks(imdb='', ret_all=True, ret_type='movies')
+			if idx: self.worker()
+			self.list = sorted(self.list, key=lambda k: k['paused_at'], reverse=True)
+			if self.list is None: self.list = []
+			if create_directory: self.movieDirectory(self.list, unfinished=True, next=False, folderName=folderName)
+			return self.list
+		except:
+			from resources.lib.modules import log_utils
+			log_utils.error()
+
 	def unfinishedManager(self):
 		try:
 			control.busy()

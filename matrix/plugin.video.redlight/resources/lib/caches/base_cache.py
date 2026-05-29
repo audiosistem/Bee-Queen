@@ -177,8 +177,12 @@ def clear_cache(cache_type, silent=False):
 		from apis import easynews_api
 		results = []
 		results.append(easynews_api.clear_media_results_database())
-		for item in ('pm_cloud', 'rd_cloud', 'ad_cloud', 'ed_cloud', 'tb_cloud', 'folders'): results.append(clear_cache(item, silent=True))
+		for item in ('pm_cloud', 'rd_cloud', 'ad_cloud', 'tb_cloud', 'folders'): results.append(clear_cache(item, silent=True))
 		success = False not in results
+	elif cache_type == 'easynews_scrape':
+		if not _confirm(): return
+		from apis import easynews_api
+		success = easynews_api.clear_media_results_database()
 	elif cache_type == 'external_scrapers':
 		from caches.external_cache import external_cache
 		from caches.debrid_cache import debrid_cache
@@ -233,11 +237,12 @@ def clear_cache(cache_type, silent=False):
 
 def clear_all_cache():
 	if not kodi_utils.confirm_dialog(): return
+	from modules.search import clear_easynews_search_history
 	progressDialog = kodi_utils.progress_dialog()
 	line = 'Clearing....[CR]%s'
 	caches = (('meta', 'Meta Cache'), ('internal_scrapers', 'Internal Scrapers Cache'), ('external_scrapers', 'External Scrapers Cache'), ('trakt', 'Trakt Cache'),
 			('imdb', 'IMDb Cache'), ('list', 'List Data Cache'), ('ai_functions', 'AI Data Cache'), ('tmdb_list', 'TMDb Personal List Cache'), ('main', 'Main Cache'),
-			('pm_cloud', 'Premiumize Cloud'), ('rd_cloud', 'Real Debrid Cloud'), ('ad_cloud', 'All Debrid Cloud'), ('ed_cloud', 'Easy Debrid Cloud'),
+			('pm_cloud', 'Premiumize Cloud'), ('rd_cloud', 'Real Debrid Cloud'), ('ad_cloud', 'All Debrid Cloud'),
 			('tb_cloud', 'TorBox Cloud'))
 	for count, cache_type in enumerate(caches, 1):
 		try:
@@ -245,6 +250,8 @@ def clear_all_cache():
 			clear_cache(cache_type[0], silent=True)
 			kodi_utils.sleep(1000)
 		except: pass
+	try: clear_easynews_search_history(silent=True)
+	except: pass
 	progressDialog.close()
 	kodi_utils.sleep(100)
 	kodi_utils.ok_dialog(text='Success')

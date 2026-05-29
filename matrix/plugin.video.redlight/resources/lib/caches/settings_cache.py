@@ -361,6 +361,7 @@ def default_settings():
 {'setting_id': 'provider.external', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'external_scraper.name', 'setting_type': 'string', 'setting_default': 'empty_setting'},
 {'setting_id': 'external.cache_check', 'setting_type': 'boolean', 'setting_default': 'false'},
+{'setting_id': 'external.include_uncached_torbox', 'setting_type': 'boolean', 'setting_default': 'false'},
 #==================== Real Debrid
 {'setting_id': 'rd.token', 'setting_type': 'string', 'setting_default': 'empty_setting'},
 {'setting_id': 'rd.enabled', 'setting_type': 'boolean', 'setting_default': 'false'},
@@ -373,6 +374,7 @@ def default_settings():
 {'setting_id': 'results.sort_rdcloud_first', 'setting_type': 'boolean', 'setting_default': 'true'},
 {'setting_id': 'rd.priority', 'setting_type': 'action', 'setting_default': '10', 'min_value': '1', 'max_value': '10'},
 {'setting_id': 'rd.alternate_base_url', 'setting_type': 'boolean', 'setting_default': 'false'},
+{'setting_id': 'rd.free_active_slot', 'setting_type': 'boolean', 'setting_default': 'false'},
 #==================== Premiumize
 {'setting_id': 'pm.token', 'setting_type': 'string', 'setting_default': 'empty_setting'},
 {'setting_id': 'pm.enabled', 'setting_type': 'boolean', 'setting_default': 'false'},
@@ -399,18 +401,20 @@ def default_settings():
 {'setting_id': 'tb.token', 'setting_type': 'string', 'setting_default': 'empty_setting'},
 {'setting_id': 'tb.enabled', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'store_resolved_to_cloud.torbox', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'None', '1': 'All', '2': 'Show Packs Only'}},
+{'setting_id': 'tb.notify_cloud_ready', 'setting_type': 'boolean', 'setting_default': 'true'},
 {'setting_id': 'provider.tb_cloud', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'tb_cloud.title_filter', 'setting_type': 'boolean', 'setting_default': 'true'},
 {'setting_id': 'check.tb_cloud', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'autoplay.tb_cloud', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'results.sort_tbcloud_first', 'setting_type': 'boolean', 'setting_default': 'true'},
 {'setting_id': 'tb.priority', 'setting_type': 'action', 'setting_default': '10', 'min_value': '1', 'max_value': '10'},
-#==================== Easynews
+#==================== EasyNews
 {'setting_id': 'provider.easynews', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'easynews_user', 'setting_type': 'string', 'setting_default': 'empty_setting'},
 {'setting_id': 'easynews_password', 'setting_type': 'string', 'setting_default': 'empty_setting'},
 {'setting_id': 'easynews.title_filter', 'setting_type': 'boolean', 'setting_default': 'true'},
 {'setting_id': 'easynews.filter_lang', 'setting_type': 'boolean', 'setting_default': 'false'},
+{'setting_id': 'easynews.exclude_adult', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'easynews.lang_filters', 'setting_type': 'string', 'setting_default': 'eng'},
 {'setting_id': 'easynews.refresh_credentials', 'setting_type': 'boolean', 'setting_default': 'true'},
 {'setting_id': 'easynews.lang_include_unknown', 'setting_type': 'boolean', 'setting_default': 'true'},
@@ -525,6 +529,15 @@ def default_settings():
 {'setting_id': 'playback.volumecheck_enabled', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'playback.volumecheck_percent', 'setting_type': 'action', 'setting_default': '50', 'min_value': '1', 'max_value': '100'},
 {'setting_id': 'playback.auto_enable_subs', 'setting_type': 'boolean', 'setting_default': 'false'},
+{'setting_id': 'playback.subs_source', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Local Subtitles', '1': 'SubMaker'}},
+{'setting_id': 'playback.submaker_manifest', 'setting_type': 'string', 'setting_default': 'empty_setting'},
+{'setting_id': 'playback.submaker_language', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'English', '1': 'Arabic', '2': 'Bengali',
+'3': 'Bulgarian', '4': 'Chinese', '5': 'Croatian', '6': 'Czech', '7': 'Danish', '8': 'Dutch', '9': 'Finnish', '10': 'French', '11': 'German',
+'12': 'Greek', '13': 'Hebrew', '14': 'Hindi', '15': 'Hungarian', '16': 'Icelandic', '17': 'Indonesian', '18': 'Italian', '19': 'Japanese',
+'20': 'Korean', '21': 'Malay', '22': 'Norwegian', '23': 'Persian', '24': 'Polish', '25': 'Portuguese', '26': 'Portuguese (Brazil)', '27': 'Punjabi',
+'28': 'Romanian', '29': 'Russian', '30': 'Serbian', '31': 'Slovenian', '32': 'Spanish', '33': 'Swedish', '34': 'Tagalog', '35': 'Tamil', '36': 'Telugu',
+'37': 'Thai', '38': 'Turkish', '39': 'Ukrainian', '40': 'Urdu', '41': 'Vietnamese'}},
+{'setting_id': 'playback.submaker_prefer_local', 'setting_type': 'boolean', 'setting_default': 'true'},
 
 
 #=========================================================================================#

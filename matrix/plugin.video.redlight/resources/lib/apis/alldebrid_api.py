@@ -84,19 +84,48 @@ class AllDebridAPI:
 		cache_info = self.check_cache(hash_string)['magnets'][0]
 		return cache_info['instant']
 
-	def user_cloud(self):
+	def _delete_cache_key(self, string):
+		try:
+			from caches.base_cache import connect_database
+			dbcon = connect_database('maincache_db')
+			dbcon.execute("""DELETE FROM maincache WHERE id=?""", (string,))
+		except:
+			pass
+
+	def clear_mylist_cache(self):
+		for string in ('ad_user_cloud', 'ad_user_history', 'ad_user_links'):
+			self._delete_cache_key(string)
+
+	def user_cloud(self, fresh=False):
 		url = 'magnet/status'
+		if fresh:
+			self._delete_cache_key('ad_user_cloud')
+			return self._get(url) or {'magnets': []}
 		string = 'ad_user_cloud'
 		return cache_object(self._get, string, url, False, 0.03)
 
-	def history(self):
+	def magnets_list(self, fresh=True):
+		if fresh:
+			self._delete_cache_key('ad_user_cloud')
+		result = self._get('magnet/status')
+		if not result or not isinstance(result, dict):
+			return 'Invalid response', []
+		return None, result.get('magnets') or []
+
+	def history(self, fresh=False):
 		url = 'user/history'
-		string = "ad_user_history"
+		if fresh:
+			self._delete_cache_key('ad_user_history')
+			return self._get(url) or {}
+		string = 'ad_user_history'
 		return cache_object(self._get, string, url, False, 0.03)
 
-	def user_links(self):
+	def user_links(self, fresh=False):
 		url = 'user/links'
-		string = "ad_user_links"
+		if fresh:
+			self._delete_cache_key('ad_user_links')
+			return self._get(url) or {}
+		string = 'ad_user_links'
 		return cache_object(self._get, string, url, False, 0.03)
 
 	def unrestrict_link(self, link):

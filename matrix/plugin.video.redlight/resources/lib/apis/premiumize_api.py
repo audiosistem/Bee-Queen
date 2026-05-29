@@ -154,9 +154,31 @@ class PremiumizeAPI:
 		response = self._post(url, data)
 		return response['status']
 
-	def transfers_list(self):
+	def transfers_list(self, fresh=False):
+		if fresh:
+			try:
+				from caches.base_cache import connect_database
+				dbcon = connect_database('maincache_db')
+				dbcon.execute("""DELETE FROM maincache WHERE id=?""", ('pm_transfers_list',))
+			except:
+				pass
 		url = 'transfer/list'
-		return self._get(url)
+		response = self._get(url)
+		if not response or not isinstance(response, dict):
+			response = self._post(url, {})
+		if not response or not isinstance(response, dict):
+			return {'status': 'error', 'message': 'Invalid response', 'transfers': []}
+		if str(response.get('status', '')).lower() != 'success':
+			return response
+		transfers = response.get('transfers')
+		if transfers is None:
+			transfers = response.get('data') or []
+		if isinstance(transfers, dict):
+			transfers = list(transfers.values())
+		if not isinstance(transfers, list):
+			transfers = []
+		response['transfers'] = transfers
+		return response
 
 	def instant_transfer(self, magnet_url):
 		url = 'transfer/directdl'
@@ -179,10 +201,12 @@ class PremiumizeAPI:
 		response = self._post(url, data)
 		return response['status']
 
-	def get_item_details(self, item_id):
-		string = 'pm_item_details_%s' % item_id
+	def get_item_details(self, item_id, fresh=False):
 		url = 'item/details'
 		data = {'id': item_id}
+		if fresh:
+			return self._post(url, data)
+		string = 'pm_item_details_%s' % item_id
 		args = [url, data]
 		return cache_object(self._post, string, args, False, 0.5)
 

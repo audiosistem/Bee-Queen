@@ -64,7 +64,9 @@ def download(name, image, url, meta_name=None, pack=None): # needs re-write, pac
 			if control.setting('debug.level') == '1':
 				log_utils.log('content: %s' % str(content), __name__)
 			# transname = url.rsplit('/', 1)[1].split('|')[0]
-			transname = unquote(url.rsplit('/', 1)[1].split('|')[0])
+			url_basename = unquote(url.rsplit('/', 1)[1].split('|')[0])
+			if any(url_basename.lower().endswith(ext) for ext in ('.3gp', '.avi', '.divx', '.flv', '.m4v', '.mp4', '.mpeg', '.mpg', '.m2ts', '.mov', '.mkv', '.wmv', '.webm', '.xvid')):
+				transname = url_basename
 
 
 		elif meta_name:
@@ -134,10 +136,10 @@ def download(name, image, url, meta_name=None, pack=None): # needs re-write, pac
 				log_utils.log('dest: %s' % dest, __name__)
 
 			control.makeFile(dest)
-			dest = os.path.join(dest, 'Season %01d' % int(content[1]))
+			dest = os.path.join(dest, 'Season %02d' % int(content[1]))
 			control.makeFile(dest)
 			if file_format == '0' and not meta_name:
-				transname = transtvshowtitle + ' S%sE%s' % (content[1], content[2])
+				transname = transtvshowtitle + ' S%02dE%02d' % (int(content[1]), int(content[2]))
 			# else:
 			# 	try:
 			# 		s = re.sub(r'^[\w,\s-]+\.[A-Za-z]{3}$)','', transname)
@@ -356,10 +358,10 @@ def createStrm(name, image, url, meta_name=None):
 				transtvshowtitle = titlecase(re.sub(r'[^A-Za-z0-9\s-]+', ' ', transtvshowtitle))
 			dest = os.path.join(dest, transtvshowtitle)
 			control.makeFile(dest)
-			dest = os.path.join(dest, 'Season %01d' % int(content[1]))
+			dest = os.path.join(dest, 'Season %02d' % int(content[1]))
 			control.makeFile(dest)
 			if file_format == '0' and not meta_name:
-				transname = transtvshowtitle + ' S%sE%s' % (content[1], content[2])
+				transname = transtvshowtitle + ' S%02dE%02d' % (int(content[1]), int(content[2]))
 		dest = os.path.join(dest, transname + '.strm')
 		doStrm(url, dest, transname)
 	except: log_utils.error()

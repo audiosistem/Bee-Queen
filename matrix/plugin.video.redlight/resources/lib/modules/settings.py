@@ -118,6 +118,22 @@ def include_prerelease_results():
 def auto_enable_subs():
 	return get_setting('redlight.playback.auto_enable_subs', 'false') == 'true'
 
+def subtitles_source():
+	return get_setting('redlight.playback.subs_source', '0')
+
+def submaker_enabled():
+	return subtitles_source() == '1'
+
+def submaker_manifest():
+	manifest = get_setting('redlight.playback.submaker_manifest', 'empty_setting')
+	return '' if manifest == 'empty_setting' else manifest
+
+def submaker_language():
+	return get_setting('redlight.playback.submaker_language_name', 'English')
+
+def submaker_prefer_local():
+	return get_setting('redlight.playback.submaker_prefer_local', 'true') == 'true'
+
 def stingers_show():
 	return get_setting('redlight.stinger_alert.show', 'false') == 'true'
 
@@ -274,11 +290,20 @@ def filter_by_name(scraper):
 def uncached_min_seeders():
 	return int(get_setting('redlight.results.uncached_min_seeders', '0'))
 
+def include_uncached_torbox():
+	return get_setting('redlight.external.include_uncached_torbox', 'false') == 'true'
+
+def tb_notify_cloud_ready():
+	return get_setting('redlight.tb.notify_cloud_ready', 'true') == 'true'
+
 def easynews_language_filter():
 	enabled = get_setting('redlight.easynews.filter_lang') == 'true'
 	if enabled: filters = get_setting('redlight.easynews.lang_filters').split(', ')
 	else: filters = []
 	return enabled, filters
+
+def easynews_exclude_adult():
+	return get_setting('redlight.easynews.exclude_adult', 'false') == 'true'
 
 def easynews_refresh_credentials():
 	return get_setting('redlight.easynews.refresh_credentials', 'true') == 'true'

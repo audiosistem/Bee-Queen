@@ -38,7 +38,7 @@ class EasyNews:
 	def _get(self, url, params={}):
 		try:
 			headers = {'Authorization': self.auth}
-			response = requests.get(url, params=params, headers=headers, timeout=20)
+			response = requests.get(url, params=params, headers=headers, timeout=10)
 			if response.status_code in (200, 201):
 				try: return response.json()
 				except: return response.text

@@ -1,6 +1,8 @@
   removal pending: download, tmdblist
 
   [COLOR dodgerblue][B]Version 6.05[/B][/COLOR]
+- Added Settings/Metadata/Preferred Content Rating Region, defaults to US.
+  Requires manual Clear Meta Cache after setting change.
 - Changed subtitles provider to SubMaker - https://submaker.elfhosted.com.
   Submaker requires complete manifest url in settings, i.e. https://.../manifest.json
 - Added temporary Settings/My Lists/Trakt/Limit Trakt Requests for impending api

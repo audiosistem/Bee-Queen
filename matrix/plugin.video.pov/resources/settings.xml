@@ -315,6 +315,8 @@
 		<setting label="Language" type="lsep" />
 		<setting id="meta_language_display" label="Set Language" type="action" default="English" action="RunPlugin(plugin://plugin.video.pov/?mode=meta_language_choice)" />
 		<setting id="meta_language" label="meta_language" type="text" default="en" visible="false" />
+		<setting id="mpaa.select" label="Preferred Content Rating Region" type="enum" default="0" values="United States|Custom" />
+		<setting id="mpaa_region" label="ISO 3166 1 Code" type="text" default="US" visible="!eq(-1,0)" />
 		<!-- RPDB -->
 		<setting label="Rating Poster Database" type="lsep" />
 		<setting id="rpdb_api_key" label="API Key" type="text" default="" />

@@ -68,9 +68,6 @@ class source:
 		for item in files:
 			try:
 				post_hash, post_title, ext, duration = item['0'], item['10'], item['11'], item['14']
-				audio_langs = item.get('alangs')
-				if audio_langs:
-					if 'eng' not in audio_langs: continue
 
 				if re.match(r'^\d+s', duration) or re.match('^[0-5]m', duration): continue
 				if 'virus' in item and item['virus']: continue

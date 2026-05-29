@@ -1,3 +1,6 @@
+[COLOR lime][B]Version 1.5.3[/B][/COLOR]
+- Fixed MEDIAFUSION again
+
 [COLOR lime][B]Version 1.5.2[/B][/COLOR]
 - Fixed MEDIAFUSION
 

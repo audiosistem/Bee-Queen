@@ -44,6 +44,33 @@ def router(argv2):
 			from resources.lib.modules import changelog
 			changelog.get('Umbrella')
 		navigator.Navigator().root()
+	elif action == 'mainMenuEditor':
+		from resources.lib.menus import navigator
+		navigator.Navigator().mainMenuEditor(params.get('menu_name', 'root'))
+	elif action == 'movieNavigatorEditor':
+		from resources.lib.menus import navigator
+		navigator.Navigator().mainMenuEditor(params.get('menu_name', 'movies'))
+	elif action == 'tvNavigatorEditor':
+		from resources.lib.menus import navigator
+		navigator.Navigator().mainMenuEditor(params.get('menu_name', 'tvshows'))
+	elif action == 'myMoviesNavigatorEditor':
+		from resources.lib.menus import navigator
+		navigator.Navigator().mainMenuEditor(params.get('menu_name', 'mymovies'))
+	elif action == 'myTVShowsNavigatorEditor':
+		from resources.lib.menus import navigator
+		navigator.Navigator().mainMenuEditor(params.get('menu_name', 'mytvshows'))
+	elif action == 'runBuiltin':
+		import xbmc
+		xbmc.executebuiltin(params.get('cmd', ''))
+	elif action == 'customFolderNavigator':
+		from resources.lib.menus import navigator
+		navigator.Navigator().customFolder(params.get('folder_id', ''), folderName=folderName)
+	elif action == 'customFolderManager':
+		from resources.lib.menus import navigator
+		navigator.Navigator().customFolderManager()
+	elif action == 'customFolderEditor':
+		from resources.lib.menus import navigator
+		navigator.Navigator().mainMenuEditor(params.get('folder_id', ''))
 	####################################################
 	#---MOVIES
 	####################################################
@@ -150,6 +177,9 @@ def router(argv2):
 	elif action == 'moviesUnfinished':
 		from resources.lib.menus import movies
 		movies.Movies().unfinished(url, folderName=folderName)
+	elif action == 'mdblistMoviesUnfinished':
+		from resources.lib.menus import movies
+		movies.Movies().mdblist_unfinished(url, folderName=folderName)
 	elif action == 'movieUserlists':
 		from resources.lib.menus import movies
 		movies.Movies().userlists(folderName=folderName, create_directory=True)
@@ -471,6 +501,9 @@ def router(argv2):
 	elif action == 'episodesUnfinished':
 		from resources.lib.menus import episodes
 		episodes.Episodes().unfinished(url, folderName=folderName)
+	elif action == 'mdblistEpisodesUnfinished':
+		from resources.lib.menus import episodes
+		episodes.Episodes().mdblist_unfinished(url=url, folderName=folderName)
 	elif action == 'episodes_traktUnfinishedManager':
 		from resources.lib.menus import episodes
 		episodes.Episodes().unfinishedManager()

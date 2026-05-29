@@ -17,15 +17,77 @@ def debrid_for_ext_cache_check(enabled_debrid=None):
 	if not enabled_debrid: enabled_debrid = debrid_enabled()
 	return any(i in ['Real-Debrid', 'AllDebrid'] for i in enabled_debrid)
 
+def normalize_debrid_provider(provider):
+	if not provider:
+		return provider
+	if provider.startswith('Uncached '):
+		return provider[9:]
+	return provider
+
+def downloader_provider_slug(provider):
+	provider = normalize_debrid_provider(provider)
+	return {
+		'Real-Debrid': 'real-debrid',
+		'Premiumize.me': 'premiumize.me',
+		'AllDebrid': 'alldebrid',
+		'TorBox': 'torbox',
+	}.get(provider, (provider or '').lower())
+
+def import_pack_api(provider):
+	provider = normalize_debrid_provider(provider)
+	api_map = {
+		'Real-Debrid': RealDebridAPI,
+		'Premiumize.me': PremiumizeAPI,
+		'AllDebrid': AllDebridAPI,
+		'TorBox': TorBoxAPI,
+	}
+	return api_map.get(provider)()
+
+class ExternalPackSource:
+	'''POV-style pack helper: uses source url/hash and debrid API parse_magnet_pack.'''
+	def __init__(self, source_dict, meta=None):
+		for key, value in source_dict.items():
+			setattr(self, key, value)
+		self.meta = meta or {}
+
+	def browse_packs(self, download=False):
+		provider = normalize_debrid_provider(getattr(self, 'debrid', None) or getattr(self, 'cache_provider', ''))
+		api = import_pack_api(provider)
+		if not api:
+			hide_busy_dialog()
+			notification('Unsupported provider for pack download: %s' % (provider or 'Unknown'))
+			return None
+		show_busy_dialog()
+		magnet_fn = getattr(api, 'parse_magnet_pack', None) or api.display_magnet_pack
+		pack_choices = magnet_fn(getattr(self, 'url', ''), getattr(self, 'hash', ''))
+		hide_busy_dialog()
+		if not pack_choices:
+			if provider == 'TorBox':
+				notification('TorBox: No video files in this pack yet. Try again in a moment.', 4500)
+			else:
+				notification('Error')
+			return None
+		pack_choices.sort(key=lambda k: (k.get('filename') or '').lower())
+		if download:
+			return pack_choices, api
+		return pack_choices
+
 def manual_add_magnet_to_cloud(params):
 	show_busy_dialog()
+	provider = normalize_debrid_provider(params.get('provider', ''))
 	debrid_list_modules = [('Real-Debrid', RealDebridAPI), ('Premiumize.me', PremiumizeAPI), ('AllDebrid', AllDebridAPI), ('TorBox', TorBoxAPI)]
-	function = [i[1] for i in debrid_list_modules if i[0] == params['provider']][0]
-	result = function().create_transfer(params['magnet_url'])
-	function().clear_cache()
+	function = [i[1] for i in debrid_list_modules if i[0] == provider][0]
+	api = function()
+	result = api.create_transfer(params['magnet_url'])
+	api.clear_cache()
 	hide_busy_dialog()
-	if result == 'failed': notification('Failed')
-	else: notification('Success')
+	if not result or result == 'failed':
+		return notification('Failed')
+	if provider == 'TorBox':
+		label = params.get('display_name') or params.get('name') or ''
+		api.monitor_torrent_cloud_ready(result, label)
+		return notification('TorBox: Added — you will be notified when it is ready in Cloud', 4500)
+	notification('Success')
 
 def query_local_cache(hash_list):
 	return debrid_cache.get_many(hash_list) or []

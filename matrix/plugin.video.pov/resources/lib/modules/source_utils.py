@@ -56,7 +56,7 @@ except: UNWANTED_TAGS = []
 def internal_sources(active_sources, mediatype, prescrape=False):
 	source_list = []
 	append = source_list.append
-	files = kodi_utils.list_dirs('special://home/addons/plugin.video.pov/resources/lib/scrapers')[1]
+	files = kodi_utils.list_dirs(kodi_utils.scrapers_path)[1]
 	for item in files:
 		try:
 			module_name = item.split('.')[0]

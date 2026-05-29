@@ -91,42 +91,48 @@ class Plex():
 		url = base_url + '/devices.xml?X-Plex-Client-Identifier=%s&X-Plex-Token=%s' % (self.client_id, self.token)
 		results = requests.get(url, headers=self.headers)
 		if results.status_code != 200: return self.plex_error(results.status_code)
-		devices = re.findall(r'(<Device\s.+?</Device>)', results.text, flags=re.M | re.S)
+		log_utils.log('Plex get_authID response: %s' % results.text[:2000], __name__, log_utils.LOGDEBUG)
+		devices = re.findall(r'(<Device\s.+?</Device>|<Device\s[^>]+/>)', results.text, flags=re.M | re.S | re.I)
+		our_client_id = self.headers.get('X-Plex-Client-Identifier', '')
 		for device in devices:
-			device_token = dom_parser.parseDOM(device, 'Device', ret='token')[0]
-			if device_token != self.token: continue
-			return dom_parser.parseDOM(device, 'Device', ret='id')[0]
+			tokens = dom_parser.parseDOM(device, 'Device', ret='token')
+			if tokens and tokens[0] == self.token:
+				ids = dom_parser.parseDOM(device, 'Device', ret='id')
+				if ids: return ids[0]
+			client_ids = dom_parser.parseDOM(device, 'Device', ret='clientIdentifier')
+			if client_ids and client_ids[0] == our_client_id:
+				ids = dom_parser.parseDOM(device, 'Device', ret='id')
+				if ids: return ids[0]
 
 	def get_plexshare_resource(self):
 		url = base_url + '/api/v2/resources?includeHttps=1&X-Plex-Client-Identifier=%s&X-Plex-Token=%s' % (self.client_id, self.token)
-		#log_utils.log('plexshare get shares url = %s' % str(url), __name__, level=log_utils.LOGDEBUG)
 		resources = requests.get(url, headers=self.headers)
 		if resources.status_code != 200: return self.plex_error(resources.status_code)
+		log_utils.log('Plex get_plexshare_resource response: %s' % resources.text[:2000], __name__, log_utils.LOGDEBUG)
 		resources = re.findall(r'(<resource\s.+?</resource>)', resources.text, flags=re.M | re.S)
 		share_url = ''
 		self.clearPlex()
 		for resource in resources:
-			product = dom_parser.parseDOM(resource, 'resource', ret='product')[0]
-			if product != 'Plex Media Server': continue
-			accessToken = dom_parser.parseDOM(resource, 'resource', ret='accessToken')[0]
-			if not accessToken: continue
-			sourceTitle = dom_parser.parseDOM(resource, 'resource', ret='name')[0]
+			product_list = dom_parser.parseDOM(resource, 'resource', ret='product')
+			if not product_list: continue
+			if product_list[0] != 'Plex Media Server': continue
+			accessToken_list = dom_parser.parseDOM(resource, 'resource', ret='accessToken')
+			if not accessToken_list or not accessToken_list[0]: continue
+			accessToken = accessToken_list[0]
+			sourceTitle_list = dom_parser.parseDOM(resource, 'resource', ret='name')
+			sourceTitle = sourceTitle_list[0] if sourceTitle_list else ''
 			connections = re.findall(r'(<connection\s.+?/>)', resource, flags=re.M | re.S)
 			for connection in connections:
-				share_url = dom_parser.parseDOM(connection, 'connection', ret='uri')[0]
-				local = dom_parser.parseDOM(connection, 'connection', ret='local')[0]
-				#if '.plex.direct:' not in share_url or local == '1': continue
-				#if '.plex.direct:' not in share_url: continue
+				uri_list = dom_parser.parseDOM(connection, 'connection', ret='uri')
+				local_list = dom_parser.parseDOM(connection, 'connection', ret='local')
+				if not uri_list or not local_list: continue
+				share_url = uri_list[0]
+				local = local_list[0]
 				if local == '1': continue
 				if share_url:
-					#log_utils.log('plexshare sourceTitle = %s' % sourceTitle,1)
-					#log_utils.log('plexshare direct url = %s' % share_url, 1)
 					if not control.yesnoDialog('plexshare resource found: %s[CR]Add?' % sourceTitle,'',''): continue
 					self.plex_insert(sourceTitle, accessToken, share_url)
 					break
-					#control.setSetting('plexshare.sourceTitle', sourceTitle)
-					#control.setSetting('plexshare.accessToken', accessToken)
-					#control.setSetting('plexshare.url', share_url)
 		if not share_url: control.okDialog(message='Failed to retrieve a plexshare resource')
 
 	def revoke(self):
