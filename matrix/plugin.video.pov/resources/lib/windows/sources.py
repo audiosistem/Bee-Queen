@@ -364,7 +364,8 @@ class ResultsContextMenu(BaseDialog):
 		if scrape_provider != 'folders':
 			append(self.make_contextmenu_item(down_file_str, run_plugin_str, {
 				'mode': 'downloader', 'action': 'meta.single', 'source': source, 'meta': meta_json,
-				'name': self.meta.get('rootname', ''), 'provider': scrape_provider, 'url': None
+				'name': self.meta.get('rootname', ''), 'provider': cache_provider, 'url': None,
+				'magnet_url': magnet_url, 'info_hash': info_hash, 'highlight': self.highlight
 			}))
 		if provider_source == 'torrent':
 			append(self.make_contextmenu_item(cloud_str, run_plugin_str, {'mode': 'manual_add_magnet_to_cloud'}))

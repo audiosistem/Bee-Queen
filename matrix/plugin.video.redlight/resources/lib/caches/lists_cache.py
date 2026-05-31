@@ -40,7 +40,8 @@ def lists_cache_object(function, string, args, json=False, expiration=None):
 	else: args = (args,)
 	if json: result = function(*args).json()
 	else: result = function(*args)
-	if result in ([], {}, '[]', '{}', '', None): expiration = 0.3
+	if result is None: return result
+	if result in ([], {}, '[]', '{}', ''): expiration = 0.3
 	else: expiration = expiration or lists_cache_duraton()
 	lists_cache.set(string, result, expiration=expiration)
 	return result

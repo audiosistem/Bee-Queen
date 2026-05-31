@@ -295,6 +295,62 @@ elif action == 'trakt_list_items':
     _list_name = params.get('list_name', [''])[0]
     trakt_menu.show_list_items(_username, _list_id, _list_name, page)
 
+elif action == 'person_cast':
+    from resources.lib.menus import people as people_menu
+    _tmdb_id    = int(params.get('tmdb_id', [0])[0])
+    _media_type = params.get('media_type', ['movie'])[0]
+    people_menu.show_cast(_tmdb_id, _media_type)
+elif action == 'person_filmography':
+    from resources.lib.menus import people as people_menu
+    _person_id   = int(params.get('person_id', [0])[0])
+    _person_name = params.get('person_name', [''])[0]
+    people_menu.show_filmography(_person_id, _person_name)
+elif action == 'person_bio':
+    from resources.lib.menus import people as people_menu
+    _person_id   = int(params.get('person_id', [0])[0])
+    _person_name = params.get('person_name', [''])[0]
+    people_menu.show_bio(_person_id, _person_name)
+    xbmcplugin.endOfDirectory(handle, succeeded=False)
+elif action == 'open_person_filmography':
+    from resources.lib.menus import people as people_menu
+    _name = params.get('name', [''])[0]
+    people_menu.open_filmography_by_name(_name)
+    xbmcplugin.endOfDirectory(handle, succeeded=False)
+elif action == 'show_info':
+    from urllib.parse import quote as _quote
+    from resources.lib.info_dialog import VideoInfoDialog
+    from resources.lib.tmdb import movies as _tmdb_m, tv as _tmdb_tv
+    _tmdb_id    = int(params.get('tmdb_id', [0])[0])
+    _media_type = params.get('media_type', ['movie'])[0]
+    _item = (_tmdb_tv.get_tv_details(_tmdb_id)
+             if _media_type in ('tv', 'tvshow')
+             else _tmdb_m.get_movie_details(_tmdb_id))
+    if _item:
+        _dlg = VideoInfoDialog()
+        _dlg.set_data(_item, _media_type)
+        _dlg.doModal()
+        if _dlg.navigate_to:
+            _pid, _pname = _dlg.navigate_to
+            xbmc.executebuiltin(
+                f'ActivateWindow(Videos,plugin://plugin.video.samus'
+                f'?action=person_filmography&person_id={_pid}'
+                f'&person_name={_quote(_pname)},return)'
+            )
+        elif _dlg.play_action == 'play':
+            _play_li = xbmcgui.ListItem()
+            _play_li.setProperty('IsPlayable', 'true')
+            xbmc.Player().play(
+                f'plugin://plugin.video.samus?action=play_movie&tmdb_id={_tmdb_id}',
+                _play_li
+            )
+        elif _dlg.play_action == 'seasons':
+            xbmc.executebuiltin(
+                f'ActivateWindow(Videos,plugin://plugin.video.samus'
+                f'?action=tv_details&id={_tmdb_id},return)'
+            )
+        del _dlg
+    xbmcplugin.endOfDirectory(handle, succeeded=False)
+
 # ── Home ──────────────────────────────────────────────────────────────────────
 else:
     xbmcplugin.setPluginCategory(handle, 'Samus')

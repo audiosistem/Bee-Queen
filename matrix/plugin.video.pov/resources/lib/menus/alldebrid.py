@@ -85,7 +85,7 @@ class Menu(Debrid):
 				cm_append = cm.append
 				name = clean_file_name(item['filename']).upper()
 				size = float(int(item['size']))/1073741824
-				datetime_object = datetime.fromtimestamp(item['date']).strftime('%Y-%m-%d')
+				datetime_object = datetime.fromtimestamp(item['date']).date()
 				display = '%02d | %.2f GB | %s | [I]%s [/I]' % (count, size, datetime_object, name)
 				params = {'name': name, 'url': item['link_dl'], 'image': default_icon}
 				url_params = {**params, 'mode': 'media_play', 'mediatype': 'video'}
@@ -113,15 +113,15 @@ class Menu(Debrid):
 			username = account_info['username']
 			email = account_info['email']
 			status = 'Premium' if account_info['isPremium'] else 'Not Active'
-			expires = datetime.fromtimestamp(account_info['premiumUntil']).date()
-			days_remaining = (expires - datetime.today().date()).days
+			expires = datetime.fromtimestamp(account_info['premiumUntil'])
+			days_remaining = (expires - datetime.today()).days
 			body = []
 			append = body.append
-			append(ls(32755) % username)
-			append(ls(32756) % email)
-			append(ls(32757) % status)
-			append(ls(32750) % expires)
 			append(ls(32751) % days_remaining)
+			append(ls(32750) % expires.date())
+			append(ls(32756) % email)
+			append(ls(32755) % username)
+			append(ls(32757) % status)
 			kodi_utils.hide_busy_dialog()
 			return kodi_utils.show_text(ls(32063).upper(), '\n\n'.join(body), font_size='large')
 		except: kodi_utils.hide_busy_dialog()

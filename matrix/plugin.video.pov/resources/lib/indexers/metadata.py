@@ -4,16 +4,16 @@ from modules.utils import jsondate_to_datetime, subtract_dates, TaskPool
 # from modules.kodi_utils import logger
 
 EXPIRES_2_DAYS, EXPIRES_4_DAYS, EXPIRES_7_DAYS, EXPIRES_14_DAYS, EXPIRES_182_DAYS = 2, 4, 7, 14, 182
-movie_data, tvshow_data = tmdb_api.movie_details, tmdb_api.tvshow_details
+movie_data, tvshow_data, tmdb_image_base = tmdb_api.movie_details, tmdb_api.tvshow_details, tmdb_api.tmdb_image_base
 season_episodes_details, tmdb_english_translation = tmdb_api.season_episodes_details, tmdb_api.english_translation
 movie_external_id, tvshow_external_id = tmdb_api.movie_external_id, tmdb_api.tvshow_external_id
-tmdb_image_base, writer_credits = tmdb_api.tmdb_image_base, ('Author', 'Writer', 'Screenplay', 'Characters')
 backup_resolutions = {'poster': 'w780', 'fanart': 'w1280', 'still': 'original', 'profile': 'h632'}
-rpdb_url = 'https://api.ratingposterdb.com/%s/%s/poster-default/%s.jpg?fallback=true'
-rpdb_themes = {'1': '&theme=rounded-blocks', '2': '&theme=blocks'}
 alt_titles_test, trailers_test = ('US', 'GB', 'UK', ''), ('Trailer', 'Teaser')
 finished_show_check, empty_value_check = ('Ended', 'Canceled'), ('', 'None', None)
-youtube_url, date_format = 'plugin://plugin.video.youtube/play/?video_id=%s', '%Y-%m-%d'
+writer_credits = ('Author', 'Writer', 'Screenplay', 'Characters')
+youtube_url = 'plugin://plugin.video.youtube/play/?video_id=%s'
+rpdb_url = 'https://api.ratingposterdb.com/%s/%s/poster-default/%s.jpg?fallback=true'
+rpdb_themes = {'1': '&theme=rounded-blocks', '2': '&theme=blocks'}
 infokeys, episodekeys, seasonkeys, videoinfomethods = (
 	'country', 'director', 'duration', 'genre', 'imdbnumber', 'mediatype', 'mpaa', 'originaltitle',
 	'plot', 'premiered', 'rating', 'studio', 'tag', 'tagline', 'title', 'trailer', 'votes', 'writer', 'year',
@@ -262,7 +262,8 @@ def english_trailers(mediatype, data):
 
 def movie_expiry(current_date, meta):
 	try:
-		difference = subtract_dates(current_date, jsondate_to_datetime(meta['premiered'], date_format, remove_time=True))
+		premiered = jsondate_to_datetime(meta['premiered']).date()
+		difference = subtract_dates(current_date, premiered)
 		if difference < 0: expiration = abs(difference) + 1
 		elif difference <= 14: expiration = EXPIRES_7_DAYS
 		elif difference <= 30: expiration = EXPIRES_14_DAYS
@@ -272,17 +273,18 @@ def movie_expiry(current_date, meta):
 
 def tvshow_expiry(current_date, meta):
 	try:
-		if meta['status'] in finished_show_check: return EXPIRES_182_DAYS
-		next_episode_to_air = meta['extra_info']['next_episode_to_air']
-		expiration = subtract_dates(jsondate_to_datetime(next_episode_to_air['air_date'], date_format, remove_time=True), current_date)
+		extra_info = meta['extra_info']
+		if extra_info['status'] in finished_show_check: return EXPIRES_182_DAYS
+		next_episode_to_air = jsondate_to_datetime(extra_info['next_episode_to_air']['air_date']).date()
+		expiration = subtract_dates(next_episode_to_air, current_date)
 		expiration = max(expiration, 0) + 1
 	except: return EXPIRES_4_DAYS
 	return expiration
 
-def get_title(meta, language=None):
+def get_title(meta):
 	if 'custom_title' in meta: return meta['custom_title']
-	language = language or meta.get('meta_language', '')
-	title = meta['title'] if language == 'en' else meta.get('english_title')
+	if meta.get('meta_language', '') == 'en': title = meta['title']
+	else: title = meta.get('english_title')
 	if not title:
 		try:
 			if meta['mediatype'] == 'movie': mediatype, key = 'movie', 'title'

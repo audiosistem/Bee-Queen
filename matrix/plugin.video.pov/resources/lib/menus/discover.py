@@ -2,7 +2,7 @@ import sys
 import json
 from datetime import timedelta
 from caches.main_cache import MainCache
-from indexers.tmdb_api import base_url, tmdb_keyword_id, tmdb_people_info, tmdb_company_id, tmdb_movies_title_year, tmdb_tv_title_year
+from indexers import tmdb_api
 from modules import kodi_utils, meta_lists
 from modules.utils import safe_string, remove_accents
 # logger = kodi_utils.logger
@@ -91,8 +91,8 @@ class Discover:
 		if self._action(key) in ('clear', None): return
 		title = kodi_utils.dialog.input(heading_base % ls(32228))
 		if not title: return
-		if self.mediatype == 'movie': function = tmdb_movies_title_year
-		else: function = tmdb_tv_title_year
+		if self.mediatype == 'movie': function = tmdb_api.tmdb_movies_title_year
+		else: function = tmdb_api.tmdb_tv_title_year
 		year = kodi_utils.dialog.numeric(0, heading_base % ('%s (%s)' % (ls(32543), ls(32669))))
 		results = function(title, year)['results']
 		if len(results) == 0: return kodi_utils.notification(32575)
@@ -127,7 +127,7 @@ class Discover:
 		keyword = kodi_utils.dialog.input(heading_base % (include_base_str % ls(32657)))
 		if keyword:
 			try:
-				result = tmdb_keyword_id(keyword)['results']
+				result = tmdb_api.tmdb_keyword_id(keyword)['results']
 				keywords_choice = self._multiselect_dialog(heading_base % ('%s %s' % (ls(32193), ls(32657))), [i['name'].upper() for i in result], result)
 				if keywords_choice is not None:
 					for i in keywords_choice:
@@ -151,7 +151,7 @@ class Discover:
 		keyword = kodi_utils.dialog.input(heading_base % (exclude_base_str % ls(32657)))
 		if keyword:
 			try:
-				result = tmdb_keyword_id(keyword)['results']
+				result = tmdb_api.tmdb_keyword_id(keyword)['results']
 				keywords_choice = self._multiselect_dialog(heading_base % ('%s %s' % (ls(32193), ls(32657))), [i['name'].upper() for i in result], result)
 				if keywords_choice is not None:
 					for i in keywords_choice:
@@ -227,7 +227,7 @@ class Discover:
 	def region(self):
 		key = 'region'
 		if self._action(key) in ('clear', None): return
-		regions = meta_lists.regions
+		regions = tmdb_api.tmdb_region_ids()
 		region_names = [i['name'] for i in regions]
 		region_codes = [i['code'] for i in regions]
 		region = self._selection_dialog(region_names, region_codes, heading_base % ls(32659))
@@ -273,7 +273,7 @@ class Discover:
 		if self._action(key) in ('clear', None): return
 		query = kodi_utils.dialog.input(heading_base % ls(32664))
 		if not query: return
-		try: actors = tmdb_people_info(query)
+		try: actors = tmdb_api.tmdb_people_info(query)
 		except: actors = None
 		if not actors: return
 		for item in actors:
@@ -323,7 +323,7 @@ class Discover:
 		if company:
 			company_choice = None
 			try:
-				results = tmdb_company_id(company)
+				results = tmdb_api.tmdb_company_id(company)
 				if results['total_results'] == 0: return None
 				if results['total_results'] == 1: company_choice = results['results']
 				if not company_choice:
@@ -408,8 +408,9 @@ class Discover:
 
 	def _set_default_params(self, mediatype):
 		self._clear_property()
-		url_mediatype = 'movie' if mediatype == 'movie' else 'tv'
-		param_mediatype = 'Movies' if mediatype == 'movie' else 'TV Shows'
+		if mediatype == 'movie': url_mediatype, param_mediatype = 'movie', 'Movies'
+		else: url_mediatype, param_mediatype = 'tv', 'TV Shows'
+		base_url = tmdb_api.base_url
 		self.discover_params['mediatype'] = mediatype
 		self.discover_params['search_name'] = {'mediatype': param_mediatype}
 		self.discover_params['search_string'] = {

@@ -32,6 +32,8 @@
         <setting id="use_streamimdb" type="bool" label="StreamIMDb" default="true" />
         <setting id="use_sooti" type="bool" label="Sooti (VixSrc/HDHub/UHDMovies aggregator)" default="false" />
         <setting id="use_moviebox" type="bool" label="MovieBox (CF Worker)" default="false" />
+        <setting id="use_popr" type="bool" label="Popr (vidnest multi-server)" default="false" />
+        <setting id="use_cinesu" type="bool" label="CineSu (HLS direct)" default="true" />
         <setting id="use_multiembed" type="bool" label="MultiEmbed" default="true" />
         <setting id="use_vidbingeto" type="bool" label="VidBinge.to (vidora.stream)" default="true" />
         <setting id="use_moviesapi" type="bool" label="MoviesAPI (flixcdn.cyou)" default="true" />
@@ -42,12 +44,16 @@
         <setting id="torrserver_mode" type="labelenum" label="Mod TorrServer" values="Extern (manual)|Auto (incorporat)" default="Extern (manual)" visible="eq(-1,0)" />
         <setting id="use_torrentio" type="bool" label="Torrentio" default="false" />
         <setting id="use_torrentdb" type="bool" label="TorrentDB" default="false" />
+        <setting id="use_velaflow" type="bool" label="VelaFlow" default="false" />
         <setting id="torrentdb_url" type="text" label="TorrentDB URL (implicit: torrentsdb.com)" default="https://torrentsdb.com" visible="eq(-1,true)" />
         <setting id="use_mediafusion" type="bool" label="MediaFusion" default="false" />
         <setting id="use_comet" type="bool" label="Comet" default="false" />
         <setting id="use_perflix" type="bool" label="Peerflix" default="false" />
         <setting id="use_uindex" type="bool" label="UIndex" default="false" />
         <setting id="use_pelispanda" type="bool" label="PelisPanda (torrente ES/EN)" default="false" />
+        <setting id="use_filelist" type="bool" label="FileList.io (tracker privat RO)" default="false" />
+        <setting id="fl_username" type="text" label="FileList username" default="" visible="eq(-1,true)" />
+        <setting id="fl_passkey" type="text" label="FileList passkey (din profil, nu parola)" default="" visible="eq(-2,true)" />
     </category>
     <category label="Subtitrări">
         <setting id="subs_enabled" type="bool" label="Caută automat subtitrări (vdrk + Wyzie)" default="true" />

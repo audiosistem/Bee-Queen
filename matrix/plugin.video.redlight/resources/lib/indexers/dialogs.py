@@ -443,6 +443,18 @@ def tmdb_api_check_choice(params):
 	else: text = 'Your TMDb API Key is enabled and working'
 	return kodi_utils.ok_dialog(text=text)
 
+def tmdblist_read_token_check_choice(params):
+	import requests
+	from apis.tmdblist_api import TMDbListAPI
+	api = TMDbListAPI()
+	try:
+		data = requests.post('%s/auth/request_token' % api.base_url, headers=api.read_access_headers(), timeout=20).json()
+		if not data.get('success'): text = 'There is an issue with your TMDb Lists Read Access Token.[CR][B]"Error: %s"[/B]' % data.get('status_message', '')
+		else: text = 'Your TMDb Lists Read Access Token is valid and working'
+	except Exception as e:
+		text = 'There is an issue with your TMDb Lists Read Access Token.[CR][B]"%s"[/B]' % str(e)
+	return kodi_utils.ok_dialog(text=text)
+
 def clear_sources_folder_choice(params):
 	setting_id = params['setting_id']
 	set_default(['%s.display_name' % setting_id, '%s.movies_directory' % setting_id, '%s.tv_shows_directory' % setting_id])

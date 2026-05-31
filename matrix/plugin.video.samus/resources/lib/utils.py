@@ -2,6 +2,7 @@ import os
 import xbmc
 import xbmcgui
 import xbmcaddon
+from urllib.parse import quote
 from .tmdb.api import tmdb_request, tmdb_cached, get_genre_map, TTL_DETAILS
 
 addon = xbmcaddon.Addon()
@@ -172,7 +173,13 @@ def build_item(item):
                 continue
             role = a.get('character', '')
             thumb = IMG_BASE + a['profile_path'] if a.get('profile_path') else ''
-            actor = xbmc.Actor(name, role, -1, thumb)
+            person_id = a.get('id', '')
+            actor_url = (f'plugin://plugin.video.samus?action=person_filmography'
+                         f'&person_id={person_id}&person_name={quote(name)}') if person_id else ''
+            try:
+                actor = xbmc.Actor(name, role, -1, thumb, actor_url)
+            except TypeError:
+                actor = xbmc.Actor(name, role, -1, thumb)
             cast_list.append(actor)
         if cast_list:
             info.setCast(cast_list)
@@ -259,7 +266,13 @@ def build_item_tvshow(item):
                 continue
             role = a.get('character', '')
             thumb = IMG_BASE + a['profile_path'] if a.get('profile_path') else ''
-            actor = xbmc.Actor(name, role, -1, thumb)
+            person_id = a.get('id', '')
+            actor_url = (f'plugin://plugin.video.samus?action=person_filmography'
+                         f'&person_id={person_id}&person_name={quote(name)}') if person_id else ''
+            try:
+                actor = xbmc.Actor(name, role, -1, thumb, actor_url)
+            except TypeError:
+                actor = xbmc.Actor(name, role, -1, thumb)
             cast_list.append(actor)
         if cast_list:
             info.setCast(cast_list)

@@ -130,10 +130,9 @@ def build_mdbl_list(params):
 	max_threads = int(kodi_utils.get_setting('pov.max_threads', '100'))
 	use_alphabet = nav_jump_use_alphabet() > 0
 	user, slug, name = params.get('user'), params.get('slug'), params.get('name')
-	list_type, list_id = params.get('list_type'), params.get('list_id')
-	letter, page = params.get('new_letter', 'None'), int(params.get('new_page', '1'))
+	list_type, list_id, page = params.get('list_type'), params.get('list_id'), int(params.get('new_page', '1'))
 	results = mdblist_api.get_mdbl_list_contents(list_type, list_id)
-	if paginate() and results: process_list, total_pages = paginate_list(results, page, letter, page_limit())
+	if paginate() and results: process_list, total_pages = paginate_list(results, page, page_limit())
 	else: process_list, total_pages = results, 1
 	movies, tvshows = Movies({'id_type': 'trakt_dict'}), TVShows({'id_type': 'trakt_dict'})
 	for idx, tag in enumerate(process_list, 1):
@@ -158,7 +157,7 @@ def build_mdbl_list(params):
 		kodi_utils.add_dir(__handle__, url, jump2_str, iconImage=item_jump, isFolder=False)
 	kodi_utils.add_items(__handle__, items)
 	if total_pages > page:
-		url = {'mode': 'build_mdbl_list', 'new_page': page + 1, 'new_letter': letter,
+		url = {'mode': 'build_mdbl_list', 'new_page': page + 1,
 				'user': user, 'slug': slug, 'name': name, 'list_id': list_id, 'list_type': list_type}
 		kodi_utils.add_dir(__handle__, url, nextpage_str)
 	kodi_utils.set_category(__handle__, name)
@@ -170,13 +169,13 @@ def mdbl_account_info():
 	try:
 		kodi_utils.show_busy_dialog()
 		account_info = mdblist_api.call_mdblist('user')
-		joined = jsondate_to_datetime(account_info['date_joined'], '%Y-%m-%dT%H:%M:%SZ')
+		joined = jsondate_to_datetime(account_info['date_joined']).astimezone()
 		api_requests = account_info['api_requests']
 		remaining = api_requests - account_info['api_requests_count']
 		body = []
 		append = body.append
 		append('[B]Username:[/B] %s' % account_info['username'])
-		append('[B]Joined:[/B] %s' % joined)
+		append('[B]Joined:[/B] %s' % joined.date())
 		append('[B]Supporter:[/B] %s' % account_info['is_supporter'])
 		append('[B]API Request Limit:[/B] %s' % api_requests)
 		append('[B]API Request Remaining:[/B] %s' % remaining)

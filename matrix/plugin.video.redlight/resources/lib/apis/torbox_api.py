@@ -121,6 +121,21 @@ class TorBoxAPI:
 			data = [data]
 		return None, data
 
+	def mylist_item_files(self, folder_id, media_type='torrent'):
+		paths = {'torrent': 'torrents/mylist', 'usenet': 'usenet/mylist', 'webdl': 'webdl/mylist'}
+		path = paths.get(media_type)
+		if not path:
+			return []
+		response = self._get(path, data={'id': folder_id})
+		if not response or not response.get('success'):
+			return []
+		data = response.get('data')
+		if isinstance(data, list):
+			data = data[0] if data else {}
+		if not isinstance(data, dict):
+			return []
+		return data.get('files') or []
+
 	def user_cloud_info(self, request_id=''):
 		string = 'tb_user_cloud_%s' % request_id
 		url = 'torrents/mylist?id=%s' % request_id

@@ -74,8 +74,49 @@ def _connect():
         conn.commit()
     except Exception:
         pass
+    conn.execute('''CREATE TABLE IF NOT EXISTS provider_success (
+        tmdb_id     INTEGER NOT NULL,
+        media_type  TEXT NOT NULL,
+        provider    TEXT NOT NULL,
+        used_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (tmdb_id, media_type)
+    )''')
     conn.commit()
     return conn
+
+
+# ───────────────────────── Provider success memory ─────────────────────────
+
+def provider_success_set(tmdb_id, media_type, provider):
+    """Remember which provider worked last for this title."""
+    if not provider:
+        return
+    try:
+        conn = _connect()
+        conn.execute(
+            'INSERT OR REPLACE INTO provider_success (tmdb_id, media_type, provider, used_at) '
+            'VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
+            (tmdb_id, media_type, provider)
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        xbmc.log(f"[Samus/DB] provider_success_set: {e}", xbmc.LOGERROR)
+
+
+def provider_success_get(tmdb_id, media_type):
+    """Return last working provider tag for this title, or None."""
+    try:
+        conn = _connect()
+        row = conn.execute(
+            'SELECT provider FROM provider_success WHERE tmdb_id=? AND media_type=?',
+            (tmdb_id, media_type)
+        ).fetchone()
+        conn.close()
+        return row[0] if row else None
+    except Exception as e:
+        xbmc.log(f"[Samus/DB] provider_success_get: {e}", xbmc.LOGERROR)
+        return None
 
 
 # ───────────────────────── Favorites ─────────────────────────

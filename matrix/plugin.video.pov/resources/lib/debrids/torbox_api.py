@@ -29,26 +29,21 @@ class TorBoxAPI:
 		if 'data' in response and 'success' in response and 'control' not in path: response = response['data']
 		return response
 
-	def _get(self, url, params=None):
-		return self._request('get', url, params=params)
+	def _get(self, path, params=None):
+		return self._request('get', path, params=params)
 
-	def _post(self, url, params=None, json=None, data=None):
-		return self._request('post', url, params=params, json=json, data=data)
-
-	def add_headers_to_url(self, url):
-		return '|'.join((str(url), kodi_utils.urlencode(self.headers())))
+	def _post(self, path, params=None, json=None, data=None):
+		return self._request('post', path, params=params, json=json, data=data)
 
 	def headers(self):
 		return {'User-Agent': user_agent, 'Authorization': 'Bearer %s' % self.token}
 
 	def days_remaining(self):
-		import datetime, time
+		from datetime import datetime
 		try:
 			account_info = self.account_info()
-			FormatDateTime = '%Y-%m-%dT%H:%M:%SZ'
-			try: expires = datetime.datetime.strptime(account_info['premium_expires_at'], FormatDateTime)
-			except: expires = datetime.datetime(*(time.strptime(account_info['premium_expires_at'], FormatDateTime)[0:6]))
-			days = (expires - datetime.datetime.today()).days
+			expires = datetime.fromisoformat(account_info['premium_expires_at'].replace('Z', '+00:00'))
+			days = (expires.astimezone().date() - datetime.today().date()).days
 		except: days = None
 		return days
 

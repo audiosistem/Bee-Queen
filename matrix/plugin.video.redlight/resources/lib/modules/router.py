@@ -1,15 +1,25 @@
 # -*- coding: utf-8 -*-
 from xbmc import getInfoLabel
 from urllib.parse import parse_qsl
+from modules import kodi_utils
 from modules.kodi_utils import external, get_property
 # from modules.kodi_utils import logger
 
 def sys_exit_check():
-	if get_property('redlight.reuse_language_invoker') == 'false': return False
+	from caches.settings_cache import get_setting
+	if get_setting('redlight.reuse_language_invoker', 'true') == 'false': return False
 	return external()
 
 def routing(sys):
 	params = dict(parse_qsl(sys.argv[2][1:], keep_blank_values=True))
+	if not external():
+		from caches.settings_cache import bootstrap_settings_properties, refresh_widgets_after_db_migration, run_deferred_setup_if_needed
+		try: bootstrap_settings_properties()
+		except Exception as e: kodi_utils.logger('routing', 'bootstrap: %s' % e)
+		try: refresh_widgets_after_db_migration()
+		except Exception as e: kodi_utils.logger('routing', 'refresh widgets: %s' % e)
+		try: run_deferred_setup_if_needed()
+		except Exception as e: kodi_utils.logger('routing', 'deferred: %s' % e)
 	mode = params.get('mode', 'navigator.main')
 	if 'navigator.' in mode:
 		from indexers.navigator import Navigator
@@ -265,7 +275,7 @@ def routing(sys):
 		return kodi_refresh()
 	elif mode == 'refresh_widgets':
 		from modules.kodi_utils import refresh_widgets
-		return refresh_widgets()
+		return refresh_widgets(params.get('silent', 'false') == 'true', params.get('reload_skin', 'false') == 'true')
 	elif mode == 'person_data_dialog':
 		from indexers.people import person_data_dialog
 		return person_data_dialog(params)

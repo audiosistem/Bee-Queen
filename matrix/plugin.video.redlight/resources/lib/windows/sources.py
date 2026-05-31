@@ -5,7 +5,7 @@ from caches.settings_cache import set_setting
 from modules.debrid import debrid_for_ext_cache_check
 from modules.utils import TaskPool
 from modules.source_utils import source_filters
-from modules.settings import provider_sort_ranks, avoid_episode_spoilers, max_threads
+from modules.settings import provider_sort_ranks, avoid_episode_spoilers, max_threads, rescrape_action_value
 from modules.kodi_utils import get_icon, kodi_dialog, hide_busy_dialog, addon_fanart, select_dialog, ok_dialog, notification
 # from modules.kodi_utils import logger
 
@@ -30,7 +30,7 @@ class SourcesResults(BaseDialog):
 		self.external_cache_check = kwargs.get('external_cache_check')
 		self.prerelease_values, self.prerelease_key = ('CAM', 'SCR', 'TELE'), 'CAM/SCR/TELE'
 		self.item_list, self.filter_list, self.total_results = [], [], '0'
-		self.info_icons_dict = {'easynews': get_icon('easynews'), 'alldebrid': get_icon('alldebrid'), 'real-debrid': get_icon('realdebrid'),
+		self.info_icons_dict = {'easynews': get_icon('easynews'), 'aiostreams': get_icon('premiumize'), 'alldebrid': get_icon('alldebrid'), 'real-debrid': get_icon('realdebrid'),
 		'premiumize': get_icon('premiumize'), 'torbox': get_icon('torbox'), 'ad_cloud': get_icon('alldebrid'), 'rd_cloud': get_icon('realdebrid'),
 		'pm_cloud': get_icon('premiumize'), 'tb_cloud': get_icon('torbox')}
 		self.info_quality_dict = {'4k': get_icon('flag_4k', 'flags'), '1080p': get_icon('flag_1080p', 'flags'), '720p': get_icon('flag_720p', 'flags'),
@@ -199,11 +199,11 @@ class SourcesResults(BaseDialog):
 			[i.join() for i in threads]
 			item_list.sort(key=lambda k: k[1])
 			self.item_list = [i[0] for i in item_list]
-			if self.prescrape:
+			self.total_results = str(len(self.item_list))
+			if self.prescrape and rescrape_action_value('full_scrape', '2') != 0:
 				prescrape_listitem = self.make_listitem()
 				prescrape_listitem.setProperty('perform_full_search', 'true')
-			self.total_results = str(len(self.item_list))
-			if self.prescrape: self.item_list.append(prescrape_listitem)
+				self.item_list.append(prescrape_listitem)
 		except:
 			self.item_list = []
 			self.total_results = '0'

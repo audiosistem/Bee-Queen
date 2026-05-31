@@ -4,22 +4,25 @@ from threading import Thread
 from urllib.parse import unquote, parse_qsl, urlparse
 from urllib.request import Request, urlopen
 from indexers.metadata import get_title
-from windows import open_window
 from modules import debrid, kodi_utils
-from modules.settings import download_directory, get_art_provider, get_language
+from modules.settings import download_directory, get_art_provider
 from modules.utils import clean_file_name, clean_title, safe_string, remove_accents
 # from modules.kodi_utils import logger
 
-ls = kodi_utils.local_string
 ctx = ssl.SSLContext(ssl.PROTOCOL_TLS)
 levels = ['../../../..', '../../..', '../..', '..']
+ls, user_agent = kodi_utils.local_string, kodi_utils.xbmc.getUserAgent()
 poster_empty = kodi_utils.media_path('box_office.png')
-video_extensions = ('m4v', '3g2', '3gp', 'nsv', 'tp', 'ts', 'ty', 'pls', 'rm', 'rmvb', 'mpd', 'ifo', 'mov', 'qt', 'divx', 'xvid', 'bivx', 'vob', 'nrg', 'img', 'iso', 'udf', 'pva',
-					'wmv', 'asf', 'asx', 'ogm', 'm2v', 'avi', 'bin', 'dat', 'mpg', 'mpeg', 'mp4', 'mkv', 'mk3d', 'avc', 'vp3', 'svq3', 'nuv', 'viv', 'dv', 'fli', 'flv', 'wpl',
-					'xspf', 'vdr', 'dvr-ms', 'xsp', 'mts', 'm2t', 'm2ts', 'evo', 'ogv', 'sdp', 'avs', 'rec', 'url', 'pxml', 'vc1', 'h264', 'rcv', 'rss', 'mpls', 'mpl', 'webm',
-					'bdmv', 'bdm', 'wtv', 'trp', 'f4v', 'pvr', 'disc')
-image_extensions = ('jpg', 'jpeg', 'jpe', 'jif', 'jfif', 'jfi', 'bmp', 'dib', 'png', 'gif', 'webp', 'tiff', 'tif',
-					'psd', 'raw', 'arw', 'cr2', 'nrw', 'k25', 'jp2', 'j2k', 'jpf', 'jpx', 'jpm', 'mj2')
+image_extensions, video_extensions = (
+	'jpg', 'jpeg', 'jpe', 'jif', 'jfif', 'jfi', 'bmp', 'dib', 'png', 'gif', 'webp', 'tiff', 'tif',
+	'psd', 'raw', 'arw', 'cr2', 'nrw', 'k25', 'jp2', 'j2k', 'jpf', 'jpx', 'jpm', 'mj2'
+), (
+	'm4v', '3g2', '3gp', 'nsv', 'tp', 'ts', 'ty', 'pls', 'rm', 'rmvb', 'mpd', 'ifo', 'mov', 'qt', 'divx',
+	'xvid', 'bivx', 'vob', 'nrg', 'img', 'iso', 'udf', 'pva', 'wmv', 'asf', 'asx', 'ogm', 'm2v', 'avi', 'bin',
+	'dat', 'mpg', 'mpeg', 'mp4', 'mkv', 'mk3d', 'avc', 'vp3', 'svq3', 'nuv', 'viv', 'dv', 'fli', 'flv', 'wpl',
+	'xspf', 'vdr', 'dvr-ms', 'xsp', 'mts', 'm2t', 'm2ts', 'evo', 'ogv', 'sdp', 'avs', 'rec', 'url', 'pxml',
+	'vc1', 'h264', 'rcv', 'rss', 'mpls', 'mpl', 'webm', 'bdmv', 'bdm', 'wtv', 'trp', 'f4v', 'pvr', 'disc'
+)
 
 def runner(params):
 	action = params.get('action')
@@ -29,32 +32,30 @@ def runner(params):
 			image_params['url'] = params.pop(item)
 			image_params['mediatype'] = item
 			Downloader(image_params).run()
-	elif action == 'meta.pack':
+	elif 'meta' in action:
 		from modules.source_utils import find_season_in_release_title
-		threads = []
-		append = threads.append
 		source, meta = json.loads(params['source']), json.loads(params['meta'])
 		pack_choices = debrid.Source(source, meta).browse_packs(download=True)
 		if not pack_choices: return kodi_utils.notification(32692)
-		heading = clean_file_name(source.get('name'))
-		kwargs = {'enumerate': 'true', 'multi_choice': 'true', 'multi_line': 'true'}
-		kwargs.update({'items': json.dumps(pack_choices), 'heading': heading, 'highlight': params['highlight']})
-		chosen_list = kodi_utils.select_dialog(pack_choices, **kwargs)
+		if len(pack_choices) > 1:
+			heading = clean_file_name(source.get('name'))
+			kwargs = {'enumerate': 'true', 'multi_choice': 'true', 'multi_line': 'true'}
+			kwargs.update({'items': json.dumps(pack_choices), 'heading': heading, 'highlight': params['highlight']})
+			chosen_list = kodi_utils.select_dialog(pack_choices, **kwargs)
+		else: chosen_list = next(([i] for i in pack_choices), None)
 		if not chosen_list: return
+		size_label = sum(i['size'] for i in chosen_list) / (1024 * 1024)
+		text = '%s[CR]%s' % (ls(32688) % size_label, ls(32689))
+		if not kodi_utils.confirm_dialog(text=text, top_space=True): return
 		show_package = source.get('package') == 'show'
-		default_name = '%s (%s)' % (clean_file_name(get_title(meta, get_language())), meta.get('year'))
+		default_name = '%s (%s)' % (clean_file_name(get_title(meta)), meta.get('year'))
 		default_foldername = kodi_utils.dialog.input(ls(32228), defaultt=default_name)
-		chosen_list = [{**params, 'pack_files': item} for item in chosen_list]
 		for item in chosen_list:
+			item = {**params, 'default_foldername': default_foldername, 'pack_files': item}
 			if show_package:
 				season = find_season_in_release_title(item['pack_files']['filename'])
-				if season:
-					meta['season'] = season
-					item['meta'] = json.dumps(meta)
-					item['default_foldername'] = default_foldername
-				else: pass
-			append(Thread(target=Downloader(item).run))
-		[i.start() for i in threads]
+				if season: meta.update({'season': season}), item.update({'meta': json.dumps(meta)})
+			(Thread(target=Downloader(item).run)).start()
 	else: Downloader(params).run()
 
 class Downloader:
@@ -73,79 +74,54 @@ class Downloader:
 		if not self.confirm_download(): return self.return_notification(notification=32736)
 		self.get_download_folder()
 		if not self.get_destination_folder(): return self.return_notification(notification=32736)
-		self.download_runner(self.url, self.final_destination, self.extension)
+		self.start_download(self.url, os.path.join(self.final_destination, self.final_name + self.extension))
 
 	def download_prep(self):
 		if 'meta' in self.params:
-			art_provider = get_art_provider()
+			poster_main, poster_backup = get_art_provider()[:2]
 			self.meta = json.loads(self.params_get('meta'))
 			self.meta_get = self.meta.get
-			title = get_title(self.meta, get_language())
 			self.mediatype = self.meta_get('mediatype')
+			self.image = self.meta_get(poster_main) or self.meta_get(poster_backup) or poster_empty
 			self.year = self.meta_get('year')
-			self.image = self.meta_get('poster')
-			self.image = self.meta_get(art_provider[0]) or self.meta_get(art_provider[1]) or poster_empty
 			self.season = self.meta_get('season')
 			self.name = self.params_get('name')
+			title = get_title(self.meta)
 		else:
 			self.meta = None
-			title = self.params_get('name')
 			self.mediatype = self.params_get('mediatype')
 			self.image = self.params_get('image')
 			self.name = None
+			title = self.params_get('name')
 		self.title = clean_file_name(title)
 		self.provider = self.params_get('provider')
 		self.action = self.params_get('action')
 		self.source = self.params_get('source')
 		self.final_name = None
 
-	def download_runner(self, url, folder_dest, ext):
-		dest = os.path.join(folder_dest, self.final_name + ext)
-		self.start_download(url, dest)
-
 	def get_url_and_headers(self):
 		url = self.params_get('url')
 		if url in (None, 'None', ''):
-			if self.action == 'meta.single':
-				url = debrid.Source(json.loads(self.source), self.meta).resolve_sources()
-			if self.action == 'meta.pack':
-				if self.provider == 'real-debrid':
-					from debrids.real_debrid_api import RealDebridAPI as debrid_function
-				elif self.provider == 'premiumize.me':
-					from debrids.premiumize_api import PremiumizeAPI as debrid_function
-				elif self.provider == 'alldebrid':
-					from debrids.alldebrid_api import AllDebridAPI as debrid_function
-				elif self.provider == 'torbox':
-					from debrids.torbox_api import TorBoxAPI as debrid_function
-				url = self.params_get('pack_files')['link']
-				if self.provider == 'premiumize.me':
-					url = debrid_function().add_headers_to_url(url)
-				if self.provider in ('real-debrid', 'alldebrid', 'torbox'):
-					url = debrid_function().unrestrict_link(url)
-		else:
-			if self.action.startswith('cloud'):
-				if '_direct' in self.action:
-					url = self.params_get('url')
-				elif 'real-debrid' in self.action:
-					from menus.real_debrid import resolve_rd
-					url = resolve_rd(self.params)
-				elif 'premiumize' in self.action:
-					from debrids.premiumize_api import PremiumizeAPI
-					url = PremiumizeAPI().add_headers_to_url(url)
-				elif 'alldebrid' in self.action:
-					from menus.alldebrid import resolve_ad
-					url = resolve_ad(self.params)
-				elif 'torbox' in self.action:
-					from menus.torbox import resolve_tb
-					url = resolve_tb(self.params)
-				elif 'easynews' in self.action:
-					from menus.easynews import resolve_easynews
-					url = resolve_easynews(self.params)
-		try: headers = dict(parse_qsl(url.rsplit('|', 1)[1]))
-		except: headers = dict('')
+			if 'meta' in self.action:
+				link = self.params_get('pack_files')['link']
+				debrid_function = debrid.import_debrid(self.provider)
+				url = debrid_function.unrestrict_link(link)
+		if self.action.startswith('cloud'):
+			if 'real-debrid' in self.action:
+				from menus.real_debrid import resolve_rd as debrid_function
+			elif 'alldebrid' in self.action:
+				from menus.alldebrid import resolve_ad as debrid_function
+			elif 'torbox' in self.action:
+				from menus.torbox import resolve_tb as debrid_function
+			elif 'easynews' in self.action:
+				from menus.easynews import resolve_easynews as debrid_function
+			if '_direct' in self.action: url = self.params_get('url')
+			else: url = debrid_function(self.params)
+		else: pass
+		url, *headers = url.rsplit('|', 1)
+		try: headers = dict(parse_qsl(*headers))
+		except: headers = dict()
 		self.headers = headers
-		try: url = url.split('|')[0]
-		except: pass
 		self.url = url
 
 	def get_download_folder(self):
@@ -159,10 +135,9 @@ class Downloader:
 	def get_destination_folder(self):
 		if self.action == 'image':
 			self.final_destination = self.down_folder
-		elif self.action in ('meta.single', 'meta.pack'):
+		elif 'meta' in self.action:
 			default_name = '%s (%s)' % (self.title, self.year)
-			if self.action == 'meta.single': folder_rootname = kodi_utils.dialog.input(ls(32228), defaultt=default_name)
-			else: folder_rootname = self.params_get('default_foldername', default_name)
+			folder_rootname = self.params_get('default_foldername', default_name)
 			if not folder_rootname: return False
 			if self.mediatype == 'episode':
 				inter = os.path.join(self.down_folder, folder_rootname)
@@ -177,11 +152,11 @@ class Downloader:
 		if self.final_name: final_name = self.final_name
 		elif self.action == 'image':
 			final_name = self.title
-		elif self.action == 'meta.pack':
+		elif 'meta' in self.action:
 			name = self.params_get('pack_files')['filename']
 			final_name = os.path.splitext(urlparse(name).path)[0].split('/')[-1]
 		else:
-			name_url = unquote(self.url)
+			name_url = self.params_get('name') or unquote(self.url)
 			file_name = clean_title(name_url.split('/')[-1])
 			if clean_title(self.title).lower() in file_name.lower():
 				final_name = os.path.splitext(urlparse(name_url).path)[0].split('/')[-1]
@@ -197,13 +172,20 @@ class Downloader:
 			ext = os.path.splitext(urlparse(self.url).path)[1][1:]
 			if ext not in image_extensions: ext = 'jpg'
 			ext = '.%s' % ext
+		elif 'meta' in self.action:
+			name = self.params_get('pack_files')['filename']
+			ext = os.path.splitext(urlparse(name).path)[1][1:]
+			if ext not in video_extensions: ext = 'mp4'
+			ext = '.%s' % ext
 		else:
-			ext = os.path.splitext(urlparse(self.url).path)[1][1:]
+			name_url = self.params_get('name') or self.url
+			ext = os.path.splitext(urlparse(name_url).path)[1][1:]
 			if ext not in video_extensions: ext = 'mp4'
 			ext = '.%s' % ext
 		self.extension = ext
 
 	def download_check(self):
+		self.headers['User-Agent'] = user_agent
 		self.resp = self.get_response(self.url, self.headers, 0)
 		if not self.resp: self.return_notification(ok_dialog=32575)
 		try: self.content = int(self.resp.headers['Content-Length'])
@@ -212,18 +194,15 @@ class Downloader:
 		except: self.resumable = False
 		if self.content < 1: self.return_notification(ok_dialog=32575)
 		self.size = 1024 * 1024
-		self.mb = self.content / (1024 * 1024)
+		self.size_label = self.content / (1024 * 1024)
 		if self.content < self.size: self.size = self.content
 		kodi_utils.hide_busy_dialog()
 
 	def start_download(self, url, dest):
-		if self.action not in ('image', 'meta.pack'):
-			show_notifications = True
-			notification_frequency = 25
-		else:
+		if self.action in ('image', 'meta.pack'):
 			if self.action == 'meta.pack': kodi_utils.notification(32134, 3000, self.image)
-			show_notifications = False
-			notification_frequency = 0
+			show_notifications, notification_frequency = False, 0
+		else: show_notifications, notification_frequency = True, 25
 		notify, total, errors, count, resume, sleep_time  = 25, 0, 0, 0, 0, 0
 		f = kodi_utils.open_file(dest, 'w')
 		chunk  = None
@@ -264,11 +243,11 @@ class Downloader:
 					errno = e.errno
 				if errno == 10035: # 'A non-blocking socket operation could not be completed immediately'
 					pass
-				if errno == 10054: #'An existing connection was forcibly closed by the remote host'
-					errors = 10 #force resume
+				if errno == 10054: # 'An existing connection was forcibly closed by the remote host'
+					errors = 10    # force resume
 					sleep_time  = 30
 				if errno == 11001: # 'getaddrinfo failed'
-					errors = 10 #force resume
+					errors = 10    # force resume
 					sleep_time  = 30
 			if chunk:
 				errors = 0
@@ -296,9 +275,7 @@ class Downloader:
 
 	def get_response(self, url, headers, size):
 		try:
-			if size > 0:
-				size = int(size)
-				headers['Range'] = 'bytes=%d-' % size
+			if size > 0: headers['Range'] = 'bytes=%d-' % int(size)
 			req = Request(url, headers=headers)
 			resp = urlopen(req, context=ctx, timeout=30)
 			return resp
@@ -307,25 +284,19 @@ class Downloader:
 	def finish_download(self, title, mediatype, downloaded, image):
 		if self.mediatype == 'thumb_url': return
 		if self.mediatype == 'image_url':
-			if downloaded: kodi_utils.notification('[I]%s[/I]' % ls(32576), 3000, image)
-			else: kodi_utils.notification('[I]%s[/I]' % ls(32691), 3000, image)
-		else:
-			playing = kodi_utils.player.isPlaying()
-			if downloaded: text = '[COLOR forestgreen]%s %s[/COLOR]:[CR][B]%s[/B]' % (ls(32107), ls(32576), title)
-			else: text = '[COLOR red]%s %s[/COLOR]:[CR][B]%s[/B]' % (ls(32107), ls(32575), title)
-			if not downloaded or not playing: kodi_utils.ok_dialog(text=text)
+			text = ls(32576) if downloaded else ls(32691)
+			return kodi_utils.notification('%s' % text, 3000, image)
+		playing = kodi_utils.player.isPlaying()
+		if downloaded: text = '%s %s:[CR]%s' % (ls(32107), ls(32576), title)
+		else: text = '%s %s:[CR]%s' % (ls(32107), ls(32575), title)
+		if not downloaded or not playing: kodi_utils.ok_dialog(text=text, top_space=True)
 
 	def confirm_download(self):
-		choice = True
-		if self.action not in ('image', 'meta.pack'):
-			text = '%s[CR]%s' % (ls(32688) % self.mb, ls(32689))
-			if self.action == 'meta.single': 
-				kwargs = dict(meta=self.meta, text=text, enable_buttons=True, true_button=ls(32824), false_button=ls(32828), focus_button=10)
-				choice = open_window(('windows.progress', 'ProgressMedia'), 'progress_media.xml', **kwargs)
-			else: choice = kodi_utils.confirm_dialog(text=text)
-		return choice
+		if self.action in ('image', 'meta.single', 'meta.pack'): return True
+		text = '%s[CR]%s' % (ls(32688) % self.size_label, ls(32689))
+		return kodi_utils.confirm_dialog(text=text, top_space=True)
 
-	def return_notification(self, notification=None, ok_dialog=None):
+	def return_notification(self, notification=None, ok_dialog=None, top_space=True):
 		kodi_utils.hide_busy_dialog()
 		if notification: kodi_utils.notification(notification)
 		elif ok_dialog: kodi_utils.ok_dialog(text=ok_dialog, top_space=True)

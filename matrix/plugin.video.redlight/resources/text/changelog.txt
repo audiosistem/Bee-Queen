@@ -1,3 +1,37 @@
+[COLOR red][B]Version 1.2.3[/B][/COLOR]
+- Fixed skin widgets (e.g. Movies > Trending) staying empty after a settings DB upgrade: widget calls no longer block on settings bootstrap, failed Trakt list fetches are not cached, and widgets are silently reloaded with ReloadSkin only when sync_settings actually migrates or repairs an existing settings.db (not on every boot).
+- Fixed slow startup and browsing after the 1.2.2 boot-crash fix: settings reads no longer hit SQLite on every call once properties are loaded, the database is not synced twice on boot, path-existence checks are skipped on the read path, and default-settings metadata is cached in memory.
+- Fixed widget and skin list loads hanging ~5 seconds (or failing) after opening Red Light: the font/skin background thread now runs only in the service process, not in the plugin invoker where it blocked every widget exit.
+- Fixed widgets staying empty after the above change: widget calls no longer bulk-load settings into window properties (which could fail silently); they read from a warmed in-memory DB cache instead when properties are not yet loaded.
+
+[COLOR red][B]Version 1.2.2[/B][/COLOR]
+- Fixed Kodi boot crash after upgrading from older versions when legacy settings.db contained invalid values. On boot the service migrates/sanitizes the database first, then loads settings into window properties after the GUI is up (so widgets and skin labels work). Skin/XML updates still run when Red Light is first opened.
+
+[COLOR red][B]Version 1.2.1[/B][/COLOR]
+- Fixed prescrape regression: "Start Full Scrape" no longer appears when only EasyNews or debrid cloud results are shown unless Check Before Full Search is enabled or external scrapers still need to run. Debrid cloud still runs before external scrapers when the provider is enabled.
+- TorBox Cloud: episode search only returns files matching the requested season/episode (no longer lists every file in a season pack when the folder title matches).
+- Start Full Scrape: clean second-pass scrape — resets state, applies Results limits/filters and external scraper settings. Configurable under Tools > Settings > Rescrape Actions > Start Full Scrape (After Prescrape) (default Prompt).
+- Meta Accounts: TMDb Lists read access token is user-configurable (with restore default and test), same pattern as Trakt client credentials and the TMDb API key.
+- External scrapers: All Debrid cached-result filter now uses the All Debrid instant API (per hash) instead of MediaFusion only, so "Check for cached status (RD & AD)" returns AD results again when torrents are on your account.
+- External scrapers: fixed debrid cache check skipping re-query after a previous "not cached" result and failing to update when cache status changed (first pass empty, auto second pass).
+- External scrapers: All Debrid instant check uses GET magnet/instant (documented API), accepts instant/ready flags, and does not mark every torrent uncached when the API call fails.
+
+[COLOR red][B]Version 1.2.0[/B][/COLOR]
+- TorBox Cloud: debrid cloud results (TorBox, RD, PM, AD) bypass Results quality/HDR/size filters — your cloud library is always shown.
+
+[COLOR red][B]Version 1.1.9[/B][/COLOR]
+- TorBox Cloud: Search Cloud Storage now runs before external scrapers when enabled (no separate Check Before Full Search required).
+- TorBox Cloud: improved cloud matching and fresh mylist/file lookup during source search.
+- AIOStreams: temporarily disabled in this release (no source searches or settings UI) while integration is fixed.
+
+[COLOR red][B]Version 1.1.9~alpha[/B][/COLOR]
+- AIOStreams: optional native source provider (Tools > Settings > Sources Accounts > AIOStreams > Enable). Uses HTTP Basic Auth username and password from your AIOStreams dashboard.
+- AIOStreams: instance picker and Active base URL row show each preset with its full domain (Kuu, ElfHosted, Yeb, Midnight, or Custom).
+- AIOStreams: Check Before Full Search and Autoplay Result toggles (same pattern as EasyNews and Debrid cloud scrapers).
+- AIOStreams runs alongside Debrid, EasyNews, and external scrapers; P2P results are ignored.
+- AIOStreams: optional result highlight colour under Tools > Settings > Results (provider highlight mode).
+- Results: removed obsolete Easy Debrid and Off Cloud highlight colours.
+
 [COLOR red][B]Version 1.1.8[/B][/COLOR]
 - Fix rare scrape-screen lockup caused by thread exhaustion ("can't start new thread") by falling back to serial provider processing when new threads cannot be spawned.
 - Sources results window now fails safely if initialisation errors occur, preventing stuck scrape dialogs that required a Kodi restart.

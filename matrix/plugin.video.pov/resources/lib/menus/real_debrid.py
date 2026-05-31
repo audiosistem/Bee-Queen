@@ -2,7 +2,7 @@ import sys
 from debrids.real_debrid_api import RealDebridAPI as Debrid
 from modules import kodi_utils
 from modules.source_utils import supported_video_extensions
-from modules.utils import clean_file_name, normalize, jsondate_to_datetime
+from modules.utils import clean_file_name, normalize, jsondate_to_datetime, get_datetime
 # from modules.kodi_utils import logger
 
 get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting
@@ -60,7 +60,7 @@ class Menu(Debrid):
 				name = item['path'].lstrip('/')
 				name = clean_file_name(name).upper()
 				url_link = item['url_link']
-				if url_link.startswith('/'): url_link = 'http' + url_link
+				if url_link.startswith('/'): url_link = 'https:/' + url_link
 				size = float(int(item['bytes']))/1073741824
 				display = '%02d | [B]%s[/B] | %.2f GB | [I]%s [/I]' % (count, file_str, size, name)
 				params = {'name': name, 'url': url_link, 'image': default_icon}
@@ -85,7 +85,7 @@ class Menu(Debrid):
 				name = item['filename']
 				name = clean_file_name(name).upper()
 				size = float(int(item['filesize']))/1073741824
-				datetime_object = jsondate_to_datetime(item['generated'], '%Y-%m-%dT%H:%M:%S.%fZ', remove_time=True)
+				datetime_object = jsondate_to_datetime(item['generated']).astimezone().date()
 				display = '%02d | %.2f GB | %s | [I]%s [/I]' % (count, size, datetime_object, name)
 				params = {'name': name, 'url': item['download'], 'id': item['id'], 'image': default_icon}
 				url_params = {**params, 'mode': 'media_play', 'mediatype': 'video'}
@@ -110,19 +110,18 @@ class Menu(Debrid):
 		kodi_utils.container_refresh()
 
 	def show_account_info(self):
-		from modules.utils import datetime_workaround, get_datetime
 		try:
 			kodi_utils.show_busy_dialog()
 			account_info = self.account_info()
-			expires = datetime_workaround(account_info['expiration'], '%Y-%m-%dT%H:%M:%S.%fZ').date()
-			days_remaining = (expires - get_datetime()).days
+			expires = jsondate_to_datetime(account_info['expiration']).astimezone()
+			days_remaining = (expires.date() - get_datetime()).days
 			body = []
 			append = body.append
+			append(ls(32751) % days_remaining)
+			append(ls(32750) % expires.date())
 			append(ls(32758) % account_info['email'])
 			append(ls(32755) % account_info['username'])
 			append(ls(32757) % account_info['type'].capitalize())
-			append(ls(32750) % expires)
-			append(ls(32751) % days_remaining)
 			append(ls(32759) % account_info['points'])
 			kodi_utils.hide_busy_dialog()
 			return kodi_utils.show_text(ls(32054).upper(), '\n\n'.join(body), font_size='large')

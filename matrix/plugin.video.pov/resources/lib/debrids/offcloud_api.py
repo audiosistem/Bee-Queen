@@ -24,11 +24,11 @@ class OffcloudAPI:
 		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
 		return response.json() if 'json' in response.headers.get('Content-Type', '') else response
 
-	def _get(self, url, params=None):
-		return self._request('get', url, params=params)
+	def _get(self, path, params=None):
+		return self._request('get', path, params=params)
 
-	def _post(self, url, data=None):
-		return self._request('post', url, data=data)
+	def _post(self, path, data=None):
+		return self._request('post', path, data=data)
 
 	def headers(self):
 		return {'Authorization': 'Bearer %s' % self.token}
@@ -39,8 +39,9 @@ class OffcloudAPI:
 		return result
 
 	def torrent_info(self, request_id):
-		url = 'cloud/explore/%s?format=detailed' % request_id
-		result = self._get(url)
+		params = {'format': 'detailed'}
+		url = 'cloud/explore/%s' % request_id
+		result = self._get(url, params=params)
 		return result
 
 	def delete_torrent(self, request_id):

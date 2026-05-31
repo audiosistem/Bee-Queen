@@ -141,10 +141,9 @@ def build_trakt_list(params):
 	max_threads = int(kodi_utils.get_setting('pov.max_threads', '100'))
 	use_alphabet = nav_jump_use_alphabet() > 0
 	user, slug, name = params.get('user'), params.get('slug'), params.get('name')
-	list_type, list_id = params.get('list_type'), params.get('list_id')
-	letter, page = params.get('new_letter', 'None'), int(params.get('new_page', '1'))
+	list_type, list_id, page = params.get('list_type'), params.get('list_id'), int(params.get('new_page', '1'))
 	results = trakt_api.get_trakt_list_contents(list_type, list_id, user, slug)
-	if paginate() and results: process_list, total_pages = paginate_list(results, page, letter, page_limit())
+	if paginate() and results: process_list, total_pages = paginate_list(results, page, page_limit())
 	else: process_list, total_pages = results, 1
 	movies, tvshows = Movies({'id_type': 'trakt_dict'}), TVShows({'id_type': 'trakt_dict'})
 	episodes, seasons = Episodes({'id_type': 'trakt_dict'}), Seasons({'id_type': 'trakt_dict'})
@@ -176,7 +175,7 @@ def build_trakt_list(params):
 		kodi_utils.add_dir(__handle__, url, jump2_str, iconImage=item_jump, isFolder=False)
 	kodi_utils.add_items(__handle__, items)
 	if total_pages > page:
-		url = {'mode': 'build_trakt_list', 'new_page': page + 1, 'new_letter': letter,
+		url = {'mode': 'build_trakt_list', 'new_page': page + 1,
 				'user': user, 'slug': slug, 'name': name, 'list_id': list_id, 'list_type': list_type}
 		kodi_utils.add_dir(__handle__, url, nextpage_str)
 	kodi_utils.set_category(__handle__, name)
@@ -213,7 +212,7 @@ def trakt_account_info():
 		stats = trakt_api.call_trakt('users/%s/stats' % account_info['user']['ids']['slug'], with_auth=True)
 		username = account_info['user']['username']
 		timezone = account_info['account']['timezone']
-		joined = jsondate_to_datetime(account_info['user']['joined_at'], '%Y-%m-%dT%H:%M:%S.000Z')
+		joined = jsondate_to_datetime(account_info['user']['joined_at']).astimezone()
 		private = account_info['user']['private']
 		vip = account_info['user']['vip']
 		if vip: vip = '%s Years' % str(account_info['user']['vip_years'])
@@ -237,7 +236,7 @@ def trakt_account_info():
 		append = body.append
 		append('[B]Username:[/B] %s' % username)
 		append('[B]Timezone:[/B] %s' % timezone)
-		append('[B]Joined:[/B] %s' % joined)
+		append('[B]Joined:[/B] %s' % joined.date())
 		append('[B]Private:[/B] %s' % private)
 		append('[B]VIP Status:[/B] %s' % vip)
 		append('[B]Ratings Given:[/B] %s' % str(total_given_ratings))

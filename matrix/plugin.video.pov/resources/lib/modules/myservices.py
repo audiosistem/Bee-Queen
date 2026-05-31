@@ -57,9 +57,9 @@ class RepeatTimer(Timer):
 class RealDebrid:
 	icon = 'realdebrid.png'
 	def __init__(self):
-		self.token = get_setting('rd.token')
-		self.client_id = get_setting('rd.client_id') or 'X245A4XAIBGVM'
 		self.secret = get_setting('rd.secret')
+		self.token = get_setting('rd.token')
+		self.client_id = 'X245A4XAIBGVM'
 
 	def base_url(self, path):
 		return 'https://app.real-debrid.com/%s' % path

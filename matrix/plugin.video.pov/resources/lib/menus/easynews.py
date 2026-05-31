@@ -55,11 +55,11 @@ def account_info(params):
 		append = body.append
 		expires = jsondate_to_datetime(account_info[2], '%Y-%m-%d')
 		days_remaining = (expires - datetime.today()).days
+		append(ls(32751) % days_remaining)
+		append(ls(32750) % expires)
 		append(ls(32758) % account_info[1])
 		append(ls(32755) % account_info[0])
 		append(ls(32757) % account_info[3])
-		append(ls(32750) % expires)
-		append(ls(32751) % days_remaining)
 		append('%s %s' % (ls(32772), usage_info[2].replace('years', ls(32472))))
 		append(ls(32761) % usage_info[0].replace('Gigs', 'GB'))
 		append(ls(32762) % usage_info[1].replace('Gigs', 'GB'))

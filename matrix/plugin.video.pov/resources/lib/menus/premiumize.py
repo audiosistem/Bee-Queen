@@ -43,8 +43,9 @@ class Menu(Debrid):
 				cm_append = cm.append
 				file_type = item['type']
 				name = clean_file_name(item['name']).upper()
-				rename_params = {'mode': 'premiumize.pm_rename', 'file_type': file_type, 'id': item['id'], 'name': item['name']}
 				delete_params = {'mode': 'premiumize.pm_delete', 'id': item['id']}
+				rename_params = {'mode': 'premiumize.pm_rename', 'file_type': file_type, 'id': item['id'], 'name': item['name']}
+				down_file_params = {}
 				if file_type == 'folder':
 					is_folder = True
 					download_string = archive_str
@@ -58,14 +59,15 @@ class Menu(Debrid):
 					delete_params['file_type'] = 'item'
 					string = file_str
 					url_link = item['link']
-					if url_link.startswith('/'): url_link = 'https' + url_link
+					if url_link.startswith('/'): url_link = 'https:/' + url_link
 					size = item['size']
 					display_size = float(int(size))/1073741824
 					display = '%02d | [B]%s[/B] | %.2f GB | [I]%s [/I]' % (count, file_str, display_size, name)
-					url_params = {'mode': 'media_play', 'url': url_link, 'mediatype': 'video'}
-					down_file_params = {'mode': 'downloader', 'action': 'cloud.premiumize', 'name': item['name'], 'url': url_link, 'image': default_icon}
-					cm_append((download_string, 'RunPlugin(%s)' % build_url(down_file_params)))
+					params = {'name': item['name'], 'url': url_link, 'image': default_icon}
+					url_params = {**params, 'mode': 'media_play', 'mediatype': 'video'}
+					down_file_params = {**params, 'mode': 'downloader', 'action': 'cloud.premiumize_direct'}
 				cm_append(('[B]%s %s[/B]' % (delete_str, string.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))
+				if down_file_params: cm_append((download_string, 'RunPlugin(%s)' % build_url(down_file_params)))
 				cm_append((rename_str % file_type.capitalize(), 'RunPlugin(%s)' % build_url(rename_params)))
 				url = build_url(url_params)
 				listitem = make_listitem()
@@ -95,12 +97,13 @@ class Menu(Debrid):
 					is_folder = False
 					details = self.get_item_details(item['file_id'])
 					url_link = details['link']
-					if url_link.startswith('/'): url_link = 'https' + url_link
+					if url_link.startswith('/'): url_link = 'https:/' + url_link
 					size = details['size']
 					display_size = float(int(size))/1073741824
 					display = '%02d | %.2f%% | [B]%s[/B] | %.2f GB | [I]%s [/I]' % (count, progress, file_str, display_size, name)
-					url_params = {'mode': 'media_play', 'url': url_link, 'mediatype': 'video'}
-					down_file_params = {'mode': 'downloader', 'mediatype': 'cloud.premiumize', 'name': item['name'], 'url': url_link, 'image': default_icon}
+					params = {'name': item['name'], 'url': url_link, 'image': default_icon}
+					url_params = {**params, 'mode': 'media_play', 'mediatype': 'video'}
+					down_file_params = {**params, 'mode': 'downloader', 'mediatype': 'cloud.premiumize_direct'}
 					cm_append((down_str, 'RunPlugin(%s)' % build_url(down_file_params)))
 				url = build_url(url_params)
 				listitem = make_listitem()
@@ -134,17 +137,19 @@ class Menu(Debrid):
 			account_info = self.account_info()
 			customer_id = account_info['customer_id']
 			if account_info['premium_until']:
-				expires = datetime.fromtimestamp(account_info['premium_until']).date()
-				days_remaining = (expires - datetime.today().date()).days
+				expires = datetime.fromtimestamp(account_info['premium_until'])
+				days_remaining = (expires - datetime.today()).days
 			else: expires, days_remaining = 'Expired', 'None'
 			points_used = int(math.floor(float(account_info['space_used']) / 1073741824.0))
 			space_used = float(int(account_info['space_used']))/1073741824
 			percentage_used = str(round(float(account_info['limit_used']) * 100.0, 1))
 			body = []
 			append = body.append
-			append(ls(32749) % customer_id)
-			append(ls(32750) % expires)
 			append(ls(32751) % days_remaining)
+			if account_info['premium_until']:
+				append(ls(32750) % expires.date())
+			else: append(ls(32750) % expires)
+			append(ls(32749) % customer_id)
 			append(ls(32752) % points_used)
 			append(ls(32753) % space_used)
 			append(ls(32754) % (percentage_used + '%'))

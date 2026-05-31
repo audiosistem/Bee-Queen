@@ -426,7 +426,7 @@ def traktMonitor():
 			monitor.waitForAbort(5)
 		value, interval = settings.trakt_sync_interval()
 		next_update_string = update_string % value
-		try: status = trakt_sync_activities()
+		try: status = trakt_sync_activities(init_callback=True)
 		except: status = 'failed'
 		if status == 'success':
 			logger('POV', trakt_service_string % ('POV TraktMonitor - Success', 'Trakt Update Performed'))

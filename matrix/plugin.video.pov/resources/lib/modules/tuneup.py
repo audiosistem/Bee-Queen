@@ -19,7 +19,7 @@ def clear_streams():
 	minimum_uses = 30
 	days = dialog.numeric(0, 'Remove Items Older Than (Days)...', defaultt=str(minimum_uses))
 	if not days: return notification('No Days Set')
-	current_date = datetime.utcnow().date()
+	current_date = datetime.now().date()
 	back_date = (current_date - timedelta(days=int(days))).strftime('%Y-%m-%d %H:%M:%S')
 	with database.connect(str(dbfile)) as dbcon:
 		dbcur = dbcon.cursor()
@@ -62,7 +62,7 @@ def clear_thumbnails():
 	minimum_uses = 30
 	days = dialog.numeric(0, 'Remove Thumbs Older Than (Days)...', defaultt=str(minimum_uses))
 	if not days: return notification('No Days Set')
-	current_date = datetime.utcnow().date()
+	current_date = datetime.now().date()
 	back_date = (current_date - timedelta(days=int(days))).strftime('%Y-%m-%d %H:%M:%S')
 	with database.connect(str(dbfile)) as dbcon:
 		dbcur = dbcon.cursor()

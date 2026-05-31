@@ -508,7 +508,7 @@ def build_navigate_to_page(params):
 	if new_start is None: return
 	if use_alphabet: new_page, new_letter = '', new_start
 	else: new_page, new_letter = new_start, None
-	url_params = {'mode': params.get('transfer_mode', ''), 'action': params.get('transfer_action', ''), 'new_page': new_page, 'new_letter': new_letter,
+	url_params = {'mode': params.get('transfer_mode', ''), 'action': params.get('transfer_action', ''), 'new_page': new_page,
 				'mediatype': params.get('mediatype', ''), 'query': params.get('query', ''), 'actor_id': params.get('actor_id', ''),
 				'user': params.get('user', ''), 'slug': params.get('slug', ''), 'list_id': params.get('list_id', ''), 'name': params.get('name', '')}
 	execute_builtin('Container.Update(%s)' % build_url(url_params))

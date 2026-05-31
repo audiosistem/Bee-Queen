@@ -16,8 +16,12 @@ from resources.lib import subtitles, db
 from resources.lib.tmdb import movies, tv
 from resources.lib.resolvers import vidify, vidzee, twoembed, primesrc
 from resources.lib.resolvers import torrentio, torrentdb, mediafusion, comet, perflix, uindex, thrax
+from resources.lib.resolvers import velaflow as velaflow_resolver
+from resources.lib.resolvers import filelist as filelist_resolver
 from resources.lib.resolvers import okru as okru_resolver
 from resources.lib.resolvers import flixer, vixsrc as vixsrc_resolver, hdhub
+from resources.lib.resolvers import voe as voe_resolver
+from resources.lib.resolvers import doodstream as doodstream_resolver
 from resources.lib.resolvers import webstreamr, vidrock, stremify as stremify_resolver, nebulastreams, flixnest
 from resources.lib.resolvers import pulpwatch as pulpwatch_resolver
 from resources.lib.resolvers import filmehd as filmehd_resolver
@@ -39,6 +43,8 @@ from resources.lib.resolvers import pelispanda as pelispanda_resolver
 from resources.lib.resolvers import streamimdb as streamimdb_resolver
 from resources.lib.resolvers import sooti as sooti_resolver
 from resources.lib.resolvers import moviebox as moviebox_resolver
+from resources.lib.resolvers import popr as popr_resolver
+from resources.lib.resolvers import cinesu as cinesu_resolver
 from resources.lib.tmdb.api import get_external_ids
 from resources.lib.dialogs import enrich_source, sort_sources, show_source_dialog, run_resolving_dialog
 try:
@@ -367,7 +373,8 @@ _PROVIDER_NAMES = {
     '[VDY]':   'Videasy',      '[VSE]':   'VSEmbed',      '[YFX]':   'YFlix',
     '[MEB]':   'MultiEmbed',   '[VBT]':   'VidBinge',     '[MAPI]':  'MoviesAPI',
     '[PPD]':   'PelisPanda',   '[SIMDB]': 'StreamIMDb',   '[SOT]':   'Sooti',
-    '[MBX]':   'MovieBox',
+    '[MBX]':   'MovieBox',     '[PPR]':   'Popr',        '[CSU]':   'CineSu',
+    '[VLF]':   'VelaFlow',    '[FLI]':   'FileList',
 }
 
 
@@ -405,7 +412,7 @@ def _build_sources(results, prefixes, tmdb_title=None):
                     'quality': src.get('quality', ''),
                 }
                 sources.append(entry)
-        elif label_prefix in ('[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[PPD]'):
+        elif label_prefix in ('[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[PPD]', '[VLF]', '[FLI]'):
             for src in group:
                 quality = src.get('quality', '')
                 title_line = src.get('title_line', '')
@@ -455,7 +462,7 @@ def _build_sources(results, prefixes, tmdb_title=None):
                     'quality': quality,
                     'is_torrent': True,
                 })
-        elif label_prefix in ('[FLX]', '[VXS]', '[HDB]', '[V]', '[Z]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[PLW]', '[YAS]', '[NHD]', '[VDL]', '[VDY]', '[VSE]', '[YFX]', '[SIMDB]', '[SOT]', '[MBX]'):
+        elif label_prefix in ('[FLX]', '[VXS]', '[HDB]', '[V]', '[Z]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[PLW]', '[YAS]', '[NHD]', '[VDL]', '[VDY]', '[VSE]', '[YFX]', '[SIMDB]', '[SOT]', '[MBX]', '[PPR]', '[CSU]'):
             for src in group:
                 url = src.get('url')
                 if not url:
@@ -491,13 +498,16 @@ def _build_sources(results, prefixes, tmdb_title=None):
                 quality = src.get('quality', '')
                 label = src.get('label') or src.get('title_line') or src.get('host') or url or 'Unknown'
                 if label_prefix == '[Z]' and 'vidzee.wtf' in url:
-                    url += "|User-Agent=Mozilla/5.0&Referer=https://core.vidzee.wtf/&Origin=https://core.vidzee.wtf/"
+                    if '|' not in url:
+                        url += "|User-Agent=Mozilla/5.0&Referer=https://core.vidzee.wtf/&Origin=https://core.vidzee.wtf/"
                     direct = True
                 elif label_prefix == '[PSC]' and '.m3u8' in url:
-                    url += "|User-Agent=Mozilla/5.0&Referer=https://cloudnestra.com/"
+                    if '|' not in url:
+                        url += "|User-Agent=Mozilla/5.0&Referer=https://cloudnestra.com/"
                     direct = True
                 elif label_prefix == '[2E]':
-                    url += "|User-Agent=Mozilla/5.0&Referer=https://player4u.xyz/embed"
+                    if '|' not in url:
+                        url += "|User-Agent=Mozilla/5.0&Referer=https://player4u.xyz/embed"
                     direct = False
                 elif label_prefix in ('[FHD]', '[HHD]', '[PSM]'):
                     direct = src.get('direct', False)
@@ -676,183 +686,481 @@ def _start_history_tracker(tmdb_id, media_type, title, poster, season=None, epis
     t.start()
 
 
+def _resolve_url(selected, item_data=None, status_cb=None):
+    """Resolve a source dict to a final stream URL without touching Kodi player or handle.
+    Returns (url_string, extra_subs_list) on success, or (None, []) on failure.
+    extra_subs: subtitle paths discovered during resolution (ok.ru only).
+    Safe to call from background threads (status_cb may be None).
+    """
+    item_data = item_data or {}
+
+    def _st(msg):
+        if status_cb:
+            status_cb(msg)
+
+    if selected.get('is_torrent'):
+        url = resolve_torrent(
+            selected['infoHash'],
+            selected.get('fileIdx', 0),
+            trackers=selected.get('trackers'),
+            seeds=selected.get('seeds'),
+            size=selected.get('size'),
+            quality=selected.get('quality'),
+            status_cb=_st,
+        )
+        return (url, []) if url else (None, [])
+
+    url = selected['url']
+    is_direct = selected['direct']
+    extra_subs = []
+
+    if 'primesrc.me/api/v1/l' in url:
+        _st('Se rezolvă PrimeSrc (Cloudflare)...')
+        xbmc.log(f'[PSM] FlareSolverr → {url}', xbmc.LOGINFO)
+        data = primesrcme_resolver.resolve_via_thrax(url, tmdb_id=selected.get('tmdb_id'))
+        embed = data.get('link') if data else None
+        if not embed:
+            xbmc.log(f'[PSM] FlareSolverr nu a returnat link pentru {url}', xbmc.LOGWARNING)
+            return None, []
+        xbmc.log(f'[PSM] embed URL: {embed}', xbmc.LOGINFO)
+        url = embed
+
+    if not is_direct and (url.startswith('tg://') or 't.me/' in url):
+        _st('Se rezolvă Telegram (Thrax)...')
+        stream_url = telegram_resolver.resolve_via_thrax(url)
+        if not stream_url:
+            xbmc.log(f'[TG] Thrax nu a returnat URL pentru {url}', xbmc.LOGWARNING)
+            return None, []
+        url = stream_url
+        is_direct = True
+
+    if not is_direct and vidmoly_resolver.is_vidmoly_url(url):
+        _st('Se rezolvă Vidmoly (Thrax)...')
+        m3u8 = vidmoly_resolver.resolve_via_thrax(url)
+        if not m3u8:
+            xbmc.log(f'[VML] Thrax nu a returnat URL pentru {url}', xbmc.LOGWARNING)
+            return None, []
+        url = m3u8
+        is_direct = True
+
+    if not is_direct and abysscdn_resolver.is_abysscdn_url(url):
+        _st('Se rezolvă AbyssCDN (Thrax)...')
+        stream_url = abysscdn_resolver.resolve_via_thrax(url)
+        if not stream_url:
+            xbmc.log(f'[ABYSS] Thrax nu a returnat URL pentru {url}', xbmc.LOGWARNING)
+            return None, []
+        url = stream_url
+        is_direct = True
+
+    if not is_direct and 'ok.ru/' in url:
+        _st('Se rezolvă ok.ru...')
+        okru_result = okru_resolver.resolve(url)
+        if okru_result:
+            url = okru_result['url']
+            is_direct = True
+            okru_subs = okru_result.get('subtitles', [])
+            if okru_subs:
+                base_name = _sub_filename(item_data.get('title', 'okru'), '').rstrip('.')
+                for track in okru_subs:
+                    lang = track.get('language', 'und')
+                    sub_url = track['url']
+                    local_path = os.path.join(subs_path, f'{base_name}.{lang}.vtt')
+                    if xbmcvfs.copy(sub_url, local_path):
+                        extra_subs.append(local_path)
+                        xbmc.log(f'[OKRU] Subtitrare {lang} salvată: {local_path}', xbmc.LOGINFO)
+                    else:
+                        xbmc.log(f'[OKRU] xbmcvfs.copy eșuat, folosesc URL direct', xbmc.LOGWARNING)
+                        extra_subs.append(sub_url)
+        else:
+            xbmc.log(f'[OKRU] Rezolvare eșuată pentru {url}', xbmc.LOGWARNING)
+            return None, []
+
+    if not is_direct and 'voe.sx/' in url:
+        _st('Se rezolvă VOE...')
+        try:
+            _resolved = voe_resolver.resolve(url)
+            if _resolved:
+                url = _resolved
+                is_direct = True
+            else:
+                xbmc.log(f'[VOE] resolver nu a returnat surse pentru {url}', xbmc.LOGWARNING)
+                return None, []
+        except Exception as _ex:
+            xbmc.log(f'[VOE] eroare resolver: {_ex}', xbmc.LOGERROR)
+            return None, []
+    _DOOD_DOMAINS = ('dood.watch', 'doodstream.com', 'dood.to', 'dood.so', 'dood.cx',
+                     'dood.la', 'dood.ws', 'dood.sh', 'doodstream.co', 'dood.pm',
+                     'dood.wf', 'dood.re', 'dood.yt', 'dooood.com', 'dood.stream',
+                     'ds2play.com', 'doods.pro', 'd0o0d.com', 'd000d.com', 'dood.li')
+    if not is_direct and any(d in url for d in _DOOD_DOMAINS):
+        _st('Se rezolvă DoodStream...')
+        try:
+            _resolved = doodstream_resolver.resolve(url)
+            if _resolved:
+                url = _resolved
+                is_direct = True
+            else:
+                xbmc.log(f'[DoodStream] resolver nu a returnat surse pentru {url}', xbmc.LOGWARNING)
+                return None, []
+        except Exception as _ex:
+            xbmc.log(f'[DoodStream] eroare resolver: {_ex}', xbmc.LOGERROR)
+            return None, []
+    if not is_direct and selected.get('provider') == 'vixsrc' and 'vixsrc.to/' in url:
+        _st('Se rezolvă VixSrc...')
+        try:
+            from urllib.parse import urlparse as _urlparse
+            _p = _urlparse(url)
+            _parts = [x for x in _p.path.strip('/').split('/') if x]
+            _mtype = _parts[0] if _parts else 'movie'
+            _tid = _parts[1] if len(_parts) > 1 else ''
+            _s = int(_parts[2]) if len(_parts) > 2 else None
+            _e = int(_parts[3]) if len(_parts) > 3 else None
+            _res = vixsrc_resolver.get_sources(_tid, _mtype, season=_s, episode=_e)
+            if _res:
+                url = _res[0]['url']
+                is_direct = True
+            else:
+                xbmc.log(f'[VixSrc] resolver nu a returnat surse pentru {url}', xbmc.LOGWARNING)
+                return None, []
+        except Exception as _ex:
+            xbmc.log(f'[VixSrc] eroare resolver: {_ex}', xbmc.LOGERROR)
+            return None, []
+
+    _MIXDROP_DOMAINS = ('mixdrop.ag', 'mixdrop.co', 'mixdrop.to', 'mixdrop.sx',
+                        'mixdrop.bz', 'mixdrop.ch', 'mixdrp.co', 'mixdrp.to',
+                        'mixdrop.gl', 'mixdrop.vc', 'mixdrop.is', 'mxdrop.to')
+    if not is_direct and any(d in url for d in _MIXDROP_DOMAINS):
+        _st('Se rezolvă MixDrop...')
+        try:
+            import requests as _req
+            from resources.lib.resolvers._common import THRAX_HEADERS
+            _r = _req.get(
+                'https://api.derzis.xyz/mixdrop/resolve',
+                params={'url': url}, headers=THRAX_HEADERS, timeout=20
+            )
+            if _r.ok:
+                _d = _r.json()
+                url = '{}|Referer={}'.format(_d['url'], _d.get('referer', ''))
+                is_direct = True
+            else:
+                xbmc.log(f'[MixDrop] Thrax error {_r.status_code}', xbmc.LOGWARNING)
+                return None, []
+        except Exception as _ex:
+            xbmc.log(f'[MixDrop] eroare: {_ex}', xbmc.LOGERROR)
+            return None, []
+    _LULU_DOMAINS = ('luluvdoo.com', 'lulustream.com', 'luluvdo.com', 'lulu.st',
+                     'luluvid.com', 'streamhihi.com', 'd00ds.site')
+    if not is_direct and any(d in url for d in _LULU_DOMAINS):
+        _st('Se rezolvă LuluStream...')
+        try:
+            import requests as _req
+            from resources.lib.resolvers._common import THRAX_HEADERS
+            _r = _req.get(
+                'https://api.derzis.xyz/lulustream/resolve',
+                params={'url': url}, headers=THRAX_HEADERS, timeout=20
+            )
+            if _r.ok:
+                _d = _r.json()
+                url = '{}|Referer={}'.format(_d['url'], _d.get('referer', ''))
+                is_direct = True
+            else:
+                xbmc.log(f'[LuluStream] Thrax error {_r.status_code}', xbmc.LOGWARNING)
+                return None, []
+        except Exception as _ex:
+            xbmc.log(f'[LuluStream] eroare: {_ex}', xbmc.LOGERROR)
+            return None, []
+    _STREAMWISH_DOMAINS = ('streamwish.to', 'streamwish.com', 'streamwish.site',
+                           'streamwish.fun', 'wishembed.pro', 'embedwish.com',
+                           'cdnwish.com', 'hlswish.com', 'sfastwish.com',
+                           'flaswish.com', 'obeywish.com', 'strwish.com',
+                           'playerwish.com', 'swishsrv.com', 'hglink.to')
+    if not is_direct and any(d in url for d in _STREAMWISH_DOMAINS):
+        _st('Se rezolvă StreamWish...')
+        try:
+            import requests as _req
+            from resources.lib.resolvers._common import THRAX_HEADERS
+            _r = _req.get(
+                'https://api.derzis.xyz/streamwish/resolve',
+                params={'url': url}, headers=THRAX_HEADERS, timeout=20
+            )
+            if _r.ok:
+                _d = _r.json()
+                url = '{}|Referer={}'.format(_d['url'], _d.get('referer', ''))
+                is_direct = True
+            else:
+                xbmc.log(f'[StreamWish] Thrax error {_r.status_code}', xbmc.LOGWARNING)
+                return None, []
+        except Exception as _ex:
+            xbmc.log(f'[StreamWish] eroare: {_ex}', xbmc.LOGERROR)
+            return None, []
+    _FILEMOON_DOMAINS = ('filemoon.sx', 'filemoon.to', 'filemoon.in', 'filemoon.nl',
+                         'filemoon.wf', 'filemoon.eu', 'filemoon.art', 'bysejikuar.com',
+                         'bysesayeveum.com', 'bysekoze.com', 'bysesukior.com',
+                         'bysefujedu.com', 'bysebuho.com', 'bysewihe.com')
+    if not is_direct and any(d in url for d in _FILEMOON_DOMAINS):
+        _st('Se rezolvă Filemoon...')
+        try:
+            import requests as _req
+            from resources.lib.resolvers._common import THRAX_HEADERS
+            _r = _req.get(
+                'https://api.derzis.xyz/filemoon/resolve',
+                params={'url': url}, headers=THRAX_HEADERS, timeout=20
+            )
+            if _r.ok:
+                _d = _r.json()
+                url = '{}|Referer={}'.format(_d['url'], _d.get('referer', ''))
+                is_direct = True
+            else:
+                xbmc.log(f'[Filemoon] Thrax error {_r.status_code}', xbmc.LOGWARNING)
+                return None, []
+        except Exception as _ex:
+            xbmc.log(f'[Filemoon] eroare: {_ex}', xbmc.LOGERROR)
+            return None, []
+    _STREAMTAPE_DOMAINS = ('streamtape.com', 'strtape.cloud', 'streamtape.net',
+                           'streamta.pe', 'streamtape.site', 'strcloud.link',
+                           'streamtape.to', 'streamta.site', 'streamtape.xyz')
+    if not is_direct and any(d in url for d in _STREAMTAPE_DOMAINS):
+        _st('Se rezolvă Streamtape...')
+        try:
+            import requests as _req
+            from resources.lib.resolvers._common import THRAX_HEADERS
+            _r = _req.get(
+                'https://api.derzis.xyz/streamtape/resolve',
+                params={'url': url}, headers=THRAX_HEADERS, timeout=20
+            )
+            if _r.ok:
+                _d = _r.json()
+                url = '{}|Referer={}'.format(_d['url'], _d.get('referer', ''))
+                is_direct = True
+            else:
+                xbmc.log(f'[Streamtape] Thrax error {_r.status_code}', xbmc.LOGWARNING)
+                return None, []
+        except Exception as _ex:
+            xbmc.log(f'[Streamtape] eroare: {_ex}', xbmc.LOGERROR)
+            return None, []
+
+    _CALLISTANISE_DOMAINS = ('filelions.to', 'filelions.com', 'filelions.live',
+                              'filelions.online', 'alions.pro', 'filelions.site',
+                              'lion.wtf', 'lionstreamz.me', 'lionstreamz.lat')
+    if not is_direct and any(d in url for d in _CALLISTANISE_DOMAINS):
+        _st('Se rezolvă Callistanise...')
+        try:
+            import requests as _req
+            from resources.lib.resolvers._common import THRAX_HEADERS
+            _r = _req.get(
+                'https://api.derzis.xyz/callistanise/resolve',
+                params={'url': url}, headers=THRAX_HEADERS, timeout=20
+            )
+            if _r.ok:
+                _d = _r.json()
+                url = '{}|Referer={}'.format(_d['url'], _d.get('referer', ''))
+                is_direct = True
+            else:
+                xbmc.log(f'[Callistanise] Thrax error {_r.status_code}', xbmc.LOGWARNING)
+                return None, []
+        except Exception as _ex:
+            xbmc.log(f'[Callistanise] eroare: {_ex}', xbmc.LOGERROR)
+            return None, []
+
+    if not is_direct and 'sendvid.com/' in url:
+        _st('Se rezolvă Sendvid...')
+        try:
+            import requests as _req
+            from resources.lib.resolvers._common import THRAX_HEADERS
+            _r = _req.get(
+                'https://api.derzis.xyz/sendvid/resolve',
+                params={'url': url}, headers=THRAX_HEADERS, timeout=20
+            )
+            if _r.ok:
+                _d = _r.json()
+                url = '{}|Referer={}'.format(_d['url'], _d.get('referer', ''))
+                is_direct = True
+            else:
+                xbmc.log(f'[Sendvid] Thrax error {_r.status_code}', xbmc.LOGWARNING)
+                return None, []
+        except Exception as _ex:
+            xbmc.log(f'[Sendvid] eroare: {_ex}', xbmc.LOGERROR)
+            return None, []
+
+    if not is_direct and 'video.sibnet.ru/' in url:
+        _st('Se rezolvă Sibnet...')
+        try:
+            import requests as _req
+            from resources.lib.resolvers._common import THRAX_HEADERS
+            _r = _req.get(
+                'https://api.derzis.xyz/sibnet/resolve',
+                params={'url': url}, headers=THRAX_HEADERS, timeout=20
+            )
+            if _r.ok:
+                _d = _r.json()
+                url = '{}|Referer={}'.format(_d['url'], _d.get('referer', ''))
+                is_direct = True
+            else:
+                xbmc.log(f'[Sibnet] Thrax error {_r.status_code}', xbmc.LOGWARNING)
+                return None, []
+        except Exception as _ex:
+            xbmc.log(f'[Sibnet] eroare: {_ex}', xbmc.LOGERROR)
+            return None, []
+
+    _VIDOZA_DOMAINS = ('vidoza.net/', 'videzz.net/')
+    if not is_direct and any(d in url for d in _VIDOZA_DOMAINS):
+        _st('Se rezolvă Vidoza...')
+        try:
+            import requests as _req
+            from resources.lib.resolvers._common import THRAX_HEADERS
+            _r = _req.get(
+                'https://api.derzis.xyz/vidoza/resolve',
+                params={'url': url}, headers=THRAX_HEADERS, timeout=20
+            )
+            if _r.ok:
+                _d = _r.json()
+                url = '{}|Referer={}'.format(_d['url'], _d.get('referer', ''))
+                is_direct = True
+            else:
+                xbmc.log(f'[Vidoza] Thrax error {_r.status_code}', xbmc.LOGWARNING)
+                return None, []
+        except Exception as _ex:
+            xbmc.log(f'[Vidoza] eroare: {_ex}', xbmc.LOGERROR)
+            return None, []
+
+    if not is_direct and 'yourupload.com/' in url:
+        _st('Se rezolvă YourUpload...')
+        try:
+            import requests as _req
+            from resources.lib.resolvers._common import THRAX_HEADERS
+            _r = _req.get(
+                'https://api.derzis.xyz/yourupload/resolve',
+                params={'url': url}, headers=THRAX_HEADERS, timeout=20
+            )
+            if _r.ok:
+                _d = _r.json()
+                url = '{}|Referer={}'.format(_d['url'], _d.get('referer', ''))
+                is_direct = True
+            else:
+                xbmc.log(f'[YourUpload] Thrax error {_r.status_code}', xbmc.LOGWARNING)
+                return None, []
+        except Exception as _ex:
+            xbmc.log(f'[YourUpload] eroare: {_ex}', xbmc.LOGERROR)
+            return None, []
+
+    if not is_direct and 'my.mail.ru/' in url:
+        _st('Se rezolvă MyMail...')
+        try:
+            import requests as _req
+            from resources.lib.resolvers._common import THRAX_HEADERS
+            _r = _req.get(
+                'https://api.derzis.xyz/mymail/resolve',
+                params={'url': url}, headers=THRAX_HEADERS, timeout=20
+            )
+            if _r.ok:
+                _d = _r.json()
+                url = '{}|Referer={}'.format(_d['url'], _d.get('referer', ''))
+                is_direct = True
+            else:
+                xbmc.log(f'[MyMail] Thrax error {_r.status_code}', xbmc.LOGWARNING)
+                return None, []
+        except Exception as _ex:
+            xbmc.log(f'[MyMail] eroare: {_ex}', xbmc.LOGERROR)
+            return None, []
+
+    if not is_direct:
+        _st('Se rezolvă URL-ul...')
+        xbmc.log(f"[Samus/resolveurl] Rezolv URL: {url}", xbmc.LOGINFO)
+        try:
+            if selected.get('provider') == '[DRO]':
+                from resolveurl.hmf import HostedMediaFile
+                hmf = HostedMediaFile(url=url, include_popups=True)
+                resolved = hmf.resolve(allow_popups=True)
+            else:
+                resolved = resolve_with_timeout(url, timeout=30)
+            if resolved:
+                url = resolved
+            else:
+                xbmc.log(f"[Samus/resolveurl] Nicio rezolvare pentru: {url}", xbmc.LOGWARNING)
+                return None, []
+        except Exception as e:
+            xbmc.log(f'[Samus/resolveurl] Eroare: {e}', xbmc.LOGERROR)
+            return None, []
+
+    return url, extra_subs
+
+
+def _resolve_source(handle, selected, li, item_data, dlg, history_meta=None, resume_position=None):
+    """Resolve and start playback for one source. Returns True on success, False on failure.
+    Called with an already-open DialogResolving (dlg) so the dialog stays visible across retries.
+    """
+    url, extra_subs = _resolve_url(selected, item_data=item_data, status_cb=dlg.set_status)
+    if url is None:
+        return False
+
+    if extra_subs:
+        li.setSubtitles(extra_subs)
+        threading.Thread(target=_auto_enable_subtitles, daemon=True).start()
+
+    if selected.get('is_torrent'):
+        li.setPath(url)
+    else:
+        stream_url = url.split('|')[0] if '|' in url else url
+        if '.m3u8' in stream_url:
+            li.setMimeType("application/vnd.apple.mpegurl")
+            li.setContentLookup(False)
+            li.setProperty('inputstream', 'inputstream.adaptive')
+            li.setProperty('inputstream.adaptive.manifest_type', 'hls')
+            if '|' in url:
+                headers_str = url.split('|', 1)[1]
+                li.setProperty('inputstream.adaptive.stream_headers', headers_str)
+                li.setProperty('inputstream.adaptive.manifest_headers', headers_str)
+        li.setPath(stream_url if '.m3u8' in stream_url else url)
+
+    dlg.set_status('Se pornește redarea...')
+    if handle == -1:
+        xbmc.Player().play(li.getPath(), li)
+    else:
+        xbmcplugin.setResolvedUrl(handle, True, li)
+
+    if history_meta:
+        _start_history_tracker(
+            tmdb_id=history_meta.get('tmdb_id'),
+            media_type=history_meta.get('media_type'),
+            title=history_meta.get('title', ''),
+            poster=history_meta.get('poster', ''),
+            season=history_meta.get('season'),
+            episode=history_meta.get('episode'),
+            plot=history_meta.get('plot', ''),
+        )
+
+    # Keep dialog visible until A/V actually renders — covers TorrServer buffering gap.
+    av_started = [False]
+
+    class _Player(xbmc.Player):
+        def onAVStarted(self):
+            av_started[0] = True
+
+    player = _Player()
+    monitor = xbmc.Monitor()
+    timeout = 30
+    while not av_started[0] and timeout > 0 and not monitor.abortRequested():
+        xbmc.sleep(300)
+        timeout -= 0.3
+
+    if av_started[0] and resume_position and resume_position > 0:
+        xbmc.sleep(300)
+        xbmc.Player().seekTime(resume_position)
+
+    # For setResolvedUrl path Kodi takes over after the call — report success.
+    # For direct play path, report success only if AV actually started.
+    return True if handle != -1 else av_started[0]
+
+
 def _play_source(handle, selected, li, item_data=None, history_meta=None, resume_position=None):
     """Resolve and play a selected source dict. Returns True on success, False on failure."""
     item_data = item_data or {}
-
-    def resolver(dlg):
-        if selected.get('is_torrent'):
-            url = resolve_torrent(
-                selected['infoHash'],
-                selected.get('fileIdx', 0),
-                trackers=selected.get('trackers'),
-                seeds=selected.get('seeds'),
-                size=selected.get('size'),
-                quality=selected.get('quality'),
-                status_cb=dlg.set_status,
-            )
-            if not url:
-                return False
-            li.setPath(url)
-        else:
-            url = selected['url']
-            is_direct = selected['direct']
-            if 'primesrc.me/api/v1/l' in url:
-                dlg.set_status('Se rezolvă PrimeSrc (Cloudflare)...')
-                xbmc.log(f'[PSM] FlareSolverr → {url}', xbmc.LOGINFO)
-                data = primesrcme_resolver.resolve_via_thrax(url, tmdb_id=selected.get('tmdb_id'))
-                embed = data.get('link') if data else None
-                if not embed:
-                    xbmc.log(f'[PSM] FlareSolverr nu a returnat link pentru {url}', xbmc.LOGWARNING)
-                    return False
-                xbmc.log(f'[PSM] embed URL: {embed}', xbmc.LOGINFO)
-                url = embed
-            if not is_direct and (url.startswith('tg://') or 't.me/' in url):
-                dlg.set_status('Se rezolvă Telegram (Thrax)...')
-                stream_url = telegram_resolver.resolve_via_thrax(url)
-                if not stream_url:
-                    xbmc.log(f'[TG] Thrax nu a returnat URL pentru {url}', xbmc.LOGWARNING)
-                    return False
-                url = stream_url
-                is_direct = True
-            if not is_direct and vidmoly_resolver.is_vidmoly_url(url):
-                dlg.set_status('Se rezolvă Vidmoly (Thrax)...')
-                m3u8 = vidmoly_resolver.resolve_via_thrax(url)
-                if not m3u8:
-                    xbmc.log(f'[VML] Thrax nu a returnat URL pentru {url}', xbmc.LOGWARNING)
-                    return False
-                url = m3u8
-                is_direct = True
-            if not is_direct and abysscdn_resolver.is_abysscdn_url(url):
-                dlg.set_status('Se rezolvă AbyssCDN (Thrax)...')
-                stream_url = abysscdn_resolver.resolve_via_thrax(url)
-                if not stream_url:
-                    xbmc.log(f'[ABYSS] Thrax nu a returnat URL pentru {url}', xbmc.LOGWARNING)
-                    return False
-                url = stream_url
-                is_direct = True
-            if not is_direct and 'ok.ru/' in url:
-                dlg.set_status('Se rezolvă ok.ru...')
-                okru_result = okru_resolver.resolve(url)
-                if okru_result:
-                    url = okru_result['url']
-                    is_direct = True
-                    okru_subs = okru_result.get('subtitles', [])
-                    if okru_subs:
-                        local_subs = []
-                        base_name = _sub_filename(item_data.get('title', 'okru'), '')
-                        base_name = base_name.rstrip('.')
-                        for track in okru_subs:
-                            lang = track.get('language', 'und')
-                            sub_url = track['url']
-                            local_path = os.path.join(subs_path, f'{base_name}.{lang}.vtt')
-                            if xbmcvfs.copy(sub_url, local_path):
-                                local_subs.append(local_path)
-                                xbmc.log(f'[OKRU] Subtitrare {lang} salvată: {local_path}', xbmc.LOGINFO)
-                            else:
-                                xbmc.log(f'[OKRU] xbmcvfs.copy eșuat, folosesc URL direct', xbmc.LOGWARNING)
-                                local_subs.append(sub_url)
-                        if local_subs:
-                            li.setSubtitles(local_subs)
-                            threading.Thread(target=_auto_enable_subtitles, daemon=True).start()
-                else:
-                    xbmc.log(f'[OKRU] Rezolvare eșuată pentru {url}', xbmc.LOGWARNING)
-                    return False
-            if not is_direct and selected.get('provider') == 'vixsrc' and 'vixsrc.to/' in url:
-                dlg.set_status('Se rezolvă VixSrc...')
-                try:
-                    from urllib.parse import urlparse as _urlparse
-                    _p = _urlparse(url)
-                    _parts = [x for x in _p.path.strip('/').split('/') if x]
-                    _mtype = _parts[0] if _parts else 'movie'
-                    _tid = _parts[1] if len(_parts) > 1 else ''
-                    _s = int(_parts[2]) if len(_parts) > 2 else None
-                    _e = int(_parts[3]) if len(_parts) > 3 else None
-                    _res = vixsrc_resolver.get_sources(_tid, _mtype, season=_s, episode=_e)
-                    if _res:
-                        url = _res[0]['url']
-                        is_direct = True
-                    else:
-                        xbmc.log(f'[VixSrc] resolver nu a returnat surse pentru {url}', xbmc.LOGWARNING)
-                        return False
-                except Exception as _ex:
-                    xbmc.log(f'[VixSrc] eroare resolver: {_ex}', xbmc.LOGERROR)
-                    return False
-            if not is_direct:
-                dlg.set_status('Se rezolvă URL-ul...')
-                xbmc.log(f"[Samus/resolveurl] Rezolv URL: {url}", xbmc.LOGINFO)
-                try:
-                    if selected.get('provider') == '[DRO]':
-                        from resolveurl.hmf import HostedMediaFile
-                        hmf = HostedMediaFile(url=url, include_popups=True)
-                        resolved = hmf.resolve(allow_popups=True)
-                    else:
-                        resolved = resolve_with_timeout(url, timeout=30)
-                    if resolved:
-                        url = resolved
-                        is_direct = True
-                    else:
-                        xbmc.log(f"[Samus/resolveurl] Nicio rezolvare pentru: {url}", xbmc.LOGWARNING)
-                        return False
-                except Exception as e:
-                    xbmc.log(f'[Samus/resolveurl] Eroare: {e}', xbmc.LOGERROR)
-                    return False
-
-            stream_url = url.split('|')[0] if '|' in url else url
-            if '.m3u8' in stream_url:
-                li.setMimeType("application/vnd.apple.mpegurl")
-                li.setContentLookup(False)
-                li.setProperty('inputstream', 'inputstream.adaptive')
-                li.setProperty('inputstream.adaptive.manifest_type', 'hls')
-                if '|' in url:
-                    headers_str = url.split('|', 1)[1]
-                    li.setProperty('inputstream.adaptive.stream_headers', headers_str)
-                    li.setProperty('inputstream.adaptive.manifest_headers', headers_str)
-            li.setPath(stream_url if '.m3u8' in stream_url else url)
-
-        dlg.set_status('Se pornește redarea...')
-        if handle == -1:
-            xbmc.Player().play(li.getPath(), li)
-        else:
-            xbmcplugin.setResolvedUrl(handle, True, li)
-
-        if history_meta:
-            _start_history_tracker(
-                tmdb_id=history_meta.get('tmdb_id'),
-                media_type=history_meta.get('media_type'),
-                title=history_meta.get('title', ''),
-                poster=history_meta.get('poster', ''),
-                season=history_meta.get('season'),
-                episode=history_meta.get('episode'),
-                plot=history_meta.get('plot', ''),
-            )
-
-        # Keep dialog visible until A/V actually renders — covers TorrServer buffering gap.
-        av_started = [False]
-
-        class _Player(xbmc.Player):
-            def onAVStarted(self):
-                av_started[0] = True
-
-        player = _Player()
-        monitor = xbmc.Monitor()
-        timeout = 30
-        while not av_started[0] and timeout > 0 and not monitor.abortRequested():
-            xbmc.sleep(300)
-            timeout -= 0.3
-
-        if av_started[0] and resume_position and resume_position > 0:
-            xbmc.sleep(300)
-            xbmc.Player().seekTime(resume_position)
-
-        # For setResolvedUrl path Kodi takes over after the call — report success.
-        # For direct play path, report success only if AV actually started.
-        return True if handle != -1 else av_started[0]
-
     return run_resolving_dialog(
         fanart=item_data.get('fanart', ''),
         title=item_data.get('title', ''),
-        resolver_fn=resolver,
+        resolver_fn=lambda dlg: _resolve_source(handle, selected, li, item_data, dlg,
+                                                history_meta=history_meta,
+                                                resume_position=resume_position),
     )
 
 
@@ -873,7 +1181,7 @@ def play_movie(handle, tmdb_id):
     if sources:
         xbmc.log(f'[Samus] Cache surse film: {len(sources)} pentru tmdb_id={tmdb_id}', xbmc.LOGINFO)
     else:
-        results = [None] * 37
+        results = [None] * 41
         threads = []
 
         if addon.getSettingBool('use_vidify'):
@@ -948,10 +1256,18 @@ def play_movie(handle, tmdb_id):
             threads.append(threaded_resolver(sooti_resolver.get_sources, (imdb_id, 'movie'), results, 35))
         if addon.getSettingBool('use_moviebox'):
             threads.append(threaded_resolver(moviebox_resolver.get_sources, (tmdb_id, 'movie'), results, 36))
+        if addon.getSettingBool('use_popr'):
+            threads.append(threaded_resolver(popr_resolver.get_sources, (tmdb_id, 'movie'), results, 37))
+        if addon.getSettingBool('use_cinesu'):
+            threads.append(threaded_resolver(cinesu_resolver.get_sources, (tmdb_id, 'movie'), results, 38))
+        if addon.getSettingBool('use_velaflow') and imdb_id:
+            threads.append(threaded_resolver(velaflow_resolver.get_movie_sources, (imdb_id,), results, 39))
+        if addon.getSettingBool('use_filelist') and imdb_id:
+            threads.append(threaded_resolver(filelist_resolver.get_movie_sources, (imdb_id,), results, 40))
         # Wait briefly so the fastest resolvers (THX, vidzee, primesrc) can finish first
         _wait_for_resolvers(threads, budget=1.5)
 
-        prefixes = ['[V]', '[ES]', '[Z]', '[2E]', '[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[THX]', '[PSC]', '[FLX]', '[VXS]', '[HDB]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[PLW]', '[FHD]', '[HHD]', '[YAS]', '[NHD]', '[PSM]', '[VDL]', '[VDY]', '[VSE]', '[YFX]', '[MEB]', '[VBT]', '[MAPI]', '[PPD]', '[SIMDB]', '[SOT]', '[MBX]']
+        prefixes = ['[V]', '[ES]', '[Z]', '[2E]', '[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[THX]', '[PSC]', '[FLX]', '[VXS]', '[HDB]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[PLW]', '[FHD]', '[HHD]', '[YAS]', '[NHD]', '[PSM]', '[VDL]', '[VDY]', '[VSE]', '[YFX]', '[MEB]', '[VBT]', '[MAPI]', '[PPD]', '[SIMDB]', '[SOT]', '[MBX]', '[PPR]', '[CSU]', '[VLF]', '[FLI]']
         _processed = set()
 
         def _drain_new():
@@ -1014,17 +1330,28 @@ def play_movie(handle, tmdb_id):
 
     remaining = list(sources)
 
-    # Show dialog once (with live feed on first open)
-    selected, remaining = show_source_dialog(remaining, item_data, source_feed=_live_feed)
-    if _live_feed and remaining:
-        db.cache_set(_cache_key, remaining)
-    if selected is None:
-        if not remaining:
-            xbmcgui.Dialog().notification('Samus', 'Nicio sursă video găsită.', xbmcgui.NOTIFICATION_ERROR)
-        xbmcplugin.setResolvedUrl(handle, False, xbmcgui.ListItem())
-        return
+    # Auto-select last working provider when sources are fully loaded (no live feed).
+    _saved_provider = db.provider_success_get(tmdb_id, 'movie') if not _live_feed else None
+    if _saved_provider:
+        _pref = [s for s in remaining if s.get('provider') == _saved_provider]
+        if _pref:
+            selected = _pref[0]
+            remaining = [s for s in remaining if s is not selected]
+            xbmc.log(f'[Samus] Auto-select provider memorat: {_saved_provider}', xbmc.LOGINFO)
+        else:
+            _saved_provider = None
 
-    remaining = [s for s in remaining if s is not selected]
+    if not _saved_provider:
+        # Show dialog once (with live feed on first open)
+        selected, remaining = show_source_dialog(remaining, item_data, source_feed=_live_feed)
+        if _live_feed and remaining:
+            db.cache_set(_cache_key, remaining)
+        if selected is None:
+            if not remaining:
+                xbmcgui.Dialog().notification('Samus', 'Nicio sursă video găsită.', xbmcgui.NOTIFICATION_ERROR)
+            xbmcplugin.setResolvedUrl(handle, False, xbmcgui.ListItem())
+            return
+        remaining = [s for s in remaining if s is not selected]
 
     # Fetch subtitles once
     vidzee_subs = selected.get('subtitles', [])
@@ -1042,29 +1369,38 @@ def play_movie(handle, tmdb_id):
                     _subs_to_set = [sub_path]
                     break
 
-    # Auto-retry loop: try selected, advance to next on failure (no dialog)
-    while selected is not None:
-        li = xbmcgui.ListItem(path=selected.get('url', ''))
-        li.setProperty('IsPlayable', 'true')
-        _set_video_info_movie(li, title, year, imdb_id)
-        if _subs_to_set:
-            li.setSubtitles(_subs_to_set)
+    # Single dialog for all retries — no flicker between sources.
+    def _movie_resolver(dlg):
+        nonlocal selected
+        while selected is not None:
+            li = xbmcgui.ListItem(path=selected.get('url', ''))
+            li.setProperty('IsPlayable', 'true')
+            _set_video_info_movie(li, title, year, imdb_id)
+            if _subs_to_set:
+                li.setSubtitles(_subs_to_set)
 
-        ok = _play_source(handle, selected, li, item_data, history_meta=history_meta, resume_position=resume_pos)
-        if ok:
-            if selected.get('subtitles'):
-                threading.Thread(target=_auto_enable_subtitles, daemon=True).start()
-            return
+            ok = _resolve_source(handle, selected, li, item_data, dlg,
+                                 history_meta=history_meta, resume_position=resume_pos)
+            if ok:
+                db.provider_success_set(tmdb_id, 'movie', selected.get('provider', ''))
+                if selected.get('subtitles'):
+                    threading.Thread(target=_auto_enable_subtitles, daemon=True).start()
+                return True
 
-        xbmc.log(f'[Samus] Sursă eșuată: {selected.get("label", "")}', xbmc.LOGWARNING)
-        if not remaining:
-            xbmcgui.Dialog().notification('Samus', 'Toate sursele au eșuat.', xbmcgui.NOTIFICATION_ERROR, 3000)
-            xbmcplugin.setResolvedUrl(handle, False, xbmcgui.ListItem())
-            return
-        selected = remaining.pop(0)
-        provider = selected.get('provider') or selected.get('label') or '?'
-        xbmcgui.Dialog().notification('Samus', f'Sursă eșuată. Se încearcă {provider}…',
-                                       xbmcgui.NOTIFICATION_WARNING, 2000)
+            xbmc.log(f'[Samus] Sursă eșuată: {selected.get("label", "")}', xbmc.LOGWARNING)
+            if not remaining:
+                xbmcplugin.setResolvedUrl(handle, False, xbmcgui.ListItem())
+                return False
+            selected = remaining.pop(0)
+            provider = selected.get('provider') or selected.get('label') or '?'
+            dlg.set_status(f'Sursă eșuată. Se încearcă {provider}…')
+        return False
+
+    run_resolving_dialog(
+        fanart=item_data.get('fanart', ''),
+        title=item_data.get('title', ''),
+        resolver_fn=_movie_resolver,
+    )
 
 
 def _get_next_episode(tv_id, season, episode):
@@ -1176,7 +1512,7 @@ def _fetch_tv_sources(tv_id, imdb_id, season, episode, details):
         return cached
 
     original_name = details.get('original_name') or None
-    results = [None] * 37
+    results = [None] * 41
     threads = []
     if addon.getSettingBool('use_vidify'):
         threads.append(threaded_resolver(vidify.get_vidify_tv_episode_sources, (tv_id, imdb_id, season, episode), results, 0))
@@ -1250,8 +1586,16 @@ def _fetch_tv_sources(tv_id, imdb_id, season, episode, details):
         threads.append(threaded_resolver(sooti_resolver.get_sources, (imdb_id, 'tv', season, episode), results, 35))
     if addon.getSettingBool('use_moviebox'):
         threads.append(threaded_resolver(moviebox_resolver.get_sources, (tv_id, 'tv', season, episode), results, 36))
+    if addon.getSettingBool('use_popr'):
+        threads.append(threaded_resolver(popr_resolver.get_sources, (tv_id, 'tv', season, episode), results, 37))
+    if addon.getSettingBool('use_cinesu'):
+        threads.append(threaded_resolver(cinesu_resolver.get_sources, (tv_id, 'tv', season, episode), results, 38))
+    if addon.getSettingBool('use_velaflow') and imdb_id:
+        threads.append(threaded_resolver(velaflow_resolver.get_tv_sources, (imdb_id, season, episode), results, 39))
+    if addon.getSettingBool('use_filelist') and imdb_id:
+        threads.append(threaded_resolver(filelist_resolver.get_tv_sources, (imdb_id, season, episode), results, 40))
     _wait_for_resolvers(threads)
-    prefixes = ['[V]', '[ES]', '[Z]', '[2E]', '[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[THX]', '[PSC]', '[FLX]', '[VXS]', '[HDB]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[PLW]', '[FHD]', '[HHD]', '[YAS]', '[NHD]', '[PSM]', '[VDL]', '[VDY]', '[VSE]', '[YFX]', '[MEB]', '[VBT]', '[MAPI]', '[PPD]', '[SIMDB]', '[SOT]', '[MBX]']
+    prefixes = ['[V]', '[ES]', '[Z]', '[2E]', '[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[THX]', '[PSC]', '[FLX]', '[VXS]', '[HDB]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[PLW]', '[FHD]', '[HHD]', '[YAS]', '[NHD]', '[PSM]', '[VDL]', '[VDY]', '[VSE]', '[YFX]', '[MEB]', '[VBT]', '[MAPI]', '[PPD]', '[SIMDB]', '[SOT]', '[MBX]', '[PPR]', '[CSU]', '[VLF]', '[FLI]']
     show_label = f"{details.get('name', '')} S{season:02d}E{episode:02d}"
     sources = _build_sources(results, prefixes, tmdb_title=show_label)
     for s in sources:
@@ -1289,18 +1633,21 @@ def _autoselect_source(sources, preferred_provider=None, quality_pref=None, is_t
     return max(sources, key=_score)
 
 
-def _save_autoplay_cache(tv_id, season, episode, sources, quality_pref=None, is_torrent_pref=None):
+def _save_autoplay_cache(tv_id, season, episode, sources, quality_pref=None,
+                         is_torrent_pref=None, preresolve=None):
     try:
         data = {
             'tv_id': tv_id, 'season': season, 'episode': episode,
             'sources': sources,
             'quality_pref': quality_pref,
             'is_torrent_pref': is_torrent_pref,
+            'preresolve': preresolve,  # {source, url, ts} sau None
             'ts': time.time(),
         }
         with open(_AUTOPLAY_CACHE_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f)
-        xbmc.log(f'[Samus] Autoplay cache salvat: {len(sources)} surse pentru S{season:02d}E{episode:02d}', xbmc.LOGINFO)
+        pre_tag = ' + pre-resolve' if preresolve else ''
+        xbmc.log(f'[Samus] Autoplay cache salvat: {len(sources)} surse{pre_tag} pentru S{season:02d}E{episode:02d}', xbmc.LOGINFO)
     except Exception as e:
         xbmc.log(f'[Samus] autoplay cache write eroare: {e}', xbmc.LOGWARNING)
 
@@ -1346,6 +1693,17 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None):
     if cached:
         sources = cached['sources']
         xbmc.log(f'[Samus] Autoplay cache: {len(sources)} surse pre-scraped pentru S{season:02d}E{episode:02d}', xbmc.LOGINFO)
+
+        # Inject pre-resolved source at the front if it's still fresh (3 min TTL).
+        pr = cached.get('preresolve') or {}
+        if (pr.get('url') and pr.get('source') and
+                time.time() - pr.get('ts', 0) < 180):
+            pre_source = dict(pr['source'])
+            pre_source['url'] = pr['url']
+            pre_source['direct'] = True
+            sources = [pre_source] + [s for s in sources if s.get('url') != pr['source'].get('url')]
+            xbmc.log(f'[Samus] Autoplay pre-resolve injectat: {pre_source.get("label", "")}', xbmc.LOGINFO)
+
         selected = _autoselect_source(
             sources,
             preferred_provider,
@@ -1369,10 +1727,12 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None):
             xbmcplugin.setResolvedUrl(handle, False, xbmcgui.ListItem())
             return
 
-        if preferred_provider:
-            pref_sources = [s for s in sources if s.get('provider') == preferred_provider]
+        _eff_provider = preferred_provider or db.provider_success_get(tv_id, 'tv')
+        if _eff_provider:
+            pref_sources = [s for s in sources if s.get('provider') == _eff_provider]
             if pref_sources:
                 selected = pref_sources[0]
+                xbmc.log(f'[Samus] Auto-select provider memorat (TV): {_eff_provider}', xbmc.LOGINFO)
             else:
                 selected, sources = show_source_dialog(sources, item_data)
         else:
@@ -1417,30 +1777,44 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None):
                     _subs_to_set = [sub_path]
                     break
 
-    # Auto-retry loop: first attempt is user/auto selection, failures advance automatically
+    # Single dialog for all retries — no flicker between sources.
     remaining = [s for s in sources if s is not selected]
-    while selected is not None:
-        li = xbmcgui.ListItem(path=selected.get('url', ''))
-        li.setProperty('IsPlayable', 'true')
-        _set_video_info_episode(li, episode_tag, show_title, season, episode, imdb_id)
-        if _subs_to_set:
-            li.setSubtitles(_subs_to_set)
+    _play_ok = [False]
 
-        ok = _play_source(handle, selected, li, item_data, history_meta=history_meta, resume_position=resume_pos)
-        if ok:
-            if selected.get('subtitles'):
-                threading.Thread(target=_auto_enable_subtitles, daemon=True).start()
-            break
+    def _tv_resolver(dlg):
+        nonlocal selected
+        while selected is not None:
+            li = xbmcgui.ListItem(path=selected.get('url', ''))
+            li.setProperty('IsPlayable', 'true')
+            _set_video_info_episode(li, episode_tag, show_title, season, episode, imdb_id)
+            if _subs_to_set:
+                li.setSubtitles(_subs_to_set)
 
-        xbmc.log(f'[Samus] Sursă eșuată: {selected.get("label", "")}', xbmc.LOGWARNING)
-        if not remaining:
-            xbmcgui.Dialog().notification('Samus', 'Toate sursele au eșuat.', xbmcgui.NOTIFICATION_ERROR, 3000)
-            xbmcplugin.setResolvedUrl(handle, False, xbmcgui.ListItem())
-            return
-        selected = remaining.pop(0)
-        provider = selected.get('provider') or selected.get('label') or '?'
-        xbmcgui.Dialog().notification('Samus', f'Sursă eșuată. Se încearcă {provider}…',
-                                       xbmcgui.NOTIFICATION_WARNING, 2000)
+            ok = _resolve_source(handle, selected, li, item_data, dlg,
+                                 history_meta=history_meta, resume_position=resume_pos)
+            if ok:
+                db.provider_success_set(tv_id, 'tv', selected.get('provider', ''))
+                if selected.get('subtitles'):
+                    threading.Thread(target=_auto_enable_subtitles, daemon=True).start()
+                _play_ok[0] = True
+                return True
+
+            xbmc.log(f'[Samus] Sursă eșuată: {selected.get("label", "")}', xbmc.LOGWARNING)
+            if not remaining:
+                xbmcplugin.setResolvedUrl(handle, False, xbmcgui.ListItem())
+                return False
+            selected = remaining.pop(0)
+            provider = selected.get('provider') or selected.get('label') or '?'
+            dlg.set_status(f'Sursă eșuată. Se încearcă {provider}…')
+        return False
+
+    run_resolving_dialog(
+        fanart=item_data.get('fanart', ''),
+        title=item_data.get('title', ''),
+        resolver_fn=_tv_resolver,
+    )
+    if not _play_ok[0]:
+        return
 
     if not addon.getSettingBool('autoplay_next'):
         return
@@ -1480,8 +1854,8 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None):
                     if next_ep:
                         next_s, next_e, ep_title = next_ep
 
-                        # Start background scraping immediately
-                        scrape_result = {'sources': None}
+                        # Start background scraping + pre-resolve immediately.
+                        scrape_result = {'sources': None, 'preresolve': None}
 
                         def _bg_scrape(r=scrape_result):
                             try:
@@ -1490,8 +1864,38 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None):
                             except Exception as ex:
                                 xbmc.log(f'[Samus] BG scrape eroare: {ex}', xbmc.LOGWARNING)
 
+                        def _bg_preresolve(r=scrape_result):
+                            # Wait for scrape to finish (max 20s).
+                            for _ in range(40):
+                                if r['sources'] is not None:
+                                    break
+                                xbmc.sleep(500)
+                            srcs = r.get('sources') or []
+                            candidates = [s for s in srcs if not s.get('is_torrent')]
+                            best = _autoselect_source(
+                                candidates,
+                                preferred_provider=preferred,
+                                quality_pref=selected.get('quality'),
+                                is_torrent_pref=False,
+                            )
+                            if not best:
+                                return
+                            try:
+                                pre_url, _ = _resolve_url(best)
+                                if pre_url:
+                                    r['preresolve'] = {
+                                        'source': best,
+                                        'url': pre_url,
+                                        'ts': time.time(),
+                                    }
+                                    xbmc.log(f'[Samus] Pre-resolve OK: {best.get("label", "")}', xbmc.LOGINFO)
+                            except Exception as ex:
+                                xbmc.log(f'[Samus] Pre-resolve eroare: {ex}', xbmc.LOGWARNING)
+
                         scrape_thread = threading.Thread(target=_bg_scrape, daemon=True)
                         scrape_thread.start()
+                        preresolve_thread = threading.Thread(target=_bg_preresolve, daemon=True)
+                        preresolve_thread.start()
 
                         ep_label = f"S{next_s:02d}E{next_e:02d}"
                         if ep_title:
@@ -1509,14 +1913,16 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None):
                         del overlay
 
                         if result == _AutoplayOverlay.PLAY:
-                            # Wait for scrape (should be done or nearly done)
+                            # Wait for scrape; also grab pre-resolve if it finished.
                             scrape_thread.join(timeout=8)
+                            preresolve_thread.join(timeout=0)  # don't block — take whatever is ready
                             bg_sources = scrape_result.get('sources') or []
                             if bg_sources:
                                 _save_autoplay_cache(
                                     tv_id, next_s, next_e, bg_sources,
                                     quality_pref=selected.get('quality'),
                                     is_torrent_pref=selected.get('is_torrent', False),
+                                    preresolve=scrape_result.get('preresolve'),
                                 )
                             kv = [
                                 ('action',  'play_episode'),

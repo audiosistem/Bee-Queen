@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <defaultcontrol always="true">502</defaultcontrol>
+    <animation effect="fade" start="0"   end="100" time="180">WindowOpen</animation>
+    <animation effect="fade" start="100" end="0"   time="120">WindowClose</animation>
+
+    <controls>
+
+        <!-- ═══ BACKGROUND ═══ -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="FF080808">white.png</texture>
+        </control>
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <aspectratio>scale</aspectratio>
+            <texture colordiffuse="14FFFFFF">$INFO[Window.Property(fanart)]</texture>
+            <visible>!String.IsEmpty(Window.Property(fanart))</visible>
+        </control>
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="E8080808">white.png</texture>
+        </control>
+        <!-- Red accent bar -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>3</height>
+            <texture colordiffuse="FFCC2222">white.png</texture>
+        </control>
+
+        <!-- ═══ POSTER (stânga) ═══ -->
+        <control type="image">
+            <left>50</left><top>65</top><width>360</width><height>540</height>
+            <colordiffuse>FF0E0E0E</colordiffuse>
+            <texture border="16">panel_rounded.png</texture>
+        </control>
+        <control type="image" id="10">
+            <left>50</left><top>65</top><width>360</width><height>540</height>
+            <aspectratio>scale</aspectratio>
+            <texture fallback="DefaultVideoCover.png">$INFO[Window.Property(poster)]</texture>
+        </control>
+        <control type="image">
+            <left>50</left><top>65</top><width>360</width><height>540</height>
+            <texture border="16">panel_corner_mask.png</texture>
+        </control>
+
+        <!-- ═══ INFO (dreapta posterului) ═══ -->
+
+        <!-- Titlu -->
+        <control type="label">
+            <left>445</left><top>65</top><width>1425</width><height>80</height>
+            <font>font24</font><textcolor>white</textcolor>
+            <aligny>center</aligny>
+            <label>$INFO[Window.Property(title)]</label>
+        </control>
+
+        <!-- An · Rating · Durată -->
+        <control type="label">
+            <left>445</left><top>150</top><width>1425</width><height>34</height>
+            <font>font13</font><textcolor>FFAAAAAA</textcolor>
+            <label>$INFO[Window.Property(meta)]</label>
+        </control>
+
+        <!-- Genuri -->
+        <control type="label">
+            <left>445</left><top>188</top><width>1425</width><height>34</height>
+            <font>font13</font><textcolor>FFAAAAAA</textcolor>
+            <label>$INFO[Window.Property(genres)]</label>
+        </control>
+
+        <!-- ═══ BUTOANE ACȚIUNI ═══ -->
+
+        <!-- Buton principal: Redă (film) / Sezoane (serial) — id=500 -->
+        <control type="button" id="500">
+            <left>445</left><top>230</top><width>225</width><height>44</height>
+            <font>font13</font>
+            <textcolor>white</textcolor><focusedcolor>white</focusedcolor>
+            <align>center</align>
+            <texturenofocus border="8" colordiffuse="FF1A1A1A">panel_rounded.png</texturenofocus>
+            <texturefocus   border="8" colordiffuse="FFCC2222">panel_rounded.png</texturefocus>
+            <label>Redă</label>
+            <onright>502</onright>
+            <ondown>400</ondown>
+            <onup>500</onup>
+        </control>
+
+        <!-- Buton Trailer — id=502 -->
+        <control type="button" id="502">
+            <left>678</left><top>230</top><width>225</width><height>44</height>
+            <font>font13</font>
+            <textcolor>FFAAAAAA</textcolor><focusedcolor>white</focusedcolor>
+            <align>center</align>
+            <texturenofocus border="8" colordiffuse="FF1A1A1A">panel_rounded.png</texturenofocus>
+            <texturefocus   border="8" colordiffuse="FFCC2222">panel_rounded.png</texturefocus>
+            <label>Trailer</label>
+            <onleft>500</onleft>
+            <ondown>400</ondown>
+            <onup>502</onup>
+        </control>
+
+        <!-- Plot -->
+        <control type="textbox" id="11">
+            <left>445</left><top>284</top><width>1425</width><height>330</height>
+            <font>font13</font><textcolor>FFDEDEDE</textcolor>
+            <autoscroll delay="4000" time="2000" repeat="8000">true</autoscroll>
+        </control>
+
+        <!-- ═══ SEPARATOR ═══ -->
+        <control type="image">
+            <left>50</left><top>623</top><width>1820</width><height>2</height>
+            <texture colordiffuse="FF1E1E1E">white.png</texture>
+        </control>
+
+        <!-- ═══ CAST ═══ -->
+
+        <!-- Etichetă "Distribuție" -->
+        <control type="label">
+            <left>50</left><top>635</top><width>400</width><height>36</height>
+            <font>font14</font><textcolor>white</textcolor>
+            <label>Distribuție</label>
+        </control>
+
+        <!-- Panel orizontal actori (id=400) -->
+        <control type="panel" id="400">
+            <left>50</left><top>678</top>
+            <width>1820</width><height>342</height>
+            <onleft>400</onleft>
+            <onright>400</onright>
+            <onup>500</onup>
+            <ondown>400</ondown>
+            <scrolltime>200</scrolltime>
+            <orientation>horizontal</orientation>
+
+            <!-- Layout normal -->
+            <itemlayout height="330" width="175">
+                <!-- Card bg -->
+                <control type="image">
+                    <left>0</left><top>0</top><width>175</width><height>330</height>
+                    <colordiffuse>FF141414</colordiffuse>
+                    <texture border="16">panel_rounded.png</texture>
+                </control>
+                <!-- Foto actor -->
+                <control type="image">
+                    <left>7</left><top>7</top><width>161</width><height>241</height>
+                    <aspectratio>scale</aspectratio>
+                    <texture fallback="DefaultActorSolid.png" background="true">$INFO[ListItem.Thumb]</texture>
+                </control>
+                <!-- Nume -->
+                <control type="label">
+                    <left>7</left><top>254</top><width>161</width><height>40</height>
+                    <font>font12</font><textcolor>FFCCCCCC</textcolor>
+                    <align>center</align><aligny>center</aligny>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+                <!-- Rol -->
+                <control type="label">
+                    <left>7</left><top>294</top><width>161</width><height>30</height>
+                    <font>font10</font><textcolor>FF666666</textcolor>
+                    <align>center</align><aligny>center</aligny>
+                    <label>$INFO[ListItem.Label2]</label>
+                </control>
+            </itemlayout>
+
+            <!-- Layout focusat -->
+            <focusedlayout height="330" width="175">
+                <!-- Bordură roșie (focused) -->
+                <control type="image">
+                    <left>0</left><top>0</top><width>175</width><height>330</height>
+                    <colordiffuse>FFCC2222</colordiffuse>
+                    <texture border="16">panel_rounded.png</texture>
+                    <visible>Control.HasFocus(400)</visible>
+                </control>
+                <!-- Fill interior -->
+                <control type="image">
+                    <left>2</left><top>2</top><width>171</width><height>326</height>
+                    <colordiffuse>FF141414</colordiffuse>
+                    <texture border="14">panel_rounded.png</texture>
+                    <visible>Control.HasFocus(400)</visible>
+                </control>
+                <!-- Card bg (nefocusat) -->
+                <control type="image">
+                    <left>0</left><top>0</top><width>175</width><height>330</height>
+                    <colordiffuse>FF141414</colordiffuse>
+                    <texture border="16">panel_rounded.png</texture>
+                    <visible>!Control.HasFocus(400)</visible>
+                </control>
+                <!-- Foto actor -->
+                <control type="image">
+                    <left>7</left><top>7</top><width>161</width><height>241</height>
+                    <aspectratio>scale</aspectratio>
+                    <texture fallback="DefaultActorSolid.png" background="true">$INFO[ListItem.Thumb]</texture>
+                </control>
+                <!-- Nume (focused) -->
+                <control type="label">
+                    <left>7</left><top>254</top><width>161</width><height>40</height>
+                    <font>font12</font><textcolor>white</textcolor>
+                    <align>center</align><aligny>center</aligny>
+                    <scroll>true</scroll>
+                    <label>$INFO[ListItem.Label]</label>
+                    <visible>Control.HasFocus(400)</visible>
+                </control>
+                <!-- Nume (nefocusat) -->
+                <control type="label">
+                    <left>7</left><top>254</top><width>161</width><height>40</height>
+                    <font>font12</font><textcolor>FFCCCCCC</textcolor>
+                    <align>center</align><aligny>center</aligny>
+                    <label>$INFO[ListItem.Label]</label>
+                    <visible>!Control.HasFocus(400)</visible>
+                </control>
+                <!-- Rol (focused) -->
+                <control type="label">
+                    <left>7</left><top>294</top><width>161</width><height>30</height>
+                    <font>font10</font><textcolor>FFAAAAAA</textcolor>
+                    <align>center</align><aligny>center</aligny>
+                    <label>$INFO[ListItem.Label2]</label>
+                    <visible>Control.HasFocus(400)</visible>
+                </control>
+                <!-- Rol (nefocusat) -->
+                <control type="label">
+                    <left>7</left><top>294</top><width>161</width><height>30</height>
+                    <font>font10</font><textcolor>FF666666</textcolor>
+                    <align>center</align><aligny>center</aligny>
+                    <label>$INFO[ListItem.Label2]</label>
+                    <visible>!Control.HasFocus(400)</visible>
+                </control>
+            </focusedlayout>
+        </control>
+
+    </controls>
+</window>

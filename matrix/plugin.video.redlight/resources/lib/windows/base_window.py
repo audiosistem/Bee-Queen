@@ -391,28 +391,34 @@ class ExtrasUtils:
 						}
 
 	def run(self):
-		finished_templates = []
-		skin_file = 'extras.xml'
-		file = kodi_utils.translate_path('special://home/addons/plugin.video.redlight/resources/skins/Default/1080i/%s' % skin_file)
-		media_list = settings.extras_order()
-		media_list_length = len(media_list)
-		first_container = media_list[0]
-		last_container = media_list[media_list_length - 1]
-		for index, item in enumerate(media_list):
-			if index == 0: previous_item = 14
-			else: previous_item = media_list[index - 1]
-			if index == media_list_length - 1: next_item = 10
-			else: next_item = media_list[index + 1]
-			item_values = self.extras_items[item]
-			template = item_values['template']
-			insert_values = item_values['insert_values']
-			insert_values.update({'container_no': item, 'scrollbar_no': item + 2000, 'p_container_no': previous_item, 'n_container_no': next_item})
-			template = template.format(**insert_values)
-			finished_templates.append(template)
-		body = ''.join(finished_templates)
-		content = self.prefix_template().format(first_container=first_container, last_container=last_container) + body + self.suffix_template()
-		with kodi_utils.open_file(file, 'w') as f: f.write(content)
-		FontUtils().execute_custom_fonts(skin_files=[skin_file])
+		try:
+			finished_templates = []
+			skin_file = 'extras.xml'
+			file = kodi_utils.translate_path('special://home/addons/plugin.video.redlight/resources/skins/Default/1080i/%s' % skin_file)
+			media_list = settings.extras_order()
+			if not media_list: return
+			media_list = [i for i in media_list if i in self.extras_items]
+			if not media_list: return
+			media_list_length = len(media_list)
+			first_container = media_list[0]
+			last_container = media_list[media_list_length - 1]
+			for index, item in enumerate(media_list):
+				if index == 0: previous_item = 14
+				else: previous_item = media_list[index - 1]
+				if index == media_list_length - 1: next_item = 10
+				else: next_item = media_list[index + 1]
+				item_values = self.extras_items[item]
+				template = item_values['template']
+				insert_values = item_values['insert_values']
+				insert_values.update({'container_no': item, 'scrollbar_no': item + 2000, 'p_container_no': previous_item, 'n_container_no': next_item})
+				template = template.format(**insert_values)
+				finished_templates.append(template)
+			body = ''.join(finished_templates)
+			content = self.prefix_template().format(first_container=first_container, last_container=last_container) + body + self.suffix_template()
+			with kodi_utils.open_file(file, 'w') as f: f.write(content)
+			FontUtils().execute_custom_fonts(skin_files=[skin_file])
+		except Exception as e:
+			kodi_utils.logger('ExtrasUtils', str(e))
 
 	def thumb_media_template(self):
 		return  '''\

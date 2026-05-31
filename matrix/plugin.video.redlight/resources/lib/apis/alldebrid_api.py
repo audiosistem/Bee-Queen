@@ -76,13 +76,32 @@ class AllDebridAPI:
 		return response
 
 	def check_cache(self, hashes):
-		data = {'magnets[]': hashes}
-		response = self._post('magnet/instant', data)
-		return response
+		if isinstance(hashes, str): hashes = [hashes]
+		if not hashes or self.token in ('empty_setting', ''): return None
+		params = [('agent', self.user_agent), ('apikey', self.token)]
+		for h in hashes:
+			h = str(h).lower()
+			if len(h) == 40:
+				params.append(('magnets[]', h))
+			else:
+				params.append(('magnets[]', h))
+		try:
+			result = requests.get('%smagnet/instant' % self.base_url, params=params, timeout=20).json()
+			if result.get('status') == 'success':
+				if 'data' in result: return result['data']
+				if 'magnets' in result: return result
+		except: pass
+		return None
 
 	def check_single_magnet(self, hash_string):
-		cache_info = self.check_cache(hash_string)['magnets'][0]
-		return cache_info['instant']
+		cache_info = self.check_cache([hash_string])['magnets'][0]
+		if cache_info.get('error'): return False
+		instant = cache_info.get('instant')
+		if instant is True or instant == 1: return True
+		if str(instant).lower() in ('true', '1', 'yes'): return True
+		ready = cache_info.get('ready')
+		if ready is True or ready == 1: return True
+		return str(ready).lower() in ('true', '1', 'yes')
 
 	def _delete_cache_key(self, string):
 		try:
@@ -230,10 +249,11 @@ class AllDebridAPI:
 		except: pass
 		return result
 
-	def _post(self, url, data={}):
+	def _post(self, url, data=None):
 		result = None
 		try:
 			if self.token in ('empty_setting', ''): return None
+			if data is None: data = {}
 			url = self.base_url + url + '?agent=%s&apikey=%s' % (self.user_agent, self.token)
 			result = requests.post(url, data=data, timeout=20).json()
 			if result.get('status') == 'success' and 'data' in result: result = result['data']

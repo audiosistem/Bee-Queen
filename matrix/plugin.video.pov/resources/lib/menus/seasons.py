@@ -52,8 +52,8 @@ class Seasons:
 					if poster_path: poster = tmdb_image_base % (self.image_resolution['poster'], poster_path)
 					else: poster = show_poster
 					if season_number == total_seasons:
-						episode_airs = adjust_premiered_date(item_get('air_date'), 0)[0]
-						unaired = True if not episode_airs or self.current_date < episode_airs else False
+						episode_date, premiered = adjust_premiered_date(item_get('air_date'), 0)
+						unaired = True if not episode_date or self.current_date < episode_date else False
 					elif episode_count == 0: unaired = True
 					else: unaired = False
 					if unaired:

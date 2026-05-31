@@ -80,8 +80,7 @@ class Source:
 			if not selected_files: raise Exception('selected_files failed')
 			if not season: selected_files.sort(key=lambda k: k['size'], reverse=True)
 			file_key = next((i['link'] for i in selected_files), None)
-			if self.debrid in ('premiumize.me',): file_url = api.add_headers_to_url(file_key)
-			else: file_url = api.unrestrict_link(file_key)
+			file_url = api.unrestrict_link(file_key)
 			if self.debrid in ('premiumize.me', 'offcloud'):
 				if api.store_to_cloud: Thread(target=api.create_transfer, args=(self.url,)).start()
 			if self.debrid in ('real-debrid', 'alldebrid', 'torbox'):
@@ -105,7 +104,7 @@ class Source:
 			elif self.scrape_provider == 'pm_cloud':
 				details = premiumize_api.PremiumizeAPI().get_item_details(self.id)
 				url = details['link']
-				if url.startswith('/'): url = 'https' + url
+				if url.startswith('/'): url = 'https:/' + url
 			elif self.scrape_provider == 'ad_cloud':
 				if direct_debrid_link: url = self.url_dl
 				else: url = alldebrid_api.AllDebridAPI().unrestrict_link(self.id)
@@ -136,8 +135,7 @@ class Source:
 		chosen_result = select_dialog(pack_choices, **kwargs)
 		if chosen_result is None: return 'cancel'
 		url_dl = chosen_result['link']
-		if self.debrid == 'premiumize.me': return api.add_headers_to_url(url_dl)
-		else: return api.unrestrict_link(url_dl)
+		return api.unrestrict_link(url_dl)
 
 	def unchecked_magnet_status(self):
 		show_busy_dialog()
@@ -219,25 +217,22 @@ class DebridCheck:
 			self.cached_list.extend(i[0] for i in self.cached_hashes if i[1] == self.debrid and i[2] == 'True')
 			unchecked_filter = {h[0] for h in self.cached_hashes if h[1] == self.debrid}
 			unchecked_hashes = [i for i in self.hash_list if i not in unchecked_filter]
-			if not unchecked_hashes: return
+			if not unchecked_hashes: return self.cached_list
 			if self.debrid in ('rd', 'ad'): checked_hashes = self.external_check_cache(unchecked_hashes)
 			else: checked_hashes = self.function().check_cache(unchecked_hashes)
-			if not checked_hashes: return
+			if not checked_hashes: return self.cached_list
+			checked_hashes = set(checked_hashes)
 			hashes_to_cache = []
 			process_append = hashes_to_cache.append
 			cached_append = self.cached_list.append
-			try:
-				for h in unchecked_hashes:
-					if h in checked_hashes:
-						cached_append(h)
-						cached = 'True'
-					else: cached = 'False'
-					process_append((h, cached))
-			except:
-				for i in unchecked_hashes: process_append((i, 'False'))
+			for h in unchecked_hashes:
+				if h in checked_hashes:
+					cached_append(h)
+					process_append((h, 'True'))
+				else: process_append((h, 'False'))
 			if hashes_to_cache: Thread(target=self.cache_write, args=(hashes_to_cache,)).start()
 		except: pass
-		finally: return self.cached_list
+		return self.cached_list
 
 	def external_check_cache(self, unchecked_hashes):
 		checked_hashes = []
@@ -250,7 +245,7 @@ class DebridCheck:
 		)
 		for i in threads: i.start()
 		for i in threads: i.join()
-		return list(set(checked_hashes))
+		return checked_hashes
 
 	def cache_write(self, hashes):
 		DebridCache().set_many(hashes, self.debrid)

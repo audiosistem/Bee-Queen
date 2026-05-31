@@ -185,10 +185,9 @@ class Menu(TVShows):
 			params_get = self.params.get
 			__handle__ = int(sys.argv[1])
 			view_type, content_type = 'view.tvshows', 'tvshows'
-			mode = params_get('mode')
+			mode, category = params_get('mode'), ls(params_get('name'))
 			try: page_no = int(params_get('new_page', '1'))
 			except ValueError: page_no = params_get('new_page')
-			letter = params_get('new_letter', 'None')
 			if self.action in Menu.personal_dict: var_module, import_function = Menu.personal_dict[self.action]
 			else: var_module, import_function = 'indexers.%s_api' % self.action.split('_')[0], self.action
 			try: function = manual_function_import(var_module, import_function)
@@ -204,56 +203,56 @@ class Menu(TVShows):
 				self.list = [i['show']['ids'] for i in data]
 				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1)}
 			elif self.action in Menu.tmdb_personal:
-				data, total_pages = function('tv', page_no, letter)
+				data, total_pages = function('tv', page_no)
 				self.list = [i['id'] for i in data]
-				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1), 'new_letter': letter}
+				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1)}
 			elif self.action in Menu.trakt_personal:
 				self.id_type = 'trakt_dict'
-				data, total_pages = function('shows', page_no, letter)
+				data, total_pages = function('shows', page_no)
 				self.list = [i['media_ids'] for i in data]
 				if total_pages > 2: self.total_pages = total_pages
-				try:
-					if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1), 'new_letter': letter}
-				except: pass
+				if isinstance(page_no, int) and total_pages > page_no:
+					self.new_page = {'new_page': string(page_no + 1)}
 			elif self.action in Menu.mdblist_personal:
 				self.id_type = 'trakt_dict'
-				data, total_pages = function('shows', page_no, letter)
+				data, total_pages = function('shows', page_no)
 				self.list = [{'imdb': i['imdb_id'], 'tmdb': i['id']} for i in data]
 				if total_pages > 2: self.total_pages = total_pages
-				try:
-					if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1), 'new_letter': letter}
-				except: pass
+				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1)}
 			elif self.action in Menu.personal_dict:
-				data, total_pages = function(self.watched_info, 'tvshow', page_no, letter)
+				data, total_pages = function(self.watched_info, 'tvshow', page_no)
 				self.list = [i['media_id'] for i in data]
 				if total_pages > 2: self.total_pages = total_pages
-				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1), 'new_letter': letter}
+				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1)}
 			elif self.action in Menu.similar:
 				tmdb_id = self.params['tmdb_id']
 				data = function(tmdb_id, page_no)
 				self.list = [i['id'] for i in data['results']]
-				if data['page'] < data['total_pages']: self.new_page = {'new_page': string(data['page'] + 1), 'tmdb_id': tmdb_id}
+				if data['page'] < data['total_pages']:
+					self.new_page = {'new_page': string(data['page'] + 1), 'tmdb_id': tmdb_id}
 			elif self.action in Menu.tmdb_special_key_dict:
 				key = Menu.tmdb_special_key_dict[self.action]
 				function_var = params_get(key)
 				if not function_var: return
 				data = function(function_var, page_no)
 				self.list = [i['id'] for i in data['results']]
-				if data['page'] < data['total_pages']: self.new_page = {'new_page': string(data['page'] + 1), key: function_var}
+				if data['page'] < data['total_pages']:
+					self.new_page = {'new_page': string(data['page'] + 1), key: function_var}
 			elif self.action == 'tmdb_tv_discover':
 				from menus.discover import set_history
-				name = self.params['name']
-				query = self.params['query']
+				name, query = self.params['name'], self.params['query']
 				if page_no == 1: set_history('tvshow', name, query)
 				data = function(query, page_no)
 				self.list = [i['id'] for i in data['results']]
-				if data['page'] < data['total_pages']: self.new_page = {'query': query, 'name': name, 'new_page': string(data['page'] + 1)}
+				if data['page'] < data['total_pages']:
+					self.new_page = {'query': query, 'name': name, 'new_page': string(data['page'] + 1)}
 			elif self.action in ('tmdb_tv_genres', 'tmdb_tvanime_genres'):
 				genre_id = self.params['genre_id']
 				if not genre_id: return
 				data = function(genre_id, page_no)
 				self.list = [i['id'] for i in data['results']]
-				if data['page'] < data['total_pages']: self.new_page = {'new_page': string(data['page'] + 1), 'genre_id': genre_id}
+				if data['page'] < data['total_pages']:
+					self.new_page = {'new_page': string(data['page'] + 1), 'genre_id': genre_id}
 			elif self.action == 'tmdb_tv_search':
 				query = self.params['query']
 				data = function(query, page_no)
@@ -278,10 +277,10 @@ class Menu(TVShows):
 				kodi_utils.add_dir(__handle__, url_params, jumpto_str, item_jump, isFolder=False)
 			kodi_utils.add_items(__handle__, self.worker())
 			if self.new_page:
-				self.new_page.update({'mode': mode, 'action': self.action, 'exit_list_params': self.exit_list_params, 'name': ls(params_get('name'))})
+				self.new_page.update({'mode': mode, 'action': self.action, 'exit_list_params': self.exit_list_params, 'name': category})
 				kodi_utils.add_dir(__handle__, self.new_page, nextpage_str, item_next)
 		except: pass
-		kodi_utils.set_category(__handle__, ls(params_get('name')))
+		kodi_utils.set_category(__handle__, category)
 		kodi_utils.set_sort_method(__handle__, content_type)
 		kodi_utils.set_content(__handle__, content_type)
 		kodi_utils.end_directory(__handle__, False if self.is_widget else None)

@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-from caches.settings_cache import get_setting, set_setting, default_setting_values
+from caches.settings_cache import get_setting, set_setting, default_setting_values, _EXTRAS_LIST_DEFAULT
 from modules.kodi_utils import translate_path, get_property
 from modules.kodi_utils import logger
 
 def tmdb_api_key():
 	return get_setting('redlight.tmdb_api', '')
+
+def tmdb_lists_read_token():
+	return get_setting('redlight.tmdb.lists_read_token', '')
 
 def trakt_client():
 	return get_setting('redlight.trakt.client', '')
@@ -240,6 +243,18 @@ def easynews_authorized():
 	else: easynews_status = True
 	return easynews_status
 
+def aiostreams_authorized():
+	username = get_setting('redlight.aiostreams.username', 'empty_setting')
+	password = get_setting('redlight.aiostreams.password', 'empty_setting')
+	if username in ('empty_setting', '') or password in ('empty_setting', ''): return False
+	return True
+
+def aiostreams_active():
+	from apis.aiostreams_api import ENABLED
+	if not ENABLED: return False
+	if get_setting('redlight.provider.aiostreams', 'false') == 'true': return aiostreams_authorized()
+	return False
+
 def extras_enable_extra_ratings():
 	return get_setting('redlight.extras.enable_extra_ratings', 'true') == 'true'
 
@@ -259,10 +274,10 @@ def extras_enabled():
 	return [int(i) for i in split_setting]
 
 def extras_order():
-	setting = get_setting('redlight.extras.order', '2000,2050,2051,2052,2053,2054,2055,2056,2057,2058,2059,2060,2061,2062')
+	setting = get_setting('redlight.extras.order', _EXTRAS_LIST_DEFAULT)
 	if setting in ('', None, 'noop', []): return []
 	split_setting = setting.split(',')
-	return [int(i) for i in split_setting]
+	return [int(i) for i in split_setting if i.strip()]
 
 def recommend_service():
 	return int(get_setting('redlight.recommend_service', '0'))
@@ -274,9 +289,23 @@ def tv_progress_location():
 	return int(get_setting('redlight.tv_progress_location', '0'))
 
 def check_prescrape_sources(scraper, media_type):
-	if scraper in ('easynews', 'rd_cloud', 'pm_cloud', 'ad_cloud', 'tb_cloud', 'folders'): return get_setting('redlight.check.%s' % scraper) == 'true'
-	if get_setting('redlight.check.%s' % scraper) == 'true' and auto_play(media_type): return True
-	else: return False
+	if scraper in ('easynews', 'aiostreams', 'rd_cloud', 'pm_cloud', 'ad_cloud', 'tb_cloud', 'folders'):
+		return get_setting('redlight.check.%s' % scraper) == 'true'
+	if get_setting('redlight.check.%s' % scraper) == 'true' and auto_play(media_type):
+		return True
+	return False
+
+def cloud_scrape_before_external(scraper):
+	"""Run debrid cloud scrapers before external torrent scrapers when the provider is enabled."""
+	cloud_scrapers = {
+		'rd_cloud': 'provider.rd_cloud',
+		'pm_cloud': 'provider.pm_cloud',
+		'ad_cloud': 'provider.ad_cloud',
+		'tb_cloud': 'provider.tb_cloud',
+	}
+	if scraper in cloud_scrapers:
+		return get_setting('redlight.%s' % cloud_scrapers[scraper]) == 'true'
+	return False
 
 def external_scraper_info():
 	module = get_setting('redlight.external_scraper.module')
@@ -337,16 +366,18 @@ def active_internal_scrapers():
 	for item in [('rd', 'provider.rd_cloud'), ('pm', 'provider.pm_cloud'), ('ad', 'provider.ad_cloud'), ('tb', 'provider.tb_cloud')]:
 		if enabled_debrids_check(item[0]): settings_append(item[1])
 	active = [i.split('.')[1] for i in settings if get_setting('redlight.%s' % i) == 'true']
+	if aiostreams_active(): active.append('aiostreams')
 	return active
 
 def provider_sort_ranks():
 	fo_priority = int(get_setting('redlight.folders.priority', '6'))
+	aio_priority = int(get_setting('redlight.aio.priority', '7'))
 	en_priority = int(get_setting('redlight.en.priority', '7'))
 	rd_priority = int(get_setting('redlight.rd.priority', '8'))
 	ad_priority = int(get_setting('redlight.ad.priority', '9'))
 	pm_priority = int(get_setting('redlight.pm.priority', '10'))
 	tb_priority = int(get_setting('redlight.tb.priority', '10'))
-	return {'easynews': en_priority, 'real-debrid': rd_priority, 'premiumize.me': pm_priority, 'alldebrid': ad_priority,
+	return {'easynews': en_priority, 'aiostreams': aio_priority, 'real-debrid': rd_priority, 'premiumize.me': pm_priority, 'alldebrid': ad_priority,
 	'torbox': tb_priority, 'rd_cloud': rd_priority, 'pm_cloud': pm_priority, 'ad_cloud': ad_priority, 'tb_cloud': tb_priority, 'folders': fo_priority}
 
 def sort_to_top(provider):
@@ -362,11 +393,12 @@ def scraping_settings():
 	if highlight_type == 2:
 		highlight = get_setting('redlight.scraper_single_highlight', 'FF008EB2')
 		return {'highlight_type': 1, '4k': highlight, '1080p': highlight, '720p': highlight, 'sd': highlight}
-	easynews_highlight, debrid_cloud_highlight, folders_highlight = '', '', ''
-	rd_highlight, pm_highlight, ad_highlight, ed_highlight, tb_highlight = '', '', '', '', ''
+	easynews_highlight, aiostreams_highlight, debrid_cloud_highlight, folders_highlight = '', '', '', ''
+	rd_highlight, pm_highlight, ad_highlight, tb_highlight = '', '', '', ''
 	highlight_4K, highlight_1080P, highlight_720P, highlight_SD = '', '', '', ''
 	if highlight_type == 0:
 		easynews_highlight = get_setting('redlight.provider.easynews_highlight', 'FF00B3B2')
+		aiostreams_highlight = get_setting('redlight.provider.aiostreams_highlight', 'FF00D4FF')
 		debrid_cloud_highlight = get_setting('redlight.provider.debrid_cloud_highlight', 'FF7A01CC')
 		folders_highlight = get_setting('redlight.provider.folders_highlight', 'FFB36B00')
 		rd_highlight = get_setting('redlight.provider.rd_highlight', 'FF3C9900')
@@ -380,7 +412,7 @@ def scraping_settings():
 		highlight_SD = get_setting('redlight.scraper_SD_highlight', 'FF0166FF')
 	return {'highlight_type': highlight_type, 'real-debrid': rd_highlight, 'premiumize': pm_highlight, 'alldebrid': ad_highlight,
 			'torbox': tb_highlight, 'rd_cloud': debrid_cloud_highlight, 'pm_cloud': debrid_cloud_highlight, 'ad_cloud': debrid_cloud_highlight,
-			'tb_cloud': debrid_cloud_highlight, 'easynews': easynews_highlight, 'folders': folders_highlight,
+			'tb_cloud': debrid_cloud_highlight, 'easynews': easynews_highlight, 'aiostreams': aiostreams_highlight, 'folders': folders_highlight,
 			'4k': highlight_4K, '1080p': highlight_1080P, '720p': highlight_720P, 'sd': highlight_SD}
 
 def external_cache_check():
@@ -464,9 +496,12 @@ def update_action():
 	return int(get_setting('redlight.update.action', '2'))
 
 def rescrape_settings():
-	rescrapes = [('cache_ignored', '1', '0'), ('imdb_year', '0', '1'), ('with_all', '0', '2'), ('episode_group', '0', '3'), ('ignore_filters', '0', '4')]
+	rescrapes = [('cache_ignored', '1', '0'), ('imdb_year', '0', '1'), ('with_all', '0', '2'), ('episode_group', '0', '3'), ('ignore_filters', '0', '4'), ('full_scrape', '2', '5')]
 	return sorted([(i[0], int(get_setting('redlight.rescrape.%s' % i[0], i[1])), int(get_setting('redlight.rescrape.%s.order' % i[0], i[2]))  ) \
 					for i in rescrapes if int(get_setting('redlight.rescrape.%s' % i[0], i[1])) in (1, 2)], key=lambda x: x[2])
+
+def rescrape_action_value(action, default='0'):
+	return int(get_setting('redlight.rescrape.%s' % action, default))
 
 def cm_enabled():
 	default = 'extras,options,playback_options,browse_movie_set,browse_seasons,browse_episodes,recommended,related,more_like_this,similar,in_trakt_list,' \

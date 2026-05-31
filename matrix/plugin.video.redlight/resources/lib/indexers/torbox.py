@@ -1,5 +1,5 @@
 import sys
-from apis.torbox_api import TorBox
+from apis.torbox_api import TorBox, TorBoxAPI
 from modules.source_utils import supported_video_extensions
 from modules.utils import clean_file_name, normalize
 from modules import kodi_utils
@@ -41,9 +41,9 @@ def tb_cloud():
 	t_data = torrents_folders.get('data') or []
 	u_data = usenets_folders.get('data') or []
 	w_data = webdl_folders.get('data') or []
-	folders_torrents = [{**i, 'media_type': 'torrent'} for i in t_data if i.get('download_finished')]
-	folders_usenets = [{**i, 'media_type': 'usenet'} for i in u_data if i.get('download_finished')]
-	folders_webdl = [{**i, 'media_type': 'webdl'} for i in w_data if i.get('download_finished')]
+	folders_torrents = [{**i, 'media_type': 'torrent'} for i in t_data if TorBoxAPI._torrent_item_finished(i)]
+	folders_usenets = [{**i, 'media_type': 'usenet'} for i in u_data if TorBoxAPI._torrent_item_finished(i)]
+	folders_webdl = [{**i, 'media_type': 'webdl'} for i in w_data if TorBoxAPI._torrent_item_finished(i)]
 	folders = folders_torrents + folders_usenets + folders_webdl
 	folders.sort(key=lambda k: k.get('updated_at', ''), reverse=True)
 	handle = int(sys.argv[1])

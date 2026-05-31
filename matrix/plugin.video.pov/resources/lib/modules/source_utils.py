@@ -375,7 +375,7 @@ def get_cache_expiry(mediatype, meta, season):
 	try:
 		current_date = get_datetime()
 		if mediatype == 'movie':
-			premiered = jsondate_to_datetime(meta['premiered'], '%Y-%m-%d', remove_time=True)
+			premiered = jsondate_to_datetime(meta['premiered']).date()
 			difference = subtract_dates(current_date, premiered)
 			if difference == 0: single_expiry = int(24*0.125)
 			elif difference <= 90: single_expiry = int(24*0.334)
@@ -384,9 +384,9 @@ def get_cache_expiry(mediatype, meta, season):
 		else:
 			extra_info = meta['extra_info']
 			ended = extra_info['status'] in ('Ended', 'Canceled')
-			premiered = adjust_premiered_date(meta['premiered'], date_offset())[0]
-			difference = subtract_dates(current_date, premiered)
-			last_episode_to_air = jsondate_to_datetime(extra_info['last_episode_to_air']['air_date'], '%Y-%m-%d', remove_time=True)
+			episode_date, premiered = adjust_premiered_date(meta['premiered'], date_offset())
+			difference = subtract_dates(current_date, episode_date)
+			last_episode_to_air = jsondate_to_datetime(extra_info['last_episode_to_air']['air_date']).date()
 			last_ep_difference = subtract_dates(current_date, last_episode_to_air)
 			recently_ended = True if ended and last_ep_difference <= 14 else False
 			if not ended or recently_ended:

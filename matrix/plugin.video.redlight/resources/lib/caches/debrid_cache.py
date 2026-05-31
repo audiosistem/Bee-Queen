@@ -11,8 +11,10 @@ class DebridCache:
 			cache_data = dbcon.execute('SELECT * FROM debrid_data WHERE hash in (%s)' % (', '.join('?' for _ in hash_list)), hash_list).fetchall()
 			dbcon.close()
 			if cache_data:
-				if cache_data[0][3] > current_time: result = cache_data
-				else: self.remove_many(cache_data)
+				valid = [row for row in cache_data if row[3] > current_time]
+				expired = [row for row in cache_data if row[3] <= current_time]
+				if expired: self.remove_many(expired)
+				if valid: result = valid
 		except: pass
 		return result
 
@@ -21,7 +23,7 @@ class DebridCache:
 			dbcon = connect_database('debridcache_db')
 			expires = get_timestamp(expires)
 			insert_list = [(i[0], debrid, i[1], expires) for i in hash_list]
-			dbcon.executemany('INSERT INTO debrid_data VALUES (?, ?, ?, ?)', insert_list)
+			dbcon.executemany('INSERT OR REPLACE INTO debrid_data VALUES (?, ?, ?, ?)', insert_list)
 			dbcon.close()
 		except: pass
 

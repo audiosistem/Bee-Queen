@@ -79,30 +79,29 @@ def string_alphanum_to_num(string):
 	try: return ''.join(c for c in string if c.isdigit())
 	except ValueError: return string
 
-def jsondate_to_datetime(jsondate_object, resformat, remove_time=False):
-	if remove_time: datetime_object = datetime_workaround(jsondate_object, resformat).date()
-	else: datetime_object = datetime_workaround(jsondate_object, resformat)
-	return datetime_object
+def jsondate_to_datetime(jsondate_object, resformat=None):
+	if resformat: return datetime_workaround(jsondate_object, resformat)
+	return datetime.fromisoformat(jsondate_object.replace('Z', '+00:00'))
 
 def get_datetime(string=False, dt=False):
 	d = datetime.now()
+	if dt and string: return str(d)
 	if dt: return d
 	if string: return str(d.date())
 	return d.date()
 
 def adjust_premiered_date(orig_date, adjust_hours):
 	if not orig_date: return None, None
-	orig_date += ' 20:00:00'
-	datetime_object = jsondate_to_datetime(orig_date, '%Y-%m-%d %H:%M:%S')
+	datetime_object = jsondate_to_datetime('%s 20:00:00' % orig_date)
 	adjusted_datetime = datetime_object + timedelta(hours=adjust_hours)
 	adjusted_date = adjusted_datetime.date()
 	return adjusted_date, str(adjusted_date)
 
 def make_day(today, date, date_format, use_words=True):
-	day_diff = (date - today).days
 	try: day = date.strftime(date_format)
 	except ValueError: day = date.strftime('%Y-%m-%d')
 	if not use_words: return day
+	day_diff = (date - today).days
 	if day_diff == -1: day = ls(32848).upper()
 	elif day_diff == 0: day = ls(32849).upper()
 	elif day_diff == 1: day = ls(32850).upper()
@@ -127,7 +126,7 @@ def date_difference(current_date, compare_date, difference_tolerance, allow_post
 	except: return True
 
 def calculate_age(born, str_format, died=None):
-	''' born and died are str objects e.g. '1972-05-28' '''
+	""" born and died are str objects e.g. '1972-05-28' """
 	born = datetime_workaround(born, str_format)
 	if not died: today = date.today()
 	else: today = datetime_workaround(died, str_format)
@@ -271,29 +270,7 @@ def sort_list(sort_key, sort_direction, list_data, ignore_articles):
 		else: return list_data
 	except: return list_data
 
-def paginate_list(item_list, page, letter, limit=20):
-	def _get_start_index(letter):
-		if letter == 't':
-			try:
-				beginswith_tuple = ('s', 'the s', 'a s', 'an s')
-				indexes = [i for i, v in enumerate(title_list) if v.startswith(beginswith_tuple)]
-				start_index = indexes[-1:][0] + 1
-			except: start_index = None
-		else:
-			beginswith_tuple = (letter, 'the %s' % letter, 'a %s' % letter, 'an %s' % letter)
-			try: start_index = next(i for i, v in enumerate(title_list) if v.startswith(beginswith_tuple))
-			except: start_index = None
-		return start_index
-	if letter != 'None':
-		from itertools import chain, zip_longest
-		title_list = [i['title'].lower() for i in item_list]
-		start_list = [chr(i) for i in range(97, 123)]
-		letter_index = start_list.index(letter)
-		base_list = [element for element in list(chain.from_iterable([val for val in zip_longest(start_list[letter_index:], start_list[:letter_index][::-1])])) if element is not None]
-		for i in base_list:
-			start_index = _get_start_index(i)
-			if start_index: break
-		item_list = item_list[start_index:]
+def paginate_list(item_list, page, limit=20):
 	if not item_list: return item_list, page
 	pages = list(chunks(item_list, limit))
 	total_pages = len(pages)

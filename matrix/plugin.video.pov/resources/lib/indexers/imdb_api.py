@@ -54,8 +54,8 @@ def get_imdb(params):
 	url = params['url']
 	next_page = None
 	if 'date' in params:
-		from datetime import datetime, timedelta
-		date_time = (datetime.utcnow() - timedelta(hours=5))
+		from datetime import datetime, timedelta, timezone
+		date_time = (datetime.now(timezone.utc) - timedelta(hours=5))
 		for i in re.findall(r'date\[(\d+)\]', url):
 			url = url.replace('date[%s]' % i, (date_time - timedelta(days = int(i))).strftime('%Y-%m-%d'))
 	if action == 'imdb_people_id':
@@ -94,7 +94,7 @@ def get_imdb(params):
 		""" thanks https://github.com/tveronesi """
 		trivia, blunders, reviews, parentsguide = [], [], [], []
 		try:
-			headers = {'User-Agent': session.headers['User-Agent'], 'Content-Type': 'application/json', 'x-imdb-user-country': 'EN'}
+			headers = {'Content-Type': 'application/json', 'x-imdb-user-country': 'EN'}
 			data = {'query': imdb_extended_query % url}
 			result = session.post(graphql_url, json=data, headers=headers, timeout=timeout)
 			if not result.ok: result.raise_for_status()

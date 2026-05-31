@@ -21,6 +21,8 @@ def _cm(item):
     tid    = item['id']
     base   = sys.argv[0]
     entries = [
+        ('Informații',
+         f"RunPlugin({base}?action=show_info&tmdb_id={tid}&media_type=tv)"),
         ('Adaugă la Favorite',
          f"RunPlugin({base}?action=add_favorite"
          f"&tmdb_id={tid}&media_type=tvshow"
