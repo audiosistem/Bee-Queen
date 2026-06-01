@@ -132,12 +132,10 @@ class Sources():
 		if self.active_external:
 			early_cloud = self.internal_sources(cloud_early=True)
 			if early_cloud:
-				early_threads = []
 				for i in early_cloud:
 					t = Thread(target=self.activate_providers, args=(i[0], i[1], False), name=i[2])
-					early_threads.append(t)
+					threads_append(t)
 					t.start()
-				[i.join() for i in early_threads]
 				self.remove_scrapers.extend(i[2] for i in early_cloud)
 		if self.active_folders: self.append_folder_scrapers(self.providers)
 		self.providers.extend(self.internal_sources())
@@ -201,10 +199,11 @@ class Sources():
 			kodi_utils.clear_property('fs_filterless_search')
 		results = self.sort_first(results)
 		if self.ignore_scrape_filters: return results
-		filtered_results = [i for i in results if i not in cloud_results]
-		filtered_results = self.limit_quality_numbers(filtered_results)
-		filtered_results = self.limit_quality_total(filtered_results)
-		return filtered_results + cloud_results
+		non_cloud = [i for i in results if i.get('scrape_provider') not in cloud_scrapers]
+		cloud_in_results = [i for i in results if i.get('scrape_provider') in cloud_scrapers]
+		non_cloud = self.limit_quality_numbers(non_cloud)
+		non_cloud = self.limit_quality_total(non_cloud)
+		return self.sort_first(non_cloud + cloud_in_results)
 
 	def sort_results(self, results):
 		results = [dict(i, **{
@@ -295,7 +294,7 @@ class Sources():
 
 	def prepare_internal_scrapers(self):
 		if self.active_external and len(self.active_internal_scrapers) == 1:
-			self.internal_scraper_names = self.active_internal_scrapers[:]
+			self.internal_scraper_names = [i for i in self.active_internal_scrapers if i != 'external']
 			if self.clear_properties: self._clear_properties()
 			return True
 		active_internal_scrapers = [i for i in self.active_internal_scrapers if not i in self.remove_scrapers]
@@ -305,11 +304,11 @@ class Sources():
 			self.folder_info = [i for i in folder_info if settings.source_folders_directory(self.media_type, i[1])]
 			if self.folder_info:
 				self.active_folders = True
-				self.internal_scraper_names = [i for i in active_internal_scrapers if not i == 'folders'] + [i[0] for i in self.folder_info]
-			else: self.internal_scraper_names = [i for i in active_internal_scrapers if not i == 'folders']
+				self.internal_scraper_names = [i for i in active_internal_scrapers if i not in ('folders', 'external')] + [i[0] for i in self.folder_info]
+			else: self.internal_scraper_names = [i for i in active_internal_scrapers if i not in ('folders', 'external')]
 		else:
 			self.folder_info = []
-			self.internal_scraper_names = active_internal_scrapers[:]
+			self.internal_scraper_names = [i for i in active_internal_scrapers if i != 'external']
 		self.active_internal_scrapers = active_internal_scrapers
 		if self.clear_properties: self._clear_properties()
 		return True
@@ -374,6 +373,9 @@ class Sources():
 		folder_info = [(get_setting('redlight.%s.display_name' % i), i, settings.source_folders_directory(self.media_type, i))
 						for i in ('folder1', 'folder2', 'folder3', 'folder4', 'folder5')]
 		return [i for i in folder_info if not i[0] in (None, 'None', '') and i[2]]
+
+	def _get_active_scraper_names(self, scraper_list):
+		return [i[2] for i in scraper_list]
 
 	def scrapers_dialog(self):
 		def _scraperDialog():

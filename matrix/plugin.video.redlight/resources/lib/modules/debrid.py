@@ -98,17 +98,19 @@ def add_to_local_cache(hash_list, debrid, expires=24):
 	debrid_cache.set_many(hash_list, debrid, expires)
 
 def _ad_instant_available(magnet):
-	if magnet.get('error'): return False
-	for key in ('instant', 'ready'):
+	if not magnet or magnet.get('error'): return False
+	for key in ('instant', 'ready', 'cached'):
 		val = magnet.get(key)
 		if val is True or val == 1: return True
 		if str(val).lower() in ('true', '1', 'yes'): return True
+	status = str(magnet.get('status', '')).lower()
+	if status in ('cached', 'ready', 'completed', 'instant'): return True
 	return False
 
 def _ad_magnet_hash(magnet, fallback=''):
 	magnet_hash = (magnet.get('hash') or '').lower()
 	if len(magnet_hash) == 40: return magnet_hash
-	magnet_uri = magnet.get('magnet') or ''
+	magnet_uri = magnet.get('magnet') or magnet.get('uri') or ''
 	match = re.search(r'btih:([a-fA-F0-9]{40})', magnet_uri, re.I)
 	if match: return match.group(1).lower()
 	match = re.search(r'\b([a-fA-F0-9]{40})\b', magnet_uri)
@@ -116,9 +118,13 @@ def _ad_magnet_hash(magnet, fallback=''):
 	fallback = str(fallback).lower()
 	return fallback if len(fallback) == 40 else ''
 
+def _normalize_hash_list(hash_list):
+	return list({str(h).lower() for h in hash_list if h and len(str(h)) == 40})
+
 def cached_check(hash_list, cached_hashes, debrid):
-	cached_list = [i[0] for i in cached_hashes if i[1] == debrid and i[2] == 'True']
-	unchecked_list = [i for i in hash_list if not any([h for h in cached_hashes if h[0] == i and h[1] == debrid and h[2] == 'True'])]
+	hash_list = _normalize_hash_list(hash_list)
+	cached_list = [i[0].lower() for i in cached_hashes if i[1] == debrid and i[2] == 'True']
+	unchecked_list = [i for i in hash_list if not any(h[0].lower() == i and h[1] == debrid and h[2] == 'True' for h in cached_hashes)]
 	return cached_list, unchecked_list
 
 def RD_check(hash_list, cached_hashes, data, active_debrid):
@@ -145,6 +151,7 @@ def RD_check(hash_list, cached_hashes, data, active_debrid):
 
 def AD_check(hash_list, cached_hashes, data, active_debrid):
 	expires = 24
+	hash_list = _normalize_hash_list(hash_list)
 	cached_hashes, unchecked_hashes = cached_check(hash_list, cached_hashes, 'ad')
 	if unchecked_hashes:
 		cached_results = set()
@@ -153,21 +160,24 @@ def AD_check(hash_list, cached_hashes, data, active_debrid):
 		for hash_chunk in chunks(unchecked_hashes, 100):
 			try:
 				response = api.check_cache(hash_chunk)
-				if not response or 'magnets' not in response: continue
+				magnets = (response or {}).get('magnets')
+				if not magnets: continue
 				api_responded = True
-				for idx, magnet in enumerate(response['magnets']):
+				chunk_hashes = [h.lower() for h in hash_chunk]
+				for idx, magnet in enumerate(magnets):
 					if not _ad_instant_available(magnet): continue
-					magnet_hash = _ad_magnet_hash(magnet, hash_chunk[idx] if idx < len(hash_chunk) else '')
+					fallback = chunk_hashes[idx] if idx < len(chunk_hashes) else ''
+					magnet_hash = _ad_magnet_hash(magnet, fallback)
 					if magnet_hash: cached_results.add(magnet_hash)
 			except: pass
 		if not api_responded:
-			cached_hashes.extend(unchecked_hashes)
+			add_to_local_cache([(h, 'False') for h in unchecked_hashes], 'ad', 2)
 			return cached_hashes
 		remaining = [h for h in unchecked_hashes if h not in cached_results]
-		if remaining:
+		if remaining and 'AllDebrid' in active_debrid:
 			try:
 				fallback = get_external_cache_status('AllDebrid', remaining, data, active_debrid) or []
-				cached_results.update(i.lower() for i in fallback)
+				cached_results.update(str(i).lower() for i in fallback if i)
 			except: pass
 		cached_append = cached_hashes.append
 		process_list = []

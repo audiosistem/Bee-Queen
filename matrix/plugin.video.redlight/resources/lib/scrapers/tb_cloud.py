@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 # Thanks to kodifitzwell for allowing me to borrow his code
+import time
 from apis.torbox_api import TorBox, TorBoxAPI
 from modules import source_utils
 from modules.utils import clean_file_name, normalize
 from modules.settings import enabled_debrids_check, filter_by_name
+from caches.settings_cache import get_setting
 # from modules.kodi_utils import logger
 
 class source:
@@ -25,6 +27,7 @@ class source:
 			self.folder_query = source_utils.clean_title(normalize(title))
 			self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
 			self.title_queries = self._title_queries()
+			self.scrape_deadline = time.time() + min(25, max(10, int(get_setting('redlight.results.timeout', '20'))))
 			self._scrape_cloud_list('torrent')
 			self._scrape_cloud_list('usenet')
 			self._scrape_cloud_list('webdl')
@@ -117,23 +120,26 @@ class source:
 
 	def _scrape_cloud_list(self, media_type):
 		try:
+			if time.time() >= self.scrape_deadline: return
 			err, items = TorBox.mylist_items(media_type, fresh=False)
 			if err: return
 			append = self.scrape_results.append
 			for item in items:
+				if time.time() >= self.scrape_deadline: return
 				if not TorBoxAPI._torrent_item_finished(item): continue
 				folder_id = item['id']
 				raw_folder = item.get('name') or ''
 				folder_name = source_utils.clean_title(normalize(raw_folder))
 				folder_matched = self._folder_matched(folder_name, raw_folder)
+				if not folder_matched and not self._folder_might_match(raw_folder):
+					continue
 				files = item.get('files') or []
 				if not files:
-					if not self._folder_might_match(raw_folder):
-						continue
 					files = TorBox.mylist_item_files(folder_id, media_type)
 				if not files:
 					continue
 				for file in files:
+					if time.time() >= self.scrape_deadline: return
 					if not self._video_file(file): continue
 					label = TorBoxAPI._torrent_file_label(file)
 					normalized = normalize(label) or label

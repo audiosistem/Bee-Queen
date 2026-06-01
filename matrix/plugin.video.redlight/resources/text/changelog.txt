@@ -1,3 +1,14 @@
+[COLOR red][B]Version 1.2.5[/B][/COLOR]
+- Fixed Results > Choose Rescrape Actions crashing (KeyError) after Start Full Scrape was added: order labels and the Set Order dialog now support six priority slots (0–5).
+- Fixed progress bar stuck on EXTERNAL after debrid/EasyNews scrapers finish: the External scrapers module name was treated as a pending internal provider, so the dialog waited for the full Results Timeout even when no torrent hosts were still running.
+- Fixed External scraper phase taking much longer than Red Light v1.1.8: since v1.2.2, Debrid Cloud scrapers blocked the Coco/Magneto/Gears External module until every cloud API call finished (v1.2.4 added up to 25s more). Cloud scrapers still start first when enabled, but External runs in parallel again like v1.1.8.
+
+[COLOR red][B]Version 1.2.4[/B][/COLOR]
+- TorBox Cloud: cloud search now respects the Results Timeout budget and skips non-matching folders earlier, so a large TorBox library no longer blocks the entire source search when nothing matches.
+- Source search: internal scrapers finish (or time out at 25s) before the external scraper phase starts, so external no longer sits at a red progress bar waiting on slow internal/cloud scrapers.
+- Fixed Real Debrid (and other debrid) cloud results ignoring Show Results at Top: quality limits were re-appending all cloud results to the bottom after they had already been sorted to the top.
+- Fixed All Debrid external cache check returning inconsistent results: API failures no longer mark every torrent as cached, hash matching is normalized to lowercase, invalid hashes are skipped, and instant/ready/cached flags are parsed more reliably from the magnet/instant API.
+
 [COLOR red][B]Version 1.2.3[/B][/COLOR]
 - Fixed skin widgets (e.g. Movies > Trending) staying empty after a settings DB upgrade: widget calls no longer block on settings bootstrap, failed Trakt list fetches are not cached, and widgets are silently reloaded with ReloadSkin only when sync_settings actually migrates or repairs an existing settings.db (not on every boot).
 - Fixed slow startup and browsing after the 1.2.2 boot-crash fix: settings reads no longer hit SQLite on every call once properties are loaded, the database is not synced twice on boot, path-existence checks are skipped on the read path, and default-settings metadata is cached in memory.

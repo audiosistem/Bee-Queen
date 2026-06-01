@@ -83,18 +83,20 @@ class AllDebridAPI:
 			h = str(h).lower()
 			if len(h) == 40:
 				params.append(('magnets[]', h))
-			else:
-				params.append(('magnets[]', h))
+		if len(params) <= 2: return None
 		try:
 			result = requests.get('%smagnet/instant' % self.base_url, params=params, timeout=20).json()
-			if result.get('status') == 'success':
-				if 'data' in result: return result['data']
-				if 'magnets' in result: return result
+			if result.get('status') != 'success': return None
+			data = result.get('data') or result
+			if isinstance(data, dict) and 'magnets' in data: return data
+			if isinstance(data, list): return {'magnets': data}
 		except: pass
 		return None
 
 	def check_single_magnet(self, hash_string):
-		cache_info = self.check_cache([hash_string])['magnets'][0]
+		response = self.check_cache([hash_string])
+		if not response or 'magnets' not in response or not response['magnets']: return False
+		cache_info = response['magnets'][0]
 		if cache_info.get('error'): return False
 		instant = cache_info.get('instant')
 		if instant is True or instant == 1: return True

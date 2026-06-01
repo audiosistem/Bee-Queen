@@ -110,8 +110,9 @@ def addon_icon_choice(params):
 
 def rescrape_actions_choice(params):
 	set_focus = params.get('set_focus', 0)
-	action_values, order_values = {0: 'Off', 1: 'Auto', 2: 'Prompt'}, {0: 'Highest', 1: 'High', 2: 'Middle', 3: 'Low', 4: 'Lowest'}
-	rescrape_settings = settings.rescrape_settings()
+	action_values = {0: 'Off', 1: 'Auto', 2: 'Prompt'}
+	order_values = {0: 'Highest', 1: 'High', 2: 'Middle', 3: 'Low', 4: 'Lower', 5: 'Lowest'}
+	rescrape_settings = settings.rescrape_all_settings()
 	choices = [dict(i, **{'line1': '%02d, %s' % (int(k[2]) + 1, i['name']),
 				'line2': 'Current | Action: [B]%s[/B] | Order: [B]%s[/B]' % (action_values[k[1]], order_values[k[2]]), 'value': i['value'],
 				'action': k[1], 'order': k[2]}) for i in kodi_utils.rescrape_items() for k in rescrape_settings if k[0] == i['value']]
@@ -136,7 +137,7 @@ def rescrape_actions_choice(params):
 		set_setting(setting, setting_value)
 	else:
 		choices = [{'line1': 'Highest', 'value': '0'}, {'line1': 'High', 'value': '1'}, {'line1': 'Middle', 'value': '2'},
-					{'line1': 'Low', 'value': '3'}, {'line1': 'Lowest', 'value': '4'}]
+					{'line1': 'Low', 'value': '3'}, {'line1': 'Lower', 'value': '4'}, {'line1': 'Lowest', 'value': '5'}]
 		heading, setting = 'Choose Order', 'rescrape.%s.order'
 		kwargs = {'items': json.dumps(choices), 'heading': heading, 'narrow_window': 'true'}
 		choice = kodi_utils.select_dialog(choices, **kwargs)

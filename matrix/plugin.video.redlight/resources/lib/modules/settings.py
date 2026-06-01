@@ -495,10 +495,15 @@ def update_delay():
 def update_action():
 	return int(get_setting('redlight.update.action', '2'))
 
+def _rescrape_defaults():
+	return [('cache_ignored', '1', '0'), ('imdb_year', '0', '1'), ('with_all', '0', '2'), ('episode_group', '0', '3'), ('ignore_filters', '0', '4'), ('full_scrape', '2', '5')]
+
+def rescrape_all_settings():
+	return sorted([(i[0], int(get_setting('redlight.rescrape.%s' % i[0], i[1])), int(get_setting('redlight.rescrape.%s.order' % i[0], i[2]))) \
+					for i in _rescrape_defaults()], key=lambda x: x[2])
+
 def rescrape_settings():
-	rescrapes = [('cache_ignored', '1', '0'), ('imdb_year', '0', '1'), ('with_all', '0', '2'), ('episode_group', '0', '3'), ('ignore_filters', '0', '4'), ('full_scrape', '2', '5')]
-	return sorted([(i[0], int(get_setting('redlight.rescrape.%s' % i[0], i[1])), int(get_setting('redlight.rescrape.%s.order' % i[0], i[2]))  ) \
-					for i in rescrapes if int(get_setting('redlight.rescrape.%s' % i[0], i[1])) in (1, 2)], key=lambda x: x[2])
+	return [i for i in rescrape_all_settings() if i[1] in (1, 2)]
 
 def rescrape_action_value(action, default='0'):
 	return int(get_setting('redlight.rescrape.%s' % action, default))
