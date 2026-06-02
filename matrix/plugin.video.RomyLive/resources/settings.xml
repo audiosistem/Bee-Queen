@@ -1,7 +1,8 @@
 <settings>
-    <category label="FunTvLive">
-        <setting id="dinbox_autentificare" type="text" label="Utilizator Dinbox" default="" />
-        <setting id="dinbox_parola" type="text" label="Parola Dinbox" default="" option="hidden" />
+    
+    <category label="Live TV EPG">
+        <setting id="xmltv_epg_enabled" type="bool" label="Activeaza EPG (XMLTV) pentru Live TV" default="false" />
+        <setting id="xmltv_epg_url" type="text" label="URL XMLTV (.xml sau .xml.gz)" default="https://epgshare01.online/epgshare01/epg_ripper_ALL_SOURCES1.xml.gz" />
     </category>
     <category label="DaddyLive 24/7">
         <setting id="daddylive_hide_18plus" type="bool" label="Ascunde canalele 18+ (Player-XX)" default="true" />
