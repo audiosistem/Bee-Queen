@@ -13,7 +13,7 @@ EXPIRES_4_HOURS, EXPIRES_2_DAYS, EXPIRES_1_WEEK, EXPIRES_1_MONTH = 4, 48, 168, 6
 READ_TOKEN = kodi_utils.addon().getSetting('tmdb_read_token')
 movies_append = 'external_ids,videos,credits,release_dates,alternative_titles,translations,images'
 tvshows_append = 'external_ids,videos,credits,content_ratings,alternative_titles,translations,images'
-tmdb_image_base, tmdb_list_heading = 'https://image.tmdb.org/t/p/%s%s', 'TMDB Lists'
+tmdb_image_base, tmdblist_heading = 'https://image.tmdb.org/t/p/%s%s', 'TMDB Lists'
 list_url = 'https://api.themoviedb.org/4'
 base_url = 'https://api.themoviedb.org/3'
 timeout = 3.05
@@ -538,7 +538,7 @@ def import_trakt_list(params):
 	send_str = 'Sending items to TMDB...'
 	try:
 		progressBG = kodi_utils.progressDialogBG
-		progressBG.create(send_str, tmdb_list_heading)
+		progressBG.create(send_str, tmdblist_heading)
 		list_id, user, slug = params['trakt_list_id'], params['user'], params['list_slug']
 		items = get_trakt_list_contents(params.get('list_type'), list_id, user, slug)
 		len_items, wait = len(items), sum(1000 for i in chunks(items, 500))
@@ -560,7 +560,7 @@ def import_mdbl_list(params):
 	send_str = 'Sending list to TMDB...'
 	try:
 		progressBG = kodi_utils.progressDialogBG
-		progressBG.create(send_str, tmdb_list_heading)
+		progressBG.create(send_str, tmdblist_heading)
 		items = get_mdbl_list_contents(params['mdbl_list_id'], None)
 		len_items, wait = len(items), sum(1000 for i in chunks(items, 500))
 		for count, item in enumerate(items, 1):

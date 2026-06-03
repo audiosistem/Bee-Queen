@@ -57,15 +57,16 @@ class Menu(Debrid):
 			try:
 				cm = []
 				cm_append = cm.append
-				name = item['path'].lstrip('/')
-				name = clean_file_name(name).upper()
+				path = item['path'].lstrip('/')
+				name = clean_file_name(path).upper()
 				url_link = item['url_link']
 				if url_link.startswith('/'): url_link = 'https:/' + url_link
 				size = float(int(item['bytes']))/1073741824
 				display = '%02d | [B]%s[/B] | %.2f GB | [I]%s [/I]' % (count, file_str, size, name)
-				params = {'name': name, 'url': url_link, 'image': default_icon}
-				url_params = {**params, 'mode': 'real_debrid.resolve_rd', 'play': 'true'}
-				down_file_params = {**params, 'mode': 'downloader', 'action': 'cloud.real-debrid'}
+				params = {'id': url_link, 'url': url_link, 'image': default_icon}
+				params.update({'name': path, 'scrape_provider': 'rd_cloud', 'direct_debrid_link': 'false'})
+				url_params = {**params, 'mode': 'media_play'}
+				down_file_params = {**params, 'mode': 'downloader', 'action': 'rd_cloud'}
 				cm_append((down_str, 'RunPlugin(%s)' % build_url(down_file_params)))
 				url = build_url(url_params)
 				listitem = make_listitem()
@@ -87,10 +88,11 @@ class Menu(Debrid):
 				size = float(int(item['filesize']))/1073741824
 				datetime_object = jsondate_to_datetime(item['generated']).astimezone().date()
 				display = '%02d | %.2f GB | %s | [I]%s [/I]' % (count, size, datetime_object, name)
-				params = {'name': name, 'url': item['download'], 'id': item['id'], 'image': default_icon}
-				url_params = {**params, 'mode': 'media_play', 'mediatype': 'video'}
-				delete_params = {**params, 'mode': 'real_debrid.rd_delete', 'cache_type': 'download'}
-				down_file_params = {**params, 'mode': 'downloader', 'action': 'cloud.real-debrid_direct'}
+				params = {'id': item['download'], 'url': item['download'], 'image': default_icon}
+				params.update({'name': item['filename'], 'scrape_provider': 'rd_cloud'})
+				url_params = {**params, 'mode': 'media_play'}
+				delete_params = {**params, 'mode': 'real_debrid.rd_delete', 'id': item['id'], 'cache_type': 'download'}
+				down_file_params = {**params, 'mode': 'downloader', 'action': 'rd_cloud'}
 				cm_append(('[B]%s %s[/B]' % (delete_str, file_str.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))
 				cm_append((down_str, 'RunPlugin(%s)' % build_url(down_file_params)))
 				url = build_url(url_params)
@@ -126,10 +128,4 @@ class Menu(Debrid):
 			kodi_utils.hide_busy_dialog()
 			return kodi_utils.show_text(ls(32054).upper(), '\n\n'.join(body), font_size='large')
 		except: kodi_utils.hide_busy_dialog()
-
-def resolve_rd(params):
-	url = params['url']
-	resolved_link = Debrid().unrestrict_link(url)
-	if params.get('play', 'false') != 'true' : return resolved_link
-	kodi_utils.player.play(resolved_link)
 

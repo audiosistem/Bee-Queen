@@ -63,9 +63,10 @@ class Menu(Debrid):
 					size = item['size']
 					display_size = float(int(size))/1073741824
 					display = '%02d | [B]%s[/B] | %.2f GB | [I]%s [/I]' % (count, file_str, display_size, name)
-					params = {'name': item['name'], 'url': url_link, 'image': default_icon}
-					url_params = {**params, 'mode': 'media_play', 'mediatype': 'video'}
-					down_file_params = {**params, 'mode': 'downloader', 'action': 'cloud.premiumize_direct'}
+					params = {'id': url_link, 'url': url_link, 'image': default_icon}
+					params.update({'name': item['name'], 'scrape_provider': 'pm_cloud'})
+					url_params = {**params, 'mode': 'media_play'}
+					down_file_params = {**params, 'mode': 'downloader', 'action': 'pm_cloud'}
 				cm_append(('[B]%s %s[/B]' % (delete_str, string.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))
 				if down_file_params: cm_append((download_string, 'RunPlugin(%s)' % build_url(down_file_params)))
 				cm_append((rename_str % file_type.capitalize(), 'RunPlugin(%s)' % build_url(rename_params)))
@@ -101,9 +102,10 @@ class Menu(Debrid):
 					size = details['size']
 					display_size = float(int(size))/1073741824
 					display = '%02d | %.2f%% | [B]%s[/B] | %.2f GB | [I]%s [/I]' % (count, progress, file_str, display_size, name)
-					params = {'name': item['name'], 'url': url_link, 'image': default_icon}
-					url_params = {**params, 'mode': 'media_play', 'mediatype': 'video'}
-					down_file_params = {**params, 'mode': 'downloader', 'mediatype': 'cloud.premiumize_direct'}
+					params = {'id': url_link, 'url': url_link, 'image': default_icon}
+					params.update({'name': item['name'], 'scrape_provider': 'pm_cloud'})
+					url_params = {**params, 'mode': 'media_play'}
+					down_file_params = {**params, 'mode': 'downloader', 'action': 'pm_cloud'}
 					cm_append((down_str, 'RunPlugin(%s)' % build_url(down_file_params)))
 				url = build_url(url_params)
 				listitem = make_listitem()

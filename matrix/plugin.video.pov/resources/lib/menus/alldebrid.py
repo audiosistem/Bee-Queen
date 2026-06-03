@@ -63,9 +63,10 @@ class Menu(Debrid):
 				name = clean_file_name(item['n']).upper()
 				size = float(int(item['s']))/1073741824
 				display = '%02d | [B]%s[/B] | %.2f GB | [I]%s [/I]' % (count, file_str, size, name)
-				params = {'name': name, 'url': item['l'], 'image': default_icon}
-				url_params = {**params, 'mode': 'alldebrid.resolve_ad', 'play': 'true'}
-				down_file_params = {**params, 'mode': 'downloader', 'action': 'cloud.alldebrid'}
+				params = {'id': item['l'], 'url': item['l'], 'image': default_icon}
+				params.update({'name': item['n'], 'scrape_provider': 'ad_cloud', 'direct_debrid_link': 'false'})
+				url_params = {**params, 'mode': 'media_play'}
+				down_file_params = {**params, 'mode': 'downloader', 'action': 'ad_cloud'}
 				cm_append((down_str, 'RunPlugin(%s)' % build_url(down_file_params)))
 				url = build_url(url_params)
 				listitem = make_listitem()
@@ -87,9 +88,10 @@ class Menu(Debrid):
 				size = float(int(item['size']))/1073741824
 				datetime_object = datetime.fromtimestamp(item['date']).date()
 				display = '%02d | %.2f GB | %s | [I]%s [/I]' % (count, size, datetime_object, name)
-				params = {'name': name, 'url': item['link_dl'], 'image': default_icon}
-				url_params = {**params, 'mode': 'media_play', 'mediatype': 'video'}
-				down_file_params = {**params, 'mode': 'downloader', 'action': 'cloud.alldebrid_direct'}
+				params = {'id': item['link_dl'], 'url': item['link_dl'], 'image': default_icon}
+				params.update({'name': item['filename'], 'scrape_provider': 'ad_cloud'})
+				url_params = {**params, 'mode': 'media_play'}
+				down_file_params = {**params, 'mode': 'downloader', 'action': 'ad_cloud'}
 				cm_append((down_str, 'RunPlugin(%s)' % build_url(down_file_params)))
 				url = build_url(url_params)
 				listitem = make_listitem()
@@ -125,10 +127,4 @@ class Menu(Debrid):
 			kodi_utils.hide_busy_dialog()
 			return kodi_utils.show_text(ls(32063).upper(), '\n\n'.join(body), font_size='large')
 		except: kodi_utils.hide_busy_dialog()
-
-def resolve_ad(params):
-	url = params['url']
-	resolved_link = Debrid().unrestrict_link(url)
-	if params.get('play', 'false') != 'true' : return resolved_link
-	kodi_utils.player.play(resolved_link)
 

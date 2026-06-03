@@ -33,11 +33,22 @@ def debrid_type_enabled(debrid_type, enabled_debrids):
 	return [i[0] for i in debrid_list if i[0] in enabled_debrids and get_setting('%s.%s.enabled' % (i[1], debrid_type)) == 'true']
 
 class Source:
+	@classmethod
+	def fromcloud(cls, params):
+		self = cls(params)
+		ddl = params.get('direct_debrid_link', True)
+		if ddl in ('false', False): self.direct_debrid_link = False
+		else: self.direct_debrid_link = True if ddl == 'true' else ddl
+		self.url_dl = params['id'] if self.direct_debrid_link else ''
+		return self
+
 	def dumps(self, depth=1, width=172):
 		from pprint import pformat
 		return pformat(vars(self), depth=depth, width=width)
 
 	def __init__(self, source_dict, meta=None):
+		self.direct_debrid_link = False
+		self.scrape_provider, self.url = '', ''
 		for k, v in source_dict.items(): setattr(self, k, v)
 		self.meta = meta or {}
 
@@ -92,25 +103,20 @@ class Source:
 
 	def resolve_internal_sources(self, direct_debrid_link=False):
 		try:
-			if self.scrape_provider == 'tb_cloud':
-				if direct_debrid_link == 'usenet': function = 'unrestrict_usenet'
-				elif direct_debrid_link == 'webdl': function = 'unrestrict_webdl'
-				else: function = 'unrestrict_link'
-				function = getattr(torbox_api.TorBoxAPI(), function)
-				url = function(self.id)
-			elif self.scrape_provider == 'rd_cloud':
+			if self.scrape_provider == 'rd_cloud':
 				if direct_debrid_link: url = self.url_dl
 				else: url = real_debrid_api.RealDebridAPI().unrestrict_link(self.id)
-			elif self.scrape_provider == 'pm_cloud':
-				details = premiumize_api.PremiumizeAPI().get_item_details(self.id)
-				url = details['link']
-				if url.startswith('/'): url = 'https:/' + url
 			elif self.scrape_provider == 'ad_cloud':
 				if direct_debrid_link: url = self.url_dl
 				else: url = alldebrid_api.AllDebridAPI().unrestrict_link(self.id)
+			elif self.scrape_provider == 'tb_cloud':
+				if direct_debrid_link == 'usenet': function = 'unrestrict_usenet'
+				elif direct_debrid_link == 'webdl': function = 'unrestrict_webdl'
+				else: function = 'unrestrict_link'
+				url = getattr(torbox_api.TorBoxAPI(), function)(self.id)
 			elif self.scrape_provider == 'easynews':
-				from menus.easynews import resolve_easynews
-				url = resolve_easynews({'url_dl': self.url_dl, 'play': 'false'})
+				from debrids.easynews_api import EasyNewsAPI
+				url = EasyNewsAPI().unrestrict_link(self.url_dl)
 				if not direct_debrid_link: url += '|seekable=0'
 			else: url = self.url_dl
 			return url
@@ -201,10 +207,6 @@ class Source:
 		hide_busy_dialog()
 		if result: notification(32576)
 		else: notification(32575)
-
-	direct_debrid_link = False
-	scrape_provider = ''
-	url = ''
 
 class DebridCheck:
 	def __init__(self, meta, name):

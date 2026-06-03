@@ -65,9 +65,10 @@ class Menu(Debrid):
 				name = clean_file_name(item['short_name']).upper()
 				size = float(int(item['size']))/1073741824
 				display = '%02d | [B]%s[/B] | %.2f GB | [I]%s [/I]' % (count, file_str, size, name)
-				params = {'name': name, 'url': item['url'], 'mediatype': item['mediatype'], 'image': default_icon}
-				url_params = {**params, 'mode': 'torbox.resolve_tb', 'play': 'true'}
-				down_file_params = {**params, 'mode': 'downloader', 'action': 'cloud.torbox'}
+				params = {'id': item['url'], 'url': item['url'], 'image': default_icon}
+				params.update({'name': item['short_name'], 'scrape_provider': 'tb_cloud', 'direct_debrid_link': item['mediatype']})
+				url_params = {**params, 'mode': 'media_play'}
+				down_file_params = {**params, 'mode': 'downloader', 'action': 'tb_cloud'}
 				cm_append((down_str, 'RunPlugin(%s)' % build_url(down_file_params)))
 				url = build_url(url_params)
 				listitem = make_listitem()
@@ -106,12 +107,4 @@ class Menu(Debrid):
 			kodi_utils.hide_busy_dialog()
 			return kodi_utils.show_text('TorBox'.upper(), '\n\n'.join(body), font_size='large')
 		except: kodi_utils.hide_busy_dialog()
-
-def resolve_tb(params):
-	file_id, mediatype = params['url'], params['mediatype']
-	if   mediatype == 'usenet': resolved_link = Debrid().unrestrict_usenet(file_id)
-	elif mediatype == 'webdl': resolved_link = Debrid().unrestrict_webdl(file_id)
-	else: resolved_link = Debrid().unrestrict_link(file_id)
-	if params.get('play', 'false') != 'true': return resolved_link
-	kodi_utils.player.play(resolved_link)
 

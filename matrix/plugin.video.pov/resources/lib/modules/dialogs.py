@@ -142,7 +142,7 @@ def tmdb_manager_choice(params):
 	if not get_setting('tmdb.token', ''): return notification(32760)
 	from indexers import tmdb_api
 	image_resolution, tmdb_image_base = settings.get_resolution(), tmdb_api.tmdb_image_base
-	heading = ls(tmdb_api.tmdb_list_heading).replace('[B]', '').replace('[/B]', '')
+	heading = ls(tmdb_api.tmdblist_heading).replace('[B]', '').replace('[/B]', '')
 	icon = media_path('tmdb.png')
 	list_name = params.get('trakt_list_name') or params.get('mdbl_list_name') or ''
 	choices = []

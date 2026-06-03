@@ -21,8 +21,10 @@ def search_easynews(params):
 				name = clean_file_name(item_get('name')).upper()
 				size = str(round(float(int(item_get('rawSize')))/1073741824, 1))
 				display = '%02d | [B]%s GB[/B] | [I]%s [/I]' % (count, size, name)
-				url = build_url({'mode': 'easynews.resolve_easynews', 'url_dl': url_dl, 'play': 'true'})
-				down_file_params = {'mode': 'downloader', 'action': 'cloud.easynews_direct', 'name': item_get('name'), 'url': url_dl, 'image': default_icon}
+				params = {'id': url_dl, 'url': url_dl, 'image': default_icon}
+				params.update({'name': item_get('name'), 'scrape_provider': 'easynews'})
+				url = build_url({**params, 'mode': 'media_play'})
+				down_file_params = {**params, 'mode': 'downloader', 'action': 'easynews_cloud'}
 				cm.append((down_str,'RunPlugin(%s)' % build_url(down_file_params)))
 				listitem = make_listitem()
 				listitem.setLabel(display)
@@ -37,12 +39,6 @@ def search_easynews(params):
 	kodi_utils.set_content(__handle__, 'files')
 	kodi_utils.end_directory(__handle__)
 	kodi_utils.set_view_mode('view.premium')
-
-def resolve_easynews(params):
-	url_dl = params['url_dl']
-	resolved_link = EasyNews().unrestrict_link(url_dl)
-	if params.get('play', 'false') != 'true': return resolved_link
-	kodi_utils.player.play(resolved_link)
 
 def account_info(params):
 	from datetime import datetime

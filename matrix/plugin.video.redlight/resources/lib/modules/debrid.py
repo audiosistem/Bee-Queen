@@ -17,7 +17,7 @@ def debrid_enabled():
 
 def debrid_for_ext_cache_check(enabled_debrid=None):
 	if not enabled_debrid: enabled_debrid = debrid_enabled()
-	return any(i in ['Real-Debrid', 'AllDebrid'] for i in enabled_debrid)
+	return 'Real-Debrid' in enabled_debrid
 
 def normalize_debrid_provider(provider):
 	if not provider:
@@ -217,26 +217,48 @@ def PM_check(hash_list, cached_hashes):
 		add_to_local_cache(process_list, 'pm', expires)
 	return cached_hashes
 
+def _tb_cached_hash_set(api_response):
+	if not api_response or not api_response.get('success'):
+		return set()
+	data = api_response.get('data')
+	cached = set()
+	if isinstance(data, dict):
+		for key, value in data.items():
+			if value in (True, 1, '1', 'true'):
+				cached.add(str(key).lower())
+			elif isinstance(value, dict) and value.get('hash'):
+				cached.add(str(value['hash']).lower())
+	elif isinstance(data, list):
+		for item in data:
+			if isinstance(item, dict) and item.get('hash'):
+				cached.add(str(item['hash']).lower())
+			elif isinstance(item, str):
+				cached.add(item.lower())
+	return cached
+
 def TB_check(hash_list, cached_hashes):
 	expires = 24
 	cached_hashes, unchecked_hashes = cached_check(hash_list, cached_hashes, 'tb')
 	if unchecked_hashes:
-		results = TorBoxAPI().check_cache(unchecked_hashes)
-		if results:
-			cached_append = cached_hashes.append
-			process_list = []
-			process_append = process_list.append
-			try:
-				data = results['data']
-				results = [i['hash'] for i in data]
-				for h in unchecked_hashes:
-					cached = 'False'
-					if h in results:
-						cached_append(h)
-						cached = 'True'
-					process_append((h, cached))
-			except:
-				for i in unchecked_hashes: process_append((i, 'False'))
-		else: process_list, expires  = [(h, 'False') for h in unchecked_hashes], 2
+		cached_append = cached_hashes.append
+		process_list = []
+		process_append = process_list.append
+		cached_set = set()
+		api = TorBoxAPI()
+		try:
+			for offset in range(0, len(unchecked_hashes), 100):
+				chunk = unchecked_hashes[offset:offset + 100]
+				results = api.check_cache(chunk)
+				if results:
+					cached_set.update(_tb_cached_hash_set(results))
+			for h in unchecked_hashes:
+				h_lower = str(h).lower()
+				if h_lower in cached_set:
+					cached_append(h)
+					process_append((h, 'True'))
+				else:
+					process_append((h, 'False'))
+		except:
+			for i in unchecked_hashes: process_append((i, 'False'))
 		add_to_local_cache(process_list, 'tb', expires)
 	return cached_hashes

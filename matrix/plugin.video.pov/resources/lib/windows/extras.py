@@ -6,7 +6,7 @@ from caches import watched_cache as ws
 from indexers import metadata, tmdb_api, imdb_api
 from menus import images, people
 from modules import settings, dialogs
-from modules.downloader import runner
+from modules.downloader import factory
 from modules.meta_lists import networks
 from modules.utils import get_datetime
 from modules.kodi_utils import media_path, notification, close_all_dialog, hide_busy_dialog, ok_dialog, fetch_kodi_imagecache, local_string as ls
@@ -79,7 +79,7 @@ class Extras(BaseDialog):
 					'thumb_url': image.replace('w780', {posters_id: 'w185', backdrops_id: 'w300'}[focus_id]),
 					'image_url': image.replace('w780', 'original')
 				}
-				return runner(params)
+				return factory(params)
 		if not self.control_id or action not in self.selection_actions: return
 		if self.control_id == actions_id:
 			try: chosen_var = int(self.get_listitem(self.control_id).getProperty('tikiskins.extras.actions'))

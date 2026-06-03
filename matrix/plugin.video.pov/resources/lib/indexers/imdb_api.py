@@ -92,7 +92,15 @@ def get_imdb(params):
 		except: pass
 	elif action == 'imdb_extended_info':
 		""" thanks https://github.com/tveronesi """
-		trivia, blunders, reviews, parentsguide = [], [], [], []
+		imdb_extended_query, trivia, blunders, reviews, parentsguide = (
+			'query{title(id:"%s"){id titleText{text}trivia(first:20){edges{node{displ'
+			'ayableArticle{body{plaidHtml}}interestScore{usersVoted}}}}goofs(first:20'
+			'){edges{node{displayableArticle{body{plaidHtml}}interestScore{usersVoted'
+			'}}}}reviews(first:20){edges{node{spoiler author{nickName}authorRating su'
+			'mmary{originalText}text{originalText{plaidHtml}}submissionDate}}}parents'
+			'Guide{categories{category{id}guideItems(first:10){edges{node{isSpoiler t'
+			'ext{plaidHtml}}}}severity{id votedFor}}}}}'
+		), [], [], [], []
 		try:
 			headers = {'Content-Type': 'application/json', 'x-imdb-user-country': 'EN'}
 			data = {'query': imdb_extended_query % url}
@@ -154,83 +162,4 @@ def clear_imdb_cache(silent=False):
 		for i in imdb_results: clear_property(i)
 		return True
 	except: return False
-
-imdb_extended_query = """\
-query {
-  title(id: "%s") {
-    id
-    titleText {
-      text
-    }
-    trivia(first: 20) {
-      edges {
-        node {
-          displayableArticle {
-            body {
-              plaidHtml
-            }
-          }
-          interestScore {
-            usersVoted
-          }
-        }
-      }
-    }
-    goofs(first: 20) {
-      edges {
-        node {
-          displayableArticle {
-            body {
-              plaidHtml
-            }
-          }
-          interestScore {
-            usersVoted
-          }
-        }
-      }
-    }
-    reviews(first: 20) {
-      edges {
-        node {
-          spoiler
-          author {
-            nickName
-          }
-          authorRating
-          summary {
-            originalText
-          }
-          text {
-            originalText {
-              plaidHtml
-            }
-          }
-          submissionDate
-        }
-      }
-    }
-    parentsGuide {
-      categories {
-        category {
-          id
-        }
-        guideItems(first: 10) {
-          edges {
-            node {
-              isSpoiler
-              text {
-                plaidHtml
-              }
-            }
-          }
-        }
-        severity {
-          id
-          votedFor
-        }
-      }
-    }
-  }
-}"""
 

@@ -28,7 +28,10 @@ class source:
 				for item in self.scrape_results:
 					try:
 						file_name = self._get_filename(item['path'])
-						if filter_title and not source_utils.check_title(title, file_name, aliases, self.year, self.season, self.episode): continue
+						if self.media_type == 'episode':
+							if not source_utils.cloud_episode_matches(self.season, self.episode, file_name): continue
+							if filter_title and not source_utils.check_title(title, file_name, aliases, self.year, 'pack', self.episode): continue
+						elif filter_title and not source_utils.check_title(title, file_name, aliases, self.year, self.season, self.episode): continue
 						display_name = clean_file_name(file_name).replace('html', ' ').replace('+', ' ').replace('-', ' ')
 						file_dl, size = item['url_link'], round(float(item['bytes'])/1073741824, 2)
 						video_quality, details = source_utils.get_file_info(name_info=source_utils.release_info_format(file_name))
@@ -82,7 +85,7 @@ class source:
 			contents.sort(key=lambda k: k['path'])
 			for item in contents:
 				normalized = normalize(item['path'])
-				if self.media_type == 'episode' and not source_utils.seas_ep_filter(self.season, self.episode, normalized): continue
+				if self.media_type == 'episode' and not source_utils.cloud_episode_matches(self.season, self.episode, normalized): continue
 				if item['path'].replace('/', '').lower() not in [d['path'].replace('/', '').lower() for d in self.scrape_results]:
 					item.update({'folder_id': folder_info, 'cache_type': 'torrent'})
 					scrape_results_append(item)

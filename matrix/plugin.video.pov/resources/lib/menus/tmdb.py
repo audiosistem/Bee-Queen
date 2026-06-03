@@ -112,7 +112,7 @@ def update_tmdb_list(params):
 
 def edit_tmdb_list(params):
 	image_resolution = get_resolution()
-	heading = ls(tmdb_api.tmdb_list_heading).replace('[B]', '').replace('[/B]', '')
+	heading = ls(tmdb_api.tmdblist_heading).replace('[B]', '').replace('[/B]', '')
 	choices = [
 		('name', params['name']),
 		('poster', params['poster']),

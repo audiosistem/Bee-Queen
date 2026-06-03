@@ -1,6 +1,7 @@
   removal pending: download, tmdblist
 
   [COLOR dodgerblue][B]Version 6.06[/B][/COLOR]
+- Pack downloader preselects all files.
 - Refactored downloader for TorBox.
 - Refactored datetime parsing.
 

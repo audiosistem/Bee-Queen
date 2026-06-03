@@ -78,7 +78,7 @@ def cache_object(function, string, url, expiration=24, json=False):
 	if not isinstance(url, list): url = (url,)
 	if json: result = function(*url).json()
 	else: result = function(*url)
-	if isinstance(expiration, int): expiration = timedelta(hours=expiration)
+	if isinstance(expiration, (int, float)): expiration = timedelta(hours=expiration)
 	maincache.set(string, result, expiration)
 	return result
 

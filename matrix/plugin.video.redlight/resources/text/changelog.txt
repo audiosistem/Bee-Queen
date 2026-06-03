@@ -1,3 +1,24 @@
+[COLOR red][B]Version 1.2.8[/B][/COLOR]
+- Fixed playback progress / Trakt scrobbling (and Simkl, MDbList, etc.) not updating for TorBox and TorBox Cloud sources: v1.2.7 played those links with a bare Kodi player, skipping Red Light’s playback monitor and script.trakt.ids. 
+
+[COLOR red][B]Version 1.2.7[/B][/COLOR]
+- Service (AM Lite): optional wait for Account Manager Lite Trakt sync only when script.module.acctmgr is installed; runs in the background so startup is not blocked. Fixes “Unknown addon id script.module.acctmgr” log spam and scrape/playback failing to start when AM Lite is not installed (regression from v1.2.6).
+
+[COLOR red][B]Version 1.2.6[/B][/COLOR]
+- TorBox Cloud (source search): fixed intermittent empty results — folder list cache call was invalid.
+- Premiumize Cloud: faster, more reliable scrape (no early exit before internal_results).
+- External: “Check for cached status” is Real Debrid only — All Debrid removed from this check (AD API changes; prior AD cache logic caused worse results). With the setting off, TorBox/Premiumize no longer call checkcached unless “Include uncached TorBox” is on. Torrent host threads get a short grace period after timeout.
+- Cancel during playback/resolve returns straight to the sources results list (no empty resolve screen flash from re-entering play); progress dialog closes faster on cancel.
+- Premiumize/TorBox cloud: episode files use exact S/E matching end-to-end; title filter no longer uses pack-range episode patterns (fixes episode 1 listing episode 2). Cancel during resolve stops retrying other sources and returns to the sources list instead of the episode browser.
+- TorBox cloud scrape: restored v1.2.5 search speed by using cached mylist during source search (live bypass_cache only for Cloud Storage browse). Keeps RD-style title+year folder prefilter and per-folder fetch cap so large libraries do not hang.
+- TorBox: Cloud Storage loads all torrent/usenet/webdl lists in parallel (faster, full list on open); only caches a complete fetch for quick Back navigation. Partial API failures are not cached and show a notification.
+- TorBox: Fixed Cloud Storage folder browse on Kodi 21 (removed deprecated setInfo; use name/file_id from API). Cloud Storage list loads sequentially in the UI to avoid plugin thread errors; source search still uses parallel mylist fetch.
+- Fixed debrid cloud (RD/PM/AD/TB) always appearing at the bottom when Show Results at Top is off: quality limits re-appended all cloud results after non-cloud links; they are now re-sorted into the normal provider/quality order unless Show Results at Top is enabled for that scraper.
+- Premiumize Cloud: scrape via folder/list (same as Cloud Storage browser) instead of item/listall only — fixes empty results when files live under folders such as My Files, and is much faster on large mixed libraries. Filter-by-name off applies to title rules only; episodes still match S/E, movies still match year.
+- Fixed source search hang when debrid cloud and External scrapers are both enabled.
+- Fixed TorBox download saving files as the hashtag, instead of the filename.
+- Other small fixes.
+
 [COLOR red][B]Version 1.2.5[/B][/COLOR]
 - Fixed Results > Choose Rescrape Actions crashing (KeyError) after Start Full Scrape was added: order labels and the Set Order dialog now support six priority slots (0–5).
 - Fixed progress bar stuck on EXTERNAL after debrid/EasyNews scrapers finish: the External scrapers module name was treated as a pending internal provider, so the dialog waited for the full Results Timeout even when no torrent hosts were still running.
@@ -11,7 +32,7 @@
 
 [COLOR red][B]Version 1.2.3[/B][/COLOR]
 - Fixed skin widgets (e.g. Movies > Trending) staying empty after a settings DB upgrade: widget calls no longer block on settings bootstrap, failed Trakt list fetches are not cached, and widgets are silently reloaded with ReloadSkin only when sync_settings actually migrates or repairs an existing settings.db (not on every boot).
-- Fixed slow startup and browsing after the 1.2.2 boot-crash fix: settings reads no longer hit SQLite on every call once properties are loaded, the database is not synced twice on boot, path-existence checks are skipped on the read path, and default-settings metadata is cached in memory.
+- Fixed slow startup and browsing after the v1.2.2 boot-crash fix: settings reads no longer hit SQLite on every call once properties are loaded, the database is not synced twice on boot, path-existence checks are skipped on the read path, and default-settings metadata is cached in memory.
 - Fixed widget and skin list loads hanging ~5 seconds (or failing) after opening Red Light: the font/skin background thread now runs only in the service process, not in the plugin invoker where it blocked every widget exit.
 - Fixed widgets staying empty after the above change: widget calls no longer bulk-load settings into window properties (which could fail silently); they read from a warmed in-memory DB cache instead when properties are not yet loaded.
 

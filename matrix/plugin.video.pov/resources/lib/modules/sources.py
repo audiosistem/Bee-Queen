@@ -80,7 +80,8 @@ class Sources:
 		self.include_prerelease_results, self.include_3D_results = settings.include_prerelease_3d_results()
 		self.quality_filter = self._quality_filter()
 		self.limit_resolve = max(int(get_setting('limit_resolve', '10')), 1)
-		self.full_screen = get_setting('load_action') == '1'
+		if get_property('pov_total_autoplays') != '': self.full_screen = False
+		else: self.full_screen = get_setting('load_action') == '1'
 		self.size_filter = int(get_setting('results.size_filter', '0'))
 		self.include_unknown_size = get_setting('results.include.unknown.size') == 'true'
 		self.sleep_time = settings.display_sleep_time()

@@ -40,14 +40,11 @@
     <setting id="provider.dmm" type="bool" label="DMM (Pack capable)" default="false" />
 </category>
 
-<category label="Prowlarr/Torznab"> <!-- Indexers -->
+<category label="Prowlarr"> <!-- Indexers -->
     <setting label="Prowlarr" type="lsep" />
     <setting id="provider.prowlarr" type="bool" label="PROWLARR (Pack capable)" default="false" />
         <setting id="prowlarr.token" type="text" label="PROWLARR apikey" subsetting="true" default="" visible="eq(-1,true)" />
         <setting id="prowlarr.url" type="text" label="PROWLARR url" subsetting="true" default="" visible="eq(-2,true)" />
-    <setting label="TorBox" type="lsep" />
-    <setting id="provider.tbtorznab" type="bool" label="TORBOX Torznab (Pack capable)" default="false" />
-        <setting id="torbox.token" type="text" label="TORBOX apikey" subsetting="true" default="" visible="eq(-1,true)" />
 </category>
 
 <category label="Undesirables"> <!-- Undesirables -->

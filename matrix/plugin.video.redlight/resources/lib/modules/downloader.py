@@ -100,6 +100,21 @@ def get_season(meta):
 		season = meta.get('custom_season', None) or meta.get('season')
 		return int(season) if season else None
 
+def _sanitize_path_name(name):
+	if not name:
+		return ''
+	for char in r'\/:*?"<>|':
+		name = name.replace(char, '')
+	return name.strip('. ')
+
+def _video_extension(name):
+	if not name:
+		return ''
+	ext = os.path.splitext(name)[1].lstrip('.').lower()
+	if ext in kodi_utils.video_extensions():
+		return ext
+	return ''
+
 class Downloader:
 	def __init__(self, params):
 		self.params = params
@@ -131,9 +146,10 @@ class Downloader:
 			self.image = self.meta_get('poster') or kodi_utils.get_icon('box_office')
 			self.name = self.params_get('name')
 		else:
-			self.meta, self.name, self.year, self.season = None, None, None, None
+			self.meta, self.year, self.season = None, None, None
 			self.media_type = self.params_get('media_type')
-			self.title = clean_file_name(self.params_get('name'))
+			self.name = self.params_get('name')
+			self.title = clean_file_name(self.name or '')
 			self.image = self.params_get('image')
 		self.provider = self.params_get('provider')
 		self.action = self.params_get('action')
@@ -228,9 +244,18 @@ class Downloader:
 					url = PremiumizeAPI().add_headers_to_url(url)
 				elif 'torbox' in self.action:
 					from apis.torbox_api import TorBoxAPI
-					from indexers.torbox import resolve_tb
-					url = resolve_tb(self.params)
-					url = TorBoxAPI().add_headers_to_url(url)
+					api = TorBoxAPI()
+					file_id = self.params_get('url')
+					media_type = self.params_get('media_type') or 'torrent'
+					if media_type == 'torrent':
+						url = api.unrestrict_link(file_id)
+					elif media_type == 'webdl':
+						url = api.unrestrict_webdl(file_id)
+					else:
+						url = api.unrestrict_usenet(file_id)
+					if not url:
+						return self.return_notification(_notification='TorBox: Unable to resolve download link')
+					url = api.add_headers_to_url(url)
 				elif 'easynews' in self.action:
 					from indexers.easynews import resolve_easynews
 					url = resolve_easynews(self.params)
@@ -278,8 +303,14 @@ class Downloader:
 			if clean_title(self.title).lower() in file_name.lower():
 				final_name = os.path.splitext(urlparse(name_url).path)[0].split('/')[-1]
 			else:
-				try: final_name = self.name.translate(None, r'\/:*?"<>|').strip('.')
-				except: final_name = os.path.splitext(urlparse(name_url).path)[0].split('/')[-1]
+				name_ref = (self.name or self.title or '').strip()
+				if name_ref:
+					base = os.path.splitext(name_ref)[0] or name_ref
+					final_name = _sanitize_path_name(base) or _sanitize_path_name(name_ref)
+				else:
+					final_name = os.path.splitext(urlparse(name_url).path)[0].split('/')[-1]
+				if not final_name:
+					final_name = os.path.splitext(urlparse(name_url).path)[0].split('/')[-1] or 'download'
 		self.final_name = safe_string(remove_accents(final_name))
 
 	def get_extension(self):
@@ -289,20 +320,27 @@ class Downloader:
 			ext = os.path.splitext(urlparse(self.url).path)[1][1:]
 			if not ext in kodi_utils.image_extensions(): ext = 'jpg'
 		else:
-			ext = os.path.splitext(urlparse(self.url).path)[1][1:]
+			ext = _video_extension(self.name or self.title or '')
+			if not ext:
+				ext = os.path.splitext(urlparse(self.url).path)[1][1:]
 			if not ext in kodi_utils.video_extensions(): ext = 'mp4'
 		ext = '.%s' % ext
 		self.extension = ext
 
 	def download_check(self):
+		self.content_unknown = False
 		self.resp = self.get_response()
 		if not self.resp: return False
-		try: self.content = int(self.resp.headers['Content-Length'])
+		try: self.content = int(self.resp.headers.get('Content-Length') or 0)
 		except: self.content = 0
-		try: self.resumable = 'bytes' in self.resp.headers['Accept-Ranges'].lower()
+		try: self.resumable = 'bytes' in self.resp.headers.get('Accept-Ranges', '').lower()
 		except: self.resumable = False
-		if self.content < 1: return False
 		self.size = 1024 * 1024
+		if self.content < 1:
+			self.content_unknown = True
+			self.mb = 0
+			kodi_utils.hide_busy_dialog()
+			return True
 		self.mb = self.content / (1024 * 1024)
 		if self.content < self.size: self.size = self.content
 		kodi_utils.hide_busy_dialog()
@@ -319,7 +357,10 @@ class Downloader:
 		while True:
 			downloaded = total
 			for c in chunks: downloaded += len(c)
-			percent = min(round(float(downloaded)*100 / self.content), 100)
+			if self.content_unknown:
+				percent = min(99, downloaded // (50 * 1024 * 1024)) if downloaded else 0
+			else:
+				percent = min(round(float(downloaded) * 100 / self.content), 100)
 			if monitor_progress:
 				status = self.check_status()
 				if status == 'paused':
@@ -333,7 +374,7 @@ class Downloader:
 			try:        
 				chunk  = self.resp.read(self.size)
 				if not chunk:
-					if percent < 99:
+					if not self.content_unknown and percent < 99:
 						error = True
 					else:
 						while len(chunks) > 0:
@@ -380,12 +421,16 @@ class Downloader:
 
 	def get_response(self, size=0):
 		try:
-			headers = self.headers
+			headers = dict(self.headers or {})
+			if 'torbox' in (self.action or ''):
+				headers.setdefault('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+				headers.setdefault('Referer', 'https://torbox.app/')
 			if size > 0:
 				size = int(size)
 				headers['Range'] = 'bytes=%d-' % size
 			req = Request(self.url, headers=headers)
-			resp = urlopen(req, context=ssl.SSLContext(ssl.PROTOCOL_SSLv23), timeout=30)
+			timeout = 60 if 'torbox' in (self.action or '') else 30
+			resp = urlopen(req, context=ssl.create_default_context(), timeout=timeout)
 			return resp
 		except: return None
 
@@ -398,8 +443,13 @@ class Downloader:
 		self.remove_active_download()
 
 	def confirm_download(self):
-		return True if self.action in ('image', 'meta.pack') \
-		else kodi_utils.confirm_dialog(heading=self.final_name, text='Complete file is [B]%dMB[/B][CR]Continue with download?' % self.mb)
+		if self.action in ('image', 'meta.pack'):
+			return True
+		if getattr(self, 'content_unknown', False):
+			text = 'File size could not be determined from the server.[CR]Continue with download?'
+		else:
+			text = 'Complete file is [B]%dMB[/B][CR]Continue with download?' % self.mb
+		return kodi_utils.confirm_dialog(heading=self.final_name, text=text)
 
 	def return_notification(self, _notification=None, _ok_dialog=None):
 		kodi_utils.hide_busy_dialog()

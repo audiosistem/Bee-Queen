@@ -154,7 +154,7 @@ def cache_function(function, prop_string, url, expiration=96, json=False):
 	if data: return data
 	if json: result = function(url).json()
 	else: result = function(url)
-	if isinstance(expiration, int): expiration = timedelta(hours=expiration)
+	if isinstance(expiration, (int, float)): expiration = timedelta(hours=expiration)
 	metacache.set_function(prop_string, result, expiration)
 	return result
 

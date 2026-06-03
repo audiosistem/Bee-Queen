@@ -57,23 +57,34 @@ class TorBoxAPI:
 		try: return response.json()
 		except Exception: return None
 
-	def _get(self, url, data=None):
+	def _get(self, url, data=None, timeout=20):
 		if self.token in ('empty_setting', '', None): return None
 		try:
 			headers = {'Authorization': 'Bearer %s' % self.token}
-			response = session.get(base_url + url, params=data or {}, headers=headers, timeout=20)
-			return self._safe_json(response)
+			response = session.get(base_url + url, params=data or {}, headers=headers, timeout=timeout)
+			parsed = self._safe_json(response)
+			if parsed is not None:
+				return parsed
+			text = (response.text or '').strip()
+			return text if text else None
 		except Exception: return None
 
-	def _post(self, url, params=None, json=None, data=None, files=None):
+	def _post(self, url, params=None, json=None, data=None, files=None, timeout=30):
 		if self.token in ('empty_setting', '', None) and 'token' not in url: return None
 		try:
 			headers = {'Authorization': 'Bearer %s' % self.token}
-			response = session.post(base_url + url, params=params, json=json, data=data, files=files, headers=headers, timeout=30)
+			response = session.post(base_url + url, params=params, json=json, data=data, files=files, headers=headers, timeout=timeout)
 			return self._safe_json(response)
 		except Exception: return None
 
 	def add_headers_to_url(self, url):
+		return url + '|' + urlencode({
+			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+			'Referer': 'https://torbox.app/',
+		})
+
+	def add_headers_to_url_play(self, url):
+		'''Gears-style play headers (downloads keep full Referer).'''
 		return url + '|' + urlencode({'User-Agent': 'Mozilla/5.0'})
 
 	def account_info(self):
@@ -95,7 +106,55 @@ class TorBoxAPI:
 		url = 'webdl/mylist'
 		return cache_object(self._get, string, url, False, 0.03)
 
+	TB_UI_CACHE_HOURS = 0.05  # ~3 minutes — Cloud Storage browse/back navigation
+
+	def clear_ui_cache(self):
+		try:
+			from caches.main_cache import main_cache
+			from caches.base_cache import connect_database
+			main_cache.delete('tb_ui_cloud_folders')
+			dbcon = connect_database('maincache_db')
+			dbcon.execute("DELETE FROM maincache WHERE id LIKE ?", ('tb_ui_folder_%',))
+		except:
+			pass
+
+	def peek_ui_cloud_folders(self):
+		try:
+			from caches.main_cache import main_cache
+			cached = main_cache.get('tb_ui_cloud_folders')
+			return isinstance(cached, dict) and cached.get('complete') is True
+		except:
+			return False
+
+	def load_ui_cloud_folders(self, refresh=False, finished_only=True):
+		from caches.main_cache import main_cache
+		cache_key = 'tb_ui_cloud_folders'
+		if not refresh:
+			cached = main_cache.get(cache_key)
+			if isinstance(cached, dict) and cached.get('complete') is True:
+				return {'folders': cached.get('folders', []), 'errors': cached.get('errors', []), 'from_cache': True}
+		folders, errors = [], []
+		type_labels = {'torrent': 'TORRENT', 'usenet': 'USENET', 'webdl': 'WEB DL'}
+		mylist_results = self.mylist_items_all(fresh=True)
+		for media_type, type_label in type_labels.items():
+			err, items = mylist_results.get(media_type, ('Unknown type', []))
+			if err:
+				errors.append('%s: %s' % (type_label, err))
+				continue
+			for item in items:
+				if finished_only and not self._torrent_item_finished(item):
+					continue
+				folders.append({**item, 'media_type': media_type})
+		complete = not errors
+		payload = {'folders': folders, 'errors': errors, 'complete': complete}
+		if complete:
+			main_cache.set(cache_key, payload, expiration=self.TB_UI_CACHE_HOURS)
+		else:
+			main_cache.delete(cache_key)
+		return {'folders': folders, 'errors': errors, 'from_cache': False, 'complete': complete}
+
 	def clear_mylist_cache(self):
+		self.clear_ui_cache()
 		try:
 			from caches.base_cache import connect_database
 			dbcon = connect_database('maincache_db')
@@ -104,13 +163,13 @@ class TorBoxAPI:
 		except:
 			pass
 
-	def mylist_items(self, media_type, fresh=True):
+	def mylist_items(self, media_type, fresh=True, timeout=20):
 		paths = {'torrent': 'torrents/mylist', 'usenet': 'usenet/mylist', 'webdl': 'webdl/mylist'}
 		path = paths.get(media_type)
 		if not path:
 			return 'Unknown type', []
 		params = {'bypass_cache': True} if fresh else {}
-		response = self._get(path, data=params)
+		response = self._get(path, data=params, timeout=timeout)
 		if not response or not isinstance(response, dict):
 			return 'Invalid response', []
 		if not response.get('success'):
@@ -121,12 +180,49 @@ class TorBoxAPI:
 			data = [data]
 		return None, data
 
-	def mylist_item_files(self, folder_id, media_type='torrent'):
+	def mylist_items_all(self, fresh=True, timeout=25):
+		"""Fetch torrent, usenet and webdl mylist in parallel (TorBox has three endpoints vs one for other debrids)."""
+		from threading import Thread
+		media_types = ('torrent', 'usenet', 'webdl')
+		results = {}
+		per_request_timeout = min(20, max(8, int(timeout) - 2))
+
+		def _fetch(media_type):
+			results[media_type] = self.mylist_items(media_type, fresh=fresh, timeout=per_request_timeout)
+
+		threads = [Thread(target=_fetch, args=(media_type,)) for media_type in media_types]
+		deadline = time.time() + timeout
+		for thread in threads:
+			thread.start()
+		for thread in threads:
+			thread.join(timeout=max(0.0, deadline - time.time()))
+		return results
+
+	def mylist_folder(self, folder_id, media_type='torrent', fresh=True, timeout=20):
 		paths = {'torrent': 'torrents/mylist', 'usenet': 'usenet/mylist', 'webdl': 'webdl/mylist'}
 		path = paths.get(media_type)
 		if not path:
+			return None
+		params = {'id': folder_id}
+		if fresh:
+			params['bypass_cache'] = True
+			return self._get(path, data=params, timeout=timeout)
+		string = 'tb_ui_folder_%s_%s' % (media_type, folder_id)
+		return cache_object(self._get, string, [path, params], False, self.TB_UI_CACHE_HOURS)
+
+	def mylist_item_files(self, folder_id, media_type='torrent', fresh=False, allow_live_fallback=True, request_timeout=12):
+		response = self.mylist_folder(folder_id, media_type, fresh=fresh, timeout=request_timeout)
+		if not response or not response.get('success'):
 			return []
-		response = self._get(path, data={'id': folder_id})
+		data = response.get('data')
+		if isinstance(data, list):
+			data = data[0] if data else {}
+		if not isinstance(data, dict):
+			return []
+		files = data.get('files') or []
+		if files or fresh or not allow_live_fallback:
+			return files
+		response = self.mylist_folder(folder_id, media_type, fresh=True, timeout=request_timeout)
 		if not response or not response.get('success'):
 			return []
 		data = response.get('data')
@@ -136,17 +232,23 @@ class TorBoxAPI:
 			return []
 		return data.get('files') or []
 
-	def user_cloud_info(self, request_id=''):
+	def user_cloud_info(self, request_id='', fresh=False):
+		if fresh:
+			return self._get('torrents/mylist', data={'id': request_id, 'bypass_cache': True})
 		string = 'tb_user_cloud_%s' % request_id
 		url = 'torrents/mylist?id=%s' % request_id
 		return cache_object(self._get, string, url, False, 0.03)
 
-	def user_cloud_info_usenet(self, request_id=''):
+	def user_cloud_info_usenet(self, request_id='', fresh=False):
+		if fresh:
+			return self._get('usenet/mylist', data={'id': request_id, 'bypass_cache': True})
 		string = 'tb_user_cloud_usenet_%s' % request_id
 		url = 'usenet/mylist?id=%s' % request_id
 		return cache_object(self._get, string, url, False, 0.03)
 
-	def user_cloud_info_webdl(self, request_id=''):
+	def user_cloud_info_webdl(self, request_id='', fresh=False):
+		if fresh:
+			return self._get('webdl/mylist', data={'id': request_id, 'bypass_cache': True})
 		string = 'tb_user_cloud_webdl_%s' % request_id
 		url = 'webdl/mylist?id=%s' % request_id
 		return cache_object(self._get, string, url, False, 0.03)
@@ -179,12 +281,24 @@ class TorBoxAPI:
 	def _torrent_item_finished(item):
 		if not item:
 			return False
-		if item.get('download_finished'):
+		if item.get('download_finished') in (True, 1, '1', 'true'):
 			return True
 		if item.get('cached') in (True, 1, '1', 'true'):
 			return True
+		try:
+			progress = float(item.get('progress', 0))
+			if 0 < progress <= 1 and progress >= 0.99:
+				return True
+			if progress >= 100:
+				return True
+		except Exception:
+			pass
 		status = str(item.get('status', '')).lower()
-		return status in ('completed', 'cached', 'ready')
+		if status in ('completed', 'cached', 'ready', 'finished', 'complete', 'seeding', 'seeded'):
+			return True
+		# Dashboard can list cloud items with files before download_finished is set.
+		files = item.get('files') or []
+		return bool(files) and any(TorBoxAPI._torrent_file_id(f) is not None for f in files)
 
 	@staticmethod
 	def _torrent_file_label(item):
@@ -267,18 +381,177 @@ class TorBoxAPI:
 		return self._post('webdl/controlwebdownload', json=data)
 
 	# ----------- UNRESTRICT (request download URL) -----------
-	def unrestrict_link(self, file_id, max_attempts=12):
+	@staticmethod
+	def _extract_download_url(payload):
+		if not payload:
+			return None
+		if isinstance(payload, str) and payload.strip():
+			return payload.strip()
+		if isinstance(payload, dict):
+			for key in ('download', 'download_url', 'url', 'link'):
+				value = payload.get(key)
+				if value:
+					return str(value).strip()
+		return None
+
+	@staticmethod
+	def coerce_play_url(payload):
+		url = TorBoxAPI._extract_download_url(payload)
+		if not url and isinstance(payload, str):
+			url = payload.strip()
+		if not isinstance(url, str) or not url.lower().startswith('http'):
+			return None
+		return url
+
+	@staticmethod
+	def is_scrapeable_cloud_file(file_item, extensions, min_confirmed_bytes=1048576):
+		'''Filter cloud search results: skip stream segments and confirmed tiny junk; allow unknown size.'''
+		label = TorBoxAPI._torrent_file_label(file_item)
+		if not label:
+			return False
+		lower = label.lower()
+		if lower.endswith(('.m2ts', '.mts', '.mpls', '.clpi', '.cpi', '.bdmv', '.bdm')):
+			return False
+		if lower.endswith(('.srt', '.sub', '.ssa', '.ass', '.sup', '.idx', '.nfo', '.txt', '.jpg', '.jpeg', '.png', '.gif')):
+			return False
+		if not lower.endswith(tuple(extensions)):
+			return False
+		if any(x in lower for x in extras()):
+			return False
+		try:
+			size_bytes = int(file_item.get('size') or 0)
+		except Exception:
+			size_bytes = 0
+		if size_bytes > 0 and size_bytes < min_confirmed_bytes:
+			return False
+		return True
+
+	@staticmethod
+	def filter_browse_cloud_files(file_items, extensions):
+		'''Cloud browse: Kodi-supported video (incl. .m2ts), same idea as Umbrella browse_user_torrents.'''
+		extensions = tuple(extensions or supported_video_extensions())
+		junk_ext = ('.srt', '.sub', '.ssa', '.ass', '.sup', '.idx', '.nfo', '.txt', '.jpg', '.jpeg', '.png', '.gif',
+			'.mpls', '.clpi', '.cpi', '.bdmv', '.bdm')
+		results = []
+		for file_item in file_items or []:
+			label = TorBoxAPI._torrent_file_label(file_item)
+			if not label or TorBoxAPI._torrent_file_id(file_item) is None:
+				continue
+			lower = label.lower()
+			if lower.endswith(junk_ext):
+				continue
+			if any(x in lower for x in extras()):
+				continue
+			if not lower.endswith(extensions):
+				continue
+			results.append(file_item)
+		return results
+
+	@staticmethod
+	def folder_has_playable_videos(file_items, extensions):
+		return bool(TorBoxAPI.filter_browse_cloud_files(file_items, extensions))
+
+	@staticmethod
+	def select_browse_cloud_files(file_items, extensions):
+		return TorBoxAPI.filter_browse_cloud_files(file_items, extensions)
+
+	def _requestdl_url(self, response):
+		if isinstance(response, str) and response.strip():
+			return response.strip()
+		if isinstance(response, dict) and response.get('success'):
+			data = response.get('data')
+			if isinstance(data, str) and data.strip():
+				return data.strip()
+			return self._extract_download_url(data) or self._extract_download_url(response)
+		return None
+
+	def _mylist_torrent_ids(self, fresh=False):
+		_, items = self.mylist_items('torrent', fresh=fresh, timeout=15)
+		ids = set()
+		for item in items or []:
+			tid = item.get('id')
+			if tid is not None and str(tid).strip() not in ('', 'None'):
+				ids.add(str(tid))
+		return ids
+
+	def hash_is_cached(self, info_hash):
+		ih = str(info_hash or '').lower()
+		if len(ih) != 40:
+			return False
+		check = self.check_cache_single(ih)
+		if not check or not check.get('success'):
+			return False
+		data = check.get('data')
+		if isinstance(data, dict):
+			for key, value in data.items():
+				if str(key).lower() == ih and value in (True, 1, '1', 'true'):
+					return True
+				if isinstance(value, dict) and str(value.get('hash', '')).lower() == ih:
+					return True
+		if isinstance(data, list):
+			for entry in data:
+				if isinstance(entry, dict) and str(entry.get('hash', '')).lower() == ih:
+					return True
+				if isinstance(entry, str) and entry.lower() == ih:
+					return True
+		return False
+
+	def requestdl_redirect_url(self, file_id):
+		'''TorBox permalink: Kodi follows redirect to a fresh CDN link (recommended for play).'''
 		try:
 			user_ip = ''
-			try: user_ip = requests.get('https://api.ipify.org', timeout=2).text.strip()
-			except Exception: pass
+			try:
+				user_ip = requests.get('https://api.ipify.org', timeout=2).text.strip()
+			except Exception:
+				pass
+			torrent_id, file_id = str(file_id).split(',', 1)
+			params = {
+				'token': self.token,
+				'torrent_id': _to_int(torrent_id),
+				'file_id': _to_int(file_id),
+				'redirect': 'true',
+			}
+			if user_ip:
+				params['user_ip'] = user_ip
+			return '%storrents/requestdl?%s' % (base_url, urlencode(params))
+		except Exception:
+			return None
+
+	def unrestrict_link_quick(self, file_id):
+		'''One requestdl call (Umbrella) — no ipify, no retry loop.'''
+		try:
 			torrent_id, file_id = str(file_id).split(',', 1)
 			params = {'token': self.token, 'torrent_id': _to_int(torrent_id), 'file_id': _to_int(file_id)}
-			if user_ip: params['user_ip'] = user_ip
+			r = self._get('torrents/requestdl', data=params, timeout=28)
+			if isinstance(r, dict) and r.get('success'):
+				return self.coerce_play_url(r.get('data'))
+			return self._requestdl_url(r)
+		except Exception:
+			return None
+
+	def unrestrict_link_cloud(self, file_id):
+		'''My Services cloud play — same as Gears requestdl.'''
+		return self.unrestrict_link(file_id)
+
+	def unrestrict_link(self, file_id, max_attempts=12):
+		'''Retries with user_ip for search/magnet resolve.'''
+		try:
+			user_ip = ''
+			try:
+				user_ip = requests.get('https://api.ipify.org', timeout=2).text.strip()
+			except Exception:
+				pass
+			torrent_id, file_id = str(file_id).split(',', 1)
+			params = {'token': self.token, 'torrent_id': _to_int(torrent_id), 'file_id': _to_int(file_id)}
+			if user_ip:
+				params['user_ip'] = user_ip
 			for attempt in range(max_attempts):
 				if attempt:
 					sleep(1500)
 				r = self._get('torrents/requestdl', data=params)
+				url = self._requestdl_url(r)
+				if url:
+					return url
 				if isinstance(r, str) and r.strip():
 					return r.strip()
 				if not r or not isinstance(r, dict) or not r.get('success'):
@@ -297,21 +570,29 @@ class TorBoxAPI:
 
 	def unrestrict_usenet(self, file_id):
 		try:
-			usenet_id, file_id = file_id.split(',')
+			usenet_id, file_id = str(file_id).split(',', 1)
 			params = {'token': self.token, 'usenet_id': _to_int(usenet_id), 'file_id': _to_int(file_id)}
-			r = self._get('usenet/requestdl', data=params)
-			if r and r.get('success'): return r.get('data')
+			r = self._get('usenet/requestdl', data=params, timeout=20)
+			if isinstance(r, str) and r.strip():
+				return r.strip()
+			if r and r.get('success'):
+				return self._extract_download_url(r.get('data')) or r.get('data')
 			return None
-		except Exception: return None
+		except Exception:
+			return None
 
 	def unrestrict_webdl(self, file_id):
 		try:
-			web_id, file_id = file_id.split(',')
+			web_id, file_id = str(file_id).split(',', 1)
 			params = {'token': self.token, 'web_id': _to_int(web_id), 'file_id': _to_int(file_id)}
-			r = self._get('webdl/requestdl', data=params)
-			if r and r.get('success'): return r.get('data')
+			r = self._get('webdl/requestdl', data=params, timeout=20)
+			if isinstance(r, str) and r.strip():
+				return r.strip()
+			if r and r.get('success'):
+				return self._extract_download_url(r.get('data')) or r.get('data')
 			return None
-		except Exception: return None
+		except Exception:
+			return None
 
 	# ----------- CREATE TRANSFERS -----------
 	def add_magnet(self, magnet):
@@ -327,7 +608,7 @@ class TorBoxAPI:
 		return self._get('torrents/checkcached', data={'hash': _hash, 'format': 'list'})
 
 	def check_cache(self, hashlist):
-		return self._post('torrents/checkcached', params={'format': 'list'}, json={'hashes': hashlist})
+		return self._post('torrents/checkcached', params={'format': 'list'}, json={'hashes': hashlist}, timeout=15)
 
 	def check_cache_webdl(self, hashlist):
 		return self._post('webdl/checkcached', params={'format': 'list'}, json={'hashes': hashlist})
@@ -347,39 +628,55 @@ class TorBoxAPI:
 	# ----------- RESOLVE -----------
 	def resolve_magnet(self, magnet_url, info_hash, store_to_cloud, title, season, episode):
 		torrent_id = None
+		prior_mylist_ids = self._mylist_torrent_ids(fresh=False)
 		try:
+			if info_hash and not self.hash_is_cached(info_hash):
+				return None
 			extensions = supported_video_extensions()
 			extras_filter = extras()
-			extras_filtering_list = tuple(i for i in extras_filter if i not in title.lower())
+			extras_filtering_list = tuple(i for i in extras_filter if i not in (title or '').lower())
 			torrent = self.add_magnet(magnet_url)
 			torrent_id = self._torrent_id_from_create(torrent)
-			if not torrent_id: return None
-			_item, files = self._wait_for_torrent_files(torrent_id)
-			if not files: return None
+			if not torrent_id:
+				return None
+			_item = self._torrent_item_from_info(self.torrent_info_fresh(torrent_id))
+			files = (_item or {}).get('files') or []
+			if not files:
+				_item, files = self._wait_for_torrent_files(torrent_id, max_attempts=12)
+			if not files:
+				return None
 			selected_files = []
 			for item in files:
 				file_id = self._torrent_file_id(item)
 				filename = self._torrent_file_label(item)
 				if file_id is None or not filename.lower().endswith(tuple(extensions)):
 					continue
-				selected_files.append({'url': '%d,%d' % (int(torrent_id), int(file_id)), 'filename': filename, 'size': item.get('size', 0)})
-			if not selected_files: return None
+				try:
+					size = int(item.get('size') or 0)
+				except Exception:
+					size = 0
+				selected_files.append({'url': '%d,%d' % (int(torrent_id), int(file_id)), 'filename': filename, 'size': size})
+			if not selected_files:
+				return None
 			if season:
 				selected_files = [i for i in selected_files if seas_ep_filter(season, episode, i['filename'])]
 			else:
-				if self._m2ts_check(selected_files): return None
+				if self._m2ts_check(selected_files):
+					return None
 				selected_files = [i for i in selected_files if not any(x in i['filename'] for x in extras_filtering_list)]
 				selected_files.sort(key=lambda k: k['size'], reverse=True)
-			if not selected_files: return None
+			if not selected_files:
+				return None
 			file_key = selected_files[0]['url']
 			file_url = self.unrestrict_link(file_key)
 			if store_to_cloud:
 				self.monitor_torrent_cloud_ready(torrent_id, title)
-			else:
+			elif str(torrent_id) not in prior_mylist_ids:
 				Thread(target=self.delete_torrent, args=(torrent_id,)).start()
 			return file_url
 		except Exception:
-			if torrent_id: self.delete_torrent(torrent_id)
+			if torrent_id:
+				self.delete_torrent(torrent_id)
 			return None
 
 	def _wait_for_torrent_files(self, torrent_id, max_attempts=45):
@@ -432,7 +729,8 @@ class TorBoxAPI:
 
 	def _m2ts_check(self, folder_items):
 		for item in folder_items:
-			if item['filename'].endswith('.m2ts'): return True
+			if item['filename'].endswith('.m2ts'):
+				return True
 		return False
 
 	# ----------- AUTH -----------
@@ -517,6 +815,7 @@ class TorBoxAPI:
 				dbcon.execute("""DELETE FROM maincache WHERE id=?""", ('tb_user_cloud_usenet',))
 				dbcon.execute("""DELETE FROM maincache WHERE id=?""", ('tb_user_cloud_webdl',))
 				dbcon.execute("""DELETE FROM maincache WHERE id LIKE ?""", ('tb_user_cloud%',))
+				dbcon.execute("""DELETE FROM maincache WHERE id LIKE ?""", ('tb_ui_%',))
 				user_cloud_success = True
 			except Exception:
 				user_cloud_success = False

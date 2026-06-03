@@ -95,16 +95,16 @@ class SourceResults(BaseDialog):
 				self.open_window(('windows.sources', 'ResultsInfo'), 'sources_info.xml', **kwargs)
 			elif 'seekable_easynews' in choice:
 				link = Source(source, self.meta).resolve_internal_sources(True)
-				if link is not None:
-					source['unrestricted_link'] = link
-					self.selected = ('play', source)
-					return self.close()
+				if link is None: return
+				source['unrestricted_link'] = link
+				self.selected = ('play', source)
+				return self.close()
 			elif 'browse_packs' in choice:
 				link = Source(source, self.meta).browse_packs(highlight)
-				if link != 'cancel':
-					source['unrestricted_link'] = link
-					self.selected = ('play', source)
-					return self.close()
+				if link == 'cancel': return
+				source['unrestricted_link'] = link
+				self.selected = ('play', source)
+				return self.close()
 			elif 'manual_add_magnet_to_cloud' in choice: Source(source, self.meta).manual_add_magnet_to_cloud()
 			elif 'unchecked_magnet_status' in choice: Source(source, self.meta).unchecked_magnet_status()
 			else: self.execute_code(choice)
@@ -340,8 +340,7 @@ class ResultsContextMenu(BaseDialog):
 
 	def make_menu(self):
 		append = self.item_list.append
-		meta_json = json.dumps(self.meta)
-		source = json.dumps(self.item)
+		source_json, meta_json = json.dumps(self.item), json.dumps(self.meta)
 		name, provider_source = self.item.get('name'), self.item.get('source')
 		magnet_url, info_hash = self.item.get('url', 'None'), self.item.get('hash', 'None')
 		scrape_provider, cache_provider = self.item.get('scrape_provider'), self.item.get('cache_provider', 'None')
@@ -354,19 +353,16 @@ class ResultsContextMenu(BaseDialog):
 		else: append(self.make_contextmenu_item(filter_str, run_plugin_str, {'mode': 'results_filter'}))
 		append(self.make_contextmenu_item(extra_info_str, run_plugin_str, {'mode': 'results_info'}))
 		if 'Uncached' in cache_provider: return
+		down_params = {
+			'mode': 'downloader', 'highlight': self.highlight, 'url': None,
+			'source': source_json, 'meta': meta_json, 'name': self.meta.get('rootname', ''),
+			'provider': cache_provider, 'magnet_url': magnet_url, 'info_hash': info_hash
+		}
 		if 'package' in self.item:
 			append(self.make_contextmenu_item(browse_pack_str, run_plugin_str, {'mode': 'browse_packs'}))
-			append(self.make_contextmenu_item(down_pack_str, run_plugin_str, {
-				'mode': 'downloader', 'action': 'meta.pack', 'source': source, 'meta': meta_json,
-				'name': self.meta.get('rootname', ''), 'provider': cache_provider, 'url': None,
-				'magnet_url': magnet_url, 'info_hash': info_hash, 'highlight': self.highlight
-			}))
+			append(self.make_contextmenu_item(down_pack_str, run_plugin_str, {'action': 'meta.pack', **down_params}))
 		if scrape_provider != 'folders':
-			append(self.make_contextmenu_item(down_file_str, run_plugin_str, {
-				'mode': 'downloader', 'action': 'meta.single', 'source': source, 'meta': meta_json,
-				'name': self.meta.get('rootname', ''), 'provider': cache_provider, 'url': None,
-				'magnet_url': magnet_url, 'info_hash': info_hash, 'highlight': self.highlight
-			}))
+			append(self.make_contextmenu_item(down_file_str, run_plugin_str, {'action': 'meta.file', **down_params}))
 		if provider_source == 'torrent':
 			append(self.make_contextmenu_item(cloud_str, run_plugin_str, {'mode': 'manual_add_magnet_to_cloud'}))
 

@@ -437,6 +437,11 @@ def jsonrpc_get_system_setting(setting_id, setting_value=''):
 	except: result = setting_value
 	return result
 
+def jsonrpc_set_system_setting(setting_id, value):
+	command = {'jsonrpc': '2.0', 'id': 1, 'method': 'Settings.SetSettingValue', 'params': {'setting': setting_id, 'value': value}}
+	try: return get_jsonrpc(command)
+	except: return None
+
 def open_settings():
 	try:
 		from apis.aiostreams_api import refresh_settings_properties

@@ -1628,12 +1628,12 @@
                       <item>
                           <visible>Container(2000).HasFocus(60)</visible>
                           <visible>String.IsEqual(Window(10000).Property(redlight.provider.external),true)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)|!String.IsEqual(Window(10000).Property(redlight.ad.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)|String.IsEqual(Window(10000).Property(redlight.ad.enabled),true)</visible>
-                          <property name="setting_label">Check for cached status of Results (RD &amp; AD)</property>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
+                          <property name="setting_label">Check for cached status of Results (Real Debrid)</property>
                           <property name="setting_type">boolean</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.external.cache_check)]</property>
-                          <property name="setting_description">Enable this and Red Light will get the cached status for Real Debrid and All Debrid results. This will lead to less results overall, but the results displayed SHOULD be cached on their servers. There will also be results filtered out that are cached. Use this knowing that you will get less results.</property>
+                          <property name="setting_description">When enabled, Red Light checks whether external torrent results are cached on your Real Debrid account before listing them. You may see fewer links, but those shown should be instant on RD. All Debrid is not included in this check.</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=external.cache_check)</onclick>
                       </item>
                       <item>

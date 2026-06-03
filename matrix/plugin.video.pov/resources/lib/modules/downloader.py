@@ -24,22 +24,17 @@ image_extensions, video_extensions = (
 	'vc1', 'h264', 'rcv', 'rss', 'mpls', 'mpl', 'webm', 'bdmv', 'bdm', 'wtv', 'trp', 'f4v', 'pvr', 'disc'
 )
 
-def runner(params):
+def factory(params):
 	action = params.get('action')
-	if action == 'image':
-		for item in ('thumb_url', 'image_url'):
-			image_params = params
-			image_params['url'] = params.pop(item)
-			image_params['mediatype'] = item
-			Downloader(image_params).run()
-	elif 'meta' in action:
+	if 'meta' in action and params.get('magnet_url') != 'None':
 		from modules.source_utils import find_season_in_release_title
 		source, meta = json.loads(params['source']), json.loads(params['meta'])
 		pack_choices = debrid.Source(source, meta).browse_packs(download=True)
 		if not pack_choices: return kodi_utils.notification(32692)
 		if len(pack_choices) > 1:
 			heading = clean_file_name(source.get('name'))
-			kwargs = {'enumerate': 'true', 'multi_choice': 'true', 'multi_line': 'true'}
+			preselect = list(range(len(pack_choices)))
+			kwargs = {'enumerate': 'true', 'multi_choice': 'true', 'multi_line': 'true', 'preselect': preselect}
 			kwargs.update({'items': json.dumps(pack_choices), 'heading': heading, 'highlight': params['highlight']})
 			chosen_list = kodi_utils.select_dialog(pack_choices, **kwargs)
 		else: chosen_list = next(([i] for i in pack_choices), None)
@@ -55,7 +50,11 @@ def runner(params):
 			if show_package:
 				season = find_season_in_release_title(item['pack_files']['filename'])
 				if season: meta.update({'season': season}), item.update({'meta': json.dumps(meta)})
-			(Thread(target=Downloader(item).run)).start()
+			Thread(target=Downloader(item).run).start()
+	elif action == 'image':
+		for item in ('thumb_url', 'image_url'):
+			url = params.pop(item)
+			Downloader({**params, 'url': url, 'mediatype': item}).run()
 	else: Downloader(params).run()
 
 class Downloader:
@@ -102,21 +101,16 @@ class Downloader:
 	def get_url_and_headers(self):
 		url = self.params_get('url')
 		if url in (None, 'None', ''):
-			if 'meta' in self.action:
+			if 'meta' in self.action and 'pack_files' in self.params:
 				link = self.params_get('pack_files')['link']
 				debrid_function = debrid.import_debrid(self.provider)
 				url = debrid_function.unrestrict_link(link)
-		if self.action.startswith('cloud'):
-			if 'real-debrid' in self.action:
-				from menus.real_debrid import resolve_rd as debrid_function
-			elif 'alldebrid' in self.action:
-				from menus.alldebrid import resolve_ad as debrid_function
-			elif 'torbox' in self.action:
-				from menus.torbox import resolve_tb as debrid_function
-			elif 'easynews' in self.action:
-				from menus.easynews import resolve_easynews as debrid_function
-			if '_direct' in self.action: url = self.params_get('url')
-			else: url = debrid_function(self.params)
+			else:
+				source = json.loads(self.params_get('source'))
+				url = debrid.Source(source, self.meta).resolve_sources()
+		if 'cloud' in self.action:
+			source = debrid.Source.fromcloud(self.params)
+			url = source.resolve_internal_sources(source.direct_debrid_link)
 		else: pass
 		url, *headers = url.rsplit('|', 1)
 		try: headers = dict(parse_qsl(*headers))
@@ -133,9 +127,7 @@ class Downloader:
 			except: pass
 
 	def get_destination_folder(self):
-		if self.action == 'image':
-			self.final_destination = self.down_folder
-		elif 'meta' in self.action:
+		if 'meta' in self.action:
 			default_name = '%s (%s)' % (self.title, self.year)
 			folder_rootname = self.params_get('default_foldername', default_name)
 			if not folder_rootname: return False
@@ -144,16 +136,21 @@ class Downloader:
 				kodi_utils.make_directory(inter)
 				self.final_destination = os.path.join(inter, 'Season %02d' %  int(self.season))
 			else: self.final_destination = os.path.join(self.down_folder, folder_rootname)
+		elif self.action == 'image':
+			self.final_destination = self.down_folder
 		else: self.final_destination = self.down_folder
 		kodi_utils.make_directory(self.final_destination)
 		return True
 
 	def get_filename(self):
-		if self.final_name: final_name = self.final_name
+		if self.final_name:
+			final_name = self.final_name
 		elif self.action == 'image':
 			final_name = self.title
 		elif 'meta' in self.action:
-			name = self.params_get('pack_files')['filename']
+			if 'pack_files' in self.params:
+				name = self.params_get('pack_files')['filename']
+			else: name = self.url
 			final_name = os.path.splitext(urlparse(name).path)[0].split('/')[-1]
 		else:
 			name_url = self.params_get('name') or unquote(self.url)
@@ -173,7 +170,9 @@ class Downloader:
 			if ext not in image_extensions: ext = 'jpg'
 			ext = '.%s' % ext
 		elif 'meta' in self.action:
-			name = self.params_get('pack_files')['filename']
+			if 'pack_files' in self.params:
+				name = self.params_get('pack_files')['filename']
+			else: name = self.url
 			ext = os.path.splitext(urlparse(name).path)[1][1:]
 			if ext not in video_extensions: ext = 'mp4'
 			ext = '.%s' % ext
@@ -188,14 +187,13 @@ class Downloader:
 		self.headers['User-Agent'] = user_agent
 		self.resp = self.get_response(self.url, self.headers, 0)
 		if not self.resp: self.return_notification(ok_dialog=32575)
-		try: self.content = int(self.resp.headers['Content-Length'])
+		info_get = self.resp.info().get
+		try: self.content = int(info_get('Content-Length'))
 		except: self.content = 0
-		try: self.resumable = 'bytes' in self.resp.headers['Accept-Ranges'].lower()
+		try: self.resumable = 'bytes' in info_get('Accept-Ranges').lower()
 		except: self.resumable = False
 		if self.content < 1: self.return_notification(ok_dialog=32575)
-		self.size = 1024 * 1024
 		self.size_label = self.content / (1024 * 1024)
-		if self.content < self.size: self.size = self.content
 		kodi_utils.hide_busy_dialog()
 
 	def start_download(self, url, dest):
@@ -203,44 +201,28 @@ class Downloader:
 			if self.action == 'meta.pack': kodi_utils.notification(32134, 3000, self.image)
 			show_notifications, notification_frequency = False, 0
 		else: show_notifications, notification_frequency = True, 25
-		notify, total, errors, count, resume, sleep_time  = 25, 0, 0, 0, 0, 0
+		errors, resume, sleep_time = 0, 0, 0,
+		file_info = self.final_name + self.extension, self.image
 		f = kodi_utils.open_file(dest, 'w')
-		chunk  = None
-		chunks = []
+		p = WriteProxy(f, self.content, file_info, show_notifications, notification_frequency)
+		from shutil import copyfileobj
 		while True:
-			downloaded = total
-			for c in chunks: downloaded += len(c)
-			percent = min(round(float(downloaded)*100 / self.content), 100)
-			playing = kodi_utils.player.isPlaying()
-			if show_notifications:
-				if percent >= notify:
-					notify += notification_frequency
-					try:
-						line1 = '%s - [I]%s[/I]' % (str(percent)+'%', self.final_name)
-						if not playing: kodi_utils.notification(line1, 3000, self.image)
-					except: pass
-			chunk = None
 			error = False
 			try:
-				chunk  = self.resp.read(self.size)
-				if not chunk:
-					if percent < 99:
-						error = True
-					else:
-						while len(chunks) > 0:
-							c = chunks.pop(0)
-							f.write(c)
-							del c
-						f.close()
-						try: progressDialog.close()
-						except: pass
-						return self.finish_download(self.final_name, self.mediatype, True, self.image)
+				copyfileobj(self.resp, p)
+				f.close()
+				try: progressDialog.close()
+				except: pass
+				return self.finish_download(self.final_name, self.mediatype, True, self.image)
+			except OSError as e:
+				from traceback import format_exc
+				return kodi_utils.logger('download error', f"\n{format_exc()}")
 			except Exception as e:
+				from traceback import format_exc
+				kodi_utils.logger('download error', f"\n{format_exc()}")
 				error = True
 				sleep_time = 10
-				errno = 0
-				if hasattr(e, 'errno'):
-					errno = e.errno
+				errno = getattr(e, 'errno', 0)
 				if errno == 10035: # 'A non-blocking socket operation could not be completed immediately'
 					pass
 				if errno == 10054: # 'An existing connection was forcibly closed by the remote host'
@@ -249,29 +231,19 @@ class Downloader:
 				if errno == 11001: # 'getaddrinfo failed'
 					errors = 10    # force resume
 					sleep_time  = 30
-			if chunk:
-				errors = 0
-				chunks.append(chunk)
-				if len(chunks) > 5:
-					c = chunks.pop(0)
-					f.write(c)
-					total += len(c)
-					del c
 			if error:
 				errors += 1
-				count  += 1
 				kodi_utils.sleep(sleep_time*1000)
 			if (self.resumable and errors > 0) or errors >= 10:
 				if (not self.resumable and resume >= 50) or resume >= 500:
+					f.close()
 					try: progressDialog.close()
 					except: pass
 					return self.finish_download(self.final_name, self.mediatype, False, self.image)
 				resume += 1
 				errors  = 0
-				if self.resumable:
-					chunks  = []
-					self.resp = self.get_response(url, self.headers, total)
-				else: pass
+				if self.resumable: self.resp = self.get_response(url, self.headers, p.total_write + 1)
+			if not self.resumable: f.seek(0)
 
 	def get_response(self, url, headers, size):
 		try:
@@ -292,7 +264,7 @@ class Downloader:
 		if not downloaded or not playing: kodi_utils.ok_dialog(text=text, top_space=True)
 
 	def confirm_download(self):
-		if self.action in ('image', 'meta.single', 'meta.pack'): return True
+		if self.action == 'image' or 'pack_files' in self.params: return True
 		text = '%s[CR]%s' % (ls(32688) % self.size_label, ls(32689))
 		return kodi_utils.confirm_dialog(text=text, top_space=True)
 
@@ -301,4 +273,30 @@ class Downloader:
 		if notification: kodi_utils.notification(notification)
 		elif ok_dialog: kodi_utils.ok_dialog(text=ok_dialog, top_space=True)
 		else: return
+
+class WriteProxy:
+	def __init__(self, file_obj, length=0, file_info=None, notify=True, frequency=25):
+		self.file_obj = file_obj
+		self.total_size = length
+		self.destination, self.image = file_info or ('', '')
+		self.show_notifications = notify
+		self.notification_frequency = frequency
+		self.total_write = 0
+		self.notices = set()
+
+	def write(self, chunk):
+		self.file_obj.write(chunk)
+		self.total_write += len(chunk)
+		try:
+			percent = min(round(self.total_write / self.total_size * 100), 100)
+			line1 = '%d%% - [I]%s[/I]' % (percent, self.destination)
+			if (not (self.total_size and self.show_notifications)
+				or percent % self.notification_frequency
+				or percent in self.notices
+				or kodi_utils.player.isPlaying()
+			): return
+			self.notices.add(percent)
+			timeout = 1250 if percent < 51 else 750
+			if 0 < percent < 100: kodi_utils.notification(line1, timeout, self.image)
+		except: pass
 

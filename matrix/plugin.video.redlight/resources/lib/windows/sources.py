@@ -351,6 +351,7 @@ class SourcesPlayback(BaseDialog):
 
 	def enable_resolver(self):
 		self.window_mode = 'resolver'
+		self.setProperty('percent', '0')
 		self.set_resolver_properties()
 
 	def enable_resume(self, percent):
@@ -359,6 +360,8 @@ class SourcesPlayback(BaseDialog):
 
 	def busy_spinner(self, toggle='true'):
 		self.setProperty('enable_busy_spinner', toggle)
+		if toggle == 'false':
+			self.setProperty('percent', '0')
 
 	def set_scraper_properties(self):
 		title, genre = self.meta_get('title'), self.meta_get('genre', '')

@@ -37,9 +37,10 @@ class Router:
 			from menus.discover import Discover
 			runmode(Discover(params), mode.split('.')[1])
 		elif mode == 'media_play':
-			from modules.kodi_utils import player, close_all_dialog
-			close_all_dialog()
-			player.play(params['url'])
+			from modules.debrid import Source
+			source = Source.fromcloud(params)
+			url = source.resolve_internal_sources(source.direct_debrid_link)
+			return kodi_utils.execute_builtin('PlayMedia(%s)' % url)
 		elif mode == 'play_media':
 			from modules.sources import Sources
 			Sources.factory(params)
@@ -198,20 +199,17 @@ class Router:
 			function = manual_function_import('menus.easynews', mode.split('.')[-1])
 			function(params)
 		elif 'alldebrid' in mode:
-			from menus.alldebrid import Menu, resolve_ad
-			if 'resolve_' in mode: resolve_ad(params)
-			else: Menu().run(params)
+			from menus.alldebrid import Menu
+			Menu().run(params)
 		elif 'premiumize' in mode:
 			from menus.premiumize import Menu
 			Menu().run(params)
 		elif 'real_debrid' in mode:
-			from menus.real_debrid import Menu, resolve_rd
-			if 'resolve_' in mode: resolve_rd(params)
-			else: Menu().run(params)
+			from menus.real_debrid import Menu
+			Menu().run(params)
 		elif 'torbox' in mode:
-			from menus.torbox import Menu, resolve_tb
-			if 'resolve_' in mode: resolve_tb(params)
-			else: Menu().run(params)
+			from menus.torbox import Menu
+			Menu().run(params)
 		elif 'offcloud' in mode:
 			from menus.offcloud import Menu
 			Menu().run(params)
@@ -259,8 +257,8 @@ class Router:
 			from menus.people import person_data_dialog
 			person_data_dialog(params)
 		elif mode == 'downloader':
-			from modules.downloader import runner
-			runner(params)
+			from modules.downloader import factory
+			factory(params)
 		elif mode == 'clean_databases':
 			from modules.cache import clean_databases
 			clean_databases()

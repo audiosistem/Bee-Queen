@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import xbmc
 import json
 from threading import Thread
@@ -13,7 +14,7 @@ class RedLightPlayer(xbmc.Player):
 
 	def run(self, url=None, obj=None):
 		ku.hide_busy_dialog()
-		self.clear_playback_properties()
+		self.clear_playback_properties(clear_navigation=False)
 		if not url: return self.run_error()
 		try: return self.play_video(url, obj)
 		except: return self.run_error()
@@ -28,19 +29,29 @@ class RedLightPlayer(xbmc.Player):
 			else:
 				self.sources_object.playback_successful = self.playback_successful
 				self.sources_object.cancel_all_playback = self.cancel_all_playback
-				if self.cancel_all_playback: self.kill_dialog()
-				self.stop()
+				if self.cancel_all_playback:
+					self.kill_dialog()
+					self.safe_stop()
 			try: del self.kodi_monitor
 			except: pass
 
 	def check_playback_start(self):
+		if self.is_generic:
+			self.playback_successful = True
+			return
 		resolve_percent = 0
 		while self.playback_successful is None:
 			ku.hide_busy_dialog()
 			if not self.sources_object.progress_dialog: self.playback_successful = True
 			elif self.sources_object.progress_dialog.skip_resolved(): self.playback_successful = False
-			elif self.sources_object.progress_dialog.iscanceled() or self.kodi_monitor.abortRequested(): self.cancel_all_playback, self.playback_successful = True, False
-			elif resolve_percent >= 100: self.playback_successful = False
+			elif self.sources_object.progress_dialog.iscanceled() or self.kodi_monitor.abortRequested():
+				self.sources_object.cancel_all_playback = True
+				self.sources_object._resolve_user_cancelled = True
+				self.playback_successful = False
+				break
+			elif resolve_percent >= 100:
+				self.playback_successful = False
+				break
 			elif ku.get_visibility('Window.IsTopMost(okdialog)'):
 				ku.execute_builtin('SendClick(okdialog, 11)')
 				self.playback_successful = False
@@ -48,7 +59,7 @@ class RedLightPlayer(xbmc.Player):
 				try:
 					if self.getTotalTime() not in ('0.0', '', 0.0, None) and ku.get_visibility('Window.IsActive(fullscreenvideo)'): self.playback_successful = True
 				except: pass
-			resolve_percent = round(resolve_percent + 26.0/100, 1)
+			resolve_percent = round(resolve_percent + 0.26, 1)
 			self.sources_object.progress_dialog.update_resolver(percent=resolve_percent)
 			ku.sleep(50)
 
@@ -100,7 +111,7 @@ class RedLightPlayer(xbmc.Player):
 				if not self.subs_searched: self.run_subtitles()
 			ku.hide_busy_dialog()
 			if not self.media_marked: self.media_watched_marker()
-			self.clear_playback_properties()
+			self.clear_playback_properties(clear_navigation=False)
 		except:
 			ku.hide_busy_dialog()
 			self.sources_object.playback_successful = False
@@ -114,7 +125,25 @@ class RedLightPlayer(xbmc.Player):
 		if self.is_generic:
 			info_tag = listitem.getVideoInfoTag(True)
 			info_tag.setMediaType('video')
-			info_tag.setFilenameAndPath(self.url)
+			play_name = ku.get_property('redlight.tb.play_filename') or self.url
+			info_tag.setFilenameAndPath(play_name)
+			info_tag.setTitle(os.path.basename(play_name) if play_name else '')
+			mime = ku.get_property('redlight.tb.play_mime')
+			if not mime:
+				path_lower = (play_name or self.url or '').lower().split('|')[0].split('?')[0]
+				for ext, mt in (
+					('.m2ts', 'video/mp2t'), ('.mts', 'video/mp2t'), ('.ts', 'video/mp2t'),
+					('.mkv', 'video/x-matroska'), ('.mp4', 'video/mp4'), ('.avi', 'video/x-msvideo'),
+					('.mov', 'video/quicktime'), ('.webm', 'video/webm'),
+				):
+					if path_lower.endswith(ext):
+						mime = mt
+						break
+			if mime:
+				try:
+					listitem.setMimeType(mime)
+				except Exception:
+					pass
 		else:
 			self.tmdb_id, self.imdb_id, self.tvdb_id = self.meta_get('tmdb_id', ''), self.meta_get('imdb_id', ''), self.meta_get('tvdb_id', '')
 			self.media_type, self.title, self.year = self.meta_get('media_type'), self.meta_get('title'), self.meta_get('year')
@@ -263,8 +292,17 @@ class RedLightPlayer(xbmc.Player):
 			if self.playing_filename: ku.set_property('subs.player_filename', self.playing_filename)
 		except: pass
 
-	def clear_playback_properties(self):
-		ku.clear_property('redlight.window_stack')
+	def safe_stop(self):
+		try:
+			if self.isPlaying():
+				self.stop()
+				ku.sleep(150)
+		except:
+			pass
+
+	def clear_playback_properties(self, clear_navigation=True):
+		if clear_navigation:
+			ku.clear_property('redlight.window_stack')
 		ku.clear_property('script.trakt.ids')
 		ku.clear_property('subs.player_filename')
 

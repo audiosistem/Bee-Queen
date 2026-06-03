@@ -1,5 +1,5 @@
 import sys
-from apis.torbox_api import TorBox, TorBoxAPI
+from apis.torbox_api import TorBox
 from modules.source_utils import supported_video_extensions
 from modules.utils import clean_file_name, normalize
 from modules import kodi_utils
@@ -21,36 +21,49 @@ def tb_cloud():
 				cm = []
 				cm_append = cm.append
 				media_type = item['media_type']
+				folder_id = item.get('id')
+				if folder_id is None:
+					continue
 				label_type = {'torrent': 'TORRENT', 'usenet': 'USENET', 'webdl': 'WEB DL'}.get(media_type, 'FOLDER')
-				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, label_type, clean_file_name(normalize(item['name'])).upper())
-				url_params = {'mode': 'torbox.browse_tb_cloud', 'folder_id': item['id'], 'media_type': media_type}
-				delete_params = {'mode': 'torbox.delete', 'folder_id': item['id'], 'media_type': media_type}
+				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, label_type, clean_file_name(normalize(item.get('name') or '')).upper())
+				url_params = {'mode': 'torbox.browse_tb_cloud', 'folder_id': folder_id, 'media_type': media_type}
+				delete_params = {'mode': 'torbox.delete', 'folder_id': folder_id, 'media_type': media_type}
 				cm_append(('[B]Delete Folder[/B]', 'RunPlugin(%s)' % kodi_utils.build_url(delete_params)))
 				url = kodi_utils.build_url(url_params)
 				listitem = kodi_utils.make_listitem()
 				listitem.setLabel(display)
 				listitem.addContextMenuItems(cm)
 				listitem.setArt({'icon': icon, 'poster': icon, 'thumb': icon, 'fanart': fanart, 'banner': icon})
+				listitem.getVideoInfoTag(True).setPlot(' ')
 				yield (url, listitem, True)
 			except Exception:
 				pass
 	icon, fanart = kodi_utils.get_icon('torbox'), kodi_utils.get_addon_fanart()
-	torrents_folders = TorBox.user_cloud() or {'data': []}
-	usenets_folders = TorBox.user_cloud_usenet() or {'data': []}
-	webdl_folders = TorBox.user_cloud_webdl() or {'data': []}
-	t_data = torrents_folders.get('data') or []
-	u_data = usenets_folders.get('data') or []
-	w_data = webdl_folders.get('data') or []
-	folders_torrents = [{**i, 'media_type': 'torrent'} for i in t_data if TorBoxAPI._torrent_item_finished(i)]
-	folders_usenets = [{**i, 'media_type': 'usenet'} for i in u_data if TorBoxAPI._torrent_item_finished(i)]
-	folders_webdl = [{**i, 'media_type': 'webdl'} for i in w_data if TorBoxAPI._torrent_item_finished(i)]
-	folders = folders_torrents + folders_usenets + folders_webdl
-	folders.sort(key=lambda k: k.get('updated_at', ''), reverse=True)
 	handle = int(sys.argv[1])
-	kodi_utils.add_items(handle, list(_builder()))
-	kodi_utils.set_content(handle, 'files')
-	kodi_utils.end_directory(handle)
-	kodi_utils.set_view_mode('view.premium')
+	busy = False
+	try:
+		force_fresh = not TorBox.peek_ui_cloud_folders()
+		if force_fresh:
+			busy = True
+			kodi_utils.show_busy_dialog()
+		data = TorBox.load_ui_cloud_folders(refresh=force_fresh)
+		folders, errors = data['folders'], data['errors']
+		if errors:
+			msg = 'TorBox: %s' % errors[0]
+			if folders:
+				msg += ' (partial list)'
+			kodi_utils.notification(msg, 4000)
+		folders.sort(key=lambda k: str(k.get('updated_at') or ''), reverse=True)
+		kodi_utils.add_items(handle, list(_builder()))
+		kodi_utils.set_content(handle, 'files')
+		kodi_utils.end_directory(handle, cacheToDisc=False)
+		kodi_utils.set_view_mode('view.premium')
+	except Exception as e:
+		kodi_utils.notification('TorBox: %s' % str(e), 4000)
+		kodi_utils.end_directory(handle)
+	finally:
+		if busy:
+			kodi_utils.hide_busy_dialog()
 
 
 def tb_history():
@@ -98,7 +111,6 @@ def tb_history():
 	icon, fanart = kodi_utils.get_icon('torbox'), kodi_utils.get_addon_fanart()
 	history_items, errors = [], []
 	kodi_utils.show_busy_dialog()
-	TorBox.clear_mylist_cache()
 	for media_type, type_label in (('torrent', 'TORRENT'), ('usenet', 'USENET'), ('webdl', 'WEB DL')):
 		err, items = TorBox.mylist_items(media_type, fresh=True)
 		if err:
@@ -107,7 +119,7 @@ def tb_history():
 			for item in items:
 				history_items.append({**item, 'media_type': media_type, 'type_label': type_label})
 	kodi_utils.hide_busy_dialog()
-	history_items.sort(key=lambda k: k.get('updated_at', ''), reverse=True)
+	history_items.sort(key=lambda k: str(k.get('updated_at') or ''), reverse=True)
 	if not history_items:
 		if errors:
 			kodi_utils.notification('TorBox: %s' % errors[0], 4000)
@@ -121,41 +133,63 @@ def tb_history():
 
 
 def browse_tb_cloud(folder_id, media_type):
+	'''Match Gears/Umbrella: user_cloud_info + short_name filter + item id.'''
+	icon, fanart = kodi_utils.get_icon('torbox'), kodi_utils.get_addon_fanart()
+	handle = int(sys.argv[1])
+	if media_type == 'torrent':
+		files = TorBox.user_cloud_info(folder_id)
+	elif media_type == 'webdl':
+		files = TorBox.user_cloud_info_webdl(folder_id)
+	else:
+		files = TorBox.user_cloud_info_usenet(folder_id)
+	if not files or not files.get('success'):
+		kodi_utils.notification('TorBox: %s' % _api_error_text(files, 'Failed to load folder'))
+		kodi_utils.end_directory(handle)
+		return
+	data = files.get('data')
+	if isinstance(data, list):
+		data = data[0] if data else {}
+	if not isinstance(data, dict):
+		data = {}
+	extensions = tuple(supported_video_extensions())
+	video_files = [{**i, 'media_type': media_type} for i in (data.get('files') or []) if (i.get('short_name') or '').lower().endswith(extensions)]
+	if not video_files:
+		kodi_utils.notification('TorBox: No playable video files in this folder', 4000)
+
 	def _builder():
 		for count, item in enumerate(video_files, 1):
 			try:
-				cm = []
-				name = clean_file_name(item['short_name']).upper()
-				size = float(int(item['size'])) / 1073741824
-				display = '%02d | [B]FILE[/B] | %.2f GB | [I]%s [/I]' % (count, size, name)
-				url_link = '%d,%d' % (int(folder_id), item['id'])
-				url_params = {'mode': 'torbox.resolve_tb', 'play': 'true', 'url': url_link, 'media_type': item['media_type']}
-				down_file_params = {'mode': 'downloader.runner', 'name': name, 'url': url_link, 'media_type': item['media_type'], 'action': 'cloud.torbox', 'image': icon}
-				cm.append(('[B]Download File[/B]', 'RunPlugin(%s)' % kodi_utils.build_url(down_file_params)))
+				short_name = item.get('short_name') or ''
+				file_id = item.get('id')
+				if not short_name or file_id is None:
+					continue
+				name = clean_file_name(short_name).upper()
+				size_gb = float(int(item.get('size') or 0)) / 1073741824
+				display = '%02d | [B]FILE[/B] | %.2f GB | [I]%s [/I]' % (count, size_gb, name)
+				url_link = '%d,%d' % (int(folder_id), int(file_id))
+				url_params = {
+					'mode': 'torbox.resolve_tb', 'play': 'true', 'url': url_link,
+					'media_type': media_type, 'filename': short_name,
+				}
+				down_file_params = {'mode': 'downloader.runner', 'name': name, 'url': url_link, 'media_type': media_type, 'action': 'cloud.torbox', 'image': icon}
+				cm = [('[B]Download File[/B]', 'RunPlugin(%s)' % kodi_utils.build_url(down_file_params))]
 				url = kodi_utils.build_url(url_params)
 				listitem = kodi_utils.make_listitem()
 				listitem.setLabel(display)
 				listitem.addContextMenuItems(cm)
 				listitem.setArt({'icon': icon, 'poster': icon, 'thumb': icon, 'fanart': fanart, 'banner': icon})
-				listitem.setInfo('video', {})
+				info_tag = listitem.getVideoInfoTag(True)
+				info_tag.setMediaType('video')
+				info_tag.setTitle(short_name)
+				info_tag.setFilenameAndPath(short_name)
+				info_tag.setPlot(' ')
 				yield (url, listitem, False)
 			except Exception:
 				pass
-	if media_type == 'torrent': files = TorBox.user_cloud_info(folder_id)
-	elif media_type == 'webdl': files = TorBox.user_cloud_info_webdl(folder_id)
-	else: files = TorBox.user_cloud_info_usenet(folder_id)
-	if not files or not files.get('success') or not isinstance(files.get('data'), dict):
-		kodi_utils.notification('TorBox: %s' % _api_error_text(files, 'Failed to load folder'))
-		handle = int(sys.argv[1])
-		kodi_utils.end_directory(handle)
-		return
-	data_files = (files.get('data') or {}).get('files') or []
-	video_files = [{**i, 'media_type': media_type} for i in data_files if i.get('short_name', '').lower().endswith(tuple(supported_video_extensions()))]
-	icon, fanart = kodi_utils.get_icon('torbox'), kodi_utils.get_addon_fanart()
-	handle = int(sys.argv[1])
+
 	kodi_utils.add_items(handle, list(_builder()))
 	kodi_utils.set_content(handle, 'files')
-	kodi_utils.end_directory(handle)
+	kodi_utils.end_directory(handle, cacheToDisc=False)
 	kodi_utils.set_view_mode('view.premium')
 
 
@@ -171,17 +205,54 @@ def tb_delete(folder_id, media_type):
 	kodi_utils.execute_builtin('Container.Refresh')
 
 
+def _tb_mime_type(filename):
+	ext = ('.' + (filename or '').rsplit('.', 1)[-1].lower()) if '.' in (filename or '') else ''
+	return {
+		'.mp4': 'video/mp4', '.m4v': 'video/mp4', '.mkv': 'video/x-matroska',
+		'.avi': 'video/x-msvideo', '.mov': 'video/quicktime', '.webm': 'video/webm',
+		'.m2ts': 'video/mp2t', '.mts': 'video/mp2t', '.ts': 'video/mp2t',
+		'.mpg': 'video/mpeg', '.mpeg': 'video/mpeg',
+	}.get(ext, 'video/mp4')
+
+
+def _tb_play_cloud(resolved_link, filename=''):
+	'''Match Gears: raw CDN URL, no proxy, no pipe headers.'''
+	kodi_utils.hide_busy_dialog()
+	try:
+		if filename:
+			kodi_utils.set_property('redlight.tb.play_mime', _tb_mime_type(filename))
+			kodi_utils.set_property('redlight.tb.play_filename', filename)
+		from modules.player import RedLightPlayer
+		RedLightPlayer().run(resolved_link, 'video')
+	finally:
+		kodi_utils.clear_property('redlight.tb.play_mime')
+		kodi_utils.clear_property('redlight.tb.play_filename')
+	return None
+
+
 def resolve_tb(params):
-	file_id, media_type = params['url'], params['media_type']
-	if media_type == 'torrent': resolved_link = TorBox.unrestrict_link(file_id)
-	elif media_type == 'webdl': resolved_link = TorBox.unrestrict_webdl(file_id)
-	else: resolved_link = TorBox.unrestrict_usenet(file_id)
+	file_id, media_type = params.get('url'), params.get('media_type') or 'torrent'
+	filename = params.get('filename') or ''
+	if not file_id:
+		kodi_utils.notification('TorBox: Missing file reference', 4000)
+		return None
+	kodi_utils.show_busy_dialog()
+	try:
+		if media_type == 'torrent':
+			resolved_link = TorBox.unrestrict_link(file_id)
+		elif media_type == 'webdl':
+			resolved_link = TorBox.unrestrict_webdl(file_id)
+		else:
+			resolved_link = TorBox.unrestrict_usenet(file_id)
+		resolved_link = TorBox.coerce_play_url(resolved_link) or resolved_link
+	finally:
+		kodi_utils.hide_busy_dialog()
 	if not resolved_link:
 		kodi_utils.notification('TorBox: Unable to resolve link', 4000)
 		return None
-	if params.get('play', 'false') != 'true': return resolved_link
-	from modules.player import RedLightPlayer
-	RedLightPlayer().run(resolved_link, 'video')
+	if params.get('play', 'false') != 'true':
+		return resolved_link
+	return _tb_play_cloud(resolved_link, filename)
 
 
 def tb_send_webdl():
