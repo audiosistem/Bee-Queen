@@ -1,0 +1,982 @@
+[
+  {
+    "name": "ABCSPORT SCHEDULE",
+    "url": "https://antenasport.org/indexgol.txt"
+  },
+  {
+    "name": "Eurosport 1 UK HD",
+    "url": "https://antenasport.org/eurosport1uk.php"
+  },
+  {
+    "name": "Eurosport 2 UK HD",
+    "url": "https://antenasport.org/eurosport2uk.php"
+  },
+  {
+    "name": "BBC 1 UK HD",
+    "url": "https://antenasport.org/bbc1.php"
+  },
+  {
+    "name": "ITV 1 UK HD",
+    "url": "https://antenasport.org/itv1.php"
+  },
+  {
+    "name": "OKKO Sport Russia",
+    "url": "https://antenasport.org/okkosport.php"
+  },
+  {
+    "name": "OKKO Sport 2 Russia",
+    "url": "https://antenasport.org/okkosport2.php"
+  },
+  {
+    "name": "OKKO Futbol Russia",
+    "url": "https://antenasport.org/okkofutbol.php"
+  },
+  {
+    "name": "Movistar + LaLiga",
+    "url": "https://antenasport.org/movistarliga1.php"
+  },
+  {
+    "name": "DAZN LaLiga Spain",
+    "url": "https://antenasport.org/dazn1laliga.php"
+  },
+  {
+    "name": "LA LIGA TV UK",
+    "url": "https://antenasport.org/viaplaylaliga.php"
+  },
+  {
+    "name": "LA LIGA TV Hypermotion Spain",
+    "url": "https://antenasport.org/liga1.php"
+  },
+  {
+    "name": "Belarus 5 HD",
+    "url": "https://antenasport.org/belarus5.php"
+  },
+  {
+    "name": "Sport TV Belarus HD",
+    "url": "https://antenasport.org/sportvbelarus.php"
+  },
+  {
+    "name": "Maincast Ukraine HD",
+    "url": "https://antenasport.org/maincastukraine.php"
+  },
+  {
+    "name": "Setanta Sport 1 Eurasia HD",
+    "url": "https://antenasport.org/setantasport1.php"
+  },
+  {
+    "name": "Setanta Sport 2 Eurasia HD",
+    "url": "https://antenasport.org/setantasport2.php"
+  },
+  {
+    "name": "Setanta Sport Ukraine HD",
+    "url": "https://antenasport.org/setantaukraine.php"
+  },
+  {
+    "name": "Setanta Sport Ukraine Plus HD",
+    "url": "https://antenasport.org/setantaukraineplus.php"
+  },
+  {
+    "name": "Setanta Sport Ukraine Premium HD",
+    "url": "https://antenasport.org/setantapremium.php"
+  },
+  {
+    "name": "Setanta Sport Kazakstan HD",
+    "url": "https://antenasport.org/setantakazakstan.php"
+  },
+  {
+    "name": "Match TV Russia HD",
+    "url": "https://antenasport.org/match.php"
+  },
+  {
+    "name": "Match Futbol 1 Russia HD",
+    "url": "https://antenasport.org/match1.php"
+  },
+  {
+    "name": "Match Futbol 2 Russia HD",
+    "url": "https://antenasport.org/match2.php"
+  },
+  {
+    "name": "Match Futbol 3 Russia HD",
+    "url": "https://antenasport.org/match3.php"
+  },
+  {
+    "name": "Match Premier Russia HD",
+    "url": "https://antenasport.org/matchpremier.php"
+  },
+  {
+    "name": "Match Boets Russia HD",
+    "url": "https://antenasport.org/matchboets.php"
+  },
+  {
+    "name": "Match Igra Russia HD",
+    "url": "https://antenasport.org/matchigra.php"
+  },
+  {
+    "name": "Match Arena Russia HD",
+    "url": "https://antenasport.org/matcharena.php"
+  },
+  {
+    "name": "Match Strana Russia HD",
+    "url": "https://antenasport.org/matchstrana.php"
+  },
+  {
+    "name": "Viju Sport Plus Russia",
+    "url": "https://antenasport.org/vijusportplus.php"
+  },
+  {
+    "name": "Setanta Sport 1 Georgia HD",
+    "url": "https://antenasport.org/setantasport1georgia.php"
+  },
+  {
+    "name": "Setanta Sport 2 Georgia HD",
+    "url": "https://antenasport.org/setantasport2georgia.php"
+  },
+  {
+    "name": "Silk Sport 1 Georgia HD",
+    "url": "https://antenasport.org/silksport1georgia.php"
+  },
+  {
+    "name": "Silk Sport 2 Georgia HD",
+    "url": "https://antenasport.org/silksport2georgia.php"
+  },
+  {
+    "name": "Ziggo Sport 1 Netherlands",
+    "url": "https://antenasport.org/ziggosport1.php"
+  },
+  {
+    "name": "Ziggo Sport 2 Netherlands",
+    "url": "https://antenasport.org/ziggosport2.php"
+  },
+  {
+    "name": "Ziggo Sport 3 Netherlands",
+    "url": "https://antenasport.org/ziggosport3.php"
+  },
+  {
+    "name": "Ziggo Sport 4 Netherlands",
+    "url": "https://antenasport.org/ziggosport4.php"
+  },
+  {
+    "name": "Ziggo Sport 5 Netherlands",
+    "url": "https://antenasport.org/ziggosport5.php"
+  },
+  {
+    "name": "Ziggo Sport 6 Netherlands",
+    "url": "https://antenasport.org/ziggosport6.php"
+  },
+  {
+    "name": "Sky Sports 1 New Zealand",
+    "url": "https://antenasport.org/sky1nz.php"
+  },
+  {
+    "name": "Sky Sports 2 New Zealand",
+    "url": "https://antenasport.org/sky2nz.php"
+  },
+  {
+    "name": "Sky Sports 3 New Zealand",
+    "url": "https://antenasport.org/sky3nz.php"
+  },
+  {
+    "name": "Sky Sports 4 New Zealand",
+    "url": "https://antenasport.org/sky4nz.php"
+  },
+  {
+    "name": "Sky Sports 5 New Zealand",
+    "url": "https://antenasport.org/sky5nz.php"
+  },
+  {
+    "name": "Sky Sports 6 New Zealand",
+    "url": "https://antenasport.org/sky6nz.php"
+  },
+  {
+    "name": "Sky Sports 7 New Zealand",
+    "url": "https://antenasport.org/sky7nz.php"
+  },
+  {
+    "name": "Sky Sports 8 New Zealand",
+    "url": "https://antenasport.org/sky8nz.php"
+  },
+  {
+    "name": "Sky Sports 9 New Zealand",
+    "url": "https://antenasport.org/sky9nz.php"
+  },
+  {
+    "name": "TSN 1 Canada",
+    "url": "https://antenasport.org/tsn1.php"
+  },
+  {
+    "name": "TSN 2 Canada",
+    "url": "https://antenasport.org/tsn2.php"
+  },
+  {
+    "name": "TSN 3 Canada",
+    "url": "https://antenasport.org/tsn3.php"
+  },
+  {
+    "name": "TSN 4 Canada",
+    "url": "https://antenasport.org/tsn4.php"
+  },
+  {
+    "name": "TSN 5 Canada",
+    "url": "https://antenasport.org/tsn5.php"
+  },
+  {
+    "name": "SportsNet Ontario Canada",
+    "url": "https://antenasport.org/sportsnetontario.php"
+  },
+  {
+    "name": "SportsNet 360 Canada",
+    "url": "https://antenasport.org/sportsnet360.php"
+  },
+  {
+    "name": "SportsNet One Canada",
+    "url": "https://antenasport.org/sportsnetone.php"
+  },
+  {
+    "name": "SportsNet West Canada",
+    "url": "https://antenasport.org/sportsnetwest.php"
+  },
+  {
+    "name": "SportsNet East Canada",
+    "url": "https://antenasport.org/spottsneteast.php"
+  },
+  {
+    "name": "NHL Network",
+    "url": "https://antenasport.org/nhlnetwork.php"
+  },
+  {
+    "name": "SRF 2",
+    "url": "https://antenasport.org/srf2.php"
+  },
+  {
+    "name": "RTS 2",
+    "url": "https://antenasport.org/rts2.php"
+  },
+  {
+    "name": "RSILA2",
+    "url": "https://antenasport.org/rsila2.php"
+  },
+  {
+    "name": "MTV 3 Finland",
+    "url": "https://antenasport.org/mtv3.php"
+  },
+  {
+    "name": "Viaplay Sport Nordic",
+    "url": "https://antenasport.org/viaplaysport.php"
+  },
+  {
+    "name": "Viasat Sport 1 Finland",
+    "url": "https://antenasport.org/viasatsport1finland.php"
+  },
+  {
+    "name": "Viasat Sport + Finland",
+    "url": "https://antenasport.org/viasatsportplusfinland.php"
+  },
+  {
+    "name": "TV10 Sweden",
+    "url": "https://antenasport.org/tv10sweden.php"
+  },
+  {
+    "name": "Viasat Sport Vinter",
+    "url": "https://antenasport.org/viasatsportvinter.php"
+  },
+  {
+    "name": "Viasat Sport Premium",
+    "url": "https://antenasport.org/viasatsportpremium.php"
+  },
+  {
+    "name": "Magenta 1 Germany",
+    "url": "https://antenasport.org/magenta.php"
+  },
+  {
+    "name": "TV6 Norway",
+    "url": "https://antenasport.org/tv6norway.php"
+  },
+  {
+    "name": "TV4 Hockey Sweden",
+    "url": "https://antenasport.org/tv4hockey.php"
+  },
+  {
+    "name": "Polsat Sport 1 HD",
+    "url": "https://antenasport.org/polsatsport1.php"
+  },
+  {
+    "name": "Polsat Sport 2 HD",
+    "url": "https://antenasport.org/polsatsport2.php"
+  },
+  {
+    "name": "Polsat Sport 3 HD",
+    "url": "https://antenasport.org/polsatsport3.php"
+  },
+  {
+    "name": "Canal Sport 1 Poland HD",
+    "url": "https://antenasport.org/canalsportplus1pl.php"
+  },
+  {
+    "name": "Canal Sport 2 Poland HD",
+    "url": "https://antenasport.org/canalsportplus2pl.php"
+  },
+  {
+    "name": "Canal Sport 3 Poland HD",
+    "url": "https://antenasport.org/canalsportplus3pl.php"
+  },
+  {
+    "name": "Canal Sport 4 Poland HD",
+    "url": "https://antenasport.org/canalsportplus4pl.php"
+  },
+  {
+    "name": "Eleven Sport 1 Poland HD",
+    "url": "https://antenasport.org/elevensport1pl.php"
+  },
+  {
+    "name": "Eleven Sport 2 Poland HD",
+    "url": "https://antenasport.org/elevensport2pl.php"
+  },
+  {
+    "name": "Eleven Sport 3 Poland HD",
+    "url": "https://antenasport.org/elevensport3pl.php"
+  },
+  {
+    "name": "Eleven Sport 4 Poland HD",
+    "url": "https://antenasport.org/elevensport4pl.php"
+  },
+  {
+    "name": "Novasport 1 Czech HD",
+    "url": "https://antenasport.org/novasport1cz.php"
+  },
+  {
+    "name": "Novasport 2 Czech HD",
+    "url": "https://antenasport.org/novasport2cz.php"
+  },
+  {
+    "name": "Sport 1 Israel",
+    "url": "https://antenasport.org/sport1il.php"
+  },
+  {
+    "name": "Sport 2 Israel",
+    "url": "https://antenasport.org/sport2il.php"
+  },
+  {
+    "name": "Sport 3 Israel",
+    "url": "https://antenasport.org/sport3il.php"
+  },
+  {
+    "name": "Sport 4 Israel",
+    "url": "https://antenasport.org/sport4il.php"
+  },
+  {
+    "name": "Sport 5 Israel",
+    "url": "https://antenasport.org/sport5il.php"
+  },
+  {
+    "name": "Sport 6 Israel",
+    "url": "https://antenasport.org/sport6il.php"
+  },
+  {
+    "name": "Sport 5 Live Israel",
+    "url": "https://antenasport.org/sport5maxil.php"
+  },
+  {
+    "name": "Sport 5 Stars Israel",
+    "url": "https://antenasport.org/sport5starsil.php"
+  },
+  {
+    "name": "Sport 5 Gold Israel",
+    "url": "https://antenasport.org/sport5goldil.php"
+  },
+  {
+    "name": "Sport 5 Plus Israel",
+    "url": "https://antenasport.org/sport5plusil.php"
+  },
+  {
+    "name": "One Sport 1 Israel",
+    "url": "https://antenasport.org/oneisrael.php"
+  },
+  {
+    "name": "Cosmote Sport 1",
+    "url": "https://antenasport.org/cosmote1.php"
+  },
+  {
+    "name": "Cosmote Sport 2",
+    "url": "https://antenasport.org/cosmote2.php"
+  },
+  {
+    "name": "Cosmote Sport 3",
+    "url": "https://antenasport.org/cosmote3.php"
+  },
+  {
+    "name": "Cosmote Sport 4",
+    "url": "https://antenasport.org/cosmote4.php"
+  },
+  {
+    "name": "Cosmote Sport 5",
+    "url": "https://antenasport.org/cosmote5.php"
+  },
+  {
+    "name": "Cosmote Sport 6",
+    "url": "https://antenasport.org/cosmote6.php"
+  },
+  {
+    "name": "Cosmote Sport 7",
+    "url": "https://antenasport.org/cosmote7.php"
+  },
+  {
+    "name": "Cosmote Sport 8",
+    "url": "https://antenasport.org/cosmote8.php"
+  },
+  {
+    "name": "Cosmote Sport 9",
+    "url": "https://antenasport.org/cosmote9.php"
+  },
+  {
+    "name": "Novasport Prime",
+    "url": "https://antenasport.org/novasportprime.php"
+  },
+  {
+    "name": "Nova Sport 1",
+    "url": "https://antenasport.org/novasport1gr.php"
+  },
+  {
+    "name": "Nova Sport 2",
+    "url": "https://antenasport.org/novasport2gr.php"
+  },
+  {
+    "name": "Nova Sport 3",
+    "url": "https://antenasport.org/novasport3gr.php"
+  },
+  {
+    "name": "Nova Sport 4",
+    "url": "https://antenasport.org/novasport4gr.php"
+  },
+  {
+    "name": "Nova Sport 5",
+    "url": "https://antenasport.org/novasport5gr.php"
+  },
+  {
+    "name": "Nova Sport 6",
+    "url": "https://antenasport.org/novasport6gr.php"
+  },
+  {
+    "name": "Nova Sport Start",
+    "url": "https://antenasport.org/novasportstart.php"
+  },
+  {
+    "name": "Nova Sport Premier League",
+    "url": "https://antenasport.org/novasportpremier.php"
+  },
+  {
+    "name": "DIRECTV Peru",
+    "url": "https://antenasport.org/directvsportsperu.php"
+  },
+  {
+    "name": "beIN Sports 1 Turkey",
+    "url": "https://antenasport.org/beinsport1tr.php"
+  },
+  {
+    "name": "ESPN Brazil",
+    "url": "https://antenasport.org/espnbrazil.php"
+  },
+  {
+    "name": "ESPN 2 Brazil",
+    "url": "https://antenasport.org/espn2brazil.php"
+  },
+  {
+    "name": "ESPN 3 Brazil",
+    "url": "https://antenasport.org/espn3brazil.php"
+  },
+  {
+    "name": "ESPN 4 Brazil",
+    "url": "https://antenasport.org/espn4brazil.php"
+  },
+  {
+    "name": "ESPN 5 Brazil",
+    "url": "https://antenasport.org/espn5brazil.php"
+  },
+  {
+    "name": "ESPN 6 Brazil",
+    "url": "https://antenasport.org/espn6brazil.php"
+  },
+  {
+    "name": "FOX Sports 1 Argentina",
+    "url": "https://antenasport.org/foxsports1argentina.php"
+  },
+  {
+    "name": "FOX Sports 2 Argentina",
+    "url": "https://antenasport.org/foxsports2argentina.php"
+  },
+  {
+    "name": "FOX Sports 3 Argentina",
+    "url": "https://antenasport.org/foxsports3argentina.php"
+  },
+  {
+    "name": "FOX Sports 1 Mexico",
+    "url": "https://antenasport.org/foxsports1mexico.php"
+  },
+  {
+    "name": "FOX Sports 2 Mexico",
+    "url": "https://antenasport.org/foxsports2mexico.php"
+  },
+  {
+    "name": "FOX Sports 3 Mexico",
+    "url": "https://antenasport.org/foxsports3mexico.php"
+  },
+  {
+    "name": "ESPN 1 Mexico",
+    "url": "https://antenasport.org/espn1mx.php"
+  },
+  {
+    "name": "ESPN 2 Mexico",
+    "url": "https://antenasport.org/espn2mx.php"
+  },
+  {
+    "name": "ESPN 3 Mexico",
+    "url": "https://antenasport.org/espn3mx.php"
+  },
+  {
+    "name": "ESPN 4 Mexico",
+    "url": "https://antenasport.org/espn4mx.php"
+  },
+  {
+    "name": "CT Sport",
+    "url": "https://antenasport.org/ctsport.php"
+  },
+  {
+    "name": "Sport 1 CZ",
+    "url": "https://antenasport.org/sport1cz.php"
+  },
+  {
+    "name": "TNT Sport 1 UK",
+    "url": "https://antenasport.org/maxtnt1.php"
+  },
+  {
+    "name": "TNT Sport 2 UK",
+    "url": "https://antenasport.org/maxtnt2.php"
+  },
+  {
+    "name": "TNT Sport 3 UK",
+    "url": "https://antenasport.org/maxtnt3.php"
+  },
+  {
+    "name": "TNT Sport 4 UK",
+    "url": "https://antenasport.org/maxtnt4.php"
+  },
+  {
+    "name": "PremierSport 1 UK",
+    "url": "https://antenasport.org/viaplay1.php"
+  },
+  {
+    "name": "PremierSport 2 UK",
+    "url": "https://antenasport.org/viaplay2.php"
+  },
+  {
+    "name": "RSI LA 2 Switzerland",
+    "url": "https://antenasport.org/rsila2.php"
+  },
+  {
+    "name": "ARD Germany",
+    "url": "https://antenasport.org/ard.php"
+  },
+  {
+    "name": "ZDF Germany",
+    "url": "https://antenasport.org/zdf.php"
+  },
+  {
+    "name": "ORF 1 Austria",
+    "url": "https://antenasport.org/orf1.php"
+  },
+  {
+    "name": "DAZN 1 PT",
+    "url": "https://antenasport.org/dazn1pt.php"
+  },
+  {
+    "name": "DAZN 2 PT",
+    "url": "https://antenasport.org/dazn2pt.php"
+  },
+  {
+    "name": "DAZN 3 PT",
+    "url": "https://antenasport.org/dazn3pt.php"
+  },
+  {
+    "name": "DAZN 4 PT",
+    "url": "https://antenasport.org/dazn4pt.php"
+  },
+  {
+    "name": "DAZN 5 PT",
+    "url": "https://antenasport.org/dazn5pt.php"
+  },
+  {
+    "name": "DAZN 6 PT",
+    "url": "https://antenasport.org/dazn6pt.php"
+  },
+  {
+    "name": "DAZN 1 DE",
+    "url": "https://antenasport.org/dazn1de.php"
+  },
+  {
+    "name": "DAZN 2 DE",
+    "url": "https://antenasport.org/dazn2de.php"
+  },
+  {
+    "name": "DAZN 1 Spain",
+    "url": "https://antenasport.org/dazn1.php"
+  },
+  {
+    "name": "DAZN 2 Spain",
+    "url": "https://antenasport.org/dazn2.php"
+  },
+  {
+    "name": "DAZN 3 Spain",
+    "url": "https://antenasport.org/dazn3.php"
+  },
+  {
+    "name": "DAZN 4 Spain",
+    "url": "https://antenasport.org/dazn4.php"
+  },
+  {
+    "name": "Sky Sports Formula 1 UK",
+    "url": "https://antenasport.org/skyf1.php"
+  },
+  {
+    "name": "DAZN Formula 1 Spain",
+    "url": "https://antenasport.org/daznf1.php"
+  },
+  {
+    "name": "Megogo Sport Ukraine",
+    "url": "https://antenasport.org/megogosport.php"
+  },
+  {
+    "name": "Megogo Futbol 1 Ukraine",
+    "url": "https://antenasport.org/megogosport1.php"
+  },
+  {
+    "name": "Movistar Deportes 1",
+    "url": "https://antenasport.org/movistar1.php"
+  },
+  {
+    "name": "Movistar Deportes 2",
+    "url": "https://antenasport.org/movistar2.php"
+  },
+  {
+    "name": "Movistar Deportes 3",
+    "url": "https://antenasport.org/movistar3.php"
+  },
+  {
+    "name": "Movistar Deportes 4",
+    "url": "https://antenasport.org/movistar4.php"
+  },
+  {
+    "name": "Fox Soccer Plus USA",
+    "url": "https://antenasport.org/foxsoccerplus.php"
+  },
+  {
+    "name": "Fox Deportes USA",
+    "url": "https://antenasport.org/foxdeportes.php"
+  },
+  {
+    "name": "CBS Sports Network",
+    "url": "https://antenasport.org/cbssports.php"
+  },
+  {
+    "name": "USA Network",
+    "url": "https://antenasport.org/usa.php"
+  },
+  {
+    "name": "NBC UNIVERSO",
+    "url": "https://antenasport.org/universo.php"
+  },
+  {
+    "name": "TELEMUNDO",
+    "url": "https://antenasport.org/telemundo.php"
+  },
+  {
+    "name": "TNT USA",
+    "url": "https://antenasport.org/tnthd.php"
+  },
+  {
+    "name": "Fox USA",
+    "url": "https://antenasport.org/fox.php"
+  },
+  {
+    "name": "Fox Sports 1 USA",
+    "url": "https://antenasport.org/fox1.php"
+  },
+  {
+    "name": "Fox Sports 2 USA",
+    "url": "https://antenasport.org/fox2.php"
+  },
+  {
+    "name": "ESPN USA",
+    "url": "https://antenasport.org/espn.php"
+  },
+  {
+    "name": "ESPN 2 USA",
+    "url": "https://antenasport.org/espn2.php"
+  },
+  {
+    "name": "ESPN Deportes USA",
+    "url": "https://antenasport.org/espndeportes.php"
+  },
+  {
+    "name": "BeinSport USA",
+    "url": "https://antenasport.org/beinsportusa.php"
+  },
+  {
+    "name": "BeinSport USA Espanyol",
+    "url": "https://antenasport.org/beinsportusaes.php"
+  },
+  {
+    "name": "Sportsnet One",
+    "url": "https://antenasport.org/sportsnet360.php"
+  },
+  {
+    "name": "Sportsnet Ontario",
+    "url": "https://antenasport.org/sportnetontario.php"
+  },
+  {
+    "name": "Sportdigital Fussball Germany",
+    "url": "https://antenasport.org/sportdigital.php"
+  },
+  {
+    "name": "Sportklub 1 Serbia",
+    "url": "https://antenasport.org/sportklub1.php"
+  },
+  {
+    "name": "Sportklub 2 Serbia",
+    "url": "https://antenasport.org/sportklub2.php"
+  },
+  {
+    "name": "Sportklub 3 Serbia",
+    "url": "https://antenasport.org/sportklub3.php"
+  },
+  {
+    "name": "Sportklub 4 Serbia",
+    "url": "https://antenasport.org/sportklub4.php"
+  },
+  {
+    "name": "Arena Sport 1 Serbia",
+    "url": "https://antenasport.org/arenasport1sr.php"
+  },
+  {
+    "name": "Arena Sport 2 Serbia",
+    "url": "https://antenasport.org/arenasport2sr.php"
+  },
+  {
+    "name": "Arena Sport 3 Serbia",
+    "url": "https://antenasport.org/arenasport3sr.php"
+  },
+  {
+    "name": "Arena Sport 4 Serbia",
+    "url": "https://antenasport.org/arenasport4sr.php"
+  },
+  {
+    "name": "Arena Sport 5 Serbia",
+    "url": "https://antenasport.org/arenasport5sr.php"
+  },
+  {
+    "name": "Arena Sport 6 Serbia",
+    "url": "https://antenasport.org/arenasport6sr.php"
+  },
+  {
+    "name": "Arena Sport 1 Croatia",
+    "url": "https://antenasport.org/arenasport1hr.php"
+  },
+  {
+    "name": "Arena Sport 2 Croatia",
+    "url": "https://antenasport.org/arenasport2hr.php"
+  },
+  {
+    "name": "Arena Sport 3 Croatia",
+    "url": "https://antenasport.org/arenasport3hr.php"
+  },
+  {
+    "name": "Arena Sport 4 Croatia",
+    "url": "https://antenasport.org/arenasport4hr.php"
+  },
+  {
+    "name": "Arena Sport 5 Croatia",
+    "url": "https://antenasport.org/arenasport5hr.php"
+  },
+  {
+    "name": "Arena Sport 6 Croatia",
+    "url": "https://antenasport.org/arenasport6hr.php"
+  },
+  {
+    "name": "Arena Sport 1 Premium Bosnia",
+    "url": "https://antenasport.org/arena1premiumbosnia.php"
+  },
+  {
+    "name": "Arena Sport 1 Premium Serbia",
+    "url": "https://antenasport.org/arena1premiumserbia.php"
+  },
+  {
+    "name": "Arena Sport 2 Premium Serbia",
+    "url": "https://antenasport.org/arena2premiumserbia.php"
+  },
+  {
+    "name": "Arena Sport 3 Premium Serbia",
+    "url": "https://antenasport.org/arena3premiumserbia.php"
+  },
+  {
+    "name": "Arena Sport 4 Premium Serbia",
+    "url": "https://antenasport.org/arena4premiumserbia.php"
+  },
+  {
+    "name": "Arena Sport 5 Premium Serbia",
+    "url": "https://antenasport.org/arena5premiumserbia.php"
+  },
+  {
+    "name": "Arena Sport 1 Bosnia",
+    "url": "https://antenasport.org/arenasport1bh.php"
+  },
+  {
+    "name": "SkyTennis UK",
+    "url": "https://antenasport.org/skytennisuk.php"
+  },
+  {
+    "name": "SkyTennis Italy",
+    "url": "https://antenasport.org/skytennisit.php"
+  },
+  {
+    "name": "SkyTennis Germany",
+    "url": "https://antenasport.org/skytennisde.php"
+  },
+  {
+    "name": "SkyTop Event Germany",
+    "url": "https://antenasport.org/skytopventde.php"
+  },
+  {
+    "name": "Tennis TV USA",
+    "url": "https://antenasport.org/tennis1.php"
+  },
+  {
+    "name": "Canal Plus France",
+    "url": "https://antenasport.org/canalplusfr.php"
+  },
+  {
+    "name": "Canal Sport France",
+    "url": "https://antenasport.org/canalsportfr.php"
+  },
+  {
+    "name": "Canal 360 France",
+    "url": "https://antenasport.org/canal360fr.php"
+  },
+  {
+    "name": "Canal Foot France",
+    "url": "https://antenasport.org/canalfootfr.php"
+  },
+  {
+    "name": "Beinsport 1 France",
+    "url": "https://antenasport.org/bein1fr.php"
+  },
+  {
+    "name": "Beinsport 2 France",
+    "url": "https://antenasport.org/bein2fr.php"
+  },
+  {
+    "name": "Beinsport 3 France",
+    "url": "https://antenasport.org/bein3fr.php"
+  },
+  {
+    "name": "Sky Sports Main Event",
+    "url": "https://antenasport.org/skymain.php"
+  },
+  {
+    "name": "Sky Sports Football",
+    "url": "https://antenasport.org/skyfootball.php"
+  },
+  {
+    "name": "Sky Sports Action",
+    "url": "https://antenasport.org/skyaction.php"
+  },
+  {
+    "name": "Sky Sports Plus",
+    "url": "https://antenasport.org/skysportsplus.php"
+  },
+  {
+    "name": "Sky Sports Arena",
+    "url": "https://antenasport.org/skyarena.php"
+  },
+  {
+    "name": "Sky Sports Golf",
+    "url": "https://antenasport.org/skygolf.php"
+  },
+  {
+    "name": "Sky Sports Cricket",
+    "url": "https://antenasport.org/skycricket.php"
+  },
+  {
+    "name": "Sport TV 1 Portugal",
+    "url": "https://antenasport.org/sport1pt.php"
+  },
+  {
+    "name": "Sport TV 2 Portugal",
+    "url": "https://antenasport.org/sport2pt.php"
+  },
+  {
+    "name": "Sport TV 3 Portugal",
+    "url": "https://antenasport.org/sport3pt.php"
+  },
+  {
+    "name": "Sport TV 4 Portugal",
+    "url": "https://antenasport.org/sport4pt.php"
+  },
+  {
+    "name": "Sport TV 5 Portugal",
+    "url": "https://antenasport.org/sport5pt.php"
+  },
+  {
+    "name": "Sport TV 6 Portugal",
+    "url": "https://antenasport.org/sport6pt.php"
+  },
+  {
+    "name": "Sport TV 7 Portugal",
+    "url": "https://antenasport.org/sport7pt.php"
+  },
+  {
+    "name": "SuspilneTV Ukraine",
+    "url": "https://antenasport.org/suspilnetv.php"
+  },
+  {
+    "name": "Suspilne Sport Ukraine",
+    "url": "https://antenasport.org/suspilnesport.php"
+  },
+  {
+    "name": "Digisport 1 Romania HD",
+    "url": "https://antenasport.org/digisport1.php"
+  },
+  {
+    "name": "Digisport 2 Romania HD",
+    "url": "https://antenasport.org/digisport2.php"
+  },
+  {
+    "name": "Digisport 3 Romania HD",
+    "url": "https://antenasport.org/digisport3.php"
+  },
+  {
+    "name": "Digisport 4 Romania HD",
+    "url": "https://antenasport.org/digisport4.php"
+  },
+  {
+    "name": "Primasport 1 Romania HD",
+    "url": "https://antenasport.org/primasport1.php"
+  },
+  {
+    "name": "Primasport 2 Romania HD",
+    "url": "https://antenasport.org/primasport2.php"
+  },
+  {
+    "name": "Primasport 3 Romania HD",
+    "url": "https://antenasport.org/primasport3.php"
+  },
+  {
+    "name": "Primasport 4 Romania HD",
+    "url": "https://antenasport.org/primasport4.php"
+  },
+  {
+    "name": "Eurosport 1 FR HD",
+    "url": "https://antenasport.org/eurosport1fr.php"
+  },
+  {
+    "name": "Eurosport 2 FR HD",
+    "url": "https://antenasport.org/eurosport2fr.php"
+  }
+]

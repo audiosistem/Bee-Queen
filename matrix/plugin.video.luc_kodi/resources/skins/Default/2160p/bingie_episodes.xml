@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+	luc_kodi  ·  Bingie-style Seasons + Episodes (modern ui)
+	Left: show clearlogo + seasons list (id 5250).
+	Right: episodes list (id 525) with 16:9 landscape thumb, SxE badge,
+	       title / air date / plot / duration.
+	Coordinates are full 4K (3840 x 2160).
+-->
+<window>
+	<defaultcontrol always="true">525</defaultcontrol>
+	<controls>
+
+		<!-- ===================== BACKGROUND ===================== -->
+		<control type="image">
+			<left>0</left><top>0</top><width>3840</width><height>2160</height>
+			<aspectratio>scale</aspectratio>
+			<fadetime>400</fadetime>
+			<texture background="true" fallback="common/black.png">$INFO[Window.Property(luc_kodi.show_fanart)]</texture>
+		</control>
+		<control type="image">
+			<left>0</left><top>0</top><width>3840</width><height>2160</height>
+			<texture colordiffuse="A00A0A12">common/black.png</texture>
+		</control>
+		<control type="image">
+			<left>0</left><top>0</top><width>3840</width><height>2160</height>
+			<texture colordiffuse="FF0A0A12">common/gradient-diffuse-horizontal.png</texture>
+		</control>
+
+		<!-- ===================== HEADER ===================== -->
+		<control type="label" id="100">
+			<left>120</left><top>40</top><width>1640</width><height>70</height>
+			<label>$INFO[Window.Property(luc_kodi.page_title)]</label>
+			<font>font14</font>
+			<textcolor>FFFFFFFF</textcolor>
+			<shadowcolor>FF000000</shadowcolor>
+		</control>
+
+		<!-- ===================== LEFT: SHOW + SEASONS ===================== -->
+		<control type="group">
+			<left>120</left><top>240</top><width>1000</width><height>1800</height>
+
+			<!-- show clearlogo -->
+			<control type="image" id="9001">
+				<left>0</left><top>0</top><width>920</width><height>300</height>
+				<align>left</align>
+				<aspectratio align="left" aligny="center">keep</aspectratio>
+				<fadetime>350</fadetime>
+				<texture background="true" fallback="common/black.png">$INFO[Window.Property(luc_kodi.show_clearlogo)]</texture>
+				<visible>!String.IsEmpty(Window.Property(luc_kodi.show_clearlogo))</visible>
+			</control>
+			<!-- text title fallback -->
+			<control type="textbox" id="9002">
+				<left>0</left><top>20</top><width>940</width><height>280</height>
+				<font>font14</font>
+				<align>left</align><aligny>top</aligny>
+				<textcolor>FFFFFFFF</textcolor>
+				<label>$INFO[Window.Property(luc_kodi.show_title)]</label>
+				<visible>String.IsEmpty(Window.Property(luc_kodi.show_clearlogo))</visible>
+			</control>
+
+			<!-- current season label -->
+			<control type="label">
+				<left>4</left><top>336</top><width>940</width><height>56</height>
+				<font>font13</font>
+				<textcolor>FF00FA9A</textcolor>
+				<label>$INFO[Window.Property(luc_kodi.season_label)]</label>
+			</control>
+
+			<!-- seasons list -->
+			<control type="list" id="5250">
+				<left>0</left><top>420</top><width>940</width><height>1580</height>
+				<onright>525</onright>
+				<onleft>5250</onleft>
+				<onup>5250</onup>
+				<ondown>5250</ondown>
+				<scrolltime tween="sine" easing="out">200</scrolltime>
+				<itemlayout width="940" height="112">
+					<control type="label">
+						<left>32</left><top>0</top><width>640</width><height>112</height>
+						<aligny>center</aligny><align>left</align>
+						<font>font13</font>
+						<textcolor>FFCFCFCF</textcolor>
+						<label>$INFO[ListItem.Label]</label>
+					</control>
+					<control type="label">
+						<right>28</right><top>0</top><width>240</width><height>112</height>
+						<aligny>center</aligny><align>right</align>
+						<font>font12</font>
+						<textcolor>FF8A8A8A</textcolor>
+						<label>$INFO[ListItem.Property(luc_total_episodes)]</label>
+					</control>
+				</itemlayout>
+				<focusedlayout width="940" height="112">
+					<control type="image">
+						<left>0</left><top>4</top><width>940</width><height>104</height>
+						<texture border="4" colordiffuse="3000FA9A">common/white.png</texture>
+					</control>
+					<control type="image">
+						<left>0</left><top>4</top><width>8</width><height>104</height>
+						<texture colordiffuse="FF00FA9A">common/white.png</texture>
+					</control>
+					<control type="label">
+						<left>32</left><top>0</top><width>640</width><height>112</height>
+						<aligny>center</aligny><align>left</align>
+						<font>font13</font>
+						<textcolor>FFFFFFFF</textcolor>
+						<label>$INFO[ListItem.Label]</label>
+					</control>
+					<control type="label">
+						<right>28</right><top>0</top><width>240</width><height>112</height>
+						<aligny>center</aligny><align>right</align>
+						<font>font12</font>
+						<textcolor>FFEFEFEF</textcolor>
+						<label>$INFO[ListItem.Property(luc_total_episodes)]</label>
+					</control>
+				</focusedlayout>
+			</control>
+		</control>
+
+		<!-- ===================== RIGHT: EPISODES ===================== -->
+		<control type="list" id="525">
+			<left>1240</left><top>240</top><width>2540</width><height>1800</height>
+			<onleft>5250</onleft>
+			<onright>525</onright>
+			<onup>525</onup>
+			<ondown>525</ondown>
+			<pagecontrol>60</pagecontrol>
+			<scrolltime tween="sine" easing="out">240</scrolltime>
+			<preloaditems>3</preloaditems>
+			<itemlayout width="2540" height="400">
+				<!-- 16:9 landscape thumb -->
+				<control type="image">
+					<left>0</left><top>16</top><width>640</width><height>360</height>
+					<aspectratio>scale</aspectratio>
+					<texture fallback="common/black.png">$INFO[ListItem.Art(thumb)]</texture>
+				</control>
+				<!-- bottom gradient for badge -->
+				<control type="image">
+					<left>0</left><top>216</top><width>640</width><height>160</height>
+					<texture>common/gradient_episode_bottom.png</texture>
+				</control>
+				<!-- SxE badge -->
+				<control type="label">
+					<left>24</left><top>300</top><width>360</width><height>60</height>
+					<font>font12</font><align>left</align><aligny>center</aligny>
+					<textcolor>FF00FA9A</textcolor>
+					<label>$INFO[ListItem.Property(luc_sxe)]</label>
+				</control>
+				<!-- progress -->
+				<control type="progress">
+					<left>0</left><top>370</top><width>640</width><height>6</height>
+					<texturebg colordiffuse="60000000" border="0">common/white.png</texturebg>
+					<lefttexture/>
+					<midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture>
+					<righttexture/>
+					<info>ListItem.Property(luc_progress)</info>
+					<visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible>
+				</control>
+				<!-- watched tick -->
+				<control type="image">
+					<left>588</left><top>32</top><width>36</width><height>36</height>
+					<texture colordiffuse="CC00FA9A">common/white.png</texture>
+					<visible>Integer.IsEqual(ListItem.Property(luc_watched),1)</visible>
+				</control>
+				<!-- title -->
+				<control type="label">
+					<left>688</left><top>32</top><width>1820</width><height>64</height>
+					<font>font13</font><align>left</align>
+					<textcolor>FFFFFFFF</textcolor>
+					<label>$INFO[ListItem.Property(luc_ep_title)]</label>
+				</control>
+				<!-- air date -->
+				<control type="label">
+					<left>688</left><top>100</top><width>1820</width><height>48</height>
+					<font>font12</font><align>left</align>
+					<textcolor>FF8A8A8A</textcolor>
+					<label>$INFO[ListItem.Property(luc_ep_premiered)]</label>
+				</control>
+				<!-- plot -->
+				<control type="textbox">
+					<left>688</left><top>160</top><width>1820</width><height>168</height>
+					<font>font12</font><align>left</align>
+					<textcolor>FFCFCFCF</textcolor>
+					<label>$INFO[ListItem.Property(luc_ep_plot)]</label>
+				</control>
+				<!-- duration -->
+				<control type="label">
+					<left>688</left><top>332</top><width>600</width><height>48</height>
+					<font>font12</font><align>left</align>
+					<textcolor>FF8A8A8A</textcolor>
+					<label>$INFO[ListItem.Property(luc_ep_duration)]</label>
+				</control>
+			</itemlayout>
+			<focusedlayout width="2540" height="400">
+				<control type="image">
+					<left>-6</left><top>10</top><width>652</width><height>372</height>
+					<texture colordiffuse="FF00FA9A">common/white.png</texture>
+				</control>
+				<control type="image">
+					<left>0</left><top>16</top><width>640</width><height>360</height>
+					<aspectratio>scale</aspectratio>
+					<texture fallback="common/black.png">$INFO[ListItem.Art(thumb)]</texture>
+				</control>
+				<control type="image">
+					<left>0</left><top>216</top><width>640</width><height>160</height>
+					<texture>common/gradient_episode_bottom.png</texture>
+				</control>
+				<control type="label">
+					<left>24</left><top>300</top><width>360</width><height>60</height>
+					<font>font12</font><align>left</align><aligny>center</aligny>
+					<textcolor>FF00FA9A</textcolor>
+					<label>$INFO[ListItem.Property(luc_sxe)]</label>
+				</control>
+				<control type="progress">
+					<left>0</left><top>370</top><width>640</width><height>6</height>
+					<texturebg colordiffuse="60000000" border="0">common/white.png</texturebg>
+					<lefttexture/>
+					<midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture>
+					<righttexture/>
+					<info>ListItem.Property(luc_progress)</info>
+					<visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible>
+				</control>
+				<control type="image">
+					<left>588</left><top>32</top><width>36</width><height>36</height>
+					<texture colordiffuse="CC00FA9A">common/white.png</texture>
+					<visible>Integer.IsEqual(ListItem.Property(luc_watched),1)</visible>
+				</control>
+				<control type="label">
+					<left>688</left><top>32</top><width>1820</width><height>64</height>
+					<font>font13</font><align>left</align>
+					<textcolor>FFFFFFFF</textcolor>
+					<label>$INFO[ListItem.Property(luc_ep_title)]</label>
+				</control>
+				<control type="label">
+					<left>688</left><top>100</top><width>1820</width><height>48</height>
+					<font>font12</font><align>left</align>
+					<textcolor>FFAFAFAF</textcolor>
+					<label>$INFO[ListItem.Property(luc_ep_premiered)]</label>
+				</control>
+				<control type="textbox">
+					<left>688</left><top>160</top><width>1820</width><height>168</height>
+					<font>font12</font><align>left</align>
+					<textcolor>FFE2E2E2</textcolor>
+					<label>$INFO[ListItem.Property(luc_ep_plot)]</label>
+					<autoscroll delay="6000" time="3000" repeat="6000">true</autoscroll>
+				</control>
+				<control type="label">
+					<left>688</left><top>332</top><width>600</width><height>48</height>
+					<font>font12</font><align>left</align>
+					<textcolor>FFAFAFAF</textcolor>
+					<label>$INFO[ListItem.Property(luc_ep_duration)]</label>
+				</control>
+			</focusedlayout>
+		</control>
+
+		<!-- scrollbar -->
+		<control type="scrollbar" id="60">
+			<left>3806</left><top>240</top><width>10</width><height>1800</height>
+			<orientation>vertical</orientation>
+			<onleft>525</onleft>
+			<visible>Integer.IsGreater(Container(525).NumItems,0)</visible>
+		</control>
+
+		<!-- loading indicator -->
+		<control type="label">
+			<left>1240</left><top>2060</top><width>2540</width><height>50</height>
+			<font>font12</font><align>center</align>
+			<textcolor>FF00FA9A</textcolor>
+			<label>· · ·</label>
+			<visible>!String.IsEmpty(Window.Property(luc_kodi.loading))</visible>
+			<animation effect="fade" start="0" end="100" time="200">Visible</animation>
+		</control>
+
+	</controls>
+</window>

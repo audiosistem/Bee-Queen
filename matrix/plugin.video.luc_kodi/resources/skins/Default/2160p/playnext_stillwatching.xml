@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+	<defaultcontrol always="true">3011</defaultcontrol>
+	<onload>Dialog.Close(fullscreeninfo,true)</onload>
+	<onload>Dialog.Close(videoosd,true)</onload>
+	<controls>
+		<control type="group">
+			<animation type="WindowOpen" reversible="false">
+				<effect type="fade" start="0" end="100" time="400" />
+				<effect type="slide" start="0,-322" end="0,0" time="400" />
+			</animation>
+			<animation type="WindowClose" reversible="false">
+				<effect type="fade" start="100" end="0" time="400" />
+				<effect type="slide" start="0,0" end="0,-322" time="400" />
+			</animation>
+			<control type="group">
+				<top>0</top>
+				<left>0</left>
+				<height>322</height>
+				<width>2100</width>
+
+				<!-- Background -->
+				<control type="image">
+					<top>0</top>
+					<left>0</left>
+					<width>100%</width>
+					<height>100%</height>
+					<texture colordiffuse="FF12A0C7">common/bg.png</texture>
+				</control>
+				<!-- Landscape - Fanart - Thumb - Progress Bar-->
+				<control type="group">
+					<top>20</top>
+					<left>20</left>
+					<control type="image">
+						<top>-4</top>
+						<left>-4</left>
+						<width>508</width>
+						<height>288</height>
+						<texture>common/shadow.png</texture>
+					</control>
+					<control type="image">
+						<width>500</width>
+						<height>282</height>
+						<texture colordiffuse="FF12A0C7">common/white.png</texture>
+						<visible>String.IsEmpty(Window.Property(luc_kodi.thumb)) + String.IsEmpty(Window.Property(luc_kodi.landscape)) + String.IsEmpty(Window.Property(luc_kodi.fanart))</visible>
+					</control>
+					<control type="textbox">
+						<top>20</top>
+						<left>20</left>
+						<width>460</width>
+						<height>242</height>
+						<font>font12</font>
+						<textcolor>ffffffff</textcolor>
+						<shadowcolor>ff000000</shadowcolor>
+						<align>center</align>
+						<aligny>center</aligny>
+						<label>$INFO[Window.Property(tvshowtitle)]</label>
+						<visible>String.IsEmpty(Window.Property(luc_kodi.thumb)) + String.IsEmpty(Window.Property(luc_kodi.landscape)) + String.IsEmpty(Window.Property(luc_kodi.fanart))</visible>
+					</control>
+					<control type="image">
+						<width>500</width>
+						<height>282</height>
+						<texture>$INFO[Window.Property(luc_kodi.landscape)]</texture>
+						<aspectratio>scale</aspectratio>
+					</control>
+					<control type="image">
+						<width>500</width>
+						<height>282</height>
+						<texture>$INFO[Window.Property(luc_kodi.fanart)]</texture>
+						<aspectratio>scale</aspectratio>
+						<visible>String.IsEmpty(Window.Property(luc_kodi.landscape))</visible>
+					</control>
+					<control type="image">
+						<width>500</width>
+						<height>282</height>
+						<texture>$INFO[Window.Property(luc_kodi.thumb)]</texture>
+						<aspectratio>scale</aspectratio>
+						<visible>String.IsEmpty(Window.Property(luc_kodi.landscape)) + String.IsEmpty(Window.Property(luc_kodi.fanart))</visible>
+					</control>
+					<control type="progress" id="3014">
+						<width>500</width>
+						<top>272</top>
+						<height>10</height>
+						<reveal>true</reveal>
+						<righttexture></righttexture>
+						<overlaytexture></overlaytexture>
+						<lefttexture></lefttexture>
+						<texturebg colordiffuse="00ffffff">common/white.png</texturebg>
+						<midtexture colordiffuse="FFFF4081">common/white.png</midtexture>
+					</control>
+				</control>
+
+				<!-- Labels -->
+				<control type="group">
+					<top>20</top>
+					<left>540</left>
+					<right>20</right>
+					<!-- Labels line1, Still There and Time remaining -->
+					<control type="grouplist">
+						<orientation>horizontal</orientation>
+						<height>70</height>
+						<orientation>horizontal</orientation>
+						<itemgap>120</itemgap>
+						<control type="label">
+							<description>Still There Label</description>
+							<width>auto</width>
+							<height>70</height>
+							<aligny>center</aligny>
+							<font>font30_title</font>
+							<textcolor>ffffffff</textcolor>
+							<shadowcolor>ff000000</shadowcolor>
+							<label>$ADDON[plugin.video.luc_kodi 32172]</label>
+						</control>
+						<control type="label">
+							<description>Default Action in xx seconds label</description>
+							<width>auto</width>
+							<height>70</height>
+							<right>20</right>
+							<aligny>center</aligny>
+							<font>font25_title</font>
+							<textcolor>eeffffff</textcolor>
+							<shadowcolor>ff000000</shadowcolor>
+							<label>$ADDON[plugin.video.luc_kodi 32175][COLOR FFFF4081][B]$INFO[Player.TimeRemaining(m:ss)][/B][/COLOR]</label>
+							<visible>!Integer.IsGreater(Player.TimeRemaining,290)</visible>
+						</control>
+						<control type="label">
+							<description>Play Next label</description>
+							<width>auto</width>
+							<height>70</height>
+							<aligny>center</aligny>
+							<font>font25_title</font>
+							<textcolor>eeffffff</textcolor>
+							<shadowcolor>ff000000</shadowcolor>
+							<label>$ADDON[plugin.video.luc_kodi 32168]</label>
+							<visible>Integer.IsGreater(Player.TimeRemaining,290)</visible>
+						</control>
+					</control>
+					<!-- Labels line2, Episode Details -->
+					<control type="grouplist">
+						<orientation>horizontal</orientation>
+						<height>70</height>
+						<top>90</top>
+						<itemgap>0</itemgap>
+						<control type="label">
+							<width>auto</width>
+							<height>60</height>
+							<aligny>center</aligny>
+							<font>font12</font>
+							<textcolor>eeffffff</textcolor>
+							<shadowcolor>ff000000</shadowcolor>
+							<label>$INFO[Window.Property(luc_kodi.tvshowtitle),, - ]$INFO[Window.Property(luc_kodi.season),S,]$INFO[Window.Property(luc_kodi.episode),E, - ]$INFO[Window.Property(luc_kodi.title)]   </label>
+							<visible>!String.IsEmpty(Window.Property(luc_kodi.title))</visible>
+						</control>
+						<control type="label">
+							<width>auto</width>
+							<height>70</height>
+							<aligny>center</aligny>
+							<font>font12</font>
+							<textcolor>eeffffff</textcolor>
+							<shadowcolor>ff000000</shadowcolor>
+							<label>$INFO[Window.Property(luc_kodi.premiered),(,)   ]</label>
+							<visible>!String.IsEmpty(Window.Property(luc_kodi.premiered))</visible>
+						</control>
+						<control type="image">
+							<description>rating icon</description>
+							<width>38</width>
+							<height>38</height>
+							<aspect>keep</aspect>
+							<texture colordiffuse="FFFF4081">common/star.png</texture>
+							<animation effect="slide" end="0,16" time="0" condition="true">Conditional</animation>
+							<visible>!String.IsEmpty(Window.Property(luc_kodi.rating))</visible>
+						</control>
+						<control type="label">
+							<width>auto</width>
+							<height>70</height>
+							<aligny>center</aligny>
+							<label>$INFO[Window.Property(luc_kodi.rating), ,   ]</label>
+							<font>font12</font>
+							<textcolor>eeffffff</textcolor>
+							<shadowcolor>ff000000</shadowcolor>
+							<visible>!String.IsEmpty(Window.Property(luc_kodi.rating))</visible>
+						</control>
+					</control>
+
+					<!-- Buttons -->
+					<control type="grouplist">
+						<orientation>horizontal</orientation>
+						<left>0</left>
+						<bottom>0</bottom>
+						<height>150</height>
+						<itemgap>10</itemgap>
+						<usecontrolcoords>true</usecontrolcoords>
+						<control type="button" id="3011">
+							<description>Play Now button</description>
+							<label>    $ADDON[plugin.video.luc_kodi 32169]</label>
+							<shadowcolor>ff000000</shadowcolor>
+							<height>150</height>
+							<width>400</width>
+							<font>font20_title</font>
+							<textoffsetx>60</textoffsetx>
+							<textcolor>ddffffff</textcolor>
+							<focusedcolor>eeffffff</focusedcolor>
+							<selectedcolor>ddffffff</selectedcolor>
+							<aligny>center</aligny>
+							<align>right</align>
+							<texturefocus border="20" colordiffuse="FF172A91">common/button3.png</texturefocus>
+							<texturenofocus border="20" colordiffuse="FF212121">common/button3.png</texturenofocus>
+							<alttexturefocus border="20" colordiffuse="FF172A91">common/button3.png</alttexturefocus>
+							<alttexturenofocus border="20" colordiffuse="FF212121">common/button3.png</alttexturenofocus>
+							<pulseonselect>no</pulseonselect>
+						</control>
+						<control type="button" id="3012">
+							<description>Stop playback button</description>
+							<label>    $ADDON[plugin.video.luc_kodi 32170]</label>
+							<shadowcolor>ff000000</shadowcolor>
+							<height>150</height>
+							<width min="300">auto</width>
+							<font>font20_title</font>
+							<textoffsetx>60</textoffsetx>
+							<textcolor>ddffffff</textcolor>
+							<focusedcolor>eeffffff</focusedcolor>
+							<selectedcolor>ddffffff</selectedcolor>
+							<aligny>center</aligny>
+							<align>right</align>
+							<texturefocus border="20" colordiffuse="FF172A91">common/button3.png</texturefocus>
+							<texturenofocus border="20" colordiffuse="FF212121">common/button3.png</texturenofocus>
+							<alttexturefocus border="20" colordiffuse="FF172A91">common/button3.png</alttexturefocus>
+							<alttexturenofocus border="20" colordiffuse="FF212121">common/button3.png</alttexturenofocus>
+							<pulseonselect>no</pulseonselect>
+						</control>
+						<control type="button" id="3013">
+							<description>Close button</description>
+							<label>$ADDON[plugin.video.luc_kodi 33486]</label>
+							<shadowcolor>ff000000</shadowcolor>
+							<height>150</height>
+							<width min="320">auto</width>
+							<font>font20_title</font>
+							<textoffsetx>60</textoffsetx>
+							<textcolor>ddffffff</textcolor>
+							<focusedcolor>eeffffff</focusedcolor>
+							<selectedcolor>ddffffff</selectedcolor>
+							<aligny>center</aligny>
+							<align>right</align>
+							<texturefocus border="20" colordiffuse="FF172A91">common/button3.png</texturefocus>
+							<texturenofocus border="20" colordiffuse="FF212121">common/button3.png</texturenofocus>
+							<alttexturefocus border="20" colordiffuse="FF172A91">common/button3.png</alttexturefocus>
+							<alttexturenofocus border="20" colordiffuse="FF212121">common/button3.png</alttexturenofocus>
+							<pulseonselect>no</pulseonselect>
+						</control>
+					</control>
+					<control type="image">
+						<description>play icon on button</description>
+						<left>40</left>
+						<bottom>34</bottom>
+						<width>80</width>
+						<height>80</height>
+						<aspect>keep</aspect>
+						<texture colordiffuse="ddffffff">common/play.png</texture>
+					</control>
+					<control type="image">
+						<description>stop icon on button</description>
+						<left>450</left>
+						<bottom>38</bottom>
+						<width>72</width>
+						<height>72</height>
+						<aspect>keep</aspect>
+						<texture colordiffuse="ddffffff">common/stop.png</texture>
+					</control>
+					<control type="image">
+						<description>close icon on button</description>
+						<left>750</left>
+						<bottom>30</bottom>
+						<width>90</width>
+						<height>90</height>
+						<aspect>keep</aspect>
+						<texture colordiffuse="ddffffff">common/close.png</texture>
+					</control>
+
+					<!-- Time and EndTime -->
+					<control type="group">
+						<bottom>40</bottom>
+						<right>20</right>
+						<visible>!Window.IsVisible(extendedprogressdialog)</visible>
+						<animation effect="fade" time="150">VisibleChange</animation>
+						<control type="label">
+							<right>0</right>
+							<bottom>0</bottom>
+							<width>400</width>
+							<height>40</height>
+							<font>font12</font>
+							<align>right</align>
+							<textcolor>ddffffff</textcolor>
+							<shadowcolor>ff000000</shadowcolor>
+							<label>$ADDON[plugin.video.luc_kodi 32171] $INFO[Window.Property(luc_kodi.endtime)]</label>
+							<visible>!String.IsEmpty(Window.Property(luc_kodi.endtime))</visible>
+						</control>
+						<control type="label">
+							<right>0</right>
+							<bottom>50</bottom>
+							<width>400</width>
+							<height>40</height>
+							<font>font12</font>
+							<align>right</align>
+							<textcolor>ddffffff</textcolor>
+							<shadowcolor>ff000000</shadowcolor>
+							<label>$INFO[System.Time]</label>
+						</control>
+					</control>
+
+				</control>
+			</control>
+		</control>
+	</controls>
+</window>

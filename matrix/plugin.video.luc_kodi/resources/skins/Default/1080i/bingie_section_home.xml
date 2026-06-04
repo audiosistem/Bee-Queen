@@ -1,0 +1,623 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+	luc_kodi  ·  Bingie-style SECTION HOME (fixed ui)
+	Compact hero on top; ONE large poster row visible at a time (next category
+	scrolls in below). Large 2:3 posters, generous spacing so a row never
+	overlaps the neighbour. All rows loaded synchronously. OK plays; per-row
+	pagination (next.png card); Back pages back. Title FFC75453, sel FF00FA9A. 1080 (1920 x 1080).
+-->
+<window>
+	<defaultcontrol always="true">6000</defaultcontrol>
+	<onload>SetProperty(luc_kodi.bingie.section.loaded,1)</onload>
+	<controls>
+
+		<control type="image">
+			<left>0</left><top>0</top><width>1920</width><height>1080</height>
+			<aspectratio>scale</aspectratio><fadetime>400</fadetime>
+			<texture background="true" fallback="common/black.png">$INFO[ListItem.Art(fanart)]</texture>
+		</control>
+		<control type="image">
+			<left>0</left><top>0</top><width>1920</width><height>1080</height>
+			<texture colordiffuse="CC0A0A12">common/black.png</texture>
+		</control>
+		<control type="image">
+			<left>0</left><top>300</top><width>1920</width><height>780</height>
+			<texture colordiffuse="FF0A0A12">common/gradient-diffuse-vertical.png</texture>
+		</control>
+
+		<control type="label">
+			<left>62</left><top>20</top><width>900</width><height>36</height>
+			<label>$INFO[Window.Property(luc_kodi.section_title)]</label>
+			<font>font14</font><textcolor>FFFDB515</textcolor><shadowcolor>FF000000</shadowcolor>
+		</control>
+
+		<control type="group">
+			<left>62</left><top>62</top><width>1100</width><height>380</height>
+			<control type="image" id="9001">
+				<left>0</left><top>0</top><width>560</width><height>150</height>
+				<aspectratio align="left" aligny="center">keep</aspectratio><fadetime>350</fadetime>
+				<texture background="true" fallback="common/black.png">$INFO[ListItem.Art(clearlogo)]</texture>
+				<visible>!String.IsEmpty(ListItem.Art(clearlogo))</visible>
+			</control>
+			<control type="textbox" id="9002">
+				<left>0</left><top>16</top><width>900</width><height>130</height>
+				<font>font14</font><align>left</align><aligny>top</aligny><textcolor>FFFFFFFF</textcolor>
+				<label>$INFO[ListItem.Label]</label>
+				<visible>String.IsEmpty(ListItem.Art(clearlogo))</visible>
+			</control>
+			<control type="grouplist" id="9020">
+				<left>2</left><top>164</top><width>1400</width><height>30</height>
+				<orientation>horizontal</orientation><itemgap>24</itemgap><align>left</align>
+				<usecontrolcoords>true</usecontrolcoords>
+				<control type="label"><width>auto</width><height>30</height><font>font13</font><aligny>center</aligny><textcolor>FFCFCFCF</textcolor><label>$INFO[Window.Property(luc_kodi.meta_line)]</label></control>
+				<control type="group"><width>104</width><height>30</height><visible>!String.IsEmpty(Window.Property(luc_kodi.rating_imdb))</visible><control type="image"><left>0</left><top>0</top><width>26</width><height>30</height><aspectratio align="center" aligny="center">keep</aspectratio><texture>ratings/rating_imdb.png</texture></control><control type="label"><left>32</left><top>0</top><width>72</width><height>30</height><font>font13</font><align>left</align><aligny>center</aligny><textcolor>FFF5C518</textcolor><label>$INFO[Window.Property(luc_kodi.rating_imdb)]</label></control></control>
+				<control type="group"><width>104</width><height>30</height><visible>!String.IsEmpty(Window.Property(luc_kodi.rating_rt))</visible><control type="image"><left>0</left><top>0</top><width>26</width><height>30</height><aspectratio align="center" aligny="center">keep</aspectratio><texture>ratings/rating_rt.png</texture></control><control type="label"><left>32</left><top>0</top><width>72</width><height>30</height><font>font13</font><align>left</align><aligny>center</aligny><textcolor>FFFA320A</textcolor><label>$INFO[Window.Property(luc_kodi.rating_rt)]</label></control></control>
+				<control type="group"><width>104</width><height>30</height><visible>!String.IsEmpty(Window.Property(luc_kodi.rating_tmdb))</visible><control type="image"><left>0</left><top>0</top><width>26</width><height>30</height><aspectratio align="center" aligny="center">keep</aspectratio><texture>ratings/rating_tmdb.png</texture></control><control type="label"><left>32</left><top>0</top><width>72</width><height>30</height><font>font13</font><align>left</align><aligny>center</aligny><textcolor>FF01D277</textcolor><label>$INFO[Window.Property(luc_kodi.rating_tmdb)]</label></control></control>
+				<control type="group"><width>104</width><height>30</height><visible>!String.IsEmpty(Window.Property(luc_kodi.rating_trakt))</visible><control type="image"><left>0</left><top>0</top><width>26</width><height>30</height><aspectratio align="center" aligny="center">keep</aspectratio><texture>ratings/rating_trakt.png</texture></control><control type="label"><left>32</left><top>0</top><width>72</width><height>30</height><font>font13</font><align>left</align><aligny>center</aligny><textcolor>FFED1C24</textcolor><label>$INFO[Window.Property(luc_kodi.rating_trakt)]</label></control></control>
+			</control>
+			<control type="textbox" id="9030">
+				<left>2</left><top>206</top><width>1040</width><height>112</height>
+				<font>font12</font><align>left</align><textcolor>FFD2D2D2</textcolor>
+				<label>$INFO[ListItem.Plot]</label>
+				<autoscroll delay="5000" time="4000" repeat="6000">true</autoscroll>
+			</control>
+		</control>
+
+		<control type="group">
+			<left>62</left><top>560</top><width>1800</width><height>508</height>
+			<control type="scrollbar" id="61">
+				<left>1786</left><top>0</top><width>5</width><height>508</height>
+				<orientation>vertical</orientation><visible>false</visible>
+			</control>
+			<control type="grouplist" id="7000">
+				<left>0</left><top>0</top><width>1800</width><height>508</height>
+				<orientation>vertical</orientation>
+				<itemgap>30</itemgap>
+				<pagecontrol>61</pagecontrol>
+				<scrolltime tween="sine" easing="out">300</scrolltime>
+				<usecontrolcoords>true</usecontrolcoords>
+			<!-- ROW 0 -->
+			<control type="group">
+				<height>460</height>
+				<visible>!String.IsEmpty(Window.Property(luc_kodi.row_label.0))</visible>
+				<control type="label" id="6500">
+					<left>4</left><top>0</top><width>1400</width><height>34</height>
+					<font>font14</font><textcolor>FFC75453</textcolor>
+					<label>$INFO[Window.Property(luc_kodi.row_label.0)]</label>
+				</control>
+				<control type="label">
+					<left>4</left><top>0</top><width>1700</width><height>34</height>
+					<font>font14</font><align>right</align><textcolor>FF00FA9A</textcolor>
+					<label>· · ·</label>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.row_loading.0))</visible>
+				</control>
+				<control type="list" id="6000">
+					<left>0</left><top>42</top><width>1800</width><height>352</height>
+					<onleft>6000</onleft><onright>6000</onright>
+					<onup>6000</onup><ondown>6001</ondown>
+					<orientation>horizontal</orientation>
+					<scrolltime tween="sine" easing="out">240</scrolltime>
+					<preloaditems>5</preloaditems>
+					<itemlayout width="236" height="352">
+						
+						
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+					</itemlayout>
+					<focusedlayout width="236" height="352">
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6000) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6000) + String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<animation effect="zoom" end="106,106" center="118,173" time="120" tween="sine">focus</animation>
+					</focusedlayout>
+				</control>
+			</control>
+			<!-- ROW 1 -->
+			<control type="group">
+				<height>460</height>
+				<visible>!String.IsEmpty(Window.Property(luc_kodi.row_label.1))</visible>
+				<control type="label" id="6501">
+					<left>4</left><top>0</top><width>1400</width><height>34</height>
+					<font>font14</font><textcolor>FFC75453</textcolor>
+					<label>$INFO[Window.Property(luc_kodi.row_label.1)]</label>
+				</control>
+				<control type="label">
+					<left>4</left><top>0</top><width>1700</width><height>34</height>
+					<font>font14</font><align>right</align><textcolor>FF00FA9A</textcolor>
+					<label>· · ·</label>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.row_loading.1))</visible>
+				</control>
+				<control type="list" id="6001">
+					<left>0</left><top>42</top><width>1800</width><height>352</height>
+					<onleft>6001</onleft><onright>6001</onright>
+					<onup>6000</onup><ondown>6002</ondown>
+					<orientation>horizontal</orientation>
+					<scrolltime tween="sine" easing="out">240</scrolltime>
+					<preloaditems>5</preloaditems>
+					<itemlayout width="236" height="352">
+						
+						
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+					</itemlayout>
+					<focusedlayout width="236" height="352">
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6001) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6001) + String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<animation effect="zoom" end="106,106" center="118,173" time="120" tween="sine">focus</animation>
+					</focusedlayout>
+				</control>
+			</control>
+			<!-- ROW 2 -->
+			<control type="group">
+				<height>460</height>
+				<visible>!String.IsEmpty(Window.Property(luc_kodi.row_label.2))</visible>
+				<control type="label" id="6502">
+					<left>4</left><top>0</top><width>1400</width><height>34</height>
+					<font>font14</font><textcolor>FFC75453</textcolor>
+					<label>$INFO[Window.Property(luc_kodi.row_label.2)]</label>
+				</control>
+				<control type="label">
+					<left>4</left><top>0</top><width>1700</width><height>34</height>
+					<font>font14</font><align>right</align><textcolor>FF00FA9A</textcolor>
+					<label>· · ·</label>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.row_loading.2))</visible>
+				</control>
+				<control type="list" id="6002">
+					<left>0</left><top>42</top><width>1800</width><height>352</height>
+					<onleft>6002</onleft><onright>6002</onright>
+					<onup>6001</onup><ondown>6003</ondown>
+					<orientation>horizontal</orientation>
+					<scrolltime tween="sine" easing="out">240</scrolltime>
+					<preloaditems>5</preloaditems>
+					<itemlayout width="236" height="352">
+						
+						
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+					</itemlayout>
+					<focusedlayout width="236" height="352">
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6002) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6002) + String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<animation effect="zoom" end="106,106" center="118,173" time="120" tween="sine">focus</animation>
+					</focusedlayout>
+				</control>
+			</control>
+			<!-- ROW 3 -->
+			<control type="group">
+				<height>460</height>
+				<visible>!String.IsEmpty(Window.Property(luc_kodi.row_label.3))</visible>
+				<control type="label" id="6503">
+					<left>4</left><top>0</top><width>1400</width><height>34</height>
+					<font>font14</font><textcolor>FFC75453</textcolor>
+					<label>$INFO[Window.Property(luc_kodi.row_label.3)]</label>
+				</control>
+				<control type="label">
+					<left>4</left><top>0</top><width>1700</width><height>34</height>
+					<font>font14</font><align>right</align><textcolor>FF00FA9A</textcolor>
+					<label>· · ·</label>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.row_loading.3))</visible>
+				</control>
+				<control type="list" id="6003">
+					<left>0</left><top>42</top><width>1800</width><height>352</height>
+					<onleft>6003</onleft><onright>6003</onright>
+					<onup>6002</onup><ondown>6004</ondown>
+					<orientation>horizontal</orientation>
+					<scrolltime tween="sine" easing="out">240</scrolltime>
+					<preloaditems>5</preloaditems>
+					<itemlayout width="236" height="352">
+						
+						
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+					</itemlayout>
+					<focusedlayout width="236" height="352">
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6003) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6003) + String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<animation effect="zoom" end="106,106" center="118,173" time="120" tween="sine">focus</animation>
+					</focusedlayout>
+				</control>
+			</control>
+			<!-- ROW 4 -->
+			<control type="group">
+				<height>460</height>
+				<visible>!String.IsEmpty(Window.Property(luc_kodi.row_label.4))</visible>
+				<control type="label" id="6504">
+					<left>4</left><top>0</top><width>1400</width><height>34</height>
+					<font>font14</font><textcolor>FFC75453</textcolor>
+					<label>$INFO[Window.Property(luc_kodi.row_label.4)]</label>
+				</control>
+				<control type="label">
+					<left>4</left><top>0</top><width>1700</width><height>34</height>
+					<font>font14</font><align>right</align><textcolor>FF00FA9A</textcolor>
+					<label>· · ·</label>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.row_loading.4))</visible>
+				</control>
+				<control type="list" id="6004">
+					<left>0</left><top>42</top><width>1800</width><height>352</height>
+					<onleft>6004</onleft><onright>6004</onright>
+					<onup>6003</onup><ondown>6005</ondown>
+					<orientation>horizontal</orientation>
+					<scrolltime tween="sine" easing="out">240</scrolltime>
+					<preloaditems>5</preloaditems>
+					<itemlayout width="236" height="352">
+						
+						
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+					</itemlayout>
+					<focusedlayout width="236" height="352">
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6004) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6004) + String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<animation effect="zoom" end="106,106" center="118,173" time="120" tween="sine">focus</animation>
+					</focusedlayout>
+				</control>
+			</control>
+			<!-- ROW 5 -->
+			<control type="group">
+				<height>460</height>
+				<visible>!String.IsEmpty(Window.Property(luc_kodi.row_label.5))</visible>
+				<control type="label" id="6505">
+					<left>4</left><top>0</top><width>1400</width><height>34</height>
+					<font>font14</font><textcolor>FFC75453</textcolor>
+					<label>$INFO[Window.Property(luc_kodi.row_label.5)]</label>
+				</control>
+				<control type="label">
+					<left>4</left><top>0</top><width>1700</width><height>34</height>
+					<font>font14</font><align>right</align><textcolor>FF00FA9A</textcolor>
+					<label>· · ·</label>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.row_loading.5))</visible>
+				</control>
+				<control type="list" id="6005">
+					<left>0</left><top>42</top><width>1800</width><height>352</height>
+					<onleft>6005</onleft><onright>6005</onright>
+					<onup>6004</onup><ondown>6006</ondown>
+					<orientation>horizontal</orientation>
+					<scrolltime tween="sine" easing="out">240</scrolltime>
+					<preloaditems>5</preloaditems>
+					<itemlayout width="236" height="352">
+						
+						
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+					</itemlayout>
+					<focusedlayout width="236" height="352">
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6005) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6005) + String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<animation effect="zoom" end="106,106" center="118,173" time="120" tween="sine">focus</animation>
+					</focusedlayout>
+				</control>
+			</control>
+			<!-- ROW 6 -->
+			<control type="group">
+				<height>460</height>
+				<visible>!String.IsEmpty(Window.Property(luc_kodi.row_label.6))</visible>
+				<control type="label" id="6506">
+					<left>4</left><top>0</top><width>1400</width><height>34</height>
+					<font>font14</font><textcolor>FFC75453</textcolor>
+					<label>$INFO[Window.Property(luc_kodi.row_label.6)]</label>
+				</control>
+				<control type="label">
+					<left>4</left><top>0</top><width>1700</width><height>34</height>
+					<font>font14</font><align>right</align><textcolor>FF00FA9A</textcolor>
+					<label>· · ·</label>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.row_loading.6))</visible>
+				</control>
+				<control type="list" id="6006">
+					<left>0</left><top>42</top><width>1800</width><height>352</height>
+					<onleft>6006</onleft><onright>6006</onright>
+					<onup>6005</onup><ondown>6007</ondown>
+					<orientation>horizontal</orientation>
+					<scrolltime tween="sine" easing="out">240</scrolltime>
+					<preloaditems>5</preloaditems>
+					<itemlayout width="236" height="352">
+						
+						
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+					</itemlayout>
+					<focusedlayout width="236" height="352">
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6006) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6006) + String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<animation effect="zoom" end="106,106" center="118,173" time="120" tween="sine">focus</animation>
+					</focusedlayout>
+				</control>
+			</control>
+			<!-- ROW 7 -->
+			<control type="group">
+				<height>460</height>
+				<visible>!String.IsEmpty(Window.Property(luc_kodi.row_label.7))</visible>
+				<control type="label" id="6507">
+					<left>4</left><top>0</top><width>1400</width><height>34</height>
+					<font>font14</font><textcolor>FFC75453</textcolor>
+					<label>$INFO[Window.Property(luc_kodi.row_label.7)]</label>
+				</control>
+				<control type="label">
+					<left>4</left><top>0</top><width>1700</width><height>34</height>
+					<font>font14</font><align>right</align><textcolor>FF00FA9A</textcolor>
+					<label>· · ·</label>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.row_loading.7))</visible>
+				</control>
+				<control type="list" id="6007">
+					<left>0</left><top>42</top><width>1800</width><height>352</height>
+					<onleft>6007</onleft><onright>6007</onright>
+					<onup>6006</onup><ondown>6008</ondown>
+					<orientation>horizontal</orientation>
+					<scrolltime tween="sine" easing="out">240</scrolltime>
+					<preloaditems>5</preloaditems>
+					<itemlayout width="236" height="352">
+						
+						
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+					</itemlayout>
+					<focusedlayout width="236" height="352">
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6007) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6007) + String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<animation effect="zoom" end="106,106" center="118,173" time="120" tween="sine">focus</animation>
+					</focusedlayout>
+				</control>
+			</control>
+			<!-- ROW 8 -->
+			<control type="group">
+				<height>460</height>
+				<visible>!String.IsEmpty(Window.Property(luc_kodi.row_label.8))</visible>
+				<control type="label" id="6508">
+					<left>4</left><top>0</top><width>1400</width><height>34</height>
+					<font>font14</font><textcolor>FFC75453</textcolor>
+					<label>$INFO[Window.Property(luc_kodi.row_label.8)]</label>
+				</control>
+				<control type="label">
+					<left>4</left><top>0</top><width>1700</width><height>34</height>
+					<font>font14</font><align>right</align><textcolor>FF00FA9A</textcolor>
+					<label>· · ·</label>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.row_loading.8))</visible>
+				</control>
+				<control type="list" id="6008">
+					<left>0</left><top>42</top><width>1800</width><height>352</height>
+					<onleft>6008</onleft><onright>6008</onright>
+					<onup>6007</onup><ondown>6009</ondown>
+					<orientation>horizontal</orientation>
+					<scrolltime tween="sine" easing="out">240</scrolltime>
+					<preloaditems>5</preloaditems>
+					<itemlayout width="236" height="352">
+						
+						
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+					</itemlayout>
+					<focusedlayout width="236" height="352">
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6008) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6008) + String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<animation effect="zoom" end="106,106" center="118,173" time="120" tween="sine">focus</animation>
+					</focusedlayout>
+				</control>
+			</control>
+			<!-- ROW 9 -->
+			<control type="group">
+				<height>460</height>
+				<visible>!String.IsEmpty(Window.Property(luc_kodi.row_label.9))</visible>
+				<control type="label" id="6509">
+					<left>4</left><top>0</top><width>1400</width><height>34</height>
+					<font>font14</font><textcolor>FFC75453</textcolor>
+					<label>$INFO[Window.Property(luc_kodi.row_label.9)]</label>
+				</control>
+				<control type="label">
+					<left>4</left><top>0</top><width>1700</width><height>34</height>
+					<font>font14</font><align>right</align><textcolor>FF00FA9A</textcolor>
+					<label>· · ·</label>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.row_loading.9))</visible>
+				</control>
+				<control type="list" id="6009">
+					<left>0</left><top>42</top><width>1800</width><height>352</height>
+					<onleft>6009</onleft><onright>6009</onright>
+					<onup>6008</onup><ondown>6010</ondown>
+					<orientation>horizontal</orientation>
+					<scrolltime tween="sine" easing="out">240</scrolltime>
+					<preloaditems>5</preloaditems>
+					<itemlayout width="236" height="352">
+						
+						
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+					</itemlayout>
+					<focusedlayout width="236" height="352">
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6009) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6009) + String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<animation effect="zoom" end="106,106" center="118,173" time="120" tween="sine">focus</animation>
+					</focusedlayout>
+				</control>
+			</control>
+			<!-- ROW 10 -->
+			<control type="group">
+				<height>460</height>
+				<visible>!String.IsEmpty(Window.Property(luc_kodi.row_label.10))</visible>
+				<control type="label" id="6510">
+					<left>4</left><top>0</top><width>1400</width><height>34</height>
+					<font>font14</font><textcolor>FFC75453</textcolor>
+					<label>$INFO[Window.Property(luc_kodi.row_label.10)]</label>
+				</control>
+				<control type="label">
+					<left>4</left><top>0</top><width>1700</width><height>34</height>
+					<font>font14</font><align>right</align><textcolor>FF00FA9A</textcolor>
+					<label>· · ·</label>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.row_loading.10))</visible>
+				</control>
+				<control type="list" id="6010">
+					<left>0</left><top>42</top><width>1800</width><height>352</height>
+					<onleft>6010</onleft><onright>6010</onright>
+					<onup>6009</onup><ondown>6011</ondown>
+					<orientation>horizontal</orientation>
+					<scrolltime tween="sine" easing="out">240</scrolltime>
+					<preloaditems>5</preloaditems>
+					<itemlayout width="236" height="352">
+						
+						
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+					</itemlayout>
+					<focusedlayout width="236" height="352">
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6010) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6010) + String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<animation effect="zoom" end="106,106" center="118,173" time="120" tween="sine">focus</animation>
+					</focusedlayout>
+				</control>
+			</control>
+			<!-- ROW 11 -->
+			<control type="group">
+				<height>460</height>
+				<visible>!String.IsEmpty(Window.Property(luc_kodi.row_label.11))</visible>
+				<control type="label" id="6511">
+					<left>4</left><top>0</top><width>1400</width><height>34</height>
+					<font>font14</font><textcolor>FFC75453</textcolor>
+					<label>$INFO[Window.Property(luc_kodi.row_label.11)]</label>
+				</control>
+				<control type="label">
+					<left>4</left><top>0</top><width>1700</width><height>34</height>
+					<font>font14</font><align>right</align><textcolor>FF00FA9A</textcolor>
+					<label>· · ·</label>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.row_loading.11))</visible>
+				</control>
+				<control type="list" id="6011">
+					<left>0</left><top>42</top><width>1800</width><height>352</height>
+					<onleft>6011</onleft><onright>6011</onright>
+					<onup>6010</onup><ondown>6011</ondown>
+					<orientation>horizontal</orientation>
+					<scrolltime tween="sine" easing="out">240</scrolltime>
+					<preloaditems>5</preloaditems>
+					<itemlayout width="236" height="352">
+						
+						
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+					</itemlayout>
+					<focusedlayout width="236" height="352">
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6011) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>4</left><top>4</top><width>228</width><height>338</height><texture colordiffuse="FF00FA9A">common/white.png</texture><visible>[Control.HasFocus(6011) + String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><aspectratio>scale</aspectratio><texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture><visible>!String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>194</left><top>14</top><width>22</width><height>22</height><texture colordiffuse="CC00FA9A">common/white.png</texture><visible>[Integer.IsEqual(ListItem.Property(luc_watched),1) + !String.IsEqual(ListItem.Property(luc_next_card),1)]</visible></control>
+						<control type="progress"><left>8</left><top>332</top><width>220</width><height>4</height><texturebg colordiffuse="60000000" border="0">common/white.png</texturebg><lefttexture/><midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture><righttexture/><info>ListItem.Property(luc_progress)</info><visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible></control>
+						<control type="image"><left>8</left><top>8</top><width>220</width><height>330</height><texture colordiffuse="40FFFFFF">common/white.png</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="image"><left>64</left><top>93</top><width>108</width><height>108</height><aspectratio>keep</aspectratio><texture>$INFO[ListItem.Art(poster)]</texture><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<control type="label"><left>4</left><top>272</top><width>228</width><height>40</height><font>font14</font><align>center</align><aligny>center</aligny><textcolor>FF00FA9A</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEqual(ListItem.Property(luc_next_card),1)</visible></control>
+						<animation effect="zoom" end="106,106" center="118,173" time="120" tween="sine">focus</animation>
+					</focusedlayout>
+				</control>
+			</control>
+			</control>
+		</control>
+
+	</controls>
+</window>

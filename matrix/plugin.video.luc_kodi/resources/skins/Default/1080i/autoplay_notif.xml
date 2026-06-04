@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+    <defaultcontrol always="true">9602</defaultcontrol>
+    <controls>
+        <control type="group">
+            <animation type="WindowOpen" reversible="false">
+                <effect type="fade"  start="0"      end="100"  time="320" />
+                <effect type="slide" start="0,-200" end="0,0"  time="320" tween="sine" easing="out" />
+            </animation>
+            <animation type="WindowClose" reversible="false">
+                <effect type="fade"  start="100"    end="0"     time="260" />
+                <effect type="slide" start="0,0"    end="0,-200" time="260" tween="sine" easing="in" />
+            </animation>
+            <control type="group">
+                <left>670</left><top>40</top>
+                <width>580</width><height>130</height>
+
+                <!-- Sin línea verde — solo fondo cristal -->
+                <control type="image">
+                    <left>0</left><top>0</top>
+                    <width>580</width><height>130</height>
+                    <texture border="18">common/white_rounded.png</texture>
+                    <colordiffuse>A0141414</colordiffuse>
+                </control>
+
+                <control type="image">
+                    <top>17</top><left>14</left>
+                    <width>96</width><height>96</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture>$INFO[Window(10000).Property(luc_kodi.notif.icon)]</texture>
+                </control>
+
+                <control type="image">
+                    <left>120</left><top>18</top>
+                    <width>1</width><height>94</height>
+                    <texture>common/white.png</texture>
+                    <colordiffuse>18FFFFFF</colordiffuse>
+                </control>
+
+                <control type="label">
+                    <top>24</top><left>132</left>
+                    <width>436</width><height>34</height>
+                    <font>font13</font><textcolor>FFFFFFFF</textcolor>
+                    <shadowcolor>CC000000</shadowcolor>
+                    <label>$INFO[Window(10000).Property(luc_kodi.notif.line1)]</label>
+                    <align>left</align><aligny>center</aligny>
+                </control>
+
+                <control type="label">
+                    <top>64</top><left>132</left>
+                    <width>436</width><height>52</height>
+                    <font>font12</font><textcolor>FFFDB515</textcolor>
+                    <shadowcolor>CC000000</shadowcolor>
+                    <label>$INFO[Window(10000).Property(luc_kodi.notif.line2)]</label>
+                    <align>left</align><aligny>top</aligny>
+                    <wrapmultiline>true</wrapmultiline>
+                </control>
+            </control>
+        </control>
+    </controls>
+</window>

@@ -1,0 +1,317 @@
+<settings>
+    <category label="Allgemein">
+        <setting id="hosts.mode" type="enum" label="Standard-Aktion" values="Dialog|Verzeichnis|Autoplay" default="1" />
+		<setting id="prefLanguage" label="Sprachen" type="enum" values="All|German|English|Japanese" default="0" />
+        <setting id="scrapers.timeout" type="slider" label="Zeitlimit f&#252;r Indexseiten" default="35" range="10,60" option="int" />
+        <setting id="fanart" type="bool" label="Fanart verwenden" default="true" />
+        <setting id="search.doku" type="bool" label="Auch nach Dokumentationen suchen" default="false" />
+        <setting type="lsep" label="Einstellungen RequestHandler" />
+		<setting default="true" id="volatileHtmlCache" type="bool" label="HTML Inhalte werden nur im RAM zwischengespeichert" visible="true" />
+        <setting default="10" id="requestTimeout" label="Timeout f&#252;r HTTP-Anfragen in Sekunden" option="int" range="1,1,60" type="slider" />
+        <setting default="600" id="cacheTime" label="Cachezeit f&#252;r Webseiten (HtmlCache) in Sekunden" option="int" range="0,60,1800" type="slider" />
+        <setting default="2" id="cacheDeltaDay" label="Html Cache nach Tage l&#246;schen" option="int" range="1,1,7" type="slider" />
+        <setting id="delHtmlCache" label="[B][COLOR red]Html Cache einmalig bei Neustart l&#246;schen[/COLOR][/B]" type="bool" default="false" />
+	    <setting id="bypassDNSlock" type="bool" label="DNS-Sperre Umgehen" default="false" />	
+	    <setting id="veryfi" type="bool" label="Verifizierung Umgehen" default="false" />	
+        <setting type="lsep" label="Status - gesehen / ungesehen" />
+        <setting type="text" label="[COLOR blue]Auf leistungsschwachen Ger&#228;ten ben&#246;tigt diese [CR]Komfortfunktion etwas mehr Zeit![/COLOR]" />
+        <setting id="status.refresh.movies" type="bool" label="Filme - Status aktualisieren (refresh)" default="true" />
+        <setting id="status.refresh.episodes" type="bool" label="Episoden - Status aktualisieren (refresh)" default="true" />
+        <setting id="status.position" type="bool" label="Status - Bei Serien die aktuelle Position setzen" default="true" />
+        <setting id="status.debug" type="bool" label="Debug" default="false" />
+
+    </category>
+
+    <category label="Wiedergabe">
+        <setting id="progress.dialog" type="enum" label="Fortschrittsdialog" values="Vordergrund|Hintergrund" default="0" />
+        <setting id="prem.identify" type="enum" label="Textfarbe f&#252;r Premium-Links" values="Blau|Rot|Gelb|Altrosa|Cyan|Grasgr&#252;n|Gold|Magenta|Gelbgr&#252;n|Ohne Farbe" default="0" />
+        <setting type="lsep" label="Dateinanbieter-Filter" />
+        <setting id="hosts.quality" type="enum" label="H&#246;chste Qualit&#228;t" values="4K|1440p|1080p|720p|480p" default="2" />
+        <setting id="hosts.sort.priority" type="bool" label="Indexseiten bei Serien nach Priorit&#228;t sortieren" default="false" />
+        <setting id="hosts.sort.provider" type="bool" label="Indexseiten nach Anbieter sortieren" default="false" />
+        <setting id="hosts.limit" type="bool" label="Limit Hosteranzahl" default="False" />
+        <setting id="hosts.limit.num" type="slider" label="Liste begrenzen auf:" default="15" range="5,50" option="int" visible="eq(-1,true)" />
+        <setting id="hosts.filter" type="text" label="Hoster ausschlie&#223;en (Liste)" default="" />
+        <setting type="lsep" label="Bei Wiedergabe-Start..." />
+        <setting id="bookmarks" type="bool" label="Fortsetzen" default="true" />
+        <setting id="bookmarks.auto" type="bool" label="Automatisch Fortsetzen" default="false" enable="!eq(-1,false)" />
+    </category>
+	<category label="Remote/Local Loading">
+        <setting type="text" label="[COLOR yellow]Lade Scraper und Sites lokal oder remote[/COLOR]" />
+		<setting label="Lokal-Loading aktivieren" type="bool" id="local.enable" default="false" />
+        <setting label="Remote-Loading aktivieren" type="bool" id="remote.enable" default="true" />
+        <setting label="Remote Repository URL" type="text" id="remote.base_url" default="https://raw.githubusercontent.com/mr-evil1/lastship-modules/main" visible="false" />
+        <setting label="Cache-Dauer (Stunden)" type="slider" id="remote.cache_hours" default="24" range="1,1,168" option="int" visible="eq(-2,true)" />
+        <setting label="Lokale Module als Fallback" type="bool" id="remote.fallback" default="true" visible="eq(-3,true)" />
+        <setting type="sep" />
+        <setting type="lsep" label="Aktionen" />
+        <setting label="Jetzt aktualisieren" type="action" id="remote.update_now" action="RunScript(special://home/addons/plugin.video.lastship.reborn/remote_update.py)" visible="eq(-5,true)" />
+        <setting label="Cache leeren" type="action" id="remote.clear_cache" action="RunScript(special://home/addons/plugin.video.lastship.reborn/remote_clear_cache.py)" visible="eq(-6,true)" />
+        <setting type="sep" />
+        <setting type="lsep" label="Auto-Update" />
+        <setting label="Auto-Update aktivieren" type="bool" id="remote.auto_update" default="true" visible="eq(-9,true)" />
+        <setting type="text" label="[COLOR blue]Module werden automatisch beim Addon-Start aktualisiert[/COLOR]" visible="eq(-1,true)" />
+    </category>
+    <category label="Indexseiten (DE)">
+        <setting type="lsep" label="AniWorld" />
+        <setting default="true" type="bool" id="provider.aniworld" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.aniworld.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_aniworld" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.aniworld.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Dokus" />
+        <setting default="true" type="bool" id="provider.dokus" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.dokus.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_dokus" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.dokus.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Einschalten" />
+        <setting default="true" type="bool" id="provider.einschalten" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.einschalten.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_einschalten" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.einschalten.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="FHD Filme" />
+        <setting default="true" type="bool" id="provider.fhdfilme" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.fhdfilme.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_fhdfilme" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.fhdfilme.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="FilmPalast" />
+        <setting default="true" type="bool" id="provider.filmpalast" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.filmpalast.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_filmpalast" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.filmpalast.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Filmpro Filme" />
+        <setting default="true" type="bool" id="provider.filmpro" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.filmpro.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_filmpro" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.filmpro.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="HD Filme" />
+        <setting default="true" type="bool" id="provider.hdfilme" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.hdfilme.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_hdfilme" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.hdfilme.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="HUHU Filme" />
+        <setting default="true" type="bool" id="provider.huhu" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.huhu.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_huhu" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.huhu.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Internet Archive" />
+        <setting default="true" type="bool" id="provider.internetarchive" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.internetarchive.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_internetarchive" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.internetarchive.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Kids Tube" />
+        <setting default="true" type="bool" id="provider.kids_tube" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.kids_tube.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="false" type="bool" id="global_search_kids_tube" label="Bei Globale Suche verwenden" visible="eq(-2,false)" />
+        <setting id="provider.kids_tube.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="KinoGer" />
+        <setting default="true" type="bool" id="provider.kinoger" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.kinoger.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_kinoger" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.kinoger.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Kinokiste" />
+        <setting default="true" type="bool" id="provider.kinokiste" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.kinokiste.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_kinokiste" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.kinokiste.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="KinoX" />
+        <setting default="true" type="bool" id="provider.kinox" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.kinox.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_kinox" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.kinox.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="KKiste" />
+        <setting default="true" type="bool" id="provider.kkiste" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.kkiste.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_kkiste" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.kkiste.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="KKiste-movie" />
+        <setting default="true" type="bool" id="provider.kkiste-movie" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.kkiste-movie.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_kkiste-movie" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.kkiste-movie.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        </category>
+	<category label="Indexseiten 2 (DE)">
+        <setting type="lsep" label="Megakino" />
+        <setting default="true" type="bool" id="provider.megakino" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.megakino.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_megakino" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.megakino.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Moflix-Stream" />
+        <setting default="true" type="bool" id="provider.moflix" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.moflix.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_moflix" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.moflix.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Movie2K" />
+        <setting default="true" type="bool" id="provider.movie2k" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.movie2k.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_movie2k" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.movie2k.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Movie2K2" />
+        <setting default="true" type="bool" id="provider.movie2k2" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.movie2k2.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_movie2k2" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.movie2k2.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Netzkino" />
+        <setting default="true" type="bool" id="provider.netzkino" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.netzkino.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_netzkino" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.netzkino.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Primekiste" />
+        <setting default="true" type="bool" id="provider.primekiste" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.primekiste.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_primekiste" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.primekiste.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="SerienStream" />
+        <setting default="true" type="bool" id="provider.serienstream" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.serienstream.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_serienstream" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.serienstream.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="SKiste" />
+        <setting default="true" type="bool" id="provider.skiste" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.skiste.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_skiste" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.skiste.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Streamcloud" />
+        <setting default="true" type="bool" id="provider.streamcloud" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.streamcloud.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_streamcloud" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.streamcloud.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Streamkiste" />
+        <setting default="true" type="bool" id="provider.streamkiste" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.streamkiste.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_streamkiste" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.streamkiste.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Topstreamfilm" />
+        <setting default="true" type="bool" id="provider.topstreamfilm" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.topstreamfilm.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_topstreamfilm" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.topstreamfilm.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Vavoo" />
+        <setting default="true" type="bool" id="provider.vavoo" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.vavoo.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="false" type="bool" id="global_search_vavoo" label="Bei Globale Suche verwenden" visible="eq(-2,false)" />
+        <setting id="provider.vavoo.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Vavoo2" />
+        <setting default="true" type="bool" id="provider.vavoo2" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.vavoo2.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_vavoo2" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.vavoo2.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Vavoo3" />
+        <setting default="true" type="bool" id="provider.vavoo3" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.vavoo3.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_vavoo3" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.vavoo3.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Vavoo4" />
+        <setting default="true" type="bool" id="provider.vavoo4" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.vavoo4.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_vavoo4" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.vavoo4.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        <setting type="lsep" label="Vix Streams" />
+        <setting default="true" type="bool" id="provider.vixstream" label="Indexseite anzeigen/verwenden" />
+            <setting id="provider.vixstream.domain" label="Manuelle Seite Url" type="text" default="" visible="eq(-1,true)" />
+            <setting default="true" type="bool" id="global_search_vixstream" label="Bei Globale Suche verwenden" enable="!eq(-2,false)" />
+        <setting id="provider.vixstream.check" label="Check" type="bool" default="true" visible="false" />
+            <setting type="sep" />
+        </category>
+	<category label="Konten">
+        <setting type="lsep" label="Konto [B]SerienStream.to[/B]" />
+        <setting id="serienstream.user" type="text" label="Email" default="" />
+        <setting id="serienstream.pass" type="text" option="hidden" label="Password" default="" />
+        <setting type="lsep" label="Konto [B]Anicloud.io[/B]" />
+        <setting id="aniworld.user" type="text" label="Email" default="" />
+        <setting id="aniworld.pass" type="text" option="hidden" label="Password" default="" />
+        <setting type="lsep" label="Konto [B]Flimmerstube.com[/B]" />
+        <setting id="flimmerstube.user" type="text" label="Email" default="" />
+        <setting id="flimmerstube.pass" type="text" option="hidden" label="Password" default="" />
+        <setting type="lsep" label="TMDb" />
+        <setting id="api.tmdb" type="text" option="hidden" label="API-Key" default="0b529d296545c2545a68db5cb903cd94" />
+        <setting type="lsep" label="TRAKT" />
+        <setting id="api.trakt" type="text" option="hidden" label="API-Key" default="85d3b28a69fd4d8162b3ea78689e1c8b15ff2ad9c1430ef6fc5a950662aee3ec" />
+        <setting type="lsep" label="FANART.TV" />
+        <setting id="api.fanart.tv" type="text" label="API-Key" option="hidden" default="e376e8591e1580089d93ab4135fcc082" />
+        <setting type="lsep" label="Konto [B]opensubtitles.org[/B]" />
+        <setting id="subtitles.os_user" type="text" label="UserName" default="" />
+        <setting id="subtitles.os_pass" type="text" option="hidden" label="Password" default="" />
+    </category>
+	<category label="Support Chat Function">
+		<setting id="chatname" type="text" label="Chat Name : " default="" visible="true" />
+	</category>
+    <category label="Downloads / Untertitel">
+        <setting id="downloads" type="bool" label="Herunterladen aktivieren" default="false" />
+        <setting type="lsep" label="Bitte Ordnerpfade eingeben" />
+        <setting label="[COLOR blue]Hier Hilfe zum Syntax f&#252;r den Ordnerpfad[/COLOR]" type="action" action="RunPlugin(plugin://plugin.video.lastship/?action=settings&amp;subaction=downloadInfo)" option="" />
+        <setting id="download.movie.path" type="folder" label="Filme" enable="!eq(-3,false)" default="" />
+        <setting id="download.tv.path" type="folder" label="TV-Serien" enable="!eq(-4,false)" default="" />
+        <setting type="sep" />
+        <setting id="subtitles" type="bool" label="Untertitel aktivieren" default="false" />
+        <setting type="text" label="[COLOR blue]Konto auf [B]opensubtitles.org[/B] einrichten und[CR]die Zugandsdaten unter Einstellungen / Konten eintragen![CR][/COLOR]" visible="!eq(-1,false)" />
+        <setting type="sep" />
+        <setting id="subtitles.lang.1" type="select" label="Hauptsprache" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" enable="!eq(-3,false)" default="German" />
+        <setting id="subtitles.lang.2" type="select" label="Zweitsprache" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" enable="!eq(-4,false)" default="English" />
+        <setting id="subtitles.utf" type="bool" label="Untertitel nach UTF-8 umwandeln" enable="!eq(-5,false)" default="false" />
+    </category>
+    <category label="[COLOR red]Experimentell[/COLOR]">
+        <setting id="menuxstream" type="bool" label="[B]Seiten wie bei [COLOR red]xStream[/COLOR]           ON / OFF[/B]" default="false" />
+        <setting type="sep" />
+        <setting id="playstream" type="bool" label="[B]Play Stream from Url         ON / OFF[/B]" default="false" />
+        <setting type="sep" />
+        <setting id="menuvavoo" type="bool" label="[B]Vavoo Live TV        ON / OFF[/B]" default="true" />
+        <setting default="1" id="auto" label="IPTV Autoplay" type="enum" values="Auto|Countdown|Manuell" />
+        <setting default="5" id="count" label="Countdown Zeit" type="number" option="int" visible="eq(-1,1)" />
+        <setting default="true" id="hls" type="bool" label="HLS-Streams benutzen" visible="true" />
+        <setting type="sep" />
+        <setting type="text" label="[COLOR blue]Anzeige aktualisieren wenn Sender zur Favoritenliste hinzu[CR]gef&#252;gt wird.  Auf leistungsschwachen Ger&#228;ten ben&#246;tigt diese[/COLOR]" />
+        <setting type="text" label="[COLOR blue]Komfortfunktion etwas mehr Zeit![/COLOR]" />
+        <setting id="refresh.list" type="bool" label="Status aktualisieren (refresh)" default="true" />
+    </category>
+	<category label="Updates / Wartung">
+        <setting type="text" label="[COLOR blue]Updates und Wartung erfolgt bei einen Neustart von KODI[/COLOR]" />
+        <setting type="lsep" label="Service Modul Update" />
+		<setting id="nightlyupdate" label="[B][COLOR red]Addon Aktualisierung [/COLOR][/B] (Auto Update)" type="bool" default="true" />
+		<setting id="nightlyurl" type="text" label="Externe Update Url" default="" visible="eq(-1,true)" />
+        <setting type="text" label="[COLOR blue]Resolver AutoUpdate![/COLOR]" />
+        <setting id="update.enforceUpdate" label="[B][COLOR red]Resolver Aktualisierung [/COLOR][/B] (Nightly Update)" type="bool" default="false" />
+		<setting type="lsep" label="Service Modul Wartung" />
+        <setting id="service.check_del" label="Wartung(Cache und Thumb l&#246;schen)" type="bool" default="false" />
+        <setting id="service.dayfornextcheck" type="slider" label="Im Zeitraum von (Tage) " default="30" range="0,60" option="int" visible="eq(-1,true)" />
+        <setting id="service.enforceRefresh" label="[B][COLOR red]Refresh Thumbnails einmalig erzwingen[/COLOR][/B]" type="bool" default="false" />
+        <setting id="Debug" type="bool" label="Debug fuer Alles" default="false" />
+		<setting id="DebugALL" type="bool" label="Alle Plugins" default="false" />
+        <setting id="DebugMassage" type="bool" label="Debug Nachrichten f&#252;r Addons aktivieren" default="false" />
+    </category>
+	<category label="For Admin">
+		<setting type="lsep" label="[COLOR dodgerblue][B]Only for Admins[/B][/COLOR]" />
+		<setting id="adminchatpass" type="text" label="Admin Passwort : " default="" visible="true" />
+		<setting id="HtmlCache" type="text" label="" default="" visible="false" />
+		<setting id="chatname" type="text" label="Admin Chat Name : " default="" visible="true" />
+	</category>
+</settings>

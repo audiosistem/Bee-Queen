@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+    <controls>
+
+        <!-- ═══ FULL WINDOW MODE ═══ -->
+        <control type="group">
+            <animation effect="fade" start="0" end="100" time="300" tween="sine">WindowOpen</animation>
+            <animation effect="fade" end="0" time="200" tween="sine">WindowClose</animation>
+
+            <!-- Black base -->
+            <control type="image">
+                <left>0</left><top>0</top><width>3840</width><height>2160</height>
+                <texture>common/black.png</texture>
+            </control>
+
+            <!-- Fanart 55% opacity -->
+            <control type="image">
+                <left>0</left><top>0</top><width>3840</width><height>2160</height>
+                <aspectratio>scale</aspectratio>
+                <texture background="true">$INFO[Window.Property(luc_kodi.fanart)]</texture>
+                <colordiffuse>8CFFFFFF</colordiffuse>
+                <animation effect="fade" start="0" end="100" time="700" tween="sine">WindowOpen</animation>
+            </control>
+
+            <!-- Dark vignette overlay -->
+            <control type="image">
+                <left>0</left><top>0</top><width>3840</width><height>2160</height>
+                <texture>common/gradient-diffuse-1.png</texture>
+                <colordiffuse>99000000</colordiffuse>
+            </control>
+
+            <!-- ─── TOP-LEFT: clearlogo ─────────────────────────────────── -->
+            <control type="image">
+                <left>60</left><top>50</top>
+                <height>330</height>
+                <width min="0" max="1500">auto</width>
+                <aspectratio keep="true">keep</aspectratio>
+                <texture background="true">$INFO[Window.Property(luc_kodi.clearlogo)]</texture>
+                <animation effect="fade" start="0" end="100" time="500" delay="150" tween="sine">WindowOpen</animation>
+                <visible>!String.IsEmpty(Window.Property(luc_kodi.clearlogo))</visible>
+            </control>
+
+            <!-- Fallback title -->
+            <control type="label">
+                <left>60</left><top>110</top>
+                <width>1600</width><height>120</height>
+                <font>font20_title</font><textcolor>FFDDDDDD</textcolor><align>left</align>
+                <label>[B]$INFO[Window.Property(luc_kodi.title)][/B]</label>
+                <animation effect="fade" start="0" end="100" time="500" delay="150" tween="sine">WindowOpen</animation>
+                <visible>String.IsEmpty(Window.Property(luc_kodi.clearlogo))</visible>
+            </control>
+
+            <!-- ─── PROGRESS DOTS — 30px, más visibles en 4K ───────────── -->
+            <control type="grouplist">
+                <centerleft>50%</centerleft>
+                <top>860</top>
+                <width>720</width>
+                <orientation>horizontal</orientation>
+                <itemgap>18</itemgap>
+                <animation effect="fade" start="0" end="100" time="400" delay="200" tween="sine">WindowOpen</animation>
+
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>22FFFFFF</colordiffuse><visible>Integer.IsLess(Window.Property(percent),10)</visible></control>
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>FF00FA9A</colordiffuse><visible>Integer.IsGreaterOrEqual(Window.Property(percent),10)</visible></control>
+
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>22FFFFFF</colordiffuse><visible>Integer.IsLess(Window.Property(percent),20)</visible></control>
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>FF38EA7C</colordiffuse><visible>Integer.IsGreaterOrEqual(Window.Property(percent),20)</visible></control>
+
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>22FFFFFF</colordiffuse><visible>Integer.IsLess(Window.Property(percent),30)</visible></control>
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>FF70DB5E</colordiffuse><visible>Integer.IsGreaterOrEqual(Window.Property(percent),30)</visible></control>
+
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>22FFFFFF</colordiffuse><visible>Integer.IsLess(Window.Property(percent),40)</visible></control>
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>FFA8CC41</colordiffuse><visible>Integer.IsGreaterOrEqual(Window.Property(percent),40)</visible></control>
+
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>22FFFFFF</colordiffuse><visible>Integer.IsLess(Window.Property(percent),50)</visible></control>
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>FFE0BC23</colordiffuse><visible>Integer.IsGreaterOrEqual(Window.Property(percent),50)</visible></control>
+
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>22FFFFFF</colordiffuse><visible>Integer.IsLess(Window.Property(percent),60)</visible></control>
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>FFF7AA1B</colordiffuse><visible>Integer.IsGreaterOrEqual(Window.Property(percent),60)</visible></control>
+
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>22FFFFFF</colordiffuse><visible>Integer.IsLess(Window.Property(percent),70)</visible></control>
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>FFEB9429</colordiffuse><visible>Integer.IsGreaterOrEqual(Window.Property(percent),70)</visible></control>
+
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>22FFFFFF</colordiffuse><visible>Integer.IsLess(Window.Property(percent),80)</visible></control>
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>FFDF7F37</colordiffuse><visible>Integer.IsGreaterOrEqual(Window.Property(percent),80)</visible></control>
+
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>22FFFFFF</colordiffuse><visible>Integer.IsLess(Window.Property(percent),90)</visible></control>
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>FFD36945</colordiffuse><visible>Integer.IsGreaterOrEqual(Window.Property(percent),90)</visible></control>
+
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>22FFFFFF</colordiffuse><visible>Integer.IsLess(Window.Property(percent),100)</visible></control>
+                <control type="image"><width>30</width><height>30</height><texture>common/white_rounded_100.png</texture><colordiffuse>FFC75453</colordiffuse><visible>Integer.IsGreaterOrEqual(Window.Property(percent),100)</visible></control>
+            </control>
+
+            <!-- ─── STATS CARD — 1500px, 4 columnas + fila de providers ── -->
+            <control type="group">
+                <centerleft>50%</centerleft>
+                <top>926</top>
+                <width>1500</width>
+                <animation effect="fade" start="0" end="100" time="400" delay="250" tween="sine">WindowOpen</animation>
+                <visible>Integer.IsGreater(Window.Property(percent),0)</visible>
+
+                <!-- Card background -->
+                <control type="image">
+                    <left>0</left><top>0</top>
+                    <width>1500</width><height>520</height>
+                    <texture border="36">common/white_rounded.png</texture>
+                    <colordiffuse>80111111</colordiffuse>
+                </control>
+
+                <!-- Column headers -->
+                <control type="grouplist">
+                    <left>40</left><top>36</top><width>1420</width>
+                    <orientation>horizontal</orientation><itemgap>0</itemgap>
+                    <control type="label"><width>284</width><height>36</height><font>font12</font><textcolor>88FFFFFF</textcolor><align>center</align><label>[B]4K[/B]</label></control>
+                    <control type="label"><width>284</width><height>36</height><font>font12</font><textcolor>88FFFFFF</textcolor><align>center</align><label>[B]1080p[/B]</label></control>
+                    <control type="label"><width>284</width><height>36</height><font>font12</font><textcolor>88FFFFFF</textcolor><align>center</align><label>[B]720p[/B]</label></control>
+                    <control type="label"><width>284</width><height>36</height><font>font12</font><textcolor>88FFFFFF</textcolor><align>center</align><label>[B]SD[/B]</label></control>
+                    <control type="label"><width>284</width><height>36</height><font>font12</font><textcolor>FF00FA9A</textcolor><align>center</align><label>[B]TOTAL[/B]</label></control>
+                </control>
+
+                <!-- Count values -->
+                <control type="grouplist">
+                    <left>40</left><top>80</top><width>1420</width>
+                    <orientation>horizontal</orientation><itemgap>0</itemgap>
+                    <control type="label"><width>284</width><height>96</height><font>font20_title</font><textcolor>FFFFFFFF</textcolor><align>center</align><label>[B]$INFO[Window.Property(luc_kodi.src.4k)][/B]</label></control>
+                    <control type="label"><width>284</width><height>96</height><font>font20_title</font><textcolor>FFFFFFFF</textcolor><align>center</align><label>[B]$INFO[Window.Property(luc_kodi.src.1080)][/B]</label></control>
+                    <control type="label"><width>284</width><height>96</height><font>font20_title</font><textcolor>FFFFFFFF</textcolor><align>center</align><label>[B]$INFO[Window.Property(luc_kodi.src.720)][/B]</label></control>
+                    <control type="label"><width>284</width><height>96</height><font>font20_title</font><textcolor>FFFFFFFF</textcolor><align>center</align><label>[B]$INFO[Window.Property(luc_kodi.src.sd)][/B]</label></control>
+                    <control type="label"><width>284</width><height>96</height><font>font20_title</font><textcolor>FF00FA9A</textcolor><align>center</align><label>[B]$INFO[Window.Property(luc_kodi.src.total)][/B]</label></control>
+                </control>
+
+                <!-- Divider -->
+                <control type="image">
+                    <left>36</left><top>208</top>
+                    <width>1428</width><height>2</height>
+                    <texture>common/white.png</texture>
+                    <colordiffuse>33FFFFFF</colordiffuse>
+                </control>
+
+                <!-- Elapsed + Providers en la misma fila -->
+                <control type="grouplist">
+                    <left>40</left><top>228</top><width>1420</width>
+                    <orientation>horizontal</orientation><itemgap>0</itemgap>
+
+                    <!-- Elapsed block -->
+                    <control type="group">
+                        <width>480</width><height>240</height>
+                        <control type="label">
+                            <left>0</left><top>0</top><width>460</width><height>36</height>
+                            <font>font10</font><textcolor>77FFFFFF</textcolor>
+                            <label>[B]TIME ELAPSED[/B]</label>
+                        </control>
+                        <control type="label">
+                            <left>0</left><top>46</top><width>460</width><height>56</height>
+                            <font>font14</font><textcolor>FFDDDDDD</textcolor>
+                            <label>[B]$INFO[Window.Property(luc_kodi.src.elapsed)] s[/B]</label>
+                        </control>
+                    </control>
+
+                    <!-- Vertical separator -->
+                    <control type="image">
+                        <width>2</width><height>200</height>
+                        <texture>common/white.png</texture>
+                        <colordiffuse>33FFFFFF</colordiffuse>
+                        <animation effect="slide" end="0,20" time="0" condition="true">Conditional</animation>
+                    </control>
+
+                    <!-- Providers block — más espacio en 4K -->
+                    <control type="group">
+                        <width>980</width><height>240</height>
+                        <control type="label">
+                            <left>28</left><top>0</top><width>940</width><height>36</height>
+                            <font>font10</font><textcolor>77FFFFFF</textcolor>
+                            <label>[B]REMAINING PROVIDERS  [COLOR FF00FA9A]$INFO[Window.Property(luc_kodi.src.providers_count)][/COLOR][/B]</label>
+                        </control>
+                        <control type="label">
+                            <left>28</left><top>46</top><width>940</width><height>56</height>
+                            <font>font12</font><textcolor>FFDDDDDD</textcolor>
+                            <scroll>true</scroll>
+                            <label>[B]$INFO[Window.Property(luc_kodi.src.providers)][/B]</label>
+                        </control>
+                    </control>
+                </control>
+
+            </control>
+
+            <!-- Legacy textbox hidden -->
+            <control type="textbox" id="2001">
+                <top>-500</top><left>0</left><width>1</width><height>1</height>
+            </control>
+
+        </control>
+    </controls>
+</window>

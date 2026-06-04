@@ -1,0 +1,313 @@
+[B][COLOR ff00fa9a]Version 1.0.22[/COLOR][/B]
+-Set add-on view-->Bingie UI improved
+[B][COLOR ff00fa9a]Version 1.0.21[/COLOR][/B]
+-Set add-on view-->Bingie UI improved
+[B][COLOR ff00fa9a]Version 1.0.20[/COLOR][/B]
+-Set add-on view-->Bingie UI improved
+[B][COLOR ff00fa9a]Version 1.0.19[/COLOR][/B]
+-Added: "Set Add-on View" in tools. The way the plugin is visually displayed changes in some situations, such as categories or sections.
+[B][COLOR ff00fa9a]Version 1.0.18[/COLOR][/B]
+-Added: SIMKL public trending lists in Movies and TV shows sections.
+-SIMKL integration (full Phase 1 + Phase 2):
+  * PIN flow authorization (no client_secret, simkl.com/pin)
+  * Real-time scrobbling: /scrobble/start on play, /scrobble/pause during playback, /scrobble/stop at 80% to auto-mark watched
+  * Optional /scrobble/checkin fire-and-forget fallback (opt-in in settings)
+  * Local 5s scrobble cooldown to respect SIMKL's 20s per-user server lock
+  * Background sync service (parallel to Trakt) — activity-gated delta sync via POST /sync/activities
+  * Watched indicators source: SIMKL can replace Trakt when Trakt is not authorized (toggle simkl.indicators)
+[B][COLOR ff00fa9a]Version 1.0.17[/COLOR][/B]
+-TorBox,small bugs resolved
+[B][COLOR ff00fa9a]Version 1.0.16[/COLOR][/B]
+-Meteor updated
+-Zilean updated
+-Knaben updated
+-MediaFusion updated
+-Torz updated
+[B][COLOR ff00fa9a]Version 1.0.15[/COLOR][/B]
+-PirateBay updated
+-Meteor updated
+-Zilean updated
+-Sootio updated
+-AIOStreams updated
+-Torrentio updated
+-Peerflix updated
+-Knaben updated
+[B][COLOR ff00fa9a]Version 1.0.14[/COLOR][/B]
+-Small bugs resolved
+[B][COLOR ff00fa9a]Version 1.0.13[/COLOR][/B]
+-Small bugs resolved
+[B][COLOR ff00fa9a]Version 1.0.12[/COLOR][/B]
+-Gemini AI Search: model chain refreshed for the 2026 Gemini lineup. New default lead is gemini-3.1-flash-lite (GA since 2026-05-07), with the brand-new gemini-3.5-flash (GA since Google I/O 2026-05-19) added as a premium fallback. Both are AI Studio free-tier compatible.
+-Gemini AI Search: dropped gemini-2.0-flash from the chain ahead of Google's 2026-06-01 shutdown. Dropped gemini-3-flash-preview (superseded by 3.5 Flash GA). Renamed gemini-3.1-flash-lite-preview to its GA name gemini-3.1-flash-lite.
+-Gemini AI Search: cache_version bumped to v3 to avoid mixing cached responses from heterogeneous model generations.
+-Notifications: redesigned ,now displayed at the top-center of the screen and sliding in from above.
+[B][COLOR ff00fa9a]Version 1.0.11[/COLOR][/B]
+-Users can now override the TMDb and Fanart API keys with their own. Leaving the setting empty restores the plugin's public defaults.
+[B][COLOR ff00fa9a]Version 1.0.10[/COLOR][/B]
+-Improved  the experience in the category Streaming
+[B][COLOR ff00fa9a]Version 1.0.09[/COLOR][/B]
+-New update of the Real Debrid service that meets all requirements and the latest restrictions in 2026
+-The new Torbox service update complies with the latest features and recommendations in 2026, for example, with token or QR code association, or also the cached torrents service from Usenet (Newznab).
+-Small bugs resolved
+[B][COLOR ff00fa9a]Version 1.0.08[/COLOR][/B]
+-Small bugs resolved
+[B][COLOR ff00fa9a]Version 1.0.07[/COLOR][/B]
+-Improved  the experience in the category Streaming
+[B][COLOR ff00fa9a]Version 1.0.06[/COLOR][/B]
+-Added better icons in the category Streaming
+[B][COLOR ff00fa9a]Version 1.0.05[/COLOR][/B]
+-Movies: new "Streaming" category, popular providers (Netflix, HBO Max,Apple TV+,Hulu, Peacock, Crunchyroll, MUBI, Shudder, Tubi, Pluto TV...). Powered by TMDb 
+[B][COLOR ff00fa9a]Version 1.0.04[/COLOR][/B]
+-For You: improved feedback "Not interested"
+[B][COLOR ff00fa9a]Version 1.0.03[/COLOR][/B]
+-Trakt: fixed forced sync getting stuck on new installations after authorization
+-Trakt: skip the secondary "do you want to sync?" yes/no dialog right after a successful authorization (auto-confirms because the user just paired).
+-Trakt 2026 API compliance: sync_liked_lists now uses limit=1000 with paginated helper (was limit=1000000, which Trakt silently capped).
+-Trakt 2026 API compliance: sync_watch_list now paginates explicitly with limit=1000 (defensive against future enforcement).
+[B][COLOR ff00fa9a]Version 1.0.02[/COLOR][/B]
+-A new, intelligent feature is available that learns over time how we interact with the plugin, thus improving the "For You" experience. This involves learning, for example, which resolution (4K, 1080p, 720p, etc.) we watch most often, which debrid service we prefer (Premiumize, All Debrid, Real Debrid, etc.), and which color dynamic range we like best (HDR, Dolby Vision, SDR, etc.). I've called this feature "Source Ranker." It requires at least 10 playbacks, ideally 30 or more, to learn our preferences. These preferences can also be reset and viewed statically in the plugin settings.
+[B][COLOR ff00fa9a]Version 1.0.01[/COLOR][/B]
+-Small bugs resolved
+-Minor cosmetic changes
+[B][COLOR ff00fa9a]Version 1.0.0[/COLOR][/B]
+-Small bugs Trakt fixed
+[B][COLOR ff00fa9a]Version 0.0.99[/COLOR][/B]
+-Small bugs Trakt fixed
+[B][COLOR ff00fa9a]Version 0.0.98[/COLOR][/B]
+-Small bugs fixed
+[B][COLOR ff00fa9a]Version 0.0.97[/COLOR][/B]
+-Smalls aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.96[/COLOR][/B]
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.95[/COLOR][/B]
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.94[/COLOR][/B]
+-New: AI Search powered by Google Gemini — describe what you want to watch in natural language and get curated TMDb results
+-AI Search supports up to 3 Gemini API keys with automatic quota rotation (free tier friendly)
+[B][COLOR ff00fa9a]Version 0.0.93[/COLOR][/B]
+-"For You" - "Not interested" now removes the title from the list instantly and pulls in a new recommendation
+-New: MDBList scrobbler (continue-watching) and MDBList watchlist feed the recommendation engine as additional seeds
+-New: TMDb Discover candidates driven by your top genre preferences (higher pool diversity when Trakt history is thin)
+[B][COLOR ff00fa9a]Version 0.0.92[/COLOR][/B]
+-New custom scraper Sootio (Stremio addon by @sooti): cached torrents across 7 Debrid services, 14 torrent sources
+[B][COLOR ff00fa9a]Version 0.0.91[/COLOR][/B]
+-Improve the experience on 2160p screens
+[B][COLOR ff00fa9a]Version 0.0.90[/COLOR][/B]
+-Improved optimization for smooth playback
+-New function set GUI interface 1080/2160
+[B][COLOR ff00fa9a]Version 0.0.89[/COLOR][/B]
+-Small aesthetic changes
+-Small bugs fixed
+[B][COLOR ff00fa9a]Version 0.0.88[/COLOR][/B]
+-New method for auto play or scrape next episode.
+[B][COLOR ff00fa9a]Version 0.0.87[/COLOR][/B]
+- Custom scrapers AIOStreams y MediaFusion now ,no need in plugin a Debrid authorization before
+[B][COLOR ff00fa9a]Version 0.0.86[/COLOR][/B]
+-New scraper Orion( it's private scraper, need a API key for this)
+-New setting in Source Options-Min Quality
+[B][COLOR ff00fa9a]Version 0.0.85[/COLOR][/B]
+-New scraper Peerflix
+-Update scraper Aiostreams(delete instance "nhyira" and add new instance "cloud")
+-Small bugs fixed
+-Add new future for the AI category "For You"(More like this/Not interested)
+[B][COLOR ff00fa9a]Version 0.0.84[/COLOR][/B]
+-Small bugs fixed
+-Small aesthetic changes
+-Add new category from Trakt to Movies
+[B][COLOR ff00fa9a]Version 0.0.83[/COLOR][/B]
+- New scraper Torrentio-Spanish trakers
+-Solved icon HDR 10+ and  the corect information in results
+-Small bugs fixed
+[B][COLOR ff00fa9a]Version 0.0.82[/COLOR][/B]
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.81[/COLOR][/B]
+-Update Knaben provider
+-Update Aiostreams provider
+[B][COLOR ff00fa9a]Version 0.0.80[/COLOR][/B]
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.79[/COLOR][/B]
+-Small bug fixed
+[B][COLOR ff00fa9a]Version 0.0.78[/COLOR][/B]
+-Added automatic subtitle download system via OpenSubtitles.com (Movies + TV shows), it is needed user and password
+[B][COLOR ff00fa9a]Version 0.0.77[/COLOR][/B]
+-Small bugs fixed
+[B][COLOR ff00fa9a]Version 0.0.76[/COLOR][/B]
+-Add OMDb API for ratings
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.75[/COLOR][/B]
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.74[/COLOR][/B]
+-New category Mdblist for Movies and TV Shows( to working it needs to be installed before service.luc_kodi.mdblist and Mdblist api in settings)
+-Add suport for  full scrobbling Movies and TV Shows ( to working it needs to be installed before service.luc_kodi.mdblist and Mdblist api in settings)
+[B][COLOR ff00fa9a]Version 0.0.73[/COLOR][/B]
+-Fix auto play next episode
+-Update Aiostreams provider
+[B][COLOR ff00fa9a]Version 0.0.72[/COLOR][/B]
+-Small bugs fixed
+[B][COLOR ff00fa9a]Version 0.0.71[/COLOR][/B]
+-Update provider Torrentio
+-Update provider Mediafusion-now it's custom
+-Update provider Aiostreams-now it's custom
+-New UI notifications mod
+[B][COLOR ff00fa9a]Version 0.0.70[/COLOR][/B]
+-Improve algorithms for category "For You"
+[B][COLOR ff00fa9a]Version 0.0.69[/COLOR][/B]
+-Improve algorithms for category "For You"
+-Small bug fixed
+[B][COLOR ff00fa9a]Version 0.0.67[/COLOR][/B]
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.66[/COLOR][/B]
+Several aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.65[/COLOR][/B]
+-Small bugs fixed
+[B][COLOR ff00fa9a]Version 0.0.64[/COLOR][/B]
+-Several aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.63[/COLOR][/B]
+-Small aesthetic changes
+-Small bugs fixed
+[B][COLOR ff00fa9a]Version 0.0.62[/COLOR][/B]
+-Several bugs resolved
+[B][COLOR ff00fa9a]Version 0.0.59[/COLOR][/B]
+-Update provider Aiostreams
+[B][COLOR ff00fa9a]Version 0.0.58[/COLOR][/B]
+-Small bug fixed
+-Delete RUTOR provider
+[B][COLOR ff00fa9a]Version 0.0.57[/COLOR][/B]
+-Add new category "For You" category based on various algorithms and your preferences, similar to how an AI would work. Use a personal Trakt account for a better experience and learning.
+-Add new function "scoring" functionality and thus lay the foundation for personalized recommendations
+-Add new provider METEOR
+[B][COLOR ff00fa9a]Version 0.0.56[/COLOR][/B]
+- Add TMDb catalog update: auto-update or manual update action.
+[B][COLOR ff00fa9a]Version 0.0.55[/COLOR][/B]
+-Update Torz provider
+-Update Comet provider
+-Update Torrentsdb provider
+-Add Rutor provider
+-Add Knaben provider
+[B][COLOR ff00fa9a]Version 0.0.54[/COLOR][/B]
+-Add: MDBList scrobbling settings (API key need) for use with service.luc_kodi.mdblist
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.53[/COLOR][/B]
+-Fix: AIOStreams direct URLs now allowed even without file extension (works in Select + Autoplay)
+-Add: AIOStreams settings (custom_url, manifest_url, prefer_debrid)
+[B][COLOR ff00fa9a]Version 0.0.52[/COLOR][/B]
+-Small bugs fixed
+-Update Aiostreams
+-Update torz
+-Update zilean
+-Update torrentsdb
+[B][COLOR ff00fa9a]Version 0.0.50[/COLOR][/B]
+-Fix: settings defaults fallback (iOS) so debrid enable flags read correctly even if not written to userdata settings.xml
+-Fix AllDebrid settings visibility: show Authorize when token empty and Deauthorize only when authorized.
+-Fix Premiumize & Real-Debrid settings visibility: show Authorize when token empty and Deauthorize only when authorized.
+-Fix TorBox settings visibility: show Authorize when token empty and Deauthorize only when authorized.
+[B][COLOR ff00fa9a]Version 0.0.49[/COLOR][/B]
+-Add more futures
+-Update mediafusion
+[B][COLOR ff00fa9a]Version 0.0.47[/COLOR][/B]
+-Update comet
+[B][COLOR ff00fa9a]Version 0.0.46[/COLOR][/B]
+-Small bugs fixed
+[B][COLOR ff00fa9a]Version 0.0.45[/COLOR][/B]
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.44[/COLOR][/B]
+-Add new API AllDebrid token auth.
+[B][COLOR ff00fa9a]Version 0.0.43[/COLOR][/B]
+-Play next episode it's working again
+[B][COLOR ff00fa9a]Version 0.0.42[/COLOR][/B]
+-Add TorBox navigation menu
+[B][COLOR ff00fa9a]Version 0.0.41[/COLOR][/B]
+-Set  colored Debrid services
+[B][COLOR ff00fa9a]Version 0.0.40[/COLOR][/B]
+-Small bugs fixed
+[B][COLOR ff00fa9a]Version 0.0.39[/COLOR][/B]
+-New options with Trakt
+-Add TorBox Debrid service
+-Small bugs fixed
+[B][COLOR ff00fa9a]Version 0.0.38[/COLOR][/B]
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.31[/COLOR][/B]
+-Fix bug scrollbar in skins Confluence,AeonNox,etc...
+[B][COLOR ff00fa9a]Version 0.0.30[/COLOR][/B]
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.29[/COLOR][/B]
+-More results in Now-Movie
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.28[/COLOR][/B]
+-More results in trending-Shows
+[B][COLOR ff00fa9a]Version 0.0.27[/COLOR][/B]
+-Fix bug in skin Confluence
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.26[/COLOR][/B]
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.25[/COLOR][/B]
+-Resolutions icons changes
+-Fix small errors providers
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.24[/COLOR][/B]
+-Update mediafusion provider
+-Update comet provider
+-Update torz provider
+-Update aiostreams provider
+-Update torrentio provider
+-Update zilean provider
+[B][COLOR ff00fa9a]Version 0.0.23[/COLOR][/B]
+-Small errors fixed
+[B][COLOR ff00fa9a]Version 0.0.22[/COLOR][/B]
+-Disabled delete log
+[B][COLOR ff00fa9a]Version 0.0.21[/COLOR][/B]
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.20[/COLOR][/B]
+-Some errors repaired
+[B][COLOR ff00fa9a]Version 0.0.19[/COLOR][/B]
+-Add provider dmm
+-Add provider bitmagnet
+-Update provider aiostream
+[B][COLOR ff00fa9a]Version 0.0.18[/COLOR][/B]
+-Changed visual listed sources
+[B][COLOR ff00fa9a]Version 0.0.17[/COLOR][/B]
+-Small bugs fixed
+[B][COLOR ff00fa9a]Version 0.0.16[/COLOR][/B]
+-Changed with more news icons
+[B][COLOR ff00fa9a]Version 0.0.15[/COLOR][/B]
+-All Debrid service it's working again
+-Changed with more news icons
+[B][COLOR ff00fa9a]Version 0.0.14[/COLOR][/B]
+-Changed with more news icons
+[B][COLOR ff00fa9a]Version 0.0.12[/COLOR][/B]
+-Add new icon.png
+-Changed the fanart.jpg
+[B][COLOR ff00fa9a]Version 0.0.11[/COLOR][/B]
+-Changed with more news icons
+[B][COLOR ff00fa9a]Version 0.0.10[/COLOR][/B]
+-Small aesthetic changes
+[B][COLOR ff00fa9a]Version 0.0.9[/COLOR][/B]
+-Improve provider aiostreams
+[B][COLOR ff00fa9a]Version 0.0.8[/COLOR][/B]
+-Real Debrid service it's working again
+[B][COLOR ff00fa9a]Version 0.0.7[/COLOR][/B]
+-Add provider torrentsdb
+-Add provider torz
+-Add provider aiostreams
+-Reduce the size of the  add-on
+[B][COLOR ff00fa9a]Version 0.0.6[/COLOR][/B]
+-Fix scrapers providers, now, it's aviable again, (comet,mediafusion and torrentdownload).
+[B][COLOR ff00fa9a]Version 0.0.5[/COLOR][/B]
+-API keys of information meta providers have been changed.
+[B][COLOR ff00fa9a]Version 0.0.4[/COLOR][/B]
+-All Debrid option disabled in settings accounts.
+[B][COLOR ff00fa9a]Version 0.0.3[/COLOR][/B]
+-Real Debrid option disabled in settings accounts.
+[B][COLOR ff00fa9a]Version 0.0.2[/COLOR][/B]
+-Add icons, to resolve icons faults.
+-Change providers sources color to default color darkgoldenrod.
+[B][COLOR ff00fa9a]Version 0.0.1[/COLOR][/B]
+-Initial relese.
+-This plugin.video is a fork add-on and is meant to be a start to this new project.
+-All credits to the developers who make this open source project alive and accessible.
+-Debrid service must be authorised inside settings add-on and restart kodi after.
+-All the credits to Venom,Fen,Umbrella,Kodifitzwell,Chains and a big like for the scraper to Jack Sparrow.
+
+0.0.59
+- Added For You (AI) recommendations (Movies/TV) using Trakt + TMDb hybrid engine
+- Shows recommendation reason + score in plot

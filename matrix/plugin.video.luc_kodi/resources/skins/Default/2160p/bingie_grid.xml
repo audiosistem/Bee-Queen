@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+	luc_kodi  ·  Bingie-style content grid (modern ui)
+	Spotlight hero (clearlogo + year/runtime/genres + plot + ratings) on the left,
+	poster grid (true 2:3 posters) on the right.  Skin-independent.
+	Coordinates are full 4K (3840 x 2160).
+-->
+<window>
+	<defaultcontrol always="true">5000</defaultcontrol>
+	<onload>SetProperty(luc_kodi.bingie.loaded,1)</onload>
+	<controls>
+
+		<!-- ===================== BACKGROUND (full screen, uniform) ===================== -->
+		<!-- fanart fills the entire screen -->
+		<control type="image">
+			<left>0</left><top>0</top><width>3840</width><height>2160</height>
+			<aspectratio>scale</aspectratio>
+			<fadetime>400</fadetime>
+			<texture background="true" fallback="common/black.png">$INFO[ListItem.Art(fanart)]</texture>
+		</control>
+		<!-- one uniform dim across the whole screen -->
+		<control type="image">
+			<left>0</left><top>0</top><width>3840</width><height>2160</height>
+			<texture colordiffuse="800A0A12">common/black.png</texture>
+		</control>
+		<!-- single smooth left-to-right gradient: dark on the hero side,
+		     transparent over the poster grid (one texture, no banding) -->
+		<control type="image">
+			<left>0</left><top>0</top><width>3840</width><height>2160</height>
+			<texture colordiffuse="FF0A0A12">common/gradient-diffuse-horizontal.png</texture>
+		</control>
+
+		<!-- ===================== HEADER ===================== -->
+		<control type="label" id="100">
+			<left>120</left><top>40</top><width>1500</width><height>70</height>
+			<label>$INFO[Window.Property(luc_kodi.page_title)]</label>
+			<font>font14</font>
+			<textcolor>FFFFFFFF</textcolor>
+			<shadowcolor>FF000000</shadowcolor>
+		</control>
+		<control type="label" id="102">
+			<left>3120</left><top>56</top><width>600</width><height>40</height>
+			<label>$INFO[Window.Property(luc_kodi.total_items)]</label>
+			<font>font12</font>
+			<textcolor>FF8A8A8A</textcolor>
+			<align>right</align>
+		</control>
+
+		<!-- ===================== SPOTLIGHT HERO (LEFT) ===================== -->
+		<control type="group">
+			<left>120</left><top>300</top><width>1560</width><height>1760</height>
+			<visible>Integer.IsGreater(Container(5000).NumItems,0)</visible>
+			<animation effect="fade" start="0" end="100" time="300">Visible</animation>
+
+			<!-- clearlogo, fallback to plain title -->
+			<control type="image" id="9001">
+				<left>0</left><top>0</top><width>1000</width><height>360</height>
+				<align>left</align>
+				<aspectratio align="left" aligny="center">keep</aspectratio>
+				<fadetime>350</fadetime>
+				<texture background="true" fallback="common/black.png">$INFO[ListItem.Art(clearlogo)]</texture>
+				<visible>!String.IsEmpty(ListItem.Art(clearlogo))</visible>
+			</control>
+			<control type="textbox" id="9002">
+				<left>0</left><top>40</top><width>1500</width><height>320</height>
+				<font>font14</font>
+				<align>left</align>
+				<aligny>top</aligny>
+				<textcolor>FFFFFFFF</textcolor>
+				<label>$INFO[ListItem.Label]</label>
+				<visible>String.IsEmpty(ListItem.Art(clearlogo))</visible>
+			</control>
+
+			<!-- meta line: year - runtime - genres - cert -->
+			<control type="label" id="9010">
+				<left>4</left><top>400</top><width>1540</width><height>52</height>
+				<font>font13</font>
+				<align>left</align>
+				<textcolor>FFCFCFCF</textcolor>
+				<label>$INFO[Window.Property(luc_kodi.meta_line)]</label>
+			</control>
+
+			<!-- ratings row -->
+			<control type="grouplist" id="9020">
+				<left>4</left><top>470</top><width>1540</width><height>60</height>
+				<orientation>horizontal</orientation>
+				<itemgap>34</itemgap>
+				<align>left</align>
+				<usecontrolcoords>true</usecontrolcoords>
+
+				<control type="group">
+					<width>180</width><height>56</height>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.rating_imdb))</visible>
+					<control type="image">
+						<left>0</left><top>8</top><width>40</width><height>40</height>
+						<aspectratio>keep</aspectratio>
+						<texture>ratings/rating_imdb.png</texture>
+					</control>
+					<control type="label">
+						<left>50</left><top>0</top><width>130</width><height>56</height>
+						<font>font13</font><aligny>center</aligny>
+						<textcolor>FFEFEFEF</textcolor>
+						<label>$INFO[Window.Property(luc_kodi.rating_imdb)]</label>
+					</control>
+				</control>
+				<control type="group">
+					<width>180</width><height>56</height>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.rating_rt))</visible>
+					<control type="image">
+						<left>0</left><top>8</top><width>40</width><height>40</height>
+						<aspectratio>keep</aspectratio>
+						<texture>ratings/rating_rt.png</texture>
+					</control>
+					<control type="label">
+						<left>50</left><top>0</top><width>130</width><height>56</height>
+						<font>font13</font><aligny>center</aligny>
+						<textcolor>FFEFEFEF</textcolor>
+						<label>$INFO[Window.Property(luc_kodi.rating_rt)]</label>
+					</control>
+				</control>
+				<control type="group">
+					<width>180</width><height>56</height>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.rating_tmdb))</visible>
+					<control type="image">
+						<left>0</left><top>8</top><width>40</width><height>40</height>
+						<aspectratio>keep</aspectratio>
+						<texture>ratings/rating_tmdb.png</texture>
+					</control>
+					<control type="label">
+						<left>50</left><top>0</top><width>130</width><height>56</height>
+						<font>font13</font><aligny>center</aligny>
+						<textcolor>FFEFEFEF</textcolor>
+						<label>$INFO[Window.Property(luc_kodi.rating_tmdb)]</label>
+					</control>
+				</control>
+				<control type="group">
+					<width>180</width><height>56</height>
+					<visible>!String.IsEmpty(Window.Property(luc_kodi.rating_trakt))</visible>
+					<control type="image">
+						<left>0</left><top>8</top><width>40</width><height>40</height>
+						<aspectratio>keep</aspectratio>
+						<texture>ratings/rating_trakt.png</texture>
+					</control>
+					<control type="label">
+						<left>50</left><top>0</top><width>130</width><height>56</height>
+						<font>font13</font><aligny>center</aligny>
+						<textcolor>FFEFEFEF</textcolor>
+						<label>$INFO[Window.Property(luc_kodi.rating_trakt)]</label>
+					</control>
+				</control>
+			</control>
+
+			<!-- plot: tall box, full text, auto-scrolls when it overflows -->
+			<control type="textbox" id="9030">
+				<left>4</left><top>560</top><width>1500</width><height>1100</height>
+				<font>font12</font>
+				<align>left</align>
+				<textcolor>FFD2D2D2</textcolor>
+				<label>$INFO[ListItem.Plot]</label>
+				<autoscroll delay="6000" time="4000" repeat="8000">true</autoscroll>
+			</control>
+		</control>
+
+		<!-- ===================== POSTER GRID (RIGHT, true 2:3) ===================== -->
+		<!-- 5 columns. card 388 wide; poster 360x540 (2:3). -->
+		<control type="panel" id="5000">
+			<left>1840</left><top>300</top><width>1980</width><height>1760</height>
+			<onleft>5000</onleft>
+			<onright>5000</onright>
+			<onup>5000</onup>
+			<ondown>5000</ondown>
+			<viewtype label="Bingie">panel</viewtype>
+			<orientation>vertical</orientation>
+			<scrolltime tween="sine" easing="out">240</scrolltime>
+			<preloaditems>5</preloaditems>
+			<pagecontrol>60</pagecontrol>
+
+			<itemlayout width="388" height="600">
+				<!-- poster (true 2:3) -->
+				<control type="image">
+					<left>14</left><top>14</top><width>360</width><height>540</height>
+					<aspectratio>scale</aspectratio>
+					<texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture>
+				</control>
+				<!-- 'Next page' caption (only on the sentinel card) -->
+				<control type="label">
+					<left>14</left><top>496</top><width>360</width><height>52</height>
+					<align>center</align><aligny>center</aligny>
+					<font>font12</font>
+					<textcolor>FF00FA9A</textcolor>
+					<label>$INFO[ListItem.Label]</label>
+					<visible>Integer.IsEqual(ListItem.Property(luc_next_card),1)</visible>
+				</control>
+				<!-- watched tick -->
+				<control type="image">
+					<left>322</left><top>26</top><width>44</width><height>44</height>
+					<texture colordiffuse="CC00FA9A">common/white.png</texture>
+					<visible>Integer.IsEqual(ListItem.Property(luc_watched),1)</visible>
+				</control>
+				<!-- progress bar -->
+				<control type="progress">
+					<left>14</left><top>548</top><width>360</width><height>6</height>
+					<texturebg colordiffuse="60000000" border="0">common/white.png</texturebg>
+					<lefttexture/>
+					<midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture>
+					<righttexture/>
+					<info>ListItem.Property(luc_progress)</info>
+					<visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible>
+				</control>
+			</itemlayout>
+
+			<focusedlayout width="388" height="600">
+				<!-- focus glow border -->
+				<control type="image">
+					<left>8</left><top>8</top><width>372</width><height>552</height>
+					<texture colordiffuse="FF00FA9A">common/white.png</texture>
+				</control>
+				<control type="image">
+					<left>14</left><top>14</top><width>360</width><height>540</height>
+					<aspectratio>scale</aspectratio>
+					<texture fallback="common/black.png">$INFO[ListItem.Art(poster)]</texture>
+				</control>
+				<!-- 'Next page' caption (only on the sentinel card) -->
+				<control type="label">
+					<left>14</left><top>496</top><width>360</width><height>52</height>
+					<align>center</align><aligny>center</aligny>
+					<font>font12</font>
+					<textcolor>FF00FA9A</textcolor>
+					<label>$INFO[ListItem.Label]</label>
+					<visible>Integer.IsEqual(ListItem.Property(luc_next_card),1)</visible>
+				</control>
+				<control type="image">
+					<left>322</left><top>26</top><width>44</width><height>44</height>
+					<texture colordiffuse="CC00FA9A">common/white.png</texture>
+					<visible>Integer.IsEqual(ListItem.Property(luc_watched),1)</visible>
+				</control>
+				<control type="progress">
+					<left>14</left><top>548</top><width>360</width><height>6</height>
+					<texturebg colordiffuse="60000000" border="0">common/white.png</texturebg>
+					<lefttexture/>
+					<midtexture colordiffuse="FF00FA9A" border="0">common/white.png</midtexture>
+					<righttexture/>
+					<info>ListItem.Property(luc_progress)</info>
+					<visible>!String.IsEmpty(ListItem.Property(luc_progress))</visible>
+				</control>
+				<animation effect="zoom" end="105,105" center="auto" time="120" tween="sine">focus</animation>
+			</focusedlayout>
+		</control>
+
+		<!-- vertical scrollbar -->
+		<control type="scrollbar" id="60">
+			<left>3806</left><top>300</top><width>10</width><height>1760</height>
+			<orientation>vertical</orientation>
+			<onleft>5000</onleft>
+			<visible>Integer.IsGreater(Container(5000).NumItems,0)</visible>
+		</control>
+
+		<!-- page indicator (top-area, under the count) — paging is done by
+		     selecting the "Next page" card in the grid; Back goes one page back.
+		     Works the same with touch and remote. -->
+		<control type="label" id="103">
+			<left>120</left><top>104</top><width>1500</width><height>44</height>
+			<font>font12</font>
+			<textcolor>FF8A8A8A</textcolor>
+			<label>$INFO[Window.Property(luc_kodi.total_items)]</label>
+		</control>
+
+		<!-- loading indicator (brief, while fetching the next page) -->
+		<control type="label">
+			<left>1840</left><top>2080</top><width>1900</width><height>50</height>
+			<font>font12</font><align>center</align>
+			<textcolor>FF00FA9A</textcolor>
+			<label>· · ·</label>
+			<visible>!String.IsEmpty(Window.Property(luc_kodi.loading))</visible>
+			<animation effect="fade" start="0" end="100" time="200">Visible</animation>
+		</control>
+
+	</controls>
+</window>

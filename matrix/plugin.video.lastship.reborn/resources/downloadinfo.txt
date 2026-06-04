@@ -1,0 +1,11 @@
+[B]Syntax lokaler Pfad:[/B]
+c:\\path\to\folder\   z.B. unter Windows
+
+[B]Syntax Netzwerfreigaben:[/B]
+smb://1.2.3.4/path/to/folder/
+smb://user:password@1.2.3.4/path/to/folder/
+nfs://1.2.3.4/path/to/folder/   ([COLOR red]NFS macht unter Windows Probleme[/COLOR])
+
+„1.2.3.4“  - durch die IP ihres Servers ersetzen!
+[B]/[/B] und [B]\[/B] nicht verwechseln!
+Eingabe immer mit [B]\[/B] bzw. [B]/[/B] beenden!

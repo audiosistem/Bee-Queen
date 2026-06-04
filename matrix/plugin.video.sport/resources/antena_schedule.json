@@ -1,0 +1,472 @@
+[
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "21:30",
+    "title": "Boxing: Oleksandr Usyk vs Rico Verhoeven",
+    "channels": [
+      {
+        "name": "DAZN",
+        "url": "https://antenasport.org/dazn.php"
+      },
+      {
+        "name": "DAZN1PPV",
+        "url": "https://antenasport.org/dazn1ppv.php"
+      },
+      {
+        "name": "VIPSPORT1",
+        "url": "https://antenasport.org/vipsport1.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "12:00",
+    "title": "Rally of Scandinavia",
+    "channels": [
+      {
+        "name": "SPORTKLUB3",
+        "url": "https://antenasport.org/sportklub3.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "12:00",
+    "title": "Bolton vs Stockport",
+    "channels": [
+      {
+        "name": "ARENASPORT1HR",
+        "url": "https://antenasport.org/arenasport1hr.php"
+      },
+      {
+        "name": "SETANTASPORT1",
+        "url": "https://antenasport.org/setantasport1.php"
+      },
+      {
+        "name": "SETANTAUKRAINE",
+        "url": "https://antenasport.org/setantaukraine.php"
+      },
+      {
+        "name": "ARENA1PREMIUMSERBIA",
+        "url": "https://antenasport.org/arena1premiumserbia.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "13:00",
+    "title": "Parma vs Sassuolo",
+    "channels": [
+      {
+        "name": "MEGOGOSPORT",
+        "url": "https://antenasport.org/megogosport.php"
+      },
+      {
+        "name": "ARENASPORT2HR",
+        "url": "https://antenasport.org/arenasport2hr.php"
+      },
+      {
+        "name": "ARENA3PREMIUMSERBIA",
+        "url": "https://antenasport.org/arena3premiumserbia.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "14:20",
+    "title": "Hockey World Championship: Great Britain vs Latvia",
+    "channels": [
+      {
+        "name": "SRF2",
+        "url": "https://antenasport.org/srf2.php"
+      },
+      {
+        "name": "SUSPILNESPORT",
+        "url": "https://antenasport.org/suspilnesport.php"
+      },
+      {
+        "name": "MATCHIGRA",
+        "url": "https://antenasport.org/matchigra.php"
+      },
+      {
+        "name": "ARENASPORT5HR",
+        "url": "https://antenasport.org/arenasport5hr.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "14:20",
+    "title": "Hockey World Championship: Denmark vs Italy",
+    "channels": [
+      {
+        "name": "TSN4",
+        "url": "https://antenasport.org/tsn4.php"
+      },
+      {
+        "name": "NHLNETWORK",
+        "url": "https://antenasport.org/nhlnetwork.php"
+      },
+      {
+        "name": "RTS2",
+        "url": "https://antenasport.org/rts2.php"
+      },
+      {
+        "name": "RSILA2",
+        "url": "https://antenasport.org/rsila2.php"
+      },
+      {
+        "name": "MAINCASTUKRAINE",
+        "url": "https://antenasport.org/maincastukraine.php"
+      },
+      {
+        "name": "VIASATSPORT1FINLAND",
+        "url": "https://antenasport.org/viasatsport1finland.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "15:00",
+    "title": "Spartak Moskva vs Krasnodar Russian Cup",
+    "channels": [
+      {
+        "name": "MATCH",
+        "url": "https://antenasport.org/match.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "15:00",
+    "title": "Rally of Scandinavia",
+    "channels": [
+      {
+        "name": "SPORTKLUB3",
+        "url": "https://antenasport.org/sportklub3.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "15:00",
+    "title": "Manchester City vs Aston Villa",
+    "channels": [
+      {
+        "name": "SETANTASPORT2",
+        "url": "https://antenasport.org/setantasport2.php"
+      },
+      {
+        "name": "ARENASPORT2HR",
+        "url": "https://antenasport.org/arenasport2hr.php"
+      },
+      {
+        "name": "SETANTAUKRAINEPLUS",
+        "url": "https://antenasport.org/setantaukraineplus.php"
+      },
+      {
+        "name": "ARENA2PREMIUMSERBIA",
+        "url": "https://antenasport.org/arena2premiumserbia.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "15:00",
+    "title": "Crystal Palace vs Arsenal",
+    "channels": [
+      {
+        "name": "SKY5NZ",
+        "url": "https://antenasport.org/sky5nz.php"
+      },
+      {
+        "name": "SETANTASPORT1",
+        "url": "https://antenasport.org/setantasport1.php"
+      },
+      {
+        "name": "SETANTAUKRAINE",
+        "url": "https://antenasport.org/setantaukraine.php"
+      },
+      {
+        "name": "ARENASPORT1HR",
+        "url": "https://antenasport.org/arenasport1hr.php"
+      },
+      {
+        "name": "ARENA1PREMIUMSERBIA",
+        "url": "https://antenasport.org/arena1premiumserbia.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "15:00",
+    "title": "Simulcast English Premier League",
+    "channels": [
+      {
+        "name": "SKY8NZ",
+        "url": "https://antenasport.org/sky8nz.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "15:00",
+    "title": "West Ham vs Leeds",
+    "channels": [
+      {
+        "name": "SKY6NZ",
+        "url": "https://antenasport.org/sky6nz.php"
+      },
+      {
+        "name": "ARENA3PREMIUMSERBIA",
+        "url": "https://antenasport.org/arena3premiumserbia.php"
+      },
+      {
+        "name": "ARENASPORT4HR",
+        "url": "https://antenasport.org/arenasport4hr.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "15:00",
+    "title": "Tottenham vs Everton",
+    "channels": [
+      {
+        "name": "SKY8NZ",
+        "url": "https://antenasport.org/sky8nz.php"
+      },
+      {
+        "name": "SETANTAKAZAKSTAN",
+        "url": "https://antenasport.org/setantakazakstan.php"
+      },
+      {
+        "name": "ARENA4PREMIUMSERBIA",
+        "url": "https://antenasport.org/arena4premiumserbia.php"
+      },
+      {
+        "name": "ARENASPORT3HR",
+        "url": "https://antenasport.org/arenasport3hr.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "15:00",
+    "title": "Sunderland vs Chelsea",
+    "channels": [
+      {
+        "name": "SKY9NZ",
+        "url": "https://antenasport.org/sky9nz.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "15:00",
+    "title": "Liverpool vs Brentford",
+    "channels": [
+      {
+        "name": "SKY7NZ",
+        "url": "https://antenasport.org/sky7nz.php"
+      },
+      {
+        "name": "ARENA5PREMIUMSERBIA",
+        "url": "https://antenasport.org/arena5premiumserbia.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "16:00",
+    "title": "Napoli vs Udinese",
+    "channels": [
+      {
+        "name": "ARENASPORT6HR",
+        "url": "https://antenasport.org/arenasport6hr.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "18:00",
+    "title": "Basketball Euroleague Final: Olympiacos vs Real Madrid",
+    "channels": [
+      {
+        "name": "SPORTKLUB1",
+        "url": "https://antenasport.org/sportklub1.php"
+      },
+      {
+        "name": "SETANTAUKRAINE",
+        "url": "https://antenasport.org/setantaukraine.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "18:20",
+    "title": "Hockey World Championship: Finland vs Austria",
+    "channels": [
+      {
+        "name": "RSILA2",
+        "url": "https://antenasport.org/rsila2.php"
+      },
+      {
+        "name": "SUSPILNESPORT",
+        "url": "https://antenasport.org/suspilnesport.php"
+      },
+      {
+        "name": "CTSPORT",
+        "url": "https://antenasport.org/ctsport.php"
+      },
+      {
+        "name": "MATCHARENA",
+        "url": "https://antenasport.org/matcharena.php"
+      },
+      {
+        "name": "MTV3URHEILU1",
+        "url": "https://antenasport.org/mtv3urheilu1.php"
+      },
+      {
+        "name": "VIASATSPORT1FINLAND",
+        "url": "https://antenasport.org/viasatsport1finland.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "18:20",
+    "title": "Hockey World Championship: Slovakia vs Canada",
+    "channels": [
+      {
+        "name": "TSN4",
+        "url": "https://antenasport.org/tsn4.php"
+      },
+      {
+        "name": "NHLNETWORK",
+        "url": "https://antenasport.org/nhlnetwork.php"
+      },
+      {
+        "name": "MATCHIGRA",
+        "url": "https://antenasport.org/matchigra.php"
+      },
+      {
+        "name": "SRF2",
+        "url": "https://antenasport.org/srf2.php"
+      },
+      {
+        "name": "RTS2",
+        "url": "https://antenasport.org/rts2.php"
+      },
+      {
+        "name": "ARENASPORT5HR",
+        "url": "https://antenasport.org/arenasport5hr.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "18:30",
+    "title": "River Plate vs Belgrano",
+    "channels": [
+      {
+        "name": "ARENA3PREMIUMSERBIA",
+        "url": "https://antenasport.org/arena3premiumserbia.php"
+      },
+      {
+        "name": "ARENASPORT4HR",
+        "url": "https://antenasport.org/arenasport4hr.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "18:45",
+    "title": "Verona vs AS Roma",
+    "channels": [
+      {
+        "name": "ARENASPORT6HR",
+        "url": "https://antenasport.org/arenasport6hr.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "18:45",
+    "title": "AC Milan vs Cagliari",
+    "channels": [
+      {
+        "name": "ARENASPORT1HR",
+        "url": "https://antenasport.org/arenasport1hr.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "18:45",
+    "title": "Torino vs Juventus",
+    "channels": [
+      {
+        "name": "ARENASPORT2HR",
+        "url": "https://antenasport.org/arenasport2hr.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "18:45",
+    "title": "Cremonese vs Como",
+    "channels": [
+      {
+        "name": "ARENASPORT3HR",
+        "url": "https://antenasport.org/arenasport3hr.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "19:00",
+    "title": "Villarreal vs Atletico",
+    "channels": [
+      {
+        "name": "MEGOGOSPORT",
+        "url": "https://antenasport.org/megogosport.php"
+      },
+      {
+        "name": "ARENA2PREMIUMSERBIA",
+        "url": "https://antenasport.org/arena2premiumserbia.php"
+      }
+    ]
+  },
+  {
+    "date": "Sunday, 24 May 2026",
+    "time": "20:00",
+    "title": "Formula 1 Canada GP: Race",
+    "channels": [
+      {
+        "name": "SKYF1",
+        "url": "https://antenasport.org/skyf1.php"
+      },
+      {
+        "name": "SKY1NZ",
+        "url": "https://antenasport.org/sky1nz.php"
+      },
+      {
+        "name": "DAZNF1",
+        "url": "https://antenasport.org/daznf1.php"
+      },
+      {
+        "name": "SKYF1IT",
+        "url": "https://antenasport.org/skyf1it.php"
+      },
+      {
+        "name": "SETANTASPORT2",
+        "url": "https://antenasport.org/setantasport2.php"
+      },
+      {
+        "name": "SETANTAUKRAINEPLUS",
+        "url": "https://antenasport.org/setantaukraineplus.php"
+      }
+    ]
+  }
+]

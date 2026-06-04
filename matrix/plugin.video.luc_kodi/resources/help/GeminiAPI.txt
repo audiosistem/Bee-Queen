@@ -1,0 +1,50 @@
+[B][COLOR ff00fa9a]AI Search (Gemini) Setup[/COLOR][/B]
+
+Para usar la funcion [B]AI Search[/B] (Busqueda IA) necesitas al menos una clave de API de Google Gemini.
+
+[B][COLOR ff00fa9a]Como obtener tu Gemini API Key:[/COLOR][/B]
+
+1. Abre en tu navegador:
+   [B][COLOR fffdb515]https://aistudio.google.com/apikey[/COLOR][/B]
+
+2. Inicia sesion con tu cuenta Google (es gratuito, sin tarjeta de credito).
+
+3. Pulsa [B]"Crear clave de API"[/B] (arriba a la derecha).
+
+4. Copia la clave generada (empieza por [COLOR fffdb515]AIzaSy...[/COLOR]) y pegala en el campo [B]Gemini API Key 1[/B] en estos ajustes.
+
+
+[B][COLOR ff00fa9a]Cuota gratuita:[/COLOR][/B]
+
+- [B]gemini-2.5-flash-lite[/B] (recomendado): 1000 peticiones/dia
+- [B]gemini-2.5-flash[/B]: 250 peticiones/dia
+- Modelos 3.x preview: cuota menor pero generacion mas nueva
+
+
+[B][COLOR ff00fa9a]Tres claves para mas cuota (opcional):[/COLOR][/B]
+
+Puedes configurar hasta 3 API Keys. Cuando una agota su cuota diaria (error HTTP 429), el addon rota automaticamente a la siguiente.
+
+[B]IMPORTANTE:[/B] Google aplica el rate limit [B]por proyecto, no por clave[/B]. Para que las 3 claves sumen cuota real, cada una debe estar en un [B]proyecto Google distinto[/B]:
+
+1. En AI Studio abre [B]Proyectos[/B] (barra lateral izquierda).
+2. Pulsa [B]"Crear un proyecto nuevo"[/B]. Repite para tener 3 proyectos.
+3. En [B]"Claves de API"[/B] crea una clave en cada proyecto distinto.
+
+
+[B][COLOR ff00fa9a]Seguridad:[/COLOR][/B]
+
+Nunca compartas tu API Key publicamente ni la subas a repositorios publicos de GitHub. Google escanea GitHub automaticamente y revoca las claves expuestas en minutos.
+
+
+[B][COLOR ff00fa9a]Fallback automatico entre modelos:[/COLOR][/B]
+
+luc_kodi prueba automaticamente los siguientes modelos cuando el principal agota cuota:
+
+1. gemini-2.5-flash-lite (1000/dia)
+2. gemini-2.5-flash (250/dia)
+3. gemini-3.1-flash-lite-preview
+4. gemini-3-flash-preview
+5. gemini-2.0-flash (se deprecara en junio 2026)
+
+Cada modelo tiene cuota independiente, asi que en uso normal es muy dificil agotar el total diario.

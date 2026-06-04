@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+    <defaultcontrol always="true">3022</defaultcontrol>
+    <controls>
+
+        <!-- ─── Background stack ─────────────────────────────────────────── -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture>common/black.png</texture>
+        </control>
+
+        <!-- Fanart 50% opacidad -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <aspectratio>scale</aspectratio>
+            <texture background="true">$INFO[Window.Property(luc_kodi.fanart)]</texture>
+            <colordiffuse>80FFFFFF</colordiffuse>
+            <animation effect="fade" start="0" end="100" time="700" tween="sine">WindowOpen</animation>
+        </control>
+
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture>common/gradient-diffuse-1.png</texture>
+            <colordiffuse>40000000</colordiffuse>
+        </control>
+
+        <!-- ─── Clearlogo ────────────────────────────────────────────────── -->
+        <control type="image">
+            <left>30</left><top>25</top><height>165</height>
+            <width min="0" max="750">auto</width>
+            <aspectratio keep="true">keep</aspectratio>
+            <texture background="true">$INFO[Window.Property(luc_kodi.clearlogo)]</texture>
+            <animation effect="fade" start="0" end="100" time="500" delay="150" tween="sine">WindowOpen</animation>
+            <visible>!String.IsEmpty(Window.Property(luc_kodi.clearlogo))</visible>
+        </control>
+        <control type="label">
+            <left>30</left><top>55</top><width>800</width><height>60</height>
+            <font>font14</font><textcolor>FFDDDDDD</textcolor><align>left</align>
+            <label>[B]$INFO[Window.Property(luc_kodi.show_title)][/B]</label>
+            <animation effect="fade" start="0" end="100" time="500" delay="150" tween="sine">WindowOpen</animation>
+            <visible>String.IsEmpty(Window.Property(luc_kodi.clearlogo))</visible>
+        </control>
+
+        <!-- ─── Card -15 %: 796×274 px, mismo centro vertical (648 px) ──── -->
+        <control type="group">
+            <centerleft>50%</centerleft><top>511</top>
+            <width>796</width><height>274</height>
+            <animation effect="fade" start="0" end="100" time="400" delay="200" tween="sine">WindowOpen</animation>
+            <animation effect="fade" start="100" end="0"  time="200" tween="sine">WindowClose</animation>
+
+            <!-- Fondo cristal 50%, inset 3 px -->
+            <control type="image">
+                <left>0</left><top>0</top>
+                <width>796</width><height>274</height>
+                <texture border="20">common/white_rounded.png</texture>
+                <colordiffuse>80141414</colordiffuse>
+            </control>
+
+            <!-- "WATCH NEXT EPISODE?" -->
+            <control type="label">
+                <left>26</left><top>23</top><width>740</width><height>18</height>
+                <font>font10</font><textcolor>77FFFFFF</textcolor>
+                <label>[B]WATCH NEXT EPISODE?[/B]</label>
+            </control>
+
+            <!-- ShowTitle — S0XE0X -->
+            <control type="grouplist">
+                <orientation>horizontal</orientation>
+                <left>26</left><top>44</top><height>48</height><itemgap>0</itemgap>
+                <control type="label">
+                    <width>auto</width><height>48</height><aligny>center</aligny>
+                    <font>font14</font><textcolor>FF00CED1</textcolor><shadowcolor>ff000000</shadowcolor>
+                    <label>[B]$INFO[Window.Property(luc_kodi.show_title)][/B]</label>
+                    <visible>!String.IsEmpty(Window.Property(luc_kodi.show_title))</visible>
+                </control>
+                <control type="label">
+                    <width>auto</width><height>48</height><aligny>center</aligny>
+                    <font>font14</font><textcolor>55FFFFFF</textcolor><shadowcolor>ff000000</shadowcolor>
+                    <label> — </label>
+                </control>
+                <control type="label">
+                    <width>auto</width><height>48</height><aligny>center</aligny>
+                    <font>font14</font><textcolor>FF00FA9A</textcolor><shadowcolor>ff000000</shadowcolor>
+                    <label>[B]$INFO[Window.Property(luc_kodi.ep_label)][/B]</label>
+                    <visible>!String.IsEmpty(Window.Property(luc_kodi.ep_label))</visible>
+                </control>
+            </control>
+
+            <!-- Divider -->
+            <control type="image">
+                <left>16</left><top>100</top><width>764</width><height>1</height>
+                <texture>common/white.png</texture><colordiffuse>2AFFFFFF</colordiffuse>
+            </control>
+
+            <!-- Countdown -->
+            <control type="label">
+                <right>24</right><top>109</top><width>280</width><height>20</height>
+                <font>font10</font><align>right</align><textcolor>55FFFFFF</textcolor>
+                <label>Closes in [COLOR FF00FA9A][B]$INFO[Window.Property(luc_kodi.next_ep_countdown)][/B][/COLOR]s</label>
+            </control>
+
+            <!-- ── Botones ────────────────────────────────────────────────── -->
+            <control type="grouplist">
+                <orientation>horizontal</orientation>
+                <left>18</left><top>167</top>
+                <height>68</height><itemgap>8</itemgap>
+                <usecontrolcoords>true</usecontrolcoords>
+
+                <!-- Auto-Play -->
+                <control type="button" id="3021">
+                    <width>240</width><height>68</height>
+                    <label>[COLOR FF6AFB92][B]Auto-Play[/B][/COLOR]</label>
+                    <font>font20_title</font><aligny>center</aligny><align>center</align>
+                    <pulseonselect>no</pulseonselect><shadowcolor>ff000000</shadowcolor>
+                    <texturefocus   border="10" colordiffuse="40D0D0D0">common/button3.png</texturefocus>
+                    <texturenofocus border="10" colordiffuse="FF1E1E1E">common/button3.png</texturenofocus>
+                </control>
+
+                <!-- Not Now — sin color cyan, foco neutro oscuro -->
+                <control type="button" id="3022">
+                    <width>240</width><height>68</height>
+                    <label>[COLOR FFFF4444][B]Not Now[/B][/COLOR]</label>
+                    <font>font20_title</font><aligny>center</aligny><align>center</align>
+                    <pulseonselect>no</pulseonselect><shadowcolor>ff000000</shadowcolor>
+                    <texturefocus   border="10" colordiffuse="40D0D0D0">common/button3.png</texturefocus>
+                    <texturenofocus border="10" colordiffuse="FF1E1E1E">common/button3.png</texturenofocus>
+                </control>
+
+                <!-- Choose Source -->
+                <control type="button" id="3023">
+                    <width>270</width><height>68</height>
+                    <label>[COLOR FFE8A030][B]Choose Source[/B][/COLOR]</label>
+                    <font>font20_title</font><aligny>center</aligny><align>center</align>
+                    <pulseonselect>no</pulseonselect><shadowcolor>ff000000</shadowcolor>
+                    <texturefocus   border="10" colordiffuse="40D0D0D0">common/button3.png</texturefocus>
+                    <texturenofocus border="10" colordiffuse="FF1E1E1E">common/button3.png</texturenofocus>
+                </control>
+
+            </control>
+
+        </control>
+
+    </controls>
+</window>

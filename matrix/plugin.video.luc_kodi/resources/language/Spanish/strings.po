@@ -1,0 +1,142 @@
+# Addon Name: luc_kodi
+# Addon id: plugin.video.luc_kodi
+# Addon Provider: apoyotech
+# Spanish translations for AI Search (Gemini) feature
+msgid ""
+msgstr ""
+"Project-Id-Version: luc_kodi\n"
+"Report-Msgid-Bugs-To: \n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "#40600"
+msgid "[COLOR ff00fa9a]Get your free API key -> https://aistudio.google.com/apikey[/COLOR]"
+msgstr "[COLOR ff00fa9a]Obtén tu API Key gratuita -> https://aistudio.google.com/apikey[/COLOR]"
+
+msgctxt "#40601"
+msgid "Gemini API Key 1"
+msgstr "Gemini API Key 1"
+
+msgctxt "#40602"
+msgid "Gemini API Key 2 (optional, for quota rotation)"
+msgstr "Gemini API Key 2 (opcional, para rotar cuota)"
+
+msgctxt "#40603"
+msgid "Gemini API Key 3 (optional, for quota rotation)"
+msgstr "Gemini API Key 3 (opcional, para rotar cuota)"
+
+msgctxt "#40604"
+msgid "Gemini Model"
+msgstr "Modelo de Gemini"
+
+msgctxt "#40605"
+msgid "Clear AI Search Cache"
+msgstr "Limpiar caché de Búsqueda IA"
+
+msgctxt "#40610"
+msgid "AI Search · Auto"
+msgstr "Búsqueda IA · Auto"
+
+msgctxt "#40611"
+msgid "Describe what you want to watch"
+msgstr "Describe lo que quieres ver"
+
+msgctxt "#40612"
+msgid "Set at least one Gemini API Key in Settings · Accounts"
+msgstr "Configura al menos una API Key de Gemini en Ajustes · Cuentas"
+
+msgctxt "#40613"
+msgid "No AI Search results found"
+msgstr "Sin resultados de Búsqueda IA"
+
+msgctxt "#40614"
+msgid "Searching with Gemini..."
+msgstr "Buscando con Gemini..."
+
+msgctxt "#40615"
+msgid "AI Search · Movies"
+msgstr "Búsqueda IA · Películas"
+
+msgctxt "#40616"
+msgid "AI Search · TV Shows"
+msgstr "Búsqueda IA · Series"
+
+msgctxt "#400720"
+msgid "Personalized ranker (For You)"
+msgstr "Ranker personalizado (Para ti)"
+
+msgctxt "#400721"
+msgid "Enable personal ranker"
+msgstr "Activar ranker personal"
+
+msgctxt "#400722"
+msgid "Personal ranker weight"
+msgstr "Peso del ranker personal"
+
+msgctxt "#400723"
+msgid "Show personal ranker stats"
+msgstr "Ver estadísticas del ranker"
+
+msgctxt "#400724"
+msgid "Reset personal ranker model"
+msgstr "Resetear modelo del ranker"
+
+msgctxt "#40700"
+msgid "Streaming"
+msgstr "Streaming"
+
+msgctxt "#40701"
+msgid "Streaming"
+msgstr "Streaming"
+
+msgctxt "#40702"
+msgid "Movie Streaming Services"
+msgstr "Plataformas de streaming"
+
+msgctxt "#40703"
+msgid "Streaming providers: use JustWatch (experimental)"
+msgstr "Plataformas: usar JustWatch (experimental)"
+
+msgctxt "#45000"
+msgid "SIMKL Trending - Today"
+msgstr "SIMKL Tendencias - Hoy"
+
+msgctxt "#45001"
+msgid "SIMKL Trending - This Week"
+msgstr "SIMKL Tendencias - Esta Semana"
+
+msgctxt "#45002"
+msgid "SIMKL Trending - This Month"
+msgstr "SIMKL Tendencias - Este Mes"
+
+msgctxt "#45010"
+msgid "SIMKL Trending - Today"
+msgstr "SIMKL Tendencias - Hoy"
+
+msgctxt "#45011"
+msgid "SIMKL Trending - This Week"
+msgstr "SIMKL Tendencias - Esta Semana"
+
+msgctxt "#45012"
+msgid "SIMKL Trending - This Month"
+msgstr "SIMKL Tendencias - Este Mes"
+
+msgctxt "#400730"
+msgid "Default"
+msgstr "Por defecto"
+
+msgctxt "#400731"
+msgid "Modern UI"
+msgstr "Modern UI"
+
+msgctxt "#400732"
+msgid "Set Add-on View"
+msgstr "Cambiar vista del add-on"
+
+msgctxt "#400733"
+msgid "Menus"
+msgstr "Menús"
