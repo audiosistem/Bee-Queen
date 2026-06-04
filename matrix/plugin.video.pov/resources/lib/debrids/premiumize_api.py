@@ -50,7 +50,7 @@ class PremiumizeAPI:
 	def item_listall(self):
 		url = 'item/listall'
 		result = self._get(url)
-		return result
+		return result['files']
 
 	def delete_torrent(self, transfer_id):
 		result = self.delete_object('transfer', transfer_id)

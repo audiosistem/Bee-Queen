@@ -331,7 +331,9 @@ class SourcesPlayback(BaseDialog):
 		self.resume_choice = {10: 'resume', 11: 'start_over', 12: 'cancel'}[controlID]
 
 	def onAction(self, action):
-		if action in self.closing_actions: self.is_canceled = True
+		if action in self.closing_actions:
+			self.is_canceled = True
+			self.close()
 		elif action == self.right_action and self.window_mode == 'resolver': self.skip_resolve = True
 
 	def iscanceled(self):

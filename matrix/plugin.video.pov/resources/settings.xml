@@ -235,7 +235,7 @@
 		<setting id="stingers.enable" label="Enable Credit Scene Notification (Movie Stingers)" type="bool" default="false" />
 			<setting id="stingers.threshold" label="Notification Threshold (Seconds After Start)" type="slider" default="10" range="10,10,60" option="int" subsetting="true" visible="eq(-1,true)" />
 		<setting label="Episodes" type="lsep" />
-		<setting id="autoscrape_next_episode" label="Autoscrape Next Episode (source select)" type="bool" default="false" />
+		<setting id="autoscrape_next_episode" label="Autoscrape Next Episode (Source Select)" type="bool" default="false" />
 			<setting id="autoscrape_next_window_time" label="Show Notification Before End (secs)" type="slider" default="20" range="10,10,180" option="int" subsetting="true" visible="eq(-1,true)" />
 		<setting id="auto_play_episode" label="Auto Play" type="bool" default="false" />
 		<setting id="autoplay_quality_episode" label="Limit Auto Play Quality" type="action" default="SD, 720p, 1080p, 4K" visible="eq(-1,true)" action="RunPlugin(plugin://plugin.video.pov/?mode=set_quality_choice&amp;quality_setting=autoplay_quality_episode)" />

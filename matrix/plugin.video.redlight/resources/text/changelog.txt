@@ -1,5 +1,9 @@
+[COLOR red][B]Version 1.2.9[/B][/COLOR]
+- Fixed scrape progress window staying open after a search returns no results (including unreleased episodes).
+- When a source search finds nothing, now shows a Red Light style "No results found" dialog after the scrape progress window closes, with the Kodi dialog as a fallback if the skin window cannot open.
+
 [COLOR red][B]Version 1.2.8[/B][/COLOR]
-- Fixed playback progress / Trakt scrobbling (and Simkl, MDbList, etc.) not updating for TorBox and TorBox Cloud sources: v1.2.7 played those links with a bare Kodi player, skipping Red Light’s playback monitor and script.trakt.ids. 
+- Fixed playback progress / Trakt scrobbling (and Simkl, MDbList, etc.) not updating for TorBox and TorBox Cloud sources: v1.2.7 played those links with a bare Kodi player, skipping Red Light’s playback monitor and script.trakt.ids.
 
 [COLOR red][B]Version 1.2.7[/B][/COLOR]
 - Service (AM Lite): optional wait for Account Manager Lite Trakt sync only when script.module.acctmgr is installed; runs in the background so startup is not blocked. Fixes “Unknown addon id script.module.acctmgr” log spam and scrape/playback failing to start when AM Lite is not installed (regression from v1.2.6).

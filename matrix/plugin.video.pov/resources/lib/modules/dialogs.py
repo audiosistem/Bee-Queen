@@ -72,7 +72,7 @@ def trakt_manager_choice(params):
 		 '%s items' % item['item_count'])
 		for item in trakt_api.trakt_get_lists('my_lists')
 	]
-	choices += [(i.lower(), '[I]%s[/I]' % i, '') for i in (ls(32499), ls(32453), ls(32500))]
+	choices += [(i.lower(), '[I]%s[/I]' % i, '') for i in (ls(32500), ls(32453), ls(32499))]
 	if params['mediatype'] == 'tvshow': choices += [('dropped', 'Toggle Dropped', '')]
 	list_items = [{'line1': item[1], 'line2': item[2], 'icon': icon} for item in choices]
 	kwargs = {'items': json.dumps(list_items), 'heading': heading, 'multi_line': 'true'}
@@ -111,7 +111,7 @@ def mdbl_manager_choice(params):
 		(str(item['id']), item['name'], '%s items' % item['items'])
 		for item in mdblist_api.mdbl_get_lists('my_lists') if not item['dynamic']
 	]
-	choices += [(i.lower(), '[I]%s[/I]' % i, '') for i in (ls(32499), ls(32500))]
+	choices += [(i.lower(), '[I]%s[/I]' % i, '') for i in (ls(32500), ls(32499))]
 	if params['mediatype'] == 'tvshow': choices += [('dropped', 'Toggle Dropped', '')]
 	list_items = [{'line1': item[1], 'line2': item[2], 'icon': icon} for item in choices]
 	kwargs = {'items': json.dumps(list_items), 'heading': heading, 'multi_line': 'true'}
@@ -152,7 +152,7 @@ def tmdb_manager_choice(params):
 		for item in tmdb_api.user_lists()
 	]
 	if not list_name:
-		choices += [(i.lower(), '[I]%s[/I]' % i, '', icon) for i in (ls(32453), ls(32500))]
+		choices += [(i.lower(), '[I]%s[/I]' % i, '', icon) for i in (ls(32500), ls(32453))]
 	choices += [('clear', 'Clear list cache', '', icon), ('new', 'Create a new list', list_name, icon)]
 	if not choices: return
 	list_items = [{'line1': item[1], 'line2': item[2], 'icon': item[3]} for item in choices]
@@ -372,7 +372,7 @@ def favorites_choice(params):
 		kwargs = {'items': json.dumps(list_items), 'heading': ls(32453)}
 		mediatype = select_dialog([item[1] for item in list], **kwargs)
 		if mediatype is None: return
-		if not favorites.clear(mediatype): notification(32574)
+		notification(32576) if favorites.clear(mediatype) else notification(32574)
 	else:
 		mediatype, tmdb_id, title = params['mediatype'], params['tmdb_id'], params['title']
 		current_favorites, refresh = favorites.get(mediatype), False
@@ -411,27 +411,28 @@ def options_menu(params, meta=None):
 	on_str, off_str, currently_str, open_str, settings_str = ls(32090), ls(32027), ls(32598), ls(32641), ls(32247)
 	base_str1, base_str2 = '%s%s', '%s: [B]%s[/B]' % (currently_str, '%s')
 	scraper_options_str = '%s %s' % (ls(32533), ls(32841))
-	multi_line = 'true' if content in ('movie', 'episode') else 'false'
+	multi_line = 'true' # if content in ('movie', 'episode') else 'false'
+	scrapable = True if content in ('movie', 'episode') else False
 	watched_indicators = settings.watched_indicators()
 	results_xml_style_status = settings.results_xml_style()
 	if settings.display_uncached_torrents(): uncached_torrents_status, uncached_torrents_toggle = (on_str, 'false')
 	else: uncached_torrents_status, uncached_torrents_toggle = (off_str, 'true')
 	listing = (
 		('scrape_from_episode_group', 'Scrape From Episode Group', scraper_options_str, meta['poster']) if content == 'episode' else None,
-		('clear_and_rescrape', ls(32014), scraper_options_str, meta['poster']) if multi_line == 'true' else None,
-		('rescrape_with_disabled', ls(32006), scraper_options_str, meta['poster']) if multi_line == 'true' else None,
-		('scrape_with_filters_ignored', ls(32807), scraper_options_str, meta['poster']) if multi_line == 'true' else None,
-		('scrape_with_custom_values', ls(32135), scraper_options_str, meta['poster']) if multi_line == 'true' else None,
-		('play_random', ls(32541), '', meta['poster']) if content in ('tvshow') and meta else None,
-		('play_random_continual', ls(32542), '', meta['poster']) if content in ('tvshow') and meta else None,
-		('clear_scrapers_cache', ls(32637), '') if content in ('movie', 'episode') else None,
+		('clear_and_rescrape', ls(32014), scraper_options_str, meta['poster']) if scrapable else None,
+		('rescrape_with_disabled', ls(32006), scraper_options_str, meta['poster']) if scrapable else None,
+		('scrape_with_filters_ignored', ls(32807), scraper_options_str, meta['poster']) if scrapable else None,
+		('scrape_with_custom_values', ls(32135), scraper_options_str, meta['poster']) if scrapable else None,
+		('play_random', ls(32541), meta['title'], meta['poster']) if content in ('tvshow') and meta else None,
+		('play_random_continual', ls(32542), meta['title'], meta['poster']) if content in ('tvshow') and meta else None,
+		('clear_scrapers_cache', ls(32637), '') if scrapable else None,
 		('open_external_scrapers_choice', '%s %s' % (ls(32118), ls(32513)), ''),
-		('toggle_torrents_display_uncached', base_str1 % ('', ls(32160)), base_str2 % uncached_torrents_status) if multi_line == 'true' else None,
-		('set_results_xml_display', base_str1 % ('', '%s %s' % (ls(32139), ls(32140))), base_str2 % results_xml_style_status) if multi_line == 'true' else None,
-		('dropped_choice', 'Toggle Dropped', '') if watched_indicators == 0 and content in ('tvshow') else None,
+		('toggle_torrents_display_uncached', base_str1 % ('', ls(32160)), base_str2 % uncached_torrents_status) if scrapable else None,
+		('set_results_xml_display', base_str1 % ('', '%s %s' % (ls(32139), ls(32140))), base_str2 % results_xml_style_status) if scrapable else None,
+		('dropped_choice', 'Toggle Dropped', meta['title']) if watched_indicators == 0 and content in ('tvshow') else None,
 		('clear_trakt_cache', ls(32497) % ls(32037), '') if watched_indicators == 1 else None,
 		('clear_mdbl_cache', ls(32497) % 'MDBList', '') if watched_indicators == 2 else None,
-		('clear_media_cache', ls(32604) % (ls(32028) if content in ('movie') else ls(32029)), '', meta['poster']) if content in ('movie', 'tvshow') and meta else None,
+		('clear_media_cache', ls(32604) % (ls(32028) if content in ('movie') else ls(32029)), meta['title'], meta['poster']) if content in ('movie', 'tvshow') and meta else None,
 		('open_pov_settings', '%s %s %s' % (open_str, ls(32036), settings_str), ''),
 		('reload_widgets', 'POV: Refresh Widgets', '') if is_widget else None
 	)

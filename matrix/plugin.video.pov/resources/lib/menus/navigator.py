@@ -84,11 +84,11 @@ class Navigator:
 		tor_str, usenet_str, web_str = 'Torrent', 'Usenet', 'Web Download'
 		tb_str, cloud_str, ai_str = 'TorBox', ls(32496), ls(32494)
 		clca_str, n_ins = ls(32497) % tb_str, _in_str % (tb_str.upper(), '')
-		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'mediatype': 'torent', 'name': tor_str   }, 'torbox.png', n_ins)
-		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'mediatype': 'usenet', 'name': usenet_str}, 'torbox.png', n_ins)
-		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'mediatype': 'webdl',  'name': web_str   }, 'torbox.png', n_ins)
-		self._add_item({'mode': 'torbox.show_account_info',                       'name': ai_str    }, 'torbox.png', n_ins, False)
-		self._add_item({'mode': 'clear_cache', 'cache': 'tb_cloud',               'name': clca_str  }, 'torbox.png', n_ins, False)
+		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'mediatype': 'torrents', 'name': tor_str   }, 'torbox.png', n_ins)
+		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'mediatype': 'usenet',   'name': usenet_str}, 'torbox.png', n_ins)
+		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'mediatype': 'webdl',    'name': web_str   }, 'torbox.png', n_ins)
+		self._add_item({'mode': 'torbox.show_account_info',                         'name': ai_str    }, 'torbox.png', n_ins, False)
+		self._add_item({'mode': 'clear_cache', 'cache': 'tb_cloud',                 'name': clca_str  }, 'torbox.png', n_ins, False)
 
 	def offcloud(self):
 		cloud_str, ai_str, oc_str = ls(32496), ls(32494), 'Offcloud'

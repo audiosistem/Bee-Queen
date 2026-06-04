@@ -209,6 +209,7 @@ class Downloader:
 		while True:
 			error = False
 			try:
+				if not self.resumable: f.seek(0)
 				copyfileobj(self.resp, p)
 				f.close()
 				try: progressDialog.close()
@@ -243,7 +244,6 @@ class Downloader:
 				resume += 1
 				errors  = 0
 				if self.resumable: self.resp = self.get_response(url, self.headers, p.total_write + 1)
-			if not self.resumable: f.seek(0)
 
 	def get_response(self, url, headers, size):
 		try:

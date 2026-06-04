@@ -116,7 +116,7 @@ class Sources():
 			if self.active_external: self.activate_external_providers()
 			elif not self.active_internal_scrapers: self._kill_progress_dialog()
 			self.orig_results = self.collect_results()
-			if not self.orig_results and not self.active_external: self._kill_progress_dialog()
+			if not self.orig_results: self._kill_progress_dialog()
 			results = self.process_results(self.orig_results)
 		if not results:
 			if self.uncached_results and self.external_cache_check and self.active_external:
@@ -482,6 +482,7 @@ class Sources():
 		self.determine_scrapers_status()
 
 	def _process_post_results(self):
+		self._kill_progress_dialog(join_timeout=2.0)
 		if not self.retry_actions: return self._no_results()
 		next_action, next_setting, order = self.retry_actions.pop(0)
 		if next_action == 'cache_ignored':
@@ -490,7 +491,7 @@ class Sources():
 				if next_setting == 1 or kodi_utils.confirm_dialog(heading=self.meta.get('rootname', ''), text='No results.[CR]Retry With Cache Check Disabled?'):
 					self.threads, self.prescrape, self.external_cache_check = [], False, False
 					return self.get_sources()
-			self._process_post_results()
+			return self._process_post_results()
 		if next_action == 'imdb_year':
 			if next_setting in (1, 2) and self.active_external and not self.orig_results and not self.meta.get('custom_year'):
 				if next_setting == 1 or kodi_utils.confirm_dialog(heading=self.meta.get('rootname', ''), text='No results.[CR]Retry With IMDb Year Data?'):
@@ -501,13 +502,13 @@ class Sources():
 						self.make_search_info()
 						self.threads, self.prescrape = [], False
 						return self.get_sources()
-			self._process_post_results()
+			return self._process_post_results()
 		if next_action == 'with_all':
 			if next_setting in (1, 2) and self.active_external:
 				if next_setting == 1 or kodi_utils.confirm_dialog(heading=self.meta.get('rootname', ''), text='No results.[CR]Retry With All Scrapers?'):
 					self.threads, self.disabled_ext_ignored, self.prescrape = [], True, False
 					return self.get_sources()
-			self._process_post_results()
+			return self._process_post_results()
 		if next_action == 'episode_group':
 			if next_setting in (1, 2) and self.media_type == 'episode':
 				if next_setting == 1 \
@@ -532,20 +533,35 @@ class Sources():
 							self.params.update({'custom_season': season, 'custom_episode': episode, 'episode_group_label': '[B]CUSTOM GROUP: S%02dE%02d[/B]' % (season, episode)})
 							self.threads, self.disabled_ext_ignored, self.prescrape = [], True, True, False
 							return self.playback_prep()
-			self._process_post_results()
+			return self._process_post_results()
 		if next_action == 'ignore_filters':
 			if next_setting in (1, 2) and self.orig_results and not self.background:
 				if next_setting == 1 or kodi_utils.confirm_dialog(heading=self.meta.get('rootname', ''), text='No results. Access Filtered Results?'):
 					if self.autoplay: kodi_utils.notification('Filters Ignored & Autoplay Disabled')
 					self.threads, self.ignore_scrape_filters, self.disabled_ext_ignored, self.autoplay = [], True, True, False
 					return self.get_sources()
-			self._process_post_results()
+			return self._process_post_results()
+		return self._process_post_results()
 
 	def _no_results(self):
-		self._kill_progress_dialog()
+		self._kill_progress_dialog(join_timeout=3.0)
 		kodi_utils.hide_busy_dialog()
 		if self.background: return kodi_utils.notification('[B]Next Up:[/B] No Results', 5000)
-		kodi_utils.notification('No Results', 2000)
+		if self.progress_thread and self.progress_thread.is_alive():
+			try:
+				kodi_utils.close_dialog('sources_playback.xml')
+				self.progress_thread.join(timeout=2.0)
+			except:
+				pass
+		kodi_utils.sleep(400)
+		heading = self.meta.get('rootname', '') or self.meta.get('title', '') or 'Red Light'
+		try:
+			return kodi_utils.ok_dialog(heading=heading, text='No results found.', ok_label='OK')
+		except Exception:
+			try:
+				return kodi_utils.kodi_dialog().ok(heading, 'No results found.')
+			except Exception:
+				return kodi_utils.notification('No results found.', 4000, settle_ms=400)
 
 	def get_search_title(self):
 		search_title = self.meta.get('custom_title', None) or self.meta.get('english_title') or self.meta.get('title')
@@ -772,7 +788,12 @@ class Sources():
 	def _kill_progress_dialog(self, join_timeout=0.4):
 		try:
 			if self.progress_dialog:
+				self.progress_dialog.is_canceled = True
 				self.progress_dialog.close()
+		except:
+			pass
+		try:
+			kodi_utils.close_dialog('sources_playback.xml')
 		except:
 			pass
 		try:

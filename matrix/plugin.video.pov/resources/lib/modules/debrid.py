@@ -60,24 +60,23 @@ class Source:
 					season = self.meta.get('custom_season') or self.meta.get('season')
 					episode = self.meta.get('custom_episode') or self.meta.get('episode')
 				else: title, season, episode = metadata.get_title(self.meta), None, None
-				api = import_debrid(self.debrid)
-				api.store_to_cloud = settings.store_resolved_torrent_to_cloud(self.debrid)
-				if self.url.startswith('magnet'):
-					return self.resolve_external_sources(api, title, season, episode)
-				store_to_cloud = settings.store_resolved_usenet_to_cloud(self.debrid)
-				return api.resolve_nzb(self.url, self.hash, store_to_cloud, title, season, episode)
+				return self.resolve_external_sources(title, season, episode)
 			if self.scrape_provider in default_internal_scrapers:
 				return self.resolve_internal_sources(self.direct_debrid_link)
 			return self.url
 		except: pass
 
-	def resolve_external_sources(self, api, title, season, episode):
+	def resolve_external_sources(self, title, season, episode):
 		from modules.source_utils import supported_video_extensions, seas_ep_filter, extras_filter
 		try:
 			extensions = supported_video_extensions()
 			extras_filtering_list = tuple(i for i in extras_filter() if i not in title.lower())
+			if self.url.startswith('magnet'):
+				is_nzb, store_to_cloud = False, settings.store_resolved_torrent_to_cloud
+			else: is_nzb, store_to_cloud = True, settings.store_resolved_usenet_to_cloud
 			if self.debrid in ('real-debrid', 'alldebrid'): args = self.url, self.hash, True
 			else: args = self.url, self.hash
+			api = import_debrid(self.debrid)
 			files = api.parse_magnet_pack(*args)
 			selected_files = []
 			selected_files_append = selected_files.append
@@ -91,15 +90,20 @@ class Source:
 			if not selected_files: raise Exception('selected_files failed')
 			if not season: selected_files.sort(key=lambda k: k['size'], reverse=True)
 			file_key = next((i['link'] for i in selected_files), None)
-			file_url = api.unrestrict_link(file_key)
+			if is_nzb: file_url = api.unrestrict_usenet(file_key)
+			else: file_url = api.unrestrict_link(file_key)
 			if self.debrid in ('premiumize.me', 'offcloud'):
-				if api.store_to_cloud: Thread(target=api.create_transfer, args=(self.url,)).start()
+				if store_to_cloud: Thread(target=api.create_transfer, args=(self.url,)).start()
 			if self.debrid in ('real-debrid', 'alldebrid', 'torbox'):
-				if not api.store_to_cloud: Thread(target=api.delete_torrent, args=(torrent_id,)).start()
+				if not store_to_cloud: self._delete(api, torrent_id, is_nzb)
 			return file_url
 		except Exception as e:
 			kodi_utils.logger('resolve_external_sources exception', f"{e}\n{self.dumps()}")
-			if files and torrent_id: Thread(target=api.delete_torrent, args=(torrent_id,)).start()
+			if files and torrent_id: self._delete(api, torrent_id, is_nzb)
+
+	def _delete(self, api, torrent_id, is_nzb):
+		target = api.delete_usenet if is_nzb else api.delete_torrent
+		Thread(target=target, args=(torrent_id,)).start()
 
 	def resolve_internal_sources(self, direct_debrid_link=False):
 		try:
@@ -110,10 +114,7 @@ class Source:
 				if direct_debrid_link: url = self.url_dl
 				else: url = alldebrid_api.AllDebridAPI().unrestrict_link(self.id)
 			elif self.scrape_provider == 'tb_cloud':
-				if direct_debrid_link == 'usenet': function = 'unrestrict_usenet'
-				elif direct_debrid_link == 'webdl': function = 'unrestrict_webdl'
-				else: function = 'unrestrict_link'
-				url = getattr(torbox_api.TorBoxAPI(), function)(self.id)
+				url = torbox_api.TorBoxAPI().get_function(self.id)(self.id)
 			elif self.scrape_provider == 'easynews':
 				from debrids.easynews_api import EasyNewsAPI
 				url = EasyNewsAPI().unrestrict_link(self.url_dl)
@@ -161,9 +162,7 @@ class Source:
 		kodi_utils.progressDialog.create('POV', '')
 		kodi_utils.progressDialog.update(0, line % (line1, '', '[B]GRAB...[/B]'))
 		try:
-			store_to_cloud = get_setting('store_usenet.torbox') == 'true'
 			api = import_debrid(self.debrid)
-			api.clear_cache()
 			nzb_id = api.create_transfer(self.url, self.name)
 			if not nzb_id: return kodi_utils.notification(32574)
 			resolved_link = None
@@ -177,9 +176,7 @@ class Source:
 				kodi_utils.sleep(500)
 				result = api.nzb_info(nzb_id)
 				if result and 'id' in result: data = result
-			else: resolved_link = api.resolve_nzb(
-				self.url, self.hash, store_to_cloud, title, season, episode, nzb_info=result
-			)
+			else: resolved_link = self.resolve_external_sources(title, season, episode)
 		finally: kodi_utils.progressDialog.close()
 		return kodi_utils.notification(32574) if not resolved_link else resolved_link
 

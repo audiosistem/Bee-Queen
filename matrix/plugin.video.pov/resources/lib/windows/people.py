@@ -48,7 +48,8 @@ class People(BaseDialog):
 				params = {'mode': 'people_tagged_image_results', 'actor_name': self.person_name, 'actor_id': self.person_id}
 				Images().run(params)
 			elif controlID == 50:
-				show_text(self.person_name, self.person_biography, font_size='large')
+				kwargs = dict(text=self.person_biography, poster=self.person_image)
+				self.open_window(('windows.extras', 'ShowTextMedia'), 'textviewer_media.xml', **kwargs)
 		else: self.control_id = controlID
 
 	def onAction(self, action):

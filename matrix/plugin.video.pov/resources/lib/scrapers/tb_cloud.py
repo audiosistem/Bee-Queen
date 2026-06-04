@@ -48,11 +48,11 @@ class source(Debrid):
 					if not (self.folder_query in filename or self.folder_query in foldername): continue
 
 					if title_filter and not check_title(title, normalized, self.aliases, self.year, self.season, self.episode): continue
-					direct_debrid_link, URLName = item['mediatype'], clean_file_name(normalized).replace('html', ' ').replace('+', ' ').replace('-', ' ')
+					URLName = clean_file_name(normalized).replace('html', ' ').replace('+', ' ').replace('-', ' ')
 					file_dl, size = item['link'], round(float(item['size'])/1073741824, 2)
 					video_quality, details = get_file_info(name_info=release_info_format(normalized))
 					sources_append({
-						'source': self.scrape_provider, 'direct': True, 'direct_debrid_link': direct_debrid_link,
+						'source': self.scrape_provider, 'direct': True,
 						'scrape_provider': self.scrape_provider, 'id': file_dl, 'url_dl': file_dl, 'name': normalized, 'title': normalized,
 						'URLName': URLName, 'extraInfo': details, 'quality': video_quality, 'size': size, 'size_label': '%.2f GB' % size
 					})
@@ -67,9 +67,9 @@ class source(Debrid):
 		try:
 			results_append = self.scrape_results.append
 			for i in (threads := (
-				Thread(target=self._scrape_folders, args=(self.user_cloud, 'torent')),
-				Thread(target=self._scrape_folders, args=(self.user_cloud_usenet, 'usenet')),
-				Thread(target=self._scrape_folders, args=(self.user_cloud_webdl, 'webdl'))
+				Thread(target=self._scrape_folders, args=(self._get, 'torrents')),
+				Thread(target=self._scrape_folders, args=(self._get, 'usenet')),
+				Thread(target=self._scrape_folders, args=(self._get, 'webdl'))
 			)): i.start()
 			[i.join() for i in threads]
 		except: pass
@@ -77,12 +77,13 @@ class source(Debrid):
 	def _scrape_folders(self, function, mediatype):
 		try:
 			results_append = self.scrape_results.append
-			folder = function(check_cache=False)
+			folder = function('%s/mylist?bypass_cache=true' % mediatype)
 			for file in folder:
+				if not file['download_finished']: continue
 				for item in file['files']:
 					try: item.update({
 						'filename': item['short_name'], 'folder_name': file['name'],
-						'mediatype': mediatype, 'link': '%d,%d' % (file['id'], item['id'])
+						'link': '%s,%s' % (file['id'], item['id'])
 					})
 					except: pass
 					else: results_append(item)

@@ -160,6 +160,20 @@ class POVPlayer(kodi_utils.xbmc_player):
 		else: stinger = next((v for k, v in stingers.items() if k in keywords), None)
 		return kodi_utils.notification(stinger, time=6000, icon=poster) if stinger else ''
 
+	def getCredits(self):
+		import requests
+		base_url = 'https://api.introdb.app/segments'
+		params = {'imdb_id': self.imdb_id, 'season': self.season, 'episode': self.episode}
+		try:
+			response = requests.get(base_url, params=params, timeout=10)
+			response.raise_for_status()
+			credits = response.json().get('outro') or {}
+			if credits.get('start_sec') is not None: start_prep = int(credits['start_sec'])
+			elif credits.get('start_ms') is not None: start_prep = int(credits['start_ms'] / 1000)
+			else: start_prep = None
+			if start_prep and start_prep <= self.getTotalTime(): return start_prep
+		except: pass
+
 	def media_watched_marker(self):
 		self.media_marked = True
 		try:
@@ -226,7 +240,11 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.nextep_info_gathered = True
 		try:
 			self.nextep_settings = settings.autoplay_next_settings()
-			if not self.nextep_settings['run_popup']:
+			if window_time := self.getCredits():
+				window_time = round(self.total_time - window_time)
+				self.nextep_settings['window_time'] = window_time
+				self.nextep_settings['autoscrape_next_window_time'] = window_time
+			elif not self.nextep_settings['run_popup']:
 				window_time = round(0.02 * self.total_time)
 				self.nextep_settings['window_time'] = window_time
 			elif self.nextep_settings['timer_method'] == 'percentage':

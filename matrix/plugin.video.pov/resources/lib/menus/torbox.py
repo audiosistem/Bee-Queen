@@ -16,20 +16,14 @@ extensions = supported_video_extensions()
 class Menu(Debrid):
 	def run(self, params):
 		if   '_delete' in params['mode']:
-			return self.cloud_delete(params['folder_id'], params['mediatype'])
+			return self.cloud_delete(params['folder_id'])
 		elif '_browse_cloud' in params['mode']:
-			folder_id, mediatype = params['folder_id'], params['mediatype']
-			if   mediatype == 'usenet': items = self.user_cloud_usenet(folder_id)
-			elif mediatype == 'webdl': items = self.user_cloud_webdl(folder_id)
-			else: items = self.user_cloud(folder_id)
-			items = [{**i, 'url': '%d,%d' % (int(folder_id), i['id']), 'mediatype': mediatype} for i in items['files']]
+			folder_id, mediatype = params['folder_id'].split(',')
+			items = self.user_cloud(mediatype, folder_id)
 			_builder = self.browse_cloud
 		elif '_torrent_cloud' in params['mode']:
 			mediatype = params['mediatype']
-			if   mediatype == 'usenet': items = self.user_cloud_usenet()
-			elif mediatype == 'webdl': items = self.user_cloud_webdl()
-			else: items = self.user_cloud()
-			items = [{**i, 'mediatype': mediatype} for i in items]
+			items = self.user_cloud(mediatype)
 			_builder = self.torrent_cloud
 		else: return getattr(self, params['mode'].split('.')[-1])()
 		__handle__ = int(sys.argv[1])
@@ -45,8 +39,8 @@ class Menu(Debrid):
 				cm = []
 				cm_append = cm.append
 				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, folder_str, clean_file_name(normalize(item['name'])).upper())
-				url_params = {'mode': 'torbox.tb_browse_cloud', 'folder_id': item['id'], 'mediatype': item['mediatype']}
-				delete_params = {'mode': 'torbox.tb_delete', 'folder_id': item['id'], 'mediatype': item['mediatype']}
+				url_params = {'mode': 'torbox.tb_browse_cloud', 'folder_id': item['folder_id']}
+				delete_params = {'mode': 'torbox.tb_delete', 'folder_id': item['folder_id']}
 				cm_append(('[B]%s %s[/B]' % (delete_str, folder_str.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))
 				url = build_url(url_params)
 				listitem = make_listitem()
@@ -65,8 +59,8 @@ class Menu(Debrid):
 				name = clean_file_name(item['short_name']).upper()
 				size = float(int(item['size']))/1073741824
 				display = '%02d | [B]%s[/B] | %.2f GB | [I]%s [/I]' % (count, file_str, size, name)
-				params = {'id': item['url'], 'url': item['url'], 'image': default_icon}
-				params.update({'name': item['short_name'], 'scrape_provider': 'tb_cloud', 'direct_debrid_link': item['mediatype']})
+				params = {'id': item['link'], 'url': item['link'], 'image': default_icon}
+				params.update({'name': item['short_name'], 'scrape_provider': 'tb_cloud', 'direct_debrid_link': 'false'})
 				url_params = {**params, 'mode': 'media_play'}
 				down_file_params = {**params, 'mode': 'downloader', 'action': 'tb_cloud'}
 				cm_append((down_str, 'RunPlugin(%s)' % build_url(down_file_params)))
@@ -79,11 +73,9 @@ class Menu(Debrid):
 				yield (url, listitem, False)
 			except: pass
 
-	def cloud_delete(self, folder_id, mediatype):
+	def cloud_delete(self, folder_id):
 		if not kodi_utils.confirm_dialog(): return
-		if   mediatype == 'usenet': result = self.delete_usenet(folder_id)
-		elif mediatype == 'webdl': result = self.delete_webdl(folder_id)
-		else: result = self.delete_torrent(folder_id)
+		result = self.get_function(folder_id, True)(folder_id)
 		if not result: return kodi_utils.notification(32574)
 		self.clear_cache()
 		kodi_utils.container_refresh()

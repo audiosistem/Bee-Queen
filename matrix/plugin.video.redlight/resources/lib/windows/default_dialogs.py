@@ -131,7 +131,7 @@ class Confirm(BaseDialog):
 class OK(BaseDialog):
 	def __init__(self, *args, **kwargs):
 		BaseDialog.__init__(self, *args)
-		self.ok_label = kwargs.get('ok_label')
+		self.ok_label = kwargs.get('ok_label') or 'OK'
 		self.text = kwargs['text']
 		self.heading = kwargs['heading']
 		self.set_properties()
