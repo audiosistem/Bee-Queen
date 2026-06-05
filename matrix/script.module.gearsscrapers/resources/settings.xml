@@ -27,22 +27,24 @@
 
 <category label="Sources">
 	<setting label="[COLORghostwhite]Recomended Providers[/COLOR]" type="lsep" />
+	<setting id="provider.aiostreams" type="bool" label="[COLORcyan]AIOSTREAMS[/COLOR]" default="true" />
 	<setting id="provider.comet" type="bool" label="[COLORcyan]COMET[/COLOR]" default="true" />
-    <setting id="provider.mediafusion" type="bool" label="[COLORcyan]MEDIAFUSION[/COLOR]" default="true" />
     <setting id="provider.torrentio" type="bool" label="[COLORcyan]TORRENTIO[/COLOR]" default="true" />
-	<setting id="provider.torz" type="bool" label="[COLORcyan]TORZ[/COLOR]" default="false" />
-	<setting id="provider.meteor" type="bool" label="[COLORcyan]METEOR[/COLOR]" default="true" />
+	<setting id="provider.torz" type="bool" label="[COLORcyan]TORZ[/COLOR]" default="true" />
+	<setting id="provider.torrentsdb" type="bool" label="[COLORcyan]TORRENTSDB[/COLOR]" default="true" />
+	<setting id="provider.mediafusion" type="bool" label="[COLORcyan]MEDIAFUSION[/COLOR]" default="false" />
 	<setting label="[COLORghostwhite]Secondary Providers[/COLOR]" type="lsep" />
-	<setting id="provider.aiostreams" type="bool" label="[COLORgoldenrod]AIOSTREAMS[/COLOR]" default="false" />
 	<setting id="provider.bitmagnet" type="bool" label="[COLORgoldenrod]BITMAGNET[/COLOR]" default="false" />
 	<setting id="provider.dmm" type="bool" label="[COLORgoldenrod]DMM[/COLOR]" default="false" />
-    <setting id="provider.torrentsdb" type="bool" label="[COLORgoldenrod]TORRENTSDB[/COLOR]" default="true" />
-	<setting id="provider.torrentdownload" type="bool" label="[COLORgoldenrod]TORRENTDL[/COLOR]" default="false" />
+	<setting id="provider.meteor" type="bool" label="[COLORgoldenrod]METEOR[/COLOR]" default="false" />
+	<setting id="provider.torrentdownload" type="bool" label="[COLORgoldenrod]TORRENTDL[/COLOR]" default="true" />
 	<setting id="provider.1337x" type="bool" label="[COLORgoldenrod]$NUMBER[1337]X[/COLOR]" default="false" />
 	<setting id="provider.eztv" type="bool" label="[COLORgoldenrod]EZTV[/COLOR]" default="false" />
-	<setting id="provider.nyaa" type="bool" label="[COLORgoldenrod]NYAA[/COLOR]" default="false" />
 	<setting id="provider.kickass2" type="bool" label="[COLORgoldenrod]KICKASS[/COLOR]" default="false" />
 	<setting id="provider.piratebay" type="bool" label="[COLORgoldenrod]PIRATEBAY[/COLOR]" default="true" />
+    <setting id="provider.rutor" type="bool" label="[COLORgoldenrod]RUTOR[/COLOR]" default="true" />
+	<setting id="provider.knaben" type="bool" label="[COLORgoldenrod]KNABEN[/COLOR]" default="false" />
+	<setting id="provider.nyaa" type="bool" label="[COLORgoldenrod]NYAA[/COLOR] (Anime)" default="false" />
 	<setting id="provider.zilean" type="bool" label="[COLORgoldenrod]ZILEAN[/COLOR]" default="false" />
 	
 </category>

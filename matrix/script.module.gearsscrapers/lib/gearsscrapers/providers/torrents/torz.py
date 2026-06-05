@@ -1,10 +1,10 @@
-
+# created for gearsscrapers
 """
 	gearsscrapers Project
 """
 
 from json import loads as jsloads
-import re, queue
+import queue
 from gearsscrapers.modules import client
 from gearsscrapers.modules import source_utils
 from gearsscrapers.modules.control import setting as getSetting
@@ -19,7 +19,7 @@ class source:
 	_queue = queue.SimpleQueue()
 	def __init__(self):
 		self.language = ['en']
-		self.base_link = "https://stremthrufortheweebs.midnightignite.me"
+		self.base_link = "https://stremthru.13377001.xyz"
 		self.movieSearch_link = '/v0/torrents?sid=%s'
 		self.tvSearch_link = '/v0/torrents?sid=%s:%s:%s'
 		self.min_seeders = 0
@@ -80,8 +80,8 @@ class source:
 
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
-					size = f"{float(file['size']) / 1073741824:.2f} GB"
-					dsize, isize = source_utils._size(size)
+					size = float(file['size'])
+					dsize, isize = source_utils.convert_size(size)
 					info.insert(0, isize)
 				except: dsize = 0
 				info = ' | '.join(info)
@@ -144,8 +144,8 @@ class source:
 
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
-					size = f"{float(file['size']) / 1073741824:.2f} GB"
-					dsize, isize = source_utils._size(size)
+					size = float(file['size'])
+					dsize, isize = source_utils.convert_size(size)
 					info.insert(0, isize)
 				except: dsize = 0
 				info = ' | '.join(info)

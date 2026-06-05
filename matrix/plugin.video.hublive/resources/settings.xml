@@ -6,6 +6,8 @@
 
     <category label="Server Settings">
         <setting id="server_check_enabled" type="bool" label="Verificare automata stare servere (ON/OFF) la deschidere" default="false" />
+        <setting id="mega_search_fetch_missing_lists" type="bool" label="Mega search: descarca listele lipsa daca nu exista cache" default="true" />
+        <setting id="mega_search_fetch_batch_size" type="number" label="Mega search: numar portaluri per lot fallback" default="5" />
     </category>
 
     <category label="EPG Settings">
@@ -15,6 +17,7 @@
 
     <category label="Playback Settings">
         <setting id="live_auto_reconnect" type="bool" label="Auto reconnect for live streams" default="true" />
+        <setting id="auth_max_attempts" type="number" label="Max MAC attempts for auth/search/playback" default="6" />
         <setting id="live_max_reconnect_attempts" type="number" label="Max live reconnect attempts" default="3" />
         <setting id="live_reconnect_delay" type="number" label="Delay before live reconnect (seconds)" default="2" />
         <setting id="live_startup_timeout" type="number" label="Live startup timeout before retry (seconds)" default="12" />

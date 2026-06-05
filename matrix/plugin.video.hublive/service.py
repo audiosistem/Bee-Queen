@@ -1,3 +1,5 @@
+import os
+import sys
 import time
 from urllib.parse import urlencode
 
@@ -5,11 +7,18 @@ import xbmc
 import xbmcaddon
 import xbmcgui
 
+# Add resources/lib to path
+_addon_path = xbmcaddon.Addon().getAddonInfo('path')
+_lib_path = os.path.join(_addon_path, 'resources', 'lib')
+if _lib_path not in sys.path:
+    sys.path.insert(0, _lib_path)
+
 from playback_state import clear_playback_state, load_playback_state, save_playback_state
 
 ADDON_ID = "plugin.video.hublive"
 ADDON = xbmcaddon.Addon(ADDON_ID)
 NOTIFICATION_TITLE = "HubLive"
+_RECONNECT_LAUNCH_GRACE_SECONDS = 5
 
 
 def _log(message, level=xbmc.LOGINFO):
@@ -39,7 +48,12 @@ def _normalize_mac(mac):
     return (mac or "").strip().lower()
 
 
-def _dedupe_macs(macs, limit=6):
+def _dedupe_macs(macs, limit=None):
+    if limit is None:
+        auth_attempts = _setting_int("auth_max_attempts", 6, minimum=1, maximum=12)
+        reconnects = _setting_int("live_max_reconnect_attempts", 3, minimum=0, maximum=10)
+        limit = max(auth_attempts * (reconnects + 1), auth_attempts)
+
     ordered = []
     seen = set()
     for mac in macs or []:
@@ -123,6 +137,16 @@ class LiveReconnectService:
         _log(f"Clearing live reconnect state for session {session_id}: {reason}")
         clear_playback_state(session_id)
 
+    def _is_launch_in_progress(self, state):
+        if not state.get("launch_in_progress"):
+            return False
+
+        launch_started_at = float(state.get("launch_started_at") or 0)
+        if not launch_started_at:
+            return False
+
+        return (time.time() - launch_started_at) < _RECONNECT_LAUNCH_GRACE_SECONDS
+
     def on_av_started(self):
         state = self._load_live_state()
         if not state:
@@ -148,6 +172,8 @@ class LiveReconnectService:
                 "next_retry_at": 0,
                 "last_started_at": time.time(),
                 "last_playing_file": current_file or state.get("resolved_url", ""),
+                "launch_in_progress": False,
+                "launch_started_at": 0,
             }
         )
         self._save_state(state)
@@ -174,6 +200,17 @@ class LiveReconnectService:
             _log(
                 f"Ignoring stopped event because reconnect is already scheduled ({pending_reason})"
             )
+            return
+
+        if self._is_launch_in_progress(state):
+            _log("Ignoring stopped event during reconnect launch grace period")
+            return
+
+        if (
+            state.get("status") == "resolving"
+            and not state.get("playback_started")
+        ):
+            self._schedule_reconnect(state, "startup_stop")
             return
 
         if self._retry_on_stopped():
@@ -275,15 +312,27 @@ class LiveReconnectService:
             return
 
         if self.player.isPlaying():
-            state.update(
-                {
-                    "status": "playing",
-                    "reconnect_in_progress": False,
-                    "pending_reason": "",
-                    "next_retry_at": 0,
-                }
+            current_file = self._get_current_file()
+            resolved_url = state.get("resolved_url") or ""
+            last_playing_file = state.get("last_playing_file") or ""
+            if current_file and current_file in (resolved_url, last_playing_file):
+                state.update(
+                    {
+                        "status": "playing",
+                        "reconnect_in_progress": False,
+                        "pending_reason": "",
+                        "next_retry_at": 0,
+                        "launch_in_progress": False,
+                        "launch_started_at": 0,
+                    }
+                )
+                self._save_state(state)
+                return
+
+            self._clear_live_state(
+                state,
+                "different media is already playing while reconnect was pending",
             )
-            self._save_state(state)
             return
 
         attempted_macs = list(state.get("attempted_macs") or [])
@@ -305,6 +354,8 @@ class LiveReconnectService:
                 "next_retry_at": 0,
                 "playback_started": False,
                 "created_at": time.time(),
+                "launch_in_progress": True,
+                "launch_started_at": time.time(),
             }
         )
         self._save_state(state)

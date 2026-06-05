@@ -1,9 +1,6 @@
-import hashlib
-import json
 import os
 import random
 import re
-import string
 import sys
 import time
 import uuid
@@ -12,7 +9,6 @@ from concurrent.futures import (
     TimeoutError as FuturesTimeoutError,
     as_completed,
 )
-from functools import lru_cache
 from urllib.parse import parse_qsl, quote_plus, urlencode
 
 import requests
@@ -20,39 +16,90 @@ import xbmc
 import xbmcaddon
 import xbmcgui
 import xbmcplugin
-import xbmcvfs
-from requests.adapters import HTTPAdapter
 
-try:
-    import orjson
+# Add resources/lib to path
+_addon_path = xbmcaddon.Addon().getAddonInfo('path')
+_lib_path = os.path.join(_addon_path, 'resources', 'lib')
+if _lib_path not in sys.path:
+    sys.path.insert(0, _lib_path)
 
-    def json_loads(s):
-        if hasattr(s, "read"):
-            s = s.read()
-        return orjson.loads(s)
-
-    def json_dumps(obj, fp=None):
-        result = orjson.dumps(obj)
-        if fp:
-            fp.write(result.decode("utf-8") if isinstance(result, bytes) else result)
-            return None
-        return result.decode("utf-8") if isinstance(result, bytes) else result
-except ImportError:
-
-    def json_loads(s):
-        if hasattr(s, "read"):
-            s = s.read()
-        return json.loads(s)
-
-    def json_dumps(obj, fp=None):
-        result = json.dumps(obj)
-        if fp:
-            fp.write(result)
-            return None
-        return result
-
-
-from epg import EpgManager, format_epg_tooltip
+from epg import format_epg_tooltip
+from hublive_backend import (
+    _CHANNELS_CACHE_TTL,
+    _append_kodi_headers,
+    _build_auth_headers_and_cookies,
+    _selected_mac_override,
+    _normalize_mac,
+    check_server_online,
+    clear_token_cache,
+    clear_failed_mac,
+    clean_category_title,
+    clear_all_cache,
+    clear_all_cache_for_all_servers,
+    epg_contains,
+    epg_contains_any,
+    fetch_channels_by_category_from_server,
+    fetch_server_categories,
+    get_epg_items,
+    get_candidate_macs,
+    get_current_program,
+    get_epg_manager,
+    get_fetch_status,
+    get_portal_url_for_server,
+    get_random_mac_from_file,
+    get_romanian_categories,
+    get_server_auth,
+    get_server_type,
+    get_sport_categories,
+    handshake,
+    invalidate_server_auth,
+    is_epg_enabled,
+    iter_server_auth_candidates,
+    json_dumps,
+    json_loads,
+    load_channels_cache,
+    load_cached_category_channels,
+    load_servers_config,
+    load_epg_cache,
+    note_failed_mac,
+    reload_servers_config,
+    save_epg_cache,
+    set_server_auth,
+    set_epg_current_server,
+    set_fetch_status,
+    get_session,
+)
+from hublive_favorites import (
+    add_to_favorites,
+    list_favorites,
+    list_global_favorites,
+    load_favorite_stream_ids,
+    remove_from_favorites,
+)
+from hublive_search import (
+    clear_search_cache,
+    fetch_stalker_search as search_fetch_stalker_search,
+    mega_search_input as search_mega_search_input,
+    mega_search_menu as render_mega_search_menu,
+    search_input_dialog as render_search_input_dialog,
+    search_input_dialog_series as render_search_input_dialog_series,
+    search_input_dialog_vod as render_search_input_dialog_vod,
+    show_mega_search_results as render_mega_search_results,
+    show_search_results as render_search_results,
+    show_series_search_results as render_series_search_results,
+    show_vod_search_results as render_vod_search_results,
+)
+from hublive_vod_series import (
+    clear_vod_series_cache,
+    list_episodes as render_list_episodes,
+    list_seasons as render_list_seasons,
+    list_series_categories as render_list_series_categories,
+    list_series_items as render_list_series_items,
+    list_vod_categories as render_list_vod_categories,
+    list_vod_items as render_list_vod_items,
+    play_series as render_play_series,
+    play_vod as render_play_vod,
+)
 from playback_state import clear_playback_state, load_playback_state, save_playback_state
 
 RE_STREAM_ID = re.compile(r"stream=(\d+)")
@@ -62,33 +109,6 @@ RE_CATEGORY_PREFIX = re.compile(r"^[\|\-\s]+ro[\|\s\:\-\[\(]?", re.IGNORECASE)
 RE_EXTINF = re.compile(r"#EXTINF:", re.IGNORECASE)
 RE_GROUP_TITLE = re.compile(r'group-title="?([^",]*)"?', re.IGNORECASE)
 RE_TVG_LOGO = re.compile(r'tvg-logo=["\']([^"\']*)["\']', re.IGNORECASE)
-
-import threading
-
-# Thread-local storage for HTTP sessions to ensure thread-safety in Mega Search
-_session_storage = threading.local()
-
-
-def get_session():
-    """Get or create a thread-safe HTTP session."""
-    if not hasattr(_session_storage, "session") or _session_storage.session is None:
-        s = requests.Session()
-        adapter = HTTPAdapter(
-            pool_connections=20, pool_maxsize=30, max_retries=3, pool_block=False
-        )
-        s.mount("http://", adapter)
-        s.mount("https://", adapter)
-        s.headers.update(
-            {
-                "User-Agent": "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3",
-                "X-User-Agent": "Model: MAG250; Link: WiFi",
-                "Connection": "keep-alive",
-                "Accept-Encoding": "gzip, deflate",
-            }
-        )
-        _session_storage.session = s
-    return _session_storage.session
-
 
 TIMEOUTS = {
     "handshake": 5,
@@ -100,34 +120,14 @@ TIMEOUTS = {
     "play": 15,
 }
 
-_portal_response_cache = {}
-_PORTAL_CACHE_TTL = 300  # 5 minutes
-
-
-def get_cached_response(key):
-    """Get cached API response if still valid."""
-    if key in _portal_response_cache:
-        cached = _portal_response_cache[key]
-        if time.time() - cached["timestamp"] < _PORTAL_CACHE_TTL:
-            return cached["data"]
-    return None
-
-
-def set_cached_response(key, data):
-    """Cache API response."""
-    _portal_response_cache[key] = {"timestamp": time.time(), "data": data}
-
-
 # Plugin version
-PLUGIN_VERSION = "1.4.5"
+PLUGIN_VERSION = "1.4.6"
 MIN_KODI_VERSION = "19.0"
 MIN_PYTHON_VERSION = (3, 6)
 
 
 def check_version_compatibility():
     """Check if the plugin is compatible with the current environment."""
-    import platform
-
     checks_passed = True
     errors = []
 
@@ -167,8 +167,8 @@ def check_version_compatibility():
             f"[Version] Compatibility checks FAILED: {error_msg}", level=xbmc.LOGERROR
         )
         xbmcgui.Dialog().notification(
-            "Version Error",
-            f"Plugin may not work correctly: {error_msg}",
+            "Eroare versiune",
+            f"Pluginul poate să nu funcționeze corect: {error_msg}",
             xbmcgui.NOTIFICATION_ERROR,
             5000,
         )
@@ -181,166 +181,16 @@ def check_version_compatibility():
     return True
 
 
-# EPG data store
-epg_data = {}
-
-# EPG Cache management
-EPG_CACHE_FILE = None
-DEFAULT_EPG_CACHE_TTL = 1800  # 30 minutes in seconds
-
-
-def get_epg_cache_ttl():
-    """Return the configured EPG cache TTL in seconds."""
-    try:
-        value = int((_ADDON.getSetting("epg_cache_duration") or "").strip())
-        return max(1, value) * 60
-    except (NameError, TypeError, ValueError):
-        return DEFAULT_EPG_CACHE_TTL
-
-
-def get_epg_cache_file():
-    """Get the EPG cache file path."""
-    global EPG_CACHE_FILE
-    if EPG_CACHE_FILE is None:
-        # Get Kodi's special path and translate it to real filesystem path
-        addon_profile_path = xbmcaddon.Addon().getAddonInfo("profile")
-        # Use xbmcvfs.translatePath (or xbmc.translatePath for older Kodi versions)
-        try:
-            addon_path = xbmcvfs.translatePath(addon_profile_path)
-        except:
-            # Fallback for older Kodi versions
-            addon_path = xbmc.translatePath(addon_profile_path)
-
-        if not os.path.exists(addon_path):
-            os.makedirs(addon_path)
-        EPG_CACHE_FILE = os.path.join(addon_path, "epg_cache.json")
-    return EPG_CACHE_FILE
-
-
-def load_epg_cache():
-    """Load EPG data from cache file."""
-    cache_file = get_epg_cache_file()
-    cache_ttl = get_epg_cache_ttl()
-    try:
-        if os.path.exists(cache_file):
-            with open(cache_file, "r", encoding="utf-8") as f:
-                cache_data = json_loads(f)
-                current_time = time.time()
-
-                # Load only non-expired entries
-                for stream_id, cache_entry in cache_data.items():
-                    timestamp = cache_entry.get("timestamp", 0)
-                    if current_time - timestamp < cache_ttl:
-                        # Convert datetime strings back to datetime objects
-                        items = cache_entry.get("items", [])
-                        for item in items:
-                            if item.get("start_dt"):
-                                from datetime import datetime
-
-                                item["start_dt"] = datetime.fromisoformat(
-                                    item["start_dt"]
-                                )
-                            if item.get("end_dt"):
-                                from datetime import datetime
-
-                                item["end_dt"] = datetime.fromisoformat(item["end_dt"])
-                        epg_data[stream_id] = items
-
-                xbmc.log(
-                    f"[EPG] Loaded {len(epg_data)} channels from cache",
-                    level=xbmc.LOGDEBUG,
-                )
-    except Exception as e:
-        xbmc.log(f"[EPG] Failed to load cache: {e}", level=xbmc.LOGWARNING)
-
-
-def save_epg_cache():
-    """Save EPG data to cache file."""
-    cache_file = get_epg_cache_file()
-    try:
-        cache_data = {}
-        current_time = time.time()
-
-        for stream_id, items in epg_data.items():
-            # Convert datetime objects to ISO format strings for JSON
-            serializable_items = []
-            for item in items:
-                serializable_item = item.copy()
-                if item.get("start_dt"):
-                    serializable_item["start_dt"] = item["start_dt"].isoformat()
-                if item.get("end_dt"):
-                    serializable_item["end_dt"] = item["end_dt"].isoformat()
-                serializable_items.append(serializable_item)
-
-            cache_data[stream_id] = {
-                "timestamp": current_time,
-                "items": serializable_items,
-            }
-
-        with open(cache_file, "w", encoding="utf-8") as f:
-            json_dumps(cache_data, f)
-
-        xbmc.log(f"[EPG] Saved {len(cache_data)} channels to cache", level=xbmc.LOGINFO)
-    except Exception as e:
-        xbmc.log(f"[EPG] Failed to save cache: {e}", level=xbmc.LOGWARNING)
-
-
-def get_current_program(epg_items):
-    """Extract the current program name from EPG items."""
-    if not epg_items:
-        return None
-
-    from datetime import datetime
-
-    now = datetime.now()
-
-    for item in epg_items:
-        start_dt = item.get("start_dt")
-        end_dt = item.get("end_dt")
-
-        if start_dt and end_dt:
-            if start_dt <= now < end_dt:
-                # Current program
-                name = item.get("name") or item.get("title") or ""
-                return name.strip()
-
-    # If no current program, return the next upcoming one
-    for item in epg_items:
-        start_dt = item.get("start_dt")
-        if start_dt and now < start_dt:
-            name = item.get("name") or item.get("title") or ""
-            return f"Next: {name.strip()}"
-
-    return None
-
-
-def epg_callback(channel_key, items):
-    xbmc.log(
-        f"[DEBUG] EPG callback for channel {channel_key} with {len(items)} items. Data: {items}",
-        level=xbmc.LOGDEBUG,
-    )
-    epg_data[channel_key] = items
-
-
-# Plugin specific variables
 _ADDON = xbmcaddon.Addon()
 _HANDLE = int(sys.argv[1])
 _BASE_URL = sys.argv[0]
 
 
-# Check if EPG is enabled
-def is_epg_enabled():
-    """Check if EPG is enabled in settings."""
-    return _ADDON.getSetting("epg_enabled") == "true"
-
-
 def is_server_check_enabled():
-    """Check if automatic server ON/OFF detection is enabled in settings."""
     return _ADDON.getSetting("server_check_enabled") == "true"
 
 
 def is_live_auto_reconnect_enabled():
-    """Check whether automatic reconnect is enabled for live streams."""
     return _ADDON.getSetting("live_auto_reconnect") == "true"
 
 
@@ -366,6 +216,18 @@ def get_live_reconnect_delay():
 
 def get_live_startup_timeout():
     return _get_int_setting("live_startup_timeout", 12, minimum=3, maximum=120)
+
+
+def get_auth_max_attempts():
+    return _get_int_setting("auth_max_attempts", 6, minimum=1, maximum=12)
+
+
+def should_mega_search_fetch_missing_lists():
+    return _ADDON.getSetting("mega_search_fetch_missing_lists") != "false"
+
+
+def get_mega_search_fetch_batch_size():
+    return _get_int_setting("mega_search_fetch_batch_size", 5, minimum=1, maximum=20)
 
 
 def should_retry_live_on_stopped():
@@ -435,1560 +297,6 @@ def get_category_sort_key(category_name):
         return CATEGORY_ORDER.index(category_name)
     except ValueError:
         return 999  # Put unmapped categories at the end
-
-
-# JSON Server Configuration
-_servers_config = None
-
-
-def load_servers_config():
-    """Load server configuration from remote URL or local file."""
-    global _servers_config
-
-    if _servers_config is not None:
-        return _servers_config
-
-    return _load_servers_config_internal()
-
-
-def reload_servers_config():
-    """Force reload server configuration (clears cache)."""
-    global _servers_config
-    _servers_config = None
-    return _load_servers_config_internal()
-
-
-def _load_servers_config_internal():
-    """Internal function to actually load the config."""
-    global _servers_config
-
-    _servers_config = {"servers": []}
-
-    # Try remote URL first
-    json_url = _ADDON.getSetting("servers_json_url")
-    if json_url and json_url.strip():
-        try:
-            xbmc.log(
-                f"[Config] Fetching servers.json from URL: {json_url}",
-                level=xbmc.LOGINFO,
-            )
-            response = get_session().get(json_url.strip(), timeout=15)
-            response.raise_for_status()
-            _servers_config = response.json()
-            xbmc.log(
-                f"[Config] Loaded servers.json from remote URL", level=xbmc.LOGINFO
-            )
-            return _servers_config
-        except Exception as e:
-            xbmc.log(f"[Config] Failed to load from URL: {e}", level=xbmc.LOGWARNING)
-            # Continue to try local file
-
-    # Try local file
-    addon_path = _ADDON.getAddonInfo("path")
-    servers_file = os.path.join(addon_path, "servers.json")
-
-    try:
-        with open(servers_file, "r", encoding="utf-8") as f:
-            _servers_config = json_loads(f)
-        xbmc.log(f"[Config] Loaded servers.json from local file", level=xbmc.LOGINFO)
-        return _servers_config
-    except FileNotFoundError:
-        xbmc.log(
-            f"[Config] servers.json not found at {servers_file}", level=xbmc.LOGWARNING
-        )
-        return _servers_config
-    except json.JSONDecodeError as e:
-        xbmc.log(f"[Config] Invalid JSON in servers.json: {e}", level=xbmc.LOGERROR)
-        return _servers_config
-    except Exception as e:
-        xbmc.log(f"[Config] Error loading servers.json: {e}", level=xbmc.LOGERROR)
-        return _servers_config
-        return _servers_config
-
-
-@lru_cache(maxsize=8)
-def get_server_config(server_id):
-    """Get configuration for a specific server."""
-    config = load_servers_config()
-    for server in config.get("servers", []):
-        if server.get("id") == server_id:
-            return server
-    return None
-
-
-@lru_cache(maxsize=8)
-def get_portal_url_for_server(server_id):
-    """Get portal URL for a server from JSON config."""
-    server = get_server_config(server_id)
-    if server and server.get("portal_url"):
-        return server["portal_url"]
-    return None
-
-
-@lru_cache(maxsize=8)
-def get_macs_for_server(server_id):
-    """Get MAC addresses for a server from JSON config."""
-    server = get_server_config(server_id)
-    if server and server.get("macs"):
-        return server["macs"]
-    return None
-
-
-@lru_cache(maxsize=8)
-def get_server_type(server_id):
-    """Get server type for customization from JSON config."""
-    server = get_server_config(server_id)
-    if server:
-        return server.get("type", "stalker")
-    return "stalker"
-
-
-# MAC list cache
-_mac_list_cache = {}
-_MAC_CACHE_TTL = 7200  # 2 hours in seconds
-_failed_mac_cache = {}  # {server_id: {normalized_mac: timestamp}}
-_FAILED_MAC_TTL = 900  # 15 minutes
-_fetch_status = {}  # {(scope, server_id): {...}}
-
-
-def _normalize_mac(mac):
-    return (mac or "").strip().lower()
-
-
-def set_fetch_status(
-    scope,
-    server,
-    status="idle",
-    message="",
-    portal_online=None,
-    attempts=0,
-    used_cache=False,
-    stale_cache=False,
-    item_count=0,
-):
-    _fetch_status[(scope, server)] = {
-        "status": status,
-        "message": message,
-        "portal_online": portal_online,
-        "attempts": attempts,
-        "used_cache": used_cache,
-        "stale_cache": stale_cache,
-        "item_count": item_count,
-        "timestamp": time.time(),
-    }
-
-
-def get_fetch_status(scope, server):
-    return _fetch_status.get(
-        (scope, server),
-        {
-            "status": "unknown",
-            "message": "",
-            "portal_online": None,
-            "attempts": 0,
-            "used_cache": False,
-            "stale_cache": False,
-            "item_count": 0,
-            "timestamp": 0,
-        },
-    )
-
-
-def get_mac_pool(server="server1"):
-    """Return the cached MAC pool for a server."""
-    global _mac_list_cache
-    current_time = time.time()
-    cached = _mac_list_cache.get(server, {})
-    if cached.get("macs") and (current_time - cached.get("timestamp", 0)) < _MAC_CACHE_TTL:
-        return list(cached["macs"])
-
-    json_macs = get_macs_for_server(server) or []
-    if json_macs:
-        _mac_list_cache[server] = {
-            "macs": list(json_macs),
-            "timestamp": current_time,
-        }
-        return list(json_macs)
-    return []
-
-
-def get_recent_failed_macs(server="server1"):
-    """Return recently failed MACs for a server, pruning expired entries."""
-    entries = _failed_mac_cache.get(server, {})
-    if not entries:
-        return set()
-
-    now = time.time()
-    fresh_entries = {
-        mac: ts for mac, ts in entries.items() if (now - ts) < _FAILED_MAC_TTL
-    }
-    if fresh_entries:
-        _failed_mac_cache[server] = fresh_entries
-    else:
-        _failed_mac_cache.pop(server, None)
-    return set(fresh_entries.keys())
-
-
-def note_failed_mac(server, mac):
-    norm_mac = _normalize_mac(mac)
-    if not norm_mac:
-        return
-    _failed_mac_cache.setdefault(server, {})[norm_mac] = time.time()
-
-
-def clear_failed_mac(server, mac):
-    norm_mac = _normalize_mac(mac)
-    if not norm_mac:
-        return
-    server_failures = _failed_mac_cache.get(server)
-    if not server_failures:
-        return
-    server_failures.pop(norm_mac, None)
-    if not server_failures:
-        _failed_mac_cache.pop(server, None)
-
-
-def get_candidate_macs(server="server1", exclude_macs=None, limit=None):
-    """Return candidate MACs, preferring ones that have not failed recently."""
-    mac_pool = get_mac_pool(server)
-    if not mac_pool:
-        return []
-
-    excluded = {
-        _normalize_mac(mac)
-        for mac in (exclude_macs or [])
-        if _normalize_mac(mac)
-    }
-    recent_failed = get_recent_failed_macs(server)
-
-    preferred = []
-    fallback = []
-    seen = set()
-    for mac in mac_pool:
-        norm_mac = _normalize_mac(mac)
-        if not norm_mac or norm_mac in seen or norm_mac in excluded:
-            continue
-        seen.add(norm_mac)
-        if norm_mac in recent_failed:
-            fallback.append(mac)
-        else:
-            preferred.append(mac)
-
-    random.shuffle(preferred)
-    random.shuffle(fallback)
-    candidates = preferred + fallback
-    if limit is not None:
-        return candidates[:limit]
-    return candidates
-
-
-def get_random_mac_from_file(server="server1", exclude_macs=None):
-    """Get a random MAC address from JSON config only."""
-    candidates = get_candidate_macs(server, exclude_macs=exclude_macs, limit=1)
-    if candidates:
-        return candidates[0]
-
-    xbmcgui.Dialog().notification(
-        "Error",
-        f"No MAC addresses found for {server} in servers.json",
-        xbmcgui.NOTIFICATION_ERROR,
-    )
-    return None
-
-
-def handshake(portal_url, mac, server="server1"):
-    """Perform handshake with Stalker portal to get a session token."""
-    session = get_session()
-    # CRITICAL: Clear cookies from previous server handshakes
-    session.cookies.clear()
-
-    from urllib.parse import urlparse
-
-    parsed_url = urlparse(portal_url)
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3",
-        "X-User-Agent": "Model: MAG250; Link: WiFi",
-        "Referer": f"{portal_url}/stalker_portal/c/index.html",
-        "Host": parsed_url.netloc,
-    }
-    cookies = {"mac": mac}
-
-    # Use params for robust URL construction
-    url = f"{portal_url}/portal.php"
-    params = {
-        "type": "stb",
-        "action": "handshake",
-        "token": "",
-        "JsHttpRequest": "1-xml",
-    }
-
-    try:
-        response = session.get(
-            url,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            timeout=TIMEOUTS["handshake"],
-        )
-        response.raise_for_status()
-        data = response.json()
-
-        if isinstance(data, dict):
-            js_data = data.get("js", {})
-            if isinstance(js_data, dict):
-                token = js_data.get("token")
-                if token:
-                    return token
-                else:
-                    xbmc.log(
-                        f"[Handshake] No token in response. js data: {js_data}",
-                        level=xbmc.LOGWARNING,
-                    )
-                    return None
-            elif isinstance(js_data, list):
-                xbmc.log(
-                    f"[Handshake] Server returned error list: {js_data}",
-                    level=xbmc.LOGWARNING,
-                )
-                return None
-            else:
-                xbmc.log(
-                    f"[Handshake] Unexpected js data type: {type(js_data)}",
-                    level=xbmc.LOGWARNING,
-                )
-                return None
-        elif isinstance(data, list):
-            xbmc.log(
-                f"[Handshake] Server returned error list at root level: {data}",
-                level=xbmc.LOGWARNING,
-            )
-            return None
-
-        xbmc.log(
-            f"[Handshake] Unexpected response format: {type(data)}",
-            level=xbmc.LOGWARNING,
-        )
-        return None
-    except requests.exceptions.RequestException as e:
-        xbmc.log(f"[Handshake] Request failed: {e}", level=xbmc.LOGERROR)
-        return None
-    except Exception as e:
-        xbmc.log(f"[Handshake] Error: {e}", level=xbmc.LOGERROR)
-        return None
-
-
-# Token cache to avoid handshake for every channel
-_token_cache = {"token": None, "mac": None, "timestamp": 0}
-_TOKEN_TTL = 600  # 10 minutes
-
-# Current server for EPG operations
-_epg_current_server = "server1"
-
-# Category cache (in-memory)
-_categories_cache = {}
-_CATEGORIES_CACHE_TTL = 604800  # 7 days
-
-# Cached server cache folder path — avoids repeated xbmcaddon.Addon() IPC calls
-_server_cache_folder_path = None
-
-# Per-server authentication cache — avoids a full handshake on every request
-_auth_cache = {}  # {server_id: {"token": str, "mac": str, "timestamp": float}}
-_AUTH_TOKEN_TTL = 3600  # 1 hour (increased from 5m to avoid 429 Too Many Requests)
-
-# In-memory channels cache — avoids re-reading large JSON files on every category click
-_channels_memory_cache = {}  # {server_id: {"channels": list, "timestamp": float}}
-
-
-def _build_auth_headers_and_cookies(portal_url, mac, token):
-    from urllib.parse import urlparse
-
-    parsed_url = urlparse(portal_url)
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 "
-            "(KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3"
-        ),
-        "X-User-Agent": "Model: MAG250; Link: WiFi",
-        "Referer": f"{portal_url}/stalker_portal/c/index.html",
-        "Host": parsed_url.netloc,
-    }
-    cookies = {"mac": mac, "token": token}
-    return headers, cookies
-
-
-def invalidate_server_auth(server="server1", mac=None):
-    """Remove cached auth for a server, optionally only for a matching MAC."""
-    cached = _auth_cache.get(server)
-    if not cached:
-        return
-
-    if mac is None or _normalize_mac(cached.get("mac")) == _normalize_mac(mac):
-        _auth_cache.pop(server, None)
-
-
-def iter_server_auth_candidates(
-    server="server1",
-    use_cached=True,
-    exclude_macs=None,
-    max_attempts=3,
-):
-    """Yield authenticated request contexts, rotating to alternate MACs as needed."""
-    portal_url = get_portal_url_for_server(server)
-    if not portal_url or max_attempts <= 0:
-        return
-
-    excluded = {
-        _normalize_mac(mac)
-        for mac in (exclude_macs or [])
-        if _normalize_mac(mac)
-    }
-    current_time = time.time()
-    attempts_yielded = 0
-    cached = _auth_cache.get(server, {})
-
-    if (
-        use_cached
-        and cached.get("token")
-        and cached.get("mac")
-        and (current_time - cached.get("timestamp", 0)) < _AUTH_TOKEN_TTL
-        and _normalize_mac(cached["mac"]) not in excluded
-    ):
-        headers, cookies = _build_auth_headers_and_cookies(
-            portal_url, cached["mac"], cached["token"]
-        )
-        yield cached["token"], headers, cookies, portal_url, cached["mac"]
-        attempts_yielded += 1
-        excluded.add(_normalize_mac(cached["mac"]))
-
-    remaining_attempts = max_attempts - attempts_yielded
-    if remaining_attempts <= 0:
-        return
-
-    for mac in get_candidate_macs(
-        server, exclude_macs=excluded, limit=remaining_attempts
-    ):
-        token = handshake(portal_url, mac, server)
-        if not token:
-            note_failed_mac(server, mac)
-            excluded.add(_normalize_mac(mac))
-            continue
-
-        _auth_cache[server] = {"token": token, "mac": mac, "timestamp": time.time()}
-        clear_failed_mac(server, mac)
-        headers, cookies = _build_auth_headers_and_cookies(portal_url, mac, token)
-        yield token, headers, cookies, portal_url, mac
-        excluded.add(_normalize_mac(mac))
-        attempts_yielded += 1
-        if attempts_yielded >= max_attempts:
-            return
-
-
-def get_server_cache_folder():
-    """Get the server cache folder path (result is cached to avoid repeated IPC calls)."""
-    global _server_cache_folder_path
-    if _server_cache_folder_path is not None:
-        return _server_cache_folder_path
-    addon_profile_path = xbmcaddon.Addon().getAddonInfo("profile")
-    try:
-        addon_path = xbmcvfs.translatePath(addon_profile_path)
-    except Exception:
-        addon_path = xbmc.translatePath(addon_profile_path)
-    cache_folder = os.path.join(addon_path, "server_cache")
-    if not os.path.exists(cache_folder):
-        os.makedirs(cache_folder)
-    _server_cache_folder_path = cache_folder
-    return _server_cache_folder_path
-
-
-def get_server_cache_file(server_id):
-    """Get the cache file path for a specific server."""
-    return os.path.join(get_server_cache_folder(), f"{server_id}_cache.json")
-
-
-def get_categories_cache_file(server_id):
-    """Get the categories cache file path for a specific server."""
-    return os.path.join(get_server_cache_folder(), f"{server_id}_categories.json")
-
-
-def get_channels_cache_file(server_id):
-    """Get the channels cache file path for a specific server."""
-    return os.path.join(get_server_cache_folder(), f"{server_id}_channels.json")
-
-
-def load_categories_cache(server_id):
-    """Load categories cache from file."""
-    cache_file = get_categories_cache_file(server_id)
-    try:
-        if os.path.exists(cache_file):
-            with open(cache_file, "r", encoding="utf-8") as f:
-                content = f.read()
-                if not content:
-                    xbmc.log(
-                        f"[ServerCache] Categories cache file empty for {server_id}",
-                        level=xbmc.LOGDEBUG,
-                    )
-                    return None
-                data = json_loads(content)
-            xbmc.log(
-                f"[ServerCache] Loaded categories for {server_id}", level=xbmc.LOGDEBUG
-            )
-            return data
-    except Exception as e:
-        xbmc.log(
-            f"[ServerCache] Failed to load categories for {server_id}: {e}",
-            level=xbmc.LOGWARNING,
-        )
-    return None
-
-
-def save_categories_cache(server_id, categories):
-    """Save categories cache to file."""
-    cache_file = get_categories_cache_file(server_id)
-    try:
-        with open(cache_file, "w", encoding="utf-8") as f:
-            json_dumps({"categories": categories, "timestamp": time.time()}, f)
-        xbmc.log(f"[ServerCache] Saved categories for {server_id}", level=xbmc.LOGDEBUG)
-    except Exception as e:
-        xbmc.log(
-            f"[ServerCache] Failed to save categories for {server_id}: {e}",
-            level=xbmc.LOGWARNING,
-        )
-
-
-def clear_all_cache(server="server1"):
-    """Clear all cache files for a server (categories and channels)."""
-    try:
-        categories_file = get_categories_cache_file(server)
-        channels_file = get_channels_cache_file(server)
-
-        deleted_count = 0
-
-        if categories_file and os.path.exists(categories_file):
-            os.remove(categories_file)
-            deleted_count += 1
-            xbmc.log(f"[Cache] Deleted categories cache: {categories_file}")
-
-        if channels_file and os.path.exists(channels_file):
-            os.remove(channels_file)
-            deleted_count += 1
-            xbmc.log(f"[Cache] Deleted channels cache: {channels_file}")
-
-        if deleted_count > 0:
-            xbmcgui.Dialog().notification(
-                "Succes",
-                f"Cache șters: {deleted_count} fișiere",
-                xbmcgui.NOTIFICATION_INFO,
-            )
-        else:
-            xbmcgui.Dialog().notification(
-                "Info",
-                "Nu există cache de șters",
-                xbmcgui.NOTIFICATION_INFO,
-            )
-    except Exception as e:
-        xbmc.log(f"[Cache] Error clearing cache: {e}", level=xbmc.LOGERROR)
-        xbmcgui.Dialog().notification(
-            "Eroare",
-            f"Nu s-a putut șterge cache-ul: {e}",
-            xbmcgui.NOTIFICATION_ERROR,
-        )
-
-
-def clear_all_cache_for_all_servers():
-    """Clear all cache files for all servers."""
-    xbmc.log("[Cache] Starting clear_all_cache_for_all_servers", level=xbmc.LOGINFO)
-    try:
-        servers_config = reload_servers_config()
-        available_servers = servers_config.get("servers", [])
-        xbmc.log(f"[Cache] Found {len(available_servers)} servers", level=xbmc.LOGINFO)
-
-        if not available_servers:
-            xbmcgui.Dialog().notification(
-                "Info",
-                "Nu s-au găsit servere",
-                xbmcgui.NOTIFICATION_INFO,
-            )
-            return
-
-        dp = xbmcgui.DialogProgress()
-        dp.create("Se șterge cache-ul...", "Se pregătește...")
-
-        total_deleted = 0
-        total_servers = len(available_servers)
-
-        for idx, srv in enumerate(available_servers):
-            srv_id = srv.get("id")
-            srv_name = srv.get("name", srv_id)
-
-            if dp.iscanceled():
-                break
-
-            dp.update(
-                int((idx / total_servers) * 100),
-                f"Se șterge cache pentru {srv_name}...",
-            )
-
-            if not srv_id:
-                continue
-
-            categories_file = get_categories_cache_file(srv_id)
-            channels_file = get_channels_cache_file(srv_id)
-
-            xbmc.log(
-                f"[Cache] Checking cache for {srv_id}: categories={categories_file}, channels={channels_file}",
-                level=xbmc.LOGDEBUG,
-            )
-
-            if categories_file and os.path.exists(categories_file):
-                os.remove(categories_file)
-                total_deleted += 1
-                xbmc.log(f"[Cache] Deleted categories cache for {srv_id}")
-
-            if channels_file and os.path.exists(channels_file):
-                os.remove(channels_file)
-                total_deleted += 1
-                xbmc.log(f"[Cache] Deleted channels cache for {srv_id}")
-
-        dp.close()
-
-        if total_deleted > 0:
-            xbmcgui.Dialog().notification(
-                "Succes",
-                f"Cache șters: {total_deleted} fișiere",
-                xbmcgui.NOTIFICATION_INFO,
-            )
-        else:
-            xbmcgui.Dialog().notification(
-                "Info",
-                "Nu există cache de șters",
-                xbmcgui.NOTIFICATION_INFO,
-            )
-    except Exception as e:
-        xbmc.log(f"[Cache] Error clearing all cache: {e}", level=xbmc.LOGERROR)
-        xbmcgui.Dialog().notification(
-            "Eroare",
-            f"Nu s-a putut șterge cache-ul: {e}",
-            xbmcgui.NOTIFICATION_ERROR,
-        )
-
-
-def load_channels_cache(server_id):
-    """Load channels cache from file."""
-    cache_file = get_channels_cache_file(server_id)
-    try:
-        if os.path.exists(cache_file):
-            with open(cache_file, "r", encoding="utf-8") as f:
-                data = json_loads(f)
-            xbmc.log(
-                f"[ServerCache] Loaded channels for {server_id}", level=xbmc.LOGDEBUG
-            )
-            return data
-    except Exception as e:
-        xbmc.log(
-            f"[ServerCache] Failed to load channels for {server_id}: {e}",
-            level=xbmc.LOGWARNING,
-        )
-    return None
-
-
-def save_channels_cache(server_id, channels):
-    """Save channels cache to file."""
-    cache_file = get_channels_cache_file(server_id)
-    try:
-        with open(cache_file, "w", encoding="utf-8") as f:
-            json_dumps({"channels": channels, "timestamp": time.time()}, f)
-        xbmc.log(
-            f"[ServerCache] Saved {len(channels)} channels for {server_id}",
-            level=xbmc.LOGDEBUG,
-        )
-    except Exception as e:
-        xbmc.log(
-            f"[ServerCache] Failed to save channels for {server_id}: {e}",
-            level=xbmc.LOGWARNING,
-        )
-
-
-def load_server_data_cache(server_id):
-    """Load server data (categories and channels) from cache file for specific server."""
-    cache_file = get_server_cache_file(server_id)
-    try:
-        if os.path.exists(cache_file):
-            with open(cache_file, "r", encoding="utf-8") as f:
-                cache_data = json_loads(f)
-            xbmc.log(f"[ServerCache] Loaded cache for {server_id}", level=xbmc.LOGDEBUG)
-            return cache_data
-    except Exception as e:
-        xbmc.log(
-            f"[ServerCache] Failed to load cache for {server_id}: {e}",
-            level=xbmc.LOGWARNING,
-        )
-    return {}
-
-
-def save_server_data_cache(server_id, cache_data):
-    """Save server data (categories and channels) to cache file for specific server."""
-    cache_file = get_server_cache_file(server_id)
-    try:
-        with open(cache_file, "w", encoding="utf-8") as f:
-            json_dumps(cache_data, f)
-        xbmc.log(f"[ServerCache] Saved cache for {server_id}", level=xbmc.LOGDEBUG)
-    except Exception as e:
-        xbmc.log(
-            f"[ServerCache] Failed to save cache for {server_id}: {e}",
-            level=xbmc.LOGWARNING,
-        )
-
-
-def get_server_auth(server="server1", force_refresh=False, exclude_macs=None, max_attempts=3):
-    """Get authentication credentials (MAC and token) for server.
-
-    Results are cached per server for _AUTH_TOKEN_TTL seconds to avoid
-    a full HTTP handshake on every categories/channels request.
-    """
-    portal_url = get_portal_url_for_server(server)
-    if not portal_url:
-        return None, None, None, portal_url
-
-    for token, headers, cookies, portal_url, mac in iter_server_auth_candidates(
-        server=server,
-        use_cached=not force_refresh,
-        exclude_macs=exclude_macs,
-        max_attempts=max_attempts,
-    ):
-        xbmc.log(f"[Auth] Using auth for {server} with MAC {mac}", level=xbmc.LOGDEBUG)
-        return token, headers, cookies, portal_url
-
-    return None, None, None, portal_url
-
-
-def _fetch_stalker_list_with_retry(
-    server,
-    scope,
-    request_name,
-    request_fn,
-    parse_fn,
-    max_auth_attempts=3,
-):
-    """Fetch a Stalker list, retrying with alternate MACs when useful."""
-    portal_url = get_portal_url_for_server(server)
-    if not portal_url:
-        set_fetch_status(
-            scope,
-            server,
-            status="no_portal",
-            message="Portal URL is not configured.",
-        )
-        return None
-
-    attempted_macs = set()
-    attempts = 0
-    portal_online = None
-    last_error = f"Could not load {request_name}."
-
-    for token, headers, cookies, portal_url, mac in iter_server_auth_candidates(
-        server=server,
-        use_cached=True,
-        exclude_macs=attempted_macs,
-        max_attempts=max_auth_attempts,
-    ):
-        attempts += 1
-        norm_mac = _normalize_mac(mac)
-        if norm_mac:
-            attempted_macs.add(norm_mac)
-
-        try:
-            data = request_fn(token, headers, cookies, portal_url)
-            items = parse_fn(data)
-            if items:
-                clear_failed_mac(server, mac)
-                set_fetch_status(
-                    scope,
-                    server,
-                    status="ok",
-                    message=f"{request_name} loaded successfully.",
-                    portal_online=True,
-                    attempts=attempts,
-                    used_cache=False,
-                    stale_cache=False,
-                    item_count=len(items),
-                )
-                return items
-
-            last_error = f"{request_name} returned an empty list."
-            xbmc.log(
-                f"[Fetch:{scope}] Empty response for {server} with MAC {mac}",
-                level=xbmc.LOGWARNING,
-            )
-        except Exception as exc:
-            last_error = str(exc)
-            xbmc.log(
-                f"[Fetch:{scope}] Request failed for {server} with MAC {mac}: {exc}",
-                level=xbmc.LOGWARNING,
-            )
-
-        if portal_online is None:
-            portal_online = check_server_online(portal_url)
-            xbmc.log(
-                f"[Fetch:{scope}] Portal status for {server}: {portal_online}",
-                level=xbmc.LOGINFO,
-            )
-
-        note_failed_mac(server, mac)
-        invalidate_server_auth(server, mac=mac)
-
-        if portal_online is False:
-            set_fetch_status(
-                scope,
-                server,
-                status="portal_off",
-                message=f"{request_name} failed because the portal appears offline.",
-                portal_online=False,
-                attempts=attempts,
-            )
-            return None
-
-    if portal_online is None:
-        portal_online = check_server_online(portal_url)
-
-    final_status = "auth_failed" if portal_online else "portal_off"
-    final_message = last_error
-    if portal_online is False:
-        final_message = f"{request_name} failed because the portal appears offline."
-    elif portal_online is True and attempts:
-        final_message = (
-            f"{request_name} failed after trying {attempts} MAC address(es)."
-        )
-
-    set_fetch_status(
-        scope,
-        server,
-        status=final_status,
-        message=final_message,
-        portal_online=portal_online,
-        attempts=attempts,
-        used_cache=False,
-        stale_cache=False,
-        item_count=0,
-    )
-    return None
-
-
-def _parse_live_categories_response(data):
-    categories = []
-    if isinstance(data, dict):
-        js_data = data.get("js", {})
-        if isinstance(js_data, list):
-            for item in js_data:
-                cat_id = item.get("id")
-                cat_title = item.get("title", "")
-                if cat_id and cat_title:
-                    categories.append(
-                        {
-                            "id": cat_id,
-                            "title": cat_title.strip(),
-                            "original_title": cat_title.strip(),
-                        }
-                    )
-        elif isinstance(js_data, dict):
-            genres = js_data.get("genres") or js_data.get("data") or []
-            if isinstance(genres, list):
-                for item in genres:
-                    cat_id = item.get("id")
-                    cat_title = item.get("title") or item.get("name", "")
-                    if cat_id and cat_title:
-                        categories.append(
-                            {
-                                "id": cat_id,
-                                "title": cat_title.strip(),
-                                "original_title": cat_title.strip(),
-                            }
-                        )
-    return categories
-
-
-def _request_live_categories(token, headers, cookies, portal_url):
-    url = f"{portal_url}/portal.php"
-    params = {
-        "type": "itv",
-        "action": "get_genres",
-        "token": token,
-        "JsHttpRequest": "1-xml",
-    }
-    response = get_session().get(
-        url,
-        params=params,
-        headers=headers,
-        cookies=cookies,
-        timeout=TIMEOUTS["categories"],
-    )
-    response.raise_for_status()
-    return response.json()
-
-
-def _parse_all_channels_response(data):
-    raw_channels = []
-    if isinstance(data, dict):
-        js_data = data.get("js", {})
-        if isinstance(js_data, list):
-            raw_channels = js_data
-        elif isinstance(js_data, dict):
-            raw_channels = js_data.get("data") or js_data.get("channels") or []
-    elif isinstance(data, list):
-        raw_channels = data
-
-    channels = []
-    for ch in raw_channels or []:
-        logo = ch.get("logo") or ""
-        if logo and RE_BOX_CHARS.search(logo):
-            logo = ""
-        channels.append(
-            {
-                "id": ch.get("id"),
-                "name": clean_category_title(ch.get("name")),
-                "cmd": ch.get("cmd"),
-                "logo": logo,
-                "tv_genre_id": ch.get("tv_genre_id"),
-            }
-        )
-    return channels
-
-
-def _request_all_channels(token, headers, cookies, portal_url):
-    url = f"{portal_url}/portal.php"
-    params = {
-        "type": "itv",
-        "action": "get_all_channels",
-        "token": token,
-        "JsHttpRequest": "1-xml",
-    }
-    response = get_session().get(
-        url,
-        params=params,
-        headers=headers,
-        cookies=cookies,
-        timeout=TIMEOUTS["channels"],
-    )
-    response.raise_for_status()
-    return response.json()
-
-
-def _parse_simple_js_list_response(data):
-    if isinstance(data, dict):
-        js_data = data.get("js", [])
-        if isinstance(js_data, list):
-            return js_data
-        if isinstance(js_data, dict):
-            return js_data.get("data") or js_data.get("categories") or []
-    elif isinstance(data, list):
-        return data
-    return []
-
-
-def _request_vod_categories(token, headers, cookies, portal_url):
-    response = get_session().get(
-        f"{portal_url}/portal.php",
-        params={
-            "type": "vod",
-            "action": "get_categories",
-            "token": token,
-            "JsHttpRequest": "1-xml",
-        },
-        headers=headers,
-        cookies=cookies,
-        timeout=TIMEOUTS["categories"],
-    )
-    response.raise_for_status()
-    return response.json()
-
-
-def _request_series_categories(token, headers, cookies, portal_url):
-    response = get_session().get(
-        f"{portal_url}/portal.php",
-        params={
-            "type": "series",
-            "action": "get_categories",
-            "token": token,
-            "JsHttpRequest": "1-xml",
-        },
-        headers=headers,
-        cookies=cookies,
-        timeout=TIMEOUTS["categories"],
-    )
-    response.raise_for_status()
-    return response.json()
-
-
-def fetch_server_categories(server="server1", force_refresh=False):
-    """Fetch categories directly from STB server with file caching."""
-    global _categories_cache
-
-    current_time = time.time()
-    cache_key = f"categories_{server}"
-
-    # Try to load from file cache first
-    if not _categories_cache.get(cache_key):
-        file_cache = load_categories_cache(server)
-        if file_cache and file_cache.get("categories"):
-            _categories_cache[cache_key] = file_cache["categories"]
-            _categories_cache[f"timestamp_{server}"] = file_cache.get("timestamp", 0)
-            xbmc.log(
-                f"[Categories] Loaded categories from file cache: {len(_categories_cache[cache_key])}",
-                level=xbmc.LOGDEBUG,
-            )
-
-    # Return from memory cache if valid
-    if (
-        not force_refresh
-        and cache_key in _categories_cache
-        and _categories_cache[cache_key]
-        and (current_time - _categories_cache.get(f"timestamp_{server}", 0))
-        < _CATEGORIES_CACHE_TTL
-    ):
-        xbmc.log(
-            f"[Categories] Using cached categories for {server}: {len(_categories_cache[cache_key])}",
-            level=xbmc.LOGINFO,
-        )
-        set_fetch_status(
-            "categories",
-            server,
-            status="ok",
-            message="Using cached categories.",
-            used_cache=True,
-            stale_cache=False,
-            item_count=len(_categories_cache[cache_key]),
-        )
-        return _categories_cache[cache_key]
-
-    # Need to fetch fresh data
-    xbmc.log(f"[Categories] Fast fetch genres for {server}", level=xbmc.LOGINFO)
-    categories = _fetch_stalker_list_with_retry(
-        server,
-        "categories",
-        "live categories",
-        _request_live_categories,
-        _parse_live_categories_response,
-    )
-    if categories:
-        save_categories_cache(server, categories)
-        _categories_cache[cache_key] = categories
-        _categories_cache[f"timestamp_{server}"] = current_time
-        return categories
-
-    stale_categories = _categories_cache.get(cache_key, [])
-    if stale_categories:
-        status = get_fetch_status("categories", server)
-        set_fetch_status(
-            "categories",
-            server,
-            status="stale_cache",
-            message=status.get("message") or "Using stale cached categories.",
-            portal_online=status.get("portal_online"),
-            attempts=status.get("attempts", 0),
-            used_cache=True,
-            stale_cache=True,
-            item_count=len(stale_categories),
-        )
-        xbmc.log(
-            f"[Categories] Falling back to stale cache for {server}: {len(stale_categories)}",
-            level=xbmc.LOGWARNING,
-        )
-        return stale_categories
-
-    return []
-
-
-def fetch_vod_categories(server="server1"):
-    """Fetch VOD categories from server."""
-    categories = _fetch_stalker_list_with_retry(
-        server,
-        "vod_categories",
-        "VOD categories",
-        _request_vod_categories,
-        _parse_simple_js_list_response,
-    )
-    return categories or []
-
-
-def fetch_series_categories(server="server1"):
-    """Fetch Series categories from server."""
-    categories = _fetch_stalker_list_with_retry(
-        server,
-        "series_categories",
-        "series categories",
-        _request_series_categories,
-        _parse_simple_js_list_response,
-    )
-    return categories or []
-
-
-def clean_category_title(title):
-    """Remove Unicode box drawing characters, stars and clean up category title."""
-    if not title:
-        return ""
-
-    cleaned = RE_BOX_CHARS.sub("", str(title))
-    cleaned = cleaned.replace("✰", "")
-    cleaned = cleaned.strip(r"|-[]:() ")
-    return cleaned.strip()
-
-
-def get_sport_categories(server_categories):
-    """Filter categories that are Sport related (anywhere in the title)."""
-    if not server_categories:
-        return []
-
-    sport_keywords = [
-        "sport",
-        "bundesliga",
-        "football",
-        "laliga",
-        "la liga",
-        "deportes",
-        "liga de campeones",
-        "formula 1",
-        "moto gp",
-        "ligue 1",
-        "equipe",
-        "basket",
-        "hockey",
-        "espn",
-        "championship",
-        "games",
-        "premier leagues",
-        "league",
-        "rugby",
-        "rally",
-        "serie a",
-        "boxing",
-        "tennis",
-    ]
-
-    sport_cats = []
-    keywords_lower = [k.lower() for k in sport_keywords]
-
-    for cat in server_categories:
-        title = cat["title"].strip()
-        title_lower = title.lower()
-
-        is_sport = False
-        for keyword in keywords_lower:
-            if keyword in title_lower:
-                is_sport = True
-                break
-
-        if is_sport:
-            sport_cats.append(cat)
-            xbmc.log(
-                f"[Categories] Matched Sport category: {cat['title']}",
-                level=xbmc.LOGDEBUG,
-            )
-
-    xbmc.log(
-        f"[Categories] Found {len(sport_cats)} Sport categories", level=xbmc.LOGINFO
-    )
-    return sport_cats
-
-
-def get_romanian_categories(server_categories):
-    """Filter categories that are Romanian (must START with RO, Romania, Roumanie, etc.)"""
-    if not server_categories:
-        return []
-
-    romanian_prefixes = [
-        "ro",
-        "ro|",
-        "ro :",
-        "ro-",
-        "ro ",
-        "ro\u2503",
-        "ro\u2502",
-        "ro\u2551",
-        "ro\u2550",
-        "ro\u2588",
-        "\u2503ro",
-        "\u2502ro",
-        "\u2551ro",
-        "\u2550ro",
-        "\u2588ro",
-        "ro[",
-        "ro]",
-        "[ro]",
-        "[ro[",
-        "ro(",
-        "ro)",
-        "ro:",
-        "|EU| ROMANIA",
-        "romania",
-        "roumanie",
-        "romanie",
-        "✰ romania",
-        "✰romania",
-    ]
-
-    romanian_cats = []
-    prefixes_lower = [p.lower() for p in romanian_prefixes]
-
-    for cat in server_categories:
-        title = cat["title"].strip()
-        title_lower = title.lower()
-
-        is_romanian = False
-        for prefix in prefixes_lower:
-            if title_lower.startswith(prefix):
-                is_romanian = True
-                break
-
-        if not is_romanian:
-            if RE_CATEGORY_PREFIX.match(title_lower):
-                is_romanian = True
-                break
-
-        if not is_romanian and title_lower.startswith("ro"):
-            if len(title_lower) == 2 or title_lower[2] in " |:-":
-                is_romanian = True
-
-        if is_romanian:
-            romanian_cats.append(cat)
-            xbmc.log(
-                f"[Categories] Matched Romanian category: {cat['title']}",
-                level=xbmc.LOGDEBUG,
-            )
-
-    xbmc.log(
-        f"[Categories] Found {len(romanian_cats)} Romanian categories",
-        level=xbmc.LOGINFO,
-    )
-    return romanian_cats
-
-
-def fetch_channels_by_category_from_server(category_id, server="server1"):
-    """Fetch channels with Lazy Loading. 
-    Downloads full channel list ONLY when first category is accessed.
-    """
-    global _channels_memory_cache
-    current_time = time.time()
-    used_cache_source = False
-
-    # 1. Memory/File Cache check
-    mem = _channels_memory_cache.get(server, {})
-    if mem.get("channels") and (current_time - mem.get("timestamp", 0)) < _CATEGORIES_CACHE_TTL:
-        channels = mem["channels"]
-        used_cache_source = True
-        set_fetch_status(
-            "channels",
-            server,
-            status="ok",
-            message="Using cached channel list.",
-            used_cache=True,
-            stale_cache=False,
-            item_count=len(channels),
-        )
-    else:
-        file_cache = load_channels_cache(server)
-        if file_cache and file_cache.get("channels") and (current_time - file_cache.get("timestamp", 0)) < _CATEGORIES_CACHE_TTL:
-            channels = file_cache["channels"]
-            _channels_memory_cache[server] = {"channels": channels, "timestamp": file_cache["timestamp"]}
-            used_cache_source = True
-            set_fetch_status(
-                "channels",
-                server,
-                status="ok",
-                message="Using cached channel list.",
-                used_cache=True,
-                stale_cache=False,
-                item_count=len(channels),
-            )
-        else:
-            channels = None
-
-    if used_cache_source and channels and category_id is not None:
-        cached_matches = [
-            ch for ch in channels if str(ch.get("tv_genre_id", "")) == str(category_id)
-        ]
-        if not cached_matches:
-            xbmc.log(
-                f"[Channels] Cache had no entries for category {category_id} on {server}; forcing refresh",
-                level=xbmc.LOGINFO,
-            )
-            channels = None
-
-    # 2. Lazy Full Fetch
-    if not channels:
-        xbmc.log(f"[Channels] Lazy loading full channel list for {server}", level=xbmc.LOGINFO)
-        dp = xbmcgui.DialogProgress()
-        dp.create("HubLive", "Se descarcă grila de canale...")
-        
-        try:
-            channels = _fetch_stalker_list_with_retry(
-                server,
-                "channels",
-                "channel list",
-                _request_all_channels,
-                _parse_all_channels_response,
-            )
-            if channels:
-                _channels_memory_cache[server] = {
-                    "channels": channels,
-                    "timestamp": current_time,
-                }
-                save_channels_cache(server, channels)
-        finally:
-            dp.close()
-
-        if not channels:
-            stale_channels = mem.get("channels") or []
-            if not stale_channels:
-                file_cache = load_channels_cache(server)
-                if file_cache and file_cache.get("channels"):
-                    stale_channels = file_cache["channels"]
-                    _channels_memory_cache[server] = {
-                        "channels": stale_channels,
-                        "timestamp": file_cache.get("timestamp", current_time),
-                    }
-
-            if stale_channels:
-                status = get_fetch_status("channels", server)
-                set_fetch_status(
-                    "channels",
-                    server,
-                    status="stale_cache",
-                    message=status.get("message") or "Using stale cached channel list.",
-                    portal_online=status.get("portal_online"),
-                    attempts=status.get("attempts", 0),
-                    used_cache=True,
-                    stale_cache=True,
-                    item_count=len(stale_channels),
-                )
-                xbmc.log(
-                    f"[Channels] Falling back to stale cache for {server}: {len(stale_channels)}",
-                    level=xbmc.LOGWARNING,
-                )
-                channels = stale_channels
-
-    if not channels:
-        return []
-    if category_id is None:
-        return channels
-    return [ch for ch in channels if str(ch.get("tv_genre_id", "")) == str(category_id)]
-
-
-# Token provider for EPG Manager — delegates to the unified per-server auth cache
-def epg_token_provider(server=None):
-    """Provide token, headers, and cookies for EPG requests.
-
-    Delegates to get_server_auth which now uses the unified per-server
-    _auth_cache, so no duplicate handshakes occur.
-    """
-    global _epg_current_server
-    if server is None:
-        server = _epg_current_server
-
-    token, headers, cookies, _ = get_server_auth(server)
-    if not token:
-        xbmc.log("[EPG] Failed to get token via get_server_auth", level=xbmc.LOGWARNING)
-        return None, {}, {}
-    return token, headers, cookies
-
-
-# Initialize EPG Manager AFTER defining token provider (only if enabled)
-# Optimized settings for faster EPG fetching with parallel workers
-epg_manager = None
-if is_epg_enabled():
-    epg_portal_url = get_portal_url_for_server("server1")
-    epg_manager = EpgManager(
-        mode="stalker",
-        base_url=epg_portal_url,
-        callback=epg_callback,
-        token_provider=epg_token_provider,
-        connect_timeout=10.0,  # Increased timeout for connection
-        read_timeout=30.0,  # Increased timeout for reading
-        max_retries=3,  # Retry 3 times on failure
-        backoff_factor=1.0,  # More aggressive backoff
-        cache_ttl=float(get_epg_cache_ttl()),
-        max_items_default=10,
-        num_workers=10,  # Process 10 channels in parallel
-    )
-
-
-# Favorites file
-FAVORITES_FILE = os.path.join(
-    xbmcvfs.translatePath(_ADDON.getAddonInfo("profile")), "favorites_{server}.json"
-)
-
-
-def list_global_favorites():
-    """List favorite channels from all servers, filtering by online status."""
-    xbmcplugin.setPluginCategory(_HANDLE, "Favorite")
-    xbmcplugin.setContent(_HANDLE, "videos")
-
-    servers_config = reload_servers_config()
-    available_servers = servers_config.get("servers", [])
-    server_ids = {srv.get("id") for srv in available_servers}
-    
-    # Try to get statuses from session cache
-    server_statuses = get_session_server_statuses()
-    
-    all_favorites = []
-    
-    for srv in available_servers:
-        srv_id = srv.get("id")
-        srv_name = srv.get("name", srv_id)
-        
-        # Skip if server is offline in current session
-        if server_statuses and not server_statuses.get(srv_id, False):
-            continue
-            
-        favorites_file = FAVORITES_FILE.format(server=srv_id)
-        if os.path.exists(favorites_file):
-            try:
-                with open(favorites_file, "r", encoding="utf-8") as f:
-                    favorites = json_loads(f)
-                    for fav in favorites:
-                        fav["_server_id"] = srv_id
-                        fav["_server_name"] = srv_name
-                        all_favorites.append(fav)
-            except:
-                pass
-
-    if not all_favorites:
-        li = xbmcgui.ListItem(label="[COLOR yellow]Nu există canale favorite (sau serverele sunt OFF).[/COLOR]")
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url="", listitem=li, isFolder=False)
-        xbmcplugin.endOfDirectory(_HANDLE)
-        return
-
-    for fav in all_favorites:
-        display_label = f"{fav['name']} - [COLOR cyan]{fav['_server_name']}[/COLOR]"
-        li = xbmcgui.ListItem(label=display_label)
-        
-        logo = fav.get("logo", "")
-        if logo:
-            li.setArt({"thumb": logo, "icon": logo})
-            
-        li.setProperty("IsPlayable", "true")
-        
-        # InfoTag for Kodi 21
-        video_info = li.getVideoInfoTag()
-        video_info.setTitle(fav["name"])
-
-        url = f"{_BASE_URL}?mode=play&stream_id={fav['stream_id']}&name={quote_plus(fav['name'])}&server={fav['_server_id']}"
-        if fav['_server_id'] == "server2" and fav.get("url_template"):
-            url += f"&url_template={quote_plus(fav['url_template'])}"
-
-        # Context menu
-        li.addContextMenuItems([
-            ("Remove from Favorites", f"RunPlugin({_BASE_URL}?mode=remove_from_favorites&stream_id={fav['stream_id']}&server={fav['_server_id']})")
-        ])
-
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=False)
-
-    xbmcplugin.endOfDirectory(_HANDLE)
-
-
-def list_favorites(server="server1"):
-    """List favorite channels."""
-    # Add "Change MAC" button at the top
-    change_mac_button = xbmcgui.ListItem(
-        label="[COLOR orange]Change MAC Address[/COLOR]"
-    )
-    change_mac_button.setArt(
-        {"icon": "DefaultIconInfo.png", "thumb": "DefaultIconInfo.png"}
-    )
-    change_mac_url = f"{_BASE_URL}?mode=change_mac&category=favorites&server={server}"
-    xbmcplugin.addDirectoryItem(
-        handle=_HANDLE, url=change_mac_url, listitem=change_mac_button, isFolder=False
-    )
-
-    favorites_file = FAVORITES_FILE.format(server=server)
-    try:
-        with open(favorites_file, "r", encoding="utf-8") as f:
-            favorites = json_loads(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        favorites = []
-
-    if not favorites:
-        li = xbmcgui.ListItem(label="[COLOR yellow]No favorite channels.[/COLOR]")
-        li.setProperty("IsPlayable", "false")
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url="", listitem=li, isFolder=False)
-        xbmcplugin.endOfDirectory(_HANDLE)
-        return
-
-    for fav in favorites:
-        li = xbmcgui.ListItem(label=fav["name"])
-        li.setArt({"thumb": fav.get("logo", ""), "icon": fav.get("logo", "")})
-        li.setProperty("IsPlayable", "true")
-
-        url = f"{_BASE_URL}?mode=play&stream_id={fav['stream_id']}&name={quote_plus(fav['name'])}&server={server}"
-        if server == "server2" and fav.get("url_template"):
-            url += f"&url_template={quote_plus(fav['url_template'])}"
-
-        # Context menu to remove from favorites
-        li.addContextMenuItems(
-            [
-                (
-                    "Remove from Favorites",
-                    f"RunPlugin({_BASE_URL}?mode=remove_from_favorites&stream_id={fav['stream_id']}&server={server})",
-                )
-            ]
-        )
-
-        xbmcplugin.addDirectoryItem(
-            handle=_HANDLE, url=url, listitem=li, isFolder=False
-        )
-
-    xbmcplugin.endOfDirectory(_HANDLE)
-
-
-def add_to_favorites(stream_id, name, logo, server="server1", url_template=None):
-    """Add a channel to favorites."""
-    favorites_file = FAVORITES_FILE.format(server=server)
-    try:
-        with open(favorites_file, "r", encoding="utf-8") as f:
-            favorites = json_loads(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        favorites = []
-
-    favorite_ids = {fav["stream_id"] for fav in favorites}
-    if stream_id not in favorite_ids:
-        favorites.append(
-            {
-                "stream_id": stream_id,
-                "name": name,
-                "logo": logo,
-                "url_template": url_template,
-            }
-        )
-        with open(favorites_file, "w", encoding="utf-8") as f:
-            json_dumps(favorites, f)
-        xbmcgui.Dialog().notification(
-            "Favorites", f"{name} added to favorites", xbmcgui.NOTIFICATION_INFO, 2000
-        )
-    else:
-        xbmcgui.Dialog().notification(
-            "Favorites",
-            f"{name} is already in favorites",
-            xbmcgui.NOTIFICATION_INFO,
-            2000,
-        )
-
-
-def remove_from_favorites(stream_id, server="server1"):
-    """Remove a channel from favorites."""
-    favorites_file = FAVORITES_FILE.format(server=server)
-    try:
-        with open(favorites_file, "r", encoding="utf-8") as f:
-            favorites = json_loads(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return
-
-    favorites = [fav for fav in favorites if fav["stream_id"] != stream_id]
-
-    with open(favorites_file, "w", encoding="utf-8") as f:
-        json_dumps(favorites, f)
-    xbmcgui.Dialog().notification(
-        "Favorites", "Channel removed from favorites", xbmcgui.NOTIFICATION_INFO, 2000
-    )
-    xbmc.executebuiltin("Container.Refresh")
 
 
 def get_params():
@@ -2098,11 +406,13 @@ def main_menu():
     for label, main_mode, icon in items:
         li = xbmcgui.ListItem(label=label)
         li.setArt({"icon": icon, "thumb": icon})
+        is_folder = True
 
         if main_mode == "check":
             url = (
                 f"{_BASE_URL}?mode=select_server&main_mode=verificare&force_check=true"
             )
+            is_folder = False
         elif main_mode == "settings_menu":
             url = f"{_BASE_URL}?mode=settings_menu&is_main=true"
         elif main_mode == "mega_search_menu":
@@ -2110,31 +420,18 @@ def main_menu():
         elif main_mode == "global_favorites":
             url = f"{_BASE_URL}?mode=global_favorites"
         else:
-            url = f"{_BASE_URL}?mode=select_server&main_mode={main_mode}"
+            url = f"{_BASE_URL}?mode=open_section&main_mode={main_mode}"
+            is_folder = False
 
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=True)
+        xbmcplugin.addDirectoryItem(
+            handle=_HANDLE, url=url, listitem=li, isFolder=is_folder
+        )
 
     xbmcplugin.endOfDirectory(_HANDLE)
 
 
 def mega_search_menu():
-    """Render the Mega Search submenu."""
-    items = [
-        ("Cauta Live", "live", "DefaultAddonPVRClient.png"),
-        ("Cauta Filme", "vod", "DefaultMovies.png"),
-        ("Cauta Seriale", "series", "DefaultTVShows.png"),
-    ]
-
-    for label, search_type, icon in items:
-        li = xbmcgui.ListItem(label=label)
-        li.setArt({"icon": icon, "thumb": icon})
-        url = f"{_BASE_URL}?mode=mega_search_input&search_type={search_type}"
-        # isFolder=False to prevent history stack issues
-        xbmcplugin.addDirectoryItem(
-            handle=_HANDLE, url=url, listitem=li, isFolder=False
-        )
-
-    xbmcplugin.endOfDirectory(_HANDLE)
+    render_mega_search_menu(_BASE_URL, _HANDLE)
 
 
 def get_session_server_statuses():
@@ -2162,11 +459,11 @@ def select_server_dialog(main_mode, force_check=False):
     """Show a dialog to select a server and return the selected server ID.
     Uses session cache for statuses unless force_check is True.
     """
-    servers_config = reload_servers_config()
+    servers_config = load_servers_config()
     available_servers = servers_config.get("servers", [])
 
     if not available_servers:
-        xbmcgui.Dialog().ok("Error", "No servers configured in servers.json")
+        xbmcgui.Dialog().ok("Eroare", "Nu există servere configurate în servers.json")
         return None
 
     # Try to get statuses from session cache
@@ -2208,216 +505,42 @@ def select_server_dialog(main_mode, force_check=False):
     return None
 
 
-def fetch_stalker_paginated(type_param, category_id, server="server1"):
-    """Helper to fetch all pages for a given Stalker category."""
-    token, headers, cookies, portal_url = get_server_auth(server)
-    if not token or not portal_url:
-        return []
-
-    base_url = f"{portal_url}/portal.php"
-    param_key = "category" if type_param in ["vod", "series"] else "genre"
-
-    all_items = []
-    current_page = 1
-    total_pages = 1
-
-    while current_page <= total_pages:
-        params = {
-            "type": type_param,
-            "action": "get_ordered_list",
-            param_key: category_id,
-            "JsHttpRequest": "1-xml",
-            "p": current_page,
-        }
-
-        try:
-            response = get_session().get(
-                base_url,
-                params=params,
-                headers=headers,
-                cookies=cookies,
-                timeout=TIMEOUTS["channels"],
-            )
-            response.raise_for_status()
-            data = response.json()
-            js_data = data.get("js", {})
-
-            # Update total pages on first request
-            if current_page == 1:
-                total_items = int(js_data.get("total_items", 0))
-                items_first_page = js_data.get("data", [])
-                if not items_first_page:
-                    break
-
-                items_per_page = len(items_first_page)
-                if items_per_page > 0:
-                    total_pages = (total_items + items_per_page - 1) // items_per_page
-
-                xbmc.log(
-                    f"[Stalker] Total items: {total_items}, Pages: {total_pages} for {type_param} cat {category_id}",
-                    level=xbmc.LOGINFO,
-                )
-
-            page_items = js_data.get("data", [])
-            if not page_items:
-                break
-
-            all_items.extend(page_items)
-            current_page += 1
-
-            # Safety break to avoid infinite loops if server misbehaves
-            if current_page > 100:
-                break
-
-        except Exception as e:
-            xbmc.log(
-                f"[Stalker] Pagination error at page {current_page}: {e}",
-                level=xbmc.LOGERROR,
-            )
-            break
-
-    return all_items
-
-
-def fetch_vod_items(category_id, server="server1"):
-    """Fetch VOD items for a specific category from server using pagination."""
-    return fetch_stalker_paginated("vod", category_id, server)
-
-
-def fetch_series_items(category_id, server="server1"):
-    """Fetch Series items for a specific category from server using pagination."""
-    return fetch_stalker_paginated("series", category_id, server)
+def _build_selected_server_target(main_mode, selected_server):
+    target_params = {"server": selected_server}
+    if main_mode:
+        target_params["main_mode"] = main_mode
+    if main_mode == "vod":
+        target_params["mode"] = "list_vod_categories"
+    elif main_mode == "series":
+        target_params["mode"] = "list_series_categories"
+    else:
+        target_params["mode"] = "list_channels"
+    return f"{_BASE_URL}?{urlencode(target_params)}"
 
 
 def list_vod_items(category_id, server="server1"):
-    """List VOD items for a specific category."""
-    items = fetch_vod_items(category_id, server)
-    if not items:
-        xbmcgui.Dialog().notification("Info", "No VOD items found in this category.")
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
-        return
-
-    for item in items:
-        name = item.get("name", "Unknown")
-        movie_id = item.get("id")
-        li = xbmcgui.ListItem(label=name)
-        li.setInfo(
-            "video",
-            {"title": name, "plot": item.get("description"), "year": item.get("year")},
-        )
-        li.setProperty("IsPlayable", "true")
-        url = f"{_BASE_URL}?mode=play_vod&movie_id={movie_id}&server={server}"
-        xbmcplugin.addDirectoryItem(
-            handle=_HANDLE, url=url, listitem=li, isFolder=False
-        )
-
-    xbmcplugin.endOfDirectory(_HANDLE)
+    render_list_vod_items(_BASE_URL, _HANDLE, category_id, server=server, timeouts=TIMEOUTS)
 
 
 def list_series_items(category_id, server="server1"):
-    """List Series items for a specific category."""
-    items = fetch_series_items(category_id, server)
-    if not items:
-        xbmcgui.Dialog().notification("Info", "No series found in this category.")
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
-        return
-
-    for item in items:
-        name = item.get("name", "Unknown")
-        series_id = item.get("id")
-        li = xbmcgui.ListItem(label=name)
-        li.setInfo(
-            "video",
-            {"title": name, "plot": item.get("description"), "year": item.get("year")},
-        )
-        # For series, clicking an item should lead to seasons
-        # series_id might need splitting if it contains colons like in stalker_kodi.py
-        movie_id = str(series_id).split(":")[0]
-        url = f"{_BASE_URL}?mode=list_seasons&movie_id={movie_id}&server={server}"
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=True)
-
-    xbmcplugin.endOfDirectory(_HANDLE)
-
-
-def fetch_seasons(movie_id, server="server1"):
-    """Fetch seasons for a series."""
-    token, headers, cookies, portal_url = get_server_auth(server)
-    if not token or not portal_url:
-        return []
-
-    url = f"{portal_url}/portal.php?type=series&action=get_ordered_list&movie_id={movie_id}&JsHttpRequest=1-xml"
-    try:
-        response = get_session().get(
-            url, headers=headers, cookies=cookies, timeout=TIMEOUTS["channels"]
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data.get("js", {}).get("data", [])
-    except Exception as e:
-        xbmc.log(f"[Series] Failed to fetch seasons: {e}", level=xbmc.LOGERROR)
-        return []
+    render_list_series_items(
+        _BASE_URL, _HANDLE, category_id, server=server, timeouts=TIMEOUTS
+    )
 
 
 def list_seasons(movie_id, server="server1"):
-    """List seasons for a series."""
-    seasons = fetch_seasons(movie_id, server)
-    if not seasons:
-        xbmcgui.Dialog().notification("Info", "No seasons found for this series.")
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
-        return
-
-    for season in seasons:
-        li = xbmcgui.ListItem(label=season.get("name", "Unknown Season"))
-        url = f"{_BASE_URL}?mode=list_episodes&movie_id={movie_id}&season_id={season.get('id')}&server={server}"
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=True)
-
-    xbmcplugin.endOfDirectory(_HANDLE)
-
-
-def fetch_episodes(movie_id, season_id, server="server1"):
-    """Fetch episodes for a season."""
-    token, headers, cookies, portal_url = get_server_auth(server)
-    if not token or not portal_url:
-        return []
-
-    url = f"{portal_url}/portal.php?type=series&action=get_ordered_list&movie_id={movie_id}&season_id={season_id}&JsHttpRequest=1-xml"
-    try:
-        response = get_session().get(
-            url, headers=headers, cookies=cookies, timeout=TIMEOUTS["channels"]
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data.get("js", {}).get("data", [])
-    except Exception as e:
-        xbmc.log(f"[Series] Failed to fetch episodes: {e}", level=xbmc.LOGERROR)
-        return []
+    render_list_seasons(_BASE_URL, _HANDLE, movie_id, server=server, timeouts=TIMEOUTS)
 
 
 def list_episodes(movie_id, season_id, server="server1"):
-    """List episodes for a season."""
-    episodes_data = fetch_episodes(movie_id, season_id, server)
-    if not episodes_data or not isinstance(episodes_data, list):
-        xbmcgui.Dialog().notification("Info", "No episodes found for this season.")
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
-        return
-
-    # In Stalker, episodes_data[0]['series'] is usually a list of episode numbers
-    # and episodes_data[0]['cmd'] is the base command for the season.
-    if len(episodes_data) > 0:
-        season_info = episodes_data[0]
-        episodes_list = season_info.get("series", [])
-        season_cmd = season_info.get("cmd")
-
-        for ep_num in episodes_list:
-            label = f"Episodul {ep_num}"
-            li = xbmcgui.ListItem(label=label)
-            li.setProperty("IsPlayable", "true")
-            url = f"{_BASE_URL}?mode=play_series&cmd={quote_plus(str(season_cmd))}&episode={ep_num}&server={server}"
-            xbmcplugin.addDirectoryItem(
-                handle=_HANDLE, url=url, listitem=li, isFolder=False
-            )
-
-    xbmcplugin.endOfDirectory(_HANDLE)
+    render_list_episodes(
+        _BASE_URL,
+        _HANDLE,
+        movie_id,
+        season_id,
+        server=server,
+        timeouts=TIMEOUTS,
+    )
 
 
 def _normalize_playback_url(stream_url):
@@ -2442,11 +565,11 @@ def _split_kodi_url_options(stream_url):
     return base_url, option_headers
 
 
-def _probe_stream_url(stream_url, headers=None, timeout=None):
+def _probe_stream_url(stream_url, headers=None, timeout=None, allow_body_read=True):
     """Perform a lightweight probe before handing the URL to Kodi."""
     probe_url, option_headers = _split_kodi_url_options(stream_url)
     if not probe_url:
-        return False, "Playback URL is empty."
+        return False, "Playback URL is empty.", None
 
     probe_headers = {
         "User-Agent": get_session().headers.get("User-Agent", ""),
@@ -2470,14 +593,17 @@ def _probe_stream_url(stream_url, headers=None, timeout=None):
             timeout=timeout or TIMEOUTS["playprobe"],
             allow_redirects=True,
             stream=True,
+            verify=False,
         )
 
         status_code = response.status_code
+        final_url = response.url
+        
         if status_code >= 400:
-            return False, f"HTTP {status_code}"
+            return False, f"HTTP {status_code}", final_url
 
         content_type = (response.headers.get("Content-Type") or "").lower()
-        if "text/html" in content_type:
+        if allow_body_read and "text/html" in content_type:
             sample = b""
             try:
                 sample = next(response.iter_content(chunk_size=256), b"")
@@ -2489,11 +615,11 @@ def _probe_stream_url(stream_url, headers=None, timeout=None):
                 marker in sample_text
                 for marker in ("<html", "forbidden", "denied", "expired", "error")
             ):
-                return False, f"Unexpected HTML response ({status_code})"
+                return False, f"Unexpected HTML response ({status_code})", final_url
 
-        return True, f"HTTP {status_code}"
+        return True, f"HTTP {status_code}", final_url
     except requests.exceptions.RequestException as exc:
-        return False, str(exc)
+        return False, str(exc), None
     finally:
         if response is not None:
             response.close()
@@ -2517,7 +643,13 @@ def _parse_attempted_macs_param(attempted_macs):
     return parsed
 
 
-def _trim_attempted_macs(macs, limit=6):
+def _trim_attempted_macs(macs, limit=None):
+    if limit is None:
+        limit = max(
+            get_auth_max_attempts() * (get_live_max_reconnect_attempts() + 1),
+            get_auth_max_attempts(),
+        )
+
     trimmed = []
     seen = set()
     for mac in macs or []:
@@ -2650,253 +782,361 @@ def _finalize_playback_failure(
     xbmcgui.Dialog().notification("Eroare", message, xbmcgui.NOTIFICATION_ERROR)
 
 
-def play_vod(movie_id, server="server1"):
-    """Play a VOD movie."""
-    clear_playback_state()
-    portal_url = get_portal_url_for_server(server)
-    if not portal_url:
-        _finalize_playback_failure(
-            server,
-            portal_url,
-            0,
-            "Portal URL is not configured.",
-            "Redarea filmului",
-            kind="vod",
+def _navigate_to_main_menu():
+    main_menu_url = f"{_BASE_URL}?"
+    xbmc.executebuiltin(f"Container.Update({main_menu_url})")
+    xbmc.executebuiltin(f"ActivateWindow(Videos,{main_menu_url},return)")
+
+
+def _handle_exhausted_mac_options(
+    server,
+    stream_id,
+    name,
+    attempted_macs,
+    session_id=None,
+    reconnect_count=0,
+    url_template=None,
+):
+    auth_max_attempts = get_auth_max_attempts()
+    remaining_candidates = get_candidate_macs(
+        server, exclude_macs=list(attempted_macs), limit=auth_max_attempts
+    )
+    remaining_count = len(remaining_candidates)
+
+    if not remaining_count:
+        selection = xbmcgui.Dialog().select(
+            "Nu mai sunt MAC-uri disponibile",
+            [
+                "Mergi la meniul principal",
+                "Renunță",
+            ],
         )
-        return
+        if selection == 0:
+            clear_playback_state(session_id)
+            _navigate_to_main_menu()
+            return True
+        if selection == 1:
+            clear_playback_state(session_id)
+            return True
+        return False
 
-    attempted_macs = set()
-    attempts = 0
-    last_error = "Nu s-a putut genera link-ul de redare."
-    cmd = f"movie {movie_id}"
-    for token, headers, cookies, portal_url, mac in iter_server_auth_candidates(
+    next_count = min(auth_max_attempts, remaining_count)
+    selection = xbmcgui.Dialog().select(
+        f"Nu s-au găsit MAC-uri viabile ({len(attempted_macs)} încercate)",
+        [
+            f"Încearcă următoarele {next_count} MAC-uri",
+            "Mergi la meniul principal",
+            "Renunță",
+        ],
+    )
+
+    if selection == 0:
+        play_stream(
+            stream_id,
+            name,
+            server=server,
+            url_template=url_template,
+            session_id=session_id,
+            attempted_macs=",".join(sorted(attempted_macs)),
+            reconnect_count=reconnect_count,
+            autoplay_reconnect=False,
+        )
+        return True
+
+    if selection == 1:
+        clear_playback_state(session_id)
+        _navigate_to_main_menu()
+        return True
+
+    if selection == 2:
+        clear_playback_state(session_id)
+        return True
+
+    return False
+
+
+def _handle_exhausted_vod_series_options(
+    server,
+    attempted_macs,
+    kind="vod",
+    movie_id=None,
+    cmd=None,
+    episode_num=None,
+):
+    """Handle exhausted MAC options for VOD and Series playback."""
+    remaining_candidates = get_candidate_macs(
+        server, exclude_macs=list(attempted_macs), limit=1
+    )
+    if not remaining_candidates:
+        return False
+
+    content_type = "filme" if kind == "vod" else "seriale"
+    selection = xbmcgui.Dialog().select(
+        f"Nu s-au găsit MAC-uri viabile pentru {content_type}",
+        [
+            "Încearcă un nou set de MAC-uri",
+            "Mergi la meniul principal",
+            "Renunță",
+        ],
+    )
+
+    if selection == 0:
+        # Retry with new MACs
+        attempted_macs_str = ",".join(sorted(attempted_macs))
+        if kind == "vod":
+            play_vod(movie_id, server=server, attempted_macs=attempted_macs_str)
+        else:  # series
+            play_series(cmd, episode_num, server=server, attempted_macs=attempted_macs_str)
+        return True
+
+    if selection == 1:
+        clear_playback_state()
+        _navigate_to_main_menu()
+        return True
+
+    return False
+
+
+def _record_live_playback_success(
+    server,
+    name,
+    stream_id,
+    resolved_url,
+    random_mac,
+    attempts,
+    attempted_macs,
+    reconnect_count,
+    session_id,
+    url_template=None,
+    cache_token=None,
+    random_val="0",
+):
+    clear_failed_mac(server, random_mac)
+    if cache_token:
+        set_server_auth(server, cache_token, random_mac, random_value=random_val)
+    set_fetch_status(
+        "playback",
+        server,
+        status="ok",
+        message=f"Canal pornit cu MAC {random_mac}",
+        portal_online=True,
+        attempts=attempts,
+        used_cache=False,
+        stale_cache=False,
+        item_count=1,
+    )
+    session_id = _save_live_playback_session(
+        stream_id=stream_id,
+        name=name,
         server=server,
-        use_cached=True,
-        exclude_macs=attempted_macs,
-        max_attempts=4,
-    ):
-        attempts += 1
-        norm_mac = _normalize_mac(mac)
-        if norm_mac:
-            attempted_macs.add(norm_mac)
+        resolved_url=resolved_url,
+        current_mac=random_mac,
+        url_template=url_template,
+        attempted_macs=list(attempted_macs),
+        reconnect_count=reconnect_count,
+        session_id=session_id,
+    )
+    
+    # Fix HTTP 555 by appending headers for Kodi player
+    portal_url = get_portal_url_for_server(server)
+    url_with_headers = _append_kodi_headers(
+        resolved_url, mac=random_mac, token=cache_token, portal_url=portal_url, random_val=random_val
+    )
+    
+    play_item = xbmcgui.ListItem(path=url_with_headers)
+    xbmcplugin.setResolvedUrl(_HANDLE, True, listitem=play_item)
+    return session_id
 
-        url = f"{portal_url}/portal.php?type=vod&action=create_link&cmd={quote_plus(cmd)}&JsHttpRequest=1-xml"
-        try:
-            response = get_session().get(
-                url, headers=headers, cookies=cookies, timeout=TIMEOUTS["play"]
-            )
-            response.raise_for_status()
-            data = response.json()
-            returned_url = data.get("js", {}).get("cmd")
 
-            if not returned_url:
-                last_error = "Serverul nu a returnat comanda de redare pentru film."
-                raise ValueError(last_error)
-
-            final_url = _normalize_playback_url(returned_url)
-            if "play_token=" in final_url:
-                try:
-                    play_token = final_url.split("play_token=")[1].split("&")[0]
-                    final_url = f"{portal_url}/play/movie.php?mac={mac}&stream={movie_id}.mkv&play_token={play_token}&type=movie"
-                except IndexError:
-                    last_error = "Raspunsul de redare pentru film nu contine play_token valid."
-                    raise ValueError(last_error)
-
-            is_valid, probe_reason = _probe_stream_url(final_url, headers=headers)
-            if not is_valid:
-                last_error = f"Linkul filmului a picat la verificare: {probe_reason}"
-                raise ValueError(last_error)
-
-            clear_failed_mac(server, mac)
-            set_fetch_status(
-                "playback",
-                server,
-                status="ok",
-                message=f"Film pornit cu MAC {mac}",
-                portal_online=True,
-                attempts=attempts,
-                used_cache=False,
-                stale_cache=False,
-                item_count=1,
-            )
-            xbmc.log(f"[VOD] Playing URL: {final_url}", level=xbmc.LOGINFO)
-            clear_playback_state()
-            li = xbmcgui.ListItem(path=final_url)
-            xbmcplugin.setResolvedUrl(_HANDLE, True, listitem=li)
-            return
-        except Exception as e:
-            last_error = str(e) or last_error
-            note_failed_mac(server, mac)
-            invalidate_server_auth(server, mac=mac)
-            xbmc.log(
-                f"[VOD] Attempt {attempts} failed for MAC {mac}: {last_error}",
-                level=xbmc.LOGWARNING,
-            )
-
-    _finalize_playback_failure(
-        server, portal_url, attempts, last_error, "Redarea filmului", kind="vod"
+def _handle_live_attempt_failure(server, random_mac, attempts, last_error, log_prefix):
+    note_failed_mac(server, random_mac)
+    invalidate_server_auth(server, mac=random_mac)
+    xbmc.log(
+        f"[{log_prefix}] Playback attempt {attempts} failed for MAC {random_mac}: {last_error}",
+        level=xbmc.LOGWARNING,
     )
 
 
-def play_series(cmd, episode_num, server="server1"):
-    """Play a series episode."""
-    clear_playback_state()
-    portal_url = get_portal_url_for_server(server)
-    if not portal_url:
-        _finalize_playback_failure(
-            server,
-            portal_url,
-            0,
-            "Portal URL is not configured.",
-            "Redarea episodului",
-            kind="series",
-        )
-        return
+def _extract_live_returned_cmd(link_data):
+    if isinstance(link_data, dict):
+        js_data = link_data.get("js", {})
+        if isinstance(js_data, dict):
+            returned_cmd = js_data.get("cmd")
+        elif isinstance(js_data, list):
+            raise ValueError("MAC respins de server (raspuns js gol).")
+        else:
+            raise ValueError(f"Tip de raspuns js neasteptat: {type(js_data)}")
+    elif isinstance(link_data, list):
+        raise ValueError("MAC respins de server (lista goala la nivel root).")
+    else:
+        raise ValueError(f"Tip de raspuns neasteptat: {type(link_data)}")
 
-    attempted_macs = set()
+    if not returned_cmd:
+        raise ValueError("Serverul nu a returnat comanda de redare.")
+    return returned_cmd
+
+
+def _extract_play_token(returned_cmd, missing_message):
+    play_token_match = re.search(r"play_token=([a-zA-Z0-9]+)", returned_cmd or "")
+    if not play_token_match:
+        raise ValueError(missing_message)
+    return play_token_match.group(1)
+
+
+def _run_live_playback_attempts(
+    server,
+    name,
+    stream_id,
+    attempted_mac_list,
+    reconnect_count,
+    session_id,
+    attempt_provider,
+    attempt_executor,
+    url_template=None,
+    total_attempts=4,
+    progress_total=None,
+    progress_message="Se încearcă conectarea...",
+    failure_title="Redarea canalului",
+    allow_retry_prompt=True,
+):
+    dp = xbmcgui.DialogProgress()
+    dp.create("Se caută stream valid...", "Se testează streamul...")
+    dp.update(0)
+    attempted_macs = {
+        _normalize_mac(mac) for mac in attempted_mac_list if _normalize_mac(mac)
+    }
     attempts = 0
-    last_error = "Nu s-a putut genera link-ul de redare."
+    last_error = "Niciun stream valid găsit."
+    final_portal_url = get_portal_url_for_server(server)
+    progress_divisor = progress_total or total_attempts or 1
 
-    for token, headers, cookies, portal_url, mac in iter_server_auth_candidates(
-        server=server,
-        use_cached=True,
-        exclude_macs=attempted_macs,
-        max_attempts=4,
-    ):
-        attempts += 1
-        norm_mac = _normalize_mac(mac)
-        if norm_mac:
-            attempted_macs.add(norm_mac)
+    try:
+        for attempt_entry in attempt_provider(attempted_macs):
+            if dp.iscanceled():
+                clear_playback_state(session_id)
+                return None
 
-        url = f"{portal_url}/portal.php?type=vod&action=create_link&cmd={quote_plus(str(cmd))}&series={episode_num}&JsHttpRequest=1-xml"
-        try:
-            response = get_session().get(
-                url, headers=headers, cookies=cookies, timeout=TIMEOUTS["play"]
+            attempts += 1
+            dp.update(
+                int(((attempts - 1) / max(progress_divisor, 1)) * 100),
+                progress_message,
             )
-            response.raise_for_status()
-            data = response.json()
-            stream_url = _normalize_playback_url(data.get("js", {}).get("cmd"))
 
-            if not stream_url:
-                last_error = (
-                    "Serverul nu a returnat comanda de redare pentru episod."
+            random_mac = attempt_entry.get("mac")
+            portal_url = attempt_entry.get("portal_url")
+            final_portal_url = portal_url or final_portal_url
+
+            norm_mac = _normalize_mac(random_mac)
+            if norm_mac:
+                attempted_macs.add(norm_mac)
+
+            result = attempt_executor(attempt_entry, attempts, attempted_macs)
+            if result.get("success"):
+                return _record_live_playback_success(
+                    server=server,
+                    name=name,
+                    stream_id=stream_id,
+                    resolved_url=result["resolved_url"],
+                    random_mac=random_mac,
+                    attempts=attempts,
+                    attempted_macs=attempted_macs,
+                    reconnect_count=reconnect_count,
+                    session_id=session_id,
+                    url_template=url_template,
+                    cache_token=result.get("cache_token"),
+                    random_val=result.get("random", "0"),
                 )
-                raise ValueError(last_error)
 
-            is_valid, probe_reason = _probe_stream_url(stream_url, headers=headers)
-            if not is_valid:
-                last_error = f"Linkul episodului a picat la verificare: {probe_reason}"
-                raise ValueError(last_error)
+            last_error = result.get("error") or last_error
+            if result.get("break"):
+                break
+    finally:
+        dp.close()
 
-            clear_failed_mac(server, mac)
-            set_fetch_status(
-                "playback",
-                server,
-                status="ok",
-                message=f"Episod pornit cu MAC {mac}",
-                portal_online=True,
-                attempts=attempts,
-                used_cache=False,
-                stale_cache=False,
-                item_count=1,
-            )
-            xbmc.log(f"[Series] Playing URL: {stream_url}", level=xbmc.LOGINFO)
-            clear_playback_state()
-            li = xbmcgui.ListItem(path=stream_url)
-            xbmcplugin.setResolvedUrl(_HANDLE, True, listitem=li)
-            return
-        except Exception as e:
-            last_error = str(e) or last_error
-            note_failed_mac(server, mac)
-            invalidate_server_auth(server, mac=mac)
-            xbmc.log(
-                f"[Series] Attempt {attempts} failed for MAC {mac}: {last_error}",
-                level=xbmc.LOGWARNING,
-            )
+    if allow_retry_prompt and _handle_exhausted_mac_options(
+        server=server,
+        stream_id=stream_id,
+        name=name,
+        attempted_macs=attempted_macs,
+        session_id=session_id,
+        reconnect_count=reconnect_count,
+        url_template=url_template,
+    ):
+        return None
 
     _finalize_playback_failure(
-        server, portal_url, attempts, last_error, "Redarea episodului", kind="series"
+        server,
+        final_portal_url,
+        attempts,
+        last_error,
+        failure_title,
+        session_id=session_id,
     )
+    return None
+
+
+def play_vod(movie_id, server="server1", attempted_macs=""):
+    """Play VOD with MAC retry support."""
+    attempted_macs_list = attempted_macs.split(",") if attempted_macs else []
+    
+    result = render_play_vod(
+        _HANDLE,
+        movie_id,
+        server=server,
+        normalize_playback_url_fn=_normalize_playback_url,
+        probe_stream_url_fn=_probe_stream_url,
+        finalize_playback_failure_fn=_finalize_playback_failure,
+        timeouts=TIMEOUTS,
+        attempted_macs=attempted_macs_list,
+    )
+    
+    # If playback failed and we have the attempted MACs, offer retry options
+    if result and isinstance(result, dict) and not result.get("success"):
+        attempted = result.get("attempted_macs", [])
+        if attempted:
+            _handle_exhausted_vod_series_options(
+                server=server,
+                movie_id=movie_id,
+                attempted_macs=attempted,
+                kind="vod",
+            )
+
+
+def play_series(cmd, episode_num, server="server1", attempted_macs=""):
+    """Play series episode with MAC retry support."""
+    attempted_macs_list = attempted_macs.split(",") if attempted_macs else []
+    
+    result = render_play_series(
+        _HANDLE,
+        cmd,
+        episode_num,
+        server=server,
+        normalize_playback_url_fn=_normalize_playback_url,
+        probe_stream_url_fn=_probe_stream_url,
+        finalize_playback_failure_fn=_finalize_playback_failure,
+        timeouts=TIMEOUTS,
+        attempted_macs=attempted_macs_list,
+    )
+    
+    # If playback failed and we have the attempted MACs, offer retry options
+    if result and isinstance(result, dict) and not result.get("success"):
+        attempted = result.get("attempted_macs", [])
+        if attempted:
+            _handle_exhausted_vod_series_options(
+                server=server,
+                cmd=cmd,
+                episode_num=episode_num,
+                attempted_macs=attempted,
+                kind="series",
+            )
 
 
 def list_vod_categories(server="server1"):
-    """List VOD categories from server."""
-    categories = fetch_vod_categories(server)
-    if not categories:
-        status = get_fetch_status("vod_categories", server)
-        if status.get("portal_online") is False:
-            message = "Portalul serverului pare indisponibil."
-        elif status.get("attempts", 0) > 0:
-            message = (
-                f"Nu s-au putut incarca categoriile dupa {status['attempts']} MAC-uri."
-            )
-        else:
-            message = "No VOD categories found."
-        xbmcgui.Dialog().notification("Info", message)
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
-        return
-
-    # Set plugin category and content
-    xbmcplugin.setPluginCategory(_HANDLE, "Filme")
-    xbmcplugin.setContent(_HANDLE, "videos")
-
-    # Add "Search" button at the top - Action item, not a folder to prevent history stack issues
-    search_button = xbmcgui.ListItem(label="[COLOR yellow]Cauta Film[/COLOR]")
-    search_button.setArt(
-        {"thumb": "DefaultAddonsSearch.png", "icon": "DefaultAddonsSearch.png"}
-    )
-    search_button.setProperty("IsPlayable", "false")
-    search_button_url = f"{_BASE_URL}?mode=search_input_vod&server={server}"
-    xbmcplugin.addDirectoryItem(
-        handle=_HANDLE, url=search_button_url, listitem=search_button, isFolder=False
-    )
-
-    for cat in categories:
-        li = xbmcgui.ListItem(label=cat.get("title", "Unknown"))
-        url = f"{_BASE_URL}?mode=list_vod_items&category_id={cat.get('id')}&server={server}"
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=True)
-
-    xbmcplugin.endOfDirectory(_HANDLE)
+    render_list_vod_categories(_BASE_URL, _HANDLE, server=server)
 
 
 def list_series_categories(server="server1"):
-    """List Series categories from server."""
-    categories = fetch_series_categories(server)
-    if not categories:
-        status = get_fetch_status("series_categories", server)
-        if status.get("portal_online") is False:
-            message = "Portalul serverului pare indisponibil."
-        elif status.get("attempts", 0) > 0:
-            message = (
-                f"Nu s-au putut incarca categoriile dupa {status['attempts']} MAC-uri."
-            )
-        else:
-            message = "No Series categories found."
-        xbmcgui.Dialog().notification("Info", message)
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
-        return
-
-    # Set plugin category and content
-    xbmcplugin.setPluginCategory(_HANDLE, "Seriale")
-    xbmcplugin.setContent(_HANDLE, "videos")
-
-    # Add "Search" button at the top - Action item, not a folder
-    search_button = xbmcgui.ListItem(label="[COLOR yellow]Cauta Serial[/COLOR]")
-    search_button.setArt(
-        {"thumb": "DefaultAddonsSearch.png", "icon": "DefaultAddonsSearch.png"}
-    )
-    search_button.setProperty("IsPlayable", "false")
-    search_button_url = f"{_BASE_URL}?mode=search_input_series&server={server}"
-    xbmcplugin.addDirectoryItem(
-        handle=_HANDLE, url=search_button_url, listitem=search_button, isFolder=False
-    )
-
-    for cat in categories:
-        li = xbmcgui.ListItem(label=cat.get("title", "Unknown"))
-        url = f"{_BASE_URL}?mode=list_series_items&category_id={cat.get('id')}&server={server}"
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=True)
-
-    xbmcplugin.endOfDirectory(_HANDLE)
+    render_list_series_categories(_BASE_URL, _HANDLE, server=server)
 
 
 def list_channels(
@@ -2912,8 +1152,8 @@ def list_channels(
     if not portal_url:
         xbmc.log(f"[List] No portal URL configured for {server}", level=xbmc.LOGERROR)
         xbmcgui.Dialog().notification(
-            "Error",
-            f"No portal URL configured for {server}",
+            "Eroare",
+            f"Nu este configurat niciun portal URL pentru {server}",
             xbmcgui.NOTIFICATION_ERROR,
         )
         return
@@ -2986,8 +1226,18 @@ def list_categories(channels, server="server1", main_mode=None):
         )
         epg_button_url = f"{_BASE_URL}?mode=get_full_epg&server={server}&main_mode={main_mode if main_mode else ''}"
         xbmcplugin.addDirectoryItem(
-            handle=_HANDLE, url=epg_button_url, listitem=epg_button, isFolder=True
+            handle=_HANDLE, url=epg_button_url, listitem=epg_button, isFolder=False
         )
+
+    # Add "Refresh Cache" button
+    refresh_button = xbmcgui.ListItem(label="[COLOR cyan]Reîmprospătează Lista[/COLOR]")
+    refresh_button.setArt(
+        {"icon": "DefaultAddonService.png", "thumb": "DefaultAddonService.png"}
+    )
+    refresh_button_url = f"{_BASE_URL}?mode=refresh_cache&server={server}&main_mode={main_mode if main_mode else ''}"
+    xbmcplugin.addDirectoryItem(
+        handle=_HANDLE, url=refresh_button_url, listitem=refresh_button, isFolder=False
+    )
 
     # Always use server categories (mandatory with JSON config)
     server_cat_list = []
@@ -3033,7 +1283,7 @@ def list_categories(channels, server="server1", main_mode=None):
             )
             list_channels_in_category(
                 [],
-                cat["title"],
+                clean_category_title(cat["title"]),
                 server=server,
                 category_id=cat["id"],
                 from_server=True,
@@ -3123,13 +1373,7 @@ def list_channels_in_category(
     main_mode=None,
 ):
     """List channels within a specific category."""
-    favorites_file = FAVORITES_FILE.format(server=server)
-    try:
-        with open(favorites_file, "r", encoding="utf-8") as f:
-            favorites = json_loads(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        favorites = []
-    favorite_stream_ids = {fav["stream_id"] for fav in favorites}
+    favorite_stream_ids = load_favorite_stream_ids(server)
 
     # Handle server categories
     if from_server and category_id:
@@ -3188,7 +1432,7 @@ def list_channels_in_category(
 
     # Add "Change MAC" button at the top
     change_mac_button = xbmcgui.ListItem(
-        label="[COLOR orange]Change MAC Address[/COLOR]"
+        label="[COLOR orange]Schimbă adresa MAC[/COLOR]"
     )
     change_mac_button.setArt(
         {"icon": "DefaultIconInfo.png", "thumb": "DefaultIconInfo.png"}
@@ -3212,18 +1456,18 @@ def list_channels_in_category(
                 primary_label = "[COLOR red]Nu se poate incarca lista de canale[/COLOR]"
                 secondary_label = (
                     f"[COLOR yellow]S-au incercat {status['attempts']} MAC-uri diferite. "
-                    "Incearca din nou sau schimba MAC-ul[/COLOR]"
+                    "Încearcă din nou sau schimbă adresa MAC[/COLOR]"
                 )
             else:
                 primary_label = (
                     f'[COLOR red]Nu exista canale in categoria "{selected_category}"[/COLOR]'
                 )
-                secondary_label = "[COLOR yellow]Incearca alta categorie sau alt server[/COLOR]"
+                secondary_label = "[COLOR yellow]Încearcă altă categorie sau alt server[/COLOR]"
         else:
             primary_label = (
                 f'[COLOR red]Nu exista canale in categoria "{selected_category}"[/COLOR]'
             )
-            secondary_label = "[COLOR yellow]Incearca alta categorie sau alt server[/COLOR]"
+            secondary_label = "[COLOR yellow]Încearcă altă categorie sau alt server[/COLOR]"
 
         li = xbmcgui.ListItem(label=primary_label)
         li.setProperty("IsPlayable", "false")
@@ -3234,15 +1478,15 @@ def list_channels_in_category(
         return
 
     # Only load and request EPG if enabled
-    if is_epg_enabled() and epg_manager:
+    manager = get_epg_manager()
+    if manager:
         # Set current server for EPG operations
-        global _epg_current_server
-        _epg_current_server = server
+        set_epg_current_server(server)
 
         # Reconfigure EPG manager for the current server
         portal_url = get_portal_url_for_server(server)
         if portal_url:
-            epg_manager.reconfigure(base_url=portal_url)
+            manager.reconfigure(base_url=portal_url)
 
         # Load EPG cache first
         load_epg_cache()
@@ -3254,7 +1498,7 @@ def list_channels_in_category(
 
         # Count how many channels already have EPG from cache
         channels_with_cached_epg = sum(
-            1 for ch in channels_in_category if ch["stream_id"] in epg_data
+            1 for ch in channels_in_category if epg_contains(ch["stream_id"])
         )
         xbmc.log(
             f"[EPG] {channels_with_cached_epg}/{len(channels_in_category)} channels have cached EPG",
@@ -3263,7 +1507,7 @@ def list_channels_in_category(
 
         # Request EPG data for ALL channels in the category
         for channel in channels_in_category:
-            epg_manager.request(channel, size=10)
+            manager.request(channel, size=10)
 
         # Calculate adaptive timeout based on number of channels and cache coverage
         num_channels = len(channels_in_category)
@@ -3272,31 +1516,41 @@ def list_channels_in_category(
         )
 
         if cache_coverage >= 0.8:
-            # Good cache — wait at most 3 s (50 ms per channel)
-            max_wait_time = min(3000, num_channels * 50)
+            # Good cache — give it a short window to fill missing entries.
+            max_wait_time = min(2000, num_channels * 35)
+            no_progress_limit = 500
             xbmc.log(
                 f"[EPG] Good cache coverage ({cache_coverage:.0%}), waiting up to {max_wait_time}ms",
                 level=xbmc.LOGINFO,
             )
+        elif cache_coverage >= 0.3:
+            # Partial cache — wait briefly, but favor fast list rendering.
+            max_wait_time = min(1000, num_channels * 25)
+            no_progress_limit = 500
+            xbmc.log(
+                f"[EPG] Partial cache coverage ({cache_coverage:.0%}), waiting up to {max_wait_time}ms",
+                level=xbmc.LOGINFO,
+            )
         else:
-            # Fresh fetch needed — wait at most 15 s (200 ms per channel)
-            max_wait_time = min(15000, num_channels * 200)
+            # No local EPG cache: give the first fetch a realistic chance to populate.
+            max_wait_time = min(1800, max(800, num_channels * 35))
+            no_progress_limit = 1200
             xbmc.log(
                 f"[EPG] Fetching fresh EPG, waiting up to {max_wait_time}ms",
                 level=xbmc.LOGINFO,
             )
 
-        wait_interval = 100  # Poll every 100 ms (was 300 ms)
+        wait_interval = 100
         waited = 0
         last_count = channels_with_cached_epg
-        no_progress_since = 0  # ms since last new EPG arrived
+        no_progress_since = 0
 
         while waited < max_wait_time:
             xbmc.sleep(wait_interval)
             waited += wait_interval
 
             channels_with_epg = sum(
-                1 for ch in channels_in_category if ch["stream_id"] in epg_data
+                1 for ch in channels_in_category if epg_contains(ch["stream_id"])
             )
 
             if channels_with_epg != last_count:
@@ -3316,17 +1570,17 @@ def list_channels_in_category(
                 )
                 break
 
-            # No new EPG for 2 s — give up waiting
-            if no_progress_since >= 2000:
+            # Stop waiting as soon as EPG stops progressing.
+            if no_progress_since >= no_progress_limit:
                 xbmc.log(
-                    f"[EPG] No new EPG for 2s, proceeding with {channels_with_epg}/{num_channels}",
+                    f"[EPG] No new EPG for {no_progress_limit}ms, proceeding with {channels_with_epg}/{num_channels}",
                     level=xbmc.LOGDEBUG,
                 )
                 break
 
         # Final count
         final_count = sum(
-            1 for ch in channels_in_category if ch["stream_id"] in epg_data
+            1 for ch in channels_in_category if epg_contains(ch["stream_id"])
         )
         final_coverage = final_count / num_channels if num_channels > 0 else 0
         xbmc.log(
@@ -3343,8 +1597,8 @@ def list_channels_in_category(
         channel_label = channel["name"]
 
         # Add current program to label if EPG available and enabled
-        if is_epg_enabled() and channel["stream_id"] in epg_data:
-            epg_items = epg_data[channel["stream_id"]]
+        if is_epg_enabled() and epg_contains(channel["stream_id"]):
+            epg_items = get_epg_items(channel["stream_id"])
             current_prog = get_current_program(epg_items)
             if current_prog:
                 channel_label = f"{channel['name']} - {current_prog}"
@@ -3358,8 +1612,8 @@ def list_channels_in_category(
         li.setProperty("IsPlayable", "true")
 
         # Set EPG data if available and enabled
-        if is_epg_enabled() and channel["stream_id"] in epg_data:
-            epg_items = epg_data[channel["stream_id"]]
+        if is_epg_enabled() and epg_contains(channel["stream_id"]):
+            epg_items = get_epg_items(channel["stream_id"])
             plot = format_epg_tooltip(epg_items)
             li.setInfo("video", {"plot": plot})
 
@@ -3373,7 +1627,7 @@ def list_channels_in_category(
         if channel["stream_id"] in favorite_stream_ids:
             context_menu.append(
                 (
-                    "Remove from Favorites",
+                    "Elimină din favorite",
                     f"RunPlugin({_BASE_URL}?mode=remove_from_favorites&stream_id={channel['stream_id']}&server={server})",
                 )
             )
@@ -3381,7 +1635,7 @@ def list_channels_in_category(
             add_fav_url = f"{_BASE_URL}?mode=add_to_favorites&stream_id={channel['stream_id']}&name={quote_plus(channel['name'])}&logo={quote_plus(channel['logo'])}&server={server}"
             if server == "server2" and channel.get("url"):
                 add_fav_url += f"&url_template={quote_plus(channel['url'])}"
-            context_menu.append(("Add to Favorites", f"RunPlugin({add_fav_url})"))
+            context_menu.append(("Adaugă la favorite", f"RunPlugin({add_fav_url})"))
         li.addContextMenuItems(context_menu)
 
         xbmcplugin.addDirectoryItem(
@@ -3393,15 +1647,23 @@ def list_channels_in_category(
 
 def get_full_epg():
     """Fetch EPG for ALL channels from server."""
-    if not is_epg_enabled() or not epg_manager:
-        xbmcgui.Dialog().notification(
-            "EPG Disabled", "Enable EPG in addon settings", xbmcgui.NOTIFICATION_INFO
-        )
-        return
-
     # Get server from params
     params = get_params()
     server = params.get("server", "server1")
+    set_epg_current_server(server)
+
+    manager = get_epg_manager()
+    if not manager:
+        xbmcgui.Dialog().notification(
+            "EPG dezactivat",
+            "Activează EPG în setările addonului",
+            xbmcgui.NOTIFICATION_INFO,
+        )
+        return
+
+    portal_url = get_portal_url_for_server(server)
+    if portal_url:
+        manager.reconfigure(base_url=portal_url)
 
     # Get all channels from server
     xbmc.log(f"[EPG] Fetching all channels from {server}", level=xbmc.LOGINFO)
@@ -3412,7 +1674,7 @@ def get_full_epg():
 
     if not server_cats:
         xbmcgui.Dialog().notification(
-            "EPG", "Could not fetch categories", xbmcgui.NOTIFICATION_WARNING
+            "EPG", "Nu s-au putut încărca categoriile", xbmcgui.NOTIFICATION_WARNING
         )
         return
 
@@ -3428,7 +1690,7 @@ def get_full_epg():
 
     if not all_channels:
         xbmcgui.Dialog().notification(
-            "EPG", "No channels found", xbmcgui.NOTIFICATION_WARNING
+            "EPG", "Nu au fost găsite canale", xbmcgui.NOTIFICATION_WARNING
         )
         return
 
@@ -3440,7 +1702,7 @@ def get_full_epg():
     channels_with_cached_epg = sum(
         1
         for ch in all_channels
-        if str(ch.get("id")) in epg_data or str(ch.get("tv_genre_id")) in epg_data
+        if epg_contains_any(str(ch.get("id")), str(ch.get("tv_genre_id")))
     )
     xbmc.log(
         f"[EPG] {channels_with_cached_epg}/{total_channels} channels already have cached EPG",
@@ -3450,7 +1712,8 @@ def get_full_epg():
     # Create progress dialog
     progress = xbmcgui.DialogProgress()
     progress.create(
-        "Fetching Full EPG", f"Requesting EPG for {total_channels} channels..."
+        "Descărcare EPG complet",
+        f"Se solicită EPG pentru {total_channels} canale...",
     )
 
     # Request EPG for all channels
@@ -3460,16 +1723,17 @@ def get_full_epg():
             progress.close()
             return
 
-        epg_manager.request(channel, size=10)
+        manager.request(channel, size=10)
 
         # Update progress every 10 channels
         if (idx + 1) % 10 == 0:
             percent = int(((idx + 1) / total_channels) * 30)
             progress.update(
-                percent, f"Requested EPG for {idx + 1}/{total_channels} channels..."
+                percent,
+                f"S-a solicitat EPG pentru {idx + 1}/{total_channels} canale...",
             )
 
-    progress.update(30, f"Waiting for EPG data from server...")
+    progress.update(30, "Se așteaptă datele EPG de la server...")
 
     # Calculate timeout based on total channels
     max_wait_time = min(300000, total_channels * 400)
@@ -3495,7 +1759,9 @@ def get_full_epg():
         waited += wait_interval
 
         # Check progress
-        channels_with_epg = sum(1 for ch in channels if ch["stream_id"] in epg_data)
+        channels_with_epg = sum(
+            1 for ch in all_channels if epg_contains(str(ch.get("id", "")))
+        )
 
         # Update progress dialog (30% to 95%)
         progress_percent = 30 + int(((channels_with_epg / total_channels) * 65))
@@ -3522,16 +1788,16 @@ def get_full_epg():
             break
 
     # Final save
-    progress.update(95, "Saving EPG to cache...")
+    progress.update(95, "Se salvează EPG în cache...")
     save_epg_cache()
 
     # Final stats
-    final_count = sum(1 for ch in channels if ch["stream_id"] in epg_data)
+    final_count = sum(1 for ch in all_channels if epg_contains(str(ch.get("id", ""))))
     final_coverage = int((final_count / total_channels) * 100)
 
     progress.update(
         100,
-        f"Complete! EPG for {final_count}/{total_channels} channels ({final_coverage}%)",
+        f"Complet! EPG pentru {final_count}/{total_channels} canale ({final_coverage}%)",
     )
     xbmc.sleep(1500)  # Show final message for 1.5 seconds
     progress.close()
@@ -3541,8 +1807,8 @@ def get_full_epg():
         level=xbmc.LOGDEBUG,
     )
     xbmcgui.Dialog().notification(
-        "EPG Complete",
-        f"Got EPG for {final_count}/{total_channels} channels ({final_coverage}%)",
+        "EPG complet",
+        f"EPG disponibil pentru {final_count}/{total_channels} canale ({final_coverage}%)",
         xbmcgui.NOTIFICATION_INFO,
         3000,
     )
@@ -3559,24 +1825,22 @@ def generate_random_mac():
 
 def change_mac(category=None, server="server1"):
     """Change to a new random MAC address and clear token cache."""
-    global _token_cache
-
     # Get a new random MAC from file
     new_mac = get_random_mac_from_file(server)
     if not new_mac:
         xbmcgui.Dialog().notification(
-            "Error", "Failed to get new MAC address", xbmcgui.NOTIFICATION_ERROR
+            "Eroare", "Nu s-a putut obține o adresă MAC nouă", xbmcgui.NOTIFICATION_ERROR
         )
         return
 
     # Clear token cache to force new handshake with new MAC
-    _token_cache["token"] = None
-    _token_cache["mac"] = None
-    _token_cache["timestamp"] = 0
+    clear_token_cache()
+    invalidate_server_auth(server)
+    _selected_mac_override[server] = new_mac
 
     xbmc.log(f"[MAC] Changed to new MAC: {new_mac}", level=xbmc.LOGDEBUG)
     xbmcgui.Dialog().notification(
-        "MAC Changed", f"New MAC: {new_mac}", xbmcgui.NOTIFICATION_INFO, 3000
+        "Adresă MAC schimbată", f"Noua adresă MAC: {new_mac}", xbmcgui.NOTIFICATION_INFO, 3000
     )
 
     # Refresh the category view if we came from a category
@@ -3592,6 +1856,7 @@ def play_stream(
     session_id=None,
     attempted_macs=None,
     reconnect_count=0,
+    autoplay_reconnect=False,
 ):
     """Get the token and MAC dynamically and resolve the URL for a single stream."""
     try:
@@ -3603,6 +1868,7 @@ def play_stream(
         clear_playback_state()
 
     attempted_mac_list = _parse_attempted_macs_param(attempted_macs)
+    auth_max_attempts = get_auth_max_attempts()
     portal_url = get_portal_url_for_server(server)
     if not portal_url:
         _finalize_playback_failure(
@@ -3654,15 +1920,15 @@ def play_stream(
             except Exception as e:
                 clear_playback_state(session_id)
                 xbmcgui.Dialog().notification(
-                    "Error", f"Failed to load mag.txt: {e}", xbmcgui.NOTIFICATION_ERROR
+                    "Eroare", f"Nu s-a putut încărca mag.txt: {e}", xbmcgui.NOTIFICATION_ERROR
                 )
                 return
 
         if not url_line:
             clear_playback_state(session_id)
             xbmcgui.Dialog().notification(
-                "Error",
-                "Channel not found or URL template missing",
+                "Eroare",
+                "Canalul nu a fost găsit sau lipsește șablonul URL",
                 xbmcgui.NOTIFICATION_ERROR,
             )
             return
@@ -3677,52 +1943,28 @@ def play_stream(
             portal_match = re.match(r"(https?://[^/]+)", url_line)
             if portal_match:
                 server2_portal_url = portal_match.group(1)
-
-                # Try up to 4 different MACs with loading dialog
-                dp = xbmcgui.DialogProgress()
-                dp.create("Se caută stream valid...", "Se testează streamul...")
-                dp.update(0)
-                attempted_macs = {
-                    _normalize_mac(mac)
-                    for mac in attempted_mac_list
-                    if _normalize_mac(mac)
-                }
-                attempts = 0
-                last_error = "Niciun stream valid găsit."
                 candidate_macs = get_candidate_macs(
-                    server, exclude_macs=attempted_mac_list, limit=4
+                    server, exclude_macs=attempted_mac_list, limit=auth_max_attempts
                 )
 
                 if not candidate_macs:
-                    dp.close()
                     _finalize_playback_failure(
                         server,
                         server2_portal_url,
-                        attempts,
+                        0,
                         "Nu exista MAC-uri configurate pentru acest server.",
                         "Redarea canalului",
                         session_id=session_id,
                     )
                     return
 
-                for mac_attempt, random_mac in enumerate(candidate_macs, start=1):
-                    if dp.iscanceled():
-                        dp.close()
-                        clear_playback_state(session_id)
-                        return
+                def _server2_attempt_provider(_attempted_macs):
+                    for random_mac in candidate_macs:
+                        yield {"mac": random_mac, "portal_url": server2_portal_url}
 
-                    attempts = mac_attempt
-                    dp.update(
-                        int(((mac_attempt - 1) / len(candidate_macs)) * 100),
-                        "Se încearcă conectarea...",
-                    )
-
-                    norm_mac = _normalize_mac(random_mac)
-                    if norm_mac:
-                        attempted_macs.add(norm_mac)
-
-                    # Get session token via handshake
-                    session_token = handshake(
+                def _server2_attempt_executor(attempt_entry, attempts, attempted_macs):
+                    random_mac = attempt_entry["mac"]
+                    session_token, random_val = handshake(
                         server2_portal_url, random_mac, server=server
                     )
                     if not session_token:
@@ -3732,13 +1974,14 @@ def play_stream(
                             f"[{server}] {last_error}",
                             level=xbmc.LOGWARNING,
                         )
-                        if not check_server_online(server2_portal_url):
-                            break
-                        continue
+                        return {
+                            "success": False,
+                            "error": last_error,
+                            "break": not check_server_online(server2_portal_url),
+                        }
 
-                    # Create link to get play token
                     headers, cookies = _build_auth_headers_and_cookies(
-                        server2_portal_url, random_mac, session_token
+                        server2_portal_url, random_mac, session_token, random_val
                     )
                     create_link_url = f"{server2_portal_url}/portal.php?action=create_link&type=itv&cmd={actual_stream_id}&JsHttpRequest=1-xml"
 
@@ -3748,145 +1991,113 @@ def play_stream(
                             headers=headers,
                             cookies=cookies,
                             timeout=TIMEOUTS["playlink"],
+                            verify=False,
                         )
                         response.raise_for_status()
                         link_data = response.json()
-
-                        js_data = link_data.get("js", {})
-                        returned_cmd = js_data.get("cmd")
-
-                        if not returned_cmd:
-                            raise ValueError("Serverul nu a returnat comanda de redare.")
-
-                        play_token_match = re.search(
-                            r"play_token=([a-zA-Z0-9]+)", returned_cmd
+                        returned_cmd = _extract_live_returned_cmd(link_data)
+                        play_token = _extract_play_token(
+                            returned_cmd, "Raspunsul nu contine play_token valid."
                         )
-                        if not play_token_match:
-                            raise ValueError("Raspunsul nu contine play_token valid.")
 
-                        play_token = play_token_match.group(1)
-
-                        # Replace placeholders in the original URL from template
                         final_url = url_line.replace("MACPH", random_mac).replace(
                             "TOKENPH", play_token
                         )
-
-                        # Add User-Agent to the final URL to prevent 405 errors
-                        final_url_with_ua = (
-                            f"{final_url}|User-Agent={quote_plus(headers['User-Agent'])}"
-                        )
-                        is_valid, probe_reason = _probe_stream_url(
-                            final_url_with_ua, headers=headers
+                        
+                        is_valid, probe_reason, redirected_url = _probe_stream_url(
+                            final_url,
+                            headers=headers,
+                            allow_body_read=False,
                         )
                         if not is_valid:
                             raise ValueError(
                                 f"Linkul final a picat la verificare: {probe_reason}"
                             )
-
-                        clear_failed_mac(server, random_mac)
-                        _auth_cache[server] = {
-                            "token": session_token,
-                            "mac": random_mac,
-                            "timestamp": time.time(),
+                        return {
+                            "success": True,
+                            "resolved_url": final_url,
+                            "cache_token": session_token,
+                            "random": random_val,
                         }
-                        set_fetch_status(
-                            "playback",
-                            server,
-                            status="ok",
-                            message=f"Canal pornit cu MAC {random_mac}",
-                            portal_online=True,
-                            attempts=attempts,
-                            used_cache=False,
-                            stale_cache=False,
-                            item_count=1,
-                        )
-                        session_id = _save_live_playback_session(
-                            stream_id=stream_id,
-                            name=name,
-                            server=server,
-                            resolved_url=final_url_with_ua,
-                            current_mac=random_mac,
-                            url_template=url_template,
-                            attempted_macs=list(attempted_macs),
-                            reconnect_count=reconnect_count,
-                            session_id=session_id,
-                        )
-                        dp.close()
-                        play_item = xbmcgui.ListItem(path=final_url_with_ua)
-                        xbmcplugin.setResolvedUrl(_HANDLE, True, listitem=play_item)
-                        return
                     except Exception as e:
-                        last_error = str(e) or last_error
-                        note_failed_mac(server, random_mac)
-                        invalidate_server_auth(server, mac=random_mac)
-                        xbmc.log(
-                            f"[{server}] Playback attempt {attempts} failed for MAC {random_mac}: {last_error}",
-                            level=xbmc.LOGWARNING,
+                        last_error = str(e) or "Niciun stream valid găsit."
+                        _handle_live_attempt_failure(
+                            server,
+                            random_mac,
+                            attempts,
+                            last_error,
+                            server,
                         )
-                        if not check_server_online(server2_portal_url):
-                            break
+                        return {
+                            "success": False,
+                            "error": last_error,
+                            "break": not check_server_online(server2_portal_url),
+                        }
 
-                # All MAC attempts failed
-                dp.close()
-                _finalize_playback_failure(
-                    server,
-                    server2_portal_url,
-                    attempts,
-                    last_error,
-                    "Redarea canalului",
+                session_id = _run_live_playback_attempts(
+                    server=server,
+                    name=name,
+                    stream_id=stream_id,
+                    attempted_mac_list=attempted_mac_list,
+                    reconnect_count=reconnect_count,
                     session_id=session_id,
+                    attempt_provider=_server2_attempt_provider,
+                    attempt_executor=_server2_attempt_executor,
+                    url_template=url_template,
+                    total_attempts=auth_max_attempts,
+                    progress_total=len(candidate_macs),
+                    allow_retry_prompt=True,
                 )
                 return
             else:
                 clear_playback_state(session_id)
                 xbmcgui.Dialog().notification(
-                    "Error",
-                    "Could not extract portal URL from template",
+                    "Eroare",
+                    "Nu s-a putut extrage URL-ul portalului din șablon",
                     xbmcgui.NOTIFICATION_ERROR,
                 )
                 return
         else:
             clear_playback_state(session_id)
             xbmcgui.Dialog().notification(
-                "Error",
-                "Could not extract stream ID from URL",
+                "Eroare",
+                "Nu s-a putut extrage ID-ul streamului din URL",
                 xbmcgui.NOTIFICATION_ERROR,
             )
             return
 
-    # Server 1: Try up to 4 MACs with loading dialog
-    dp = xbmcgui.DialogProgress()
-    dp.create("Se caută stream valid...", "Se testează streamul...")
-    dp.update(0)
-    attempted_macs = {
-        _normalize_mac(mac) for mac in attempted_mac_list if _normalize_mac(mac)
-    }
-    attempts = 0
-    last_error = "Niciun stream valid găsit."
+    def _server1_attempt_provider(attempted_macs):
+        for token, headers, cookies, portal_url, random_mac, random_val in iter_server_auth_candidates(
+            server=server,
+            use_cached=True,
+            exclude_macs=list(attempted_macs),
+            max_attempts=auth_max_attempts,
+        ):
+            yield {
+                "token": token,
+                "headers": headers,
+                "cookies": cookies,
+                "portal_url": portal_url,
+                "mac": random_mac,
+                "random": random_val,
+            }
 
-    for token, headers, cookies, portal_url, random_mac in iter_server_auth_candidates(
-        server=server,
-        use_cached=True,
-        exclude_macs=list(attempted_macs),
-        max_attempts=4,
-    ):
-        if dp.iscanceled():
-            dp.close()
-            clear_playback_state(session_id)
-            return
-
-        attempts += 1
-        dp.update(int(((attempts - 1) / 4) * 100), "Se încearcă conectarea...")
-        norm_mac = _normalize_mac(random_mac)
-        if norm_mac:
-            attempted_macs.add(norm_mac)
-
+    def _server1_attempt_executor(attempt_entry, attempts, attempted_macs):
+        headers = attempt_entry["headers"]
+        cookies = attempt_entry["cookies"]
+        portal_url = attempt_entry["portal_url"]
+        random_mac = attempt_entry["mac"]
+        token = attempt_entry["token"]
+        random_val = attempt_entry["random"]
+        
         xbmc.log(
-            f"[Server1] Attempt {attempts}/4 with MAC: {random_mac}",
+            f"[Server1] Attempt {attempts}/{auth_max_attempts} with MAC: {random_mac}",
             level=xbmc.LOGINFO,
         )
 
-        create_link_url = f"{portal_url}/portal.php?type=itv&action=create_link&cmd={stream_id}&JsHttpRequest=1-xml"
+        # Use create_link first. The handshake token authenticates the portal
+        # request; the stream URL needs a per-stream play_token from create_link.
+        create_link_url = f"{portal_url.rstrip('/')}/portal.php?type=itv&action=create_link&cmd={stream_id}&JsHttpRequest=1-xml"
 
         try:
             response = get_session().get(
@@ -3894,100 +2105,97 @@ def play_stream(
                 headers=headers,
                 cookies=cookies,
                 timeout=TIMEOUTS["playlink"],
+                verify=False,
             )
             response.raise_for_status()
             link_data = response.json()
+            returned_cmd = _extract_live_returned_cmd(link_data)
+            play_token = _extract_play_token(
+                returned_cmd, "Raspunsul nu contine play_token valid."
+            )
+            final_url = f"{portal_url.rstrip('/')}/play/live.php?mac={random_mac}&stream={stream_id}&extension=ts&play_token={play_token}"
 
-            # Check if response is a dict (expected) or list (error)
-            if isinstance(link_data, dict):
-                js_data = link_data.get("js", {})
-                if isinstance(js_data, dict):
-                    returned_cmd = js_data.get("cmd")
-                elif isinstance(js_data, list):
-                    last_error = "MAC respins de server (raspuns js gol)."
-                    raise ValueError(last_error)
-                else:
-                    last_error = f"Tip de raspuns js neasteptat: {type(js_data)}"
-                    raise ValueError(last_error)
-            elif isinstance(link_data, list):
-                last_error = "MAC respins de server (lista goala la nivel root)."
-                raise ValueError(last_error)
-            else:
-                last_error = f"Tip de raspuns neasteptat: {type(link_data)}"
-                raise ValueError(last_error)
+            is_valid, probe_reason, redirected_url = _probe_stream_url(
+                final_url,
+                headers=headers,
+                allow_body_read=False,
+            )
+            if not is_valid:
+                raise ValueError(
+                    f"create_link a returnat URL invalid pentru Kodi: {probe_reason}"
+                )
 
-            if returned_cmd:
-                play_token_match = re.search(r"play_token=([a-zA-Z0-9]+)", returned_cmd)
-                if play_token_match:
-                    play_token = play_token_match.group(1)
-                    final_url = f"{portal_url}/play/live.php?mac={random_mac}&stream={stream_id}&extension=ts&play_token={play_token}"
-                    is_valid, probe_reason = _probe_stream_url(
-                        final_url, headers=headers
-                    )
-                    if not is_valid:
-                        last_error = (
-                            f"Linkul final a picat la verificare: {probe_reason}"
-                        )
-                        raise ValueError(last_error)
-
-                    clear_failed_mac(server, random_mac)
-                    set_fetch_status(
-                        "playback",
-                        server,
-                        status="ok",
-                        message=f"Canal pornit cu MAC {random_mac}",
-                        portal_online=True,
-                        attempts=attempts,
-                        used_cache=False,
-                        stale_cache=False,
-                        item_count=1,
-                    )
-                    session_id = _save_live_playback_session(
-                        stream_id=stream_id,
-                        name=name,
-                        server=server,
-                        resolved_url=final_url,
-                        current_mac=random_mac,
-                        url_template=url_template,
-                        attempted_macs=list(attempted_macs),
-                        reconnect_count=reconnect_count,
-                        session_id=session_id,
-                    )
-                    xbmc.log(
-                        f"[Server1] Successfully playing with MAC: {random_mac}",
-                        level=xbmc.LOGINFO,
-                    )
-                    dp.close()
-                    play_item = xbmcgui.ListItem(path=final_url)
-                    xbmcplugin.setResolvedUrl(_HANDLE, True, listitem=play_item)
-                    return  # SUCCESS!
-                else:
-                    last_error = "Raspunsul nu contine play_token valid."
-                    raise ValueError(last_error)
-            else:
-                last_error = "Serverul nu a returnat comanda de redare."
-                raise ValueError(last_error)
+            xbmc.log(
+                f"[Server1] Successfully created play URL via create_link with MAC: {random_mac}",
+                level=xbmc.LOGINFO,
+            )
+            return {
+                "success": True,
+                "resolved_url": redirected_url or final_url,
+                "cache_token": token,
+                "random": random_val,
+            }
 
         except Exception as e:
-            last_error = str(e) or last_error
-            note_failed_mac(server, random_mac)
-            invalidate_server_auth(server, mac=random_mac)
             xbmc.log(
-                f"[Server1] Playback attempt {attempts} failed for MAC {random_mac}: {last_error}",
-                level=xbmc.LOGWARNING,
+                f"[Server1] create_link failed for MAC {random_mac}: {e}",
+                level=xbmc.LOGDEBUG,
             )
-            if not check_server_online(portal_url):
-                break
 
-    # All MAC attempts failed
-    dp.close()
-    _finalize_playback_failure(
-        server,
-        portal_url,
-        attempts,
-        last_error,
-        "Redarea canalului",
+        fallback_urls = [
+            (
+                f"{portal_url.rstrip('/')}/play/live.php?mac={random_mac}&stream={stream_id}&extension=ts",
+                "direct no token",
+            ),
+            (
+                f"{portal_url.rstrip('/')}/play/live.php?mac={random_mac}&stream={stream_id}&extension=ts&play_token={token}",
+                "direct session token",
+            ),
+        ]
+        last_error = "Niciun stream valid găsit."
+        for test_url, label in fallback_urls:
+            is_valid, probe_reason, redirected_url = _probe_stream_url(
+                test_url,
+                headers=headers,
+                allow_body_read=False,
+            )
+            if is_valid:
+                xbmc.log(
+                    f"[Server1] Direct playback valid ({label}) for MAC: {random_mac}",
+                    level=xbmc.LOGINFO,
+                )
+                return {
+                    "success": True,
+                    "resolved_url": redirected_url or test_url,
+                    "cache_token": token,
+                    "random": random_val,
+                }
+
+            last_error = f"{label}: {probe_reason}"
+            xbmc.log(
+                f"[Server1] Direct playback failed ({label}, {probe_reason}) for MAC: {random_mac}",
+                level=xbmc.LOGDEBUG,
+            )
+
+        _handle_live_attempt_failure(server, random_mac, attempts, last_error, "Server1")
+        return {
+            "success": False,
+            "error": last_error,
+            "break": not check_server_online(portal_url),
+        }
+
+    _run_live_playback_attempts(
+        server=server,
+        name=name,
+        stream_id=stream_id,
+        attempted_mac_list=attempted_mac_list,
+        reconnect_count=reconnect_count,
         session_id=session_id,
+        attempt_provider=_server1_attempt_provider,
+        attempt_executor=_server1_attempt_executor,
+        url_template=url_template,
+        total_attempts=auth_max_attempts,
+        allow_retry_prompt=True,
     )
 
 
@@ -4063,9 +2271,9 @@ def _list_servers_page(available_servers, server_statuses=None):
         li.setArt({"icon": "DefaultNetwork.png", "thumb": "DefaultNetwork.png"})
         xbmcplugin.addDirectoryItem(
             handle=_HANDLE,
-            url=f"{_BASE_URL}?server={srv_id}",
+            url=f"{_BASE_URL}?mode=open_server&server={srv_id}",
             listitem=li,
-            isFolder=True,
+            isFolder=False,
         )
 
     # On-demand check button — always visible regardless of the auto-check setting
@@ -4081,60 +2289,6 @@ def _list_servers_page(available_servers, server_statuses=None):
     )
 
     xbmcplugin.endOfDirectory(_HANDLE)
-
-
-def _get_probe_session():
-    """Create a lightweight no-retry session for one probe worker."""
-    session = requests.Session()
-    adapter = HTTPAdapter(pool_connections=1, pool_maxsize=1, max_retries=0)
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
-    return session
-
-
-def check_server_online(portal_url, timeout=3):
-    """Check whether a Stalker portal is reachable."""
-    if not portal_url:
-        return False
-
-    portal_url = portal_url.rstrip("/")
-    mag_headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 "
-            "(KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3"
-        ),
-        "X-User-Agent": "Model: MAG250; Link: WiFi",
-    }
-
-    probe_session = _get_probe_session()
-    try:
-        try:
-            probe_session.get(
-                f"{portal_url}/portal.php",
-                headers=mag_headers,
-                timeout=timeout,
-                allow_redirects=True,
-            )
-            return True
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-            pass
-        except Exception:
-            pass
-
-        try:
-            probe_session.get(
-                portal_url,
-                headers=mag_headers,
-                timeout=timeout,
-                allow_redirects=True,
-            )
-            return True
-        except Exception:
-            pass
-
-        return False
-    finally:
-        probe_session.close()
 
 
 def _check_all_servers_online(servers_list):
@@ -4184,15 +2338,35 @@ def router(params):
             main_menu()
             return
 
-        # Always reload servers from JSON config (fresh on each request)
-        servers_config = reload_servers_config()
+        # Keep servers.json cached for a short TTL instead of refetching on every request.
+        servers_config = load_servers_config()
         available_servers = servers_config.get("servers", [])
 
         # Handle clear_all_cache mode early (doesn't require server)
         if mode == "clear_all_cache":
             xbmc.log("[Router] Processing clear_all_cache mode", level=xbmc.LOGINFO)
             clear_all_cache_for_all_servers()
+            clear_vod_series_cache()
+            clear_search_cache()
             xbmc.executebuiltin("Container.Refresh")
+            return
+
+        if mode == "open_section":
+            main_mode = params.get("main_mode")
+            force_check = params.get("force_check") == "true"
+            selected_server = select_server_dialog(main_mode, force_check=force_check)
+            if selected_server:
+                xbmc.executebuiltin(
+                    f"Container.Update({_build_selected_server_target(main_mode, selected_server)},replace)"
+                )
+            return
+
+        if mode == "open_server":
+            target = _build_selected_server_target(None, server)
+            xbmcplugin.endOfDirectory(
+                _HANDLE, succeeded=True, updateListing=False, cacheToDisc=False
+            )
+            xbmc.executebuiltin(f"Container.Update({target},replace)")
             return
 
         # Handle select_server mode
@@ -4202,12 +2376,12 @@ def router(params):
             selected_server = select_server_dialog(main_mode, force_check=force_check)
 
             if selected_server:
-                if main_mode == "vod":
-                    list_vod_categories(server=selected_server)
-                elif main_mode == "series":
-                    list_series_categories(server=selected_server)
-                else:
-                    list_channels(server=selected_server, main_mode=main_mode)
+                xbmcplugin.endOfDirectory(
+                    _HANDLE, succeeded=True, updateListing=False, cacheToDisc=False
+                )
+                xbmc.executebuiltin(
+                    f"Container.Update({_build_selected_server_target(main_mode, selected_server)},replace)"
+                )
             else:
                 # If user cancelled dialog, we must end the directory listing to stop the spinner
                 xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
@@ -4234,6 +2408,12 @@ def router(params):
         elif mode == "play_series":
             play_series(params.get("cmd"), params.get("episode"), server=server)
             return
+        elif mode == "list_vod_categories":
+            list_vod_categories(server=server)
+            return
+        elif mode == "list_series_categories":
+            list_series_categories(server=server)
+            return
 
         # Handle modes that don't strictly require a pre-selected server or handle it themselves
         if mode == "settings_menu":
@@ -4245,7 +2425,7 @@ def router(params):
             xbmc.executebuiltin("Container.Refresh")
             return
         elif mode == "favorites":
-            list_favorites(server=server if server else "server1")
+            list_favorites(_BASE_URL, _HANDLE, server=server if server else "server1")
             return
         elif mode == "mega_search_menu":
             mega_search_menu()
@@ -4254,10 +2434,15 @@ def router(params):
             mega_search_input(params.get("search_type"))
             return
         elif mode == "mega_search_results":
-            show_mega_search_results(params.get("query"), params.get("search_type"))
+            show_mega_search_results(
+                params.get("query"),
+                params.get("search_type"),
+                batch_start=params.get("batch_start", 0),
+                skip_api=params.get("skip_api") == "true",
+            )
             return
         elif mode == "global_favorites":
-            list_global_favorites()
+            list_global_favorites(_BASE_URL, _HANDLE, get_session_server_statuses)
             return
         elif mode == "search_input":
             search_input_dialog(server=server, main_mode=params.get("main_mode"))
@@ -4266,7 +2451,11 @@ def router(params):
             # Display search results (can be called with query or search_query param)
             query = params.get("query") or params.get("search_query")
             if query:
-                show_search_results(query, server=server)
+                show_search_results(
+                    query,
+                    server=server,
+                    main_mode=params.get("main_mode"),
+                )
             else:
                 # No query, show search input dialog
                 search_input_dialog(server=server)
@@ -4344,7 +2533,7 @@ def router(params):
                     f"[Router] Missing stream_id for mode: {mode}", level=xbmc.LOGERROR
                 )
                 xbmcgui.Dialog().notification(
-                    "Error", "Missing stream ID", xbmcgui.NOTIFICATION_ERROR
+                    "Eroare", "Lipsește ID-ul streamului", xbmcgui.NOTIFICATION_ERROR
                 )
                 return
 
@@ -4357,6 +2546,7 @@ def router(params):
                 session_id=params.get("session_id"),
                 attempted_macs=params.get("attempted_macs"),
                 reconnect_count=params.get("reconnect_count", 0),
+                autoplay_reconnect=params.get("autoplay_reconnect") == "true",
             )
         elif mode == "add_to_favorites":
             add_to_favorites(
@@ -4387,17 +2577,33 @@ def router(params):
             )
         elif mode == "get_full_epg":
             get_full_epg()
+        elif mode == "refresh_cache":
+            # Refresh cache for current server
+            server = params.get("server", "server1")
+            main_mode = params.get("main_mode")
+            
+            # Clear cache for this server
+            clear_all_cache(server)
+            clear_vod_series_cache(server=server)
+            clear_search_cache(server=server)
+            
+            # Show notification
+            xbmcgui.Dialog().notification(
+                "Cache Reîmprospătat",
+                f"Cache-ul pentru {server} a fost șters",
+                xbmcgui.NOTIFICATION_INFO,
+                2000
+            )
+            
+            # Refresh the container to reload the list
+            xbmc.executebuiltin("Container.Refresh")
         elif mode == "change_mac":
             change_mac(params.get("category"), server=server)
         elif mode == "clear_cache":
             clear_all_cache(server=server if server else "server1")
+            clear_vod_series_cache(server=server if server else "server1")
+            clear_search_cache(server=server if server else "server1")
             xbmc.executebuiltin("Container.Refresh")
-        elif mode == "clear_all_cache":
-            xbmc.log("[Router] Processing clear_all_cache mode", level=xbmc.LOGINFO)
-            clear_all_cache_for_all_servers()
-            xbmc.executebuiltin("Container.Refresh")
-        elif mode == "favorites":
-            list_favorites(server=server if server else "server1")
 
     except KeyError as e:
         xbmc.log(
@@ -4405,545 +2611,101 @@ def router(params):
             level=xbmc.LOGERROR,
         )
         xbmcgui.Dialog().notification(
-            "Error", f"Missing parameter: {e}", xbmcgui.NOTIFICATION_ERROR
+            "Eroare", f"Lipsește parametrul: {e}", xbmcgui.NOTIFICATION_ERROR
         )
     except Exception as e:
         xbmc.log(
             f"[Router] Unexpected error: {type(e).__name__}: {e}", level=xbmc.LOGERROR
         )
         xbmcgui.Dialog().notification(
-            "Error",
-            f"An unexpected error occurred: {type(e).__name__}",
+            "Eroare",
+            f"A apărut o eroare neașteptată: {type(e).__name__}",
             xbmcgui.NOTIFICATION_ERROR,
         )
-    finally:
-        # Only stop epg_manager if it exists
-        if epg_manager:
-            epg_manager.stop()
 
 
 def mega_search_input(search_type):
-    """Show keyboard for mega search and then update to results."""
-    xbmc.executebuiltin("Dialog.Close(all,true)")
-    labels = {"live": "Canal Live", "vod": "Film", "series": "Serial"}
-    search_term = xbmcgui.Dialog().input(
-        f"Mega Cautare {labels.get(search_type)}", type=xbmcgui.INPUT_ALPHANUM
+    search_mega_search_input(_BASE_URL, search_type)
+
+
+def show_mega_search_results(query, search_type, batch_start=0, skip_api=False):
+    render_mega_search_results(
+        _BASE_URL,
+        _HANDLE,
+        query,
+        search_type,
+        load_servers_config,
+        fetch_stalker_search,
+        fetch_channels_by_category_from_server,
+        load_channels_cache,
+        load_cached_category_channels,
+        _CHANNELS_CACHE_TTL,
+        should_mega_search_fetch_missing_lists(),
+        get_mega_search_fetch_batch_size(),
+        batch_start,
+        skip_api,
+        RE_STREAM_ID,
     )
-
-    if search_term:
-        url = f"{_BASE_URL}?mode=mega_search_results&query={quote_plus(search_term)}&search_type={search_type}"
-        xbmc.executebuiltin(f"Container.Update({url})")
-
-
-def show_mega_search_results(query, search_type):
-    """Search on all servers concurrently and display unified results."""
-    xbmc.log(
-        f"[MegaSearch] Starting with query='{query}', search_type='{search_type}'",
-        level=xbmc.LOGINFO,
-    )
-
-    if not query:
-        xbmc.log("[MegaSearch] No query provided, exiting", level=xbmc.LOGWARNING)
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
-        return
-
-    servers_config = reload_servers_config()
-    available_servers = servers_config.get("servers", [])
-    xbmc.log(
-        f"[MegaSearch] Found {len(available_servers)} servers: {[s.get('id') for s in available_servers]}",
-        level=xbmc.LOGINFO,
-    )
-
-    if not available_servers:
-        xbmcgui.Dialog().notification(
-            "Eroare", "Niciun server configurat.", xbmcgui.NOTIFICATION_ERROR
-        )
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
-        return
-
-    # Set content type
-    content_map = {"live": "videos", "vod": "movies", "series": "tvshows"}
-    xbmcplugin.setContent(_HANDLE, content_map.get(search_type, "videos"))
-    xbmcplugin.setPluginCategory(_HANDLE, f"Mega Cautare: {query}")
-
-    dp = xbmcgui.DialogProgress()
-    dp.create(
-        "Mega Cautare",
-        f"Se cauta pe [COLOR yellow]{len(available_servers)}[/COLOR] servere...",
-    )
-
-    all_results = []
-    type_param_map = {"live": "itv", "vod": "vod", "series": "series"}
-    stalker_type = type_param_map.get(search_type, "itv")
-
-    def worker(srv):
-        srv_name = srv.get("name", srv.get("id"))
-        srv_id = srv.get("id")
-        xbmc.log(
-            f"[MegaSearch] Searching '{query}' on {srv_id} (type={stalker_type})",
-            level=xbmc.LOGINFO,
-        )
-        try:
-            results = fetch_stalker_search(stalker_type, query, server=srv_id)
-            xbmc.log(
-                f"[MegaSearch] Got {len(results) if results else 0} results from {srv_id}",
-                level=xbmc.LOGINFO,
-            )
-            if results:
-                for item in results:
-                    item["_server_name"] = srv_name
-                    item["_server_id"] = srv_id
-                return results
-        except Exception as e:
-            xbmc.log(
-                f"[MegaSearch] Worker failed for {srv_id}: {e}", level=xbmc.LOGWARNING
-            )
-        return []
-
-    # Run searches in parallel
-    with ThreadPoolExecutor(max_workers=min(len(available_servers), 10)) as executor:
-        future_to_srv = {executor.submit(worker, srv): srv for srv in available_servers}
-
-        completed = 0
-        total = len(available_servers)
-
-        for future in as_completed(future_to_srv):
-            if dp.iscanceled():
-                break
-
-            res = future.result()
-            if res:
-                all_results.extend(res)
-
-            completed += 1
-            progress = int((completed / total) * 100)
-            srv = future_to_srv[future]
-            dp.update(
-                progress,
-                f"Finalizat: [COLOR yellow]{srv.get('name')}[/COLOR] ({completed}/{total})",
-            )
-
-    dp.close()
-
-    # Fallback to local search for live channels if no results from API
-    if not all_results and search_type == "live":
-        xbmc.log(
-            f"[MegaSearch] No results from API, trying local search for live",
-            level=xbmc.LOGINFO,
-        )
-        search_term_lower = query.lower()
-        for srv in available_servers:
-            srv_id = srv.get("id")
-            srv_name = srv.get("name", srv_id)
-            try:
-                all_channels = fetch_channels_by_category_from_server(None, srv_id)
-                if all_channels:
-                    for item in all_channels:
-                        name = item.get("name", "")
-                        if name and search_term_lower in name.lower():
-                            item["_server_name"] = srv_name
-                            item["_server_id"] = srv_id
-                            all_results.append(item)
-            except Exception as e:
-                xbmc.log(
-                    f"[MegaSearch] Local search failed for {srv_id}: {e}",
-                    level=xbmc.LOGWARNING,
-                )
-
-    if not all_results:
-        xbmc.log(f"[MegaSearch] No results found for '{query}'", level=xbmc.LOGINFO)
-        li = xbmcgui.ListItem(
-            label=f'[COLOR red]Nu s-a gasit nimic pentru "{query}" pe niciun server.[/COLOR]'
-        )
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url="", listitem=li, isFolder=False)
-        xbmcplugin.endOfDirectory(_HANDLE)
-        return
-
-    # Process results
-    for item in all_results:
-        name = item.get("name", "Unknown")
-        srv_name = item.get("_server_name")
-        srv_id = item.get("_server_id")
-
-        display_label = f"{name} - [COLOR cyan]{srv_name}[/COLOR]"
-        li = xbmcgui.ListItem(label=display_label)
-
-        # Art and Info
-        logo = item.get("logo") or ""
-        if logo:
-            li.setArt({"thumb": logo, "icon": logo})
-
-        desc = item.get("description", "")
-        year = item.get("year", "")
-
-        video_info = li.getVideoInfoTag()
-        video_info.setTitle(name)
-        video_info.setPlot(desc)
-        if year and year.isdigit():
-            video_info.setYear(int(year))
-
-        # URL Construction based on type
-        if search_type == "live":
-            cmd = item.get("cmd", "")
-            # Try to get stream_id from cmd first (reliable for Stalker)
-            stream_id_match = RE_STREAM_ID.search(cmd)
-            if stream_id_match:
-                stream_id = stream_id_match.group(1)
-            else:
-                # Fallback to direct id
-                stream_id = item.get("id")
-
-            if not stream_id:
-                continue
-
-            url = f"{_BASE_URL}?mode=play&stream_id={stream_id}&name={quote_plus(name)}&server={srv_id}"
-            li.setProperty("IsPlayable", "true")
-            is_folder = False
-        elif search_type == "vod":
-            movie_id = item.get("id")
-            url = f"{_BASE_URL}?mode=play_vod&movie_id={movie_id}&server={srv_id}"
-            li.setProperty("IsPlayable", "true")
-            is_folder = False
-        else:  # series
-            series_id = item.get("id")
-            movie_id = str(series_id).split(":")[0] if series_id else ""
-            url = f"{_BASE_URL}?mode=list_seasons&movie_id={movie_id}&server={srv_id}"
-            is_folder = True
-
-        xbmcplugin.addDirectoryItem(
-            handle=_HANDLE, url=url, listitem=li, isFolder=is_folder
-        )
-
-    xbmcplugin.endOfDirectory(_HANDLE)
 
 
 def search_input_dialog(server="server1", main_mode=None):
-    """Show keyboard and display search results directly."""
-    # Close any open dialogs first
-    xbmc.executebuiltin("Dialog.Close(all,true)")
-
-    search_term = xbmcgui.Dialog().input("Cauta canal", type=xbmcgui.INPUT_ALPHANUM)
-    if search_term:
-        # End current directory first
-        xbmcplugin.endOfDirectory(_HANDLE)
-        xbmc.sleep(200)
-        # Use Container.Update to replace current directory with search results
-        search_url = f"{_BASE_URL}?mode=search_results&query={quote_plus(search_term)}&server={server}"
-        xbmc.executebuiltin(f"Container.Update({search_url})")
-    else:
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+    render_search_input_dialog(_BASE_URL, _HANDLE, server=server, main_mode=main_mode)
 
 
 def search_input_dialog_vod(server="server1"):
-    """Show keyboard and display VOD search results directly."""
-    xbmc.executebuiltin("Dialog.Close(all,true)")
-    search_term = xbmcgui.Dialog().input("Cauta film", type=xbmcgui.INPUT_ALPHANUM)
-    if search_term:
-        xbmcplugin.endOfDirectory(_HANDLE)
-        xbmc.sleep(200)
-        search_url = f"{_BASE_URL}?mode=search_results_vod&query={quote_plus(search_term)}&server={server}"
-        xbmc.executebuiltin(f"Container.Update({search_url})")
-    else:
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+    render_search_input_dialog_vod(_BASE_URL, _HANDLE, server=server)
 
 
 def search_input_dialog_series(server="server1"):
-    """Show keyboard and display Series search results directly."""
-    xbmc.executebuiltin("Dialog.Close(all,true)")
-    search_term = xbmcgui.Dialog().input("Cauta serial", type=xbmcgui.INPUT_ALPHANUM)
-    if search_term:
-        xbmcplugin.endOfDirectory(_HANDLE)
-        xbmc.sleep(200)
-        search_url = f"{_BASE_URL}?mode=search_results_series&query={quote_plus(search_term)}&server={server}"
-        xbmc.executebuiltin(f"Container.Update({search_url})")
-    else:
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
+    render_search_input_dialog_series(_BASE_URL, _HANDLE, server=server)
 
 
 def fetch_stalker_search(type_param, query, server="server1"):
-    """Fetch search results directly from Stalker server with robustness."""
-    xbmc.log(
-        f"[Stalker] Search request: server={server}, type={type_param}, query={query}",
-        level=xbmc.LOGINFO,
+    return search_fetch_stalker_search(
+        type_param,
+        query,
+        server,
+        get_server_auth,
+        get_session,
+        TIMEOUTS,
+        json_loads,
     )
 
-    token, headers, cookies, portal_url = get_server_auth(server)
-    if not token or not portal_url:
-        xbmc.log(
-            f"[Stalker] No auth for {server}, returning empty", level=xbmc.LOGWARNING
-        )
-        return []
 
-    # Use params for robust URL construction
-    url = f"{portal_url}/portal.php"
-    params = {
-        "type": type_param,
-        "action": "search",
-        "q": query,
-        "token": token,
-        "JsHttpRequest": "1-xml",
-    }
-
-    try:
-        session = get_session()
-        # Clear existing cookies since threads are reused in ThreadPoolExecutor
-        session.cookies.clear()
-
-        response = session.get(
-            url,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            timeout=TIMEOUTS["channels"],
-        )
-
-        if response.status_code != 200:
-            xbmc.log(
-                f"[Stalker] Server {server} returned status {response.status_code} for {type_param} search",
-                level=xbmc.LOGWARNING,
-            )
-            return []
-
-        raw_text = response.text
-        if not raw_text or len(raw_text.strip()) < 5:
-            xbmc.log(f"[Stalker] Response too short from {server} for {type_param}: '{raw_text[:100] if raw_text else 'empty'}'", level=xbmc.LOGWARNING)
-            
-            # Fallback for VOD/Series: try get_ordered_list with search param
-            if type_param in ["vod", "series"]:
-                xbmc.log(f"[Stalker] Trying fallback get_ordered_list search for {type_param} on {server}", level=xbmc.LOGINFO)
-                fallback_params = {
-                    "type": type_param,
-                    "action": "get_ordered_list",
-                    "search": query,
-                    "token": token,
-                    "JsHttpRequest": "1-xml"
-                }
-                try:
-                    response = session.get(url, params=fallback_params, headers=headers, cookies=cookies, timeout=TIMEOUTS["channels"])
-                    if response.status_code == 200 and response.text and len(response.text.strip()) >= 5:
-                        raw_text = response.text
-                        xbmc.log(f"[Stalker] Fallback search successful for {server}", level=xbmc.LOGINFO)
-                    else:
-                        return []
-                except:
-                    return []
-            else:
-                return []
-
-        xbmc.log(
-            f"[Stalker] Raw response from {server}: {raw_text[:200]}",
-            level=xbmc.LOGINFO,
-        )
-
-        # Stalker portals often return garbage text before/after the JSON object
-        if "{" in raw_text:
-            raw_text = raw_text[raw_text.find("{") :]
-        if "}" in raw_text:
-            raw_text = raw_text[: raw_text.rfind("}") + 1]
-            
-        try:
-            data = json_loads(raw_text)
-
-            results = []
-            if isinstance(data, dict):
-                js_data = data.get("js", {})
-                if isinstance(js_data, dict):
-                    # Try js -> data (standard) or js -> data -> data (paginated)
-                    res_data = js_data.get("data", [])
-                    if isinstance(res_data, dict):
-                        results = res_data.get("data", [])
-                    else:
-                        results = res_data
-                elif isinstance(js_data, list):
-                    results = js_data
-            elif isinstance(data, list):
-                results = data
-
-            if not isinstance(results, list):
-                results = []
-
-            return results
-        except ValueError as e:
-            xbmc.log(f"[Stalker] JSON decode failed for {server}: {e}", level=xbmc.LOGERROR)
-            return []
-
-    except Exception as e:
-        xbmc.log(
-            f"[Stalker] Search failed for {server} ({type_param}): {e}",
-            level=xbmc.LOGWARNING,
-        )
-        return []
-
-
-def show_search_results(query, server="server1"):
-    """Display search results for channels using direct server search."""
-    if not query:
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
-        return
-
-    # Use direct server search
-    matching_channels = fetch_stalker_search("itv", query, server)
-
-    if not matching_channels:
-        # Fallback to local search if direct search returns nothing (some portals are picky)
-        all_channels = fetch_channels_by_category_from_server(None, server)
-        search_term_lower = query.lower()
-        matching_channels = [
-            ch for ch in all_channels if search_term_lower in ch.get("name", "").lower()
-        ]
-
-    # Set plugin category and content
-    xbmcplugin.setPluginCategory(_HANDLE, f"Cautare: {query}")
-    xbmcplugin.setContent(_HANDLE, "videos")
-
-    # Load favorites
-    favorites_file = FAVORITES_FILE.format(server=server)
-    try:
-        with open(favorites_file, "r", encoding="utf-8") as f:
-            favorites = json_loads(f)
-    except:
-        favorites = []
-    favorite_stream_ids = {fav["stream_id"] for fav in favorites}
-
-    for ch in matching_channels:
-        name = ch.get("name", "Unknown")
-        logo = ch.get("logo") or ""
-        cmd = ch.get("cmd", "")
-
-        stream_id_match = RE_STREAM_ID.search(cmd)
-        stream_id = stream_id_match.group(1) if stream_id_match else ch.get("id")
-
-        if not stream_id:
-            continue
-
-        channel_label = name
-        plot = ""
-        if is_epg_enabled() and stream_id in epg_data:
-            epg_items = epg_data[stream_id]
-            current_prog = get_current_program(epg_items)
-            if current_prog:
-                channel_label = f"{name} - {current_prog}"
-            plot = format_epg_tooltip(epg_items)
-
-        li = xbmcgui.ListItem(label=channel_label)
-        if logo:
-            li.setArt({"thumb": logo, "icon": logo})
-
-        li.setProperty("IsPlayable", "true")
-
-        # Kodi 21 InfoTags
-        video_info = li.getVideoInfoTag()
-        video_info.setTitle(name)
-        video_info.setPlot(plot)
-
-        url = f"{_BASE_URL}?mode=play&stream_id={stream_id}&name={quote_plus(name)}&server={server}&search_query={quote_plus(query)}"
-
-        # Context menu
-        context_menu = []
-        if stream_id in favorite_stream_ids:
-            context_menu.append(
-                (
-                    "Remove from Favorites",
-                    f"RunPlugin({_BASE_URL}?mode=remove_from_favorites&stream_id={stream_id}&server={server})",
-                )
-            )
-        else:
-            add_fav_url = f"{_BASE_URL}?mode=add_to_favorites&stream_id={stream_id}&name={quote_plus(name)}&logo={quote_plus(logo)}&server={server}"
-            context_menu.append(("Add to Favorites", f"RunPlugin({add_fav_url})"))
-        li.addContextMenuItems(context_menu)
-
-        xbmcplugin.addDirectoryItem(
-            handle=_HANDLE, url=url, listitem=li, isFolder=False
-        )
-
-    if not matching_channels:
-        li = xbmcgui.ListItem(
-            label=f'[COLOR red]Nu am gasit niciun canal pentru "{query}"[/COLOR]'
-        )
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url="", listitem=li, isFolder=False)
-
-    xbmcplugin.endOfDirectory(_HANDLE)
+def show_search_results(query, server="server1", main_mode=None):
+    render_search_results(
+        _BASE_URL,
+        _HANDLE,
+        query,
+        server,
+        main_mode,
+        fetch_stalker_search,
+        fetch_server_categories,
+        get_romanian_categories,
+        get_sport_categories,
+        load_channels_cache,
+        load_cached_category_channels,
+        _CHANNELS_CACHE_TTL,
+        load_favorite_stream_ids,
+        is_epg_enabled,
+        epg_contains,
+        get_epg_items,
+        get_current_program,
+        format_epg_tooltip,
+        RE_STREAM_ID,
+    )
 
 
 def show_vod_search_results(query, server="server1"):
-    """Display VOD search results using direct server search."""
-    if not query:
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
-        return
-
-    matching_items = fetch_stalker_search("vod", query, server)
-
-    # Set plugin category and content
-    xbmcplugin.setPluginCategory(_HANDLE, f"Cautare Filme: {query}")
-    xbmcplugin.setContent(_HANDLE, "movies")
-
-    for item in matching_items:
-        name = item.get("name", "Unknown")
-        movie_id = item.get("id")
-        year = item.get("year", "")
-        description = item.get("description", "")
-
-        li = xbmcgui.ListItem(label=f"{name} ({year})")
-        li.setProperty("IsPlayable", "true")
-
-        # Kodi 21 InfoTags
-        video_info = li.getVideoInfoTag()
-        video_info.setTitle(name)
-        video_info.setPlot(description)
-        video_info.setYear(int(year) if year and year.isdigit() else 0)
-
-        url = f"{_BASE_URL}?mode=play_vod&movie_id={movie_id}&server={server}&search_query={quote_plus(query)}"
-        xbmcplugin.addDirectoryItem(
-            handle=_HANDLE, url=url, listitem=li, isFolder=False
-        )
-
-    if not matching_items:
-        li = xbmcgui.ListItem(
-            label=f'[COLOR red]Nu am gasit niciun film pentru "{query}"[/COLOR]'
-        )
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url="", listitem=li, isFolder=False)
-
-    xbmcplugin.endOfDirectory(_HANDLE)
+    render_vod_search_results(
+        _BASE_URL, _HANDLE, query, server, fetch_stalker_search
+    )
 
 
 def show_series_search_results(query, server="server1"):
-    """Display Series search results using direct server search."""
-    if not query:
-        xbmcplugin.endOfDirectory(_HANDLE, succeeded=False)
-        return
-
-    matching_items = fetch_stalker_search("series", query, server)
-
-    # Set plugin category and content
-    xbmcplugin.setPluginCategory(_HANDLE, f"Cautare Seriale: {query}")
-    xbmcplugin.setContent(_HANDLE, "tvshows")
-
-    for item in matching_items:
-        name = item.get("name", "Unknown")
-        series_id = item.get("id")
-        year = item.get("year", "")
-        description = item.get("description", "")
-
-        li = xbmcgui.ListItem(label=f"{name} ({year})")
-
-        # Kodi 21 InfoTags
-        video_info = li.getVideoInfoTag()
-        video_info.setTitle(name)
-        video_info.setPlot(description)
-        video_info.setYear(int(year) if year and year.isdigit() else 0)
-
-        # For series, clicking an item should lead to seasons
-        movie_id = str(series_id).split(":")[0] if series_id else ""
-        url = f"{_BASE_URL}?mode=list_seasons&movie_id={movie_id}&server={server}&search_query={quote_plus(query)}"
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url=url, listitem=li, isFolder=True)
-
-    if not matching_items:
-        li = xbmcgui.ListItem(
-            label=f'[COLOR red]Nu am gasit niciun serial pentru "{query}"[/COLOR]'
-        )
-        xbmcplugin.addDirectoryItem(handle=_HANDLE, url="", listitem=li, isFolder=False)
-
-    xbmcplugin.endOfDirectory(_HANDLE)
+    render_series_search_results(
+        _BASE_URL, _HANDLE, query, server, fetch_stalker_search
+    )
 
 
 if __name__ == "__main__":

@@ -1,9 +1,9 @@
-
+# created for gearsscrapers
 """
 	gearsscrapers Project
 """
 
-from json import loads as jsloads
+import xml.etree.ElementTree as ET
 import queue
 from gearsscrapers.modules import client
 from gearsscrapers.modules import source_utils
@@ -19,8 +19,8 @@ class source:
 	def __init__(self):
 		self.language = ['en']
 		self.base_link = "https://bitmagnetfortheweebs.midnightignite.me"
-		self.movieSearch_link = '/api/v1/search?type=movie&id=%s'
-		self.tvSearch_link = '/api/v1/search?type=series&id=%s:%s:%s'
+		self.movieSearch_link = '/torznab/api?t=movie&imdbid=%s'
+		self.tvSearch_link = '/torznab/api?t=tvsearch&imdbid=%s&season=%s&ep=%s'
 		self.min_seeders = 0
 
 	def sources(self, data, hostDict):
@@ -44,10 +44,10 @@ class source:
 				url = '%s%s' % (self.base_link, self.movieSearch_link % imdb)
 			# log_utils.log('url = %s' % url)
 			try:
-				results = client.request(url, headers=self._headers(), timeout=self.timeout)
-				files = jsloads(results)['data']['results']
+				results = client.request(url, timeout=self.timeout)
+				files = ET.fromstring(results)
 			except:
-				files = []
+				files = ET.fromstring('<?xml version="1.0" ?><metadata />')
 				raise
 			finally:
 				self._queue.put_nowait(files) # if seasons
@@ -58,12 +58,15 @@ class source:
 			source_utils.scraper_error('BITMAGNET')
 			return sources
 
-		for file in files:
+		for file in files.iter('item'):
 			try:
-				hash = file['infoHash']
-				file_title = file['folderName'] or file['filename']
+				attr_dict = {'title': file.find('title').text}
+				for attr in file.findall('torznab:attr', {'torznab': 'http://torznab.com/schemas/2015/feed'}):
+					key, val = attr.get('name'), attr.get('value')
+					if key: attr_dict[key] = val
+				hash = attr_dict['infohash']
 
-				name = source_utils.clean_name(file_title)
+				name = source_utils.clean_name(attr_dict['title'])
 
 				if not source_utils.check_title(title, aliases, name.replace('.(Archie.Bunker', ''), hdlr, year): continue
 				name_info = source_utils.info_from_name(name, title, year, hdlr, episode_title)
@@ -73,14 +76,14 @@ class source:
 				url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name)
 
 				try:
-					seeders = file['seeders']
+					seeders = int(attr_dict['seeders'])
 					if self.min_seeders > seeders: continue
 				except: seeders = 0
 
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
-					size = f"{float(file['size']) / 1073741824:.2f} GB"
-					dsize, isize = source_utils._size(size)
+					size = float(attr_dict['size'])
+					dsize, isize = source_utils.convert_size(size)
 					info.insert(0, isize)
 				except: dsize = 0
 				info = ' | '.join(info)
@@ -112,12 +115,15 @@ class source:
 			source_utils.scraper_error('BITMAGNET')
 			return sources
 
-		for file in files:
+		for file in files.iter('item'):
 			try:
-				hash = file['infoHash']
-				file_title = file['folderName'] or file['filename']
+				attr_dict = {'title': file.find('title').text}
+				for attr in file.findall('torznab:attr', {'torznab': 'http://torznab.com/schemas/2015/feed'}):
+					key, val = attr.get('name'), attr.get('value')
+					if key: attr_dict[key] = val
+				hash = attr_dict['infohash']
 
-				name = source_utils.clean_name(file_title)
+				name = source_utils.clean_name(attr_dict['title'])
 
 				episode_start, episode_end = 0, 0
 				if not search_series:
@@ -139,14 +145,14 @@ class source:
 
 				url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name)
 				try:
-					seeders = file['seeders']
+					seeders = int(attr_dict['seeders'])
 					if self.min_seeders > seeders: continue
 				except: seeders = 0
 
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
-					size = f"{float(file['size']) / 1073741824:.2f} GB"
-					dsize, isize = source_utils._size(size)
+					size = float(attr_dict['size'])
+					dsize, isize = source_utils.convert_size(size)
 					info.insert(0, isize)
 				except: dsize = 0
 				info = ' | '.join(info)
@@ -162,15 +168,3 @@ class source:
 			except:
 				source_utils.scraper_error('BITMAGNET')
 		return sources
-
-	def _headers(self):
-		return {'x-aiostreams-user-data': (
-			'ewogICJzZXJ2aWNlcyI6IFsKICAgIHsKICAgICAgImlkIjogImFsbGRlYnJpZCIsCiAgICAgICJlbmFi'
-			'bGVkIjogdHJ1ZSwKICAgICAgImNyZWRlbnRpYWxzIjogeyJhcGlLZXkiOiAic3RhdGljRGVtb0FwaWtl'
-			'eVByZW0ifQogICAgfQogIF0sCiAgInByZXNldHMiOiBbCiAgICB7CiAgICAgICJ0eXBlIjogImJpdG1h'
-			'Z25ldCIsCiAgICAgICJpbnN0YW5jZUlkIjogIjNiMyIsCiAgICAgICJlbmFibGVkIjogdHJ1ZSwKICAg'
-			'ICAgIm9wdGlvbnMiOiB7Im5hbWUiOiAiQml0bWFnbmV0IiwgInRpbWVvdXQiOiAxMDAwMCwgIm1lZGlh'
-			'VHlwZXMiOiBbXX0KICAgIH0KICBdLAogICJmb3JtYXR0ZXIiOiB7CiAgICAiaWQiOiAidG9ycmVudGlv'
-			'IiwKICAgICJkZWZpbml0aW9uIjogeyJuYW1lIjogIiIsICJkZXNjcmlwdGlvbiI6ICIifQogIH0sCiAg'
-			'InNvcnRDcml0ZXJpYSI6IHsiZ2xvYmFsIjogW119Cn0='
-		)}

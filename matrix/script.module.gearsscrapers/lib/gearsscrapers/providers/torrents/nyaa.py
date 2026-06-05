@@ -1,6 +1,6 @@
-
+# created by Venom for Fenomscrapers
 """
-	gearsscrapers Project
+	Fenomscrapers Project
 """
 
 import re
@@ -11,7 +11,7 @@ from gearsscrapers.modules import source_utils
 
 
 class source:
-	priority = 5
+	priority = 7
 	pack_capable = False
 	hasMovies = True
 	hasEpisodes = True
