@@ -411,7 +411,7 @@ def digionline__phone_registerDevice(NAME, SESSION, DATA_DIR):
   _response_ = json.loads(_request_.content.decode())
 
   if _response_['result']['code'] == 200:
-    common_vars.__logger__.debug('Received message: ' + str(_response_['data']['message']))
+    common_vars.__logger__.debug('Received message: ' + str(_response_['result']['message']))
     __rsd__['state_data']['registeredDeviceID'] = __rsd__['state_data']['deviceID']
     common_vars.__logger__.debug('State data: ' + str(__rsd__['state_data']))
 
@@ -1427,17 +1427,16 @@ def digionline__playVideo(BEHAVE_AS, CHANNEL_ID, NAME, SESSION, DATA_DIR):
       if _stream_details_['errorCode'] == 500:
         common_vars.__logger__.debug('errorCode => 500')
 
-        __rsd__ = digionline__phone_read_stateData(NAME, DATA_DIR)
-        __rsd__['state_data']['registeredDeviceID'] = ""
-        digionline__phone_write_stateData(__rsd__['state_data'], NAME, DATA_DIR)
+        common_vars.__logger__.debug('Registering user')
+        digionline__phone_registerUser(NAME, SESSION, DATA_DIR)
+
+        common_vars.__logger__.debug('Registering device')
+        digionline__phone_registerDevice(NAME, SESSION, DATA_DIR)
 
         time.sleep(2)
 
-        digionline__phone_doAuth(NAME, SESSION, DATA_DIR)
         _stream_details_ =  digionline__phone_getStreamDetails(CHANNEL_ID, NAME, SESSION, DATA_DIR)
         common_vars.__logger__.debug('Received data: ' + str(_stream_details_))
-
-        common_vars.__logger__.debug('Exit function')
 
       else:
         common_vars.__logger__.debug('[digionline.ro] => ' + _stream_details_['error'])
