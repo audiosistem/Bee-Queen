@@ -17,5 +17,9 @@ msgstr ""
 
 # {0} and {1} are web-UI hostname and port respectively
 msgctxt "#32002"
-msgid "Web-UI opened at {0}:{1}"
+msgid "Web-UI opened at {}:{}"
+msgstr ""
+
+msgctxt "#32003"
+msgid "Addon error! Starting post-mortem debugging."
 msgstr ""
