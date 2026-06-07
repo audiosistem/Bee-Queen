@@ -219,7 +219,7 @@ Added support for Kodi v19 (Matrix)
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.program.bq" name="BQ" version="1.4" provider-name="AS">
+</addon><addon id="plugin.program.bq" name="BQ" version="1.5" provider-name="AS">
     <requires>
         <import addon="script.module.kodi-six" />
     </requires>

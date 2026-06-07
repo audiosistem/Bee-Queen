@@ -23,15 +23,15 @@ def menuoptions():
     )
     call = dialog.select('[B]BQ[/B]', [
             '[B]ClickSud[/B]',
-            '[B]FlixZone[/B]',
+            '[B]Chasetv[/B]',
             '[B]AZMovies[/B]',
-            '[B]Stream4U[/B]',
+            '[B]DuloTV[/B]',
             '[B]YESMovies[/B]',
             '[B]VexMovies[/B]',
             '[B]7xstream[/B]',
-            '[B]MyFlixer[/B]',
-            '[B]Sflix[/B]',
-            '[B]Moontv[/B]',
+            '[B]StreamxTV[/B]',
+            '[B]Flix[/B]',
+            '[B]ApexMovies[/B]',
             '[B]Cancel & Close[/B]',
         ]
     )
@@ -76,8 +76,8 @@ def function1(): # Web.app
         return webbrowser.open(link)
 
 
-def function2(): # FlixZone
-    link = 'https://flixzone.co/home'
+def function2(): # Chasetv
+    link = 'https://chasetv.cc/app'
     if myplatform == 'android':
         return xbmc.executebuiltin(mycommand % link)
     else:
@@ -92,8 +92,8 @@ def function3(): # AZMovie
         return webbrowser.open(link)
 
 
-def function4(): # Stream4U
-    link = 'https://streamm4u.com.co/home'
+def function4(): # DuloTV
+    link = 'https://dulo.tv/'
     if myplatform == 'android':
         return xbmc.executebuiltin(mycommand % link)
     else:
@@ -124,24 +124,24 @@ def function7(): # 7xstream
         return webbrowser.open(link)
 
 
-def function8(): # MyFlixer
-    link = 'https://myflixer.is/home'
+def function8(): # StreamxTV
+    link = 'https://streamxtv.tech'
     if myplatform == 'android':
         return xbmc.executebuiltin(mycommand % link)
     else:
         return webbrowser.open(link)
 
 
-def function9(): # Sflix
-    link = 'https://sflix.to/home'
+def function9(): # Flix
+    link = 'https://flixstream.ca'
     if myplatform == 'android':
         return xbmc.executebuiltin(mycommand % link)
     else:
         return webbrowser.open(link)
 
 
-def function10(): # 1HD
-    link = 'https://moontv.to/home'
+def function10(): # ApexMovies
+    link = 'https://apexmovies.net'
     if myplatform == 'android':
         return xbmc.executebuiltin(mycommand % link)
     else:
