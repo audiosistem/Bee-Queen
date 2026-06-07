@@ -2,10 +2,11 @@
 import json
 from windows.base_window import BaseDialog
 from caches.settings_cache import set_setting
-from modules.debrid import debrid_for_ext_cache_check
+from modules.debrid import debrid_cache_check_available
+from modules.settings import debrid_cache_check
 from modules.utils import TaskPool
 from modules.source_utils import source_filters
-from modules.settings import provider_sort_ranks, avoid_episode_spoilers, max_threads, rescrape_action_value
+from modules.settings import provider_sort_ranks, avoid_episode_spoilers, max_threads
 from modules.kodi_utils import get_icon, kodi_dialog, hide_busy_dialog, addon_fanart, select_dialog, ok_dialog, notification
 # from modules.kodi_utils import logger
 
@@ -27,17 +28,28 @@ class SourcesResults(BaseDialog):
 		self.empty_poster = get_icon('box_office')
 		self.addon_fanart = addon_fanart()
 		self.poster = self.meta_get('poster') or self.empty_poster
-		self.external_cache_check = kwargs.get('external_cache_check')
+		self.cache_check_override = kwargs.get('cache_check_override')
 		self.prerelease_values, self.prerelease_key = ('CAM', 'SCR', 'TELE'), 'CAM/SCR/TELE'
 		self.item_list, self.filter_list, self.total_results = [], [], '0'
 		self.info_icons_dict = {'easynews': get_icon('easynews'), 'aiostreams': get_icon('premiumize'), 'alldebrid': get_icon('alldebrid'), 'real-debrid': get_icon('realdebrid'),
-		'premiumize': get_icon('premiumize'), 'torbox': get_icon('torbox'), 'ad_cloud': get_icon('alldebrid'), 'rd_cloud': get_icon('realdebrid'),
-		'pm_cloud': get_icon('premiumize'), 'tb_cloud': get_icon('torbox')}
+		'premiumize': get_icon('premiumize'), 'offcloud': get_icon('offcloud'), 'torbox': get_icon('torbox'), 'ad_cloud': get_icon('alldebrid'), 'rd_cloud': get_icon('realdebrid'),
+		'pm_cloud': get_icon('premiumize'), 'oc_cloud': get_icon('offcloud'), 'tb_cloud': get_icon('torbox')}
 		self.info_quality_dict = {'4k': get_icon('flag_4k', 'flags'), '1080p': get_icon('flag_1080p', 'flags'), '720p': get_icon('flag_720p', 'flags'),
 		'sd': get_icon('flag_sd', 'flags'), 'cam': get_icon('flag_sd', 'flags'), 'tele': get_icon('flag_sd', 'flags'), 'scr': get_icon('flag_sd', 'flags')}
 		self.make_items()
 		self.make_filter_items()
 		self.set_properties()
+
+	def _any_cache_check_active(self):
+		if self.cache_check_override is not None:
+			return self.cache_check_override
+		from modules.settings import any_external_cache_check
+		return any_external_cache_check()
+
+	def _provider_cache_verified(self, provider):
+		if self.cache_check_override is not None:
+			return self.cache_check_override
+		return debrid_cache_check(provider)
 
 	def onInit(self):
 		self.filter_applied = False
@@ -89,7 +101,7 @@ class SourcesResults(BaseDialog):
 					filtered_list = [i for i in self.item_list if all(x in i.getProperty('extraInfo') for x in choice)]
 				elif filter_value == 'showuncached': filtered_list = self.make_items(self.uncached_results)
 				else: #cache_check_rescrape
-					self.selected = ('cache_change_rescrape', 'false' if self.external_cache_check else 'true')
+					self.selected = ('cache_change_rescrape', 'false' if self._any_cache_check_active() else 'true')
 					return self.close()
 			if not filtered_list: return ok_dialog(text='No Results')
 			self.set_filter(filtered_list)
@@ -166,9 +178,10 @@ class SourcesResults(BaseDialog):
 						else: set_properties({'source_type': 'UNCACHED'})
 						set_properties({'highlight': 'FF7C7C7C'})
 					else:
-						if provider in ('REAL-DEBRID', 'ALLDEBRID'):
-							if self.external_cache_check: cache_flag = '[B]CACHED[/B]'
-							else: cache_flag = 'UNCHECKED'
+						provider_check_names = {'REAL-DEBRID': 'Real-Debrid', 'TORBOX': 'TorBox', 'PREMIUMIZE': 'Premiumize.me', 'OFFCLOUD': 'Offcloud'}
+						check_provider = provider_check_names.get(provider)
+						if check_provider and self._provider_cache_verified(check_provider): cache_flag = '[B]CACHED[/B]'
+						elif check_provider: cache_flag = 'UNCHECKED'
 						else: cache_flag = '[B]CACHED[/B]'
 						if highlight_type == 0: key = provider_lower
 						else: key = basic_quality
@@ -200,7 +213,7 @@ class SourcesResults(BaseDialog):
 			item_list.sort(key=lambda k: k[1])
 			self.item_list = [i[0] for i in item_list]
 			self.total_results = str(len(self.item_list))
-			if self.prescrape and rescrape_action_value('full_scrape', '2') != 0:
+			if self.prescrape:
 				prescrape_listitem = self.make_listitem()
 				prescrape_listitem.setProperty('perform_full_search', 'true')
 				self.item_list.append(prescrape_listitem)
@@ -227,7 +240,7 @@ class SourcesResults(BaseDialog):
 							and not i.getProperty('provider') == '']
 		provider_totals = {i: len([x for x in self.item_list if x.getProperty('provider') == i]) for i in providers}
 		sort_ranks = provider_sort_ranks()
-		cache_functions_debrid = debrid_for_ext_cache_check()
+		cache_functions_debrid = debrid_cache_check_available()
 		sort_ranks['premiumize'] = sort_ranks.pop('premiumize.me')
 		provider_choices = sorted(sort_ranks.keys(), key=sort_ranks.get)
 		provider_choices = [i.upper() for i in provider_choices]
@@ -235,7 +248,7 @@ class SourcesResults(BaseDialog):
 		qualities = [('Show [B]%s[/B] Only | [B]%d[/B] Results' % (i, quality_totals[i]), 'quality', i) for i in qualities]
 		providers = [('Show [B]%s[/B] Only | [B]%d[/B] Results' % (i, provider_totals[i]), 'provider', i) for i in providers]
 		data = []
-		if cache_functions_debrid: data.append(('Rescrape with External Cache Check [B]%s[/B]' % ('OFF' if self.external_cache_check else 'ON'), 'special', 'cache_check_rescrape'))
+		if cache_functions_debrid: data.append(('Rescrape with External Cache Check [B]%s[/B]' % ('OFF' if self._any_cache_check_active() else 'ON'), 'special', 'cache_check_rescrape'))
 		if self.uncached_results: data.append(('Show [B]Uncached[/B] Only | [B]%d[/B] Results' % len(self.uncached_results), 'special', 'showuncached'))
 		data.extend(qualities)
 		data.extend(providers)

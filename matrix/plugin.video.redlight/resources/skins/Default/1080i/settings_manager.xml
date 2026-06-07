@@ -1628,28 +1628,6 @@
                       <item>
                           <visible>Container(2000).HasFocus(60)</visible>
                           <visible>String.IsEqual(Window(10000).Property(redlight.provider.external),true)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
-                          <property name="setting_label">Check for cached status of Results (Real Debrid)</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.external.cache_check)]</property>
-                          <property name="setting_description">When enabled, Red Light checks whether external torrent results are cached on your Real Debrid account before listing them. You may see fewer links, but those shown should be instant on RD. All Debrid is not included in this check.</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=external.cache_check)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.external),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
-                          <property name="setting_label">Include uncached results (TorBox)</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.external.include_uncached_torbox)]</property>
-                          <property name="setting_description">When enabled, torrents not in TorBox shared cache appear in the main results list (subject to minimum seeders). Default off shows cached TorBox only. Selecting an uncached row adds it to your TorBox cloud.</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=external.include_uncached_torbox)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.external),true)</visible>
                           <visible>!String.IsEqual(Window(10000).Property(redlight.external_scraper.name),empty_setting)</visible>
                           <property name="setting_label">Open External Scraper Settings</property>
                           <property name="setting_type">action</property>
@@ -1658,246 +1636,6 @@
                           <onclick>back</onclick>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=open_external_scraper_settings)</onclick>
                       </item>
-        <!-- Real Debrid -->
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <property name="setting_label">Real Debrid</property>
-                          <property name="setting_type">separator</property>
-                          <onclick>noop</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
-                          <property name="setting_label">Authorize</property>
-                          <property name="setting_type">action</property>
-                          <property name="setting_value">...</property>
-                          <property name="setting_description">Authorize your Real Debrid account and use it within Red Light</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=real_debrid.authenticate)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
-                          <property name="setting_label">Enable</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.rd.enabled)]</property>
-                          <property name="setting_description">Enable the use of your Real Debrid account</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=rd.enabled)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
-                          <property name="setting_label">Revoke Authorization</property>
-                          <property name="setting_type">action</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.rd.account_id)]</property>
-                          <property name="setting_description">Revoke authorization of your Real Debrid account</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=real_debrid.revoke_authentication)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
-                          <property name="setting_label">Add Resolved Debrid Cache to Cloud</property>
-                          <property name="setting_type">action</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.store_resolved_to_cloud.real-debrid_name)]</property>
-                          <property name="setting_description">Choose which resolved media is automatically added to your Real Debrid Cloud. All media or only show packs</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_from_list&amp;setting_id=store_resolved_to_cloud.real-debrid)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
-                          <property name="setting_label">Search Cloud Storage</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.provider.rd_cloud)]</property>
-                          <property name="setting_description">Enable this and Red Light will search your Real Debrid Cloud for media</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=provider.rd_cloud)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.rd_cloud),true)</visible>
-                          <property name="setting_label">    - Filter Results by Name</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.rd_cloud.title_filter)]</property>
-                          <property name="setting_description">Enable this and Red Light will perform extra name matching functions on your Real Debrid Cloud results. Will help to limit incorrect results, but may also filter some relevant results</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=rd_cloud.title_filter)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.rd_cloud),true)</visible>
-                          <property name="setting_label">    - Check Before Full Search</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.check.rd_cloud)]</property>
-                          <property name="setting_description">Enable this and Red Light will search for results in your Real Debrid Cloud before checking other enabled scrapers</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=check.rd_cloud)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.rd_cloud),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.check.rd_cloud),true)</visible>
-                          <property name="setting_label">    - Autoplay Cloud Result</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.autoplay.rd_cloud)]</property>
-                          <property name="setting_description">Enable this and Red Light will Autoplay the top result found from the Real Debrid Cloud</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=autoplay.rd_cloud)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.rd_cloud),true)</visible>
-                          <property name="setting_label">    - Show Results at Top</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.results.sort_rdcloud_first)]</property>
-                          <property name="setting_description">Enable this and Red Light will sort the results from your Real Debrid Cloud to the top of all results</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=results.sort_rdcloud_first)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
-                          <property name="setting_label">Priority (Lower Number Equals Higher Priority)</property>
-                          <property name="setting_type">numeric</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.rd.priority)]</property>
-                          <property name="setting_description">Choose the order in which Real Debrid results appear in relation to any other active accounts. The lower the number, the higher the sort order</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_numeric&amp;setting_id=rd.priority)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
-                          <property name="setting_label">Use alternate url</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.rd.alternate_base_url)]</property>
-                          <property name="setting_description">Enable this and Red Light will use an alternate base url for RD. This may circumvent any blocks being performed</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=rd.alternate_base_url)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
-                          <property name="setting_label">Free active download slot</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.rd.free_active_slot)]</property>
-                          <property name="setting_description">When enabled, Red Light removes one active Real Debrid torrent before adding a new one if you already have 5 active downloads (RD's usual limit). This can prevent failed resolves when slots are full, but may delete a transfer you started elsewhere — including in the RD website or another app. Leave disabled unless you often hit resolve failures due to too many active downloads.</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=rd.free_active_slot)</onclick>
-                      </item>
-        <!-- Premiumize -->
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <property name="setting_label">Premiumize</property>
-                          <property name="setting_type">separator</property>
-                          <onclick>noop</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
-                          <property name="setting_label">Authorize</property>
-                          <property name="setting_type">action</property>
-                          <property name="setting_value">...</property>
-                          <property name="setting_description">Authorize your Premiumize account and use it within Red Light</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=premiumize.authenticate)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
-                          <property name="setting_label">Enable</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.pm.enabled)]</property>
-                          <property name="setting_description">Enable the use of your Premiumize account</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=pm.enabled)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
-                          <property name="setting_label">Revoke Authorization</property>
-                          <property name="setting_type">action</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.pm.account_id)]</property>
-                          <property name="setting_description">Revoke authorization of your Premiumize account</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=premiumize.revoke_authentication)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
-                          <property name="setting_label">Add Resolved Debrid Cache to Cloud</property>
-                          <property name="setting_type">action</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.store_resolved_to_cloud.premiumize.me_name)]</property>
-                          <property name="setting_description">Choose which resolved media is automatically added to your Premiumize Cloud. All media or only show packs</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_from_list&amp;setting_id=store_resolved_to_cloud.premiumize.me)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
-                          <property name="setting_label">Search Cloud Storage</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.provider.pm_cloud)]</property>
-                          <property name="setting_description">Enable this and Red Light will search your Premiumize Cloud for media</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=provider.pm_cloud)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.pm_cloud),true)</visible>
-                          <property name="setting_label">    - Filter Results by Name</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.pm_cloud.title_filter)]</property>
-                          <property name="setting_description">Enable this and Red Light will perform extra name matching functions on your Premiumize Cloud results. Will help to limit incorrect results, but may also filter some relevant results</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=pm_cloud.title_filter)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.pm_cloud),true)</visible>
-                          <property name="setting_label">    - Check Before Full Search</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.check.pm_cloud)]</property>
-                          <property name="setting_description">Enable this and Red Light will search for results in your Premiumize Cloud before checking other enabled scrapers</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=check.pm_cloud)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.pm_cloud),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.check.pm_cloud),true)</visible>
-                          <property name="setting_label">    - Autoplay Cloud Result</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.autoplay.pm_cloud)]</property>
-                          <property name="setting_description">Enable this and Red Light will Autoplay the top result found from the Premiumize Cloud</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=autoplay.pm_cloud)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.pm_cloud),true)</visible>
-                          <property name="setting_label">    - Show Results at Top</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.results.sort_pmcloud_first)]</property>
-                          <property name="setting_description">Enable this and Red Light will sort the results from your Premiumize Cloud to the top of all results</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=results.sort_pmcloud_first)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
-                         <property name="setting_label">Priority (Lower Number Equals Higher Priority)</property>
-                         <property name="setting_type">numeric</property>
-                         <property name="setting_value">$INFO[Window(10000).Property(redlight.pm.priority)]</property>
-                         <property name="setting_description">Choose the order in which Premiumize results appear in relation to any other active accounts. The lower the number, the higher the sort order</property>
-                         <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_numeric&amp;setting_id=pm.priority)</onclick>
-                     </item>
         <!-- All Debrid -->
                      <item>
                          <visible>Container(2000).HasFocus(60)</visible>
@@ -2007,126 +1745,6 @@
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.ad.priority)]</property>
                           <property name="setting_description">Choose the order in which All Debrid results appear in relation to any other active accounts. The lower the number, the higher the sort order</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_numeric&amp;setting_id=ad.priority)</onclick>
-                      </item>
-        <!-- TorBox -->
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <property name="setting_label">TorBox</property>
-                          <property name="setting_type">separator</property>
-                          <onclick>noop</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
-                          <property name="setting_label">Authorize</property>
-                          <property name="setting_type">action</property>
-                          <property name="setting_value">...</property>
-                          <property name="setting_description">Authorize your TorBox account with a QR code and use it within Red Light</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=torbox.authenticate)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
-                          <property name="setting_label">Enable</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.tb.enabled)]</property>
-                          <property name="setting_description">Enable the use of your TorBox account</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=tb.enabled)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
-                          <property name="setting_label">Revoke Authorization</property>
-                          <property name="setting_type">action</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.tb.token)]</property>
-                          <property name="setting_description">Revoke authorization of your TorBox account</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=torbox.revoke_authentication)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
-                          <property name="setting_label">Add Resolved Debrid Cache to Cloud</property>
-                          <property name="setting_type">action</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.store_resolved_to_cloud.torbox_name)]</property>
-                          <property name="setting_description">Choose which resolved media is automatically added to your TorBox Cloud. All media or only show packs</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_from_list&amp;setting_id=store_resolved_to_cloud.torbox)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
-                          <property name="setting_label">Notify when added torrents are ready in Cloud</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.tb.notify_cloud_ready)]</property>
-                          <property name="setting_description">Notify when a torrent you added to TorBox (uncached Add to Cloud, or kept via Store Resolved to Cloud) has finished and is available in Cloud Storage / History</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=tb.notify_cloud_ready)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
-                          <property name="setting_label">Search Cloud Storage</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.provider.tb_cloud)]</property>
-                          <property name="setting_description">Enable this and Red Light will search your TorBox Cloud for media before external scrapers run.</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=provider.tb_cloud)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.tb_cloud),true)</visible>
-                          <property name="setting_label">    - Filter Results by Name</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.tb_cloud.title_filter)]</property>
-                          <property name="setting_description">Enable this and Red Light will perform extra name matching functions on your TorBox Cloud results. Will help to limit incorrect results, but may also filter some relevant results</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=tb_cloud.title_filter)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.tb_cloud),true)</visible>
-                          <property name="setting_label">    - Check Before Full Search</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.check.tb_cloud)]</property>
-                          <property name="setting_description">Enable this and Red Light will search for results in your TorBox Cloud before checking other enabled scrapers</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=check.tb_cloud)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.tb_cloud),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.check.tb_cloud),true)</visible>
-                          <property name="setting_label">    - Autoplay Cloud Result</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.autoplay.tb_cloud)]</property>
-                          <property name="setting_description">Enable this and Red Light will Autoplay the top result found from the TorBox Cloud</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=autoplay.tb_cloud)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.tb_cloud),true)</visible>
-                          <property name="setting_label">    - Show Results at Top</property>
-                          <property name="setting_type">boolean</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.results.sort_tbcloud_first)]</property>
-                          <property name="setting_description">Enable this and Red Light will sort the results from your TorBox Cloud to the top of all results</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=results.sort_tbcloud_first)</onclick>
-                      </item>
-                      <item>
-                          <visible>Container(2000).HasFocus(60)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
-                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
-                          <property name="setting_label">Priority (Lower Number Equals Higher Priority)</property>
-                          <property name="setting_type">numeric</property>
-                          <property name="setting_value">$INFO[Window(10000).Property(redlight.tb.priority)]</property>
-                          <property name="setting_description">Choose the order in which TorBox results appear in relation to any other active accounts. The lower the number, the higher the sort order</property>
-                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_numeric&amp;setting_id=tb.priority)</onclick>
                       </item>
         <!-- EasyNews -->
                       <item>
@@ -2273,6 +1891,540 @@
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.en.priority)]</property>
                           <property name="setting_description">Choose the order in which EasyNews results appear in relation to any other active accounts. The lower the number, the higher the sort order</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_numeric&amp;setting_id=en.priority)</onclick>
+                      </item>
+        <!-- Offcloud -->
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <property name="setting_label">Offcloud</property>
+                          <property name="setting_type">separator</property>
+                          <onclick>noop</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.oc.token),empty_setting)</visible>
+                          <property name="setting_label">Authorize</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">...</property>
+                          <property name="setting_description">Authorize your Offcloud account with a QR code and use it within Red Light</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=offcloud.authenticate)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.oc.token),empty_setting)</visible>
+                          <property name="setting_label">Enable</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.oc.enabled)]</property>
+                          <property name="setting_description">Enable the use of your Offcloud account</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=oc.enabled)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.oc.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.oc.enabled),true)</visible>
+                          <property name="setting_label">Revoke Authorization</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.oc.token)]</property>
+                          <property name="setting_description">Revoke authorization of your Offcloud account</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=offcloud.revoke_authentication)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.oc.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.oc.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.external),true)</visible>
+                          <property name="setting_label">Check Cached Status (External Scrapers)</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.oc.cache_check)]</property>
+                          <property name="setting_description">When enabled, Red Light checks whether external torrent results are cached on your Offcloud account before listing them. You may see fewer links, but those shown should be instant.</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=oc.cache_check)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.oc.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.oc.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.external),true)</visible>
+                          <property name="setting_label">Include Uncached Results (External Scrapers)</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.oc.include_uncached)]</property>
+                          <property name="setting_description">When enabled, torrents not in Offcloud instant cache also appear in the main results list (subject to minimum seeders). Selecting an uncached row adds it to your Offcloud cloud.</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=oc.include_uncached)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.oc.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.oc.enabled),true)</visible>
+                          <property name="setting_label">Add Resolved Debrid Cache to Cloud</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.store_resolved_to_cloud.offcloud_name)]</property>
+                          <property name="setting_description">Choose which resolved media is automatically added to your Offcloud cloud. All media or only show packs</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_from_list&amp;setting_id=store_resolved_to_cloud.offcloud)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.oc.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.oc.enabled),true)</visible>
+                          <property name="setting_label">Notify when added torrents are ready in Cloud</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.oc.notify_cloud_ready)]</property>
+                          <property name="setting_description">Notify when a magnet you added to Offcloud (uncached Add to Cloud, context menu, or kept via Store Resolved to Cloud) has finished and is available in Cloud Storage / History</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=oc.notify_cloud_ready)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.oc.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.oc.enabled),true)</visible>
+                          <property name="setting_label">Search Cloud Storage</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.provider.oc_cloud)]</property>
+                          <property name="setting_description">Enable this and Red Light will search your Offcloud cloud for media</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=provider.oc_cloud)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.oc.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.oc.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.oc_cloud),true)</visible>
+                          <property name="setting_label">    - Filter Results by Name</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.oc_cloud.title_filter)]</property>
+                          <property name="setting_description">Enable this and Red Light will perform extra name matching on your Offcloud cloud results</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=oc_cloud.title_filter)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.oc.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.oc.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.oc_cloud),true)</visible>
+                          <property name="setting_label">    - Check Before Full Search</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.check.oc_cloud)]</property>
+                          <property name="setting_description">Enable this and Red Light will search your Offcloud cloud before checking other enabled scrapers</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=check.oc_cloud)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.oc.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.oc.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.oc_cloud),true)</visible>
+                          <property name="setting_label">    - Show Results at Top</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.results.sort_occloud_first)]</property>
+                          <property name="setting_description">Enable this and Red Light will sort Offcloud cloud results to the top of all results</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=results.sort_occloud_first)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.oc.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.oc.enabled),true)</visible>
+                          <property name="setting_label">Priority (Lower Number Equals Higher Priority)</property>
+                          <property name="setting_type">numeric</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.oc.priority)]</property>
+                          <property name="setting_description">Choose the order in which Offcloud results appear in relation to any other active accounts. The lower the number, the higher the sort order</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_numeric&amp;setting_id=oc.priority)</onclick>
+                      </item>
+        <!-- Premiumize -->
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <property name="setting_label">Premiumize</property>
+                          <property name="setting_type">separator</property>
+                          <onclick>noop</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
+                          <property name="setting_label">Authorize</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">...</property>
+                          <property name="setting_description">Authorize your Premiumize account and use it within Red Light</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=premiumize.authenticate)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
+                          <property name="setting_label">Enable</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.pm.enabled)]</property>
+                          <property name="setting_description">Enable the use of your Premiumize account</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=pm.enabled)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
+                          <property name="setting_label">Revoke Authorization</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.pm.account_id)]</property>
+                          <property name="setting_description">Revoke authorization of your Premiumize account</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=premiumize.revoke_authentication)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.external),true)</visible>
+                          <property name="setting_label">Check Cached Status (External Scrapers)</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.pm.cache_check)]</property>
+                          <property name="setting_description">When enabled, Red Light checks whether external torrent results are cached on your Premiumize account before listing them. You may see fewer links, but those shown should be instant.</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=pm.cache_check)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
+                          <property name="setting_label">Add Resolved Debrid Cache to Cloud</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.store_resolved_to_cloud.premiumize.me_name)]</property>
+                          <property name="setting_description">Choose which resolved media is automatically added to your Premiumize Cloud. All media or only show packs</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_from_list&amp;setting_id=store_resolved_to_cloud.premiumize.me)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
+                          <property name="setting_label">Search Cloud Storage</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.provider.pm_cloud)]</property>
+                          <property name="setting_description">Enable this and Red Light will search your Premiumize Cloud for media</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=provider.pm_cloud)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.pm_cloud),true)</visible>
+                          <property name="setting_label">    - Filter Results by Name</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.pm_cloud.title_filter)]</property>
+                          <property name="setting_description">Enable this and Red Light will perform extra name matching functions on your Premiumize Cloud results. Will help to limit incorrect results, but may also filter some relevant results</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=pm_cloud.title_filter)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.pm_cloud),true)</visible>
+                          <property name="setting_label">    - Check Before Full Search</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.check.pm_cloud)]</property>
+                          <property name="setting_description">Enable this and Red Light will search for results in your Premiumize Cloud before checking other enabled scrapers</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=check.pm_cloud)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.pm_cloud),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.check.pm_cloud),true)</visible>
+                          <property name="setting_label">    - Autoplay Cloud Result</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.autoplay.pm_cloud)]</property>
+                          <property name="setting_description">Enable this and Red Light will Autoplay the top result found from the Premiumize Cloud</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=autoplay.pm_cloud)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.pm_cloud),true)</visible>
+                          <property name="setting_label">    - Show Results at Top</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.results.sort_pmcloud_first)]</property>
+                          <property name="setting_description">Enable this and Red Light will sort the results from your Premiumize Cloud to the top of all results</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=results.sort_pmcloud_first)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
+                         <property name="setting_label">Priority (Lower Number Equals Higher Priority)</property>
+                         <property name="setting_type">numeric</property>
+                         <property name="setting_value">$INFO[Window(10000).Property(redlight.pm.priority)]</property>
+                         <property name="setting_description">Choose the order in which Premiumize results appear in relation to any other active accounts. The lower the number, the higher the sort order</property>
+                         <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_numeric&amp;setting_id=pm.priority)</onclick>
+                     </item>
+        <!-- Real Debrid -->
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <property name="setting_label">Real Debrid</property>
+                          <property name="setting_type">separator</property>
+                          <onclick>noop</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
+                          <property name="setting_label">Authorize</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">...</property>
+                          <property name="setting_description">Authorize your Real Debrid account and use it within Red Light</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=real_debrid.authenticate)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
+                          <property name="setting_label">Enable</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.rd.enabled)]</property>
+                          <property name="setting_description">Enable the use of your Real Debrid account</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=rd.enabled)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
+                          <property name="setting_label">Revoke Authorization</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.rd.account_id)]</property>
+                          <property name="setting_description">Revoke authorization of your Real Debrid account</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=real_debrid.revoke_authentication)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.external),true)</visible>
+                          <property name="setting_label">Check Cached Status (External Scrapers)</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.rd.cache_check)]</property>
+                          <property name="setting_description">When enabled, Red Light checks whether external torrent results are cached on your Real Debrid account before listing them. You may see fewer links, but those shown should be instant.</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=rd.cache_check)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
+                          <property name="setting_label">Add Resolved Debrid Cache to Cloud</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.store_resolved_to_cloud.real-debrid_name)]</property>
+                          <property name="setting_description">Choose which resolved media is automatically added to your Real Debrid Cloud. All media or only show packs</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_from_list&amp;setting_id=store_resolved_to_cloud.real-debrid)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
+                          <property name="setting_label">Search Cloud Storage</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.provider.rd_cloud)]</property>
+                          <property name="setting_description">Enable this and Red Light will search your Real Debrid Cloud for media</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=provider.rd_cloud)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.rd_cloud),true)</visible>
+                          <property name="setting_label">    - Filter Results by Name</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.rd_cloud.title_filter)]</property>
+                          <property name="setting_description">Enable this and Red Light will perform extra name matching functions on your Real Debrid Cloud results. Will help to limit incorrect results, but may also filter some relevant results</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=rd_cloud.title_filter)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.rd_cloud),true)</visible>
+                          <property name="setting_label">    - Check Before Full Search</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.check.rd_cloud)]</property>
+                          <property name="setting_description">Enable this and Red Light will search for results in your Real Debrid Cloud before checking other enabled scrapers</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=check.rd_cloud)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.rd_cloud),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.check.rd_cloud),true)</visible>
+                          <property name="setting_label">    - Autoplay Cloud Result</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.autoplay.rd_cloud)]</property>
+                          <property name="setting_description">Enable this and Red Light will Autoplay the top result found from the Real Debrid Cloud</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=autoplay.rd_cloud)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.rd_cloud),true)</visible>
+                          <property name="setting_label">    - Show Results at Top</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.results.sort_rdcloud_first)]</property>
+                          <property name="setting_description">Enable this and Red Light will sort the results from your Real Debrid Cloud to the top of all results</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=results.sort_rdcloud_first)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
+                          <property name="setting_label">Priority (Lower Number Equals Higher Priority)</property>
+                          <property name="setting_type">numeric</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.rd.priority)]</property>
+                          <property name="setting_description">Choose the order in which Real Debrid results appear in relation to any other active accounts. The lower the number, the higher the sort order</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_numeric&amp;setting_id=rd.priority)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
+                          <property name="setting_label">Use alternate url</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.rd.alternate_base_url)]</property>
+                          <property name="setting_description">Enable this and Red Light will use an alternate base url for RD. This may circumvent any blocks being performed</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=rd.alternate_base_url)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
+                          <property name="setting_label">Free active download slot</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.rd.free_active_slot)]</property>
+                          <property name="setting_description">When enabled, Red Light removes one active Real Debrid torrent before adding a new one if you already have 5 active downloads (RD's usual limit). This can prevent failed resolves when slots are full, but may delete a transfer you started elsewhere — including in the RD website or another app. Leave disabled unless you often hit resolve failures due to too many active downloads.</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=rd.free_active_slot)</onclick>
+                      </item>
+        <!-- TorBox -->
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <property name="setting_label">TorBox</property>
+                          <property name="setting_type">separator</property>
+                          <onclick>noop</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
+                          <property name="setting_label">Authorize</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">...</property>
+                          <property name="setting_description">Authorize your TorBox account with a QR code and use it within Red Light</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=torbox.authenticate)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
+                          <property name="setting_label">Enable</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.tb.enabled)]</property>
+                          <property name="setting_description">Enable the use of your TorBox account</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=tb.enabled)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
+                          <property name="setting_label">Revoke Authorization</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.tb.token)]</property>
+                          <property name="setting_description">Revoke authorization of your TorBox account</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=torbox.revoke_authentication)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.external),true)</visible>
+                          <property name="setting_label">Check Cached Status (External Scrapers)</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.tb.cache_check)]</property>
+                          <property name="setting_description">When enabled, Red Light checks whether external torrent results are cached on your TorBox account before listing them. You may see fewer links, but those shown should be instant.</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=tb.cache_check)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.external),true)</visible>
+                          <property name="setting_label">Include Uncached Results (External Scrapers)</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.tb.include_uncached)]</property>
+                          <property name="setting_description">When enabled, torrents not in TorBox shared cache also appear in the main results list (subject to minimum seeders). Selecting an uncached row adds it to your TorBox cloud.</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=tb.include_uncached)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
+                          <property name="setting_label">Add Resolved Debrid Cache to Cloud</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.store_resolved_to_cloud.torbox_name)]</property>
+                          <property name="setting_description">Choose which resolved media is automatically added to your TorBox Cloud. All media or only show packs</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_from_list&amp;setting_id=store_resolved_to_cloud.torbox)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
+                          <property name="setting_label">Notify when added torrents are ready in Cloud</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.tb.notify_cloud_ready)]</property>
+                          <property name="setting_description">Notify when a torrent you added to TorBox (uncached Add to Cloud, or kept via Store Resolved to Cloud) has finished and is available in Cloud Storage / History</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=tb.notify_cloud_ready)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
+                          <property name="setting_label">Search Cloud Storage</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.provider.tb_cloud)]</property>
+                          <property name="setting_description">Enable this and Red Light will search your TorBox Cloud for media before external scrapers run.</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=provider.tb_cloud)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.tb_cloud),true)</visible>
+                          <property name="setting_label">    - Filter Results by Name</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.tb_cloud.title_filter)]</property>
+                          <property name="setting_description">Enable this and Red Light will perform extra name matching functions on your TorBox Cloud results. Will help to limit incorrect results, but may also filter some relevant results</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=tb_cloud.title_filter)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.tb_cloud),true)</visible>
+                          <property name="setting_label">    - Check Before Full Search</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.check.tb_cloud)]</property>
+                          <property name="setting_description">Enable this and Red Light will search for results in your TorBox Cloud before checking other enabled scrapers</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=check.tb_cloud)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.tb_cloud),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.check.tb_cloud),true)</visible>
+                          <property name="setting_label">    - Autoplay Cloud Result</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.autoplay.tb_cloud)]</property>
+                          <property name="setting_description">Enable this and Red Light will Autoplay the top result found from the TorBox Cloud</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=autoplay.tb_cloud)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.provider.tb_cloud),true)</visible>
+                          <property name="setting_label">    - Show Results at Top</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.results.sort_tbcloud_first)]</property>
+                          <property name="setting_description">Enable this and Red Light will sort the results from your TorBox Cloud to the top of all results</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=results.sort_tbcloud_first)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(60)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
+                          <property name="setting_label">Priority (Lower Number Equals Higher Priority)</property>
+                          <property name="setting_type">numeric</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.tb.priority)]</property>
+                          <property name="setting_description">Choose the order in which TorBox results appear in relation to any other active accounts. The lower the number, the higher the sort order</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_numeric&amp;setting_id=tb.priority)</onclick>
                       </item>
         <!-- AIOStreams (hidden while aiostreams_api.ENABLED is false) -->
                       <item>
@@ -2499,10 +2651,10 @@
                       </item>
                       <item>
                           <visible>Container(2000).HasFocus(70)</visible>
-                          <property name="setting_label">Choose Rescrape Actions</property>
+                          <property name="setting_label">Rescrape Actions</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">...</property>
-                          <property name="setting_description">Choose what Rescrape Options are used when there are no original results</property>
+                          <property name="setting_description">Configure automatic retries when a source search returns no playable results. Each action can be Off, Auto, or Prompt, with order from Highest to Lowest. Rescrape With No Cache Check disables per-provider external cache checks (Real Debrid, TorBox, Premiumize, Offcloud). Rescrape With Disabled External Providers includes disabled external torrent providers (not internal scrapers such as EasyNews or debrid cloud). Offer Full Search After Early Results applies to the empty-search retry path only; Check Before Full Search and Run Full Source Search during prescrape are separate.</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=rescrape_actions_choice)</onclick>
                       </item>
         <!-- Sorting and Filtering -->
@@ -2762,6 +2914,15 @@
                           <property name="setting_value">[COLOR $INFO[Window(10000).Property(redlight.provider.ad_highlight)]]$INFO[Window(10000).Property(redlight.provider.ad_highlight)][/COLOR]</property>
                           <property name="setting_description">Choose All Debrid color</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=scraper_color_choice&amp;setting_id=provider.ad_highlight)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(70)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.highlight.type),0)</visible>
+                          <property name="setting_label">    - Offcloud Color</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">[COLOR $INFO[Window(10000).Property(redlight.provider.oc_highlight)]]$INFO[Window(10000).Property(redlight.provider.oc_highlight)][/COLOR]</property>
+                          <property name="setting_description">Choose Offcloud color</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=scraper_color_choice&amp;setting_id=provider.oc_highlight)</onclick>
                       </item>
                       <item>
                           <visible>Container(2000).HasFocus(70)</visible>

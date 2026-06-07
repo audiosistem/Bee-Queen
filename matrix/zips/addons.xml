@@ -995,24 +995,6 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.06.04" name="POV" provider-name="kodifitzwell">
-	<requires>
-		<import addon="xbmc.python" version="3.0.0" />
-		<import addon="script.module.requests" />
-	</requires>
-	<extension point="xbmc.python.pluginsource" library="resources/lib/router.py">
-		<provides>video</provides>
-	</extension>
-	<extension point="xbmc.service" library="resources/lib/service.py" />
-	<extension point="xbmc.addon.metadata">
-		<reuselanguageinvoker>true</reuselanguageinvoker>
-		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
-		<disclaimer lang="en">The author of this addon does not host any of the content which is found and has no affiliation with any of the content providers.[CR]The author is in no way affiliated with Kodi, Team Kodi, or the XBMC Foundation.</disclaimer>
-		<summary>What you like to watch.[CR]</summary>
-		<description lang="en">This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.</description>
-		<news>INFO: For latest changes see Changelog within add-on.</news>
-		<assets><icon>pov.png</icon><fanart>pov_fanart.png</fanart></assets>
-	</extension>
 </addon><addon id="plugin.video.ptfm" name="Play That Funky Music" version="1.0.3" provider-name="Metal Dude">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -1037,7 +1019,7 @@ In addition to what livestreams allowed you to do, you can now,
 		<fanart>fanart.jpg</fanart>
   </assets>
   </extension>
-</addon><addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]" version="1.2.9">
+</addon><addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]" version="1.2.9d">
     <requires>
         <import addon="xbmc.python" version="3.0.1" />
         <import addon="script.module.pil" version="1.1.7" />
@@ -1046,7 +1028,7 @@ In addition to what livestreams allowed you to do, you can now,
     <extension point="xbmc.python.pluginsource" library="resources/lib/redlight.py">
         <provides>video</provides>
     </extension>
-    
+    <extension point="xbmc.service" library="resources/lib/service.py" />
     <extension point="xbmc.python.module" library="resources/lib/" />
     <extension point="xbmc.addon.metadata">
         <reuselanguageinvoker>true</reuselanguageinvoker>

@@ -1,3 +1,23 @@
+[COLOR red][B]Version 1.2.9d[/B][/COLOR]
+- In Progress lists: when Watched Indicators are Trakt and Trakt is authorised, refresh from Trakt each time a list is opened (not only when empty). Movies and In Progress Episodes pull playback progress; TV Shows In Progress pulls watched episode state. Episodes with resume at or below 1% are excluded, matching movies.
+
+[COLOR red][B]Version 1.2.9c[/B][/COLOR]
+- External cache check: per-provider toggles under each Debrid account (Real Debrid, TorBox, Premiumize, Offcloud). TorBox/Offcloud include-uncached moved to their Debrid sections. Existing settings migrate automatically. Premiumize cache check wired for external scrapers.
+- Fixed Movies In Progress empty when using Trakt watched indicators: playback progress is saved locally on stop, and Trakt sync no longer wipes those rows while waiting for Trakt to catch up. If Red Light has no progress rows, the list refreshes from Trakt when authorized.
+
+[COLOR red][B]Version 1.2.9b[/B][/COLOR]
+- Filter Results by Name: EasyNews and Local Folders use exact show-title match before SxxExx (e.g. Wings no longer matches Behind The Wings). Debrid cloud scrapers, use S/E match plus optional title filter; turn off for S/E-only recall.
+- Rescrape Actions: clearer labels (Offer Full Search After Early Results, Disabled External Providers, Real Debrid Only for no cache check). Rescrape Actions settings screen shows Action and Order only; full help in Settings description. Check Before Full Search / Run Full Source Search remain independent of rescrape full_scrape.
+- Rescrape Actions: setting label shortened to: "Rescrape With No Cache Check (RD Only)".
+- Fixed Rescrape With Episode Group crashing when a custom group was already applied (another old FenLightAM bug).
+
+[COLOR red][B]Version 1.2.9a[/B][/COLOR]
+- Offcloud support (ported from v1.3.x): QR OAuth auth, My Services Cloud Storage and History, cloud scrape, external cache check, resolve, packs, highlight colour. Include uncached results (Offcloud) under External Scrapers (default Off). Notify when added torrents are ready in Cloud. Clear Offcloud Cache in cache tools.
+- Sources Accounts: provider sections reordered alphabetically (All Debrid, EasyNews, Offcloud, Premiumize, Real Debrid, TorBox; Local Media Folders last). External Scrapers debrid toggles ordered Offcloud, Real Debrid, TorBox when each provider is enabled.
+- My Services: same alphabetical provider order (All Debrid, EasyNews, Offcloud, Premiumize, Real Debrid, TorBox).
+- Fixed Custom Sort to Top for movies: Set Filters to Top now promotes matching rows to the top of each quality band (4K, 1080p, etc.) instead of the 1.3.x tie-breaker that only reordered identical quality/size/provider rows. SD HDR no longer sorts above 1080p Remux. Debrid cloud results keep pref order when quality limits apply.
+- External Scrapers: setting label shortened to “Check for cached status of Results (RD)”. Description text amended.
+
 [COLOR red][B]Version 1.2.9[/B][/COLOR]
 - Fixed scrape progress window staying open after a search returns no results (including unreleased episodes).
 - When a source search finds nothing, now shows a Red Light style "No results found" dialog after the scrape progress window closes, with the Kodi dialog as a fallback if the skin window cannot open.

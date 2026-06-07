@@ -6,17 +6,17 @@ from threading import Thread, Lock
 from caches.external_cache import external_cache
 from caches.settings_cache import get_setting
 from modules import kodi_utils, source_utils
-from modules.debrid import RD_check, TB_check, query_local_cache
-from modules.settings import include_uncached_torbox
+from modules.debrid import RD_check, OC_check, TB_check, PM_check, query_local_cache
+from modules.settings import debrid_cache_check
 from modules.utils import clean_file_name
 # logger = kodi_utils.logger
 
 class source:
-	def __init__(self, meta, source_dict, active_debrid, external_cache_check, internal_scrapers, prescrape_sources, progress_dialog, disabled_ext_ignored=False, cloud_scrapers=None):
+	def __init__(self, meta, source_dict, active_debrid, cache_check_override, internal_scrapers, prescrape_sources, progress_dialog, disabled_ext_ignored=False, cloud_scrapers=None):
 		self.monitor = kodi_utils.kodi_monitor()
 		self.scrape_provider = 'external'
 		self.progress_dialog = progress_dialog
-		self.external_cache_check = external_cache_check
+		self.cache_check_override = cache_check_override
 		self.meta = meta
 		self.background = self.meta.get('background', False)
 		self.active_debrid = active_debrid
@@ -33,7 +33,8 @@ class source:
 							('sources_sd', '', self._quality_length_sd), ('sources_total', '', self.quality_length_final))
 		self.count_tuple_final = (('final_4k', '4K', self._quality_length), ('final_1080p', '1080p', self._quality_length), ('final_720p', '720p', self._quality_length),
 									('final_sd', '', self._quality_length_sd), ('final_total', '', self.quality_length_final))
-		self.debrid_runners = {'Real-Debrid': ('Real-Debrid', RD_check), 'TorBox': ('TorBox', TB_check)}
+		self.debrid_runners = {'Real-Debrid': ('Real-Debrid', RD_check), 'Premiumize.me': ('Premiumize.me', PM_check),
+								'Offcloud': ('Offcloud', OC_check), 'TorBox': ('TorBox', TB_check)}
 		self.cloud_scrapers = [i for i in (cloud_scrapers or []) if i != 'external']
 		self.processed_cloud_scrapers = set()
 
@@ -199,12 +200,9 @@ class source:
 				except: yield provider
 		final_lock = Lock()
 		def _debrid_api_check_enabled(provider):
-			# External cache check is Real Debrid only (All Debrid removed — API unreliable).
-			if provider == 'Real-Debrid':
-				return self.external_cache_check
-			if provider == 'TorBox':
-				return include_uncached_torbox()
-			return False
+			if self.cache_check_override is not None:
+				return self.cache_check_override
+			return debrid_cache_check(provider)
 		def _process_cache_check(provider, function):
 			if _debrid_api_check_enabled(provider):
 				if provider == 'Real-Debrid':

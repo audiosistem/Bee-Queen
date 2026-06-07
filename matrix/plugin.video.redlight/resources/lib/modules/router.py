@@ -195,6 +195,31 @@ def routing(sys):
 		elif mode == 'alldebrid.delete':
 			from indexers.alldebrid import ad_delete
 			return ad_delete(params.get('id'))
+	elif 'offcloud' in mode:
+		if mode == 'offcloud.oc_cloud':
+			from indexers.offcloud import oc_cloud
+			return oc_cloud()
+		elif mode == 'offcloud.oc_history':
+			from indexers.offcloud import oc_history
+			return oc_history()
+		elif mode == 'offcloud.browse_oc_cloud':
+			from indexers.offcloud import browse_oc_cloud
+			return browse_oc_cloud(params.get('folder_id'))
+		elif mode == 'offcloud.resolve_oc':
+			from indexers.offcloud import resolve_oc
+			return resolve_oc(params)
+		elif mode == 'offcloud.oc_account_info':
+			from indexers.offcloud import oc_account_info
+			return oc_account_info()
+		elif mode == 'offcloud.authenticate':
+			from apis.offcloud_api import OffcloudAPI
+			return OffcloudAPI().auth()
+		elif mode == 'offcloud.revoke_authentication':
+			from apis.offcloud_api import OffcloudAPI
+			return OffcloudAPI().revoke()
+		elif mode == 'offcloud.delete':
+			from indexers.offcloud import oc_delete
+			return oc_delete(params.get('folder_id'))
 	elif 'torbox' in mode:
 		if mode == 'torbox.tb_cloud':
 			from indexers.torbox import tb_cloud

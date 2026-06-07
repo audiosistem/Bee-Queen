@@ -32,7 +32,7 @@ def runner(params):
 		pack_choices, pack_api = pack_result
 		provider = downloader_provider_slug(getattr(pack_source, 'debrid', '') or source.get('cache_provider', ''))
 		pack_items = [dict(params, **{'pack_files': item, 'provider': provider}) for item in pack_choices]
-		icon = {'real-debrid': 'realdebrid', 'premiumize.me': 'premiumize', 'alldebrid': 'alldebrid', 'torbox': 'torbox'}.get(provider, 'box_office')
+		icon = {'real-debrid': 'realdebrid', 'premiumize.me': 'premiumize', 'alldebrid': 'alldebrid', 'offcloud': 'offcloud', 'torbox': 'torbox'}.get(provider, 'box_office')
 		chosen_list = select_pack_item(pack_items, kodi_utils.get_icon(icon))
 		if not chosen_list: return
 		show_package = source.get('package') == 'show'
@@ -211,6 +211,8 @@ class Downloader:
 					from apis.alldebrid_api import AllDebridAPI as debrid_function
 				elif self.provider in ('torbox', 'TorBox', 'Torbox'):
 					from apis.torbox_api import TorBoxAPI as debrid_function
+				elif self.provider in ('offcloud', 'Offcloud'):
+					from apis.offcloud_api import OffcloudAPI as debrid_function
 				link = self.params_get('pack_files', {}).get('link')
 				if not link:
 					url = None
@@ -227,6 +229,9 @@ class Downloader:
 						url = api.add_headers_to_url(url)
 					else:
 						return self.return_notification(_notification='TorBox: Download link not ready. Wait until the torrent is finished in TorBox, then try Download Pack again.')
+				elif self.provider in ('offcloud', 'Offcloud'):
+					# display_magnet_pack / cache_download already returns direct Offcloud CDN URLs
+					url = link
 				else:
 					url = None
 		else:

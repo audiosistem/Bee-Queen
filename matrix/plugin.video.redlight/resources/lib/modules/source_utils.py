@@ -240,8 +240,10 @@ def check_title(title, release_title, aliases, year, season, episode):
 		if hdlr:
 			release_title = release_title.split(hdlr.lower())[0]
 			release_title = release_title.replace(year, '').replace('(', '').replace(')', '').replace('&', 'and').rstrip('.-').rstrip('.').rstrip('-').replace(':', '')
-			if not any(item in release_title for item in cleaned_titles): return False
-			# if not any(release_title == i for i in cleaned_titles): return False
+			# Episodes: exact show title before SxxExx (Wings must not match Behind The Wings / Super Wings).
+			if season and season != 'pack':
+				if not any(release_title == i for i in cleaned_titles): return False
+			elif not any(item in release_title for item in cleaned_titles): return False
 		else:
 			release_title = release_title.replace(year, '').replace('(', '').replace(')', '').replace('&', 'and').rstrip('.-').rstrip('.').rstrip('-').replace(':', '')
 			if not any(i in release_title for i in cleaned_titles): return False

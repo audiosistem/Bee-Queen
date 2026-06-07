@@ -46,12 +46,14 @@ class TraktWatched():
 		self._executemany('INSERT OR IGNORE INTO watched VALUES (?, ?, ?, ?, ?, ?)', insert_list)
 
 	def set_bulk_movie_progress(self, insert_list):
-		self._delete('DELETE FROM progress WHERE db_type = ?', ('movie',))
-		self._executemany('INSERT OR IGNORE INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', insert_list)
+		dbcon = connect_database('trakt_db')
+		dbcon.execute('DELETE FROM progress WHERE db_type = ? AND resume_id != 0', ('movie',))
+		if insert_list: dbcon.executemany('INSERT OR REPLACE INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', insert_list)
 
 	def set_bulk_tvshow_progress(self, insert_list):
-		self._delete('DELETE FROM progress WHERE db_type = ?', ('episode',))
-		self._executemany('INSERT OR IGNORE INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', insert_list)
+		dbcon = connect_database('trakt_db')
+		dbcon.execute('DELETE FROM progress WHERE db_type = ? AND resume_id != 0', ('episode',))
+		if insert_list: dbcon.executemany('INSERT OR REPLACE INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', insert_list)
 
 	def _executemany(self, command, insert_list):
 		dbcon = connect_database('trakt_db')

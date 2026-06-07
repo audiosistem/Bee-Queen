@@ -4,7 +4,7 @@ import json
 from modules.metadata import movie_meta, movieset_meta
 from modules.utils import get_datetime, get_current_timestamp, paginate_list, jsondate_to_datetime, TaskPool, manual_function_import
 from modules import kodi_utils, settings, watched_status
-# logger = kodi_utils.logger
+logger = kodi_utils.logger
 
 class Movies:
 	main = ('tmdb_movies_popular', 'tmdb_movies_popular_today','tmdb_movies_blockbusters','tmdb_movies_in_theaters', 'tmdb_movies_upcoming',
@@ -25,7 +25,7 @@ class Movies:
 		self.items, self.new_page, self.total_pages, self.is_external = [], {}, None, kodi_utils.external()
 		if self.is_external:
 			self.widget_hide_next_page = settings.widget_hide_next_page()
-			self.widget_hide_watched = self.action not in ('watched_movies', 'recent_watched_movies') and settings.widget_hide_watched()
+			self.widget_hide_watched = self.action not in ('watched_movies', 'recent_watched_movies', 'in_progress_movies') and settings.widget_hide_watched()
 		else: self.widget_hide_next_page, self.widget_hide_watched = False, False
 		self.playback_key = settings.playback_key()
 		self.play_mode = 'playback.%s' % settings.playback_key()
@@ -110,7 +110,9 @@ class Movies:
 				if self.params_get('get_imdb'):
 					key_id = movie_meta('tmdb_id', key_id, self.tmdb_api_key, settings.mpaa_region(), get_datetime(), get_current_timestamp())['imdb_id']
 				self.list = imdb_more_like_this(key_id)
-			kodi_utils.add_items(handle, self.worker())
+			items = self.worker()
+			if self.list and not items: logger('Red Light', 'movies.fetch_list empty build for %s (%s ids, external=%s)' % (self.action, len(self.list), self.is_external))
+			kodi_utils.add_items(handle, items)
 			if self.total_pages and self.total_pages > 2 and settings.jump_to_enabled() and not self.is_external:
 				url_params = json.dumps({**self.new_page, **{'mode': 'build_movie_list', 'action': self.action, 'category_name': self.category_name}})
 				kodi_utils.add_dir(handle, {'mode': 'navigate_to_page_choice', 'current_page': page_no, 'total_pages': self.total_pages, 'url_params': url_params},

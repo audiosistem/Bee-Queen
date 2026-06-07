@@ -64,10 +64,10 @@ def rescrape_items():
 	return [
 	{'name': 'Rescrape With No Cache Check', 'value': 'cache_ignored'},
 	{'name': 'Rescrape With IMDb Year Data', 'value': 'imdb_year'},
-	{'name': 'Rescrape With All Scrapers', 'value': 'with_all'},
+	{'name': 'Rescrape With Disabled External Providers', 'value': 'with_all'},
 	{'name': 'Rescrape With Episode Group', 'value': 'episode_group'},
 	{'name': 'Rescrape with Filters Ignored', 'value': 'ignore_filters'},
-	{'name': 'Start Full Scrape (After Prescrape)', 'value': 'full_scrape'}]
+	{'name': 'Offer Full Search After Early Results', 'value': 'full_scrape'}]
 
 def video_extensions():
 	return ('m4v', '3g2', '3gp', 'nsv', 'tp', 'ts', 'ty', 'pls', 'rm', 'rmvb', 'mpd', 'ifo', 'mov', 'qt', 'divx', 'xvid', 'bivx', 'vob', 'nrg', 'img', 'iso', 'udf', 'pva',

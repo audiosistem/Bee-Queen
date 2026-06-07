@@ -177,7 +177,7 @@ def clear_cache(cache_type, silent=False):
 		from apis import easynews_api
 		results = []
 		results.append(easynews_api.clear_media_results_database())
-		for item in ('pm_cloud', 'rd_cloud', 'ad_cloud', 'tb_cloud', 'folders'): results.append(clear_cache(item, silent=True))
+		for item in ('pm_cloud', 'rd_cloud', 'ad_cloud', 'oc_cloud', 'tb_cloud', 'folders'): results.append(clear_cache(item, silent=True))
 		success = False not in results
 	elif cache_type == 'easynews_scrape':
 		if not _confirm(): return
@@ -208,6 +208,10 @@ def clear_cache(cache_type, silent=False):
 		if not _confirm(): return
 		from apis.alldebrid_api import AllDebrid
 		success = AllDebrid.clear_cache()
+	elif cache_type == 'oc_cloud':
+		if not _confirm(): return
+		from apis.offcloud_api import Offcloud
+		success = Offcloud.clear_cache()
 	elif cache_type == 'tb_cloud':
 		if not _confirm(): return
 		from apis.torbox_api import TorBox
@@ -243,7 +247,7 @@ def clear_all_cache():
 	caches = (('meta', 'Meta Cache'), ('internal_scrapers', 'Internal Scrapers Cache'), ('external_scrapers', 'External Scrapers Cache'), ('trakt', 'Trakt Cache'),
 			('imdb', 'IMDb Cache'), ('list', 'List Data Cache'), ('ai_functions', 'AI Data Cache'), ('tmdb_list', 'TMDb Personal List Cache'), ('main', 'Main Cache'),
 			('pm_cloud', 'Premiumize Cloud'), ('rd_cloud', 'Real Debrid Cloud'), ('ad_cloud', 'All Debrid Cloud'),
-			('tb_cloud', 'TorBox Cloud'))
+			('oc_cloud', 'Offcloud Cloud'), ('tb_cloud', 'TorBox Cloud'))
 	for count, cache_type in enumerate(caches, 1):
 		try:
 			progressDialog.update(line % (cache_type[1]), int(float(count) / float(len(caches)) * 100))
