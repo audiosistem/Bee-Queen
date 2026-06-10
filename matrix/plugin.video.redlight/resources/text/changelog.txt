@@ -1,9 +1,25 @@
+[COLOR red][B]Version 1.2.9f[/B][/COLOR]
+- TorBox and Offcloud: Include Uncached Results (External Scrapers) shown only when Check Cached Status is enabled, matching Premiumize (v1.2.9e). Include uncached has no effect while cache check is off.
+
+[COLOR red][B]Version 1.2.9e[/B][/COLOR]
+- Intended functionality can have unintended consequences! Reverted v1.2.6 cancel navigation: stopping playback or resolve during source selection closes the progress dialog and returns to the episode/results browser instead of reopening the sources list.
+- Resolve cancel: Fixed occasional FenLightAM behaviour where backing out of resolve causes Kodi crash.
+- Scrape cancel: Changed FenLightAM behaviour, backing out of the progress dialog now aborts the search, releases the busy lock immediately, and suppresses late results.
+- Prescrape (Check Before Full Search): renamed Run Full Source Search to Run External Scraper Search in results; confirm prompt asks Run external torrent scrapers? — cloud/EasyNews prescrape already ran; the follow-up step is external torrent scrapers only.
+- Prescrape external follow-up: other enabled cloud/debrid/folder scrapers no longer run again when continuing to external torrent search (only prescrape results plus external scrapers are collected).
+- Prescrape external follow-up: refreshes quality filters, result sort order, and debrid priority ranks before merging external torrent results.
+- Prescrape empty cloud: no confirmation popup when Check Before Full Search finds nothing — automatically continues with other enabled scrapers and shows a No Cloud Results Found notice above the results list.
+- All Debrid: Check Cached Status (External Scrapers) toggle under Sources Accounts, matching Real Debrid, TorBox, Premiumize, and Offcloud (uses existing AD_check cache API).
+- Premiumize: Include Uncached Results (External Scrapers) toggle under Sources Accounts, matching TorBox and Offcloud (uncached rows in main list; selecting adds to Premiumize cloud). Shown only when Check Cached Status is enabled.
+- External cache check defaults: Check Cached Status (External Scrapers) now defaults to on for Premiumize, Offcloud, and TorBox; Real Debrid and All Debrid remain off by default. Existing installs: one-time migration sets PM/OC/TB cache check on when still off.
+- Kodi Log Uploader: dismiss busy spinner before the Pastebin QR countdown so Back can cancel the dialog; close the progress window when exiting early or when the timer finishes; QR screen now runs a 2 minute countdown (was 50 seconds) and auto-closes when it reaches zero.
+
 [COLOR red][B]Version 1.2.9d[/B][/COLOR]
-- In Progress lists: when Watched Indicators are Trakt and Trakt is authorised, refresh from Trakt each time a list is opened (not only when empty). Movies and In Progress Episodes pull playback progress; TV Shows In Progress pulls watched episode state. Episodes with resume at or below 1% are excluded, matching movies.
+- In Progress lists: when Watched Indicators are Trakt and Trakt is authorised, refresh from Trakt each time a list is opened, as well as when empty. Movies and In Progress Episodes pull playback progress; TV Shows In Progress pulls watched episode state. Episodes with resume at or below 1% are excluded, matching movies.
 
 [COLOR red][B]Version 1.2.9c[/B][/COLOR]
 - External cache check: per-provider toggles under each Debrid account (Real Debrid, TorBox, Premiumize, Offcloud). TorBox/Offcloud include-uncached moved to their Debrid sections. Existing settings migrate automatically. Premiumize cache check wired for external scrapers.
-- Fixed Movies In Progress empty when using Trakt watched indicators: playback progress is saved locally on stop, and Trakt sync no longer wipes those rows while waiting for Trakt to catch up. If Red Light has no progress rows, the list refreshes from Trakt when authorized.
+- Fixed Movies In Progress empty when using Trakt watched indicators: playback progress is saved locally on stop, and Trakt sync no longer wipes those rows while waiting for Trakt to catch up. If Red Light has no progress rows, the list refreshes from Trakt when authorised.
 
 [COLOR red][B]Version 1.2.9b[/B][/COLOR]
 - Filter Results by Name: EasyNews and Local Folders use exact show-title match before SxxExx (e.g. Wings no longer matches Behind The Wings). Debrid cloud scrapers, use S/E match plus optional title filter; turn off for S/E-only recall.
@@ -32,8 +48,9 @@
 - TorBox Cloud (source search): fixed intermittent empty results — folder list cache call was invalid.
 - Premiumize Cloud: faster, more reliable scrape (no early exit before internal_results).
 - External: “Check for cached status” is Real Debrid only — All Debrid removed from this check (AD API changes; prior AD cache logic caused worse results). With the setting off, TorBox/Premiumize no longer call checkcached unless “Include uncached TorBox” is on. Torrent host threads get a short grace period after timeout.
-- Cancel during playback/resolve returns straight to the sources results list (no empty resolve screen flash from re-entering play); progress dialog closes faster on cancel.
-- Premiumize/TorBox cloud: episode files use exact S/E matching end-to-end; title filter no longer uses pack-range episode patterns (fixes episode 1 listing episode 2). Cancel during resolve stops retrying other sources and returns to the sources list instead of the episode browser.
+- Cancel during playback/resolve returns straight to the sources results list; progress dialog closes faster on cancel.
+- Cancel during resolve stops retrying other sources and returns to the sources list instead of the results/episode browser.
+- Premiumize/TorBox cloud: episode files use exact S/E matching end-to-end; title filter no longer uses pack-range episode patterns (fixes episode 1 listing episode 2).
 - TorBox cloud scrape: restored v1.2.5 search speed by using cached mylist during source search (live bypass_cache only for Cloud Storage browse). Keeps RD-style title+year folder prefilter and per-folder fetch cap so large libraries do not hang.
 - TorBox: Cloud Storage loads all torrent/usenet/webdl lists in parallel (faster, full list on open); only caches a complete fetch for quick Back navigation. Partial API failures are not cached and show a notification.
 - TorBox: Fixed Cloud Storage folder browse on Kodi 21 (removed deprecated setInfo; use name/file_id from API). Cloud Storage list loads sequentially in the UI to avoid plugin thread errors; source search still uses parallel mylist fetch.

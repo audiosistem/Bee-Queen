@@ -351,7 +351,7 @@ class Navigator:
 		function_list_append = function_list.append
 		genre_list = dict(sorted(json.loads(genre_list).items()))
 		list_items = list(_builder())
-		kwargs = {'items': json.dumps(list_items), 'heading': ls(32847), 'enumerate': 'false', 'multi_choice': 'true', 'multi_line': 'false'}
+		kwargs = {'items': json.dumps(list_items), 'heading': ls(32847), 'multi_choice': 'true', 'multi_line': 'false'}
 		genre_ids = ku.select_dialog(function_list, **kwargs)
 		if genre_ids is None: return
 		genre_id = ','.join(genre_ids)

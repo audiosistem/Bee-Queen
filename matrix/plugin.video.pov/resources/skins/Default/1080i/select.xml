@@ -20,8 +20,9 @@
 			<width>620</width>
 			<height>800</height>
 			<control type="group">
+				<visible>!String.IsEqual(Window.Property(tikiskins.dialog.multi_choice),true)</visible>
 				<control type="image">
-					<texture colordiffuse="80343434">white.png</texture>
+					<texture colordiffuse="CC343434">white.png</texture>
 				</control>
 				<control type="image">
 					<left>10</left>
@@ -45,56 +46,78 @@
 					<label>[UPPERCASE][B]$INFO[Window.Property(tikiskins.dialog.heading)][/B][/UPPERCASE]</label>
 				</control>
 			</control>
-			<control type="image">
-				<top>70</top>
-				<left>10</left>
-				<width max="600">auto</width>
-				<height>720</height>
-				<aspectratio>stretch</aspectratio>
-				<texture>$INFO[Container(2025).ListItem.Property(tikiskins.dialog.icon)]</texture>
-				<!--visible>String.IsEqual(Window.Property(tikiskins.dialog.multi_choice),false)</visible-->
+			<control type="group">
+				<visible>String.IsEqual(Window.Property(tikiskins.dialog.multi_choice),true)</visible>
+				<left>-80</left>
+				<width>700</width>
+				<control type="image">
+					<texture colordiffuse="CC343434">white.png</texture>
+				</control>
+				<control type="image">
+					<left>10</left>
+					<top>10</top>
+					<width>50</width>
+					<height>50</height>
+					<align>left</align>
+					<aligny>center</aligny>
+					<aspectratio aligny="top">keep</aspectratio>
+					<texture>$INFO[Window.Property(tikiskins.pov.icon)]</texture>
+				</control>
+				<control type="label">
+					<centerleft>50%</centerleft>
+					<width max="570">auto</width>
+					<height>70</height>
+					<font>font12</font>
+					<textcolor>FFCCCCCC</textcolor>
+					<align>center</align>
+					<aligny>center</aligny>
+					<scroll>true</scroll>
+					<label>[UPPERCASE][B]$INFO[Window.Property(tikiskins.dialog.heading)][/B][/UPPERCASE]</label>
+				</control>
 			</control>
 			<control type="grouplist">
 				<visible>String.IsEqual(Window.Property(tikiskins.dialog.multi_choice),true)</visible>
-				<orientation>horizontal</orientation>
+				<orientation>vertical</orientation>
 				<itemgap>20</itemgap>
-				<top>810</top>
-				<left>10</left>
-				<width>600</width>
-				<align>center</align>
+				<left>-80</left>
+				<top>70</top>
+				<width>90</width>
+				<align>top</align>
 				<control type="button" id="10">
 					<description>OK</description>
 					<top>0</top>
-					<width>240</width>
-					<height>60</height>
-					<onup>2025</onup>
-					<ondown>2025</ondown>
-					<onleft>11</onleft>
-					<onright>11</onright>
-					<label>[B]OK[/B]</label>
+					<width>80</width>
+					<height>80</height>
+					<onup>11</onup>
+					<ondown>11</ondown>
+					<onleft>2065</onleft>
+					<onright>2025</onright>
+					<!--label>[B]OK[/B]</label-->
 					<font>font12</font>
 					<textcolor>FFB7B4BB</textcolor>
 					<focusedcolor>$INFO[Window.Property(tikiskins.dialog.highlight)]</focusedcolor>
-					<texturefocus colordiffuse="FFCCCCCC">white.png</texturefocus>
-					<texturenofocus colordiffuse="FF302F2F">white.png</texturenofocus>
+					<texturefocus colordiffuse="$INFO[Window.Property(tikiskins.dialog.highlight)]">next_episodes.png</texturefocus>
+					<texturenofocus colordiffuse="FFCCCCCC">next_episodes.png</texturenofocus>
 					<align>center</align>
+					<aligny>center</aligny>
 				</control>
 				<control type="button" id="11">
 					<description>Cancel</description>
 					<top>0</top>
-					<width>240</width>
-					<height>60</height>
-					<onup>2025</onup>
-					<ondown>2025</ondown>
-					<onleft>10</onleft>
-					<onright>10</onright>
-					<label>[B]Cancel[/B]</label>
+					<width>80</width>
+					<height>80</height>
+					<onup>10</onup>
+					<ondown>10</ondown>
+					<onleft>2065</onleft>
+					<onright>2025</onright>
+					<!--label>[B]Cancel[/B]</label-->
 					<font>font12</font>
 					<textcolor>FFB7B4BB</textcolor>
 					<focusedcolor>$INFO[Window.Property(tikiskins.dialog.highlight)]</focusedcolor>
-					<texturefocus colordiffuse="FFCCCCCC">white.png</texturefocus>
-					<texturenofocus colordiffuse="FF302F2F">white.png</texturenofocus>
+					<texturefocus flipx="true" colordiffuse="$INFO[Window.Property(tikiskins.dialog.highlight)]">next_episodes.png</texturefocus>
+					<texturenofocus flipx="true" colordiffuse="FFCCCCCC">next_episodes.png</texturenofocus>
 					<align>center</align>
+					<aligny>center</aligny>
 				</control>
 			</control>
 			<control type="group">
@@ -103,12 +126,14 @@
 				<width>600</width>
 				<height>720</height>
 				<control type="image">
-					<texture colordiffuse="E6343434">white.png</texture>
+					<aspectratio>stretch</aspectratio>
+					<texture colordiffuse="33FFFFFF">$INFO[Container(2025).ListItem.Property(tikiskins.dialog.icon)]</texture>
 				</control>
 				<control type="fixedlist" id="2025">
 					<pagecontrol>2065</pagecontrol>
 					<onup>2025</onup>
-					<ondown>11</ondown>
+					<ondown>2025</ondown>
+					<onleft>11</onleft>
 					<onright>2065</onright>
 					<orientation>vertical</orientation>
 					<focusposition>3</focusposition>
@@ -266,7 +291,7 @@
 					<texturesliderbar colordiffuse="FF555556">white.png</texturesliderbar>
 					<texturesliderbarfocus colordiffuse="FFB7B4BB">white.png</texturesliderbarfocus>
 					<onleft>2025</onleft>
-					<onright>2025</onright>
+					<onright>11</onright>
 					<showonepage>false</showonepage>
 					<orientation>vertical</orientation>
 				</control>

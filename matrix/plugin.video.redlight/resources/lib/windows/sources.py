@@ -21,7 +21,11 @@ class SourcesResults(BaseDialog):
 		self.info_highlights_dict = kwargs.get('scraper_settings')
 		self.episode_group_label = kwargs.get('episode_group_label', '')
 		self.prescrape = kwargs.get('prescrape')
+		self.prescrape_empty_notice = kwargs.get('prescrape_empty_notice', False)
+		self.prescrape_empty_notice_main = kwargs.get('prescrape_empty_notice_main', '')
+		self.prescrape_empty_notice_sub = kwargs.get('prescrape_empty_notice_sub', '')
 		self.meta = kwargs.get('meta')
+		self.sources_ref = kwargs.get('sources_ref')
 		self.filters_ignored = kwargs.get('filters_ignored', False)
 		self.meta_get = self.meta.get
 		self.make_poster = self.window_format in ('list', 'medialist')
@@ -128,6 +132,11 @@ class SourcesResults(BaseDialog):
 					'magnet_url': chosen_source['url'],
 					'display_name': chosen_source.get('display_name', ''),
 				})
+			try:
+				if self.sources_ref:
+					self.sources_ref._prepare_resolve_ui()
+			except:
+				pass
 			self.selected = ('play', chosen_source)
 			return self.close()
 		elif action in self.context_actions:
@@ -178,7 +187,7 @@ class SourcesResults(BaseDialog):
 						else: set_properties({'source_type': 'UNCACHED'})
 						set_properties({'highlight': 'FF7C7C7C'})
 					else:
-						provider_check_names = {'REAL-DEBRID': 'Real-Debrid', 'TORBOX': 'TorBox', 'PREMIUMIZE': 'Premiumize.me', 'OFFCLOUD': 'Offcloud'}
+						provider_check_names = {'REAL-DEBRID': 'Real-Debrid', 'ALLDEBRID': 'AllDebrid', 'TORBOX': 'TorBox', 'PREMIUMIZE': 'Premiumize.me', 'OFFCLOUD': 'Offcloud'}
 						check_provider = provider_check_names.get(provider)
 						if check_provider and self._provider_cache_verified(check_provider): cache_flag = '[B]CACHED[/B]'
 						elif check_provider: cache_flag = 'UNCHECKED'
@@ -267,6 +276,9 @@ class SourcesResults(BaseDialog):
 		self.setProperty('title', self.meta_get('title'))
 		self.setProperty('total_results', self.total_results)
 		self.setProperty('filters_ignored', '| Filters Ignored' if self.filters_ignored else '')
+		if self.prescrape_empty_notice:
+			self.setProperty('prescrape_empty_notice', self.prescrape_empty_notice_main)
+			self.setProperty('prescrape_empty_notice_sub', self.prescrape_empty_notice_sub)
 
 	def set_poster(self):
 		if self.window_id == 2000: self.set_image(200, self.poster)
@@ -330,6 +342,7 @@ class SourcesPlayback(BaseDialog):
 	def __init__(self, *args, **kwargs):
 		BaseDialog.__init__(self, *args)
 		self.meta = kwargs.get('meta')
+		self.sources_ref = kwargs.get('sources_ref')
 		self.is_canceled, self.skip_resolve, self.resume_choice = False, False, None
 		self.meta_get = self.meta.get
 		self.addon_fanart = addon_fanart()
@@ -346,7 +359,22 @@ class SourcesPlayback(BaseDialog):
 	def onAction(self, action):
 		if action in self.closing_actions:
 			self.is_canceled = True
-			self.close()
+			defer_close = False
+			try:
+				if self.sources_ref:
+					if self.window_mode == 'resume':
+						self.resume_choice = 'cancel'
+						self.sources_ref._on_resolve_dialog_cancel()
+						defer_close = True
+					elif self.window_mode == 'resolver':
+						self.sources_ref._on_resolve_dialog_cancel()
+						defer_close = True
+					elif self.window_mode == 'scraper':
+						self.sources_ref._on_scrape_dialog_cancel()
+			except:
+				pass
+			if not defer_close:
+				self.close()
 		elif action == self.right_action and self.window_mode == 'resolver': self.skip_resolve = True
 
 	def iscanceled(self):

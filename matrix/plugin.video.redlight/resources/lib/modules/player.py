@@ -8,9 +8,17 @@ from caches.settings_cache import get_setting
 from modules import kodi_utils as ku, settings as st, watched_status as ws
 # logger = ku.logger
 
+PROP_RESOLVE_CANCEL = 'redlight.resolve_cancelled'
+PROP_PLAY_OPENING = 'redlight.play_opening'
+
 class RedLightPlayer(xbmc.Player):
 	def __init__ (self):
 		xbmc.Player.__init__(self)
+
+	def _resolve_cancelled(self):
+		if not self.is_generic and (self.sources_object._resolve_user_cancelled or self.sources_object.cancel_all_playback):
+			return True
+		return ku.get_property(PROP_RESOLVE_CANCEL) == 'true'
 
 	def run(self, url=None, obj=None):
 		ku.hide_busy_dialog()
@@ -21,16 +29,30 @@ class RedLightPlayer(xbmc.Player):
 
 	def play_video(self, url, obj):
 		self.set_constants(url, obj)
+		if not self.is_generic and self._resolve_cancelled():
+			self.playback_successful = False
+			self.cancel_all_playback = True
+			self.sources_object.cancel_all_playback = True
+			self.sources_object._resolve_user_cancelled = True
+			return
 		ku.volume_checker()
+		ku.set_property(PROP_PLAY_OPENING, 'true')
 		self.play(self.url, self.make_listing())
 		if not self.is_generic:
 			self.check_playback_start()
-			if self.playback_successful: self.monitor()
+			if self.playback_successful:
+				ku.clear_property(PROP_PLAY_OPENING)
+				self.monitor()
 			else:
 				self.sources_object.playback_successful = self.playback_successful
-				self.sources_object.cancel_all_playback = self.cancel_all_playback
-				if self.cancel_all_playback:
-					self.kill_dialog()
+				if self.cancel_all_playback or self.sources_object._resolve_user_cancelled:
+					self.sources_object.cancel_all_playback = True
+					self.sources_object._resolve_user_cancelled = True
+				else:
+					self.sources_object.cancel_all_playback = self.cancel_all_playback
+				if self.cancel_all_playback or self.sources_object._resolve_user_cancelled:
+					if not self.sources_object._resolve_user_cancelled:
+						self.kill_dialog()
 					self.safe_stop()
 			try: del self.kodi_monitor
 			except: pass
@@ -42,12 +64,30 @@ class RedLightPlayer(xbmc.Player):
 		resolve_percent = 0
 		while self.playback_successful is None:
 			ku.hide_busy_dialog()
-			if not self.sources_object.progress_dialog: self.playback_successful = True
+			if self._resolve_cancelled():
+				self.sources_object.cancel_all_playback = True
+				self.sources_object._resolve_user_cancelled = True
+				self.playback_successful = False
+				self.safe_stop()
+				break
+			elif not self.sources_object.progress_dialog:
+				if self._resolve_cancelled():
+					self.sources_object.cancel_all_playback = True
+					self.sources_object._resolve_user_cancelled = True
+					self.playback_successful = False
+					self.safe_stop()
+					break
+				elif self.isPlayingVideo():
+					try:
+						if self.getTotalTime() not in ('0.0', '', 0.0, None) and ku.get_visibility('Window.IsActive(fullscreenvideo)'):
+							self.playback_successful = True
+					except: pass
 			elif self.sources_object.progress_dialog.skip_resolved(): self.playback_successful = False
 			elif self.sources_object.progress_dialog.iscanceled() or self.kodi_monitor.abortRequested():
 				self.sources_object.cancel_all_playback = True
 				self.sources_object._resolve_user_cancelled = True
 				self.playback_successful = False
+				self.safe_stop()
 				break
 			elif resolve_percent >= 100:
 				self.playback_successful = False
@@ -56,11 +96,20 @@ class RedLightPlayer(xbmc.Player):
 				ku.execute_builtin('SendClick(okdialog, 11)')
 				self.playback_successful = False
 			elif self.isPlayingVideo():
+				if self._resolve_cancelled():
+					self.sources_object.cancel_all_playback = True
+					self.sources_object._resolve_user_cancelled = True
+					self.playback_successful = False
+					self.safe_stop()
+					break
 				try:
 					if self.getTotalTime() not in ('0.0', '', 0.0, None) and ku.get_visibility('Window.IsActive(fullscreenvideo)'): self.playback_successful = True
 				except: pass
 			resolve_percent = round(resolve_percent + 0.26, 1)
-			self.sources_object.progress_dialog.update_resolver(percent=resolve_percent)
+			try:
+				if self.sources_object.progress_dialog:
+					self.sources_object.progress_dialog.update_resolver(percent=resolve_percent)
+			except: pass
 			ku.sleep(50)
 
 	def playback_close_dialogs(self):
@@ -255,8 +304,11 @@ class RedLightPlayer(xbmc.Player):
 		return None
 
 	def kill_dialog(self):
-		try: self.sources_object._kill_progress_dialog()
-		except: ku.close_all_dialog()
+		try:
+			self.sources_object._kill_progress_dialog()
+		except:
+			if not getattr(self.sources_object, '_resolve_user_cancelled', False):
+				ku.close_all_dialog()
 
 	def set_constants(self, url, obj):
 		self.url = url
@@ -294,11 +346,42 @@ class RedLightPlayer(xbmc.Player):
 
 	def safe_stop(self):
 		try:
-			if self.isPlaying():
-				self.stop()
-				ku.sleep(150)
+			if ku.get_property(PROP_PLAY_OPENING) == 'true' or (self.isPlaying() and not self.isPlayingVideo()):
+				for _ in range(80):
+					try:
+						if self.isPlayingVideo():
+							ku.sleep(300)
+							break
+					except:
+						pass
+					ku.sleep(100)
+				else:
+					ku.sleep(400)
+			ku.execute_builtin('PlayerControl(Stop)', block=True)
+			stable_idle = 0
+			for _ in range(80):
+				playing = False
+				try:
+					playing = self.isPlaying() or self.isPlayingVideo()
+				except:
+					pass
+				if playing:
+					stable_idle = 0
+					try:
+						self.stop()
+					except:
+						pass
+					ku.execute_builtin('PlayerControl(Stop)', block=False)
+				else:
+					stable_idle += 1
+					if stable_idle >= 6:
+						ku.sleep(400)
+						return
+				ku.sleep(100)
 		except:
 			pass
+		finally:
+			ku.clear_property(PROP_PLAY_OPENING)
 
 	def clear_playback_properties(self, clear_navigation=True):
 		if clear_navigation:
@@ -307,6 +390,7 @@ class RedLightPlayer(xbmc.Player):
 		ku.clear_property('subs.player_filename')
 
 	def run_error(self):
+		ku.clear_property(PROP_PLAY_OPENING)
 		try: self.sources_object.playback_successful = False
 		except: pass
 		self.clear_playback_properties()

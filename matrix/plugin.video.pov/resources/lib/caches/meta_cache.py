@@ -115,7 +115,7 @@ class MetaCache(BaseCache):
 		except: pass
 
 	def delete_all_seasons_memory_cache(self, media_id, total_seasons=None):
-		if not total_seasons: total_seasons = 101
+		if not total_seasons: total_seasons = 100
 		for item in range(total_seasons + 1):
 			clear_property('%s_%s' % (prop_dict.get('meta_season') % str(media_id), str(item)))
 

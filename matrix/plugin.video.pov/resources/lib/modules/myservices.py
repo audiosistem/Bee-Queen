@@ -21,7 +21,7 @@ def watch_indicators(function):
 			'At successful activation, watched status and resume progress will be set to [B]%s[/B]. '
 			'To change settings after activation, use the addon settings category:[CR]'
 			'[B]Features/Watched Indicators/Watched Status Provider[/B]'
-		) % instance.__class__.__name__)
+		) % instance.__class__.__name__, top_space=False)
 	return wrapper
 
 def _make_progress_dialog(**kwargs):

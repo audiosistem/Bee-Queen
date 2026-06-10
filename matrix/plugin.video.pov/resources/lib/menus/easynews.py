@@ -46,7 +46,7 @@ def account_info(params):
 	try:
 		kodi_utils.show_busy_dialog()
 		account_info, usage_info = EasyNews().account()
-		if not account_info or not usage_info: return kodi_utils.ok_dialog(text=32574, top_space=True)
+		if not account_info or not usage_info: return kodi_utils.ok_dialog(text=32574)
 		body = []
 		append = body.append
 		expires = jsondate_to_datetime(account_info[2], '%Y-%m-%d')

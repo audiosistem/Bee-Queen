@@ -79,29 +79,27 @@ class SourceResults(BaseDialog):
 			if magnet_url: link = Source(source, self.meta).manual_add_magnet_to_cloud()
 			else: link = Source(source, self.meta).manual_add_nzb_to_cloud()
 			if link is None: return
-			source['unrestricted_link'] = link
-			self.selected = ('play', source)
+			self.selected = ('play', {**source, 'unrestricted_link': link})
 			return self.close()
 		elif action == self.info_actions:
-			kwargs = dict(item=chosen_listitem, fanart=self.original_fanart())
+			kwargs = {'item': chosen_listitem, 'fanart': self.original_fanart()}
 			self.open_window(('windows.sources', 'ResultsInfo'), 'sources_info.xml', **kwargs)
 		elif action in self.context_actions:
 			highlight = chosen_listitem.getProperty('tikiskins.highlight')
 #			source = json.loads(chosen_listitem.getProperty('source'))
 			source = self._results[chosen_listitem.getProperty('source')]
-			kwargs = dict(item=source, meta=self.meta, highlight=highlight, filter_applied=self.filter_applied)
+			kwargs = {'item': source, 'meta': self.meta, 'highlight': highlight, 'filter_applied': self.filter_applied}
 			choice = self.open_window(('windows.sources', 'ResultsContextMenu'), 'contextmenu.xml', **kwargs)
 			if choice is None: return
 			if 'clear_results_filter' in choice: return self.clear_filter()
 			elif 'results_filter' in choice: return self.filter_results()
 			elif 'results_info' in choice:
-				kwargs = dict(item=chosen_listitem, fanart=self.original_fanart())
+				kwargs = {'item': chosen_listitem, 'fanart': self.original_fanart()}
 				self.open_window(('windows.sources', 'ResultsInfo'), 'sources_info.xml', **kwargs)
 			elif 'seekable_easynews' in choice:
 				link = Source(source, self.meta).resolve_internal_sources(True)
 				if link is None: return
-				source['unrestricted_link'] = link
-				self.selected = ('play', source)
+				self.selected = ('play', {**source, 'unrestricted_link': link})
 				return self.close()
 			elif 'browse_packs' in choice:
 				link = Source(source, self.meta).browse_packs(highlight)
@@ -188,6 +186,7 @@ class SourceResults(BaseDialog):
 			self.item_list = list(builder())
 			self.total_results = string(len(self.item_list))
 			if not self.prescrape: return
+			count = len(self.item_list)
 			self._results[str(count + 1)] = {}
 			prescrape_listitem = self.make_listitem()
 			prescrape_listitem.setProperty('source', str(count + 1))
@@ -220,12 +219,12 @@ class SourceResults(BaseDialog):
 		choices = [(filter_quality, 'quality'), (filter_provider, 'provider'), (filter_title, 'keyword_title'), (filter_extraInfo, 'extra_info')]
 		list_items = [{'line1': item[0]} for item in choices]
 		heading = filter_str.replace('[B]', '').replace('[/B]', '')
-		kwargs = {'items': json.dumps(list_items), 'heading': heading, 'enumerate': 'false', 'multi_choice': 'false', 'multi_line': 'false'}
+		kwargs = {'items': json.dumps(list_items), 'heading': heading, 'multi_line': 'false'}
 		main_choice = select_dialog([i[1] for i in choices], **kwargs)
 		if main_choice is None: return
 		if main_choice == 'extra_info':
 			list_items = [{'line1': item[0]} for item in extra_info_choices]
-			kwargs = {'items': json.dumps(list_items), 'heading': heading, 'enumerate': 'false', 'multi_choice': 'true', 'multi_line': 'false'}
+			kwargs = {'items': json.dumps(list_items), 'heading': heading, 'multi_choice': 'true', 'multi_line': 'false'}
 			choice = select_dialog(extra_info_choices, **kwargs)
 			if choice is None: return
 			choice = [i[1] for i in choice]
@@ -254,11 +253,11 @@ class SourceResults(BaseDialog):
 			]
 			provider_choices.sort(key=choice_sorter.index)
 			list_items = [{'line1': item} for item in provider_choices]
-			kwargs = {'items': json.dumps(list_items), 'heading': heading, 'enumerate': 'false', 'multi_choice': 'true', 'multi_line': 'false'}
+			kwargs = {'items': json.dumps(list_items), 'heading': heading, 'multi_choice': 'true', 'multi_line': 'false'}
 			choice = select_dialog(provider_choices, **kwargs)
 			if choice is None: return
 			filtered_list = [i for i in self.item_list if any(x in i.getProperty(filter_property) for x in choice)]
-		if not filtered_list: return ok_dialog(text=32760, top_space=True)
+		if not filtered_list: return ok_dialog(text=32760)
 		self.filter_applied = True
 		self.win.reset()
 		self.win.addItems(filtered_list)

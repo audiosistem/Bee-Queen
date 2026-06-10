@@ -43,6 +43,31 @@
                 <aligny>center</aligny>
                 <label>[B]$INFO[Window.Property(total_results)][/B] [UPPERCASE]Results $INFO[Window.Property(filters_ignored)] $INFO[Window.Property(filter_info)][/UPPERCASE]</label>
             </control>
+            <control type="group">
+                <visible>!String.IsEmpty(Window.Property(prescrape_empty_notice))</visible>
+                <control type="label">
+                    <left>70</left>
+                    <top>48</top>
+                    <width max="1780">auto</width>
+                    <height>22</height>
+                    <font>font12</font>
+                    <textcolor>FFFF8A65</textcolor>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <label>[B]$INFO[Window.Property(prescrape_empty_notice)][/B]</label>
+                </control>
+                <control type="label">
+                    <left>70</left>
+                    <top>72</top>
+                    <width max="1780">auto</width>
+                    <height>18</height>
+                    <font>font10</font>
+                    <textcolor>FFCCCCCC</textcolor>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <label>$INFO[Window.Property(prescrape_empty_notice_sub)]</label>
+                </control>
+            </control>
         </control>
         <!-- Results -->
         <control type="group">
@@ -184,7 +209,7 @@
                                 <textcolor>FF9c9a9b</textcolor>
                                 <align>center</align>
                                 <aligny>center</aligny>
-                                <label>[B]RUN FULL SOURCE SEARCH[/B]</label>
+                                <label>[B]RUN EXTERNAL SCRAPER SEARCH[/B]</label>
                                 <scroll>false</scroll>
                                 <visible>!String.IsEmpty(ListItem.Property(perform_full_search))</visible>
                             </control>
@@ -285,7 +310,7 @@
                                     <textcolor>FF1F2020</textcolor>
                                     <align>center</align>
                                     <aligny>center</aligny>
-                                    <label>[B]RUN FULL SOURCE SEARCH[/B]</label>
+                                    <label>[B]RUN EXTERNAL SCRAPER SEARCH[/B]</label>
                                 </control>
                             </control>
                         </control>
@@ -453,7 +478,7 @@
                                 <textcolor>FF9c9a9b</textcolor>
                                 <align>center</align>
                                 <aligny>center</aligny>
-                                <label>[B]RUN FULL SOURCE SEARCH[/B]</label>
+                                <label>[B]RUN EXTERNAL SCRAPER SEARCH[/B]</label>
                                 <scroll>false</scroll>
                                 <visible>!String.IsEmpty(ListItem.Property(perform_full_search))</visible>
                             </control>
@@ -554,7 +579,7 @@
                                     <textcolor>FF1F2020</textcolor>
                                     <align>center</align>
                                     <aligny>center</aligny>
-                                    <label>[B]RUN FULL SOURCE SEARCH[/B]</label>
+                                    <label>[B]RUN EXTERNAL SCRAPER SEARCH[/B]</label>
                                     <scroll>false</scroll>
                                     <visible>!String.IsEmpty(ListItem.Property(perform_full_search))</visible>
                                 </control>
@@ -714,7 +739,7 @@
                                 <textcolor>FF9c9a9b</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
-                                <label>[B]RUN FULL SOURCE SEARCH[/B]</label>
+                                <label>[B]RUN EXTERNAL SCRAPER SEARCH[/B]</label>
                                 <scroll>false</scroll>
                             </control>
                         </control>
@@ -802,7 +827,7 @@
                                     <textcolor>FF1F2020</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
-                                    <label>[B]RUN FULL SOURCE SEARCH[/B]</label>
+                                    <label>[B]RUN EXTERNAL SCRAPER SEARCH[/B]</label>
                                 </control>
                             </control>
                         </control>

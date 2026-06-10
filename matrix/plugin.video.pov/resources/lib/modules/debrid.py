@@ -137,8 +137,7 @@ class Source:
 			'line2': '%s: %.2f GB' % (ls(32584), float(item['size'])/1073741824)
 		})
 		if download: return pack_choices
-		kwargs = {'enumerate': 'true', 'multi_line': 'true'}
-		kwargs.update({'items': json.dumps(pack_choices), 'heading': self.name, 'highlight': highlight})
+		kwargs = {'items': json.dumps(pack_choices), 'heading': self.name, 'highlight': highlight}
 		chosen_result = select_dialog(pack_choices, **kwargs)
 		if chosen_result is None: return 'cancel'
 		url_dl = chosen_result['link']
@@ -149,15 +148,15 @@ class Source:
 		api = import_debrid(self.debrid)
 		result = api.parse_magnet_pack(self.url, self.hash)
 		hide_busy_dialog()
-		if not result: return ok_dialog(text='Not Cached at [B]%s[/B]' % self.debrid.upper(), top_space=True)
+		if not result: return ok_dialog(text='Not Cached at [B]%s[/B]' % self.debrid.upper())
 		torrent_id = next((i['torrent_id'] for i in result if 'torrent_id' in i), None)
 		if torrent_id: Thread(target=api.delete_torrent, args=(torrent_id,)).start()
-		ok_dialog(text='Cached at [B]%s[/B]' % self.debrid.upper(), top_space=True)
+		ok_dialog(text='Cached at [B]%s[/B]' % self.debrid.upper())
 
 	def nzb_cache_and_play(self):
 		line, status_str = '%s[CR]%s[CR]STATUS: %s', '[B]%s[/B] (%2d%%)'
 		title, season, episode = self.meta['title'], self.meta['season'], self.meta['episode']
-		if season and episode: line1 = '%s (%02dx%02d)' % (title, season, episode)
+		if season and episode: line1 = '%s (S%sE%s)' % (title, season, episode)
 		else: line1 = '%s (%s)' % (title, self.meta['year'])
 		kodi_utils.progressDialog.create('POV', '')
 		kodi_utils.progressDialog.update(0, line % (line1, '', '[B]GRAB...[/B]'))
@@ -184,7 +183,7 @@ class Source:
 		if self.debrid in ('torbox',) and self.meta:
 			args = 'POV', '[CR]%s' % ls(32831) % self.debrid.upper()
 			choice = kodi_utils.dialog.yesnocustom(*args, customlabel='Cache/Play')
-		else: choice = confirm_dialog(text=ls(32831) % self.debrid.upper(), top_space=True)
+		else: choice = confirm_dialog(text=ls(32831) % self.debrid.upper())
 		if choice == 2: return self.nzb_cache_and_play()
 		if choice in (-1, 0, False): return
 		show_busy_dialog()
@@ -196,7 +195,7 @@ class Source:
 		else: notification(32575)
 
 	def manual_add_magnet_to_cloud(self):
-		if not confirm_dialog(text=ls(32831) % self.debrid.upper(), top_space=True): return
+		if not confirm_dialog(text=ls(32831) % self.debrid.upper()): return
 		show_busy_dialog()
 		api = import_debrid(self.debrid)
 		api.clear_cache()

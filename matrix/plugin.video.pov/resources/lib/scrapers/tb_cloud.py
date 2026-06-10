@@ -83,7 +83,7 @@ class source(Debrid):
 				for item in file['files']:
 					try: item.update({
 						'filename': item['short_name'], 'folder_name': file['name'],
-						'link': '%s,%s' % (file['id'], item['id'])
+						'link': '%s,%s,%s' % (file['id'], item['id'], mediatype)
 					})
 					except: pass
 					else: results_append(item)

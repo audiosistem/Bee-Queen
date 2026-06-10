@@ -108,7 +108,7 @@ class Discover:
 			else: icon = poster
 			append({'line1': rootname, 'line2': item['overview'], 'icon': icon, 'rootname': rootname, 'tmdb_id': str(item['id'])})
 		heading = heading_base % ('%s %s' % (ls(32193), ls(32228)))
-		kwargs = {'items': json.dumps(choice_list), 'heading': heading, 'multi_line': 'true'}
+		kwargs = {'items': json.dumps(choice_list), 'heading': heading}
 		values = kodi_utils.select_dialog([(i['tmdb_id'], i['rootname']) for i in choice_list], **kwargs)
 		if values is None: return
 		self._process(key, values)
@@ -279,11 +279,11 @@ class Discover:
 		for item in actors:
 			known_for_list = [i.get('title', 'NA') for i in item['known_for']]
 			known_for_list = [i for i in known_for_list if i != 'NA']
-			item['icon'] = icon = profile_url % item['profile_path'] if item.get('profile_path') else people_icon
 			item['line1'] = item['name']
 			item['line2'] = ', '.join(known_for_list) if known_for_list else ''
+			item['icon'] = icon = profile_url % item['profile_path'] if item.get('profile_path') else people_icon
 		if len(actors) > 1:
-			kwargs = {'items': json.dumps(actors), 'heading': heading_base % ls(32664), 'multi_line': 'true'}
+			kwargs = {'items': json.dumps(actors), 'heading': heading_base % ls(32664)}
 			choice = kodi_utils.select_dialog(actors, **kwargs)
 			if choice is None: return self._set_property()
 			actor_id, actor_name = choice['id'], choice['name']
@@ -487,13 +487,14 @@ class Discover:
 	def _selection_dialog(self, dialog_list, function_list, string):
 		list_items = [{'line1': item, 'icon': default_icon} for item in dialog_list]
 		kwargs = {'items': json.dumps(list_items), 'heading': string}
-		return kodi_utils.select_dialog(function_list, **kwargs)
+		return kodi_utils.select_dialog(function_list, multi_line='false', **kwargs)
 
-	def _multiselect_dialog(self, string, dialog_list, function_list=None, preselect= []):
+	def _multiselect_dialog(self, string, dialog_list, function_list=None, preselect=None):
 		if not function_list: function_list = dialog_list
+		if not preselect: preselect = []
 		list_items = [{'line1': item, 'icon': default_icon} for item in dialog_list]
 		kwargs = {'items': json.dumps(list_items), 'heading': string, 'multi_choice': 'true', 'preselect': preselect}
-		return kodi_utils.select_dialog(function_list, **kwargs)
+		return kodi_utils.select_dialog(function_list, multi_line='false', **kwargs)
 
 	def _build_string(self):
 		string_params = self.discover_params['search_string']

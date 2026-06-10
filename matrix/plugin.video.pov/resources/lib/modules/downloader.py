@@ -34,14 +34,14 @@ def factory(params):
 		if len(pack_choices) > 1:
 			heading = clean_file_name(source.get('name'))
 			preselect = list(range(len(pack_choices)))
-			kwargs = {'enumerate': 'true', 'multi_choice': 'true', 'multi_line': 'true', 'preselect': preselect}
-			kwargs.update({'items': json.dumps(pack_choices), 'heading': heading, 'highlight': params['highlight']})
+			kwargs = {'heading': heading, 'highlight': params['highlight'], 'preselect': preselect}
+			kwargs.update({'items': json.dumps(pack_choices), 'multi_choice': 'true'})
 			chosen_list = kodi_utils.select_dialog(pack_choices, **kwargs)
 		else: chosen_list = next(([i] for i in pack_choices), None)
 		if not chosen_list: return
 		size_label = sum(i['size'] for i in chosen_list) / (1024 * 1024)
 		text = '%s[CR]%s' % (ls(32688) % size_label, ls(32689))
-		if not kodi_utils.confirm_dialog(text=text, top_space=True): return
+		if not kodi_utils.confirm_dialog(text=text): return
 		show_package = source.get('package') == 'show'
 		default_name = '%s (%s)' % (clean_file_name(get_title(meta)), meta.get('year'))
 		default_foldername = kodi_utils.dialog.input(ls(32228), defaultt=default_name)
@@ -261,17 +261,17 @@ class Downloader:
 		playing = kodi_utils.player.isPlaying()
 		if downloaded: text = '%s %s:[CR]%s' % (ls(32107), ls(32576), title)
 		else: text = '%s %s:[CR]%s' % (ls(32107), ls(32575), title)
-		if not downloaded or not playing: kodi_utils.ok_dialog(text=text, top_space=True)
+		if not downloaded or not playing: kodi_utils.ok_dialog(text=text)
 
 	def confirm_download(self):
 		if self.action == 'image' or 'pack_files' in self.params: return True
 		text = '%s[CR]%s' % (ls(32688) % self.size_label, ls(32689))
-		return kodi_utils.confirm_dialog(text=text, top_space=True)
+		return kodi_utils.confirm_dialog(text=text)
 
-	def return_notification(self, notification=None, ok_dialog=None, top_space=True):
+	def return_notification(self, notification=None, ok_dialog=None):
 		kodi_utils.hide_busy_dialog()
 		if notification: kodi_utils.notification(notification)
-		elif ok_dialog: kodi_utils.ok_dialog(text=ok_dialog, top_space=True)
+		elif ok_dialog: kodi_utils.ok_dialog(text=ok_dialog)
 		else: return
 
 class WriteProxy:

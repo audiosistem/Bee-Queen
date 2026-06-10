@@ -128,7 +128,7 @@ def edit_tmdb_list(params):
 		default_icon}
 		for i in choices
 	]
-	kwargs = {'items': json.dumps(list_items), 'heading': heading, 'multi_line': 'true'}
+	kwargs = {'items': json.dumps(list_items), 'heading': heading}
 	choice = kodi_utils.select_dialog([i[0] for i in choices], **kwargs)
 	if choice in ('cancel', None): return
 	if   'name' in choice:
@@ -136,7 +136,7 @@ def edit_tmdb_list(params):
 		params['name'] = name.strip() or params['name']
 	elif 'public' in choice:
 		text = 'Make %s Private?' % params['name']
-		params['public'] = 'true' if not kodi_utils.confirm_dialog(text=text, top_space=True) else 'false'
+		params['public'] = 'true' if not kodi_utils.confirm_dialog(text=text) else 'false'
 	elif choice in ('poster', 'fanart'):
 		art = artwork_choice_tmdb_list(choice, params['list_id'], params['name'], image_resolution, default_icon)
 		params[choice] = params[choice] if art is None else art
@@ -164,6 +164,6 @@ def artwork_choice_tmdb_list(key, list_id, list_title, resolution, icon):
 	]
 	choices += [('clear', 'Clear', icon)]
 	list_items = [{'line1': item[1], 'line2': item[0], 'icon': item[2]} for item in choices]
-	kwargs = {'items': json.dumps(list_items), 'heading': list_title, 'enumerate': 'true', 'multi_line': 'true'}
+	kwargs = {'items': json.dumps(list_items), 'heading': list_title, 'enumerate': 'true'}
 	return kodi_utils.select_dialog([i[0] for i in choices], **kwargs)
 

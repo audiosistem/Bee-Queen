@@ -6,7 +6,7 @@ from threading import Thread, Lock
 from caches.external_cache import external_cache
 from caches.settings_cache import get_setting
 from modules import kodi_utils, source_utils
-from modules.debrid import RD_check, OC_check, TB_check, PM_check, query_local_cache
+from modules.debrid import RD_check, AD_check, OC_check, TB_check, PM_check, query_local_cache
 from modules.settings import debrid_cache_check
 from modules.utils import clean_file_name
 # logger = kodi_utils.logger
@@ -34,7 +34,7 @@ class source:
 		self.count_tuple_final = (('final_4k', '4K', self._quality_length), ('final_1080p', '1080p', self._quality_length), ('final_720p', '720p', self._quality_length),
 									('final_sd', '', self._quality_length_sd), ('final_total', '', self.quality_length_final))
 		self.debrid_runners = {'Real-Debrid': ('Real-Debrid', RD_check), 'Premiumize.me': ('Premiumize.me', PM_check),
-								'Offcloud': ('Offcloud', OC_check), 'TorBox': ('TorBox', TB_check)}
+								'AllDebrid': ('AllDebrid', AD_check), 'Offcloud': ('Offcloud', OC_check), 'TorBox': ('TorBox', TB_check)}
 		self.cloud_scrapers = [i for i in (cloud_scrapers or []) if i != 'external']
 		self.processed_cloud_scrapers = set()
 
@@ -205,7 +205,7 @@ class source:
 			return debrid_cache_check(provider)
 		def _process_cache_check(provider, function):
 			if _debrid_api_check_enabled(provider):
-				if provider == 'Real-Debrid':
+				if provider in ('Real-Debrid', 'AllDebrid'):
 					cached = function(hash_list, cached_hashes, self.data, self.active_debrid)
 				else:
 					cached = function(hash_list, cached_hashes)

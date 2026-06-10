@@ -119,7 +119,7 @@ class Menu(Debrid):
 	def cloud_delete(self, file_type, file_id):
 		if not kodi_utils.confirm_dialog(): return
 		result = self.delete_object(file_type, file_id)
-		if not result: return kodi_utils.ok_dialog(text=32574, top_space=True)
+		if not result: return kodi_utils.ok_dialog(text=32574)
 		self.clear_cache()
 		kodi_utils.container_refresh()
 
@@ -127,7 +127,7 @@ class Menu(Debrid):
 		new_name = kodi_utils.dialog.input('POV', defaultt=current_name)
 		if not new_name: return
 		result = self.rename_cache_item(file_type, file_id, new_name)
-		if not result: return kodi_utils.ok_dialog(text=32574, top_space=True)
+		if not result: return kodi_utils.ok_dialog(text=32574)
 		self.clear_cache()
 		kodi_utils.container_refresh()
 

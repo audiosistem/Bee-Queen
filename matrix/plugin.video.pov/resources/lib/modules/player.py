@@ -162,15 +162,22 @@ class POVPlayer(kodi_utils.xbmc_player):
 
 	def getCredits(self):
 		from requests import request
-		base_url = 'https://api.introdb.app/segments'
+		timeout = (3.05, 6.05)
 		params = {'imdb_id': self.imdb_id, 'season': self.season, 'episode': self.episode}
 		try:
-			response = request('get', base_url, params=params, timeout=10)
+			response = request('get', 'https://api.introdb.app/segments', params=params, timeout=timeout)
 			credits = response.json().get('outro') or {}
-			if credits.get('start_sec') is not None: start_prep = int(credits['start_sec'])
-			elif credits.get('start_ms') is not None: start_prep = int(credits['start_ms'] / 1000)
-			else: start_prep = None
-			if start_prep and start_prep <= self.getTotalTime(): return start_prep
+			if credits.get('start_sec') is not None: credits_init = int(credits['start_sec'])
+			elif credits.get('start_ms') is not None: credits_init = int(credits['start_ms'] / 1000)
+			else: credits_init = None
+			if credits_init and credits_init <= self.getTotalTime(): return credits_init
+		except: pass
+		try:
+			response = request('get', 'https://api.theintrodb.org/v3/media', params=params, timeout=timeout)
+			credits = next(iter(response.json().get('credits') or []))
+			if credits.get('start_ms') is not None: credits_init = int(credits['start_ms'] / 1000)
+			else: credits_init = None
+			if credits_init and credits_init <= self.getTotalTime(): return credits_init
 		except: pass
 
 	def media_watched_marker(self):
