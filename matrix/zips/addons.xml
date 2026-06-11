@@ -699,7 +699,7 @@ v1.6.0 - My Free Flow + full Trakt integration</news>
       <fanart>resources/fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="plugin.video.hublive" name="HubLive" version="1.5.0" provider-name="1X si Geamanu">
+</addon><addon id="plugin.video.hublive" name="HubLive" version="1.6.3" provider-name="1X si Geamanu">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
@@ -2404,7 +2404,7 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
       <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
-</addon><addon id="repository.hub" name="Hub Repo" version="1.2.4" provider-name="1x">
+</addon><addon id="repository.hub" name="Hub Repo" version="1.2.5" provider-name="1x">
     <extension point="xbmc.addon.repository" name="Hub Repo">
 		<dir>
 			<info compressed="false">https://raw.githubusercontent.com/staycanuca/hub/main/zip/addons.xml</info>

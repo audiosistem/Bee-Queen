@@ -1,7 +1,11 @@
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from urllib.parse import quote_plus
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    TimeoutError as FuturesTimeoutError,
+    as_completed,
+)
+from urllib.parse import quote_plus, urlencode
 
 import xbmc
 import xbmcaddon
@@ -10,8 +14,237 @@ import xbmcplugin
 import xbmcvfs
 
 _SEARCH_CACHE_TTL = 120
-_MEGA_SEARCH_MAX_WORKERS = 3
+_MEGA_SEARCH_MAX_WORKERS = 8
+_MEGA_SEARCH_SERVER_TIMEOUT = 10
 _search_cache = {}
+
+
+def _get_saved_searches_file():
+    addon = xbmcaddon.Addon()
+    profile_path = addon.getAddonInfo("profile")
+    try:
+        resolved = xbmcvfs.translatePath(profile_path)
+    except Exception:
+        resolved = xbmc.translatePath(profile_path)
+
+    if not os.path.exists(resolved):
+        os.makedirs(resolved)
+    return os.path.join(resolved, "saved_searches.json")
+
+
+def load_saved_searches():
+    try:
+        import json
+
+        with open(_get_saved_searches_file(), "r", encoding="utf-8") as handle:
+            saved_searches = json.load(handle)
+        return saved_searches if isinstance(saved_searches, list) else []
+    except (FileNotFoundError, ValueError, TypeError):
+        return []
+    except Exception as exc:
+        xbmc.log(
+            f"[SavedSearches] Failed to load saved searches: {exc}",
+            level=xbmc.LOGWARNING,
+        )
+        return []
+
+
+def _save_saved_searches(saved_searches):
+    import json
+
+    with open(_get_saved_searches_file(), "w", encoding="utf-8") as handle:
+        json.dump(saved_searches, handle, ensure_ascii=True, indent=2)
+
+
+def _saved_search_key(search):
+    return (
+        (search.get("query") or "").strip().casefold(),
+        search.get("search_type") or "",
+        search.get("server") or "",
+        search.get("main_mode") or "",
+    )
+
+
+def add_saved_search(query, search_type, server="", main_mode=""):
+    query = (query or "").strip()
+    if not query:
+        return
+
+    saved_search = {
+        "query": query,
+        "search_type": search_type or "live",
+        "server": server or "",
+        "main_mode": main_mode or "",
+    }
+    saved_searches = load_saved_searches()
+    if _saved_search_key(saved_search) in {
+        _saved_search_key(item) for item in saved_searches
+    }:
+        xbmcgui.Dialog().notification(
+            "Căutări salvate",
+            f'"{query}" este deja salvată',
+            xbmcgui.NOTIFICATION_INFO,
+            2000,
+        )
+        return
+
+    saved_searches.append(saved_search)
+    try:
+        _save_saved_searches(saved_searches)
+    except Exception as exc:
+        xbmc.log(
+            f"[SavedSearches] Failed to save search: {exc}",
+            level=xbmc.LOGERROR,
+        )
+        xbmcgui.Dialog().notification(
+            "Căutări salvate",
+            "Căutarea nu a putut fi salvată",
+            xbmcgui.NOTIFICATION_ERROR,
+            2500,
+        )
+        return
+
+    xbmcgui.Dialog().notification(
+        "Căutări salvate",
+        f'"{query}" a fost salvată',
+        xbmcgui.NOTIFICATION_INFO,
+        2000,
+    )
+    xbmc.executebuiltin("Container.Refresh")
+
+
+def remove_saved_search(query, search_type, server="", main_mode=""):
+    target = {
+        "query": query or "",
+        "search_type": search_type or "live",
+        "server": server or "",
+        "main_mode": main_mode or "",
+    }
+    saved_searches = load_saved_searches()
+    remaining = [
+        item
+        for item in saved_searches
+        if _saved_search_key(item) != _saved_search_key(target)
+    ]
+    if len(remaining) == len(saved_searches):
+        return
+
+    try:
+        _save_saved_searches(remaining)
+    except Exception as exc:
+        xbmc.log(
+            f"[SavedSearches] Failed to remove saved search: {exc}",
+            level=xbmc.LOGERROR,
+        )
+        return
+
+    xbmcgui.Dialog().notification(
+        "Căutări salvate",
+        f'"{query}" a fost ștearsă',
+        xbmcgui.NOTIFICATION_INFO,
+        2000,
+    )
+    xbmc.executebuiltin("Container.Refresh")
+
+
+def _build_saved_search_url(base_url, search):
+    search_type = search.get("search_type") or "live"
+    params = {"query": search.get("query") or ""}
+
+    if search_type.startswith("mega_"):
+        params["mode"] = "mega_search_results"
+        params["search_type"] = search_type[5:]
+    elif search_type == "vod":
+        params["mode"] = "search_results_vod"
+        params["server"] = search.get("server") or "server1"
+    elif search_type == "series":
+        params["mode"] = "search_results_series"
+        params["server"] = search.get("server") or "server1"
+    else:
+        params["mode"] = "search_results"
+        params["server"] = search.get("server") or "server1"
+        if search.get("main_mode"):
+            params["main_mode"] = search["main_mode"]
+
+    return f"{base_url}?{urlencode(params)}"
+
+
+def list_saved_searches(base_url, handle):
+    xbmcplugin.setPluginCategory(handle, "Căutări salvate")
+    saved_searches = load_saved_searches()
+    if not saved_searches:
+        li = xbmcgui.ListItem(
+            label="[COLOR yellow]Nu există căutări salvate.[/COLOR]"
+        )
+        xbmcplugin.addDirectoryItem(handle=handle, url="", listitem=li, isFolder=False)
+        xbmcplugin.endOfDirectory(handle)
+        return
+
+    labels = {
+        "live": "Live",
+        "vod": "Film",
+        "series": "Serial",
+        "mega_live": "Mega Live",
+        "mega_vod": "Mega Filme",
+        "mega_series": "Mega Seriale",
+    }
+    for search in saved_searches:
+        query = search.get("query") or ""
+        search_type = search.get("search_type") or "live"
+        server = search.get("server") or ""
+        suffix = labels.get(search_type, search_type)
+        if server:
+            suffix = f"{suffix}, {server}"
+
+        li = xbmcgui.ListItem(label=f'{query} [COLOR gray]({suffix})[/COLOR]')
+        li.setArt(
+            {"icon": "DefaultAddonsSearch.png", "thumb": "DefaultAddonsSearch.png"}
+        )
+        remove_params = {
+            "mode": "remove_saved_search",
+            "query": query,
+            "search_type": search_type,
+            "server": server,
+            "main_mode": search.get("main_mode") or "",
+        }
+        li.addContextMenuItems(
+            [
+                (
+                    "Șterge căutarea salvată",
+                    f"RunPlugin({base_url}?{urlencode(remove_params)})",
+                )
+            ]
+        )
+        xbmcplugin.addDirectoryItem(
+            handle=handle,
+            url=_build_saved_search_url(base_url, search),
+            listitem=li,
+            isFolder=True,
+        )
+
+    xbmcplugin.endOfDirectory(handle)
+
+
+def _add_save_search_item(
+    base_url, handle, query, search_type, server="", main_mode=""
+):
+    params = {
+        "mode": "add_saved_search",
+        "query": query or "",
+        "search_type": search_type or "live",
+        "server": server or "",
+        "main_mode": main_mode or "",
+    }
+    li = xbmcgui.ListItem(label="[COLOR gold]Salvează această căutare[/COLOR]")
+    li.setArt(
+        {"icon": "DefaultFavourites.png", "thumb": "DefaultFavourites.png"}
+    )
+    xbmcplugin.addDirectoryItem(
+        handle=handle,
+        url=f"{base_url}?{urlencode(params)}",
+        listitem=li,
+        isFolder=False,
+    )
 
 
 def _get_search_cache_file():
@@ -281,17 +514,31 @@ def _search_live_channels_locally(
 
 def mega_search_menu(base_url, handle):
     items = [
+        ("Căutări salvate", "saved", "DefaultFavourites.png"),
         ("Cauta Live", "live", "DefaultAddonPVRClient.png"),
         ("Cauta Filme", "vod", "DefaultMovies.png"),
         ("Cauta Seriale", "series", "DefaultTVShows.png"),
+        (
+            "[COLOR yellow]Verifică indexul ratb[/COLOR]",
+            "reindex_ratb",
+            "DefaultAddonService.png",
+        ),
     ]
 
     for label, search_type, icon in items:
         li = xbmcgui.ListItem(label=label)
         li.setArt({"icon": icon, "thumb": icon})
-        url = f"{base_url}?mode=mega_search_input&search_type={search_type}"
+        if search_type == "saved":
+            url = f"{base_url}?mode=saved_searches"
+            is_folder = True
+        elif search_type == "reindex_ratb":
+            url = f"{base_url}?mode=reindex_ratb"
+            is_folder = False
+        else:
+            url = f"{base_url}?mode=mega_search_input&search_type={search_type}"
+            is_folder = False
         xbmcplugin.addDirectoryItem(
-            handle=handle, url=url, listitem=li, isFolder=False
+            handle=handle, url=url, listitem=li, isFolder=is_folder
         )
 
     xbmcplugin.endOfDirectory(handle)
@@ -457,6 +704,30 @@ def fetch_stalker_search(
         return []
 
 
+def _shutdown_executor_without_waiting(executor):
+    try:
+        executor.shutdown(wait=False, cancel_futures=True)
+    except TypeError:
+        executor.shutdown(wait=False)
+
+
+def _run_mega_search_call_with_timeout(call, server_id, operation):
+    executor = ThreadPoolExecutor(max_workers=1)
+    future = executor.submit(call)
+    try:
+        return future.result(timeout=_MEGA_SEARCH_SERVER_TIMEOUT)
+    except FuturesTimeoutError:
+        future.cancel()
+        xbmc.log(
+            f"[MegaSearch] Skipping slow server {server_id}: {operation} exceeded "
+            f"{_MEGA_SEARCH_SERVER_TIMEOUT}s",
+            level=xbmc.LOGWARNING,
+        )
+        return None
+    finally:
+        _shutdown_executor_without_waiting(executor)
+
+
 def show_mega_search_results(
     base_url,
     handle,
@@ -473,6 +744,8 @@ def show_mega_search_results(
     batch_start,
     skip_api_search,
     re_stream_id,
+    playlist_search_fn=None,
+    search_mode="rapid",
 ):
     xbmc.log(
         f"[MegaSearch] Starting with query='{query}', search_type='{search_type}'",
@@ -489,9 +762,14 @@ def show_mega_search_results(
     available_servers_count = len(available_servers)
     fetch_batch_size = max(1, int(fetch_batch_size or 1))
     batch_start = max(0, int(batch_start or 0))
+    search_mode = "complete" if search_mode == "complete" else "rapid"
+    effective_search_mode = search_mode if search_type == "live" else "complete"
 
     # Check if we have cached results for this exact search
-    cache_key = f"mega_{search_type}_{query}_{batch_start}_{skip_api_search}"
+    cache_key = (
+        f"mega_v2_{search_type}_{query}_{batch_start}_{skip_api_search}"
+        f"_{effective_search_mode}"
+    )
     cached_data = _get_cached_search_results("mega_search", cache_key, query)
     
     if cached_data is not None:
@@ -555,8 +833,23 @@ def show_mega_search_results(
     type_mapping = {"live": "itv", "vod": "vod", "series": "series"}
     stalker_type = type_mapping.get(search_type, "itv")
     all_results = []
+    timed_out_server_ids = set()
+    playlist_covered_server_keys = set()
 
-    if not skip_api_search:
+    if search_type == "live" and playlist_search_fn:
+        try:
+            playlist_results, playlist_covered_server_keys = playlist_search_fn(
+                query, available_servers
+            )
+            all_results.extend(playlist_results or [])
+        except Exception as exc:
+            xbmc.log(
+                f"[MegaSearch] Playlist index failed: {exc}",
+                level=xbmc.LOGWARNING,
+            )
+            playlist_covered_server_keys = set()
+
+    if not skip_api_search and effective_search_mode == "complete":
         dp = xbmcgui.DialogProgress()
         dp.create("Mega Cautare", "Se cauta pe toate serverele...")
 
@@ -581,42 +874,74 @@ def show_mega_search_results(
                 )
             return []
 
-        max_workers = min(len(available_servers), _MEGA_SEARCH_MAX_WORKERS)
-        executor = ThreadPoolExecutor(max_workers=max_workers or 1)
+        api_servers = [
+            server
+            for server in available_servers
+            if (
+                server.get("id") or "",
+                server.get("name") or "",
+                (server.get("portal_url") or "").rstrip("/"),
+            )
+            not in playlist_covered_server_keys
+        ]
+        max_workers = min(len(api_servers), _MEGA_SEARCH_MAX_WORKERS)
+        executor = None
         try:
-            future_to_server = {
-                executor.submit(worker, server): server for server in available_servers
-            }
+            future_to_server = {}
+            if api_servers:
+                executor = ThreadPoolExecutor(max_workers=max_workers or 1)
+                future_to_server = {
+                    executor.submit(worker, server): server for server in api_servers
+                }
 
             completed = 0
-            total = len(available_servers)
-            for future in as_completed(future_to_server):
-                if dp.iscanceled():
-                    break
+            total = len(api_servers)
+            search_timeout = _MEGA_SEARCH_SERVER_TIMEOUT
+            try:
+                for future in as_completed(future_to_server, timeout=search_timeout):
+                    if dp.iscanceled():
+                        break
 
-                result = future.result()
-                if result:
-                    all_results.extend(result)
+                    result = future.result()
+                    if result:
+                        all_results.extend(result)
 
-                completed += 1
-                progress = int((completed / total) * 100)
-                server = future_to_server[future]
-                dp.update(
-                    progress,
-                    f"Finalizat: [COLOR yellow]{server.get('name')}[/COLOR] ({completed}/{total})",
+                    completed += 1
+                    progress = int((completed / total) * 100)
+                    server = future_to_server[future]
+                    dp.update(
+                        progress,
+                        f"Finalizat: [COLOR yellow]{server.get('name')}[/COLOR] ({completed}/{total})",
+                    )
+            except FuturesTimeoutError:
+                slow_servers = []
+                for future, server in future_to_server.items():
+                    if future.done():
+                        continue
+                    future.cancel()
+                    server_id = server.get("id")
+                    if server_id:
+                        timed_out_server_ids.add(server_id)
+                    slow_servers.append(server.get("name", server_id))
+
+                xbmc.log(
+                    f"[MegaSearch] Search timeout after {search_timeout}s; "
+                    f"skipping slow servers: {slow_servers}",
+                    level=xbmc.LOGWARNING,
                 )
         finally:
-            try:
-                executor.shutdown(wait=False, cancel_futures=True)
-            except TypeError:
-                executor.shutdown(wait=False)
-
-        dp.close()
+            if executor is not None:
+                _shutdown_executor_without_waiting(executor)
+            dp.close()
         all_results = _dedupe_search_results(all_results, search_type)
 
     next_batch_start = None
     next_batch_count = 0
-    if not all_results and search_type == "live":
+    if (
+        not all_results
+        and search_type == "live"
+        and effective_search_mode == "complete"
+    ):
         if skip_api_search:
             xbmc.log(
                 f"[MegaSearch] Continuing sequential live fallback from portal #{batch_start + 1}",
@@ -628,11 +953,23 @@ def show_mega_search_results(
                 level=xbmc.LOGINFO,
             )
 
-        batch_servers = available_servers[batch_start : batch_start + fetch_batch_size]
+        fallback_servers = [
+            server
+            for server in available_servers
+            if (
+                server.get("id") or "",
+                server.get("name") or "",
+                (server.get("portal_url") or "").rstrip("/"),
+            )
+            not in playlist_covered_server_keys
+        ]
+        batch_servers = fallback_servers[
+            batch_start : batch_start + fetch_batch_size
+        ]
         next_batch_start = batch_start + len(batch_servers)
-        if next_batch_start < len(available_servers):
+        if next_batch_start < len(fallback_servers):
             next_batch_count = min(
-                fetch_batch_size, len(available_servers) - next_batch_start
+                fetch_batch_size, len(fallback_servers) - next_batch_start
             )
         dp = xbmcgui.DialogProgress()
         dp.create("Mega Căutare", "Se caută secvențial pe portaluri...")
@@ -644,6 +981,20 @@ def show_mega_search_results(
 
                 server_id = server.get("id")
                 server_name = server.get("name", server_id)
+                server_key = (
+                    server_id or "",
+                    server_name or "",
+                    (server.get("portal_url") or "").rstrip("/"),
+                )
+                if server_key in playlist_covered_server_keys:
+                    continue
+                if server_id in timed_out_server_ids:
+                    xbmc.log(
+                        f"[MegaSearch] Skipping fallback for timed-out server {server_id}",
+                        level=xbmc.LOGWARNING,
+                    )
+                    continue
+
                 dp.update(
                     int(((idx - 1) / total_servers) * 100),
                     f"Portal {batch_start + idx}: [COLOR yellow]{server_name}[/COLOR] ({idx}/{total_servers})",
@@ -666,8 +1017,12 @@ def show_mega_search_results(
                         continue
 
                     if not had_cache:
-                        fetched_channels = fetch_channels_by_category_from_server(
-                            None, server_id
+                        fetched_channels = _run_mega_search_call_with_timeout(
+                            lambda: fetch_channels_by_category_from_server(
+                                None, server_id
+                            ),
+                            server_id,
+                            "channel list fetch",
                         )
                         if not fetched_channels:
                             continue
@@ -730,6 +1085,7 @@ def _render_mega_search_results(
     fetch_batch_size=None,
 ):
     """Render mega search results from cached or fresh data."""
+    _add_save_search_item(base_url, handle, query, f"mega_{search_type}")
     
     # Calculate next batch info if not provided (for cached results)
     if next_batch_start is None and available_servers_count and fetch_batch_size:
@@ -957,6 +1313,9 @@ def show_search_results(
 
     xbmcplugin.setPluginCategory(handle, f"Cautare: {query}")
     xbmcplugin.setContent(handle, "videos")
+    _add_save_search_item(
+        base_url, handle, query, "live", server=server, main_mode=main_mode
+    )
     favorite_stream_ids = load_favorite_stream_ids(server)
 
     for channel in matching_channels:
@@ -1048,6 +1407,7 @@ def show_vod_search_results(base_url, handle, query, server, fetch_stalker_searc
     
     xbmcplugin.setPluginCategory(handle, f"Cautare Filme: {query}")
     xbmcplugin.setContent(handle, "movies")
+    _add_save_search_item(base_url, handle, query, "vod", server=server)
 
     for item in matching_items:
         name = item.get("name", "Unknown")
@@ -1105,6 +1465,7 @@ def show_series_search_results(base_url, handle, query, server, fetch_stalker_se
     
     xbmcplugin.setPluginCategory(handle, f"Cautare Seriale: {query}")
     xbmcplugin.setContent(handle, "tvshows")
+    _add_save_search_item(base_url, handle, query, "series", server=server)
 
     for item in matching_items:
         name = item.get("name", "Unknown")
