@@ -168,44 +168,6 @@ networks = (
 	{'logo': 'https://imgup.uk/i/bxj43JrL.png', 'id': 1436, 'name': 'YouTube Red'}
 )
 
-meta_colors = {
-	'black': 'FF000000', 'white': 'FFFFFFFF', 'whitesmoke': 'FFF5F5F5', 'gainsboro': 'FFDCDCDC',
-	'lightgray': 'FFD3D3D3', 'silver': 'FFC0C0C0', 'darkgray': 'FFA9A9A9', 'gray': 'FF808080',
-	'dimgray': 'FF696969', 'snow': 'FFFFFAFA', 'floralwhite': 'FFFFFAF0', 'ivory': 'FFFFFFF0',
-	'beige': 'FFF5F5DC', 'cornsilk': 'FFFFF8DC', 'antiquewhite': 'FFFAEBD7', 'bisque': 'FFFFE4C4',
-	'blanchedalmond': 'FFFFEBCD', 'burlywood': 'FFDEB887', 'darkgoldenrod': 'FFB8860B',
-	'ghostwhite': 'FFF8F8FF', 'azure': 'FFF0FFFF', 'lightslategray': 'FF778899', 'lightsteelblue': 'FFB0C4DE',
-	'powderblue': 'FFB0E0E6', 'lightblue': 'FFADD8E6', 'skyblue': 'FF87CEEB', 'lightskyblue': 'FF87CEFA',
-	'deepskyblue': 'FF00BFFF', 'dodgerblue': 'FF1E90FF', 'royalblue': 'FF4169E1', 'blue': 'FF0000FF',
-	'mediumblue': 'FF0000CD', 'midnightblue': 'FF191970', 'navy': 'FF000080', 'darkblue': 'FF00008B',
-	'cornflowerblue': 'FF6495ED', 'slateblue': 'FF6A5ACD', 'slategray': 'FF708090', 'yellowgreen': 'FF9ACD32',
-	'springgreen': 'FF00FF7F', 'seagreen': 'FF2E8B57', 'steelblue': 'FF4682B4', 'teal': 'FF008080',
-	'magenta': 'FFFF00FF', 'deeppink': 'FFFF1493', 'darkmagenta': 'FF8B008B', 'blueviolet': 'FF8A2BE2',
-	'darkviolet': 'FF9400D3', 'darkorchid': 'FF9932CC', 'darkslateblue': 'FF483D8B', 'darkslategray': 'FF2F4F4F',
-	'indigo': 'FF4B0082', 'cadetblue': 'FF5F9EA0', 'darkcyan': 'FF008B8B', 'darkturquoise': 'FF00CED1',
-	'turquoise': 'FF40E0D0', 'cyan': 'FF00FFFF', 'paleturquoise': 'FFAFEEEE', 'lightcyan': 'FFE0FFFF',
-	'mintcream': 'FFF5FFFA', 'honeydew': 'FFF0FFF0', 'aqua': 'FF00FFFF', 'aquamarine': 'FF7FFFD4',
-	'chartreuse': 'FF7FFF00', 'greenyellow': 'FFADFF2F', 'palegreen': 'FF98FB98', 'lawngreen': 'FF7CFC00',
-	'lightgreen': 'FF90EE90', 'lime': 'FF00FF00', 'mediumspringgreen': 'FF00FA9A', 'mediumturquoise': 'FF48D1CC',
-	'lightseagreen': 'FF20B2AA', 'mediumaquamarine': 'FF66CDAA', 'mediumseagreen': 'FF3CB371', 
-	'limegreen': 'FF32CD32', 'darkseagreen': 'FF8FBC8F', 'forestgreen': 'FF228B22', 'green': 'FF008000',
-	'darkgreen': 'FF006400', 'darkolivegreen': 'FF556B2F', 'olive': 'FF808000', 'olivedrab': 'FF6B8E23',
-	'darkkhaki': 'FFBDB76B', 'khaki': 'FFF0E68C', 'gold': 'FFFFD700', 'goldenrod': 'FFDAA520',
-	'lightyellow': 'FFFFFFE0', 'lightgoldenrodyellow': 'FFFAFAD2', 'lemonchiffon': 'FFFFFACD',
-	'yellow': 'FFFFFF00', 'seashell': 'FFFFF5EE', 'lavenderblush': 'FFFFF0F5', 'lavender': 'FFE6E6FA',
-	'lightcoral': 'FFF08080', 'indianred': 'FFCD5C5C', 'darksalmon': 'FFE9967A', 'lightsalmon': 'FFFFA07A',
-	'pink': 'FFFFC0CB', 'lightpink': 'FFFFB6C1', 'hotpink': 'FFFF69B4', 'fuchsia': 'FFFF00FF', 'plum': 'FFDDA0DD',
-	'violet': 'FFEE82EE', 'orchid': 'FFDA70D6', 'palevioletred': 'FFDB7093', 'mediumvioletred': 'FFC71585',
-	'purple': 'FF800080', 'maroon': 'FF800000', 'mediumorchid': 'FFBA55D3', 'mediumpurple': 'FF9370DB',
-	'mediumslateblue': 'FF7B68EE', 'thistle': 'FFD8BFD8', 'linen': 'FFFAF0E6', 'mistyrose': 'FFFFE4E1',
-	'palegoldenrod': 'FFEEE8AA', 'oldlace': 'FFFDF5E6', 'papayawhip': 'FFFFEFD5', 'moccasin': 'FFFFE4B5',
-	'navajowhite': 'FFFFDEAD', 'peachpuff': 'FFFFDAB9', 'sandybrown': 'FFF4A460', 'peru': 'FFCD853F',
-	'chocolate': 'FFD2691E', 'orange': 'FFFFA500', 'darkorange': 'FFFF8C00', 'tomato': 'FFFF6347',
-	'orangered': 'FFFF4500', 'red': 'FFFF0000', 'crimson': 'FFDC143C', 'salmon': 'FFFA8072', 'coral': 'FFFF7F50',
-	'firebrick': 'FFB22222', 'brown': 'FFA52A2A', 'darkred': 'FF8B0000', 'tan': 'FFD2B48C',
-	'rosybrown': 'FFBC8F8F', 'sienna': 'FFA0522D', 'saddlebrown': 'FF8B4513'
-}
-
 oscar_winners = (
 	1054867, 1064213, 872585, 545611, 776503, 581734, #2020s
 	496243, 490132, 399055, 376867, 314365, 194662, 76203, 68734, 74643, 45269, #2010s

@@ -115,17 +115,20 @@ class Menu(Debrid):
 		try:
 			kodi_utils.show_busy_dialog()
 			account_info = self.account_info()
+			status = account_info['type']
 			expires = jsondate_to_datetime(account_info['expiration']).astimezone()
 			days_remaining = (expires.date() - get_datetime()).days
+			points_available = account_info['points']
 			body = []
 			append = body.append
-			append(ls(32751) % days_remaining)
+#			append(ls(32758) % account_info['email'])
+#			append(ls(32755) % account_info['username'])
+			append(ls(32757) % status.capitalize())
 			append(ls(32750) % expires.date())
-			append(ls(32758) % account_info['email'])
-			append(ls(32755) % account_info['username'])
-			append(ls(32757) % account_info['type'].capitalize())
-			append(ls(32759) % account_info['points'])
+			append(ls(32751) % days_remaining)
+			append(ls(32759) % points_available)
 			kodi_utils.hide_busy_dialog()
-			return kodi_utils.show_text(ls(32054).upper(), '\n\n'.join(body), font_size='large')
+#			return kodi_utils.show_text(ls(32054).upper(), '\n\n'.join(body), font_size='large')
+			return kodi_utils.ok_dialog(ls(32054).upper(), '[CR]'.join(body), top_space=False)
 		except: kodi_utils.hide_busy_dialog()
 

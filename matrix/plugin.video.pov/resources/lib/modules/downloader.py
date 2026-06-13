@@ -108,7 +108,7 @@ class Downloader:
 			else:
 				source = json.loads(self.params_get('source'))
 				url = debrid.Source(source, self.meta).resolve_sources()
-		if 'cloud' in self.action:
+		elif 'cloud' in self.action:
 			source = debrid.Source.fromcloud(self.params)
 			url = source.resolve_internal_sources(source.direct_debrid_link)
 		else: pass

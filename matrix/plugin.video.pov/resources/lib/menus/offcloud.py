@@ -84,15 +84,18 @@ class Menu(Debrid):
 		try:
 			kodi_utils.show_busy_dialog()
 			account_info = self.account_info()
+			username = account_info['user_id']
+			status = 'Premium' if account_info['is_premium'] else 'Expired'
 			expires = jsondate_to_datetime(account_info['expiration_date']).astimezone()
 			days_remaining = (expires.date() - get_datetime()).days
 			body = []
 			append = body.append
-			append(ls(32751) % days_remaining)
+#			append(ls(32758) % username)
+			append(ls(32757) % status)
 			append(ls(32750) % expires.date())
-			append(ls(32757) % ('Premium' if account_info['is_premium'] else 'Expired'))
-			append(ls(32758) % account_info['user_id'])
+			append(ls(32751) % days_remaining)
 			kodi_utils.hide_busy_dialog()
-			return kodi_utils.show_text('Offcloud'.upper(), '\n\n'.join(body), font_size='large')
+#			return kodi_utils.show_text('Offcloud'.upper(), '\n\n'.join(body), font_size='large')
+			return kodi_utils.ok_dialog('Offcloud'.upper(), '[CR]'.join(body), top_space=False)
 		except: kodi_utils.hide_busy_dialog()
 

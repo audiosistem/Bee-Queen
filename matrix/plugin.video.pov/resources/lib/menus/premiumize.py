@@ -137,7 +137,7 @@ class Menu(Debrid):
 		try:
 			kodi_utils.show_busy_dialog()
 			account_info = self.account_info()
-			customer_id = account_info['customer_id']
+			username = account_info['customer_id']
 			if account_info['premium_until']:
 				expires = datetime.fromtimestamp(account_info['premium_until'])
 				days_remaining = (expires - datetime.today()).days
@@ -147,15 +147,17 @@ class Menu(Debrid):
 			percentage_used = str(round(float(account_info['limit_used']) * 100.0, 1))
 			body = []
 			append = body.append
-			append(ls(32751) % days_remaining)
+#			append(ls(32749) % username)
 			if account_info['premium_until']:
 				append(ls(32750) % expires.date())
 			else: append(ls(32750) % expires)
-			append(ls(32749) % customer_id)
-			append(ls(32752) % points_used)
-			append(ls(32753) % space_used)
+			append(ls(32751) % days_remaining)
+#			append(ls(32752) % points_used)
+#			append(ls(32753) % space_used)
 			append(ls(32754) % (percentage_used + '%'))
+			append('%s   %s ' % (ls(32752) % points_used, ls(32753) % space_used))
 			kodi_utils.hide_busy_dialog()
-			return kodi_utils.show_text(ls(32061).upper(), '\n\n'.join(body), font_size='large')
+#			return kodi_utils.show_text(ls(32061).upper(), '\n\n'.join(body), font_size='large')
+			return kodi_utils.ok_dialog(ls(32061).upper(), '[CR]'.join(body), top_space=False)
 		except: kodi_utils.hide_busy_dialog()
 

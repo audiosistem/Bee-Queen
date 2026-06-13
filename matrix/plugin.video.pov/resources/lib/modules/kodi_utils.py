@@ -204,12 +204,13 @@ def select_dialog(function_list, **kwargs):
 	def _builder():
 		for count, item in enumerate(items, 1):
 			line1 = '%s. %s' % (count, item['line1']) if enum else item['line1']
-			line2 = item.get('line2') or item['line1']
+			line2 = '[I]%s[/I]' % (item.get('line2') or item['line1'])
 			listitem = make_listitem()
 			listitem.setLabel(line1.upper())
 			listitem.setLabel2(line2.upper())
-			listitem.setArt({'icon': item.get('icon') or ''})
+			listitem.setArt({'icon': item.get('icon') or default_icon})
 			yield listitem
+	default_icon = '%s%s' % (get_addoninfo('path'), 'pov_poster.png')
 	items = json.loads(kwargs.get('items') or '[]')
 	heading = kwargs.get('heading') or get_addoninfo('name')
 	enum = kwargs.get('enumerate', 'false') == 'true'

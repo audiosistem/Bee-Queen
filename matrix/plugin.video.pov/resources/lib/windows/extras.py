@@ -48,10 +48,10 @@ class Extras(BaseDialog):
 			if self.mediatype == 'movie': futures.append(tpe.submit(self.make_collection))
 			else: self.setProperty('tikiskins.extras.make.collection', 'false')
 			self.make_cast()
+			self.make_options()
 			concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
+			self.setFocusId(self.focus_id)
 		finally: tpe.shutdown(False)
-		self.make_options()
-		self.setFocusId(self.focus_id)
 
 	def run(self):
 		self.doModal()

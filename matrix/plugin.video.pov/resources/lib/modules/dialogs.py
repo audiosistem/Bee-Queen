@@ -72,7 +72,7 @@ def trakt_manager_choice(params):
 		 '%s items' % item['item_count'])
 		for item in trakt_api.trakt_get_lists('my_lists')
 	]
-	choices += [(i.lower(), '[I]%s[/I]' % i, '') for i in (ls(32500), ls(32453), ls(32499))]
+	choices += [(i.lower(), i, '') for i in (ls(32500), ls(32453), ls(32499))]
 	if params['mediatype'] == 'tvshow': choices += [('dropped', 'Toggle Dropped', '')]
 	list_items = [{'line1': item[1], 'line2': item[2], 'icon': icon} for item in choices]
 	kwargs = {'items': json.dumps(list_items), 'heading': heading}
@@ -111,7 +111,7 @@ def mdbl_manager_choice(params):
 		(str(item['id']), item['name'], '%s items' % item['items'])
 		for item in mdblist_api.mdbl_get_lists('my_lists') if not item['dynamic']
 	]
-	choices += [(i.lower(), '[I]%s[/I]' % i, '') for i in (ls(32500), ls(32499))]
+	choices += [(i.lower(), i, '') for i in (ls(32500), ls(32499))]
 	if params['mediatype'] == 'tvshow': choices += [('dropped', 'Toggle Dropped', '')]
 	list_items = [{'line1': item[1], 'line2': item[2], 'icon': icon} for item in choices]
 	kwargs = {'items': json.dumps(list_items), 'heading': heading}
@@ -152,7 +152,7 @@ def tmdb_manager_choice(params):
 		for item in tmdb_api.user_lists()
 	]
 	if not list_name:
-		choices += [(i.lower(), '[I]%s[/I]' % i, '', icon) for i in (ls(32500), ls(32453))]
+		choices += [(i.lower(), i, '', icon) for i in (ls(32500), ls(32453))]
 	choices += [('clear', 'Clear list cache', '', icon), ('new', 'Create a new list', list_name, icon)]
 	if not choices: return
 	list_items = [{'line1': item[1], 'line2': item[2], 'icon': item[3]} for item in choices]
@@ -254,8 +254,8 @@ def extras_lists_choice():
 	selection = select_dialog(fl, multi_line='false', **kwargs)
 	if selection == []: return set_setting('extras.enabled_menus', 'noop')
 	elif selection is None: return
-	selection = [str(i) for i in selection]
-	set_setting('extras.enabled_menus', ','.join(selection))
+	selection = ','.join(map(str, selection))
+	set_setting('extras.enabled_menus', selection)
 
 def set_language_filter_choice(filter_setting):
 	from modules.meta_lists import meta_languages
@@ -280,16 +280,16 @@ def results_sorting_choice():
 	list_items = [{'line1': item[0]} for item in choices]
 	kwargs = {'items': json.dumps(list_items), 'heading': 'POV'}
 	choice = select_dialog(choices, multi_line='false', **kwargs)
-	if choice:
-		set_setting('results.sort_order_display', choice[0])
-		set_setting('results.sort_order', choice[1])
+	if not choice: return
+	set_setting('results.sort_order_display', choice[0])
+	set_setting('results.sort_order', choice[1])
 
 def results_highlights_choice():
 	choices = [(ls(32240), '0'), (ls(32583), '1'), (ls(32241), '2')]
 	list_items = [{'line1': item[0]} for item in choices]
 	kwargs = {'items': json.dumps(list_items), 'heading': 'POV'}
 	choice = select_dialog([i[1] for i in choices], multi_line='false', **kwargs)
-	if choice: return set_setting('highlight.type', choice)
+	if choice: set_setting('highlight.type', choice)
 
 def results_layout_choice():
 	xml_choices = [
@@ -307,7 +307,7 @@ def set_subtitle_choice():
 	list_items = [{'line1': item[0]} for item in choices]
 	kwargs = {'items': json.dumps(list_items), 'heading': 'POV'}
 	choice = select_dialog([i[1] for i in choices], multi_line='false', **kwargs)
-	if choice: return set_setting('subtitles.subs_action', choice)
+	if choice: set_setting('subtitles.subs_action', choice)
 
 def scraper_dialog_color_choice(setting):
 	setting = 'int_dialog_highlight' if setting == 'internal' else 'ext_dialog_highlight'
@@ -336,13 +336,15 @@ def scraper_color_choice(setting):
 	if chosen_color: set_setting(setting, chosen_color)
 
 def color_choice(msg_dialog='POV', no_color=False):
-	from modules.meta_lists import meta_colors
-	color_chart = meta_colors.items()
-	color_display = ['[COLOR %s]%s[/COLOR]' % (i[1], i[0].capitalize()) for i in color_chart]
-	if no_color: color_chart.insert(0, 'No Color') ; color_display.insert(0, 'No Color')
+	import xml.etree.ElementTree as ET
+	root = ET.fromstring(kodi_utils.open_file('special://xbmc/system/colors.xml').read()).iter('color')
+	color_chart = [(i.get('name'), i.text) for i in root if i.get('name') not in ('none', 'transparent')]
+	color_chart.sort(key=lambda k: k[1], reverse=False)
+	if no_color: color_chart = [('no color', ''), *color_chart]
+	color_display = ['[COLOR %s]%s[/COLOR]' % (i[1], i[0].upper()) for i in color_chart]
 	list_items = [{'line1': item} for item in color_display]
 	kwargs = {'items': json.dumps(list_items), 'heading': 'POV'}
-	choice = select_dialog([i[0]for i in color_chart], multi_line='false', **kwargs)
+	choice = select_dialog([i[0] for i in color_chart], multi_line='false', **kwargs)
 	if choice is None: return
 	return choice
 
@@ -397,7 +399,6 @@ def options_menu(params, meta=None):
 		for item in listing:
 			kwargs = {'line1': item[1], 'line2': item[2] or item[1]}
 			if len(item) == 4: kwargs['icon'] = item[3]
-			else: kwargs['icon'] = default_icon
 			yield kwargs
 	is_widget = params.get('is_widget', 'false').lower() == 'true'
 	content = params.get('content') or params.get('mediatype') or container_content()[:-1]
@@ -408,7 +409,6 @@ def options_menu(params, meta=None):
 	on_str, off_str, currently_str, open_str, settings_str = ls(32090), ls(32027), ls(32598), ls(32641), ls(32247)
 	base_str1, base_str2 = '%s%s', '%s: [B]%s[/B]' % (currently_str, '%s')
 	scraper_options_str = '%s %s' % (ls(32533), ls(32841))
-	default_icon = kodi_utils.get_addoninfo('icon')
 	scrapable = True if content in ('movie', 'episode') else False
 	watched_indicators = settings.watched_indicators()
 	results_xml_style_status = settings.results_xml_style()

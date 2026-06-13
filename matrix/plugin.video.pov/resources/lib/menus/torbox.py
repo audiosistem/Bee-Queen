@@ -84,19 +84,20 @@ class Menu(Debrid):
 		from modules.utils import jsondate_to_datetime, get_datetime
 		try:
 			kodi_utils.show_busy_dialog()
-			plans = {0: 'Free', 1: 'Essential', 2: 'Pro', 3: 'Standard'}
 			account_info = self.account_info()
+			status = ('free', 'essential', 'pro', 'standard')[account_info['plan']]
 			expires = jsondate_to_datetime(account_info['premium_expires_at']).astimezone()
 			days_remaining = (expires.date() - get_datetime()).days
 			body = []
 			append = body.append
-			append(ls(32751) % days_remaining)
+#			append(ls(32758) % account_info['email'])
+#			append(ls(32755) % account_info['customer'])
+			append(ls(32757) % status.capitalize())
 			append(ls(32750) % expires.date())
-			append(ls(32758) % account_info['email'])
-			append(ls(32755) % account_info['customer'])
-			append(ls(32757) % plans[account_info['plan']])
+			append(ls(32751) % days_remaining)
 			append('[B]Downloaded[/B]: %s' % account_info['total_downloaded'])
 			kodi_utils.hide_busy_dialog()
-			return kodi_utils.show_text('TorBox'.upper(), '\n\n'.join(body), font_size='large')
+#			return kodi_utils.show_text('TorBox'.upper(), '\n\n'.join(body), font_size='large')
+			return kodi_utils.ok_dialog('TorBox'.upper(), '[CR]'.join(body), top_space=False)
 		except: kodi_utils.hide_busy_dialog()
 

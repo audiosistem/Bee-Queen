@@ -119,12 +119,13 @@ class Menu(Debrid):
 			days_remaining = (expires - datetime.today()).days
 			body = []
 			append = body.append
-			append(ls(32751) % days_remaining)
-			append(ls(32750) % expires.date())
-			append(ls(32756) % email)
-			append(ls(32755) % username)
+#			append(ls(32756) % email)
+#			append(ls(32755) % username)
 			append(ls(32757) % status)
+			append(ls(32750) % expires.date())
+			append(ls(32751) % days_remaining)
 			kodi_utils.hide_busy_dialog()
-			return kodi_utils.show_text(ls(32063).upper(), '\n\n'.join(body), font_size='large')
+#			return kodi_utils.show_text(ls(32063).upper(), '\n\n'.join(body), font_size='large')
+			return kodi_utils.ok_dialog(ls(32063).upper(), '[CR]'.join(body), top_space=False)
 		except: kodi_utils.hide_busy_dialog()
 

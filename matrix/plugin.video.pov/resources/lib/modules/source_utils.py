@@ -180,41 +180,57 @@ def seas_ep_query_list(season, episode):
 			'season%depisode%02d' % (int(season), int(episode)),
 			'season%depisode%d' % (int(season), int(episode))]
 
+SEAS_EP_REGEX = re.compile(
+	r"""
+	s(?:eason)? \s* (\d+) [xX\s._-]*
+	e(?:p(?:isode)?)? [\s._-]* (\d+)
+	(?: [\s._-]* e? (?:p(?:isode)?)? \s* (\d+) )?
+	|
+	(\d+) \s* [xX] \s*
+	(\d+)
+	(?: [\s._-]* (?:[xX]|-)? \s* (\d+) )?
+	|
+	\b (?: ep(?:isode)? | [._-]e ) [\s._-]* (\d+)
+	""",
+	flags=re.I | re.X
+)
+
 def seas_ep_filter(season, episode, release_title, split=False, return_match=False):
-	str_season, str_episode = string(season), string(episode)
-	season_fill, episode_fill = str_season.zfill(2), str_episode.zfill(2)
-	str_ep_plus_1, str_ep_minus_1 = string(episode+1), string(episode-1)
-	release_title = re.sub(r'[^A-Za-z0-9-]+', '.', unquote(release_title).replace('\'', '')).lower()
-	string1 = r'(s<<S>>[.-]?e[p]?[.-]?<<E>>[.-])'
-	string2 = r'(season[.-]?<<S>>[.-]?episode[.-]?<<E>>[.-])|([s]?<<S>>[x.]<<E>>[.-])'
-	string3 = r'(s<<S>>e<<E1>>[.-]?e?<<E2>>[.-])'
-	string4 = r'([.-]<<S>>[.-]?<<E>>[.-])'
-	string5 = r'(episode[.-]?<<E>>[.-])'
-	string6 = r'([.-]e[p]?[.-]?<<E>>[.-])'
-	string7 = r'(^(?=.*\.e?0*<<E>>\.)(?:(?!((?:s|season)[.-]?\d+[.-x]?(?:ep?|episode)[.-]?\d+)|\d+x\d+).)*$)'
-	string_list = []
-	string_list_append = string_list.append
-	string_list_append(string1.replace('<<S>>', season_fill).replace('<<E>>', episode_fill))
-	string_list_append(string1.replace('<<S>>', str_season).replace('<<E>>', episode_fill))
-	string_list_append(string1.replace('<<S>>', season_fill).replace('<<E>>', str_episode))
-	string_list_append(string1.replace('<<S>>', str_season).replace('<<E>>', str_episode))
-	string_list_append(string2.replace('<<S>>', season_fill).replace('<<E>>', episode_fill))
-	string_list_append(string2.replace('<<S>>', str_season).replace('<<E>>', episode_fill))
-	string_list_append(string2.replace('<<S>>', season_fill).replace('<<E>>', str_episode))
-	string_list_append(string2.replace('<<S>>', str_season).replace('<<E>>', str_episode))
-	string_list_append(string3.replace('<<S>>', season_fill).replace('<<E1>>', str_ep_minus_1.zfill(2)).replace('<<E2>>', episode_fill))
-	string_list_append(string3.replace('<<S>>', season_fill).replace('<<E1>>', episode_fill).replace('<<E2>>', str_ep_plus_1.zfill(2)))
-	string_list_append(string4.replace('<<S>>', season_fill).replace('<<E>>', episode_fill))
-	string_list_append(string4.replace('<<S>>', str_season).replace('<<E>>', episode_fill))
-	string_list_append(string5.replace('<<E>>', episode_fill))
-	string_list_append(string5.replace('<<E>>', str_episode))
-	string_list_append(string6.replace('<<E>>', episode_fill))
-	string_list_append(string7.replace('<<E>>', episode_fill))
-	final_string = '|'.join(string_list)
-	reg_pattern = re.compile(final_string)
-	if split: return release_title.split(re.search(reg_pattern, release_title).group(), 1)[1]
-	elif return_match: return re.search(reg_pattern, release_title).group()
-	else: return bool(re.search(reg_pattern, release_title))
+	cleaned_title = unquote(release_title).lower().replace('_', '.')
+	cleaned_title = re.sub(r'[^a-z0-9]', '.', cleaned_title)
+
+	match = SEAS_EP_REGEX.search(cleaned_title)
+	if not match:
+		return '' if (split or return_match) else False
+
+	season, episode = int(season), int(episode)
+	file_season, file_episode_start, file_episode_end = None, None, None
+	g = match.groups()
+
+	if   g[0] is not None:
+		file_season = int(g[0])
+		file_episode_start = int(g[1])
+#		if g[2] is not None: file_episode_end = int(g[2])
+	elif g[3] is not None:
+		file_season = int(g[3])
+		file_episode_start = int(g[4])
+#		if g[5] is not None: file_episode_end = int(g[5])
+	elif g[6] is not None:
+		file_episode_start = int(g[6])
+
+	if file_season is not None and file_season != season:
+		return '' if (split or return_match) else False
+
+	if file_episode_end is not None:
+		ep_matches = file_episode_start <= episode <= file_episode_end
+	else: ep_matches = file_episode_start == episode
+
+	if not ep_matches:
+		return '' if (split or return_match) else False
+
+	if split: return cleaned_title.split(match.group(), 1)[1]
+	if return_match: return match.group()
+	return True
 
 def extras_filter():
 	return ('sample', 'extra', 'extras', 'deleted', 'unused', 'footage', 'inside', 'blooper', 'bloopers', 'making.of', 'feature',

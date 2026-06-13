@@ -161,20 +161,20 @@ class MenuEditor:
 		self._db_execute('set', choice_name, list_items, refresh=False)
 
 	def _menu_select(self, choice_items, menu_name, heading='POV', multi_line='false', position_list=False):
-		def _builder():
-			for item in choice_items:
-				item_get = item.get
-				line1 = ls(item_get('name', '')).replace('[B]', '').replace('[/B]', '')
-				line2 = pos_str % (menu_name, line1 or ls(item_get('list_name')) if position_list else '')
-				if item_get('iconImage') in ('', 'None', None, 'DefaultFolder.png'): icon = 'DefaultFolder.png'
-				elif item_get('iconImage') == 'pov.png': icon = kodi_utils.get_addoninfo('icon')
-				elif item_get('network_id'): icon = item_get('iconImage', 'discover.png')
-				else: icon = '%s%s' % (icon_path, item_get('iconImage', 'discover.png'))
-				yield {'line1': line1, 'line2': line2, 'icon': icon}
 		menu_name, icon_path = menu_name.replace('[B]', '').replace('[/B]', ''), media_path()
-		list_items = list(_builder())
-		if position_list: list_items.insert(0, {'line1': top_str, 'line2': top_pos_str % menu_name, 'icon': media_path('top.png')})
-		index_list = [list_items.index(i) for i in list_items]
+		list_items = []
+		list_items_append = list_items.append
+		if position_list: list_items_append({'line1': top_str, 'line2': top_pos_str % menu_name, 'icon': media_path('top.png')})
+		for item in choice_items:
+			item_get = item.get
+			line1 = ls(item_get('name', '')).replace('[B]', '').replace('[/B]', '')
+			line2 = pos_str % (menu_name, line1 or ls(item_get('list_name')) if position_list else '')
+			if item_get('iconImage') in ('', 'None', None, 'DefaultFolder.png'): icon = 'DefaultFolder.png'
+			elif item_get('iconImage') == 'pov.png': icon = kodi_utils.get_addoninfo('icon')
+			elif item_get('network_id'): icon = item_get('iconImage', 'discover.png')
+			else: icon = '%s%s' % (icon_path, item_get('iconImage', 'discover.png'))
+			list_items_append({'line1': line1, 'line2': line2, 'icon': icon})
+		index_list = list(range(len(list_items)))
 		kwargs = {'items': json.dumps(list_items), 'heading': heading, 'multi_line': multi_line}
 		return kodi_utils.select_dialog(index_list, **kwargs)
 
