@@ -306,7 +306,7 @@ Added support for Kodi v19 (Matrix)
 				<screenshot />
 		</assets>
 	</extension>
-</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.7+matrix" provider-name="RomyCupidon">  
+</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.9+matrix" provider-name="RomyCupidon">  
 <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
@@ -1066,9 +1066,10 @@ I am grateful to Tikipeter and his various pseudonyms and aliases for creating a
         </assets>
         <news>[COLOR red]Check the Changelog in Tools &gt; Changelog &amp; Log Utils[/COLOR]</news>
     </extension>
-</addon><addon id="plugin.video.rotv123" name="Rotv123" version="1.3.4" provider-name="1X,AS,Derzis si Geamanu">
+</addon><addon id="plugin.video.rotv123" name="Rotv123" version="1.3.5" provider-name="1X,AS,derzis si Geamanu">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
+        <import addon="inputstream.adaptive" />
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
