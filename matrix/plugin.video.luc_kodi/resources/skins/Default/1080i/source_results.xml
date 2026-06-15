@@ -72,7 +72,7 @@
       <width max="696">auto</width>
       
 			
-      <height>140</height>
+      <height>154</height>
       
 			
       <aspectratio align="center" aligny="center">keep</aspectratio>
@@ -429,7 +429,7 @@
         <orientation>Vertical</orientation>
         
 				
-        <itemlayout height="100">
+        <itemlayout height="133">
           
 				
           <control type="image">
@@ -447,7 +447,7 @@
             <width>1350</width>
             
 					
-            <height>95</height>
+            <height>127</height>
             
 					
             <aspectratio>stretch</aspectratio>
@@ -459,7 +459,7 @@
             <left>0</left>
             <top>0</top>
             <width>1350</width>
-            <height>95</height>
+            <height>127</height>
             <aspectratio>stretch</aspectratio>
             <texture flipx="true" colordiffuse="$INFO[ListItem.Property(highlight)]">common/gradient-diffuse-horizontal.png</texture>
           </control>
@@ -468,7 +468,7 @@
             <left>0</left>
             <top>0</top>
             <width>6</width>
-            <height>95</height>
+            <height>127</height>
             <aspectratio>stretch</aspectratio>
             <texture>$INFO[ListItem.Property(quality_bar)]</texture>
           </control>
@@ -486,13 +486,13 @@
             <left>3</left>
             
 						
-            <top>3</top>
+            <top>27</top>
             
 						
-            <width>89</width>
+            <width>72</width>
             
 						
-            <height>89</height>
+            <height>72</height>
             
 						
             <aspectratio align="center" aligny="center">keep</aspectratio>
@@ -510,7 +510,7 @@
             <left>110</left>
             
 						
-            <top>50</top>
+            <top>39</top>
             
 						
             <width>1274</width>
@@ -525,7 +525,7 @@
               <description>Line1 link name</description>
               
 							
-              <top>-35</top>
+              <top>-32</top>
               
 							
               <font>font12</font>
@@ -555,7 +555,7 @@
               <description>Line1 link name UNCACHED TORRENTS</description>
               
 							
-              <top>-35</top>
+              <top>-32</top>
               
 							
               <font>font12</font>
@@ -742,13 +742,144 @@
             
 					
           </control>
+          <control type="group">
+            <description>Media flags row (3rd row)</description>
+            <left>110</left>
+            <top>74</top>
+            <control type="image">
+              <description>flag slot 0</description>
+              <left>2</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag0)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 1</description>
+              <left>66</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag1)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 2</description>
+              <left>130</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag2)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 3</description>
+              <left>194</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag3)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 4</description>
+              <left>258</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag4)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 5</description>
+              <left>322</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag5)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 6</description>
+              <left>386</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag6)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 7</description>
+              <left>450</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag7)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 8</description>
+              <left>514</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag8)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 9</description>
+              <left>578</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag9)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 10</description>
+              <left>642</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag10)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 11</description>
+              <left>706</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag11)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 12</description>
+              <left>770</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag12)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 13</description>
+              <left>834</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag13)]</texture>
+            </control>
+          </control>
           
 				
 
         </itemlayout>
         
 				
-        <focusedlayout height="100">
+        <focusedlayout height="133">
           
 					
           <control type="image">
@@ -763,7 +894,7 @@
             <width>1350</width>
             
 						
-            <height>95</height>
+            <height>127</height>
             
 						
             <texture background="true" colordiffuse="FF696969">common/card_focus.png</texture>
@@ -772,7 +903,7 @@
             <left>0</left>
             <top>0</top>
             <width>1350</width>
-            <height>95</height>
+            <height>127</height>
             <aspectratio>stretch</aspectratio>
             <texture flipx="true" colordiffuse="40$INFO[ListItem.Property(highlight):3]">common/gradient-diffuse-horizontal.png</texture>
           </control>
@@ -781,7 +912,7 @@
             <left>0</left>
             <top>0</top>
             <width>6</width>
-            <height>95</height>
+            <height>127</height>
             <aspectratio>stretch</aspectratio>
             <texture>$INFO[ListItem.Property(quality_bar)]</texture>
           </control>
@@ -799,13 +930,13 @@
             <left>3</left>
             
 						
-            <top>3</top>
+            <top>27</top>
             
 						
-            <width>89</width>
+            <width>72</width>
             
 						
-            <height>89</height>
+            <height>72</height>
             
 						
             <aspectratio align="center" aligny="center">keep</aspectratio>
@@ -823,7 +954,7 @@
             <left>110</left>
             
 						
-            <top>50</top>
+            <top>39</top>
             
 						
             <width>1274</width>
@@ -838,7 +969,7 @@
               <description>Line1 link name</description>
               
 							
-              <top>-35</top>
+              <top>-32</top>
               
 							
               <font>font12</font>
@@ -1040,6 +1171,137 @@
             
 					
           </control>
+          <control type="group">
+            <description>Media flags row (3rd row)</description>
+            <left>110</left>
+            <top>74</top>
+            <control type="image">
+              <description>flag slot 0</description>
+              <left>2</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag0)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 1</description>
+              <left>66</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag1)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 2</description>
+              <left>130</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag2)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 3</description>
+              <left>194</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag3)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 4</description>
+              <left>258</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag4)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 5</description>
+              <left>322</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag5)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 6</description>
+              <left>386</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag6)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 7</description>
+              <left>450</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag7)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 8</description>
+              <left>514</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag8)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 9</description>
+              <left>578</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag9)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 10</description>
+              <left>642</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag10)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 11</description>
+              <left>706</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag11)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 12</description>
+              <left>770</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag12)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 13</description>
+              <left>834</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag13)]</texture>
+            </control>
+          </control>
           
 				
 
@@ -1071,6 +1333,7 @@
         
 				
         <description>Info icons</description>
+        <visible>false</visible>
         
 				
         <left>110</left>
@@ -1544,7 +1807,7 @@
           <aspectratio align="center" aligny="center">keep</aspectratio>
           
 					
-          <texture>audio/dolbydigital_ex.jpg</texture>
+          <texture>audio/dolbydigital.png</texture>
           
 					
           <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),DD-EX)</visible>
@@ -1835,7 +2098,7 @@
         <orientation>Vertical</orientation>
         
 				
-        <itemlayout height="100">
+        <itemlayout height="133">
           
 				
           <control type="image">
@@ -1853,7 +2116,7 @@
             <width>1480</width>
             
 					
-            <height>80</height>
+            <height>127</height>
             
 					
             <aspectratio>stretch</aspectratio>
@@ -1865,7 +2128,7 @@
             <left>0</left>
             <top>10</top>
             <width>1480</width>
-            <height>80</height>
+            <height>127</height>
             <aspectratio>stretch</aspectratio>
             <texture flipx="true" colordiffuse="$INFO[ListItem.Property(highlight)]">common/gradient-diffuse-horizontal.png</texture>
           </control>
@@ -1874,7 +2137,7 @@
             <left>0</left>
             <top>10</top>
             <width>6</width>
-            <height>80</height>
+            <height>127</height>
             <aspectratio>stretch</aspectratio>
             <texture>$INFO[ListItem.Property(quality_bar)]</texture>
           </control>
@@ -1892,13 +2155,13 @@
             <left>3</left>
             
 						
-            <top>3</top>
+            <top>27</top>
             
 						
-            <width>89</width>
+            <width>72</width>
             
 						
-            <height>89</height>
+            <height>72</height>
             
 						
             <aspectratio align="center" aligny="center">keep</aspectratio>
@@ -1916,7 +2179,7 @@
             <left>110</left>
             
 						
-            <top>50</top>
+            <top>39</top>
             
 						
             <width>1274</width>
@@ -1931,7 +2194,7 @@
               <description>Line1 link name</description>
               
 							
-              <top>-35</top>
+              <top>-32</top>
               
 							
               <font>font12</font>
@@ -1961,7 +2224,7 @@
               <description>Line1 link name UNCACHED TORRENTS</description>
               
 							
-              <top>-35</top>
+              <top>-32</top>
               
 							
               <font>font12</font>
@@ -2148,13 +2411,144 @@
             
 					
           </control>
+          <control type="group">
+            <description>Media flags row (3rd row)</description>
+            <left>110</left>
+            <top>74</top>
+            <control type="image">
+              <description>flag slot 0</description>
+              <left>2</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag0)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 1</description>
+              <left>66</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag1)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 2</description>
+              <left>130</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag2)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 3</description>
+              <left>194</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag3)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 4</description>
+              <left>258</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag4)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 5</description>
+              <left>322</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag5)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 6</description>
+              <left>386</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag6)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 7</description>
+              <left>450</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag7)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 8</description>
+              <left>514</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag8)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 9</description>
+              <left>578</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag9)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 10</description>
+              <left>642</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag10)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 11</description>
+              <left>706</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag11)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 12</description>
+              <left>770</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag12)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 13</description>
+              <left>834</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag13)]</texture>
+            </control>
+          </control>
           
 				
 
         </itemlayout>
         
 				
-        <focusedlayout height="100">
+        <focusedlayout height="133">
           
 					
           <control type="image">
@@ -2169,7 +2563,7 @@
             <width>1350</width>
             
 						
-            <height>100</height>
+            <height>127</height>
             
 						
             <texture background="true" colordiffuse="FF696969">common/card_focus.png</texture>
@@ -2178,7 +2572,7 @@
             <left>0</left>
             <top>0</top>
             <width>1350</width>
-            <height>100</height>
+            <height>127</height>
             <aspectratio>stretch</aspectratio>
             <texture flipx="true" colordiffuse="40$INFO[ListItem.Property(highlight):3]">common/gradient-diffuse-horizontal.png</texture>
           </control>
@@ -2187,7 +2581,7 @@
             <left>0</left>
             <top>0</top>
             <width>6</width>
-            <height>100</height>
+            <height>127</height>
             <aspectratio>stretch</aspectratio>
             <texture>$INFO[ListItem.Property(quality_bar)]</texture>
           </control>
@@ -2205,13 +2599,13 @@
             <left>3</left>
             
 						
-            <top>3</top>
+            <top>27</top>
             
 						
-            <width>89</width>
+            <width>72</width>
             
 						
-            <height>89</height>
+            <height>72</height>
             
 						
             <aspectratio align="center" aligny="center">keep</aspectratio>
@@ -2229,7 +2623,7 @@
             <left>110</left>
             
 						
-            <top>50</top>
+            <top>39</top>
             
 						
             <width>1274</width>
@@ -2244,7 +2638,7 @@
               <description>Line1 link name</description>
               
 							
-              <top>-35</top>
+              <top>-32</top>
               
 							
               <font>font12</font>
@@ -2446,6 +2840,137 @@
             
 					
           </control>
+          <control type="group">
+            <description>Media flags row (3rd row)</description>
+            <left>110</left>
+            <top>74</top>
+            <control type="image">
+              <description>flag slot 0</description>
+              <left>2</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag0)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 1</description>
+              <left>66</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag1)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 2</description>
+              <left>130</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag2)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 3</description>
+              <left>194</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag3)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 4</description>
+              <left>258</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag4)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 5</description>
+              <left>322</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag5)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 6</description>
+              <left>386</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag6)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 7</description>
+              <left>450</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag7)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 8</description>
+              <left>514</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag8)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 9</description>
+              <left>578</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag9)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 10</description>
+              <left>642</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag10)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 11</description>
+              <left>706</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag11)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 12</description>
+              <left>770</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag12)]</texture>
+            </control>
+            <control type="image">
+              <description>flag slot 13</description>
+              <left>834</left>
+              <top>2</top>
+              <width>55</width>
+              <height>44</height>
+              <aspectratio align="center" aligny="center">keep</aspectratio>
+              <texture>$INFO[ListItem.Property(luc_kodi.flag13)]</texture>
+            </control>
+          </control>
           
 				
 
@@ -2477,6 +3002,7 @@
         
 				
         <description>Info icons</description>
+        <visible>false</visible>
         
 				
         <left>110</left>
@@ -2950,7 +3476,7 @@
           <aspectratio align="center" aligny="center">keep</aspectratio>
           
 					
-          <texture>audio/dolbydigital_ex.jpg</texture>
+          <texture>audio/dolbydigital.png</texture>
           
 					
           <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DD-EX)</visible>

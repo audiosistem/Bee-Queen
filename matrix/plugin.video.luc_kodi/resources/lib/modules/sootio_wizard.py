@@ -192,6 +192,9 @@ class _WizardServer(object):
 		try: self.sock.close()
 		except Exception: pass
 
+	def is_alive(self):
+		return self._thread is not None and self._thread.is_alive()
+
 	def _serve_loop(self):
 		import time
 		t0 = time.time()
@@ -279,6 +282,8 @@ class _WizardServer(object):
 # -----------------------------------------------------------------------------
 
 def _method_local_server():
+	import time
+	import xbmcgui
 	port = _find_free_port()
 	if port is None:
 		control.dialog.ok(
@@ -304,21 +309,37 @@ def _method_local_server():
 	_copy2clip_safe(url)
 
 	control.dialog.ok(
-		'Sootio Setup — open this on any device',
-		'Open the following URL in the browser of your phone, tablet or PC\n'
-		'(same Wi-Fi as this Kodi device):\n\n'
+		'Sootio Setup — open this URL on your phone/PC',
+		'On the same Wi-Fi, open this in a browser:\n\n'
 		'[COLOR fffdb515]%s[/COLOR]\n\n'
 		'Paste the Install link from sooti.info/configure in the form and\n'
-		'press Save. Then come back here and press OK.\n\n'
-		'(URL copied to clipboard where supported.)' % url,
+		'press [B]Save to Kodi[/B].\n\n'
+		'The server stays open for %d minutes. Press OK and wait —\n'
+		'Kodi will show a confirmation when the token is received.' % (url, _HTTP_TIMEOUT // 60),
 	)
 
+	# Server sigue vivo — progress dialog cancelable mientras esperamos el POST
+	pd = xbmcgui.DialogProgressBG()
+	pd.create('Sootio Setup', 'Waiting for token from browser...')
+
+	t0 = time.time()
+	while srv.is_alive() and srv.result is None:
+		elapsed = int(time.time() - t0)
+		remaining = _HTTP_TIMEOUT - elapsed
+		if remaining <= 0:
+			break
+		pct = int(elapsed * 100 / _HTTP_TIMEOUT)
+		pd.update(min(pct, 99), 'Sootio Setup',
+		          'Waiting... (%ds remaining)' % remaining)
+		time.sleep(0.5)
+
+	pd.close()
 	srv.stop()
 
 	if srv.result is None:
 		control.dialog.ok(
 			'Sootio Setup — cancelled',
-			'No token was received. Nothing was saved.\n'
+			'No token was received (timeout or server error).\n'
 			'You can try again or use the manual paste method.',
 		)
 		return False

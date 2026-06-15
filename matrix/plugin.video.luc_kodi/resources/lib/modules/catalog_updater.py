@@ -114,9 +114,12 @@ def _get_tmdb_links():
 
     return movie_links, tv_links
 
-def precache_tmdb_catalog(pages=3, silent=False):
+def precache_tmdb_catalog(pages=3, silent=False, force_refresh=False):
     """
     Fetches TMDB lists to warm luc_kodi cache.
+    force_refresh=True invalida primero la entrada cacheada de cada lista
+    (TTL 96h/168h) para traer datos realmente nuevos en el arranque, en vez de
+    servir lo cacheado. Las imágenes/metadatos por título siguen su propio TTL.
     Returns True/False.
     """
     try:
@@ -133,7 +136,19 @@ def precache_tmdb_catalog(pages=3, silent=False):
                 _notify(control.lang(400704))  # "TMDB Catalog: No TMDB links found."
             return False
 
-        log_utils.log('[luc_kodi] TMDB Catalog: precache start (pages=%s)' % pages, level=LOGINFO)
+        log_utils.log('[luc_kodi] TMDB Catalog: precache start (pages=%s, force=%s)' % (pages, force_refresh), level=LOGINFO)
+
+        if force_refresh:
+            # Invalida la entrada cacheada de cada lista/página con la MISMA clave
+            # que usa tmdb_list (cache.get(self.get_request, ttl, url % API_key)).
+            try:
+                from resources.lib.database import cache
+                for idx, links in ((movies_idx, movie_links), (tv_idx, tv_links)):
+                    for url in links:
+                        for p in range(1, int(pages) + 1):
+                            try: cache.remove(idx.get_request, _page_url(url, p) % idx.API_key)
+                            except: pass
+            except: log_utils.error()
 
         for url in movie_links:
             for p in range(1, int(pages) + 1):
@@ -166,6 +181,8 @@ class CatalogService:
         # small delay after Kodi starts to avoid competing with other services
         monitor.waitForAbort(10)
 
+        did_startup = False  # guard por sesión: el refresco de arranque corre UNA vez por inicio de Kodi
+
         while not monitor.abortRequested():
             try:
                 # Skip iteration entirely if user is actively watching — avoid
@@ -180,17 +197,21 @@ class CatalogService:
                     notify = _get_bool(S_NOTIFY, default=True)
                     interval = _get_int(S_INTERVAL, default=6)
 
-                    # On startup: only if never ran before
-                    if on_start and _get_last_run() == 0:
-                        precache_tmdb_catalog(pages=3, silent=not notify)
+                    # On startup: en CADA inicio de Kodi (no solo la primera vez).
+                    # force_refresh=True para máxima frescura: invalida las listas
+                    # TMDb cacheadas y trae datos nuevos. El guard de sesión evita
+                    # repetirlo dentro del mismo arranque.
+                    if on_start and not did_startup:
+                        precache_tmdb_catalog(pages=3, silent=not notify, force_refresh=True)
                         _set_last_run(_now())
+                        did_startup = True
                         try:
                             control.trigger_widget_refresh()
                         except:
                             pass
 
                     # Scheduled run
-                    if _is_due(interval):
+                    elif _is_due(interval):
                         precache_tmdb_catalog(pages=3, silent=not notify)
                         _set_last_run(_now())
                         try:

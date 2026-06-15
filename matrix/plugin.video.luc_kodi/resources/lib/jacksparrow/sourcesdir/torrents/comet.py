@@ -21,8 +21,9 @@ class source:
 		self.language = ['en']
 		self.base_link = (
 			"https://comet.stremio.ru",
-			"https://cometfortheweebs.midnightignite.me"
-		)[int(getSetting('comet.url', '0'))]
+			"https://cometfortheweebs.midnightignite.me",
+			"https://comet.elfhosted.com"  # instancia publica oficial, patrocinada por ElfHosted (default para instalaciones nuevas desde v1.0.28)
+		)[int(getSetting('comet.url', '2'))]
 		self.movieSearch_link = '/stream/movie/%s.json'
 		self.tvSearch_link = '/stream/series/%s:%s:%s.json'
 		self.min_seeders = 0

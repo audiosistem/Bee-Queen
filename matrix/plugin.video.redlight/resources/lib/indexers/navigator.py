@@ -240,8 +240,14 @@ class Navigator:
 		self.add({'mode': 'navigator.changelog_utils'}, 'Changelog & Log Utils', 'settings2')
 		self.add({'mode': 'build_next_episode_manager'}, 'TV Shows Progress Manager', 'settings2')
 		self.add({'mode': 'navigator.shortcut_folders'}, 'Shortcut Folders Manager', 'settings2')
+		self.add({'mode': 'navigator.import_export'}, 'Import & Export', 'settings2')
 		self.add({'mode': 'navigator.maintenance'}, 'Database & Cache Maintenance', 'settings2')
 		self.add({'mode': 'language_invoker_choice', 'isFolder': 'false'}, 'Toggle Language Invoker (ADVANCED!!)', 'settings2')
+		self.end_directory()
+
+	def import_export(self):
+		self.add({'mode': 'local_backup.import_data', 'isFolder': 'false'}, 'Import Red Light Favorites & Progress', 'settings')
+		self.add({'mode': 'local_backup.export_data', 'isFolder': 'false'}, 'Export Red Light Favorites & Progress', 'settings')
 		self.end_directory()
 
 	def maintenance(self):

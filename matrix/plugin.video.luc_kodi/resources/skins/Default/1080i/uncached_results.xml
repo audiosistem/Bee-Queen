@@ -439,7 +439,7 @@
 						<align>left</align>
 						<aligny>center</aligny>
 						<aspectratio>keep</aspectratio>
-						<texture>audio/dolbydigital_ex.jpg</texture>
+						<texture>audio/dolbydigital.png</texture>
 						<visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DD-EX)</visible>
 					</control>
 					<control type="image">

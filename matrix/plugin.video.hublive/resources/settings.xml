@@ -7,6 +7,7 @@
     <category label="Server Settings">
         <setting id="server_check_enabled" type="bool" label="Verificare automata stare servere (ON/OFF) la deschidere" default="false" />
         <setting id="mega_search_mode" type="select" label="Mega search Live: mod cautare" values="Rapid (doar playlisturile ratb)|Complet (toate serverele)" default="0" />
+        <setting id="live_catalog_source" type="select" label="Sursa categoriilor si canalelor Live" values="RATB cu fallback portal|Doar portal|Doar RATB" default="0" />
         <setting id="mega_search_fetch_missing_lists" type="bool" label="Mega search: descarca listele lipsa daca nu exista cache" default="true" />
         <setting id="mega_search_fetch_batch_size" type="number" label="Mega search: numar portaluri per lot fallback" default="5" />
     </category>

@@ -4834,6 +4834,10 @@ msgctxt "#45012"
 msgid "SIMKL Trending - This Month"
 msgstr ""
 
+msgctxt "#45013"
+msgid "SIMKL Latest Unwatched Episodes"
+msgstr ""
+
 msgctxt "#400730"
 msgid "Default"
 msgstr ""
@@ -4848,4 +4852,40 @@ msgstr ""
 
 msgctxt "#400733"
 msgid "Menus"
+msgstr ""
+
+msgctxt "#45014"
+msgid "Rotate posters periodically (TMDb alternates)"
+msgstr ""
+
+msgctxt "#45015"
+msgid "Rotation interval"
+msgstr ""
+
+msgctxt "#45016"
+msgid "3 hours"
+msgstr ""
+
+msgctxt "#45017"
+msgid "6 hours"
+msgstr ""
+
+msgctxt "#45018"
+msgid "12 hours"
+msgstr ""
+
+msgctxt "#45019"
+msgid "24 hours"
+msgstr ""
+
+msgctxt "#45020"
+msgid "Weekly cleanup of unused TMDb posters (texture cache)"
+msgstr ""
+
+msgctxt "#45021"
+msgid "Prefer English titles (when available)"
+msgstr ""
+
+msgctxt "#45022"
+msgid "Monthly cache database maintenance (auto-cleanup)"
 msgstr ""

@@ -330,7 +330,8 @@ class OffcloudAPI:
 			if not torrent or torrent.get('status') != 'downloaded': return None
 			torrent_id = torrent['requestId']
 			torrent_files = self.torrent_info(torrent_id)
-			torrent_files = [{'link': self.requote_uri(item), 'filename': item.split('/')[-1], 'size': 0} for item in torrent_files if item.lower().endswith(tuple(extensions))]
+			torrent_files = [{'link': self.requote_uri(item), 'filename': item.split('/')[-1], 'size': 0, 'request_id': torrent_id}
+				for item in torrent_files if item.lower().endswith(tuple(extensions))]
 			return torrent_files or None
 		except Exception:
 			if torrent_id: self.delete_torrent(torrent_id)

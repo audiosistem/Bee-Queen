@@ -16,6 +16,7 @@ from resources.lib.modules import client
 from resources.lib.modules import control
 from resources.lib.modules.playcount import getMovieIndicators, getMovieOverlay
 from resources.lib.modules import tools
+from resources.lib.modules import poster_rotator
 from resources.lib.modules import trakt
 from resources.lib.modules import views
 
@@ -50,6 +51,7 @@ class Movies:
 		_is_4k = _is_4k_display()
 		self.enable_fanarttv = getSetting('enable.fanarttv') == 'true' or _is_4k
 		self.prefer_tmdbArt = getSetting('prefer.tmdbArt') == 'true'
+		self.prefer_en_titles = getSetting('title.lang.en') == 'true'
 		self.unairedcolor = control.getColor(getSetting('movie.unaired.identify'))
 		self.highlight_color = control.getHighlightColor()
 		self.tmdb_link = 'https://api.themoviedb.org'
@@ -479,7 +481,13 @@ class Movies:
 				if not jw_code: continue  # no JW mapping → skip this provider in JW mode
 				self.list.append({'content': 'studios', 'name': i[0], 'url': jw_code, 'image': i[2], 'icon': i[2], 'action': 'movieJustWatch'})
 			else:
-				self.list.append({'content': 'studios', 'name': i[0], 'url': self.tmdb_watchproviders_link % ('%s', i[1]), 'image': i[2], 'icon': i[2], 'action': 'tmdbmovies'})
+				url = self.tmdb_watchproviders_link % ('%s', i[1])
+				# 4th tuple element (optional) = watch_region for providers with no US
+				# presence (e.g. SkyShowtime). Swap the hardcoded US region in the link.
+				region = i[3] if len(i) > 3 and i[3] else 'US'
+				if region != 'US':
+					url = url.replace('region=US&watch_region=US', 'region=%s&watch_region=%s' % (region, region))
+				self.list.append({'content': 'studios', 'name': i[0], 'url': url, 'image': i[2], 'icon': i[2], 'action': 'tmdbmovies'})
 		self.addDirectory(self.list)
 		return self.list
 
@@ -1002,7 +1010,7 @@ class Movies:
 					if 'available_translations' in self.list[i] and self.lang not in self.list[i]['available_translations']: raise Exception()
 					trans_item = trakt.getMovieTranslation(imdb, self.lang, full=True)
 					if trans_item:
-						if trans_item.get('title'): values['title'] = trans_item.get('title')
+						if trans_item.get('title') and not self.prefer_en_titles: values['title'] = trans_item.get('title') # con títulos EN activos solo se traduce la sinopsis
 						if trans_item.get('overview'): values['plot'] =trans_item.get('overview')
 				except:
 					from resources.lib.modules import log_utils
@@ -1067,6 +1075,7 @@ class Movies:
 				else:
 					poster = meta.get('poster2') or meta.get('poster3') or meta.get('poster') or addonPoster
 					clearlogo = meta.get('clearlogo') or meta.get('tmdblogo', '')
+				poster = poster_rotator.rotate(meta, poster) # rotación de pósters TMDb (si está activada)
 				fanart = ''
 				if settingFanart:
 					if self.prefer_tmdbArt: fanart = meta.get('fanart3') or meta.get('fanart') or meta.get('fanart2') or addonFanart
@@ -1078,7 +1087,7 @@ class Movies:
 				art = {}
 				art.update({'icon': icon, 'thumb': thumb, 'banner': banner, 'poster': poster, 'fanart': fanart, 'landscape': landscape, 'clearlogo': clearlogo,
 								'clearart': meta.get('clearart', ''), 'discart': meta.get('discart', ''), 'keyart': meta.get('keyart', '')})
-				for k in ('metacache', 'poster2', 'poster3', 'fanart2', 'fanart3', 'banner2', 'banner3', 'trailer'): meta.pop(k, None)
+				for k in ('metacache', 'poster2', 'poster3', 'posters_all', 'fanart2', 'fanart3', 'banner2', 'banner3', 'trailer'): meta.pop(k, None)
 				meta.update({'poster': poster, 'fanart': fanart, 'banner': banner})
 				sysmeta, sysart = quote_plus(jsdumps(meta)), quote_plus(jsdumps(art))
 				url = '%s?action=play_Item&title=%s&year=%s&imdb=%s&tmdb=%s&meta=%s' % (sysaddon, systitle, year, imdb, tmdb, sysmeta)

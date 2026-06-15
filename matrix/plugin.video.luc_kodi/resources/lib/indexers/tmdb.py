@@ -20,6 +20,42 @@ retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 50
 session.mount('https://api.themoviedb.org', HTTPAdapter(max_retries=retries, pool_maxsize=100))
 
 
+def _english_title(result, media='movie'):
+	# Título en inglés "si es posible": para originales en inglés, original_title/original_name
+	# ES el título inglés (coste cero). Para otros idiomas se intenta el título alternativo
+	# oficial de US/GB (descartando los que llevan 'type': working titles, etc.). Si no hay
+	# nada fiable devuelve None y se conserva el título localizado — el contenido nativo
+	# español mantiene así su título natural.
+	try:
+		if media == 'movie': orig_key, alt_key = 'original_title', 'titles'
+		else: orig_key, alt_key = 'original_name', 'results'
+		if result.get('original_language') == 'en' and result.get(orig_key): return result[orig_key]
+		alts = result.get('alternative_titles', {}).get(alt_key) or []
+		alts = [x.get('title') for x in alts if x.get('iso_3166_1') in ('US', 'GB') and not x.get('type') and x.get('title')]
+		if alts: return alts[0]
+	except: pass
+	return None
+
+
+def _poster_list(images, lang, path_prefix, limit=10):
+	# Devuelve hasta `limit` URLs completas de pósters alternativos.
+	# Prioridad de llenado: idioma del usuario > sin idioma (arte limpio) > inglés,
+	# cada grupo ordenado por votos. Sin esta prioridad un usuario 'es' recibiría un
+	# pool dominado por pósters 'en' (siempre acumulan más votos en TMDb).
+	try:
+		if not images: return []
+		pool = [x for x in images if x.get('file_path')]
+		if not pool: return []
+		def _prio(x):
+			iso = x.get('iso_639_1')
+			if iso == lang: return 0
+			if iso in (None, '', 'null'): return 1
+			return 2
+		pool = sorted(pool, key=lambda x: (_prio(x), -float(x.get('vote_average') or 0)))
+		return ['%s%s' % (path_prefix, x['file_path']) for x in pool[:limit]]
+	except: return []
+
+
 class TMDb:
 	def __init__(self):
 		self.API_key = getSetting('tmdb.api.key')
@@ -28,6 +64,8 @@ class TMDb:
 		self.lang = apiLanguage()['tmdb']
 		self.mpa_country = mpaCountry()
 		self.enable_fanarttv = getSetting('enable.fanarttv') == 'true'
+		self.prefer_en_titles = getSetting('title.lang.en') == 'true'
+		self.art_lang = 'en' if self.prefer_en_titles else self.lang # orientación única para pósters/logos/poster3
 
 	def get_request(self, url):
 		try:
@@ -110,13 +148,12 @@ class TMDb:
 		user_level = int(getSetting('tmdb.imageResolutions', '2'))
 		# Auto-upgrade a 'original' en pantallas 4K detectadas por gui_resolution.py.
 		# Solo cuando el usuario NO ha bajado manualmente la calidad (nivel < 2).
-		# Esto mejora automáticamente posters, fondos, stills, logos y fotos de actores
-		# en dispositivos como Nvidia Shield TV Pro, Fire TV Stick 4K, etc.
 		# is_4k_display() espera al flag con timeout corto — evita la race
 		# condition del primer menú tras boot en frío de Android.
+		# Nivel 3 = el usuario forzó 'original' manualmente — siempre respetar.
 		from resources.lib.modules.gui_resolution import is_4k_display as _is_4k_display
-		if _is_4k_display() and user_level >= 2:
-			resolutions = paths[3]  # original — máxima calidad para pantalla 4K
+		if user_level >= 3 or (_is_4k_display() and user_level >= 2):
+			resolutions = paths[3]  # original — máxima calidad
 		else:
 			resolutions = paths[user_level]
 		self.poster_path  = image_path % resolutions['poster']
@@ -130,7 +167,7 @@ class Movies(TMDb):
 		TMDb.__init__(self)
 		self.list = []
 		self.meta = []
-		self.movie_link = base_link + 'movie/%s?api_key=%s&language=%s&append_to_response=credits,release_dates,videos,alternative_titles,images' % ('%s', self.API_key, self.lang)
+		self.movie_link = base_link + 'movie/%s?api_key=%s&language=%s&append_to_response=credits,release_dates,videos,alternative_titles,images&include_image_language=%s,en,null' % ('%s', self.API_key, self.lang, self.lang)
 		###  other "append_to_response" options external_ids,images,translations
 		self.art_link = base_link + 'movie/%s/images?api_key=%s' % ('%s', self.API_key)
 		self.external_ids = base_link + 'movie/%s/external_ids?api_key=%s' % ('%s', self.API_key)
@@ -379,7 +416,9 @@ class Movies(TMDb):
 # adult - not used
 			meta['fanart'] = '%s%s' % (self.fanart_path, result['backdrop_path']) if result.get('backdrop_path') else ''
 
-			try: tmdblogo_path = [i['file_path'] for i in result['images']['logos'] if 'file_path' in i if i['file_path'].endswith('png')][0]
+			try:
+				_logos = [i for i in result['images']['logos'] if i.get('file_path', '').endswith('png')]
+				tmdblogo_path = ([i['file_path'] for i in _logos if i.get('iso_639_1') == self.art_lang] or [i['file_path'] for i in _logos])[0]
 			except: tmdblogo_path = ''
 			meta['tmdblogo'] = '%s%s' % (self.fanart_path, tmdblogo_path) if tmdblogo_path else ''
 
@@ -396,6 +435,11 @@ class Movies(TMDb):
 			if self.lang != 'en' and meta['plot'] in ('', None, 'None'): meta['plot'] = self.get_en_overview(tmdb)
 			# meta['?'] = result.get('popularity', '')
 			meta['poster'] = '%s%s' % (self.poster_path, result['poster_path']) if result.get('poster_path') else ''
+			try:
+				_alt_posters = _poster_list(result['images']['posters'], self.art_lang, self.poster_path)
+				if self.prefer_en_titles and _alt_posters: meta['poster'] = _alt_posters[0] # póster base también en inglés (aunque la rotación esté apagada)
+				if len(_alt_posters) > 1: meta['posters_all'] = _alt_posters # solo guardar si hay alternativas reales para rotar
+			except: pass
 			# production_companies = result.get('production_companies', {})
 			# try: meta['studio'] = [x['name'] for x in production_companies if x['logo_path']][0] # Silvo seems to use "studio" icons in place of "thumb" for movies in list view
 			# except:
@@ -412,6 +456,8 @@ class Movies(TMDb):
 			meta['status'] = result['status']
 			meta['tagline'] = result.get('tagline', '')
 			meta['title'] = result.get('title')
+			if self.prefer_en_titles and self.lang != 'en':
+				meta['title'] = _english_title(result, 'movie') or meta['title']
 			meta['rating'] = result.get('vote_average', '')
 			meta['votes'] = result.get('vote_count', '')
 			crew = result.get('credits', {}).get('crew')
@@ -470,7 +516,7 @@ class Movies(TMDb):
 	def parse_art(self, img):
 		if not img: return None
 		try:
-			ret_img = [(x['file_path'], x['vote_average']) for x in img if any(value == x.get('iso_639_1') for value in (self.lang, 'null', '', None))]
+			ret_img = [(x['file_path'], x['vote_average']) for x in img if any(value == x.get('iso_639_1') for value in (self.art_lang, 'null', '', None))]
 			if not ret_img: ret_img = [(x['file_path'], x['vote_average']) for x in img]
 			if not ret_img: return None
 			if len(ret_img) >1: ret_img = sorted(ret_img, key=lambda x: int(x[1]), reverse=True)
@@ -535,24 +581,30 @@ class Movies(TMDb):
 		return result
 
 	def get_watchproviders(self):
-		# Curated tuples: (display_name, provider_id, logo_override).
+		# Curated tuples: (display_name, provider_id, logo_override[, watch_region]).
 		# logo_override = "" -> fetch live from TMDb /watch/providers/movie (cached 30 days).
 		# Override exists when TVshows.get_networks() already has a curated high-quality
 		# logo for the same brand; otherwise we trust JustWatch's logo via TMDb's CDN.
+		# provider_id may be pipe-joined ('520|524') to OR multiple TMDb ids (TMDb keeps
+		# regional duplicates for some brands). watch_region defaults to 'US'; set the 4th
+		# element for providers with no US presence (e.g. SkyShowtime is Europe-only) so
+		# both the discover query and the logo lookup use a region where they exist.
 		curated = [
-			('Netflix',             8,    'https://i.postimg.cc/ZqqR6BJW/pngwing-com-(2).png'),
-			('Amazon Prime Video',  9,    'https://i.postimg.cc/Y0gztGmP/pngwing-com-(5).png'),
-			('Paramount+',          2303, 'https://i.postimg.cc/2yStW3JX/Paramount-plus-mediumspringgreen-1024x1024.png'),
-			('HBO Max',             1899, 'https://i.postimg.cc/HnqH7Kxf/HBO-Max-Logo-svg.png'),
-			('Hulu',                15,   'https://i.postimg.cc/7PShth5p/Hulu-1024x1024.png'),
-			('Apple TV+',           350,  'https://i.postimg.cc/bvKY3fpj/Apple-TV-Plus-mediumspringgreen-1024x1024.png'),
-			('Peacock Premium',     386,  'https://i.postimg.cc/76m4v7VW/NBCUniversal-Peacock-Logo.png'),
-			('Disney+',             337,  'https://i.postimg.cc/XYqVWYYH/Disney-plus-mediumspringgreen.png'),
-            ('Starz',               43,   'https://i.postimg.cc/VLPjjWTk/Starz.png'),
-			('AMC+',                526,  'https://i.postimg.cc/x8T92HZB/AMC-logo.png'),
-			('Crunchyroll',         283,  'https://i.imgur.com/2FlIQUO.png'),
+			('Netflix',             8,    'https://i.postimg.cc/25VTZBr9/pngwing-com-(2).png'),
+			('Amazon Prime Video',  9,    'https://i.postimg.cc/FH4WdKBq/prime-video-(1).png'),
+			('Paramount+',          2303, 'https://i.postimg.cc/50xnPkV6/paramount-plus.png'),
+			('SkyShowtime',         1773, 'https://i.postimg.cc/76GpVGxT/skyshowtime-2022-color.png', 'ES'),
+			('The CW',              83,   'https://i.postimg.cc/4NnRNxHk/The-CW-(2006-2024).png'),
+			('HBO Max',             1899, 'https://i.postimg.cc/BnD29cZq/HBO-Max-Logo-svg.png'),
+			('Hulu',                15,   'https://i.postimg.cc/26tsWfs5/Hulu-svg.png'),
+			('Apple TV+',           350,  'https://i.postimg.cc/Bnz3fH66/apple-tv-(1).png'),
+			('Peacock Premium',     386,  'https://i.postimg.cc/rpx038J6/peacock-(1).png'),
+			('Disney+',             337,  'https://i.postimg.cc/1zGXMvmX/Disney-svg.png'),
+            ('Starz',               43,   'https://i.postimg.cc/LXpsYw1B/starz-(1).png'),
+			('AMC+',                526,  'https://i.postimg.cc/SxqxRW7Y/AMC.png'),
+			('Crunchyroll',         283,  'https://i.postimg.cc/T1tSqv5D/crunchyroll.png'),
 			('MUBI',                11,   'https://i.postimg.cc/GtCQRFtZ/Mubi.png'),
-			('Shudder',             99,   'https://i.postimg.cc/pLLNbWYJ/Shudder.png'),
+			('Shudder',             99,   'https://i.postimg.cc/nhXr6vZb/shudder.png'),
 			('Google Play Movies',  3,    'https://i.postimg.cc/nLX7Kwkp/pngwing-com.png'),
 			('TCM',                 361,  'https://i.postimg.cc/Wz8hcMnJ/pngwing-com-(1).png'),
 			('fuboTV',              257,  'https://i.postimg.cc/d3V9DqRH/Fubo.png'),
@@ -563,21 +615,37 @@ class Movies(TMDb):
 			('Kanopy',              191,  'https://i.postimg.cc/fR46Q6VV/image.jpg'),
 			('Plex',                538,  'https://i.postimg.cc/sD003b1H/pngwing-com-(3).png'),
 		]
-		# Resolve missing logos in one cached call (30-day TTL; TMDb logo paths are very stable).
-		live_logos = {}
-		if any(not override for _, _, override in curated):
+		# Normalize to 4-tuples (name, pid, override, region) with 'US' as default region.
+		norm = []
+		for entry in curated:
+			region = entry[3] if len(entry) > 3 and entry[3] else 'US'
+			norm.append((entry[0], entry[1], entry[2], region))
+		# Resolve missing logos with one cached call per needed region (30-day TTL;
+		# TMDb logo paths are very stable).
+		live_logos = {}  # (region, provider_id_int) -> logo url
+		need_regions = set(r for _, _, override, r in norm if not override)
+		for reg in need_regions:
 			try:
-				url = base_link + 'watch/providers/movie?api_key=%s&language=en-US&watch_region=US' % self.API_key
+				url = base_link + 'watch/providers/movie?api_key=%s&language=en-US&watch_region=%s' % (self.API_key, reg)
 				data = cache.get(self.get_request, 720, url)
 				if isinstance(data, dict):
 					for p in (data.get('results') or []):
 						lp = p.get('logo_path')
 						if lp:
-							live_logos[p.get('provider_id')] = 'https://image.tmdb.org/t/p/original' + lp
+							live_logos[(reg, p.get('provider_id'))] = 'https://image.tmdb.org/t/p/original' + lp
 			except Exception:
 				from resources.lib.modules import log_utils
 				log_utils.error()
-		return [(name, str(pid), override if override else live_logos.get(pid, '')) for name, pid, override in curated]
+		out = []
+		for name, pid, override, region in norm:
+			logo = override
+			if not logo:
+				for part in str(pid).split('|'):
+					try: logo = live_logos.get((region, int(part)), '')
+					except: logo = ''
+					if logo: break
+			out.append((name, str(pid), logo, region))
+		return out
 
 
 class TVshows(TMDb):
@@ -585,7 +653,7 @@ class TVshows(TMDb):
 		TMDb.__init__(self)
 		self.list = []
 		self.meta = []
-		self.show_link = base_link + 'tv/%s?api_key=%s&language=%s&append_to_response=credits,content_ratings,external_ids,alternative_titles,videos,images' % ('%s', self.API_key, self.lang)
+		self.show_link = base_link + 'tv/%s?api_key=%s&language=%s&append_to_response=credits,content_ratings,external_ids,alternative_titles,videos,images&include_image_language=%s,en,null' % ('%s', self.API_key, self.lang, self.lang)
 		# 'append_to_response=translations, aggregate_credits' (DO NOT USE, response data way to massive and bogs the response time)
 		self.art_link = base_link + 'tv/%s/images?api_key=%s' % ('%s', self.API_key)
 		self.tvdb_key = getSetting('tvdb.api.key')
@@ -748,7 +816,9 @@ class TVshows(TMDb):
 			meta['mediatype'] = 'tvshow'
 			meta['fanart'] = '%s%s' % (self.fanart_path, result['backdrop_path']) if result.get('backdrop_path') else ''
 
-			try: tmdblogo_path = [i['file_path'] for i in result['images']['logos'] if 'file_path' in i if i['file_path'].endswith('png')][0]
+			try:
+				_logos = [i for i in result['images']['logos'] if i.get('file_path', '').endswith('png')]
+				tmdblogo_path = ([i['file_path'] for i in _logos if i.get('iso_639_1') == self.art_lang] or [i['file_path'] for i in _logos])[0]
 			except: tmdblogo_path = ''
 			meta['tmdblogo'] = '%s%s' % (self.fanart_path, tmdblogo_path) if tmdblogo_path else ''
 
@@ -764,6 +834,8 @@ class TVshows(TMDb):
 			meta['last_episode_to_air'] = result.get('last_episode_to_air', '')
 			meta['next_episode_to_air'] = result.get('next_episode_to_air', '')
 			meta['tvshowtitle'] = result.get('name')
+			if self.prefer_en_titles and self.lang != 'en':
+				meta['tvshowtitle'] = _english_title(result, 'show') or meta['tvshowtitle']
 			networks = result.get('networks', {})
 			try: meta['studio'] = [x['name'] for x in networks if x['logo_path']][0] # use single studio name that has a logo in hopes skin also has logo 
 			except:
@@ -786,6 +858,13 @@ class TVshows(TMDb):
 			# meta['?'] = result.get('popularity', '')
 			meta['poster'] = '%s%s' % (self.poster_path, result['poster_path']) if result.get('poster_path') else ''
 			meta['tvshow_poster'] = meta['poster'] # check that this new dict key is used throughout
+			try:
+				_alt_posters = _poster_list(result['images']['posters'], self.art_lang, self.poster_path)
+				if self.prefer_en_titles and _alt_posters:
+					meta['poster'] = _alt_posters[0] # póster base también en inglés (aunque la rotación esté apagada)
+					meta['tvshow_poster'] = meta['poster'] # mantener sincronizado (se copió antes del override)
+				if len(_alt_posters) > 1: meta['posters_all'] = _alt_posters # solo guardar si hay alternativas reales para rotar
+			except: pass
 			try: meta['country_codes'] = [i['iso_3166_1'] for i in result['production_countries']]
 			except: meta['country_codes'] = ''
 			meta['seasons'] = result.get('seasons')
@@ -947,7 +1026,7 @@ class TVshows(TMDb):
 	def parse_art(self, img):
 		if not img: return None
 		try:
-			ret_img = [(x['file_path'], x['vote_average']) for x in img if any(value == x.get('iso_639_1') for value in (self.lang, 'null', '', None))]
+			ret_img = [(x['file_path'], x['vote_average']) for x in img if any(value == x.get('iso_639_1') for value in (self.art_lang, 'null', '', None))]
 			if not ret_img: ret_img = [(x['file_path'], x['vote_average']) for x in img]
 			if not ret_img: return None
 			if len(ret_img) >1: ret_img = sorted(ret_img, key=lambda x: int(x[1]), reverse=True)
@@ -1056,7 +1135,10 @@ class TVshows(TMDb):
 		return 'true' if unaired_count > 0 else 'false'
 
 	def get_networks(self):
-		return [
+		# Curated tuples: (display_name, network_id, logo).
+		# logo = "" -> resolved live from TMDb /network/{id} (cached 30 days).
+		# network_id may be pipe-joined ('4353|5192') to OR duplicate TMDb networks.
+		networks = [
 			('A&E', '129', 'https://i.imgur.com/xLDfHjH.png'),
 			('ABC (US)', '2', 'https://i.imgur.com/qePLxos.png'),
 			('ABC (AU)', '18', 'https://i.postimg.cc/K8N5BGVC/abc-australia.png'),
@@ -1099,7 +1181,7 @@ class TVshows(TMDb):
 			('CW Seed', '1049', 'https://i.imgur.com/nOdKoEy.png'),
 			('DC Universe', '2243', 'https://i.postimg.cc/nM8hNMZc/dc-universe.png'),
 			('Discovery Channel', '64', 'https://i.imgur.com/8UrXnAB.png'),
-			('Discovery+', '4353', 'https://i.imgur.com/8UrXnAB.png'),
+			('Discovery+', '4353|5192', 'https://i.imgur.com/8UrXnAB.png'), # TMDb keeps two duplicate Discovery+ networks; pipe = OR
 			('Discovery ID', '244', 'https://i.imgur.com/07w7BER.png'),
 			('Disney+', '2739', 'https://i.postimg.cc/zBNHHbKZ/disney.png'),
 			('Disney Channel', '54', 'https://i.imgur.com/ZCgEkp6.png'),
@@ -1143,8 +1225,10 @@ class TVshows(TMDb):
 			('Showtime', '67', 'https://i.imgur.com/SawAYkO.png'),
 			('Sky1', '214', 'https://i.imgur.com/xbgzhPU.png'),
 			('Sky Atlantic', '1063', 'https://i.imgur.com/9u6M0ef.png'),
+			('SkyShowtime', '5944', 'https://i.postimg.cc/76GpVGxT/skyshowtime-2022-color.png'),
 			('Smithsonian', '658', 'https://i.postimg.cc/GtZ5RkNy/smithsonian.png'),
 			('Spike', '55', 'https://i.postimg.cc/zGs4WW7f/spike.png'),
+			('Stan (AU)', '1255', ''),
 			('Starz', '318', 'https://i.imgur.com/Z0ep2Ru.png'),
 			('Sundance TV', '270', 'https://i.imgur.com/qldG5p2.png'),
 			('Syfy', '77', 'https://i.imgur.com/9yCq37i.png'),
@@ -1163,6 +1247,22 @@ class TVshows(TMDb):
 			('WGN America', '202', 'https://i.imgur.com/TL6MzgO.png'),
 			('WWE Network', '1025', 'https://i.imgur.com/JjbTbb2.png'),
 			('YouTube Premium', '1436', 'https://i.postimg.cc/vHtqdhyt/youtube-premium.png')]
+		# Resolve missing logos live from TMDb network details (30-day TTL; logo paths
+		# are very stable). One small cached call per network with an empty logo.
+		out = []
+		for name, nid, logo in networks:
+			if not logo:
+				try:
+					first_id = str(nid).split('|')[0]
+					url = base_link + 'network/%s?api_key=%s' % (first_id, self.API_key)
+					data = cache.get(self.get_request, 720, url)
+					lp = data.get('logo_path') if isinstance(data, dict) else None
+					if lp: logo = 'https://image.tmdb.org/t/p/original' + lp
+				except Exception:
+					from resources.lib.modules import log_utils
+					log_utils.error()
+			out.append((name, nid, logo))
+		return out
 
 	def get_originals(self):
 		return [

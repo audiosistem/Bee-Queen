@@ -15,6 +15,7 @@
 from urllib.parse import quote_plus
 from json import dumps as jsdumps
 from resources.lib.modules import control
+from resources.lib.modules import poster_rotator
 
 
 # module-level session cache: {cache_key: {'first_page':[...], 'pos':int, 'page':int}}
@@ -135,6 +136,7 @@ def _open_seasons(i):
 		else:
 			poster = g('poster2') or g('poster3') or g('poster') or _addonPoster
 			clearlogo = g('clearlogo') or g('tmdblogo', '') or ''
+		poster = poster_rotator.rotate(i, poster) # rotación de pósters TMDb (si está activada)
 		if use_fanart:
 			if prefer_tmdb: fanart = g('fanart3') or g('fanart') or g('fanart2') or _addonFanart
 			else: fanart = g('fanart2') or g('fanart3') or g('fanart') or _addonFanart

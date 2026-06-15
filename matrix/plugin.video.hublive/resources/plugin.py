@@ -105,7 +105,12 @@ from hublive_vod_series import (
     play_vod as render_play_vod,
 )
 from playback_state import clear_playback_state, load_playback_state, save_playback_state
-from playlist_search import search_playlist_index, update_playlist_index
+from playlist_search import (
+    get_playlist_categories,
+    get_playlist_channels,
+    search_playlist_index,
+    update_playlist_index,
+)
 from world_cup_2026 import (
     list_world_cup_match_channels,
     list_world_cup_matches,
@@ -130,7 +135,7 @@ TIMEOUTS = {
 }
 
 # Plugin version
-PLUGIN_VERSION = "1.6.3"
+PLUGIN_VERSION = "1.7.0"
 MIN_KODI_VERSION = "19.0"
 MIN_PYTHON_VERSION = (3, 6)
 
@@ -201,6 +206,11 @@ def is_server_check_enabled():
 
 def is_live_auto_reconnect_enabled():
     return _ADDON.getSetting("live_auto_reconnect") == "true"
+
+
+def get_live_catalog_source():
+    value = (_ADDON.getSetting("live_catalog_source") or "0").strip()
+    return value if value in ("0", "1", "2") else "0"
 
 
 def _get_int_setting(setting_id, default_value, minimum=0, maximum=None):
@@ -1266,14 +1276,47 @@ def list_categories(channels, server="server1", main_mode=None):
         handle=_HANDLE, url=refresh_button_url, listitem=refresh_button, isFolder=False
     )
 
-    # Always use server categories (mandatory with JSON config)
     server_cat_list = []
     all_server_cats = []
+    catalog_source = get_live_catalog_source()
+    catalog_label = "portal"
 
-    # Try to fetch categories from server (works for stalker, stalker_v2 types)
-    if server_type in ["stalker", "stalker_v2"]:
-        all_server_cats = fetch_server_categories(server)
+    if catalog_source != "1":
+        available_servers = load_servers_config().get("servers", [])
+        all_server_cats = get_playlist_categories(server, available_servers)
         if all_server_cats:
+            catalog_label = "ratb"
+
+    # Portal-only mode, or automatic fallback when the RATB catalog is absent.
+    if (
+        not all_server_cats
+        and catalog_source != "2"
+        and server_type in ["stalker", "stalker_v2"]
+    ):
+        all_server_cats = fetch_server_categories(server)
+        catalog_label = "portal"
+
+    if all_server_cats:
+        if main_mode == "world":
+            server_cat_list = all_server_cats
+        elif main_mode == "sport":
+            server_cat_list = get_sport_categories(all_server_cats)
+        else:
+            server_cat_list = get_romanian_categories(all_server_cats)
+
+        if (
+            catalog_label == "ratb"
+            and not server_cat_list
+            and catalog_source == "0"
+            and server_type in ["stalker", "stalker_v2"]
+        ):
+            xbmc.log(
+                f"[Categories] RATB has no matches for mode {main_mode}; "
+                "using portal fallback",
+                level=xbmc.LOGINFO,
+            )
+            all_server_cats = fetch_server_categories(server)
+            catalog_label = "portal"
             if main_mode == "world":
                 server_cat_list = all_server_cats
             elif main_mode == "sport":
@@ -1281,23 +1324,29 @@ def list_categories(channels, server="server1", main_mode=None):
             else:
                 server_cat_list = get_romanian_categories(all_server_cats)
 
-            if not server_cat_list and get_fetch_status("categories", server).get("used_cache"):
-                xbmc.log(
-                    f"[Categories] Cached categories produced no matches for mode {main_mode}; forcing refresh",
-                    level=xbmc.LOGINFO,
-                )
-                all_server_cats = fetch_server_categories(server, force_refresh=True)
-                if main_mode == "world":
-                    server_cat_list = all_server_cats
-                elif main_mode == "sport":
-                    server_cat_list = get_sport_categories(all_server_cats)
-                else:
-                    server_cat_list = get_romanian_categories(all_server_cats)
-
+        if (
+            catalog_label == "portal"
+            and not server_cat_list
+            and get_fetch_status("categories", server).get("used_cache")
+        ):
             xbmc.log(
-                f"[Categories] Using server categories for {server}: {len(server_cat_list)} found (mode: {main_mode})",
+                f"[Categories] Cached categories produced no matches for mode "
+                f"{main_mode}; forcing refresh",
                 level=xbmc.LOGINFO,
             )
+            all_server_cats = fetch_server_categories(server, force_refresh=True)
+            if main_mode == "world":
+                server_cat_list = all_server_cats
+            elif main_mode == "sport":
+                server_cat_list = get_sport_categories(all_server_cats)
+            else:
+                server_cat_list = get_romanian_categories(all_server_cats)
+
+        xbmc.log(
+            f"[Categories] Using {catalog_label} categories for {server}: "
+            f"{len(server_cat_list)} found (mode: {main_mode})",
+            level=xbmc.LOGINFO,
+        )
 
     # Determine which categories to display
     if server_cat_list:
@@ -1409,7 +1458,46 @@ def list_channels_in_category(
             f"[Categories] Fetching channels for category ID: {category_id} (mode: {main_mode})",
             level=xbmc.LOGINFO,
         )
-        server_channels = fetch_channels_by_category_from_server(category_id, server)
+        catalog_source = get_live_catalog_source()
+        server_channels = []
+        if str(category_id).startswith("ratb:") and catalog_source != "1":
+            available_servers = load_servers_config().get("servers", [])
+            server_channels = get_playlist_channels(
+                server,
+                category_id,
+                available_servers,
+            )
+            if not server_channels and catalog_source == "0":
+                portal_categories = fetch_server_categories(server)
+                selected_key = clean_category_title(
+                    selected_category
+                ).casefold()
+                portal_category = next(
+                    (
+                        item
+                        for item in portal_categories or []
+                        if clean_category_title(
+                            item.get("title") or ""
+                        ).casefold()
+                        == selected_key
+                    ),
+                    None,
+                )
+                if portal_category:
+                    xbmc.log(
+                        f"[Categories] RATB category empty; using portal "
+                        f"fallback {portal_category.get('id')}",
+                        level=xbmc.LOGWARNING,
+                    )
+                    server_channels = fetch_channels_by_category_from_server(
+                        portal_category.get("id"),
+                        server,
+                    )
+        else:
+            server_channels = fetch_channels_by_category_from_server(
+                category_id,
+                server,
+            )
 
         if server_channels:
             # Convert server channels to our format

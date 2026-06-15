@@ -381,6 +381,20 @@ class SubtitlePlayer(control.player2):
 		control.sleep(500)
 		self.onAVStarted()
 
+class PosterJanitorService:
+	def run(self):
+		control.log('[ plugin.video.luc_kodi ]  Poster Texture Janitor Service Starting...', LOGINFO)
+		from resources.lib.modules import poster_rotator
+		poster_rotator.janitor_service() # contiene bucle "control.monitor.waitForAbort()"; no-op si la rotación está desactivada
+
+
+class CacheMaintenanceService:
+	def run(self):
+		control.log('[ plugin.video.luc_kodi ]  Cache DB Maintenance Service Starting...', LOGINFO)
+		from resources.lib.modules import cache_janitor
+		cache_janitor.janitor_service() # contiene bucle "control.monitor.waitForAbort()"; no-op si está desactivado
+
+
 def main():
 	while not control.monitor.abortRequested():
 		control.log('[ plugin.video.luc_kodi ]  Service Started', LOGINFO)
@@ -408,6 +422,14 @@ def main():
 
 		catalogService = Thread(target=CatalogService().run)
 		catalogService.start()
+
+		# v1.0.31: limpieza semanal de texturas de pósters rotados (no-op si está desactivada)
+		posterJanitorService = Thread(target=PosterJanitorService().run)
+		posterJanitorService.start()
+
+		# v1.0.35: mantenimiento mensual de las bases de caché regenerables (no-op si está desactivado)
+		cacheMaintenanceService = Thread(target=CacheMaintenanceService().run)
+		cacheMaintenanceService.start()
 
 		_subtitle_player = SubtitlePlayer()  # persistent Player in service process
 		control.log('[ luc_kodi ] SubtitlePlayer registered', LOGINFO)

@@ -832,6 +832,9 @@ def router(params):
 		elif action == 'tools_sootioWizard':
 			from resources.lib.modules import sootio_wizard
 			sootio_wizard.run()
+		elif action == 'tools_meteorWizard':
+			from resources.lib.modules import meteor_wizard
+			meteor_wizard.run()
 		elif action == 'tools_openSubsTest':
 			from resources.lib.modules import opensubs
 			opensubs.Opensubs().getAccountStatus()

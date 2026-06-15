@@ -169,6 +169,7 @@ class Seasons:
 				art.update({'poster': season_poster, 'tvshow.poster': poster, 'season.poster': season_poster, 'fanart': fanart, 'icon': icon, 'thumb': season_poster, 'banner': banner,
 						'clearlogo': meta.get('clearlogo', ''), 'tvshow.clearlogo': meta.get('clearlogo', ''), 'clearart': meta.get('clearart', ''), 'tvshow.clearart': meta.get('clearart', ''), 'landscape': meta.get('landscape')})
 				# for k in ('poster2', 'poster3', 'fanart2', 'fanart3', 'banner2', 'banner3'): meta.pop(k, None)
+				meta.pop('posters_all', None) # no serializar la lista de pósters alternativos en la URL
 				meta.update({'poster': poster, 'fanart': fanart, 'banner': banner, 'thumb': season_poster, 'season_poster': season_poster, 'icon': icon})
 				sysmeta = quote_plus(jsdumps(meta))
 				url = '%s?action=episodes&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s&tvdb=%s&meta=%s&season=%s' % (sysaddon, systitle, year, imdb, tmdb, tvdb, sysmeta, season)

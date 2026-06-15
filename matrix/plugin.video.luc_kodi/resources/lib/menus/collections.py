@@ -14,6 +14,7 @@ from resources.lib.indexers.fanarttv import FanartTv
 from resources.lib.modules import cleangenre
 from resources.lib.modules import client
 from resources.lib.modules import control
+from resources.lib.modules import poster_rotator
 from resources.lib.modules.playcount import getMovieIndicators, getMovieOverlay
 from resources.lib.modules import trakt
 from resources.lib.modules import views
@@ -31,6 +32,7 @@ class Collections:
 		_is_4k = _is_4k_display()
 		self.enable_fanarttv = getSetting('enable.fanarttv') == 'true' or _is_4k
 		self.prefer_tmdbArt = getSetting('prefer.tmdbArt') == 'true'
+		self.prefer_en_titles = getSetting('title.lang.en') == 'true'
 		self.unairedcolor = control.getColor(getSetting('movie.unaired.identify'))
 		self.highlight_color = control.getHighlightColor()
 		self.date_time = datetime.now()
@@ -606,7 +608,7 @@ class Collections:
 					# if self.lang == 'en' or self.lang not in values.get('available_translations', [self.lang]): raise Exception()
 					trans_item = trakt.getMovieTranslation(imdb, self.lang, full=True)
 					if trans_item:
-						if trans_item.get('title'): values['title'] = trans_item.get('title')
+						if trans_item.get('title') and not self.prefer_en_titles: values['title'] = trans_item.get('title') # con títulos EN activos solo se traduce la sinopsis
 						if trans_item.get('overview'): values['plot'] =trans_item.get('overview')
 				except:
 					from resources.lib.modules import log_utils
@@ -659,6 +661,7 @@ class Collections:
 				except: pass
 				if self.prefer_tmdbArt: poster = meta.get('poster3') or meta.get('poster') or meta.get('poster2') or addonPoster
 				else: poster = meta.get('poster2') or meta.get('poster3') or meta.get('poster') or addonPoster
+				poster = poster_rotator.rotate(meta, poster) # rotación de pósters TMDb (si está activada)
 				fanart = ''
 				if settingFanart:
 					if self.prefer_tmdbArt: fanart = meta.get('fanart3') or meta.get('fanart') or meta.get('fanart2') or addonFanart
@@ -670,7 +673,7 @@ class Collections:
 				art = {}
 				art.update({'icon': icon, 'thumb': thumb, 'banner': banner, 'poster': poster, 'fanart': fanart, 'landscape': landscape, 'clearlogo': meta.get('clearlogo', ''),
 								'clearart': meta.get('clearart', ''), 'discart': meta.get('discart', ''), 'keyart': meta.get('keyart', '')})
-				for k in ('metacache', 'poster2', 'poster3', 'fanart2', 'fanart3', 'banner2', 'banner3', 'trailer'): meta.pop(k, None)
+				for k in ('metacache', 'poster2', 'poster3', 'posters_all', 'fanart2', 'fanart3', 'banner2', 'banner3', 'trailer'): meta.pop(k, None)
 				meta.update({'poster': poster, 'fanart': fanart, 'banner': banner})
 				sysmeta, sysart = quote_plus(jsdumps(meta)), quote_plus(jsdumps(art))
 				url = '%s?action=play_Item&title=%s&year=%s&imdb=%s&tmdb=%s&meta=%s' % (sysaddon, systitle, year, imdb, tmdb, sysmeta)

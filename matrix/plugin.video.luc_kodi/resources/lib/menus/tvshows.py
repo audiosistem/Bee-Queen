@@ -14,6 +14,7 @@ from resources.lib.indexers.fanarttv import FanartTv
 from resources.lib.modules import cleangenre
 from resources.lib.modules import client
 from resources.lib.modules import control
+from resources.lib.modules import poster_rotator
 from resources.lib.modules.playcount import getTVShowOverlay, getShowCount, getSeasonIndicators
 from resources.lib.modules import trakt
 from resources.lib.modules import views
@@ -35,6 +36,7 @@ class TVshows:
 		_is_4k = _is_4k_display()
 		self.enable_fanarttv = getSetting('enable.fanarttv') == 'true' or _is_4k
 		self.prefer_tmdbArt = getSetting('prefer.tmdbArt') == 'true'
+		self.prefer_en_titles = getSetting('title.lang.en') == 'true'
 		self.unairedcolor = control.getColor(getSetting('unaired.identify'))
 		self.highlight_color = control.getHighlightColor()
 		self.date_time = datetime.now()
@@ -960,7 +962,7 @@ class TVshows:
 					if 'available_translations' in self.list[i] and self.lang not in self.list[i]['available_translations']: raise Exception()
 					trans_item = trakt.getTVShowTranslation(imdb, lang=self.lang, full=True)
 					if trans_item:
-						if trans_item.get('title'):
+						if trans_item.get('title') and not self.prefer_en_titles: # con títulos EN activos solo se traduce la sinopsis
 							values['tvshowtitle'] = trans_item.get('title')
 							values['title'] = trans_item.get('title')
 						if trans_item.get('overview'): values['plot'] =trans_item.get('overview')
@@ -1019,6 +1021,7 @@ class TVshows:
 				else:
 					poster = meta.get('poster2') or meta.get('poster3') or meta.get('poster') or addonPoster
 					clearlogo = meta.get('clearlogo') or meta.get('tmdblogo', '')
+				poster = poster_rotator.rotate(meta, poster) # rotación de pósters TMDb (si está activada)
 				landscape = meta.get('landscape')
 				fanart = ''
 				if settingFanart:
@@ -1030,7 +1033,7 @@ class TVshows:
 				art = {}
 				art.update({'poster': poster, 'tvshow.poster': poster, 'fanart': fanart, 'icon': icon, 'thumb': thumb, 'banner': banner, 'clearlogo': clearlogo,
 						'tvshow.clearlogo': clearlogo, 'clearart': meta.get('clearart', ''), 'tvshow.clearart': meta.get('clearart', ''), 'landscape': landscape})
-				for k in ('metacache', 'poster2', 'poster3', 'fanart2', 'fanart3', 'banner2', 'banner3', 'trailer'): meta.pop(k, None)
+				for k in ('metacache', 'poster2', 'poster3', 'posters_all', 'fanart2', 'fanart3', 'banner2', 'banner3', 'trailer'): meta.pop(k, None)
 				meta.update({'poster': poster, 'fanart': fanart, 'banner': banner, 'thumb': thumb, 'icon': icon})
 				sysmeta, sysart = quote_plus(jsdumps(meta)), quote_plus(jsdumps(art))
 				if flatten:

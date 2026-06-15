@@ -166,6 +166,102 @@ class TorBox:
 			data['add_only_if_cached'] = 'true'
 		return self._POST(self.cloud_usenet, data=data)
 
+	def resolve_nzb(self, nzb_url, info_hash, season, episode, title):
+		"""TorBox 2026: resolve a usenet (NZB) item to a playable URL.
+
+		Mirror of resolve_magnet() but for the /usenet/* endpoints. The picker
+		hands us the raw .nzb link (item['url']); we add it, explore the usenet
+		download's file list, pick the right video file (season/episode aware,
+		extras filtered) and unrestrict it. Without this method usenet items
+		fell through sourcesResolve()'s hoster branch (which only knows
+		RD/PM/AD) and never produced a URL — i.e. usenet results were
+		un-playable despite appearing as 'cached usenet' in the picker.
+		"""
+		from resources.lib.modules.source_utils import seas_ep_filter, extras_filter
+		import time as _t
+		usenet_id = None
+		try:
+			file_url, match = None, False
+			extensions = supported_video_extensions()
+			title = title or ''
+			extras_filtering_list = tuple(i for i in extras_filter() if not i in title.lower())
+
+			# Add the NZB (honours add_only_if_cached). TorBox de-duplicates by
+			# hash, so re-adding an already-cached item just returns its id.
+			result = self.add_nzb(nzb_url)
+			if not result or not result.get('success'):
+				log_utils.log('TorBox resolve_nzb: add_nzb failed (%s)' % (result or {}).get('error'),
+							  level=log_utils.LOGWARNING)
+				return None
+			# createusenetdownload devuelve data.usenetdownload_id (igual que POV).
+			# Aceptamos también usenet_id/hash por tolerancia de esquema.
+			_rdata = result.get('data') or {}
+			usenet_id = _rdata.get('usenetdownload_id') or _rdata.get('usenet_id') or _rdata.get('hash')
+			if not usenet_id:
+				log_utils.log('TorBox resolve_nzb: no usenetdownload_id in add_nzb response (data=%s)' % _rdata,
+							  level=log_utils.LOGWARNING)
+				return None
+
+			# Poll the usenet item until the file list is populated (cached items
+			# resolve almost immediately; uncached may need a moment).
+			files = []
+			for _attempt in range(5):
+				info = self.user_cloud_usenet(usenet_id)
+				data = (info or {}).get('data') or {}
+				files = data.get('files') or []
+				if files:
+					break
+				_t.sleep(1.5 * (_attempt + 1))
+			if not files:
+				log_utils.log('TorBox resolve_nzb: no files after polling (usenet_id=%s)' % usenet_id,
+							  level=log_utils.LOGWARNING)
+				return None
+
+			# Select the correct video file.
+			correct_files = []
+			if season and episode:
+				for f in files:
+					name = f.get('short_name') or f.get('name') or ''
+					if not name.lower().endswith(tuple(extensions)):
+						continue
+					if seas_ep_filter(season, episode, name):
+						correct_files.append(f)
+						match = True
+			if not match:
+				# Movie (or single-file pack): largest video file wins.
+				vids = [f for f in files
+						if (f.get('short_name') or f.get('name') or '').lower().endswith(tuple(extensions))]
+				if vids:
+					vids.sort(key=lambda f: int(f.get('size') or 0), reverse=True)
+					correct_files = [vids[0]]
+					match = True
+
+			if not match or not correct_files:
+				return None
+
+			# Honour extras filtering (sample/featurette/etc.) when a real
+			# episode title is known, same as resolve_magnet.
+			chosen = None
+			for f in correct_files:
+				name = (f.get('short_name') or f.get('name') or '').lower()
+				if any(x in name for x in extras_filtering_list):
+					continue
+				chosen = f
+				break
+			if not chosen:
+				chosen = correct_files[0]
+
+			file_id = chosen.get('id')
+			if file_id is None:
+				return None
+
+			# unrestrict_usenet expects "usenet_id,file_id"
+			file_url = self.unrestrict_usenet('%s,%s' % (usenet_id, file_id))
+			return file_url
+		except Exception:
+			log_utils.error()
+			return None
+
 	def create_transfer(self, magnet_url):
 		result = self.add_magnet(magnet_url)
 		if not result['success']: return ''

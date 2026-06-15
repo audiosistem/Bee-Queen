@@ -20,6 +20,10 @@ def debrid_cache_check_available(enabled_debrid=None):
 	if not enabled_debrid: enabled_debrid = debrid_enabled()
 	return any(p in enabled_debrid for p in ('Real-Debrid', 'TorBox', 'Premiumize.me', 'Offcloud', 'AllDebrid'))
 
+NO_DOWNLOAD_URL_MSG = 'No URL found for Download. Pick another Source'
+NO_CLOUD_ADD_MSG = 'No URL found for Add to Cloud. Pick another Source'
+BROWSE_NO_FILES_MSG = 'Could not list files for Browse — source may not be cached'
+
 def debrid_for_ext_cache_check(enabled_debrid=None):
 	return debrid_cache_check_available(enabled_debrid)
 
@@ -30,12 +34,17 @@ def normalize_debrid_provider(provider):
 		provider = provider[9:]
 	aliases = {
 		'offcloud': 'Offcloud',
+		'oc_cloud': 'Offcloud',
 		'torbox': 'TorBox',
 		'torbox cloud': 'TorBox',
+		'tb_cloud': 'TorBox',
 		'real-debrid': 'Real-Debrid',
+		'rd_cloud': 'Real-Debrid',
 		'premiumize.me': 'Premiumize.me',
 		'premiumize': 'Premiumize.me',
+		'pm_cloud': 'Premiumize.me',
 		'alldebrid': 'AllDebrid',
+		'ad_cloud': 'AllDebrid',
 	}
 	return aliases.get(str(provider).lower(), provider)
 
@@ -80,9 +89,11 @@ class ExternalPackSource:
 		hide_busy_dialog()
 		if not pack_choices:
 			if provider == 'TorBox':
-				notification('TorBox: No video files in this pack yet. Try again in a moment.', 4500)
+				notification('TorBox: No video file(s) yet. Try again in a moment.', 4500)
+			elif download:
+				notification(NO_DOWNLOAD_URL_MSG, 2500)
 			else:
-				notification('Error')
+				notification(BROWSE_NO_FILES_MSG, 4500)
 			return None
 		pack_choices.sort(key=lambda k: (k.get('filename') or '').lower())
 		if download:
@@ -115,8 +126,10 @@ def manual_add_magnet_to_cloud(params):
 	result = api.create_transfer(magnet_url)
 	api.clear_cache()
 	hide_busy_dialog()
-	if not result or result == 'failed':
-		return notification('Failed')
+	if result == 'failed':
+		return notification('Failed', 2500)
+	if not result or result == 'no_url':
+		return notification(NO_CLOUD_ADD_MSG, 2500)
 	if provider == 'TorBox':
 		from modules.settings import tb_notify_cloud_ready
 		label = params.get('display_name') or params.get('name') or ''

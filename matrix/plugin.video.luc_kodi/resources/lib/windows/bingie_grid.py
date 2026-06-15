@@ -24,6 +24,7 @@
 from urllib.parse import quote_plus
 from json import dumps as jsdumps
 from resources.lib.modules import control
+from resources.lib.modules import poster_rotator
 from resources.lib.windows.base import BaseDialog
 
 
@@ -108,6 +109,7 @@ class BingieGridXML(BaseDialog):
 		else:
 			poster = g('poster2') or g('poster3') or g('poster') or self._addonPoster
 			clearlogo = g('clearlogo') or g('tmdblogo', '')
+		poster = poster_rotator.rotate(i, poster) # rotación de pósters TMDb (si está activada)
 		fanart = ''
 		if self.settingFanart:
 			if self.prefer_tmdbArt: fanart = g('fanart3') or g('fanart') or g('fanart2') or self._addonFanart

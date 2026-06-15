@@ -618,6 +618,21 @@
                           <property name="setting_description">Choose your download location for Images</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_path&amp;setting_id=image_download_directory)</onclick>
                       </item>
+        <!-- Import & Export -->
+                      <item>
+                          <visible>Container(2000).HasFocus(10)</visible>
+                          <property name="setting_label">Import &amp; Export</property>
+                          <property name="setting_type">separator</property>
+                          <onclick>noop</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(10)</visible>
+                          <property name="setting_label">Import &amp; Export Directory</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.import_export_directory)]</property>
+                          <property name="setting_description">Choose your default location for Red Light favorites and progress backup files</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_path&amp;setting_id=import_export_directory)</onclick>
+                      </item>
 <!-- FEATURES 20-->
         <!-- Extras -->
                       <item>

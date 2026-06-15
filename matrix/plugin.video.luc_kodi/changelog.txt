@@ -1,3 +1,31 @@
+[B][COLOR ff00fa9a]Version 1.0.31[/COLOR][/B]
+-Meteor update with setup wizard 
+-Sootio update
+[B][COLOR ff00fa9a]Version 1.0.30[/COLOR][/B]
+-Small bugs resolved
+[B][COLOR ff00fa9a]Version 1.0.29[/COLOR][/B]
+-Small aesthetic changes
+-The catalog and content metadata are updated and refreshed each time the plugin is started.
+[B][COLOR ff00fa9a]Version 1.0.28[/COLOR][/B]
+-Torboxnews update
+-Peerflix update
+-Meteor: rewritten as Custom scraper (Meteor 2.0 requires per-user config). Paste your configured Manifest URL from meteorfortheweebs.midnightignite.me/stremio/configure. Default OFF; auto-disables silently if unconfigured.
+-Comet: added official public instance comet.elfhosted.com (default for new installs).
+-AIOStreams: added community instance aiostreams.elfhosted.com (note: rate-limited, Torrentio disabled there).
+[B][COLOR ff00fa9a]Version 1.0.27[/COLOR][/B]
+-NEW: Movies > Streaming: SkyShowtime and The CW
+-NEW: TV Shows > Networks: SkyShowtime and Stan (AU) added; logos auto-resolved from TMDb (30-day cache).
+-FIX: Discovery+ network now merges TMDb's duplicate network ids (4353|5192) for fuller results.
+-Streaming providers now support per-provider watch_region and pipe-joined provider ids.
+[B][COLOR ff00fa9a]Version 1.0.26[/COLOR][/B]
+-NEW: SIMKL Latest Unwatched Episodes in the TV Shows section, next to SIMKL Trending (independent of Trakt; requires SIMKL login only). Toggle in Settings > Navigation > SIMKL.
+-Source Results: media flags (Dolby Vision/HDR/HEVC/REMUX/Atmos/TrueHD/channels...) moved INTO each card as a 3rd row.
+[B][COLOR ff00fa9a]Version 1.0.25[/COLOR][/B]
+-Smalls aesthetic changes
+[B][COLOR ff00fa9a]Version 1.0.24[/COLOR][/B]
+-Smalls aesthetic changes
+[B][COLOR ff00fa9a]Version 1.0.23[/COLOR][/B]
+-Smalls aesthetic changes
 [B][COLOR ff00fa9a]Version 1.0.22[/COLOR][/B]
 -Set add-on view-->Bingie UI improved
 [B][COLOR ff00fa9a]Version 1.0.21[/COLOR][/B]

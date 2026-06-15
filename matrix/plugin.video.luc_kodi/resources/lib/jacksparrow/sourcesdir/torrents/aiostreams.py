@@ -46,6 +46,7 @@ _INSTANCES = {
 	'2': 'https://aiostreams.viren070.me',
 	'3': 'https://aiostreamsfortheweak.cloud',
 	'4': 'https://aiostreams.12312023.xyz',
+	'5': 'https://aiostreams.elfhosted.com',  # instancia comunitaria oficial (ElfHosted); rate-limited y con Torrentio desactivado
 }
 
 _SERVICE_PATTERNS = [

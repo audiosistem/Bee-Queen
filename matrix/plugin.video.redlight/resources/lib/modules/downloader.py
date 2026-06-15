@@ -7,11 +7,13 @@ from threading import Thread
 from urllib.request import Request, urlopen
 from urllib.parse import parse_qsl, urlparse, unquote
 from modules import kodi_utils
-from modules.sources import Sources
+from modules.sources import Sources, PROP_RESOLVE_CANCEL
 from modules.settings import download_directory, store_resolved_to_cloud
 from modules.source_utils import clean_title
 from modules.utils import clean_file_name, safe_string, remove_accents, normalize
 # logger = kodi_utils.logger
+
+NO_DOWNLOAD_URL_MSG = 'No URL found for Download. Pick another Source'
 
 def runner(params):
 	action = params.get('action')
@@ -124,7 +126,7 @@ class Downloader:
 		kodi_utils.show_busy_dialog()
 		self.download_prep()
 		self.get_url_and_headers()
-		if self.url in (None, 'None', ''): return self.return_notification(_notification='No URL found for Download. Pick another Source')
+		if self.url in (None, 'None', ''): return self.return_notification(_notification=NO_DOWNLOAD_URL_MSG)
 		self.get_filename()
 		self.get_extension()
 		if not self.download_check():
@@ -196,6 +198,7 @@ class Downloader:
 				try:
 					source = json.loads(self.source)
 					if source.get('scrape_provider', '') == 'easynews': source['url_dl'] = source['down_url']
+					kodi_utils.clear_property(PROP_RESOLVE_CANCEL)
 					url = Sources().resolve_sources(source, meta=self.meta)
 					if 'torbox' in url:
 						from apis.torbox_api import TorBoxAPI

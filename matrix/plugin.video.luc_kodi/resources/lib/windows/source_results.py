@@ -279,6 +279,7 @@ class SourceResultsXML(BaseDialog):
 					extra_info = extra_info.split('GB ', 1)[-1]
 					extra_info = extra_info.lstrip(' |').strip()
 					extra_info_focused = ''
+					_parts = []
 					if extra_info:
 						# Tabla de sinonimos para normalizacion global (aplica a todos los scrapers)
 						_SYNONYMS = {
@@ -351,6 +352,56 @@ class SourceResultsXML(BaseDialog):
 					listitem.setProperty('quality_bar',     joinPath(skin_media, q_bar) if q_bar else '')
 					listitem.setProperty('luc_kodi.quality', quality.upper())
 					listitem.setProperty('luc_kodi.quality_icon', quality_icon)
+					# ── Media-flag icon slots (3rd row inside each card) ─────────────
+					# itemlayout freezes <visible> per item, but a per-item texture
+					# ($INFO[ListItem.Property]) resolves correctly. So we compute the
+					# ordered, gap-free list of icon paths here and expose them as
+					# luc_kodi.flag0..flagN; the skin shows one image per slot.
+					def _flag_icons(parts):
+						up = [p.upper() for p in parts]
+						def has(tok): return any(tok in u for u in up)
+						out = []
+						# video / source (same order & rules as the old strip)
+						if has('DOLBY-VISION'): out.append('source/dv.png')
+						if has('HDR') and not has('HDRIP'): out.append('source/hdr.png')
+						if has('HDR10'): out.append('source/hdr10plus.png')
+						if has('SDR'): out.append('source/sdr.png')
+						if has('HEVC') or ((has('DOLBY-VISION') or has('HDR')) and not has('HDRIP') and not has('AVC')):
+							out.append('source/hevc.png')
+						if has('AVC'): out.append('source/h264.png')
+						if has('MPEG'): out.append('source/mpeg_video.png')
+						if has('REMUX'): out.append('source/REMUX.png')
+						if has('AV1'): out.append('source/AV1.png')
+						if has('MKV'): out.append('source/mkv2.png')
+						if has('AVI'): out.append('source/avc.png')
+						if has('XVID'): out.append('source/xvid.png')
+						if has('BLURAY'): out.append('source/bluray.png')
+						if has('M2TS'): out.append('source/m2ts.png')
+						if has('HDTV'): out.append('source/hdtv.png')
+						if has('WEB'): out.append('source/web-dl.png')
+						if has('DVDRIP'): out.append('source/dvd.png')
+						# audio
+						if has('ATMOS'): out.append('audio/atmos.png')
+						if has('DOLBY-TRUEHD'): out.append('audio/dolbytruehd.png')
+						if has('DOLBYDIGITAL'): out.append('audio/dolbydigital.png')
+						if has('DD') and not has('DD-EX'): out.append('audio/eac3.png')
+						if has('DTS-HD MA'): out.append('audio/dtshd_ma.png')
+						if has('DTS-X'): out.append('audio/dts_x.png')
+						if has('DTS') and not has('DTS-X') and not has('DTS-HD MA'): out.append('audio/dts2.png')
+						if has('AAC'): out.append('audio/aac.png')
+						if has('MP3'): out.append('audio/mp3.png')
+						if has('FLAC'): out.append('audio/flac.png')
+						if has('MULTI-LANG'): out.append('audio/multi_lingual.png')
+						# channels
+						if has('2CH'): out.append('channels/2.png')
+						if has('6CH'): out.append('channels/6.png')
+						if has('8CH'): out.append('channels/8.png')
+						return out
+					_FLAG_SLOTS = 14
+					_icons = _flag_icons(_parts)
+					for _i in range(_FLAG_SLOTS):
+						_val = joinPath(skin_media, _icons[_i]) if _i < len(_icons) else ''
+						listitem.setProperty('luc_kodi.flag%d' % _i, _val)
 					listitem.setProperty('luc_kodi.url', item.get('url'))
 					listitem.setProperty('luc_kodi.extra_info', extra_info)
 					listitem.setProperty('luc_kodi.extra_info_focused', extra_info_focused)

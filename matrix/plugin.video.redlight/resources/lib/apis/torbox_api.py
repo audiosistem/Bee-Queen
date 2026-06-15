@@ -692,7 +692,7 @@ class TorBoxAPI:
 		return None, []
 
 	def parse_magnet_pack(self, magnet_url, info_hash):
-		'''POV-aligned pack listing: create_transfer then read files from mylist (no early delete).'''
+		'''List pack files via create_transfer; caller removes transfer when Store Resolved to Cloud is off.'''
 		torrent_id = None
 		try:
 			extensions = supported_video_extensions()

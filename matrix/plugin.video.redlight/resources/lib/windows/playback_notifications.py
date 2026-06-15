@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import time
+from threading import Thread
 from modules.kodi_utils import addon_fanart
 from windows.base_window import BaseDialog
 from modules.settings import avoid_episode_spoilers
@@ -21,8 +22,9 @@ class NextEpisode(BaseDialog):
 		self.set_properties()
 
 	def onInit(self):
-		self.setFocusId(11)
-		self.monitor()
+		focus_map = {'play': 11, 'cancel': 12, 'pause': 12, 'close': 10}
+		self.setFocusId(focus_map.get(self.selected, 12))
+		Thread(target=self.monitor, daemon=True).start()
 
 	def run(self):
 		self.doModal()
@@ -56,29 +58,44 @@ class NextEpisode(BaseDialog):
 		else: thumb = self.meta.get('ep_thumb', None) or self.meta.get('fanart', '') or addon_fanart()
 		return thumb
 
+	def _player_active(self):
+		try:
+			return self.player.isPlayingVideo() or self.player.isPlaying()
+		except:
+			return False
+
 	def monitor(self):
-		total_time = self.player.getTotalTime()
-		while self.player.isPlaying():
-			remaining_time = round(total_time - self.player.getTime())
-			if self.closed: break
-			elif self.selected == 'pause' and remaining_time <= 10:
-				self.player.pause()
-				self.sleep(500)
-				break
-			self.sleep(1000)
+		try:
+			if self._player_active():
+				total_time = self.player.getTotalTime()
+				while self._player_active() and not self.closed:
+					remaining_time = round(total_time - self.player.getTime())
+					if self.selected == 'pause' and remaining_time <= 10:
+						try: self.player.pause()
+						except: pass
+						self.sleep(500)
+						break
+					self.sleep(1000)
+		except:
+			pass
+		if self.closed:
+			return
 		if self.selected == 'pause':
 			start_time = time.time()
 			end_time = start_time + 900
 			current_time = start_time
-			while current_time <= end_time and self.selected == 'pause':
+			while current_time <= end_time and self.selected == 'pause' and not self.closed:
 				try:
 					current_time = time.time()
 					pause_timer = time.strftime('%M:%S', time.gmtime(max(end_time - current_time, 0)))
 					self.setProperty('pause_timer', pause_timer)
 					self.sleep(1000)
 				except: break
-			if self.selected != 'cancel': self.player.pause()
-		self.close()
+			if self.selected != 'cancel' and not self.closed:
+				try: self.player.pause()
+				except: pass
+		if not self.closed:
+			self.close()
 
 class StillWatching(BaseDialog):
 	def __init__(self, *args, **kwargs):
@@ -91,7 +108,7 @@ class StillWatching(BaseDialog):
 
 	def onInit(self):
 		self.setFocusId(10)
-		self.monitor()
+		Thread(target=self.monitor, daemon=True).start()
 
 	def run(self):
 		self.doModal()
@@ -119,13 +136,16 @@ class StillWatching(BaseDialog):
 
 	def monitor(self):
 		pause_timer = 10
-		while self.player.isPlaying():
-			self.setProperty('pause_timer', '%02d %s' % (pause_timer, 'seconds' if pause_timer > 1 else 'second'))
-			self.sleep(1000)
-			if self.closed: break
-			if pause_timer == 0: break
-			pause_timer -= 1
-		self.close()
+		try:
+			while self.player.isPlaying() and not self.closed:
+				self.setProperty('pause_timer', '%02d %s' % (pause_timer, 'seconds' if pause_timer > 1 else 'second'))
+				self.sleep(1000)
+				if pause_timer == 0: break
+				pause_timer -= 1
+		except:
+			pass
+		if not self.closed:
+			self.close()
 
 class StingersNotification(BaseDialog):
 	def __init__(self, *args, **kwargs):
@@ -138,7 +158,7 @@ class StingersNotification(BaseDialog):
 
 	def onInit(self):
 		self.make_stingers()
-		self.monitor()
+		Thread(target=self.monitor, daemon=True).start()
 
 	def run(self):
 		self.doModal()
@@ -166,8 +186,11 @@ class StingersNotification(BaseDialog):
 
 	def monitor(self):
 		total_time = 10000
-		while self.player.isPlaying() and total_time > 0:
-			if self.closed: break
-			self.sleep(1000)
-			total_time -= 1000
-		self.close()
+		try:
+			while self.player.isPlaying() and total_time > 0 and not self.closed:
+				self.sleep(1000)
+				total_time -= 1000
+		except:
+			pass
+		if not self.closed:
+			self.close()

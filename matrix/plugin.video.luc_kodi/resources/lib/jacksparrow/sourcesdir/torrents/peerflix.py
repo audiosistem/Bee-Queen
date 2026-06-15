@@ -25,6 +25,8 @@ from resources.lib.jacksparrow.control import setting as getSetting
 _META_RE   = re.compile(r'[👤💾🌐]')
 _VIDEO_EXT = re.compile(r'\.(mkv|avi|mp4|mov|m4v|ts|m2ts|wmv)$', re.IGNORECASE)
 _SIZE_RE   = re.compile(r'([\d]+(?:[.,]\d+)?\s*(?:GB|GiB|Gb|MB|MiB|Mb))', re.IGNORECASE)
+_FLAG_RE   = re.compile('[\U0001F1E6-\U0001F1FF]{2}')
+_MULTI_RE  = re.compile(r'\b(multi|dual|dl)\b', re.IGNORECASE)
 
 # ── Flag → idioma ISO-639-1 ────────────────────────────────────────────────────
 _FLAG_LANG = {
@@ -113,12 +115,32 @@ def _parse_stream(file):
     elif file.get('language'):
         lang = file['language'].lower()
 
+    # ── Todos los idiomas detectados (client-side filter, v1.0.31) ─────────────
+    # Un stream multi-audio puede traer varias flags; las recogemos todas de
+    # name + title, más el campo 'language' si existe, más la marca MULTI/DUAL.
+    langs    = set()
+    all_text = '%s %s' % (name_field, title_field)
+    for flag in _FLAG_RE.findall(all_text):
+        code = _FLAG_LANG.get(flag)
+        if code:
+            langs.add(code)
+    if file.get('language'):
+        langs.add(str(file['language']).lower())
+    is_multi = bool(_MULTI_RE.search(all_text))
+    if is_multi:
+        langs.add('multi')
+    if not langs:
+        # Sin flag ni campo language: release scene típica -> asumimos inglés
+        langs.add('en')
+
     return {
         'filename'    : filename,
         'all_names'   : content_lines,
         'provider'    : provider,
         'seeders'     : seeders,
         'lang'        : lang,
+        'langs'       : langs,
+        'is_multi'    : is_multi,
         'size_str'    : size_str,
     }
 
@@ -130,11 +152,9 @@ class source:
     hasMovies  = True
     hasEpisodes = True
 
-    # peerflix.mov es el endpoint canonico del manifest; config.peerflix.mov
-    # es solo la UI (no sirve la API de streams). El subdominio addon.* no
-    # existe en docs oficiales — lo retiramos en v1.0.15.
     DEFAULT_CANDIDATES = (
         'https://peerflix.mov',
+        'https://addon.peerflix.mov',
     )
 
     def __init__(self):
@@ -142,6 +162,9 @@ class source:
         lang_idx = int(getSetting('peerflix.language') or '0')
         # 0=en  1=es  2=en+es
         self._langs = {0: ['en'], 1: ['es'], 2: ['en', 'es']}.get(lang_idx, ['en'])
+        # Conjunto para el filtro client-side (v1.0.31). Los streams MULTI/DUAL
+        # siempre pasan porque pueden contener el idioma deseado.
+        self._lang_set = set(self._langs)
 
         qf_idx = getSetting('peerflix.qualityfilter') or '0'
         self._qualityfilter = _QF_MAP.get(qf_idx, '')
@@ -173,24 +196,44 @@ class source:
         return '/%s/stream/movie/%s.json' % (cfg, imdb)
 
     def _fetch_streams(self, path):
-        """GET sobre todas las bases candidatas. Devuelve (payload, base_url)."""
+        """GET sobre todas las bases candidatas. Devuelve (payload, base_url).
+
+        v1.0.31: se mantiene client.request() (es lo que funcionaba en 1.0.11)
+        pero se añade logging para diagnosticar fallos. La reescritura a rutas
+        estáticas de v1.0.28 fue un error de diagnóstico: el backend de
+        peerflix.mov SIGUE siendo dinámico y acepta el prefijo
+        /language=..|qualityfilter=../stream/.. — restaurado.
+        """
+        from resources.lib.jacksparrow import log_utils
         last_exc = None
         for base in self._bases:
             url = base + path
             try:
                 res = client.request(url, headers=self._headers(), timeout=self.timeout)
                 if not res:
+                    log_utils.log('PEERFLIX: respuesta vacía/None de %s' % url, level=log_utils.LOGDEBUG)
                     continue
-                payload = jsloads(res)
+                try:
+                    payload = jsloads(res)
+                except Exception:
+                    log_utils.log('PEERFLIX: respuesta no-JSON de %s -- %s'
+                                  % (url, str(res)[:160]), level=log_utils.LOGWARNING)
+                    continue
                 if isinstance(payload, dict) and 'streams' in payload:
+                    n = len(payload.get('streams') or [])
+                    log_utils.log('PEERFLIX: %d streams de %s' % (n, url), level=log_utils.LOGDEBUG)
                     return payload, base
+                else:
+                    log_utils.log('PEERFLIX: JSON sin clave "streams" de %s (keys=%s)'
+                                  % (url, list(payload.keys()) if isinstance(payload, dict) else type(payload).__name__),
+                                  level=log_utils.LOGWARNING)
             except Exception as e:
                 last_exc = e
                 continue
         if last_exc:
             source_utils.scraper_error('PEERFLIX (sin payload): %s' % last_exc)
         else:
-            source_utils.scraper_error('PEERFLIX (sin payload)')
+            log_utils.log('PEERFLIX: ninguna base devolvió payload para %s' % path, level=log_utils.LOGDEBUG)
         return None, None
 
     def _collect_streams(self, lang, is_tv, imdb, season, episode, results, idx):
@@ -286,6 +329,13 @@ class source:
 
                 # ── Parseo multi-línea ─────────────────────────────────────────
                 parsed    = _parse_stream(file)
+
+                # ── Filtro de idioma client-side (v1.0.31) ─────────────────────
+                # Los MULTI/DUAL siempre pasan (pueden incluir el idioma deseado).
+                # El resto solo pasa si alguno de sus idiomas está en la selección.
+                if not parsed['is_multi'] and not (parsed['langs'] & self._lang_set):
+                    continue
+
                 filename  = parsed['filename']
                 all_names = parsed['all_names']
                 name      = source_utils.clean_name(filename) if filename else source_utils.clean_name(title)

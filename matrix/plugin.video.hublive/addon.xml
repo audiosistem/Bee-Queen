@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.hublive" name="HubLive" version="1.6.3" provider-name="1X si Geamanu">
+<addon id="plugin.video.hublive" name="HubLive" version="1.7.0" provider-name="1X si Geamanu">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
     <import addon="script.module.requests"/>

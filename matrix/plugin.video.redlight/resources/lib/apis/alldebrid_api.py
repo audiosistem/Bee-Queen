@@ -160,8 +160,15 @@ class AllDebridAPI:
 		url = 'magnet/upload'
 		url_append = '&magnet=%s' % magnet
 		result = self._get(url, url_append)
-		if 'error' in result: return None
-		return result['magnets'][0].get('id', None)
+		if not result or 'error' in result:
+			return 'no_url'
+		try:
+			transfer_id = result['magnets'][0].get('id', None)
+		except (IndexError, KeyError, TypeError):
+			return 'no_url'
+		if not transfer_id:
+			return 'no_url'
+		return transfer_id
 
 	def list_transfer(self, transfer_id):
 		url = 'magnet/status'

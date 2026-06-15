@@ -19,7 +19,8 @@ class StillWatchingXML(BaseDialog):
 		self.meta = kwargs.get('meta')
 		self.playing_file = self.getPlayingFile()
 		self.duration = self.getTotalTime() - self.getTime()
-		self.default_action = int(getSetting('playnext.default.action'))
+		try: self.default_action = int(getSetting('playnext.default.action') or '0')
+		except (ValueError, TypeError): self.default_action = 0
 		self.closed = False
 
 	def onInit(self):

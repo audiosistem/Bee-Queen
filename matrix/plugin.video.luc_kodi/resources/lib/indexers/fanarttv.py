@@ -21,6 +21,7 @@ class FanartTv:
 		if not client_key: client_key = 'e5fd54cf4c8f3362235b991c4735781b'
 		self.headers.update({'client-key': client_key})
 		self.lang = apiLanguage()['trakt']
+		if getSetting('title.lang.en') == 'true': self.lang = 'en' # orientación inglesa unificada (títulos/pósters/logos); fallbacks en/00 intactos
 
 	def get_request(self, url):
 		try:

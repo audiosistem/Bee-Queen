@@ -69,7 +69,9 @@ class Sources:
 			               and getSetting('mediafusion.secret'))
 			_sootio_active = (getSetting('provider.sootio') == 'true'
 			                  and getSetting('sootio.config'))
-			if not (_aio_active or _mf_active or _sootio_active):
+			_meteor_active = (getSetting('provider.meteor') == 'true'
+			                  and (getSetting('meteor.config_token') or getSetting('meteor.manifest_url')))
+			if not (_aio_active or _mf_active or _sootio_active or _meteor_active):
 				control.sleep(200) ; control.hide()
 				homeWindow.clearProperty('luc_kodi.bingie_direct')
 				return control.notification(message=33034)
@@ -1190,9 +1192,29 @@ class Sources:
 		append = filter.append
 		remove = filter.remove
 		log_dupes = getSetting('remove.duplicates.logging') == 'false'
+		# Claves de deduplicacion de fuentes directas de Meteor:
+		# 1) videoSize exacto en bytes (mismo archivo = mismo size)
+		# 2) nombre normalizado sin extension como fallback
+		# Si un torrent de otro scraper coincide con alguna, se descarta
+		# porque Meteor ya lo tiene resuelto como URL directa.
+		_meteor_sizes = set()
+		_meteor_names = set()
+		for _m in self.sources:
+			if _m.get('provider') == 'meteor' and _m.get('direct') is True:
+				_sz = _m.get('size') or 0
+				if _sz > 0: _meteor_sizes.add(round(_sz, 2))
+				_nm = re.sub(r'\.[a-z0-9]{2,4}$', '', _m['name'].lower())
+				_meteor_names.add(_nm)
 		for i in self.sources:
 			larger = False
 			a = i['url'].lower()
+			# Saltar torrents de otros scrapers que Meteor ya cubre con URL directa
+			if i.get('provider') != 'meteor' and (_meteor_sizes or _meteor_names):
+				_isz = round(i.get('size') or 0, 2)
+				_inm = re.sub(r'\.[a-z0-9]{2,4}$', '', i['name'].lower())
+				if (_meteor_sizes and _isz > 0 and _isz in _meteor_sizes) or (_meteor_names and _inm in _meteor_names):
+					if log_dupes: log_utils.log('Removing %s - %s (METEOR DIRECT COVERS)' % (i['provider'], i['name']), level=log_utils.LOGDEBUG)
+					continue
 			for sublist in filter:
 				try:
 					if i['source'] == 'cloud': break
@@ -1434,6 +1456,32 @@ class Sources:
 			self.url = None
 			debrid_provider = item['debrid'] if item.get('debrid') else ''
 		except: log_utils.error()
+		# ── TorBox 2026: usenet (NZB) resolution ──────────────────────────────
+		# Usenet items carry source 'cached usenet'/'uncached usenet' and an
+		# http(s) .nzb link in item['url'] (NOT a magnet). They must be resolved
+		# via TorBox's /usenet/* endpoints, not the magnet or hoster branches.
+		# Without this they fell through to the hoster branch (RD/PM/AD only) and
+		# never produced a playable URL.
+		if 'usenet' in item.get('source', ''):
+			try:
+				meta = homeWindow.getProperty(self.metaProperty)
+				if meta:
+					meta = jsloads(unquote(meta.replace('%22', '\\"')))
+					season, episode, title = meta.get('season'), meta.get('episode'), meta.get('title')
+				else:
+					season = homeWindow.getProperty(self.seasonProperty)
+					episode = homeWindow.getProperty(self.episodeProperty)
+					title = homeWindow.getProperty(self.titleProperty)
+				if debrid_provider == 'TorBox':
+					from resources.lib.debrid.torbox import TorBox as debrid_function
+					url = debrid_function().resolve_nzb(url, item.get('hash'), season, episode, title)
+					self.url = url
+					return url
+				else:
+					return
+			except:
+				log_utils.error()
+				return
 		if 'magnet:' in url:
 			if not 'uncached' in item['source']:
 				try:
@@ -1506,7 +1554,7 @@ class Sources:
 			elif provider in ('EasyDebrid', 'ED'):
 				from resources.lib.debrid.easydebrid import EasyDebrid as debrid_function
 			elif provider in ('TorBox', 'TB'):
-				from resources.lib.debrid.easydebrid import EasyDebrid as debrid_function
+				from resources.lib.debrid.torbox import TorBox as debrid_function
 			else: return
 			debrid_files = None
 			control.busy()

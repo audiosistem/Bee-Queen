@@ -46,7 +46,7 @@ class Navigator:
 
 	def movies(self, lite=False):
 		# For You (AI recommendations)
-		self.addDirectoryItem(40110 if self.indexLabels else 40110, 'recoMovies', 'highly-rated.png', 'DefaultMovies.png')
+		self.addDirectoryItem(40110 if self.indexLabels else 40110, 'recoMovies', 'foryou_icon.png', 'DefaultMovies.png')
 		if getMenuEnabled('navi.movie.trakt.popular'):
 			self.addDirectoryItem(40519 if self.indexLabels else 40519, 'movies&url=traktpopular', 'trakt.png' if self.iconLogos else 'most-popular.png', 'DefaultMovies.png')
 		if getMenuEnabled('navi.movie.trakt.trending'):
@@ -69,11 +69,11 @@ class Navigator:
 			self.addDirectoryItem(40524 if self.indexLabels else 40524, 'movies&url=traktrecommendations', 'trakt.png' if self.iconLogos else 'recommended.png', 'DefaultMovies.png')
 		# ── SIMKL public trending lists (no login required, client_id-only) ────
 		if getMenuEnabled('navi.movie.simkl.trendingToday'):
-			self.addDirectoryItem(45000, 'movies&url=simkltrendingtoday', 'simkl.png' if self.iconLogos else 'trending.png', 'DefaultMovies.png')
+			self.addDirectoryItem(45000, 'movies&url=simkltrendingtoday', 'simkl.png', 'DefaultMovies.png')
 		if getMenuEnabled('navi.movie.simkl.trendingWeek'):
-			self.addDirectoryItem(45001, 'movies&url=simkltrendingweek',  'simkl.png' if self.iconLogos else 'trending.png', 'DefaultMovies.png')
+			self.addDirectoryItem(45001, 'movies&url=simkltrendingweek',  'simkl.png', 'DefaultMovies.png')
 		if getMenuEnabled('navi.movie.simkl.trendingMonth'):
-			self.addDirectoryItem(45002, 'movies&url=simkltrendingmonth', 'simkl.png' if self.iconLogos else 'trending.png', 'DefaultMovies.png')
+			self.addDirectoryItem(45002, 'movies&url=simkltrendingmonth', 'simkl.png', 'DefaultMovies.png')
 		if getMenuEnabled('navi.movie.tmdb.genres'):
 			self.addDirectoryItem(32486 if self.indexLabels else 32455, 'movieGenres&url=tmdb_genre', 'tmdb.png' if self.iconLogos else 'genres.png', 'DefaultGenre.png')
 		if getMenuEnabled('navi.movie.tmdb.years'):
@@ -116,7 +116,7 @@ class Navigator:
 
 	def tvshows(self, lite=False):
 		# For You (AI recommendations)
-		self.addDirectoryItem(40111 if self.indexLabels else 40111, 'recoTV', 'highly-rated.png', 'DefaultTVShows.png')
+		self.addDirectoryItem(40111 if self.indexLabels else 40111, 'recoTV', 'foryou_icon.png', 'DefaultTVShows.png')
 		if getMenuEnabled('navi.tv.trakt.trending'):
 			self.addDirectoryItem(40522 if self.indexLabels else 40522, 'tvshows&url=trakttrending', 'trakt.png' if self.iconLogos else 'trending.png', 'DefaultTVShows.png')
 		if getMenuEnabled('navi.originals'):
@@ -129,11 +129,17 @@ class Navigator:
 			self.addDirectoryItem(40524 if self.indexLabels else 40524, 'tvshows&url=traktrecommendations', 'trakt.png' if self.iconLogos else 'recommended.png', 'DefaultTVShows.png', queue=True)
 		# ── SIMKL public trending lists (no login required, client_id-only) ────
 		if getMenuEnabled('navi.tv.simkl.trendingToday'):
-			self.addDirectoryItem(45010, 'tvshows&url=simkltrendingtoday', 'simkl.png' if self.iconLogos else 'trending.png', 'DefaultTVShows.png')
+			self.addDirectoryItem(45010, 'tvshows&url=simkltrendingtoday', 'simkl.png', 'DefaultTVShows.png')
 		if getMenuEnabled('navi.tv.simkl.trendingWeek'):
-			self.addDirectoryItem(45011, 'tvshows&url=simkltrendingweek',  'simkl.png' if self.iconLogos else 'trending.png', 'DefaultTVShows.png')
+			self.addDirectoryItem(45011, 'tvshows&url=simkltrendingweek',  'simkl.png', 'DefaultTVShows.png')
 		if getMenuEnabled('navi.tv.simkl.trendingMonth'):
-			self.addDirectoryItem(45012, 'tvshows&url=simkltrendingmonth', 'simkl.png' if self.iconLogos else 'trending.png', 'DefaultTVShows.png')
+			self.addDirectoryItem(45012, 'tvshows&url=simkltrendingmonth', 'simkl.png', 'DefaultTVShows.png')
+		if getMenuEnabled('navi.tv.simkl.progress'):
+			try:
+				from resources.lib.modules import simkl
+				if simkl.getSimklCredentialsInfo():
+					self.addDirectoryItem(45013, 'calendar&url=simklprogress', 'simkl.png', 'DefaultTVShows.png', queue=True, context=(32072, 'episodes_clrProgressCache&url=simklprogress'))
+			except: pass
 		if getMenuEnabled('navi.tv.tmdb.genres'):
 			self.addDirectoryItem(32486 if self.indexLabels else 32455, 'tvGenres&url=tmdb_genre', 'tmdb.png' if self.iconLogos else 'genres.png', 'DefaultGenre.png')
 		if getMenuEnabled('navi.tv.tvmaze.networks'):

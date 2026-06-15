@@ -21,6 +21,7 @@ class Select(BaseDialog):
 		self.item_list = []
 		self.chosen_indexes = []
 		self.selected = None
+		self.control_id = None
 		self.set_properties()
 		self.make_menu()
 

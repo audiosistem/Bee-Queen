@@ -202,11 +202,15 @@ class RealDebridAPI:
 		with _rd_magnet_semaphore:
 			torrent_id = None
 			try:
-				extensions = supported_video_extensions()
 				torrent = self.add_magnet(magnet_url)
+				if not torrent or 'error' in torrent:
+					return 'no_url'
 				torrent_id = torrent['id']
 				info = self.torrent_info(torrent_id)
-				files = info['files']
+				files = info.get('files') or []
+				if not files:
+					self.delete_torrent(torrent_id)
+					return 'no_url'
 				self.add_torrent_select(torrent_id, 'all')
 				return 'success'
 			except:
@@ -308,6 +312,8 @@ class RealDebridAPI:
 		try:
 			torrent_id = None
 			torrent = self.add_magnet(magnet_url)
+			if not torrent or 'error' in torrent:
+				return None
 			torrent_id = torrent['id']
 			self.add_torrent_select(torrent_id, 'all')
 			sleep(1000)

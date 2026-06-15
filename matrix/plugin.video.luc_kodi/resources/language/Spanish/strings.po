@@ -125,6 +125,10 @@ msgctxt "#45012"
 msgid "SIMKL Trending - This Month"
 msgstr "SIMKL Tendencias - Este Mes"
 
+msgctxt "#45013"
+msgid "SIMKL Latest Unwatched Episodes"
+msgstr "SIMKL Últimos Episodios Sin Ver"
+
 msgctxt "#400730"
 msgid "Default"
 msgstr "Por defecto"
@@ -140,3 +144,39 @@ msgstr "Cambiar vista del add-on"
 msgctxt "#400733"
 msgid "Menus"
 msgstr "Menús"
+
+msgctxt "#45014"
+msgid "Rotate posters periodically (TMDb alternates)"
+msgstr "Rotar pósters periódicamente (alternativos de TMDb)"
+
+msgctxt "#45015"
+msgid "Rotation interval"
+msgstr "Intervalo de rotación"
+
+msgctxt "#45016"
+msgid "3 hours"
+msgstr "3 horas"
+
+msgctxt "#45017"
+msgid "6 hours"
+msgstr "6 horas"
+
+msgctxt "#45018"
+msgid "12 hours"
+msgstr "12 horas"
+
+msgctxt "#45019"
+msgid "24 hours"
+msgstr "24 horas"
+
+msgctxt "#45020"
+msgid "Weekly cleanup of unused TMDb posters (texture cache)"
+msgstr "Limpieza semanal de pósters TMDb sin usar (caché de texturas)"
+
+msgctxt "#45021"
+msgid "Prefer English titles (when available)"
+msgstr "Preferir títulos en inglés (cuando existan)"
+
+msgctxt "#45022"
+msgid "Monthly cache database maintenance (auto-cleanup)"
+msgstr "Mantenimiento mensual de bases de caché (limpieza automática)"

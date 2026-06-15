@@ -150,12 +150,53 @@ def _read_screen_height():
 
 
 def _write_flags(height):
-    """Escribe los dos window properties consumidos por el resto del addon."""
+    """Escribe los dos window properties consumidos por el resto del addon.
+
+    Si detectamos 4K por primera vez en la sesión (flag anterior != 'true'),
+    programamos una limpieza de metacache en background para que las URLs de
+    artwork se reconstruyan con calidad 'original' en lugar de las que pudo
+    haber almacenado una detección fallida previa (race condition cold-boot).
+    """
     is_4k = height >= _4K_HEIGHT_THRESHOLD
     detected = '2160' if is_4k else '1080'
+    prev_flag = control.homeWindow.getProperty(DISPLAY_4K_FLAG)
     control.homeWindow.setProperty(DISPLAY_4K_FLAG,  'true' if is_4k else 'false')
     control.homeWindow.setProperty(DISPLAY_RES_FLAG, detected)
+    # Upgrade 4K detectado: metacache puede contener URLs w780/w1280 grabadas
+    # durante un arranque en frío donde is_4k_display() aún no tenía el flag.
+    # Limpiar caché en background para que el siguiente fetch use 'original'.
+    if is_4k and prev_flag != 'true':
+        _spawn(target=_clear_metacache_for_4k_upgrade)
     return is_4k, detected
+
+
+def _clear_metacache_for_4k_upgrade():
+    """
+    Limpia metacache cuando se confirma pantalla 4K por primera vez en sesión.
+
+    Motivación: si TMDb.__init__() construyó un objeto Movies/TVShows antes
+    de que is_4k_display() tuviera el flag listo (race condition cold-boot en
+    Android Shield), las URLs de artwork se grabaron con la resolución por
+    defecto del usuario (p.ej. w780/w1280) en lugar de 'original'. Esas URLs
+    quedan en metacache hasta 30 días. Esta limpieza fuerza un re-fetch con
+    calidad 'original' en el siguiente acceso al catálogo.
+
+    Espera 3 s para no competir con el arranque del skin/menú principal.
+    Solo corre UNA vez por sesión gracias a la guardia en _write_flags
+    (prev_flag != 'true').
+    """
+    try:
+        import xbmc
+        xbmc.sleep(3000)
+        from resources.lib.database import metacache
+        metacache.cache_clear_meta()
+        control.log(
+            '[ plugin.video.luc_kodi ]  GUIResolution: metacache cleared — '
+            '4K upgrade detected, artwork URLs will refresh to original quality',
+            LOGINFO
+        )
+    except Exception:
+        log_utils.error()
 
 
 def _spawn(target, args=()):

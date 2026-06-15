@@ -27,6 +27,11 @@
     <setting type="action" label="32620" subsetting="true" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearMetaAndCache)" visible="eq(-2,true)" />
     <setting id="prefer.tmdbArt" type="bool" label="32079" subsetting="true" default="true" visible="eq(-3,true)" />
     <setting id="tmdb.imageResolutions" type="enum" label="32233" lvalues="32234|32235|32236|32237" default="1" />
+    <setting id="poster.rotation" type="bool" label="45014" default="false" />
+    <setting id="poster.rotation.interval" type="enum" label="45015" lvalues="45016|45017|45018|45019" default="3" subsetting="true" visible="eq(-1,true)" />
+    <setting id="poster.rotation.cleanup" type="bool" label="45020" default="true" subsetting="true" visible="eq(-2,true)" />
+    <setting id="title.lang.en" type="bool" label="45021" default="true" />
+    <setting id="db.maintenance" type="bool" label="45022" default="true" />
     <setting id="hidecinema" type="bool" label="32571" default="false" />
     <setting id="hidecinema.rollback" type="slider" label="40063" subsetting="true" default="6" range="1,12" option="int" visible="eq(-1,true)" />
     <setting id="movie.unaired.identify" type="select" label="35526" lvalues="32593|32669|32589|32666|32596|32592|32590|32595|32591|32597|32668|32667|32594|32671|32670|32598" default="0" />
@@ -101,6 +106,7 @@
     <setting id="navi.tv.simkl.trendingToday" type="bool" label="45010" default="false" />
     <setting id="navi.tv.simkl.trendingWeek"  type="bool" label="45011" default="true" />
     <setting id="navi.tv.simkl.trendingMonth" type="bool" label="45012" default="false" />
+    <setting id="navi.tv.simkl.progress" type="bool" label="45013" default="true" />
     <setting type="lsep" label="MDBList" />
     <setting id="navi.tv.mdblist.continue"    type="bool" label="40234" default="true" />
     <setting id="navi.tv.mdblist.topLists"    type="bool" label="40235" default="true" />
@@ -116,6 +122,7 @@
     <setting id="tvshows.calendar.extended" type="bool" label="32023" default="false" />
     <setting type="lsep" label="40027" />
     <setting id="enable.playnext" type="bool" label="40028" default="false" />
+      <setting id="playnext.default.action" type="enum" label="Default action on timeout" lvalues="Play Next|Stop|Pause" default="0" subsetting="true" visible="eq(-1,true)" />
     <setting label="35056" type="lsep" />
     <setting id="sort.imdbshows.type" type="select" label="35054" lvalues="33564|33039|35187|35188|35391|35392|35393" default="0" />
     <setting id="sort.imdbshows.order" type="enum" label="33679" lvalues="33649|33650" default="0" subsetting="true" enable="!eq(-1,0)" />
@@ -168,10 +175,12 @@
       <setting id="torz.url" label="torz instance" type="enum" default="0" values="stremthru.stremio.ru|13377001.xyz|midnightignite" subsetting="true" visible="eq(-1,true)" />
     <setting id="provider.torrentsdb" label="40089" type="bool" default="true" />
     <setting id="provider.comet" label="40083" type="bool" default="true" />
-      <setting id="comet.url" label="Instance" type="enum" default="0" values="comet.stremio.ru|midnightignite" subsetting="true" visible="eq(-1,true)" />
+      <setting id="comet.url" label="Instance" type="enum" default="2" values="comet.stremio.ru|midnightignite|elfhosted  │  [COLOR fffdb515]https://comet.elfhosted.com[/COLOR]" subsetting="true" visible="eq(-1,true)" />
     <setting id="provider.piratebay" label="40087" type="bool" default="true" />
     <setting id="provider.peerflix" type="bool" label="40093" default="true" />
-    <setting id="provider.meteor" type="bool" label="40092" default="false" />
+      <setting id="peerflix.language" label="Audio Language" type="enum" default="0" values="English (+ Multi)|Español (+ Multi)|English + Español (+ Multi)" subsetting="true" visible="eq(-1,true)" />
+      <setting id="peerflix.qualityfilter" label="Exclude Quality" type="enum" default="1" values="None|CAM / Screener|CAM / Screener / SD" subsetting="true" visible="eq(-2,true)" />
+      <setting id="peerflix.min.seeders" label="Min Seeders" type="slider" default="0" range="0,100" option="int" subsetting="true" visible="eq(-3,true)" />
     <setting id="provider.torrentdownload" label="40086" type="bool" default="true" />
     <!--setting id="provider.dmm" label="40088" type="bool" default="false" -->
     <setting id="provider.zilean" label="40081" type="bool" default="true" />
@@ -192,8 +201,13 @@
       <setting id="sootio.config" label="Config Token  (from [COLOR fffdb515]sooti.info/configure[/COLOR])" type="text" default="" subsetting="true" visible="eq(-2,true)" />
       <setting id="sootio.debrid.detected" label="     Debrid detected" type="text" default="not configured" enable="false" subsetting="true" visible="eq(-3,true)" />
       <setting id="sootio.wizard" type="action" label="[COLOR ff00fa9a]Sootio Setup Wizard  (easy setup, no keyboard needed)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_sootioWizard)" subsetting="true" visible="eq(-4,true)" />
+    <setting id="provider.meteor" type="bool" label="40092" default="false" />
+      <setting id="meteor.config_token" label="Config Token  (from [COLOR fffdb515]meteorfortheweebs.midnightignite.me/stremio/configure[/COLOR])" type="text" default="" subsetting="true" visible="eq(-1,true)" />
+      <setting id="meteor.debrid.detected" label="     Debrid detected" type="text" default="not configured" enable="false" subsetting="true" visible="eq(-2,true)" />
+      <setting id="meteor.wizard" type="action" label="[COLOR ff00fa9a]Meteor Setup Wizard  (easy setup, no keyboard needed)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_meteorWizard)" subsetting="true" visible="eq(-3,true)" />
+      <setting id="meteor.manifest_url" label="manifest_url (legacy)" type="text" default="" visible="false" />
     <setting id="provider.aiostreams" label="40085" type="bool" default="false" />
-      <setting id="aiostreams.url" label="Instance" type="enum" default="0" values="midnightignite  │  [COLOR fffdb515]https://aiostreamsfortheweebsstable.midnightignite.me[/COLOR]|stremio.ru  │  [COLOR fffdb515]https://aiostreams.stremio.ru[/COLOR]|viren070  │  [COLOR fffdb515]https://aiostreams.viren070.me[/COLOR]|cloud  │  [COLOR fffdb515]https://aiostreamsfortheweak.cloud[/COLOR]|omni's  │  [COLOR fffdb515]https://aiostreams.12312023.xyz[/COLOR]" subsetting="true" visible="eq(-1,true)" />
+      <setting id="aiostreams.url" label="Instance" type="enum" default="0" values="midnightignite  │  [COLOR fffdb515]https://aiostreamsfortheweebsstable.midnightignite.me[/COLOR]|stremio.ru  │  [COLOR fffdb515]https://aiostreams.stremio.ru[/COLOR]|viren070  │  [COLOR fffdb515]https://aiostreams.viren070.me[/COLOR]|cloud  │  [COLOR fffdb515]https://aiostreamsfortheweak.cloud[/COLOR]|omni's  │  [COLOR fffdb515]https://aiostreams.12312023.xyz[/COLOR]|elfhosted  │  [COLOR fffdb515]https://aiostreams.elfhosted.com[/COLOR]" subsetting="true" visible="eq(-1,true)" />
       <setting id="aiostreams.uuid" label="UUID  (from /configure)" type="text" default="" subsetting="true" visible="eq(-2,true)" />
       <setting id="aiostreams.password" label="Password  (from /configure)" type="text" default="" subsetting="true" visible="eq(-3,true)" />
     <setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=Providers)" />

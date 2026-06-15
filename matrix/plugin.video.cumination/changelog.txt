@@ -1,11 +1,8 @@
-[B]Version 1.1.186[/B]
-- premiumporn - fix playback
-- 85po - fix playback
-- uflash - site removed
-- hitprn - .com replaced with hitprn.net
-- xnxx - added lookupinfo
-- erome - fix nextpage
-- Added fpoxxx
-- Added heavyfetish
-- Added notfans
-- Added yourlesbians
+[B]Version 1.1.187[/B]
+- xnxx - fix lookupinfo, thumbnails
+- sites that are incompatible with the Kodi version are ignored and no longer cause the add-on to crash
+- camcaps - fix listing
+- freeuseporn - fix listing
+- added CamGirlFap
+- added PimpBunny
+

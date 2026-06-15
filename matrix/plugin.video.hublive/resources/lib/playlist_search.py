@@ -29,7 +29,11 @@ _REFRESH_RETRY_TTL = 1800
 _DOWNLOAD_TIMEOUT = (5, 20)
 _INDEX_DOWNLOAD_TIMEOUT = (5, 120)
 _MAX_RESULTS = 2000
-_INDEX_SCHEMA_VERSION = "2-standard-sqlite"
+_INDEX_SCHEMA_VERSION = "3-catalog-sqlite"
+_COMPATIBLE_SCHEMA_VERSIONS = {
+    "2-standard-sqlite",
+    _INDEX_SCHEMA_VERSION,
+}
 _STREAM_RE = re.compile(r"[?&]stream=(\d+)")
 _SERVER_NAME_RE = re.compile(
     r"^Server\s+(\d+)(?:\s+.*)?$",
@@ -113,7 +117,7 @@ def _has_current_schema(index_file):
             row = connection.execute(
                 "SELECT value FROM build_metadata WHERE key = 'schema_version'"
             ).fetchone()
-            return bool(row and row[0] == _INDEX_SCHEMA_VERSION)
+            return bool(row and row[0] in _COMPATIBLE_SCHEMA_VERSIONS)
         finally:
             connection.close()
     except Exception:
@@ -131,7 +135,7 @@ def _validate_index(index_file, manifest=None):
         metadata = dict(
             connection.execute("SELECT key, value FROM build_metadata").fetchall()
         )
-        if metadata.get("schema_version") != _INDEX_SCHEMA_VERSION:
+        if metadata.get("schema_version") not in _COMPATIBLE_SCHEMA_VERSIONS:
             raise RuntimeError("Versiunea schemei SQLite nu corespunde.")
         if manifest:
             expected_channels = int(manifest.get("channel_count") or 0)
@@ -142,10 +146,19 @@ def _validate_index(index_file, manifest=None):
             actual_playlists = connection.execute(
                 "SELECT count(*) FROM playlist_metadata"
             ).fetchone()[0]
+            expected_categories = int(manifest.get("category_count") or 0)
             if expected_channels and actual_channels != expected_channels:
                 raise RuntimeError("Numărul canalelor nu corespunde manifestului.")
             if expected_playlists and actual_playlists != expected_playlists:
                 raise RuntimeError("Numărul playlisturilor nu corespunde manifestului.")
+            if expected_categories:
+                actual_categories = connection.execute(
+                    "SELECT count(*) FROM categories"
+                ).fetchone()[0]
+                if actual_categories != expected_categories:
+                    raise RuntimeError(
+                        "Numărul categoriilor nu corespunde manifestului."
+                    )
         return metadata
     finally:
         connection.close()
@@ -189,7 +202,7 @@ def _install_bundled_index():
 def _validate_manifest(manifest, manifest_url):
     if not isinstance(manifest, dict):
         raise RuntimeError("Manifestul indexului nu este un obiect JSON.")
-    if manifest.get("schema_version") != _INDEX_SCHEMA_VERSION:
+    if manifest.get("schema_version") not in _COMPATIBLE_SCHEMA_VERSIONS:
         raise RuntimeError("Manifestul folosește o schemă incompatibilă.")
     try:
         archive_size = int(manifest.get("archive_size") or 0)
@@ -213,6 +226,7 @@ def _validate_manifest(manifest, manifest_url):
     manifest["archive_size"] = archive_size
     manifest["channel_count"] = channel_count
     manifest["playlist_count"] = playlist_count
+    manifest["category_count"] = int(manifest.get("category_count") or 0)
     manifest["archive_sha256"] = archive_sha256
     return manifest
 
@@ -442,6 +456,133 @@ def _playlist_for_server_name(server_name):
     if not match:
         return None
     return f"server_{int(match.group(1))}.m3u"
+
+
+def _find_server(server_id, servers):
+    for server in servers or []:
+        if (server.get("id") or "") == (server_id or ""):
+            return server
+    return None
+
+
+def _has_catalog_schema(connection):
+    row = connection.execute(
+        "SELECT value FROM build_metadata WHERE key = 'schema_version'"
+    ).fetchone()
+    if not row or row[0] != _INDEX_SCHEMA_VERSION:
+        return False
+    required_tables = {"categories", "channels", "logos", "playlist_metadata"}
+    tables = {
+        item[0]
+        for item in connection.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        ).fetchall()
+    }
+    return required_tables.issubset(tables)
+
+
+def _validated_catalog_playlist(connection, server):
+    if not server:
+        return None
+    playlist = _playlist_for_server_name(server.get("name"))
+    if not playlist:
+        return None
+    manifest = _load_metadata(connection).get(playlist)
+    if not manifest:
+        return None
+    expected_key = (
+        manifest["server_id"],
+        manifest["server_name"],
+        manifest["portal_url"],
+    )
+    return playlist if _server_key(server) == expected_key else None
+
+
+def get_playlist_categories(server_id, servers):
+    index_file = _ensure_index()
+    server = _find_server(server_id, servers)
+    if not index_file or not server:
+        return []
+
+    connection = sqlite3.connect(index_file)
+    try:
+        if not _has_catalog_schema(connection):
+            return []
+        playlist = _validated_catalog_playlist(connection, server)
+        if not playlist:
+            return []
+        rows = connection.execute(
+            """
+            SELECT category_id, title, channel_count
+            FROM categories
+            WHERE playlist = ?
+            ORDER BY position
+            """,
+            (playlist,),
+        ).fetchall()
+        return [
+            {
+                "id": category_id,
+                "title": title,
+                "channel_count": channel_count,
+                "_source": "ratb",
+            }
+            for category_id, title, channel_count in rows
+        ]
+    except Exception as exc:
+        xbmc.log(
+            f"[PlaylistCatalog] Category query failed for {server_id}: {exc}",
+            level=xbmc.LOGWARNING,
+        )
+        return []
+    finally:
+        connection.close()
+
+
+def get_playlist_channels(server_id, category_id, servers):
+    index_file = _ensure_index()
+    server = _find_server(server_id, servers)
+    if not index_file or not server or not str(category_id).startswith("ratb:"):
+        return []
+
+    connection = sqlite3.connect(index_file)
+    try:
+        if not _has_catalog_schema(connection):
+            return []
+        playlist = _validated_catalog_playlist(connection, server)
+        if not playlist:
+            return []
+        rows = connection.execute(
+            """
+            SELECT c.stream_id, c.name, COALESCE(l.url, ''), c.tvg_id
+            FROM channels AS c
+            LEFT JOIN logos AS l ON l.logo_id = c.logo_id
+            WHERE c.playlist = ? AND c.category_id = ?
+            ORDER BY c.position
+            """,
+            (playlist, category_id),
+        ).fetchall()
+        return [
+            {
+                "id": stream_id,
+                "name": name,
+                "logo": logo,
+                "tvg_id": tvg_id,
+                "cmd": "",
+                "tv_genre_id": category_id,
+                "_source": "ratb",
+            }
+            for stream_id, name, logo, tvg_id in rows
+        ]
+    except Exception as exc:
+        xbmc.log(
+            f"[PlaylistCatalog] Channel query failed for "
+            f"{server_id}/{category_id}: {exc}",
+            level=xbmc.LOGWARNING,
+        )
+        return []
+    finally:
+        connection.close()
 
 
 def _blob_sha(content):

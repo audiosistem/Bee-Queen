@@ -248,7 +248,7 @@ def resolve_tb(params):
 	finally:
 		kodi_utils.hide_busy_dialog()
 	if not resolved_link:
-		kodi_utils.notification('TorBox: Unable to resolve link', 4000)
+		kodi_utils.ok_dialog(heading='TorBox', text='Unable to resolve this cloud link. It may be expired or no longer available.')
 		return None
 	if params.get('play', 'false') != 'true':
 		return resolved_link

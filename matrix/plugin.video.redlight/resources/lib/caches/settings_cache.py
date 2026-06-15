@@ -413,7 +413,13 @@ def set_numeric(params):
 def set_path(params):
 	setting_id = params['setting_id']
 	browse_mode = int(default_setting_values(setting_id)['browse_mode'])
-	new_value = kodi_utils.kodi_dialog().browse(browse_mode, '', '', defaultt=get_setting('redlight.%s' % setting_id))
+	current = get_setting('redlight.%s' % setting_id)
+	if browse_mode == 0:
+		new_value = kodi_utils.browse_directory(current)
+	else:
+		new_value = kodi_utils.kodi_dialog().browse(browse_mode, '', '', defaultt=current)
+	if not new_value:
+		return
 	set_setting(setting_id, new_value)
 
 def set_from_list(params):
@@ -485,6 +491,7 @@ def default_settings():
 {'setting_id': 'tvshow_download_directory', 'setting_type': 'path', 'setting_default': 'special://profile/addon_data/plugin.video.redlight/TV Show Downloads/', 'browse_mode': '0'},
 {'setting_id': 'premium_download_directory', 'setting_type': 'path', 'setting_default': 'special://profile/addon_data/plugin.video.redlight/Premium Downloads/', 'browse_mode': '0'},
 {'setting_id': 'image_download_directory', 'setting_type': 'path', 'setting_default': 'special://profile/addon_data/plugin.video.redlight/Image Downloads/', 'browse_mode': '0'},
+{'setting_id': 'import_export_directory', 'setting_type': 'path', 'setting_default': 'special://profile/addon_data/plugin.video.redlight/Import Export/', 'browse_mode': '0'},
 
 
 #================================================================================#
