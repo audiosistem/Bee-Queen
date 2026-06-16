@@ -306,7 +306,7 @@ Added support for Kodi v19 (Matrix)
 				<screenshot />
 		</assets>
 	</extension>
-</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.0.9+matrix" provider-name="RomyCupidon">  
+</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.1.0+matrix" provider-name="RomyCupidon">  
 <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
