@@ -1,0 +1,64 @@
+[
+	{
+		"name": "Netflix",
+		"providers": "8",
+		"networks": "213"
+	},
+	{
+		"name": "Disney+",
+		"providers": "337",
+		"networks": "2739"
+	},
+	{
+		"name": "Max",
+		"providers": "1899",
+		"networks": "3186|49"
+	},
+	{
+		"name": "Prime Video",
+		"providers": "9|10",
+		"networks": "1024"
+	},
+	{
+		"name": "Apple TV+",
+		"providers": "350",
+		"networks": "2552"
+	},
+	{
+		"name": "Hulu",
+		"providers": "15",
+		"networks": "453"
+	},
+	{
+		"name": "Paramount+",
+		"providers": "531|582|1853|633",
+		"networks": "4330|2076"
+	},
+	{
+		"name": "Peacock",
+		"providers": "386|387",
+		"networks": "3353"
+	},
+	{
+		"name": "Starz",
+		"providers": "43|1855|634|1794",
+		"networks": "318"
+	},
+	{
+		"name": "AMC+",
+		"providers": "526|528|1854|635",
+		"networks": "174"
+	},
+	{
+		"name": "MGM+",
+		"providers": "34|583|636",
+		"networks": "",
+		"icon": "mgm_plus_logo"
+	},
+	{
+		"name": "Crunchyroll",
+		"providers": "283|1968",
+		"networks": "",
+		"icon": "crunchyroll_logo"
+	}
+]

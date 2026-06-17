@@ -1,0 +1,54 @@
+{
+	"movie": [
+		{
+			"name": "G",
+			"id": "G"
+		},
+		{
+			"name": "PG",
+			"id": "PG"
+		},
+		{
+			"name": "PG-13",
+			"id": "PG-13"
+		},
+		{
+			"name": "R",
+			"id": "R"
+		},
+		{
+			"name": "NC-17",
+			"id": "NC-17"
+		},
+		{
+			"name": "NR",
+			"id": "NR"
+		}
+	],
+	"tvshow": [
+		{
+			"name": "TV-Y",
+			"id": "tv-y"
+		},
+		{
+			"name": "TV-Y7",
+			"id": "tv-y7"
+		},
+		{
+			"name": "TV-G",
+			"id": "tv-g"
+		},
+		{
+			"name": "TV-PG",
+			"id": "tv-pg"
+		},
+		{
+			"name": "TV-14",
+			"id": "tv-14"
+		},
+		{
+			"name": "TV-MA",
+			"id": "tv-ma"
+		}
+	]
+}

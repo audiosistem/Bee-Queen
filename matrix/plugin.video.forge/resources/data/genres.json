@@ -1,0 +1,301 @@
+{
+	"movie": [
+		{
+			"name": "Action",
+			"id": "28",
+			"icon": "genre_action"
+		},
+		{
+			"name": "Adventure",
+			"id": "12",
+			"icon": "genre_adventure"
+		},
+		{
+			"name": "Animation",
+			"id": "16",
+			"icon": "genre_animation"
+		},
+		{
+			"name": "Comedy",
+			"id": "35",
+			"icon": "genre_comedy"
+		},
+		{
+			"name": "Crime",
+			"id": "80",
+			"icon": "genre_crime"
+		},
+		{
+			"name": "Documentary",
+			"id": "99",
+			"icon": "genre_documentary"
+		},
+		{
+			"name": "Drama",
+			"id": "18",
+			"icon": "genre_drama"
+		},
+		{
+			"name": "Family",
+			"id": "10751",
+			"icon": "genre_family"
+		},
+		{
+			"name": "Fantasy",
+			"id": "14",
+			"icon": "genre_fantasy"
+		},
+		{
+			"name": "History",
+			"id": "36",
+			"icon": "genre_history"
+		},
+		{
+			"name": "Horror",
+			"id": "27",
+			"icon": "genre_horror"
+		},
+		{
+			"name": "Music",
+			"id": "10402",
+			"icon": "genre_music"
+		},
+		{
+			"name": "Mystery",
+			"id": "9648",
+			"icon": "genre_mystery"
+		},
+		{
+			"name": "Romance",
+			"id": "10749",
+			"icon": "genre_romance"
+		},
+		{
+			"name": "Science Fiction",
+			"id": "878",
+			"icon": "genre_scifi"
+		},
+		{
+			"name": "TV Movie",
+			"id": "10770",
+			"icon": "genre_soap"
+		},
+		{
+			"name": "Thriller",
+			"id": "53",
+			"icon": "genre_thriller"
+		},
+		{
+			"name": "War",
+			"id": "10752",
+			"icon": "genre_war"
+		},
+		{
+			"name": "Western",
+			"id": "37",
+			"icon": "genre_western"
+		}
+	],
+	"tvshow": [
+		{
+			"name": "Action & Adventure",
+			"id": "10759",
+			"icon": "genre_action"
+		},
+		{
+			"name": "Animation",
+			"id": "16",
+			"icon": "genre_animation"
+		},
+		{
+			"name": "Comedy",
+			"id": "35",
+			"icon": "genre_comedy"
+		},
+		{
+			"name": "Crime",
+			"id": "80",
+			"icon": "genre_crime"
+		},
+		{
+			"name": "Documentary",
+			"id": "99",
+			"icon": "genre_documentary"
+		},
+		{
+			"name": "Drama",
+			"id": "18",
+			"icon": "genre_drama"
+		},
+		{
+			"name": "Family",
+			"id": "10751",
+			"icon": "genre_family"
+		},
+		{
+			"name": "Kids",
+			"id": "10762",
+			"icon": "genre_kids"
+		},
+		{
+			"name": "Mystery",
+			"id": "9648",
+			"icon": "genre_mystery"
+		},
+		{
+			"name": "News",
+			"id": "10763",
+			"icon": "genre_news"
+		},
+		{
+			"name": "Reality",
+			"id": "10764",
+			"icon": "genre_reality"
+		},
+		{
+			"name": "Sci-Fi & Fantasy",
+			"id": "10765",
+			"icon": "genre_scifi"
+		},
+		{
+			"name": "Soap",
+			"id": "10766",
+			"icon": "genre_soap"
+		},
+		{
+			"name": "Talk",
+			"id": "10767",
+			"icon": "genre_talk"
+		},
+		{
+			"name": "War & Politics",
+			"id": "10768",
+			"icon": "genre_war"
+		},
+		{
+			"name": "Western",
+			"id": "37",
+			"icon": "genre_western"
+		}
+	],
+	"anime": [
+		{
+			"name": "Action & Adventure",
+			"id": "10759",
+			"icon": "genre_action"
+		},
+		{
+			"name": "Comedy",
+			"id": "35",
+			"icon": "genre_comedy"
+		},
+		{
+			"name": "Crime",
+			"id": "80",
+			"icon": "genre_crime"
+		},
+		{
+			"name": "Drama",
+			"id": "18",
+			"icon": "genre_drama"
+		},
+		{
+			"name": "Family",
+			"id": "10751",
+			"icon": "genre_family"
+		},
+		{
+			"name": "Kids",
+			"id": "10762",
+			"icon": "genre_kids"
+		},
+		{
+			"name": "Mystery",
+			"id": "9648",
+			"icon": "genre_mystery"
+		},
+		{
+			"name": "Sci-Fi & Fantasy",
+			"id": "10765",
+			"icon": "genre_scifi"
+		},
+		{
+			"name": "War & Politics",
+			"id": "10768",
+			"icon": "genre_war"
+		},
+		{
+			"name": "Western",
+			"id": "37",
+			"icon": "genre_western"
+		}
+	],
+	"mixed": [
+		{
+			"name": "Action & Adventure",
+			"movie_id": "28|12",
+			"tv_id": "10759",
+			"icon": "genre_action"
+		},
+		{
+			"name": "Animation",
+			"movie_id": "16",
+			"tv_id": "16",
+			"icon": "genre_animation"
+		},
+		{
+			"name": "Comedy",
+			"movie_id": "35",
+			"tv_id": "35",
+			"icon": "genre_comedy"
+		},
+		{
+			"name": "Crime",
+			"movie_id": "80",
+			"tv_id": "80",
+			"icon": "genre_crime"
+		},
+		{
+			"name": "Documentary",
+			"movie_id": "99",
+			"tv_id": "99",
+			"icon": "genre_documentary"
+		},
+		{
+			"name": "Drama",
+			"movie_id": "18",
+			"tv_id": "18",
+			"icon": "genre_drama"
+		},
+		{
+			"name": "Family",
+			"movie_id": "10751",
+			"tv_id": "10751",
+			"icon": "genre_family"
+		},
+		{
+			"name": "Mystery & Thriller",
+			"movie_id": "9648|53",
+			"tv_id": "9648",
+			"icon": "genre_mystery"
+		},
+		{
+			"name": "Sci-Fi & Fantasy",
+			"movie_id": "878|14",
+			"tv_id": "10765",
+			"icon": "genre_scifi"
+		},
+		{
+			"name": "War",
+			"movie_id": "10752",
+			"tv_id": "10768",
+			"icon": "genre_war"
+		},
+		{
+			"name": "Western",
+			"movie_id": "37",
+			"tv_id": "37",
+			"icon": "genre_western"
+		}
+	]
+}

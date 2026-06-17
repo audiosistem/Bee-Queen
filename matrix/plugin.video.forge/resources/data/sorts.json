@@ -1,0 +1,78 @@
+{
+	"movie": [
+		{
+			"name": "Popularity (asc)",
+			"id": "&sort_by=popularity.asc"
+		},
+		{
+			"name": "Popularity (desc)",
+			"id": "&sort_by=popularity.desc"
+		},
+		{
+			"name": "Release Date (asc)",
+			"id": "&sort_by=primary_release_date.asc"
+		},
+		{
+			"name": "Release Date (desc)",
+			"id": "&sort_by=primary_release_date.desc"
+		},
+		{
+			"name": "Total Revenue (asc)",
+			"id": "&sort_by=revenue.asc"
+		},
+		{
+			"name": "Total Revenue (desc)",
+			"id": "&sort_by=revenue.desc"
+		},
+		{
+			"name": "Title (asc)",
+			"id": "&sort_by=original_title.asc"
+		},
+		{
+			"name": "Title (desc)",
+			"id": "&sort_by=original_title.desc"
+		},
+		{
+			"name": "Rating (asc)",
+			"id": "&sort_by=vote_average.asc"
+		},
+		{
+			"name": "Rating (desc)",
+			"id": "&sort_by=vote_average.desc"
+		},
+		{
+			"name": "Random",
+			"id": "[random]"
+		}
+	],
+	"tvshow": [
+		{
+			"name": "Popularity (asc)",
+			"id": "&sort_by=popularity.asc"
+		},
+		{
+			"name": "Popularity (desc)",
+			"id": "&sort_by=popularity.desc"
+		},
+		{
+			"name": "First Aired (asc)",
+			"id": "&sort_by=first_air_date.asc"
+		},
+		{
+			"name": "First Aired (desc)",
+			"id": "&sort_by=first_air_date.desc"
+		},
+		{
+			"name": "Rating (asc)",
+			"id": "&sort_by=vote_average.asc"
+		},
+		{
+			"name": "Rating (desc)",
+			"id": "&sort_by=vote_average.desc"
+		},
+		{
+			"name": "Random",
+			"id": "[random]"
+		}
+	]
+}

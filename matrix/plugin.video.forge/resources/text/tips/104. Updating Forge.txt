@@ -1,0 +1,13 @@
+
+Forge has the ability to update itself. It no longer relies on a repository being installed to update.
+
+You can set the update behavior in Settings->General->Manage Addon Updates.
+
+For "Update Action" there are 4 choices:
+
+1. PROMPT: Forge will enact a confirm dialog for you to interact with when an update is available.
+2. AUTOMATIC: Forge will automatically install the new version of itself when an update is available.
+3. NOTIFICATION: Forge will display a notification when an update is available. Users will have to install the update manually (see below).
+4. OFF: Forge will not even check if there is an update available.
+
+If you need to update Forge manually, navigate to Tools->Update Utilities and select "Check for Updates". A confirm dialog will appear and you can select to install the update.

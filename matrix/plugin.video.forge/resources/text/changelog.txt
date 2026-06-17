@@ -1,0 +1,101 @@
+[COLOR dodgerblue][B]Version 0.2.8[/B][/COLOR]
+- New: Forge can now be used as a player for TMDBHelper — play movies and episodes from TMDBHelper widgets/lists through Forge instead of seeing "Playback through external addons is not supported".
+- Added Tools > "Install TMDBHelper Player": one tap copies the Forge player configs into TMDBHelper, adding "Forge - Auto Play" and "Forge - Source Select" to its "Play with..." menu (restart Kodi afterward).
+
+
+[COLOR dodgerblue][B]Version 0.2.7[/B][/COLOR]
+- New "Skip Intro/Outro" feature: a Netflix-style Skip button appears during episode playback to jump past intros, recaps, and outros.
+- Skip timings come from crowd-sourced IntroDB data, with AniSkip used for anime episodes and an optional chapter-based fallback.
+- Configure under Settings > Playback: enable it, toggle AniSkip, and tune minimum confidence/submissions and button duration (off by default).
+- Skip-marker data is cached and can be cleared from the maintenance menu ("Clear Skip Markers Cache").
+- Stability fix: reworked the "In Progress" home widget to reduce a thread race that could crash Kodi.
+
+
+[COLOR dodgerblue][B]Version 0.2.6[/B][/COLOR]
+- New "Quick Add" context-menu item: one tap adds or removes the highlighted movie/show from a single chosen list.
+- Pick your Quick Add target in Settings > Context Menu: Trakt Watchlist, TMDb Watchlist/Favorites, Forge Favorites, or any of your Trakt/TMDb/Forge personal lists.
+- The menu entry reads "Add to ..." or "Remove from ..." depending on whether the item is already in that list.
+- When no target is set, it falls back to your Trakt Watchlist (or Forge Favorites if Trakt isn't connected).
+
+
+[COLOR dodgerblue][B]Version 0.2.5[/B][/COLOR]
+- Restored Easynews as a built-in source — browse and search Easynews videos and images, view account info, and play Easynews links directly
+- Added an Easynews settings section (login, language filter, playback method) under Settings → Scrapers
+- Easynews now shows a "Login Failed" toast when your username or password is wrong or expired, instead of silently returning no results
+- The actor info dialog can now search Easynews for images of that person
+
+
+[COLOR dodgerblue][B]Version 0.2.4[/B][/COLOR]
+- The Trakt, Real-Debrid, All-Debrid, and Premiumize authorization screens can now open the activation page directly in your browser
+
+
+[COLOR dodgerblue][B]Version 0.2.3[/B][/COLOR]
+- Fixed TMDb Lists account authorization, which was failing to start
+- The TMDb authorize screen now shows a short link and can open the page in your browser
+- Fixed "Revoke Account Authorization" for TMDb Lists, which left accounts stranded as connected
+- Improved the under-the-hood settings-migration system applied on addon updates
+
+
+[COLOR dodgerblue][B]Version 0.2.2[/B][/COLOR]
+- New "Mixed Channels" menu: a curated row per streaming service (Netflix, Disney+, Max, Prime Video, Apple TV+, and more), each combining movies & TV with crisp brand icons
+- Added a "Play Trailer" context-menu shortcut on movies, shows, seasons, and episodes
+- Mixed Genres now combine related genres: Action & Adventure, Mystery & Thriller, and Sci-Fi & Fantasy
+- Addon icon and background image are now fixed Forge artwork (removed the assign/restore options)
+- Fixed anime-by-provider lists returning non-anime results
+
+
+[COLOR dodgerblue][B]Version 0.2.1[/B][/COLOR]
+- Cache adjustment
+
+
+[COLOR dodgerblue][B]Version 0.2.0[/B][/COLOR]
+- Fresh release baseline. Best installed clean (uninstall any older Forge first).
+- Removed all legacy upgrade migrations; new installs start from correct defaults.
+- Faster scraping: precompiled title/episode matching and added database indexes.
+
+
+[COLOR dodgerblue][B]Version 0.1.9[/B][/COLOR]
+- Repaired existing installs whose saved icon setting still pointed at the missing file, so the Forge icon now appears instead of a generic folder/box.
+
+
+[COLOR dodgerblue][B]Version 0.1.8[/B][/COLOR]
+- Fixed the Forge icon showing as a generic placeholder in Kodi/Estuary menus.
+
+
+[COLOR dodgerblue][B]Version 0.1.7[/B][/COLOR]
+- Fixed the authorize QR code showing a stale image from a previously-connected service.
+
+
+[COLOR dodgerblue][B]Version 0.1.6[/B][/COLOR]
+- Fixed connect sources dialog & standardized.
+
+
+[COLOR dodgerblue][B]Version 0.1.5[/B][/COLOR]
+- MORE mods for release
+
+
+[COLOR dodgerblue][B]Version 0.1.4[/B][/COLOR]
+- Mods for release
+
+
+[COLOR dodgerblue][B]Version 0.1.3[/B][/COLOR]
+- Reliability: added network timeouts so an unresponsive Real-Debrid or update server can no longer hang playback prep or the updater.
+- Reliability: cache databases now use crash-safe WAL journaling (faster concurrent reads while browsing, no corruption on power loss).
+- Fixed a connection leak and a broken cache-delete in the external scraper cache.
+- Performance: pre-compiled hot scraper regexes for faster source filtering.
+
+
+[COLOR dodgerblue][B]Version 0.1.1[/B][/COLOR]
+- Mixed menu expanded with 8 ordered combined lists: Mixed Trending, Mixed Trending Recent, Mixed Most Watched, Mixed Most Favorited, Mixed Popular, Mixed Popular Today, Mixed Premieres, Mixed Upcoming.
+- New setting "Include Anime in Mixed Lists" (default off) adds anime as a third bucket to every Mixed surface (Mixed lists, Random Mixed Lists, In Progress [All]).
+
+
+[COLOR dodgerblue][B]Version 0.1.0[/B][/COLOR]
+- Initial Release
+- This is an English language only addon.
+
+
+
+
+
+-
