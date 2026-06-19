@@ -156,7 +156,6 @@ def _build_prompt(target_lang, num_texts):
                 '- "baby" → "puiule"\n'
                 '- "Oh my God" → "Doamne Dumnezeule"\n'
                 '- "my treat" → "fac eu cinste"\n'
-                '- Adapt threats stylistically: "Kill them" → "Elimină-i" (not "Ucide-i")\n'
                 '- "lakh" = sută de mii, "crore" = zece milioane\n'
                 '- "But" (conjunction) → "Dar" — NEVER leave "But" untranslated at sentence start\n'
                 '- Convert imperial units to metric for Romanian audiences:\n'
@@ -347,7 +346,7 @@ Ugh, Uh, Uhh, Uhm, Um, Umm, Whew, Whoa, Wow, Yikes.
 # ═══════════════════════════════════════════════════════════════════
 #  GEMINI API CALL (Adapted for Kodi, emulates google.genai)
 # ═══════════════════════════════════════════════════════════════════
-def translate_gemini(texts_dict, target_lang, api_key, model_name, timeout=API_TIMEOUT, thinking_level=None):
+def translate_gemini(texts_dict, target_lang, api_key, model_name, timeout=API_TIMEOUT, thinking_level=None, temperature=None):
     # 3.0 models require the v1alpha endpoint. The rest work on v1beta.
     api_version = "v1alpha" if "gemini-3" in model_name else "v1beta"
     url = (
@@ -359,7 +358,7 @@ def translate_gemini(texts_dict, target_lang, api_key, model_name, timeout=API_T
     json_input = [{"index": str(k), "text": v} for k, v in texts_dict.items()]
 
     generation_config = {
-        "temperature": 0.9,  # Set to 0.9, as in the Windows script
+        "temperature": temperature if temperature is not None else 0.9,
         "response_mime_type": "application/json",
         "responseSchema": {
             "type": "ARRAY",
@@ -871,8 +870,8 @@ def _split_inline_dialogue(text):
     Ex: '...fruits? -Cheese.' -> '...fruits?\n-Cheese.'
     """
     if not text: return text
-    # Look for punctuation (. ! ? ") followed by a space and a dialog dash
-    text = re.sub(r'([.!?"])\s+(-\s*\S)', r'\1\n\2', text)
+    # Look for punctuation (. ! ? ") followed by a space (optional) and a dialog dash
+    text = re.sub(r'([.!?"])\s*(-\s*\S)', r'\1\n\2', text)
     return text
 
 def _restore_formatting(original, translated):
@@ -1028,7 +1027,7 @@ def _post_process_text(text):
 # ═══════════════════════════════════════════════════════════════════
 #  TRANSLATES ONE BATCH WITH INDEX AND MERGING PROTECTIONS
 # ═══════════════════════════════════════════════════════════════════
-def translate_one_batch(batch, target_lang, all_keys, batch_index=0, thinking_level=None):
+def translate_one_batch(batch, target_lang, all_keys, batch_index=0, thinking_level=None, temperature=None):
     to_translate = {}
     cleaned_count = 0
 
@@ -1070,6 +1069,8 @@ def translate_one_batch(batch, target_lang, all_keys, batch_index=0, thinking_le
         models_to_use = MODEL_PREFERAT
         batch_timeout = API_TIMEOUT
 
+    _but_retry_count = 0
+    _untrans_retry_count = 0
     for key_idx, current_key in enumerate(all_keys):
         if _is_blocked(current_key): continue
         _log_debug(f"Trying key {key_idx+1}/{len(all_keys)}: ...{current_key[-4:]}")
@@ -1078,7 +1079,8 @@ def translate_one_batch(batch, target_lang, all_keys, batch_index=0, thinking_le
             result, err_code = translate_gemini(
                 to_translate, target_lang, current_key,
                 current_model, timeout=batch_timeout,
-                thinking_level=thinking_level
+                thinking_level=thinking_level,
+                temperature=temperature
             )
 
             if err_code == -1:
@@ -1138,20 +1140,40 @@ def translate_one_batch(batch, target_lang, all_keys, batch_index=0, thinking_le
                                     validation_failed = True
                                     break
 
-                    # Check 3: Untranslated text detection (source == translation)
+# Check 3: Untranslated text detection (source == translation)
                     if not orig_is_nothing and not trans_is_nothing:
                         orig_stripped = orig_text.strip()
                         trans_stripped = trans_text.strip()
-                        # If translation is identical to source for texts longer than 20 chars, it was skipped
                         if trans_stripped == orig_stripped and len(orig_stripped) > 20:
-                            _log_warn(f"UNTRANSLATED text at index {b_id}: '{orig_text[:40]}'. RETRY.")
-                            validation_failed = True
-                            break
+                            # Exempt: all words start with uppercase = proper nouns
+                            words_check = re.findall(r'[A-Za-z\u00C0-\u024F]+', orig_stripped)
+                            all_proper = words_check and all(w[0].isupper() for w in words_check)
+                            if not all_proper:
+                                if _untrans_retry_count < 2:
+                                    _untrans_retry_count += 1
+                                    _log_warn(f"UNTRANSLATED [{b_id}]: '{orig_text[:40]}'. Retry {_untrans_retry_count}/2.")
+                                    validation_failed = True
+                                    break
+                                else:
+                                    _log_warn(f"UNTRANSLATED [{b_id}] after 2 retries — passing through.")
+                            else:
+                                _log_debug(f"Check 3 exempt (proper nouns) [{b_id}]: '{orig_text[:30]}'")
+
+# Check 4 (RO only): "But" la inceput de fraza → max 2 retry-uri
+                    if target_lang == 'ro' and not orig_is_nothing and not trans_is_nothing:
+                        clean_start = re.sub(r'^[\s\-♪]+', '', trans_text)
+                        clean_start = re.sub(r'^(?:<[^>]+>\s*)+', '', clean_start)
+                        if re.match(r'^But\b', clean_start, re.IGNORECASE):
+                            if _but_retry_count < 2:
+                                _but_retry_count += 1
+                                _log_warn(f"'But' in RO [{b_id}]: '{trans_text[:40]}'. Retry {_but_retry_count}/2.")
+                                validation_failed = True
+                                break
+                            else:
+                                _log_warn(f"'But' la [{b_id}] dupa 2 retry-uri — lasam sa treaca.")
 
                 if validation_failed:
                     continue
-
-                _log_debug(f"Translation fully validated: {len(result)}/{sent_count}")
 
                 _log_debug(f"Translation fully validated: {len(result)}/{sent_count}")
                 chunk = ""
@@ -1385,10 +1407,11 @@ def _make_batches(blocks):
 # ═══════════════════════════════════════════════════════════════════
 #  GENERATE TRANSLATED FILE NAME
 # ═══════════════════════════════════════════════════════════════════
-def _make_output_name(original_name, target_lang):
+def _make_output_name(original_name, target_lang, suffix=""):
     base, ext = os.path.splitext(original_name)
-    # Remove original language code if it exists (e.g. 'Movie.en' becomes 'Movie')
     base = re.sub(r'\.[a-z]{2,3}$', '', base, flags=re.IGNORECASE)
+    if suffix:
+        return f"{base}.{suffix}.{target_lang}{ext}"
     return f"{base}.{target_lang}{ext}"
 
 
@@ -1509,7 +1532,12 @@ def run_translation(sub_addon_id, mode="fast"):
         thinking_levels = ["minimal", "low", "medium", "high"]
         selected_thinking_level = thinking_levels[thinking_idx] if 0 <= thinking_idx < len(thinking_levels) else "medium"
     except Exception:
-        selected_thinking_level = "medium" 
+        selected_thinking_level = "medium"
+
+    try:
+        temperature = _addon.getSettingInt('gemini_temperature') * 0.1
+    except:
+        temperature = 1.0
 
     if robot_idx == 1:
         # --- OPTION: Gemini Slow (Flash 3 Preview) ---
@@ -1521,13 +1549,13 @@ def run_translation(sub_addon_id, mode="fast"):
         try:
             slow_idx = _addon.getSettingInt('gemini_slow_batch')
             if slow_idx == 0: NEXT_BATCH_SIZE = 300
-            elif slow_idx == 1: NEXT_BATCH_SIZE = 500
-            elif slow_idx == 2: NEXT_BATCH_SIZE = 700
+            elif slow_idx == 1: NEXT_BATCH_SIZE = 400
+            elif slow_idx == 2: NEXT_BATCH_SIZE = 500
             else: NEXT_BATCH_SIZE = 300
         except Exception:
             NEXT_BATCH_SIZE = 300
             
-        _log_info(f"SLOW mode (Flash 3 Preview) activated: First batch={FIRST_BATCH_SIZE}, Next={NEXT_BATCH_SIZE}.")
+        _log_info(f"SLOW mode (Flash 3 Preview) activated: First batch={FIRST_BATCH_SIZE}, Next={NEXT_BATCH_SIZE}, Temperature={temperature}.")
 
     elif robot_idx == 2 or mode == "slow":
         # --- OPTION: Gemini Slow (Flash 3.5) ---
@@ -1539,13 +1567,13 @@ def run_translation(sub_addon_id, mode="fast"):
         try:
             slow_idx = _addon.getSettingInt('gemini_slow_batch')
             if slow_idx == 0: NEXT_BATCH_SIZE = 300
-            elif slow_idx == 1: NEXT_BATCH_SIZE = 500
-            elif slow_idx == 2: NEXT_BATCH_SIZE = 700
+            elif slow_idx == 1: NEXT_BATCH_SIZE = 400
+            elif slow_idx == 2: NEXT_BATCH_SIZE = 500
             else: NEXT_BATCH_SIZE = 300
         except Exception:
             NEXT_BATCH_SIZE = 300
             
-        _log_info(f"SLOW mode (Flash 3.5) activated: First batch={FIRST_BATCH_SIZE}, Next={NEXT_BATCH_SIZE}.")
+        _log_info(f"SLOW mode (Flash 3.5) activated: First batch={FIRST_BATCH_SIZE}, Next={NEXT_BATCH_SIZE}, Temperature={temperature}.")
 
     else:
         # --- OPTION: Gemini Fast (Lite) (robot_idx == 0 or default) ---
@@ -1694,7 +1722,15 @@ def run_translation(sub_addon_id, mode="fast"):
     _log_info(f"{total_lines} lines → {total_batches} batches [{batch_info}]")
 
     # ── Output file ────────────────────────────────────────────
-    output_name = _make_output_name(original_name, target_lang)
+    if robot_idx == 0:
+        suffix = "(3.1-lite)"
+    elif robot_idx == 1:
+        suffix = "(3.0)"
+    elif robot_idx == 2:
+        suffix = "(3.5)"
+    else:
+        suffix = ""
+    output_name = _make_output_name(original_name, target_lang, suffix)
     output_path = os.path.join(profile_path, output_name)
     _log_info(f"Output → {output_name}")
 
@@ -1754,7 +1790,8 @@ def run_translation(sub_addon_id, mode="fast"):
 
                 chunk, model_used = translate_one_batch(
                     batch, target_lang, active_keys, batch_index=batch_idx,
-                    thinking_level=selected_thinking_level)
+                    thinking_level=selected_thinking_level,
+                    temperature=temperature)
 
                 # 1. CRITICAL PROTECTION: Check for ABORT FIRST, before anything else
                 if model_used == "ABORT" or not _player_has_media():
@@ -1784,7 +1821,9 @@ def run_translation(sub_addon_id, mode="fast"):
             if player_stopped:
                 break
 
-            batch_elapsed = round(time.time() - batch_start, 1)
+            batch_elapsed = int(time.time() - batch_start)
+            b_min = batch_elapsed // 60
+            b_sec = batch_elapsed % 60
 
             if chunk:
                 all_chunks.append(chunk)
@@ -1793,6 +1832,8 @@ def run_translation(sub_addon_id, mode="fast"):
                 # NEW: Activate subtitle on screen EVERY time a batch is translated
                 # This way, Kodi reloads the updated SRT file and text no longer disappears at minute 6.
                 ok = _write_and_activate(output_path, all_chunks, target_lang, activate=True)
+                
+                _log_info(f"Batch {batch_idx+1}/{total_batches} translated successfully in {b_min}m {b_sec}s.")
 
                 if not first_done and ok:
                     first_done = True

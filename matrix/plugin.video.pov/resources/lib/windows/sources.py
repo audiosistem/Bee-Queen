@@ -82,7 +82,7 @@ class SourceResults(BaseDialog):
 			self.selected = ('play', {**source, 'unrestricted_link': link})
 			return self.close()
 		elif action == self.info_actions:
-			kwargs = {'item': chosen_listitem, 'fanart': self.original_fanart()}
+			kwargs = {'item': chosen_listitem, 'fanart': self.fanart}
 			self.open_window(('windows.sources', 'ResultsInfo'), 'sources_info.xml', **kwargs)
 		elif action in self.context_actions:
 			highlight = chosen_listitem.getProperty('tikiskins.highlight')
@@ -94,7 +94,7 @@ class SourceResults(BaseDialog):
 			if 'clear_results_filter' in choice: return self.clear_filter()
 			elif 'results_filter' in choice: return self.filter_results()
 			elif 'results_info' in choice:
-				kwargs = {'item': chosen_listitem, 'fanart': self.original_fanart()}
+				kwargs = {'item': chosen_listitem, 'fanart': self.fanart}
 				self.open_window(('windows.sources', 'ResultsInfo'), 'sources_info.xml', **kwargs)
 			elif 'seekable_easynews' in choice:
 				link = Source(source, self.meta).resolve_internal_sources(True)
@@ -196,24 +196,18 @@ class SourceResults(BaseDialog):
 		except: pass
 
 	def set_properties(self):
-		self.poster_main, self.poster_backup, self.fanart_main, self.fanart_backup = get_art_provider()
+		poster_main, poster_backup, fanart_main, fanart_backup = get_art_provider()
+		self.poster = self.meta.get(poster_main) or self.meta.get(poster_backup) or poster_empty
+		self.fanart = self.meta.get(fanart_main) or self.meta.get(fanart_backup) or fanart_empty
 		self.setProperty('tikiskins.window_style', self.window_style)
-		self.setProperty('tikiskins.fanart', self.original_fanart())
-		self.setProperty('tikiskins.poster', self.original_poster())
+		self.setProperty('tikiskins.poster', self.poster)
+		self.setProperty('tikiskins.fanart', self.fanart)
+		self.setProperty('tikiskins.clearlogo', self.meta.get('clearlogo') or '')
 		self.setProperty('tikiskins.title', self.meta['title'])
-		self.setProperty('tikiskins.clearlogo', self.meta['clearlogo'] or '')
 		self.setProperty('tikiskins.plot', self.meta['plot'])
 		self.setProperty('tikiskins.total_results', self.total_results)
 		self.setProperty('tikiskins.filters_ignored', self.filters_ignored)
 		self.setProperty('tikiskins.scrape_time', '%.2f' % self.meta['scrape_time'])
-
-	def original_poster(self):
-		poster = self.meta.get(self.poster_main) or self.meta.get(self.poster_backup) or poster_empty
-		return poster
-
-	def original_fanart(self):
-		fanart = self.meta.get(self.fanart_main) or self.meta.get(self.fanart_backup) or fanart_empty
-		return fanart
 
 	def filter_results(self):
 		choices = [(filter_quality, 'quality'), (filter_provider, 'provider'), (filter_title, 'keyword_title'), (filter_extraInfo, 'extra_info')]

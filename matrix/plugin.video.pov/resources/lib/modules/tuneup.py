@@ -33,7 +33,7 @@ def clear_streams():
 		""", (str(back_date),))
 		result = dbcur.fetchall()
 		expired = total - len(result)
-		if expired <= 0: return notification('No Streams to Clear')
+		if expired <= 0: return notification('No streams to clear.')
 		if not dialog.yesno('POV', '[CR][CR]Delete %d Items?' % expired): return
 		progress_dialog = xbmcgui.DialogProgress()
 		progress_dialog.create('Streams Remover', '')

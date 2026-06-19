@@ -8,11 +8,8 @@ from windows import open_window, create_window
 from caches.providers_cache import ExternalProvidersCache
 from indexers.metadata import movie_meta, tvshow_meta, season_episodes_meta, get_title
 from modules.debrid import debrid_enabled, debrid_type_enabled, Source, DebridCheck
-from modules import player, kodi_utils, settings
-from modules.source_utils import internal_sources
-from modules.source_utils import pack_enable_check, sources_quality_count
-from modules.source_utils import get_cache_expiry, get_filename_match, get_file_info, normalize
-from modules.utils import clean_file_name, safe_string, string_to_float, remove_accents, get_datetime
+from modules import player, kodi_utils, settings, source_utils
+from modules.utils import safe_string, string_to_float, get_datetime
 #from modules.kodi_utils import logger
 
 POVPlayer, progressDialogBG, notification = player.POVPlayer, kodi_utils.progressDialogBG, kodi_utils.notification
@@ -22,6 +19,9 @@ ls, monitor, sleep, get_setting = kodi_utils.local_string, kodi_utils.monitor, k
 check_prescrape_sources, quality_filter, sort_to_top = settings.check_prescrape_sources, settings.quality_filter, settings.sort_to_top
 results_xml_style, results_xml_window_number = settings.results_xml_style, settings.results_xml_window_number
 default_internal_scrapers, cloud_scrapers = settings.default_internal_scrapers, settings.cloud_scrapers
+internal_sources, clean_file_name = source_utils.internal_sources, source_utils.clean_file_name
+pack_enable_check, sources_quality_count = source_utils.pack_enable_check, source_utils.sources_quality_count
+get_cache_expiry, get_file_info = source_utils.get_cache_expiry, source_utils.get_file_info
 quality_ranks = {'4K': 1, '1080p': 2, '720p': 3, 'SD': 4, 'SCR': 5, 'CAM': 5, 'TELE': 5}
 av1_filter_key, hevc_filter_key, hdr_filter_key, dolby_vision_filter_key = '[B]AV1[/B]', '[B]HEVC[/B]', '[B]HDR[/B]', '[B]D/VISION[/B]'
 total_format, int_format, ext_format = '[COLOR %s][B]%s[/B][/COLOR]', '[COLOR %s][B]Int: [/B][/COLOR]%s', '[COLOR %s][B]Ext: [/B][/COLOR]%s'
@@ -312,7 +312,7 @@ class Sources:
 						if monitor.abortRequested(): break
 						elif self.progress_dialog and self.progress_dialog.iscanceled(): break
 						percent = int(((total_items := len(items))-count)/total_items*100)
-						name = item['name'].replace('.', ' ').replace('-', ' ').upper()
+						name = (item.get('URLName') or item['name']).upper()
 						line1 = item.get('scrape_provider'), item.get('cache_provider'), item.get('provider')
 						if source_index is not None: line1 = ('[B]%02d[/B]' % (source_index + count), *line1)
 						line2 = item.get('size_label', ''), item.get('extraInfo', '')
@@ -467,17 +467,19 @@ class Sources:
 		return meta
 
 	def _make_alias_dict(self, meta, title):
-		aliases = []
-		meta_title = meta['title']
-		original_title = meta['original_title']
-		alternative_titles = meta.get('alternative_titles', [])
-		country_codes = set([i.replace('GB', 'UK') for i in meta.get('country_codes', [])])
-		if meta_title not in alternative_titles: alternative_titles.append(meta_title)
-		if original_title not in alternative_titles: alternative_titles.append(original_title)
-		if alternative_titles: aliases = [{'title': i, 'country': ''} for i in alternative_titles]
-		if country_codes: aliases.extend([{'title': '%s %s' % (title, i), 'country': ''} for i in country_codes])
-		normalized = ({'title': normalize(i['title']), 'country': i['country']} for i in aliases)
-		aliases.extend(i for i in normalized if i not in aliases)
+		raw_titles = {meta['title'], meta['original_title']}
+		raw_titles.update(meta.get('alternative_titles', []))
+		aliases = [{'title': i, 'country': ''} for i in raw_titles]
+		aliases_append = aliases.append
+		country_codes = {i.replace('GB', 'UK') for i in meta.get('country_codes', [])}
+		aliases.extend({'title': '%s %s' % (title, i), 'country': ''} for i in country_codes)
+		seen = {(i['title'], i['country']) for i in aliases}
+		for i in aliases[:]:
+			norm_title = safe_string(i['title'])
+			norm_pair = (norm_title, i['country'])
+			if norm_pair not in seen and not seen.add(norm_pair):
+				aliases_append({'title': norm_title, 'country': i['country']})
+		aliases = [i for i in aliases if safe_string(i['title'])]
 		return aliases
 
 	def _get_search_year(self, meta):
@@ -491,9 +493,9 @@ class Sources:
 
 	def _get_ep_name(self, meta):
 		if meta.get('mediatype') == 'episode':
-			ep_name = meta.get('ep_name')
-			try: ep_name = safe_string(remove_accents(ep_name))
-			except: ep_name = safe_string(ep_name)
+			ep_name = meta.get('ep_name') or ''
+			try: ep_name = safe_string(ep_name)
+			except: pass
 		else: ep_name = None
 		return ep_name
 
@@ -685,7 +687,7 @@ class ExternalSource:
 		try:
 			self.mediatype, self.tmdb_id, self.year = info['mediatype'], str(info['tmdb_id']), info['year']
 			self.season, self.episode, self.total_seasons = info['season'], info['episode'], info['total_seasons']
-			self.title, self.orig_title, aliases = normalize(info['title']), info['title'], info['aliases']
+			self.title, self.orig_title, aliases = safe_string(info['title']), info['title'], info['aliases']
 			self.single_expiry, self.season_expiry, self.show_expiry = info['expiry_times']
 			if self.mediatype == 'episode':
 				season_divider = (
@@ -696,7 +698,7 @@ class ExternalSource:
 				self.show_divider = int(self.meta['total_aired_eps'])
 				self.data = {
 					'timeout': self.timeout, 'imdb': info['imdb_id'], 'tvdb': info['tvdb_id'], 'aliases': aliases,
-					'title': normalize(info['ep_name']), 'tvshowtitle': self.title, 'year': self.year,
+					'title': safe_string(info['ep_name']), 'tvshowtitle': self.title, 'year': self.year,
 					'season': str(self.season), 'episode': str(self.episode), 'total_seasons': self.total_seasons
 				}
 				self.get_episode_source(*self.args)
@@ -747,11 +749,9 @@ class ExternalSource:
 				try:
 					i_get = i.get
 					if 'hash' in i: i['hash'] = str(i['hash']).lower()
+					URLName = clean_file_name(i_get('name')).replace('html', ' ')
+					quality, extraInfo = get_file_info(name_info=i_get('name_info'))
 					size, size_label, divider = 0, None, None
-					if 'name' in i: URLName = clean_file_name(i_get('name')).replace('html', ' ').replace('+', ' ').replace('-', ' ')
-					else: URLName = get_filename_match(self.orig_title, i_get('url'), i_get('name'))
-					if 'name_info' in i: quality, extraInfo = get_file_info(name_info=i_get('name_info'))
-					else: quality, extraInfo = get_file_info(url=i_get('url'))
 					try:
 						size = i_get('size')
 						if 'package' in i and not i_get('true_size', False):

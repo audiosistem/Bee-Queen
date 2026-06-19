@@ -1,8 +1,7 @@
 import sys
 from debrids.torbox_api import TorBoxAPI as Debrid
 from modules import kodi_utils
-from modules.source_utils import supported_video_extensions
-from modules.utils import clean_file_name, normalize
+from modules.source_utils import supported_video_extensions, clean_file_name
 # from modules.kodi_utils import logger
 
 get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting
@@ -38,7 +37,7 @@ class Menu(Debrid):
 			try:
 				cm = []
 				cm_append = cm.append
-				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, folder_str, clean_file_name(normalize(item['name'])).upper())
+				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, folder_str, clean_file_name(item['name']).upper())
 				url_params = {'mode': 'torbox.tb_browse_cloud', 'folder_id': item['folder_id']}
 				delete_params = {'mode': 'torbox.tb_delete', 'folder_id': item['folder_id']}
 				cm_append(('[B]%s %s[/B]' % (delete_str, folder_str.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))

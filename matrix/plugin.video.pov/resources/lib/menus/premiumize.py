@@ -1,8 +1,7 @@
 import sys
 from debrids.premiumize_api import PremiumizeAPI as Debrid
 from modules import kodi_utils
-from modules.source_utils import supported_video_extensions
-from modules.utils import clean_file_name, normalize
+from modules.source_utils import supported_video_extensions, clean_file_name
 # from modules.kodi_utils import logger
 
 get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting
@@ -52,7 +51,7 @@ class Menu(Debrid):
 					delete_params['file_type'] = 'folder'
 					string = folder_str
 					display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, folder_str, name)
-					url_params = {'mode': 'premiumize.pm_torrent_cloud', 'id': item['id'], 'folder_name': normalize(item['name'])}
+					url_params = {'mode': 'premiumize.pm_torrent_cloud', 'id': item['id'], 'folder_name': clean_file_name(item['name'])}
 				else:
 					is_folder = False
 					download_string = down_str
@@ -92,7 +91,7 @@ class Menu(Debrid):
 				if file_type == 'folder':
 					is_folder = True if status == 'finished' else False
 					display = '%02d | %.2f%% | [B]%s[/B] | [I]%s [/I]' % (count, progress, folder_str, name)
-					if is_folder: url_params = {'mode': 'premiumize.pm_torrent_cloud', 'id': item['folder_id'], 'folder_name': normalize(item['name'])}
+					if is_folder: url_params = {'mode': 'premiumize.pm_torrent_cloud', 'id': item['folder_id'], 'folder_name': clean_file_name(item['name'])}
 					else: url_params = {'mode': 'premiumize.pm_downloads'}
 				else:
 					is_folder = False

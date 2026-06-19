@@ -10,8 +10,8 @@ from gearsscrapers.modules import source_utils
 
 
 class source:
-	timeout = 10
-	priority = 1
+	timeout = 30
+	priority = 3
 	pack_capable = True
 	hasMovies = True
 	hasEpisodes = True

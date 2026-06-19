@@ -1,8 +1,8 @@
 import sys
 from debrids.real_debrid_api import RealDebridAPI as Debrid
 from modules import kodi_utils
-from modules.source_utils import supported_video_extensions
-from modules.utils import clean_file_name, normalize, jsondate_to_datetime, get_datetime
+from modules.source_utils import supported_video_extensions, clean_file_name
+from modules.utils import jsondate_to_datetime, get_datetime
 # from modules.kodi_utils import logger
 
 get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting
@@ -40,7 +40,7 @@ class Menu(Debrid):
 			try:
 				cm = []
 				cm_append = cm.append
-				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, folder_str, clean_file_name(normalize(item['filename'])).upper())
+				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, folder_str, clean_file_name(item['filename']).upper())
 				url_params = {'mode': 'real_debrid.rd_browse_cloud', 'id': item['id']}
 				delete_params = {'mode': 'real_debrid.rd_delete', 'id': item['id'], 'cache_type': 'torrent'}
 				cm_append(('[B]%s %s[/B]' % (delete_str, folder_str.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))

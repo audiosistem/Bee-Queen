@@ -1,8 +1,8 @@
 import json
 from indexers import metadata
-from modules import kodi_utils, source_utils, settings
+from modules import kodi_utils, settings
 from modules.cache import clear_cache
-from modules.utils import get_datetime, clean_file_name
+from modules.utils import get_datetime, safe_string
 # logger = kodi_utils.logger
 
 ls, build_url, media_path, select_dialog = kodi_utils.local_string, kodi_utils.build_url, kodi_utils.media_path, kodi_utils.select_dialog
@@ -28,7 +28,7 @@ def trailer_choice(mediatype, poster, tmdb_id, trailer_url, all_trailers=None):
 	if len(all_trailers) > 1:
 		all_trailers.sort(key=lambda k: k.get('published_at'))
 		list_items = [
-			{'line1': clean_file_name(i['name']),
+			{'line1': safe_string(i['name']),
 			 'line2': '%s (%s)' % (i['type'], i.get('site') or 'NA'),
 			 'icon': poster}
 			for i in all_trailers
@@ -227,9 +227,8 @@ def playback_choice(content, poster, meta):
 	else: scrape_with_custom_values(content, meta)
 
 def set_quality_choice(quality_setting):
-	include = ls(32188)
-	dl = ['%s SD' % include, '%s 720p' % include, '%s 1080p' % include, '%s 4K' % include]
 	fl = ['SD', '720p', '1080p', '4K']
+	dl = ['%s %s' % (ls(32188), i) for i in fl]
 	try: preselect = [fl.index(i) for i in get_setting(quality_setting).split(', ')]
 	except: preselect = []
 	list_items = [{'line1': item} for item in dl]
@@ -242,11 +241,8 @@ def set_quality_choice(quality_setting):
 
 def extras_lists_choice():
 	fl = [2050, 2051, 2052, 2053, 2054, 2055, 2056, 2057, 2058, 2059, 2060, 2061, 2062]
-	dl = [
-		ls(32664), ls(32503), ls(32607), ls(32984), ls(32986), ls(32989), ls(32531), ls(32616), ls(32617),
-		'%s %s' % (ls(32612), ls(32543)), '%s %s' % (ls(32612), ls(32470)),
-		'%s %s' % (ls(32612), ls(32480)), '%s %s' % (ls(32612), ls(32499))
-	]
+	dl = [ls(32664), ls(32503), ls(32607), ls(32984), ls(32986), ls(32989), ls(32531), ls(32616), ls(32617)]
+	dl.extend('%s %s' % (ls(32612), ls(i)) for i in (32543, 32470, 32480, 32499))
 	try: preselect = [fl.index(i) for i in settings.extras_enabled_menus()]
 	except: preselect = []
 	list_items = [{'line1': item} for item in dl]
@@ -447,7 +443,7 @@ def options_menu(params, meta=None):
 	elif choice == 'play_random': return random_choice(choice, meta)
 	elif choice == 'play_random_continual': return random_choice(choice, meta)
 	elif choice == 'clear_scrapers_cache': return clear_scrapers_cache()
-	elif choice == 'open_external_scrapers_choice': return source_utils.enable_disable('all')
+	elif choice == 'open_external_scrapers_choice': return enable_disable('all')
 	elif choice == 'toggle_torrents_display_uncached': set_setting('torrent.display.uncached', uncached_torrents_toggle)
 	elif choice == 'set_results_xml_display': results_layout_choice()
 	elif choice == 'dropped_choice': return dropped_choice(meta)
@@ -464,13 +460,8 @@ def extras_menu(params):
 	from windows import open_window
 	function = metadata.movie_meta if params['mediatype'] == 'movie' else metadata.tvshow_meta
 	meta = function('tmdb_id', params['tmdb_id'], settings.metadata_user_info(), get_datetime())
-	open_window(
-		('windows.extras', 'Extras'),
-		'extras.xml',
-		meta=meta,
-		is_widget=params.get('is_widget', 'false'),
-		is_home=params.get('is_home', 'false')
-	)
+	kwargs = {'meta': meta, 'is_widget': params.get('is_widget', 'false'), 'is_home': params.get('is_home', 'false')}
+	open_window(('windows.extras', 'Extras'), 'extras.xml', **kwargs)
 
 def refresh_cached_meta(meta):
 	from caches.meta_cache import MetaCache
@@ -493,7 +484,7 @@ def build_navigate_to_page(params):
 			else: line1, line2 = '%s %s' % ('Page', i), ls(32822) % i
 			yield {'line1': line1, 'line2': line2, 'icon': icon}
 	if use_alphabet:
-		start_list = [chr(i) for i in range(97,123)]
+		start_list = [chr(i) for i in range(97, 123)]
 	else:
 		start_list = [str(i) for i in range(1, int(params.get('total_pages'))+1)]
 		start_list.remove(params.get('current_page'))
@@ -509,9 +500,47 @@ def build_navigate_to_page(params):
 				'user': params.get('user', ''), 'slug': params.get('slug', ''), 'list_id': params.get('list_id', ''), 'name': params.get('name', '')}
 	execute_builtin('Container.Update(%s)' % build_url(url_params))
 
-def clear_scrapers_cache(silent=False):
-	for item in ('internal_scrapers', 'external_scrapers'): clear_cache(item, silent=True)
-	if not silent: notification(32576)
+def scrape_from_episode_group(meta, season, episode):
+	from indexers.tmdb_api import episode_groups, episode_group_details
+	from modules.sources import Sources
+	tmdb_id, heading, poster = meta['tmdb_id'], meta['tvshowtitle'], meta['poster']
+	groups = episode_groups(tmdb_id)
+	choices = [
+		(item['id'],
+		 '%s (%s)' % (item['name'], item['type']),
+		 '%s Groups, %s Episodes' % (item['group_count'], item['episode_count']))
+		for item in groups
+	]
+	if not choices: return notification(32760)
+	list_items = [{'line1': item[1], 'line2': item[2], 'icon': poster} for item in choices]
+	kwargs = {'items': json.dumps(list_items), 'heading': heading, 'enumerate': 'true'}
+	choice = select_dialog([i[0] for i in choices], multi_line='false', **kwargs)
+	if choice is None: return
+	episodes = episode_group_details(choice)
+	if not episodes: return notification(32760)
+	episodes = [
+		{**episode, 'custom_episode': episode['order'] + 1, 'custom_season': group['order'],
+		'custom_name': f"S{group['order']}xE{episode['order'] + 1:02d} - {episode['name']}",
+		'custom_title': f"S{episode['season_number']}xE{episode['episode_number']:02d} - {episode['name']}"}
+		for group in episodes for episode in group['episodes']
+	]
+	index = next((
+		episodes.index(i) for i in episodes
+		if i['season_number'] == int(season) and i['episode_number'] == int(episode)
+	), None)
+	if index is not None:
+		heading = episodes[index]['name']
+		episodes, preselect = episodes[index:] + episodes[:index], 0
+	else: heading, preselect = meta['title'], -1
+	choices = [(item['custom_season'], item['custom_episode'], item['custom_name'], item['custom_title']) for item in episodes]
+	if not choices: return
+	list_items = [{'line1': item[2], 'line2': item[3], 'icon': poster} for item in choices]
+	kwargs = {'items': json.dumps(list_items), 'heading': heading, 'preselect': preselect}
+	choice = select_dialog([(i[0], i[1]) for i in choices], multi_line='false', **kwargs)
+	if choice is None: return
+	play_params = {'mode': 'play_media', 'tmdb_id': tmdb_id, 'mediatype': 'episode', 'season': season, 'episode': episode}
+	play_params.update({'custom_season': choice[0], 'custom_episode': choice[1]})
+	Sources().source_select(play_params)
 
 def clear_and_rescrape(mediatype, meta, season=None, episode=None):
 	from caches.providers_cache import ExternalProvidersCache
@@ -567,45 +596,44 @@ def scrape_with_custom_values(mediatype, meta, season=None, episode=None):
 		set_property('fs_filterless_search', 'true')
 	Sources().source_select(play_params)
 
-def scrape_from_episode_group(meta, season, episode):
-	from indexers.tmdb_api import episode_groups, episode_group_details
-	from modules.sources import Sources
-	tmdb_id, heading, poster = meta['tmdb_id'], meta['tvshowtitle'], meta['poster']
-	groups = episode_groups(tmdb_id)
-	choices = [
-		(item['id'],
-		 '%s (%s)' % (item['name'], item['type']),
-		 '%s Groups, %s Episodes' % (item['group_count'], item['episode_count']))
-		for item in groups
-	]
-	if not choices: return notification(32760)
-	list_items = [{'line1': item[1], 'line2': item[2], 'icon': poster} for item in choices]
-	kwargs = {'items': json.dumps(list_items), 'heading': heading, 'enumerate': 'true'}
-	choice = select_dialog([i[0] for i in choices], multi_line='false', **kwargs)
-	if choice is None: return
-	episodes = episode_group_details(choice)
-	if not episodes: return notification(32760)
-	episodes = [
-		{**episode, 'custom_episode': episode['order'] + 1, 'custom_season': group['order'],
-		'custom_name': f"S{group['order']}xE{episode['order'] + 1:02d} - {episode['name']}",
-		'custom_title': f"S{episode['season_number']}xE{episode['episode_number']:02d} - {episode['name']}"}
-		for group in episodes for episode in group['episodes']
-	]
-	index = next((
-		episodes.index(i) for i in episodes
-		if i['season_number'] == int(season) and i['episode_number'] == int(episode)
-	), None)
-	if index is not None:
-		heading = episodes[index]['name']
-		episodes, preselect = episodes[index:] + episodes[:index], 0
-	else: heading, preselect = meta['title'], -1
-	choices = [(item['custom_season'], item['custom_episode'], item['custom_name'], item['custom_title']) for item in episodes]
-	if not choices: return
-	list_items = [{'line1': item[2], 'line2': item[3], 'icon': poster} for item in choices]
-	kwargs = {'items': json.dumps(list_items), 'heading': heading, 'preselect': preselect}
-	choice = select_dialog([(i[0], i[1]) for i in choices], multi_line='false', **kwargs)
-	if choice is None: return
-	play_params = {'mode': 'play_media', 'tmdb_id': tmdb_id, 'mediatype': 'episode', 'season': season, 'episode': episode}
-	play_params.update({'custom_season': choice[0], 'custom_episode': choice[1]})
-	Sources().source_select(play_params)
+def clear_scrapers_cache(silent=False):
+	for item in ('internal_scrapers', 'external_scrapers'): clear_cache(item, silent=True)
+	if not silent: notification(32576)
+
+def scraper_names(folder):
+	providerList = []
+	append = providerList.append
+	source_folder_location = 'special://home/addons/plugin.video.pov/resources/lib/magneto/%s'
+	sourceSubFolders = {'hosters': '', 'torrents': ''}
+	if folder == 'all': sourceSubFolders = ['']
+	else: sourceSubFolders = [v for k, v in sourceSubFolders.items() if k == folder]
+	for item in sourceSubFolders:
+		files = kodi_utils.list_dirs(source_folder_location % item)[1]
+		for item in files:
+			module_name = item.split('.')[0]
+			if module_name == '__init__': continue
+			append(module_name)
+	return providerList
+
+def scrapers_status(folder='all'):
+	providers = scraper_names(folder)
+	enabled = [i for i in providers if kodi_utils.get_setting('provider.' + i) == 'true']
+	disabled = [i for i in providers if i not in enabled]
+	return enabled, disabled
+
+def enable_disable(folder):
+	try:
+		icon = 'special://home/addons/plugin.video.pov/resources/lib/fenom/fenom_icon.png'
+		enabled, disabled = scrapers_status(folder)
+		all_sources = sorted(enabled + disabled)
+		preselect = [all_sources.index(i) for i in enabled]
+		list_items = [{'line1': i.upper(), 'icon': icon} for i in all_sources]
+		kwargs = {'items': json.dumps(list_items), 'multi_choice': 'true', 'preselect': preselect}
+		chosen = kodi_utils.select_dialog(all_sources, multi_line='false', **kwargs)
+		if chosen is None: return
+		for i in all_sources:
+			if i in chosen: set_setting('provider.' + i, 'true')
+			else: set_setting('provider.' + i, 'false')
+		return kodi_utils.notification(32576, 1500)
+	except: return kodi_utils.notification(32574, 1500)
 

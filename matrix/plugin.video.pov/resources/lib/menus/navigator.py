@@ -390,13 +390,13 @@ class Navigator:
 
 	def folder_navigator(self):
 		import os
-		from modules.utils import clean_file_name, normalize
+		from modules.source_utils import clean_file_name
 		def _process():
 			for item, isFolder in items:
 				try:
 					url = os.path.join(folder_path, item)
 					listitem = make_listitem()
-					listitem.setLabel(clean_file_name(normalize(item)))
+					listitem.setLabel(clean_file_name(item))
 					listitem.setArt({'fanart': fanart})
 					yield (url, listitem, isFolder)
 				except: pass

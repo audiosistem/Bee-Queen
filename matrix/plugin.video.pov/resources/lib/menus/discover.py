@@ -4,7 +4,7 @@ from datetime import timedelta
 from caches.main_cache import MainCache
 from indexers import tmdb_api
 from modules import kodi_utils, meta_lists
-from modules.utils import safe_string, remove_accents
+from modules.utils import safe_string
 # logger = kodi_utils.logger
 
 maincache_db = kodi_utils.maincache_db
@@ -289,7 +289,7 @@ class Discover:
 			actor_id, actor_name = choice['id'], choice['name']
 		else: actor_id, actor_name = [item['id'] for item in actors][0], [item['name'] for item in actors][0]
 		if actor_id:
-			values = ('&with_cast=%s' % str(actor_id), safe_string(remove_accents(actor_name)))
+			values = ('&with_cast=%s' % str(actor_id), safe_string(actor_name))
 			self._process(key, values)
 
 	def network(self):

@@ -4,7 +4,7 @@
 """
 
 import ctypes, random, time
-import re, requests
+import requests
 from fenom import client, source_utils
 
 
@@ -28,7 +28,7 @@ class source:
 		try:
 			self.title = data['tvshowtitle'] if 'tvshowtitle' in data else data['title']
 			self.title = self.title.replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
-			self.aliases = data['aliases']
+			self.aliases = source_utils.aliases_to_array(data['aliases'])
 			self.episode_title = data['title'] if 'tvshowtitle' in data else None
 			self.total_seasons = data['total_seasons'] if 'tvshowtitle' in data else None
 			self.year = data['year']
@@ -79,7 +79,9 @@ class source:
 						if not valid: continue
 						else: package = 'show'
 					else: package = 'season'
-				name_info = source_utils.info_from_name(name, self.title, self.year, self.hdlr, self.episode_title)
+				if package in ('season', 'show'):
+					name_info = source_utils.info_from_name(name, self.title, self.year, season=self.season_x, pack=package)
+				else: name_info = source_utils.info_from_name(name, self.title, self.year, self.hdlr, self.episode_title)
 				if source_utils.remove_lang(name_info, self.check_foreign_audio): continue
 				if self.undesirables and source_utils.remove_undesirables(name_info, self.undesirables): continue
 

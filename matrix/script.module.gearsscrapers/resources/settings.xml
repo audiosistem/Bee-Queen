@@ -1,52 +1,72 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
 
-<category label="Scrapers Test"> <!-- Health -->
-    <setting type="action" label="Test All Torrent Providers" action="RunPlugin(plugin://script.module.gearsscrapers/?action=healthCheck)" />
-    <setting type="sep" />
-    <setting type="action" label="Clean Settings file" option="close" action="RunPlugin(plugin://script.module.gearsscrapers/?action=cleanSettings)" />
+<category label="General">
     <setting type="action" label="Show Changelog" action="RunPlugin(plugin://script.module.gearsscrapers/?action=ShowChangelog)" />
-    <setting type="sep" />
-    <setting id="debug.enabled" type="bool" label="Enable Debug" default="false" />
-    <setting id="debug.location" type="enum" label="Logging Location" default="0" values="Kodi Log|Addon Log" enable="eq(-1,true)" />
-    <setting id="debug.reversed" type="bool" label="Write gearsscrapers log in reverse order" default="false" visible="eq(-2,true)+eq(-1,1)" />
-    <setting type="action" label="Clear gearsscrapers log file" visible="eq(-3,true)+eq(-2,1)" action="RunPlugin(plugin://script.module.gearsscrapers/?action=tools_clearLogFile)" />
-    <setting type="action" label="View gearsscrapers log file" visible="eq(-4,true)+eq(-3,1)" action="RunPlugin(plugin://script.module.gearsscrapers/?action=tools_viewLogFile&amp;name=gearsscrapers)" />
-    <setting type="action" label="Upload gearsscrapers log file to pastebin" visible="eq(-5,true)+eq(-4,1)" action="RunPlugin(plugin://script.module.gearsscrapers/?action=tools_uploadLogFile)" />
 </category>
 
-<category label="Undesirables"> <!-- Undesirables -->
-    <setting id="filter.foreign.single.audio" type="bool" label="Remove identified Foreign single audio sources" default="false" />
+<category label="Providers">
+	<setting id="provider.bitsearch" type="bool" label="Bitsearch" default="false" />
+    <setting id="provider.aiostreams" type="bool" label="Aiostreams" default="false" />
+	<setting id="provider.torlock" type="bool" label="Torlock" default="false" />
+	<setting id="provider.torrentproject2" type="bool" label="Torrentproject" default="false" />
+    <setting id="provider.torrentz2" type="bool" label="Torrentz" default="false" />
+	<setting id="provider.meteor" type="bool" label="Meteor" default="false" />
+    <setting id="provider.1337x" type="bool" label="1337x" default="false" />
+    <setting id="provider.kickass2" type="bool" label="Kickass" default="false" />
+    <setting id="provider.piratebay" type="bool" label="PirateBay" default="false" />
+    <setting id="provider.rutor" type="bool" label="Rutor" default="false" />
+    <setting id="provider.knaben" type="bool" label="Knaben" default="false" />
+    <setting id="provider.nyaa" type="bool" label="Nyaa (Anime)" default="false" />
+	<setting id="provider.ytsmx" type="bool" label="Yts" default="false" />
+</category>
+
+<category label="Pack Providers">
+    <setting id="provider.bitmagnet" type="bool" label="Bitmagnet" default="true" />
+	<setting id="provider.comet" type="bool" label="Comet" default="true" />
+	<setting id="provider.eztv" type="bool" label="Eztv (Shows Only)" default="false" />
+    <setting id="provider.torz" type="bool" label="Torz" default="true" />
+	<setting id="provider.torrentio" type="bool" label="Torrentio" default="true" />
+	<setting id="provider.zilean" type="bool" label="Zilean" default="false" />
+	<setting id="provider.mediafusion" type="bool" label="MediaFusion" default="false" />
+	<setting id="provider.torrentsdb" type="bool" label="torrentsdb" default="true" />
+	<setting id="provider.torrentdownload" type="bool" label="TorrentDownload" default="false" />
+</category>
+
+<category label="Dmm Setup">
+    <setting id="provider.bitmagnet" type="bool" label="Bitmagnet" default="false" />
+    <setting id="provider.dmm" type="bool" label="DMM" default="false" />
+	<setting id="provider.zilean" type="bool" label="Zilean" default="false" />
+</category>
+
+<category label="Prowlarr">
+    <setting label="Prowlarr" type="lsep" />
+    <setting id="provider.prowlarr" type="bool" label="PROWLARR" default="false" />
+        <setting id="prowlarr.token" type="text" label="PROWLARR apikey" subsetting="true" default="" visible="eq(-1,true)" />
+        <setting id="prowlarr.url" type="text" label="PROWLARR url" subsetting="true" default="" visible="eq(-2,true)" />
+</category>
+
+<category label="Debrid Services">
+    <setting id="debrid.premiumize" type="bool" label="Premiumize" default="true" />
+    <setting id="debrid.alldebrid" type="bool" label="AllDebrid" default="false" />
+    <setting id="debrid.torbox" type="bool" label="TorBox" default="false" />
+    <setting id="debrid.easynews" type="bool" label="EasyNews" default="false" />
+    <setting id="debrid.realdebrid" type="bool" label="Real-Debrid" default="false" />
+</category>
+
+<category label="Filters">
+    <setting id="filter.foreign.single.audio" type="bool" label="Remove Foreign Audio" default="false" />
     <setting id="filter.undesirables" type="bool" label="Remove Undesirables" default="false" />
-        <setting type="action" label="Manage Default Undesirables" subsetting="true" enable="eq(-1,true)" action="RunPlugin(plugin://script.module.gearsscrapers/?action=undesirablesSelect)" />
-        <setting type="action" label="Define Extra Undesirables (Comma Separated)" subsetting="true" enable="eq(-2,true)" action="RunPlugin(plugin://script.module.gearsscrapers/?action=undesirablesInput)" />
-        <setting type="action" label="Remove Extra Undesirables" subsetting="true" enable="eq(-3,true)" action="RunPlugin(plugin://script.module.gearsscrapers/?action=undesirablesUserRemove)" />
-        <setting type="action" label="Clear ALL Extra Undesirables" subsetting="true" enable="eq(-4,true)" action="RunPlugin(plugin://script.module.gearsscrapers/?action=undesirablesUserRemoveAll)" />
-    <setting type="action" label="[COLOR cyan]-- undesirables filter Help --[/COLOR]" action="RunPlugin(plugin://script.module.gearsscrapers/?action=ShowHelp&amp;name=undesirablesFilter)" />
 </category>
 
-<category label="Sources">
-	<setting label="[COLORghostwhite]Recomended Providers[/COLOR]" type="lsep" />
-	<setting id="provider.aiostreams" type="bool" label="[COLORcyan]AIOSTREAMS[/COLOR]" default="true" />
-	<setting id="provider.comet" type="bool" label="[COLORcyan]COMET[/COLOR]" default="true" />
-    <setting id="provider.torrentio" type="bool" label="[COLORcyan]TORRENTIO[/COLOR]" default="true" />
-	<setting id="provider.torz" type="bool" label="[COLORcyan]TORZ[/COLOR]" default="true" />
-	<setting id="provider.torrentsdb" type="bool" label="[COLORcyan]TORRENTSDB[/COLOR]" default="true" />
-	<setting id="provider.mediafusion" type="bool" label="[COLORcyan]MEDIAFUSION[/COLOR]" default="false" />
-	<setting label="[COLORghostwhite]Secondary Providers[/COLOR]" type="lsep" />
-	<setting id="provider.bitmagnet" type="bool" label="[COLORgoldenrod]BITMAGNET[/COLOR]" default="false" />
-	<setting id="provider.dmm" type="bool" label="[COLORgoldenrod]DMM[/COLOR]" default="false" />
-	<setting id="provider.meteor" type="bool" label="[COLORgoldenrod]METEOR[/COLOR]" default="false" />
-	<setting id="provider.torrentdownload" type="bool" label="[COLORgoldenrod]TORRENTDL[/COLOR]" default="true" />
-	<setting id="provider.1337x" type="bool" label="[COLORgoldenrod]$NUMBER[1337]X[/COLOR]" default="false" />
-	<setting id="provider.eztv" type="bool" label="[COLORgoldenrod]EZTV[/COLOR]" default="false" />
-	<setting id="provider.kickass2" type="bool" label="[COLORgoldenrod]KICKASS[/COLOR]" default="false" />
-	<setting id="provider.piratebay" type="bool" label="[COLORgoldenrod]PIRATEBAY[/COLOR]" default="true" />
-    <setting id="provider.rutor" type="bool" label="[COLORgoldenrod]RUTOR[/COLOR]" default="true" />
-	<setting id="provider.knaben" type="bool" label="[COLORgoldenrod]KNABEN[/COLOR]" default="false" />
-	<setting id="provider.nyaa" type="bool" label="[COLORgoldenrod]NYAA[/COLOR] (Anime)" default="false" />
-	<setting id="provider.zilean" type="bool" label="[COLORgoldenrod]ZILEAN[/COLOR]" default="false" />
-	
+<category label="Maintenance">
+    <setting type="action" label="Test All Torrent Providers" action="RunPlugin(plugin://script.module.gearsscrapers/?action=healthCheck)" />
+    <setting type="action" label="Clean Settings File" action="RunPlugin(plugin://script.module.gearsscrapers/?action=cleanSettings)" />
 </category>
-	
+
+<category label="Advanced">
+    <setting id="debug.enabled" type="bool" label="Enable Debug Logging" default="false" />
+    <setting id="debug.location" type="enum" label="Logging Location" default="0" values="Kodi Log|Addon Log" />
+</category>
+
 </settings>

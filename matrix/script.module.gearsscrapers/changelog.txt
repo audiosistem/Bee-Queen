@@ -1,4 +1,112 @@
-[COLORcyan] VERSION 1.4.2[/COLOR]
+[COLORcyan] VERSION 1.4.6[/COLOR]
+
+[COLOR cyan][B]SETTINGS OVERHAUL[/B][/COLOR]
+
+• Complete settings menu reworked for improved navigation and usability.
+
+• Providers have been reorganized into dedicated sections, making it easier to manage recommended and secondary torrent providers.
+
+• Added a dedicated Pack Providers section highlighting providers capable of returning season and series packs.
+
+• Added a dedicated Debrid Services section for supported services:
+
+Premiumize
+AllDebrid
+TorBox
+EasyNews
+Real-Debrid
+
+• Added Prowlarr integration section with dedicated URL and API key configuration options.
+
+• Added DMM Setup section with recommended provider configuration guidance for optimal DMM performance.
+
+• Added Minimum Seeders setting to allow better control over torrent quality and reliability.
+
+• Improved Maintenance section with easier access to:
+
+Provider Health Testing
+Settings Cleanup
+Changelog Viewing
+
+• Improved Advanced section with streamlined debugging and logging controls.
+
+• Removed duplicate provider entries throughout the settings menu for a cleaner and more intuitive experience.
+
+• Updated category layout to better separate:
+
+Providers
+Pack Providers
+Debrid Services
+Filters
+Maintenance
+Advanced Settings
+
+• General improvements to readability, organization, and overall user experience.
+
+
+[COLOR cyan][B]New Feature: Pack Capable Torrent Providers[/B][/COLOR]
+
+Pack Capable Torrent Providers have now been added to the settings menu, giving users greater control over how season packs and multi-episode torrent sources are handled during scraping.
+
+Added a dedicated Pack Capable Torrent Providers section within settings.
+Easily enable or disable specific providers that support season packs and complete series packs.
+Improved identification of providers capable of returning packed torrent results.
+Greater flexibility when tailoring scraper behaviour to your preferred providers.
+
+Faster scraping by prioritising providers that offer complete season and series packs.
+Improved source availability for older shows and hard-to-find content.
+Reduced need to scrape individual episode torrents when season packs are available.
+Better overall efficiency and organisation of torrent source results.
+
+Enhanced pack detection logic.
+Improved compatibility with supported torrent providers.
+Cleaner management of pack-capable sources directly from the settings interface.
+
+[COLOR cyan][B]New Feature Added[/B][/COLOR]
+
+DDM Setup Integration Added to Gears Scraper
+Added full DDM setup support within Gears Scraper.
+Improved compatibility with DDM-powered source providers.
+Streamlined configuration process for easier setup and management.
+Enhanced source detection and retrieval performance when using DDM configurations.
+Optimized communication between Gears Scraper and DDM modules for greater reliability.
+Reduced setup complexity, allowing users to get up and running faster.
+
+[COLORcyan]Improvements[/B][/COLOR]
+
+Better scraper stability during source aggregation.
+Improved handling of provider responses and timeouts.
+Enhanced source parsing for increased accuracy.
+General performance optimizations throughout the scraper engine.
+
+[COLORcyan]Benefits[/B][/COLOR]
+
+Faster source discovery.
+Improved reliability across supported providers.
+Easier setup and maintenance.
+More consistent scraping performance.
+Better overall user experience.
+
+
+[COLOR cyan][B]SCRAPER ENGINE IMPROVEMENTS & ENHANCEMENTS[/B][/COLOR]
+
+• Torz Scraper has been fixed, optimized, and enhanced to improve source reliability, stability, and overall performance during searches.
+
+• AIO Scraper has been updated with multiple fixes and enhancements, resolving issues that could affect source retrieval while improving compatibility with supported providers.
+
+• Other Scraper has been fixed and refined, delivering more consistent results and better handling of provider responses.
+
+• Improved source aggregation across multiple providers, allowing results to be collected faster and more efficiently.
+
+• Optimized scraper communication and processing routines to reduce delays when gathering sources.
+
+• Enhanced caching mechanisms to minimize duplicate requests, reduce unnecessary network traffic, and improve overall search speed.
+
+• Reduced scraper initialization and startup times, resulting in faster search launches and improved responsiveness throughout the addon.
+
+• Improved error handling and recovery processes to help prevent scraper failures and ensure more reliable source retrieval.
+
+• General performance optimizations and backend improvements have been implemented across the scraper framework for a smoother and more stable user experience.
 
 [COLOR=cyan][B]SCRAPER FIXES & ENHANCEMENTS[/B][/COLOR]
 

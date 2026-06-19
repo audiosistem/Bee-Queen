@@ -6,7 +6,7 @@ from urllib.request import Request, urlopen
 from indexers.metadata import get_title
 from modules import debrid, kodi_utils
 from modules.settings import download_directory, get_art_provider
-from modules.utils import clean_file_name, clean_title, safe_string, remove_accents
+from modules.source_utils import clean_file_name, find_season_in_release_title
 # from modules.kodi_utils import logger
 
 ctx = ssl.SSLContext(ssl.PROTOCOL_TLS)
@@ -27,7 +27,6 @@ image_extensions, video_extensions = (
 def factory(params):
 	action = params.get('action')
 	if 'meta' in action and params.get('magnet_url') != 'None':
-		from modules.source_utils import find_season_in_release_title
 		source, meta = json.loads(params['source']), json.loads(params['meta'])
 		pack_choices = debrid.Source(source, meta).browse_packs(download=True)
 		if not pack_choices: return kodi_utils.notification(32692)
@@ -154,13 +153,9 @@ class Downloader:
 			final_name = os.path.splitext(urlparse(name).path)[0].split('/')[-1]
 		else:
 			name_url = self.params_get('name') or unquote(self.url)
-			file_name = clean_title(name_url.split('/')[-1])
-			if clean_title(self.title).lower() in file_name.lower():
-				final_name = os.path.splitext(urlparse(name_url).path)[0].split('/')[-1]
-			else:
-				try: final_name = self.name.translate(None, r'\/:*?"<>|').strip('.')
-				except: final_name = os.path.splitext(urlparse(name_url).path)[0].split('/')[-1]
-		self.final_name = safe_string(remove_accents(final_name))
+			name_url = name_url.split('/')[-1]
+			final_name = os.path.splitext(urlparse(name_url).path)[0].split('/')[-1]
+		self.final_name = clean_file_name(final_name, False)
 
 	def get_extension(self):
 		if self.action == 'archive':

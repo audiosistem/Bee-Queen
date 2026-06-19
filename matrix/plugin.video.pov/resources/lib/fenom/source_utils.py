@@ -3,19 +3,34 @@
 """
 
 import re
+import unicodedata
 from string import printable
 from threading import Thread as thread
-from fenom import cleantitle
+from fenom import cleantitle, log_utils
 from fenom.undesirables import Undesirables
 from fenom.control import homeWindow, jsloads, setting as getSetting, setSetting
 
 
-RES_4K = ('2160', '216o', '.4k', 'ultrahd', 'ultra.hd', '.uhd.')
-RES_1080 = ('1080', '1o8o', '108o', '1o80', '.fhd.')
-RES_720 = ('720', '72o')
-SCR = ('dvdscr', 'screener', '.scr.', '.r5', '.r6')
-CAM = ('1xbet', 'betwin', '.cam.', 'camrip', 'cam.rip', 'dvdcam', 'dvd.cam', 'dvdts', 'hdcam', '.hd.cam', '.hctc', '.hc.tc', '.hdtc',
-				'.hd.tc', 'hdts', '.hd.ts', 'hqcam', '.hg.cam', '.ts.', '.tc.', 'tsrip', 'telecine', 'telesync', 'tele.sync')
+UNWANTED_REGEX_CACHE = {}
+RE_BRACKETS_JP = re.compile(r'【.*?】')
+RE_BRACKETS_SQ = re.compile(r'^\[.*?]', re.I)
+RE_YEAR_PARENTHESIS = re.compile(r'([(])(?=((19|20)[0-9]{2})).*?([)])')
+RE_VIDEO_RESOLUTIONS = re.compile(r'2160p|216op|4k|1080p|1o8op|108op|1o80p|720p|72op|480p|48op', re.I)
+RE_EPISODE_RANGES = [re.compile(i, re.I) for i in (
+	r's\d{1,3}e\d{1,3}[-.]e\d{1,3}',
+	r's\d{1,3}e\d{1,3}[-.]\d{1,3}(?!p|bit|gb)(?!\d{1,3})',
+	r's\d{1,3}[-.]e\d{1,3}[-.]e\d{1,3}',
+	r'season[.-]?\d{1,3}[.-]?ep[.-]?\d{1,3}[-.]ep[.-]?\d{1,3}',
+	r'season[.-]?\d{1,3}[.-]?episode[.-]?\d{1,3}[-.]episode[.-]?\d{1,3}'
+)]
+
+COMPILED_RESOLUTIONS = {k: re.compile(v, re.I) for k, v in {
+	'4K': r'\b(2160p?|216o|4k|ultrahd|ultra\.hd|uhd)\b',
+	'1080p': r'\b(1080p?|1o8o|108o|1o80|fhd)\b',
+	'720p': r'\b(720p?|72o)\b(?!mb)',
+	'SCR': r'\b(dvdscr|screener|\.scr\.|r5|r6)\b',
+	'CAM': r'\b(cam|camrip|dvdcam|dvdts|hdcam|hctc|hdtc|hdts|hqcam|ts|tc|tsrip|telecine|telesync)\b'
+}.items()}
 
 LANG = ('arabic', 'bgaudio', 'castellano', 'chinese', 'dutch', 'finnish', 'french', 'german', 'greek', 'hebrew', 'italian', 'korean', 'latino', 'polish',
 				'portuguese', 'russian', 'spanish', 'tamil', 'telugu', 'truefrench', 'truespanish', 'turkish')
@@ -59,117 +74,111 @@ except: unwanted_tags = []
 home_getProperty = homeWindow.getProperty
 
 
+class Thread(thread):
+	def __init__(self, target, *args):
+		self._target = target
+		self._args = args
+		thread.__init__(self, target=self._target, args=self._args)
+
+def log_utils_error(*args):
+	return log_utils.error(*args)
+
 def get_undesirables():
 	if not getSetting('filter.undesirables') == 'true' or home_getProperty('fs_filterless_search') == 'true' : return []
 	try: undesirables = Undesirables().get_enabled()
 	except: undesirables = UNDESIRABLES
 	return undesirables
 
+def remove_undesirables(release_info, undesirables):
+	if any(value in release_info for value in undesirables): return True
+
 def check_foreign_audio():
 	return False if home_getProperty('fs_filterless_search') == 'true' else getSetting('filter.foreign.single.audio') == 'true'
 
+def remove_lang(release_info, check_foreign_audio):
+	if not release_info: return False
+
+	def match(text_list):
+		return any(value in release_info for value in text_list)
+
+	try:
+		if match(DUBBED) or match(SUBS): return True
+		if check_foreign_audio and not match(ENG_CHECK):
+			if match(LANG) or match(ABV_LANG): return True
+		if release_info.endswith('.srt.') and not match(SRT_CHECK): return True
+		return False
+	except:
+		log_utils_error()
+		return False
+
 def get_qual(term):
-	if any(i in term for i in SCR): return 'SCR'
-	elif any(i in term for i in CAM): return 'CAM'
-	elif any(i in term for i in RES_720): return '720p'
-	elif any(i in term for i in RES_1080): return '1080p'
-	elif any(i in term for i in RES_4K): return '4K'
-	elif '.hd.' in term: return '720p'
-	else: return 'SD'
+	if not term: return None
+	term_lower = term.lower()
+	for quality, pattern in COMPILED_RESOLUTIONS.items():
+		if pattern.search(term_lower): return quality
+	if '.hd.' in term_lower: return '720p'
+	return 'SD'
 
 def get_release_quality(release_info, release_link=None):
 	try:
-		quality = None ; info = []
-		if release_info: quality = get_qual(release_info)
-		if not quality:
-			if release_link:
-				release_link = release_link.lower()
-				quality = get_qual(release_link)
-				if not quality: quality = 'SD'
-			else: quality = 'SD'
-		return quality, info
+		quality = get_qual(release_info) or get_qual(release_link) or 'SD'
+		return quality, []
 	except:
-		from fenom import log_utils
-		log_utils.error()
+		log_utils_error()
 		return 'SD', []
 
 def aliases_to_array(aliases, filter=None):
 	try:
-		if all(isinstance(x, str) for x in aliases): return aliases
+#		if all(isinstance(x, str) for x in aliases): return aliases
+		if all(isinstance(x, str) for x in aliases): return tuple(aliases)
 		if not filter: filter = []
 		if isinstance(filter, str): filter = [filter]
-		return [x.get('title') for x in aliases if not filter or x.get('country') in filter]
+#		return [x.get('title') for x in aliases if not filter or x.get('country') in filter]
+		return tuple(x.get('title') for x in aliases if not filter or x.get('country') in filter)
 	except:
-		from fenom import log_utils
-		log_utils.error()
+		log_utils_error()
 		return []
 
 def check_title(title, aliases, release_title, hdlr, year, years=None): # non pack file title check, single eps and movies
 	if years: # for movies only, scraper to pass None for episodes
-		if not any(value in release_title for value in years): return False
-	else: 
+		if not any(val in release_title for val in years): return False
+	else:
 		if not re.search(r'%s' % hdlr, release_title, re.I): return False
-	aliases = aliases_to_array(aliases)
-	title_list = []
-	title_list_append = title_list.append
+#	aliases = aliases_to_array(aliases)
+	title_list = set()
+	title_list_append = title_list.add
 	if aliases:
 		for item in aliases:
 			try:
 				alias = item.replace('&', 'and').replace(year, '')
 				if years: # for movies only, scraper to pass None for episodes
 					for i in years: alias = alias.replace(i, '')
-				if alias in title_list: continue
 				title_list_append(alias)
 			except:
-				from fenom import log_utils
-				log_utils.error()
+				log_utils_error()
 	try:
 		title = title.replace('&', 'and')
-		if title not in title_list: title_list_append(title)
+		title_list_append(title)
 
-		release_title = re.sub(r'([(])(?=((19|20)[0-9]{2})).*?([)])', '\\2', release_title) #remove parenthesis only if surrounding a 4 digit date
+		release_title = RE_YEAR_PARENTHESIS.sub('\\2', release_title) # remove parenthesis only if surrounding a 4 digit date
 		t = re.split(r'%s' % hdlr, release_title, 1, re.I)[0].replace(year, '').replace('&', 'and')
 		if years:
 			for i in years: t = t.split(i)[0]
-		t = re.split(r'2160p|216op|4k|1080p|1o8op|108op|1o80p|720p|72op|480p|48op', t, 1, re.I)[0]
-		if all(cleantitle.get(i) != cleantitle.get(t) for i in title_list): return False
+		t = RE_VIDEO_RESOLUTIONS.split(t, 1)[0]
+		t = cleantitle.get(t)
+		if all(cleantitle.get(i) != t for i in title_list): return False
 
 # filter to remove episode ranges that should be picked up in "filter_season_pack()" ex. "s01e01-08"
 		if hdlr != year: # equal for movies but not for shows
-			range_regex = (
-					r's\d{1,3}e\d{1,3}[-.]e\d{1,3}',
-					r's\d{1,3}e\d{1,3}[-.]\d{1,3}(?!p|bit|gb)(?!\d{1,3})',
-					r's\d{1,3}[-.]e\d{1,3}[-.]e\d{1,3}',
-					r'season[.-]?\d{1,3}[.-]?ep[.-]?\d{1,3}[-.]ep[.-]?\d{1,3}',
-					r'season[.-]?\d{1,3}[.-]?episode[.-]?\d{1,3}[-.]episode[.-]?\d{1,3}') # may need to add "to", "thru"
-			for regex in range_regex:
-				if bool(re.search(regex, release_title, re.I)): return False
+			for regex in RE_EPISODE_RANGES: # may need to add "to", "thru"
+				if regex.search(release_title): return False
 		return True
 	except:
-		from fenom import log_utils
-		log_utils.error()
+		log_utils_error()
 		return False
-
-def remove_lang(release_info, check_foreign_audio):
-	if not release_info: return False
-	try:
-		if any(value in release_info for value in DUBBED): return True
-		if any(value in release_info for value in SUBS): return True
-		if check_foreign_audio:
-			if any(value in release_info for value in LANG) and not any(value in release_info for value in ENG_CHECK): return True
-			if any(value in release_info for value in ABV_LANG) and not any(value in release_info for value in ENG_CHECK): return True
-		if release_info.endswith('.srt.') and not any(value in release_info for value in SRT_CHECK): return True
-		return False
-	except:
-		from fenom import log_utils
-		log_utils.error()
-		return False
-
-def remove_undesirables(release_info, undesirables):
-	if any(value in release_info for value in undesirables): return True
 
 def filter_season_pack(show_title, aliases, year, season, release_title):
-	aliases = aliases_to_array(aliases)
+#	aliases = aliases_to_array(aliases)
 	title_list = []
 	title_list_append = title_list.append
 	if aliases:
@@ -179,8 +188,7 @@ def filter_season_pack(show_title, aliases, year, season, release_title):
 				if alias in title_list: continue
 				title_list_append(alias)
 			except:
-				from fenom import log_utils
-				log_utils.error()
+				log_utils_error()
 	try:
 		show_title = show_title.replace('!', '').replace('(', '').replace(')', '').replace('&', 'and')
 		if show_title not in title_list: title_list_append(show_title)
@@ -245,12 +253,11 @@ def filter_season_pack(show_title, aliases, year, season, release_title):
 			return True, 0, 0
 		return False, 0, 0
 	except:
-		from fenom import log_utils
-		log_utils.error()
+		log_utils_error()
 		return True
 
 def filter_show_pack(show_title, aliases, imdb, year, season, release_title, total_seasons):
-	aliases = aliases_to_array(aliases)
+#	aliases = aliases_to_array(aliases)
 	title_list = []
 	title_list_append = title_list.append
 	if aliases:
@@ -260,8 +267,7 @@ def filter_show_pack(show_title, aliases, imdb, year, season, release_title, tot
 				if alias in title_list: continue
 				title_list_append(alias)
 			except:
-				from fenom import log_utils
-				log_utils.error()
+				log_utils_error()
 	try:
 		show_title = show_title.replace('!', '').replace('(', '').replace(')', '').replace('&', 'and')
 		if show_title not in title_list: title_list_append(show_title)
@@ -485,8 +491,7 @@ def filter_show_pack(show_title, aliases, imdb, year, season, release_title, tot
 
 		return True, total_seasons
 	except:
-		from fenom import log_utils
-		log_utils.error()
+		log_utils_error()
 		# return True, total_seasons
 
 def info_from_name(release_title, title, year, hdlr=None, episode_title=None, season=None, pack=None):
@@ -513,8 +518,7 @@ def info_from_name(release_title, title, year, hdlr=None, episode_title=None, se
 		name_info = '.%s.' % name_info
 		return name_info
 	except:
-		from fenom import log_utils
-		log_utils.error()
+		log_utils_error()
 		return release_title
 
 def release_title_format(release_title):
@@ -523,35 +527,40 @@ def release_title_format(release_title):
 		fmt = '.%s.' % re.sub(r'[^a-z0-9-~]+', '.', release_title).replace('.-.', '-').replace('-.', '-').replace('.-', '-').replace('--', '-')
 		return fmt
 	except:
-		from fenom import log_utils
-		log_utils.error()
+		log_utils_error()
 		return release_title
 
 def clean_name(release_title):
 	try:
-		release_title = re.sub(r'【.*?】', '', release_title)
+		release_title = RE_BRACKETS_JP.sub('', release_title)
 		release_title = strip_non_ascii_and_unprintable(release_title).lstrip('+.-:/ ').replace(' ', '.')
-		releasetitle_startswith = release_title.lower().startswith
-		if releasetitle_startswith('rifftrax'): return release_title # removed by "undesirables" anyway so exit
-		for i in unwanted_tags:
-			if releasetitle_startswith(i):
-				release_title = re.sub(r'^%s' % i.replace('+', '\\+'), '', release_title, 1, re.I)
+		title_lower = release_title.lower()
+		if title_lower.startswith('rifftrax'): return release_title # removed by "undesirables" anyway so exit
+		for tag in unwanted_tags:
+			if title_lower.startswith(tag):
+				if tag not in UNWANTED_REGEX_CACHE:
+					UNWANTED_REGEX_CACHE[tag] = re.compile(r'^%s' % tag.replace('+', '\\+'), re.I)
+				release_title = UNWANTED_REGEX_CACHE[tag].sub('', release_title, 1)
+				break
 		release_title = release_title.lstrip('+.-:/ ')
-		release_title = re.sub(r'^\[.*?]', '', release_title, 1, re.I)
-		release_title = release_title.lstrip('.-[](){}:/')
+		release_title = RE_BRACKETS_SQ.sub('', release_title, 1).lstrip('.-[](){}:/')
 		return release_title
 	except:
-		from fenom import log_utils
-		log_utils.error()
+		log_utils_error()
 		return release_title
 
 def strip_non_ascii_and_unprintable(text):
 	try:
-		result = ''.join(char for char in text if char in printable)
-		return result.encode('ascii', errors='ignore').decode('ascii', errors='ignore')
+		ascii_chars = (
+			c for c in unicodedata.normalize('NFKD', text)
+			if ord(c) < 128
+			and c in printable
+			and not unicodedata.combining(c)
+		)
+		text = ''.join(ascii_chars)
+		return text
 	except:
-		from fenom import log_utils
-		log_utils.error()
+		log_utils_error()
 		return text
 
 def _size(siz):
@@ -566,8 +575,7 @@ def _size(siz):
 		str_size = '%.2f GB' % float_size
 		return float_size, str_size
 	except:
-		from fenom import log_utils
-		log_utils.error('failed on siz=%s' % siz)
+		log_utils_error('failed on siz=%s' % siz)
 		return 0, ''
 
 def convert_size(size_bytes, to='GB'):
@@ -582,20 +590,17 @@ def convert_size(size_bytes, to='GB'):
 		str_size = "%s %s" % (float_size, to)
 		return float_size, str_size
 	except:
-		from fenom import log_utils
-		log_utils.error()
+		log_utils_error()
 		return 0, ''
 
 def base32_to_hex(hash, caller):
 	from base64 import b32decode
-	from fenom import log_utils
 	hex = b32decode(hash).hex()
 	log_utils.log('%s: base32 hash  "%s"  converted to hex 40  "%s" ' % (caller, hash, hex), __name__, log_utils.LOGDEBUG)
 	return hex
 
 def scraper_error(provider):
 	import traceback
-	from fenom import log_utils
 	failure = traceback.format_exc()
 	log_utils.log(provider.upper() + ' - Exception: \n' + str(failure), caller='scraper_error', level=log_utils.LOGERROR)
 
@@ -610,8 +615,7 @@ def is_host_valid(url, domains):
 		if hosts and any([h for h in ('akamaized', 'ocloud') if h in host]): host = 'CDN'
 		return any(hosts), host
 	except:
-		from fenom import log_utils
-		log_utils.error()
+		log_utils_error()
 		return False, ''
 
 def __top_domain(url):
@@ -626,8 +630,7 @@ def __top_domain(url):
 		domain = domain.lower()
 		return domain
 	except:
-		from fenom import log_utils
-		log_utils.error()
+		log_utils_error()
 
 def copy2clip(txt):
 	from sys import platform as sys_platform
@@ -639,28 +642,19 @@ def copy2clip(txt):
 			cmd = "echo " + txt.replace('&', '^&').strip() + "|clip" # "&" is a command seperator
 			return check_call(cmd, shell=True)
 		except:
-			from fenom import log_utils
-			log_utils.error('Windows: Failure to copy to clipboard')
+			log_utils_error('Windows: Failure to copy to clipboard')
 	elif platform == "darwin":
 		try:
 			from subprocess import check_call
 			cmd = "echo " + txt.strip() + "|pbcopy"
 			return check_call(cmd, shell=True)
 		except:
-			from fenom import log_utils
-			log_utils.error('Mac: Failure to copy to clipboard')
+			log_utils_error('Mac: Failure to copy to clipboard')
 	elif platform == "linux":
 		try:
 			from subprocess import Popen, PIPE
 			p = Popen(["xsel", "-pi"], stdin=PIPE)
 			p.communicate(input=txt)
 		except:
-			from fenom import log_utils
-			log_utils.error('Linux: Failure to copy to clipboard')
-
-class Thread(thread):
-	def __init__(self, target, *args):
-		self._target = target
-		self._args = args
-		thread.__init__(self, target=self._target, args=self._args)
+			log_utils_error('Linux: Failure to copy to clipboard')
 

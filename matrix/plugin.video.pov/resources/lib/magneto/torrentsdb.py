@@ -28,7 +28,7 @@ class source:
 		try:
 			title = data['tvshowtitle'] if 'tvshowtitle' in data else data['title']
 			title = title.replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
-			aliases = data['aliases']
+			aliases = source_utils.aliases_to_array(data['aliases'])
 			episode_title = data['title'] if 'tvshowtitle' in data else None
 			total_seasons = data['total_seasons'] if 'tvshowtitle' in data else None
 			year = data['year']
@@ -69,7 +69,9 @@ class source:
 						if not valid: continue
 						else: package = 'show'
 					else: package = 'season'
-				name_info = source_utils.info_from_name(name, title, year, hdlr, episode_title)
+				if package in ('season', 'show'):
+					name_info = source_utils.info_from_name(name, title, year, season=season, pack=package)
+				else: name_info = source_utils.info_from_name(name, title, year, hdlr, episode_title)
 				if source_utils.remove_lang(name_info, check_foreign_audio): continue
 				if undesirables and source_utils.remove_undesirables(name_info, undesirables): continue
 

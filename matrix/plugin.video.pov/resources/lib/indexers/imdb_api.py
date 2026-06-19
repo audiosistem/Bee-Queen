@@ -13,9 +13,9 @@ retry = requests.adapters.Retry(total=None, status=1, status_forcelist=(429, 502
 session.mount('https://', requests.adapters.HTTPAdapter(pool_maxsize=100, max_retries=retry))
 
 def remove_html_tags(text):
-	lines = re.compile(r'(<br>|<br\s?/>)')
-	clean = re.compile(r'<.*?>')
-	return re.sub(clean, '', re.sub(lines, '\n', text))
+	lines = re.compile(r'<br\s*/?>', re.I)
+	tags = re.compile(r'<.*?>')
+	return tags.sub('', lines.sub('\n', text))
 
 def people_get_imdb_id(actor_name, actor_tmdbID=None):
 	name = actor_name.lower()

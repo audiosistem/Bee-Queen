@@ -184,9 +184,6 @@ def ok_dialog(heading='POV', text='', highlight='dodgerblue', ok_label=local_str
 	if not text: top_space, text = True, local_string(32760)
 	if top_space: text = '[CR]%s' % text
 	return dialog.ok(heading, text)
-#	kwargs = {'heading': heading, 'text': text, 'highlight': highlight, 'ok_label': ok_label}
-#	from windows import open_window
-#	return open_window(('windows.select_ok', 'OK'), 'select_ok.xml', **kwargs)
 
 def confirm_dialog(heading='POV', text='', highlight='dodgerblue', ok_label=local_string(32839), cancel_label=local_string(32840), top_space=True, default_control=11):
 	if isinstance(heading, int): heading = local_string(heading)
@@ -196,9 +193,6 @@ def confirm_dialog(heading='POV', text='', highlight='dodgerblue', ok_label=loca
 	if not text: text = '[CR]%s' % local_string(32580)
 	elif top_space: text = '[CR]%s' % text
 	return dialog.yesno(heading, text, cancel_label, ok_label)
-#	kwargs = {'heading': heading, 'text': text, 'highlight': highlight, 'ok_label': ok_label, 'cancel_label': cancel_label, 'default_control': default_control}
-#	from windows import open_window
-#	return open_window(('windows.select_ok', 'YesNo'), 'select_ok.xml', **kwargs)
 
 def select_dialog(function_list, **kwargs):
 	def _builder():
@@ -225,11 +219,6 @@ def select_dialog(function_list, **kwargs):
 	if selection in ([], -1, None): return None
 	if multi_choice: return [function_list[i] for i in selection]
 	return function_list[selection]
-#	from windows import open_window
-#	selection = open_window(('windows.select_ok', 'Select'), 'select.xml', **kwargs)
-#	if selection in ([], None): return None
-#	if kwargs.get('multi_choice', 'false') == 'true': return [function_list[i] for i in selection]
-#	return function_list[selection]
 
 def show_text(heading, text=None, file=None, font_size='small', kodi_log=False):
 	if isinstance(heading, int): heading = local_string(heading)
@@ -248,8 +237,6 @@ def show_text(heading, text=None, file=None, font_size='small', kodi_log=False):
 		text = ''.join(i for i in reversed(lines) if any(x in i.lower() for x in ('exception', 'error')))
 	if not text: return notification(32760)
 	return dialog.textviewer(heading, text)
-#	from windows import open_window
-#	return open_window(('windows.textviewer', 'TextViewer'), 'textviewer.xml', heading=heading, text=text, font_size=font_size)
 
 def notification(line1, time=3000, icon=None, sound=False):
 	if isinstance(line1, int): line1 = local_string(line1)
@@ -436,11 +423,11 @@ def clean_settings():
 
 def open_settings(query, addon='plugin.video.pov'):
 	hide_busy_dialog()
-	if not query: return Addon(id=addon).openSettings()
+	execute_builtin('Addon.OpenSettings(%s)' % addon)
+	if not query: return
 	try:
 		button, control = 100, 80
 		menu, function = query.split('.')
-		execute_builtin('Addon.OpenSettings(%s)' % addon)
 		execute_builtin('SetFocus(%i)' % (int(menu) - button))
 		execute_builtin('SetFocus(%i)' % (int(function) - control))
 	except: notification(32574)

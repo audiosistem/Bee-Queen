@@ -1,8 +1,7 @@
 import sys
-from urllib.parse import unquote
 from debrids.easynews_api import EasyNewsAPI as EasyNews
 from modules import kodi_utils
-from modules.utils import clean_file_name
+from modules.source_utils import clean_file_name
 # from modules.kodi_utils import logger
 
 ls, build_url, make_listitem = kodi_utils.local_string, kodi_utils.build_url, kodi_utils.make_listitem
@@ -32,7 +31,7 @@ def search_easynews(params):
 				listitem.setArt({'icon': thumbnail, 'poster': thumbnail, 'thumb': thumbnail, 'fanart': fanart, 'banner': default_icon})
 				yield (url, listitem, False)
 			except: pass
-	search_name = clean_file_name(unquote(params.get('query')))
+	search_name = clean_file_name(params.get('query'))
 	files = EasyNews().search(search_name)
 	__handle__ = int(sys.argv[1])
 	kodi_utils.add_items(__handle__, list(_builder()))

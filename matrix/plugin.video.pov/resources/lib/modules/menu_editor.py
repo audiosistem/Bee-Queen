@@ -24,17 +24,18 @@ class MenuEditor:
 		external_list_item, shortcut_folder = self.menu_item_get('external_list_item', 'False') == 'True', self.menu_item_get('shortcut_folder', 'False') == 'True'
 		list_name =  main_list_name_dict[active_list]
 		listing = []
+		listing_append = listing.append
 		if len(active_list) != 1:
-			listing.append((ls(32716) % menu_name_translated_display, self.move))
-			listing.append((ls(32717) % menu_name_translated_display, self.remove))
+			listing_append((ls(32716) % menu_name_translated_display, self.move))
+			listing_append((ls(32717) % menu_name_translated_display, self.remove))
 		if not shortcut_folder:
-			listing.append((ls(32718) % menu_name_translated_display, self.add_original_external))
-			listing.append((ls(32719) % menu_name_translated_display, self.shortcut_folder_add_item))
-		listing.append((ls(32725) % list_name, self.shortcut_folder_add_to_main_menu))
-		listing.append((ls(32721) % list_name, self.add_original))
-		listing.append((ls(32723) % list_name, self.check_update_list))
-		listing.append((ls(32722) % list_name, self.restore))
-		if not external_list_item: listing.append((ls(32724) % menu_name_translated_display, self.reload_menu_item))
+			listing_append((ls(32718) % menu_name_translated_display, self.add_original_external))
+			listing_append((ls(32719) % menu_name_translated_display, self.shortcut_folder_add_item))
+		listing_append((ls(32725) % list_name, self.shortcut_folder_add_to_main_menu))
+		listing_append((ls(32721) % list_name, self.add_original))
+		listing_append((ls(32723) % list_name, self.check_update_list))
+		listing_append((ls(32722) % list_name, self.restore))
+		if not external_list_item: listing_append((ls(32724) % menu_name_translated_display, self.reload_menu_item))
 		list_items = [{'line1': i[0]} for i in listing]
 		kwargs = {'items': json.dumps(list_items), 'heading': list_name.upper(), 'multi_line': 'false'}
 		function = kodi_utils.select_dialog([i[1] for i in listing], **kwargs)

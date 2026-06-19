@@ -3,7 +3,6 @@ from threading import Thread
 from debrids import alldebrid_api, premiumize_api, real_debrid_api, torbox_api, offcloud_api
 from caches.debrid_cache import DebridCache
 from indexers import metadata
-from modules.utils import clean_file_name
 from modules import kodi_utils, settings
 # from modules.kodi_utils import logger
 
@@ -84,7 +83,8 @@ class Source:
 				torrent_id, filename = i.get('torrent_id'), i['filename'].lower()
 				if filename.endswith('.m2ts'): raise Exception('_m2ts_check failed')
 				if not filename.endswith(tuple(extensions)): continue
-				if season and not seas_ep_filter(season, episode, filename): continue
+				if season:
+					if not seas_ep_filter(season, episode, filename): continue
 				elif any(x in filename for x in extras_filtering_list): continue
 				selected_files_append(i)
 			if not selected_files: raise Exception('selected_files failed')
@@ -125,6 +125,7 @@ class Source:
 			kodi_utils.logger('resolve_internal_sources exception', f"{e}\n{self.dumps()}")
 
 	def browse_packs(self, highlight=None, download=False):
+		from modules.source_utils import clean_file_name
 		show_busy_dialog()
 		api = import_debrid(self.debrid)
 		pack_choices = api.parse_magnet_pack(self.url, self.hash)

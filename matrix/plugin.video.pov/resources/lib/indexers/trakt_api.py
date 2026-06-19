@@ -89,7 +89,7 @@ def trakt_movies_trending(page_no):
 
 def trakt_movies_trending_recent(page_no):
 	year = get_datetime().year
-	params = {'limit': 250, 'page': page_no, 'years': '%s-%s' % (year-1, year)}
+	params = {'languages': 'en', 'limit': 250, 'page': page_no, 'years': '%s-%s' % (year-1, year)}
 	string = 'trakt_movies_trending_recent_%s' % page_no
 	url = {'path': 'movies/trending', 'params': params, 'with_auth': False, 'pagination': True}
 	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
@@ -108,7 +108,7 @@ def trakt_tv_trending(page_no):
 
 def trakt_tv_trending_recent(page_no):
 	year = get_datetime().year
-	params = {'limit': 250, 'page': page_no, 'years': '%s-%s' % (year-1, year)}
+	params = {'languages': 'en', 'limit': 250, 'page': page_no, 'years': '%s-%s' % (year-1, year)}
 	string = 'trakt_tv_trending_recent_%s' % page_no
 	url = {'path': 'shows/trending', 'params': params , 'with_auth': False, 'pagination': True}
 	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
