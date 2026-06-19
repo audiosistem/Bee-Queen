@@ -18,7 +18,8 @@ class source(Debrid):
 			search_title = clean_file_name(title).replace('&', 'and')
 			if season: query = '%s S%02dE%02d' % (search_title, season, episode)
 			else: query = '%s %d' % (search_title, int(info.get('year')))
-			self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
+			if not filter_by_name(self.scrape_provider): self.aliases = None
+			else: self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
 			self.scrape_results = self.search(query, info.get('expiry_times')[0])
 			if not self.scrape_results: return internal_results(self.scrape_provider, self.sources)
 			for item in self.scrape_results:

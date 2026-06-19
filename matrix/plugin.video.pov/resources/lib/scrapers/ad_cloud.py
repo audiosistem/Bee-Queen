@@ -18,7 +18,8 @@ class source(Debrid):
 			if not enabled_debrids_check('ad'): return internal_results(self.scrape_provider, self.sources)
 			self.scrape_results = []
 			title, season, episode = info.get('title'), info.get('season'), info.get('episode')
-			self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
+			if not filter_by_name(self.scrape_provider): self.aliases = None
+			else: self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
 			self._scrape_cloud(title)
 			if not self.scrape_results: return internal_results(self.scrape_provider, self.sources)
 			extras_filtering_list = tuple(i for i in extras_filter if i not in title.lower())

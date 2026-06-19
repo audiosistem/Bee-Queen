@@ -475,11 +475,10 @@ class Sources:
 		aliases.extend({'title': '%s %s' % (title, i), 'country': ''} for i in country_codes)
 		seen = {(i['title'], i['country']) for i in aliases}
 		for i in aliases[:]:
-			norm_title = safe_string(i['title'])
-			norm_pair = (norm_title, i['country'])
+			norm_pair = (i['title'], i['country'])
 			if norm_pair not in seen and not seen.add(norm_pair):
-				aliases_append({'title': norm_title, 'country': i['country']})
-		aliases = [i for i in aliases if safe_string(i['title'])]
+				aliases_append({'title': i['title'], 'country': i['country']})
+		aliases = [i for i in aliases if safe_string(i['title']).strip()]
 		return aliases
 
 	def _get_search_year(self, meta):
