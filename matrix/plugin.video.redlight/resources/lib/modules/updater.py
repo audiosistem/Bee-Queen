@@ -107,6 +107,5 @@ def update_addon(new_version, action, show_after_action=True):
 		else:
 			kodi_utils.ok_dialog(heading='Red Light Updater', text='[CR]Success.[CR]Red Light updated to version [B]%s[/B]' % new_version)
 	kodi_utils.update_local_addons()
-	kodi_utils.disable_enable_addon()
 	kodi_utils.update_kodi_addons_db()
 	kodi_utils.refresh_widgets()

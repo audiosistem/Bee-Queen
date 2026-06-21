@@ -432,10 +432,8 @@ def process_trakt_list(chosen_list):
 		trakt_media_type = chosen_list.get('media_type')
 		result = trakt_fetch_collection_watchlist(trakt_list_type, trakt_media_type)
 		try:
-			sort_order = lists_sort_order(trakt_list_type)
-			if sort_order == 0: result = sort_for_article(result, 'title', ignore_articles())
-			elif sort_order == 1: result.sort(key=lambda k: k['collected_at'], reverse=True)
-			else: result.sort(key=lambda k: k.get('released'), reverse=True)
+			from modules.settings import sort_trakt_sync_list
+			result = sort_trakt_sync_list(result, trakt_list_type)
 		except: pass
 	else:
 		result = get_trakt_list_contents(trakt_list_type, chosen_list.get('user'), chosen_list.get('slug'), trakt_list_type == 'my_lists')

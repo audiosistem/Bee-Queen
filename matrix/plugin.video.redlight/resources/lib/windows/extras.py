@@ -779,6 +779,10 @@ class Extras(BaseDialog):
 		return dialogs.trakt_manager_choice({'tmdb_id': self.tmdb_id, 'imdb_id': self.imdb_id, 'tvdb_id': self.meta_get('tvdb_id', 'None'),
 											'media_type': self.media_type, 'icon': self.poster})
 
+	def show_simkl_manager(self):
+		return dialogs.simkl_manager_choice({'tmdb_id': self.tmdb_id, 'imdb_id': self.imdb_id, 'tvdb_id': self.meta_get('tvdb_id', 'None'),
+											'media_type': self.media_type, 'title': self.title, 'icon': self.poster})
+
 	def show_personallists_manager(self):
 		return dialogs.personallists_manager_choice({'list_type': self.media_type, 'tmdb_id': self.tmdb_id, 'title': self.title,
 											'premiered': self.meta_get('premiered'), 'current_time': get_current_timestamp(), 'icon': self.poster})

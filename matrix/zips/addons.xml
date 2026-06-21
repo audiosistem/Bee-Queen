@@ -1062,7 +1062,7 @@ In addition to what livestreams allowed you to do, you can now,
 		<fanart>fanart.jpg</fanart>
   </assets>
   </extension>
-</addon><addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]" version="1.2.9l">
+</addon><addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]" version="1.4.1">
     <requires>
         <import addon="xbmc.python" version="3.0.1" />
         <import addon="script.module.pil" version="1.1.7" />
@@ -1071,7 +1071,7 @@ In addition to what livestreams allowed you to do, you can now,
     <extension point="xbmc.python.pluginsource" library="resources/lib/redlight.py">
         <provides>video</provides>
     </extension>
-    
+    <extension point="xbmc.service" library="resources/lib/service.py" />
     <extension point="xbmc.python.module" library="resources/lib/" />
     <extension point="xbmc.addon.metadata">
         <reuselanguageinvoker>true</reuselanguageinvoker>
@@ -1079,9 +1079,7 @@ In addition to what livestreams allowed you to do, you can now,
         <description lang="en">[COLOR red]* We will not revoke our Trakt or TMDb keys
 * We will not block any third party apps or skins
 * No politics
-* NO DRAMA!
-
-I am grateful to Tikipeter and his various pseudonyms and aliases for creating and maintaining Fen and FenLight/FenLightAM[/COLOR]</description>
+* NO DRAMA![/COLOR]</description>
         <platform>all</platform>
 		<disclaimer lang="en">[COLOR red]The author of this add-on does not host any content and has no affiliation with the content providers[/COLOR]</disclaimer>
         <license />
@@ -2948,6 +2946,26 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="repository.slyguy" name="SlyGuy Repository" provider-name="SlyGuy" version="0.0.9">
+  <extension point="xbmc.addon.repository" name="SlyGuy Repository">
+    <dir>
+      <info compressed="false">https://slyguy.uk/.repo/repository.slyguy/addons.xml</info>
+      <checksum>https://slyguy.uk/.repo/repository.slyguy/addons.xml.md5</checksum>
+      <datadir zip="true">https://slyguy.uk/.repo/repository.slyguy/</datadir>
+    </dir>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <description lang="en">Addons by SlyGuy (slyguy.uk)</description>
+    <license />
+    <language />
+    <website />
+    <news />
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
 </addon><addon id="repository.thelab" name="TheLab Repository" version="23.9.10" provider-name="[COLORpurple]• [COLORorchid]Tech [COLORdarkorchid]E [COLORplum]Coyote [COLORpurple]•[/COLOR]">
     <extension point="xbmc.addon.repository" name="TheLab Repository">
         <dir minversion="20.0">
@@ -3789,6 +3807,21 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
         <description lang="hr_HR">Prilagodi najčešće URL-ove video izvora kako bi radili u XBMC/Kodiju, pojednostavnjuje razvoj priključaka za video dodatke koji zahtjevaju višestruke video izvore.</description>
         <disclaimer lang="en_GB">This script only resolves video content from legitimate file lockers without prejudice. If this script is being used by 3rd parties to resolve content that you feel infringes upon your Intellectual Property then please take your complaints to the actual website or developer linking to such content and not here. This script in no way searches for any content whatsoever.</disclaimer>
         <disclaimer lang="el_GR">Το ανωτέρο σενάριο το μόνο που κάνει είναι να επιλύει οπτικοακουστικό περιεχόμενο από νόμιμες πηγές χωρίς προκατάληψη. Εάν το ανωτέρο σενάριο χρησιμοποιηθεί από τρίτους ώστε να επιλύσει περιεχόμενο το οποίο σας προκαλεί αντίδραση ότι παραβιάζει την πνευματική σας ιδιοκτησία παρακαλώ μεταφέρετε τα παραπονά σας στον ιστότοπο τον οποίο βρίσκεται το εν λόγω περιεχόμενο η τον δημιουργό ο οποίος πραγματοποιεί την σύνδεση και όχι εδω. Το σενάριο αυτό ουδεμία περίπτωση πραγματοποιεί αναζήτηση περιεχομένου.</disclaimer>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon><addon id="script.module.resolveurl.xxx" version="2.1.44" name="Adult Resolver SMR Extension" provider-name="gujal">
+    <requires>
+        
+        <import addon="script.module.resolveurl" version="5.1.0" />
+    </requires>
+    <extension point="xbmc.python.module" library="lib" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Resolve adult video host URL's to be playable in XBMC/Kodi.</summary>
+        <description lang="en_GB">Resolve adult video host URL's to be playable in XBMC/Kodi.</description>
+        <platform>all</platform>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>

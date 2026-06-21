@@ -137,7 +137,7 @@ def oc_history():
 	kodi_utils.end_directory(handle, cacheToDisc=False)
 	kodi_utils.set_view_mode('view.premium')
 	if not built and not history_items:
-		kodi_utils.notification('Offcloud: No history items (or authorization expired — re-link in Sources Accounts)', 5500)
+		kodi_utils.notification('Offcloud: No history items (or authorisation expired — re-link in Sources Accounts)', 5500)
 
 def browse_oc_cloud(folder_id):
 	def _builder():

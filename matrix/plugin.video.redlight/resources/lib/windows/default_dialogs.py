@@ -98,6 +98,20 @@ class Select(BaseDialog):
 		self.setProperty('heading', self.heading)
 		self.setProperty('narrow_window', self.narrow_window)
 
+def _handle_scroll_area_nav(dialog, action, ok_id=10, cancel_id=11):
+	if getattr(dialog, 'scroll_focus', 'false') != 'true': return False
+	try:
+		if dialog.getFocusId() != 2070: return False
+	except: return False
+	aid = action.getId()
+	if aid == dialog.left_action:
+		dialog.setFocusId(cancel_id)
+		return True
+	if aid == dialog.right_action:
+		dialog.setFocusId(ok_id)
+		return True
+	return False
+
 class Confirm(BaseDialog):
 	def __init__(self, *args, **kwargs):
 		BaseDialog.__init__(self, *args)
@@ -106,11 +120,13 @@ class Confirm(BaseDialog):
 		self.text = kwargs['text']
 		self.heading = kwargs['heading']
 		self.default_control = kwargs['default_control']
+		self.scroll = kwargs.get('scroll', 'false')
+		self.scroll_focus = kwargs.get('scroll_focus', 'false')
 		self.selected = None
 		self.set_properties()
 
 	def onInit(self):
-		self.setFocusId(self.default_control)
+		self.setFocusId(2070 if self.scroll_focus == 'true' else self.default_control)
 
 	def run(self):
 		self.doModal()
@@ -121,6 +137,7 @@ class Confirm(BaseDialog):
 		self.close()
 
 	def onAction(self, action):
+		if _handle_scroll_area_nav(self, action, ok_id=10, cancel_id=11): return
 		if action in self.closing_actions: self.close()
 
 	def set_properties(self):
@@ -128,6 +145,8 @@ class Confirm(BaseDialog):
 		self.setProperty('cancel_label', self.cancel_label)
 		self.setProperty('text', self.text)
 		self.setProperty('heading', self.heading)
+		self.setProperty('scroll', self.scroll)
+		self.setProperty('scroll_focus', self.scroll_focus)
 
 class OK(BaseDialog):
 	def __init__(self, *args, **kwargs):
@@ -135,7 +154,12 @@ class OK(BaseDialog):
 		self.ok_label = kwargs.get('ok_label') or 'OK'
 		self.text = kwargs['text']
 		self.heading = kwargs['heading']
+		self.scroll = kwargs.get('scroll', 'false')
+		self.scroll_focus = kwargs.get('scroll_focus', 'false')
 		self.set_properties()
+
+	def onInit(self):
+		self.setFocusId(2070 if self.scroll_focus == 'true' else 10)
 
 	def run(self):
 		self.doModal()
@@ -144,6 +168,7 @@ class OK(BaseDialog):
 		self.close()
 
 	def onAction(self, action):
+		if _handle_scroll_area_nav(self, action, ok_id=10, cancel_id=10): return
 		if action in self.closing_actions:
 			self.close()
 
@@ -151,3 +176,5 @@ class OK(BaseDialog):
 		self.setProperty('ok_label', self.ok_label)
 		self.setProperty('text', self.text)
 		self.setProperty('heading', self.heading)
+		self.setProperty('scroll', self.scroll)
+		self.setProperty('scroll_focus', self.scroll_focus)

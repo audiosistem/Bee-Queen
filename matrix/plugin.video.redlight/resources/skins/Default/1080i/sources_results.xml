@@ -43,31 +43,6 @@
                 <aligny>center</aligny>
                 <label>[B]$INFO[Window.Property(total_results)][/B] [UPPERCASE]Results $INFO[Window.Property(filters_ignored)] $INFO[Window.Property(filter_info)][/UPPERCASE]</label>
             </control>
-            <control type="group">
-                <visible>!String.IsEmpty(Window.Property(prescrape_empty_notice))</visible>
-                <control type="label">
-                    <left>70</left>
-                    <top>48</top>
-                    <width max="1780">auto</width>
-                    <height>22</height>
-                    <font>font12</font>
-                    <textcolor>FFFF8A65</textcolor>
-                    <align>left</align>
-                    <aligny>center</aligny>
-                    <label>[B]$INFO[Window.Property(prescrape_empty_notice)][/B]</label>
-                </control>
-                <control type="label">
-                    <left>70</left>
-                    <top>72</top>
-                    <width max="1780">auto</width>
-                    <height>18</height>
-                    <font>font10</font>
-                    <textcolor>FFCCCCCC</textcolor>
-                    <align>left</align>
-                    <aligny>center</aligny>
-                    <label>$INFO[Window.Property(prescrape_empty_notice_sub)]</label>
-                </control>
-            </control>
         </control>
         <!-- Results -->
         <control type="group">
@@ -223,7 +198,7 @@
                                 <animation effect="fade" start="100" end="60" time="0" condition="!Control.HasFocus(2000)">Conditional</animation>
                                 <control type="image">
                                     <width>1180</width>
-                                    <texture colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texture>
+                                    <texture colordiffuse="$INFO[ListItem.Property(highlight_bg)]" border="30">redlight_common/circle.png</texture>
                                 </control>
                                 <control type="image">
                                     <width>200</width>
@@ -231,7 +206,7 @@
                                 </control>
                             </control>
                             <control type="group">
-                                <visible>String.IsEmpty(ListItem.Property(perform_full_search))</visible>
+                                <visible>String.IsEmpty(ListItem.Property(perform_full_search)) + !String.IsEqual(Window.Property(highlight_tint_focused_background),true)</visible>
                                 <control type="group">
                                     <height max="100">auto</height>
                                     <width max="160">auto</width>
@@ -287,6 +262,66 @@
                                     <align>left</align>
                                     <aligny>center</aligny>
                                     <label>[UPPERCASE][COLOR $INFO[ListItem.Property(highlight)]][B]Title: [/B][/COLOR]$INFO[ListItem.Property(count)] $INFO[ListItem.Property(name)][/UPPERCASE]</label>
+                                    <scroll>Control.HasFocus(2000)</scroll>
+                                </control>
+                            </control>
+                            <control type="group">
+                                <visible>String.IsEmpty(ListItem.Property(perform_full_search)) + String.IsEqual(Window.Property(highlight_tint_focused_background),true)</visible>
+                                <control type="group">
+                                    <height max="100">auto</height>
+                                    <width max="160">auto</width>
+                                    <top>35</top>
+                                    <left>20</left>
+                                    <control type="label">
+                                        <font>font14</font> <!-- REDLIGHT_33 -->
+                                        <textcolor>FFFFFFFF</textcolor>
+                                        <align>left</align>
+                                        <aligny>bottom</aligny>
+                                        <label>[B]$INFO[ListItem.Property(quality)][/B]</label>
+                                    </control>
+                                    <control type="label">
+                                        <top>35</top>
+                                        <font>font10</font> <!-- REDLIGHT_21 -->
+                                        <textcolor>FFFFFFFF</textcolor>
+                                        <align>left</align>
+                                        <aligny>top</aligny>
+                                        <label>[B]$INFO[ListItem.Property(provider)][/B]</label>
+                                    </control>
+                                </control>
+                                <control type="label">
+                                    <top>30</top>
+                                    <left>210</left>
+                                    <width max="950">auto</width>
+                                    <height>12</height>
+                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <textcolor>FFFFFFFF</textcolor>
+                                    <align>left</align>
+                                    <aligny>center</aligny>
+                                    <label>[UPPERCASE][COLOR FFA8A8A8][B]Size:[/B][/COLOR] [COLOR FFFFFFFF]$INFO[ListItem.Property(size_label)][/COLOR]     [COLOR FFA8A8A8][B]Hoster:[/B][/COLOR] [COLOR FFFFFFFF]$INFO[ListItem.Property(source_type)][/COLOR]     [COLOR FFA8A8A8][B]Site:[/B][/COLOR] [COLOR FFFFFFFF]$INFO[ListItem.Property(source_site)][/COLOR][/UPPERCASE]</label>
+                                    <scroll>Control.HasFocus(2000)</scroll>
+                                </control>
+                                <control type="label">
+                                    <top>62</top>
+                                    <left>210</left>
+                                    <width max="950">auto</width>
+                                    <height>12</height>
+                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <textcolor>FFFFFFFF</textcolor>
+                                    <align>left</align>
+                                    <aligny>center</aligny>
+                                    <label>[UPPERCASE][COLOR FFA8A8A8][B]Info:[/B][/COLOR] [COLOR FFFFFFFF]$INFO[ListItem.Property(extraInfo)][/COLOR][/UPPERCASE]</label>
+                                    <scroll>Control.HasFocus(2000)</scroll>
+                                </control>
+                                <control type="label">
+                                    <top>94</top>
+                                    <left>210</left>
+                                    <width max="950">auto</width>
+                                    <height>12</height>
+                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <textcolor>FFFFFFFF</textcolor>
+                                    <align>left</align>
+                                    <aligny>center</aligny>
+                                    <label>[UPPERCASE][COLOR FFA8A8A8][B]Title:[/B][/COLOR] [COLOR FFFFFFFF]$INFO[ListItem.Property(count)] $INFO[ListItem.Property(name)][/COLOR][/UPPERCASE]</label>
                                     <scroll>Control.HasFocus(2000)</scroll>
                                 </control>
                             </control>
@@ -492,7 +527,7 @@
                                 <height>110</height>
                                 <control type="image">
                                     <width>925</width>
-                                    <texture colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texture>
+                                    <texture colordiffuse="$INFO[ListItem.Property(highlight_bg)]" border="30">redlight_common/circle.png</texture>
                                 </control>
                                 <control type="image">
                                     <width>175</width>
@@ -752,7 +787,7 @@
                                 <height>110</height>
                                 <control type="image">
                                     <width>1700</width>
-                                    <texture colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texture>
+                                    <texture colordiffuse="$INFO[ListItem.Property(highlight_bg)]" border="30">redlight_common/circle.png</texture>
                                 </control>
                                 <control type="image">
                                     <width>200</width>

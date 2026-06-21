@@ -33,5 +33,8 @@ class Progress(BaseDialog):
 		try:
 			self.set_text(2001, content)
 			self.set_percent(5000, percent)
-			if icon: self.set_image(200, icon)
+			if icon:
+				self.icon = icon
+			if self.icon:
+				self.set_image(200, self.icon)
 		except: pass

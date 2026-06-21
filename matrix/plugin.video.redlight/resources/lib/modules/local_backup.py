@@ -10,6 +10,19 @@ BACKUP_FORMAT = 1
 BACKUP_MASK = '.json'
 PROGRESS_MIN_PERCENT = 1.0
 
+_EXTERNAL_PROGRESS_PROVIDERS = {1: 'Trakt', 2: 'Simkl'}
+
+
+def _external_progress_provider_name():
+	return _EXTERNAL_PROGRESS_PROVIDERS.get(settings.watched_indicators())
+
+
+def _progress_not_included_message():
+	provider = _external_progress_provider_name()
+	if not provider:
+		return None
+	return 'Progress not included[CR](%s Indicators)' % provider
+
 
 def _default_backup_dir():
 	return settings.import_export_directory()
@@ -48,7 +61,7 @@ def export_data(params):
 	filename = 'redlight-backup-%s.json' % datetime.now().strftime('%Y%m%d-%H%M%S')
 	path = os.path.join(folder, filename)
 	preview = _export_preview_text(filename, counts)
-	if not kodi_utils.confirm_dialog(heading='Red Light export preview', text=preview, ok_label='Export', cancel_label='Cancel'):
+	if not kodi_utils.confirm_dialog(heading='Red Light export preview', text=preview, ok_label='Export', cancel_label='Cancel', default_control=10, scroll=True):
 		return
 	try:
 		kodi_utils.make_directory(folder)
@@ -57,7 +70,7 @@ def export_data(params):
 	except Exception as e:
 		return kodi_utils.ok_dialog(heading='Red Light export failed', text=str(e))
 	summary = _export_summary(counts, filename)
-	kodi_utils.ok_dialog(heading='Red Light export complete', text=summary.replace('; ', '[CR]'))
+	kodi_utils.ok_dialog(heading='Red Light export complete', text=summary.replace('; ', '[CR]'), scroll=True)
 	kodi_utils.notification(summary, 6500)
 
 
@@ -76,7 +89,7 @@ def import_data(params):
 		return kodi_utils.ok_dialog(heading='Red Light import', text='This backup file contains no Red Light favorites or progress data.')
 	local_stats = _local_stats()
 	preview = _preview_text(path, payload, file_stats, local_stats)
-	if not kodi_utils.confirm_dialog(heading='Red Light import preview', text=preview, ok_label='Continue', cancel_label='Cancel'):
+	if not kodi_utils.confirm_dialog(heading='Red Light import preview', text=preview, ok_label='Continue', cancel_label='Cancel', default_control=10, scroll=True):
 		return
 	mode_choices = [
 		('Merge — combine with this device; furthest watch position wins', 'merge'),
@@ -88,11 +101,11 @@ def import_data(params):
 	if not mode:
 		return
 	rules = _import_rules_text(mode, file_stats)
-	if not kodi_utils.confirm_dialog(heading='Confirm Red Light import (%s)' % mode.capitalize(), text=rules, ok_label='Import', cancel_label='Cancel'):
+	if not kodi_utils.confirm_dialog(heading='Confirm Red Light import (%s)' % mode.capitalize(), text=rules, ok_label='Import', cancel_label='Cancel', default_control=10, scroll=True):
 		return
 	if mode == 'replace' and (file_stats['favorites'] or file_stats['progress']):
 		warn = 'Local Red Light favorites and progress will be replaced by this backup.'
-		if not kodi_utils.confirm_dialog(heading='Replace Red Light data?', text=warn, ok_label='Replace', cancel_label='Cancel'):
+		if not kodi_utils.confirm_dialog(heading='Replace Red Light data?', text=warn, ok_label='Replace', cancel_label='Cancel', default_control=10):
 			return
 	try:
 		make_database('favorites_db')
@@ -100,7 +113,7 @@ def import_data(params):
 		summary = _apply_import(payload, mode, file_stats)
 	except Exception as e:
 		return kodi_utils.ok_dialog(heading='Red Light import failed', text=str(e))
-	kodi_utils.ok_dialog(heading='Red Light import complete', text=summary.replace('; ', '[CR]'))
+	kodi_utils.ok_dialog(heading='Red Light import complete', text=summary.replace('; ', '[CR]'), scroll=True)
 	kodi_utils.notification(summary, 6500)
 	kodi_utils.kodi_refresh()
 
@@ -228,7 +241,7 @@ def _preview_text(path, payload, file_stats, local_stats):
 	if overlap_parts:
 		lines.append('Overlap: %s' % ', '.join(overlap_parts))
 	if file_stats['progress'] and settings.watched_indicators() != 0:
-		lines.append('[COLOR yellow]Progress in backup will not be imported (Trakt Indicators)[/COLOR]')
+		lines.append('[COLOR yellow]Progress in backup will not be imported[CR](%s Indicators)[/COLOR]' % _external_progress_provider_name())
 	return '[CR]'.join(lines)
 
 
@@ -239,8 +252,9 @@ def _export_preview_text(filename, counts):
 		'',
 		'Export: %s favorite(s), %s progress' % (counts['favorites'], counts['progress']),
 	]
-	if settings.watched_indicators() != 0:
-		lines.append('[COLOR yellow]Progress not included (Trakt Indicators)[/COLOR]')
+	msg = _progress_not_included_message()
+	if msg:
+		lines.append('[COLOR yellow]%s[/COLOR]' % msg)
 	return '[CR]'.join(lines)
 
 
@@ -281,7 +295,7 @@ def _import_rules_text(mode, file_stats):
 				'• Remove all local progress, then import from the backup.',
 			])
 	elif file_stats['progress'] and settings.watched_indicators() != 0:
-		lines.append('[B]Progress[/B]: not imported (Trakt Indicators)')
+		lines.append('[B]Progress[/B]: not imported[CR](%s Indicators)' % _external_progress_provider_name())
 	return '[CR]'.join(lines) if lines else 'Nothing to import.'
 
 
@@ -292,7 +306,7 @@ def _apply_import(payload, mode, file_stats):
 	if file_stats['progress'] and settings.watched_indicators() == 0:
 		summary_parts.append(_import_progress(payload.get('progress') or [], mode))
 	elif file_stats['progress']:
-		summary_parts.append('Progress skipped (Trakt Indicators)')
+		summary_parts.append('Progress skipped (%s Indicators)' % _external_progress_provider_name())
 	return 'Import complete — %s' % '; '.join([i for i in summary_parts if i])
 
 

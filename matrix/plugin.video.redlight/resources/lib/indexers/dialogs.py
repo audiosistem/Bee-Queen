@@ -80,7 +80,6 @@ def language_invoker_choice(params):
 	new_xml = str(root.toxml()).replace('<?xml version="1.0" ?>', '')
 	with open(addon_xml, 'w') as f: f.write(new_xml)
 	set_setting('reuse_language_invoker', new_value)
-	kodi_utils.execute_builtin('ActivateWindow(Home)', True)
 	kodi_utils.update_local_addons()
 	kodi_utils.disable_enable_addon()
 
@@ -104,9 +103,10 @@ def addon_icon_choice(params):
 	with open(addon_xml, 'w') as f: f.write(new_xml)
 	set_setting('addon_icon_choice', new_icon_path)
 	set_setting('addon_icon_choice_name', new_icon)
-	kodi_utils.execute_builtin('ActivateWindow(Home)', True)
+	icon_path = kodi_utils.translate_path(os.path.join(kodi_utils.addon_info('path'), new_icon_path))
+	kodi_utils.set_property('redlight.addon_icon', icon_path)
+	kodi_utils.set_property('redlight.addon_icon_mini', os.path.join(kodi_utils.addon_info('path'), 'resources', 'media', 'addon_icons', 'minis', new_icon))
 	kodi_utils.update_local_addons()
-	kodi_utils.disable_enable_addon()
 
 def rescrape_actions_choice(params):
 	set_focus = params.get('set_focus', 0)
@@ -439,10 +439,20 @@ def preferred_filters_choice(params):
 
 def tmdb_api_check_choice(params):
 	from apis.tmdb_api import movie_details
-	data = movie_details('299534', settings.tmdb_api_key())
-	if not data.get('success', True): text = 'There is an issue with your API Key.[CR][B]"Error: %s"[/B]' % data.get('status_message', '')
-	else: text = 'Your TMDb API Key is enabled and working'
-	return kodi_utils.ok_dialog(text=text)
+	from caches.settings_cache import looks_like_tmdb_v4_jwt
+	api_key = settings.tmdb_api_key()
+	if looks_like_tmdb_v4_jwt(api_key):
+		return kodi_utils.ok_dialog(heading='Wrong key type', text='This is a TMDb v4 Read Access Token (JWT), not the v3 API Key.[CR]Use TMDb Lists → Read Access Token for v4 tokens.')
+	data = movie_details('299534', api_key)
+	if not data or not data.get('success', True):
+		text = 'TMDb API Key failed.[CR]%s' % (data or {}).get('status_message', 'Unknown error')
+		return kodi_utils.ok_dialog(heading='Failed', text=text)
+	return kodi_utils.ok_dialog(heading='Success', text='TMDb API Key is valid.')
+
+def trakt_credentials_check_choice(params):
+	from apis.trakt_api import trakt_test_credentials
+	ok, text = trakt_test_credentials()
+	return kodi_utils.ok_dialog(heading='Success' if ok else 'Failed', text=text)
 
 def tmdblist_read_token_check_choice(params):
 	import requests
@@ -450,11 +460,12 @@ def tmdblist_read_token_check_choice(params):
 	api = TMDbListAPI()
 	try:
 		data = requests.post('%s/auth/request_token' % api.base_url, headers=api.read_access_headers(), timeout=20).json()
-		if not data.get('success'): text = 'There is an issue with your TMDb Lists Read Access Token.[CR][B]"Error: %s"[/B]' % data.get('status_message', '')
-		else: text = 'Your TMDb Lists Read Access Token is valid and working'
+		if not data.get('success'):
+			text = 'Lists read access token failed.[CR]%s' % data.get('status_message', 'Unknown error')
+			return kodi_utils.ok_dialog(heading='Failed', text=text)
+		return kodi_utils.ok_dialog(heading='Success', text='Lists read access token is valid.')
 	except Exception as e:
-		text = 'There is an issue with your TMDb Lists Read Access Token.[CR][B]"%s"[/B]' % str(e)
-	return kodi_utils.ok_dialog(text=text)
+		return kodi_utils.ok_dialog(heading='Failed', text='Lists read access token failed.[CR]%s' % str(e))
 
 def clear_sources_folder_choice(params):
 	setting_id = params['setting_id']
@@ -577,6 +588,20 @@ def random_choice(params):
 	from modules.episode_tools import EpisodeTools
 	exec('EpisodeTools(meta).%s()' % choice)
 
+def _trakt_manager_mark(params, action):
+	from modules import watched_status as ws
+	mark_params = {'action': action, 'tmdb_id': params['tmdb_id'], 'tvdb_id': params.get('tvdb_id', '0'),
+					'title': params.get('title', ''), 'refresh': 'true'}
+	media_type = params.get('media_type')
+	season, episode = params.get('season'), params.get('episode')
+	if media_type == 'movie': return ws.mark_movie(mark_params)
+	try:
+		if media_type == 'episode' or (season not in ('', None) and episode not in ('', None) and int(season) > 0 and int(episode) > 0):
+			mark_params.update({'season': season, 'episode': episode})
+			return ws.mark_episode(mark_params)
+	except: pass
+	return ws.mark_tvshow(mark_params)
+
 def trakt_manager_choice(params):
 	if not settings.trakt_user_active(): return kodi_utils.notification('No Active Trakt Account', 3500)
 	tmdb_id, tvdb_id, imdb_id, media_type = params['tmdb_id'], params['tvdb_id'], params['imdb_id'], params['media_type']
@@ -603,6 +628,10 @@ def trakt_manager_choice(params):
 	selected = trakt_api.get_trakt_list_selection(['personal'])
 	if selected == None: return
 	trakt_api.add_to_list(selected['user'], selected['slug'], data) if choice == 'add' else trakt_api.remove_from_list(selected['user'], selected['slug'], data)
+
+def simkl_manager_choice(params):
+	from apis import simkl_api
+	return simkl_api.simkl_manager_choice(params)
 
 def episode_groups_choice(params):
 	from modules.metadata import episode_groups
@@ -924,6 +953,15 @@ def clear_favorites_choice(params):
 	favorites_cache.clear_favorites(media_type)
 	kodi_utils.notification('Success', 3000)
 
+def highlight_background_opacity_choice(params):
+	choices = [('20%', '33'), ('30%', '4D'), ('40%', '66'), ('50%', '80'), ('60%', '99'), ('70%', 'B3'), ('80%', 'CC')]
+	list_items = [{'line1': item[0]} for item in choices]
+	kwargs = {'items': json.dumps(list_items), 'narrow_window': 'true'}
+	choice = kodi_utils.select_dialog(choices, **kwargs)
+	if choice is None: return
+	set_setting('highlight.background_opacity_name', choice[0])
+	set_setting('highlight.background_opacity', choice[1])
+
 def scraper_color_choice(params):
 	setting = params.get('setting_id')
 	current_setting, original_highlight = get_setting('redlight.%s' % setting), default_setting_values(setting)['setting_default']
@@ -980,7 +1018,7 @@ def options_menu_choice(params, meta=None):
 	tmdb_id, content, poster = params_get('tmdb_id', None), params_get('content', None), params_get('poster', None)
 	is_external, from_extras = params_get('is_external') in (True, 'True', 'true'), params_get('from_extras', 'false') == 'true'
 	season, episode = params_get('season', ''), params_get('episode', '')
-	single_ep_list = ('episode.progress', 'episode.recently_watched', 'episode.next_trakt', 'episode.next_redlight', 'episode.trakt_recently_aired', 'episode.trakt_calendar')
+	single_ep_list = ('episode.progress', 'episode.recently_watched', 'episode.next_trakt', 'episode.next_redlight', 'episode.next_simkl', 'episode.trakt_recently_aired', 'episode.trakt_calendar')
 	if not content: content = kodi_utils.container_content()[:-1]
 	menu_type = content
 	if content.startswith('episode.'): content = 'episode'
@@ -994,9 +1032,10 @@ def options_menu_choice(params, meta=None):
 	listing_append = listing.append
 	if from_extras:
 		if menu_type in ('movie', 'episode'): listing_append(('Playback Options', 'Scrapers Options', 'playback_choice'))
+		if settings.simkl_user_active(): listing_append(('Simkl Lists Manager', '', 'simkl_manager'))
 		if settings.trakt_user_active(): listing_append(('Trakt Lists Manager', '', 'trakt_manager'))
-		listing_append(('Personal Lists Manager', '', 'personallists_manager_choice'))
 		listing_append(('TMDb Lists Manager', '', 'tmdblists_manager_choice'))
+		listing_append(('Personal Lists Manager', '', 'personallists_manager_choice'))
 		listing_append(('Favorites Manager', '', 'favorites_manager_choice'))
 	if menu_type == 'tvshow': listing_append(('Play Random', 'Based On %s' % rootname, 'random'))
 	if menu_type in ('tvshow', 'season'):
@@ -1065,6 +1104,9 @@ def options_menu_choice(params, meta=None):
 		return random_choice({'meta': meta, 'poster': poster})
 	if choice == 'trakt_manager':
 		return trakt_manager_choice({'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id or 'None', 'media_type': content, 'icon': poster})
+	if choice == 'simkl_manager':
+		return simkl_manager_choice({'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id or 'None', 'media_type': content, 'icon': poster,
+									'title': title, 'season': season, 'episode': episode})
 	if choice == 'personallists_manager_choice':
 		from modules.utils import get_current_timestamp
 		return personallists_manager_choice({'list_type': content, 'tmdb_id': tmdb_id, 'title': title,

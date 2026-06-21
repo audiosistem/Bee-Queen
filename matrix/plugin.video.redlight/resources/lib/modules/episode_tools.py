@@ -87,6 +87,8 @@ class EpisodeTools:
 			if not first_run:
 				url_params['background'] = 'true'
 				url_params['play_type'] = 'random_continual'
+				url_params['autoplay'] = 'true'
+				url_params['random_continual'] = 'true'
 		except: url_params = 'error'
 		return self.add_playback_key(url_params)
 
@@ -134,6 +136,7 @@ def build_next_episode_manager():
 	show_list = get_next_episodes(0)
 	hidden_list = get_hidden_progress_items(indicators)
 	if indicators == 0: icon, mode = kodi_utils.get_icon('folder'), 'hide_unhide_progress_items'
+	elif indicators == 2: icon, mode = kodi_utils.get_icon('simkl'), 'simkl.simkl_hide_unhide_progress_items'
 	else: icon, mode = kodi_utils.get_icon('trakt'), 'trakt.hide_unhide_progress_items'
 	threads = TaskPool().tasks(_process, show_list, min(len(show_list), max_threads()))
 	[i.join() for i in threads]

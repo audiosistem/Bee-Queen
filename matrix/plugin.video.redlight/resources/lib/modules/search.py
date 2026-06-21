@@ -30,6 +30,10 @@ def get_key_id(params):
 		url_params, string = {'mode': 'easynews.search_easynews_image'}, 'easynews_image_queries'
 	elif search_type == 'trakt_lists':
 		url_params, string = {'mode': 'trakt.list.search_trakt_lists'}, 'trakt_list_queries'
+	elif search_type == 'trakt_my_lists':
+		url_params, string = {'mode': 'trakt.list.search_trakt_my_lists'}, 'trakt_my_list_queries'
+	elif search_type == 'simkl_lists':
+		url_params, string = {'mode': 'simkl.list.search_simkl_lists'}, 'simkl_list_queries'
 	if string: add_to_search(key_id, string)
 	if search_type == 'people': return person_search(key_id)
 	if search_type == 'easynews_image': return search_easynews_image(key_id)
@@ -66,7 +70,9 @@ def clear_search():
 	('Clear Keywords TV Show Search History', 'keyword_tmdb_tvshow_queries'),
 	('Clear EasyNews Search History', 'easynews_video_queries'),
 	('Clear EasyNews Search History', 'easynews_image_queries'),
-	('Clear Trakt List Search History', 'trakt_list_queries')]
+	('Clear Trakt User Lists Search History', 'trakt_list_queries'),
+	('Clear Trakt My Lists Search History', 'trakt_my_list_queries'),
+	('Clear Simkl List Search History', 'simkl_list_queries')]
 	try:
 		list_items = [{'line1': item[0]} for item in clear_history_list]
 		kwargs = {'items': json.dumps(list_items), 'narrow_window': 'true'}

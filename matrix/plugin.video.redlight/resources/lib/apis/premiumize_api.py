@@ -27,7 +27,7 @@ class PremiumizeAPI:
 		qr_code = make_qrcode(auth_url) or ''
 		copy2clip(auth_url)
 		content = 'Please Scan the QR Code[CR]Full link copied to clipboard[CR]OR visit: [B]%s[/B][CR]AND Enter this Code: [B]%s[/B]' % (auth_url, user_code)
-		progressDialog = progress_dialog('Premiumize Authorize', qr_code)
+		progressDialog = progress_dialog('Premiumize Authorise', qr_code)
 		progressDialog.update(content, 0)
 		device_code = response['device_code']
 		expires_in = int(response['expires_in'])
@@ -48,7 +48,7 @@ class PremiumizeAPI:
 				self.token = str(response['access_token'])
 				set_setting('pm.token', self.token)
 			except:
-				 ok_dialog(text='Error')
+				 ok_dialog(heading='Premiumize', text='Authorisation failed.')
 				 break
 		try: progressDialog.close()
 		except: pass
@@ -56,13 +56,13 @@ class PremiumizeAPI:
 			account_info = self.account_info()
 			set_setting('pm.account_id', str(account_info['customer_id']))
 			set_setting('pm.enabled', 'true')
-			ok_dialog(text='Success')
+			ok_dialog(heading='Premiumize', text='Account authorised.')
 
 	def revoke(self):
 		set_setting('pm.token', 'empty_setting')
 		set_setting('pm.account_id', 'empty_setting')
 		set_setting('pm.enabled', 'false')
-		notification('Premiumize Authorization Reset', 3000)
+		notification('Premiumize Authorisation Reset', 3000)
 
 	def account_info(self):
 		url = 'account/info'

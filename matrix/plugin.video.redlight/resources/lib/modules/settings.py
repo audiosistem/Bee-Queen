@@ -16,7 +16,21 @@ def trakt_secret():
 	return get_setting('redlight.trakt.secret', '')
 
 def trakt_user_active():
-	return get_setting('redlight.trakt.user', 'empty_setting') not in (None, 'empty_setting', '')
+	from caches.settings_cache import settings_cache
+	val = settings_cache.read_db_value('trakt.user')
+	return val not in (None, 'empty_setting', '')
+
+def simkl_user_active():
+	from caches.settings_cache import settings_cache
+	user = settings_cache.read_db_value('simkl.user')
+	token = settings_cache.read_db_value('simkl.token')
+	return user not in (None, 'empty_setting', '') and token not in (None, '0', '', 'empty_setting')
+
+def simkl_sync_interval():
+	setting = get_setting('redlight.simkl.sync_interval', '60')
+	try: interval = max(5, int(setting))
+	except: interval = 60
+	return interval, interval * 60
 
 def tmdblist_user_active():
 	return get_setting('redlight.tmdb.account_id', 'empty_setting') not in (None, 'empty_setting', '')
@@ -202,6 +216,31 @@ def trakt_sync_interval():
 def lists_sort_order(setting):
 	return int(get_setting('redlight.sort.%s' % setting, '0'))
 
+def sort_trakt_sync_list(data, setting_key):
+	"""Sort Trakt collection/watchlist rows. 0=title, 1/3=date added desc/asc, 2/4=release desc/asc."""
+	sort_order = lists_sort_order(setting_key)
+	if sort_order == 0:
+		from modules.utils import sort_for_article
+		return sort_for_article(data, 'title', ignore_articles())
+	if sort_order in (1, 3):
+		data.sort(key=lambda k: k.get('collected_at') or '', reverse=(sort_order == 1))
+	elif sort_order in (2, 4):
+		data.sort(key=lambda k: k.get('released') or '', reverse=(sort_order == 2))
+	return data
+
+def sort_simkl_personal_list(data):
+	"""Sort Simkl Plan to Watch / Watching / etc. Same order codes as sort_trakt_sync_list."""
+	try: sort_order = lists_sort_order('simkl')
+	except: sort_order = 0
+	if sort_order == 0:
+		from modules.utils import sort_for_article
+		return sort_for_article(data, 'title', ignore_articles())
+	if sort_order in (1, 3):
+		data.sort(key=lambda k: k.get('collected_at') or '', reverse=(sort_order == 1))
+	elif sort_order in (2, 4):
+		data.sort(key=lambda k: k.get('released') or '', reverse=(sort_order == 2))
+	return data
+
 def tmdblists_sort_order(setting):
 	if setting == 'recommendations': return None
 	return str(get_setting('redlight.tmdbsort.%s' % setting, '4'))
@@ -297,6 +336,7 @@ def tv_progress_location():
 def check_prescrape_sources(scraper, media_type):
 	if scraper in ('easynews', 'aiostreams', 'rd_cloud', 'pm_cloud', 'ad_cloud', 'oc_cloud', 'tb_cloud', 'folders'):
 		if get_setting('redlight.check.%s' % scraper) == 'true': return True
+		if scraper == 'easynews' and autoplay_prescrape('easynews'): return True
 		if scraper in ('rd_cloud', 'pm_cloud', 'ad_cloud', 'oc_cloud', 'tb_cloud') and autoplay_prescrape(scraper): return True
 		return False
 	if get_setting('redlight.check.%s' % scraper) == 'true' and auto_play(media_type):
@@ -500,9 +540,49 @@ def date_offset():
 def media_open_action(media_type):
 	return int(get_setting('redlight.media_open_action_%s' % media_type, '0'))
 
+def _resolve_watched_provider():
+	ind = int(get_setting('redlight.watched_indicators', '0'))
+	if ind == 1 and not trakt_user_active(): return 0
+	if ind == 2 and not simkl_user_active(): return 0
+	return ind
+
+def watched_provider_options():
+	options = {'0': 'Red Light'}
+	if simkl_user_active(): options['2'] = 'Simkl'
+	if trakt_user_active(): options['1'] = 'Trakt'
+	return options
+
+def offer_watched_provider(provider_index, name):
+	from modules.kodi_utils import confirm_dialog
+	if confirm_dialog(heading='Watched Status Provider', text='Do you want to set %s as your Watched Status Provider?' % name,
+						ok_label='Yes', cancel_label='No', default_control=10):
+		set_setting('watched_indicators', str(provider_index))
+		return True
+	return False
+
+def offer_trakt_import_to_simkl():
+	if not trakt_user_active() or not simkl_user_active(): return False
+	from modules.kodi_utils import confirm_dialog
+	if not confirm_dialog(heading='Import Trakt to Simkl',
+		text='Import your Trakt watch history into Simkl?',
+		ok_label='Yes', cancel_label='No', default_control=10): return False
+	from apis.simkl_api import simkl_import_trakt
+	simkl_import_trakt()
+	return True
+
+def fallback_watched_provider_on_revoke(revoked_index):
+	current = int(get_setting('redlight.watched_indicators', '0'))
+	if current != revoked_index: return
+	if revoked_index == 1:
+		set_setting('watched_indicators', '2' if simkl_user_active() else '0')
+	elif revoked_index == 2:
+		set_setting('watched_indicators', '1' if trakt_user_active() else '0')
+
 def watched_indicators():
-	if not trakt_user_active(): return 0
-	return int(get_setting('redlight.watched_indicators', '0'))
+	return _resolve_watched_provider()
+
+def most_watched_provider():
+	return 'simkl' if watched_indicators() == 2 else 'trakt'
 
 def flatten_episodes():
 	return get_setting('redlight.trakt.flatten_episodes', 'false') == 'true'
@@ -555,17 +635,67 @@ def rescrape_action_value(action, default='0'):
 
 def cm_enabled():
 	default = 'extras,options,playback_options,browse_movie_set,browse_seasons,browse_episodes,recommended,related,more_like_this,similar,in_trakt_list,' \
-				'trakt_manager,personal_manager,tmdb_manager,favorites_manager,mark_watched,unmark_previous_episode,exit,refresh,reload'
+				'simkl_manager,trakt_manager,tmdb_manager,personal_manager,favorites_manager,mark_watched,unmark_previous_episode,exit,refresh,reload'
 	setting = get_setting('redlight.context_menu.enabled', default)
 	if setting in ('', None, 'noop', '[]'): return default.split(',')
 	return setting.split(',')
 
+def _merge_cm_order_with_enabled(order, enabled):
+	order = [i for i in order if i]
+	for item in enabled:
+		if item in order: continue
+		if item == 'simkl_manager' and 'trakt_manager' in order:
+			order.insert(order.index('trakt_manager'), item)
+		else:
+			order.append(item)
+	return order
+
+def _normalize_cm_list_order(order):
+	order = list(order)
+	if 'simkl_manager' in order and 'trakt_manager' in order:
+		si, ti = order.index('simkl_manager'), order.index('trakt_manager')
+		if ti < si: order[si], order[ti] = order[ti], order[si]
+	if 'tmdb_manager' in order and 'personal_manager' in order:
+		ti, pi = order.index('tmdb_manager'), order.index('personal_manager')
+		if pi < ti: order[ti], order[pi] = order[pi], order[ti]
+	return order
+
+def migrate_simkl_context_menu_for_upgrade(had_existing_settings):
+	if get_setting('redlight.simkl.cm_menu_migrated', 'false') == 'true': return False
+	set_setting('simkl.cm_menu_migrated', 'true')
+	if not had_existing_settings: return False
+	item, changed = 'simkl_manager', False
+	raw = get_setting('redlight.context_menu.enabled', '')
+	if raw and raw not in ('noop', '[]'):
+		parts = [p for p in raw.split(',') if p]
+		if item not in parts:
+			set_setting('context_menu.enabled', ','.join(parts + [item]))
+			changed = True
+	raw = get_setting('redlight.context_menu.order', '')
+	if raw and raw not in ('noop', '[]'):
+		parts = _merge_cm_order_with_enabled([p for p in raw.split(',') if p], cm_enabled())
+		if item not in raw.split(','):
+			set_setting('context_menu.order', ','.join(parts))
+			changed = True
+	return changed
+
+def migrate_cm_manager_order_for_upgrade():
+	if get_setting('redlight.cm_manager_order_migrated', 'false') == 'true': return False
+	set_setting('cm_manager_order_migrated', 'true')
+	before = get_setting('redlight.context_menu.order', '')
+	cm_current_order()
+	return get_setting('redlight.context_menu.order', '') != before
+
 def cm_current_order():
 	default = 'extras,options,playback_options,browse_movie_set,browse_seasons,browse_episodes,recommended,related,more_like_this,similar,in_trakt_list,' \
-				'trakt_manager,personal_manager,tmdb_manager,favorites_manager,mark_watched,unmark_previous_episode,exit,refresh,reload'
+				'simkl_manager,trakt_manager,tmdb_manager,personal_manager,favorites_manager,mark_watched,unmark_previous_episode,exit,refresh,reload'
 	setting = get_setting('redlight.context_menu.order', default)
-	if setting in ('', None, 'noop', '[]'): return default.split(',')
-	return setting.split(',')
+	if setting in ('', None, 'noop', '[]'): order = default.split(',')
+	else: order = setting.split(',')
+	enabled = cm_enabled()
+	merged = _normalize_cm_list_order(_merge_cm_order_with_enabled(order, enabled))
+	if merged != order: set_setting('context_menu.order', ','.join(merged))
+	return merged
 
 def cm_sort_order():
 	try: setting = {i: c for c, i in enumerate([i for i in cm_current_order() if i in cm_enabled()])}

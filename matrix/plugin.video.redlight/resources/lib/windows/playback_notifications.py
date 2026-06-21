@@ -48,10 +48,17 @@ class NextEpisode(BaseDialog):
 		self.setProperty('thumb', self.get_thumb())
 		self.setProperty('clearlogo', self.meta.get('clearlogo', ''))
 		self.setProperty('episode_label', '%s[B] | [/B]%02dx%02d[B] | [/B]%s' % (self.meta['title'], self.meta['season'], self.meta['episode'], self.meta['ep_name']))
+		self.setProperty('pause_timer', '')
+		self.setProperty('nextep_remaining', '')
 		status_label, status_highlight = self.episode_status_dict[self.meta.get('episode_type', '')]
 		if status_label:
 			self.setProperty('episode_status.label', status_label)
 			self.setProperty('episode_status.highlight', status_highlight)
+
+	def _format_clock(self, seconds):
+		seconds = max(0, int(seconds))
+		mins, secs = divmod(seconds, 60)
+		return '%d:%02d' % (mins, secs)
 
 	def get_thumb(self):
 		if avoid_episode_spoilers() and int(self.meta.get('playcount', '0')) == 0: thumb = self.meta.get('fanart', '') or addon_fanart()
@@ -67,14 +74,18 @@ class NextEpisode(BaseDialog):
 	def monitor(self):
 		try:
 			if self._player_active():
-				total_time = self.player.getTotalTime()
 				while self._player_active() and not self.closed:
-					remaining_time = round(total_time - self.player.getTime())
-					if self.selected == 'pause' and remaining_time <= 10:
-						try: self.player.pause()
-						except: pass
-						self.sleep(500)
-						break
+					try:
+						total_time = self.player.getTotalTime()
+						remaining_time = max(0, round(total_time - self.player.getTime()))
+						self.setProperty('nextep_remaining', self._format_clock(remaining_time))
+						if self.selected == 'pause' and remaining_time <= 10:
+							try: self.player.pause()
+							except: pass
+							self.sleep(500)
+							break
+					except:
+						pass
 					self.sleep(1000)
 		except:
 			pass
@@ -104,9 +115,13 @@ class StillWatching(BaseDialog):
 		self.selected = False
 		self.meta = kwargs.get('meta')
 		self.check_text = kwargs.get('check_text')
+		self.heading = kwargs.get('heading') or 'Still Watching?'
+		right_align = kwargs.get('right_align', 'false')
+		self.compact_confirm = str(right_align).lower() in ('true', '1', 'yes')
 		self.set_properties()
 
 	def onInit(self):
+		self.set_properties()
 		self.setFocusId(10)
 		Thread(target=self.monitor, daemon=True).start()
 
@@ -118,7 +133,7 @@ class StillWatching(BaseDialog):
 
 	def onAction(self, action):
 		if action in self.closing_actions:
-			self.selected = 'no'
+			self.selected = False
 			self.closed = True
 			self.close()
 
@@ -129,17 +144,34 @@ class StillWatching(BaseDialog):
 
 	def set_properties(self):
 		landscape, fanart, clearlogo = self.meta.get('landscape', ''), self.meta.get('fanart', ''), self.meta.get('clearlogo', '')
-		self.setProperty('mode', 'still_watching')
-		self.setProperty('thumb', landscape or fanart)
-		if not landscape: self.setProperty('clearlogo', clearlogo)
-		self.setProperty('episode_label', self.check_text % self.meta['title'])
+		self.setProperty('mode', 'autoscrape_confirm' if self.compact_confirm else 'still_watching')
+		if self.compact_confirm:
+			if avoid_episode_spoilers() and int(self.meta.get('playcount', '0')) == 0:
+				thumb = fanart or addon_fanart()
+			else:
+				thumb = self.meta.get('ep_thumb') or fanart or addon_fanart()
+			self.setProperty('thumb', thumb)
+			self.setProperty('clearlogo', clearlogo)
+			self.setProperty('episode_label', '%s[B] | [/B]%02dx%02d[B] | [/B]%s' % (
+				self.meta['title'], self.meta['season'], self.meta['episode'], self.meta.get('ep_name', '')))
+		else:
+			self.setProperty('thumb', landscape or fanart)
+			if not landscape: self.setProperty('clearlogo', clearlogo)
+			self.setProperty('episode_label', self.check_text % self.meta['title'])
+		self.setProperty('still_watching_heading', self.heading)
+		self.setProperty('pause_timer', '')
 
 	def monitor(self):
 		pause_timer = 10
 		try:
-			while self.player.isPlaying() and not self.closed:
+			while not self.closed and pause_timer >= 0:
+				if self.compact_confirm:
+					try:
+						if not self.player.isPlayingVideo() and not self.player.isPlaying(): break
+					except: pass
 				self.setProperty('pause_timer', '%02d %s' % (pause_timer, 'seconds' if pause_timer > 1 else 'second'))
 				self.sleep(1000)
+				if self.closed: return
 				if pause_timer == 0: break
 				pause_timer -= 1
 		except:

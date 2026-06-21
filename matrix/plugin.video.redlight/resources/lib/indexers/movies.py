@@ -4,7 +4,6 @@ import json
 from modules.metadata import movie_meta, movieset_meta
 from modules.utils import get_datetime, get_current_timestamp, paginate_list, jsondate_to_datetime, TaskPool, manual_function_import
 from modules import kodi_utils, settings, watched_status
-logger = kodi_utils.logger
 
 class Movies:
 	main = ('tmdb_movies_popular', 'tmdb_movies_popular_today','tmdb_movies_blockbusters','tmdb_movies_in_theaters', 'tmdb_movies_upcoming',
@@ -13,8 +12,10 @@ class Movies:
 	'tmdb_movies_genres', 'tmdb_movies_companies', 'tmdb_movies_search', 'tmdb_movie_keyword_results', 'tmdb_movie_keyword_results_direct', 'ai_similar')
 	personal = {'in_progress_movies': ('modules.watched_status', 'get_in_progress_movies'), 'favorites_movies': ('modules.favorites', 'get_favorites'),
 	'watched_movies': ('modules.watched_status', 'get_watched_items'), 'recent_watched_movies': ('modules.watched_status', 'get_recently_watched')}
-	trakt_main = ('trakt_movies_trending', 'trakt_movies_trending_recent', 'trakt_movies_most_watched', 'trakt_movies_most_favorited', 'trakt_movies_top10_boxoffice')
+	most_watched = ('movies_most_watched', 'trakt_movies_most_watched')
+	trakt_main = ('trakt_movies_trending', 'trakt_movies_trending_recent', 'trakt_movies_most_favorited', 'trakt_movies_top10_boxoffice')
 	trakt_personal = ('trakt_collection', 'trakt_watchlist', 'trakt_collection_lists', 'trakt_watchlist_lists', 'trakt_favorites')
+	simkl_personal = ('simkl_plantowatch', 'simkl_completed', 'simkl_watching', 'simkl_hold', 'simkl_dropped')
 
 	def __init__(self, params):
 		self.params = params
@@ -40,6 +41,9 @@ class Movies:
 			try: page_no = int(self.params_get('new_page', '1'))
 			except: page_no = self.params_get('new_page')
 			if self.action in self.personal: var_module, import_function = self.personal[self.action]
+			elif self.action in self.most_watched:
+				from modules.most_watched import normalize_most_watched_action
+				var_module, import_function = 'modules.most_watched', normalize_most_watched_action(self.action)
 			else: var_module, import_function = 'apis.%s_api' % self.action.split('_')[0], self.action
 			try: function = manual_function_import(var_module, import_function)
 			except: pass
@@ -62,6 +66,17 @@ class Movies:
 				self.list = [i['media_id'] for i in data]
 				if total_pages > 2: self.total_pages = total_pages
 				if total_pages > page_no: self.new_page = {'new_page': str(page_no + 1), 'paginate_start': self.paginate_start}
+			elif self.action in self.most_watched:
+				from modules.most_watched import most_watched_category_name, simkl_most_watched_has_next, most_watched_provider, normalize_most_watched_action
+				category_name = most_watched_category_name(self.action)
+				if category_name: self.category_name = category_name
+				self.id_type = 'trakt_dict'
+				data = function(page_no) or []
+				try: self.list = [i['movie']['ids'] for i in data]
+				except: self.list = [i['ids'] for i in data]
+				if most_watched_provider() == 'simkl' and data and simkl_most_watched_has_next(normalize_most_watched_action(self.action), page_no):
+					self.new_page = {'new_page': str(page_no + 1)}
+				elif data: self.new_page = {'new_page': str(page_no + 1)}
 			elif self.action in self.trakt_main:
 				self.id_type = 'trakt_dict'
 				data = function(page_no)
@@ -73,6 +88,15 @@ class Movies:
 				data = function('movies', page_no)
 				if self.action in ('trakt_collection_lists', 'trakt_watchlist_lists', 'trakt_favorites'): total_pages = 1
 				else: data, total_pages = self.paginate_list(data, page_no)
+				self.list = [i['media_ids'] for i in data]
+				if total_pages > 2: self.total_pages = total_pages
+				try:
+					if total_pages > page_no: self.new_page = {'new_page': str(page_no + 1), 'paginate_start': self.paginate_start}
+				except: pass
+			elif self.action in self.simkl_personal:
+				self.id_type = 'trakt_dict'
+				data = function('movies', page_no)
+				data, total_pages = self.paginate_list(data, page_no)
 				self.list = [i['media_ids'] for i in data]
 				if total_pages > 2: self.total_pages = total_pages
 				try:
@@ -111,7 +135,6 @@ class Movies:
 					key_id = movie_meta('tmdb_id', key_id, self.tmdb_api_key, settings.mpaa_region(), get_datetime(), get_current_timestamp())['imdb_id']
 				self.list = imdb_more_like_this(key_id)
 			items = self.worker()
-			if self.list and not items: logger('Red Light', 'movies.fetch_list empty build for %s (%s ids, external=%s)' % (self.action, len(self.list), self.is_external))
 			kodi_utils.add_items(handle, items)
 			if self.total_pages and self.total_pages > 2 and settings.jump_to_enabled() and not self.is_external:
 				url_params = json.dumps({**self.new_page, **{'mode': 'build_movie_list', 'action': self.action, 'category_name': self.category_name}})
@@ -170,7 +193,12 @@ class Movies:
 										'key_id': 'movie|%s' % tmdb_id, 'name': 'Similar based on %s' % title})
 			browse_in_trakt_list_params = self.build_url({'mode': 'trakt.list.in_trakt_lists', 'media_type': 'movie', 'imdb_id': imdb_id, 'is_external': self.is_external,
 										'category_name': '%s In Trakt Lists' % title})
-			trakt_manager_params = self.build_url({'mode': 'trakt_manager_choice', 'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': 'None', 'media_type': 'movie', 'icon': poster})
+			trakt_manager_params = self.build_url({'mode': 'trakt_manager_choice', 'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': 'None', 'media_type': 'movie',
+													'title': title, 'icon': poster})
+			simkl_manager_params = ''
+			if settings.simkl_user_active():
+				simkl_manager_params = self.build_url({'mode': 'simkl_manager_choice', 'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': 'None', 'media_type': 'movie',
+														'title': title, 'icon': poster})
 			personal_manager_params = self.build_url({'mode': 'personallists_manager_choice', 'list_type': 'movie', 'tmdb_id': tmdb_id, 'title': title,
 										'premiered': premiered, 'current_time': self.current_time, 'icon': poster})
 			tmdb_manager_params = self.build_url({'mode': 'tmdblists_manager_choice', 'media_type': 'movie', 'tmdb_id': tmdb_id, 'icon': poster})
@@ -194,9 +222,10 @@ class Movies:
 			cm_append(['more_like_this', ('[B]Browse More Like This[/B]', self.window_command % browse_more_like_this_params)])
 			if self.ai_model_active: cm_append(['similar', ('[B]Browse Similar[/B]', self.window_command % browse_similar_params)])
 			cm_append(['in_trakt_list', ('[B]In Trakt Lists[/B]', self.window_command % browse_in_trakt_list_params)])
+			if simkl_manager_params: cm_append(['simkl_manager', ('[B]Simkl Lists Manager[/B]', 'RunPlugin(%s)' % simkl_manager_params)])
 			cm_append(['trakt_manager', ('[B]Trakt Lists Manager[/B]', 'RunPlugin(%s)' % trakt_manager_params)])
-			cm_append(['personal_manager', ('[B]Personal Lists Manager[/B]', 'RunPlugin(%s)' % personal_manager_params)])
 			cm_append(['tmdb_manager', ('[B]TMDb Lists Manager[/B]', 'RunPlugin(%s)' % tmdb_manager_params)])
+			cm_append(['personal_manager', ('[B]Personal Lists Manager[/B]', 'RunPlugin(%s)' % personal_manager_params)])
 			cm_append(['favorites_manager', ('[B]Favorites Manager[/B]', 'RunPlugin(%s)' % favorites_manager_params)])
 			if playcount:
 				if self.widget_hide_watched: return
@@ -241,6 +270,7 @@ class Movies:
 				'redlight.browse_similar_params': browse_similar_params,
 				'redlight.browse_in_trakt_list_params': browse_in_trakt_list_params,
 				'redlight.trakt_manager_params': trakt_manager_params,
+				'redlight.simkl_manager_params': simkl_manager_params,
 				'redlight.personal_manager_params': personal_manager_params,
 				'redlight.tmdb_manager_params': tmdb_manager_params,
 				'redlight.favorites_manager_params': favorites_manager_params

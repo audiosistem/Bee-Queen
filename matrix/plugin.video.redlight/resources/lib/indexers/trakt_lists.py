@@ -58,6 +58,70 @@ def search_trakt_lists(params):
 	kodi_utils.end_directory(handle)
 	kodi_utils.set_view_mode('view.main')
 
+def search_trakt_my_lists(params):
+	"""Search the authenticated user's Trakt lists by name (not global Trakt list search)."""
+	def get_custom_image(list_name, list_type, user, image_type, images):
+		try:
+			md5_image_name = gen_md5('%s_%s' % (list_name, user))
+			custom_image = [i for i in images if i.rsplit('_', 1)[0] == md5_image_name][0]
+			return os.path.join(profile_path, 'images', 'trakt_%s_%s' % (list_type, image_type), custom_image)
+		except: return ''
+	def _builder():
+		for item in data:
+			try:
+				cm = []
+				cm_append = cm.append
+				list_name, list_id, user, slug, item_count = item['name'], item['ids']['trakt'], item['user']['ids']['slug'], item['ids']['slug'], item['item_count']
+				if user in (None, 'None'): continue
+				if str(list_id) in all_custom_sorts:
+					custom_sorts = all_custom_sorts[str(list_id)]
+					sort_by, sort_how = custom_sorts['sort_by'], custom_sorts['sort_how']
+				else: sort_by, sort_how = item['sort_by'], item['sort_how']
+				custom_poster = get_custom_image(list_name, list_type, user, 'poster', all_posters)
+				poster = custom_poster or trakt_icon
+				custom_fanart = get_custom_image(list_name, list_type, user, 'fanart', all_fanart)
+				background = custom_fanart or fanart
+				url_params = {'mode': 'trakt.list.build_trakt_list', 'user': user, 'slug': slug, 'list_type': list_type, 'list_id': list_id,
+					'list_name': list_name, 'iconImage': 'trakt', 'name': list_name, 'sort_by': sort_by, 'sort_how': sort_how}
+				url = build_url(url_params)
+				display = '%s [I](x%s)[/I]' % (list_name, str(item_count))
+				cm_append(('[B]Make New List[/B]', 'RunPlugin(%s)' % build_url({'mode': 'trakt.make_new_trakt_list'})))
+				cm_append(('[B]Delete List[/B]', 'RunPlugin(%s)' % build_url({'mode': 'trakt.delete_trakt_list', 'user': user, 'list_slug': slug})))
+				cm_append(('[B]Add to Shortcut Folder[/B]', 'RunPlugin(%s)' % build_url({'mode': 'menu_editor.shortcut_folder_add_known', 'url': url})))
+				cm_append(('[B]Set Custom Sort[/B]', 'RunPlugin(%s)' % build_url({'mode': 'trakt.list.set_list_custom_sort', 'list_id': list_id,
+					'sort_by': sort_by, 'sort_how': sort_how})))
+				listitem = make_listitem()
+				listitem.setLabel(display)
+				listitem.setArt({'icon': poster, 'poster': poster, 'thumb': poster, 'fanart': background, 'banner': background})
+				info_tag = listitem.getVideoInfoTag(True)
+				info_tag.setPlot(' ')
+				listitem.addContextMenuItems(cm)
+				yield (url, listitem, True)
+			except: pass
+	handle = int(sys.argv[1])
+	list_type = 'my_lists'
+	trakt_icon, fanart = kodi_utils.get_icon('trakt'), kodi_utils.get_addon_fanart()
+	build_url, make_listitem = kodi_utils.build_url, kodi_utils.make_listitem
+	profile_path = kodi_utils.addon_profile()
+	all_posters = kodi_utils.list_dirs(os.path.join(profile_path, 'images', 'trakt_%s_poster' % list_type))[1]
+	all_fanart = kodi_utils.list_dirs(os.path.join(profile_path, 'images', 'trakt_%s_fanart' % list_type))[1]
+	all_custom_sorts = get_all_lists_custom_sort()
+	search_title = params.get('key_id') or params.get('query') or ''
+	query = search_title.strip().lower()
+	try:
+		from modules import settings
+		if not settings.trakt_user_active(): data = []
+		else:
+			data = trakt_get_lists(list_type) or []
+			if query: data = [i for i in data if query in (i.get('name') or '').lower()]
+			data.sort(key=lambda k: k['name'])
+		kodi_utils.add_items(handle, list(_builder()))
+	except: pass
+	kodi_utils.set_content(handle, 'files')
+	kodi_utils.set_category(handle, search_title.capitalize() if search_title else 'Search My Trakt Lists')
+	kodi_utils.end_directory(handle)
+	kodi_utils.set_view_mode('view.main')
+
 def get_trakt_lists(params):
 	def get_custom_image(list_name, list_type, user, image_type, images):
 		try:

@@ -35,7 +35,7 @@ class AllDebridAPI:
 		else: p_dialog_insert = '[CR]Full link copied to clipboard[CR]OR Enter this Code: [B]%s[/B]' % user_code
 		sleep_interval = 5
 		content = 'Please Scan the QR Code%s[CR]' % p_dialog_insert
-		progressDialog = progress_dialog('All Debrid Authorize', qr_code)
+		progressDialog = progress_dialog('All Debrid Authorise', qr_code)
 		progressDialog.update(content, 0)
 		start, time_passed = time.time(), 0
 		sleep(2000)
@@ -54,7 +54,7 @@ class AllDebridAPI:
 				self.token = str(response['apikey'])
 				set_setting('ad.token', self.token)
 			except:
-				ok_dialog(text='Error')
+				ok_dialog(heading='All Debrid', text='Authorisation failed.')
 				break
 		try: progressDialog.close()
 		except: pass
@@ -63,13 +63,13 @@ class AllDebridAPI:
 			account_info = self._get('user')
 			set_setting('ad.account_id', str(account_info['user']['username']))
 			set_setting('ad.enabled', 'true')
-			ok_dialog(text='Success')
+			ok_dialog(heading='All Debrid', text='Account authorised.')
 
 	def revoke(self):
 		set_setting('ad.token', 'empty_setting')
 		set_setting('ad.account_id', 'empty_setting')
 		set_setting('ad.enabled', 'false')
-		notification('All Debrid Authorization Reset', 3000)
+		notification('All Debrid Authorisation Reset', 3000)
 
 	def account_info(self):
 		response = self._get('user')

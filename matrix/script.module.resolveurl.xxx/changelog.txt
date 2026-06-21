@@ -1,0 +1,10 @@
+Version 2.1.44 (April 13, 2025)
+
+- Resolvers Added:
+    - trendyporn
+ 
+- Resolvers Fixed/Updated:
+    - None
+
+- Resolvers Removed
+    - None

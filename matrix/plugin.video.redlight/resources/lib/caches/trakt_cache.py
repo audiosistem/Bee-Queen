@@ -191,7 +191,7 @@ def clear_all_trakt_cache_data(silent=False, refresh=True):
 		dbcon.execute('VACUUM')
 		if refresh:
 			from apis.trakt_api import trakt_sync_activities
-			Thread(target=trakt_sync_activities).start()
+			Thread(target=trakt_sync_activities, kwargs={'force_update': True}).start()
 		return True
 	except: return False
 

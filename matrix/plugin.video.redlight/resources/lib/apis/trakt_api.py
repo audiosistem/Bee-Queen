@@ -119,7 +119,32 @@ def trakt_get_device_code():
 	CLIENT_ID = settings.trakt_client()
 	if CLIENT_ID in (None, 'empty_setting', ''): return no_client_key()
 	data = {'client_id': CLIENT_ID}
-	return call_trakt('oauth/device/code', data=data, with_auth=False)
+	result = call_trakt('oauth/device/code', data=data, with_auth=False)
+	if result: return result
+	_, message = trakt_test_credentials()
+	kodi_utils.ok_dialog(heading='Trakt Authorise', text=message)
+	return None
+
+def trakt_test_credentials():
+	CLIENT_ID = settings.trakt_client()
+	if CLIENT_ID in (None, 'empty_setting', ''):
+		return False, 'Trakt Client ID Key is not set.'
+	CLIENT_SECRET = settings.trakt_secret()
+	if CLIENT_SECRET in (None, 'empty_setting', ''):
+		return False, 'Trakt Client Secret Key is not set.'
+	try:
+		headers = {'Content-Type': 'application/json', 'trakt-api-version': '2', 'trakt-api-key': CLIENT_ID}
+		response = requests.post('https://api.trakt.tv/oauth/device/code', json={'client_id': CLIENT_ID}, headers=headers, timeout=15)
+		if response.status_code == 200:
+			return True, 'Trakt client keys are valid.'
+		try:
+			payload = response.json()
+			detail = payload.get('error_description') or payload.get('error') or ''
+		except: detail = ''
+		if not detail: detail = (response.text or '').strip() or 'No details returned.'
+		return False, 'Trakt client keys failed.[CR]Trakt rejected the client ID (HTTP %s).[CR]%s' % (response.status_code, detail)
+	except Exception as e:
+		return False, 'Trakt client keys failed.[CR]Could not reach Trakt: %s' % str(e)
 
 def trakt_get_device_token(device_codes):
 	API_ENDPOINT = 'https://api.trakt.tv/%s'
@@ -143,7 +168,7 @@ def trakt_get_device_token(device_codes):
 		if short_url: p_dialog_insert = '[CR]OR....[CR]visit [B]%s[/B]' % short_url
 		else: p_dialog_insert = ''
 		content = 'Enter [B]%s[/B] at [B]%s[/B][CR]OR....[CR]Scan the [B]QR Code[/B]%s' % (user_code, device_codes['verification_url'], p_dialog_insert)
-		progressDialog = kodi_utils.progress_dialog('Trakt Authorize', qr_code)
+		progressDialog = kodi_utils.progress_dialog('Trakt Authorise', qr_code)
 		progressDialog.update(content, 0)
 		try:
 			time_passed = 0
@@ -197,16 +222,16 @@ def trakt_authenticate(dummy=''):
 		set_setting('trakt.token', token['access_token'])
 		set_setting('trakt.refresh', token['refresh_token'])
 		set_setting('trakt.expires', str(time.time() + token['expires_in']))
-		set_setting('watched_indicators', '1')
-		kodi_utils.sleep(1000)
 		try:
 			user = call_trakt('/users/me')
 			set_setting('trakt.user', str(user['username']))
-		except: pass
-		kodi_utils.notification('Trakt Account Authorized', 3000)
+		except: set_setting('trakt.user', 'Trakt User')
+		settings.offer_watched_provider(1, 'Trakt')
+		kodi_utils.sleep(1000)
+		kodi_utils.notification('Trakt Account Authorised', 3000)
 		trakt_sync_activities(force_update=True)
 		return True
-	kodi_utils.notification('Trakt Error Authorizing', 3000)
+	kodi_utils.notification('Trakt Error Authorising', 3000)
 	return False
 
 def trakt_revoke_authentication(dummy=''):
@@ -215,9 +240,9 @@ def trakt_revoke_authentication(dummy=''):
 	set_setting('trakt.token', '0')
 	set_setting('trakt.refresh', '0')
 	set_setting('trakt.next_daily_clear', '0')
-	set_setting('watched_indicators', '0')
+	settings.fallback_watched_provider_on_revoke(1)
 	trakt_cache.clear_all_trakt_cache_data(silent=True, refresh=False)
-	kodi_utils.notification('Trakt Account Authorization Reset', 3000)
+	kodi_utils.notification('Trakt Account Authorisation Reset', 3000)
 	CLIENT_ID = settings.trakt_client()
 	if CLIENT_ID in (None, 'empty_setting', ''): return no_client_key()
 	CLIENT_SECRET = settings.trakt_secret()
@@ -394,11 +419,7 @@ def trakt_watchlist_lists(media_type, list_type=None):
 
 def trakt_collection(media_type, dummy_arg):
 	data = trakt_fetch_collection_watchlist('collection', media_type)
-	sort_order = settings.lists_sort_order('collection')
-	if sort_order == 0: data = sort_for_article(data, 'title', settings.ignore_articles())
-	elif sort_order == 1: data.sort(key=lambda k: k['collected_at'], reverse=True)
-	else: data.sort(key=lambda k: k['released'], reverse=True)
-	return data
+	return settings.sort_trakt_sync_list(data, 'collection')
 
 def trakt_watchlist(media_type, dummy_arg):
 	data = trakt_fetch_collection_watchlist('watchlist', media_type)
@@ -406,10 +427,7 @@ def trakt_watchlist(media_type, dummy_arg):
 		current_date = get_datetime()
 		str_format = '%Y-%m-%d' if media_type in ('movie', 'movies') else '%Y-%m-%dT%H:%M:%S.%fZ'
 		data = [i for i in data if i.get('released', None) and js2date(i.get('released'), str_format, remove_time=True) <= current_date]
-	sort_order = settings.lists_sort_order('watchlist')
-	if sort_order == 0: data = sort_for_article(data, 'title', settings.ignore_articles())
-	elif sort_order == 1: data.sort(key=lambda k: k['collected_at'], reverse=True)
-	else: data.sort(key=lambda k: k.get('released'), reverse=True)
+	data = settings.sort_trakt_sync_list(data, 'watchlist')
 	return data
 
 def trakt_fetch_collection_watchlist(list_type, media_type):
@@ -840,7 +858,8 @@ def trakt_get_activity():
 	params = {'path': 'sync/last_activities%s', 'with_auth': True, 'pagination': False}
 	return get_trakt(params)
 
-def trakt_sync_activities(force_update=False):
+def trakt_sync_activities(params=None, force_update=False):
+	if isinstance(params, dict): force_update = params.get('force_update', 'false') in ('true', 'True', True) or force_update
 	# def clear_watched_tvshow_cache():
 	# 	from modules.watched_status import clear_cache_watched_tvshow_status
 	# 	clear_cache_watched_tvshow_status(watched_indicators=1)
@@ -870,7 +889,7 @@ def trakt_sync_activities(force_update=False):
 	except: return 'failed'
 	cached = trakt_cache.reset_activity(latest)
 	fallback_date = '2020-01-01T00:00:01.000Z'
-	if not _compare(latest['all'], cached['all']): return 'not needed'
+	if not force_update and not _compare(latest['all'], cached['all']): return 'not needed'
 	lists_actions, refresh_movies_progress, refresh_shows_progress, clear_tvshow_watched_cache = [], False, False, False
 	cached_movies, latest_movies = cached['movies'], latest['movies']
 	cached_shows, latest_shows = cached['shows'], latest['shows']
@@ -885,15 +904,15 @@ def trakt_sync_activities(force_update=False):
 	if _compare(latest_shows['dropped_at'], cached_shows.get('dropped_at', fallback_date)):
 		clear_properties('episode')
 		trakt_cache.clear_trakt_hidden_data('dropped')
-	if _compare(latest_movies['watched_at'], cached_movies.get('watched_at', fallback_date)):
+	if force_update or _compare(latest_movies['watched_at'], cached_movies.get('watched_at', fallback_date)):
 		clear_properties('movie')
 		trakt_indicators_movies()
-	if _compare(latest_episodes['watched_at'], cached_episodes.get('watched_at', fallback_date)):
+	if force_update or _compare(latest_episodes['watched_at'], cached_episodes.get('watched_at', fallback_date)):
 		clear_properties('episode')
 		trakt_indicators_tv()
 		# clear_tvshow_watched_cache = True
-	if _compare(latest_movies['paused_at'], cached_movies.get('paused_at', fallback_date)): refresh_movies_progress = True
-	if _compare(latest_episodes['paused_at'], cached_episodes.get('paused_at', fallback_date)): refresh_shows_progress = True
+	if force_update or _compare(latest_movies['paused_at'], cached_movies.get('paused_at', fallback_date)): refresh_movies_progress = True
+	if force_update or _compare(latest_episodes['paused_at'], cached_episodes.get('paused_at', fallback_date)): refresh_shows_progress = True
 	if _compare(latest_lists['updated_at'], cached_lists.get('updated_at', fallback_date)): lists_actions.append('my_lists')
 	if _compare(latest_lists['liked_at'], cached_lists.get('liked_at', fallback_date)): lists_actions.append('liked_lists')
 	if refresh_movies_progress or refresh_shows_progress:
@@ -910,3 +929,15 @@ def trakt_sync_activities(force_update=False):
 			trakt_cache.clear_trakt_list_contents_data(item)
 	# if clear_tvshow_watched_cache: clear_watched_tvshow_cache()
 	return 'success'
+
+def trakt_force_sync(params=None):
+	if not settings.trakt_user_active(): return kodi_utils.notification('Trakt account not authorised', 3000)
+	progress = kodi_utils.progress_dialog('Trakt Sync')
+	progress.update('Syncing with Trakt...', 0)
+	status = trakt_sync_activities(force_update=True)
+	progress.close()
+	if status == 'failed': kodi_utils.notification('Trakt Sync Failed', 3000)
+	else:
+		kodi_utils.notification('Trakt Sync Complete', 3000)
+		kodi_utils.kodi_refresh()
+	return status

@@ -133,9 +133,15 @@ def subtract_dates(date1, date2):
 	return day
 
 def datetime_workaround(data, str_format):
-	try: datetime_object = datetime.strptime(data, str_format)
-	except: datetime_object = datetime(*(time.strptime(data, str_format)[0:6]))
-	return datetime_object
+	if not data: return None
+	for fmt in (str_format, '%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d'):
+		for parser in (datetime.strptime, lambda d, f: datetime(*(time.strptime(d, f)[0:6]))):
+			try: return parser(data, fmt)
+			except: pass
+	if 'T' in str(data):
+		try: return datetime(*(time.strptime(str(data).rstrip('Z').split('.')[0], '%Y-%m-%dT%H:%M:%S')[0:6]))
+		except: pass
+	raise ValueError("time data %r does not match format %r" % (data, str_format))
 
 def date_difference(current_date, compare_date, difference_tolerance, allow_postive_difference=False):
 	try:
@@ -331,19 +337,32 @@ def unzip(zip_location, destination_location, destination_check, show_busy=True)
 	if show_busy: hide_busy_dialog()
 	return status
 
+def _prune_qr_cache(folder, keep=30):
+	try:
+		import glob
+		from os import path, remove
+		files = sorted(glob.glob(path.join(folder, 'qr_*.png')), key=path.getmtime, reverse=True)
+		for stale in files[keep:]:
+			try: remove(stale)
+			except: pass
+	except: pass
+
 def make_qrcode(url):
 	if url == None: return
 	import segno
 	from hashlib import sha1
 	from os import path
-	from modules.kodi_utils import addon_profile
+	from time import time
+	from modules.kodi_utils import addon_profile, translate_path
 	try:
+		profile = addon_profile()
 		qr_id = sha1(url.encode('utf-8')).hexdigest()[:12]
-		art_path = path.join(addon_profile(), 'qr_%s.png' % qr_id)
+		art_path = path.join(profile, 'qr_%s_%s.png' % (qr_id, int(time() * 1000)))
 		qrcode = segno.make(url, micro=False)
 		qrcode.save(art_path, scale=20)
+		_prune_qr_cache(profile)
 	except: return
-	return art_path
+	return translate_path(art_path)
 
 def make_tinyurl(url):
 	if not url:

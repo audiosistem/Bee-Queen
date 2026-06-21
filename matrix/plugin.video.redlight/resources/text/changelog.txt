@@ -1,3 +1,63 @@
+[COLOR red][B]Version 1.4.1[/B][/COLOR]
+- Fixed Autoscrape confirm dialog: countdown expiry no longer shows a redundant Cancel Autoscrape notification.
+
+[COLOR red][B]Version 1.4.0[/B][/COLOR]
+- Fixed Autoscrape confirm dialog: 10-second countdown restored to original behaviour — press Yes during the countdown to scrape; if it reaches 0 (or playback ends) the dialog closes and autoscrape is cancelled.
+- Fixed addon update resetting Language Invoker and icon: saved settings are written back into addon.xml after a repo update (no notification or forced trip to Home).
+
+[COLOR red][B]Version 1.3.9[/B][/COLOR]
+- Fixed autoscrape/autoplay binge playback: next-episode prep no longer blocks scheduling the following episode while the current next one is still playing.
+- Fixed Still Watching and Autoplay Next Episode dialogs: countdown timers restored (no longer depend on Kodi player infolabels or active playback).
+
+[COLOR red][B]Version 1.3.8[/B][/COLOR]
+- Fixed Autoscrape confirm dialog: uses the same layout as the Autoplay Next Episode alert (poster, dim band, heading, Yes/No buttons); waits for your choice instead of auto-closing.
+- Fixed autoscrape/autoplay binge playback: next-episode prep runs in the background, waits for valid duration before triggering, and avoids stopping a stream that is still opening.
+
+[COLOR red][B]Version 1.3.7[/B][/COLOR]
+- Results: optional Tint Focused Result Background (off by default) tints the focused row using your provider/quality highlight color; Results Background Opacity (20%-80%) when enabled. Credits and with thanks: Polgara01 (#13).
+
+[COLOR red][B]Version 1.3.6[/B][/COLOR]
+- Fixed My Lists failing to open when a saved menu still used the old navigator.my_content route (alias plus one-time menu migration).
+- Simkl: single Simkl Lists entry under My Lists (removed duplicate Simkl My Content menu).
+- Simkl: Force Simkl Sync now shows a success notification like Force Trakt Sync.
+- Search: main Search menu keeps Search Trakt User Lists only (no Simkl entry; Simkl list search remains under Simkl Lists).
+- Trakt Lists (personal): Search My Trakt Lists filters your own lists by name.
+- Fixed Autoscrape confirm dialog: compact top-right card without the full-width dim tint band.
+- Fixed settings bootstrap / Remake Settings Cache error that could leave the settings UI on a white background.
+
+[COLOR red][B]Version 1.3.5[/B][/COLOR]
+- Simkl Lists Manager: dynamic add/remove for Plan to Watch, Watching, Completed, On Hold, and Dropped (from cached list data); shortcuts to open status lists; lighter refresh after list changes (no full sync on every edit).
+- Simkl lists: Search My Simkl Lists finds titles across your status lists (includes anime).
+- Simkl lists: new Simkl Lists sort under Contents Sort Order For Simkl Lists (Plan to Watch, Watching, Completed, On Hold, Dropped), including Release Date (asc).
+- Simkl: Import Trakt to Simkl under Meta Accounts (official Simkl import page via QR or link); prompt when switching Watched Status Provider to Simkl while Trakt is authorised.
+- Trakt Collection and Watchlist: added Date Added (asc) and Release Date (asc) sort options (earliest air/release or added date first).
+- Meta Accounts: Trakt Authorise now explains when custom Client ID/Secret are rejected; new Test Client Credentials action under Trakt.
+- Meta Accounts: TMDb API key entry trims whitespace, warns when a v4 Read Access Token is pasted into the v3 API Key field, and Test API Key checks for the same mistake.
+- Fixed Play Random: auto-starts a source when global Autoplay Episodes is off (random play keeps its own autoplay path; continual random chains in the background).
+- Autoscrape: confirm-before-scrape prompt now uses an Autoscrape Next Episode heading and aligns top-right to match the post-scrape flow.
+- Prescrape: debrid cloud scrapers (e.g. Premiumize) no longer run again during the full scrape when they already ran in prescrape.
+- Prescrape: playback failure no longer restarts the full scrape when prescrape already returned results (avoids duplicate Premiumize cloud passes).
+- Prescrape: removed empty-prescrape notice from the results list and autoplay toast (search continues with other scrapers automatically).
+- EasyNews: Autoplay Result queue continues to the next hit after a failed stream instead of stopping at the first failure.
+- Resolve queue: failed playback no longer closes the resolver between attempts (same walk-the-list behaviour for EasyNews, cloud library, and external debrid).
+- EasyNews: Autoplay Result (per-provider prescrape toggle) now starts playback like debrid cloud autoplay.
+- Playback: show the playback-failed message once per resolve attempt (no duplicate alerts on EasyNews retries or end-of-queue fallback).
+- Playback: failed dialog notes when an external source was unchecked (cache check was off) and may not be on your debrid.
+
+[COLOR red][B]Version 1.3.4[/B][/COLOR]
+- Simkl: PIN OAuth under Meta Accounts; optional Watched Status Provider prompt on authorise (Trakt or Simkl); revoke falls back to the other service or Red Light when the revoked account was the active provider.
+- Simkl lists (parallel to Trakt): Plan to Watch, Watching, Completed, On Hold, Dropped under My Content; Random Simkl Lists; Simkl Lists Manager on context menu and Options.
+- Simkl sync: background SimklMonitor, simklcache.db, scrobble/progress/watched when Simkl is the Watched Status Provider; Clear Simkl Cache in maintenance.
+- Watched Status Provider picker: lists Red Light, Simkl, and Trakt alphabetically (values unchanged).
+- Context menu: TMDb Lists Manager appears above Personal Lists Manager; existing order migrates on upgrade.
+- Trakt Cache: Force Trakt Sync for a full re-sync (parallel to Force Simkl Sync).
+- Most Watched: when Simkl is the Watched Status Provider, Movies/TV/Anime Most Watched use Simkl trending charts; otherwise Trakt (unchanged).
+- Tools — Red Light Import & Export: scrollable preview dialogs for long backup summaries; progress sections name the active Trakt or Simkl provider when local progress is skipped.
+- Anime Providers: fixed empty lists when browsing Anime by streaming provider.
+
+[COLOR red][B]Version 1.3.0 - 1.3.3[/B][/COLOR]
+- Test releases for v1.2.9x and v1.3.4.
+
 [COLOR red][B]Version 1.2.9l[/B][/COLOR]
 - Sources Browse: after browse playback, return to the sources results list without re-scraping.
 - Sources Browse: close the results list when playback starts so fullscreen is not blocked.
@@ -119,7 +179,7 @@
 [COLOR red][B]Version 1.2.3[/B][/COLOR]
 - Fixed skin widgets (e.g. Movies > Trending) staying empty after a settings DB upgrade: widget calls no longer block on settings bootstrap, failed Trakt list fetches are not cached, and widgets are silently reloaded with ReloadSkin only when sync_settings actually migrates or repairs an existing settings.db (not on every boot).
 - Fixed slow startup and browsing after the v1.2.2 boot-crash fix: settings reads no longer hit SQLite on every call once properties are loaded, the database is not synced twice on boot, path-existence checks are skipped on the read path, and default-settings metadata is cached in memory.
-- Fixed widget and skin list loads hanging 5 seconds (or failing) after opening Red Light: the font/skin background thread now runs only in the service process, not in the plugin invoker where it blocked every widget exit.
+- Fixed widget and skin list loads hanging after 5 seconds (or failing) after opening Red Light: the font/skin background thread now runs only in the service process, not in the plugin invoker where it blocked every widget exit.
 - Fixed widgets staying empty after the above change: widget calls no longer bulk-load settings into window properties (which could fail silently); they read from a warmed in-memory DB cache instead when properties are not yet loaded.
 
 [COLOR red][B]Version 1.2.2[/B][/COLOR]

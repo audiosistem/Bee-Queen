@@ -17,10 +17,12 @@ class TVShows:
 	'recent_watched_tvshows': ('modules.watched_status', 'get_recently_watched'),
 	'favorites_tvshows': ('modules.favorites', 'get_favorites'),
 	'favorites_anime': ('modules.favorites', 'get_favorites')}
-	trakt_main = ('trakt_tv_trending', 'trakt_tv_trending_recent', 'trakt_tv_most_watched', 'trakt_tv_most_favorited',
-	'trakt_anime_trending', 'trakt_anime_trending_recent', 'trakt_anime_most_watched', 'trakt_anime_most_favorited')
+	most_watched = ('tv_most_watched', 'anime_most_watched', 'trakt_tv_most_watched', 'trakt_anime_most_watched')
+	trakt_main = ('trakt_tv_trending', 'trakt_tv_trending_recent', 'trakt_tv_most_favorited',
+	'trakt_anime_trending', 'trakt_anime_trending_recent', 'trakt_anime_most_favorited')
 	trakt_special = ('trakt_tv_certifications', 'trakt_anime_certifications')
 	trakt_personal = ('trakt_collection', 'trakt_watchlist', 'trakt_collection_lists', 'trakt_watchlist_lists', 'trakt_favorites')
+	simkl_personal = ('simkl_plantowatch', 'simkl_completed', 'simkl_watching', 'simkl_hold', 'simkl_dropped')
 	
 	def __init__(self, params):
 		self.params = params
@@ -55,9 +57,13 @@ class TVShows:
 				folder_path = kodi_utils.folder_path()
 				if not any([x in folder_path for x in ('build_season_list', 'build_episode_list')]): kodi_utils.set_property('redlight.exit_params', folder_path)
 			if self.action in self.personal: var_module, import_function = self.personal[self.action]
+			elif self.action in self.most_watched:
+				from modules.most_watched import normalize_most_watched_action
+				var_module, import_function = 'modules.most_watched', normalize_most_watched_action(self.action)
 			else: var_module, import_function = 'apis.%s_api' % self.action.split('_')[0], self.action
 			try: function = manual_function_import(var_module, import_function)
-			except: pass
+			except: function = None
+			if self.action and self.action.startswith('simkl_') and function is None: return
 			if self.action in self.main:
 				data = function(page_no)
 				results = data['results']
@@ -76,6 +82,18 @@ class TVShows:
 				self.list = [i['media_id'] for i in data]
 				if total_pages > 2: self.total_pages = total_pages
 				if total_pages > page_no: self.new_page = {'new_page': str(page_no + 1), 'paginate_start': self.paginate_start}
+			elif self.action in self.most_watched:
+				from modules.most_watched import most_watched_category_name, simkl_most_watched_has_next, most_watched_provider, normalize_most_watched_action
+				category_name = most_watched_category_name(self.action)
+				if category_name: self.category_name = category_name
+				self.id_type = 'trakt_dict'
+				data = function(page_no) or []
+				try: self.list = [i['show']['ids'] for i in data]
+				except: self.list = [i['ids'] for i in data]
+				if not is_random:
+					if most_watched_provider() == 'simkl' and data and simkl_most_watched_has_next(normalize_most_watched_action(self.action), page_no):
+						self.new_page = {'new_page': str(page_no + 1)}
+					elif data: self.new_page = {'new_page': str(page_no + 1)}
 			elif self.action in self.trakt_main:
 				self.id_type = 'trakt_dict'
 				data = function(page_no)
@@ -94,6 +112,15 @@ class TVShows:
 				data = function('shows', page_no)
 				if self.action in ('trakt_collection_lists', 'trakt_watchlist_lists', 'trakt_favorites'): total_pages = 1
 				else: data, total_pages = self.paginate_list(data, page_no)
+				self.list = [i['media_ids'] for i in data]
+				if total_pages > 2: self.total_pages = total_pages
+				try:
+					if total_pages > page_no: self.new_page = {'new_page': str(page_no + 1), 'paginate_start': self.paginate_start}
+				except: pass
+			elif self.action in self.simkl_personal:
+				self.id_type = 'trakt_dict'
+				data = function('shows', page_no)
+				data, total_pages = self.paginate_list(data, page_no)
 				self.list = [i['media_ids'] for i in data]
 				if total_pages > 2: self.total_pages = total_pages
 				try:
@@ -139,7 +166,8 @@ class TVShows:
 		except: pass
 		kodi_utils.set_content(handle, 'tvshows')
 		kodi_utils.set_category(handle, self.category_name)
-		kodi_utils.end_directory(handle, cacheToDisc=False if self.is_external else True)
+		kodi_utils.end_directory(handle, updateListing=True if self.action in self.simkl_personal else False,
+			cacheToDisc=False if (self.is_external or self.action in self.simkl_personal) else True)
 		if not self.is_external:
 			if self.params_get('refreshed') == 'true': kodi_utils.sleep(1000)
 			kodi_utils.set_view_mode('view.tvshows', 'tvshows', self.is_external)
@@ -184,7 +212,12 @@ class TVShows:
 										'key_id': 'tvshow|%s' % tmdb_id, 'name': 'Similar based on %s' % title})
 			browse_in_trakt_list_params = self.build_url({'mode': 'trakt.list.in_trakt_lists', 'media_type': 'tvshow', 'imdb_id': imdb_id, 'is_external': self.is_external,
 										'category_name': '%s In Trakt Lists' % title})
-			trakt_manager_params = self.build_url({'mode': 'trakt_manager_choice', 'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id, 'media_type': 'tvshow', 'icon': poster})
+			trakt_manager_params = self.build_url({'mode': 'trakt_manager_choice', 'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id, 'media_type': 'tvshow',
+													'title': title, 'icon': poster})
+			simkl_manager_params = ''
+			if settings.simkl_user_active():
+				simkl_manager_params = self.build_url({'mode': 'simkl_manager_choice', 'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id, 'media_type': 'tvshow',
+														'title': title, 'icon': poster})
 			personal_manager_params = self.build_url({'mode': 'personallists_manager_choice', 'list_type': 'tvshow', 'tmdb_id': tmdb_id, 'title': title,
 										'premiered': premiered, 'current_time': self.current_time, 'icon': poster})
 			tmdb_manager_params = self.build_url({'mode': 'tmdblists_manager_choice', 'media_type': 'tv', 'tmdb_id': tmdb_id, 'icon': poster})
@@ -203,9 +236,10 @@ class TVShows:
 			cm_append(['more_like_this', ('[B]Browse More Like This[/B]', self.window_command % browse_more_like_this_params)])
 			if self.ai_model_active: cm_append(['similar', ('[B]Browse Similar[/B]', self.window_command % browse_similar_params)])
 			cm_append(['in_trakt_list', ('[B]In Trakt Lists[/B]', self.window_command % browse_in_trakt_list_params)])
+			if simkl_manager_params: cm_append(['simkl_manager', ('[B]Simkl Lists Manager[/B]', 'RunPlugin(%s)' % simkl_manager_params)])
 			cm_append(['trakt_manager', ('[B]Trakt Lists Manager[/B]', 'RunPlugin(%s)' % trakt_manager_params)])
-			cm_append(['personal_manager', ('[B]Personal Lists Manager[/B]', 'RunPlugin(%s)' % personal_manager_params)])
 			cm_append(['tmdb_manager', ('[B]TMDb Lists Manager[/B]', 'RunPlugin(%s)' % tmdb_manager_params)])
+			cm_append(['personal_manager', ('[B]Personal Lists Manager[/B]', 'RunPlugin(%s)' % personal_manager_params)])
 			cm_append(['favorites_manager', ('[B]Favorites Manager[/B]', 'RunPlugin(%s)' % favorites_manager_params)])
 			if playcount:
 				if self.widget_hide_watched: return
@@ -245,6 +279,7 @@ class TVShows:
 				'redlight.browse_similar_params': browse_similar_params,
 				'redlight.browse_in_trakt_list_params': browse_in_trakt_list_params,
 				'redlight.trakt_manager_params': trakt_manager_params,
+				'redlight.simkl_manager_params': simkl_manager_params,
 				'redlight.personal_manager_params': personal_manager_params,
 				'redlight.tmdb_manager_params': tmdb_manager_params,
 				'redlight.favorites_manager_params': favorites_manager_params
@@ -265,6 +300,9 @@ class TVShows:
 		self.custom_cm_menu = self.cm_sort_order != settings.cm_default_order()
 		self.is_folder = False if self.open_extras else True
 		self.watched_indicators = settings.watched_indicators()
+		if self.watched_indicators == 2 and settings.simkl_user_active():
+			from apis.simkl_api import simkl_sync_activities
+			simkl_sync_activities()
 		self.watched_info = watched_status.watched_info_tvshow(watched_status.get_database(self.watched_indicators))
 		self.window_command = 'ActivateWindow(Videos,%s,return)' if self.is_external else 'Container.Update(%s)'
 		if self.custom_order:

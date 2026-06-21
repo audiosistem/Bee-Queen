@@ -143,7 +143,7 @@ def build_single_episode(list_type, params={}):
 		try:
 			cat_name = {'episode.progress': 'In Progress Episodes',
 						'episode.recently_watched': 'Recently Watched Episodes',
-						'episode.next_trakt': 'Next Episodes', 'episode.next_redlight': 'Next Episodes',
+						'episode.next_trakt': 'Next Episodes', 'episode.next_redlight': 'Next Episodes', 'episode.next_simkl': 'Next Episodes',
 						'episode.trakt': {'true': 'Recently Aired Episodes', None: 'Trakt Calendar'}}[list_type]
 			if isinstance(cat_name, dict): cat_name = cat_name[params.get('recently_aired')]
 		except: cat_name = 'Episodes'
@@ -320,7 +320,9 @@ def build_single_episode(list_type, params={}):
 		if settings.nextep_limit_history(): data = data[:settings.nextep_limit()]
 		hidden_list = ws.get_hidden_progress_items(watched_indicators)
 		if hidden_list: data = [i for i in data if not i['media_ids']['tmdb'] in hidden_list]
-		if watched_indicators == 1: resformat, resinsert, list_type = '%Y-%m-%dT%H:%M:%S.%fZ', '2000-01-01T00:00:00.000Z', 'episode.next_trakt'
+		if watched_indicators in (1, 2):
+			resformat, resinsert = '%Y-%m-%dT%H:%M:%S.%fZ', '2000-01-01T00:00:00.000Z'
+			list_type = 'episode.next_trakt' if watched_indicators == 1 else 'episode.next_simkl'
 		else: resformat, resinsert, list_type = '%Y-%m-%d %H:%M:%S', '2000-01-01 00:00:00', 'episode.next_redlight'
 		if include_unwatched != 0:
 			if include_unwatched in (1, 3):

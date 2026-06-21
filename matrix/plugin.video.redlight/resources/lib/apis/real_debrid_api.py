@@ -41,7 +41,7 @@ class RealDebridAPI:
 		else:
 			p_dialog_insert = '[CR]Full link copied to clipboard[CR]OR Enter this Code: [B]%s[/B]' % user_code
 		content = 'Please Scan the QR Code%s[CR]' % p_dialog_insert
-		progressDialog = progress_dialog('Real Debrid Authorize', qr_code)
+		progressDialog = progress_dialog('Real Debrid Authorise', qr_code)
 		progressDialog.update(content, 0)
 		expires_in = int(response['expires_in'])
 		sleep_interval = int(response['interval'])
@@ -64,7 +64,7 @@ class RealDebridAPI:
 				self.client_ID = response['client_id']
 				progressDialog.close()
 			except:
-				ok_dialog(text='Error')
+				ok_dialog(heading='Real Debrid', text='Authorisation failed.')
 				break
 		try: progressDialog.close()
 		except: pass
@@ -79,7 +79,7 @@ class RealDebridAPI:
 			set_setting('rd.refresh', self.refresh)
 			set_setting('rd.account_id', username)
 			set_setting('rd.enabled', 'true')
-			ok_dialog(text='Success')
+			ok_dialog(heading='Real Debrid', text='Account authorised.')
 
 	def refresh_token(self):
 		try:
@@ -100,7 +100,7 @@ class RealDebridAPI:
 		set_setting('rd.token', 'empty_setting')
 		set_setting('rd.account_id', 'empty_setting')
 		set_setting('rd.enabled', 'false')
-		notification('Real Debrid Authorization Reset', 3000)
+		notification('Real Debrid Authorisation Reset', 3000)
 
 	def account_info(self):
 		url = 'user'

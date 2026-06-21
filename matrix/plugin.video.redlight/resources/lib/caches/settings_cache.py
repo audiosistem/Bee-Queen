@@ -22,6 +22,16 @@ _DEFAULTS_MAP = None
 def _properties_loaded():
 	return kodi_utils.get_property(_SETTINGS_PROPERTIES_LOADED) == 'true'
 
+_CREDENTIAL_STRING_SETTINGS = frozenset(('tmdb_api', 'trakt.client', 'trakt.secret', 'tmdb.lists_read_token', 'omdb_api'))
+
+def normalize_credential_string(value):
+	if value in (None, 'empty_setting'): return ''
+	return str(value).strip()
+
+def looks_like_tmdb_v4_jwt(value):
+	value = normalize_credential_string(value)
+	return len(value) > 48 and value.startswith('eyJ') and value.count('.') >= 2
+
 def property_safe_string(value):
 	if value is None: return ''
 	value = str(value).replace('\x00', '')
@@ -59,6 +69,22 @@ def sanitize_setting_value(setting_id, value, setting_info=None, validate_paths=
 	if setting_info and setting_info.get('setting_type') == 'boolean':
 		if value in ('true', 'false'): return value
 		return default
+	if setting_id == 'watched_indicators':
+		from modules.settings import watched_provider_options
+		value = str(value)
+		opts = watched_provider_options()
+		if value in opts: return value
+		if value == '1':
+			from caches.settings_cache import settings_cache
+			token = settings_cache.read_db_value('trakt.token')
+			if token not in (None, '0', '', 'empty_setting'): return value
+		if value == '2':
+			from modules.settings import simkl_user_active
+			if simkl_user_active(): return value
+		return '0'
+	if setting_id in _CREDENTIAL_STRING_SETTINGS:
+		if value in (None, 'empty_setting', ''): return default if value is None else value
+		return normalize_credential_string(value)
 	if len(value) > _MAX_PROPERTY_LEN: return value[:_MAX_PROPERTY_LEN]
 	return value
 
@@ -73,13 +99,13 @@ class SettingsCache:
 
 	def _warm_db_cache(self):
 		if self._db_warmed: return
+		self._db_warmed = True
 		try:
 			for setting_id, setting_value in self.get_all().items():
 				setting_info = default_setting_values(setting_id)
 				if setting_info: setting_value = sanitize_setting_value(setting_id, setting_value, setting_info, validate_paths=False)
 				else: setting_value = property_safe_string(setting_value)
 				self._db_cache[setting_id] = setting_value
-			self._db_warmed = True
 		except: pass
 
 	def read_db_value(self, setting_id, validate_paths=False):
@@ -140,7 +166,12 @@ class SettingsCache:
 			self.set_memory_cache(setting_id, setting_value)
 		if setting_type == 'action' and 'settings_options' in setting_info:
 			name_setting_id = '%s_name' % setting_id
-			name_setting_value = setting_info['settings_options'][setting_value]
+			if setting_id == 'watched_indicators':
+				from modules.settings import watched_provider_options
+				opts = watched_provider_options()
+				name_setting_value = opts.get(str(setting_value)) or setting_info['settings_options'].get(str(setting_value), opts['0'])
+			else:
+				name_setting_value = setting_info['settings_options'][setting_value]
 			if setting_id == 'aiostreams.instance':
 				try:
 					from apis.aiostreams_api import INSTANCE_LABELS
@@ -217,6 +248,14 @@ def _apply_settings_properties_from_db():
 		else: sanitized = property_safe_string(value)
 		try: settings_cache.set_memory_cache(setting_id, sanitized)
 		except: pass
+		if setting_id == 'watched_indicators':
+			try:
+				from modules.settings import watched_provider_options
+				opts = watched_provider_options()
+				info = defaults_map.get(setting_id) or {}
+				static_opts = info.get('settings_options', {})
+				settings_cache.set_memory_cache('watched_indicators_name', opts.get(sanitized) or static_opts.get(sanitized, opts['0']))
+			except: pass
 	try:
 		from apis.aiostreams_api import refresh_settings_properties
 		refresh_settings_properties()
@@ -268,13 +307,29 @@ def refresh_widgets_after_db_migration():
 	schedule_widget_refresh_once(reload_skin=True)
 
 def run_deferred_setup_if_needed():
+	run_deferred_setup_background_if_needed()
+
+def run_deferred_setup_background_if_needed():
 	if kodi_utils.get_property(_DEFERRED_SETUP_DONE) == 'true': return
 	kodi_utils.set_property(_DEFERRED_SETUP_DONE, 'true')
-	try:
-		from service import run_deferred_service_setup
-		run_deferred_service_setup()
-	except Exception as e:
-		kodi_utils.logger('run_deferred_setup_if_needed', str(e))
+	from threading import Thread
+	def _run():
+		try:
+			from service import run_deferred_service_setup
+			run_deferred_service_setup()
+		except Exception as e:
+			kodi_utils.logger('run_deferred_setup_if_needed', str(e))
+	Thread(target=_run, daemon=True).start()
+
+_DIRECTORY_LISTING_MODES = frozenset((
+	'build_movie_list', 'build_tvshow_list', 'build_season_list', 'build_episode_list',
+	'build_in_progress_episode', 'build_recently_watched_episode', 'build_next_episode',
+	'build_my_calendar', 'build_next_episode_manager'))
+
+def is_directory_listing_mode(mode):
+	if not mode: return False
+	if mode.startswith('navigator.'): return True
+	return mode in _DIRECTORY_LISTING_MODES
 
 def load_settings_properties(force=False):
 	bootstrap_settings_properties(force=force)
@@ -332,6 +387,17 @@ def sync_settings(params={}):
 			currentsettings['update.username'] = 'The-Red-Wizard'
 			migrated = True
 			if load_properties: settings_cache.set_memory_cache('update.username', 'The-Red-Wizard')
+		from modules.settings import migrate_simkl_context_menu_for_upgrade, migrate_cm_manager_order_for_upgrade
+		if migrate_simkl_context_menu_for_upgrade(had_existing_settings): migrated = True
+		if migrate_cm_manager_order_for_upgrade(): migrated = True
+		if currentsettings.get('migration.my_content_nav_mode_v136') != 'true':
+			try:
+				from caches.navigator_cache import migrate_my_content_nav_mode
+				if migrate_my_content_nav_mode(): migrated = True
+			except: pass
+			settings_cache.write_db('migration.my_content_nav_mode_v136', 'true', defaults_map.get('migration.my_content_nav_mode_v136'))
+			currentsettings['migration.my_content_nav_mode_v136'] = 'true'
+			if load_properties: settings_cache.set_memory_cache('migration.my_content_nav_mode_v136', 'true')
 		for setting_id, value in list(currentsettings.items()):
 			if setting_id not in defaults_map: continue
 			sanitized = sanitize_setting_value(setting_id, value, defaults_map[setting_id], validate_paths=False)
@@ -383,12 +449,18 @@ def set_boolean(params):
 	set_setting(setting, boolean_dict[get_setting('redlight.%s' % setting)])
 
 def set_string(params):
-	current_value = get_setting('redlight.%s' % params['setting_id'])
+	setting_id = params['setting_id']
+	current_value = get_setting('redlight.%s' % setting_id)
 	current_value = current_value.replace('empty_setting', '')
 	new_value = kodi_utils.kodi_dialog().input('', defaultt=current_value)
 	if not new_value and not kodi_utils.confirm_dialog(text='Enter Blank Value?', ok_label='Yes', cancel_label='Re-Enter Value', default_control=11):
 		return set_string(params)
-	set_setting(params['setting_id'], new_value or 'empty_setting')
+	if setting_id in _CREDENTIAL_STRING_SETTINGS:
+		new_value = normalize_credential_string(new_value)
+	if setting_id == 'tmdb_api' and new_value and looks_like_tmdb_v4_jwt(new_value):
+		kodi_utils.ok_dialog(heading='Wrong key type', text='This is a TMDb v4 Read Access Token (JWT), not the v3 API Key.[CR]Use TMDb Lists → Read Access Token for v4 tokens.')
+		return set_string(params)
+	set_setting(setting_id, new_value or 'empty_setting')
 
 def set_numeric(params):
 	setting_id = params['setting_id']
@@ -424,12 +496,26 @@ def set_path(params):
 
 def set_from_list(params):
 	setting_id = params['setting_id']
-	settings_options = default_setting_values(setting_id)['settings_options'].items()
+	if setting_id == 'watched_indicators':
+		from modules.settings import watched_provider_options
+		settings_options = watched_provider_options().items()
+	else:
+		settings_options = default_setting_values(setting_id)['settings_options'].items()
 	settings_list = [(v, k) for k, v in settings_options]
+	if setting_id == 'watched_indicators':
+		settings_list.sort(key=lambda item: item[0].lower())
 	new_value = kodi_utils.select_dialog(settings_list, **{'items': json.dumps([{'line1': item[0]} for item in settings_list]), 'narrow_window': 'true'})
 	if not new_value: return
 	setting_value = new_value[1]
+	prev_value = get_setting('redlight.%s' % setting_id) if setting_id == 'watched_indicators' else None
 	set_setting(setting_id, setting_value)
+	if setting_id == 'watched_indicators' and setting_value == '2' and str(prev_value) != '2':
+		try:
+			from modules.settings import trakt_user_active, offer_trakt_import_to_simkl
+			if trakt_user_active() and not offer_trakt_import_to_simkl():
+				from apis.simkl_api import simkl_sync_activities
+				simkl_sync_activities(force_update=True)
+		except: pass
 
 def set_source_folder_path(params):
 	setting_id = params['setting_id']
@@ -480,7 +566,14 @@ def default_settings():
 {'setting_id': 'update.username', 'setting_type': 'string', 'setting_default': 'The-Red-Wizard'},
 {'setting_id': 'update.location', 'setting_type': 'string', 'setting_default': 'TheRedWizard.github.io'},
 #==================== Watched Indicators
-{'setting_id': 'watched_indicators', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Red Light', '1': 'Trakt'}},
+{'setting_id': 'watched_indicators', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Red Light', '2': 'Simkl', '1': 'Trakt'}},
+#======+============= Simkl Cache
+{'setting_id': 'simkl.user', 'setting_type': 'string', 'setting_default': 'empty_setting'},
+{'setting_id': 'simkl.token', 'setting_type': 'string', 'setting_default': '0'},
+{'setting_id': 'simkl.sync_interval', 'setting_type': 'action', 'setting_default': '60', 'min_value': '5', 'max_value': '600'},
+{'setting_id': 'simkl.refresh_widgets', 'setting_type': 'boolean', 'setting_default': 'true'},
+{'setting_id': 'simkl.cm_menu_migrated', 'setting_type': 'boolean', 'setting_default': 'false'},
+{'setting_id': 'cm_manager_order_migrated', 'setting_type': 'boolean', 'setting_default': 'false'},
 #======+============= Trakt Cache
 {'setting_id': 'trakt.sync_interval', 'setting_type': 'action', 'setting_default': '60', 'min_value': '5', 'max_value': '600'},
 {'setting_id': 'trakt.refresh_widgets', 'setting_type': 'boolean', 'setting_default': 'true'},
@@ -546,9 +639,11 @@ def default_settings():
 #==================== Contents Sort Order For Watched Progress
 {'setting_id': 'sort.progress', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Title', '1': 'Recently Watched'}},
 {'setting_id': 'sort.watched', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Title', '1': 'Recently Watched'}},
+#==================== Contents Sort Order For Simkl Lists
+{'setting_id': 'sort.simkl', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Title', '1': 'Date Added (desc)', '2': 'Release Date (desc)', '3': 'Date Added (asc)', '4': 'Release Date (asc)'}},
 #==================== Contents Sort Order For Trakt Lists
-{'setting_id': 'sort.collection', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Title', '1': 'Date Added', '2': 'Release Date'}},
-{'setting_id': 'sort.watchlist', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Title', '1': 'Date Added', '2': 'Release Date'}},
+{'setting_id': 'sort.collection', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Title', '1': 'Date Added (desc)', '2': 'Release Date (desc)', '3': 'Date Added (asc)', '4': 'Release Date (asc)'}},
+{'setting_id': 'sort.watchlist', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Title', '1': 'Date Added (desc)', '2': 'Release Date (desc)', '3': 'Date Added (asc)', '4': 'Release Date (asc)'}},
 #==================== Contents Sort Order For TMDb Lists
 {'setting_id': 'tmdbsort.watchlist', 'setting_type': 'action', 'setting_default': '4', 'settings_options': {'0': 'Title', '1': 'Release Date (asc)', '2': 'Release Date (desc)',
 '3': 'Shuffle', '4': 'Default from TMDb (None)'}},
@@ -570,10 +665,10 @@ def default_settings():
 #==================== Context Menu
 {'setting_id': 'context_menu.enabled', 'setting_type': 'string',
 'setting_default': 'extras,options,playback_options,browse_movie_set,browse_seasons,browse_episodes,recommended,related,more_like_this,similar,in_trakt_list,' \
-'trakt_manager,personal_manager,tmdb_manager,favorites_manager,mark_watched,unmark_previous_episode,exit,refresh,reload'},
+'simkl_manager,trakt_manager,tmdb_manager,personal_manager,favorites_manager,mark_watched,unmark_previous_episode,exit,refresh,reload'},
 {'setting_id': 'context_menu.order', 'setting_type': 'string',
 'setting_default': 'extras,options,playback_options,browse_movie_set,browse_seasons,browse_episodes,recommended,related,more_like_this,similar,in_trakt_list,' \
-'trakt_manager,personal_manager,tmdb_manager,favorites_manager,mark_watched,unmark_previous_episode,exit,refresh,reload'},
+'simkl_manager,trakt_manager,tmdb_manager,personal_manager,favorites_manager,mark_watched,unmark_previous_episode,exit,refresh,reload'},
 
 
 #==================================================================================#
@@ -631,6 +726,7 @@ def default_settings():
 {'setting_id': 'provider.external', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'external_scraper.name', 'setting_type': 'string', 'setting_default': 'empty_setting'},
 {'setting_id': 'migration.cache_check_pm_oc_tb_v129e', 'setting_type': 'boolean', 'setting_default': 'false'},
+{'setting_id': 'migration.my_content_nav_mode_v136', 'setting_type': 'boolean', 'setting_default': 'false'},
 #==================== Real Debrid
 {'setting_id': 'rd.token', 'setting_type': 'string', 'setting_default': 'empty_setting'},
 {'setting_id': 'rd.enabled', 'setting_type': 'boolean', 'setting_default': 'false'},
@@ -801,6 +897,9 @@ def default_settings():
 {'setting_id': 'scraper_720p_highlight', 'setting_type': 'string', 'setting_default': 'FF3C9900'},
 {'setting_id': 'scraper_SD_highlight', 'setting_type': 'string', 'setting_default': 'FF0166FF'},
 {'setting_id': 'scraper_single_highlight', 'setting_type': 'string', 'setting_default': 'FF008EB2'},
+{'setting_id': 'highlight.tint_focused_background', 'setting_type': 'boolean', 'setting_default': 'false'},
+{'setting_id': 'highlight.background_opacity', 'setting_type': 'string', 'setting_default': '66'},
+{'setting_id': 'highlight.background_opacity_name', 'setting_type': 'string', 'setting_default': '40%'},
 
 
 #===============================================================================#

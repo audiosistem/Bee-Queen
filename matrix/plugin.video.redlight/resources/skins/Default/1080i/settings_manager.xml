@@ -532,12 +532,46 @@
                       </item>
                       <item>
                           <visible>Container(2000).HasFocus(10)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.trakt.user),empty_setting)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.trakt.user),empty_setting) | !String.IsEqual(Window(10000).Property(redlight.simkl.user),empty_setting)</visible>
                           <property name="setting_label">Watched Status Provider</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.watched_indicators_name)]</property>
-                          <property name="setting_description">Choose the provider that keeps track of the Movies and Episodes you have watched within Red Light. Options are the built in method of Red Light or your Trakt account</property>
+                          <property name="setting_description">Watched ticks, resume bars, scrobble, Next Episodes, and In Progress lists. Red Light (local), Simkl, or Trakt (authorise under Meta Accounts).</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_from_list&amp;setting_id=watched_indicators)</onclick>
+                      </item>
+        <!-- Simkl Cache -->
+                      <item>
+                          <visible>Container(2000).HasFocus(10)</visible>
+                          <property name="setting_label">Simkl Cache</property>
+                          <property name="setting_type">separator</property>
+                          <onclick>noop</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(10)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.simkl.user),empty_setting)</visible>
+                          <property name="setting_label">Resync Interval (mins)</property>
+                          <property name="setting_type">numeric</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.simkl.sync_interval)]</property>
+                          <property name="setting_description">Choose how often Red Light polls your Simkl service for any changes</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_numeric&amp;setting_id=simkl.sync_interval)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(10)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.simkl.user),empty_setting)</visible>
+                          <property name="setting_label">Refresh Widgets After Simkl Sync</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.simkl.refresh_widgets)]</property>
+                          <property name="setting_description">Enable this and Red Light will refresh widgets after performing a Simkl Sync if there were any changes</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=simkl.refresh_widgets)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(10)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.simkl.user),empty_setting)</visible>
+                          <property name="setting_label">Force Simkl Sync</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">...</property>
+                          <property name="setting_description">Pull watched status and playback progress from Simkl now</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=simkl.simkl_force_sync)</onclick>
                       </item>
         <!-- Trakt Cache -->
                       <item>
@@ -563,6 +597,15 @@
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.trakt.refresh_widgets)]</property>
                           <property name="setting_description">Enable this and Red Light will refresh widgets after performing a Trakt Sync if there were any changes</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=trakt.refresh_widgets)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(10)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.trakt.user),empty_setting)</visible>
+                          <property name="setting_label">Force Trakt Sync</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">...</property>
+                          <property name="setting_description">Pull watched status and playback progress from Trakt now</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=trakt.trakt_force_sync)</onclick>
                       </item>
         <!-- UTC Time Offset -->
                       <item>
@@ -1042,6 +1085,22 @@
                           <property name="setting_description">Choose the sort order for your Watched media</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_from_list&amp;setting_id=sort.watched)</onclick>
                       </item>
+        <!-- Contents Sort Order For Simkl Lists -->
+                      <item>
+                          <visible>Container(2000).HasFocus(30)</visible>
+                          <property name="setting_label">Contents Sort Order For Simkl Lists</property>
+                          <property name="setting_type">separator</property>
+                          <onclick>noop</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(30)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.simkl.user),empty_setting)</visible>
+                          <property name="setting_label">Simkl Lists</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.sort.simkl_name)]</property>
+                          <property name="setting_description">Sort order for Simkl Plan to Watch, Watching, Completed, On Hold, and Dropped. Release Date uses Simkl year or release metadata (TV uses premiere year when full air date is unavailable).</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_from_list&amp;setting_id=sort.simkl)</onclick>
+                      </item>
         <!-- Contents Sort Order For Trakt Lists -->
                       <item>
                           <visible>Container(2000).HasFocus(30)</visible>
@@ -1055,7 +1114,7 @@
                           <property name="setting_label">Trakt Collection</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.sort.collection_name)]</property>
-                          <property name="setting_description">Choose the sort order for your Trakt Collection media</property>
+                          <property name="setting_description">Choose the sort order for your Trakt Collection media. Release Date uses movie release / TV first-air date.</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_from_list&amp;setting_id=sort.collection)</onclick>
                       </item>
                       <item>
@@ -1064,7 +1123,7 @@
                           <property name="setting_label">Trakt Watchlist</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.sort.watchlist_name)]</property>
-                          <property name="setting_description">Choose the sort order for your Trakt Watchlist media</property>
+                          <property name="setting_description">Choose the sort order for your Trakt Watchlist media. Release Date uses movie release / TV first-air date.</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_from_list&amp;setting_id=sort.watchlist)</onclick>
                       </item>
         <!-- Contents Sort Order For TMDb Lists -->
@@ -1403,6 +1462,40 @@
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_numeric&amp;setting_id=trakt.calendar_future_days)</onclick>
                       </item>
 <!-- META ACCOUNTS 50 -->
+        <!-- Simkl -->
+                      <item>
+                          <visible>Container(2000).HasFocus(50)</visible>
+                          <property name="setting_label">Simkl</property>
+                          <property name="setting_type">separator</property>
+                          <onclick>noop</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(50)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.simkl.user),empty_setting)</visible>
+                          <property name="setting_label">Authorise</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">...</property>
+                          <property name="setting_description">Authorise your Simkl account. PIN shown on screen — visit simkl.com/pin</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=simkl.simkl_authenticate)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(50)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.simkl.user),empty_setting)</visible>
+                          <property name="setting_label">Revoke Authorisation</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.simkl.user)]</property>
+                          <property name="setting_description">Revoke authorisation of your Simkl account</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=simkl.simkl_revoke_authentication)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(50)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.simkl.user),empty_setting)</visible>
+                          <property name="setting_label">Import Trakt to Simkl</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">...</property>
+                          <property name="setting_description">Open Simkl's official Trakt import page (QR code or copied link). Use when moving watch history from Trakt to Simkl.</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=simkl.simkl_import_trakt)</onclick>
+                      </item>
         <!-- Trakt -->
                       <item>
                           <visible>Container(2000).HasFocus(50)</visible>
@@ -1413,20 +1506,20 @@
                       <item>
                           <visible>Container(2000).HasFocus(50)</visible>
                           <visible>String.IsEqual(Window(10000).Property(redlight.trakt.user),empty_setting)</visible>
-                          <property name="setting_label">Authorize</property>
+                          <property name="setting_label">Authorise</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">...</property>
-                          <property name="setting_description">Authorize your Trakt account and use it within Red Light</property>
+                          <property name="setting_description">Authorise your Trakt account and use it within Red Light</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=trakt.trakt_authenticate)</onclick>
                       </item>
                       <item>
                           <visible>Container(2000).HasFocus(50)</visible>
                           <visible>!String.IsEqual(Window(10000).Property(redlight.trakt.user),empty_setting)</visible>
-                          <property name="setting_label">Revoke Authorization</property>
+                          <property name="setting_label">Revoke Authorisation</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">...</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.trakt.user)]</property>
-                          <property name="setting_description">Revoke authorization of your Trakt account</property>
+                          <property name="setting_description">Revoke authorisation of your Trakt account</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=trakt.trakt_revoke_authentication)</onclick>
                       </item>
                       <item>
@@ -1434,7 +1527,7 @@
                           <property name="setting_label">Client ID Key</property>
                           <property name="setting_type">numeric</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.trakt.client)]</property>
-                          <property name="setting_description">Enter here your Trakt Client ID key</property>
+                          <property name="setting_description">Enter the Client ID from your app at trakt.tv/oauth/applications (or leave the Red Light default)</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_string&amp;setting_id=trakt.client)</onclick>
                       </item>
                       <item>
@@ -1450,7 +1543,7 @@
                           <property name="setting_label">Client Secret Key</property>
                           <property name="setting_type">numeric</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.trakt.secret)]</property>
-                          <property name="setting_description">Enter here your Trakt Client Secret key</property>
+                          <property name="setting_description">Enter the Client Secret from the same Trakt app as the Client ID above</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_string&amp;setting_id=trakt.secret)</onclick>
                       </item>
                       <item>
@@ -1462,6 +1555,14 @@
                           <property name="setting_description">Restore default Trakt Client Secret Key</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.restore_setting_default&amp;setting_id=trakt.secret)</onclick>
                       </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(50)</visible>
+                          <property name="setting_label">Test Client Keys...</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">...</property>
+                          <property name="setting_description">Check that your Trakt Client ID (and Secret if set) are accepted by Trakt before using Authorise</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=trakt_credentials_check_choice)</onclick>
+                      </item>
         <!-- TMDb API -->
                       <item>
                           <visible>Container(2000).HasFocus(50)</visible>
@@ -1471,10 +1572,10 @@
                       </item>
                       <item>
                           <visible>Container(2000).HasFocus(50)</visible>
-                          <property name="setting_label">API Key</property>
+                          <property name="setting_label">API Key (v3 API)</property>
                           <property name="setting_type">numeric</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.tmdb_api)]</property>
-                          <property name="setting_description">Enter here your TMDb API key</property>
+                          <property name="setting_description">Enter the 32-character TMDb API Key (v3 auth) from themoviedb.org/settings/api — not the v4 Read Access Token</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_string&amp;setting_id=tmdb_api)</onclick>
                       </item>
                       <item>
@@ -1504,10 +1605,10 @@
                       </item>
                       <item>
                           <visible>Container(2000).HasFocus(50)</visible>
-                          <property name="setting_label">Lists Read Access Token</property>
+                          <property name="setting_label">Lists Read Access Token (v4 token)</property>
                           <property name="setting_type">numeric</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.tmdb.lists_read_token)]</property>
-                          <property name="setting_description">Enter your TMDb v4 read access token (JWT). Used for TMDb Lists account authorization and API calls before you sign in with Authorize Account. Create one at themoviedb.org/settings/api with API Read Access permission.</property>
+                          <property name="setting_description">Enter your TMDb v4 read access token (JWT). Used for TMDb Lists account authorisation and API calls before you sign in with Authorise Account. Create one at themoviedb.org/settings/api with API Read Access permission.</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_string&amp;setting_id=tmdb.lists_read_token)</onclick>
                       </item>
                       <item>
@@ -1531,19 +1632,19 @@
                       <item>
                           <visible>Container(2000).HasFocus(50)</visible>
                           <visible>String.IsEqual(Window(10000).Property(redlight.tmdb.token),empty_setting)</visible>
-                          <property name="setting_label">Authorize Account</property>
+                          <property name="setting_label">Authorise Account</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">...</property>
-                          <property name="setting_description">Authorize your TMDb account and use it within Red Light for Lists</property>
+                          <property name="setting_description">Authorise your TMDb account and use it within Red Light for Lists</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=tmdblist_api.authenticate)</onclick>
                       </item>
                       <item>
                           <visible>Container(2000).HasFocus(50)</visible>
                           <visible>!String.IsEqual(Window(10000).Property(redlight.tmdb.token),empty_setting)</visible>
-                          <property name="setting_label">Revoke Account Authorization</property>
+                          <property name="setting_label">Revoke Account Authorisation</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.tmdb.username)]</property>
-                          <property name="setting_description">Revoke authorization of your TMDb account</property>
+                          <property name="setting_description">Revoke authorisation of your TMDb account</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=tmdblist_api.revoke_authentication)</onclick>
                       </item>
         <!-- OMDb -->
@@ -1661,10 +1762,10 @@
                       <item>
                           <visible>Container(2000).HasFocus(60)</visible>
                           <visible>String.IsEqual(Window(10000).Property(redlight.ad.token),empty_setting)</visible>
-                          <property name="setting_label">Authorize</property>
+                          <property name="setting_label">Authorise</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">...</property>
-                          <property name="setting_description">Authorize your All Debrid account and use it within Red Light</property>
+                          <property name="setting_description">Authorise your All Debrid account and use it within Red Light</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=alldebrid.authenticate)</onclick>
                       </item>
                       <item>
@@ -1680,10 +1781,10 @@
                           <visible>Container(2000).HasFocus(60)</visible>
                           <visible>!String.IsEqual(Window(10000).Property(redlight.ad.token),empty_setting)</visible>
                           <visible>String.IsEqual(Window(10000).Property(redlight.ad.enabled),true)</visible>
-                          <property name="setting_label">Revoke Authorization</property>
+                          <property name="setting_label">Revoke Authorisation</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.ad.account_id)]</property>
-                          <property name="setting_description">Revoke authorization of your All Debrid account</property>
+                          <property name="setting_description">Revoke authorisation of your All Debrid account</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=alldebrid.revoke_authentication)</onclick>
                       </item>
                       <item>
@@ -1928,10 +2029,10 @@
                       <item>
                           <visible>Container(2000).HasFocus(60)</visible>
                           <visible>String.IsEqual(Window(10000).Property(redlight.oc.token),empty_setting)</visible>
-                          <property name="setting_label">Authorize</property>
+                          <property name="setting_label">Authorise</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">...</property>
-                          <property name="setting_description">Authorize your Offcloud account with a QR code and use it within Red Light</property>
+                          <property name="setting_description">Authorise your Offcloud account with a QR code and use it within Red Light</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=offcloud.authenticate)</onclick>
                       </item>
                       <item>
@@ -1947,10 +2048,10 @@
                           <visible>Container(2000).HasFocus(60)</visible>
                           <visible>!String.IsEqual(Window(10000).Property(redlight.oc.token),empty_setting)</visible>
                           <visible>String.IsEqual(Window(10000).Property(redlight.oc.enabled),true)</visible>
-                          <property name="setting_label">Revoke Authorization</property>
+                          <property name="setting_label">Revoke Authorisation</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.oc.token)]</property>
-                          <property name="setting_description">Revoke authorization of your Offcloud account</property>
+                          <property name="setting_description">Revoke authorisation of your Offcloud account</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=offcloud.revoke_authentication)</onclick>
                       </item>
                       <item>
@@ -2059,10 +2160,10 @@
                       <item>
                           <visible>Container(2000).HasFocus(60)</visible>
                           <visible>String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
-                          <property name="setting_label">Authorize</property>
+                          <property name="setting_label">Authorise</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">...</property>
-                          <property name="setting_description">Authorize your Premiumize account and use it within Red Light</property>
+                          <property name="setting_description">Authorise your Premiumize account and use it within Red Light</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=premiumize.authenticate)</onclick>
                       </item>
                       <item>
@@ -2078,10 +2179,10 @@
                           <visible>Container(2000).HasFocus(60)</visible>
                           <visible>!String.IsEqual(Window(10000).Property(redlight.pm.token),empty_setting)</visible>
                           <visible>String.IsEqual(Window(10000).Property(redlight.pm.enabled),true)</visible>
-                          <property name="setting_label">Revoke Authorization</property>
+                          <property name="setting_label">Revoke Authorisation</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.pm.account_id)]</property>
-                          <property name="setting_description">Revoke authorization of your Premiumize account</property>
+                          <property name="setting_description">Revoke authorisation of your Premiumize account</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=premiumize.revoke_authentication)</onclick>
                       </item>
                       <item>
@@ -2192,10 +2293,10 @@
                       <item>
                           <visible>Container(2000).HasFocus(60)</visible>
                           <visible>String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
-                          <property name="setting_label">Authorize</property>
+                          <property name="setting_label">Authorise</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">...</property>
-                          <property name="setting_description">Authorize your Real Debrid account and use it within Red Light</property>
+                          <property name="setting_description">Authorise your Real Debrid account and use it within Red Light</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=real_debrid.authenticate)</onclick>
                       </item>
                       <item>
@@ -2211,10 +2312,10 @@
                           <visible>Container(2000).HasFocus(60)</visible>
                           <visible>!String.IsEqual(Window(10000).Property(redlight.rd.token),empty_setting)</visible>
                           <visible>String.IsEqual(Window(10000).Property(redlight.rd.enabled),true)</visible>
-                          <property name="setting_label">Revoke Authorization</property>
+                          <property name="setting_label">Revoke Authorisation</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.rd.account_id)]</property>
-                          <property name="setting_description">Revoke authorization of your Real Debrid account</property>
+                          <property name="setting_description">Revoke authorisation of your Real Debrid account</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=real_debrid.revoke_authentication)</onclick>
                       </item>
                       <item>
@@ -2333,10 +2434,10 @@
                       <item>
                           <visible>Container(2000).HasFocus(60)</visible>
                           <visible>String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
-                          <property name="setting_label">Authorize</property>
+                          <property name="setting_label">Authorise</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">...</property>
-                          <property name="setting_description">Authorize your TorBox account with a QR code and use it within Red Light</property>
+                          <property name="setting_description">Authorise your TorBox account with a QR code and use it within Red Light</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=torbox.authenticate)</onclick>
                       </item>
                       <item>
@@ -2352,10 +2453,10 @@
                           <visible>Container(2000).HasFocus(60)</visible>
                           <visible>!String.IsEqual(Window(10000).Property(redlight.tb.token),empty_setting)</visible>
                           <visible>String.IsEqual(Window(10000).Property(redlight.tb.enabled),true)</visible>
-                          <property name="setting_label">Revoke Authorization</property>
+                          <property name="setting_label">Revoke Authorisation</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.tb.token)]</property>
-                          <property name="setting_description">Revoke authorization of your TorBox account</property>
+                          <property name="setting_description">Revoke authorisation of your TorBox account</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=torbox.revoke_authentication)</onclick>
                       </item>
                       <item>
@@ -3054,6 +3155,23 @@
                           <property name="setting_value">[COLOR $INFO[Window(10000).Property(redlight.scraper_single_highlight)]]$INFO[Window(10000).Property(redlight.scraper_single_highlight)][/COLOR]</property>
                           <property name="setting_description">Choose Single color for all results</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=scraper_color_choice&amp;setting_id=scraper_single_highlight)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(70)</visible>
+                          <property name="setting_label">Tint Focused Result Background</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.highlight.tint_focused_background)]</property>
+                          <property name="setting_description">Tint the focused result row background using your highlight color instead of the default grey</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=highlight.tint_focused_background)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(70)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.highlight.tint_focused_background),true)</visible>
+                          <property name="setting_label">    - Results Background Opacity</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.highlight.background_opacity_name)]</property>
+                          <property name="setting_description">Choose the opacity applied to the focused result background when tinting is enabled</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=highlight_background_opacity_choice)</onclick>
                       </item>
 <!-- PLAYBACK 80 -->
         <!-- Playback Movies -->

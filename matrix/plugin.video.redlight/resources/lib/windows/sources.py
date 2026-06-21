@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 from windows.base_window import BaseDialog
-from caches.settings_cache import set_setting
+from caches.settings_cache import get_setting, set_setting
 from modules.debrid import debrid_cache_check_available
 from modules.settings import debrid_cache_check
 from modules.utils import TaskPool
@@ -9,6 +9,13 @@ from modules.source_utils import source_filters
 from modules.settings import provider_sort_ranks, avoid_episode_spoilers, max_threads
 from modules.kodi_utils import get_icon, kodi_dialog, hide_busy_dialog, addon_fanart, select_dialog, ok_dialog, notification
 # from modules.kodi_utils import logger
+
+def _highlight_with_alpha(color, alpha):
+	if not color: return color or 'FFCCCCCC'
+	color = color.strip().replace('#', '')
+	if len(color) == 8: return alpha + color[2:]
+	if len(color) == 6: return alpha + color
+	return color
 
 class SourcesResults(BaseDialog):
 	def __init__(self, *args, **kwargs):
@@ -21,9 +28,6 @@ class SourcesResults(BaseDialog):
 		self.info_highlights_dict = kwargs.get('scraper_settings')
 		self.episode_group_label = kwargs.get('episode_group_label', '')
 		self.prescrape = kwargs.get('prescrape')
-		self.prescrape_empty_notice = kwargs.get('prescrape_empty_notice', False)
-		self.prescrape_empty_notice_main = kwargs.get('prescrape_empty_notice_main', '')
-		self.prescrape_empty_notice_sub = kwargs.get('prescrape_empty_notice_sub', '')
 		self.meta = kwargs.get('meta')
 		self.sources_ref = kwargs.get('sources_ref')
 		self.filters_ignored = kwargs.get('filters_ignored', False)
@@ -40,6 +44,8 @@ class SourcesResults(BaseDialog):
 		'pm_cloud': get_icon('premiumize'), 'oc_cloud': get_icon('offcloud'), 'tb_cloud': get_icon('torbox')}
 		self.info_quality_dict = {'4k': get_icon('flag_4k', 'flags'), '1080p': get_icon('flag_1080p', 'flags'), '720p': get_icon('flag_720p', 'flags'),
 		'sd': get_icon('flag_sd', 'flags'), 'cam': get_icon('flag_sd', 'flags'), 'tele': get_icon('flag_sd', 'flags'), 'scr': get_icon('flag_sd', 'flags')}
+		self.tint_focused_background = get_setting('redlight.highlight.tint_focused_background') == 'true'
+		self.highlight_alpha = get_setting('redlight.highlight.background_opacity', '66')
 		self.make_items()
 		self.make_filter_items()
 		self.set_properties()
@@ -205,7 +211,7 @@ class SourcesResults(BaseDialog):
 					if 'Uncached' in item['cache_provider']:
 						if 'seeders' in item: set_properties({'source_type': 'UNCACHED (%d SEEDERS)' % get('seeders', 0)})
 						else: set_properties({'source_type': 'UNCACHED'})
-						set_properties({'highlight': 'FF7C7C7C'})
+						item_highlight = 'FF7C7C7C'
 					else:
 						provider_check_names = {'REAL-DEBRID': 'Real-Debrid', 'ALLDEBRID': 'AllDebrid', 'TORBOX': 'TorBox', 'PREMIUMIZE': 'Premiumize.me', 'OFFCLOUD': 'Offcloud'}
 						check_provider = provider_check_names.get(provider)
@@ -214,7 +220,7 @@ class SourcesResults(BaseDialog):
 						else: cache_flag = '[B]CACHED[/B]'
 						if highlight_type == 0: key = provider_lower
 						else: key = basic_quality
-						set_properties({'highlight': self.info_highlights_dict[key]})
+						item_highlight = self.info_highlights_dict[key]
 						if pack: set_properties({'source_type': '%s [B]PACK[/B]' % cache_flag})
 						else: set_properties({'source_type': '%s' % cache_flag})
 					set_properties({'provider': provider})
@@ -223,9 +229,12 @@ class SourcesResults(BaseDialog):
 					provider, provider_icon = self.get_provider_and_path(source.lower())
 					if highlight_type == 0: key = provider
 					else: key = basic_quality
-					set_properties({'highlight': self.info_highlights_dict[key], 'source_type': 'DIRECT', 'provider': provider.upper()})
+					item_highlight = self.info_highlights_dict[key]
+					set_properties({'source_type': 'DIRECT', 'provider': provider.upper()})
+				highlight_bg = _highlight_with_alpha(item_highlight, self.highlight_alpha) if self.tint_focused_background else 'FFCCCCCC'
 				set_properties({'name': name.upper(), 'source_site': source_site, 'provider_icon': provider_icon, 'quality_icon': quality_icon, 'count': '%02d.' % count,
-						'size_label': get('size_label', 'N/A'), 'extraInfo': extraInfo, 'quality': quality.upper(), 'hash': get('hash', 'N/A'), 'source': json.dumps(item)})	
+						'size_label': get('size_label', 'N/A'), 'extraInfo': extraInfo, 'quality': quality.upper(), 'hash': get('hash', 'N/A'), 'source': json.dumps(item),
+						'highlight': item_highlight, 'highlight_bg': highlight_bg})
 				item_list.append((listitem, count))
 			except: pass
 		try:
@@ -290,15 +299,13 @@ class SourcesResults(BaseDialog):
 
 	def set_properties(self):
 		self.set_home_property('window_theme.sources', self.get_home_property('window_theme'))
+		self.setProperty('highlight_tint_focused_background', 'true' if self.tint_focused_background else 'false')
 		self.setProperty('window_format', self.window_format)
 		self.setProperty('fanart', self.meta_get('fanart') or self.addon_fanart)
 		self.setProperty('clearlogo', self.meta_get('clearlogo') or '')
 		self.setProperty('title', self.meta_get('title'))
 		self.setProperty('total_results', self.total_results)
 		self.setProperty('filters_ignored', '| Filters Ignored' if self.filters_ignored else '')
-		if self.prescrape_empty_notice:
-			self.setProperty('prescrape_empty_notice', self.prescrape_empty_notice_main)
-			self.setProperty('prescrape_empty_notice_sub', self.prescrape_empty_notice_sub)
 
 	def set_poster(self):
 		if self.window_id == 2000: self.set_image(200, self.poster)

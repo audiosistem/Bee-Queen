@@ -31,7 +31,7 @@ class TMDbListAPI:
 		copy2clip(short_url)
 		if short_url: p_dialog_insert = '[CR]OR visit this URL: [B]%s[/B]' % short_url
 		else: p_dialog_insert = ''
-		progressDialog = progress_dialog(heading='TMDb Account Authorization', icon=qr_code)
+		progressDialog = progress_dialog(heading='TMDb Account Authorisation', icon=qr_code)
 		count, success = 72, None
 		while not progressDialog.iscanceled() and count >= 0 and success == None:
 			try:

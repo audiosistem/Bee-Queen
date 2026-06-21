@@ -484,8 +484,8 @@ def tmdb_anime_genres(genre_id, page_no):
 def tmdb_anime_providers(provider, page_no):
 	api_key = tmdb_api_key()
 	if api_key in (None, 'empty_setting', ''): return no_api_key()
-	string = 'tmdb_anime_providers_%s_%s' % (provider, page_no)
-	url = 'https://api.themoviedb.org/3/discover/tv?api_key=%s&with_keywords=210048&watch_region=US&with_watch_providers=%s&include_null_first_air_dates=false' \
+	string = 'tmdb_anime_providers2_%s_%s' % (provider, page_no)
+	url = 'https://api.themoviedb.org/3/discover/tv?api_key=%s&sort_by=popularity.desc&with_keywords=210024&watch_region=US&with_watch_providers=%s&include_null_first_air_dates=false' \
 	'&first_air_date.lte=%s&page=%s' % (api_key, provider, get_current_date(), page_no)
 	return lists_cache_object(get_data, string, url)
 

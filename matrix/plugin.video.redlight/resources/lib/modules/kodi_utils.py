@@ -30,7 +30,7 @@ def extras_button_label_values():
 				'show_director': 'Director', 'show_options': 'Options', 'show_recommended': 'Recommended', 'show_related': 'Related', 'show_more_like_this': 'More Like This',
 				'show_similar': 'Similar', 'show_reviews': 'Reviews', 'show_comments': 'Comments', 'show_trivia': 'Trivia', 'show_blunders': 'Blunders',
 				'show_year': 'More Year', 'show_genre': 'More Genres', 'show_network': 'More Network',
-				'show_trakt_manager': 'Trakt Lists', 'show_personallists_manager': 'Personal Lists', 'show_tmdb_manager': 'TMDb Lists',
+				'show_trakt_manager': 'Trakt Lists', 'show_simkl_manager': 'Simkl Lists', 'show_tmdb_manager': 'TMDb Lists', 'show_personallists_manager': 'Personal Lists',
 				'show_favorites_manager': 'Favorites Lists', 'playback_choice': 'Play Options', 'show_plot': 'Plot', 'show_keywords': 'Keywords',
 				'show_in_trakt_lists': 'In Trakt Lists', 'close_all': 'Close'},
 			'tvshow':
@@ -38,7 +38,7 @@ def extras_button_label_values():
 				'play_nextep': 'Play Next', 'show_options': 'Options', 'show_recommended': 'Recommended', 'show_related': 'Related', 'show_more_like_this': 'More Like This',
 				'show_similar': 'Similar', 'show_reviews': 'Reviews', 'show_comments': 'Comments', 'show_trivia': 'Trivia', 'show_blunders': 'Blunders',
 				'show_year': 'More Year', 'show_genre': 'More Genres', 'show_network': 'More Network',
-				'show_trakt_manager': 'Trakt Lists', 'show_personallists_manager': 'Personal Lists', 'show_tmdb_manager': 'TMDb Lists',
+				'show_trakt_manager': 'Trakt Lists', 'show_simkl_manager': 'Simkl Lists', 'show_tmdb_manager': 'TMDb Lists', 'show_personallists_manager': 'Personal Lists',
 				'show_favorites_manager': 'Favorites Lists', 'play_random_episode': 'Play Random', 'show_plot': 'Plot', 'show_keywords': 'Keywords',
 				'show_in_trakt_lists': 'In Trakt Lists', 'close_all': 'Close'}}
 
@@ -55,8 +55,8 @@ def context_menu_items():
 	{'name': 'Browse Movie Set', 'value': 'browse_movie_set'}, {'name': 'Browse TV Seasons', 'value': 'browse_seasons'},
 	{'name': 'Browse Season Episodes', 'value': 'browse_episodes'}, {'name': 'Browse Recommended', 'value': 'recommended'}, {'name': 'Browse Related', 'value': 'related'},
 	{'name': 'Browse More Like This', 'value': 'more_like_this'}, {'name': 'Browse Similar', 'value': 'similar'}, {'name': 'In Trakt Lists', 'value': 'in_trakt_list'},
-	{'name': 'Trakt Lists Manager', 'value': 'trakt_manager'}, {'name': 'Personal Lists Manager', 'value': 'personal_manager'},
-	{'name': 'TMDb Lists Manager', 'value': 'tmdb_manager'}, {'name': 'Favorites Manager', 'value': 'favorites_manager'}, {'name': 'Mark Watched/Unwatched', 'value': 'mark_watched'},
+	{'name': 'Simkl Lists Manager', 'value': 'simkl_manager'}, {'name': 'Trakt Lists Manager', 'value': 'trakt_manager'}, {'name': 'TMDb Lists Manager', 'value': 'tmdb_manager'},
+	{'name': 'Personal Lists Manager', 'value': 'personal_manager'}, {'name': 'Favorites Manager', 'value': 'favorites_manager'}, {'name': 'Mark Watched/Unwatched', 'value': 'mark_watched'},
 	{'name': 'Unmark Previous Watched Episode', 'value': 'unmark_previous_episode'}, {'name': 'Exit List', 'value': 'exit'}, {'name': 'Refresh Widgets', 'value': 'refresh'},
 	{'name': 'Reload Widgets', 'value': 'reload'}]
 
@@ -218,8 +218,8 @@ def set_content(handle, content):
 def set_category(handle, label):
 	xbmcplugin.setPluginCategory(handle, label)
 
-def end_directory(handle, cacheToDisc=True):
-	xbmcplugin.endOfDirectory(handle, cacheToDisc=cacheToDisc)
+def end_directory(handle, updateListing=False, cacheToDisc=True):
+	xbmcplugin.endOfDirectory(handle, updateListing=updateListing, cacheToDisc=cacheToDisc)
 
 def set_view_mode(view_type, content='files', is_external=None):
 	if not get_property('redlight.use_viewtypes') == 'true': return
@@ -352,8 +352,8 @@ def kodi_version():
 def get_video_database_path():
 	return translate_path('special://profile/Database/MyVideos%s.db' % {19: '119', 20: '121', 21: '124'}[kodi_version()])
 
-def show_busy_dialog(block=False):
-	return execute_builtin('ActivateWindow(busydialognocancel)', block)
+def show_busy_dialog():
+	return execute_builtin('ActivateWindow(busydialognocancel)')
 
 def hide_busy_dialog():
 	execute_builtin('Dialog.Close(busydialognocancel)')
@@ -438,7 +438,76 @@ def disable_enable_addon(addon_name='plugin.video.redlight'):
 def update_local_addons():
 	execute_builtin('UpdateLocalAddons', True)
 	sleep(2500)
- 
+
+def addon_ui_busy():
+	try:
+		player = xbmc.Player()
+		if player.isPlaying() or player.isPlayingVideo(): return True
+	except: pass
+	if get_property('redlight.window_loaded') == 'true': return True
+	try:
+		if xbmc.getCondVisibility('Window.IsActive(dialog)'): return True
+	except: pass
+	return False
+
+def sync_addon_xml_from_settings(addon_name='plugin.video.redlight'):
+	from xml.dom.minidom import parse as mdParse
+	from caches.settings_cache import get_setting
+	addon_xml = translate_path('special://home/addons/%s/addon.xml' % addon_name)
+	if not path_exists(addon_xml): return False, False
+	invoker_setting = get_setting('redlight.reuse_language_invoker', None)
+	icon_setting = get_setting('redlight.addon_icon_choice', None)
+	if invoker_setting is None and icon_setting is None: return False, False
+	root = mdParse(addon_xml)
+	changed = False
+	invoker_changed = False
+	if invoker_setting is not None:
+		tags = root.getElementsByTagName('reuselanguageinvoker')
+		if tags:
+			node = tags[0].firstChild
+			if node and node.data != invoker_setting:
+				node.data = invoker_setting
+				changed = True
+				invoker_changed = True
+	if icon_setting is not None:
+		tags = root.getElementsByTagName('icon')
+		if tags:
+			node = tags[0].firstChild
+			if node and node.data != icon_setting:
+				node.data = icon_setting
+				changed = True
+	if changed:
+		new_xml = str(root.toxml()).replace('<?xml version="1.0" ?>', '')
+		with open(addon_xml, 'w') as f: f.write(new_xml)
+	return changed, invoker_changed
+
+def schedule_addon_metadata_reload(invoker_changed=False):
+	from threading import Thread
+	def _run():
+		update_local_addons()
+		if not invoker_changed: return
+		monitor = kodi_monitor()
+		attempts = 0
+		while attempts < 72 and not monitor.abortRequested():
+			if not addon_ui_busy():
+				disable_enable_addon()
+				logger('Red Light', 'Language invoker synced from settings after addon update')
+				return
+			attempts += 1
+			monitor.waitForAbort(5)
+	Thread(target=_run, daemon=True).start()
+
+def restore_addon_xml_from_settings():
+	try:
+		changed, invoker_changed = sync_addon_xml_from_settings()
+		if not changed: return False
+		logger('Red Light', 'Restored addon.xml from settings after update')
+		schedule_addon_metadata_reload(invoker_changed)
+		return True
+	except Exception as e:
+		logger('restore_addon_xml_from_settings', str(e))
+		return False
+
 def update_kodi_addons_db(addon_name='plugin.video.redlight'):
 	import time
 	import sqlite3 as database
@@ -499,6 +568,7 @@ def progress_dialog(heading='', icon=None):
 	from windows.base_window import create_window
 	progress_dialog = create_window(('windows.progress', 'Progress'), 'progress.xml', heading=heading, icon=icon or addon_icon())
 	Thread(target=progress_dialog.run).start()
+	sleep(150)
 	return progress_dialog
 
 def select_dialog(function_list, **kwargs):
@@ -508,14 +578,30 @@ def select_dialog(function_list, **kwargs):
 	if kwargs.get('multi_choice', 'false') == 'true': return [function_list[i] for i in selection]
 	return function_list[selection]
 
-def confirm_dialog(heading='', text='Are you sure?', ok_label='OK', cancel_label='Cancel', default_control=11):
+_DIALOG_CONFIRM_CHARS_PER_LINE = 42
+_DIALOG_CONFIRM_VISIBLE_LINES = 5
+
+def _dialog_needs_scroll(text):
+	if not text: return False
+	plain = text
+	for tag in ('[B]', '[/B]', '[I]', '[/I]', '[COLOR yellow]', '[/COLOR]'):
+		plain = plain.replace(tag, '')
+	lines = [i.strip() for i in plain.split('[CR]') if i.strip()]
+	wrapped = sum(max(1, (len(line) + _DIALOG_CONFIRM_CHARS_PER_LINE - 1) // _DIALOG_CONFIRM_CHARS_PER_LINE) for line in lines)
+	return wrapped > _DIALOG_CONFIRM_VISIBLE_LINES
+
+def confirm_dialog(heading='', text='Are you sure?', ok_label='OK', cancel_label='Cancel', default_control=11, scroll=False):
 	from windows.base_window import open_window
-	kwargs = {'heading': heading, 'text': text, 'ok_label': ok_label, 'cancel_label': cancel_label, 'default_control': default_control}
+	needs_scroll = scroll and _dialog_needs_scroll(text)
+	kwargs = {'heading': heading, 'text': text, 'ok_label': ok_label, 'cancel_label': cancel_label, 'default_control': default_control,
+				'scroll': 'true' if needs_scroll else 'false', 'scroll_focus': 'true' if needs_scroll else 'false'}
 	return open_window(('windows.default_dialogs', 'Confirm'), 'confirm.xml', **kwargs)
 
-def ok_dialog(heading='', text='No Results', ok_label='OK'):
+def ok_dialog(heading='', text='No Results', ok_label='OK', scroll=False):
 	from windows.base_window import open_window
-	kwargs = {'heading': heading, 'text': text, 'ok_label': ok_label}
+	needs_scroll = scroll and _dialog_needs_scroll(text)
+	kwargs = {'heading': heading, 'text': text, 'ok_label': ok_label,
+				'scroll': 'true' if needs_scroll else 'false', 'scroll_focus': 'true' if needs_scroll else 'false'}
 	return open_window(('windows.default_dialogs', 'OK'), 'ok.xml', **kwargs)
 
 def show_text(heading, text=None, file=None, font_size='small', kodi_log=False):

@@ -23,10 +23,9 @@ PROP_BROWSE_RETURN_SOURCES = 'redlight.browse_return_sources'
 class Sources():
 	def __init__(self):
 		self.params = {}
-		self.prescrape_scrapers, self.prescrape_threads, self.prescrape_sources, self.uncached_results, self.orig_results = [], [], [], [], []
+		self.prescrape_scrapers, self.prescrape_threads, self.prescrape_sources, self.prescrape_ran_scrapers, self.uncached_results, self.orig_results = [], [], [], set(), [], []
 		self.threads, self.providers, self.sources, self.internal_scraper_names, self.remove_scrapers = [], [], [], [], ['external']
 		self.clear_properties, self.filters_ignored, self.active_folders, self.resolve_dialog_made, self.episode_group_used = True, False, False, False, False
-		self.prescrape_empty_notice = False
 		self.sources_total = self.sources_4k = self.sources_1080p = self.sources_720p = self.sources_sd = 0
 		self.prescrape, self.disabled_ext_ignored = 'true', 'false'
 		self.ext_name, self.ext_folder = '', ''
@@ -67,6 +66,16 @@ class Sources():
 		except:
 			pass
 
+	def _random_playback(self):
+		return any((self.random, self.random_continual, self.play_type == 'random_continual'))
+
+	def _effective_autoplay(self):
+		if not self.autoplay:
+			return False
+		if self.cloud_prescrape_autoplay or self._random_playback():
+			return True
+		return settings.auto_play(self.media_type)
+
 	def playback_prep(self, params=None):
 		kodi_utils.hide_busy_dialog()
 		if params: self.params = params
@@ -101,7 +110,9 @@ class Sources():
 		else: self.season, self.episode, self.custom_season, self.custom_episode = '', '', '', ''
 		if 'autoplay' in self.params: self.autoplay = params_get('autoplay', 'false') == 'true'
 		else: self.autoplay = settings.auto_play(self.media_type)
+		if self._random_playback(): self.autoplay = True
 		self.cloud_prescrape_autoplay = False
+		self._playback_failed_notified = False
 		self.get_meta()
 		self.determine_scrapers_status()
 		if not self.prescrape and not self._playback_skips_prescrape_override() and settings.prescrape_enabled(self.media_type, self.active_internal_scrapers):
@@ -155,6 +166,8 @@ class Sources():
 	def _allow_concurrent_scrape(self):
 		if self.autoscrape and self.background:
 			return True
+		if self.background and self.play_type == 'random_continual':
+			return True
 		return self._background_nextep_scrape()
 
 	def get_sources(self):
@@ -193,13 +206,8 @@ class Sources():
 					self._kill_progress_dialog(join_timeout=1.0)
 					if not self.progress_dialog and not self.background:
 						self._make_progress_dialog()
-					if not self.background and not self.prescrape_sources:
-						self.prescrape_empty_notice = True
-						if settings.auto_play(self.media_type) and self.active_external:
-							notice_main, notice_sub = self._prescrape_empty_notice_labels()
-							kodi_utils.notification('%s — %s' % (notice_main, notice_sub), 3500)
 					self._refresh_results_settings()
-				if not settings.auto_play(self.media_type) and not self.cloud_prescrape_autoplay:
+				if not settings.auto_play(self.media_type) and not self.cloud_prescrape_autoplay and not self._random_playback():
 					self.autoplay = False
 				self.prescrape = False
 				self._release_empty_prescrape_cloud_scrapers()
@@ -229,7 +237,8 @@ class Sources():
 		self.cloud_scraper_names = []
 		threads_append = self.threads.append
 		if self.active_external:
-			early_cloud = self.internal_sources(cloud_early=True)
+			prescrape_ran = getattr(self, 'prescrape_ran_scrapers', set()) or set()
+			early_cloud = [i for i in self.internal_sources(cloud_early=True) if i[2] not in prescrape_ran]
 			if early_cloud:
 				self.cloud_scraper_names = [i[2] for i in early_cloud]
 				for i in early_cloud:
@@ -279,10 +288,11 @@ class Sources():
 		else: self.scrapers_dialog()
 		for i in self.prescrape_scrapers:
 			scraper_name = i[2]
-			if any(r.get('scrape_provider') == scraper_name for r in self.prescrape_sources) and scraper_name not in self.remove_scrapers:
+			if scraper_name not in self.remove_scrapers:
 				self.remove_scrapers.append(scraper_name)
-		if folder_prescrape and any(r.get('scrape_provider') == 'folders' for r in self.prescrape_sources) and 'folders' not in self.remove_scrapers:
+		if folder_prescrape and 'folders' not in self.remove_scrapers:
 			self.remove_scrapers.append('folders')
+		self.prescrape_ran_scrapers = {i[2] for i in self.prescrape_scrapers}
 		return self.prescrape_sources
 
 	def process_results(self, results):
@@ -315,7 +325,7 @@ class Sources():
 			results = scrape_results + cloud_results
 		if self.prescrape:
 			self.all_scrapers = self.active_internal_scrapers
-			autoplay_results = self._cloud_autoplay_candidates(results)
+			autoplay_results = self._prescrape_autoplay_candidates(results)
 			if autoplay_results:
 				self.autoplay = True
 				self.cloud_prescrape_autoplay = True
@@ -574,6 +584,10 @@ class Sources():
 
 	def internal_sources(self, prescrape=False, cloud_early=False):
 		active_sources = [i for i in self.active_internal_scrapers if i in ['easynews', 'aiostreams', 'rd_cloud', 'pm_cloud', 'ad_cloud', 'oc_cloud', 'tb_cloud'] and i not in self.remove_scrapers]
+		if not prescrape:
+			prescrape_ran = getattr(self, 'prescrape_ran_scrapers', set()) or set()
+			if prescrape_ran:
+				active_sources = [i for i in active_sources if i not in prescrape_ran]
 		if cloud_early:
 			active_sources = [i for i in active_sources if settings.cloud_scrape_before_external(i)]
 		else:
@@ -607,8 +621,9 @@ class Sources():
 	def _cloud_scrapers(self):
 		return ('rd_cloud', 'pm_cloud', 'ad_cloud', 'oc_cloud', 'tb_cloud')
 
-	def _cloud_autoplay_candidates(self, results):
-		return [i for i in results if i.get('scrape_provider') in self._cloud_scrapers() and settings.autoplay_prescrape(i['scrape_provider'])]
+	def _prescrape_autoplay_candidates(self, results):
+		autoplay_scrapers = self._cloud_scrapers() + ('easynews',)
+		return [i for i in results if i.get('scrape_provider') in autoplay_scrapers and settings.autoplay_prescrape(i['scrape_provider'])]
 
 	def _is_cloud_result(self, item):
 		return item.get('scrape_provider') in self._cloud_scrapers()
@@ -620,16 +635,12 @@ class Sources():
 	def _release_empty_prescrape_cloud_scrapers(self):
 		"""Let cloud scrapers run again during full scrape when prescrape found nothing."""
 		if not self.check_prescrape_ran: return
+		prescrape_ran = getattr(self, 'prescrape_ran_scrapers', set()) or set()
 		for scraper in self._cloud_scrapers():
+			if scraper in prescrape_ran:
+				continue
 			if scraper in self.remove_scrapers and not any(r.get('scrape_provider') == scraper for r in self.prescrape_sources):
 				self.remove_scrapers.remove(scraper)
-
-	def _effective_autoplay(self):
-		if not self.autoplay:
-			return False
-		if self.cloud_prescrape_autoplay:
-			return True
-		return settings.auto_play(self.media_type)
 
 	def _prepare_cloud_autoplay_resolve(self):
 		"""Leave prescrape progress UI and open a clean resolver dialog for cloud autoplay."""
@@ -646,22 +657,22 @@ class Sources():
 			return
 		if self.background:
 			autoplay_queue = results
-			if self.autoplay and settings.auto_play(self.media_type):
+			if self._effective_autoplay():
 				external = self._external_autoplay_candidates(results)
 				if external: autoplay_queue = external
 			return self.play_file(autoplay_queue)
-		cloud_autoplay = self._cloud_autoplay_candidates(results)
-		if cloud_autoplay:
+		prescrape_autoplay = self._prescrape_autoplay_candidates(results)
+		if prescrape_autoplay:
 			self.autoplay = True
 			self.cloud_prescrape_autoplay = True
-			self._last_cloud_autoplay_results = list(cloud_autoplay)
-			kodi_utils.logger('Red Light', 'Autoplay cloud: %s hit(s) from %s' % (len(cloud_autoplay), cloud_autoplay[0].get('scrape_provider', '')))
+			self._last_cloud_autoplay_results = list(prescrape_autoplay)
+			kodi_utils.logger('Red Light', 'Autoplay prescrape: %s hit(s) from %s' % (len(prescrape_autoplay), prescrape_autoplay[0].get('scrape_provider', '')))
 			self._prepare_cloud_autoplay_resolve()
-			return self.play_file(cloud_autoplay)
+			return self.play_file(prescrape_autoplay)
 		self.cloud_prescrape_autoplay = False
 		if self.prescrape and any(self._is_cloud_result(i) for i in results):
 			return self.display_results(results)
-		if self.autoplay and settings.auto_play(self.media_type):
+		if self._effective_autoplay():
 			external = self._external_autoplay_candidates(results)
 			if external:
 				return self.play_file(external)
@@ -723,12 +734,10 @@ class Sources():
 	def display_results(self, results):
 		while True:
 			window_format, window_number = settings.results_format()
-			notice_main, notice_sub = self._prescrape_empty_notice_labels() if self.prescrape_empty_notice else ('', '')
 			window_result = open_window(('windows.sources', 'SourcesResults'), 'sources_results.xml',
 					window_format=window_format, window_id=window_number, results=results, meta=self.meta, sources_ref=self, episode_group_label=self.episode_group_label,
 					scraper_settings=self.scraper_settings, prescrape=self.prescrape, filters_ignored=self.filters_ignored,
-					uncached_results=self.uncached_results, cache_check_override=self.cache_check_override,
-					prescrape_empty_notice=self.prescrape_empty_notice, prescrape_empty_notice_main=notice_main, prescrape_empty_notice_sub=notice_sub)
+					uncached_results=self.uncached_results, cache_check_override=self.cache_check_override)
 			if not window_result:
 				self._kill_progress_dialog()
 				return
@@ -774,16 +783,6 @@ class Sources():
 	def _get_active_scraper_names(self, scraper_list):
 		return [i[2] for i in scraper_list]
 
-	def _prescrape_empty_notice_labels(self):
-		cloud_scrapers = frozenset(('rd_cloud', 'pm_cloud', 'ad_cloud', 'oc_cloud', 'tb_cloud'))
-		prescraped = frozenset(i[2] for i in self.prescrape_scrapers)
-		main = 'NO CLOUD RESULTS FOUND' if prescraped & cloud_scrapers else 'NO EARLY RESULTS FOUND'
-		if settings.auto_play(self.media_type) and self.active_external:
-			sub = 'Results from other enabled scrapers.'
-		else:
-			sub = 'Results below are from other enabled scrapers.'
-		return main, sub
-
 	def _prepare_external_only_followup(self):
 		"""External torrent follow-up: skip re-scraping internals, use current filter/sort/priority settings."""
 		self.autoplay = False
@@ -809,6 +808,7 @@ class Sources():
 		self.filters_ignored = self.ignore_scrape_filters
 		self.sources, self.prescrape_sources, self.orig_results = [], [], []
 		self.threads, self.providers, self.prescrape_scrapers, self.prescrape_threads = [], [], [], []
+		self.prescrape_ran_scrapers = set()
 		self.remove_scrapers, self.uncached_results = ['external'], []
 		self.active_folders, self.folder_info = False, []
 		self.internal_scraper_names, self.resolve_dialog_made = [], False
@@ -901,9 +901,30 @@ class Sources():
 			except Exception:
 				return kodi_utils.notification(text, 4000, settle_ms=400)
 
+	def _external_cache_check_active(self, provider):
+		provider = debrid.normalize_debrid_provider(provider)
+		if not provider:
+			return True
+		if self.cache_check_override is not None:
+			return self.cache_check_override
+		return settings.debrid_cache_check(provider)
+
+	def _playback_failed_default_message(self):
+		reasons = ['expired', 'removed']
+		item = getattr(self, 'playing_item', None) or {}
+		if item.get('scrape_provider') == 'external':
+			provider = debrid.normalize_debrid_provider(item.get('debrid') or item.get('cache_provider'))
+			if provider and not self._external_cache_check_active(provider):
+				reasons.append('not cached on your debrid (cache check was off)')
+		reasons.append('unsupported on this device')
+		return 'This link could not be played. It may be %s, or %s.' % (', '.join(reasons[:-1]), reasons[-1])
+
 	def _show_playback_failed_dialog(self, text=None):
+		if self._playback_failed_notified:
+			return
+		self._playback_failed_notified = True
 		self._close_progress_before_modal()
-		message = text or 'This link could not be played. It may be expired, removed, or unsupported on this device.'
+		message = text or self._playback_failed_default_message()
 		if self.autoplay or self.background:
 			return kodi_utils.notification('Playback Failed', 4000, settle_ms=400)
 		return self._show_modal_message('Playback failed', message)
@@ -1221,9 +1242,10 @@ class Sources():
 		except: action = 'cancel'
 		return action
 
-	def _make_still_watching_dialog(self, check_text):
-		try: action = open_window(('windows.playback_notifications', 'StillWatching'), 'playback_notifications.xml', meta=self.meta, check_text=check_text)
-		except: action = 'no'
+	def _make_still_watching_dialog(self, check_text, heading='Still Watching?', right_align=False):
+		try: action = open_window(('windows.playback_notifications', 'StillWatching'), 'playback_notifications.xml', meta=self.meta, check_text=check_text,
+			heading=heading, right_align='true' if right_align else 'false')
+		except: action = False
 		return action
 
 	def _user_cancelled_resolve(self):
@@ -1264,10 +1286,24 @@ class Sources():
 
 	def _wait_player_idle(self, max_ms=8000):
 		try:
+			if kodi_utils.get_property(PROP_PLAY_OPENING) == 'true':
+				for _ in range(50):
+					if kodi_utils.get_property(PROP_PLAY_OPENING) != 'true':
+						break
+					kodi_utils.sleep(100)
+				if kodi_utils.get_property(PROP_PLAY_OPENING) == 'true':
+					return
 			player = kodi_utils.kodi_player()
+			try:
+				if not (player.isPlaying() or player.isPlayingVideo()):
+					return
+			except:
+				return
 			kodi_utils.execute_builtin('PlayerControl(Stop)', block=True)
 			stable_idle = 0
 			for _ in range(max(1, max_ms // 100)):
+				if kodi_utils.get_property(PROP_PLAY_OPENING) == 'true':
+					return
 				playing = False
 				try:
 					playing = player.isPlaying() or player.isPlayingVideo()
@@ -1476,6 +1512,7 @@ class Sources():
 		playable_results = [i for i in results if 'Uncached' not in i.get('cache_provider', '')]
 		if not playable_results and not source:
 			return self._no_results()
+		self._playback_failed_notified = False
 		kodi_utils.clear_property(PROP_RESOLVE_CANCEL)
 		self._claim_resolve_busy()
 		url = None
@@ -1484,7 +1521,7 @@ class Sources():
 			self.playback_successful, self.cancel_all_playback = None, False
 			self._resolve_user_cancelled = False
 			self._prepare_resolve_ui()
-			defer_stop_for_nextep = self.background and self.autoplay_nextep
+			defer_stop_for_nextep = self.background and (self.autoplay_nextep or self.autoscrape_nextep)
 			if not defer_stop_for_nextep:
 				self._stop_active_playback()
 			retry_easynews = settings.easynews_playback_method('retry')
@@ -1540,7 +1577,11 @@ class Sources():
 						if self._user_cancelled_resolve():
 							self._resolve_user_cancelled = True
 							self.cancel_all_playback = True
-						break
+							break
+						if not self.background:
+							self._make_progress_dialog()
+						if not self.progress_dialog:
+							break
 					if not self._user_cancelled_resolve():
 						if count > 1:
 							prev = items[count - 2]
@@ -1608,7 +1649,7 @@ class Sources():
 			if self.cancel_all_playback or self._resolve_user_cancelled:
 				self._finish_resolve_cancel()
 			elif not self.playback_successful or not url:
-				kodi_utils.logger('Red Light', 'Autoplay cloud resolve failed: success=%s url=%s dialog=%s' % (
+				kodi_utils.logger('Red Light', 'Resolve queue failed: success=%s url=%s dialog=%s' % (
 					self.playback_successful, bool(url), bool(self.progress_dialog)))
 				self.playback_failed_action()
 		finally:
@@ -1653,17 +1694,24 @@ class Sources():
 				results = self.process_results(fallback_sources)
 				if results:
 					self.cloud_prescrape_autoplay = False
-					if self.autoplay and not settings.auto_play(self.media_type):
+					if self.autoplay and not self._effective_autoplay():
 						self.autoplay = False
 					return self.display_results(results)
 			self.cloud_prescrape_autoplay = False
-			if self.autoplay and not settings.auto_play(self.media_type):
+			if self.autoplay and not self._effective_autoplay():
 				self.autoplay = False
 			return self._show_playback_failed_dialog()
-		if self.prescrape and self._effective_autoplay():
+		if self.prescrape and self._effective_autoplay() and not self.prescrape_sources:
+			# Prescrape found nothing — continue to the full scrape (e.g. external autoplay).
 			self._kill_progress_dialog(join_timeout=1.0)
 			self.resolve_dialog_made, self.prescrape, self.prescrape_sources = False, False, []
 			return self.get_sources()
+		if self.prescrape_sources:
+			self._kill_progress_dialog(join_timeout=1.0)
+			self.resolve_dialog_made = False
+			results = self.process_results(list(self.prescrape_sources))
+			if results:
+				return self.display_results(results)
 		if self.autoplay or self.background:
 			return self._no_results()
 		return self._show_playback_failed_dialog()
@@ -1745,7 +1793,8 @@ class Sources():
 
 	def autoscrape_nextep_handler(self):
 		if settings.autoscrape_confirm():
-			if not self._make_still_watching_dialog('Autoscrape Next Episode of [B]%s[/B]?'): return kodi_utils.notification('Cancel Autoscrape', icon=self.meta.get('poster'))
+			if not self._make_still_watching_dialog('Autoscrape Next Episode of [B]%s[/B]?', heading='Autoscrape Next Episode?', right_align=True):
+				return
 		player = kodi_utils.kodi_player()
 		if player.isPlayingVideo():
 			results = self.get_sources()
