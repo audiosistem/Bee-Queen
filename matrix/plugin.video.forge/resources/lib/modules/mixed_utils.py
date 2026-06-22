@@ -122,6 +122,67 @@ MIXED_LIST_MENU = (
 )
 
 
+# Personal ("My Lists") sources for Navigator.mixed_my_list. Unlike MIXED_LIST_SOURCES these
+# pull the user's own lists, which return the whole list at once (no page param) and carry ids
+# in non-standard shapes. Every per-source difference is data on the row so the handler stays
+# branch-light — only the fetch mechanism keys off "api"; the id extraction/build read the row:
+#   api == "trakt": call fn(media_type, "") per side; ids live under "media_ids" (a
+#                   {tmdb,imdb,tvdb} dict consumed as id_type "trakt_dict"); TV side is "show".
+#   api == "tmdb":  fetch via get_tmdb_list({"list_id", "media_type"}) per side; ids are "id"
+#                   (id_type "tmdb_id"); TV side is "tv".
+MIXED_MY_LIST_SOURCES = {
+	"trakt_collection": {
+		"api": "trakt",
+		"label": "Mixed Trakt Collection",
+		"icon": "trakt",
+		"fn": ("apis.trakt_api", "trakt_collection"),
+		"id_field": "media_ids",
+		"id_type": "trakt_dict",
+		"tv_media_type": "show",
+	},
+	"trakt_watchlist": {
+		"api": "trakt",
+		"label": "Mixed Trakt Watchlist",
+		"icon": "trakt",
+		"fn": ("apis.trakt_api", "trakt_watchlist"),
+		"id_field": "media_ids",
+		"id_type": "trakt_dict",
+		"tv_media_type": "show",
+	},
+	"tmdb_watchlist": {
+		"api": "tmdb",
+		"label": "Mixed TMDB Watchlist",
+		"icon": "tmdb",
+		"list_id": "watchlist",
+		"id_field": "id",
+		"id_type": "tmdb_id",
+		"tv_media_type": "tv",
+	},
+	"tmdb_favorites": {
+		"api": "tmdb",
+		"label": "Mixed TMDB Favorites",
+		"icon": "tmdb",
+		"list_id": "favorites",
+		"id_field": "id",
+		"id_type": "tmdb_id",
+		"tv_media_type": "tv",
+	},
+	"tmdb_recommendations": {
+		"api": "tmdb",
+		"label": "Mixed TMDB Recommendations",
+		"icon": "tmdb",
+		"list_id": "recommendations",
+		"id_field": "id",
+		"id_type": "tmdb_id",
+		"tv_media_type": "tv",
+	},
+}
+
+# Ordered (label, action, icon) rows for the Mixed My Lists submenu, derived from the source
+# table so the menu and the handler share one source of truth (no parallel lists to drift).
+MIXED_MY_LIST_MENU = tuple((source["label"], action, source["icon"]) for action, source in MIXED_MY_LIST_SOURCES.items())
+
+
 def trakt_ids(item, list_key):
 	"""Extract the canonical Trakt id dict from a list response item.
 

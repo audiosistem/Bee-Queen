@@ -12,7 +12,7 @@
 		},
 		{
 			"id": 2,
-			"name": "Apple TV",
+			"name": "iTunes Store",
 			"logo": "/SPnB1qiCkYfirS2it3hZORwGVn.jpg"
 		},
 		{
@@ -47,7 +47,7 @@
 		},
 		{
 			"id": 350,
-			"name": "Apple TV",
+			"name": "Apple TV+",
 			"logo": "/mcbz1LgtErU9p4UdbZ0rG6RTWHX.jpg"
 		},
 		{
@@ -122,7 +122,7 @@
 		},
 		{
 			"id": 584,
-			"name": "Discovery+ Amazon Channel",
+			"name": "Discovery+",
 			"logo": "/lgudHqEtTOzkMWlpTjU1oUyoUSZ.jpg"
 		},
 		{
@@ -334,6 +334,16 @@
 			"id": 284,
 			"name": "Lifetime Movie Club",
 			"logo": "/m4ofXxkTOj04N8df5KJGCIjnWii.jpg"
+		},
+		{
+			"id": 2303,
+			"name": "Paramount+",
+			"logo": "/fts6X10Jn4QT0X6ac3udKEn2tJA.jpg"
+		},
+		{
+			"id": 73,
+			"name": "Tubi",
+			"logo": "/zLYr7OPvpskMA4S79E3vlCi71iC.jpg"
 		}
 	],
 	"tvshow": [
@@ -349,7 +359,7 @@
 		},
 		{
 			"id": 2,
-			"name": "Apple TV",
+			"name": "iTunes Store",
 			"logo": "/SPnB1qiCkYfirS2it3hZORwGVn.jpg"
 		},
 		{
@@ -379,7 +389,7 @@
 		},
 		{
 			"id": 350,
-			"name": "Apple TV",
+			"name": "Apple TV+",
 			"logo": "/mcbz1LgtErU9p4UdbZ0rG6RTWHX.jpg"
 		},
 		{
@@ -459,7 +469,7 @@
 		},
 		{
 			"id": 584,
-			"name": "Discovery+ Amazon Channel",
+			"name": "Discovery+",
 			"logo": "/lgudHqEtTOzkMWlpTjU1oUyoUSZ.jpg"
 		},
 		{
@@ -956,6 +966,16 @@
 			"id": 1794,
 			"name": "Starz Amazon Channel",
 			"logo": "/esiLBRzDUwodjfN8gA4qj7l3ZF7.jpg"
+		},
+		{
+			"id": 2303,
+			"name": "Paramount+",
+			"logo": "/fts6X10Jn4QT0X6ac3udKEn2tJA.jpg"
+		},
+		{
+			"id": 73,
+			"name": "Tubi",
+			"logo": "/zLYr7OPvpskMA4S79E3vlCi71iC.jpg"
 		}
 	]
 }

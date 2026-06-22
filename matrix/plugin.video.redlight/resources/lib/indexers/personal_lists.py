@@ -33,7 +33,7 @@ def get_personal_lists(params):
 				'iconImage': poster, 'name': list_name}
 				if random: url_params['random'] = 'true'
 				if shuffle_lists: url_params['shuffle'] = 'true'
-				url = build_url(url_params)
+				url = kodi_utils.build_folder_url(url_params)
 				cm = [('[B]Make New List[/B]', 'RunPlugin(%s)' % build_url({'mode': 'personal_lists.make_new_personal_list'})),
 				('[B]Edit Properties[/B]', 'RunPlugin(%s)' % build_url({'mode': 'personal_lists.adjust_personal_list_properties', 'description': description, 'author': author,
 					'list_name': list_name, 'sort_order': sort_order, 'seen': seen, 'poster': custom_poster, 'fanart': custom_fanart})),
@@ -108,7 +108,7 @@ def build_personal_list(params):
 		page_no, paginate_start = int(params.get('new_page', '1')), int(params.get('paginate_start', '0'))
 		new_params = {'mode': 'personal_lists.build_personal_list', 'list_name': list_name, 'author': author, 'sort_order': sort_order, 'seen': 'true',
 						'paginate_start': paginate_start}
-		if page_no == 1 and not is_external: kodi_utils.set_property('redlight.exit_params', kodi_utils.folder_path())
+		if page_no == 1 and not is_external: kodi_utils.set_property('redlight.exit_params', kodi_utils.list_collection_exit_params(params))
 		if use_result: result = params.get('result', [])
 		else: result = get_personal_list(params)
 		process_list, total_pages, paginate_start = _paginate_list(result, page_no, paginate_start)

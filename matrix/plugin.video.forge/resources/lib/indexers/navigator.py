@@ -445,21 +445,28 @@ class Navigator:
 			)
 		self.end_directory()
 
+	def _add_provider_icon(self, url_params, name, local_icon, tmdb_logo):
+		# Shared brand/provider icon cascade used by Mixed Channels, Mixed Providers, and the Movie/TV
+		# Providers menus: a crisp local network_icons basename wins, then the (smaller) TMDb provider
+		# logo, then a generic icon. Keeping the fallback policy in one place stops the menus drifting
+		# apart and guards every caller against a row that lacks both an icon and a logo.
+		if local_icon:
+			self.add(url_params, name, self.get_icon(local_icon, "network_icons"), original_image=True)
+		elif tmdb_logo:
+			self.add(url_params, name, "https://image.tmdb.org/t/p/original/%s" % tmdb_logo, original_image=True)
+		else:
+			self.add(url_params, name, "providers")
+
 	def providers(self):
 		menu_type = self.params_get("menu_type")
-		tmdb_img = "https://image.tmdb.org/t/p/original/%s"
 		if menu_type == "mixed":
 			from modules.meta_lists import watch_providers_mixed
 
 			for i in watch_providers_mixed():
 				# Some TMDb provider names carry a trailing space (e.g. "… Apple TV Channel ").
 				name = i["name"].strip()
-				self.add(
-					{"mode": "navigator.mixed_keyed_list", "action": "mixed_providers", "key_id": i["id"], "name": name},
-					name,
-					tmdb_img % i["logo"],
-					original_image=True,
-				)
+				url_params = {"mode": "navigator.mixed_keyed_list", "action": "mixed_providers", "key_id": i["id"], "name": name}
+				self._add_provider_icon(url_params, name, i.get("icon"), i.get("logo"))
 			return self.end_directory()
 		if menu_type == "movie":
 			from modules.meta_lists import watch_providers_movies as function
@@ -474,7 +481,8 @@ class Navigator:
 			else:
 				action = "tmdb_anime_providers"
 		for i in function():
-			self.add({"mode": mode, "action": action, "key_id": i["id"], "name": i["name"]}, i["name"], tmdb_img % i["logo"], original_image=True)
+			url_params = {"mode": mode, "action": action, "key_id": i["id"], "name": i["name"]}
+			self._add_provider_icon(url_params, i["name"], None, i.get("logo"))
 		self.end_directory()
 
 	def genres(self):
@@ -785,6 +793,7 @@ class Navigator:
 		self.add({"mode": "navigator.in_progress_mixed"}, "Mixed In Progress", "player")
 		for label, action, icon in MIXED_LIST_MENU:
 			self.add({"mode": "navigator.mixed_list", "action": action}, label, icon)
+		self.add({"mode": "navigator.mixed_my_lists"}, "Mixed My Lists", "trakt")
 		self.add({"mode": "navigator.genres", "menu_type": "mixed"}, "Mixed Genres", "genres")
 		self.add({"mode": "navigator.providers", "menu_type": "mixed"}, "Mixed Providers", "providers")
 		self.add({"mode": "navigator.mixed_brands"}, "Mixed Channels", "providers")
@@ -914,6 +923,33 @@ class Navigator:
 			k.set_view_mode(view_key, content_type, self.is_external)
 		k.logger("Forge", "in_progress_mixed: page=%s done (movies=%s episodes=%s)" % (page_no, len(movie_items), len(episode_items)))
 
+	def _finish_mixed_directory(self, handle, combined, n_movies, n_shows, label, next_page_params=None, next_page=None, shuffle_if_random=False):
+		# Shared render tail for the Mixed * handlers (mixed_list, mixed_keyed_list, mixed_my_list,
+		# mixed_brand_list): optionally shuffle on a widget sort_by=random, pick the content type from
+		# the bucket sizes, add the items, optionally append a Next Page link, finalize the directory
+		# and set the view. `n_shows` should include any anime bucket. Returns the chosen content_type.
+		from modules import settings as _settings
+
+		# Honor sort_by=random (what a user adds to a widget path) by shuffling the rendered page in
+		# place. The keyed/brand/personal lists opt in; only the paginated mixed_list does not.
+		if shuffle_if_random and (self.params_get("sort_by", "") == "random" or self.params_get("random", "") == "true"):
+			from random import shuffle
+
+			shuffle(combined)
+		content_type = "movies" if n_movies >= n_shows else "tvshows"
+		self.category_name = label
+		k.add_items(handle, combined)
+		# Skip the Next Page link when this page is empty (would otherwise loop forever pointing to
+		# another empty page) and when the user has hidden it in widgets.
+		if next_page_params is not None and combined and not (self.is_external and _settings.widget_hide_next_page()):
+			k.add_dir(handle, dict(next_page_params, new_page=str(next_page)), "Next Page (%s) >>" % next_page, "nextpage", k.get_icon("nextpage_landscape"))
+		k.set_content(handle, content_type)
+		k.set_category(handle, self.category_name)
+		k.end_directory(handle, cacheToDisc=False if self.is_external else True)
+		if not self.is_external:
+			k.set_view_mode("view." + content_type, content_type, self.is_external)
+		return content_type
+
 	def mixed_list(self):
 		from threading import Thread
 
@@ -995,27 +1031,15 @@ class Navigator:
 		[t.join() for t in build_threads]
 
 		combined = interleave_buckets(results["movies"], results["shows"], results["anime"])
-		content_type = "movies" if len(results["movies"]) >= (len(results["shows"]) + len(results["anime"])) else "tvshows"
-		self.category_name = label
-		k.add_items(handle, combined)
-		# Skip the Next Page link when this page is empty (would otherwise loop forever
-		# pointing to another empty page) and when the user has hidden it in widgets.
-		hide_next_page = self.is_external and _settings.widget_hide_next_page()
-		if combined and not hide_next_page:
-			next_page = str(page_no + 1)
-			k.add_dir(
-				handle,
-				{"mode": "navigator.mixed_list", "action": action, "new_page": next_page},
-				"Next Page (%s) >>" % next_page,
-				"nextpage",
-				k.get_icon("nextpage_landscape"),
-			)
-		k.set_content(handle, content_type)
-		k.set_category(handle, self.category_name)
-		k.end_directory(handle, cacheToDisc=False if self.is_external else True)
-		if not self.is_external:
-			view_key = "view.movies" if content_type == "movies" else "view.tvshows"
-			k.set_view_mode(view_key, content_type, self.is_external)
+		self._finish_mixed_directory(
+			handle,
+			combined,
+			len(results["movies"]),
+			len(results["shows"]) + len(results["anime"]),
+			label,
+			next_page_params={"mode": "navigator.mixed_list", "action": action},
+			next_page=page_no + 1,
+		)
 		k.logger(
 			"Forge",
 			"mixed_list: action=%s page=%s done (movies=%s shows=%s anime=%s)"
@@ -1104,52 +1128,114 @@ class Navigator:
 		[t.join() for t in build_threads]
 
 		combined = interleave_buckets(results["movies"], results["shows"], results["anime"])
-		content_type = "movies" if len(results["movies"]) >= (len(results["shows"]) + len(results["anime"])) else "tvshows"
-		self.category_name = label
-		k.add_items(handle, combined)
-		# Skip the Next Page link when this page is empty (would otherwise loop forever
-		# pointing to another empty page) and when the user has hidden it in widgets.
-		hide_next_page = self.is_external and _settings.widget_hide_next_page()
-		if combined and not hide_next_page:
-			next_page = str(page_no + 1)
-			k.add_dir(
-				handle,
-				{"mode": "navigator.mixed_keyed_list", "action": action, "name": label, "movie_key": movie_key, "tv_key": tv_key, "new_page": next_page},
-				"Next Page (%s) >>" % next_page,
-				"nextpage",
-				k.get_icon("nextpage_landscape"),
-			)
-		k.set_content(handle, content_type)
-		k.set_category(handle, self.category_name)
-		k.end_directory(handle, cacheToDisc=False if self.is_external else True)
-		if not self.is_external:
-			view_key = "view.movies" if content_type == "movies" else "view.tvshows"
-			k.set_view_mode(view_key, content_type, self.is_external)
+		# Like mixed_brand_list, this is a live popularity-paginated TMDb query, so a sort_by=random
+		# shuffle reorders the current page's titles rather than the whole catalog. Covers both Mixed
+		# Providers and Mixed Genres (they share this handler).
+		self._finish_mixed_directory(
+			handle,
+			combined,
+			len(results["movies"]),
+			len(results["shows"]) + len(results["anime"]),
+			label,
+			next_page_params={"mode": "navigator.mixed_keyed_list", "action": action, "name": label, "movie_key": movie_key, "tv_key": tv_key},
+			next_page=page_no + 1,
+			shuffle_if_random=True,
+		)
 		k.logger(
 			"Forge",
 			"mixed_keyed_list: action=%s page=%s done (movies=%s shows=%s anime=%s)"
 			% (action, page_no, len(results["movies"]), len(results["shows"]), len(results["anime"])),
 		)
 
+	def mixed_my_lists(self):
+		# Submenu of the user's own lists, each blended movie+TV (Mixed My Lists).
+		from modules.mixed_utils import MIXED_MY_LIST_MENU
+
+		self.category_name = "Mixed My Lists"
+		for label, action, icon in MIXED_MY_LIST_MENU:
+			self.add({"mode": "navigator.mixed_my_list", "action": action}, label, icon)
+		self.end_directory()
+
+	def mixed_my_list(self):
+		# Personal-list sibling of mixed_list: blends the movie and TV halves of one of the user's
+		# own lists (Trakt collection/watchlist, TMDb watchlist/favorites/recommendations). These
+		# return the whole list at once — no page param, no anime bucket, no Next Page link — and
+		# carry ids in non-standard shapes, so the source row (MIXED_MY_LIST_SOURCES) carries the
+		# api/id_field/id_type/tv_media_type as data; only the fetch mechanism branches on api.
+		from threading import Thread
+
+		from indexers.movies import Movies
+		from indexers.tmdb_lists import get_tmdb_list
+		from indexers.tvshows import TVShows
+		from modules.mixed_utils import MIXED_MY_LIST_SOURCES, interleave_buckets
+		from modules.utils import manual_function_import
+
+		handle = int(sys.argv[1])
+		action = self.params_get("action", "")
+		sources = MIXED_MY_LIST_SOURCES.get(action)
+		if not sources:
+			k.logger("Forge", "mixed_my_list: unknown action %s" % action)
+			k.end_directory(handle)
+			return
+		if not self.is_external:
+			k.set_property("forge.exit_params", k.folder_path())
+		label, id_field = sources["label"], sources["id_field"]
+		k.logger("Forge", "mixed_my_list: action=%s start" % action)
+
+		movie_raw, show_raw = [], []
+
+		def _fetch(target, media_type):
+			try:
+				if sources["api"] == "trakt":
+					# Trakt fetchers take (media_type, "") and already sort their side internally.
+					raw = manual_function_import(*sources["fn"])(media_type, "")
+				else:
+					# get_tmdb_list applies the same "Contents sort order" setting the single-type
+					# TMDb list uses, so a list and its mixed counterpart order identically per side.
+					raw = get_tmdb_list({"list_id": sources["list_id"], "media_type": media_type})
+				target.extend([i[id_field] for i in (raw or []) if i.get(id_field)])
+			except Exception as e:
+				k.logger("Forge", "mixed_my_list._fetch %s/%s: %s" % (action, media_type, e))
+
+		fetch_threads = [Thread(target=_fetch, args=(movie_raw, "movie")), Thread(target=_fetch, args=(show_raw, sources["tv_media_type"]))]
+		[t.start() for t in fetch_threads]
+		[t.join() for t in fetch_threads]
+
+		id_type = sources["id_type"]
+		results = {"movies": [], "shows": []}
+
+		def _build(bucket_key, builder_cls, ids, menu_type):
+			if not ids:
+				return
+			try:
+				params = {"list": ids, "id_type": id_type, "menu_type": menu_type, "action": action}
+				results[bucket_key] = builder_cls(params).worker() or []
+			except Exception as e:
+				k.logger("Forge", "mixed_my_list._build %s: %s" % (bucket_key, e))
+
+		build_threads = [
+			Thread(target=_build, args=("movies", Movies, movie_raw, "movie")),
+			Thread(target=_build, args=("shows", TVShows, show_raw, "tvshow")),
+		]
+		[t.start() for t in build_threads]
+		[t.join() for t in build_threads]
+
+		combined = interleave_buckets(results["movies"], results["shows"])
+		self._finish_mixed_directory(handle, combined, len(results["movies"]), len(results["shows"]), label, shuffle_if_random=True)
+		k.logger("Forge", "mixed_my_list: action=%s done (movies=%s shows=%s)" % (action, len(results["movies"]), len(results["shows"])))
+
 	def mixed_brands(self):
 		# Menu of curated streaming "brands" (Mixed Channels). Each row carries pipe-joined provider
 		# + network id strings consumed by mixed_brand_list. Logos resolve from watch_providers data.
 		from modules.meta_lists import mixed_brands as get_brands
 
-		tmdb_img = "https://image.tmdb.org/t/p/original/%s"
 		self.category_name = "Mixed Channels"
 		for b in get_brands():
 			url_params = {"mode": "navigator.mixed_brand_list", "name": b["name"], "providers": b["providers"], "networks": b["networks"]}
 			# Prefer crisp local network icons (same source as the TV Networks menu): an explicit
 			# per-brand override, then the networks.json icon; fall back to the TMDb provider logo,
 			# then a generic icon.
-			local_icon = b["icon"] or b["network_logo"]
-			if local_icon:
-				self.add(url_params, b["name"], self.get_icon(local_icon, "network_icons"), original_image=True)
-			elif b["logo"]:
-				self.add(url_params, b["name"], tmdb_img % b["logo"], original_image=True)
-			else:
-				self.add(url_params, b["name"], "providers")
+			self._add_provider_icon(url_params, b["name"], b["icon"] or b["network_logo"], b["logo"])
 		self.end_directory()
 
 	def mixed_brand_list(self):
@@ -1231,27 +1317,18 @@ class Navigator:
 		[t.join() for t in build_threads]
 
 		combined = interleave_buckets(results["movies"], results["shows"], results["anime"])
-		content_type = "movies" if len(results["movies"]) >= (len(results["shows"]) + len(results["anime"])) else "tvshows"
-		self.category_name = label
-		k.add_items(handle, combined)
-		# Skip the Next Page link when this page is empty (would otherwise loop forever
-		# pointing to another empty page) and when the user has hidden it in widgets.
-		hide_next_page = self.is_external and _settings.widget_hide_next_page()
-		if combined and not hide_next_page:
-			next_page = str(page_no + 1)
-			k.add_dir(
-				handle,
-				{"mode": "navigator.mixed_brand_list", "name": label, "providers": providers, "networks": networks, "new_page": next_page},
-				"Next Page (%s) >>" % next_page,
-				"nextpage",
-				k.get_icon("nextpage_landscape"),
-			)
-		k.set_content(handle, content_type)
-		k.set_category(handle, self.category_name)
-		k.end_directory(handle, cacheToDisc=False if self.is_external else True)
-		if not self.is_external:
-			view_key = "view.movies" if content_type == "movies" else "view.tvshows"
-			k.set_view_mode(view_key, content_type, self.is_external)
+		# This list is a live popularity-paginated TMDb query, so a sort_by=random shuffle reorders
+		# the current page's titles rather than the whole catalog (handled in _finish_mixed_directory).
+		self._finish_mixed_directory(
+			handle,
+			combined,
+			len(results["movies"]),
+			len(results["shows"]) + len(results["anime"]),
+			label,
+			next_page_params={"mode": "navigator.mixed_brand_list", "name": label, "providers": providers, "networks": networks},
+			next_page=page_no + 1,
+			shuffle_if_random=True,
+		)
 		k.logger(
 			"Forge",
 			"mixed_brand_list: name=%s page=%s done (movies=%s shows=%s anime=%s)"

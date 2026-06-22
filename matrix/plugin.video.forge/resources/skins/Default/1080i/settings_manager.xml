@@ -1103,11 +1103,10 @@
                       </item>
                       <item>
                           <visible>Container(2000).HasFocus(30)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(forge.widget_refresh_timer),0)</visible>
-                          <property name="setting_label">    - Show Notification after Refresh</property>
+                          <property name="setting_label">Show Notification after Refresh</property>
                           <property name="setting_type">boolean</property>
                           <property name="setting_value">$INFO[Window(10000).Property(forge.widget_refresh_notification)]</property>
-                          <property name="setting_description">Enable this and Forge will show a notification whenever widgets are refreshed by the timer</property>
+                          <property name="setting_description">Enable this and Forge will show a notification whenever widgets are refreshed, whether by the timer or a manual refresh</property>
                           <onclick>RunPlugin(plugin://plugin.video.forge/?mode=settings_manager.set_boolean&amp;setting_id=widget_refresh_notification)</onclick>
                       </item>
                       <item>

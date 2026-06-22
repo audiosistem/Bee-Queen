@@ -469,7 +469,7 @@ def refresh_cached_data(meta):
 
 	refresh_imdb_meta_data(imdb_id)
 	kodi_utils.notification("Success")
-	kodi_utils.kodi_refresh()
+	kodi_utils.refresh_after_action(refresh_when_internal=True)
 
 
 def columns_in_table(database, table, check_existence=""):

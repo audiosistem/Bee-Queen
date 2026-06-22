@@ -275,8 +275,8 @@ def personallists_manager_choice(params):
 
 	result = personal_lists_cache.add_remove_list_item(list_name, author, action, new_contents)
 	kodi_utils.notification(result, 3000)
-	if action == "remove" and any([kodi_utils.path_check(list_name) or kodi_utils.external()]):
-		kodi_utils.kodi_refresh()
+	if action == "remove":
+		kodi_utils.refresh_after_action(list_name)
 
 
 def tmdblists_manager_choice(params):
@@ -350,8 +350,8 @@ def tmdblists_manager_choice(params):
 		tmdb_lists_cache.clear_list(list_id)
 		tmdb_lists_cache.clear_all_lists()
 	kodi_utils.notification("Success" if success else "Failed", 3000)
-	if "remove" in action and any([kodi_utils.path_check(str(list_id)) or kodi_utils.external()]):
-		kodi_utils.kodi_refresh()
+	if "remove" in action:
+		kodi_utils.refresh_after_action(str(list_id))
 
 
 def favorites_manager_choice(params):
@@ -376,7 +376,7 @@ def favorites_manager_choice(params):
 	success = function(media_type, tmdb_id, title)
 	if success:
 		if refresh:
-			kodi_utils.kodi_refresh()
+			kodi_utils.refresh_after_action(refresh_when_internal=True)
 		kodi_utils.notification("Success", 3500)
 	else:
 		kodi_utils.notification("Error", 3500)

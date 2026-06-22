@@ -168,7 +168,6 @@ def context_menu_items():
 		{"name": "Unmark Previous Watched Episode", "value": "unmark_previous_episode"},
 		{"name": "Exit List", "value": "exit"},
 		{"name": "Refresh Widgets", "value": "refresh"},
-		{"name": "Reload Widgets", "value": "reload"},
 	]
 
 
@@ -617,6 +616,32 @@ def home():
 	return xbmcgui.getCurrentWindowId() == 10000
 
 
+def widgets_refresh_safe() -> bool:
+	"""True when it's safe to emit the home-widget reload announcement.
+
+	"Safe" = settled on Home/skin with no Forge window transition in flight, so the
+	UpdateLibrary scan's deferred Home update (see reload_home_widgets) can't collide
+	with a Back-to-Home transition. Mirrors the WidgetRefresher service's gate: active
+	container is not a plugin directory, nothing playing, services not paused, no Forge
+	custom window open, and no window stack.
+	"""
+	if "plugin" in get_infolabel("Container.PluginName"):
+		return False
+	if kodi_player().isPlayingVideo():
+		return False
+	if get_property("forge.pause_services") == "true":
+		return False
+	if get_property("forge.window_loaded") == "true":
+		return False
+	# base_window only ever stores '' (cleared/settled) or json.dumps(stack); any
+	# non-empty value — including '[]' from a just-closed window — means a Forge
+	# window is open or a transition is in flight, so the truthiness test stands in
+	# for the old json.loads() decode.
+	if get_property("forge.window_stack"):
+		return False
+	return True
+
+
 def folder_path():
 	return get_infolabel("Container.FolderPath")
 
@@ -630,18 +655,98 @@ def reload_skin():
 
 
 def kodi_refresh() -> None:
-	"""Trigger a video-library refresh (no-op path coaxes Kodi into running updates)."""
-	execute_builtin("UpdateLibrary(video,special://skin/foo)")
+	"""Refresh the current container after a user action (add/remove/edit/mark-watched).
+
+	Previously ran UpdateLibrary(video,special://skin/foo) as a refresh hack, but that kicked
+	off the VideoLibrary scanner whose deferred 'RecentlyAdded' home-screen update could
+	collide with a Back-to-Home window transition and crash Kodi natively. A plain
+	Container.Refresh re-renders the active container with no library/home-widget side effect.
+	"""
+	execute_builtin("Container.Refresh")
 
 
-def refresh_widgets():
+def reload_home_widgets():
+	"""Clear Forge's random-widget cache and emit the library-update announcement
+	that makes skins reload their plugin-backed home widgets.
+
+	SAFETY CONTRACT: the UpdateLibrary builtin kicks off the VideoLibrary scanner,
+	whose deferred Home 'RecentlyAdded' update crashes Kodi natively if it lands
+	during a Back-to-Home transition. The guard below enforces that contract — a
+	stray direct call from an unsafe state self-heals into a deferred reload instead
+	of running the scan — but request_widget_reload() and the WidgetRefresher service
+	remain the only intended callers.
+	"""
+	if not widgets_refresh_safe():
+		return request_widget_reload()
 	from caches.random_widgets_cache import RandomWidgets
 	from caches.settings_cache import get_setting
 
 	RandomWidgets().delete_like("random_list.%")
-	kodi_refresh()
+	execute_builtin("UpdateLibrary(video,special://skin/foo)")
 	if get_setting("forge.widget_refresh_notification", "true") == "true":
 		notification("Widgets Refreshed", 2500)
+
+
+def request_widget_reload(announce=False):
+	"""Reload home widgets — immediately if it's currently safe, otherwise deferred.
+
+	Fires reload_home_widgets() now when settled on Home (widgets_refresh_safe());
+	otherwise sets the forge.widget_reload_pending flag for the WidgetRefresher service
+	to consume on its next safe tick (<=10s). This keeps the home-widget reload off the
+	crash-prone Back-to-Home transition (see reload_home_widgets).
+
+	announce=True (user-initiated 'Refresh Widgets') shows a brief acknowledgement
+	when the request is deferred, so the manual action isn't silent for up to ~10s;
+	the immediate path needs no ack since reload_home_widgets() toasts on completion.
+	"""
+	if widgets_refresh_safe():
+		# Drop any stale pending flag so the service doesn't fire a duplicate reload.
+		clear_property("forge.widget_reload_pending")
+		return reload_home_widgets()
+	from time import time
+
+	set_property("forge.widget_reload_pending", str(time()))
+	if announce:
+		from caches.settings_cache import get_setting
+
+		if get_setting("forge.widget_refresh_notification", "true") == "true":
+			notification("Refreshing Widgets", 2000)
+
+
+def refresh_widgets():
+	"""Back-compat entry point (refresh_widgets router mode); defers to request_widget_reload().
+
+	This is the user-facing 'Refresh Widgets' path, so it announces a deferred reload.
+	"""
+	return request_widget_reload(announce=True)
+
+
+def refresh_after_action(member_path=None, *, refresh_when_internal=False):
+	"""Refresh the UI after a data mutation (add / remove / hide / edit / mark-watched).
+
+	One owner for the "where am I, what needs refreshing" decision so every mutating
+	caller stays consistent (and so new callers can't silently regress to a bare
+	kodi_refresh() that re-renders the open container but leaves Home widgets stale):
+
+	* viewing the affected list (member_path matches the active container) →
+	  Container.Refresh re-renders it in place, AND a home-widget reload is queued so
+	  the matching Home widget updates once you settle back on Home;
+	* invoked from a Home widget (external()) → request a safe home-widget reload;
+	* otherwise → re-render the current container (when refresh_when_internal is set,
+	  for callers with no specific list that still want the active view redrawn) and
+	  queue the home-widget reload too.
+
+	request_widget_reload() is crash-safe from inside the plugin: it just sets the
+	deferred forge.widget_reload_pending flag (no UpdateLibrary) which the
+	WidgetRefresher service services on its next safe tick. Repeated mutations all
+	collapse onto that one flag, so returning to Home triggers a single reload.
+	"""
+	on_member_path = member_path is not None and path_check(member_path)
+	if external() and not on_member_path:
+		request_widget_reload()
+	elif on_member_path or refresh_when_internal:
+		kodi_refresh()
+		request_widget_reload()
 
 
 def run_plugin(params, block=False):

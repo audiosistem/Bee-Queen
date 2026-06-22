@@ -479,7 +479,7 @@ def make_custom_artwork(params):
 	if shuffle_art == None:
 		return
 	new_image = trakt_image_maker(list_name, list_type, list_id, image_type, user, slug, custom_image, shuffle_art)
-	kodi_utils.kodi_refresh()
+	kodi_utils.refresh_after_action(refresh_when_internal=True)
 
 
 def trakt_image_maker(list_name, list_type, list_id, image_type, user, slug, custom_image, shuffle_sort_order):
@@ -525,7 +525,7 @@ def delete_current_image(params):
 	kodi_utils.sleep(1000)
 	success = not kodi_utils.path_exists(custom_image)
 	if success:
-		kodi_utils.kodi_refresh()
+		kodi_utils.refresh_after_action(refresh_when_internal=True)
 	else:
 		kodi_utils.notification("Error Deleting Image")
 
@@ -556,7 +556,7 @@ def set_list_custom_sort(params):
 		success = delete_list_custom_sort(list_id)
 		if success:
 			kodi_utils.ok_dialog("Trakt List Custom Sort", "Success")
-			kodi_utils.kodi_refresh()
+			kodi_utils.refresh_after_action(refresh_when_internal=True)
 		else:
 			kodi_utils.ok_dialog("Trakt List Custom Sort", "An Error Occured")
 		return
@@ -573,6 +573,6 @@ def set_list_custom_sort(params):
 	success = set_list_custom_sort(list_id, {"list_id": list_id, "sort_by": sort_by, "sort_how": sort_how})
 	if success:
 		kodi_utils.ok_dialog("Trakt List Custom Sort", "Success")
-		kodi_utils.kodi_refresh()
+		kodi_utils.refresh_after_action(refresh_when_internal=True)
 	else:
 		kodi_utils.ok_dialog("Trakt List Custom Sort", "An Error Occured")

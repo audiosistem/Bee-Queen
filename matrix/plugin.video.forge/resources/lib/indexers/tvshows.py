@@ -383,8 +383,7 @@ class TVShows:
 			if self.is_external:
 				cm.extend(
 					[
-						["refresh", ("[B]Refresh Widgets[/B]", "RunPlugin(%s)" % self.build_url({"mode": "refresh_widgets"}))],
-						["reload", ("[B]Reload Widgets[/B]", "RunPlugin(%s)" % self.build_url({"mode": "kodi_refresh"}))],
+						["refresh", ("[B]Refresh Widgets[/B]", "RunPlugin(%s)" % self.build_url({"mode": "request_widget_reload"}))],
 					]
 				)
 			cm = self.context_menu(cm)

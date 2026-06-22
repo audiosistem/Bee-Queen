@@ -54,6 +54,9 @@ def routing(sys):
 			return exec('simkl_lists.%s(params)' % mode.split('.')[2])
 		from apis import simkl_api
 		return exec('simkl_api.%s(params)' % mode.split('.')[1])
+	elif 'mdblist.' in mode:
+		from apis import mdblist_api
+		return exec('mdblist_api.%s(params)' % mode.split('.')[1])
 	elif 'trakt.' in mode:
 		if '.list' in mode:
 			from indexers import trakt_lists

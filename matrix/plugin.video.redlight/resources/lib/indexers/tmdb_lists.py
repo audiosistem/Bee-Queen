@@ -38,7 +38,7 @@ def get_tmdb_lists(params):
 				url_params = {'mode': mode, 'list_id': list_id, 'list_name': list_name, 'sort_order': sort_order, 'updated_at': updated_at, 'iconImage': poster, 'name': list_name}
 				if random: url_params['random'] = 'true'
 				if shuffle_lists: url_params['shuffle'] = 'true'
-				url = build_url(url_params)
+				url = kodi_utils.build_folder_url(url_params)
 				display = '%s [I](x%02d)[/I]' % (list_name, item_count)
 				cm = [('[B]Make New List[/B]', 'RunPlugin(%s)' % build_url({'mode': 'tmdblist.make_new_tmdb_list'})),
 				('[B]Edit Properties[/B]', 'RunPlugin(%s)' % build_url({'mode': 'tmdblist.adjust_tmdb_list_properties', 'list_id': list_id, 'updated_at': updated_at,
@@ -120,7 +120,7 @@ def build_tmdb_list(params):
 		page_no, paginate_start = int(params.get('new_page', '1')), int(params.get('paginate_start', '0'))
 		new_params = {'mode': 'tmdblist.build_tmdb_list', 'list_id': list_id, 'list_name': list_name, 'media_type': media_type,
 						'paginate_start': paginate_start, 'sort_order': sort_order}
-		if page_no == 1 and not is_external: kodi_utils.set_property('redlight.exit_params', kodi_utils.folder_path())
+		if page_no == 1 and not is_external: kodi_utils.set_property('redlight.exit_params', kodi_utils.list_collection_exit_params(params))
 		if use_result: result = params.get('result', [])
 		else: result = get_tmdb_list(params)
 		result, total_pages, paginate_start = _paginate_list(result, page_no, paginate_start)

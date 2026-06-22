@@ -510,12 +510,12 @@
   {
     "setting_id": "context_menu.enabled",
     "setting_type": "string",
-    "setting_default": "extras,play_trailer,options,playback_options,browse_movie_set,browse_seasons,browse_episodes,recommended,related,more_like_this,similar,in_trakt_list,trakt_manager,personal_manager,tmdb_manager,favorites_manager,quick_add,mark_watched,unmark_previous_episode,exit,refresh,reload"
+    "setting_default": "extras,play_trailer,options,playback_options,browse_movie_set,browse_seasons,browse_episodes,recommended,related,more_like_this,similar,in_trakt_list,trakt_manager,personal_manager,tmdb_manager,favorites_manager,quick_add,mark_watched,unmark_previous_episode,exit,refresh"
   },
   {
     "setting_id": "context_menu.order",
     "setting_type": "string",
-    "setting_default": "extras,play_trailer,options,playback_options,browse_movie_set,browse_seasons,browse_episodes,recommended,related,more_like_this,similar,in_trakt_list,trakt_manager,personal_manager,tmdb_manager,favorites_manager,quick_add,mark_watched,unmark_previous_episode,exit,refresh,reload"
+    "setting_default": "extras,play_trailer,options,playback_options,browse_movie_set,browse_seasons,browse_episodes,recommended,related,more_like_this,similar,in_trakt_list,trakt_manager,personal_manager,tmdb_manager,favorites_manager,quick_add,mark_watched,unmark_previous_episode,exit,refresh"
   },
   {
     "setting_id": "context_menu.quick_add_target",

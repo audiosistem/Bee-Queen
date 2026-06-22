@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import json
 import os
 from threading import Thread
 from time import time
@@ -53,6 +52,7 @@ class ClearStaleProperties:
 		"forge.active_queued_downloads",
 		"forge.active_downloads",
 		"forge.external_scraper.module",
+		"forge.widget_reload_pending",  # deferred home-widget reload request; stale if unserviced at shutdown
 	)
 
 	# UI state from the previous session's plugin invocations.
@@ -310,7 +310,7 @@ class TraktMonitor:
 					else:
 						kodi_utils.logger("Forge", trakt_service_string % ("Success. No Changes Needed", next_update_string))  # 'not needed'
 					if status == "success" and get_setting("forge.trakt.refresh_widgets", "false") == "true":
-						kodi_utils.run_plugin({"mode": "kodi_refresh"})
+						kodi_utils.request_widget_reload()
 			except Exception as e:
 				kodi_utils.logger("Forge", trakt_service_string % ("Failed", "The following Error Occured: %s" % str(e)))
 			wait_for_abort(wait_time)
@@ -360,8 +360,8 @@ class WidgetRefresher:
 		kodi_utils.logger("Forge", "WidgetRefresher Service Starting")
 		from time import time
 
-		monitor, player = kodi_utils.kodi_monitor(), kodi_utils.kodi_player()
-		wait_for_abort, self.is_playing = monitor.waitForAbort, player.isPlayingVideo
+		monitor = kodi_utils.kodi_monitor()
+		wait_for_abort = monitor.waitForAbort
 		wait_for_abort(10)
 		self.set_next_refresh(time())
 		while not monitor.abortRequested():
@@ -371,11 +371,23 @@ class WidgetRefresher:
 				if offset != self.offset:
 					self.set_next_refresh(time())
 					continue
-				if self.condition_check():
+				if not kodi_utils.widgets_refresh_safe():
 					continue
-				if self.next_refresh < time():
+				# Safe state reached. Service an explicit reload request first (independent
+				# of the periodic timer, so it still fires when the timer is disabled)...
+				if kodi_utils.get_property("forge.widget_reload_pending"):
+					kodi_utils.logger("Forge", "WidgetRefresher Service - Widgets Reloaded (requested)")
+					# Reload first, then clear: if reload_home_widgets() raises (e.g. cache DB
+					# locked), the flag survives and the request is retried next safe tick
+					# instead of being silently dropped.
+					kodi_utils.reload_home_widgets()
+					kodi_utils.clear_property("forge.widget_reload_pending")
+					self.set_next_refresh(time())
+					continue
+				# ...then the periodic refresh, when its timer is enabled and due.
+				if self.next_refresh is not None and self.next_refresh < time():
 					kodi_utils.logger("Forge", "WidgetRefresher Service - Widgets Refreshed")
-					kodi_utils.refresh_widgets()
+					kodi_utils.reload_home_widgets()
 					self.set_next_refresh(time())
 			except:
 				pass
@@ -383,27 +395,7 @@ class WidgetRefresher:
 			del monitor
 		except:
 			pass
-		try:
-			del player
-		except:
-			pass
 		return kodi_utils.logger("Forge", "WidgetRefresher Service Finished")
-
-	def condition_check(self):
-		if not self.external():
-			return True
-
-		if self.next_refresh == None or self.is_playing() or kodi_utils.get_property(pause_services_prop) == "true":
-			return True
-		if kodi_utils.get_property("forge.window_loaded") == "true":
-			return True
-		try:
-			window_stack = json.loads(kodi_utils.get_property("forge.window_stack"))
-			if window_stack or window_stack == []:
-				return True
-		except:
-			pass
-		return False
 
 	def set_next_refresh(self, _time):
 		self.offset = int(get_setting("forge.widget_refresh_timer", "60"))
@@ -411,9 +403,6 @@ class WidgetRefresher:
 			self.next_refresh = _time + (self.offset * 60)
 		else:
 			self.next_refresh = None
-
-	def external(self):
-		return "plugin" not in kodi_utils.get_infolabel("Container.PluginName")
 
 
 class AutoStart:

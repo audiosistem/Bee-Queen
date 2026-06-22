@@ -61,6 +61,10 @@ def simkl_manager():
 	params = get_params('simkl_manager_params')
 	if params: dialogs.simkl_manager_choice(params)
 
+def mdblist_manager():
+	params = get_params('mdblist_manager_params')
+	if params: dialogs.mdblist_manager_choice(params)
+
 def personal_manager():
 	params = get_params('personal_manager_params')
 	if params: dialogs.personallists_manager_choice(params)

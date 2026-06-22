@@ -558,7 +558,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
     </assets>
   </extension>
 
-</addon><addon id="plugin.video.forge" name="Forge" provider-name="Forge Project" version="0.2.8">
+</addon><addon id="plugin.video.forge" name="Forge" provider-name="Forge Project" version="0.2.11">
     <requires>
         <import addon="xbmc.python" version="3.0.1" />
         <import addon="script.module.pil" version="1.1.7" />
@@ -1062,7 +1062,7 @@ In addition to what livestreams allowed you to do, you can now,
 		<fanart>fanart.jpg</fanart>
   </assets>
   </extension>
-</addon><addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]" version="1.4.1">
+</addon><addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]" version="1.4.3">
     <requires>
         <import addon="xbmc.python" version="3.0.1" />
         <import addon="script.module.pil" version="1.1.7" />
@@ -1071,7 +1071,7 @@ In addition to what livestreams allowed you to do, you can now,
     <extension point="xbmc.python.pluginsource" library="resources/lib/redlight.py">
         <provides>video</provides>
     </extension>
-    <extension point="xbmc.service" library="resources/lib/service.py" />
+    
     <extension point="xbmc.python.module" library="resources/lib/" />
     <extension point="xbmc.addon.metadata">
         <reuselanguageinvoker>true</reuselanguageinvoker>

@@ -3,6 +3,7 @@ from datetime import datetime
 from threading import Thread
 from apis.trakt_api import trakt_watched_status_mark, trakt_official_status, trakt_progress, trakt_get_hidden_items
 from apis.simkl_api import simkl_watched_status_mark, simkl_progress
+from apis.mdblist_api import mdblist_watched_status_mark, mdblist_progress
 from caches.base_cache import connect_database, database
 from caches.trakt_cache import clear_trakt_collection_watchlist_data
 from modules.kodi_utils import kodi_progress_background, sleep, get_video_database_path, notification, kodi_refresh, logger
@@ -11,7 +12,7 @@ from modules import metadata, settings
 # from modules.kodi_utils import logger
 
 def get_database(watched_indicators=None):
-	return connect_database({0: 'watched_db', 1: 'trakt_db', 2: 'simkl_db'}[watched_indicators if watched_indicators is not None else settings.watched_indicators()])
+	return connect_database({0: 'watched_db', 1: 'trakt_db', 2: 'simkl_db', 3: 'mdblist_db'}[watched_indicators if watched_indicators is not None else settings.watched_indicators()])
 
 # def cache_watched_tvshow_status(function, status_type, watched_indicators=None):
 # 	watched_indicators = watched_indicators or settings.watched_indicators()
@@ -43,6 +44,9 @@ def get_hidden_progress_items(watched_indicators):
 		elif watched_indicators == 2:
 			from apis.simkl_api import simkl_get_dropped_items
 			return simkl_get_dropped_items()
+		elif watched_indicators == 3:
+			from apis.mdblist_api import mdblist_get_dropped_items
+			return mdblist_get_dropped_items()
 		else: return trakt_get_hidden_items('dropped')
 	except: return []
 
@@ -54,6 +58,8 @@ def update_hidden_progress(media_id):
 	if watched_indicators == 0: function = hide_unhide_progress_items
 	elif watched_indicators == 2:
 		from apis.simkl_api import simkl_hide_unhide_progress_items as function
+	elif watched_indicators == 3:
+		from apis.mdblist_api import mdblist_hide_unhide_progress_items as function
 	else: from apis.trakt_api import hide_unhide_progress_items as function
 	function({'action': 'undrop', 'media_type': 'shows', 'media_id': media_id, 'section': 'dropped', 'refresh': 'false'})
 
@@ -253,6 +259,13 @@ def erase_bookmark(media_type, media_id, season='', episode='', refresh='false')
 				sleep(1000)
 				simkl_progress('clear_progress', media_type, media_id, 0, season, episode, resume_id)
 			except: pass
+		elif watched_indicators == 3:
+			try:
+				if media_type == 'episode': resume_id = get_bookmarks_episode(str(media_id), season, watched_db)[int(episode)]['resume_id']
+				else: resume_id = get_bookmarks_movie(watched_db)[str(media_id)]['resume_id']
+				sleep(1000)
+				mdblist_progress('clear_progress', media_type, media_id, 0, season, episode, resume_id)
+			except: pass
 		watched_db.execute('DELETE FROM progress where db_type = ? and media_id = ? and season = ? and episode = ?', (media_type, media_id, season, episode))
 		refresh_container(refresh == 'true')
 	except: pass
@@ -262,8 +275,10 @@ def batch_erase_bookmark(watched_indicators, insert_list, action):
 		watched_db = get_database(watched_indicators)
 		if action == 'mark_as_watched': modified_list = [(i[0], i[1], i[2], i[3]) for i in insert_list]
 		else: modified_list = insert_list
-		if watched_indicators in (1, 2):
-			progress_fn = trakt_progress if watched_indicators == 1 else simkl_progress
+		if watched_indicators in (1, 2, 3):
+			if watched_indicators == 1: progress_fn = trakt_progress
+			elif watched_indicators == 2: progress_fn = simkl_progress
+			else: progress_fn = mdblist_progress
 			def _process():
 				for i in insert_list:
 					try:
@@ -289,6 +304,8 @@ def set_bookmark(params):
 			trakt_progress('set_progress', media_type, tmdb_id, resume_point, season, episode, refresh_trakt=False)
 		elif watched_indicators == 2:
 			simkl_progress('set_progress', media_type, tmdb_id, resume_point, season, episode, refresh_simkl=False)
+		elif watched_indicators == 3:
+			mdblist_progress('set_progress', media_type, tmdb_id, resume_point, season, episode, refresh_mdblist=False)
 		refresh_container(refresh)
 	except: pass
 
@@ -304,6 +321,8 @@ def mark_movie(params):
 		clear_trakt_collection_watchlist_data('watchlist', media_type)
 	elif watched_indicators == 2:
 		if not simkl_watched_status_mark(action, 'movie', tmdb_id) and not from_playback: return notification('Error')
+	elif watched_indicators == 3:
+		if not mdblist_watched_status_mark(action, 'movie', tmdb_id) and not from_playback: return notification('Error')
 	watched_status_mark(watched_indicators, media_type, tmdb_id, action, title=title)
 	refresh_container(refresh)
 
@@ -319,6 +338,8 @@ def mark_tvshow(params):
 		clear_trakt_collection_watchlist_data('watchlist', 'tvshow')
 	elif watched_indicators == 2:
 		if not simkl_watched_status_mark(action, 'tvshow', tmdb_id, tvdb_id): return notification('Error')
+	elif watched_indicators == 3:
+		if not mdblist_watched_status_mark(action, 'tvshow', tmdb_id, tvdb_id): return notification('Error')
 	current_date = get_datetime()
 	insert_list = []
 	insert_append = insert_list.append
@@ -357,6 +378,8 @@ def mark_season(params):
 		clear_trakt_collection_watchlist_data('watchlist', 'tvshow')
 	elif watched_indicators == 2:
 		if not simkl_watched_status_mark(action, 'season', tmdb_id, tvdb_id, season): return notification('Error')
+	elif watched_indicators == 3:
+		if not mdblist_watched_status_mark(action, 'season', tmdb_id, tvdb_id, season): return notification('Error')
 	progress_backround = kodi_progress_background()
 	progress_backround.create('[B]Please Wait..[/B]', '')
 	current_date = get_datetime()
@@ -391,6 +414,8 @@ def mark_episode(params):
 		clear_trakt_collection_watchlist_data('watchlist', 'tvshow')
 	elif watched_indicators == 2:
 		if not simkl_watched_status_mark(action, media_type, tmdb_id, tvdb_id, season, episode) and not from_playback: return notification('Error')
+	elif watched_indicators == 3:
+		if not mdblist_watched_status_mark(action, media_type, tmdb_id, tvdb_id, season, episode) and not from_playback: return notification('Error')
 	watched_status_mark(watched_indicators, media_type, tmdb_id, action, season, episode, title)
 	update_hidden_progress(tmdb_id)
 	refresh_container(refresh)
@@ -486,6 +511,30 @@ def _refresh_simkl_tvshow_watched():
 		simkl_indicators_tv()
 	except: pass
 
+def _refresh_mdblist_tvshow_watched():
+	try:
+		if settings.watched_indicators() != 3 or not settings.mdblist_user_active(): return
+		from apis.mdblist_api import mdblist_indicators_tv, _get_mdbl_paginated_list
+		watched_info = _get_mdbl_paginated_list('sync/watched')
+		mdblist_indicators_tv(watched_info)
+	except: pass
+
+def _refresh_mdblist_movie_progress():
+	try:
+		if settings.watched_indicators() != 3 or not settings.mdblist_user_active(): return
+		from apis.mdblist_api import call_mdblist, mdblist_progress_movies
+		progress = call_mdblist('sync/playback') or {}
+		mdblist_progress_movies(progress.get('items', []))
+	except: pass
+
+def _refresh_mdblist_episode_progress():
+	try:
+		if settings.watched_indicators() != 3 or not settings.mdblist_user_active(): return
+		from apis.mdblist_api import call_mdblist, mdblist_progress_tv
+		progress = call_mdblist('sync/playback') or {}
+		mdblist_progress_tv(progress.get('items', []))
+	except: pass
+
 def _refresh_trakt_episode_progress():
 	try:
 		if settings.watched_indicators() != 1 or not settings.trakt_user_active(): return
@@ -518,6 +567,10 @@ def get_in_progress_movies(dummy_arg, page_no):
 		_refresh_trakt_movie_progress()
 		data = _movie_progress_list(dbcon)
 		if data: source = 'trakt'
+	elif watched_indicators == 3 and settings.mdblist_user_active():
+		_refresh_mdblist_movie_progress()
+		data = _movie_progress_list(dbcon)
+		if data: source = 'mdblist'
 	logger('Red Light', 'get_in_progress_movies: %s item(s) from %s' % (len(data), source))
 	return _sort_progress_list(data)
 
@@ -529,6 +582,9 @@ def get_in_progress_tvshows(dummy_arg, page_no):
 	elif settings.watched_indicators() == 2 and settings.simkl_user_active():
 		_refresh_simkl_tvshow_watched()
 		source = 'simkl'
+	elif settings.watched_indicators() == 3 and settings.mdblist_user_active():
+		_refresh_mdblist_tvshow_watched()
+		source = 'mdblist'
 	results = active_tvshows_information('progress')
 	logger('Red Light', 'get_in_progress_tvshows: %s item(s) from %s' % (len(results), source))
 	if settings.lists_sort_order('progress') == 0: results = sort_for_article(results, 'title', settings.ignore_articles())
@@ -544,6 +600,10 @@ def get_in_progress_episodes():
 		_refresh_trakt_episode_progress()
 		episode_list = _episode_progress_list(dbcon)
 		if episode_list: source = 'trakt'
+	elif watched_indicators == 3 and settings.mdblist_user_active():
+		_refresh_mdblist_episode_progress()
+		episode_list = _episode_progress_list(dbcon)
+		if episode_list: source = 'mdblist'
 	logger('Red Light', 'get_in_progress_episodes: %s item(s) from %s' % (len(episode_list), source))
 	if settings.lists_sort_order('progress') == 0: episode_list = sort_for_article(episode_list, 'title', settings.ignore_articles())
 	else: episode_list.sort(key=lambda k: k['date'], reverse=True)

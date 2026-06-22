@@ -633,6 +633,10 @@ def simkl_manager_choice(params):
 	from apis import simkl_api
 	return simkl_api.simkl_manager_choice(params)
 
+def mdblist_manager_choice(params):
+	from apis import mdblist_api
+	return mdblist_api.mdblist_manager_choice(params)
+
 def episode_groups_choice(params):
 	from modules.metadata import episode_groups
 	episode_group_types = {1: 'Original Air Date', 2: 'Absolute', 3: 'DVD', 4: 'Digital', 5: 'Story Arc', 6: 'Production', 7: 'TV'}
@@ -1032,6 +1036,8 @@ def options_menu_choice(params, meta=None):
 	listing_append = listing.append
 	if from_extras:
 		if menu_type in ('movie', 'episode'): listing_append(('Playback Options', 'Scrapers Options', 'playback_choice'))
+	if menu_type in ('movie', 'tvshow'):
+		if settings.mdblist_user_active(): listing_append(('MDBList Manager', '', 'mdblist_manager'))
 		if settings.simkl_user_active(): listing_append(('Simkl Lists Manager', '', 'simkl_manager'))
 		if settings.trakt_user_active(): listing_append(('Trakt Lists Manager', '', 'trakt_manager'))
 		listing_append(('TMDb Lists Manager', '', 'tmdblists_manager_choice'))
@@ -1106,6 +1112,9 @@ def options_menu_choice(params, meta=None):
 		return trakt_manager_choice({'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id or 'None', 'media_type': content, 'icon': poster})
 	if choice == 'simkl_manager':
 		return simkl_manager_choice({'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id or 'None', 'media_type': content, 'icon': poster,
+									'title': title, 'season': season, 'episode': episode})
+	if choice == 'mdblist_manager':
+		return mdblist_manager_choice({'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id or 'None', 'media_type': content, 'icon': poster,
 									'title': title, 'season': season, 'episode': episode})
 	if choice == 'personallists_manager_choice':
 		from modules.utils import get_current_timestamp

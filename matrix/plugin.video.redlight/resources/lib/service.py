@@ -180,6 +180,31 @@ class SimklMonitor:
 			wait_for_abort(wait_time)
 		return kodi_utils.logger('Red Light', 'SimklMonitor Service Finished')
 
+class MdblistMonitor:
+	def run(self):
+		kodi_utils.logger('Red Light', 'MDBListMonitor Service Starting')
+		from apis.mdblist_api import mdblist_sync_activities
+		from modules.settings import mdblist_user_active, mdblist_sync_interval
+		monitor, player = kodi_utils.kodi_monitor(), kodi_utils.kodi_player()
+		wait_for_abort, is_playing = monitor.waitForAbort, player.isPlayingVideo
+		wait_for_abort(60)
+		while not monitor.abortRequested():
+			while is_playing() or kodi_utils.get_property(pause_services_prop) == 'true': wait_for_abort(10)
+			wait_time = 1800
+			try:
+				sync_interval, wait_time = mdblist_sync_interval()
+				next_update_string = 'MDBList Sync finished - Next Sync in %s minutes' % sync_interval
+				if mdblist_user_active(): status = mdblist_sync_activities()
+				else: status = 'no_auth'
+				if status == 'failed': kodi_utils.logger('Red Light', 'MDBList Sync Failed')
+				elif status == 'no_auth': kodi_utils.logger('Red Light', 'MDBList Sync Not Run - No Account')
+				else: kodi_utils.logger('Red Light', 'MDBList Sync %s - %s' % ('OK' if status == 'success' else 'No Changes', next_update_string))
+				if status == 'success' and get_setting('redlight.mdblist.refresh_widgets', 'false') == 'true':
+					kodi_utils.run_plugin({'mode': 'kodi_refresh'})
+			except Exception as e: kodi_utils.logger('Red Light', 'MDBList Sync Failed: %s' % str(e))
+			wait_for_abort(wait_time)
+		return kodi_utils.logger('Red Light', 'MDBListMonitor Service Finished')
+
 class UpdateCheck:
 	def run(self):
 		if kodi_utils.get_property(firstrun_update_prop) == 'true': return
@@ -272,6 +297,7 @@ class RedLightMonitor(Monitor):
 		start_custom_windows_prepare()
 		Thread(target=TraktMonitor().run).start()
 		Thread(target=SimklMonitor().run).start()
+		Thread(target=MdblistMonitor().run).start()
 		Thread(target=UpdateCheck().run).start()
 		Thread(target=WidgetRefresher().run).start()
 		try: AutoStart().run()

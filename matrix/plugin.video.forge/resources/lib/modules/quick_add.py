@@ -509,5 +509,4 @@ def run_toggle(params):
 		_notify("Quick Add Failed", 3000)
 	if success and member:
 		hint = _refresh_hint(kind, fields)
-		if kodi_utils.external() or (hint and kodi_utils.path_check(hint)):
-			kodi_utils.kodi_refresh()
+		kodi_utils.refresh_after_action(hint or None)

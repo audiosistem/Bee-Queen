@@ -251,7 +251,7 @@ def delete_personal_list(params):
 	if personal_lists_cache.delete_list(list_name, author):
 		for image_type, custom_image in (("poster", poster), ("fanart", fanart)):
 			delete_current_image(image_type, list_name, author, custom_image)
-		return kodi_utils.kodi_refresh()
+		return kodi_utils.refresh_after_action("get_personal_lists")
 	kodi_utils.notification("Error Deleting List", 3000)
 
 
@@ -330,8 +330,8 @@ def make_new_personal_list(params):
 	if chosen_list:
 		new_contents = process_trakt_list(chosen_list)
 		result = personal_lists_cache.add_many_list_items(list_name, author, new_contents)
-	if not external_creation and any([kodi_utils.path_check("get_personal_lists") or kodi_utils.external()]):
-		kodi_utils.kodi_refresh()
+	if not external_creation:
+		kodi_utils.refresh_after_action("get_personal_lists")
 	return list_name, author
 
 
@@ -751,8 +751,8 @@ def external(params):
 			},
 			True,
 		)
-	if action == "import" and (kodi_utils.path_check("get_personal_lists") or kodi_utils.external()):
-		kodi_utils.kodi_refresh()
+	if action == "import":
+		kodi_utils.refresh_after_action("get_personal_lists")
 
 
 def unique_list_check(list_name, author="Unknown"):

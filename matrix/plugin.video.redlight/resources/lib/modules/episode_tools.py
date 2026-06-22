@@ -137,6 +137,7 @@ def build_next_episode_manager():
 	hidden_list = get_hidden_progress_items(indicators)
 	if indicators == 0: icon, mode = kodi_utils.get_icon('folder'), 'hide_unhide_progress_items'
 	elif indicators == 2: icon, mode = kodi_utils.get_icon('simkl'), 'simkl.simkl_hide_unhide_progress_items'
+	elif indicators == 3: icon, mode = kodi_utils.get_icon('mdblist'), 'mdblist.mdblist_hide_unhide_progress_items'
 	else: icon, mode = kodi_utils.get_icon('trakt'), 'trakt.hide_unhide_progress_items'
 	threads = TaskPool().tasks(_process, show_list, min(len(show_list), max_threads()))
 	[i.join() for i in threads]

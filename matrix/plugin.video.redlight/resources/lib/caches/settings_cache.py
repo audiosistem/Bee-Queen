@@ -81,6 +81,9 @@ def sanitize_setting_value(setting_id, value, setting_info=None, validate_paths=
 		if value == '2':
 			from modules.settings import simkl_user_active
 			if simkl_user_active(): return value
+		if value == '3':
+			from modules.settings import mdblist_user_active
+			if mdblist_user_active(): return value
 		return '0'
 	if setting_id in _CREDENTIAL_STRING_SETTINGS:
 		if value in (None, 'empty_setting', ''): return default if value is None else value
@@ -387,8 +390,9 @@ def sync_settings(params={}):
 			currentsettings['update.username'] = 'The-Red-Wizard'
 			migrated = True
 			if load_properties: settings_cache.set_memory_cache('update.username', 'The-Red-Wizard')
-		from modules.settings import migrate_simkl_context_menu_for_upgrade, migrate_cm_manager_order_for_upgrade
+		from modules.settings import migrate_simkl_context_menu_for_upgrade, migrate_mdblist_context_menu_for_upgrade, migrate_cm_manager_order_for_upgrade
 		if migrate_simkl_context_menu_for_upgrade(had_existing_settings): migrated = True
+		if migrate_mdblist_context_menu_for_upgrade(had_existing_settings): migrated = True
 		if migrate_cm_manager_order_for_upgrade(): migrated = True
 		if currentsettings.get('migration.my_content_nav_mode_v136') != 'true':
 			try:
@@ -509,6 +513,11 @@ def set_from_list(params):
 	setting_value = new_value[1]
 	prev_value = get_setting('redlight.%s' % setting_id) if setting_id == 'watched_indicators' else None
 	set_setting(setting_id, setting_value)
+	if setting_id == 'watched_indicators' and setting_value == '3' and str(prev_value) != '3':
+		try:
+			from apis.mdblist_api import mdblist_sync_activities
+			mdblist_sync_activities(force_update=True)
+		except: pass
 	if setting_id == 'watched_indicators' and setting_value == '2' and str(prev_value) != '2':
 		try:
 			from modules.settings import trakt_user_active, offer_trakt_import_to_simkl
@@ -566,14 +575,23 @@ def default_settings():
 {'setting_id': 'update.username', 'setting_type': 'string', 'setting_default': 'The-Red-Wizard'},
 {'setting_id': 'update.location', 'setting_type': 'string', 'setting_default': 'TheRedWizard.github.io'},
 #==================== Watched Indicators
-{'setting_id': 'watched_indicators', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Red Light', '2': 'Simkl', '1': 'Trakt'}},
+{'setting_id': 'watched_indicators', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'3': 'MDBList', '0': 'Red Light', '2': 'Simkl', '1': 'Trakt'}},
+#======+============= MDBList Cache
+{'setting_id': 'mdblist.user', 'setting_type': 'string', 'setting_default': 'empty_setting'},
+{'setting_id': 'mdblist.client', 'setting_type': 'string', 'setting_default': 'JFZCpEIYFtpvGk47pEEprjEkXzlPL8hJR45jqddJ'},
+{'setting_id': 'mdblist.token', 'setting_type': 'string', 'setting_default': '0'},
+{'setting_id': 'mdblist.refresh', 'setting_type': 'string', 'setting_default': '0'},
+{'setting_id': 'mdblist.sync_interval', 'setting_type': 'action', 'setting_default': '60', 'min_value': '5', 'max_value': '600'},
+{'setting_id': 'mdblist.refresh_widgets', 'setting_type': 'boolean', 'setting_default': 'true'},
 #======+============= Simkl Cache
 {'setting_id': 'simkl.user', 'setting_type': 'string', 'setting_default': 'empty_setting'},
 {'setting_id': 'simkl.token', 'setting_type': 'string', 'setting_default': '0'},
 {'setting_id': 'simkl.sync_interval', 'setting_type': 'action', 'setting_default': '60', 'min_value': '5', 'max_value': '600'},
 {'setting_id': 'simkl.refresh_widgets', 'setting_type': 'boolean', 'setting_default': 'true'},
 {'setting_id': 'simkl.cm_menu_migrated', 'setting_type': 'boolean', 'setting_default': 'false'},
+{'setting_id': 'mdblist.cm_menu_migrated', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'cm_manager_order_migrated', 'setting_type': 'boolean', 'setting_default': 'false'},
+{'setting_id': 'cm_manager_order_migrated_v2', 'setting_type': 'boolean', 'setting_default': 'false'},
 #======+============= Trakt Cache
 {'setting_id': 'trakt.sync_interval', 'setting_type': 'action', 'setting_default': '60', 'min_value': '5', 'max_value': '600'},
 {'setting_id': 'trakt.refresh_widgets', 'setting_type': 'boolean', 'setting_default': 'true'},
@@ -665,10 +683,10 @@ def default_settings():
 #==================== Context Menu
 {'setting_id': 'context_menu.enabled', 'setting_type': 'string',
 'setting_default': 'extras,options,playback_options,browse_movie_set,browse_seasons,browse_episodes,recommended,related,more_like_this,similar,in_trakt_list,' \
-'simkl_manager,trakt_manager,tmdb_manager,personal_manager,favorites_manager,mark_watched,unmark_previous_episode,exit,refresh,reload'},
+'mdblist_manager,simkl_manager,trakt_manager,tmdb_manager,personal_manager,favorites_manager,mark_watched,unmark_previous_episode,exit,refresh,reload'},
 {'setting_id': 'context_menu.order', 'setting_type': 'string',
 'setting_default': 'extras,options,playback_options,browse_movie_set,browse_seasons,browse_episodes,recommended,related,more_like_this,similar,in_trakt_list,' \
-'simkl_manager,trakt_manager,tmdb_manager,personal_manager,favorites_manager,mark_watched,unmark_previous_episode,exit,refresh,reload'},
+'mdblist_manager,simkl_manager,trakt_manager,tmdb_manager,personal_manager,favorites_manager,mark_watched,unmark_previous_episode,exit,refresh,reload'},
 
 
 #==================================================================================#

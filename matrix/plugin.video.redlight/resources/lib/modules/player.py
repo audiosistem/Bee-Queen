@@ -203,8 +203,12 @@ class RedLightPlayer(xbmc.Player):
 						ku.sleep(250)
 						continue
 					self.current_point = round(float(self.curr_time/self.total_time * 100), 1)
-					if self.current_point >= 90:
-						if play_random_continual: self.run_random_continual(); break
+					if play_random_continual:
+						if self._should_prep_random_continual():
+							self.random_continual_triggered = True
+							self.run_random_continual()
+							break
+					elif self.current_point >= 90:
 						if not self.media_marked: self.media_watched_marker()
 					if self.media_type == 'episode':
 						if self.autoplay_nextep or self.autoscrape_nextep:
@@ -346,6 +350,26 @@ class RedLightPlayer(xbmc.Player):
 		except:
 			return False
 		return remaining > 0 and remaining <= self.start_prep
+
+	def _ensure_random_continual_prep(self):
+		if getattr(self, 'random_continual_start_prep', None) is not None: return
+		if st.autoscrape_next_episode(): play_type = 'autoscrape_nextep'
+		elif st.autoplay_next_episode(): play_type = 'autoplay_nextep'
+		else: play_type = 'autoscrape_nextep'
+		nextep_settings = st.auto_nextep_settings(play_type)
+		final_chapter = self.final_chapter(90) if nextep_settings['use_chapters'] else None
+		percentage = 100 - final_chapter if final_chapter else nextep_settings['window_percentage']
+		try: window_time = round((percentage / 100) * self.total_time)
+		except: window_time = nextep_settings['window_percentage']
+		self.random_continual_start_prep = nextep_settings['scraper_time'] + window_time
+
+	def _should_prep_random_continual(self):
+		if getattr(self, 'random_continual_triggered', False): return False
+		if not self._valid_playback_duration(self.total_time, self.curr_time): return False
+		self._ensure_random_continual_prep()
+		try: remaining = round(float(self.total_time) - float(self.curr_time))
+		except: return False
+		return remaining > 0 and remaining <= self.random_continual_start_prep
 
 	def _schedule_next_ep(self):
 		if ku.get_property(PROP_NEXTEP_PENDING) == 'true':

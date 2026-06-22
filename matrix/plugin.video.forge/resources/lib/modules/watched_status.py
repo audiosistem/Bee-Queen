@@ -6,7 +6,7 @@ from apis.trakt_api import trakt_get_hidden_items, trakt_official_status, trakt_
 from caches.base_cache import connect_database, database
 from caches.trakt_cache import clear_trakt_collection_watchlist_data
 from modules import metadata, settings
-from modules.kodi_utils import get_video_database_path, kodi_progress_background, kodi_refresh, notification, sleep
+from modules.kodi_utils import get_video_database_path, kodi_progress_background, notification, refresh_after_action, sleep
 from modules.utils import TaskPool, adjust_premiered_date, get_datetime, sort_for_article
 
 # from modules.kodi_utils import logger
@@ -82,7 +82,7 @@ def hide_unhide_progress_items(params):
 		),
 	)
 	if refresh:
-		kodi_refresh()
+		refresh_after_action(refresh_when_internal=True)
 
 
 def get_last_played_value(watched_indicators):
@@ -101,7 +101,7 @@ def make_batch_insert(action, media_type, media_id, season, episode, last_played
 
 def refresh_container(refresh=True):
 	if refresh:
-		kodi_refresh()
+		refresh_after_action(refresh_when_internal=True)
 
 
 def active_tvshows_information(status_type):

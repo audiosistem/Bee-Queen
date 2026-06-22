@@ -23,6 +23,7 @@ class TaskPool:
 			except Exception as e: logger('thread queue error', str(e))
 
 	def tasks(self, _target, _list, _max_size=60):
+		if not _list: return []
 		if not isinstance(_list[0], tuple): _list = [(i,) for i in _list]
 		[self._queue.put(tag) for tag in _list]
 		threads = [Thread(target=self._thread_target, args=(self._queue, _target)) for i in range(_max_size)]

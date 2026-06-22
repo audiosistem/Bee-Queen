@@ -107,20 +107,166 @@ def networks():
 	return _load("networks")
 
 
+# Trailing per-storefront suffixes TMDb appends to a brand's channel listings (e.g. "Starz Apple TV
+# Channel"). Stripped when folding variants together so the brand collapses to one menu entry.
+_STOREFRONT_SUFFIXES = (" amazon channel", " apple tv channel", " roku premium channel")
+
+# Cross-name brands the suffix rule can't unify on its own. TMDb lists MHz Choice's Amazon storefront
+# under a "MZ Choice" typo (id 291), separate from the base "Mhz Choice" (id 427); fold them together.
+_BRAND_ALIASES = {"mzchoice": "mhzchoice"}
+
+# Display names for brand keys whose auto-picked label isn't ideal (data uses "MGM Plus", "AcornTV
+# Amazon Channel", "Mhz Choice"). Cosmetic only — keyed by the normalized brand key.
+_BRAND_DISPLAY = {"mgm+": "MGM+", "acorntv": "Acorn TV", "mhzchoice": "MHz Choice"}
+
+
+def _strip_storefront(name):
+	# (stem, had_suffix) — the brand name with a trailing storefront-channel suffix removed.
+	stem = name.strip()
+	low = stem.lower()
+	for suffix in _STOREFRONT_SUFFIXES:
+		if low.endswith(suffix):
+			return stem[: len(stem) - len(suffix)].strip(), True
+	return stem, False
+
+
+def _brand_key(name):
+	# Matching key: drop a storefront suffix, lowercase, unify a spelled-out "Plus" token with "+",
+	# strip spaces, then alias. The "plus"→"+" swap is token-bounded (not a substring replace) so a
+	# brand whose name merely contains the letters "plus" (e.g. a hypothetical "Surplus TV") isn't
+	# mangled into a different brand's key and wrongly folded with it.
+	stem = _strip_storefront(name)[0]
+	key = "".join("+" if tok == "plus" else tok for tok in stem.lower().split())
+	return _BRAND_ALIASES.get(key, key)
+
+
+def _join_ids(ids):
+	# Wire form for a brand's member ids: a plain int for a singleton, else a pipe-joined string the
+	# TMDb `with_watch_providers` query ORs (and the menu handler splits back on "|").
+	return ids[0] if len(ids) == 1 else "|".join(str(x) for x in ids)
+
+
+def _brand_groups(rows):
+	# Ordered list of (brand_key, group) folding per-storefront channel variants of one streaming brand
+	# (e.g. "Starz", "Starz Apple TV Channel", "Starz Roku Premium Channel") into a single group whose
+	# `ids` lists every member id (base first) and `id` pipe-joins them, so the TMDb `with_watch_providers`
+	# query ORs them and no content is missed. First-seen order is preserved; name/logo come from the
+	# brand's base row (one with no storefront suffix) when present, else the cleaned stem of the first
+	# variant — so a brand that exists only as a storefront channel is renamed (e.g. "Hallmark+"), never
+	# dropped. Shared by the Movie/TV menus and the Mixed Providers intersection.
+	groups = {}  # key -> {"order": int, "members": [(id, stem, logo, had_suffix)]}
+	for i, row in enumerate(rows):
+		stem, had_suffix = _strip_storefront(row["name"])
+		g = groups.setdefault(_brand_key(row["name"]), {"order": i, "members": []})
+		g["members"].append((row["id"], stem, row.get("logo"), had_suffix))
+	out = []
+	for key, g in sorted(groups.items(), key=lambda kv: kv[1]["order"]):
+		members = g["members"]
+		base = next((m for m in members if not m[3]), None)  # base = a row with no storefront suffix
+		ordered = [base] + [m for m in members if m is not base] if base else members
+		ids = [m[0] for m in ordered]
+		out.append(
+			(
+				key,
+				{
+					"ids": ids,  # raw member ids, base first — for the Mixed Providers union/icon lookup
+					"id": _join_ids(ids),
+					"name": _BRAND_DISPLAY.get(key) or (base[1] if base else ordered[0][1]),
+					"logo": next((m[2] for m in ordered if m[2]), None),
+				},
+			)
+		)
+	return out
+
+
+def _collapse_variants(rows):
+	# Public-menu shape: the folded brands as {id, name, logo} (drops the internal raw-ids list).
+	return [{"id": g["id"], "name": g["name"], "logo": g["logo"]} for _, g in _brand_groups(rows)]
+
+
 def watch_providers_movies():
-	return _load("watch_providers")["movie"]
+	return _collapse_variants(_load("watch_providers")["movie"])
 
 
 def watch_providers_tvshows():
-	return _load("watch_providers")["tvshow"]
+	return _collapse_variants(_load("watch_providers")["tvshow"])
+
+
+# Mixed-list providers that should render with a crisp local icon instead of TMDb's small h100 logo.
+# Keyed by watch-provider id → the matching network name in networks.json: the icon resolves from the
+# same PNG the TV Networks / Mixed Channels menus use, so a future art re-cut in networks.json carries
+# over automatically with no hash to keep in sync here. Several ids intentionally share a network
+# (Netflix Kids reuses Netflix, AMC+ reuses AMC, FXNow reuses FX).
+_MIXED_ICON_NETWORK = {
+	337: "Disney+",
+	8: "Netflix",
+	175: "Netflix",
+	9: "Amazon",  # Amazon Prime Video; id 10 "Amazon Video" keeps its TMDb logo so the two differ
+	350: "Apple TV +",
+	15: "Hulu",
+	386: "Peacock",
+	2303: "Paramount+",
+	43: "Starz",
+	526: "AMC",
+	80: "AMC",
+	79: "NBC",
+	83: "The CW",
+	209: "PBS",
+	123: "FX",
+	211: "Freeform",
+	156: "A&E",
+	157: "Lifetime",
+	87: "Acorn TV",
+	584: "Discovery+",
+}
+
+# The two Mixed-list brands with no networks.json entry carry an explicit network_icons basename,
+# mirroring the per-brand `icon` override in mixed_brands.json.
+_MIXED_ICON_FILE = {
+	34: "mgm_plus_logo",  # MGM Plus
+	283: "crunchyroll_logo",  # Crunchyroll
+}
+
+
+def _mixed_icon(ids, net_logos):
+	# Crisp local network_icons basename for a Mixed-list brand, or None to fall back to its TMDb logo.
+	# Scans every member id (base first) so an icon mapped to a storefront-only variant still attaches
+	# even when the brand's base id isn't itself in the maps. Network-backed brands resolve through
+	# networks.json (by name); the rest use an explicit file.
+	for provider_id in ids:
+		network = _MIXED_ICON_NETWORK.get(provider_id)
+		if network:
+			return net_logos.get(network)
+		if provider_id in _MIXED_ICON_FILE:
+			return _MIXED_ICON_FILE[provider_id]
+	return None
 
 
 def watch_providers_mixed():
-	# Providers common to both movies and TV (ids are identical across types), in movie order.
-	# Restricting to the intersection avoids dead buckets where a provider has no movies or no TV.
-	data = _load("watch_providers")
-	tv_ids = {p["id"] for p in data["tvshow"]}
-	return [p for p in data["movie"] if p["id"] in tv_ids]
+	# Brands with content on both movies and TV, folded the same way as the Movie/TV menus: storefront
+	# variants collapse into one row whose `id` pipe-joins every movie+TV member id, so clicking it ORs
+	# them in the TMDb query (`mixed_providers` fires the same tmdb_*_providers calls) instead of hitting
+	# only the base provider and missing variant content. The brand intersection avoids dead buckets where
+	# a brand has no movies or no TV; a crisp local `icon` is attached by base id where one exists (None
+	# otherwise); the list is sorted alphabetically — which keeps Netflix beside Netflix Kids.
+	net_logos = {n["name"]: n.get("logo") for n in _load("networks")}
+	movie = dict(_brand_groups(_load("watch_providers")["movie"]))
+	tv = dict(_brand_groups(_load("watch_providers")["tvshow"]))
+	rows = []
+	for key, m in movie.items():
+		if key not in tv:
+			continue
+		ids = m["ids"] + [i for i in tv[key]["ids"] if i not in m["ids"]]  # union, movie/base first
+		rows.append(
+			{
+				"id": _join_ids(ids),
+				"name": m["name"],
+				"logo": m["logo"] or tv[key]["logo"],
+				"icon": _mixed_icon(ids, net_logos),
+			}
+		)
+	rows.sort(key=lambda p: p["name"].strip().lower())
+	return rows
 
 
 def mixed_brands():

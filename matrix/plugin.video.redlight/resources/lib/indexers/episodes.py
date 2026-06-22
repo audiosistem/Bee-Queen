@@ -320,9 +320,9 @@ def build_single_episode(list_type, params={}):
 		if settings.nextep_limit_history(): data = data[:settings.nextep_limit()]
 		hidden_list = ws.get_hidden_progress_items(watched_indicators)
 		if hidden_list: data = [i for i in data if not i['media_ids']['tmdb'] in hidden_list]
-		if watched_indicators in (1, 2):
+		if watched_indicators in (1, 2, 3):
 			resformat, resinsert = '%Y-%m-%dT%H:%M:%S.%fZ', '2000-01-01T00:00:00.000Z'
-			list_type = 'episode.next_trakt' if watched_indicators == 1 else 'episode.next_simkl'
+			list_type = {1: 'episode.next_trakt', 2: 'episode.next_simkl', 3: 'episode.next_mdblist'}[watched_indicators]
 		else: resformat, resinsert, list_type = '%Y-%m-%d %H:%M:%S', '2000-01-01 00:00:00', 'episode.next_redlight'
 		if include_unwatched != 0:
 			if include_unwatched in (1, 3):

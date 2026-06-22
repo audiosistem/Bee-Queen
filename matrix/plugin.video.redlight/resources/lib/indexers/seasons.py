@@ -112,6 +112,10 @@ def build_season_list(params):
 		from apis.simkl_api import simkl_sync_activities
 		simkl_sync_activities()
 		watched_info = watched_info_season(tmdb_id, get_database(watched_indicators))
+	if watched_indicators == 3 and settings.mdblist_user_active():
+		from apis.mdblist_api import mdblist_sync_activities
+		mdblist_sync_activities()
+		watched_info = watched_info_season(tmdb_id, get_database(watched_indicators))
 	list_items = list(list(_process()))
 	if custom_order is not None: return (list_items[0], custom_order)
 	kodi_utils.add_items(handle, list_items)

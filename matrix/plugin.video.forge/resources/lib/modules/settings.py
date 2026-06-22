@@ -660,7 +660,7 @@ def all_rescrape_settings():
 def cm_enabled():
 	default = (
 		"extras,play_trailer,options,playback_options,browse_movie_set,browse_seasons,browse_episodes,recommended,related,more_like_this,similar,in_trakt_list,"
-		"trakt_manager,personal_manager,tmdb_manager,favorites_manager,quick_add,mark_watched,unmark_previous_episode,exit,refresh,reload"
+		"trakt_manager,personal_manager,tmdb_manager,favorites_manager,quick_add,mark_watched,unmark_previous_episode,exit,refresh"
 	)
 	setting = get_setting("forge.context_menu.enabled", default)
 	if setting in ("", None, "noop", "[]"):
@@ -671,7 +671,7 @@ def cm_enabled():
 def cm_current_order():
 	default = (
 		"extras,play_trailer,options,playback_options,browse_movie_set,browse_seasons,browse_episodes,recommended,related,more_like_this,similar,in_trakt_list,"
-		"trakt_manager,personal_manager,tmdb_manager,favorites_manager,quick_add,mark_watched,unmark_previous_episode,exit,refresh,reload"
+		"trakt_manager,personal_manager,tmdb_manager,favorites_manager,quick_add,mark_watched,unmark_previous_episode,exit,refresh"
 	)
 	setting = get_setting("forge.context_menu.order", default)
 	if setting in ("", None, "noop", "[]"):

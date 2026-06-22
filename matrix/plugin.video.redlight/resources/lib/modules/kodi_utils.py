@@ -30,7 +30,7 @@ def extras_button_label_values():
 				'show_director': 'Director', 'show_options': 'Options', 'show_recommended': 'Recommended', 'show_related': 'Related', 'show_more_like_this': 'More Like This',
 				'show_similar': 'Similar', 'show_reviews': 'Reviews', 'show_comments': 'Comments', 'show_trivia': 'Trivia', 'show_blunders': 'Blunders',
 				'show_year': 'More Year', 'show_genre': 'More Genres', 'show_network': 'More Network',
-				'show_trakt_manager': 'Trakt Lists', 'show_simkl_manager': 'Simkl Lists', 'show_tmdb_manager': 'TMDb Lists', 'show_personallists_manager': 'Personal Lists',
+				'show_mdblist_manager': 'MDBList', 'show_simkl_manager': 'Simkl Lists', 'show_trakt_manager': 'Trakt Lists', 'show_tmdb_manager': 'TMDb Lists', 'show_personallists_manager': 'Personal Lists',
 				'show_favorites_manager': 'Favorites Lists', 'playback_choice': 'Play Options', 'show_plot': 'Plot', 'show_keywords': 'Keywords',
 				'show_in_trakt_lists': 'In Trakt Lists', 'close_all': 'Close'},
 			'tvshow':
@@ -38,7 +38,7 @@ def extras_button_label_values():
 				'play_nextep': 'Play Next', 'show_options': 'Options', 'show_recommended': 'Recommended', 'show_related': 'Related', 'show_more_like_this': 'More Like This',
 				'show_similar': 'Similar', 'show_reviews': 'Reviews', 'show_comments': 'Comments', 'show_trivia': 'Trivia', 'show_blunders': 'Blunders',
 				'show_year': 'More Year', 'show_genre': 'More Genres', 'show_network': 'More Network',
-				'show_trakt_manager': 'Trakt Lists', 'show_simkl_manager': 'Simkl Lists', 'show_tmdb_manager': 'TMDb Lists', 'show_personallists_manager': 'Personal Lists',
+				'show_mdblist_manager': 'MDBList', 'show_simkl_manager': 'Simkl Lists', 'show_trakt_manager': 'Trakt Lists', 'show_tmdb_manager': 'TMDb Lists', 'show_personallists_manager': 'Personal Lists',
 				'show_favorites_manager': 'Favorites Lists', 'play_random_episode': 'Play Random', 'show_plot': 'Plot', 'show_keywords': 'Keywords',
 				'show_in_trakt_lists': 'In Trakt Lists', 'close_all': 'Close'}}
 
@@ -55,7 +55,7 @@ def context_menu_items():
 	{'name': 'Browse Movie Set', 'value': 'browse_movie_set'}, {'name': 'Browse TV Seasons', 'value': 'browse_seasons'},
 	{'name': 'Browse Season Episodes', 'value': 'browse_episodes'}, {'name': 'Browse Recommended', 'value': 'recommended'}, {'name': 'Browse Related', 'value': 'related'},
 	{'name': 'Browse More Like This', 'value': 'more_like_this'}, {'name': 'Browse Similar', 'value': 'similar'}, {'name': 'In Trakt Lists', 'value': 'in_trakt_list'},
-	{'name': 'Simkl Lists Manager', 'value': 'simkl_manager'}, {'name': 'Trakt Lists Manager', 'value': 'trakt_manager'}, {'name': 'TMDb Lists Manager', 'value': 'tmdb_manager'},
+	{'name': 'MDBList Manager', 'value': 'mdblist_manager'}, {'name': 'Simkl Lists Manager', 'value': 'simkl_manager'}, {'name': 'Trakt Lists Manager', 'value': 'trakt_manager'}, {'name': 'TMDb Lists Manager', 'value': 'tmdb_manager'},
 	{'name': 'Personal Lists Manager', 'value': 'personal_manager'}, {'name': 'Favorites Manager', 'value': 'favorites_manager'}, {'name': 'Mark Watched/Unwatched', 'value': 'mark_watched'},
 	{'name': 'Unmark Previous Watched Episode', 'value': 'unmark_previous_episode'}, {'name': 'Exit List', 'value': 'exit'}, {'name': 'Refresh Widgets', 'value': 'refresh'},
 	{'name': 'Reload Widgets', 'value': 'reload'}]
@@ -192,6 +192,104 @@ def get_addon_fanart():
 def build_url(url_params):
 	return 'plugin://plugin.video.redlight/?%s' % urlencode(url_params)
 
+_FOLDER_URL_SKIP = frozenset(('iconImage', 'random_support', 'random', 'name', 'isFolder'))
+
+def build_folder_url(url_params):
+	routing = {k: v for k, v in url_params.items() if k not in _FOLDER_URL_SKIP and v not in (None, '')}
+	mode = routing.get('mode', url_params.get('mode', ''))
+	if 'category_name' not in routing and url_params.get('name') and mode in ('build_movie_list', 'build_tvshow_list'):
+		routing['category_name'] = url_params['name']
+	return build_url(routing)
+
+def sanitize_folder_url(url):
+	if not url or 'plugin.video.redlight' not in url: return url
+	try:
+		from urllib.parse import parse_qsl, unquote
+		query = unquote(url.split('?', 1)[-1])
+		params = dict(parse_qsl(query, keep_blank_values=True))
+		return build_folder_url(params)
+	except: return url
+
+def set_browse_exit_params(list_mode='tvshow', action=None):
+	if external(): return
+	set_property('redlight.exit_params', browse_list_exit_params(list_mode, action))
+
+def browse_list_exit_params(list_mode='tvshow', action=None):
+	folder_path = get_infolabel('Container.FolderPath')
+	parent_tokens = ('navigator.', 'mdblist.', 'simkl.', 'trakt.list', 'tmdblist.', 'personal_lists.', 'build_tmdb_lists_contents')
+	if any(token in folder_path for token in parent_tokens):
+		return sanitize_folder_url(folder_path)
+	if action:
+		action_parent = _browse_action_exit_params.get(action)
+		if action_parent: return build_folder_url(action_parent)
+		subnav_parent = _browse_subnav_exit_params.get(action)
+		if subnav_parent: return build_folder_url(subnav_parent)
+	build_mode = 'build_movie_list' if list_mode == 'movie' else 'build_tvshow_list'
+	if build_mode in folder_path:
+		nav_actions = {'movie': 'MovieList', 'tvshow': 'TVShowList', 'anime': 'AnimeList'}
+		return build_folder_url({'mode': 'navigator.main', 'action': nav_actions.get(list_mode, 'TVShowList')})
+	return sanitize_folder_url(folder_path)
+
+def list_collection_exit_params(params=None):
+	folder_path = get_infolabel('Container.FolderPath')
+	parent_tokens = (
+		'trakt.list.get_trakt_lists', 'trakt.list.search_trakt', 'trakt.list.get_trakt_user_lists',
+		'tmdblist.get_tmdb_lists', 'personal_lists.get_personal_lists', 'navigator.', 'mdblist.', 'simkl.')
+	if any(token in folder_path for token in parent_tokens):
+		return sanitize_folder_url(folder_path)
+	params = params or {}
+	mode = params.get('mode', '')
+	if mode in ('trakt.list.build_trakt_list', 'random.build_trakt_lists_contents'):
+		return build_folder_url({'mode': 'trakt.list.get_trakt_lists', 'list_type': params.get('list_type', 'my_lists')})
+	if mode in ('tmdblist.build_tmdb_list', 'random.build_tmdb_lists_contents'):
+		return build_folder_url({'mode': 'tmdblist.get_tmdb_lists'})
+	if mode in ('personal_lists.build_personal_list', 'random.build_personal_lists_contents'):
+		return build_folder_url({'mode': 'personal_lists.get_personal_lists'})
+	return sanitize_folder_url(folder_path)
+
+_browse_action_exit_params = {
+	'mdblist_watchlist': {'mode': 'navigator.mdblist_lists'},
+	'mdblist_collection': {'mode': 'navigator.mdblist_lists'},
+	'mdblist_droplist': {'mode': 'navigator.mdblist_lists'},
+	'trakt_collection': {'mode': 'navigator.trakt_collections'},
+	'trakt_collection_lists': {'mode': 'navigator.trakt_collections'},
+	'trakt_watchlist': {'mode': 'navigator.trakt_watchlists'},
+	'trakt_watchlist_lists': {'mode': 'navigator.trakt_watchlists'},
+	'trakt_favorites': {'mode': 'navigator.trakt_favorites', 'category_name': 'Favorites'},
+	'trakt_recommendations': {'mode': 'navigator.trakt_recommendations', 'category_name': 'Recommended'},
+	'simkl_plantowatch': {'mode': 'navigator.simkl_lists'},
+	'simkl_completed': {'mode': 'navigator.simkl_lists'},
+	'simkl_watching': {'mode': 'navigator.simkl_lists'},
+	'simkl_hold': {'mode': 'navigator.simkl_lists'},
+	'simkl_dropped': {'mode': 'navigator.simkl_lists'},
+	'favorites_movies': {'mode': 'navigator.favorites'},
+	'favorites_tvshows': {'mode': 'navigator.favorites'},
+	'favorites_anime': {'mode': 'navigator.favorites'},
+}
+
+_browse_subnav_exit_params = {
+	'tmdb_movies_genres': {'mode': 'navigator.genres', 'menu_type': 'movie'},
+	'tmdb_tv_genres': {'mode': 'navigator.genres', 'menu_type': 'tvshow'},
+	'tmdb_anime_genres': {'mode': 'navigator.genres', 'menu_type': 'anime'},
+	'tmdb_movies_providers': {'mode': 'navigator.providers', 'menu_type': 'movie'},
+	'tmdb_tv_providers': {'mode': 'navigator.providers', 'menu_type': 'tvshow'},
+	'tmdb_anime_providers': {'mode': 'navigator.providers', 'menu_type': 'anime'},
+	'tmdb_movies_languages': {'mode': 'navigator.languages', 'menu_type': 'movie'},
+	'tmdb_tv_languages': {'mode': 'navigator.languages', 'menu_type': 'tvshow'},
+	'tmdb_movies_year': {'mode': 'navigator.years', 'menu_type': 'movie'},
+	'tmdb_tv_year': {'mode': 'navigator.years', 'menu_type': 'tvshow'},
+	'tmdb_anime_year': {'mode': 'navigator.years', 'menu_type': 'anime'},
+	'tmdb_movies_decade': {'mode': 'navigator.decades', 'menu_type': 'movie'},
+	'tmdb_tv_decade': {'mode': 'navigator.decades', 'menu_type': 'tvshow'},
+	'tmdb_anime_decade': {'mode': 'navigator.decades', 'menu_type': 'anime'},
+	'tmdb_movies_certifications': {'mode': 'navigator.certifications', 'menu_type': 'movie'},
+	'trakt_tv_certifications': {'mode': 'navigator.certifications', 'menu_type': 'tvshow'},
+	'trakt_anime_certifications': {'mode': 'navigator.certifications', 'menu_type': 'anime'},
+	'tmdb_tv_networks': {'mode': 'navigator.networks', 'menu_type': 'tvshow'},
+	'tmdb_movies_discover': {'mode': 'navigator.discover_contents', 'media_type': 'movie'},
+	'tmdb_tv_discover': {'mode': 'navigator.discover_contents', 'media_type': 'tvshow'},
+}
+
 def add_dir(handle, url_params, list_name, icon_image='folder', fanart_image=None, isFolder=True):
 	fanart = fanart_image or get_addon_fanart()
 	icon = get_icon(icon_image)
@@ -228,13 +326,14 @@ def set_view_mode(view_type, content='files', is_external=None):
 	view_id = get_property('redlight.%s' % view_type) or None
 	if not view_id: return
 	try:
-		hold = 0
-		sleep(100)
-		while not container_content() == content:
-			hold += 1
-			if hold < 3000: sleep(1)
-			else: return
 		execute_builtin('Container.SetViewMode(%s)' % view_id)
+		if content in ('', None): return
+		if container_content() == content: return
+		for _ in range(3000):
+			if container_content() == content:
+				execute_builtin('Container.SetViewMode(%s)' % view_id)
+				return
+			sleep(1)
 	except: return
 
 def random_integer(start=1, end=1000000):

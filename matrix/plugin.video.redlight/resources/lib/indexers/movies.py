@@ -16,6 +16,7 @@ class Movies:
 	trakt_main = ('trakt_movies_trending', 'trakt_movies_trending_recent', 'trakt_movies_most_favorited', 'trakt_movies_top10_boxoffice')
 	trakt_personal = ('trakt_collection', 'trakt_watchlist', 'trakt_collection_lists', 'trakt_watchlist_lists', 'trakt_favorites')
 	simkl_personal = ('simkl_plantowatch', 'simkl_completed', 'simkl_watching', 'simkl_hold', 'simkl_dropped')
+	mdblist_personal = ('mdblist_watchlist', 'mdblist_collection')
 
 	def __init__(self, params):
 		self.params = params
@@ -47,7 +48,8 @@ class Movies:
 			else: var_module, import_function = 'apis.%s_api' % self.action.split('_')[0], self.action
 			try: function = manual_function_import(var_module, import_function)
 			except: pass
-			if page_no == 1 and not self.is_external: kodi_utils.set_property('redlight.exit_params', kodi_utils.folder_path())
+			if page_no == 1 and not self.is_external and self.action != 'mdblist_user_list':
+				kodi_utils.set_browse_exit_params('movie', self.action)
 			if self.action in self.main:
 				data = function(page_no)
 				results = data['results']
@@ -102,6 +104,25 @@ class Movies:
 				try:
 					if total_pages > page_no: self.new_page = {'new_page': str(page_no + 1), 'paginate_start': self.paginate_start}
 				except: pass
+			elif self.action in self.mdblist_personal:
+				data = function('movies', page_no)
+				if isinstance(data, tuple): data, total_pages = data
+				else: data, total_pages = data, 1
+				if self.action == 'mdblist_watchlist':
+					self.id_type = 'tmdb_id'
+					self.list = []
+					for i in data:
+						if not isinstance(i, dict): continue
+						tmdb_id = i.get('id') or i.get('tmdb') or (i.get('ids') or {}).get('tmdb')
+						if tmdb_id:
+							try: self.list.append(int(tmdb_id))
+							except: pass
+				else:
+					self.id_type = 'trakt_dict'
+					self.list = [{'tmdb': i['id'], 'imdb': i.get('imdb_id') or i.get('imdb') or '', 'tvdb': i.get('tvdb_id') or ''} for i in data if i.get('id')]
+				if total_pages > page_no: self.new_page = {'new_page': str(page_no + 1), 'paginate_start': self.paginate_start}
+			elif self.action == 'mdblist_user_list':
+				self.list = self.params_get('list', [])
 			elif self.action == 'trakt_recommendations':
 				self.id_type = 'trakt_dict'
 				data = function('movies')
@@ -135,6 +156,8 @@ class Movies:
 					key_id = movie_meta('tmdb_id', key_id, self.tmdb_api_key, settings.mpaa_region(), get_datetime(), get_current_timestamp())['imdb_id']
 				self.list = imdb_more_like_this(key_id)
 			items = self.worker()
+			if self.action == 'mdblist_watchlist' and self.list and not items:
+				kodi_utils.logger('MDBList Watchlist', 'Failed to build list items from %s ids' % len(self.list))
 			kodi_utils.add_items(handle, items)
 			if self.total_pages and self.total_pages > 2 and settings.jump_to_enabled() and not self.is_external:
 				url_params = json.dumps({**self.new_page, **{'mode': 'build_movie_list', 'action': self.action, 'category_name': self.category_name}})
@@ -143,10 +166,12 @@ class Movies:
 			if self.new_page and not self.widget_hide_next_page:
 				self.new_page.update({'mode': 'build_movie_list', 'action': self.action, 'category_name': self.category_name})
 				kodi_utils.add_dir(handle, self.new_page, 'Next Page (%s) >>' % self.new_page['new_page'], 'nextpage', kodi_utils.get_icon('nextpage_landscape'))
-		except: pass
+		except Exception as e:
+			if self.action in self.mdblist_personal or self.action == 'mdblist_user_list':
+				kodi_utils.logger('MDBList List Error', '%s: %s' % (self.action, e))
 		kodi_utils.set_content(handle, 'movies')
 		kodi_utils.set_category(handle, self.category_name)
-		kodi_utils.end_directory(handle, cacheToDisc=False if self.is_external else True)
+		kodi_utils.end_directory(handle, cacheToDisc=False if self.is_external or self.action in self.mdblist_personal else True)
 		if not self.is_external:
 			if self.params_get('refreshed') == 'true': kodi_utils.sleep(1000)
 			kodi_utils.set_view_mode('view.movies', 'movies', self.is_external)
@@ -199,6 +224,10 @@ class Movies:
 			if settings.simkl_user_active():
 				simkl_manager_params = self.build_url({'mode': 'simkl_manager_choice', 'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': 'None', 'media_type': 'movie',
 														'title': title, 'icon': poster})
+			mdblist_manager_params = ''
+			if settings.mdblist_user_active():
+				mdblist_manager_params = self.build_url({'mode': 'mdblist_manager_choice', 'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': 'None', 'media_type': 'movie',
+														'title': title, 'icon': poster})
 			personal_manager_params = self.build_url({'mode': 'personallists_manager_choice', 'list_type': 'movie', 'tmdb_id': tmdb_id, 'title': title,
 										'premiered': premiered, 'current_time': self.current_time, 'icon': poster})
 			tmdb_manager_params = self.build_url({'mode': 'tmdblists_manager_choice', 'media_type': 'movie', 'tmdb_id': tmdb_id, 'icon': poster})
@@ -222,6 +251,7 @@ class Movies:
 			cm_append(['more_like_this', ('[B]Browse More Like This[/B]', self.window_command % browse_more_like_this_params)])
 			if self.ai_model_active: cm_append(['similar', ('[B]Browse Similar[/B]', self.window_command % browse_similar_params)])
 			cm_append(['in_trakt_list', ('[B]In Trakt Lists[/B]', self.window_command % browse_in_trakt_list_params)])
+			if mdblist_manager_params: cm_append(['mdblist_manager', ('[B]MDBList Manager[/B]', 'RunPlugin(%s)' % mdblist_manager_params)])
 			if simkl_manager_params: cm_append(['simkl_manager', ('[B]Simkl Lists Manager[/B]', 'RunPlugin(%s)' % simkl_manager_params)])
 			cm_append(['trakt_manager', ('[B]Trakt Lists Manager[/B]', 'RunPlugin(%s)' % trakt_manager_params)])
 			cm_append(['tmdb_manager', ('[B]TMDb Lists Manager[/B]', 'RunPlugin(%s)' % tmdb_manager_params)])
@@ -271,6 +301,7 @@ class Movies:
 				'redlight.browse_in_trakt_list_params': browse_in_trakt_list_params,
 				'redlight.trakt_manager_params': trakt_manager_params,
 				'redlight.simkl_manager_params': simkl_manager_params,
+				'redlight.mdblist_manager_params': mdblist_manager_params,
 				'redlight.personal_manager_params': personal_manager_params,
 				'redlight.tmdb_manager_params': tmdb_manager_params,
 				'redlight.favorites_manager_params': favorites_manager_params

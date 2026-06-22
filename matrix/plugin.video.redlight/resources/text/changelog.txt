@@ -1,3 +1,14 @@
+[COLOR red][B]Version 1.4.3[/B][/COLOR]
+- Improved browse menu navigation: Back and Exit return to the correct parent menu (Movies, TV Shows, Anime, My Lists, MDBList, Trakt, TMDb, genres, and more) with list view preserved.
+- Refined menu folder links for smoother navigation through Trending, watchlists, collections, and other browse shortcuts.
+
+[COLOR red][B]Version 1.4.2[/B][/COLOR]
+- MDBList: optional watched status provider (API key auth) with sync, scrobble/progress, watchlist, library (collection), dropped, and list browse under My Lists → MDBList Lists.
+- MDBList Manager on movie/TV rows (watch/unwatch, reset scrobble, watchlist add/remove) when authorised.
+- Settings: Meta Accounts > MDBList; My Data > MDBList Cache (sync interval, force sync, clear cache).
+- Settings: Meta Accounts > Simkl > clear cache; Trakt > clear cache.
+- Play Random (continuous): episode handoff timing now follows your autoscrape/autoplay next-episode window for smoother transitions between episodes.
+
 [COLOR red][B]Version 1.4.1[/B][/COLOR]
 - Fixed Autoscrape confirm dialog: countdown expiry no longer shows a redundant Cancel Autoscrape notification.
 

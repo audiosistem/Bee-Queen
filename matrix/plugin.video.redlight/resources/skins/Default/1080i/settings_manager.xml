@@ -532,12 +532,55 @@
                       </item>
                       <item>
                           <visible>Container(2000).HasFocus(10)</visible>
-                          <visible>!String.IsEqual(Window(10000).Property(redlight.trakt.user),empty_setting) | !String.IsEqual(Window(10000).Property(redlight.simkl.user),empty_setting)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.trakt.user),empty_setting) | !String.IsEqual(Window(10000).Property(redlight.simkl.user),empty_setting) | !String.IsEqual(Window(10000).Property(redlight.mdblist.user),empty_setting)</visible>
                           <property name="setting_label">Watched Status Provider</property>
                           <property name="setting_type">action</property>
                           <property name="setting_value">$INFO[Window(10000).Property(redlight.watched_indicators_name)]</property>
-                          <property name="setting_description">Watched ticks, resume bars, scrobble, Next Episodes, and In Progress lists. Red Light (local), Simkl, or Trakt (authorise under Meta Accounts).</property>
+                          <property name="setting_description">Watched ticks, resume bars, scrobble, Next Episodes, and In Progress lists. MDBList, Red Light (local), Simkl, or Trakt (authorise under Meta Accounts).</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_from_list&amp;setting_id=watched_indicators)</onclick>
+                      </item>
+        <!-- MDBList Cache -->
+                      <item>
+                          <visible>Container(2000).HasFocus(10)</visible>
+                          <property name="setting_label">MDBList Cache</property>
+                          <property name="setting_type">separator</property>
+                          <onclick>noop</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(10)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.mdblist.user),empty_setting)</visible>
+                          <property name="setting_label">Resync Interval (mins)</property>
+                          <property name="setting_type">numeric</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.mdblist.sync_interval)]</property>
+                          <property name="setting_description">Choose how often Red Light polls MDBList for watched status and progress changes</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_numeric&amp;setting_id=mdblist.sync_interval)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(10)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.mdblist.user),empty_setting)</visible>
+                          <property name="setting_label">Refresh Widgets After MDBList Sync</property>
+                          <property name="setting_type">boolean</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.mdblist.refresh_widgets)]</property>
+                          <property name="setting_description">Refresh widgets after an MDBList sync when changes were detected</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_boolean&amp;setting_id=mdblist.refresh_widgets)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(10)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.mdblist.user),empty_setting)</visible>
+                          <property name="setting_label">Force MDBList Sync</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">...</property>
+                          <property name="setting_description">Pull watched status and playback progress from MDBList now</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=mdblist.mdblist_force_sync)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(10)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.mdblist.user),empty_setting)</visible>
+                          <property name="setting_label">Clear MDBList Cache</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">...</property>
+                          <property name="setting_description">Clear cached MDBList lists and sync data, then resync from MDBList</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=clear_cache&amp;cache=mdblist)</onclick>
                       </item>
         <!-- Simkl Cache -->
                       <item>
@@ -573,6 +616,15 @@
                           <property name="setting_description">Pull watched status and playback progress from Simkl now</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=simkl.simkl_force_sync)</onclick>
                       </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(10)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.simkl.user),empty_setting)</visible>
+                          <property name="setting_label">Clear Simkl Cache</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">...</property>
+                          <property name="setting_description">Clear cached Simkl lists and sync data, then resync from Simkl</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=clear_cache&amp;cache=simkl)</onclick>
+                      </item>
         <!-- Trakt Cache -->
                       <item>
                           <visible>Container(2000).HasFocus(10)</visible>
@@ -606,6 +658,15 @@
                           <property name="setting_value">...</property>
                           <property name="setting_description">Pull watched status and playback progress from Trakt now</property>
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=trakt.trakt_force_sync)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(10)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.trakt.user),empty_setting)</visible>
+                          <property name="setting_label">Clear Trakt Cache</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">...</property>
+                          <property name="setting_description">Clear cached Trakt lists and sync data, then resync from Trakt</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=clear_cache&amp;cache=trakt)</onclick>
                       </item>
         <!-- UTC Time Offset -->
                       <item>
@@ -1462,6 +1523,31 @@
                           <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=settings_manager.set_numeric&amp;setting_id=trakt.calendar_future_days)</onclick>
                       </item>
 <!-- META ACCOUNTS 50 -->
+        <!-- MDBList -->
+                      <item>
+                          <visible>Container(2000).HasFocus(50)</visible>
+                          <property name="setting_label">MDBList</property>
+                          <property name="setting_type">separator</property>
+                          <onclick>noop</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(50)</visible>
+                          <visible>String.IsEqual(Window(10000).Property(redlight.mdblist.user),empty_setting)</visible>
+                          <property name="setting_label">Authorise</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">...</property>
+                          <property name="setting_description">Authorise your MDBList account. Enter the code on screen or scan the QR code — same flow as Trakt and Simkl.</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=mdblist.mdblist_authenticate)</onclick>
+                      </item>
+                      <item>
+                          <visible>Container(2000).HasFocus(50)</visible>
+                          <visible>!String.IsEqual(Window(10000).Property(redlight.mdblist.user),empty_setting)</visible>
+                          <property name="setting_label">Revoke Authorisation</property>
+                          <property name="setting_type">action</property>
+                          <property name="setting_value">$INFO[Window(10000).Property(redlight.mdblist.user)]</property>
+                          <property name="setting_description">Revoke authorisation of your MDBList account</property>
+                          <onclick>RunPlugin(plugin://plugin.video.redlight/?mode=mdblist.mdblist_revoke_authentication)</onclick>
+                      </item>
         <!-- Simkl -->
                       <item>
                           <visible>Container(2000).HasFocus(50)</visible>

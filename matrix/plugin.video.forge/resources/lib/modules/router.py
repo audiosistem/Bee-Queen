@@ -345,6 +345,10 @@ def routing(sys):
 		from modules.kodi_utils import refresh_widgets
 
 		return refresh_widgets()
+	elif mode == "request_widget_reload":
+		from modules.kodi_utils import request_widget_reload
+
+		return request_widget_reload(announce=True)
 	elif mode == "person_data_dialog":
 		from indexers.people import person_data_dialog
 

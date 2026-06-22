@@ -10,7 +10,7 @@ BACKUP_FORMAT = 1
 BACKUP_MASK = '.json'
 PROGRESS_MIN_PERCENT = 1.0
 
-_EXTERNAL_PROGRESS_PROVIDERS = {1: 'Trakt', 2: 'Simkl'}
+_EXTERNAL_PROGRESS_PROVIDERS = {1: 'Trakt', 2: 'Simkl', 3: 'MDBList'}
 
 
 def _external_progress_provider_name():

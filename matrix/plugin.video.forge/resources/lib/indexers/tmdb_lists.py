@@ -412,7 +412,7 @@ def make_new_tmdb_list(params):
 		success = process_add_to_list(data.get("id"), new_contents)
 	tmdb_lists_cache.clear_all_lists()
 	if not external_creation:
-		kodi_utils.kodi_refresh()
+		kodi_utils.refresh_after_action(refresh_when_internal=True)
 	return data.get("id")
 
 
@@ -425,7 +425,7 @@ def delete_tmdb_list(params):
 		return kodi_utils.notification("Error Deleting List")
 	tmdb_lists_cache.clear_list(list_id)
 	tmdb_lists_cache.clear_all_lists()
-	kodi_utils.kodi_refresh()
+	kodi_utils.refresh_after_action(refresh_when_internal=True)
 
 
 def clear_tmdb_list(list_name, list_id):
@@ -469,6 +469,31 @@ def get_all_tmdb_lists(sort_order=None):
 	return contents
 
 
+def normalize_tmdb_list_titles(contents):
+	# Give movie ("title"/"release_date") and TV ("name"/"first_air_date") items a common key set
+	# so the sort below can treat both the same way.
+	return [dict(i, **{"title": i.get("title") or i.get("name"), "release_date": i.get("release_date") or i.get("first_air_date")}) for i in contents]
+
+
+def sort_tmdb_list_contents(contents, sort_order):
+	# Apply a Forge "Contents sort order" value to a normalized TMDb list. Shared with the Mixed My
+	# Lists handler so a list and its mixed counterpart order identically. Items must carry
+	# "original_order"/"release_date"/"title" (see normalize_tmdb_list_titles).
+	if sort_order:
+		try:
+			if sort_order in ("4", "None", "original_order"):
+				contents.sort(key=lambda k: (k["original_order"] is None, k["original_order"]))
+			elif sort_order in ("3", "shuffle"):
+				shuffle(contents)
+			elif sort_order in ("1", "2"):
+				contents.sort(key=lambda k: (k["release_date"] is None, k["release_date"]), reverse=sort_order != "1")
+			elif sort_order == "0":
+				contents = sort_for_article(contents, "title", ignore_articles())
+		except:
+			pass
+	return contents
+
+
 def get_tmdb_list(params):
 	list_id, media_type, sort_order = params["list_id"], params.get("media_type"), params.get("sort_order", None)
 	if list_id in ("watchlist", "favorites", "recommendations"):
@@ -476,35 +501,21 @@ def get_tmdb_list(params):
 		sort_order = tmdblists_sort_order(list_id)
 	else:
 		contents = tmdb_list_api.get_list_details(list_id)
-	contents = [dict(i, **{"title": i.get("title") or i.get("name"), "release_date": i.get("release_date") or i.get("first_air_date")}) for i in contents]
-	if sort_order:
-		try:
-			if sort_order in ("4", "None", "", "original_order"):
-				contents.sort(key=lambda k: (k["original_order"] is None, k["original_order"]))
-			elif sort_order in ("3", "shuffle"):
-				shuffle(contents)
-			elif sort_order in ("1", "2"):
-				contents.sort(key=lambda k: (k["release_date"] is None, k["release_date"]), reverse=sort_order != "1")
-			elif sort_order in ("", "0", "None"):
-				contents = sort_for_article(contents, "title", ignore_articles())
-			else:
-				pass
-		except:
-			pass
-	return contents
+	contents = normalize_tmdb_list_titles(contents)
+	return sort_tmdb_list_contents(contents, sort_order)
 
 
 def cache_delete_all_tmdb(params=None):
 	tmdb_lists_cache.clear_all()
 	kodi_utils.notification("Success")
-	kodi_utils.kodi_refresh()
+	kodi_utils.refresh_after_action(refresh_when_internal=True)
 
 
 def cache_delete_list_tmdb(params):
 	tmdb_lists_cache.clear_list(params["list_id"])
 	tmdb_lists_cache.clear_all_lists()
 	kodi_utils.notification("Success")
-	kodi_utils.kodi_refresh()
+	kodi_utils.refresh_after_action(refresh_when_internal=True)
 
 
 def import_trakt_list_tmdb(params):

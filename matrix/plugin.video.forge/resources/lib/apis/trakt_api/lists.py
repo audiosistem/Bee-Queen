@@ -127,8 +127,7 @@ def remove_from_list(user, slug, data):
 		return kodi_utils.notification("Error", 3000)
 	kodi_utils.notification("Success", 3000)
 	trakt_sync_activities()
-	if kodi_utils.path_check("my_lists") or kodi_utils.external():
-		kodi_utils.kodi_refresh()
+	kodi_utils.refresh_after_action("my_lists")
 	return result
 
 
@@ -149,8 +148,7 @@ def remove_from_watchlist(data):
 		return kodi_utils.notification("Error", 3000)
 	kodi_utils.notification("Success", 3000)
 	trakt_sync_activities()
-	if kodi_utils.path_check("trakt_watchlist") or kodi_utils.external():
-		kodi_utils.kodi_refresh()
+	kodi_utils.refresh_after_action("trakt_watchlist")
 	return result
 
 
@@ -171,8 +169,7 @@ def remove_from_collection(data):
 		return kodi_utils.notification("Error", 3000)
 	kodi_utils.notification("Success", 3000)
 	trakt_sync_activities()
-	if kodi_utils.path_check("trakt_collection") or kodi_utils.external():
-		kodi_utils.kodi_refresh()
+	kodi_utils.refresh_after_action("trakt_collection")
 	return result
 
 
@@ -183,7 +180,7 @@ def hide_unhide_progress_items(params):
 	data = {media_type: [{"ids": {"tmdb": media_id}}]}
 	call_trakt(url, data=data)
 	trakt_sync_activities()
-	kodi_utils.kodi_refresh()
+	kodi_utils.refresh_after_action(refresh_when_internal=True)
 
 
 def trakt_search_lists(search_title, page_no):
@@ -420,7 +417,7 @@ def make_new_trakt_list(params):
 	call_trakt("users/me/lists", data=data)
 	trakt_sync_activities()
 	kodi_utils.notification("Success", 3000)
-	kodi_utils.kodi_refresh()
+	kodi_utils.refresh_after_action(refresh_when_internal=True)
 
 
 def delete_trakt_list(params):
@@ -432,7 +429,7 @@ def delete_trakt_list(params):
 	call_trakt(url, is_delete=True)
 	trakt_sync_activities()
 	kodi_utils.notification("Success", 3000)
-	kodi_utils.kodi_refresh()
+	kodi_utils.refresh_after_action(refresh_when_internal=True)
 
 
 def trakt_like_a_list(params):
@@ -446,7 +443,7 @@ def trakt_like_a_list(params):
 		kodi_utils.notification("Success - Trakt List Liked", 3000)
 		trakt_sync_activities()
 		if refresh:
-			kodi_utils.kodi_refresh()
+			kodi_utils.refresh_after_action(refresh_when_internal=True)
 		return True
 	except Exception as e:
 		kodi_utils.logger("trakt_like_a_list", str(e))
@@ -465,7 +462,7 @@ def trakt_unlike_a_list(params):
 		kodi_utils.notification("Success - Trakt List Unliked", 3000)
 		trakt_sync_activities()
 		if refresh:
-			kodi_utils.kodi_refresh()
+			kodi_utils.refresh_after_action(refresh_when_internal=True)
 		return True
 	except Exception as e:
 		kodi_utils.logger("trakt_unlike_a_list", str(e))

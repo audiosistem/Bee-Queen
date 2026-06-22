@@ -149,8 +149,7 @@ def build_episode_list(params):
 				if is_external:
 					cm.extend(
 						[
-							["refresh", ("[B]Refresh Widgets[/B]", "RunPlugin(%s)" % build_url({"mode": "refresh_widgets"}))],
-							["reload", ("[B]Reload Widgets[/B]", "RunPlugin(%s)" % build_url({"mode": "kodi_refresh"}))],
+							["refresh", ("[B]Refresh Widgets[/B]", "RunPlugin(%s)" % build_url({"mode": "request_widget_reload"}))],
 						]
 					)
 				if custom_cm_menu:
@@ -596,8 +595,7 @@ def build_single_episode(list_type, params={}):
 			if is_external:
 				cm.extend(
 					[
-						["refresh", ("[B]Refresh Widgets[/B]", "RunPlugin(%s)" % build_url({"mode": "refresh_widgets"}))],
-						["reload", ("[B]Reload Widgets[/B]", "RunPlugin(%s)" % build_url({"mode": "kodi_refresh"}))],
+						["refresh", ("[B]Refresh Widgets[/B]", "RunPlugin(%s)" % build_url({"mode": "request_widget_reload"}))],
 					]
 				)
 			if custom_cm_menu:

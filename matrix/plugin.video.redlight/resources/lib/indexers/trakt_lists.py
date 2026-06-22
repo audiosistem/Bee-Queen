@@ -83,7 +83,7 @@ def search_trakt_my_lists(params):
 				background = custom_fanart or fanart
 				url_params = {'mode': 'trakt.list.build_trakt_list', 'user': user, 'slug': slug, 'list_type': list_type, 'list_id': list_id,
 					'list_name': list_name, 'iconImage': 'trakt', 'name': list_name, 'sort_by': sort_by, 'sort_how': sort_how}
-				url = build_url(url_params)
+				url = kodi_utils.build_folder_url(url_params)
 				display = '%s [I](x%s)[/I]' % (list_name, str(item_count))
 				cm_append(('[B]Make New List[/B]', 'RunPlugin(%s)' % build_url({'mode': 'trakt.make_new_trakt_list'})))
 				cm_append(('[B]Delete List[/B]', 'RunPlugin(%s)' % build_url({'mode': 'trakt.delete_trakt_list', 'user': user, 'list_slug': slug})))
@@ -151,7 +151,7 @@ def get_trakt_lists(params):
 				'name': list_name, 'sort_by': sort_by, 'sort_how': sort_how}
 				if random: url_params['random'] = 'true'
 				elif shuffle_lists: url_params['shuffle'] = 'true'
-				url = build_url(url_params)
+				url = kodi_utils.build_folder_url(url_params)
 				if list_type == 'liked_lists':
 					display = '%s | [I]%s (x%s)[/I]' % (list_name, user, str(item_count))
 					cm_append(('[B]Unlike List[/B]', 'RunPlugin(%s)' % build_url({'mode': 'trakt.trakt_unlike_a_list', 'user': user, 'list_slug': slug})))
@@ -228,7 +228,7 @@ def get_trakt_user_lists(params):
 				url_params = {'mode': mode, 'user': user, 'slug': slug, 'list_id': list_id, 'list_type': 'user_lists', 'list_name': list_name, 'iconImage': 'trakt',
 								'name': list_name, 'sort_by': sort_by, 'sort_how': sort_how}
 				if random: url_params['random'] = 'true'
-				url = build_url(url_params)
+				url = kodi_utils.build_folder_url(url_params)
 				listitem = make_listitem()
 				if user != 'Trakt Official':
 					cm_append(('[B]Like List[/B]', 'RunPlugin(%s)' % build_url({'mode': 'trakt.trakt_like_a_list', 'user': user, 'list_slug': slug})))
@@ -310,7 +310,7 @@ def build_trakt_list(params):
 		paginate_enabled = paginate(is_external)
 		use_result = 'result' in params
 		page_no, paginate_start = int(params.get('new_page', '1')), int(params.get('paginate_start', '0'))
-		if page_no == 1 and not is_external: kodi_utils.set_property('redlight.exit_params', kodi_utils.folder_path())
+		if page_no == 1 and not is_external: kodi_utils.set_property('redlight.exit_params', kodi_utils.list_collection_exit_params(params))
 		if use_result: result = params.get('result', [])
 		else:
 			user, slug, list_id, list_type = params.get('user'), params.get('slug'), params.get('list_id'), params.get('list_type')

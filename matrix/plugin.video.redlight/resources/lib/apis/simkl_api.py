@@ -449,7 +449,7 @@ def simkl_manager_choice(params):
 		'open_lists': 'navigator.simkl_lists',
 	}
 	if choice in open_modes:
-		return kodi_utils.container_update({'mode': open_modes[choice], 'refreshed': 'true'})
+		return kodi_utils.container_update({'mode': open_modes[choice]})
 	if choice == 'mark_watched':
 		from indexers.dialogs import _trakt_manager_mark
 		return _trakt_manager_mark(params, 'mark_as_watched')
