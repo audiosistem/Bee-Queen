@@ -85,21 +85,6 @@ def internal_sources(active_sources, mediatype, prescrape=False):
 		except: pass
 	return source_list
 
-def get_aliases_titles(aliases):
-	try: result = [i['title'] for i in aliases]
-	except: result = []
-	return result
-
-def internal_results(provider, sources):
-	quality_count = sources_quality_count(sources)
-	kodi_utils.set_property('%s.internal_results' % provider, json.dumps(quality_count))
-
-def sources_quality_count(sources):
-	result = {'4K': 0, '1080p': 0, '720p': 0, 'SD': 0, 'total': len(sources)}
-	quality_map = {'4K': '4K', '1440p': '1080p', '1080p': '1080p', '720p': '720p', 'HD': '720p'}
-	for i in sources: result[quality_map.get(i.get('quality', 'SD'), 'SD')] += 1
-	return result
-
 def pack_enable_check(meta, season, episode):
 	try:
 		extra_info = meta['extra_info']
@@ -146,6 +131,21 @@ def get_cache_expiry(mediatype, meta, season):
 			else: single_expiry, season_expiry, show_expiry = 240, 720, 720
 	except: single_expiry, season_expiry, show_expiry = 72, 72, 240
 	return single_expiry, season_expiry, show_expiry
+
+def sources_quality_count(sources):
+	result = {'4K': 0, '1080p': 0, '720p': 0, 'SD': 0, 'total': len(sources)}
+	quality_map = {'4K': '4K', '1440p': '1080p', '1080p': '1080p', '720p': '720p', 'HD': '720p'}
+	for i in sources: result[quality_map.get(i.get('quality', 'SD'), 'SD')] += 1
+	return result
+
+def get_aliases_titles(aliases):
+	try: result = [i['title'] for i in aliases]
+	except: result = []
+	return result
+
+def internal_results(provider, sources):
+	quality_count = sources_quality_count(sources)
+	kodi_utils.set_property('%s.internal_results' % provider, json.dumps(quality_count))
 
 def supported_video_extensions():
 	supported_video_extensions = kodi_utils.supported_media().split('|')

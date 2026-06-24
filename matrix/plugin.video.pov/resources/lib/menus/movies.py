@@ -304,5 +304,5 @@ class Menu(Movies):
 		kodi_utils.set_sort_method(__handle__, content_type)
 		kodi_utils.set_content(__handle__, content_type)
 		kodi_utils.end_directory(__handle__, False if self.is_widget else None)
-		kodi_utils.set_view_mode(view_type, content_type)
+		kodi_utils.set_view_mode(view_type, content_type, self.is_widget)
 

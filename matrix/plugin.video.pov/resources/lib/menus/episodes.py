@@ -277,6 +277,6 @@ class Menu(Episodes):
 		kodi_utils.set_sort_method(__handle__, sort_type)
 		kodi_utils.set_content(__handle__, content_type)
 		kodi_utils.end_directory(__handle__, False)
-		kodi_utils.set_view_mode(view_type, content_type)
+		kodi_utils.set_view_mode(view_type, content_type, self.is_widget)
 		if index: kodi_utils.focus_index(index)
 

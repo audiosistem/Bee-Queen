@@ -4,7 +4,7 @@ from operator import itemgetter
 from concurrent.futures import ThreadPoolExecutor
 from caches import trakt_cache
 from caches.main_cache import cache_object
-from indexers.metadata import movie_external_id, tvshow_external_id
+from indexers.tmdb_api import movie_external_id, tvshow_external_id
 from modules import kodi_utils, settings
 from modules.cache import check_databases
 from modules.utils import sort_list, sort_for_article, make_thread_list, jsondate_to_datetime, paginate_list, get_datetime, TaskPool

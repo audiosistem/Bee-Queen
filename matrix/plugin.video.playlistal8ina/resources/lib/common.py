@@ -8,10 +8,7 @@ import re
 import shutil
 import time
 import urllib.error
-import urllib.error
 import urllib.parse
-import urllib.parse
-import urllib.request
 import urllib.request
 import xbmc
 import xbmcaddon
@@ -189,19 +186,19 @@ def plx2list(url, cache):
 
 
 def m3u2list(url, cache):
-	response = GetList(url, cache) + "#EXT#"
+	response = str(GetList(url, cache)) + "#EXT#"
 	matches=re.compile('(?s)^#EXTINF:-?[0-9]*(.*?),(.*?)\n(.*?)#EXT#', re.M).findall(response.replace('#EXTINF','#EXT#\n#EXTINF'))
 	li = []
 	for params, display_name, uri in matches:
-		url = uri
+		url_channel = uri
 		if uri.startswith('#'):
 			for ln in uri.splitlines():
-				if not ln.startswith('#'): url = ln
+				if not ln.startswith('#'): url_channel = ln
 				else:
 					if ln.startswith('#EXTGRP'): 
 						params += ln.replace('"', '').replace("#EXTGRP:" ,' group_title="') + '"'
 
-		item_data = {"params": params, "display_name": display_name.strip(), "url": url.strip()}
+		item_data = {"params": params, "display_name": display_name.strip(), "url": url_channel.strip()}
 		li.append(item_data)
 	chList = []
 	for channel in li:
@@ -256,27 +253,6 @@ def epg2dict(url, cache):
 		
 		except: 
 			return {}
-		'''
-			try: 
-				xbmc.log(str('*****'))
-				
-				
-				data = StringIO(zlib.decompress(response))
-				#data = gzip.GzipFile('', 'rb', 9, StringIO(response))
-				content = data.read()
-				doc = xmltodict.parse(content)
-        
-				url_file_handle=StringIO( response )
-				xbmc.log(str(url_file_handle))
-				gzip_file_handle = gzip.GzipFile(fileobj=url_file_handle)
-				xbmc.log(str(gzip_file_handle))
-				decompressed_data = gzip_file_handle.read()
-				xbmc.log(str(decompressed_data))
-				gzip_file_handle.close()
-				doc = xmltodict.parse(decompressed_data)
-			except:
-				return {}
-		'''
 		
 		nList = []
 		dList=[]

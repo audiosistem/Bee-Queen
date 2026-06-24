@@ -142,12 +142,13 @@ def get_language():
 	return get_setting('meta_language', 'en')
 
 def get_resolution():
-	return (
-		{'poster': 'w185', 'fanart': 'w300', 'still': 'w185', 'profile': 'w185'},
-		{'poster': 'w342', 'fanart': 'w780', 'still': 'w300', 'profile': 'w342'},
-		{'poster': 'w780', 'fanart': 'w1280', 'still': 'original', 'profile': 'h632'},
-		{'poster': 'original', 'fanart': 'original', 'still': 'original', 'profile': 'original'}
-	)[int(get_setting('image_resolutions', '2'))]
+	keys = ('logo', 'poster', 'fanart', 'still', 'profile')
+	return tuple(dict(zip(keys, row)) for row in (
+		('w185', 'w185', 'w300', 'w185', 'w185'),
+		('w300', 'w342', 'w780', 'w300', 'w342'),
+		('w500', 'w780', 'w1280', 'original', 'h632'),
+		('original', 'original', 'original', 'original', 'original')
+	))[int(get_setting('image_resolutions', '2'))]
 
 def get_rpdb_data():
 	return get_setting('get_rpdb_movies') == 'true', get_setting('get_rpdb_series') == 'true'

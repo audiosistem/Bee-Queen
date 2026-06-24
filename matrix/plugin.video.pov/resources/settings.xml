@@ -38,7 +38,7 @@
 		<setting id="pm.hoster.enabled" label="Use Hoster Services" type="bool" default="false" enable="false" visible="false" />
 		<setting id="store_torrent.premiumize.me" label="Add Resolved Torrents to Cloud" type="bool" default="false" visible="eq(-4,true)+!eq(-5,)" />
 		<setting id="provider.pm_cloud" label="Search PM Cloud" type="bool" default="false" visible="eq(-5,true)+!eq(-6,)" />
-			<setting id="pm_cloud.title_filter" label="Filter Results by Name" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-6,true)+!eq(-7,)" />
+			<setting id="pm_cloud.title_filter" label="Filter Results with Aliases" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-6,true)+!eq(-7,)" />
 			<setting id="check.pm_cloud" label="Check Before Full Search" type="bool" default="false" subsetting="true" visible="eq(-2,true)+eq(-7,true)+!eq(-8,)" />
 			<setting id="results.sort_pmcloud_first" label="Show Results at Top" type="bool" default="true" subsetting="true" visible="eq(-3,true)+eq(-8,true)+!eq(-9,)" />
 		<setting id="pm.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="8" range="1,1,10" option="int" visible="eq(-9,true)+!eq(-10,)" />
@@ -55,7 +55,7 @@
 		<setting id="store_usenet.torbox" label="Add Resolved Usenet to Cloud" type="bool" default="false" visible="eq(-5,true)+!eq(-6,)" />
 		<setting id="tb.user_engines_only" label="Filter User Usenet Services Only" type="bool" default="false" visible="eq(-6,true)+!eq(-7,)" />
 		<setting id="provider.tb_cloud" label="Search TB Cloud" type="bool" default="false" visible="eq(-7,true)+!eq(-8,)" />
-			<setting id="tb_cloud.title_filter" label="Filter Results by Name" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-8,true)+!eq(-9,)" />
+			<setting id="tb_cloud.title_filter" label="Filter Results with Aliases" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-8,true)+!eq(-9,)" />
 			<setting id="check.tb_cloud" label="Check Before Full Search" type="bool" default="false" subsetting="true" visible="eq(-2,true)+eq(-9,true)+!eq(-10,)" />
 			<setting id="results.sort_tbcloud_first" label="Show Results at Top" type="bool" default="true" subsetting="true" visible="eq(-3,true)+eq(-10,true)+!eq(-11,)" />
 		<setting id="tb.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="9" range="1,1,10" option="int" visible="eq(-11,true)+!eq(-12,)" />
@@ -68,7 +68,7 @@
 		<setting id="oc.torrent.enabled" label="Use Torrent Services" type="bool" default="true" enable="true" visible="eq(-2,true)+!eq(-3,)" />
 		<setting id="store_torrent.offcloud" label="Add Resolved Torrents to Cloud" type="bool" default="false" visible="eq(-3,true)+!eq(-4,)" />
 		<setting id="provider.oc_cloud" label="Search OC Cloud" type="bool" default="false" visible="eq(-4,true)+!eq(-5,)" />
-			<setting id="oc_cloud.title_filter" label="Filter Results by Name" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-5,true)+!eq(-6,)" />
+			<setting id="oc_cloud.title_filter" label="Filter Results with Aliases" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-5,true)+!eq(-6,)" />
 			<setting id="check.oc_cloud" label="Check Before Full Search" type="bool" default="false" subsetting="true" visible="eq(-2,true)+eq(-6,true)+!eq(-7,)" />
 			<setting id="results.sort_occloud_first" label="Show Results at Top" type="bool" default="true" subsetting="true" visible="eq(-3,true)+eq(-7,true)+!eq(-8,)" />
 		<setting id="oc.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="9" range="1,1,10" option="int" visible="eq(-8,true)+!eq(-9,)" />
@@ -87,7 +87,7 @@
 		<setting id="rd.hoster.enabled" label="Use Hoster Services" type="bool" default="false" enable="false" visible="false" />
 		<setting id="store_torrent.real-debrid" label="Add Resolved Torrents to Cloud" type="bool" default="false" visible="eq(-4,true)+!eq(-5,)" />
 		<setting id="provider.rd_cloud" label="Search RD Cloud" type="bool" default="false" visible="eq(-5,true)+!eq(-6,)" />
-			<setting id="rd_cloud.title_filter" label="Filter Results by Name" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-6,true)+!eq(-7,)" />
+			<setting id="rd_cloud.title_filter" label="Filter Results with Aliases" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-6,true)+!eq(-7,)" />
 			<setting id="check.rd_cloud" label="Check Before Full Search" type="bool" default="false" subsetting="true" visible="eq(-2,true)+eq(-7,true)+!eq(-8,)" />
 			<setting id="results.sort_rdcloud_first" label="Show Results at Top" type="bool" default="true" subsetting="true" visible="eq(-3,true)+eq(-8,true)+!eq(-9,)" />
 		<setting id="rd.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="10" range="1,1,10" option="int" visible="eq(-9,true)+!eq(-10,)" />
@@ -101,7 +101,7 @@
 		<setting id="ad.hoster.enabled" label="Use Hoster Services" type="bool" default="false" enable="false" visible="false" />
 		<setting id="store_torrent.alldebrid" label="Add Resolved Torrents to Cloud" type="bool" default="false" visible="eq(-4,true)+!eq(-5,)" />
 		<setting id="provider.ad_cloud" label="Search AD Cloud" type="bool" default="false" visible="eq(-5,true)+!eq(-6,)" />
-			<setting id="ad_cloud.title_filter" label="Filter Results by Name" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-6,true)+!eq(-7,)" />
+			<setting id="ad_cloud.title_filter" label="Filter Results with Aliases" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-6,true)+!eq(-7,)" />
 			<setting id="check.ad_cloud" label="Check Before Full Search" type="bool" default="false" subsetting="true" visible="eq(-2,true)+eq(-7,true)+!eq(-8,)" />
 			<setting id="results.sort_adcloud_first" label="Show Results at Top" type="bool" default="true" subsetting="true" visible="eq(-3,true)+eq(-8,true)+!eq(-9,)" />
 		<setting id="ad.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="9" range="1,1,10" option="int" visible="eq(-9,true)+!eq(-10,)" />
@@ -111,7 +111,7 @@
 		<setting id="provider.easynews" label="Enable" type="bool" default="false" visible="!eq(1,)+!eq(2,)" />
 		<setting id="easynews_user" label="Username" type="text" default="" enable="false" visible="eq(-1,true)+!eq(1,)" />
 		<setting id="easynews_password" label="Password" type="text" default="" enable="false" visible="false" />
-		<setting id="easynews.title_filter" label="Filter Results by Name" type="bool" default="false" visible="eq(-3,true)+!eq(-1,)" />
+		<setting id="easynews.title_filter" label="Filter Results with Aliases" type="bool" default="false" visible="eq(-3,true)+!eq(-1,)" />
 		<setting id="easynews.filter_lang" label="Filter Languages" type="bool" default="false" visible="eq(-4,true)+!eq(-2,)" />
 			<setting id="easynews.lang_filters" label="Choose Languages To Include" type="action" default="eng" subsetting="true" visible="eq(-5,true)+!eq(-3,)+eq(-1,true)" action="RunPlugin(plugin://plugin.video.pov/?mode=set_language_filter_choice&amp;filter_setting=easynews.lang_filters)" />
 		<setting id="easynews_moderation" label="Exclude Adult Results" type="bool" default="true" visible="eq(-6,true)+!eq(-4,)" />

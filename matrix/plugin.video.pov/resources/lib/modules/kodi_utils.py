@@ -278,25 +278,17 @@ def set_view_properties():
 	view_ids = dbcur.fetchall()
 	for item in view_ids: set_property('pov_%s' % item[0], item[1])
 
-def set_view_mode(view_type, content='files'):
-	if external_browse(): return
+def set_view_mode(view_type, content='files', is_widget=None):
+	if is_widget is True or (is_widget is None and external_browse()): return
 	view_id = get_property('pov_%s' % view_type)
-	hold = 0
-	if not view_id:
-		try:
-			dbcon = database_connect(views_db, isolation_level=None)
-			dbcur = dbcon.cursor()
-			dbcur.execute("""SELECT view_id FROM views WHERE view_type = ?""", (str(view_type),))
-			view_id = dbcur.fetchone()[0]
-		except: return
+	if not view_id: return
 	try:
-		sleep(100)
-		while container_content() != content:
-			hold += 1
-			if hold < 5000: sleep(1)
-			else: return
-		if view_id: execute_builtin('Container.SetViewMode(%s)' % view_id)
-	except: return
+		for _ in range(60):
+			if container_content() == content: break
+			sleep(50)
+		else: return
+		execute_builtin('Container.SetViewMode(%s)' % view_id)
+	except: pass
 
 def clear_view(view_type):
 	if not confirm_dialog(): return

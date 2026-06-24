@@ -3,7 +3,6 @@ import os
 import sys
 import urllib.error
 import urllib.parse
-import urllib.parse
 import urllib.request
 import uuid as random
 import xbmc
@@ -12,6 +11,7 @@ import xbmcgui
 import xbmcplugin
 import xbmcvfs
 import resources.lib.common as common
+import re
 from datetime import datetime
 from dateutil import parser
 from dateutil import tz
@@ -47,6 +47,19 @@ def getLocaleString(id):
     return Addon.getLocalizedString(id)
 
 
+def clean_tags(text):
+    """Elimină complet tagurile de culoare corupte și caracterele '[' sau ']' rămase."""
+    if not text:
+        return ""
+    # 1. Elimină tagurile standard [COLOR ...] și [/COLOR] sau [B]...
+    text = re.sub(r'\[\/?(?:COLOR|B)[^\]]*\]', '', text, flags=re.IGNORECASE)
+    # 2. Elimină fragmentele text de taguri stricate (ex: COLORorangered sau /COLOR)
+    text = re.sub(r'\/?(?:COLOR|B)[a-zA-Z0-9_]*', '', text, flags=re.IGNORECASE)
+    # 3. Curăță orice paranteze pătrate reziduale [ sau ] rămase singure în text
+    text = re.sub(r'[\[\]]', '', text)
+    return text.strip()
+
+
 def AddListItems(chList, addToVdir=True):
         
     cacheList = []
@@ -78,14 +91,19 @@ def AddListItems(chList, addToVdir=True):
         except Exception as ex:
             xbmc.log("{0}".format(ex), 3)
 
-    
+
 def Categories():
     AddDir("[B]{0}: {1}[/B] - {2} ".format(getLocaleString(30036), getLocaleString(30037) if makeGroups else getLocaleString(30038), getLocaleString(30039)), "setting", 50, os.path.join(iconsDir, "setting.png"), isFolder=False)
-    AddDir("[COLOR white][B][{0}][/B][/COLOR]".format(getLocaleString(30003)), "favorites", 30, os.path.join(iconsDir, "bright_yellow_star.png"))
+    
+    # Meniu Favorite (Modificat pentru a elimina parantezele pătrate exterioare)
+    AddDir("[COLOR orange][B]{0}[/B][/COLOR]".format(getLocaleString(30003)), "favorites", 30, os.path.join(iconsDir, "bright_yellow_star.png"))
+    
+    # Meniu căutare (Modificat pentru a elimina parantezele pătrate exterioare)
+    AddDir("[COLOR red][B]Search[/B][/COLOR]", "search", 60, os.path.join(iconsDir, "search.png"))
+    
     AddDir("[COLOR yellow][B]{0}[/B][/COLOR]".format(getLocaleString(30001)), "newList", 20, os.path.join(iconsDir, "NewList.ico"), isFolder=False)
     AddDir("[COLOR yellow][B]{0}[/B][/COLOR]".format(getLocaleString(30040)), "newDirectory", 43, os.path.join(iconsDir, "New-folder.png"), isFolder=False)
 
-    # Displaying virtual directories.
     vDirs = common.ReadList(vDirectoriesFile)
     y = 0
     for vDir in vDirs:
@@ -124,8 +142,6 @@ def AddNewList():
     if logosUrl.startswith('http') and not logosUrl.endswith('/'):
         logosUrl += '/'
     epgUrl = '' if listUrl.endswith('.plx') else GetChoice(30046, 30047, 30048, 30047, 30048, 30021, fileType=1, fileMask='.xml')
-#    if epgUrl.startswith('http') and not epgUrl.endswith('/'):
-#        epgUrl += '/'
     cacheInMinutes = GetNumFromUser(getLocaleString(30034), '0') if listUrl.startswith('http') else 0
     if cacheInMinutes is None:
         cacheInMinutes = 0
@@ -167,7 +183,6 @@ def RemoveFromLists(iuuid, listFile):
             del chList[i]
         i += 1
     
-    # Removing from vdir lists.
     for vDir in vDirsList:
         i = 0
         for uuid4 in vDir["data"]:
@@ -221,8 +236,6 @@ def m3uCategory(url, logos, epg, cache, mode, gListIndex=-1):
       use_time = 'true'
     else: epgDict = {}
     
-    #xbmc.log('EPGDICT')
-    #xbmc.log(str(epgDict))
     groupChannels = []
     
     for channel in chList:
@@ -273,7 +286,6 @@ def m3uCategory(url, logos, epg, cache, mode, gListIndex=-1):
                         next = False
 
                         if idx is not None:
-                            #xbmc.log(str( epgDict.get('prg').get(epgDict[u'data'][idx][0])))
                             if epgDict.get('prg').get(epgDict[u'data'][idx][0]):
                                 for start,stop,title in epgDict.get('prg').get(epgDict[u'data'][idx][0]):
                                     stime = parser.parse(start)
@@ -311,7 +323,7 @@ def m3uCategory(url, logos, epg, cache, mode, gListIndex=-1):
     
     common.SaveList(tmpListFile, tmpList)
 
-        
+
 def PlayUrl(name, url, iconimage=None):
     url = common.getFinalUrl(url)
     xbmc.log('--- Playing "{0}". {1}'.format(name, url), 2)
@@ -380,7 +392,6 @@ def AddDir(name, url, mode, iconimage='', logos='', epg='', index=-1, move=0, uu
         items += [
             (getLocaleString(30030), 'RunPlugin({0}?index={1}&mode={2}&move=-1&uuid={3})'.format(sys.argv[0], index, listMode, uuid)),
             (getLocaleString(30031), 'RunPlugin({0}?index={1}&mode={2}&move=1&uuid={3})'.format(sys.argv[0], index, listMode, uuid))
-            #(getLocaleString(30032), 'RunPlugin({0}?index={1}&mode={2}&move=0&uuid={3})'.format(sys.argv[0], index, listMode, uuid))
         ]
         
         if addToVdir:
@@ -411,11 +422,10 @@ def GetSourceLocation(title, chList):
 
 
 def AddFavorites(url, iconimage, name):
-    # Checking if url already in list.
     favList = common.ReadList(favoritesFile)
     for item in favList:
         if item["url"].lower() == url.lower():
-            xbmc.executebuiltin("Notification({0}, '{1}' {2}, 5000, {3})".format(AddonName, name, getLocaleString(30011), icon))
+            xbmc.executebuiltin("Notification({0}, '{1}' {2}, 5000, {3})".format(AddonName, name, getLocaleString(3011), icon))
             return
     
     chList = common.ReadList(tmpListFile)    
@@ -446,7 +456,6 @@ def AddNewDirectory():
 
 
 def AddToDirectory(playlist_uuid):
-    # if vdir is none, ask to choose one
     vdirs = common.ReadList(vDirectoriesFile)
         
     dialog = xbmcgui.Dialog()
@@ -528,7 +537,6 @@ def AddNewFavorite():
 
 def GetPlaylistIndex(iuuid, listFile):
     chList = common.ReadList(listFile)
-    
     i = 0
     for playlist in chList:
         if playlist["uuid"] == iuuid:
@@ -548,11 +556,11 @@ def ChangeKey(iuuid, listFile, key, title, favourites=False):
     chList = common.ReadList(listFile)
     index = GetPlaylistIndex(iuuid, listFile) if not favourites else iuuid
     
-    str = GetKeyboardText(getLocaleString(title), chList[index][key])
-    if len(str) < 1:
+    str_val = GetKeyboardText(getLocaleString(title), chList[index][key])
+    if len(str_val) < 1:
         return
         
-    chList[index][key] = str
+    chList[index][key] = str_val
     if common.SaveList(listFile, chList):
         xbmc.executebuiltin("Container.Refresh()")
         
@@ -561,37 +569,35 @@ def ChangeChoice(iuuid, listFile, key, choiceTitle, fileTitle, urlTitle, choiceF
     index = GetPlaylistIndex(iuuid, listFile) if not favourites else iuuid
     chList = common.ReadList(listFile)
     defaultText = chList[index].get(key, "")
-    str = GetChoice(choiceTitle, fileTitle, urlTitle, choiceFile, choiceUrl, choiceNone, fileType, fileMask, defaultText)
-    if key == "url" and len(str) < 1:
+    str_val = GetChoice(choiceTitle, fileTitle, urlTitle, choiceFile, choiceUrl, choiceNone, fileType, fileMask, defaultText)
+    if key == "url" and len(str_val) < 1:
         return
-    elif key == "logos" and str.startswith('http') and not str.endswith('/'):
-        str += '/'
-    chList[index][key] = str
+    elif key == "logos" and str_val.startswith('http') and not str_val.endswith('/'):
+        str_val += '/'
+    chList[index][key] = str_val
     if common.SaveList(listFile, chList):
         xbmc.executebuiltin("Container.Refresh()")
     
 
-def MoveInFavourites(index, step):
-    
+def MoveInFavourites(index, move_val):
     theList = common.ReadList(favoritesFile)
 
-    if index + step >= len(theList) or index + step < 0:
+    if index + move_val >= len(theList) or index + move_val < 0:
         return
-    if step == 0:
-        step = GetIndexFromUser(len(theList), index)
+    if move_val == 0:
+        move_val = GetIndexFromUser(len(theList), index)
     
-    if step < 0:
-        tempList = theList[0:index + step] + [theList[index]] + theList[index + step:index] + theList[index + 1:]
-    elif step > 0:
-        tempList = theList[0:index] + theList[index +  1:index + 1 + step] + [theList[index]] + theList[index + 1 + step:]
+    if move_val < 0:
+        tempList = theList[0:index + move_val] + [theList[index]] + theList[index + move_val:index] + theList[index + 1:]
+    elif move_val > 0:
+        tempList = theList[0:index] + theList[index + 1:index + 1 + move_val] + [theList[index]] + theList[index + 1 + move_val:]
     else:
         return
     common.SaveList(favoritesFile, tempList)
     xbmc.executebuiltin("Container.Refresh()")
 
 
-def MoveInList(iuuid, step, listFile):
-    
+def MoveInList(iuuid, move_val, listFile):
     def moveOnPlaylist(index, step, tList):
         tempList = None
         if index + step >= len(tList) or index + step < 0:
@@ -602,46 +608,37 @@ def MoveInList(iuuid, step, listFile):
     
         if step < 0:
             tempList = tList[0:index + step] + [tList[index]] + tList[index + step:index] + tList[index + 1:]
-    
         elif step > 0:
-            tempList = tList[0:index] + tList[index +  1:index + 1 + step] + [tList[index]] + tList[index + 1 + step:]
-        
+            tempList = tList[0:index] + tList[index + 1:index + 1 + step] + [tList[index]] + tList[index + 1 + step:]
         else:
             return None
-        
         return tempList
    
     theList = common.ReadList(listFile)
     
-    # Checking that playlist is not in a directory.
-    dir = False
+    dir_check = False
     vdirs = common.ReadList(vDirectoriesFile)
     for vdir in vdirs:
         uuids4 = [uuid4 for uuid4 in vdir["data"]]
         if iuuid in uuids4:
-            dir = vdir
+            dir_check = vdir
     
-    if not dir is False:
-        # Moving two sides, directories and global list ( in case of directory removal )
-        dirFiles = lsDir(dir["uuid"])
-        
+    if not dir_check is False:
+        dirFiles = lsDir(dir_check["uuid"])
         ffiles = [tfile for tfile in theList if tfile["uuid"] in dirFiles]
         rfiles = [tfile for tfile in theList if tfile["uuid"] not in dirFiles]
         
-        ffiles = moveOnPlaylist(dirFiles.index(iuuid), step, ffiles)
-        
+        ffiles = moveOnPlaylist(dirFiles.index(iuuid), move_val, ffiles)
         if not ffiles is None:
             common.SaveList(listFile, rfiles + ffiles)
         
-        # Movin it directory side.
-        idx = vdirs.index(vdir)
-        vdir["data"] = [item["uuid"] for item in ffiles]
-        vdirs[idx] = vdir
+        idx = vdirs.index(dir_check)
+        dir_check["data"] = [item["uuid"] for item in ffiles]
+        vdirs[idx] = dir_check
         common.SaveList(vDirectoriesFile, vdirs)
-            
     else:
         dirFiles = [item for data in vdirs for item in lsDir(data["uuid"])]
-        dirItems    = [playlist for playlist in common.ReadList(listFile) if playlist["uuid"] in dirFiles]
+        dirItems = [playlist for playlist in common.ReadList(listFile) if playlist["uuid"] in dirFiles]
         notDirFiles = [playlist for playlist in common.ReadList(listFile) if not playlist["uuid"] in dirFiles]
         
         idx = 0
@@ -650,8 +647,7 @@ def MoveInList(iuuid, step, listFile):
                 break
             idx += 1
         
-        ffiles = moveOnPlaylist(idx, step, notDirFiles)
-    
+        ffiles = moveOnPlaylist(idx, move_val, notDirFiles)
         if not ffiles is None:
             common.SaveList(listFile, dirItems + ffiles)
         
@@ -665,7 +661,6 @@ def GetNumFromUser(title, defaultt=''):
 
 
 def GetIndexFromUser(listLen, index):
-    dialog = xbmcgui.Dialog()
     location = GetNumFromUser('{0} (1-{1})'.format(getLocaleString(30033), listLen))
     return 0 if location is None or location > listLen or location <= 0 else location - 1 - index
 
@@ -686,6 +681,66 @@ def ToggleGroups():
     notMakeGroups = "false" if makeGroups else "true"
     Addon.setSetting("makeGroups", notMakeGroups)
     xbmc.executebuiltin("Container.Refresh()")
+
+
+def SearchChannels():
+    search_term = GetKeyboardText("Introdu numele canalului:").strip().lower()
+    if not search_term or len(search_term) < 2:
+        return
+
+    playlists = common.ReadList(playlistsFile)
+    if not playlists:
+        xbmcgui.Dialog().ok(AddonName, "Nu ai nicio listă adăugată pentru a efectua căutarea.")
+        return
+
+    tmpList = []
+    progress = xbmcgui.DialogProgress()
+    progress.create("Căutare", "Se scanează listele de canale...")
+    
+    total_lists = len(playlists)
+    
+    for idx, playlist in enumerate(playlists):
+        if progress.iscanceled():
+            break
+        
+        percent = int((idx / total_lists) * 100)
+        
+        # Curățare completă de reziduuri de taguri [ sau ]
+        clean_playlist_name = clean_tags(playlist["name"])
+        progress.update(percent, "Se caută în: {0}".format(clean_playlist_name))
+        
+        url_playlist = playlist["url"]
+        cache_playlist = int(playlist.get("cache", "0"))
+        logos_playlist = playlist.get("logos", "")
+        epg_playlist = playlist.get("epg", "")
+        
+        if '.plx' in url_playlist.lower():
+            continue
+            
+        try:
+            chList = common.m3u2list(url_playlist, cache_playlist)
+            for channel in chList:
+                display_name = channel.get("display_name", "")
+                if search_term in display_name.lower():
+                    chUrl = common.GetEncodeString(channel["url"])
+                    image = channel.get("tvg_logo", channel.get("logo", ""))
+                    if logos_playlist and image and not image.startswith('http'):
+                        image = logos_playlist + image
+                    
+                    full_name = common.GetEncodeString(display_name)
+                    
+                    AddDir(full_name, chUrl, 3, image, epg=epg_playlist, index=-1, isFolder=False, IsPlayable=True)
+                    tmpList.append({"url": chUrl, "image": image, "name": full_name})
+        except Exception as e:
+            xbmc.log("Eroare la căutarea în lista {0}: {1}".format(playlist["name"], str(e)), 3)
+
+    progress.close()
+    
+    if len(tmpList) == 0:
+        xbmcgui.Dialog().ok(AddonName, "Nu s-a găsit niciun canal care să conțină textul specificat.")
+    else:
+        common.SaveList(tmpListFile, tmpList)
+
 
 params = dict(urllib.parse.parse_qsl(sys.argv[2].replace('?','')))
 url = params.get('url')
@@ -787,5 +842,8 @@ elif mode == 47:
 
 elif mode == 50:
     ToggleGroups()
+
+elif mode == 60:
+    SearchChannels()
     
 xbmcplugin.endOfDirectory(int(sys.argv[1]))

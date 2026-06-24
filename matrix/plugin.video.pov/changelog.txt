@@ -1,5 +1,7 @@
 
   [COLOR dodgerblue][B]Version 6.06[/B][/COLOR]
+- Changed cloud scrapers to "Filter Results with Aliases".
+- Used AI to tune some of the regex patterns.
 - Added introdb.app / theintrodb.org integration to Next Episodes.
 - Pack downloader preselects all files.
 - Refactored downloader for TorBox.

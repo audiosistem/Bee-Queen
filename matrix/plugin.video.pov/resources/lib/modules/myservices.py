@@ -45,7 +45,7 @@ def authorize():
 	service = kodi_utils.dialog.select('My Services', list(_builder()), useDetails=True)
 	if service < 0: return
 	try: success = services[service][1]().set()
-	except Exception as e: kodi_utils.logger('myservices error', str(e))
+	except: kodi_utils.logger('myservices error', f"\n{__import__('traceback').format_exc()}")
 	else: return success
 	return notification(32574)
 

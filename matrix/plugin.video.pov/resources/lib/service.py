@@ -1,7 +1,7 @@
 from entry import logger, POVMonitor
 
 if __name__ == '__main__':
-	logger('POV', 'Main Monitor Service Starting')
+	logger('POV', 'Main Monitor Service Starting (%s)' % POVMonitor.ver())
 	logger('POV', 'Settings Monitor Service Starting')
 
 	with POVMonitor() as pov:

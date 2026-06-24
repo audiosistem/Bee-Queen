@@ -45,6 +45,7 @@ class Router:
 			from modules.sources import Sources
 			Sources.factory(params)
 		elif 'choice' in mode:
+			from indexers import list_manager
 			from modules import dialogs
 			if mode == 'scraper_color_choice':
 				dialogs.scraper_color_choice(params['setting'])
@@ -67,11 +68,11 @@ class Router:
 			elif mode == 'favorites_choice':
 				dialogs.favorites_choice(params)
 			elif mode == 'trakt_manager_choice':
-				dialogs.trakt_manager_choice(params)
-			elif mode == 'tmdb_manager_choice':
-				dialogs.tmdb_manager_choice(params)
+				list_manager.TraktManager(params).manage()
 			elif mode == 'mdbl_manager_choice':
-				dialogs.mdbl_manager_choice(params)
+				list_manager.MdbListManager(params).manage()
+			elif mode == 'tmdb_manager_choice':
+				list_manager.TmdbManager(params).manage()
 			elif mode == 'set_language_filter_choice':
 				dialogs.set_language_filter_choice(params['filter_setting'])
 			elif mode == 'extras_lists_choice':
@@ -96,10 +97,10 @@ class Router:
 				function(params)
 		elif 'tmdb.' in mode:
 			if 'edit_tmdb_list' in mode:
-				from menus.tmdb import edit_tmdb_list
+				from indexers.list_manager import edit_tmdb_list
 				edit_tmdb_list(params)
 			elif 'update_tmdb_list' in mode:
-				from menus.tmdb import update_tmdb_list
+				from indexers.list_manager import update_tmdb_list
 				update_tmdb_list(params)
 			else:
 				from modules.utils import manual_function_import
@@ -298,6 +299,9 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 
 	def __exit__(self, exc_type, exc_value, traceback):
 		for i in self.threads: i.join()
+
+	def ver(*args):
+		return f"{kodi_utils.get_addoninfo('id')}-{kodi_utils.get_addoninfo('version')}"
 
 	def startUpServices(self):
 		try: initializeDatabases()
