@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="General">
+        <setting id="tmdb_api_key" type="text" label="TMDB API Key (v3)" default="f15af109700aab95d564acda15bdcd97"/>
+        <setting id="tmdb_lang" type="labelenum" label="TMDB Language" default="en-GB" values="en-GB|en-US|de-DE|es-ES|fr-FR|it-IT|nl-NL|pt-BR|ru-RU"/>
+        <setting id="tmdb_region" type="labelenum" label="Region (Releases)" default="GB" values="GB|US|AU|CA|DE|FR|IE|IN|IT|NL|NZ|ZA"/>
+        <setting id="results_per_page" type="slider" label="Items per page" default="20" range="10,5,40" option="int"/>
+    </category>
+    <category label="Calendar">
+        <setting id="calendar_country_1" type="labelenum" label="Calendar Country 1" default="US" values="US|GB|CA|AU|IE|DE|FR|IT|ES|NL|JP"/>
+        <setting id="calendar_country_2" type="labelenum" label="Calendar Country 2" default="GB" values="GB|US|CA|AU|IE|DE|FR|IT|ES|NL|JP"/>
+        <setting id="calendar_days" type="slider" label="Days ahead" default="7" range="1,1,14" option="int"/>
+    </category>
+    <category label="Sources">
+        <setting id="vidsrc_host" type="text" label="Primary Vidsrc host" default="vidsrcme.ru"/>
+        <setting id="enable_secondary_source" type="bool" label="Enable secondary source (vidsrc.xyz / 2embed)" default="false"/>
+        <setting id="enable_stigstream" type="bool" label="Enable Stigstream source (HD HLS streams via decrypted API — recommended)" default="true"/>
+        <setting id="enable_vidnest" type="bool" label="Enable Vidnest multi-backend (7 providers: MoviesAPI, PurStream, AllMovies, CatFlix, HollyMovieHD, FlixHQ, VidLink — recommended)" default="true"/>
+        <setting id="enable_filehost_sources" type="bool" label="Enable file-host sources (MoviesFree / Ghostplayer / Goojara / fmovie-core sites — requires script.module.resolveurl, shown at bottom of picker)" default="true"/>
+        <setting id="enable_extra_sources" type="bool" label="Enable extra community indexer sources (15 indexer sites — file-host links, shown at the very bottom)" default="true"/>
+        <setting id="show_search_progress" type="bool" label="Show per-source search progress dialog (live stream counts)" default="true"/>
+        <setting id="secondary_source_host" type="labelenum" label="Secondary source host" default="vidsrc.xyz" values="vidsrc.xyz|vidsrc.to|vidsrc.net|vidsrc.icu|2embed.cc|2embed.skin|multiembed.mov|moviesapi.club" enable="eq(-1,true)"/>
+        <setting id="show_source_picker" type="bool" label="Show source picker (manual select between primary / secondary)" default="false" enable="eq(-2,true)"/>
+        <setting id="show_server_picker" type="bool" label="Show server sub-picker when multiple Cloudnestra mirrors exist" default="true"/>
+        <setting id="prefer_resolveurl" type="bool" label="Prefer ResolveURL fallback" default="false"/>
+        <setting id="probe_candidates" type="bool" label="Probe each candidate URL before returning (slower but more reliable)" default="true"/>
+        <setting id="auto_secondary_on_404" type="bool" label="Auto-fallback to secondary hosts when primary 404s (recommended for new releases)" default="true"/>
+        <setting type="sep"/>
+        <setting id="aggregate_all_sources" type="bool" label="Multi-link mode: query every host in parallel for max fallback candidates (slower first-resolve)" default="false"/>
+        <setting id="aggregate_workers" type="slider" label="Parallel workers (in multi-link mode)" default="5" range="2,1,10" option="int" enable="eq(-1,true)"/>
+    </category>
+    <category label="Playback">
+        <setting id="auto_play_first" type="bool" label="Auto-play best link (skip quality picker)" default="false"/>
+        <setting id="remember_quality" type="bool" label="Remember last picked quality per show" default="true"/>
+        <setting id="use_inputstream" type="bool" label="Use InputStream Adaptive for HLS" default="true"/>
+        <setting id="auto_fallback" type="bool" label="Auto-fallback if stream stalls (silently try next link)" default="true"/>
+        <setting id="auto_fallback_seconds" type="slider" label="Stall threshold (seconds)" default="10" range="5,1,30" option="int" enable="eq(-1,true)"/>
+        <setting type="sep"/>
+        <setting id="smart_next_up_enabled" type="bool" label="Smart Next-Up (TV): auto-play next episode near end-credits" default="true"/>
+        <setting id="smart_next_up_seconds" type="slider" label="Show Next-Up prompt this many seconds before end" default="90" range="20,5,300" option="int" enable="eq(-1,true)"/>
+    </category>
+    <category label="Trakt">
+        <setting type="lsep" label="Trakt scrobbling + watch history (device code at trakt.tv/activate)"/>
+        <setting id="trakt_enabled" type="bool" label="Enable Trakt integration" default="false"/>
+        <setting id="trakt_status" type="text" label="Status" default="Not authenticated" enable="false"/>
+        <setting type="action" label="Authenticate with Trakt" action="RunPlugin(plugin://plugin.video.vidscr/?action=trakt_auth)" enable="eq(-2,true)"/>
+        <setting type="action" label="Sign out of Trakt" action="RunPlugin(plugin://plugin.video.vidscr/?action=trakt_logout)" enable="eq(-3,true)"/>
+        <setting type="action" label="Sync watched history now" action="RunPlugin(plugin://plugin.video.vidscr/?action=trakt_sync)" enable="eq(-4,true)"/>
+        <setting id="trakt_scrobble" type="bool" label="Scrobble while playing (start / pause / stop)" default="true" enable="eq(-5,true)"/>
+        <setting id="trakt_client_id" type="text" label="Custom Trakt client ID (optional)" default=""/>
+        <setting id="trakt_client_secret" type="text" label="Custom Trakt client secret (optional)" default="" option="hidden"/>
+        <setting id="trakt_authorization" type="text" visible="false" default=""/>
+        <setting type="action" label="Show Trakt token status (debug)" action="RunPlugin(plugin://plugin.video.vidscr/?action=trakt_status)" enable="eq(-7,true)"/>
+    </category>
+    <category label="Bingebase">
+        <setting type="lsep" label="Bingebase tracking (device code at bingebase.com/activate)"/>
+        <setting id="bingebase_enabled" type="bool" label="Enable Bingebase integration" default="false"/>
+        <setting id="bingebase_status" type="text" label="Status" default="Not authenticated" enable="false"/>
+        <setting type="action" label="Authenticate with Bingebase" action="RunPlugin(plugin://plugin.video.vidscr/?action=bingebase_auth)" enable="eq(-2,true)"/>
+        <setting type="action" label="Sign out of Bingebase" action="RunPlugin(plugin://plugin.video.vidscr/?action=bingebase_logout)" enable="eq(-3,true)"/>
+        <setting type="action" label="Sync watched history now" action="RunPlugin(plugin://plugin.video.vidscr/?action=bingebase_sync)" enable="eq(-4,true)"/>
+        <setting id="bingebase_scrobble" type="bool" label="Scrobble while playing (start / pause / stop)" default="true" enable="eq(-5,true)"/>
+        <setting id="bingebase_sync_push" type="bool" label="Push addon-local watched store to Bingebase" default="true" enable="eq(-6,true)"/>
+        <setting id="bingebase_sync_pull" type="bool" label="Pull Bingebase history into addon-local store" default="true" enable="eq(-7,true)"/>
+        <setting id="bingebase_last_sync" type="text" visible="false" default=""/>
+        <setting id="bingebase_authorization" type="text" visible="false" default=""/>
+        <setting type="action" label="Show Bingebase token status (debug)" action="RunPlugin(plugin://plugin.video.vidscr/?action=bingebase_status)" enable="eq(-9,true)"/>
+    </category>
+    <category label="SIMKL">
+        <setting type="lsep" label="SIMKL scrobbling + watch history (PIN code at simkl.com/pin)"/>
+        <setting id="simkl_enabled" type="bool" label="Enable SIMKL integration" default="false"/>
+        <setting id="simkl_status" type="text" label="Status" default="Not authenticated" enable="false"/>
+        <setting type="action" label="Authenticate with SIMKL" action="RunPlugin(plugin://plugin.video.vidscr/?action=simkl_auth)" enable="eq(-2,true)"/>
+        <setting type="action" label="Sign out of SIMKL" action="RunPlugin(plugin://plugin.video.vidscr/?action=simkl_logout)" enable="eq(-3,true)"/>
+        <setting type="action" label="Sync watched history now" action="RunPlugin(plugin://plugin.video.vidscr/?action=simkl_sync)" enable="eq(-4,true)"/>
+        <setting id="simkl_scrobble" type="bool" label="Scrobble while playing (start / pause / stop)" default="true" enable="eq(-5,true)"/>
+        <setting id="simkl_client_id" type="text" label="Custom SIMKL client ID (optional — leave blank to use bundled default)" default=""/>
+        <setting id="simkl_client_secret" type="text" label="Custom SIMKL client secret (optional)" default="" option="hidden"/>
+        <setting id="simkl_authorization" type="text" visible="false" default=""/>
+        <setting type="action" label="Show SIMKL token status (debug)" action="RunPlugin(plugin://plugin.video.vidscr/?action=simkl_status)" enable="eq(-7,true)"/>
+    </category>
+    <category label="Resume / Watched">
+        <setting id="show_watched_marker" type="bool" label="Show Watched / Resume indicators on lists" default="true"/>
+        <setting id="use_kodi_library_db" type="bool" label="Read Kodi library DB (MyVideos) for resume points" default="true"/>
+        <setting id="resume_threshold_pct" type="slider" label="Mark as Watched when above %" default="90" range="50,5,99" option="int"/>
+        <setting type="action" label="Clear addon-local watched store" action="RunPlugin(plugin://plugin.video.vidscr/?action=clear_watched)"/>
+    </category>
+    <category label="Debug">
+        <setting id="debug_log" type="bool" label="Enable debug logging (addon-local)" default="true"/>
+        <setting type="action" label="View debug log" action="RunPlugin(plugin://plugin.video.vidscr/?action=view_log)"/>
+        <setting type="action" label="Clear debug log" action="RunPlugin(plugin://plugin.video.vidscr/?action=clear_log)"/>
+        <setting type="sep"/>
+        <setting type="lsep" label="Deep diagnostics"/>
+        <setting type="action" label="▶ Run deep diagnostic report (system + network + settings)" action="RunPlugin(plugin://plugin.video.vidscr/?action=deep_debug)"/>
+        <setting type="action" label="Probe all stream hosts (network reachability test)" action="RunPlugin(plugin://plugin.video.vidscr/?action=net_test)"/>
+        <setting type="action" label="Export debug bundle (.zip) to Downloads folder" action="RunPlugin(plugin://plugin.video.vidscr/?action=download_debug_zip)"/>
+        <setting type="action" label="Export captured cloudnestra body dumps to Downloads (for source-fix)" action="RunPlugin(plugin://plugin.video.vidscr/?action=export_cloudnestra_dumps)"/>
+        <setting type="sep"/>
+        <setting type="lsep" label="Device bundle — download Vidscr zip on any device"/>
+        <setting type="action" label="▶ Download addon zip to Downloads folder (this device)" action="RunPlugin(plugin://plugin.video.vidscr/?action=download_bundle)"/>
+        <setting type="action" label="Upload addon zip to gofile.io and show share link" action="RunPlugin(plugin://plugin.video.vidscr/?action=upload_bundle)"/>
+        <setting type="action" label="Show resolved Downloads folder for this device" action="RunPlugin(plugin://plugin.video.vidscr/?action=show_downloads_dir)"/>
+        <setting id="downloads_dir" type="folder" label="Custom Downloads folder (leave blank for auto-detect)" default=""/>
+        <setting type="sep"/>
+        <setting id="cache_ttl_hours" type="slider" label="TMDB cache TTL (hours, 0 = disable cache)" default="24" range="0,1,168" option="int"/>
+        <setting type="action" label="Clear TMDB cache now (cache_*.json in addon data)" action="RunPlugin(plugin://plugin.video.vidscr/?action=clear_cache)"/>
+        <setting type="sep"/>
+        <setting type="action" label="Run resolver test (movie tt17048514)" action="RunPlugin(plugin://plugin.video.vidscr/?action=debug_test&amp;imdb_id=tt17048514)"/>
+        <setting type="action" label="Run resolver test (custom IMDb id...)" action="RunPlugin(plugin://plugin.video.vidscr/?action=debug_test_prompt)"/>
+    </category>
+    <category label="About">
+        <setting type="lsep" label="Vidscr v1.1.1 — by Zeus768"/>
+        <setting type="lsep" label="Posters/Metadata: TMDB &amp; TVmaze"/>
+        <setting type="lsep" label="Sources: vidsrcme.ru (primary) + vidsrc.xyz / 2embed (optional)"/>
+    </category>
+</settings>
