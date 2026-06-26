@@ -1525,7 +1525,7 @@ In addition to what livestreams allowed you to do, you can now,
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.4+beta.2.unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
+</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.4+unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.27.1" />
@@ -1642,12 +1642,22 @@ In addition to what livestreams allowed you to do, you can now,
         <disclaimer lang="vi_VN">Plugin này không được xác nhận bởi Google</disclaimer>
         <disclaimer lang="zh_CN">此插件未被谷歌认可</disclaimer>
         <disclaimer lang="zh_TW">此附加元件未由Google支持</disclaimer>
-    <news>## v7.4.4+beta.2
+    <news>## v7.4.4
 ### Fixed
+- Fix not including FolderPath in current container details
+- Fix current plugin item window properties sometimes not updating correctly
+- Fix not updating remote history upon consecutive playback events for certain video types
 - Fix using unimplemented change to localisation identifier when showing API config page address
+- Fix play uri parameters/properties not being able to be forced off
+- Limit retrying feeds that cannot be accessed
 
 ### Changed
-- More aggressively utilise cached data for My Subscriptions feed failures</news></extension>
+- Improve responsiveness of service loop upon plugin invocation
+- Log redacted visitorData details
+- More aggressively utilise cached data for My Subscriptions feed failures
+
+### New
+- Add option to play YouTube error notification video upon playback failure</news></extension>
 </addon><addon id="program.optiklean" name="OptiKlean" provider-name="DigiTalking" version="2.3.0">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
