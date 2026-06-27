@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addon
-	id="plugin.video.macvod" version="1.995" name="[COLORyellow]XC MAC M3U[/COLOR]" provider-name="1x|iNKuBo|bee">
+	id="plugin.video.macvod" version="1.996" name="[COLORyellow]XC MAC M3U[/COLOR]" provider-name="1x|iNKuBo|AS">
 <requires>    		
     	<import addon="script.module.resolveurl"/>
 	    <import addon="script.module.requests"/>	

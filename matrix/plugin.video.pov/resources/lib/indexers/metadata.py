@@ -292,7 +292,32 @@ def _adjust_total_aired_eps(meta, current_date):
 	return meta
 
 def season_episodes_meta(season, meta, user_info):
-	def _process():
+	def _make_poster(item):
+		if not item['poster_path']: return item['season_number'], ''
+		return item['season_number'], tmdb_image_base % (image_resolution['poster'], item['poster_path'])
+	def _make_profile(item):
+		if item['profile_path']: thumbnail = tmdb_image_base % (profile_resolution, item['profile_path'])
+		else: thumbnail = ''
+		return {'name': item['name'], 'role': item['character'], 'thumbnail': thumbnail}
+	image_resolution = user_info.get('image_resolution', backup_resolutions)
+	metacache = MetaCache()
+	metacache_get, metacache_set = metacache.get, metacache.set
+	media_id, data = meta['tmdb_id'], None
+	string = '%s_%s' % (media_id, season)
+	data = metacache_get('season', 'tmdb_id', string)
+	if data: return data
+	try: season_posters = dict(_make_poster(i) for i in meta.get('season_data') if 'poster_path' in i)
+	except: season_posters = dict()
+	episodes_data = []
+	append = episodes_data.append
+	try:
+		show_ended, total_seasons = meta['status'] in finished_show_check, meta['total_seasons']
+		expiration = EXPIRES_182_DAYS if show_ended or total_seasons > int(season) else EXPIRES_4_DAYS
+		premiere = 'series_premiere' if int(season) == 1 else 'season_premiere'
+		finale = 'series_finale' if show_ended and int(season) == total_seasons else 'season_finale'
+		ep_details = {1: premiere, 'mid_season': 'mid_season_finale', 'finale': finale}
+		still_resolution, profile_resolution = image_resolution['still'], image_resolution['profile']
+		data = tmdb_api.season_episodes_details(media_id, season, user_info['language'])['episodes']
 		for ep_data in data:
 			writer, director, guest_stars = '', '', []
 			ep_data_get = ep_data.get
@@ -302,16 +327,12 @@ def season_episodes_meta(season, meta, user_info):
 			ep_type = ep_details.get(ep_type) or ep_details.get(episode) or ep_type or ''
 			if ep_type == 'mid_season_finale': ep_details[episode + 1] = 'mid_season_premiere'
 			poster = season_posters.get(int(season)) or ''
-			if still_path: thumb = tmdb_image_base % (still_resolution, still_path)
-			else: thumb = ''
+			thumb = tmdb_image_base % (still_resolution, still_path) if still_path else ''
 			try: duration = ep_data_get('runtime') * 60
 			except: duration = 0
 			guest_stars_list = ep_data_get('guest_stars')
 			if guest_stars_list:
-				try: guest_stars = [
-					{'name': i['name'], 'role': i['character'], 'thumbnail': tmdb_image_base % (profile_resolution, i['profile_path']) if i['profile_path'] else ''}
-					for i in guest_stars_list
-				]
+				try: guest_stars = [_make_profile(i) for i in guest_stars_list]
 				except: pass
 			crew = ep_data_get('crew')
 			if crew:
@@ -319,37 +340,15 @@ def season_episodes_meta(season, meta, user_info):
 				except: pass
 				try: director = [i['name'] for i in crew if i['job'] == 'Director'][0]
 				except: pass
-			yield {
+			append({
 				'season_poster': poster, 'thumb': thumb, 'guest_stars': guest_stars, 'director': director,
 				'writer': writer, 'plot': plot, 'title': title, 'premiered': premiered,
 				'rating': rating, 'votes': votes, 'duration': duration, 'episode_type': ep_type,
 				'mediatype': 'episode', 'season': season, 'episode': episode
-			}
-	image_resolution = user_info.get('image_resolution', backup_resolutions)
-	metacache = MetaCache()
-	metacache_get, metacache_set = metacache.get, metacache.set
-	media_id, data = meta['tmdb_id'], None
-	string = '%s_%s' % (media_id, season)
-	data = metacache_get('season', 'tmdb_id', string)
-	if data: return data
-	try: season_posters = {
-		i['season_number']: tmdb_image_base % (image_resolution['poster'], i['poster_path']) if i['poster_path'] else ''
-		for i in meta.get('season_data')
-		if 'poster_path' in i
-	}
-	except: season_posters = {}
-	try:
-		show_ended, total_seasons = meta['status'] in finished_show_check, meta['total_seasons']
-		expiration = EXPIRES_182_DAYS if show_ended or total_seasons > int(season) else EXPIRES_4_DAYS
-		premiere = 'series_premiere' if int(season) == 1 else 'season_premiere'
-		finale = 'series_finale' if show_ended and int(season) == total_seasons else 'season_finale'
-		ep_details = {1: premiere, 'mid_season': 'mid_season_finale', 'finale': finale}
-		still_resolution, profile_resolution = image_resolution['still'], image_resolution['profile']
-		data = tmdb_api.season_episodes_details(media_id, season, user_info['language'])['episodes']
-		data = list(_process())
-		metacache_set('season', 'tmdb_id', data, expiration, string)
+			})
+		metacache_set('season', 'tmdb_id', episodes_data, expiration, string)
 	except: pass
-	return data
+	return episodes_data
 
 def all_episodes_meta(meta, user_info, Thread):
 	def _get_tmdb_episodes(season):

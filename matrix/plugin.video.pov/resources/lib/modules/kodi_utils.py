@@ -57,7 +57,7 @@ def addon(addon_id='plugin.video.pov'):
 	return Addon(id=addon_id)
 
 def addon_installed(addon_id):
-	return get_visibility('System.HasAddon(%s)' % addon_id)
+	return get_visibility('System.AddonIsEnabled(%s)' % addon_id)
 
 def add_item(handle, url, listitem, isFolder):
 	xbmcplugin.addDirectoryItem(handle, url, listitem, isFolder)
