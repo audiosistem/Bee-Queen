@@ -9,6 +9,7 @@ from modules.sources import Sources
 # from modules.kodi_utils import logger
 
 ls, build_url = kodi_utils.local_string, kodi_utils.build_url
+nextep_str, nores_str = ls(32801), ls(32760)
 
 def get_random_episode(tmdb_id, continual=False):
 	meta_user_info, adjust_hours, current_date = settings.metadata_user_info(), settings.date_offset(), get_datetime()
@@ -83,94 +84,37 @@ def nextep_playback_info(meta):
 	except: url_params = 'error'
 	return meta, url_params
 
-def execute_scrape_nextep(meta):
+def execute_skip_intro(player, meta):
+	intro_start, intro_end = player.intro
+	while player.isPlayingVideo():
+		try: current_time = player.getTime()
+		except Exception: break
+		if current_time > intro_end: break
+		if intro_start <= current_time <= intro_end:
+			if _continue_action(True, meta, 'skip_intro'):
+				player.seekTime(intro_end)
+			return
+		kodi_utils.sleep(1000)
+
+def execute_scrape_nextep(player, meta):
 	nextep_meta, nextep_params = nextep_playback_info(meta)
 	if nextep_params == 'error': return kodi_utils.notification(32574)
 	if nextep_params == 'no_next_episode': return
-	if not Sources.background_prep(nextep_params): return kodi_utils.notification(32760)
+	if not Sources.background_prep(nextep_params): return kodi_utils.notification('%s %s' % (nextep_str, nores_str))
 	Sources.nextep_callback(nextep_params)
-	action = open_window(('windows.next_episode', 'NextEpisode'), 'next_episode.xml', meta=nextep_meta, function='next_ep')
+	action = _continue_action(True, nextep_meta)
 	if action == 'cancel':
 		Sources.nextep_params.clear()
 		return kodi_utils.notification(32736)
-	if action == 'play': kodi_utils.player.stop()
+	if action == 'play': player.stop()
 
-def _confirm_threshold(nextep_settings, nextep_meta):
-	nextep_threshold = nextep_settings['threshold']
-	if nextep_threshold == 0: return True
-	try: current_number = int(kodi_utils.get_property('pov_total_autoplays'))
-	except: current_number = 1
-	if current_number < nextep_threshold:
-		current_number += 1
-		kodi_utils.set_property('pov_total_autoplays', str(current_number))
-		return True
-	if open_window(('windows.next_episode', 'NextEpisode'), 'next_episode.xml', meta=nextep_meta, function='confirm'):
-		current_number = 1
-		kodi_utils.set_property('pov_total_autoplays', str(current_number))
-		return True
-	return False
-
-def _continue_action(run_popup, nextep_meta):
-	if run_popup:
-		return open_window(('windows.next_episode', 'NextEpisode'), 'next_episode.xml', meta=nextep_meta, function='next_ep')
-	return 'close'
-
-def _control_playback(player, nextep_settings, nextep_meta):
-	confirm_threshold = False
-	final_action = 'cancel'
-	run_popup = nextep_settings['run_popup']
-	display_nextep_popup = nextep_settings['window_time']
-	nextep_threshold_check = nextep_settings['threshold_check']
-	while player.isPlayingVideo():
-		try:
-			total_time = player.getTotalTime()
-			curr_time = player.getTime()
-			remaining_time = round(total_time - curr_time)
-			if remaining_time <= nextep_threshold_check:
-				if not confirm_threshold:
-					confirm_threshold = _confirm_threshold(nextep_settings, nextep_meta)
-					if not confirm_threshold:
-						final_action = 'cancel'
-						break
-			if remaining_time <= display_nextep_popup:
-				final_action = _continue_action(run_popup, nextep_meta)
-				break
-			kodi_utils.sleep(200)
-		except: pass
-	return final_action
-
-def _control_playback(player, nextep_settings, nextep_meta):
-	confirm_threshold = False
-	final_action = 'cancel'
-	run_popup = nextep_settings['run_popup']
-	display_nextep_popup = nextep_settings['window_time']
-	nextep_threshold_check = nextep_settings['threshold_check']
-	while player.isPlayingVideo():
-		try:
-			total_time = player.getTotalTime()
-			curr_time = player.getTime()
-			remaining_time = round(total_time - curr_time)
-			if remaining_time <= nextep_threshold_check:
-				if not confirm_threshold:
-					confirm_threshold = _confirm_threshold(nextep_settings, nextep_meta)
-					if not confirm_threshold:
-						final_action = 'cancel'
-						break
-			if remaining_time <= display_nextep_popup:
-				final_action = _continue_action(run_popup, nextep_meta)
-				break
-			kodi_utils.sleep(200)
-		except: pass
-	return final_action
-
-def execute_nextep(meta, nextep_settings):
+def execute_nextep(player, meta, nextep_settings):
 	if 'random_continual' in meta: nextep_meta, nextep_params = get_random_episode(meta['tmdb_id'], True)
 	else: nextep_meta, nextep_params = nextep_playback_info(meta)
 	if nextep_params == 'error': return kodi_utils.notification(32574)
 	if nextep_params == 'no_next_episode': return
-	if not Sources.background_prep(nextep_params): return kodi_utils.notification(32760)
+	if not Sources.background_prep(nextep_params): return kodi_utils.notification('%s %s' % (nextep_str, nores_str))
 	Sources.nextep_callback(nextep_params)
-	player = kodi_utils.player
 	action = _control_playback(player, nextep_settings, nextep_meta)
 	if action == 'cancel':
 		Sources.nextep_params.clear()
@@ -181,4 +125,47 @@ def execute_nextep(meta, nextep_settings):
 		text = '%s %s S%02dE%02d' % (ls(32801), nextep_meta['title'], nextep_meta['season'], nextep_meta['episode'])
 		kodi_utils.notification(text, 6500, nextep_meta['poster'])
 	if action == 'play': player.stop()
+
+def _continue_action(run_popup, nextep_meta, function='next_ep'):
+	if not run_popup: return 'close'
+	return open_window(('windows.next_episode', 'NextEpisode'), 'next_episode.xml', meta=nextep_meta, function=function)
+
+def _confirm_threshold(nextep_settings, nextep_meta):
+	nextep_threshold = nextep_settings['threshold']
+	if nextep_threshold == 0: return True
+	try: current_number = int(kodi_utils.get_property('pov_total_autoplays'))
+	except: current_number = 1
+	if current_number < nextep_threshold:
+		current_number += 1
+		kodi_utils.set_property('pov_total_autoplays', str(current_number))
+		return True
+	if _continue_action(True, nextep_meta, 'confirm'):
+		current_number = 1
+		kodi_utils.set_property('pov_total_autoplays', str(current_number))
+		return True
+	return False
+
+def _control_playback(player, nextep_settings, nextep_meta):
+	confirm_threshold = False
+	final_action = 'cancel'
+	run_popup = nextep_settings['run_popup']
+	display_nextep_popup = nextep_settings['window_time']
+	nextep_threshold_check = nextep_settings['threshold_check']
+	while player.isPlayingVideo():
+		try:
+			total_time = player.getTotalTime()
+			curr_time = player.getTime()
+			remaining_time = round(total_time - curr_time)
+			if remaining_time <= nextep_threshold_check:
+				if not confirm_threshold:
+					confirm_threshold = _confirm_threshold(nextep_settings, nextep_meta)
+					if not confirm_threshold:
+						final_action = 'cancel'
+						break
+			if remaining_time <= display_nextep_popup:
+				final_action = _continue_action(run_popup, nextep_meta)
+				break
+			kodi_utils.sleep(200)
+		except: pass
+	return final_action
 

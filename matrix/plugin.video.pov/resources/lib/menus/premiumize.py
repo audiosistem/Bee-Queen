@@ -13,28 +13,27 @@ default_art = {'icon': default_icon, 'poster': default_icon, 'thumb': default_ic
 extensions = supported_video_extensions()
 
 class Menu(Debrid):
-	def run(self, params, *args):
+	def run(self, params):
 		if   '_delete' in params['mode']:
 			return self.cloud_delete(params['file_type'], params['id'])
 		elif '_rename' in params['mode']:
 			return self.cloud_rename(params['file_type'], params['id'], params['name'])
 		elif '_torrent_cloud' in params['mode']:
-			args = params.get('id'), params.get('folder_name')
-			items = self.user_cloud(args[0])['content']
+			if params.get('id'): items = self.user_folder(params['id'])
+			else: items = self.user_cloud()
 			_builder = self.torrent_cloud
 		elif '_downloads' in params['mode']:
-			items = self.downloads()['transfers']
+			items = self.downloads()
 			_builder = self.browse_downloads
 		else: return getattr(self, params['mode'].split('.')[-1])()
 		__handle__ = int(sys.argv[1])
-		kodi_utils.add_items(__handle__, list(_builder(items, *args)))
+		kodi_utils.add_items(__handle__, list(_builder(items)))
 		kodi_utils.set_content(__handle__, 'files')
 		kodi_utils.end_directory(__handle__)
 		kodi_utils.set_view_mode('view.premium')
 
-	def torrent_cloud(self, items, folder_id=None, folder_name=None):
+	def torrent_cloud(self, items):
 		items.sort(key=lambda k: k['name'])
-		items.sort(key=lambda k: k['type'], reverse=True)
 		for count, item in enumerate(items, 1):
 			try:
 				if not ('link' in item and item['link'].lower().endswith(tuple(extensions))) and item['type'] != 'folder': continue
@@ -51,7 +50,7 @@ class Menu(Debrid):
 					delete_params['file_type'] = 'folder'
 					string = folder_str
 					display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, folder_str, name)
-					url_params = {'mode': 'premiumize.pm_torrent_cloud', 'id': item['id'], 'folder_name': clean_file_name(item['name'])}
+					url_params = {'mode': 'premiumize.pm_torrent_cloud', 'id': item['id']}
 				else:
 					is_folder = False
 					download_string = down_str

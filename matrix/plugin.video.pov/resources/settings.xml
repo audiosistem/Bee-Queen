@@ -21,7 +21,7 @@
 		<setting id="provider.comet" label="comet" type="bool" default="false" />
 			<setting id="comet.url" label="comet instance" type="enum" default="0" values="Goldy|Kuu-lection|Midnightignite" subsetting="true" visible="eq(-1,true)" />
 		<setting id="provider.mediafusion" label="mediafusion" type="bool" default="false" />
-		<setting id="provider.torz" label="stremthru torz" type="bool" default="false" />
+		<setting id="provider.torz" label="stremthru torz" type="bool" default="true" />
 			<setting id="torz.url" label="torz instance" type="enum" default="0" values="Munif|Kuu-lection|Midnightignite" subsetting="true" visible="eq(-1,true)" />
 		<setting id="provider.zilean" label="zilean" type="bool" default="false" />
 			<setting id="zilean.url" label="zilean instance" type="enum" default="0" values="Kuu-lection|Midnightignite" subsetting="true" visible="eq(-1,true)" />
@@ -161,7 +161,7 @@
 		<setting id="auto_start_pov" label="Auto Start POV when Kodi Starts" type="bool" default="false" />
 		<setting id="widget_hide_watched" label="Hide Watched Items in Widgets" type="bool" default="false" />
 		<setting id="kodi_menu_cache" label="Enable Kodi Menu Caching" type="bool" default="true" />
-		<setting id="rli_fix" label="Enable Reuse Language Invoker Fix" type="bool" default="false" />
+		<setting id="rli_fix" label="Enable Reuse Language Invoker Fix" type="bool" default="true" />
 		<setting id="pov.max_threads" label="Maximum threads" type="slider" default="100" range="20,10,100" option="int" />
 		<!-- Downloads -->
 		<setting label="Downloads" type="lsep" />

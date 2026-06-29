@@ -5,7 +5,7 @@ from caches.main_cache import cache_object
 from caches.meta_cache import cache_function
 from modules import kodi_utils
 from modules.settings import get_language, show_unaired_watchlist, ignore_articles, lists_sort_order, paginate, page_limit
-from modules.utils import paginate_list, sort_for_article, jsondate_to_datetime, get_datetime, chunks, TaskPool
+from modules.utils import paginate_list, sort_for_article, jsondate_to_datetime, get_datetime, TaskPool
 
 ls, logger = kodi_utils.local_string, kodi_utils.logger
 get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting
@@ -532,49 +532,6 @@ def tmdb_clean_watchlist(silent=False):
 		if not silent: kodi_utils.notification(32576)
 		return '%d items removed.' % len(items)
 	except: pass
-
-def import_trakt_list(params):
-	from indexers.trakt_api import get_trakt_list_contents
-	send_str = 'Sending items to TMDB...'
-	try:
-		progressBG = kodi_utils.progressDialogBG
-		progressBG.create(send_str, tmdblist_heading)
-		list_id, user, slug = params['trakt_list_id'], params['user'], params['list_slug']
-		items = get_trakt_list_contents(params.get('list_type'), list_id, user, slug)
-		len_items, wait = len(items), sum(1000 for i in chunks(items, 500))
-		for count, item in enumerate(items, 1):
-			kodi_utils.sleep(int(wait / len_items))
-			if (mtype := item['type']) in ('movie', 'show') and 'tmdb' in item[mtype]['ids'] and item[mtype]['ids']['tmdb']:
-				item['export'] = {'media_type': 'tv' if mtype == 'show' else mtype, 'media_id': item[mtype]['ids']['tmdb']}
-			else: item['export'] = None
-			progressBG.update(int(count / len_items * 100), send_str)
-		items = {'items': [i['export'] for i in items if i['export']]}
-		Thread(target=list_add_items, args=(params['list_id'], items)).start()
-		clear_tmdbl_cache()
-	except: kodi_utils.notification(32574)
-	else: kodi_utils.notification('List sent to TMDB')
-	finally: progressBG.close()
-
-def import_mdbl_list(params):
-	from indexers.mdblist_api import get_mdbl_list_contents
-	send_str = 'Sending list to TMDB...'
-	try:
-		progressBG = kodi_utils.progressDialogBG
-		progressBG.create(send_str, tmdblist_heading)
-		items = get_mdbl_list_contents(params['mdbl_list_id'], None)
-		len_items, wait = len(items), sum(1000 for i in chunks(items, 500))
-		for count, item in enumerate(items, 1):
-			kodi_utils.sleep(int(wait / len_items))
-			if (mtype := item['mediatype']) in ('movie', 'show') and item['id']:
-				item['export'] = {'media_type': 'tv' if mtype == 'show' else mtype, 'media_id': item['id']}
-			else: item['export'] = None
-			progressBG.update(int(count / len_items * 100), send_str)
-		items = {'items': [i['export'] for i in items if i['export']]}
-		Thread(target=list_add_items, args=(params['list_id'], items)).start()
-		clear_tmdbl_cache()
-	except: kodi_utils.notification(32574)
-	else: kodi_utils.notification('List sent to TMDB')
-	finally: progressBG.close()
 
 def clear_tmdbl_cache(silent=False):
 	from modules.kodi_utils import path_exists, clear_property, database_connect, maincache_db

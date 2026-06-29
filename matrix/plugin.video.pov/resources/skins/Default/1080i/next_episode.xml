@@ -112,7 +112,7 @@
 			</control>
 			<!-- Confirm -->
 			<control type="group">
-				<visible>String.IsEqual(Window.Property(tikiskins.nextep_function),confirm)</visible>
+				<visible>!String.IsEqual(Window.Property(tikiskins.nextep_function),next_ep)</visible>
 				<control type="label">
 					<top>5</top>
 					<height>30</height>
@@ -129,7 +129,7 @@
 					<font>font12</font>
 					<align>right</align>
 					<aligny>top</aligny>
-					<label>[B]Still watching?[/B]</label>
+					<label>[B]$INFO[Window.Property(tikiskins.nextep_prompt)][/B]</label>
 					<textcolor>FFB7B4BB</textcolor>
 				</control>
 				<control type="grouplist">

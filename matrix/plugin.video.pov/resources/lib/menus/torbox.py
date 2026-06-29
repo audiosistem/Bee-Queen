@@ -18,11 +18,10 @@ class Menu(Debrid):
 			return self.cloud_delete(params['folder_id'])
 		elif '_browse_cloud' in params['mode']:
 			folder_id, mediatype = params['folder_id'].split(',')
-			items = self.user_cloud(mediatype, folder_id)
+			items = self.user_folder(mediatype, folder_id)
 			_builder = self.browse_cloud
 		elif '_torrent_cloud' in params['mode']:
-			mediatype = params['mediatype']
-			items = self.user_cloud(mediatype)
+			items = self.user_cloud(params['mediatype'])
 			_builder = self.torrent_cloud
 		else: return getattr(self, params['mode'].split('.')[-1])()
 		__handle__ = int(sys.argv[1])

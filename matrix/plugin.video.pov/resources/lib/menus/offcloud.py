@@ -17,8 +17,7 @@ class Menu(Debrid):
 		if   '_delete' in params['mode']:
 			return self.cloud_delete(params['folder_id'])
 		elif '_browse_cloud' in params['mode']:
-			items = self.torrent_info(params['folder_id'])
-			items = items['files']
+			items = self.user_folder(params['folder_id'])
 			_builder = self.browse_cloud
 		elif '_torrent_cloud' in params['mode']:
 			items = self.user_cloud()

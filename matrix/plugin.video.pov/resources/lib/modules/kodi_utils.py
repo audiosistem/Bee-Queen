@@ -32,7 +32,7 @@ packages_path  = 'special://home/addons/packages/'
 current_dbs           = ('settings.xml', 'debridcache.db', 'watched.db', 'maincache.db', 'metacache.db', 'fenomundesirables.db',
 						'navigator.db', 'providerscache.db', 'traktcache.db', 'mdblcache.db', 'views.db', 'fenomcache.db')
 indicators_dict       = {0: watched_db, 1: trakt_db, 2: mdbl_db}
-myvideos_db_paths     = {19: '119', 20: '121', 21: '131', 22: '139'}
+myvideos_db_paths     = {19: '119', 20: '121', 21: '131', 22: '146'}
 
 def logger(heading, function):
 	xbmc.log('>> %s <<: %s' % (heading, function), 1)
@@ -326,11 +326,11 @@ def remove_meta_keys(dict_item, dict_removals):
 	for k in dict_removals: dict_item.pop(k, None)
 	return dict_item
 
-def volume_checker(volume_setting):
-	# 0% == -60db, 100% == 0db
-	try:
+def volume_checker(volume_setting=None):
+	try: # 0% == -60db, 100% == 0db
 		if get_visibility('Player.Muted'): return
 		from modules.utils import string_alphanum_to_num
+		if not volume_setting: volume_setting = get_setting('volumecheck.percent', '100')
 		max_volume = int(min(int(volume_setting), 100))
 		current_volume_db = int(string_alphanum_to_num(get_infolabel('Player.Volume').split('.')[0]))
 		current_volume_percent = int(100 - ((float(current_volume_db)/60)*100))

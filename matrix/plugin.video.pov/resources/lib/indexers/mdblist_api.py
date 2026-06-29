@@ -325,11 +325,12 @@ def mdbl_get_activity():
 def mdbl_sync_activities_thread(*args, **kwargs):
 	Thread(target=mdbl_sync_activities, args=args, kwargs=kwargs).start()
 
-def mdbl_sync_activities(force_update=False):
+def mdbl_sync_activities(force_update=False, monitor=None):
 	def _compare(latest, cached):
 		try: return (latest or '') > (cached or '')
 		except: return True
 	if not get_setting('mdblist_user', ''): return 'no account'
+	if monitor and monitor.abortRequested(): return
 	if force_update:
 		check_databases()
 		mdbl_cache.clear_all_mdbl_cache_data(refresh=False)

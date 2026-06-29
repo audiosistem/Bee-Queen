@@ -157,18 +157,21 @@ class TorBoxAPI:
 		except Exception as e:
 			if torrent_id: self.delete_torrent(torrent_id)
 
-	def user_cloud(self, mediatype, request_id=None, completed=True):
-		if request_id:
-			string = 'pov_tb_user_cloud_info_%s_%s' % (mediatype, request_id)
-			url = '%s/mylist?id=%s' % (mediatype, request_id)
-			result = cache_object(self._get, string, url, 0.5)
-			for i in result['files']: i['link'] = '%s,%s,%s' % (request_id, i['id'], mediatype)
-			return result['files']
-		string = 'pov_tb_user_cloud_info_%s' % mediatype
+	def user_cloud(self, mediatype, cached=True):
+		string = 'pov_tb_user_cloud_%s' % mediatype
 		url = '%s/mylist?bypass_cache=true' % mediatype
-		result = cache_object(self._get, string, url, 0.5)
-		if completed: result = [i for i in result if i['download_finished'] and i['files']]
+		if cached: result = cache_object(self._get, string, url, 0.5)
+		else: result = self._get(url)
+		result = [i for i in result if i['download_finished'] and i['files']]
 		for i in result: i['folder_id'] = '%s,%s' % (i['id'], mediatype)
+		return result
+
+	def user_folder(self, mediatype, request_id):
+		string = 'pov_tb_user_cloud_%s_%s' % (mediatype, request_id)
+		url = '%s/mylist?id=%s' % (mediatype, request_id)
+		result = cache_object(self._get, string, url, 0.5)
+		for i in result['files']: i['link'] = '%s,%s,%s' % (request_id, i['id'], mediatype)
+		result = result['files']
 		return result
 
 	def clear_cache(*args):

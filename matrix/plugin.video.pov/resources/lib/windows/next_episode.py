@@ -40,6 +40,9 @@ class NextEpisode(BaseDialog):
 		self.close()
 
 	def set_properties(self):
+		if self.function == 'confirm': prompt = 'Still watching?'
+		elif self.function == 'skip_intro': prompt = 'Skip Intro?'
+		else: prompt = 'Up Next in'
 		episode = 'S%dE%d' % (self.meta['season'], self.meta['episode'])
 		title = '%s [B]|[/B] %s [B]|[/B] %s' % (self.meta['title'], episode, self.meta['ep_name'])
 		poster_main, poster_backup, fanart_main, fanart_backup = get_art_provider()
@@ -48,6 +51,7 @@ class NextEpisode(BaseDialog):
 		self.setProperty('tikiskins.poster', self.poster)
 		self.setProperty('tikiskins.fanart', self.fanart)
 		self.setProperty('tikiskins.title', title)
+		self.setProperty('tikiskins.nextep_prompt', prompt)
 		self.setProperty('tikiskins.nextep_episode', episode)
 		self.setProperty('tikiskins.nextep_function', self.function)
 

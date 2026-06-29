@@ -541,11 +541,12 @@ def trakt_get_activity():
 def trakt_sync_activities_thread(*args, **kwargs):
 	Thread(target=trakt_sync_activities, args=args, kwargs=kwargs).start()
 
-def trakt_sync_activities(force_update=False, init_callback=None):
+def trakt_sync_activities(force_update=False, init_callback=None, monitor=None):
 	def _compare(latest, cached):
 		try: return latest > cached
 		except: return True
 	if not get_setting('trakt_user', ''): return 'no account'
+	if monitor and monitor.abortRequested(): return
 	if callable(init_callback): init_callback()
 	elif init_callback is True: trakt_expires()
 	else: pass

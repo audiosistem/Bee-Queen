@@ -42,16 +42,10 @@ def trailer_choice(mediatype, poster, tmdb_id, trailer_url, all_trailers=None):
 
 def genres_choice(mediatype, genres, poster, return_genres=False):
 	from modules.meta_lists import movie_genres, tvshow_genres
-	def _process_dicts(genre_str, _dict):
-		final_genres_list = []
-		append = final_genres_list.append
-		for key, value in _dict.items():
-			if key in genre_str: append({'genre': key, 'value': value})
-		return final_genres_list
 	if mediatype in ('movie', 'movies'):
 		genre_action, meta_type, action = movie_genres, 'movie', 'tmdb_movies_genres'
 	else: genre_action, meta_type, action = tvshow_genres, 'tvshow', 'tmdb_tv_genres'
-	genre_list = _process_dicts(genres, genre_action)
+	genre_list = [{'genre': k, 'value': v} for k, v in genre_action.items() if k in genres]
 	if return_genres: return genre_list
 	if len(genre_list) == 0: return notification(32760, 1500)
 	mode = 'build_%s_list' % meta_type
@@ -65,16 +59,15 @@ def random_choice(choice, meta):
 	if not tmdb_id: return
 	from modules.episode_tools import get_random_episode
 	from modules.sources import Sources
-	meta, play_params = get_random_episode(tmdb_id, True if choice == 'play_random_continual' else False)
+	continual = True if choice == 'play_random_continual' else False
+	meta, play_params = get_random_episode(tmdb_id, continual)
 	if not play_params: return notification(32760)
 	Sources.factory(play_params)
 
 def playback_choice(content, poster, meta):
 	items = [
-		('clear_and_rescrape', ls(32014)),
-		('rescrape_with_disabled', ls(32006)),
-		('scrape_with_filters_ignored', ls(32807)),
-		('scrape_with_custom_values', ls(32135))
+		('clear_and_rescrape', ls(32014)),          ('rescrape_with_disabled', ls(32006)),
+		('scrape_with_filters_ignored', ls(32807)), ('scrape_with_custom_values', ls(32135))
 	]
 	list_items = [{'line1': i[1], 'icon': poster} for i in items]
 	kwargs = {'items': json.dumps(list_items), 'heading': ls(32174)}
@@ -148,7 +141,7 @@ def results_highlights_choice():
 
 def results_layout_choice():
 	xml_choices = [
-		'List Default', 'List Contrast Default',
+		'List Default',     'List Contrast Default',
 		'InfoList Default', 'InfoList Contrast Default',
 		'WideList Default', 'WideList Contrast Default'
 	]
@@ -175,16 +168,11 @@ def scraper_quality_color_choice(setting):
 
 def scraper_color_choice(setting):
 	choices = [
-		('easynews', 'provider.easynews_colour'),
-		('debrid_cloud', 'provider.debrid_cloud_colour'),
-		('hoster', 'hoster.identify'),
-		('torrent', 'torrent.identify'),
-		('rd', 'provider.rd_colour'),
-		('pm', 'provider.pm_colour'),
-		('ad', 'provider.ad_colour'),
-		('tb', 'provider.tb_colour'),
-		('oc', 'provider.oc_colour'),
-		('free', 'provider.free_colour')
+		('easynews', 'provider.easynews_colour'), ('debrid_cloud', 'provider.debrid_cloud_colour'),
+		('hoster', 'hoster.identify'),            ('torrent', 'torrent.identify'),
+		('rd', 'provider.rd_colour'),             ('pm', 'provider.pm_colour'),
+		('ad', 'provider.ad_colour'),             ('tb', 'provider.tb_colour'),
+		('oc', 'provider.oc_colour'),             ('free', 'provider.free_colour')
 	]
 	setting = [i[1] for i in choices if i[0] == setting][0]
 	chosen_color = color_choice()
@@ -250,69 +238,73 @@ def dropped_choice(params):
 	container_refresh()
 
 def options_menu(params, meta=None):
-	def _builder():
-		for item in listing:
-			kwargs = {'line1': item[1], 'line2': item[2] or item[1]}
-			if len(item) == 4: kwargs['icon'] = item[3]
-			yield kwargs
-	is_widget = params.get('is_widget', 'false').lower() == 'true'
 	content = params.get('content') or params.get('mediatype') or container_content()[:-1]
 	season, episode = params.get('season'), params.get('episode')
 	if not meta:
-		function = metadata.movie_meta if content == 'movie' else metadata.tvshow_meta
-		meta = function('tmdb_id', params['tmdb_id'], settings.metadata_user_info(), get_datetime())
+		func = metadata.movie_meta if content == 'movie' else metadata.tvshow_meta
+		meta = func('tmdb_id', params['tmdb_id'], settings.metadata_user_info(), get_datetime())
+	scrapable = content in ('movie', 'episode')
+	poster = meta.get('poster', '')
+	title = meta.get('title', '')
 	on_str, off_str, currently_str, open_str, settings_str = ls(32090), ls(32027), ls(32598), ls(32641), ls(32247)
-	base_str1, base_str2 = '%s%s', '%s: [B]%s[/B]' % (currently_str, '%s')
 	scraper_options_str = '%s %s' % (ls(32533), ls(32841))
-	scrapable = True if content in ('movie', 'episode') else False
 	watched_indicators = settings.watched_indicators()
-	results_xml_style_status = settings.results_xml_style()
-	if settings.display_uncached_torrents(): uncached_torrents_status, uncached_torrents_toggle = (on_str, 'false')
-	else: uncached_torrents_status, uncached_torrents_toggle = (off_str, 'true')
-	listing = (
-		('scrape_from_episode_group', 'Scrape From Episode Group', scraper_options_str, meta['poster']) if content == 'episode' else None,
-		('clear_and_rescrape', ls(32014), scraper_options_str, meta['poster']) if scrapable else None,
-		('rescrape_with_disabled', ls(32006), scraper_options_str, meta['poster']) if scrapable else None,
-		('scrape_with_filters_ignored', ls(32807), scraper_options_str, meta['poster']) if scrapable else None,
-		('scrape_with_custom_values', ls(32135), scraper_options_str, meta['poster']) if scrapable else None,
-		('play_random', ls(32541), meta['title'], meta['poster']) if content in ('tvshow') and meta else None,
-		('play_random_continual', ls(32542), meta['title'], meta['poster']) if content in ('tvshow') and meta else None,
-		('clear_scrapers_cache', ls(32637), '') if scrapable else None,
-		('open_external_scrapers_choice', '%s %s' % (ls(32118), ls(32513)), ''),
-		('toggle_torrents_display_uncached', base_str1 % ('', ls(32160)), base_str2 % uncached_torrents_status) if scrapable else None,
-		('set_results_xml_display', base_str1 % ('', '%s %s' % (ls(32139), ls(32140))), base_str2 % results_xml_style_status) if scrapable else None,
-		('dropped_choice', 'Toggle Dropped', meta['title'], meta['poster']) if watched_indicators == 0 and content in ('tvshow') else None,
-		('clear_trakt_cache', ls(32497) % ls(32037), '') if watched_indicators == 1 else None,
-		('clear_mdbl_cache', ls(32497) % 'MDBList', '') if watched_indicators == 2 else None,
-		('clear_media_cache', ls(32604) % (ls(32028) if content in ('movie') else ls(32029)), meta['title'], meta['poster']) if content in ('movie', 'tvshow') and meta else None,
-		('open_pov_settings', '%s %s %s' % (open_str, ls(32036), settings_str), ''),
-		('reload_widgets', 'POV: Refresh Widgets', '') if is_widget else None
-	)
-	listing = [item for item in listing if item]
-	list_items = list(_builder())
+	uncached_status, uncached_toggle = (on_str, 'false') if settings.display_uncached_torrents() else (off_str, 'true')
+	results_xml_status = settings.results_xml_style()
+	listing = []
+	append = listing.append
+	if content == 'episode':
+		append(('scrape_from_episode_group', 'Scrape From Episode Group', scraper_options_str, poster))
+	if scrapable:
+		append(('clear_and_rescrape', ls(32014), scraper_options_str, poster))
+		append(('rescrape_with_disabled', ls(32006), scraper_options_str, poster))
+		append(('scrape_with_filters_ignored', ls(32807), scraper_options_str, poster))
+		append(('scrape_with_custom_values', ls(32135), scraper_options_str, poster))
+	if content == 'tvshow' and meta:
+		append(('play_random', ls(32541), title, poster))
+		append(('play_random_continual', ls(32542), title, poster))
+	if scrapable:
+		append(('clear_scrapers_cache', ls(32637), ''))
+	append(('open_external_scrapers_choice', '%s %s' % (ls(32118), ls(32513)), ''))
+	if scrapable:
+		append(('toggle_torrents_display_uncached', ls(32160), '%s: [B]%s[/B]' % (currently_str, uncached_status)))
+		append(('set_results_xml_display', '%s %s' % (ls(32139), ls(32140)), '%s: [B]%s[/B]' % (currently_str, results_xml_status)))
+	if watched_indicators == 0 and content == 'tvshow':
+		append(('dropped_choice', 'Toggle Dropped', title, poster))
+	elif watched_indicators == 1:
+		append(('clear_trakt_cache', ls(32497) % ls(32037), ''))
+	elif watched_indicators == 2:
+		append(('clear_mdbl_cache', ls(32497) % 'MDBList', ''))
+	if content in ('movie', 'tvshow') and meta:
+		append(('clear_media_cache', ls(32604) % (ls(32028) if content == 'movie' else ls(32029)), title, poster))
+	listing.append(('open_pov_settings', '%s %s %s' % (open_str, ls(32036), settings_str), ''))
+	if params.get('is_widget', 'false').lower() == 'true':
+		listing.append(('reload_widgets', 'POV: Refresh Widgets', ''))
+	list_items = [
+		{'line1': item[1], 'line2': item[2] or item[1], **({'icon': item[3]} if len(item) == 4 else {})}
+		for item in listing
+	]
 	heading = ls(32646).replace('[B]', '').replace('[/B]', '')
-	kwargs = {'items': json.dumps(list_items), 'heading': heading}
-	choice = select_dialog([i[0] for i in listing], **kwargs)
-	if   choice in (None, 'save_and_exit'): return
-	elif choice == 'clear_and_rescrape': return clear_and_rescrape(content, meta, season, episode)
-	elif choice == 'rescrape_with_disabled': return rescrape_with_disabled(content, meta, season, episode)
-	elif choice == 'scrape_with_filters_ignored': return scrape_with_filters_ignored(content, meta, season, episode)
-	elif choice == 'scrape_with_custom_values': return scrape_with_custom_values(content, meta, season, episode)
-	elif choice == 'scrape_from_episode_group': return scrape_from_episode_group(meta, season, episode)
-	elif choice == 'play_random': return random_choice(choice, meta)
-	elif choice == 'play_random_continual': return random_choice(choice, meta)
-	elif choice == 'clear_scrapers_cache': return clear_scrapers_cache()
-	elif choice == 'open_external_scrapers_choice': return enable_disable('all')
-	elif choice == 'toggle_torrents_display_uncached': set_setting('torrent.display.uncached', uncached_torrents_toggle)
+	choice = select_dialog([i[0] for i in listing], items=json.dumps(list_items), heading=heading)
+	if choice in (None, 'save_and_exit'): return
+	if choice == 'clear_and_rescrape': return clear_and_rescrape(content, meta, season, episode)
+	if choice == 'rescrape_with_disabled': return rescrape_with_disabled(content, meta, season, episode)
+	if choice == 'scrape_with_filters_ignored': return scrape_with_filters_ignored(content, meta, season, episode)
+	if choice == 'scrape_with_custom_values': return scrape_with_custom_values(content, meta, season, episode)
+	if choice == 'scrape_from_episode_group': return scrape_from_episode_group(meta, season, episode)
+	if choice in ('play_random', 'play_random_continual'): return random_choice(choice, meta)
+	if choice == 'clear_scrapers_cache': return clear_scrapers_cache()
+	if choice == 'open_external_scrapers_choice': return enable_disable('all')
+	if choice == 'dropped_choice': return dropped_choice(meta)
+	if choice == 'clear_media_cache': return refresh_cached_meta(meta)
+	if choice == 'open_pov_settings': return kodi_utils.open_settings('')
+	if choice in ('clear_trakt_cache', 'clear_mdbl_cache'):
+		clear_cache({'clear_trakt_cache': 'trakt', 'clear_mdbl_cache': 'mdblist'}[choice])
+		return container_refresh()
+	if choice == 'toggle_torrents_display_uncached': set_setting('torrent.display.uncached', uncached_toggle)
 	elif choice == 'set_results_xml_display': results_layout_choice()
-	elif choice == 'dropped_choice': return dropped_choice(meta)
-	elif choice == 'clear_trakt_cache': return clear_cache('trakt')
-	elif choice == 'clear_mdbl_cache': return clear_cache('mdblist')
-	elif choice == 'clear_media_cache': return refresh_cached_meta(meta)
-	elif choice == 'open_pov_settings': return kodi_utils.open_settings('')
 #	elif choice == 'reload_widgets': return kodi_utils.widget_refresh()
-	elif choice == 'reload_widgets': return execute_builtin('ReloadSkin()')
-	if   choice in ('clear_trakt_cache', 'clear_mdbl_cache'): container_refresh()
+	elif choice == 'reload_widgets': execute_builtin('ReloadSkin()')
 	options_menu(params, meta=meta)
 
 def extras_menu(params):
@@ -336,28 +328,38 @@ def refresh_cached_meta(meta):
 def build_navigate_to_page(params):
 	use_alphabet = settings.nav_jump_use_alphabet() == 2
 	icon = media_path('item_jump.png')
-	mediatype = params.get('mediatype')
-	def _builder(use_alphabet):
-		for i in start_list:
-			if use_alphabet: line1, line2 = i.upper(), ls(32821) % (mediatype, i.upper())
-			else: line1, line2 = '%s %s' % ('Page', i), ls(32822) % i
-			yield {'line1': line1, 'line2': line2, 'icon': icon}
+	mediatype = params.get('mediatype', '')
 	if use_alphabet:
 		start_list = [chr(i) for i in range(97, 123)]
 	else:
-		start_list = [str(i) for i in range(1, int(params.get('total_pages'))+1)]
-		start_list.remove(params.get('current_page'))
-	list_items = list(_builder(use_alphabet))
+		total_pages = int(params.get('total_pages', 0))
+		start_list = [str(i) for i in range(1, total_pages + 1)]
+		current_page = params.get('current_page')
+		if current_page in start_list: start_list.remove(current_page)
+	list_items = []
+	for item in start_list:
+		if use_alphabet: line1, line2 = item.upper(), ls(32821) % (mediatype, item.upper())
+		else: line1, line2 = '%s %s' % ('Page', item), ls(32822) % item
+		list_items.append({'line1': line1, 'line2': line2, 'icon': icon})
 	kwargs = {'items': json.dumps(list_items), 'heading': 'POV'}
 	new_start = select_dialog(start_list, **kwargs)
 	sleep(100)
 	if new_start is None: return
-	if use_alphabet: new_page, new_letter = '', new_start
-	else: new_page, new_letter = new_start, None
-	url_params = {'mode': params.get('transfer_mode', ''), 'action': params.get('transfer_action', ''), 'new_page': new_page,
-				'mediatype': params.get('mediatype', ''), 'query': params.get('query', ''), 'actor_id': params.get('actor_id', ''),
-				'user': params.get('user', ''), 'slug': params.get('slug', ''), 'list_id': params.get('list_id', ''), 'name': params.get('name', '')}
+	passthrough_keys = ['mediatype', 'query', 'actor_id', 'user', 'slug', 'list_id', 'name']
+	url_params = {key: params.get(key, '') for key in passthrough_keys}
+	url_params.update({
+		'mode': params.get('transfer_mode', ''),
+		'action': params.get('transfer_action', ''),
+		'new_page': '' if use_alphabet else new_start,
+		'new_letter': new_start if use_alphabet else ''
+	})
 	execute_builtin('Container.Update(%s)' % build_url(url_params))
+
+def _get_base_play_params(mediatype, meta, season=None, episode=None):
+	play_params = {'mode': 'play_media', 'tmdb_id': meta['tmdb_id'], 'autoplay': 'false'}
+	if mediatype in ('movie', 'movies'): play_params.update({'mediatype': 'movie'})
+	else: play_params.update({'mediatype': 'episode', 'season': season, 'episode': episode})
+	return play_params
 
 def scrape_from_episode_group(meta, season, episode):
 	from indexers.tmdb_api import episode_groups, episode_group_details
@@ -408,32 +410,26 @@ def clear_and_rescrape(mediatype, meta, season=None, episode=None):
 	deleted = ExternalProvidersCache().delete_cache_single(mediatype, str(meta['tmdb_id']))
 	hide_busy_dialog()
 	if not deleted: return notification(32574)
-	play_params = {'mode': 'play_media', 'tmdb_id': meta['tmdb_id'], 'autoplay': 'false'}
-	if mediatype == 'movie': play_params.update({'mediatype': 'movie'})
-	else: play_params.update({'mediatype': 'episode', 'season': season, 'episode': episode})
+	play_params = _get_base_play_params(mediatype, meta, season, episode)
 	Sources().source_select(play_params)
 
 def rescrape_with_disabled(mediatype, meta, season=None, episode=None):
 	from modules.sources import Sources
-	play_params = {'mode': 'play_media', 'tmdb_id': meta['tmdb_id'], 'autoplay': 'false', 'disabled_ignored': 'true', 'prescrape': 'false'}
-	if mediatype == 'movie': play_params.update({'mediatype': 'movie'})
-	else: play_params.update({'mediatype': 'episode', 'season': season, 'episode': episode})
+	play_params = _get_base_play_params(mediatype, meta, season, episode)
+	play_params.update({'disabled_ignored': 'true', 'prescrape': 'false'})
 	Sources().source_select(play_params)
 
 def scrape_with_filters_ignored(mediatype, meta, season=None, episode=None):
 	from modules.sources import Sources
-	play_params = {'mode': 'play_media', 'tmdb_id': meta['tmdb_id'], 'autoplay': 'false', 'ignore_scrape_filters': 'true'}
-	if mediatype == 'movie': play_params.update({'mediatype': 'movie'})
-	else: play_params.update({'mediatype': 'episode', 'season': season, 'episode': episode})
+	play_params = _get_base_play_params(mediatype, meta, season, episode)
+	play_params.update({'ignore_scrape_filters': 'true'})
 	set_property('fs_filterless_search', 'true')
 	Sources().source_select(play_params)
 
 def scrape_with_custom_values(mediatype, meta, season=None, episode=None):
 	from windows import open_window
 	from modules.sources import Sources
-	play_params = {'mode': 'play_media', 'tmdb_id': meta['tmdb_id'], 'autoplay': 'false'}
-	if mediatype in ('movie', 'movies'): play_params.update({'mediatype': 'movie'})
-	else: play_params.update({'mediatype': 'episode', 'season': season, 'episode': episode})
+	play_params = _get_base_play_params(mediatype, meta, season, episode)
 	custom_title = kodi_utils.dialog.input(ls(32228), defaultt=meta['title'])
 	if not custom_title: return
 	play_params['custom_title'] = custom_title
@@ -460,19 +456,19 @@ def clear_scrapers_cache(silent=False):
 	if not silent: notification(32576)
 
 def scraper_names(folder):
-	providerList = []
-	append = providerList.append
+	provider_list = []
+	append = provider_list.append
 	source_folder_location = 'special://home/addons/plugin.video.pov/resources/lib/magneto/%s'
-	sourceSubFolders = {'hosters': '', 'torrents': ''}
-	if folder == 'all': sourceSubFolders = ['']
-	else: sourceSubFolders = [v for k, v in sourceSubFolders.items() if k == folder]
-	for item in sourceSubFolders:
+	source_subfolders = {'hosters': '', 'torrents': ''}
+	if folder == 'all': source_subfolders = ['']
+	else: source_subfolders = [v for k, v in source_subfolders.items() if k == folder]
+	for item in source_subfolders:
 		files = kodi_utils.list_dirs(source_folder_location % item)[1]
 		for item in files:
 			module_name = item.split('.')[0]
 			if module_name == '__init__': continue
 			append(module_name)
-	return providerList
+	return provider_list
 
 def scrapers_status(folder='all'):
 	providers = scraper_names(folder)

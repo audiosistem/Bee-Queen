@@ -45,7 +45,6 @@ class Router:
 			from modules.sources import Sources
 			Sources.factory(params)
 		elif 'choice' in mode:
-			from indexers import list_manager
 			from modules import dialogs
 			if mode == 'scraper_color_choice':
 				dialogs.scraper_color_choice(params['setting'])
@@ -68,11 +67,14 @@ class Router:
 			elif mode == 'favorites_choice':
 				dialogs.favorites_choice(params)
 			elif mode == 'trakt_manager_choice':
-				list_manager.TraktManager(params).manage()
+				from menus.trakt import TraktManager
+				TraktManager(params).manage()
 			elif mode == 'mdbl_manager_choice':
-				list_manager.MdbListManager(params).manage()
+				from menus.mdblist import MdbListManager
+				MdbListManager(params).manage()
 			elif mode == 'tmdb_manager_choice':
-				list_manager.TmdbManager(params).manage()
+				from menus.tmdb import TmdbManager
+				TmdbManager(params).manage()
 			elif mode == 'set_language_filter_choice':
 				dialogs.set_language_filter_choice(params['filter_setting'])
 			elif mode == 'extras_lists_choice':
@@ -97,10 +99,10 @@ class Router:
 				function(params)
 		elif 'tmdb.' in mode:
 			if 'edit_tmdb_list' in mode:
-				from indexers.list_manager import edit_tmdb_list
+				from menus.tmdb import edit_tmdb_list
 				edit_tmdb_list(params)
 			elif 'update_tmdb_list' in mode:
-				from indexers.list_manager import update_tmdb_list
+				from menus.tmdb import update_tmdb_list
 				update_tmdb_list(params)
 			else:
 				from modules.utils import manual_function_import
@@ -129,8 +131,8 @@ class Router:
 				from menus.seasons import Seasons
 				Seasons(params).run()
 			elif mode == 'build_episode_list':
-				from menus.seasons import Seasons
-				Seasons(params).run()
+				from menus.seasons import Episodes
+				Episodes(params).run()
 			elif mode == 'build_in_progress_episode':
 				from menus.episodes import Menu
 				Menu(params).run()
@@ -294,7 +296,7 @@ class Router:
 
 class POVMonitor(kodi_utils.xbmc_monitor):
 	def __enter__(self):
-		self.threads = (Thread(target=traktMonitor), Thread(target=premAccntNotification))
+		self.threads = (Thread(target=SyncMonitorService().run), Thread(target=premAccntNotification))
 		return self
 
 	def __exit__(self, exc_type, exc_value, traceback):
@@ -409,61 +411,6 @@ def clearSubs():
 			kodi_utils.delete_file(subtitle_path + i)
 	return logger('POV', 'Clear Subtitles Service Finished')
 
-def traktMonitor():
-	from caches.trakt_cache import clear_trakt_list_contents_data
-	from indexers.trakt_api import trakt_sync_activities
-	from indexers.mdblist_api import mdbl_sync_activities
-	from indexers.tmdb_api import tmdb_clean_watchlist, clear_tmdbl_cache
-	logger('POV', 'TraktMonitor Service Starting')
-	trakt_service_string = 'TraktMonitor Service Update %s - %s'
-	update_string = 'Next Update in %s minutes...'
-	if get_property('pov_traktmonitor_first_run') != 'true':
-		for i in ('user_lists', 'liked_lists', 'my_lists'): clear_trakt_list_contents_data(i)
-		clear_tmdbl_cache()
-		set_property('pov_traktmonitor_first_run', 'true')
-	while not monitor.abortRequested():
-		while is_playing() or get_visibility('Container().isUpdating') or get_property('pov_pause_services') == 'true':
-			monitor.waitForAbort(10)
-		if get_property('pov_traktmonitor_first_run') != 'true':
-			monitor.waitForAbort(5)
-		value, interval = settings.trakt_sync_interval()
-		next_update_string = update_string % value
-		try: status = trakt_sync_activities(init_callback=True)
-		except: status = 'failed'
-		if status == 'success':
-			logger('POV', trakt_service_string % ('POV TraktMonitor - Success', 'Trakt Update Performed'))
-			if settings.trakt_sync_refresh_widgets():
-				kodi_utils.widget_refresh()
-				logger('POV', trakt_service_string % ('POV TraktMonitor - Widgets Refresh', 'Setting Activated. Widget Refresh Performed'))
-			else: logger('POV', trakt_service_string % ('POV TraktMonitor - Widgets Refresh', 'Setting Disabled. Skipping Widget Refresh'))
-		elif status == 'no account':
-			logger('POV', trakt_service_string % ('POV TraktMonitor - Aborted. No Trakt Account Active', next_update_string))
-		elif status == 'failed':
-			logger('POV', trakt_service_string % ('POV TraktMonitor - Failed. Error from Trakt', next_update_string))
-		else:# 'not needed'
-			logger('POV', trakt_service_string % ('POV TraktMonitor - Success. No Changes Needed', next_update_string))
-		try: status = mdbl_sync_activities()
-		except: status = 'failed'
-		if status == 'success':
-			logger('POV', trakt_service_string % ('POV MDBListMonitor - Success', 'MDBList Update Performed'))
-			if settings.trakt_sync_refresh_widgets():
-				kodi_utils.widget_refresh()
-				logger('POV', trakt_service_string % ('POV MDBListMonitor - Widgets Refresh', 'Setting Activated. Widget Refresh Performed'))
-			else: logger('POV', trakt_service_string % ('POV MDBListMonitor - Widgets Refresh', 'Setting Disabled. Skipping Widget Refresh'))
-		elif status == 'no account':
-			logger('POV', trakt_service_string % ('POV MDBListMonitor - Aborted. No MDBList Account Active', next_update_string))
-		elif status == 'failed':
-			logger('POV', trakt_service_string % ('POV MDBListMonitor - Failed. Error from MDBList', next_update_string))
-		else:# 'not needed'
-			logger('POV', trakt_service_string % ('POV MDBListMonitor - Success. No Changes Needed', next_update_string))
-		try:
-			if get_setting('tmdb.token') and get_setting('tmdblist.watchlist_sync') == 'true':
-				status = tmdb_clean_watchlist(silent=True)
-				if status: logger('POV', 'TMDB Lists Service Update - Success. %s' % status)
-		except: pass
-		monitor.waitForAbort(interval)
-	return logger('POV', 'TraktMonitor Service Finished')
-
 def premAccntNotification():
 	logger('POV', 'Debrid Account Expiry Notification Service Starting')
 	from importlib import import_module
@@ -491,4 +438,83 @@ def checkUndesirablesDatabase():
 	old_database = Undesirables().check_database()
 	if old_database: add_new_default_keywords()
 	return logger('POV', 'CheckUndesirablesDatabase Service Finished')
+
+class SyncMonitorService(kodi_utils.xbmc_monitor):
+	def __init__(self):
+		kodi_utils.xbmc_monitor.__init__(self)
+		from caches.trakt_cache import clear_trakt_list_contents_data
+		from indexers.trakt_api import trakt_sync_activities
+		from indexers.mdblist_api import mdbl_sync_activities
+		from indexers.tmdb_api import tmdb_clean_watchlist, clear_tmdbl_cache
+		self.clear_trakt_list_contents_data = clear_trakt_list_contents_data
+		self.trakt_sync_activities = trakt_sync_activities
+		self.mdbl_sync_activities = mdbl_sync_activities
+		self.tmdb_clean_watchlist = tmdb_clean_watchlist
+		self.clear_tmdbl_cache = clear_tmdbl_cache
+		self.service_string = 'SyncMonitor Service Update %s - %s'
+		self.update_string = 'Next Update in %s minutes...'
+
+	def run(self):
+		logger('POV', 'SyncMonitor Service Starting')
+		self.handle_first_run_cache()
+		while not self.abortRequested():
+			self.wait_if_busy()
+			if get_property('pov_traktmonitor_first_run') != 'true': self.waitForAbort(5)
+			value, interval = settings.trakt_sync_interval()
+			next_update_str = self.update_string % value
+			self.sync_trakt(next_update_str)
+			self.sync_mdblist(next_update_str)
+			self.sync_tmdb()
+			self.waitForAbort(interval)
+		return logger('POV', 'SyncMonitor Service Finished')
+
+	def handle_first_run_cache(self):
+		if get_property('pov_traktmonitor_first_run') != 'true':
+			for i in ('user_lists', 'liked_lists', 'my_lists'): self.clear_trakt_list_contents_data(i)
+			self.clear_tmdbl_cache()
+			set_property('pov_traktmonitor_first_run', 'true')
+
+	def wait_if_busy(self):
+		while is_playing() or get_visibility('Container().isUpdating') or get_property('pov_pause_services') == 'true':
+			self.waitForAbort(10)
+
+	def refresh_widgets(self, monitor_name):
+		if settings.trakt_sync_refresh_widgets():
+			kodi_utils.widget_refresh()
+			logger('POV', self.service_string % ('POV %s - Widgets Refresh' % monitor_name, 'Setting Activated. Widget Refresh Performed'))
+		else:
+			logger('POV', self.service_string % ('POV %s - Widgets Refresh' % monitor_name, 'Setting Disabled. Skipping Widget Refresh'))
+
+	def sync_trakt(self, next_update_str):
+		try: status = self.trakt_sync_activities(init_callback=True, monitor=self)
+		except: status = 'failed'
+		if status == 'success':
+			logger('POV', self.service_string % ('POV TraktMonitor - Success', 'Trakt Update Performed'))
+			self.refresh_widgets('TraktMonitor')
+		elif status == 'no account':
+			logger('POV', self.service_string % ('POV TraktMonitor - Aborted. No Trakt Account Active', next_update_str))
+		elif status == 'failed':
+			logger('POV', self.service_string % ('POV TraktMonitor - Failed. Error from Trakt', next_update_str))
+		else:
+			logger('POV', self.service_string % ('POV TraktMonitor - Success. No Changes Needed', next_update_str))
+
+	def sync_mdblist(self, next_update_str):
+		try: status = self.mdbl_sync_activities(monitor=self)
+		except: status = 'failed'
+		if status == 'success':
+			logger('POV', self.service_string % ('POV MDBListMonitor - Success', 'MDBList Update Performed'))
+			self.refresh_widgets('MDBListMonitor')
+		elif status == 'no account':
+			logger('POV', self.service_string % ('POV MDBListMonitor - Aborted. No MDBList Account Active', next_update_str))
+		elif status == 'failed':
+			logger('POV', self.service_string % ('POV MDBListMonitor - Failed. Error from MDBList', next_update_str))
+		else:
+			logger('POV', self.service_string % ('POV MDBListMonitor - Success. No Changes Needed', next_update_str))
+
+	def sync_tmdb(self):
+		try:
+			if get_setting('tmdb.token') and get_setting('tmdblist.watchlist_sync') == 'true':
+				status = self.tmdb_clean_watchlist(silent=True)
+				if status: logger('POV', 'TMDB Lists Service Update - Success. %s' % status)
+		except: pass
 

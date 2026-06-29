@@ -79,7 +79,7 @@ class Source:
 			files = api.parse_magnet_pack(*args)
 			selected_files = []
 			selected_files_append = selected_files.append
-			for i in files or selected_files:
+			for i in files or []:
 				torrent_id, filename = i.get('torrent_id'), i['filename'].lower()
 				if filename.endswith('.m2ts'): raise Exception('_m2ts_check failed')
 				if not filename.endswith(tuple(extensions)): continue
@@ -206,10 +206,21 @@ class Source:
 		else: notification(32575)
 
 class DebridCheck:
+	_debrid_dict = {i[0]: i for i in debrid_list}
+	hash_list, cached_hashes = [], []
+
+	@classmethod
+	def set_cached_hashes(cls, hash_list):
+		cls.hash_list = hash_list
+		cls.cached_hashes = DebridCache().get_many(hash_list) or []
+
 	def __init__(self, meta, name):
 		self.cached_list = []
 		self.name, self.debrid, self.function = self._debrid_dict[name]
 		self.imdb, self.season, self.episode = meta.get('imdb_id'), meta.get('season'), meta.get('episode')
+
+	def cache_write(self, hashes):
+		DebridCache().set_many(hashes, self.debrid)
 
 	def cache_check(self):
 		try:
@@ -245,17 +256,6 @@ class DebridCheck:
 		for i in threads: i.start()
 		for i in threads: i.join()
 		return checked_hashes
-
-	def cache_write(self, hashes):
-		DebridCache().set_many(hashes, self.debrid)
-
-	@classmethod
-	def set_cached_hashes(cls, hash_list):
-		cls.hash_list = hash_list
-		cls.cached_hashes = DebridCache().get_many(hash_list) or []
-
-	_debrid_dict = {i[0]: i for i in debrid_list}
-	hash_list, cached_hashes = [], []
 
 import re, random, requests
 from fenom.client import randomagent

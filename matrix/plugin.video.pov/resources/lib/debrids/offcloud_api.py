@@ -90,11 +90,19 @@ class OffcloudAPI:
 			]
 		except: pass
 
-	def user_cloud(self, completed=True):
-		url = 'cloud/history'
+	def user_cloud(self, cached=True):
 		string = 'pov_oc_user_cloud'
-		result = cache_object(self._get, string, url, 0.5)
-		if completed: result = [i for i in result if i['status'] == 'downloaded']
+		url = 'cloud/history'
+		if cached: result = cache_object(self._get, string, url, 0.5)
+		else: result = self._get(url)
+		result = [i for i in result if i['status'] == 'downloaded']
+		return result
+
+	def user_folder(self, folder_id):
+		string = 'pov_oc_user_cloud_%s' % folder_id
+		url = folder_id
+		result = cache_object(self.torrent_info, string, url, 0.5)
+		result = result['files']
 		return result
 
 	def clear_cache(*args):
@@ -106,9 +114,12 @@ class OffcloudAPI:
 			dbcur = dbcon.cursor()
 			# USER CLOUD
 			try:
-				dbcur.execute("""DELETE FROM maincache WHERE id = ?""", ('pov_oc_user_cloud',))
-				clear_property('pov_oc_user_cloud')
-				dbcon.commit()
+				dbcur.execute("""SELECT id FROM maincache WHERE id LIKE ?""", ('pov_oc_user_cloud%',))
+				user_cloud_cache = [str(i[0]) for i in dbcur.fetchall()]
+				if user_cloud_cache:
+					dbcur.execute("""DELETE FROM maincache WHERE id LIKE ?""", ('pov_oc_user_cloud%',))
+					for i in user_cloud_cache: clear_property(i)
+					dbcon.commit()
 				user_cloud_success = True
 			except: user_cloud_success = False
 			dbcon.close()

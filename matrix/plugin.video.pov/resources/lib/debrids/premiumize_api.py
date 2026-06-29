@@ -111,19 +111,28 @@ class PremiumizeAPI:
 		args = [url, data]
 		return cache_object(self._post, string, args, 24)
 
-	def downloads(self):
-		url = 'transfer/list'
+	def downloads(self, cached=True):
 		string = 'pov_pm_downloads'
-		return cache_object(self._get, string, url, 0.5)
+		url = 'transfer/list'
+		if cached: result = cache_object(self._get, string, url, 0.5)
+		else: result = self._get(url)
+		result = result['transfers']
+		return result
 
-	def user_cloud(self, folder_id=None):
-		if folder_id:
-			url = 'folder/list?id=%s' % folder_id
-			string = 'pov_pm_user_cloud_%s' % folder_id
-		else:
-			url = 'folder/list'
-			string = 'pov_pm_user_cloud_root'
-		return cache_object(self._get, string, url, 0.5)
+	def user_cloud(self, cached=True):
+		string = 'pov_pm_user_cloud'
+		url = 'folder/list'
+		if cached: result = cache_object(self._get, string, url, 0.5)
+		else: result = self._get(url)
+		result = result['content']
+		return result
+
+	def user_folder(self, folder_id):
+		string = 'pov_pm_user_cloud_%s' % folder_id
+		url = 'folder/list?id=%s' % folder_id
+		result = cache_object(self._get, string, url, 0.5)
+		result = result['content']
+		return result
 
 	def clear_cache(*args):
 		from modules.kodi_utils import clear_property, path_exists, database_connect, maincache_db

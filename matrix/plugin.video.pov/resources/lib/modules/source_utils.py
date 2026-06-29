@@ -6,8 +6,8 @@ from string import printable
 from urllib.parse import unquote, unquote_plus
 from indexers.metadata import season_episodes_meta
 from modules import kodi_utils
-from modules.settings import check_prescrape_sources, date_offset, metadata_user_info
-from modules.utils import manual_function_import, adjust_premiered_date, get_datetime, jsondate_to_datetime, subtract_dates
+from modules.settings import date_offset, metadata_user_info
+from modules.utils import adjust_premiered_date, get_datetime, jsondate_to_datetime, subtract_dates
 # from modules.kodi_utils import logger
 
 string = str
@@ -69,21 +69,6 @@ PATTERNS = {
 	'ADS': ('ADS', r'(?:\b|_)(1xbet|betwin)(?:\b|_)'),
 	'SUBS': ('SUBS', r'(?:\b|_)(subita|subfrench|subspanish|subtitula|swesub|nl\.subs)(?:\b|_)')
 }
-
-def internal_sources(active_sources, mediatype, prescrape=False):
-	source_list = []
-	append = source_list.append
-	files = kodi_utils.list_dirs(kodi_utils.scrapers_path)[1]
-	for item in files:
-		try:
-			module_name = item.split('.')[0]
-			if module_name in ('__init__',): continue
-			if module_name not in active_sources: continue
-			if prescrape and not check_prescrape_sources(module_name, mediatype): continue
-			module = manual_function_import('scrapers.%s' % module_name, 'source')
-			append(('internal', module, module_name))
-		except: pass
-	return source_list
 
 def pack_enable_check(meta, season, episode):
 	try:

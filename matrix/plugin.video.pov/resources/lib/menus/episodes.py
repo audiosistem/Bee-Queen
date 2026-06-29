@@ -8,9 +8,8 @@ from modules import kodi_utils, settings
 from modules.utils import adjust_premiered_date, make_day, get_datetime, title_key, date_difference, TaskPool
 # logger = kodi_utils.logger
 
-tv_meta_function, season_meta_function, default_duration = tvshow_meta, season_episodes_meta, 3600
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
-string, ls, build_url, get_infolabel = str, kodi_utils.local_string, kodi_utils.build_url, kodi_utils.get_infolabel
+string, ls, build_url, default_duration = str, kodi_utils.local_string, kodi_utils.build_url, 3600
 calendar_sort_order, calendar_focus_today = settings.calendar_sort_order, settings.calendar_focus_today
 nextep_content_settings, nextep_display_settings = settings.nextep_content_settings, settings.nextep_display_settings
 thumb_fanart_info, default_all_episodes = settings.thumb_fanart, settings.default_all_episodes
@@ -22,7 +21,7 @@ fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
 watched_str, unwatched_str, extras_str, options_str = ls(32642), ls(32643), ls(32645), ls(32646)
 clearprog_str, browse_str, browse_seas_str, today_str = ls(32651), ls(32652), ls(32544), ls(32849).upper()
-traktmanager_str, mdblmanager_str = ls(32198), ls(32200)
+traktmanager_str, mdblmanager_str, unaired_label, date_label = ls(32198), ls(32200), 'cyan', 'magenta'
 
 class Episodes:
 	def __init__(self, params):
@@ -53,19 +52,17 @@ class Episodes:
 	def build_episode_content(self, position, ep_data):
 		try:
 			ep_data_get = ep_data.get
-			meta = tv_meta_function('trakt_dict', ep_data_get('media_ids'), self.meta_user_info, self.current_date)
+			meta = tvshow_meta('trakt_dict', ep_data_get('media_ids'), self.meta_user_info, self.current_date)
 			meta_get = meta.get
 			if not meta: return
 			if self.list_type.startswith('next_episode'):
 				props = {'pov_last_played': ep_data_get('last_played', self.resinsert)}
-			else: props = {'pov_sort_order': string(ep_data_get('sort', position))}
-			orig_season, orig_episode = ep_data_get('season'), ep_data_get('episode')
-			if self.list_type.startswith('next_episode'):
-				episode_count = (i['episode_count'] for i in meta_get('season_data') if i['season_number'] == orig_season)
-				if orig_episode >= next(episode_count): orig_season, orig_episode, new_season = orig_season + 1, 1, True
-				else: orig_episode, new_season = orig_episode + 1, False
+				orig_season, orig_episode, new_season = get_next_episode_pointer(ep_data_get, meta_get)
 				if new_season and orig_season > meta_get('total_seasons'): return
-			episodes_data = season_meta_function(orig_season, meta, self.meta_user_info)
+			else:
+				props = {'pov_sort_order': string(ep_data_get('sort', position))}
+				orig_season, orig_episode = ep_data_get('season'), ep_data_get('episode')
+			episodes_data = season_episodes_meta(orig_season, meta, self.meta_user_info)
 			try: item = next((i for i in episodes_data if i['episode'] == orig_episode))
 			except: return
 			cm = []
@@ -73,7 +70,7 @@ class Episodes:
 			item_get = item.get
 			item['background'] = item_get('thumb') if self.thumb_fanart else ''
 			tmdb_id, tvdb_id, imdb_id = meta_get('tmdb_id'), meta_get('tvdb_id'), meta_get('imdb_id')
-			title, year = meta_get('title'), meta_get('year')
+			title, year, total_seasons = meta_get('title'), meta_get('year'), meta_get('total_seasons')
 			cast, episode_run_time = meta_get('cast', []), meta_get('duration')
 			season, episode = item_get('season'), item_get('episode')
 			orig_premiered, ep_name = item_get('premiered'), item_get('title')
@@ -90,32 +87,7 @@ class Episodes:
 			else: playcount, overlay = get_watched_status_episode(self.watched_info, string(tmdb_id), season, episode)
 			if self.widget_hide_watched and playcount and not unaired: return
 			resumetime, progress = get_resumetime(self.bookmarks, tmdb_id, season, episode)
-			if self.display_title == 0: title_string = ''.join([title, ': '])
-			else: title_string = ''
-			if self.display_title in (0, 1): seas_ep = ''.join([str_season_zfill2, 'x', str_episode_zfill2, ' - '])
-			else: seas_ep = ''
-			if self.list_type.startswith('next_episode'):
-				unwatched = ep_data_get('unwatched', False)
-				if episode_date: display_premiered = make_day_function(self.current_date, episode_date, self.date_format)
-				else: display_premiered == 'UNKNOWN'
-				airdate = ('[[COLOR magenta]', display_premiered, '[/COLOR]] ') if self.nextep_include_airdate else ''
-				highlight_color = self.nextep_unaired_color if unaired else self.nextep_unwatched_color if unwatched else ''
-				italics_open, italics_close = ('[I]', '[/I]') if highlight_color else ('', '')
-				if highlight_color: episode_info = seas_ep, italics_open, '[COLOR', highlight_color, ']', ep_name, '[/COLOR]', italics_close
-				else: episode_info = seas_ep, italics_open, ep_name, italics_close
-				display = ''.join([''.join(airdate), title_string.upper(), ''.join(episode_info)])
-			elif self.list_type == 'trakt_calendar':
-				if episode_date: display_premiered = make_day_function(self.current_date, episode_date, self.date_format)
-				else: display_premiered == 'UNKNOWN'
-				airdate = '[[COLOR magenta]', display_premiered, '[/COLOR]] '
-				highlight_color = 'cyan' if unaired else ''
-				italics_open, italics_close = ('[I]', '[/I]') if highlight_color else ('', '')
-				if highlight_color: episode_info = seas_ep, italics_open, '[COLOR', highlight_color, ']', ep_name, '[/COLOR]', italics_close
-				else: episode_info = seas_ep, italics_open, ep_name, italics_close
-				display = ''.join([''.join(airdate), title_string.upper(), ''.join(episode_info)])
-			else:
-				if unaired: ep_name = '[COLOR cyan][I]%s[/I][/COLOR]' % ep_name
-				display = ''.join([title_string.upper(), seas_ep, ep_name])
+			display = _format_title(self, title, season, episode, ep_name, ep_data_get, episode_date, unaired)
 			item.update({
 				'title': display, 'premiered': premiered, 'playcount': playcount, 'overlay': overlay,
 				'duration': item_get('duration') or episode_run_time or default_duration
@@ -132,7 +104,7 @@ class Episodes:
 				'mode': 'play_media', 'mediatype': 'episode',
 				'tmdb_id': tmdb_id, 'season': season, 'episode': episode
 			})
-			if self.all_episodes and self.all_episodes == 1 and meta_get('total_seasons') > 1: browse_params = build_url({
+			if self.all_episodes and self.all_episodes == 1 and total_seasons > 1: browse_params = build_url({
 				'mode': 'build_season_list', 'tmdb_id': tmdb_id
 			})
 			elif self.all_episodes: browse_params = build_url({
@@ -201,36 +173,11 @@ class Episodes:
 		except: pass
 
 class Menu(Episodes):
-	def next_episode_filters(self):
-		self.nextep_settings, nextep_disp_settings = nextep_content_settings(), nextep_display_settings()
-		self.nextep_include_unaired = self.nextep_settings['include_unaired']
-		self.nextep_include_airdate = nextep_disp_settings['include_airdate']
-		self.nextep_unwatched_color = nextep_disp_settings['unwatched_color']
-		self.nextep_unaired_color = nextep_disp_settings['unaired_color']
-#		if self.watched_indicators != 1: return
-#		if not self.nextep_settings['include_unwatched']: return
-#		items = trakt_fetch_collection_watchlist('watchlist', 'tvshow')
-#		try: self.list.extend({'media_ids': i['media_ids'], 'season': 1, 'episode': 0, 'unwatched': True} for i in items)
-#		except: pass
-
 	def worker(self):
 #		threads = list(make_thread_list_enumerate(self.build_episode_content, self.list, Thread))
 		for i in TaskPool().tasks_enumerate(self.build_episode_content, self.list, Thread): i.join()
-		if self.list_type.startswith('next_episode'):
-			def func(function):
-				if sort_key == 'pov_name': return title_key_function(function, self.ignore_articles)
-				return function
-			def aired_today(item):
-				return str(item.getProperty('pov_first_aired')) == str(self.current_date)
-			sort_key, sort_direction = self.nextep_settings['sort_key'], self.nextep_settings['sort_direction']
-			sort_airing_today_to_top = self.nextep_settings['sort_airing_today_to_top']
-			self.items.sort(key=lambda k: func(k[1].getProperty(sort_key)), reverse=sort_direction)
-			self.items.sort(key=lambda k: k[1].getProperty('pov_unaired') == 'true', reverse=False)
-			if sort_airing_today_to_top: self.items.sort(key=lambda k: aired_today(k[1]), reverse=True)
-		elif self.list_type in ('trakt_calendar', 'trakt_recently_aired'):
-			reverse = calendar_sort_order() == 0 if self.list_type == 'trakt_calendar' else True
-			self.items.sort(key=lambda k: int(k[1].getProperty('pov_sort_order')))
-			self.items.sort(key=lambda k: k[1].getProperty('pov_first_aired'), reverse=reverse)
+		if self.list_type.startswith('next_episode'): self._sort_next_episode()
+		elif self.list_type in ('trakt_calendar', 'trakt_recently_aired'): self._sort_calendar()
 		else: self.items.sort(key=lambda k: int(k[1].getProperty('pov_sort_order')))
 		return self.items
 
@@ -241,31 +188,15 @@ class Menu(Episodes):
 			view_type, content_type = 'view.episodes_lists', 'episodes'
 			sort_type, category = 'unsorted', ls(params_get('name'))
 			mode = params_get('mode')
-			if   'in_progress' in mode:
-				self.list_type = 'in_progress'
-				self.list = get_in_progress_items(self.bookmarks, 'episode')
-			elif 'next_episode' in mode:
-				self.list_type = 'next_episode_pov'
-				self.list = get_next_episodes(self.watched_indicators)
-				self.next_episode_filters()
-			elif 'my_calendar' in mode:
-				recently_aired = params_get('recently_aired')
-				self.list = trakt_get_my_calendar(recently_aired, self.current_date)
-				if recently_aired:
-					self.list_type = 'trakt_recently_aired'
-					self.list = self.list[:20]
-				else:
-					self.list_type = 'trakt_calendar'
-					self.list = sorted(self.list, key=lambda k: k['sort_title'])
-			elif 'my_anime_calendar' in mode:
-				self.list = trakt_get_my_anime_calendar(self.current_date)
-				self.list_type = 'trakt_calendar'
-				self.list = sorted(self.list, key=lambda k: k['sort_title'])
-			elif 'anime_calendar' in mode:
-				self.list = trakt_anime_calendar(self.current_date)
-				self.list_type = 'trakt_calendar'
-				self.list = sorted(self.list, key=lambda k: k['sort_title'])
-			kodi_utils.add_items(__handle__, self.worker())
+			func = next((i for key, i in {
+				'in_progress': self._setup_in_progress,
+				'next_episode': self._setup_next_episode,
+				'my_calendar': self._setup_my_calendar,
+				'my_anime_calendar': self._setup_my_anime_calendar,
+				'anime_calendar': self._setup_anime_calendar
+			}.items() if key in mode), None)
+			if callable(func): func(params_get)
+			if self.list: kodi_utils.add_items(__handle__, self.worker())
 		except: pass
 		if self.list_type == 'trakt_calendar' and calendar_focus_today():
 			try:
@@ -279,4 +210,89 @@ class Menu(Episodes):
 		kodi_utils.end_directory(__handle__, False)
 		kodi_utils.set_view_mode(view_type, content_type, self.is_widget)
 		if index: kodi_utils.focus_index(index)
+
+	def _setup_in_progress(self, params_get):
+		self.list_type = 'in_progress'
+		self.list = get_in_progress_items(self.bookmarks, 'episode')
+
+	def _setup_next_episode(self, params_get):
+		self.list_type = 'next_episode_pov'
+		self.list = get_next_episodes(self.watched_indicators)
+		self.nextep_settings, nextep_disp_settings = nextep_content_settings(), nextep_display_settings()
+		self.nextep_include_unaired = self.nextep_settings['include_unaired']
+		self.nextep_include_airdate = nextep_disp_settings['include_airdate']
+		self.nextep_unwatched_color = nextep_disp_settings['unwatched_color']
+		self.nextep_unaired_color = nextep_disp_settings['unaired_color']
+#		if self.watched_indicators != 1: return
+#		if not self.nextep_settings['include_unwatched']: return
+#		items = trakt_fetch_collection_watchlist('watchlist', 'tvshow')
+#		watchlist = ({'media_ids': i['media_ids'], 'season': 1, 'episode': 0, 'unwatched': True} for i in items)
+#		try: self.list.extend(watchlist)
+#		except: pass
+
+	def _setup_my_calendar(self, params_get):
+		recently_aired = params_get('recently_aired')
+		self.list = trakt_get_my_calendar(recently_aired, self.current_date)
+		if recently_aired:
+			self.list_type = 'trakt_recently_aired'
+			self.list = self.list[:20]
+		else:
+			self.list_type = 'trakt_calendar'
+			self.list = sorted(self.list, key=lambda k: k['sort_title'])
+
+	def _setup_my_anime_calendar(self, params_get):
+		self.list = sorted(trakt_get_my_anime_calendar(self.current_date), key=lambda k: k['sort_title'])
+		self.list_type = 'trakt_calendar'
+
+	def _setup_anime_calendar(self, params_get):
+		self.list = sorted(trakt_anime_calendar(self.current_date), key=lambda k: k['sort_title'])
+		self.list_type = 'trakt_calendar'
+
+	def _sort_next_episode(self):
+		def func(function):
+			if sort_key == 'pov_name': return title_key_function(function, self.ignore_articles)
+			return function
+		def aired_today(item):
+			return str(item.getProperty('pov_first_aired')) == str(self.current_date)
+		sort_key, sort_direction = self.nextep_settings['sort_key'], self.nextep_settings['sort_direction']
+		sort_airing_today_to_top = self.nextep_settings['sort_airing_today_to_top']
+		self.items.sort(key=lambda k: func(k[1].getProperty(sort_key)), reverse=sort_direction)
+		self.items.sort(key=lambda k: k[1].getProperty('pov_unaired') == 'true', reverse=False)
+		if sort_airing_today_to_top: self.items.sort(key=lambda k: aired_today(k[1]), reverse=True)
+
+	def _sort_calendar(self):
+		reverse = calendar_sort_order() == 0 if self.list_type == 'trakt_calendar' else True
+		self.items.sort(key=lambda k: int(k[1].getProperty('pov_sort_order')))
+		self.items.sort(key=lambda k: k[1].getProperty('pov_first_aired'), reverse=reverse)
+
+def _format_title(self, title, season, episode, ep_name, ep_data_get, episode_date, unaired):
+	str_season, str_episode = string(season).zfill(1), string(episode).zfill(2)
+	title_string = ''.join([title, ': ']) if self.display_title == 0 else ''
+	seas_ep = ''.join([str_season, 'x', str_episode, ' - ']) if self.display_title in (0, 1) else ''
+	if self.list_type.startswith('next_episode') or self.list_type == 'trakt_calendar':
+		if episode_date: display_premiered = make_day_function(self.current_date, episode_date, self.date_format)
+		else: display_premiered = 'UNKNOWN'
+		if self.list_type.startswith('next_episode'):
+			airdate = ('[[COLOR ', date_label, ']', display_premiered, '[/COLOR]] ') if self.nextep_include_airdate else ''
+			if unaired: highlight_color = self.nextep_unaired_color
+			else: highlight_color = self.nextep_unwatched_color if ep_data_get('unwatched', False) else ''
+		else: # trakt_calendar
+			airdate = ('[[COLOR ', date_label, ']', display_premiered, '[/COLOR]] ')
+			highlight_color = unaired_label if unaired else ''
+		italics_open, italics_close = ('[I]', '[/I]') if highlight_color else ('', '')
+		if highlight_color:
+			episode_info = seas_ep, '[COLOR', highlight_color, ']', italics_open, ep_name, italics_close, '[/COLOR]'
+		else: episode_info = seas_ep, italics_open, ep_name, italics_close
+		return ''.join([''.join(airdate), title_string.upper(), ''.join(episode_info)])
+	if unaired: ep_name = '[COLOR %s][I]%s[/I][/COLOR]' % (unaired_label, ep_name)
+	return ''.join([title_string.upper(), seas_ep, ep_name])
+
+def get_next_episode_pointer(ep_data_get, meta_get):
+	orig_season, orig_episode = ep_data_get('season'), ep_data_get('episode')
+	season_data = meta_get('season_data')
+	episode_count = (i['episode_count'] for i in season_data if i['season_number'] == orig_season)
+	try: max_episodes = next(episode_count)
+	except StopIteration: return orig_season, orig_episode, False
+	if orig_episode >= max_episodes: return orig_season + 1, 1, True
+	return orig_season, orig_episode + 1, False
 

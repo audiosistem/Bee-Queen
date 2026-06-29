@@ -18,9 +18,7 @@ class Menu(Debrid):
 		if   '_delete' in params['mode']:
 			return self.cloud_delete(params['id'], params['cache_type'])
 		elif '_browse_cloud' in params['mode']:
-			torrent_info = self.torrent_info(params['id'])
-			selected = (i for i in torrent_info['files'] if i['selected'])
-			items = [{**i, 'url_link': link} for i, link in zip(selected, torrent_info['links'])]
+			items = self.user_folder(params['id'])
 			_builder = self.browse_cloud
 		elif '_torrent_cloud' in params['mode']:
 			items = self.user_cloud()

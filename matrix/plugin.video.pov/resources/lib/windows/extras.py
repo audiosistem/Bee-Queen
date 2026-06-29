@@ -3,8 +3,8 @@ import concurrent.futures
 from datetime import datetime, timedelta
 from windows import BaseDialog, location, videoplayer
 from caches import watched_cache as ws
-from indexers import metadata, tmdb_api, imdb_api, list_manager
-from menus import images, people
+from indexers import metadata, tmdb_api, imdb_api
+from menus import images, people, trakt, mdblist, tmdb
 from modules import settings, dialogs, downloader
 from modules.meta_lists import networks as meta_networks
 from modules.utils import get_datetime
@@ -24,9 +24,12 @@ tmdb_list_ids = (recommended_id, year_id, genres_id, networks_id, collection_id)
 imdb_list_ids = (reviews_id, trivia_id, blunders_id, parentsguide_id)
 art_ids = (posters_id, backdrops_id)
 parentsguide_dict = {
-	'nudity': (ls(32990), 'porn.png'), 'violence': (ls(32991), 'war.png'), 'profanity': (ls(32992), 'bad_language.png'),
-	'alcohol': (ls(32993), 'drugs_alcohol.png'), 'frightening': (ls(32994), 'horror.png'),
-	'mild': ls(32996), 'moderate': ls(32997), 'severe': ls(32998), 'none': 'none'
+	'mild': ls(32996), 'moderate': ls(32997), 'severe': ls(32998), 'none': 'none',
+	'profanity': (ls(32992), 'bad_language.png'),
+	'alcohol': (ls(32993), 'drugs_alcohol.png'),
+	'frightening': (ls(32994), 'horror.png'),
+	'violence': (ls(32991), 'war.png'),
+	'nudity': (ls(32990), 'porn.png')
 }
 
 class Extras(BaseDialog):
@@ -50,7 +53,7 @@ class Extras(BaseDialog):
 				tpe.submit(self.make_artwork, 'posters'),
 				tpe.submit(self.make_artwork, 'backdrops')
 			]
-			if self.mediatype == 'movie': futures.append(tpe.submit(self.make_collection))
+			if self.is_movie: futures.append(tpe.submit(self.make_collection))
 			else: self.setProperty('tikiskins.extras.make.collection', 'false')
 			self.make_options()
 			self.make_cast()
@@ -72,7 +75,7 @@ class Extras(BaseDialog):
 		if action in self.closing_actions: self.close()
 		if action in self.context_actions:
 			focus_id = self.getFocusId()
-			if focus_id == actions_id and self.mediatype == 'movie':
+			if focus_id == actions_id and self.is_movie:
 				params = int(self.get_listitem(focus_id).getProperty('tikiskins.extras.actions'))
 				if params == playbrowse_id: dialogs.playback_choice('movie', self.poster, self.meta)
 			elif focus_id in (posters_id, backdrops_id):
@@ -90,7 +93,7 @@ class Extras(BaseDialog):
 			except: return
 			if chosen_var == playbrowse_id:
 				close_all_dialog()
-				if self.mediatype == 'movie':
+				if self.is_movie:
 					url_params = {'mode': 'play_media', 'mediatype': 'movie', 'tmdb_id': self.tmdb_id}
 					self.selected = self.plugin_runner % self.build_url(url_params)
 				else:
@@ -108,14 +111,14 @@ class Extras(BaseDialog):
 				self.open_window(('windows.extras', 'ShowTextMedia'), 'textviewer_media.xml', text=text, poster=self.poster)
 			elif chosen_var == genre_id:
 				if not self.genre: return
-				base_media = 'movies' if self.mediatype == 'movie' else 'tv'
+				base_media = 'movies' if self.is_movie else 'tv'
 				genre_params = dialogs.genres_choice(base_media, self.genre, self.poster)
 				if not genre_params: return
 				close_all_dialog()
 				self.selected = self.folder_runner % self.build_url(genre_params)
 				self.close()
 			elif chosen_var == director_id:
-				if self.mediatype == 'movie':
+				if self.is_movie:
 					director = self.meta.get('director')
 					if director: return people.person_data_dialog({'query': director})
 				else:
@@ -124,9 +127,9 @@ class Extras(BaseDialog):
 					self.close()
 			elif chosen_var in (trakt_id, mdbl_id, tmdbl_id):
 				params = {'tmdb_id': self.tmdb_id, 'imdb_id': self.imdb_id, 'tvdb_id': self.meta['tvdb_id'], 'mediatype': self.mediatype, 'icon': self.poster}
-				if chosen_var == trakt_id: return list_manager.TraktManager(params).manage()
-				if chosen_var == mdbl_id: return list_manager.MdbListManager(params).manage()
-				if chosen_var == tmdbl_id: return list_manager.TmdbManager(params).manage()
+				if chosen_var == trakt_id: return trakt.TraktManager(params).manage()
+				if chosen_var == mdbl_id: return mdblist.MdbListManager(params).manage()
+				if chosen_var == tmdbl_id: return tmdb.TmdbManager(params).manage()
 		else:
 			try: chosen_var = self.get_listitem(self.control_id).getProperty(self.item_action_dict[self.control_id])
 			except: return
@@ -137,7 +140,7 @@ class Extras(BaseDialog):
 				if not chosen: return
 				self.open_window(('windows.videoplayer', 'VideoPlayer'), 'videoplayer.xml', meta=self.meta, video=chosen)
 			elif self.control_id in tmdb_list_ids:
-				function = metadata.movie_meta if self.mediatype == 'movie' else metadata.tvshow_meta
+				function = metadata.movie_meta if self.is_movie else metadata.tvshow_meta
 				meta = function('tmdb_id', chosen_var, settings.metadata_user_info(), get_datetime())
 				if not meta: return
 				params = {'mode': 'extras_menu_choice', 'tmdb_id': chosen_var, 'mediatype': self.mediatype, 'is_widget': self.is_widget, 'is_home': self.is_home}
@@ -156,7 +159,7 @@ class Extras(BaseDialog):
 	def make_options(self):
 		icon_path = media_path()
 		item_list = []
-		if self.mediatype == 'movie':
+		if self.is_movie:
 			args = (playbrowse_id, 'playback', 'player.png'), (director_id, 'director', 'movies.png')
 		else:
 			args = (playbrowse_id, 'browse', 'in_progress_tvshow.png'), (director_id, 'play random', 'library.png')
@@ -198,51 +201,43 @@ class Extras(BaseDialog):
 		self.item_action_dict[cast_id] = 'tikiskins.extras.name'
 		self.add_items(cast_id, item_list)
 
-	def _add_tmdb_items(self, list_id, data, prop_name):
-		if list_id not in self.enabled_lists or not data: return
-		item_list = list(self.make_tmdb_listitems(data))
-		if not item_list: return
-		self.setProperty('tikiskins.extras.%s.number' % prop_name, '(x%02d)' % len(item_list))
-		self.item_action_dict[list_id] = 'tikiskins.extras.tmdb_id'
-		self.add_items(list_id, item_list)
-
 	def make_recommended(self):
 		try:
-			if self.mediatype == 'movie': function = tmdb_api.tmdb_movies_recommendations
+			if self.is_movie: function = tmdb_api.tmdb_movies_recommendations
 			else: function = tmdb_api.tmdb_tv_recommendations
 			data = function(self.tmdb_id, 1)['results']
-			self._add_tmdb_items(recommended_id, data, 'recommended')
+			self.make_tmdb_listitems(recommended_id, data, 'recommended')
 		except: pass
 
 	def make_year(self):
 		try:
-			if self.mediatype == 'movie': function = tmdb_api.tmdb_movies_year
+			if self.is_movie: function = tmdb_api.tmdb_movies_year
 			else: function = tmdb_api.tmdb_tv_year
 			data = self.remove_current_tmdb_mediaitem(function(self.year, 1)['results'])
-			self._add_tmdb_items(year_id, data, 'more_from_year')
+			self.make_tmdb_listitems(year_id, data, 'more_from_year')
 		except: pass
 
 	def make_genres(self):
 		try:
-			if self.mediatype == 'movie': function = tmdb_api.tmdb_movies_genres
+			if self.is_movie: function = tmdb_api.tmdb_movies_genres
 			else: function = tmdb_api.tmdb_tv_genres
 			genre_dict = dialogs.genres_choice(self.mediatype, self.genre, '', return_genres=True)
 			genre_list = ','.join([i['value'][0] for i in genre_dict])
 			data = self.remove_current_tmdb_mediaitem(function(genre_list, 1)['results'])
-			self._add_tmdb_items(genres_id, data, 'more_from_genres')
+			self.make_tmdb_listitems(genres_id, data, 'more_from_genres')
 		except: pass
 
 	def make_network(self):
 		try:
 			network = self.meta['studio']
-			if self.mediatype == 'movie':
+			if self.is_movie:
 				network_id = next(i['id'] for i in tmdb_api.tmdb_company_id(network)['results'] if i['name'] == network)
 			else:
 				network_id = next(item['id'] for item in meta_networks if item.get('name') == network)
-			if self.mediatype == 'movie': function = tmdb_api.tmdb_movies_networks
+			if self.is_movie: function = tmdb_api.tmdb_movies_networks
 			else: function = tmdb_api.tmdb_tv_networks
 			data = self.remove_current_tmdb_mediaitem(function(network_id, 1)['results'])
-			self._add_tmdb_items(networks_id, data, 'more_from_networks')
+			self.make_tmdb_listitems(networks_id, data, 'more_from_networks')
 		except: pass
 
 	def make_collection(self):
@@ -256,7 +251,7 @@ class Extras(BaseDialog):
 			self.setProperty('tikiskins.extras.more_from_collection.overview', data['overview'])
 			self.setProperty('tikiskins.extras.more_from_collection.poster', poster)
 			parts = sorted(data['parts'], key=lambda k: k['release_date'] or '2050')
-			self._add_tmdb_items(collection_id, parts, 'more_from_collection')
+			self.make_tmdb_listitems(collection_id, parts, 'more_from_collection')
 		except: pass
 
 	def make_imdb_extended_info(self):
@@ -368,7 +363,7 @@ class Extras(BaseDialog):
 	def make_artwork(self, image_type):
 		_id = posters_id if image_type == 'posters' else backdrops_id
 		if _id not in self.enabled_lists: return
-		dbtype = 'movie' if self.mediatype == 'movie' else 'tv'
+		dbtype = 'movie' if self.is_movie else 'tv'
 		data = tmdb_api.tmdb_media_images(dbtype, self.tmdb_id)[image_type]
 		data.sort(key=lambda x: x['file_path'])
 		json_all_images = json.dumps([(tmdb_image_base % ('original', i['file_path']), '%sx%s' % (i['height'], i['width'])) for i in data])
@@ -485,9 +480,11 @@ class Extras(BaseDialog):
 	def remove_current_tmdb_mediaitem(self, data):
 		return [i for i in data if int(i['id']) != self.tmdb_id]
 
-	def make_tmdb_listitems(self, data):
-		name_key = 'title' if self.mediatype == 'movie' else 'name'
-		release_key = 'release_date' if self.mediatype == 'movie' else 'first_air_date'
+	def make_tmdb_listitems(self, list_id, data, prop_name):
+		if list_id not in self.enabled_lists or not data: return
+		name_key = 'title' if self.is_movie else 'name'
+		release_key = 'release_date' if self.is_movie else 'first_air_date'
+		item_list = []
 		for item in data:
 			try:
 				poster_path = item['poster_path']
@@ -500,8 +497,12 @@ class Extras(BaseDialog):
 				listitem.setProperty('tikiskins.extras.vote_average', '%.1f' % item['vote_average'])
 				listitem.setProperty('tikiskins.extras.thumbnail', thumbnail)
 				listitem.setProperty('tikiskins.extras.tmdb_id', str(item['id']))
-				yield listitem
+				item_list.append(listitem)
 			except: pass
+		if not item_list: return
+		self.setProperty('tikiskins.extras.%s.number' % prop_name, '(x%02d)' % len(item_list))
+		self.item_action_dict[list_id] = 'tikiskins.extras.tmdb_id'
+		self.add_items(list_id, item_list)
 
 	def listitem_check(self):
 		return self.get_infolabel('ListItem.Title') == self.meta['title']
@@ -533,6 +534,7 @@ class Extras(BaseDialog):
 		self.is_home = kwargs['is_home'].lower()
 		self.meta = kwargs['meta']
 		self.mediatype = self.meta['mediatype']#movie, tvshow
+		self.is_movie = self.mediatype in ('movie', 'movies')
 		self.tmdb_id = self.meta['tmdb_id']
 		self.imdb_id = self.meta['imdb_id']
 		if self.is_widget == 'true' or self.is_home == 'true':
@@ -560,7 +562,7 @@ class Extras(BaseDialog):
 		if not self.network: self.network = ''
 		self.duration_data = int(float(self.meta['duration'])/60)
 		self.duration = self.get_duration()
-		if self.mediatype == 'movie':
+		if self.is_movie:
 			self.progress = self.get_progress()
 			self.finish_watching = self.get_finish()
 			self.last_aired_episode, self.next_aired_episode, self.next_episode = '', '', ''

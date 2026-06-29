@@ -138,7 +138,6 @@ RE_EPISODE_RANGES = [re.compile(i, re.I) for i in (
 	r'season[.-]?\d{1,3}[.-]?episode[.-]?\d{1,3}[-.]episode[.-]?\d{1,3}'
 )]
 
-
 def check_title(title, aliases, release_title, hdlr, year, years=None): # non pack file title check, single eps and movies
 	if years: # for movies only, scraper to pass None for episodes
 		if not any(val in release_title for val in years): return False

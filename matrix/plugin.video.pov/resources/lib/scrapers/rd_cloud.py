@@ -59,7 +59,7 @@ class source(Debrid):
 			results_append = self.scrape_results.append
 			threads = []
 			append = threads.append
-			cloud_files = self.user_cloud()
+			cloud_files = self.user_cloud(False)
 			for item in cloud_files:
 				if not check_title(title, item['filename'], self.aliases): continue
 				append(i := Thread(target=self._scrape_folders, args=(item,)))
@@ -71,12 +71,11 @@ class source(Debrid):
 	def _scrape_folders(self, folder_info):
 		try:
 			results_append = self.scrape_results.append
-			folder = self.torrent_info(folder_info['id'])
-			selected = (i for i in folder['files'] if i['selected'])
-			for item, link in zip(selected, folder['links']):
+			folder = self.user_folder(folder_info['id'])
+			for item in folder:
 				try:
 					name = item['path'].replace('/', '')
-					item.update({'filename': name, 'folder_name': folder['filename'], 'link': link})
+					item.update({'filename': name, 'folder_name': folder_info['filename'], 'link': item['url_link']})
 				except: pass
 				else: results_append(item)
 		except: pass
@@ -84,7 +83,7 @@ class source(Debrid):
 	def _scrape_downloads(self):
 		try:
 			results_append = self.scrape_results.append
-			cloud_downloads = self.downloads()
+			cloud_downloads = self.downloads(False)
 			links = set()
 			for item in cloud_downloads:
 				if item['link'] in links: continue

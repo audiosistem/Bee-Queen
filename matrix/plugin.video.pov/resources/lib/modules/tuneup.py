@@ -57,8 +57,12 @@ def clear_streams():
 
 def clear_thumbnails():
 	thumbs_path = Path(xbmcvfs.translatePath('special://thumbnails/'))
-	dbfile = Path(xbmcvfs.translatePath('special://database/'), 'Textures13.db')
-	if not dbfile.exists(): return notification('Failed')
+	dbfile = xbmcvfs.translatePath('special://database/')
+	dbfile = dialog.browse(1, 'Textures*.db', 'local', defaultt=dbfile)
+	dbfile = Path(dbfile)
+	if not dbfile.is_file(): return notification('Failed')
+	if not dbfile.name.lower().startswith('textures'): return notification('Not a valid file')
+	if not dialog.yesno('POV', f"{dbfile.name}[CR][CR]Are you sure?"): return
 	minimum_uses = 30
 	days = dialog.numeric(0, 'Remove Thumbs Older Than (Days)...', defaultt=str(minimum_uses))
 	if not days: return notification('No Days Set')
