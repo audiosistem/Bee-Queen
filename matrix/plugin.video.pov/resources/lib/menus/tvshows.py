@@ -62,15 +62,10 @@ class TVShows:
 			tmdb_id, tvdb_id, imdb_id = meta_get('tmdb_id'), meta_get('tvdb_id'), meta_get('imdb_id')
 			try: tags = [i for i in (imdb_id, string(tmdb_id), string(tvdb_id)) if i not in ('', 'None', None)]
 			except: tags = []
-			if self.all_episodes and self.all_episodes == 1 and total_seasons > 1: url_params = build_url({
-				'mode': 'build_season_list', 'tmdb_id': tmdb_id
-			})
-			elif self.all_episodes: url_params = build_url({
-				'mode': 'build_episode_list', 'tmdb_id': tmdb_id, 'season': 'all'
-			})
-			else: url_params = build_url({
-				'mode': 'build_season_list', 'tmdb_id': tmdb_id
-			})
+			valid_seasons = (True for i in meta_get('season_data') if i['episode_count'])
+			if self.all_episodes == 2 or (self.all_episodes == 1 and sum(valid_seasons) == 1):
+				url_params = build_url({'mode': 'build_episode_list', 'tmdb_id': tmdb_id, 'season': 'all'})
+			else: url_params = build_url({'mode': 'build_season_list', 'tmdb_id': tmdb_id})
 			extras_params = build_url({
 				'mode': 'extras_menu_choice', 'mediatype': 'tvshow',
 				'tmdb_id': tmdb_id, 'is_widget': self.is_widget

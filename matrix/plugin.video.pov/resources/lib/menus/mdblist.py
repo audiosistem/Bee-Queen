@@ -106,7 +106,7 @@ class GetMdblLists(BaseMdblList):
 		if 'source' in item: display = '[COLOR cyan][I]%s[/I][/COLOR]' % display
 		elif item.get('dynamic'): display = '[COLOR magenta][I]%s[/I][/COLOR]' % display
 		elif item.get('private'): display = '[I]%s[/I]' % display
-		plot = '[CR][CR][B]Likes[/B]: %s' % item.get('likes') or 0
+		plot = '[B]Likes[/B]: %s' % item.get('likes')
 		return display, plot
 
 class GetTopLists(BaseMdblList):

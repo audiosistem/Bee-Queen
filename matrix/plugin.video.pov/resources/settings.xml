@@ -14,7 +14,6 @@
 		<setting label="Sources" type="lsep" />
 		<setting id="provider.nyaa" label="nyaa" type="bool" default="false" />
 		<setting id="provider.piratebay" label="piratebay" type="bool" default="true" />
-		<setting id="provider.torrentdownload" label="torrentdownload" type="bool" default="false" />
 		<setting id="provider.torrentio" label="torrentio" type="bool" default="true" />
 		<setting id="provider.torrentsdb" label="torrentsdb" type="bool" default="false" />
 		<setting id="provider.bitmagnet" label="bitmagnet" type="bool" default="false" />
@@ -137,7 +136,6 @@
 		<setting id="trakt.expires" type="text" default="" visible="false" />
 		<setting id="trakt.token" type="text" default="" visible="false" />
 		<setting id="trakt_user" label="Username" type="text" default="" enable="false" />
-		<setting id="trakt.limit" label="Limit Trakt Requests" type="bool" default="false" />
 		<setting id="trakt.reverse" label="Reverse Added/Released Sort Direction" type="bool" default="false" />
 		<!-- MDBList -->
 		<setting label="MDBList" type="lsep" />
@@ -232,7 +230,7 @@
 		<setting id="autoplay_quality_movie" label="Limit Auto Play Quality" type="action" default="SD, 720p, 1080p, 4K" visible="eq(-1,true)" action="RunPlugin(plugin://plugin.video.pov/?mode=set_quality_choice&amp;quality_setting=autoplay_quality_movie)" />
 		<setting id="results_quality_movie" label="Limit Quality" type="action" default="SD, 720p, 1080p, 4K" visible="eq(-2,false)" action="RunPlugin(plugin://plugin.video.pov/?mode=set_quality_choice&amp;quality_setting=results_quality_movie)" />
 		<setting id="auto_resume_movie" label="Automatically Resume Playback" type="enum" default="0" values="Never|Always|Autoplay Only" />
-		<setting id="stingers.enable" label="Enable Credit Scene Notification (Movie Stingers)" type="bool" default="false" />
+		<setting id="stingers.enable" label="Enable Credit Scene Notification (Movie Stingers)" type="bool" default="true" />
 			<setting id="stingers.threshold" label="Notification Threshold (Seconds After Start)" type="slider" default="10" range="10,10,60" option="int" subsetting="true" visible="eq(-1,true)" />
 		<setting label="Episodes" type="lsep" />
 		<setting id="autoscrape_next_episode" label="Autoscrape Next Episode (Source Select)" type="bool" default="false" />
@@ -247,6 +245,7 @@
 			<setting id="autoplay_next_check_threshold" label="Episodes Watched Before Still Watching Check (0=Off)" type="slider" default="3" range="0,1,10" option="int" subsetting="true" visible="eq(-7,true)+eq(-5,true)" />
 		<setting id="results_quality_episode" label="Limit Quality" type="action" default="SD, 720p, 1080p, 4K" visible="eq(-8,false)" action="RunPlugin(plugin://plugin.video.pov/?mode=set_quality_choice&amp;quality_setting=results_quality_episode)" />
 		<setting id="auto_resume_episode" label="Automatically Resume Playback" type="enum" default="0" values="Never|Always|Autoplay Only" />
+		<setting id="skip_intro.enable" label="Show Skip Intro Window" type="bool" default="true" />
 		<!-- Playback Volume -->
 		<setting label="Playback" type="lsep" />
 		<setting id="load_action" label="Loading Progress" type="enum" default="1" values="Background|Full-Screen" />
@@ -334,7 +333,7 @@
 	<!-- Context Menu -->
 	<category label="Context Menu">
 		<!-- Context Menu Sorting -->
-		<setting label="Context Menu Sorting" type="lsep" />
+		<setting label="Context Menu Sorting  (0 = Disable)" type="lsep" />
 		<setting id="context.options" label="Options..." type="slider" default="1" range="0,1,7" option="int" />
 		<setting id="context.extras" label="Extras.../Playback.../Browse..." type="slider" default="2" range="0,1,7" option="int" />
 		<setting id="context.trakt" label="Trakt Lists Manager" type="slider" default="3" range="0,1,7" option="int" />

@@ -5,7 +5,7 @@ from indexers.trakt_api import trakt_fetch_collection_watchlist, trakt_get_my_ca
 from caches.watched_cache import get_resumetime, set_resumetime, get_watched_status_episode, get_watched_info_tv, get_bookmarks, get_next_episodes, get_in_progress_items
 from modules import kodi_utils, settings
 #from modules.utils import jsondate_to_datetime, adjust_premiered_date, make_day, get_datetime, title_key, date_difference, make_thread_list_enumerate
-from modules.utils import adjust_premiered_date, make_day, get_datetime, title_key, date_difference, TaskPool
+from modules.utils import get_next_episode_pointer, adjust_premiered_date, make_day, get_datetime, title_key, date_difference, TaskPool
 # logger = kodi_utils.logger
 
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
@@ -57,7 +57,8 @@ class Episodes:
 			if not meta: return
 			if self.list_type.startswith('next_episode'):
 				props = {'pov_last_played': ep_data_get('last_played', self.resinsert)}
-				orig_season, orig_episode, new_season = get_next_episode_pointer(ep_data_get, meta_get)
+				sn, en = int(ep_data_get('season')), int(ep_data_get('episode'))
+				orig_season, orig_episode, new_season = get_next_episode_pointer(meta, sn, en)
 				if new_season and orig_season > meta_get('total_seasons'): return
 			else:
 				props = {'pov_sort_order': string(ep_data_get('sort', position))}
@@ -87,7 +88,7 @@ class Episodes:
 			else: playcount, overlay = get_watched_status_episode(self.watched_info, string(tmdb_id), season, episode)
 			if self.widget_hide_watched and playcount and not unaired: return
 			resumetime, progress = get_resumetime(self.bookmarks, tmdb_id, season, episode)
-			display = _format_title(self, title, season, episode, ep_name, ep_data_get, episode_date, unaired)
+			display = self._format_title(title, season, episode, ep_name, episode_date, unaired, ep_data_get('unwatched', False))
 			item.update({
 				'title': display, 'premiered': premiered, 'playcount': playcount, 'overlay': overlay,
 				'duration': item_get('duration') or episode_run_time or default_duration
@@ -171,6 +172,28 @@ class Episodes:
 				videoinfo.setResumePoint(*set_resumetime(resumetime, progress, videoinfo.getDuration()))
 			self.append((url_params, listitem, False))
 		except: pass
+
+	def _format_title(self, title, season, episode, ep_name, episode_date, unaired, unwatched):
+		str_season, str_episode = string(season).zfill(1), string(episode).zfill(2)
+		title_string = ''.join([title, ': ']) if self.display_title == 0 else ''
+		seas_ep = ''.join([str_season, 'x', str_episode, ' - ']) if self.display_title in (0, 1) else ''
+		if self.list_type.startswith('next_episode') or self.list_type == 'trakt_calendar':
+			if episode_date: display_premiered = make_day_function(self.current_date, episode_date, self.date_format)
+			else: display_premiered = 'UNKNOWN'
+			if self.list_type.startswith('next_episode'):
+				airdate = ('[[COLOR ', date_label, ']', display_premiered, '[/COLOR]] ') if self.nextep_include_airdate else ''
+				if unaired: highlight_color = self.nextep_unaired_color
+				else: highlight_color = self.nextep_unwatched_color if unwatched else ''
+			else: # trakt_calendar
+				airdate = ('[[COLOR ', date_label, ']', display_premiered, '[/COLOR]] ')
+				highlight_color = unaired_label if unaired else ''
+			italics_open, italics_close = ('[I]', '[/I]') if highlight_color else ('', '')
+			if highlight_color:
+				episode_info = seas_ep, '[COLOR', highlight_color, ']', italics_open, ep_name, italics_close, '[/COLOR]'
+			else: episode_info = seas_ep, italics_open, ep_name, italics_close
+			return ''.join([''.join(airdate), title_string.upper(), ''.join(episode_info)])
+		if unaired: ep_name = '[COLOR %s][I]%s[/I][/COLOR]' % (unaired_label, ep_name)
+		return ''.join([title_string.upper(), seas_ep, ep_name])
 
 class Menu(Episodes):
 	def worker(self):
@@ -265,34 +288,4 @@ class Menu(Episodes):
 		self.items.sort(key=lambda k: int(k[1].getProperty('pov_sort_order')))
 		self.items.sort(key=lambda k: k[1].getProperty('pov_first_aired'), reverse=reverse)
 
-def _format_title(self, title, season, episode, ep_name, ep_data_get, episode_date, unaired):
-	str_season, str_episode = string(season).zfill(1), string(episode).zfill(2)
-	title_string = ''.join([title, ': ']) if self.display_title == 0 else ''
-	seas_ep = ''.join([str_season, 'x', str_episode, ' - ']) if self.display_title in (0, 1) else ''
-	if self.list_type.startswith('next_episode') or self.list_type == 'trakt_calendar':
-		if episode_date: display_premiered = make_day_function(self.current_date, episode_date, self.date_format)
-		else: display_premiered = 'UNKNOWN'
-		if self.list_type.startswith('next_episode'):
-			airdate = ('[[COLOR ', date_label, ']', display_premiered, '[/COLOR]] ') if self.nextep_include_airdate else ''
-			if unaired: highlight_color = self.nextep_unaired_color
-			else: highlight_color = self.nextep_unwatched_color if ep_data_get('unwatched', False) else ''
-		else: # trakt_calendar
-			airdate = ('[[COLOR ', date_label, ']', display_premiered, '[/COLOR]] ')
-			highlight_color = unaired_label if unaired else ''
-		italics_open, italics_close = ('[I]', '[/I]') if highlight_color else ('', '')
-		if highlight_color:
-			episode_info = seas_ep, '[COLOR', highlight_color, ']', italics_open, ep_name, italics_close, '[/COLOR]'
-		else: episode_info = seas_ep, italics_open, ep_name, italics_close
-		return ''.join([''.join(airdate), title_string.upper(), ''.join(episode_info)])
-	if unaired: ep_name = '[COLOR %s][I]%s[/I][/COLOR]' % (unaired_label, ep_name)
-	return ''.join([title_string.upper(), seas_ep, ep_name])
-
-def get_next_episode_pointer(ep_data_get, meta_get):
-	orig_season, orig_episode = ep_data_get('season'), ep_data_get('episode')
-	season_data = meta_get('season_data')
-	episode_count = (i['episode_count'] for i in season_data if i['season_number'] == orig_season)
-	try: max_episodes = next(episode_count)
-	except StopIteration: return orig_season, orig_episode, False
-	if orig_episode >= max_episodes: return orig_season + 1, 1, True
-	return orig_season, orig_episode + 1, False
 

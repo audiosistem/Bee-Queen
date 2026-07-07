@@ -302,8 +302,8 @@ def mark_as_watched_unwatched_tvshow(params):
 	last_played = get_last_played_value(data_base)
 	insert_list = []
 	insert_append = insert_list.append
+	kodi_utils.progressDialogBG.create(wait_str, '')
 	try:
-		kodi_utils.progressDialogBG.create(wait_str, '')
 		meta = metadata.tvshow_meta('tmdb_id', tmdb_id, meta_user_info, current_date)
 		season_data = meta['season_data']
 		season_data = [i for i in season_data if i['season_number'] > 0]
@@ -344,8 +344,8 @@ def mark_as_watched_unwatched_season(params):
 	last_played = get_last_played_value(data_base)
 	insert_list = []
 	insert_append = insert_list.append
+	kodi_utils.progressDialogBG.create(wait_str, '')
 	try:
-		kodi_utils.progressDialogBG.create(wait_str, '')
 		meta = metadata.tvshow_meta('tmdb_id', tmdb_id, meta_user_info, current_date)
 		ep_data = metadata.season_episodes_meta(season, meta, meta_user_info)
 		total = len(ep_data)
@@ -397,7 +397,7 @@ def mark_as_watched_unwatched(watched_indicators, mediatype='', tmdb_id='', acti
 		last_played = get_last_played_value(data_base)
 		dbcon = _database_connect(data_base)
 		dbcur = set_PRAGMAS(dbcon)
-		if action == 'mark_as_watched': 
+		if action == 'mark_as_watched':
 			dbcur.execute(SET_MOVIE_SHOW, (mediatype, tmdb_id, season, episode, last_played, title))
 		elif action == 'mark_as_unwatched':
 			dbcur.execute(DELETE_MOVIE_SHOW, (mediatype, tmdb_id, season, episode))

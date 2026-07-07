@@ -65,19 +65,19 @@ class Seasons(BaseSeason):
 				item_get = item.get
 				season_number, episode_count = item_get('season_number'), item_get('episode_count')
 				poster_path, name = item_get('poster_path'), item_get('name')
+				if not episode_count: continue
 				if poster_path: poster = tmdb_image_base % (self.image_resolution['poster'], poster_path)
 				else: poster = show.poster
 				if season_number == show.total_seasons:
 					episode_date, premiered = adjust_premiered_date(item_get('air_date'), 0)
 					unaired = True if not episode_date or self.current_date < episode_date else False
-				elif episode_count == 0: unaired = True
-				else: unaired = False
+				else: unaired = episode_count == 0
 				if unaired:
-					if not self.show_unaired: return
+					if not self.show_unaired: continue
 					episode_count = 0
 				elif season_number != 0:
+					episode_count = min(episode_count, running_ep_count)
 					running_ep_count -= episode_count
-					if running_ep_count < 0: episode_count = running_ep_count + episode_count
 				display = name if self.use_season_title and name else '%s %s' % (season_str, string(season_number))
 				if unaired: display = '[COLOR %s][I]%s[/I][/COLOR]' % (unaired_label, display)
 				if 'season' in params: display = '%s: %s' % (show.title, display)

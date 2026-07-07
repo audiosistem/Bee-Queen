@@ -4,7 +4,7 @@ from threading import Thread
 from windows import open_window
 from indexers.metadata import tvshow_meta, season_episodes_meta, all_episodes_meta
 from modules import kodi_utils, settings
-from modules.utils import get_datetime, adjust_premiered_date
+from modules.utils import get_next_episode_pointer, adjust_premiered_date, get_datetime
 from modules.sources import Sources
 # from modules.kodi_utils import logger
 
@@ -58,17 +58,15 @@ def get_random_episode(tmdb_id, continual=False):
 def nextep_playback_info(meta):
 	adjust_hours, current_date = settings.date_offset(), get_datetime()
 	meta_get = meta.get
-	tmdb_id, current_season, current_episode = meta_get('tmdb_id'), int(meta_get('season')), int(meta_get('episode'))
-	season_data = meta_get('season_data')
 	try:
-		curr_season_data = [i for i in season_data if i['season_number'] == current_season][0]
-		season = current_season if current_episode < curr_season_data['episode_count'] else current_season + 1
-		episode = current_episode + 1 if current_episode < curr_season_data['episode_count'] else 1
+		sn, en = int(meta_get('season')), int(meta_get('episode'))
+		season, episode, new_season = get_next_episode_pointer(meta, sn, en)
+		if new_season and season > meta_get('total_seasons'): return meta, 'no_next_episode'
 		ep_data = season_episodes_meta(season, meta, settings.metadata_user_info())
-		if not ep_data: return meta, 'no_next_episode'
-		ep_data = [i for i in ep_data if i['episode'] == episode][0]
+		try: ep_data = next((i for i in ep_data if i['episode'] == episode))
+		except: return meta, 'no_next_episode'
 		episode_date, premiered = adjust_premiered_date(ep_data['premiered'], adjust_hours)
-		if current_date < episode_date: return 'no_next_episode'
+		if current_date < episode_date: return meta, 'no_next_episode'
 		custom_title = meta_get('custom_title')
 		title = custom_title or meta_get('title')
 		display_name = '%s - %dx%.2d' % (title, int(season), int(episode))
@@ -78,7 +76,7 @@ def nextep_playback_info(meta):
 		})
 		url_params = {
 			'mode': 'play_media', 'mediatype': 'episode', 'season': season, 'episode': episode,
-			'tmdb_id': tmdb_id, 'tvshowtitle': meta_get('rootname')
+			'tmdb_id': meta_get('tmdb_id'), 'tvshowtitle': meta_get('rootname')
 		}
 		if custom_title: url_params['custom_title'] = custom_title
 	except: url_params = 'error'

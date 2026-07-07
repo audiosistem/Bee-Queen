@@ -21,57 +21,51 @@ import re
 from resources.lib import utils
 from resources.lib.jsunpack import unpack
 from resources.lib.adultsite import AdultSite
-
-site = AdultSite('rlc', '[COLOR hotpink]Reallifecam.to[/COLOR]', 'https://reallifecam.to/', 'https://reallifecam.to/images/logo/logo.png', 'rlc')
-# site1 = AdultSite('vh', '[COLOR hotpink]Voyeur-house.to[/COLOR]', 'https://voyeur-house.to/', 'https://voyeur-house.to/images/logo/logo.png', 'vh')
-site2 = AdultSite('vhlife', '[COLOR hotpink]Voyeur-house[/COLOR]', 'https://www.voyeur-house.me/', 'https://www.voyeur-house.me/images/logo/logo.png', 'vhlife')
-site3 = AdultSite('vhlife1', '[COLOR hotpink]Reallifecams.us[/COLOR]', 'https://reallifecams.us/', 'https://reallifecams.us/images/logo/logo.png', 'vhlife1')
+import xbmc
+import xbmcgui
+from six.moves import urllib_parse
 
 
-def getBaselink(url):
-    if 'reallifecam.to' in url:
-        siteurl = site.url
-    # elif 'voyeur-house.to' in url:
-    #     siteurl = site1.url
-    elif 'voyeur-house' in url:
-        siteurl = site2.url
-    elif 'reallifecams' in url:
-        siteurl = site3.url
-    return siteurl
-
+site = AdultSite('camcaps', '[COLOR hotpink]Camcaps[/COLOR]', 'https://camcaps.io/', 'https://camcaps.io/images/logo/logo.png', 'camcaps')
 
 @site.register(default_mode=True)
-# @site1.register(default_mode=True)
-@site2.register(default_mode=True)
-@site3.register(default_mode=True)
 def Main(url):
-    siteurl = getBaselink(url)
-    site.add_dir('[COLOR hotpink]Categories[/COLOR]', siteurl + 'categories', 'Categories', site.img_cat)
-    site.add_dir('[COLOR hotpink]Search[/COLOR]', siteurl + 'search/videos?search_query=', 'Search', site.img_search)
-    List(siteurl + 'videos?o=mr')
+    site.add_dir('[COLOR hotpink]Categories[/COLOR]', site.url + 'categories', 'Categories', site.img_cat)
+    site.add_dir('[COLOR hotpink]Search[/COLOR]', site.url + 'search/videos/', 'Search', site.img_search)
+    List(site.url + 'videos?o=mr')
 
 
 @site.register()
 def List(url):
-    siteurl = getBaselink(url)
     listhtml = utils.getHtml(url, '')
 
-    # match = re.compile(r'col-sm-6.+?<a href="([^"]+)".+?img src="([^"]+)" title="([^"]+)"(.+?)class="duration">\s*([\d:]+)', re.DOTALL | re.IGNORECASE).findall(listhtml)
-    match = re.compile(r'col-sm-6.+?<a href="([^"]+)".+?img src="([^"]+)" title="([^"]+)"(.+?)class="duration">\D*([\d:]+)', re.DOTALL | re.IGNORECASE).findall(listhtml)
+    delimiter = 'col-sm-6|article class="thumb"'
+    re_videopage = 'href="([^"]+)"'
+    re_name = 'title="([^"]+)"'
+    re_img = 'img src="([^"]+)"'
+    re_duration = r'"dur-icon">([\d:]+)'
 
-    for videopage, img, name, quality, duration in match:
-        name = utils.cleantext(name)
-        if videopage.startswith('/'):
-            videopage = siteurl[:-1] + videopage
-        hd = 'HD' if '>HD<' in quality else ''
-        site.add_download_link(name, videopage, 'Playvid', img, name, duration=duration, quality=hd)
-    try:
-        next_page = re.compile('href="([^"]+)" class="prevnext"', re.DOTALL | re.IGNORECASE).findall(listhtml)[0]
-        page_nr = re.findall(r'\d+', next_page)[-1]
-        site.add_dir('Next Page ({})'.format(page_nr), next_page, 'List', site.img_next)
-    except:
-        pass
+    utils.videos_list(site, 'camcaps.Play', listhtml, delimiter, re_videopage, re_name, re_img, re_duration=re_duration)
+
+    re_npurl = r'<a class="active".+?<a href="([^"]+)"'
+    re_npnr = r'<a class="active".+?<a href="[^"]+">(\d+)<'
+    re_lpnr = r'>(\d+)</a>\s*<a class="next"'
+
+    utils.next_page(site, 'camcaps.List', listhtml, re_npurl, re_npnr, re_lpnr=re_lpnr, contextm='camcaps.GotoPage')
     utils.eod()
+
+
+@site.register()
+def GotoPage(list_mode, url, np, lp):
+    dialog = xbmcgui.Dialog()
+    pg = dialog.numeric(0, 'Enter Page number')
+    if pg:
+        if int(lp) > 0 and int(pg) > int(lp):
+            utils.notify(msg='Out of range!')
+            return
+        url = url.replace('page={}'.format(np), 'page={}'.format(pg))
+        contexturl = (utils.addon_sys + "?mode=" + str(list_mode) + "&url=" + urllib_parse.quote_plus(url))
+        xbmc.executebuiltin('Container.Update(' + contexturl + ')')
 
 
 @site.register()
@@ -80,26 +74,23 @@ def Search(url, keyword=None):
     if not keyword:
         site.search_dir(url, 'Search')
     else:
-        title = keyword.replace(' ', '%20')
+        title = keyword.replace(' ', '-')
         searchUrl = searchUrl + title
         List(searchUrl)
 
 
 @site.register()
 def Categories(url):
-    siteurl = getBaselink(url)
     cathtml = utils.getHtml(url, '')
-    match = re.compile(r'col-sm.+?a href="([^"]+)">.+?img src="([^"]+)"\s*title="([^"]+)".+?"float-right">\s*(\d+)\s*<', re.DOTALL | re.IGNORECASE).findall(cathtml)
+    match = re.compile(r'<article class="thumb.+?href="([^"]+)".+?img src="([^"]+)"\stitle="([^"]+)".+?class="videos-icon">(\d+)<', re.DOTALL | re.IGNORECASE).findall(cathtml)
     for catpage, img, name, videos in match:
-        catpage = siteurl[:-1] + catpage if catpage.startswith('/') else catpage
-        img = siteurl[:-1] + img if img.startswith('/') else site.img_cat
-        name = utils.cleantext(name.strip()).title() + " [COLOR deeppink]" + videos + "[/COLOR]"
+        name = utils.cleantext(name.strip()).title() + " [COLOR deeppink] (" + videos + " videos)[/COLOR]"
         site.add_dir(name, catpage, 'List', img)
     utils.eod()
 
 
 @site.register()
-def Playvid(url, name, download=None):
+def Play(url, name, download=None):
     vp = utils.VideoPlayer(name, download)
     vp.progress.update(25, "[CR]Loading video page[CR]")
     videopage = utils.getHtml(url)

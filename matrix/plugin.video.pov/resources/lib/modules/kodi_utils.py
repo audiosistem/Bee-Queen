@@ -418,7 +418,8 @@ def open_settings(query, addon='plugin.video.pov'):
 	execute_builtin('Addon.OpenSettings(%s)' % addon)
 	if not query: return
 	try:
-		button, control = 100, 80
+		if get_kodi_version() < 20: button, control = 100, 80
+		else: button, control = 200, 180
 		menu, function = query.split('.')
 		execute_builtin('SetFocus(%i)' % (int(menu) - button))
 		execute_builtin('SetFocus(%i)' % (int(function) - control))

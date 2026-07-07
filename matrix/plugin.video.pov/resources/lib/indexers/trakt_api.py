@@ -46,8 +46,8 @@ def call_trakt(path, params=None, data=None, with_auth=True, method=None, pagina
 		logger('trakt error', str(e))
 
 def _get_trakt_paginated_list(url):
-	try: params = {'limit': 250 if get_setting('trakt.limit') == 'true' else 1000, 'page': 1}
-	except: params = {'limit': 250, 'page': 1}
+	if 'extended=progress' in url: params = {'limit': 100, 'page': 1}
+	else: params = {'limit': 250, 'page': 1}
 	try: items, pages = call_trakt(url, params=params, pagination=True)
 	except: return []
 	if pages <= 1: return items

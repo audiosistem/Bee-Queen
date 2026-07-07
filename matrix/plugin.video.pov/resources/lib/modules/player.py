@@ -29,6 +29,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.art_provider = (*get_art_provider(), poster_empty, fanart_empty)
 		self.stinger_enabled = get_setting('stingers.enable') == 'true'
 		self.stinger_check = int(get_setting('stingers.threshold', '30'))
+		self.skip_intro_enabled = get_setting('skip_intro.enable', 'true') == 'true'
 		self.volume_check = get_setting('volumecheck.enabled', 'false') == 'true'
 
 	def onAVStarted(self):
@@ -46,8 +47,9 @@ class POVPlayer(kodi_utils.xbmc_player):
 		try:
 			self.meta = meta or {}
 			self.meta_get = self.meta.get
-			self.tmdb_id, self.imdb_id, self.tvdb_id = self.meta_get('tmdb_id'), self.meta_get('imdb_id'), self.meta_get('tvdb_id')
-			self.mediatype, self.title, self.year = self.meta_get('mediatype'), self.meta_get('title'), self.meta_get('year')
+			self.tmdb_id, self.imdb_id = self.meta_get('tmdb_id'), self.meta_get('imdb_id')
+			self.title, self.year = self.meta_get('title'), self.meta_get('year')
+			self.mediatype, self.tvdb_id = self.meta_get('mediatype'), self.meta_get('tvdb_id')
 			self.season, self.episode = self.meta_get('season', ''), self.meta_get('episode', '')
 			if any(i in self.meta for i in ('random', 'random_continual')): bookmark = 0
 			else: bookmark = self.bookmarkPOV()
@@ -140,7 +142,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 			if total_time: break
 		else: return
 		self.intro, self.credits = SegmentScraper(self.imdb_id, self.season, self.episode).run()
-		if self.intro is not None:
+		if self.intro is not None and self.skip_intro_enabled:
 			self.exec_task('skip_intro')
 		if self.play_random_continual or self.autoplay_next_episode or self.autoscrape_next_episode:
 			self.info_next_ep()

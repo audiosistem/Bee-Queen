@@ -20,6 +20,9 @@ import re
 from resources.lib import utils
 from resources.lib.adultsite import AdultSite
 import json
+import xbmc
+from six.moves import urllib_parse
+
 
 site = AdultSite('noodlemagazine', '[COLOR hotpink]Noodlemagazine[/COLOR]', 'https://noodlemagazine.com/', 'noodlemagazine.png', 'noodlemagazine')
 
@@ -65,38 +68,44 @@ def Main(url):
     site.add_download_link(getFilterLabels(), site.url, 'setFilters', '')
     site.add_dir('[COLOR hotpink]Search[/COLOR]', site.url + 'video/', 'Search', site.img_search)
     site.add_dir('[COLOR hotpink]Babepedia Top 100 Pornstar to search for[/COLOR]', 'https://www.babepedia.com/pornstartop100', 'Babepedia', site.img_search)
+    List(site.url + 'now' + getFilters(0), page=0)
     utils.eod()
 
 
 @site.register()
 def List(url, page=0):
-    try:
-        listhtml = utils.getHtml(url, '')
-    except Exception:
-        return None
+    listhtml = utils.getHtml(url, '')
 
-    match = re.compile(r'class="item">\s+?<a href="/([^"]+)".*?data-src="([^"]+)".*?alt="([^"]+)">(.*?)</div>.*?</svg> ([^<]+)<', re.DOTALL | re.IGNORECASE).findall(listhtml)
-    for videopage, img, name, hd, duration in match:
-        name = utils.cleantext(name)
-        videopage = site.url + videopage
-        hd = " [COLOR orange]HD[/COLOR]" if 'hd_mark' in hd else ''
-        if 'getVideoPreview' in img:
-            i1, i2 = img.split('/getVideoPreview')
-            img = 'https://' + i1.split('/')[-1] + '/getVideoPreview' + i2
-        img = img.replace('&amp;', '&') + '|User-Agent=' + utils.USER_AGENT
+    if 'data-i18n="nothing_found">' in listhtml:
+        utils.notify('No results found', 'Try a different search term')
+        return
 
-        site.add_download_link(name, videopage, 'Playvid', img, name, duration=duration, quality=hd)
+    delimiter = '<div class="item">'
+    re_videopage = '<a href="([^"]+)"'
+    re_name = 'class="title">([^<]+)<'
+    re_img = 'src="([^"]+jpg)"'
+    re_duration = r'</svg>\s*([:\d]+)<'
+    re_quality = r'class="hd_mark">([^<]+)<'
+    skip = '${video.title}'
 
-    np = re.compile('class="more" data-page="([^"]+)">', re.DOTALL | re.IGNORECASE).search(listhtml)
+    cm = []
+    cm_lookupinfo = (utils.addon_sys + "?mode=noodlemagazine.Lookupinfo&url=")
+    cm.append(('[COLOR deeppink]Lookup info[/COLOR]', 'RunPlugin(' + cm_lookupinfo + ')'))
+    cm_related = (utils.addon_sys + "?mode=noodlemagazine.Related&url=")
+    cm.append(('[COLOR deeppink]Related videos[/COLOR]', 'RunPlugin(' + cm_related + ')'))
+
+    utils.videos_list(site, 'noodlemagazine.Play', listhtml, delimiter, re_videopage, re_name, re_img, re_duration=re_duration, re_quality=re_quality, contextm=cm, skip=skip)
+
+    np = re.compile('class="more" data-page="([^"]+)" data-i18n="show_more"', re.DOTALL | re.IGNORECASE).search(listhtml)
     if np:
         np = np.group(1)
         nextp = url.replace('p=' + str(page), 'p=' + np)
-        site.add_dir('Next Page ({})'.format(np), nextp, 'List', site.img_next, page=np)
+        site.add_dir('Next Page ({})'.format(int(np) + 1), nextp, 'List', site.img_next, page=np)
     utils.eod()
 
 
 @site.register()
-def Playvid(url, name, download=None):
+def Play(url, name, download=None):
     vp = utils.VideoPlayer(name, download)
     vp.progress.update(25, "[CR]Loading video page[CR]")
     html = utils.getHtml(url, site.url)
@@ -106,7 +115,8 @@ def Playvid(url, name, download=None):
         src = js["sources"]
         sources = {x["label"]: x["file"] for x in src}
         videourl = utils.prefquality(sources, sort_by=lambda x: int(''.join([y for y in x if y.isdigit()])), reverse=True)
-        videourl = videourl + '|Referer=' + site.url
+        if videourl:
+            videourl += '|Referer=' + site.url
         vp.play_from_direct_link(videourl)
     else:
         utils.notify('Oh oh', 'No video found')
@@ -183,3 +193,19 @@ def getDefaults():
                     }
                 }
     return default_items
+
+
+@site.register()
+def Related(url):
+    contexturl = (utils.addon_sys + "?mode=" + str('noodlemagazine.List') + "&url=" + urllib_parse.quote_plus(url))
+    xbmc.executebuiltin('Container.Update(' + contexturl + ')')
+
+
+@site.register()
+def Lookupinfo(url):
+    lookup_list = [
+        ("Tags", r'<a class="vtag" href="/([^"]+)".+?</svg>([^<]+)</a>', ''),
+    ]
+    lookupinfo = utils.LookupInfo(site.url, url, 'noodlemagazine.List', lookup_list)
+    lookupinfo.getinfo()
+

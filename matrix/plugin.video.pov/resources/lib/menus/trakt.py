@@ -180,12 +180,6 @@ class GetTrendingPopularLists(BaseTraktList):
 	def parse_item(self, item):
 		return item['list'], 'user_lists'
 
-	def get_display_and_plot(self, item, name, item_count, user):
-		if item_count: display = '[B]%s[/B] | [I](x%s) - %s[/I]' % (name, item_count, user)
-		else: display = '[B]%s[/B] | [I]%s[/I]' % (name, user)
-		plot = '[B]Link[/B]: [I]%s[/I][CR][CR][B]Likes[/B]: %s' % (item['share_link'], item['likes'])
-		return display, plot
-
 class TraktListBuilder(list_helper.BaseMediaListBuilder):
 	mode = 'build_trakt_list'
 

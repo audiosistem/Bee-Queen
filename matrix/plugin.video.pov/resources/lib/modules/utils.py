@@ -77,6 +77,12 @@ def string_alphanum_to_num(string):
 	try: return ''.join(c for c in string if c.isdigit())
 	except ValueError: return string
 
+def get_next_episode_pointer(meta, current_season, current_episode):
+	season_data = meta.get('season_data', [])
+	season_info = next((i for i in season_data if i['season_number'] == current_season), None)
+	if season_info and current_episode >= season_info['episode_count']: return current_season + 1, 1, True
+	return current_season, current_episode + 1, False
+
 def jsondate_to_datetime(jsondate_object, resformat=None):
 	if resformat: return datetime_workaround(jsondate_object, resformat)
 	return datetime.fromisoformat(jsondate_object.replace('Z', '+00:00'))

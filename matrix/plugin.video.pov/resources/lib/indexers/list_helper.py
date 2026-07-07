@@ -31,7 +31,7 @@ class BaseList:
 	def get_display_and_plot(self, item, name, item_count, user):
 		if item_count: display = '[B]%s[/B] | [I](x%s) - %s[/I]' % (name, str(item_count), user)
 		else: display = '[B]%s[/B] | [I]%s[/I]' % (name, user)
-		plot = '[CR][CR][B]Likes[/B]: %s' % item.get('likes') or 0
+		plot = '[B]Likes[/B]: %s' % item.get('likes')
 		return display, plot
 
 	def add_next_page(self):

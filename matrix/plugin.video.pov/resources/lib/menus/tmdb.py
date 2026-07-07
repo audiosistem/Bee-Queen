@@ -90,9 +90,9 @@ def trakt_list_to_tmdb(params, api):
 	from indexers.trakt_api import get_trakt_list_contents
 	from modules.utils import chunks
 	send_str = 'Sending list to TMDB...'
+	progressBG = kodi_utils.progressDialogBG
+	progressBG.create(send_str, api.tmdblist_heading)
 	try:
-		progressBG = kodi_utils.progressDialogBG
-		progressBG.create(send_str, api.tmdblist_heading)
 		list_id, user, slug = params['trakt_list_id'], params['user'], params['list_slug']
 		items = get_trakt_list_contents(params.get('list_type'), list_id, user, slug)
 		len_items, wait = len(items), sum(1000 for i in chunks(items, 500))
@@ -114,9 +114,9 @@ def mdbl_list_to_tmdb(params, api):
 	from indexers.mdblist_api import get_mdbl_list_contents
 	from modules.utils import chunks
 	send_str = 'Sending list to TMDB...'
+	progressBG = kodi_utils.progressDialogBG
+	progressBG.create(send_str, api.tmdblist_heading)
 	try:
-		progressBG = kodi_utils.progressDialogBG
-		progressBG.create(send_str, api.tmdblist_heading)
 		items = get_mdbl_list_contents(params.get('list_type'), params['mdbl_list_id'])
 		len_items, wait = len(items), sum(1000 for i in chunks(items, 500))
 		for count, item in enumerate(items, 1):
