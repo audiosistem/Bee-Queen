@@ -13,7 +13,8 @@
         <setting id="show18" type="bool" label="Show Leia (v18.0) Builds" default="true"/>
         <setting id="show19" type="bool" label="Show Matrix (v19.0) Builds" default="true"/>
 		<setting id="show20" type="bool" label="Show Nexus (v20.0) Builds" default="true"/>
-		<setting id="show20" type="bool" label="Show Omega (v21.0) Builds" default="true"/>
+		<setting id="show21" type="bool" label="Show Omega (v21.0) Builds" default="true"/>
+		<setting id="show22" type="bool" label="Show Pierse (v22.0) Builds" default="true"/>
         <setting id="separate" type="bool" label="Do not separate based off version" default="true"/>
         
         <!-- Hidden Settings -->
