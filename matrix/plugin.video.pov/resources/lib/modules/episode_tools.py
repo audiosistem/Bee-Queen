@@ -11,6 +11,22 @@ from modules.sources import Sources
 ls, build_url = kodi_utils.local_string, kodi_utils.build_url
 nextep_str, nores_str = ls(32801), ls(32760)
 
+def SmartPlay(params):
+	tmdb_id = params.get('tmdb_id')
+	if not tmdb_id: return kodi_utils.notification(32574)
+	from caches.watched_cache import get_next_episodes
+	meta_user_info, current_date = settings.metadata_user_info(), get_datetime()
+	watched_info = get_next_episodes(settings.watched_indicators())
+	watched_info = next((i for i in watched_info if i['media_ids']['tmdb'] == str(tmdb_id)), None)
+	if watched_info: season, episode = int(watched_info['season']), int(watched_info['episode'])
+	else: season, episode = 1, 0
+	meta = tvshow_meta('tmdb_id', tmdb_id, meta_user_info, current_date)
+	meta.update({'season': season, 'episode': episode})
+	nextep_meta, nextep_params = nextep_playback_info(meta)
+	if nextep_params == 'error': return kodi_utils.notification(32574)
+	if nextep_params == 'no_next_episode': return kodi_utils.notification('%s %s' % (nextep_str, nores_str))
+	Sources.factory(nextep_params)
+
 def get_random_episode(tmdb_id, continual=False):
 	meta_user_info, adjust_hours, current_date = settings.metadata_user_info(), settings.date_offset(), get_datetime()
 	tmdb_key = str(tmdb_id)
@@ -126,7 +142,7 @@ def execute_nextep(player, meta, nextep_settings):
 
 def _continue_action(run_popup, nextep_meta, function='next_ep'):
 	if not run_popup: return 'close'
-	return open_window(('windows.next_episode', 'NextEpisode'), 'next_episode.xml', meta=nextep_meta, function=function)
+	return open_window(('windows.episodes', 'NextEpisode'), 'episodes.xml', meta=nextep_meta, function=function)
 
 def _confirm_threshold(nextep_settings, nextep_meta):
 	nextep_threshold = nextep_settings['threshold']

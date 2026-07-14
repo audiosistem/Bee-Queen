@@ -5,7 +5,7 @@ from caches.main_cache import cache_object
 from caches.meta_cache import cache_function
 from modules import kodi_utils
 from modules.settings import get_language, show_unaired_watchlist, ignore_articles, lists_sort_order, paginate, page_limit
-from modules.utils import paginate_list, sort_for_article, jsondate_to_datetime, get_datetime, TaskPool
+from modules.utils import paginate_list, sort_for_article, jsondate_to_datetime, get_datetime, chunks, TaskPool
 
 ls, logger = kodi_utils.local_string, kodi_utils.logger
 get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting
@@ -23,8 +23,7 @@ session.mount('https://api.themoviedb.org', requests.adapters.HTTPAdapter(pool_m
 
 def get_tmdb(url):
 	try:
-		if 'api_key' in url: response = session.get(url, timeout=timeout) # residual history possible, remove later
-		else: response = session.get(url, headers={'Authorization': 'Bearer %s' % READ_TOKEN}, timeout=timeout)
+		response = session.get(url, headers={'Authorization': 'Bearer %s' % READ_TOKEN}, timeout=timeout)
 		result = response.json() if 'json' in response.headers.get('Content-Type', '') else response.text
 		if not response.ok: response.raise_for_status()
 		return result
@@ -73,9 +72,15 @@ def tmdb_movies_title_year(title, year=None):
 		url = '%s/search/movie?language=en-US&query=%s' % (base_url, title)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_MONTH)
 
+def tmdb_oscar_winners(page_no):
+	from modules.meta_lists import oscar_winners
+	results = [[{'id': x} for x in i] for i in chunks(oscar_winners, 20)]
+	return {'page': page_no, 'total_pages': len(results), 'results': results[page_no - 1]}
+
 def tmdb_movies_popular(page_no):
 	string = 'tmdb_movies_popular_%s' % page_no
-	url = '%s/movie/popular?language=en-US&region=US&page=%s' % (base_url, page_no)
+	url = '%s/discover/movie?with_original_language=en&language=en-US&region=US&page=%s' % (base_url, page_no)
+	url += '&sort_by=popularity.desc'
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_movies_blockbusters(page_no):
@@ -156,8 +161,8 @@ def tmdb_tv_title_year(title, year=None):
 
 def tmdb_tv_popular(page_no):
 	string = 'tmdb_tv_popular_%s' % page_no
-	url = '%s/discover/tv?language=en-US&region=US&page=%s' % (base_url, page_no)
-	url += '&sort_by=popularity.desc&with_original_language=en&without_genres=10763,10767'
+	url = '%s/discover/tv?with_original_language=en&language=en-US&region=US&page=%s' % (base_url, page_no)
+	url += '&sort_by=popularity.desc&without_genres=10763,10767'
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_tv_premieres(page_no):
@@ -170,7 +175,7 @@ def tmdb_tv_premieres(page_no):
 def tmdb_tv_upcoming(page_no):
 	current_date, future_date = get_dates(31, reverse=False)
 	string = 'tmdb_tv_upcoming_%s' % page_no
-	url = '%s/discover/tv?with_original_language=en&language=en-US&page=%s' % (base_url, page_no)
+	url = '%s/discover/tv?with_original_language=en&language=en-US&region=US&page=%s' % (base_url, page_no)
 	url += '&sort_by=popularity.desc&first_air_date.gte=%s&first_air_date.lte=%s' % (current_date, future_date)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 

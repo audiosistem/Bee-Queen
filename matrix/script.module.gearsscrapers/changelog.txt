@@ -1,32 +1,34 @@
-[COLORcyan] VERSION 1.4.6[/COLOR]
+[COLORcyan] VERSION 1.4.7[/COLOR]
 
-[COLOR cyan][B]SETTINGS OVERHAUL[/B][/COLOR]
 
-• Complete settings menu reworked for improved navigation and usability.
+Settings & Configuration Framework
 
-• Providers have been reorganized into dedicated sections, making it easier to manage recommended and secondary torrent providers.
+• Completely refactored the settings architecture, delivering a redesigned configuration interface with improved navigation, logical categorisation, and enhanced overall usability.
+• Reorganised all provider settings into dedicated categories, separating recommended providers from secondary providers to simplify configuration and improve long-term maintainability.
+• Introduced a dedicated Pack Providers category, allowing users to easily identify providers capable of returning complete Season Packs and Series Packs for improved scraping efficiency.
 
-• Added a dedicated Pack Providers section highlighting providers capable of returning season and series packs.
+Prowlarr Integration
 
-• Added a dedicated Debrid Services section for supported services:
+• Implemented native Prowlarr configuration support, including dedicated fields for server URL and API key authentication, enabling seamless integration with external indexer management.
 
-Premiumize
-AllDebrid
-TorBox
-EasyNews
-Real-Debrid
+• Scraper Enhancements
 
-• Added Prowlarr integration section with dedicated URL and API key configuration options.
+•  Setup section featuring recommended provider configuration guidelines to optimise  compatibility, improve provider selection, and maximise scraping performance.
 
-• Added DMM Setup section with recommended provider configuration guidance for optimal DMM performance.
+Torrent Quality Controls
 
-• Added Minimum Seeders setting to allow better control over torrent quality and reliability.
+• Introduced a configurable Minimum Seeders filter, providing greater control over torrent quality, source reliability, and result prioritisation.
 
-• Improved Maintenance section with easier access to:
+Maintenance Improvements
 
-Provider Health Testing
-Settings Cleanup
-Changelog Viewing
+• Refined and expanded the Maintenance section with streamlined access to essential diagnostic and management tools, including:
+• Provider Health Testing
+• Settings Cleanup
+• Integrated Changelog Viewer
+
+Backend Improvements
+
+• Performed extensive internal configuration refactoring and codebase optimisation to improve scalability, maintainability, and overall settings management performance.
 
 • Improved Advanced section with streamlined debugging and logging controls.
 

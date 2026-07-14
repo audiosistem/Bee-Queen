@@ -39,7 +39,7 @@
       <screenshot>resources/screenshot-3.jpg</screenshot>
     </assets>
   </extension>
-</addon><addon id="plugin.audio.mp3streams" name="MP3 Streams" version="2026.05.26" provider-name="Jon Bovi, [COLOR crimson]King Krimson[/COLOR]">
+</addon><addon id="plugin.audio.mp3streams" name="MP3 Streams" version="2026.07.15" provider-name="Jon Bovi, [COLOR crimson]King Krimson[/COLOR]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.future" />
@@ -50,15 +50,15 @@
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>audio</provides>
     </extension>
-    <extension point="xbmc.service" library="playerMP3.py" start="startup" />
+    <extension point="xbmc.service" library="playerMP3.py" />
     <extension point="xbmc.addon.metadata">
         <platform>all</platform>
-        <summary>A music streaming Collection.</summary>
-        <description>MP3 Streams Kodi 19+</description>
-        <news>2026.05.26 - Downloads, favorites, dialogs, navigation, see the changelog. 2025.0.1 - Fix Billboard Charts, 2022.0.2 - Fix errors loading pages. 2022.0.1 - Small fix, Kodi 20 ready. 2021.0.6 - Fixed issue with hanging  when skipping tracks. 2021.0.4 - Fixed Settings, 2021.0.3 - Bugfixes. Enjoy!</news>
+        <summary>A Music Streaming Collection</summary>
+        <description>MP3 Streams for Kodi 19+</description>
+        <news>2026.07.15 - Fixed missing genre icons. 2026.07.14 - Kodi 19+ metadata compliance (language .po, service declaration), single-track downloads keep track numbers, collab albums download flat, thank you JMAN730. See the changelog. Enjoy!</news>
         <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
+            <icon>art/icon.png</icon>
+            <fanart>art/fanart.jpg</fanart>
         </assets>
     </extension>
 </addon><addon id="plugin.audio.radio_de_light" name="Radio light" provider-name="fivebanger, Publish3r" version="1.0.2">
@@ -1019,7 +1019,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.07.02" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.07.06" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -1027,7 +1027,7 @@ In addition to what livestreams allowed you to do, you can now,
 	<extension point="xbmc.python.pluginsource" library="resources/lib/router.py">
 		<provides>video</provides>
 	</extension>
-	
+	<extension point="xbmc.service" library="resources/lib/service.py" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
@@ -3322,7 +3322,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="script.module.gearsscrapers" version="1.4.6" name="Gears Scrapers" provider-name="gearsscrapers">
+</addon><addon id="script.module.gearsscrapers" version="1.4.7" name="Gears Scrapers" provider-name="gearsscrapers">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -3430,7 +3430,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
     <news>0.1.3:
 - Fix non-UTF-8 byte string decoding in Python 2.</news>
   </extension>
-</addon><addon id="script.module.magneto" version="6.06.01" name="Magneto Module" provider-name="Magneto">
+</addon><addon id="script.module.magneto" version="6.07.03" name="Magneto Module" provider-name="Magneto">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -3840,7 +3840,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="script.module.viperscrapers" name="Viper Scrapers" version="1.5.3" provider-name="Jax">
+</addon><addon id="script.module.viperscrapers" name="Viper Scrapers" version="1.5.4" provider-name="Jax">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -3848,7 +3848,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
 	<extension point="xbmc.python.pluginsource" library="lib/default.py">
 		<provides>executable</provides>
 	</extension> 
-	
+	<extension point="xbmc.service" library="lib/service.py" start="startup" />
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>false</reuselanguageinvoker>

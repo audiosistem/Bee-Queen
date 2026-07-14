@@ -25,7 +25,7 @@ class TorBoxAPI:
 		except session.custom_errors: return kodi_utils.notification('%s timeout' % __name__)
 		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
 		response = response.json() if 'json' in response.headers.get('Content-Type', '') else response
-		if 'data' in response and 'success' in response and 'control' not in path: response = response['data']
+		if not self._is_control(path) and 'data' in response and 'success' in response: response = response['data']
 		return response
 
 	def _get(self, path, params=None):
@@ -33,6 +33,9 @@ class TorBoxAPI:
 
 	def _post(self, path, params=None, json=None, data=None):
 		return self._request('post', path, params=params, json=json, data=data)
+
+	def _is_control(self, path):
+		return any(i in path for i in ('control', 'edit'))
 
 	def headers(self):
 		return {'User-Agent': user_agent, 'Authorization': 'Bearer %s' % self.token}
@@ -173,6 +176,14 @@ class TorBoxAPI:
 		for i in result['files']: i['link'] = '%s,%s,%s' % (request_id, i['id'], mediatype)
 		result = result['files']
 		return result
+
+	def toggle_airlock(self, mediatype, request_id, airlock_value):
+		if 'usenet' in mediatype: path, key = 'usenet/editusenetdownload', 'usenet_download_id'
+		elif 'webdl' in mediatype: path, key = 'webdl/editwebdownload', 'webdl_id'
+		else: path, key = 'torrents/edittorrent', 'torrent_id'
+		data = {key: request_id, 'airlocked': airlock_value in ('true', True)}
+		result = self._request('put', path, json=data)
+		return True if result is not None and result['success'] else False
 
 	def clear_cache(*args):
 		from modules.kodi_utils import clear_property, path_exists, database_connect, maincache_db

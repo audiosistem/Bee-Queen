@@ -1,4 +1,3 @@
-import sys
 from threading import Thread
 from indexers.metadata import tvshow_meta, art_infodict, movie_show_infodict
 from caches.watched_cache import get_watched_info_tv, get_watched_status_tvshow
@@ -37,8 +36,11 @@ class TVShows:
 		self.include_year_in_title = settings.include_year_in_title('tvshow')
 		self.open_extras = settings.extras_open_action('tvshow')
 		self.cm_sort = settings.context_menu_sort()
-		self.is_folder = False if self.open_extras else True
+		self.smart_play = settings.smart_play_enabled()
 		self.is_widget = kodi_utils.external_browse()
+		if self.open_extras or self.smart_play == 2 or (self.smart_play == 1 and self.is_widget):
+			self.is_folder = False
+		else: self.is_folder = True
 		self.widget_hide_watched = self.is_widget and self.meta_user_info['widget_hide_watched']
 		if not self.exit_list_params: self.exit_list_params = get_infolabel('Container.FolderPath')
 		self.art_provider = (*settings.get_art_provider(), poster_empty, fanart_empty)
@@ -63,7 +65,9 @@ class TVShows:
 			try: tags = [i for i in (imdb_id, string(tmdb_id), string(tvdb_id)) if i not in ('', 'None', None)]
 			except: tags = []
 			valid_seasons = (True for i in meta_get('season_data') if i['episode_count'])
-			if self.all_episodes == 2 or (self.all_episodes == 1 and sum(valid_seasons) == 1):
+			if self.smart_play == 2 or (self.smart_play == 1 and self.is_widget):
+				url_params = build_url({'mode': 'smart_play_media', 'tmdb_id': tmdb_id})
+			elif self.all_episodes == 2 or (self.all_episodes == 1 and sum(valid_seasons) == 1):
 				url_params = build_url({'mode': 'build_episode_list', 'tmdb_id': tmdb_id, 'season': 'all'})
 			else: url_params = build_url({'mode': 'build_season_list', 'tmdb_id': tmdb_id})
 			extras_params = build_url({
@@ -175,9 +179,9 @@ class Menu(TVShows):
 		return self.items
 
 	def run(self):
+		__handle__ = int(kodi_utils.argv1())
 		try:
 			params_get = self.params.get
-			__handle__ = int(sys.argv[1])
 			view_type, content_type = 'view.tvshows', 'tvshows'
 			mode, category = params_get('mode'), ls(params_get('name'))
 			try: page_no = int(params_get('new_page', '1'))

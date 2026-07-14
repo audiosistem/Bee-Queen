@@ -195,6 +195,19 @@ class Source:
 		if result: notification(32576)
 		else: notification(32575)
 
+	def manual_airlock_to_cloud(self):
+		if not confirm_dialog(text=ls(32831) % self.debrid.upper()): return
+		show_busy_dialog()
+		api = import_debrid(self.debrid)
+		api.clear_cache()
+		request_id = api.create_transfer(self.url)
+		if not request_id: return notification(32575)
+		mediatype = 'torrents' if self.url.startswith('magnet') else 'usenet'
+		result = api.toggle_airlock(mediatype, request_id, True)
+		hide_busy_dialog()
+		if result: notification(32576)
+		else: notification(32575)
+
 	def manual_add_magnet_to_cloud(self):
 		if not confirm_dialog(text=ls(32831) % self.debrid.upper()): return
 		show_busy_dialog()

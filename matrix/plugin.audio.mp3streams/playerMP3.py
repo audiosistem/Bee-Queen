@@ -151,7 +151,7 @@ ADDON      =  xbmcaddon.Addon(ADDONID)
 HOME       =  xbmcvfs.translatePath(ADDON.getAddonInfo('path'))
 PROFILE    =  xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
 PROFILE    =  ADDON.getAddonInfo('profile')
-ICON       =  os.path.join(HOME, 'icon.png')
+ICON       =  xbmcvfs.translatePath(ADDON.getAddonInfo('icon'))
 TEMP       =  xbmcvfs.translatePath(os.path.join(PROFILE, 'temp_dl'))
 
 MAX_DOWNLOADERS = 3

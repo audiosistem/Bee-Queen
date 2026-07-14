@@ -55,9 +55,7 @@ class Subtitles(kodi_utils.xbmc_player):
 		response = self.subtitles_download(chosen_sub['url'])
 		if isinstance(response, str): return kodi_utils.notification('Subtitles Error: %s' % response)
 		if 'error' in chosen_sub['lang'].lower():
-			from datetime import datetime
-			now = int(datetime.now().timestamp())
-			final_path = '%s%s' % (self.subtitle_path, '%s_%s' % (now, self.search_filename))
+			final_path = '%s%s_%s' % (self.subtitle_path, hex(id(self))[2:], self.search_filename)
 		else: final_path = '%s%s' % (self.subtitle_path, self.search_filename)
 		try: content = response.text
 		except: content = response.content

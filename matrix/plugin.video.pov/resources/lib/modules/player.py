@@ -29,7 +29,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.art_provider = (*get_art_provider(), poster_empty, fanart_empty)
 		self.stinger_enabled = get_setting('stingers.enable') == 'true'
 		self.stinger_check = int(get_setting('stingers.threshold', '30'))
-		self.skip_intro_enabled = get_setting('skip_intro.enable', 'true') == 'true'
+		self.skip_intro_enabled = get_setting('skip_intro.enable') == 'true'
 		self.volume_check = get_setting('volumecheck.enabled', 'false') == 'true'
 
 	def onAVStarted(self):
@@ -61,18 +61,13 @@ class POVPlayer(kodi_utils.xbmc_player):
 			listitem.setArt(art_infodict(self.meta, self.art_provider, meta_user_info()))
 			listitem.setPath(url)
 			listitem.setProperty('StartPercent', str(bookmark))
+
 			self.playback_event = False
 			self.play(url, listitem)
-
 			while not self.playback_event: kodi_utils.sleep(100)
 			if callable(progress_media): progress_media()
 			kodi_utils.close_all_dialog()
-			try:
-				trakt_ids = {'tmdb': self.tmdb_id, 'imdb': self.imdb_id, 'slug': make_title_slug(self.title)}
-				if self.mediatype == 'episode': trakt_ids['tvdb'] = self.tvdb_id
-				kodi_utils.clear_property('script.trakt.ids')
-				kodi_utils.set_property('script.trakt.ids', json.dumps(trakt_ids))
-			except: pass
+			self.exec_task('trakt_ids')
 			if self.mediatype == 'episode':
 				self.play_random_continual = 'random_continual' in self.meta
 				if not self.play_random_continual and self.autoplay_nextep:
@@ -84,13 +79,13 @@ class POVPlayer(kodi_utils.xbmc_player):
 				self.exec_task('episode_handler')
 			if self.volume_check: kodi_utils.volume_checker()
 			kodi_utils.sleep(1000)
-			while self.isPlayingVideo(): self.playback_monitor()
+			while self.isPlayingVideo(): self.check_playback_events()
 			if not self.media_marked: self.media_watched_marker()
 			ws.clear_local_bookmarks()
 			kodi_utils.clear_property('script.trakt.ids')
 		except: pass
 
-	def playback_monitor(self):
+	def check_playback_events(self):
 		try:
 			kodi_utils.sleep(1000)
 			self.total_time, self.curr_time = self.getTotalTime(), self.getTime()
@@ -135,11 +130,11 @@ class POVPlayer(kodi_utils.xbmc_player):
 
 	def episode_handler(self):
 		for _ in range(150):
-			kodi_utils.sleep(200)
 			total_time = False
 			try: total_time = self.getTotalTime() > 0
 			except: pass
 			if total_time: break
+			kodi_utils.sleep(200)
 		else: return
 		self.intro, self.credits = SegmentScraper(self.imdb_id, self.season, self.episode).run()
 		if self.intro is not None and self.skip_intro_enabled:
@@ -258,5 +253,10 @@ class POVPlayer(kodi_utils.xbmc_player):
 				poster = self.meta.get('poster') or poster_empty
 				tmdb_id = self.tmdb_id if self.mediatype == 'movie' and self.stinger_enabled else None
 				Thread(target=self.getStingers, args=(tmdb_id, poster)).start()
+			elif task_name == 'trakt_ids':
+				trakt_ids = {'tmdb': self.tmdb_id, 'imdb': self.imdb_id, 'slug': make_title_slug(self.title)}
+				if self.mediatype == 'episode': trakt_ids['tvdb'] = self.tvdb_id
+				kodi_utils.clear_property('script.trakt.ids')
+				kodi_utils.set_property('script.trakt.ids', json.dumps(trakt_ids))
 		except: pass
 

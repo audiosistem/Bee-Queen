@@ -1,3 +1,7 @@
+[COLOR lime][B]Version 1.5.4[/B][/COLOR]
+- Added BITSEARCH
+- Removed TORRENTDOWNLAD and KNABEN dead providers
+
 [COLOR lime][B]Version 1.5.3[/B][/COLOR]
 - Fixed MEDIAFUSION again
 

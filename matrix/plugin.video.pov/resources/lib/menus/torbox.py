@@ -7,6 +7,7 @@ from modules.source_utils import supported_video_extensions, clean_file_name
 get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting
 ls, build_url, make_listitem = kodi_utils.local_string, kodi_utils.build_url, kodi_utils.make_listitem
 folder_str, file_str, delete_str, down_str = ls(32742).upper(), ls(32743).upper(), ls(32785), ls(32747)
+_add_str, _rem_str, airlock_str = ls(32602).replace(' To', ''), ls(32603).replace(' From', ''), 'AIRLOCK'
 fanart = kodi_utils.get_addoninfo('fanart')
 default_icon = kodi_utils.media_path(Debrid.icon)
 default_art = {'icon': default_icon, 'poster': default_icon, 'thumb': default_icon, 'fanart': fanart, 'banner': default_icon}
@@ -14,7 +15,9 @@ extensions = supported_video_extensions()
 
 class Menu(Debrid):
 	def run(self, params):
-		if   '_delete' in params['mode']:
+		if   '_airlock' in params['mode']:
+			return self.cloud_airlock(params['folder_id'], params['airlock'])
+		elif '_delete' in params['mode']:
 			return self.cloud_delete(params['folder_id'])
 		elif '_browse_cloud' in params['mode']:
 			folder_id, mediatype = params['folder_id'].split(',')
@@ -36,10 +39,14 @@ class Menu(Debrid):
 			try:
 				cm = []
 				cm_append = cm.append
-				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, folder_str, clean_file_name(item['name']).upper())
+				if item['airlocked']: airlock_value, func_str, res_str = 'false', _rem_str, airlock_str
+				else: airlock_value, func_str, res_str = 'true', _add_str, folder_str
+				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, res_str, clean_file_name(item['name']).upper())
 				url_params = {'mode': 'torbox.tb_browse_cloud', 'folder_id': item['folder_id']}
+				airlock_params = {'mode': 'torbox.tb_airlock', 'folder_id': item['folder_id'], 'airlock': airlock_value}
 				delete_params = {'mode': 'torbox.tb_delete', 'folder_id': item['folder_id']}
 				cm_append(('[B]%s %s[/B]' % (delete_str, folder_str.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))
+				cm_append(('[B]%s %s[/B]' % (func_str, airlock_str.capitalize()), 'RunPlugin(%s)' % build_url(airlock_params)))
 				url = build_url(url_params)
 				listitem = make_listitem()
 				listitem.setLabel(display)
@@ -74,6 +81,14 @@ class Menu(Debrid):
 	def cloud_delete(self, folder_id):
 		if not kodi_utils.confirm_dialog(): return
 		result = self.get_function(folder_id, True)(folder_id)
+		if not result: return kodi_utils.notification(32574)
+		self.clear_cache()
+		kodi_utils.container_refresh()
+
+	def cloud_airlock(self, folder_id, airlock_value):
+		if 'false' == airlock_value and not kodi_utils.confirm_dialog(): return
+		request_id, mediatype = folder_id.split(',')
+		result = self.toggle_airlock(mediatype, request_id, airlock_value)
 		if not result: return kodi_utils.notification(32574)
 		self.clear_cache()
 		kodi_utils.container_refresh()

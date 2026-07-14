@@ -1,10 +1,9 @@
-import sys
 from threading import Thread
 from indexers.metadata import movie_meta, art_infodict, movie_show_infodict, tmdb_image_base
 from caches.watched_cache import get_watched_info_movie, get_watched_status_movie, get_bookmarks, get_resumetime, set_resumetime
 from modules import kodi_utils, settings
 #from modules.utils import manual_function_import, get_datetime, make_thread_list_enumerate, chunks
-from modules.utils import manual_function_import, get_datetime, TaskPool, chunks
+from modules.utils import manual_function_import, get_datetime, TaskPool
 # logger = kodi_utils.logger
 
 KODI_VERSION, make_cast_list, default_duration = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list, 3600
@@ -157,7 +156,7 @@ class Movies:
 class Menu(Movies):
 	personal_dict = {'watched_movies': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_movies': ('caches.watched_cache', 'get_in_progress_items'), 'favorites_movies': ('caches.favorites_cache', 'get_favorites')}
 	tmdb_special_key_dict = {'tmdb_movies_networks': 'company', 'tmdb_movies_year': 'year', 'tmdb_moviesanime_year': 'year'}
-	tmdb_main = ('tmdb_movies_popular', 'tmdb_movies_latest_releases', 'tmdb_movies_premieres', 'tmdb_movies_upcoming', 'tmdb_movies_blockbusters', 'tmdb_moviesanime_popular', 'tmdb_moviesanime_latest_releases')
+	tmdb_main = ('tmdb_movies_popular', 'tmdb_movies_latest_releases', 'tmdb_movies_premieres', 'tmdb_movies_upcoming', 'tmdb_movies_blockbusters', 'tmdb_oscar_winners', 'tmdb_moviesanime_popular', 'tmdb_moviesanime_latest_releases')
 	trakt_main = ('trakt_movies_trending', 'trakt_movies_trending_recent', 'trakt_movies_most_watched', 'trakt_moviesanime_trending', 'trakt_moviesanime_most_watched')
 	tmdb_personal = ('tmdb_watchlist', 'tmdb_favorites', 'tmdb_recommendations')
 	trakt_personal = ('trakt_collection', 'trakt_watchlist', 'trakt_favorites', 'trakt_collection_lists', 'trakt_watchlist_lists')
@@ -189,9 +188,9 @@ class Menu(Movies):
 		return self.items
 
 	def run(self):
+		__handle__ = int(kodi_utils.argv1())
 		try:
 			params_get = self.params.get
-			__handle__ = int(sys.argv[1])
 			worker, view_type, content_type = self.build_movies_results, 'view.movies', 'movies'
 			mode, category = params_get('mode'), ls(params_get('name'))
 			try: page_no = int(params_get('new_page', '1'))
@@ -255,10 +254,6 @@ class Menu(Movies):
 				self.list = [i['id'] for i in data['results']]
 				if data['page'] < data['total_pages']:
 					self.new_page = {'query': query, 'name': name, 'new_page': string(data['page'] + 1)}
-			elif self.action == 'imdb_movies_oscar_winners':
-				from modules.meta_lists import oscar_winners
-				self.list = [i for i in chunks(oscar_winners, 20)][page_no-1]
-				if self.list[-1] != 631: self.new_page = {'new_page': string(page_no + 1)}
 			elif self.action in ('tmdb_movies_genres', 'tmdb_moviesanime_genres'):
 				genre_id = params_get('genre_id')
 				if not genre_id: return

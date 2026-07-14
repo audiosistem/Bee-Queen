@@ -44,6 +44,9 @@ def routing(sys):
 		source = Source.fromcloud(params)
 		url = source.resolve_internal_sources(source.direct_debrid_link)
 		kodi_utils.execute_builtin('PlayMedia(%s)' % url)
+	elif mode == 'smart_play_media':
+		from modules.episode_tools import SmartPlay
+		SmartPlay(params)
 	elif mode == 'play_media':
 		from modules.sources import Sources
 		Sources.factory(params)
@@ -299,40 +302,33 @@ def routing(sys):
 
 class POVMonitor(kodi_utils.xbmc_monitor):
 	def __enter__(self):
+		initializeDatabases()
+		checkSettingsFile()
 		self.threads = (Thread(target=SyncMonitorService().run), Thread(target=premAccntNotification))
-		try: initializeDatabases()
-		except: pass
-		try: checkSettingsFile()
-		except: pass
-		try: databaseMaintenance()
-		except: pass
-		try: viewsSetWindowProperties()
-		except: pass
-		try: reuseLanguageInvokerCheck()
-		except: pass
-		for i in getattr(self, 'threads', ()): i.start()
-		try: autoRun()
-		except: pass
-		try: clearSubs()
-		except: pass
-		try: checkUndesirablesDatabase()
-		except: pass
 		return self
 
 	def __exit__(self, exc_type, exc_value, traceback):
-		for i in self.threads: i.join()
+		for i in getattr(self, 'threads', ()): i.join()
 
 	def run(self):
-		with self: self.waitForAbort()
+		with self:
+			try: databaseMaintenance()
+			except: pass
+			try: viewsSetWindowProperties()
+			except: pass
+			try: reuseLanguageInvokerCheck()
+			except: pass
+			for i in getattr(self, 'threads', ()): i.start()
+			try: autoRun()
+			except: pass
+			try: clearSubs()
+			except: pass
+			try: checkUndesirablesDatabase()
+			except: pass
+			self.waitForAbort()
 
 	def ver(*args):
 		return f"{kodi_utils.get_addoninfo('id')}-{kodi_utils.get_addoninfo('version')}"
-
-	def onScreensaverActivated(self):
-		set_property('pov_pause_services', 'true')
-
-	def onScreensaverDeactivated(self):
-		clear_property('pov_pause_services')
 
 	def onSettingsChanged(self):
 		clear_property('pov_settings')
@@ -340,6 +336,12 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 		make_settings_dict()
 		set_property('pov_kodi_menu_cache', get_setting('kodi_menu_cache'))
 		set_property('pov_rli_fix', get_setting('rli_fix'))
+
+	def onScreensaverActivated(self):
+		set_property('pov_pause_services', 'true')
+
+	def onScreensaverDeactivated(self):
+		clear_property('pov_pause_services')
 
 	def onNotification(self, sender, method, data):
 		if method == 'System.OnSleep': set_property('pov_pause_services', 'true')
@@ -353,13 +355,13 @@ def initializeDatabases():
 
 def checkSettingsFile():
 	logger('POV', 'CheckSettingsFile Service Starting')
-	clear_property('pov_settings')
 	profile_dir = kodi_utils.get_addoninfo('profile')
 	profile_xml = profile_dir + 'settings.xml'
 	if not path_exists(profile_xml):
 		kodi_utils.make_directorys(profile_dir)
 		kodi_utils.addon().setSetting('kodi_menu_cache', 'true')
 		kodi_utils.sleep(500)
+	clear_property('pov_settings')
 	make_settings_dict()
 	set_property('pov_kodi_menu_cache', get_setting('kodi_menu_cache'))
 	set_property('pov_rli_fix', get_setting('rli_fix'))
@@ -462,8 +464,8 @@ class SyncMonitorService(kodi_utils.xbmc_monitor):
 		logger('POV', 'SyncMonitor Service Starting')
 		self.handle_first_run_cache()
 		while not self.abortRequested():
-			self.wait_if_busy()
 			if get_property('pov_traktmonitor_first_run') != 'true': self.waitForAbort(5)
+			else: self.wait_if_busy()
 			value, interval = settings.trakt_sync_interval()
 			next_update_str = self.update_string % value
 			self.sync_trakt(next_update_str)

@@ -512,7 +512,7 @@ msgid "BITMAGNET"
 msgstr ""
 
 msgctxt "#32138"
-msgid "BITSEARCH (Pack capable)"
+msgid "BITSEARCH"
 msgstr ""
 
 msgctxt "#32139"

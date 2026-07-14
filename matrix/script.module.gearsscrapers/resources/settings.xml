@@ -6,7 +6,6 @@
 </category>
 
 <category label="Providers">
-	<setting id="provider.bitsearch" type="bool" label="Bitsearch" default="false" />
     <setting id="provider.aiostreams" type="bool" label="Aiostreams" default="false" />
 	<setting id="provider.torlock" type="bool" label="Torlock" default="false" />
 	<setting id="provider.torrentproject2" type="bool" label="Torrentproject" default="false" />
@@ -34,7 +33,7 @@
 </category>
 
 <category label="Dmm Setup">
-    <setting id="provider.bitmagnet" type="bool" label="Bitmagnet" default="false" />
+	<setting id="provider.bitsearch" type="bool" label="Bitsearch" default="false" />
     <setting id="provider.dmm" type="bool" label="DMM" default="false" />
 	<setting id="provider.zilean" type="bool" label="Zilean" default="false" />
 </category>

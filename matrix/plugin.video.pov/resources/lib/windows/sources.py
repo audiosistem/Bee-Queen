@@ -21,6 +21,7 @@ filter_str, clr_filter_str, filters_ignored, start_full_scrape = ls(32152), ls(3
 filter_quality, filter_provider, filter_title, filter_extraInfo = ls(32154), ls(32157), ls(32679), ls(32169)
 run_plugin_str, ignored_str = 'RunPlugin(%s)', '[B][COLOR dodgerblue](%s)[/COLOR][/B]'
 en_seek_str, check_str = '[B]EN: PLAY (SEEK ENABLED)[/B]', '[B]CHECK CACHE STATUS[/B]'
+airlock_str = ls(32016).replace('Add', 'Airlock')
 string, upper, lower = str, str.upper, str.lower
 
 class SourceResults(BaseDialog):
@@ -106,6 +107,7 @@ class SourceResults(BaseDialog):
 				self.selected = ('play', source)
 				return self.close()
 			elif 'manual_add_magnet_to_cloud' in choice: Source(source, self.meta).manual_add_magnet_to_cloud()
+			elif 'manual_airlock_to_cloud' in choice: Source(source, self.meta).manual_airlock_to_cloud()
 			elif 'unchecked_magnet_status' in choice: Source(source, self.meta).unchecked_magnet_status()
 			else: self.execute_code(choice)
 
@@ -356,6 +358,8 @@ class ResultsContextMenu(BaseDialog):
 			append(self.make_contextmenu_item(down_file_str, run_plugin_str, {'action': 'meta.file', **down_params}))
 		if provider_source == 'torrent':
 			append(self.make_contextmenu_item(cloud_str, run_plugin_str, {'mode': 'manual_add_magnet_to_cloud'}))
+		if cache_provider in ('torbox',):
+			append(self.make_contextmenu_item(airlock_str, run_plugin_str, {'mode': 'manual_airlock_to_cloud'}))
 
 	def set_properties(self):
 		self.setProperty('tikiskins.context.highlight', self.highlight)

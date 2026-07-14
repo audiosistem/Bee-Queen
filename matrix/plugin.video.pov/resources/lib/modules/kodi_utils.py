@@ -37,6 +37,10 @@ myvideos_db_paths     = {19: '119', 20: '121', 21: '131', 22: '146'}
 def logger(heading, function):
 	xbmc.log('>> %s <<: %s' % (heading, function), 1)
 
+def argv1():
+	try: return __import__('sys').argv[1]
+	except: return '-1'
+
 def database_connect(file, **kwargs):
 	return database.connect(translate_path(file), **kwargs)
 
@@ -358,37 +362,42 @@ def fetch_kodi_imagecache(image):
 	except: pass
 	return result
 
-def set_setting(setting_id, value):
-	Addon().setSetting(setting_id, value)
+class SettingsManager:
+	def __init__(self):
+		self._cache = {}
+		self._last_raw_string = None
+
+	def _sync(self):
+		current_raw = get_property('pov_settings')
+		if current_raw == self._last_raw_string: return
+		try: self._cache = json.loads(current_raw)
+		except Exception: self._cache = make_settings_dict()
+		self._last_raw_string = current_raw
+
+	def get(self, key, fallback=None):
+		self._sync()
+		value = self._cache.get(key, '')
+		if value == '' and fallback is not None: return fallback
+		return value
+
+manager = SettingsManager()
 
 def get_setting(setting_id, fallback=None):
-	try: settings_dict = json.loads(get_property('pov_settings'))
-	except: settings_dict = make_settings_dict()
-	if settings_dict is None: settings_dict = get_setting_fallback(setting_id)
-	value = settings_dict.get(setting_id, '')
-	if fallback is None: return value
-	if value == '': return fallback
+	try: value = manager.get(setting_id, fallback)
+	except: value = Addon().getSetting(setting_id)
 	return value
 
-def get_setting_fallback(setting_id):
-	return {setting_id: Addon().getSetting(setting_id)}
+def set_setting(setting_id, value):
+	Addon().setSetting(setting_id, value)
 
 def make_settings_dict():
 	import xml.etree.ElementTree as ET
 	settings_dict = None
+	setting = Addon().getSetting
 	try:
-		profile_dir = 'special://profile/addon_data/plugin.video.pov/'
-		profile_xml = profile_dir + 'settings.xml'
-		if not path_exists(profile_xml):
-			make_directorys(profile_dir)
-			Addon().setSetting('kodi_menu_cache', 'true')
-			sleep(500)
-		with open_file(profile_xml) as xml_file: root = ET.fromstring(xml_file.read())
-		settings_dict = {
-			item.get('id'): (item.text or '')
-			for item in root.iter('setting')
-			if item.get('id')
-		}
+		default_xml = 'special://home/addons/plugin.video.pov/resources/settings.xml'
+		with open_file(default_xml) as xml_file: root = ET.fromstring(xml_file.read())
+		settings_dict = {i: setting(i) for item in root.iter('setting') if (i := item.get('id'))}
 		set_property('pov_settings', json.dumps(settings_dict))
 	except Exception as e: logger('make_settings_dict error', str(e))
 	return settings_dict

@@ -1,4 +1,3 @@
-import sys
 from threading import Thread
 from indexers.metadata import tvshow_meta, season_episodes_meta, art_infodict, episode_infodict, info_tagger
 from indexers.trakt_api import trakt_fetch_collection_watchlist, trakt_get_my_calendar, trakt_get_my_anime_calendar, trakt_anime_calendar
@@ -205,27 +204,23 @@ class Menu(Episodes):
 		return self.items
 
 	def run(self):
-		try:
-			params_get = self.params.get
-			__handle__ = int(sys.argv[1])
-			view_type, content_type = 'view.episodes_lists', 'episodes'
-			sort_type, category = 'unsorted', ls(params_get('name'))
-			mode = params_get('mode')
-			func = next((i for key, i in {
-				'in_progress': self._setup_in_progress,
-				'next_episode': self._setup_next_episode,
-				'my_calendar': self._setup_my_calendar,
-				'my_anime_calendar': self._setup_my_anime_calendar,
-				'anime_calendar': self._setup_anime_calendar
-			}.items() if key in mode), None)
-			if callable(func): func(params_get)
-			if self.list: kodi_utils.add_items(__handle__, self.worker())
-		except: pass
+		__handle__ = int(kodi_utils.argv1())
+		params_get = self.params.get
+		view_type, content_type = 'view.episodes_lists', 'episodes'
+		sort_type, category = 'unsorted', ls(params_get('name'))
+		mode = params_get('mode')
+		func = next((i for key, i in {
+			'in_progress': self._setup_in_progress,
+			'next_episode': self._setup_next_episode,
+			'my_calendar': self._setup_my_calendar,
+			'my_anime_calendar': self._setup_my_anime_calendar,
+			'anime_calendar': self._setup_anime_calendar
+		}.items() if key in mode), None)
+		if callable(func): func(params_get)
+		if self.list: kodi_utils.add_items(__handle__, self.worker())
 		if self.list_type == 'trakt_calendar' and calendar_focus_today():
-			try:
-				labels = enumerate((i[1].getLabel() for i in self.items), 1)
-				index = next((i for i, x in labels if today_str in x))
-			except: index = None
+			labels = enumerate((i[1].getLabel() for i in self.items), 1)
+			index = next((i for i, x in labels if today_str in x), None)
 		else: index = False
 		kodi_utils.set_category(__handle__, category)
 		kodi_utils.set_sort_method(__handle__, sort_type)

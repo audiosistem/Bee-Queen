@@ -1,4 +1,3 @@
-import sys
 import json
 from threading import Thread
 from queue import SimpleQueue
@@ -14,7 +13,6 @@ nextpage_str, jump2_str = ls(32799), ls(32964)
 class BaseList:
 	def __init__(self, params):
 		self.params = params
-		self.handle = int(sys.argv[1])
 		self.lists = []
 		self.category_name = params.get('name')
 		self.sort_method = None
@@ -38,6 +36,7 @@ class BaseList:
 		pass
 
 	def build(self):
+		self.handle = int(kodi_utils.argv1())
 		self.fetch_results()
 		kodi_utils.add_items(self.handle, list(self.process_results()))
 		self.add_next_page()
@@ -52,7 +51,6 @@ class BaseMediaListBuilder:
 
 	def __init__(self, params):
 		self.params = params
-		self.handle = int(sys.argv[1])
 		self.is_widget = kodi_utils.external_browse()
 		self.use_alphabet = nav_jump_use_alphabet() > 0
 		self.max_threads = int(kodi_utils.get_setting('pov.max_threads', '100'))
@@ -77,6 +75,7 @@ class BaseMediaListBuilder:
 		return {'user': self.user, 'name': self.name, 'list_id': self.list_id}
 
 	def build(self):
+		self.handle = int(kodi_utils.argv1())
 		queue = SimpleQueue()
 		results = self.fetch_results()
 		if paginate() and results: process_list, total_pages = paginate_list(results, self.page, page_limit())

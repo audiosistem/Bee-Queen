@@ -191,6 +191,11 @@
 					<default>false</default>
 					<control type="toggle"/>
 				</setting>	
+				<setting id="provider.bitsearch" type="boolean" label="32138" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
 				<setting id="provider.dmm" type="boolean" label="32106" help="">
 					<level>0</level>
 					<default>false</default>
@@ -216,11 +221,6 @@
 					<default>false</default>
 					<control type="toggle"/>
 				</setting>
-				<setting id="provider.torrentdownload" type="boolean" label="32123" help="">
-					<level>0</level>
-					<default>false</default>
-					<control type="toggle"/>
-				</setting>	
 				<setting id="provider.torrentgalaxy" type="boolean" label="32125" help="">
 					<level>0</level>
 					<default>false</default>

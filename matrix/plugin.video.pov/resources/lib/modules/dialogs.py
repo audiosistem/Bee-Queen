@@ -54,6 +54,13 @@ def genres_choice(mediatype, genres, poster, return_genres=False):
 	kwargs = {'items': json.dumps(list_items), 'heading': ls(32470)}
 	return select_dialog(choices, **kwargs)
 
+def browse_choice(meta, is_widget=False):
+	tmdb_id = meta.get('tmdb_id')
+	if not tmdb_id: return
+	container_update = ('Container.Update(%s)', 'ActivateWindow(Videos,%s,return)')[is_widget]
+	url_params = {'mode': 'build_season_list', 'tmdb_id': tmdb_id}
+	execute_builtin(container_update % build_url(url_params))
+
 def random_choice(choice, meta):
 	tmdb_id = meta.get('tmdb_id')
 	if not tmdb_id: return
@@ -238,6 +245,7 @@ def dropped_choice(params):
 	container_refresh()
 
 def options_menu(params, meta=None):
+	is_widget = params.get('is_widget', False) in ('true', 'True', True)
 	content = params.get('content') or params.get('mediatype') or container_content()[:-1]
 	season, episode = params.get('season'), params.get('episode')
 	if not meta:
@@ -248,7 +256,9 @@ def options_menu(params, meta=None):
 	title = meta.get('title', '')
 	on_str, off_str, currently_str, open_str, settings_str = ls(32090), ls(32027), ls(32598), ls(32641), ls(32247)
 	scraper_options_str = '%s %s' % (ls(32533), ls(32841))
+	browse_str = ls(32652).replace('[B]', '').replace('[/B]', '')
 	watched_indicators = settings.watched_indicators()
+	smart_play = settings.smart_play_enabled()
 	uncached_status, uncached_toggle = (on_str, 'false') if settings.display_uncached_torrents() else (off_str, 'true')
 	results_xml_status = settings.results_xml_style()
 	listing = []
@@ -261,10 +271,11 @@ def options_menu(params, meta=None):
 		append(('scrape_with_filters_ignored', ls(32807), scraper_options_str, poster))
 		append(('scrape_with_custom_values', ls(32135), scraper_options_str, poster))
 	if content == 'tvshow' and meta:
+		if smart_play == 2 or (smart_play == 1 and is_widget):
+			append(('browse_choice', browse_str, title, poster))
 		append(('play_random', ls(32541), title, poster))
 		append(('play_random_continual', ls(32542), title, poster))
-	if scrapable:
-		append(('clear_scrapers_cache', ls(32637), ''))
+	append(('clear_scrapers_cache', ls(32637), ''))
 	append(('open_external_scrapers_choice', '%s %s' % (ls(32118), ls(32513)), ''))
 	if scrapable:
 		append(('toggle_torrents_display_uncached', ls(32160), '%s: [B]%s[/B]' % (currently_str, uncached_status)))
@@ -278,8 +289,7 @@ def options_menu(params, meta=None):
 	if content in ('movie', 'tvshow') and meta:
 		append(('clear_media_cache', ls(32604) % (ls(32028) if content == 'movie' else ls(32029)), title, poster))
 	listing.append(('open_pov_settings', '%s %s %s' % (open_str, ls(32036), settings_str), ''))
-	if params.get('is_widget', 'false').lower() == 'true':
-		listing.append(('reload_widgets', 'POV: Refresh Widgets', ''))
+	if is_widget: listing.append(('reload_widgets', 'POV: Refresh Widgets', ''))
 	list_items = [
 		{'line1': item[1], 'line2': item[2] or item[1], **({'icon': item[3]} if len(item) == 4 else {})}
 		for item in listing
@@ -292,6 +302,7 @@ def options_menu(params, meta=None):
 	if choice == 'scrape_with_filters_ignored': return scrape_with_filters_ignored(content, meta, season, episode)
 	if choice == 'scrape_with_custom_values': return scrape_with_custom_values(content, meta, season, episode)
 	if choice == 'scrape_from_episode_group': return scrape_from_episode_group(meta, season, episode)
+	if choice == 'browse_choice': return browse_choice(meta, is_widget)
 	if choice in ('play_random', 'play_random_continual'): return random_choice(choice, meta)
 	if choice == 'clear_scrapers_cache': return clear_scrapers_cache()
 	if choice == 'open_external_scrapers_choice': return enable_disable('all')
@@ -304,7 +315,7 @@ def options_menu(params, meta=None):
 	if choice == 'toggle_torrents_display_uncached': set_setting('torrent.display.uncached', uncached_toggle)
 	elif choice == 'set_results_xml_display': results_layout_choice()
 #	elif choice == 'reload_widgets': return kodi_utils.widget_refresh()
-	elif choice == 'reload_widgets': execute_builtin('ReloadSkin()')
+	elif choice == 'reload_widgets': return execute_builtin('ReloadSkin()')
 	options_menu(params, meta=meta)
 
 def extras_menu(params):

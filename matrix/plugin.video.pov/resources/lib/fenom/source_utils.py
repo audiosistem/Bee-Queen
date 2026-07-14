@@ -451,16 +451,24 @@ def _size(siz):
 		log_utils_error('failed on siz=%s' % siz)
 		return 0, ''
 
+POWERS = {
+	'YB': 1208925819614629174706176,
+	'ZB': 1180591620717411303424,
+	'EB': 1152921504606846976,
+	'TB': 1099511627776,
+	'GB': 1073741824,
+	'MB': 1048576,
+	'KB': 1024,
+	'B': 1
+}
+
 def convert_size(size_bytes, to='GB'):
 	try:
-		import math
 		if size_bytes == 0: return 0, ''
-		power = {'B' : 0, 'KB': 1, 'MB' : 2, 'GB': 3, 'TB' : 4, 'EB' : 5, 'ZB' : 6, 'YB': 7}
-		i = power[to]
-		p = math.pow(1024, i)
+		p = POWERS[to]
 		float_size = round(size_bytes / p, 2)
 		# if to == 'B' or to  == 'KB': return 0, ''
-		str_size = "%s %s" % (float_size, to)
+		str_size = '%s %s' % (float_size, to)
 		return float_size, str_size
 	except:
 		log_utils_error()

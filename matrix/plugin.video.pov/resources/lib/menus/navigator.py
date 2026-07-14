@@ -3,9 +3,8 @@ from caches.navigator_cache import navigator_cache as nc
 from modules import kodi_utils as ku, settings as ks
 # logger = ku.logger
 
-media_path, ls, build_url, notification, list_dirs = ku.media_path, ku.local_string, ku.build_url, ku.notification, ku.list_dirs
-make_listitem, add_item, add_dir, end_directory, add_items = ku.make_listitem, ku.add_item, ku.add_dir, ku.end_directory, ku.add_items
-set_content, set_view_mode, set_sort_method, set_category = ku.set_content, ku.set_view_mode, ku.set_sort_method, ku.set_category
+ls, build_url, make_listitem, media_path = ku.local_string, ku.build_url, ku.make_listitem, ku.media_path
+add_item, add_items, add_dir, set_sort_method = ku.add_item, ku.add_items, ku.add_dir, ku.set_sort_method
 _in_str, mov_str, tv_str, edit_str = ls(32484), ls(32028), ls(32029), ls(32705)
 browse_str, add_menu_str, s_folder_str = ls(32706), ls(32730), ls(32731)
 
@@ -403,7 +402,7 @@ class Navigator:
 		handle, fanart = self.params_get('handle'), self.params_get('fanart')
 		folder_path = self.params_get('folder_path')
 		sources_folders = self.params_get('sources_folders')
-		dirs, files = list_dirs(folder_path)
+		dirs, files = ku.list_dirs(folder_path)
 		items = [(i, True) for i in dirs] + [(i, False) for i in files]
 		add_items(handle, list(_process()))
 		set_sort_method(handle, 'files')
@@ -510,8 +509,8 @@ class Navigator:
 
 	def _end_directory(self):
 		handle, fanart = self.params_get('handle'), self.params_get('fanart')
-		set_category(handle, ls(self.params_get('name')))
-		set_content(handle, '')
-		end_directory(handle)
-		set_view_mode('view.main', '')
+		ku.set_category(handle, ls(self.params_get('name')))
+		ku.set_content(handle, '')
+		ku.end_directory(handle)
+		ku.set_view_mode('view.main', '')
 

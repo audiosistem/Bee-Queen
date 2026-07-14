@@ -12,6 +12,7 @@
 		<setting id="debug.location" label="Logging Location" type="enum" default="0" values="Kodi Log|Addon Log" enable="eq(-1,true)" visible="eq(-1,true)" />
 		<setting label="Test All Source Providers (Magneto)" type="action" action="RunPlugin(plugin://plugin.video.pov/?mode=speedTest)" />
 		<setting label="Sources" type="lsep" />
+		<setting id="provider.bitsearch" label="bitsearch" type="bool" default="false" />
 		<setting id="provider.nyaa" label="nyaa" type="bool" default="false" />
 		<setting id="provider.piratebay" label="piratebay" type="bool" default="true" />
 		<setting id="provider.torrentio" label="torrentio" type="bool" default="true" />
@@ -182,6 +183,9 @@
 		<setting id="mdbl_indicators_active" label="mdbl_indicators_active" type="text" default="false" visible="false" />
 		<setting id="watched_indicators" label="Watched Status Provider" type="enum" default="0" values="POV|Trakt|MDBList" visible="eq(-2,true)|eq(-1,true)" />
 		<setting id="amble.indicators" label="Authorize Trakt or MDBList for More options" type="text" enable="false" visible="eq(-3,false)+eq(-2,false)" />
+		<!-- Smart Play -->
+		<setting label="Smart Play" type="lsep" />
+		<setting id="smart_play.enabled" label="Play Next Episode From TV Shows" type="enum" default="0" values="Never|Widgets Only|Always" />
 		<!-- Content and Sorting -->
 		<setting label="Next Episodes" type="lsep" />
 		<setting id="nextep.sort_type" label="Sort Type" type="enum" default="0" values="Recently Watched|Airdate|Title" />

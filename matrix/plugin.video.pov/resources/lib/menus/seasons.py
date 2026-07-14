@@ -1,4 +1,3 @@
-import sys
 from threading import Thread
 from indexers.metadata import tvshow_meta, season_episodes_meta, all_episodes_meta, episode_infodict, season_infodict, info_tagger, tmdb_image_base
 from caches.watched_cache import get_watched_info_tv, get_watched_status_season, get_bookmarks, get_resumetime, set_resumetime, get_watched_status_episode
@@ -33,7 +32,7 @@ class BaseSeason:
 		self.poster_main, self.poster_backup, self.fanart_main, self.fanart_backup = get_art_provider()
 
 	def run(self):
-		__handle__, is_widget = int(sys.argv[1]), kodi_utils.external_browse()
+		__handle__, is_widget = int(kodi_utils.argv1()), kodi_utils.external_browse()
 		mode = self.params.get('mode', 'build_season_list')
 		if 'episode' in mode: content_type, view_type = 'episodes', 'view.episodes'
 		else: content_type, view_type = 'seasons', 'view.seasons'

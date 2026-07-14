@@ -1,6 +1,14 @@
 
   [COLOR dodgerblue][B]Version 6.07[/B][/COLOR]
 - Shuffling the deck chairs on the Titanic.
+- Added My Services/TorBox Cloud/Add or Remove Airlock to folders context menu.
+- Added Airlock to Cloud to context menu for TorBox cached results.
+- Added Settings/Features/Smart Play/Play Next Episode From TV Shows.
+  When enabled, directly from the TV Shows Menu the addon will skip season browse and
+  attempt to source the "Next Episode" from watched history or S01E01 if no
+  watched history.  When enabled a Browse option is added to the Options... context menu.
+- Added bitsearch.
+- Removed torrentdownload.
 
   [COLOR dodgerblue][B]Version 6.06[/B][/COLOR]
 - Changed cloud scrapers to "Filter Results with Aliases".
@@ -340,7 +348,7 @@
 - Fixed Offcloud user cloud scraper quality count.
 - Removed Furk.
 - Enabled "Use Torrent Services" in settings to disable debrid service but allow access to
-  cloud from "My Services" menu.
+  cloud from My Services menu.
 - Fixed Offcloud "Authorize/Revoke" missing.
 - Added Offcloud cloud scraper to search existing items in user cloud.  Offcloud api
   does not provide file metadata, do not report zero size files.

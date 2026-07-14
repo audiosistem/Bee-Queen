@@ -263,6 +263,9 @@ def single_ep_display_title():
 def single_ep_format():
 	return {0: '%d-%m-%Y', 1: '%Y-%m-%d', 2: '%m-%d-%Y'}[int(get_setting('single_ep_format', '1'))]
 
+def smart_play_enabled():
+	return int(get_setting('smart_play.enabled', '0'))
+
 def thumb_fanart():
 	return get_setting('thumb_fanart') == 'true'
 
