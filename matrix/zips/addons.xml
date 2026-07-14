@@ -469,7 +469,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
       <screenshot>resources/images/screenshot-3.jpg</screenshot>
     </assets>
   </extension>
-</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.190">
+</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.191">
     <requires>
         <import addon="script.module.six" />
         <import addon="script.module.kodi-six" />

@@ -1657,9 +1657,9 @@ def fix_url(url, siteurl=None, baseurl=None):
     return url
 
 
-def videos_list(site, playvid, html, delimiter, re_videopage, re_name=None, re_img=None, re_quality=None, re_duration=None, contextm=None, skip=None, thumbnails=None):
+def videos_list(site, playvid, html, delimiter, re_videopage, re_name=None, re_img=None, re_quality=None, re_duration=None, contextm=None, skip=None, thumbnails=None, img_options=None):
     if thumbnails:
-        th = Thumbnails(site.name)
+        th = Thumbnails(site.name, img_options=img_options)
 
     videolist = re.split(delimiter, html)
     if videolist:
@@ -1684,6 +1684,9 @@ def videos_list(site, playvid, html, delimiter, re_videopage, re_name=None, re_i
                     img = fix_url(match.group(1).replace('&amp;', '&'), site.url)
                     if thumbnails:
                         img = th.cache_img(img) if thumbnails == 'cache' else th.fix_img(img)
+                    elif img_options:
+                        img = img + img_options
+
             quality = ''
             if re_quality:
                 match = re.search(re_quality, video, flags=re.DOTALL | re.IGNORECASE)
@@ -1826,12 +1829,13 @@ def ToggleDebug():
 
 class Thumbnails:
     # Download thumbnails to local cache and correct the extensions of WEBP images that were renamed to JPG, which cannot be displayed in KODI 21
-    def __init__(self, site):
+    def __init__(self, site, img_options=None):
         self.path = os.path.join(profileDir, 'thumbnails', site)
         if not os.path.exists(self.path):
             os.makedirs(self.path)
         self.cache_time = 480
         self.clean()
+        self.img_options = img_options
 
     def clean(self):
         current_time = time.time()
@@ -1843,7 +1847,16 @@ class Thumbnails:
 
     def download_image(self, img, img_path):
         try:
-            response = urlopen(Request(img, headers=base_hdrs))
+            if self.img_options:
+                headers = base_hdrs.copy()
+                options = self.img_options.replace('|', '').split('&')
+                for option in options:
+                    if '=' in option:
+                        key, value = option.split('=', 1)
+                        headers[key] = value
+                response = urlopen(Request(img, headers=headers))
+            else:
+                response = urlopen(Request(img, headers=base_hdrs))
             try:
                 with open(img_path, 'wb') as f:
                     f.write(response.read())
