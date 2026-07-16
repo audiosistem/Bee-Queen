@@ -47,7 +47,7 @@ class IMDbPeople:
 
 
     def search(self, content=''):
-        navigator.navigator().addDirectoryItem(32603, 'peopleSearchnew&content=%s' % content, 'people-search.png', 'DefaultMovies.png')
+        navigator.navigator().addDirectoryItem(32603, 'peopleSearchterm&content=%s' % content, 'people-search.png', 'DefaultMovies.png')
 
         dbcon = database.connect(control.searchFile)
         dbcur = dbcon.cursor()
@@ -64,35 +64,22 @@ class IMDbPeople:
         for (id, term) in dbcur.fetchall():
             if term not in str(lst):
                 delete_option = True
-                navigator.navigator().addDirectoryItem(term.title(), 'peopleSearchterm&name=%s&content=%s' % (term, content), 'people-search.png', 'DefaultMovies.png', context=(32644, 'peopleDeleteterm&name=%s' % term))
+                navigator.navigator().addDirectoryItem(term.title(), 'peopleSearchterm&content=%s&name=%s' % (content, term), 'people-search.png', 'DefaultMovies.png', context=(32644, 'peopleDeleteterm&name=%s' % term))
                 lst += [(term)]
         dbcur.close()
 
         if delete_option:
-            navigator.navigator().addDirectoryItem(32605, 'clearCacheSearch&select=people', 'tools.png', 'DefaultAddonProgram.png')
+            navigator.navigator().addDirectoryItem(32605, 'clearCacheSearch&select=people', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
 
         navigator.navigator().endDirectory(False)
 
 
-    def search_new(self, content):
+    def search_term(self, content, q=''):
         control.idle()
-
-        q = control.getKeyboard(heading=control.lang(32010))
-        if not q: return
-        q = q.lower()
-
-        dbcon = database.connect(control.searchFile)
-        dbcur = dbcon.cursor()
-        dbcur.execute("DELETE FROM people WHERE term = ?", (q,))
-        dbcur.execute("INSERT INTO people VALUES (?,?)", (None,q))
-        dbcon.commit()
-        dbcur.close()
-        url = self.person_search_link % q
-        self.persons(url, content=content)
-
-
-    def search_term(self, q, content):
-        control.idle()
+        if not q:
+            q = control.inputDialog(control.lang(32010))
+        if not q:
+            return
         q = q.lower()
 
         dbcon = database.connect(control.searchFile)
@@ -118,7 +105,7 @@ class IMDbPeople:
 
     def bio_txt(self, url, name):
         r = cache.get(imdb_api.get_person_details, 48, url)
-        #log_utils.log(repr(r))
+        #log_utils.log(r)
 
         try:
             born = r['birthDate']['date'] or ''
@@ -149,7 +136,7 @@ class IMDbPeople:
         func = getattr(imdb_api, query)
 
         items = func(first, after, pars)
-        #log_utils.log(repr(items))
+        #log_utils.log(items)
 
         try:
             if items['pageInfo']['hasNextPage']:
@@ -163,7 +150,7 @@ class IMDbPeople:
             nxt = page = ''
 
         items = items['edges']
-        #log_utils.log(repr(items))
+        #log_utils.log(items)
 
         for item in items:
             try:
@@ -259,12 +246,12 @@ class IMDbPeople:
                 if cm:
                     item.addContextMenuItems(cm)
 
-                if kodiVersion < 20:
-                    item.setInfo(type='video', infoLabels={'plot': plot})
-                else:
+                if kodiVersion > 19:
                     vtag = item.getVideoInfoTag()
                     vtag.setMediaType('video')
                     vtag.setPlot(plot)
+                else:
+                    item.setInfo(type='video', infoLabels={'plot': plot})
 
                 #control.addItem(handle=syshandle, url=url, listitem=item, isFolder=is_dir)
                 list_items.append((url, item, is_dir))
@@ -328,7 +315,7 @@ class TMDbPeople:
 
 
     def search(self, content=''):
-        navigator.navigator().addDirectoryItem(32603, 'peopleSearchnew&content=%s' % content, 'people-search.png', 'DefaultMovies.png')
+        navigator.navigator().addDirectoryItem(32603, 'peopleSearchterm&content=%s' % content, 'people-search.png', 'DefaultMovies.png')
 
         dbcon = database.connect(control.searchFile)
         dbcur = dbcon.cursor()
@@ -345,35 +332,22 @@ class TMDbPeople:
         for (id, term) in dbcur.fetchall():
             if term not in str(lst):
                 delete_option = True
-                navigator.navigator().addDirectoryItem(term.title(), 'peopleSearchterm&name=%s&content=%s' % (term, content), 'people-search.png', 'DefaultMovies.png', context=(32644, 'peopleDeleteterm&name=%s' % term))
+                navigator.navigator().addDirectoryItem(term.title(), 'peopleSearchterm&content=%s&name=%s' % (content, term), 'people-search.png', 'DefaultMovies.png', context=(32644, 'peopleDeleteterm&name=%s' % term))
                 lst += [(term)]
         dbcur.close()
 
         if delete_option:
-            navigator.navigator().addDirectoryItem(32605, 'clearCacheSearch&select=people', 'tools.png', 'DefaultAddonProgram.png')
+            navigator.navigator().addDirectoryItem(32605, 'clearCacheSearch&select=people', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
 
         navigator.navigator().endDirectory(False)
 
 
-    def search_new(self, content):
+    def search_term(self, content, q=''):
         control.idle()
-
-        q = control.getKeyboard(heading=control.lang(32010))
-        if not q: return
-        q = q.lower()
-
-        dbcon = database.connect(control.searchFile)
-        dbcur = dbcon.cursor()
-        dbcur.execute("DELETE FROM people WHERE term = ?", (q,))
-        dbcur.execute("INSERT INTO people VALUES (?,?)", (None,q))
-        dbcon.commit()
-        dbcur.close()
-        url = self.person_search_link % urllib_parse.quote_plus(q)
-        self.persons(url, content=content)
-
-
-    def search_term(self, q, content):
-        control.idle()
+        if not q:
+            q = control.inputDialog(control.lang(32010))
+        if not q:
+            return
         q = q.lower()
 
         dbcon = database.connect(control.searchFile)
@@ -417,7 +391,7 @@ class TMDbPeople:
         result.encoding = 'utf-8'
         result = result.json() if six.PY3 else utils.json_loads_as_str(result.text)
         items = result['results']
-        #log_utils.log(repr(items))
+        #log_utils.log(items)
 
         try:
             page = int(result['page'])
@@ -515,12 +489,12 @@ class TMDbPeople:
                 if cm:
                     item.addContextMenuItems(cm)
 
-                if kodiVersion < 20:
-                    item.setInfo(type='video', infoLabels={'plot': plot})
-                else:
+                if kodiVersion > 19:
                     vtag = item.getVideoInfoTag()
                     vtag.setMediaType('video')
                     vtag.setPlot(plot)
+                else:
+                    item.setInfo(type='video', infoLabels={'plot': plot})
 
                 #control.addItem(handle=syshandle, url=url, listitem=item, isFolder=is_dir)
                 list_items.append((url, item, is_dir))

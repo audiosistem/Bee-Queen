@@ -101,8 +101,8 @@ class navigator:
         if providers.SCRAPER_INIT:
             self.addDirectoryItem('My Services', 'movieServicesMenu', 'mymovies.png', 'DefaultMovies.png')
 
-        if imdbCredentials == True:
-            self.addDirectoryItem(32034, 'movies&url=imdb_watchlist', 'imdb.png', 'DefaultMovies.png', queue=True)
+        # if imdbCredentials == True:
+            # self.addDirectoryItem(32034, 'movies&url=imdb_watchlist', 'imdb.png', 'DefaultMovies.png', queue=True)
 
         if traktCredentials == True:
             self.addDirectoryItem(32033, 'movies&url=traktwatchlist', 'trakt.png', 'DefaultMovies.png', queue=True, context=(32551, 'moviesToLibrary&url=traktwatchlist'))
@@ -111,15 +111,14 @@ class navigator:
             self.addDirectoryItem(32032, 'movies&url=traktcollection', 'trakt.png', 'DefaultMovies.png', queue=True, context=(32551, 'moviesToLibrary&url=traktcollection'))
             self.addDirectoryItem(32035, 'movies&url=traktrecommendations', 'trakt.png', 'DefaultMovies.png', queue=True)
 
-        if imdbCredentials == True or traktCredentials == True:
-            self.addDirectoryItem(32039, 'movieUserlists', 'userlists.png', 'DefaultMovies.png')
-
         if traktCredentials == False:
             self.addDirectoryItem(32094, 'movies&url=local_ondeck', 'iconT.png', 'DefaultMovies.png', queue=True)
             self.addDirectoryItem(32036, 'movies&url=local_history', 'iconT.png', 'DefaultMovies.png', queue=True)
             self.addDirectoryItem(32527, 'movies&url=local_list', 'iconT.png', 'DefaultMovies.png', queue=True)
 
-        self.endDirectory()
+        self.addDirectoryItem(32039, 'movieUserlists', 'userlists.png', 'DefaultMovies.png')
+
+        self.endDirectory(cache=False)
 
 
     def tvshows(self):
@@ -169,8 +168,8 @@ class navigator:
         if providers.SCRAPER_INIT:
             self.addDirectoryItem('My Services', 'tvServicesMenu', 'mytvshows.png', 'DefaultTVShows.png')
 
-        if imdbCredentials == True:
-            self.addDirectoryItem(32034, 'tvshows&url=imdb_watchlist', 'imdb.png', 'DefaultTVShows.png')
+        # if imdbCredentials == True:
+            # self.addDirectoryItem(32034, 'tvshows&url=imdb_watchlist', 'imdb.png', 'DefaultTVShows.png')
 
         if traktCredentials == True:
             self.addDirectoryItem(32033, 'tvshows&url=traktwatchlist', 'trakt.png', 'DefaultTVShows.png', context=(32551, 'tvshowsToLibrary&url=traktwatchlist'))
@@ -183,15 +182,14 @@ class navigator:
             self.addDirectoryItem(32035, 'tvshows&url=traktrecommendations', 'trakt.png', 'DefaultTVShows.png')
             self.addDirectoryItem(32041, 'episodeUserlists', 'userlists.png', 'DefaultTVShows.png')
 
-        if imdbCredentials == True or traktCredentials == True:
-            self.addDirectoryItem(32040, 'tvUserlists', 'userlists.png', 'DefaultTVShows.png')
-
         if traktCredentials == False:
             self.addDirectoryItem(32094, 'calendar&url=local_ondeck', 'iconT.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
             self.addDirectoryItem(32036, 'calendar&url=local_history', 'iconT.png', 'DefaultTVShows.png', queue=True)
             self.addDirectoryItem(32527, 'tvshows&url=local_list', 'iconT.png', 'DefaultTVShows.png')
 
-        self.endDirectory()
+        self.addDirectoryItem(32040, 'tvUserlists', 'userlists.png', 'DefaultTVShows.png')
+
+        self.endDirectory(cache=False)
 
 
     def tools(self):
@@ -300,7 +298,7 @@ class navigator:
         try:
             control.idle()
 
-            items = [ (control.lang(32001), 'movies'), (control.lang(32002), 'tvshows'), (control.lang(32054), 'seasons'), (control.lang(32326), 'episodes') , ('Sources', 'files') ]
+            items = [ (control.lang(32001), 'movies'), (control.lang(32002), 'tvshows'), (control.lang(32054), 'seasons'), (control.lang(32326), 'episodes') ]
 
             select = control.selectDialog([i[0] for i in items], control.lang(32049))
 
@@ -316,12 +314,12 @@ class navigator:
             item = control.item(label=title)
             item.setArt({'icon': poster, 'thumb': poster, 'poster': poster, 'fanart': fanart, 'banner': banner})
 
-            if control.getKodiVersion() < 20:
-                item.setInfo(type='video', infoLabels={'title': title})
-            else:
+            if control.getKodiVersion() > 19:
                 vtag = item.getVideoInfoTag()
                 vtag.setMediaType('video')
                 vtag.setTitle(title)
+            else:
+                item.setInfo(type='video', infoLabels={'title': title})
 
             control.addItem(handle=int(sys.argv[1]), url=url, listitem=item, isFolder=False)
             control.content(int(sys.argv[1]), content)
@@ -368,6 +366,7 @@ class navigator:
         from resources.lib.modules import cache
         cache.cache_clear_search(select)
         control.infoDialog(control.lang(32057), sound=True, icon='INFO')
+        control.refresh()
 
     def clearDebridCheck(self):
         yes = control.yesnoDialog(control.lang(32056))
@@ -396,7 +395,7 @@ class navigator:
         log_utils.empty_log()
 
     def dev_menu(self):
-        c = control.getKeyboard(heading='PIN code required to enter Dev menu')
+        c = control.inputDialog('PIN code required to enter Dev menu')
         if c == api_keys.pin:
             if not hasScraper:
                 self.addDirectoryItem('Install external scraper package', 'installAddon&addon_id=script.module.blackscrapers', 'iconT.png', 'DefaultAddonProgram.png', isFolder=False)
@@ -422,12 +421,12 @@ class navigator:
         except: item = control.item(label=name)
         item.addContextMenuItems(cm)
         item.setArt({'icon': thumb, 'thumb': thumb, 'fanart': addonFanart})
-        if control.getKodiVersion() < 20:
-            item.setInfo(type='video', infoLabels={'plot': plot})
-        else:
+        if control.getKodiVersion() > 19:
             vtag = item.getVideoInfoTag()
             vtag.setMediaType('video')
             vtag.setPlot(plot)
+        else:
+            item.setInfo(type='video', infoLabels={'plot': plot})
         control.addItem(handle=syshandle, url=url, listitem=item, isFolder=isFolder)
 
     def endDirectory(self, cache=True):

@@ -75,10 +75,11 @@
         <setting id="size.filters" type="bool" label="32137" default="false" visible="System.HasAddon(script.module.blackscrapers)" />
         <setting id="min.size.gb" type="slider" label="32133" default="0" range="0,0.5,20" option="float" enable="eq(-1,true)" subsetting="true" visible="System.HasAddon(script.module.blackscrapers)" />
         <setting id="max.size.gb" type="slider" label="32134" default="20" range="0.5,0.5,50" option="float" enable="eq(-2,true)" subsetting="true" visible="System.HasAddon(script.module.blackscrapers)" />
-        <setting id="debrid.only" type="bool" label="32621" default="false" visible="System.HasAddon(script.module.blackscrapers)" />
-        <setting id="remove.hevc" type="bool" label="32363" default="false" visible="System.HasAddon(script.module.blackscrapers)" />
+        <setting id="debrid.only" type="bool" label="32621" default="true" visible="System.HasAddon(script.module.blackscrapers)" />
+        <setting id="remove.av1" type="bool" label="32363" default="false" visible="System.HasAddon(script.module.blackscrapers)" />
         <setting id="remove.dv" type="bool" label="32364" default="false" visible="System.HasAddon(script.module.blackscrapers)" />
         <setting id="remove.keywords" type="text" label="32365" default="" visible="System.HasAddon(script.module.blackscrapers)" />
+        <setting id="remove.hosts" type="text" label="32366" default="" visible="System.HasAddon(script.module.blackscrapers)" />
         <setting id="remove.captcha" type="bool" label="32341" default="false" visible="System.HasAddon(script.module.blackscrapers)" />
         <!--<setting id="cf.disable" type="bool" label="32362" default="false" visible="System.HasAddon(script.module.blackscrapers)" />-->
         <setting id="remove.dups" type="bool" label="32090" default="true" visible="System.HasAddon(script.module.blackscrapers)" />
@@ -114,13 +115,11 @@
         <setting id="trakt.user" type="action" label="32306" option="close" action="RunPlugin(plugin://plugin.video.blacklodge/?action=authTrakt)" />
         <setting id="trakt.token" type="text" visible="false" label="" default="" />
         <setting id="trakt.refresh" type="text" visible="false" label="" default="" />
+        <setting id="trakt.expires_at" type="text" visible="false" label="" default="" />
         <setting type="lsep" label="32075" />
         <setting id="trakt.client_id" type="text" label="32609" default="" />
         <setting id="trakt.client_secret" type="text" label="32610" default="" />
-        <setting id="trakt.ua" type="text" label="User-Agent" default="" />
-        <setting type="lsep" label="Opensubtitles.org" />
-        <setting id="os.user" type="text" label="32117" default="" />
-        <setting id="os.pass" type="text" option="hidden" label="32307" default="" />
+        <setting id="trakt.ua" type="text" label="User-Agent (App name)" default="" />
         <setting type="lsep" label="Opensubtitles.com" />
         <setting id="os.com.user" type="text" label="32117" default="" />
         <setting id="os.com.pass" type="text" label="32307" default="" />
@@ -150,7 +149,6 @@
         <setting id="subtitles.lang.1" type="select" label="32356" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" enable="!eq(-1,false)" default="Greek" />
         <setting id="subtitles.lang.2" type="select" label="32357" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" enable="!eq(-2,false)" default="English" />
         <setting id="subtitles.notify" type="bool" label="32361" enable="!eq(-3,false)" default="true" />
-        <setting id="subtitles.utf" type="bool" label="32355" enable="!eq(-4,false)" default="true" />
         <setting type="lsep" label="[CR]" />
         <setting id="subs.text" type="text" label="32118" enable="false" />
     </category>

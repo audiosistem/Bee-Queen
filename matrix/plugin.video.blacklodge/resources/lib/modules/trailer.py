@@ -51,12 +51,12 @@ class YT_trailer:
             item = control.item(label=name, path=url)
             item.setArt({'icon': icon, 'thumb': icon, 'poster': icon})
             item.setProperty('IsPlayable', 'true')
-            if control.getKodiVersion() < 20:
-                item.setInfo(type='video', infoLabels={'title': name})
-            else:
+            if control.getKodiVersion() > 19:
                 vtag = item.getVideoInfoTag()
                 vtag.setMediaType('video')
                 vtag.setTitle(name)
+            else:
+                item.setInfo(type='video', infoLabels={'title': name})
 
             if 'plugin' in control.infoLabel('Container.PluginName'):
                 control.player.play(url, item)
@@ -180,12 +180,12 @@ class TMDb_trailer:
             item = control.item(label=name, path=url)
             item.setArt({'icon': icon, 'thumb': icon, 'poster': icon})
             item.setProperty('IsPlayable', 'true')
-            if control.getKodiVersion() < 20:
-                item.setInfo(type='video', infoLabels={'title': name})
-            else:
+            if control.getKodiVersion() > 19:
                 vtag = item.getVideoInfoTag()
                 vtag.setMediaType('video')
                 vtag.setTitle(name)
+            else:
+                item.setInfo(type='video', infoLabels={'title': name})
 
             if 'plugin' in control.infoLabel('Container.PluginName'):
                 control.player.play(url, item)
@@ -267,14 +267,14 @@ class IMDb_trailer:
             item = control.item(label=title, path=url)
             item.setArt({'icon': icon, 'thumb': icon, 'poster': icon})
             item.setProperty('IsPlayable', 'true')
-            if control.getKodiVersion() < 20:
-                item.setInfo(type='video', infoLabels={'title': title, 'plot': item_dict['description'], 'tagline': item_dict['type']})
-            else:
+            if control.getKodiVersion() > 19:
                 vtag = item.getVideoInfoTag()
                 vtag.setMediaType('video')
                 vtag.setTitle(title)
                 vtag.setTagLine(item_dict['type'])
                 vtag.setPlot(item_dict['description'])
+            else:
+                item.setInfo(type='video', infoLabels={'title': title, 'plot': item_dict['description'], 'tagline': item_dict['type']})
 
             if 'plugin' in control.infoLabel('Container.PluginName'):
                 control.player.play(url, item)
@@ -292,7 +292,7 @@ class IMDb_trailer:
     def get_items(self, imdb, name):
         try:
             listItems = cache.get(imdb_api.get_imdb_trailers, 48, imdb)
-            #log_utils.log(repr(listItems))
+            #log_utils.log(listItems)
             listItems = listItems['data']['title']['primaryVideos']['edges']
             vids_list = []
             for item in listItems:
@@ -345,14 +345,14 @@ class IMDb_trailer:
             # r = re.findall(r'("playbackURLs":\[.+?PlaybackURL"\}\])', r, re.I)[0]
             # r = '{'+r+'}'
             # vids = utils.json_loads_as_str(r)
-            # #log_utils.log(repr(vids))
+            # #log_utils.log(vids)
             # vid = [i['url'] for i in vids['playbackURLs'] if i['videoMimeType'] == 'MP4'][0]
 
             vids = cache.get(imdb_api.get_playback_url, 48, video_id)
             vids = vids['data']['video']['playbackURLs']
             #vids = [v for v in vids if v['videoMimeType'] == 'MP4']
             vids.sort(key=lambda x: int(re.sub(r'\D', '0', x['displayName']['value'])), reverse=True)
-            #log_utils.log(repr(vids))
+            #log_utils.log(vids)
             vid = [i['url'] for i in vids][0]
             return vid
         except:

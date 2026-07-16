@@ -174,7 +174,7 @@ class tvshows:
 
             if u in self.trakt_link and '/users/' in url:
                 try:
-                    #if not '/users/me/' in url: raise Exception()
+                    if not '/users/me/' in url: raise Exception()
                     if trakt.getActivity() > cache.timeout(self.trakt_list, url): raise Exception()
                     self.list = cache.get(self.trakt_list, 720, url)
                 except:
@@ -191,7 +191,10 @@ class tvshows:
                 if idx == True: self.worker()
 
             elif u in self.imdb_graphql_link:
-                self.list = cache.get(self.imdb_graphql, 24, url)
+                if 'customlist' in url:
+                    self.list = cache.get(self.imdb_graphql, 2, url)
+                else:
+                    self.list = cache.get(self.imdb_graphql, 24, url)
                 if idx == True: self.worker()
 
             elif u in self.tvmaze_link:
@@ -204,6 +207,7 @@ class tvshows:
 
             elif u in self.local_link:
                 self.list = self.local_list(url)
+                if idx == True: self.worker()
 
 
             if idx == True and create_directory == True: self.tvshowDirectory(self.list)
@@ -225,7 +229,7 @@ class tvshows:
     def search(self, code=''):
         code = urllib_parse.quote(code) if code else ''
 
-        navigator.navigator().addDirectoryItem(32603, 'tvSearchnew&code=%s' % code, 'search.png', 'DefaultTVShows.png')
+        navigator.navigator().addDirectoryItem(32603, 'tvSearchterm&code=%s' % code, 'search.png', 'DefaultTVShows.png')
 
         dbcon = database.connect(control.searchFile)
         dbcur = dbcon.cursor()
@@ -248,30 +252,17 @@ class tvshows:
         dbcur.close()
 
         if delete_option:
-            navigator.navigator().addDirectoryItem(32605, 'clearCacheSearch&select=tvshow', 'tools.png', 'DefaultAddonProgram.png')
+            navigator.navigator().addDirectoryItem(32605, 'clearCacheSearch&select=tvshow', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
 
         navigator.navigator().endDirectory(False)
 
 
-    def search_new(self, code=''):
+    def search_term(self, q='', code=''):
         control.idle()
-
-        q = control.getKeyboard(heading=control.lang(32010))
-        if not q: return
-        q = q.lower()
-
-        dbcon = database.connect(control.searchFile)
-        dbcur = dbcon.cursor()
-        dbcur.execute("DELETE FROM tvshow WHERE term = ?", (q,))
-        dbcur.execute("INSERT INTO tvshow VALUES (?,?)", (None,q))
-        dbcon.commit()
-        dbcur.close()
-        url = self.imdb_search_link % q if (self.lists_provider == '0' and not code) else self.tmdb_search_link % urllib_parse.quote(q)
-        self.get(url, code=code)
-
-
-    def search_term(self, q, code=''):
-        control.idle()
+        if not q:
+            q = control.inputDialog(control.lang(32010))
+        if not q:
+            return
         q = q.lower()
 
         dbcon = database.connect(control.searchFile)
@@ -325,6 +316,8 @@ class tvshows:
 
 
     def keywords(self):
+        navigator.navigator().addDirectoryItem('[I]Keyword Search...[/I]', 'tvKwSearch', 'genres/mystery.png', 'DefaultAddonsSearch.png')
+
         url = 'https://www.imdb.com/search/keyword/?s=kw'
         r = cache.get(client.request, 168, url)
         rows = client.parseDOM(r, 'a', attrs={'class': 'ipc-chip ipc-chip--on-base-accent2'})
@@ -369,6 +362,14 @@ class tvshows:
             )
         self.addDirectory(self.list)
         return self.list
+
+
+    def keyword_search(self):
+        kw = control.inputDialog(control.lang(32160))
+        if not kw: return
+        kw = ','.join([k.strip().lower().replace(' ', '-') for k in kw.split(',')])
+        url = self.imdb_keyword_link % kw
+        self.get(url)
 
 
     def genres(self):
@@ -950,7 +951,29 @@ class tvshows:
 
 
     def userlists(self):
+        navigator.navigator().addDirectoryItem(32158, 'addIMDbList', 'userlists.png', 'DefaultTVShows.png', isFolder=False)
+
         userlists = []
+
+        try:
+            control.makeFile(control.dataPath)
+            dbcon = database.connect(control.mylistsFile)
+            dbcur = dbcon.cursor()
+            dbcur.execute("CREATE TABLE IF NOT EXISTS imdbLists (""id TEXT, ""name TEXT, ""author TEXT, ""UNIQUE(id)"");")
+            dbcur.execute("SELECT * FROM imdbLists")
+            lists = dbcur.fetchall()
+            dbcon.commit()
+            dbcon.close()
+            if lists:
+                for lst in lists:
+                    try:
+                        url = self.imdb_customlist_link % (lst[0], self.imdb_sort())
+                        name = "  ".join((lst[1], '[I](%s)[/I]' % lst[2]))
+                        userlists += [{'name': name, 'url': url, 'context': url, 'image': 'imdb.png', 'context2': 'delIMDbList&url=%s' % lst[0]}]
+                    except:
+                        pass
+        except:
+            pass
 
         try:
             self.list = []
@@ -997,7 +1020,7 @@ class tvshows:
         self.list = userlists
         for i in range(0, len(self.list)):
             self.list[i].update({'action': 'tvshows'})
-        self.addDirectory(self.list, queue=True)
+        self.addDirectory(self.list, queue=True, catch=False)
         return self.list
 
 
@@ -1095,8 +1118,8 @@ class tvshows:
                 status = item.get('status')
                 if not status: status = '0'
 
-                self.list.append({'title': title, 'originaltitle': title, 'year': year, 'premiered': premiered, 'studio': studio, 'genre': genre, 'duration': duration, 'rating': rating,
-                                  'votes': votes, 'mpaa': mpaa, 'plot': plot, 'country': country, 'status': status, 'imdb': imdb, 'tvdb': tvdb, 'tmdb': tmdb, 'poster': '0', 'page': page, 'next': nxt})
+                self.list.append({'title': title, 'originaltitle': title, 'year': year, 'premiered': premiered, 'studio': studio, 'genre': genre, 'duration': duration, 'rating': rating, 'votes': votes,
+                                  'mpaa': mpaa, 'plot': plot, 'country': country, 'status': status, 'imdb': imdb, 'tvdb': tvdb, 'tmdb': tmdb, 'poster': '0', 'list_prov': 'trakt', 'page': page, 'next': nxt})
             except:
                 log_utils.log('tv_trakt_list1', 1)
                 pass
@@ -1160,7 +1183,7 @@ class tvshows:
             func = getattr(imdb_api, query)
 
             items = func(first, after, pars)
-            #log_utils.log(repr(items))
+            #log_utils.log(items)
 
             if items['pageInfo']['hasNextPage']:
                 page = re.findall(r'&page=(\d+)&', url)[0]
@@ -1170,7 +1193,7 @@ class tvshows:
             else:
                 nxt = page = ''
             items = items['edges']
-            #log_utils.log(repr(items))
+            #log_utils.log(items)
 
             for item in items:
                 try:
@@ -1196,7 +1219,7 @@ class tvshows:
 
                     self.list.append({'title': title, 'originaltitle': title, 'year': year, 'genre': '0', 'rating': rating, 'votes': votes, 'mpaa': mpaa,
                                       'plot': plot, 'imdb': imdb, 'imdbnumber': imdb, 'tmdb': '0', 'tvdb': '0', 'poster': poster, 'cast': '0',
-                                      'premiered': premiered, 'page': page, 'next': nxt})
+                                      'premiered': premiered, 'list_prov': 'imdb', 'page': page, 'next': nxt})
                 except:
                     log_utils.log('imdb_graphql_item fail', 1)
                     pass
@@ -1242,7 +1265,7 @@ class tvshows:
             result = self.session.get(link, timeout=10).text
             data = re.findall('<script id="__NEXT_DATA__" type="application/json">({.+?})</script>', result)[0]
             data = utils.json_loads_as_str(data)
-            #log_utils.log(repr(data))
+            #log_utils.log(data)
             if '/list/' in link:
                 data = data['props']['pageProps']['mainColumnData']['list']['titleListItemSearch']['edges']
             elif '/user/' in link:
@@ -1283,7 +1306,7 @@ class tvshows:
                 data = utils.json_loads_as_str(data)
                 data = data['props']['pageProps']['searchResults']['titleResults']['titleListItems']
                 items = data[-int(self.items_per_page):]
-                #log_utils.log(repr(items))
+                #log_utils.log(items)
             except:
                 return self.list
 
@@ -1299,7 +1322,7 @@ class tvshows:
                 #log_utils.log('next_fail', 1)
                 nxt = page = ''
 
-        #log_utils.log(repr(items))
+        #log_utils.log(items)
 
         for item in items:
             try:
@@ -1335,7 +1358,7 @@ class tvshows:
                     imdb = item['titleId']
 
                 self.list.append({'title': title, 'originaltitle': title, 'year': year, 'genre': genre, 'rating': rating, 'votes': votes, 'mpaa': mpaa, 'premiered': premiered,
-                                  'plot': plot, 'imdb': imdb, 'imdbnumber': imdb, 'tmdb': '0', 'tvdb': '0', 'poster': poster, 'cast': '0', 'page': page, 'next': nxt})
+                                  'plot': plot, 'imdb': imdb, 'imdbnumber': imdb, 'tmdb': '0', 'tvdb': '0', 'poster': poster, 'cast': '0', 'list_prov': 'imdb', 'page': page, 'next': nxt})
             except:
                 log_utils.log('imdb_json_list fail', 1)
                 pass
@@ -1359,7 +1382,7 @@ class tvshows:
             items = data['props']['pageProps']['mainColumnData']['userListSearch']['edges']
             for item in items:
                 try:
-                    name = item['node']['name']['originalText']
+                    name = cleantitle.normalize(item['node']['name']['originalText'])
                     url = self.imdb_customlist_link % (item['node']['id'], self.imdb_sort())
                     self.list.append({'name': name, 'url': url, 'context': url, 'image': 'imdb.png'})
                 except:
@@ -1483,7 +1506,7 @@ class tvshows:
                 content = six.ensure_str(content)
 
                 self.list.append({'title': title, 'originaltitle': title, 'year': year, 'premiered': premiered, 'studio': studio, 'genre': genre, 'duration': duration, 'rating': rating,
-                                  'plot': plot, 'mpaa': '0', 'imdb': imdb, 'tvdb': tvdb, 'tmdb': '0', 'poster': poster, 'content': content, 'page': page, 'next': nxt})
+                                  'plot': plot, 'mpaa': '0', 'imdb': imdb, 'tvdb': tvdb, 'tmdb': '0', 'poster': poster, 'content': content, 'list_prov': 'tvmaze', 'page': page, 'next': nxt})
             except:
                 # log_utils.log('tvmaze0', 1)
                 pass
@@ -1572,7 +1595,7 @@ class tvshows:
                 else: poster = '0'
 
                 self.list.append({'title': title, 'originaltitle': originaltitle, 'premiered': premiered, 'year': year, 'rating': rating, 'votes': votes, 'plot': plot,
-                                  'mpaa': '0', 'imdb': '0', 'tmdb': tmdb, 'tvdb': '0', 'poster': poster, 'page': page, 'next': nxt})
+                                  'mpaa': '0', 'imdb': '0', 'tmdb': tmdb, 'tvdb': '0', 'poster': poster, 'list_prov': 'tmdb', 'page': page, 'next': nxt})
             except:
                 log_utils.log('tmdb_list1', 1)
                 pass
@@ -1659,7 +1682,7 @@ class tvshows:
             tvdb = self.list[i]['tvdb'] if 'tvdb' in self.list[i] else '0'
             list_title = self.list[i]['title']
 
-            if tmdb == '0' and not imdb == '0':
+            if (not tmdb or tmdb in ['0', 'None']) and (imdb and not imdb in ['0', 'None']):
                 try:
                     url = self.tmdb_by_imdb % imdb
                     result = self.session.get(url, timeout=10).json()
@@ -1668,7 +1691,7 @@ class tvshows:
                     if not tmdb: tmdb = '0'
                     else: tmdb = str(tmdb)
                 except:
-                    pass
+                    tmdb = '0'
 
             if tmdb == '0':
                 try:
@@ -1836,7 +1859,7 @@ class tvshows:
                 pass
             if not castwiththumb: castwiththumb = '0'
 
-            poster1 = self.list[i]['poster']
+            poster1 = self.list[i].get('poster')
 
             poster_path = item.get('poster_path')
             if poster_path:
@@ -2007,9 +2030,6 @@ class tvshows:
                 imdb, tvdb, tmdb, year = i.get('imdb', ''), i.get('tvdb', ''), i.get('tmdb', ''), i.get('year', '')
 
                 meta = dict((k,v) for k, v in six.iteritems(i) if not v == '0')
-                meta.update({'imdbnumber': imdb, 'code': tmdb})
-                if not 'mediatype' in meta: meta.update({'mediatype': 'tvshow'})
-                meta.update({'tvshowtitle': i['title']})
                 meta.update({'trailer': '%s?action=%s&mode=play&name=%s&tmdb=%s&imdb=%s' % (sysaddon, trailerAction, systitle, tmdb, imdb)})
                 if not 'duration' in meta: meta.update({'duration': '45'})
                 elif meta['duration'] == '0': meta.update({'duration': '45'})
@@ -2017,9 +2037,9 @@ class tvshows:
                 except: pass
                 try: meta.update({'genre': cleangenre.lang(meta['genre'], self.lang)})
                 except: pass
-                if 'castwiththumb' in i and not i['castwiththumb'] == '0': meta.pop('cast', '0')
-
-                meta.update({'poster': poster, 'fanart': fanart, 'banner': banner, 'landscape': landscape})
+                if 'castwiththumb' in meta: meta.pop('cast', '0')
+                meta.update({'mediatype': 'tvshow', 'imdbnumber': imdb, 'code': tmdb, 'label': label, 'tvshowtitle': i['title'],
+                             'poster': poster, 'fanart': fanart, 'banner': banner, 'landscape': landscape})
 
                 try:
                     show_indicators = [i[2] for i in indicators if i[0] == imdb][0]
@@ -2093,62 +2113,7 @@ class tvshows:
                 item.setProperties({'TotalEpisodes': total_episodes, 'WatchedEpisodes': str(watched_episodes), 'UnWatchedEpisodes': unwatched_episodes,
                                     'WatchedProgress': show_progress, 'TotalSeasons': i.get('total_seasons', '0')})
 
-                if kodiVersion < 20:
-                    castwiththumb = i.get('castwiththumb')
-                    if castwiththumb and not castwiththumb == '0':
-                        if kodiVersion >= 18:
-                            item.setCast(castwiththumb)
-                        else:
-                            cast = [(p['name'], p['role']) for p in castwiththumb]
-                            meta.update({'cast': cast})
-
-                    item.setProperty('imdb_id', imdb)
-                    item.setProperty('tmdb_id', tmdb)
-                    try: item.setUniqueIDs({'imdb': imdb, 'tmdb': tmdb})
-                    except: pass
-
-                    item.setInfo(type='video', infoLabels=control.metadataClean(meta))
-
-                    video_streaminfo = {'codec': 'h264'}
-                    item.addStreamInfo('video', video_streaminfo)
-
-                else:
-                    vtag = item.getVideoInfoTag()
-                    vtag.setMediaType('tvshow')
-                    vtag.setTitle(i['title'])
-                    vtag.setOriginalTitle(i['title'])
-                    vtag.setTvShowTitle(i['title'])
-                    vtag.setPlot(meta.get('plot'))
-                    vtag.setPlotOutline(meta.get('plot'))
-                    vtag.setYear(int(year))
-                    vtag.setRating(float(i['rating']), int(i['votes'].replace(',', '')), 'imdb')
-                    vtag.setMpaa(meta.get('mpaa'))
-                    vtag.setDuration(int(meta['duration']))
-                    vtag.setGenres(meta.get('genre', '').split(' / '))
-                    vtag.setCountries(meta.get('country', '').split(' / '))
-                    vtag.setTrailer(meta['trailer'])
-                    vtag.setTagLine(meta.get('tagline'))
-                    vtag.setStudios([meta.get('studio')])
-                    vtag.setPremiered(meta.get('premiered'))
-                    vtag.setTvShowStatus(meta.get('status'))
-                    vtag.setIMDBNumber(imdb)
-                    vtag.setUniqueIDs({'imdb': imdb, 'tmdb': tmdb})
-                    vtag.setDirectors(meta.get('director', '').split(', '))
-                    vtag.setWriters(meta.get('writer', '').split(', '))
-                    vtag.setSeason(int(i.get('total_seasons', '0'))) # for Estuary Available seasons info
-                    vtag.setEpisode(int(total_episodes)) # for Estuary Available episodes info
-
-                    if overlay > 6:
-                        vtag.setPlaycount(1)
-
-                    cast = []
-                    if 'castwiththumb' in i and not i['castwiththumb'] == '0':
-                        for p in i['castwiththumb']:
-                            cast.append(control.actor(p['name'], p['role'], 0, p['thumbnail']))
-                    elif 'cast' in i and not i['cast'] == '0':
-                        for p in i['cast']:
-                            cast.append(control.actor(p, '', 0, ''))
-                    vtag.setCast(cast)
+                control.processListItem(item, meta)
 
                 #control.addItem(handle=syshandle, url=url, listitem=item, isFolder=True)
                 list_items.append((url, item, True))
@@ -2184,7 +2149,7 @@ class tvshows:
         views.setView('tvshows', {'skin.estuary': 55, 'skin.confluence': 500})
 
 
-    def addDirectory(self, items, queue=False):
+    def addDirectory(self, items, queue=False, catch=True):
         from sys import argv
         if not items:
             control.idle()
@@ -2201,6 +2166,8 @@ class tvshows:
         playRandom = control.lang(32535)
 
         addToLibrary = control.lang(32551)
+
+        removeList = control.lang(32159)
 
         kodiVersion = control.getKodiVersion()
 
@@ -2226,8 +2193,8 @@ class tvshows:
                 if queue == True:
                     cm.append((queueMenu, 'RunPlugin(%s?action=queueItem)' % sysaddon))
 
-                try: cm.append((addToLibrary, 'RunPlugin(%s?action=tvshowsToLibrary&url=%s)' % (sysaddon, urllib_parse.quote_plus(i['context']))))
-                except: pass
+                if 'context' in i: cm.append((addToLibrary, 'RunPlugin(%s?action=tvshowsToLibrary&url=%s)' % (sysaddon, urllib_parse.quote_plus(i['context']))))
+                if 'context2' in i: cm.append((removeList, 'RunPlugin(%s?action=%s)' % (sysaddon, i['context2'])))
 
                 try: item = control.item(label=name, offscreen=True)
                 except: item = control.item(label=name)
@@ -2235,12 +2202,12 @@ class tvshows:
                 item.setArt({'icon': thumb, 'thumb': thumb, 'poster': thumb, 'fanart': addonFanart})
                 item.addContextMenuItems(cm)
 
-                if kodiVersion < 20:
-                    item.setInfo(type='video', infoLabels={'plot': plot})
-                else:
+                if kodiVersion > 19:
                     vtag = item.getVideoInfoTag()
                     vtag.setMediaType('video')
                     vtag.setPlot(plot)
+                else:
+                    item.setInfo(type='video', infoLabels={'plot': plot})
 
                 #control.addItem(handle=syshandle, url=url, listitem=item, isFolder=True)
                 list_items.append((url, item, True))
@@ -2249,4 +2216,4 @@ class tvshows:
 
         control.addItems(handle=syshandle, items=list_items, totalItems=len(list_items))
         control.content(syshandle, '')
-        control.directory(syshandle, cacheToDisc=True)
+        control.directory(syshandle, cacheToDisc=catch)

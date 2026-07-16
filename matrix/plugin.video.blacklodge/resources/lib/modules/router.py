@@ -163,10 +163,6 @@ def routing(_argv):
         from resources.lib.indexers import movies
         movies.movies().search(code)
 
-    elif action == 'movieSearchnew':
-        from resources.lib.indexers import movies
-        movies.movies().search_new(code)
-
     elif action == 'movieSearchterm':
         from resources.lib.indexers import movies
         movies.movies().search_term(name, code)
@@ -235,6 +231,10 @@ def routing(_argv):
         from resources.lib.indexers import movies
         movies.movies().userlists()
 
+    elif action == 'movieKwSearch':
+        from resources.lib.indexers import movies
+        movies.movies().keyword_search()
+
     elif action == 'channels':
         from resources.lib.indexers import channels
         channels.channels().get()
@@ -250,10 +250,6 @@ def routing(_argv):
     elif action == 'tvSearch':
         from resources.lib.indexers import tvshows
         tvshows.tvshows().search(code)
-
-    elif action == 'tvSearchnew':
-        from resources.lib.indexers import tvshows
-        tvshows.tvshows().search_new(code)
 
     elif action == 'tvSearchterm':
         from resources.lib.indexers import tvshows
@@ -319,17 +315,17 @@ def routing(_argv):
         from resources.lib.indexers import tvshows
         tvshows.tvshows().userlists()
 
+    elif action == 'tvKwSearch':
+        from resources.lib.indexers import tvshows
+        tvshows.tvshows().keyword_search()
+
     elif action == 'peopleSearch':
         from resources.lib.indexers import people
         people.People().search(content)
 
-    elif action == 'peopleSearchnew':
-        from resources.lib.indexers import people
-        people.People().search_new(content)
-
     elif action == 'peopleSearchterm':
         from resources.lib.indexers import people
-        people.People().search_term(name, content)
+        people.People().search_term(content, name)
 
     elif action == 'peopleDeleteterm':
         from resources.lib.indexers import people
@@ -437,6 +433,14 @@ def routing(_argv):
         from resources.lib.modules import mylists
         mylists.remove(name, imdb)
 
+    elif action == 'addIMDbList':
+        from resources.lib.modules import mylists
+        mylists.add_imdb_list()
+
+    elif action == 'delIMDbList':
+        from resources.lib.modules import mylists
+        mylists.del_imdb_list(url)
+
     elif action == 'traktManager':
         from resources.lib.modules import trakt
         trakt.manager(name, imdb, tmdb, content)
@@ -457,8 +461,7 @@ def routing(_argv):
 
     elif action == 'download':
         import simplejson as json
-        from resources.lib.modules import sources
-        from resources.lib.modules import downloader
+        from resources.lib.modules import downloader, sources
         try: downloader.download(name, image, sources.sources().sourcesResolve(json.loads(source)[0], info=True))
         except: pass
 

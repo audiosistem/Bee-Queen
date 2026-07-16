@@ -623,6 +623,18 @@ msgctxt "#32157"
 msgid "Biography"
 msgstr "Βιογραφία"
 
+msgctxt "#32158"
+msgid "[I]Add IMDb List...[/I]"
+msgstr "[I]Προσθήκη Λίστας IMDb...[/I]"
+
+msgctxt "#32159"
+msgid "[I]Remove list[/I]"
+msgstr "[I]Αφαίρεση λίστας[/I]"
+
+msgctxt "#32160"
+msgid "Enter Keyword (if multiple, comma separated):"
+msgstr "Εισαγωγή Keyword (για πολλά, διαχωρισμός με κόμμα):"
+
 msgctxt "#32200"
 msgid "No Color"
 msgstr "Χωρίς Χρώμα"
@@ -957,8 +969,8 @@ msgid "Disable CloudFlare protected providers"
 msgstr "Αφαίρεση πηγών προστατευμένων με CloudFlare"
 
 msgctxt "#32363"
-msgid "Remove HEVC streams"
-msgstr "Αφαίρεση ροών HEVC"
+msgid "Remove AV1 streams"
+msgstr "Αφαίρεση ροών AV1"
 
 msgctxt "#32364"
 msgid "Remove Dolby-Vision streams"
@@ -967,6 +979,10 @@ msgstr "Αφαίρεση ροών Dolby-Vision"
 msgctxt "#32365"
 msgid "Remove sources with keywords (comma separated):"
 msgstr "Αφαίρεση ροών με λέξεις-κλειδιά (διαχωρισμός με κόμμα):"
+
+msgctxt "#32366"
+msgid "Remove sources from hosts (comma separated):"
+msgstr "Αφαίρεση ροών από hosts (διαχωρισμός με κόμμα):"
 
 msgctxt "#32372"
 msgid "When playback ends..."

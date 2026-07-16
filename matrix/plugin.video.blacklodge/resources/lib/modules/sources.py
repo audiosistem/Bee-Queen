@@ -56,35 +56,56 @@ class sources:
             if not meta: # played through library
                 try:
                     if self.content == 'episode':
-                        meta = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetTVShows", "params": {"filter":{"or": [{"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}]}, "properties" : ["title", "year", "thumbnail", "file", "runtime"]}, "id": 1}' % (year, str(int(year)+1), str(int(year)-1)))
-                        meta = six.ensure_text(meta, errors='ignore')
-                        meta = json.loads(meta)['result']['tvshows']
-                        #log_utils.log('meta0: ' + repr(meta))
+                        show_meta = control.jsonrpc(
+                            '{"jsonrpc": "2.0", "method": "VideoLibrary.GetTVShows", "params": {"filter":{"or": [{"field": "year", "operator": "is", "value": "%s"}, ' \
+                            '{"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}]}, ' \
+                            '"properties" : ["title", "year", "uniqueid", "runtime", "file"]}, "id": 1}' % (year, str(int(year)+1), str(int(year)-1))
+                        )
+                        show_meta = six.ensure_text(show_meta, errors='ignore')
+                        show_meta = json.loads(show_meta)['result']['tvshows']
+                        #log_utils.log('show_meta: ' + repr(show_meta))
 
                         t = self.getTitle(tvshowtitle)
-                        meta = [i for i in meta if year == str(i['year']) and t == self.getTitle(i['title'])][0]
+                        try: show_meta = [i for i in show_meta if i['uniqueid']['imdb'] == imdb][0]
+                        except: show_meta = [i for i in show_meta if year == str(i['year']) and t == self.getTitle(i['title'])][0]
 
-                        tvshowid = meta['tvshowid']
+                        tvshowid = show_meta['tvshowid']
+                        duration = int(show_meta['runtime'])
 
-                        meta = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetEpisodes", "params":{ "tvshowid": %d, "filter":{"and": [{"field": "season", "operator": "is", "value": "%s"}, {"field": "episode", "operator": "is", "value": "%s"}]}, "properties": ["title", "season", "episode", "showtitle", "firstaired", "runtime", "rating", "director", "writer", "plot", "thumbnail", "file"]}, "id": 1}' % (tvshowid, season, episode))
+                        meta = control.jsonrpc(
+                            '{"jsonrpc": "2.0", "method": "VideoLibrary.GetEpisodes", "params": ' \
+                            '{ "tvshowid": %d, "filter":{"and": [{"field": "season", "operator": "is", "value": "%s"}, {"field": "episode", "operator": "is", "value": "%s"}]}, ' \
+                            '"properties": ["title", "season", "episode", "showtitle", "firstaired", "runtime", "rating", "votes", "director", "writer", "plot", "art", "file"]}, ' \
+                            '"id": 1}' % (tvshowid, season, episode)
+                        )
                         meta = six.ensure_text(meta, errors='ignore')
                         meta = json.loads(meta)['result']['episodes'][0]
+                        meta.update({'mediatype': self.content, 'imdb': imdb, 'tmdb': tmdb, 'tvshowtitle': tvshowtitle, 'year': year,
+                                     'premiered': meta['firstaired'], 'duration': int(meta['runtime']) or duration or 2700})
 
                     else:
-                        meta = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetMovies", "params": {"filter":{"or": [{"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}]}, "properties" : ["title", "originaltitle", "year", "genre", "studio", "country", "runtime", "rating", "votes", "mpaa", "director", "writer", "plot", "plotoutline", "tagline", "thumbnail", "file"]}, "id": 1}' % (year, str(int(year)+1), str(int(year)-1)))
+                        meta = control.jsonrpc(
+                            '{"jsonrpc": "2.0", "method": "VideoLibrary.GetMovies", "params": {"filter":{"or": [{"field": "year", "operator": "is", "value": "%s"}, ' \
+                            '{"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}]}, ' \
+                            '"properties" : ["title", "originaltitle", "year", "uniqueid", "runtime", "premiered", "genre", "studio", "country", "rating", "votes", ' \
+                            '"mpaa", "director", "writer", "plot", "tagline", "art", "file"]}, "id": 1}' % (year, str(int(year)+1), str(int(year)-1))
+                        )
                         meta = six.ensure_text(meta, errors='ignore')
                         meta = json.loads(meta)['result']['movies']
                         t = self.getTitle(title)
-                        meta = [i for i in meta if year == str(i['year']) and (t == self.getTitle(i['title']) or t == self.getTitle(i['originaltitle']))][0]
+                        try: meta = [i for i in meta if i['uniqueid']['imdb'] == imdb][0]
+                        except: meta = [i for i in meta if year == str(i['year']) and (t == self.getTitle(i['title']) or t == self.getTitle(i['originaltitle']))][0]
+                        meta.update({'mediatype': self.content, 'imdb': imdb, 'tmdb': tmdb, 'duration': meta['runtime'] or 7200})
 
                     for k, v in six.iteritems(meta):
                         if type(v) == list:
-                            try: meta[k] = str(' / '.join([six.ensure_str(i, errors='ignore') for i in v]))
+                            try: meta[k] = ' / '.join([six.ensure_str(i, errors='ignore') for i in v])
                             except: meta[k] = ''
+                        elif type(v) == dict:
+                            pass
                         else:
-                            try: meta[k] = str(six.ensure_str(v, errors='ignore'))
+                            try: meta[k] = six.ensure_str(v, errors='ignore')
                             except: meta[k] = str(v)
-
                     #log_utils.log('meta: ' + repr(meta))
                 except:
                     log_utils.log('Getting meta from lib failed', 1)
@@ -138,7 +159,8 @@ class sources:
 
         def sourcesDirMeta(metadata):
             if not metadata: return metadata
-            allowed = ['icon', 'poster', 'fanart', 'thumb', 'clearlogo', 'clearart', 'discart', 'title', 'year', 'tvshowtitle', 'season', 'episode', 'rating', 'plot', 'trailer', 'mediatype']
+            allowed = ['icon', 'poster', 'fanart', 'thumb', 'clearlogo', 'clearart', 'discart', 'title', 'year',
+                        'tvshowtitle', 'season', 'episode', 'rating', 'votes', 'plot', 'trailer', 'mediatype']
             return {k: v for k, v in six.iteritems(metadata) if k in allowed}
 
         control.playlist.clear()
@@ -209,9 +231,9 @@ class sources:
                         vtag.setMediaType('video')
                         vtag.setTitle(meta['title'])
                         vtag.setYear(int(meta['year']))
-                        vtag.setRating(float(meta.get('rating', 0)))
+                        vtag.setRating(float(meta.get('rating', '0')), int(meta.get('votes', '0').replace(',', '')))
                         vtag.setPlot(meta.get('plot'))
-                        vtag.setTrailer(meta['trailer'])
+                        vtag.setTrailer(meta.get('trailer'))
                         if 'tvshowtitle' in meta:
                             vtag.setTvShowTitle(meta['tvshowtitle'])
                             vtag.setSeason(int(meta['season']))
@@ -236,8 +258,6 @@ class sources:
 
         control.content(syshandle, 'files')
         control.directory(syshandle, cacheToDisc=True)
-        from resources.lib.modules import views
-        views.setView('files', {'skin.estuary': 55, 'skin.confluence': 500})
 
 
     def playItem(self, title, source, browse=False):
@@ -390,14 +410,14 @@ class sources:
 
     def customScrape(self, title, tvshowtitle, year, imdb, season, episode):
         if self.content == 'movie':
-            title = control.getKeyboard(title, 'Title:')
-            year = control.getKeyboard(year, 'Year:')
-            imdb = control.getKeyboard(imdb, 'IMDb id:')
+            title = control.inputDialog('Title:', title)
+            year = control.inputDialog('Year:', year, kb='num')
+            imdb = control.inputDialog('IMDb id:', imdb)
         else:
-            tvshowtitle = control.getKeyboard(tvshowtitle, 'TV Show Title:')
-            imdb = control.getKeyboard(imdb, 'TV Show IMDb id:')
-            season = control.getKeyboard(season, 'Season number:')
-            episode = control.getKeyboard(episode, 'Episode number:')
+            tvshowtitle = control.inputDialog('TV Show Title:', tvshowtitle)
+            imdb = control.inputDialog('TV Show IMDb id:', imdb)
+            season = control.inputDialog('Season number:', season, kb='num')
+            episode = control.inputDialog('Episode number:', episode, kb='num')
 
         return title, tvshowtitle, year, imdb, season, episode
 
@@ -475,8 +495,6 @@ class sources:
 
         max_quality = control.setting('hosts.quality') or '0' if not self.unfiltered else '0'
         max_quality = int(max_quality)
-        min_quality = control.setting('min.quality') or '3' if not self.unfiltered else '3'
-        min_quality = int(min_quality)
 
         pre_emp = control.setting('preemptive.termination') if not self.unfiltered else 'false'
         pre_emp_limit = int(control.setting('preemptive.limit'))
@@ -487,13 +505,7 @@ class sources:
         start_time = time.time()
         end_time = start_time + timeout
 
-        string1 = control.lang(32404)
-        string2 = control.lang(32405)
-        string3 = control.lang(32406)
-        string4 = control.lang(32601)
-        string5 = control.lang(32602)
-        string6 = control.lang(32606)
-        string7 = control.lang(32607)
+        remaining_prov = control.lang(32406)
 
         source_4k = source_1080 = source_720 = source_sd = source_filtered_out = total = 0
 
@@ -524,30 +536,10 @@ class sources:
 
                     self.sourcesFilter()
 
-                    if min_quality == 0:
-                        source_4k = len([e for e in self.sources if e['quality'] == '4k'])
-                    elif min_quality == 1:
-                        source_1080 = len([e for e in self.sources if e['quality'] == '1080p'])
-                        if max_quality == 0:
-                            source_4k = len([e for e in self.sources if e['quality'] == '4k'])
-                    elif min_quality == 2:
-                        source_720 = len([e for e in self.sources if e['quality'] == '720p'])
-                        if max_quality == 0:
-                            source_4k = len([e for e in self.sources if e['quality'] == '4k'])
-                            source_1080 = len([e for e in self.sources if e['quality'] == '1080p'])
-                        elif max_quality == 1:
-                            source_1080 = len([e for e in self.sources if e['quality'] == '1080p'])
-                    elif min_quality == 3:
-                        source_sd = len([e for e in self.sources if e['quality'] in ['sd', 'scr', 'cam']])
-                        if max_quality == 0:
-                            source_4k = len([e for e in self.sources if e['quality'] == '4k'])
-                            source_1080 = len([e for e in self.sources if e['quality'] == '1080p'])
-                            source_720 = len([e for e in self.sources if e['quality'] == '720p'])
-                        elif max_quality == 1:
-                            source_1080 = len([e for e in self.sources if e['quality'] == '1080p'])
-                            source_720 = len([e for e in self.sources if e['quality'] == '720p'])
-                        elif max_quality == 2:
-                            source_720 = len([e for e in self.sources if e['quality'] == '720p'])
+                    source_4k = len([e for e in self.sources if e['quality'] == '4k'])
+                    source_1080 = len([e for e in self.sources if e['quality'] == '1080p'])
+                    source_720 = len([e for e in self.sources if e['quality'] == '720p'])
+                    source_sd = len([e for e in self.sources if e['quality'] in ['sd', 'scr', 'cam']])
 
                     total = source_4k + source_1080 + source_720 + source_sd
                     source_filtered_out = len([e for e in self.f_out_sources])
@@ -579,8 +571,8 @@ class sources:
                     info = [sourcelabelDict[x.getName()] for x in threads if x.is_alive() == True]
                     # if i >= timeout and len(mainleft) == 0 and len(self.sources) >= 100 * len(info): break # improve responsiveness
                     line1 = pdiag_format % (source_4k_label, source_1080_label, source_720_label, source_sd_label, source_total_label, source_filtered_out_label)
-                    if len(info) > 6: line3 = string3 % (str(len(info)))
-                    elif len(info) > 0: line3 = string3 % (', '.join(info))
+                    if len(info) > 6: line3 = remaining_prov % (str(len(info)))
+                    elif len(info) > 0: line3 = remaining_prov % (', '.join(info))
                     else: break
                     # percent = int(100 * float(i) / (2 * timeout) + 0.5)
                     current_time = time.time()
@@ -912,11 +904,13 @@ class sources:
 
         remove_captcha = control.setting('remove.captcha') or 'false'
 
-        remove_hevc = control.setting('remove.hevc') or 'false'
+        remove_av1 = control.setting('remove.av1') or 'false'
 
         remove_dv = control.setting('remove.dv') or 'false'
 
         remove_keywords = control.setting('remove.keywords') or ''
+
+        remove_hosts = control.setting('remove.hosts') or ''
 
         remove_dups = control.setting('remove.dups') or 'true'
 
@@ -958,9 +952,8 @@ class sources:
             log_utils.log('DUP - Exception', 1)
             pass
 
-        if remove_hevc == 'true':
-            self.sources = [i for i in self.sources if not any(x in i['url'] for x in ['hevc', 'h265', 'x265', 'h.265', 'x.265', 'HEVC', 'H265', 'X265', 'H.265', 'X.265']) and not any(
-                                                       x in i.get('name', '').lower() for x in ['hevc', 'h265', 'x265', 'h.265', 'x.265'])]
+        if remove_av1 == 'true':
+            self.sources = [i for i in self.sources if '.av1.' not in i.get('name', '').lower()]
 
         if remove_dv == 'true':
             self.sources = [i for i in self.sources if not any(x in i.get('name', '').lower() for x in ['.dv.', '.dolby.vision.', '.dolbyvision.', '.dovi.'])]
@@ -969,6 +962,10 @@ class sources:
             keywords = remove_keywords.split(',')
             keywords = ['.{}.'.format(cleantitle.get_title(k)).lower() for k in keywords]
             self.sources = [i for i in self.sources if not any(x in '.{}.'.format(i.get('name', '').lower()) for x in keywords)]
+
+        if remove_hosts:
+            hosts = [h.lower().strip() for h in remove_hosts.split(',')]
+            self.sources = [i for i in self.sources if not i['source'].lower() in hosts]
 
         if remove_captcha == 'true':
             self.sources = [i for i in self.sources if not (i['source'].lower() in self.hostcapDict and not 'debrid' in i)]
@@ -1520,7 +1517,7 @@ class sources:
         self.hostprDict = ['dailyuploads.net', 'ddl.to', 'ddownload.com', 'fast-down.com', 'dropapk.to', 'drop.download', 'earn4files.com', 'fastclick.to' 'filefactory.com',
                            'hexupload.net', 'mega.io', 'mega.nz', 'multiup.org', 'nitroflare.com', 'nitroflares.com', 'nitro.download', 'oboom.com', 'rapidgator.asia',
                            'rapidgator.net', 'rg.to', 'rockfile.co', 'rockfile.eu', 'turbobit.net', 'turbobita.net', 'turbobit.cc', 'turbobif.com', 'torbobit.net', 'ul.to',
-                           'uploaded.net', 'uploaded.to', 'uploadgig.com', 'uploadrocket.net', 'usersdrive.com', '1fichier.com', 'alterupload.com', 'cjoint.net',
+                           'uploaded.net', 'uploaded.to', 'uploadgig.com', 'uploadrocket.net', 'uploady.io', 'usersdrive.com', '1fichier.com', 'alterupload.com', 'cjoint.net',
                            'desfichiers.com', 'dfichiers.com', 'megadl.fr', 'mesfichiers.org', 'piecejointe.net', 'pjointe.com', 'tenvoi.com', 'dl4free.com',
                            'clicknupload.click', 'clicknupload.me', 'clicknupload.com', 'clicknupload.link', 'clicknupload.org', 'clicknupload.co', 'clicknupload.cc',
                            'clicknupload.download', 'clickndownload.org', 'clicknupload.space', 'clickndownload.link', 'clicknupload.one', 'clickndownload.name']

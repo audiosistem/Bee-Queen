@@ -631,6 +631,18 @@ msgctxt "#32157"
 msgid "Biography"
 msgstr ""
 
+msgctxt "#32158"
+msgid "[I]Add IMDb List...[/I]"
+msgstr ""
+
+msgctxt "#32159"
+msgid "[I]Remove list[/I]"
+msgstr ""
+
+msgctxt "#32160"
+msgid "Enter Keyword (if multiple, comma separated):"
+msgstr ""
+
 msgctxt "#32200"
 msgid "No Color"
 msgstr ""
@@ -964,7 +976,7 @@ msgid "Disable CloudFlare protected providers"
 msgstr ""
 
 msgctxt "#32363"
-msgid "Remove HEVC streams"
+msgid "Remove AV1 streams"
 msgstr ""
 
 msgctxt "#32364"
@@ -973,6 +985,10 @@ msgstr ""
 
 msgctxt "#32365"
 msgid "Remove sources with keywords (comma separated):"
+msgstr ""
+
+msgctxt "#32366"
+msgid "Remove sources from hosts (comma separated):"
 msgstr ""
 
 msgctxt "#32372"
