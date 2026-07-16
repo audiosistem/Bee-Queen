@@ -23,6 +23,7 @@ from resources.lib.modules import client
 from resources.lib.modules import client_utils
 from resources.lib.modules import control
 from resources.lib.modules import favorites
+from resources.lib.modules import libtools
 from resources.lib.modules import metacache
 from resources.lib.modules import playcount
 from resources.lib.modules import tmdb_utils
@@ -381,19 +382,22 @@ class tvshows:
             if trakt.getTraktCredentialsInfo() == False:
                 raise Exception()
             activity = trakt.getActivity()
-            # CACHE: 5 min Trakt-only cache - see modules/trakt_cache.py.
             from resources.lib.modules import trakt_cache
             userlists += trakt_cache.get(
-                self.trakt_user_list,
+                trakt.user_list_directory_tvshow,
                 trakt_cache.TTL_LISTS_SEC,
                 self.trakt_lists_link,
+                self.trakt_list_link,
                 self.trakt_user,
             )
         except:
             pass
         self.list = userlists
-        for i in range(0, len(self.list)):
-            self.list[i].update({'action': 'tvshows'})
+        if not self.list:
+            if trakt.getTraktCredentialsInfo() == False:
+                control.infoDialog('Connect Trakt in Settings > Account Settings to see your lists.', sound=True)
+            else:
+                control.infoDialog('No Trakt TV lists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k['image'], k['name'].lower()))
         self.addDirectory(self.list)
         return self.list
@@ -405,21 +409,22 @@ class tvshows:
             if trakt.getTraktCredentialsInfo() == False:
                 raise Exception()
             activity = trakt.getActivity()
-            # CACHE: liked-lists is the heaviest Trakt enumeration the
-            # add-on performs; short-TTL cache avoids re-walking all
-            # pages on every re-entry of the directory.
             from resources.lib.modules import trakt_cache
             userlists += trakt_cache.get(
-                self.trakt_user_list,
+                trakt.user_list_directory_tvshow,
                 trakt_cache.TTL_LISTS_SEC,
                 self.trakt_likedlists_link,
+                self.trakt_list_link,
                 self.trakt_user,
             )
         except:
             pass
         self.list = userlists
-        for i in range(0, len(self.list)):
-            self.list[i].update({'action': 'tvshows'})
+        if not self.list:
+            if trakt.getTraktCredentialsInfo() == False:
+                control.infoDialog('Connect Trakt in Settings > Account Settings to see your lists.', sound=True)
+            else:
+                control.infoDialog('No Trakt TV lists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k['image'], k['name'].lower()))
         self.addDirectory(self.list)
         return self.list
@@ -430,14 +435,25 @@ class tvshows:
         try:
             if tmdb_utils.getTMDbCredentialsInfo() == False:
                 raise Exception()
-            userlists += tmdb_utils.get_created_lists(self.tmdb_userlists_link)
+            userlists += tmdb_utils.get_created_lists(self.tmdb_userlists_link, list_type='tv')
         except:
             pass
         self.list = userlists
-        for i in range(0, len(self.list)):
-            self.list[i].update({'action': 'tvshows'})
+        if not self.list:
+            if tmdb_utils.getTMDbCredentialsInfo() == False:
+                control.infoDialog('Authorize TMDb in Settings > Account Settings to see your lists.', sound=True)
+            else:
+                control.infoDialog('No TMDb TV lists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k['image'], k['name'].lower()))
         self.addDirectory(self.list)
+        return self.list
+
+
+    def local_library(self):
+        self.list = libtools.libtvshows().scan_local_items()
+        if not self.list:
+            control.infoDialog('No TV shows found in your local library folder.', sound=True)
+        self.tvshowDirectory(self.list)
         return self.list
 
 
@@ -486,7 +502,7 @@ class tvshows:
                         imdb = 'tt' + re.sub(r'[^0-9]', '', str(imdb))
                     tmdb = item.get('ids', {}).get('tmdb')
                     if not tmdb:
-                        tmdb == '0'
+                        tmdb = '0'
                     else:
                         tmdb = str(tmdb)
                     tvdb = item.get('ids', {}).get('tvdb')
@@ -496,7 +512,7 @@ class tvshows:
                         tvdb = re.sub(r'[^0-9]', '', str(tvdb))
                     paused_at = item.get('paused_at')
                     if not paused_at:
-                        paused_at == '0'
+                        paused_at = '0'
                     else:
                         paused_at = re.sub(r'[^0-9]+', '', str(paused_at))
                     self.list.append({'title': title, 'originaltitle': title, 'year': year, 'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb, 'next': next, 'paused_at': paused_at})
@@ -882,8 +898,11 @@ class tvshows:
                 items = result['parts']
             elif 'cast' in result:
                 items = result['cast']
-            for item in items:
+            for raw in items:
                 try:
+                    media_type, item = tmdb_utils.unwrap_tmdb_list_item(raw)
+                    if media_type != 'tv' or not item:
+                        raise Exception()
                     if 'media_type' in item and not item['media_type'] == 'tv':
                         raise Exception()
                     title = item['name']
@@ -1427,11 +1446,13 @@ class tvshows:
 
 
     def tvshowDirectory(self, items):
-        if items == None or len(items) == 0:
-            control.idle()
-            #sys.exit()
         sysaddon = sys.argv[0]
         syshandle = int(sys.argv[1])
+        if items == None or len(items) == 0:
+            control.idle()
+            control.content(syshandle, 'tvshows')
+            control.directory(syshandle, cacheToDisc=True)
+            return
         addonPoster, addonBanner = control.addonPoster(), control.addonBanner()
         addonFanart, settingFanart = control.addonFanart(), control.setting('show.fanart')
         traktCredentials = trakt.getTraktCredentialsInfo()
@@ -1445,6 +1466,7 @@ class tvshows:
             favitems = [i[0] for i in favitems]
         except:
             pass
+        tv_library = libtools.libtvshows()
         for i in items:
             try:
                 label = i['title']
@@ -1493,7 +1515,7 @@ class tvshows:
                     cm.append(('Trakt Manager', 'RunPlugin(%s?action=trakt_manager&name=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, tmdb)))
                 if tmdbCredentials == True:
                     cm.append(('TMDb Manager', 'RunPlugin(%s?action=tmdb_manager&name=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, tmdb)))
-                cm.append(('Add to Library', 'RunPlugin(%s?action=tvshow_to_library&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s)' % (sysaddon, systitle, year, imdb, tmdb)))
+                libtools.append_tvshow_library_cm(cm, sysaddon, tv_library, i['title'], year, imdb, tmdb)
                 if action == 'tvFavorites':
                     cm.append(('Remove from MyFavorites', 'RunPlugin(%s?action=deleteFavorite&meta=%s&content=tvshow)' % (sysaddon, sysmeta)))
                 else:
@@ -1571,7 +1593,7 @@ class tvshows:
             pass
         control.content(syshandle, 'tvshows')
         control.directory(syshandle, cacheToDisc=True)
-        views.setView('tvshows', {'skin.aeon.nox.silvo' : 50, 'skin.estuary': 55, 'skin.confluence': 500}) #View 50 List #View 501 LowList
+        views.setView('tvshows')
 
 
     def addDirectory(self, items, queue=False):
@@ -1581,17 +1603,10 @@ class tvshows:
         sysaddon = sys.argv[0]
         syshandle = int(sys.argv[1])
         addonFanart = control.addonFanart()
-        addonThumb = control.addonThumb()
-        artPath = control.artPath()
         for i in items:
             try:
                 name = i['name']
-                if i['image'].startswith('http'):
-                    thumb = i['image']
-                elif not artPath == None:
-                    thumb = os.path.join(artPath, i['image'])
-                else:
-                    thumb = addonThumb
+                image = i['image']
                 url = '%s?action=%s' % (sysaddon, i['action'])
                 try:
                     url += '&url=%s' % urllib_parse.quote_plus(i['url'])
@@ -1609,13 +1624,14 @@ class tvshows:
                     item = control.item(label=name, offscreen=True)
                 except:
                     item = control.item(label=name)
-                item.setArt({'icon': thumb, 'thumb': thumb, 'fanart': addonFanart})
+                fanart = i['fanart'] if 'fanart' in i and not (i['fanart'] == '0' or i['fanart'] == None) else addonFanart
+                control.set_menu_item_art(item, image, fanart=fanart)
                 item.addContextMenuItems(cm)
                 control.addItem(handle=syshandle, url=url, listitem=item, isFolder=True)
             except:
                 #log_utils.log('addDirectory', 1)
                 pass
-        control.content(syshandle, 'addons')
-        control.directory(syshandle, cacheToDisc=True)
+        from resources.lib.modules import views
+        views.endMenuDirectory(syshandle)
 
 

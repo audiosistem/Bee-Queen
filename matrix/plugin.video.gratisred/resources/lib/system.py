@@ -49,7 +49,7 @@ def router(_argv):
 
     elif action == 'add_view':
         from resources.lib.modules import views
-        views.addView(content)
+        views.addView(views.normalize_view_content(content))
 
 
     elif action == 'alter_sources':
@@ -64,12 +64,52 @@ def router(_argv):
 
     elif action == 'auth_tmdb':
         from resources.lib.modules import tmdb_utils
-        tmdb_utils.authTMDb()
+        reopen = (params.get('source') or '').lower() == 'settings'
+        tmdb_utils.authTMDb(reopen_settings=reopen)
+
+
+    elif action == 'revoke_tmdb':
+        from resources.lib.modules import tmdb_utils
+        reopen = (params.get('source') or '').lower() == 'settings'
+        tmdb_utils.delete_session(reopen_settings=reopen)
 
 
     elif action == 'auth_trakt':
         from resources.lib.modules import trakt
-        trakt.authTrakt()
+        reopen = (params.get('source') or '').lower() == 'settings'
+        trakt.authTrakt(reopen_settings=reopen)
+
+
+    elif action == 'revoke_trakt':
+        from resources.lib.modules import trakt
+        reopen = (params.get('source') or '').lower() == 'settings'
+        trakt.revokeTrakt(reopen_settings=reopen)
+
+
+    elif action == 'opensubs_check':
+        from resources.lib.apis import opensubs_api
+        reopen = (params.get('source') or '').lower() == 'settings'
+        opensubs_api.check_account(reopen_settings=reopen)
+
+
+    elif action == 'movie_from_library':
+        from resources.lib.modules import libtools
+        libtools.libmovies().remove(title, year, imdb)
+
+
+    elif action == 'movie_refresh_library':
+        from resources.lib.modules import libtools
+        libtools.libmovies().refresh(name, title, year, imdb)
+
+
+    elif action == 'tvshow_from_library':
+        from resources.lib.modules import libtools
+        libtools.libtvshows().remove(tvshowtitle, year, imdb, tmdb)
+
+
+    elif action == 'tvshow_refresh_library':
+        from resources.lib.modules import libtools
+        libtools.libtvshows().refresh(tvshowtitle, year, imdb, tmdb)
 
 
     elif action == 'calendar':
@@ -203,6 +243,16 @@ def router(_argv):
     elif action == 'library_menu':
         from resources.lib.indexers import navigator
         navigator.navigator().library()
+
+
+    elif action == 'library_movies':
+        from resources.lib.indexers import movies
+        movies.movies().local_library()
+
+
+    elif action == 'library_tvshows':
+        from resources.lib.indexers import tvshows
+        tvshows.tvshows().local_library()
 
 
     elif action == 'moreplugs_menu':
@@ -648,11 +698,6 @@ def router(_argv):
     elif action == 'changelog':
         from resources.lib.modules import log_utils
         log_utils.changelog()
-        
-
-    elif action == 'scrubsv2_changelog':
-        from resources.lib.modules import log_utils
-        log_utils.scrubsv2_changelog()
 
 
     elif action == 'view_debuglog':
@@ -662,7 +707,12 @@ def router(_argv):
 
     elif action == 'views_menu':
         from resources.lib.indexers import navigator
-        navigator.navigator().views()
+        navigator.navigator().views_menu()
+
+
+    elif action == 'views_pick':
+        from resources.lib.indexers import navigator
+        navigator.navigator().views_pick(content)
 
 
     elif action == 'trailer':
@@ -758,7 +808,8 @@ def router(_argv):
 
     elif action == 'installAddon':
         from resources.lib.modules import control
-        control.installAddon(id)
+        refresh_menu = params.get('refresh') == 'installs_menu'
+        control.installAddon(id, refresh_menu=refresh_menu)
 
 
     elif action == 'alt_play':
@@ -820,11 +871,6 @@ def router(_argv):
     elif action == 'gdriveplayer.sources':
         from resources.lib.indexers.plugins import gdriveplayer
         gdriveplayer.indexer().sources(url, image)
-
-
-    elif action == 'open_sidemenu': # Forces open the side menu aka slide menu.
-        from resources.lib.modules import control
-        control.execute('SetProperty(MediaMenu,True,Home)')
 
 
     elif action == 'testing':

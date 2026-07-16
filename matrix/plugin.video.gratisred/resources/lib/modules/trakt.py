@@ -63,6 +63,62 @@ BASE_URL = 'https://api.trakt.tv'
 REDIRECT_URI = 'urn:ietf:wg:oauth:2.0:oob'
 V2_API_KEY = '33ea6bfa2b06c9cfa3e408fc6b4cc30484f31b90733df3508fd09ce512f47982'
 CLIENT_SECRET = '4a294afdab95894be977dc79c9715224dc87a4a88d74944507945ca58bf719b2'
+# Trakt API max per-page limit (reduced to 250; see trakt-api discussions #681 / #775)
+TRAKT_PAGE_LIMIT = 250
+# extended=progress on watched/shows is capped at 100 per page
+TRAKT_WATCHED_PROGRESS_PAGE_LIMIT = 100
+TRAKT_REFRESH_PROPERTY = 'gratisred.trakt_refreshing_token'
+
+
+def _trakt_page_limit(query_params):
+    ext = str((query_params or {}).get('extended') or '').lower()
+    if 'progress' in ext:
+        return TRAKT_WATCHED_PROGRESS_PAGE_LIMIT
+    return TRAKT_PAGE_LIMIT
+
+
+def _set_trakt_expires(expires_in):
+    try:
+        control.setSetting('trakt.expires', str(time.time() + int(expires_in)))
+    except Exception:
+        pass
+
+
+def _refreshTraktToken():
+    try:
+        control.window.setProperty(TRAKT_REFRESH_PROPERTY, 'true')
+        oauth = urljoin(BASE_URL, '/oauth/token')
+        headers = {'Content-Type': 'application/json', 'trakt-api-key': V2_API_KEY, 'trakt-api-version': '2'}
+        opost = {'client_id': V2_API_KEY, 'client_secret': CLIENT_SECRET, 'redirect_uri': REDIRECT_URI,
+                 'grant_type': 'refresh_token', 'refresh_token': control.setting('trakt.refresh')}
+        result = requests.post(oauth, data=json.dumps(opost), headers=headers, timeout=30).json()
+        token, refresh = result['access_token'], result['refresh_token']
+        control.setSetting('trakt.token', token)
+        control.setSetting('trakt.refresh', refresh)
+        _set_trakt_expires(result.get('expires_in', 7200))
+        return token
+    except Exception as e:
+        log_utils.log('Trakt token refresh failed: %s' % e)
+        return None
+    finally:
+        control.window.clearProperty(TRAKT_REFRESH_PROPERTY)
+
+
+def _ensureTraktTokenFresh():
+    if not getTraktCredentialsInfo():
+        return
+    while control.window.getProperty(TRAKT_REFRESH_PROPERTY) == 'true':
+        time.sleep(0.25)
+    try:
+        expires_at = float(control.setting('trakt.expires') or '0')
+    except Exception:
+        expires_at = 0.0
+    if expires_at > 0 and time.time() >= expires_at:
+        _refreshTraktToken()
+
+
+def valid_trakt_activities(data):
+    return isinstance(data, dict) and 'all' in data and isinstance(data.get('movies'), dict) and isinstance(data.get('episodes'), dict)
 
 
 def getTraktCredentialsInfo():
@@ -104,8 +160,8 @@ def __getTraktALT(url, post=None):
         result = client.request(oauth, post=json.dumps(opost), headers=headers)
         result = client_utils.json_loads_as_str(result)
         token, refresh = result['access_token'], result['refresh_token']
-        control.setSetting(id='trakt.token', value=token)
-        control.setSetting(id='trakt.refresh', value=refresh)
+        control.setSetting('trakt.token', token)
+        control.setSetting('trakt.refresh', refresh)
         headers['Authorization'] = 'Bearer %s' % token
         result = client.request(url, post=post, headers=headers, output='extended', error=True)
         result = client_utils.byteify(result)
@@ -136,6 +192,7 @@ def __getTrakt(url, post=None):
         post = json.dumps(post) if post else None
         headers = {'Content-Type': 'application/json', 'trakt-api-key': V2_API_KEY, 'trakt-api-version': '2'}
         if getTraktCredentialsInfo():
+            _ensureTraktTokenFresh()
             headers.update({'Authorization': 'Bearer %s' % control.setting('trakt.token')})
         if not post:
             r = requests.get(url, headers=headers, timeout=30)
@@ -177,12 +234,9 @@ def __getTrakt(url, post=None):
         if resp_code not in ['401', '405', '403']:
             return result, resp_header
         # 401/403/405 => access token expired, try refreshing once and replay.
-        oauth = urljoin(BASE_URL, '/oauth/token')
-        opost = {'client_id': V2_API_KEY, 'client_secret': CLIENT_SECRET, 'redirect_uri': REDIRECT_URI, 'grant_type': 'refresh_token', 'refresh_token': control.setting('trakt.refresh')}
-        result = requests.post(oauth, data=json.dumps(opost), headers=headers, timeout=30).json()
-        token, refresh = result['access_token'], result['refresh_token']
-        control.setSetting(id='trakt.token', value=token)
-        control.setSetting(id='trakt.refresh', value=refresh)
+        token = _refreshTraktToken()
+        if not token:
+            return None, resp_header
         headers['Authorization'] = 'Bearer %s' % token
         if not post:
             r = requests.get(url, headers=headers, timeout=30)
@@ -245,7 +299,7 @@ def getTraktAsJson(url, post=None):
         pass
 
 
-def getTraktAsJsonPaged(url, page_size=1000):
+def getTraktAsJsonPaged(url, page_size=None):
     """
     Fetch a Trakt endpoint that supports pagination and return *all* results
     concatenated, following every page reported by the ``X-Pagination-Page-Count``
@@ -255,21 +309,21 @@ def getTraktAsJsonPaged(url, page_size=1000):
     ------------------------
     Trakt paginates almost every "list" endpoint (``/users/me/lists``,
     ``/users/likes/lists``, ``/users/me/watchlist/*``, ``/users/me/history/*``
-    etc.).  The maximum allowed ``limit`` per page is **1000** – anything
-    larger is either clamped or rejected.  Without walking the pages you
-    only ever see the first chunk, which is exactly the user-visible bug
-    ("Trakt doesn't get all its lists – some kind of block").
+    etc.).  The maximum allowed ``limit`` per page is now **250** (100 when
+    ``extended=progress``).  Without walking the pages you only ever see the
+    first chunk, which is exactly the user-visible bug ("Trakt doesn't get
+    all its lists – some kind of block").
 
     The helper:
-      * forces a sane ``limit`` (default 1000, Trakt's documented maximum),
+      * forces a sane ``limit`` (250 default, 100 for progress endpoints),
       * starts at ``page=1`` and increments until
         ``X-Pagination-Page-Count`` is reached (or the server stops
         returning items),
       * merges every page's JSON array into one flat list,
       * preserves Trakt's server-side sort when only a single page is
         returned (so behaviour is unchanged for small accounts),
-      * hard-caps at 50 pages (50 000 items) as a safety belt in case a
-        buggy server sends absurd header values.
+      * hard-caps at 50 pages as a safety belt in case a buggy server
+        sends absurd header values.
     """
     try:
         # Build the URL with explicit limit/page.  We respect any query
@@ -283,17 +337,18 @@ def getTraktAsJsonPaged(url, page_size=1000):
                 if '=' in kv:
                     k, v = kv.split('=', 1)
                     existing[k] = v
-        # Remove the useless "limit=1000000" value (or any out-of-range
-        # limit) that the legacy URL builders use; Trakt clamps these and
-        # the clamp varies per endpoint, so we replace with the documented
-        # maximum of 1000.
+        # Remove legacy out-of-range limits (e.g. limit=1000000) and use
+        # Trakt's current per-page maximum for this endpoint.
+        page_limit = _trakt_page_limit(existing)
+        if page_size is None:
+            page_size = page_limit
         try:
             limit = int(existing.get('limit', str(page_size)))
-            if limit <= 0 or limit > 1000:
+            if limit <= 0 or limit > page_limit:
                 limit = page_size
         except Exception:
             limit = page_size
-        existing['limit'] = str(limit)
+        existing['limit'] = str(min(int(limit), page_limit))
 
         merged = []
         current_page = 1
@@ -346,54 +401,107 @@ def getTraktAsJsonPaged(url, page_size=1000):
         return []
 
 
-def authTrakt():
+def revokeTrakt(reopen_settings=False):
+    """Revoke tokens at Trakt and clear local credentials."""
+    if not getTraktCredentialsInfo():
+        control.infoDialog('No Trakt account is authorised.', sound=True)
+        return
     try:
-        if getTraktCredentialsInfo() == True:
-            if control.yesnoDialog('An account already exists.' + '[CR]' + 'Do you want to reset?', heading='Trakt'):
-                control.setSetting(id='trakt.user', value='')
-                control.setSetting(id='trakt.authed', value='')
-                control.setSetting(id='trakt.token', value='')
-                control.setSetting(id='trakt.refresh', value='')
-            raise Exception()
-        result = getTraktAsJson('/oauth/device/code', {'client_id': V2_API_KEY})
-        verification_url = ensure_text('1) Visit : [COLOR skyblue]%s[/COLOR]' % result['verification_url'])
-        user_code = ensure_text('2) When prompted enter : [COLOR skyblue]%s[/COLOR]' % result['user_code'])
-        expires_in = int(result['expires_in'])
-        device_code = result['device_code']
-        interval = result['interval']
-        progressDialog = control.progressDialog
-        progressDialog.create('Trakt')
-        for i in range(0, expires_in):
+        token = (control.setting('trakt.token') or '').strip()
+        refresh = (control.setting('trakt.refresh') or '').strip()
+        revoke_token = token or refresh
+        if revoke_token:
             try:
-                percent = int(100 * float(i) / int(expires_in))
-                progressDialog.update(max(1, percent), verification_url + '[CR]' + user_code)
-                if progressDialog.iscanceled():
+                client.request(
+                    urljoin(BASE_URL, '/oauth/revoke'),
+                    post=json.dumps({
+                        'token': revoke_token,
+                        'client_id': V2_API_KEY,
+                        'client_secret': CLIENT_SECRET,
+                    }),
+                    headers={'Content-Type': 'application/json'},
+                    timeout='15',
+                )
+            except Exception as e:
+                log_utils.log('Trakt revoke API call failed: %s' % e, 1)
+        control.setSetting('trakt.user', '')
+        control.setSetting('trakt.authed', '')
+        control.setSetting('trakt.token', '')
+        control.setSetting('trakt.refresh', '')
+        control.setSetting('trakt.expires', '')
+        control.infoDialog('Trakt Account Revoked.', sound=True)
+        control.finish_auth_ui(reopen_settings=reopen_settings)
+    except Exception:
+        control.infoDialog('Trakt Revoke Failed.', sound=True)
+
+
+def authTrakt(reopen_settings=False):
+    from resources.lib.modules import auth_utils
+    progress = None
+    try:
+        if getTraktCredentialsInfo():
+            control.infoDialog('Trakt is already authorised. Use Revoke Trakt Account to sign out.', sound=True)
+            return
+        progress = auth_utils.auth_progress_dialog('Trakt Authorise', '')
+        progress.update('Connecting to Trakt...')
+        result = getTraktAsJson('/oauth/device/code', {'client_id': V2_API_KEY})
+        if not result or not result.get('device_code'):
+            control.infoDialog('Trakt Authorisation Failed.', sound=True)
+            return
+        user_code = str(result.get('user_code', ''))
+        device_code = result['device_code']
+        expires_in = int(result.get('expires_in', 600))
+        interval = max(int(result.get('interval', 5)), 1)
+        auth_url = 'https://trakt.tv/activate?code=%s' % user_code
+        progress.update('Preparing QR code...')
+        qr_code = auth_utils.make_qrcode(auth_url) or ''
+        short_url = auth_utils.make_tinyurl(auth_url)
+        auth_utils.copy2clip(auth_url)
+        insert = '[CR]OR visit [B]%s[/B]' % short_url if short_url else ''
+        verify_display = (result.get('verification_url') or 'trakt.tv/activate').replace('https://', '')
+        content = ('Enter [B]%s[/B] at [B]%s[/B][CR]OR scan the [B]QR Code[/B][CR]Link copied to clipboard%s[CR][CR]'
+                   'Waiting for authorisation...' % (user_code, verify_display, insert))
+        progress.update(content, qr_path=qr_code)
+        token_result = None
+        start = time.time()
+        while not progress.iscanceled() and (time.time() - start) < expires_in:
+            if auth_utils.auth_progress_wait(progress, interval):
+                break
+            try:
+                r = getTraktAsJson('/oauth/device/token', {
+                    'client_id': V2_API_KEY,
+                    'client_secret': CLIENT_SECRET,
+                    'code': device_code,
+                })
+                if isinstance(r, dict) and r.get('access_token'):
+                    token_result = r
                     break
-                time.sleep(1)
-                if not float(i) % interval == 0:
-                    raise Exception()
-                r = getTraktAsJson('/oauth/device/token', {'client_id': V2_API_KEY, 'client_secret': CLIENT_SECRET, 'code': device_code})
-                if 'access_token' in r:
-                    break
-            except:
+            except Exception:
                 pass
-        try:
-            progressDialog.close()
-        except:
-            pass
-        token, refresh = r['access_token'], r['refresh_token']
-        headers = {'Content-Type': 'application/json', 'trakt-api-key': V2_API_KEY, 'trakt-api-version': 2, 'Authorization': 'Bearer %s' % token}
+        canceled = progress.iscanceled()
+        auth_utils.close_auth_progress_dialog(progress)
+        progress = None
+        if canceled or not token_result:
+            control.infoDialog('Trakt Authorisation Canceled.' if canceled else 'Trakt Authorisation Failed.', sound=True)
+            return
+        token, refresh = token_result['access_token'], token_result['refresh_token']
+        headers = {'Content-Type': 'application/json', 'trakt-api-key': V2_API_KEY, 'trakt-api-version': '2', 'Authorization': 'Bearer %s' % token}
         result = client.request(urljoin(BASE_URL, '/users/me'), headers=headers)
         result = client_utils.json_loads_as_str(result)
-        user = result['username']
+        user = result.get('username', '')
         authed = '' if user == '' else str('yes')
-        control.setSetting(id='trakt.user', value=user)
-        control.setSetting(id='trakt.authed', value=authed)
-        control.setSetting(id='trakt.token', value=token)
-        control.setSetting(id='trakt.refresh', value=refresh)
-        raise Exception()
-    except:
-        control.openSettings(query='2.3')
+        control.setSetting('trakt.user', user)
+        control.setSetting('trakt.authed', authed)
+        control.setSetting('trakt.token', token)
+        control.setSetting('trakt.refresh', refresh)
+        _set_trakt_expires(token_result.get('expires_in', 7200))
+        control.infoDialog('Trakt Account Authorised.', sound=True)
+        control.finish_auth_ui(reopen_settings=reopen_settings)
+    except Exception:
+        control.infoDialog('Trakt Authorisation Failed.', sound=True)
+    finally:
+        if progress is not None:
+            auth_utils.close_auth_progress_dialog(progress)
 
 
 def getTraktIndicatorsInfo():
@@ -450,6 +558,86 @@ def slug(name):
     return name
 
 
+def _trakt_probe_list_types(username, list_slug, limit=8):
+    types = set()
+    try:
+        probe_url = '/users/%s/lists/%s/items?limit=%s' % (username, list_slug, int(limit))
+        items = getTraktAsJson(probe_url) or []
+        for item in items:
+            if item.get('movie'):
+                types.add('movie')
+            if item.get('show'):
+                types.add('show')
+            if item.get('episode'):
+                types.add('episode')
+            if item.get('season'):
+                types.add('season')
+    except:
+        pass
+    return types
+
+
+def _trakt_userlist_action(menu_type, item_types, item_count=0):
+    if not menu_type:
+        return 'movies'
+    if item_count == 0:
+        if menu_type == 'movie':
+            return 'movies'
+        if menu_type == 'tvshow':
+            return 'tvshows'
+        return 'calendar'
+    if menu_type == 'movie':
+        return 'movies' if 'movie' in item_types else None
+    if menu_type == 'tvshow':
+        return 'tvshows' if item_types & {'show', 'season'} else None
+    if menu_type == 'episode':
+        if 'episode' in item_types:
+            return 'calendar'
+        if item_types & {'show', 'season'}:
+            return 'tvshows'
+        return None
+    return 'movies'
+
+
+def build_user_list_directory(url, trakt_list_link, menu_type=None, image='trakt.png'):
+    entries = []
+    items = getTraktAsJsonPaged(url) or []
+    for item in items:
+        try:
+            try:
+                name = item['list']['name']
+                username = slug(item['list']['user']['username'])
+                list_slug = item['list']['ids']['slug']
+                item_count = int(item['list'].get('item_count') or item.get('item_count') or 0)
+            except:
+                name = item['name']
+                username = 'me'
+                list_slug = item['ids']['slug']
+                item_count = int(item.get('item_count') or 0)
+            name = client_utils.replaceHTMLCodes(name)
+            list_url = trakt_list_link % (username, list_slug)
+            item_types = _trakt_probe_list_types(username, list_slug) if menu_type and item_count else set()
+            action = _trakt_userlist_action(menu_type, item_types, item_count)
+            if menu_type and action is None:
+                continue
+            entries.append({'name': name, 'url': list_url, 'context': list_url, 'image': image, 'action': action or 'movies'})
+        except:
+            pass
+    return entries
+
+
+def user_list_directory_movie(url, trakt_list_link, user=None):
+    return build_user_list_directory(url, trakt_list_link, menu_type='movie')
+
+
+def user_list_directory_tvshow(url, trakt_list_link, user=None):
+    return build_user_list_directory(url, trakt_list_link, menu_type='tvshow')
+
+
+def user_list_directory_episode(url, trakt_list_link, user=None):
+    return build_user_list_directory(url, trakt_list_link, menu_type='episode')
+
+
 def manager(name, imdb, tmdb, content):
     try:
         post = {"movies": [{"ids": {"imdb": imdb}}]} if content == 'movie' else {"shows": [{"ids": {"tmdb": tmdb}}]}
@@ -458,7 +646,7 @@ def manager(name, imdb, tmdb, content):
         items += [('Add to [B]Watchlist[/B]', '/sync/watchlist')]
         items += [('Remove from [B]Watchlist[/B]', '/sync/watchlist/remove')]
         items += [('Add to [B]new List[/B]', '/users/me/lists/%s/items')]
-        result = getTraktAsJson('/users/me/lists')
+        result = getTraktAsJsonPaged('/users/me/lists') or []
         lists = [(i['name'], i['ids']['slug']) for i in result]
         lists = [lists[i//2] for i in range(len(lists)*2)]
         for i in range(0, len(lists), 2):
@@ -489,9 +677,19 @@ def manager(name, imdb, tmdb, content):
         return
 
 
+def getPlaybackEpisodes():
+    return getTraktAsJsonPaged('/sync/playback/episodes?extended=full') or []
+
+
+def getPlaybackMovies():
+    return getTraktAsJsonPaged('/sync/playback/movies?extended=full') or []
+
+
 def getActivity():
     try:
         i = getTraktAsJson('/sync/last_activities')
+        if not valid_trakt_activities(i):
+            return
         activity = []
         activity.append(i['movies']['collected_at'])
         activity.append(i['episodes']['collected_at'])
@@ -511,6 +709,8 @@ def getActivity():
 def getWatchedActivity():
     try:
         i = getTraktAsJson('/sync/last_activities')
+        if not valid_trakt_activities(i):
+            return
         activity = []
         activity.append(i['movies']['watched_at'])
         activity.append(i['episodes']['watched_at'])
@@ -525,7 +725,7 @@ def syncMovies(user):
     try:
         if getTraktCredentialsInfo() == False:
             return
-        indicators = getTraktAsJson('/users/me/watched/movies')
+        indicators = getTraktAsJsonPaged('/users/me/watched/movies') or []
         indicators = [i['movie']['ids'] for i in indicators]
         indicators = [str(i['imdb']) for i in indicators if 'imdb' in i]
         return indicators
@@ -547,7 +747,7 @@ def syncTVShows(user):
     try:
         if getTraktCredentialsInfo() == False:
             return
-        indicators = getTraktAsJson('/users/me/watched/shows?extended=full')
+        indicators = getTraktAsJsonPaged('/users/me/watched/shows?extended=full') or []
         indicators = [(i['show']['ids']['tmdb'], i['show']['aired_episodes'], sum([[(s['number'], e['number']) for e in s['episodes']] for s in i['seasons']], [])) for i in indicators]
         indicators = [(str(i[0]), int(i[1]), i[2]) for i in indicators]
         return indicators

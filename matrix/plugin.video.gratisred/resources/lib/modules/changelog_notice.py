@@ -58,8 +58,25 @@ def _read_changelog():
             return ''
 
 
+def _changelog_enabled():
+    return control.setting('show.changelog') == 'true'
+
+
+def _sync_version_when_disabled():
+    cur = _current_version()
+    if not cur or cur == _stored_version():
+        return
+    try:
+        control.setSetting('addon.lastversion', cur)
+        control.setSetting('addon.changelog.dismissed', 'true')
+    except Exception:
+        log_utils.log('changelog_notice: failed to sync version while disabled', 1)
+
+
 def has_pending_notice():
-    """True if current version != stored version OR user hasn't dismissed yet."""
+    """True if changelog-on-update is enabled and current version != stored version OR user hasn't dismissed yet."""
+    if not _changelog_enabled():
+        return False
     cur = _current_version()
     stored = _stored_version()
     dismissed = (control.setting('addon.changelog.dismissed') == 'true')
@@ -93,6 +110,9 @@ def dismiss_only():
 def service_check():
     """Called from service.py. Non-blocking trigger via RunPlugin if needed."""
     try:
+        if not _changelog_enabled():
+            _sync_version_when_disabled()
+            return
         if has_pending_notice():
             # Use RunPlugin so the dialog renders in the GUI thread after startup.
             control.execute('RunPlugin(plugin://%s/?action=show_changelog)' % 'plugin.video.gratisred')

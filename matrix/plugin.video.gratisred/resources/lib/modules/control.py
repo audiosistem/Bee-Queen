@@ -87,6 +87,8 @@ transPath = xbmc.translatePath if getKodiVersion() < 19 else xbmcvfs.translatePa
 #transPath = xbmcvfs.translatePath if six.PY3 else xbmc.translatePath
 addonPath = transPath(addonInfo('path'))
 dataPath = transPath(addonInfo('profile'))
+# Estuary WideList row icons use ListItem.Icon only for Container.Content() — not addons/files.
+MENU_FOLDER_CONTENT = ''
 skinPath = transPath('special://skin/')
 
 cacheFile = os.path.join(dataPath, 'cache.db')
@@ -113,6 +115,40 @@ def sleep(time):
     while time > 0 and not monitor.abortRequested():
         xbmc.sleep(min(100, time))
         time = time - 100
+
+
+def set_list_item_art(item, icon, fanart=None, thumb=None):
+    icon_img = icon or thumb
+    art = {'icon': icon_img, 'thumb': thumb or icon_img}
+    if fanart:
+        art['fanart'] = fanart
+    item.setArt(art)
+    try:
+        item.setIconImage(icon_img)
+    except:
+        pass
+
+
+def menu_image(image, fallback='DefaultFolder.png'):
+    if not image:
+        return fallback
+    if isinstance(image, str) and image.startswith('http'):
+        return image
+    art = artPath()
+    if art and image and not os.path.isabs(image):
+        return os.path.join(art, image)
+    return image if image else fallback
+
+
+def set_menu_item_art(item, image, fanart=None):
+    icon_img = menu_image(image)
+    fanart_img = fanart or addonFanart()
+    art = {'icon': icon_img, 'thumb': icon_img, 'poster': icon_img, 'fanart': fanart_img}
+    item.setArt(art)
+    try:
+        item.setIconImage(icon_img)
+    except:
+        pass
 
 
 def addonId():
@@ -191,8 +227,19 @@ def addonNext():
 
 
 def getCurrentViewId():
-    win = xbmcgui.Window(xbmcgui.getCurrentWindowId())
-    return str(win.getFocusId())
+    # Some Kodi builds do not expose a numeric Container.Viewmode.id label.
+    # Fall back to the focused view control ID used by skin views (50/55/500/...).
+    view_id = infoLabel('Container.Viewmode.id') or ''
+    if view_id and view_id.isdigit():
+        return str(view_id)
+    try:
+        win = xbmcgui.Window(xbmcgui.getCurrentWindowId())
+        focus = str(win.getFocusId())
+        if focus.isdigit() and int(focus) >= 50:
+            return focus
+    except:
+        pass
+    return ''
 
 
 def moderator():
@@ -431,33 +478,195 @@ def copy2clip(txt):
             pass
 
 
+def _addon_settings_visible():
+    return condVisibility('Window.IsVisible(addonsettings)')
+
+
+def _wait_addon_settings_window(timeout_ms=6000):
+    elapsed = 0
+    while elapsed < timeout_ms and not monitor.abortRequested():
+        if _addon_settings_visible():
+            try:
+                return xbmcgui.Window(xbmcgui.getCurrentWindowDialogId())
+            except Exception:
+                pass
+        sleep(100)
+        elapsed += 100
+    return None
+
+
+def _control_item_count(ctrl):
+    for attr in ('size', 'getNumItems', 'getItemCount'):
+        fn = getattr(ctrl, attr, None)
+        if callable(fn):
+            try:
+                return int(fn())
+            except Exception:
+                pass
+    return 0
+
+
+def _is_list_control(ctrl):
+    cls = (ctrl.getControlClassName() or '').lower()
+    return 'list' in cls or 'panel' in cls
+
+
+def _find_category_list_control(window, category_index):
+    sidebar = []
+    tabbar = []
+    for cid in range(1, 501):
+        try:
+            ctrl = window.getControl(cid)
+        except Exception:
+            continue
+        if not _is_list_control(ctrl):
+            continue
+        try:
+            x, y = ctrl.getPosition()
+            w = ctrl.getWidth()
+            h = ctrl.getHeight()
+        except Exception:
+            continue
+        count = _control_item_count(ctrl)
+        if count <= category_index:
+            continue
+        if x < 500 and w < 600 and h >= 120:
+            sidebar.append((x, y, cid, ctrl))
+        elif y < 220 and w >= 350:
+            tabbar.append((y, x, cid, ctrl))
+    if sidebar:
+        sidebar.sort(key=lambda item: (item[0], item[1]))
+        return sidebar[0][3], sidebar[0][2]
+    if tabbar:
+        tabbar.sort(key=lambda item: (item[0], item[1]))
+        return tabbar[0][3], tabbar[0][2]
+    return None, None
+
+
+def _focus_addon_settings_category(category, setting=0):
+    try:
+        window = _wait_addon_settings_window()
+        if window is None:
+            return False
+        ctrl, cid = _find_category_list_control(window, category)
+        if ctrl is None:
+            for fallback_id in (3, 9, 30, 6000, 7000):
+                try:
+                    ctrl = window.getControl(fallback_id)
+                    if _is_list_control(ctrl) and _control_item_count(ctrl) > category:
+                        cid = fallback_id
+                        break
+                except Exception:
+                    ctrl = None
+            else:
+                ctrl, cid = None, None
+        if ctrl is not None and cid is not None:
+            try:
+                window.setFocusId(cid)
+            except Exception:
+                pass
+            try:
+                ctrl.selectItem(max(int(category), 0))
+            except Exception:
+                execute('SetFocus(%d,%d,absolute)' % (cid, int(category)))
+            sleep(250)
+        elif getKodiVersion() < 18:
+            execute('SetFocus(%i)' % (int(category) + 200))
+        if setting:
+            sleep(150)
+            execute('SetFocus(%d)' % (100 + int(setting)))
+        return True
+    except Exception:
+        return False
+
+
 def openSettings(query=None, id=None):
     try:
         id = addonInfo('id') if id == None else id
         idle()
         execute('Addon.OpenSettings(%s)' % id)
         if query == None:
-            raise Exception()
-        c, f = query.split('.')
-        if getKodiVersion() >= 18:
-            execute('SetFocus(%i)' % (int(c) - 100))
-            execute('SetFocus(%i)' % (int(f) - 80))
-        else:
-            execute('SetFocus(%i)' % (int(c) + 100))
-            execute('SetFocus(%i)' % (int(f) + 200))
+            return
+        category, setting = query.split('.')
+        _focus_addon_settings_category(int(category), int(setting))
     except:
         return
 
 
-def installAddon(id):
+def refresh_addon_container():
+    """Rebuild the visible addon menu after auth changes."""
+    try:
+        execute('Dialog.Close(settings)')
+        sleep(300)
+    except Exception:
+        pass
+    try:
+        folder = infoLabel('Container.FolderPath') or ''
+        if addonInfo('id') in folder:
+            execute('Container.Update(%s,replace)' % folder)
+            sleep(200)
+    except Exception:
+        pass
+    try:
+        refresh()
+    except Exception:
+        pass
+
+
+def reopen_account_settings():
+    """Close and reopen Account Settings so auth changes apply without pressing OK."""
+    reopen_settings_category(2, 0)
+
+
+def reopen_settings_category(category, setting=0):
+    """Close and reopen addon settings on the requested category."""
+    try:
+        idle()
+        execute('Dialog.Close(settings)')
+        sleep(250)
+        execute('Addon.OpenSettings(%s)' % addonInfo('id'))
+        sleep(350)
+        _focus_addon_settings_category(int(category), int(setting))
+    except Exception:
+        pass
+
+
+def finish_auth_ui(reopen_settings=False):
+    """Refresh addon menus after auth changes; optionally return to Account Settings."""
+    if reopen_settings:
+        try:
+            reopen_account_settings()
+        except Exception:
+            pass
+    else:
+        refresh_addon_container()
+
+
+def installAddon(id, refresh_menu=False):
     try:
         addon_path = os.path.join(transPath('special://home/addons'), id)
         if not os.path.exists(addon_path) == True:
-            xbmc.executebuiltin('InstallAddon(%s)' % (id))
+            execute('InstallAddon(%s)' % id)
+            if refresh_menu and _wait_for_addon(id):
+                refresh()
         else:
             infoDialog('{0} is already installed'.format(id), sound=True)
+            if refresh_menu:
+                refresh()
     except:
         return
+
+
+def _wait_for_addon(addon_id, timeout_sec=120):
+    try:
+        check = 'System.HasAddon(%s)' % addon_id
+        for _ in range(int(timeout_sec * 2)):
+            if condVisibility(check):
+                return True
+            sleep(500)
+    except:
+        pass
+    return False
 
 
 def checkArtwork():

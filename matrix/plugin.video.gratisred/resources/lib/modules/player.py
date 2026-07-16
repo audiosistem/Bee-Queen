@@ -1,16 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import re
-import os
 import sys
-import base64
-import codecs
-import gzip
 
 from kodi_six import xbmc
 import simplejson as json
 import six
-from six.moves import urllib_parse, xmlrpc_client
+from six.moves import urllib_parse
 
 try:
     #from infotagger.listitem import ListItemInfoTag
@@ -22,6 +17,7 @@ from resources.lib.modules import bookmarks
 from resources.lib.modules import control
 from resources.lib.modules import cleantitle
 from resources.lib.modules import playcount
+from resources.lib.modules import subtitles as subtitle_service
 from resources.lib.modules import trakt
 
 try:
@@ -266,7 +262,7 @@ class player(xbmc.Player):
                     self.seekTime(float(self.offset))
                 control.sleep(1000)
                 self.pause()
-        subtitles().get(self.name, self.imdb, self.season, self.episode)
+        subtitle_service.subtitles().get(self.imdb, self.season, self.episode, year=self.year, title=self.title)
         self.idleForPlayback()
 
 
@@ -289,7 +285,7 @@ class player(xbmc.Player):
                         self.seekTime(float(self.offset))
                     control.sleep(1000)
                     self.pause()
-            subtitles().get(self.name, self.imdb, self.season, self.episode)
+            subtitle_service.subtitles().get(self.imdb, self.season, self.episode, year=self.year, title=self.title)
             self.idleForPlayback()
         else:
             pass
@@ -310,115 +306,4 @@ class player(xbmc.Player):
         self.onPlayBackStopped()
         if control.setting('crefresh') == 'true':
             control.refresh()
-
-
-class subtitles:
-    def get(self, name, imdb, season, episode):
-        try:
-            if not control.setting('subtitles') == 'true':
-                raise Exception()
-            langDict = {'Afrikaans': 'afr', 'Albanian': 'alb', 'Arabic': 'ara',
-                'Armenian': 'arm', 'Basque': 'baq', 'Bengali': 'ben',
-                'Bosnian': 'bos', 'Breton': 'bre', 'Bulgarian': 'bul',
-                'Burmese': 'bur', 'Catalan': 'cat', 'Chinese': 'chi',
-                'Croatian': 'hrv', 'Czech': 'cze', 'Danish': 'dan',
-                'Dutch': 'dut', 'English': 'eng', 'Esperanto': 'epo',
-                'Estonian': 'est', 'Finnish': 'fin', 'French': 'fre',
-                'Galician': 'glg', 'Georgian': 'geo', 'German': 'ger',
-                'Greek': 'ell', 'Hebrew': 'heb', 'Hindi': 'hin',
-                'Hungarian': 'hun', 'Icelandic': 'ice', 'Indonesian': 'ind',
-                'Italian': 'ita', 'Japanese': 'jpn', 'Kazakh': 'kaz',
-                'Khmer': 'khm', 'Korean': 'kor', 'Latvian': 'lav',
-                'Lithuanian': 'lit', 'Luxembourgish': 'ltz', 'Macedonian': 'mac',
-                'Malay': 'may', 'Malayalam': 'mal', 'Manipuri': 'mni',
-                'Mongolian': 'mon', 'Montenegrin': 'mne', 'Norwegian': 'nor',
-                'Occitan': 'oci', 'Persian': 'per', 'Polish': 'pol',
-                'Portuguese': 'por,pob', 'Portuguese(Brazil)': 'pob,por',
-                'Romanian': 'rum', 'Russian': 'rus', 'Serbian': 'scc',
-                'Sinhalese': 'sin', 'Slovak': 'slo', 'Slovenian': 'slv',
-                'Spanish': 'spa', 'Swahili': 'swa', 'Swedish': 'swe',
-                'Syriac': 'syr', 'Tagalog': 'tgl', 'Tamil': 'tam', 'Telugu': 'tel',
-                'Thai': 'tha', 'Turkish': 'tur', 'Ukrainian': 'ukr', 'Urdu': 'urd'
-            }
-            codePageDict = {'ara': 'cp1256', 'ar': 'cp1256', 'ell': 'cp1253',
-                'el': 'cp1253', 'heb': 'cp1255', 'he': 'cp1255', 'tur': 'cp1254',
-                'tr': 'cp1254', 'rus': 'cp1251', 'ru': 'cp1251'
-            }
-            quality = ['bluray', 'hdrip', 'brrip', 'bdrip', 'dvdrip', 'webrip', 'hdtv']
-            langs = []
-            try:
-                try:
-                    langs = langDict[control.setting('subtitles.lang.1')].split(',')
-                except:
-                    langs.append(langDict[control.setting('subtitles.lang.1')])
-            except:
-                pass
-            try:
-                try:
-                    langs = langs + langDict[control.setting('subtitles.lang.2')].split(',')
-                except:
-                    langs.append(langDict[control.setting('subtitles.lang.2')])
-            except:
-                pass
-            try:
-                subLang = xbmc.Player().getSubtitles()
-            except:
-                subLang = ''
-            if subLang == langs[0]:
-                raise Exception()
-            un = control.setting('os.user')
-            pw = control.setting('os.pass')
-            server = xmlrpc_client.Server('http://api.opensubtitles.org/xml-rpc', verbose=0)
-            token = server.LogIn(un, pw, 'en', 'XBMC_Subtitles_Unofficial_v5.2.14')['token']
-            sublanguageid = ','.join(langs) ; imdbid = re.sub(r'[^0-9]', '', imdb)
-            if not (season == None or episode == None):
-                result = server.SearchSubtitles(token, [{'sublanguageid': sublanguageid, 'imdbid': imdbid, 'season': season, 'episode': episode}])['data']
-                fmt = ['hdtv']
-            else:
-                result = server.SearchSubtitles(token, [{'sublanguageid': sublanguageid, 'imdbid': imdbid}])['data']
-                try:
-                    vidPath = xbmc.Player().getPlayingFile()
-                except:
-                    vidPath = ''
-                fmt = re.split(r'\.|\(|\)|\[|\]|\s|\-', vidPath)
-                fmt = [i.lower() for i in fmt]
-                fmt = [i for i in fmt if i in quality]
-            filter = []
-            result = [i for i in result if i['SubSumCD'] == '1']
-            for lang in langs:
-                filter += [i for i in result if i['SubLanguageID'] == lang and any(x in i['MovieReleaseName'].lower() for x in fmt)]
-                filter += [i for i in result if i['SubLanguageID'] == lang and any(x in i['MovieReleaseName'].lower() for x in quality)]
-                filter += [i for i in result if i['SubLanguageID'] == lang]
-            try:
-                lang = xbmc.convertLanguage(filter[0]['SubLanguageID'], xbmc.ISO_639_1)
-            except:
-                lang = filter[0]['SubLanguageID']
-            subname = str(filter[0]['SubFileName'])
-            content = [filter[0]['IDSubtitleFile'],]
-            content = server.DownloadSubtitles(token, content)
-            content = base64.b64decode(content['data'][0]['data'])
-            content = gzip.GzipFile(fileobj=six.BytesIO(content)).read()
-            subtitle = control.transPath('special://temp/')
-            subtitle = os.path.join(subtitle, 'TemporarySubs.%s.srt' % lang)
-            codepage = codePageDict.get(lang, '')
-            if codepage and control.setting('subtitles.utf') == 'true':
-                try:
-                    content_encoded = codecs.decode(content, codepage)
-                    content = codecs.encode(content_encoded, 'utf-8')
-                except:
-                    pass
-            file = control.openFile(subtitle, 'w')
-            file.write(content)
-            file.close()
-            #xbmc.sleep(1000)
-            control.sleep(1000)
-            xbmc.Player().setSubtitles(subtitle)
-            if control.setting('subtitles.notify') == 'true':
-                if xbmc.Player().isPlaying() and xbmc.Player().isPlayingVideo():
-                    control.execute('Dialog.Close(all,true)')
-                    #xbmc.sleep(3000)
-                    control.sleep(3000)
-                    control.infoDialog(subname, heading='{} subtitles downloaded'.format(str(lang).upper()), time=6000)
-        except:
-            pass
 

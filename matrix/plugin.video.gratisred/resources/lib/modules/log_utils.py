@@ -19,7 +19,6 @@ LOGNONE = xbmc.LOGNONE
 
 version = control.addonInfo('version')
 ChangeLog_head = '-- Gratis Red Changelog --' #% version
-Scrubsv2Log_head = '-- Gratis Red Current Version - v%s --' % version
 DebugLog_head = '--[Gratis Red - %s - DebugLog]--' % version
 DEBUGPREFIX = '[Gratis Red - %s - DEBUG]' % version
 
@@ -29,7 +28,6 @@ changelogfile = os.path.join(control.addonPath, 'resources', 'changelog.txt')
 
 LOGPATH = control.transPath('special://logpath/')
 log_file = os.path.join(LOGPATH, 'scrubsv2.log')
-scrubsv2_changelogfile = os.path.join(control.addonPath, 'resources', 'scrubsv2-changelog.txt')
 
 debug_enabled = control.setting('addon.debug')
 debugtime_enabled = control.setting('addon.debugtime')
@@ -70,15 +68,6 @@ def changelog():
     except:
         log('changelog', 1)
         control.infoDialog('Error opening Changelog')
-        pass
-
-
-def scrubsv2_changelog():
-    try:
-        control.textViewer(scrubsv2_changelogfile, Scrubsv2Log_head)
-    except:
-        log('changelog', 1)
-        control.infoDialog('Error opening Scrubs v2 Changelog')
         pass
 
 

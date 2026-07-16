@@ -327,12 +327,13 @@ def request(url, close=True, redirect=True, error=False, verify=True, post=None,
 
 
 def _flaresolverr_url():
-    """Read FlareSolverr endpoint from addon settings.  Empty -> disabled."""
+    """FlareSolverr endpoint — included with Gratis Red (local default)."""
+    default = 'http://127.0.0.1:8191/v1'
     try:
         url = (control.setting('flaresolverr.url') or '').strip()
     except Exception:
         url = ''
-    return url
+    return url or default
 
 
 def _is_cf_challenge(page):

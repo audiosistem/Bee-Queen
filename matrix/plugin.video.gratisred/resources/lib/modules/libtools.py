@@ -3,6 +3,7 @@
 import re
 import os
 import sys
+import shutil
 import datetime
 
 import simplejson as json
@@ -80,6 +81,15 @@ class lib_tools:
             return filename
         except:
             return filename
+
+
+    @staticmethod
+    def normalize_folder_title(title):
+        try:
+            transtitle = title.translate(None, r'\/:*?"<>|')
+        except:
+            transtitle = title.translate(str.maketrans('', '', r'\/:*?"<>|'))
+        return cleantitle.normalize(transtitle)
 
 
     @staticmethod
@@ -182,11 +192,7 @@ class libmovies:
         try:
             name, title, year, imdb = i['name'], i['title'], i['year'], i['imdb']
             sysname, systitle = urllib_parse.quote_plus(name), urllib_parse.quote_plus(title)
-            try:
-                transtitle = title.translate(None, r'\/:*?"<>|')
-            except:
-                transtitle = title.translate(str.maketrans('', '', r'\/:*?"<>|'))
-            transtitle = cleantitle.normalize(transtitle)
+            transtitle = lib_tools.normalize_folder_title(title)
             content = '%s?action=play&name=%s&title=%s&year=%s&imdb=%s' % (sys.argv[0], sysname, systitle, year, imdb)
             folder = lib_tools.make_path(self.library_folder, transtitle, year)
             lib_tools.create_folder(folder)
@@ -194,6 +200,101 @@ class libmovies:
             lib_tools.write_file(os.path.join(folder, lib_tools.legal_filename(transtitle) + '.' + year + '.nfo'), lib_tools.nfo_url('movie', i))
         except:
             pass
+
+
+    def folder_path(self, title, year):
+        try:
+            transtitle = lib_tools.normalize_folder_title(title)
+            return lib_tools.make_path(self.library_folder, transtitle, year)
+        except:
+            return None
+
+
+    def has(self, title, year, imdb=None):
+        try:
+            folder = self.folder_path(title, year)
+            if not folder or not os.path.isdir(folder):
+                return False
+            _, files = control.listDir(folder)
+            return any(str(f).endswith('.strm') for f in files)
+        except:
+            return False
+
+
+    def _remove_kodi_movie(self, title, year, imdb):
+        try:
+            imdb = 'tt' + re.sub(r'[^0-9]', '', str(imdb))
+            safe_title = title.replace('\\', '\\\\').replace('"', '\\"')
+            lib = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetMovies", "params": {"filter":{"or": [{"field": "imdbnumber", "operator": "is", "value": "%s"}, {"field": "title", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}]}, "properties": ["title"]}, "id": 1}' % (imdb, safe_title, year))
+            lib = six.ensure_text(lib, errors='ignore')
+            movies = json.loads(lib).get('result', {}).get('movies') or []
+            for movie in movies:
+                control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.RemoveMovie", "params": {"movieid": %s, "deletefile": true}, "id": 1}' % int(movie['movieid']))
+        except:
+            pass
+
+
+    def remove(self, title, year, imdb):
+        if not self.has(title, year, imdb):
+            control.infoDialog('Not in your local library.', sound=True)
+            return
+        if not control.yesnoDialog('Remove "%s (%s)" from your local library?' % (title, year)):
+            return
+        folder = self.folder_path(title, year)
+        self._remove_kodi_movie(title, year, imdb)
+        try:
+            if folder and os.path.isdir(folder):
+                shutil.rmtree(folder, ignore_errors=True)
+        except:
+            pass
+        control.infoDialog('Removed from library.', sound=True)
+        if self.library_setting == 'true' and not control.condVisibility('Library.IsScanningVideo'):
+            control.execute('CleanLibrary(video)')
+
+
+    def refresh(self, name, title, year, imdb):
+        if not self.has(title, year, imdb):
+            self.add(name, title, year, imdb)
+            return
+        if not control.condVisibility('Window.IsVisible(infodialog)') and not control.condVisibility('Player.HasVideo'):
+            control.infoDialog('Updating library item...', time=3000)
+        self.strmFile({'name': name, 'title': title, 'year': year, 'imdb': imdb})
+        control.infoDialog('Library item updated.', sound=True)
+        if self.library_setting == 'true' and not control.condVisibility('Library.IsScanningVideo'):
+            control.execute('UpdateLibrary(video)')
+
+
+    def scan_local_items(self):
+        items = []
+        try:
+            for folder in control.listDir(self.library_folder)[0]:
+                folder_path = os.path.join(self.library_folder, folder)
+                try:
+                    files = control.listDir(folder_path)[1]
+                except:
+                    continue
+                strms = [f for f in files if str(f).endswith('.strm')]
+                if not strms:
+                    continue
+                try:
+                    file = control.openFile(os.path.join(folder_path, strms[0]))
+                    read = six.ensure_str(file.read())
+                    file.close()
+                    if not read.startswith(sys.argv[0]):
+                        raise Exception()
+                    params = dict(urllib_parse.parse_qsl(read.replace('?', '')))
+                    title = params.get('title') or params.get('name') or folder
+                    title = urllib_parse.unquote_plus(title)
+                    year = params.get('year') or '0'
+                    imdb = params.get('imdb') or '0'
+                    tmdb = params.get('tmdb') or '0'
+                    items.append({'title': title, 'originaltitle': title, 'year': year, 'imdb': imdb, 'tmdb': tmdb, 'tvdb': '0', 'next': ''})
+                except:
+                    pass
+        except:
+            pass
+        items.sort(key=lambda k: k['title'].lower())
+        return items
 
 
 class libtvshows:
@@ -335,6 +436,124 @@ class libtvshows:
             pass
 
 
+    def folder_path(self, tvshowtitle, year):
+        try:
+            transtitle = lib_tools.normalize_folder_title(tvshowtitle)
+            return lib_tools.make_path(self.library_folder, transtitle, year)
+        except:
+            return None
+
+
+    def has(self, tvshowtitle, year, imdb=None, tmdb=None):
+        try:
+            folder = self.folder_path(tvshowtitle, year)
+            if not folder or not os.path.isdir(folder):
+                return False
+            for root, dirs, files in os.walk(folder):
+                if any(str(f).endswith('.strm') for f in files):
+                    return True
+            return False
+        except:
+            return False
+
+
+    def _remove_kodi_tvshow(self, tvshowtitle, year, imdb, tmdb):
+        try:
+            imdb = 'tt' + re.sub(r'[^0-9]', '', str(imdb or ''))
+            safe_title = tvshowtitle.replace('\\', '\\\\').replace('"', '\\"')
+            lib = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetTVShows", "params": {"filter":{"or": [{"field": "imdbnumber", "operator": "is", "value": "%s"}, {"field": "title", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}]}, "properties": ["title"]}, "id": 1}' % (imdb, safe_title, year))
+            lib = six.ensure_text(lib, errors='ignore')
+            shows = json.loads(lib).get('result', {}).get('tvshows') or []
+            for show in shows:
+                control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.RemoveTVShow", "params": {"tvshowid": %s, "deletefile": true}, "id": 1}' % int(show['tvshowid']))
+        except:
+            pass
+
+
+    def _clear_tvshow_cache(self, imdb):
+        try:
+            control.makeFile(control.dataPath)
+            dbcon = database.connect(control.libcacheFile)
+            dbcur = dbcon.cursor()
+            dbcur.execute("DELETE FROM tvshows WHERE id = '%s'" % ('tt' + re.sub(r'[^0-9]', '', str(imdb))))
+            dbcon.commit()
+            dbcon.close()
+        except:
+            pass
+
+
+    def remove(self, tvshowtitle, year, imdb, tmdb):
+        if not self.has(tvshowtitle, year, imdb, tmdb):
+            control.infoDialog('Not in your local library.', sound=True)
+            return
+        if not control.yesnoDialog('Remove "%s (%s)" from your local library?' % (tvshowtitle, year)):
+            return
+        folder = self.folder_path(tvshowtitle, year)
+        self._remove_kodi_tvshow(tvshowtitle, year, imdb, tmdb)
+        self._clear_tvshow_cache(imdb)
+        try:
+            if folder and os.path.isdir(folder):
+                shutil.rmtree(folder, ignore_errors=True)
+        except:
+            pass
+        control.infoDialog('Removed from library.', sound=True)
+        if self.library_setting == 'true' and not control.condVisibility('Library.IsScanningVideo'):
+            control.execute('CleanLibrary(video)')
+
+
+    def refresh(self, tvshowtitle, year, imdb, tmdb):
+        if not self.has(tvshowtitle, year, imdb, tmdb):
+            self.add(tvshowtitle, year, imdb, tmdb)
+            return
+        self._clear_tvshow_cache(imdb)
+        self.add(tvshowtitle, year, imdb, tmdb)
+        control.infoDialog('Library item updated.', sound=True)
+
+
+    def scan_local_items(self):
+        items = []
+        seen = set()
+        try:
+            for folder in control.listDir(self.library_folder)[0]:
+                show_path = os.path.join(self.library_folder, folder)
+                strm_path = None
+                try:
+                    for root, dirs, files in os.walk(show_path):
+                        for filename in files:
+                            if str(filename).endswith('.strm'):
+                                strm_path = os.path.join(root, filename)
+                                break
+                        if strm_path:
+                            break
+                except:
+                    pass
+                if not strm_path:
+                    continue
+                try:
+                    file = control.openFile(strm_path)
+                    read = six.ensure_str(file.read())
+                    file.close()
+                    if not read.startswith(sys.argv[0]):
+                        raise Exception()
+                    params = dict(urllib_parse.parse_qsl(read.replace('?', '')))
+                    tvshowtitle = params.get('tvshowtitle') or params.get('show') or folder
+                    tvshowtitle = urllib_parse.unquote_plus(tvshowtitle)
+                    year = params.get('year') or '0'
+                    imdb = params.get('imdb') or '0'
+                    tmdb = params.get('tmdb') or '0'
+                    key = (tvshowtitle.lower(), str(year), str(imdb))
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    items.append({'title': tvshowtitle, 'year': year, 'imdb': imdb, 'tmdb': tmdb, 'tvdb': '0', 'status': 'N/A', 'next': ''})
+                except:
+                    pass
+        except:
+            pass
+        items.sort(key=lambda k: k['title'].lower())
+        return items
+
+
 class libepisodes:
     def __init__(self):
         self.library_folder = os.path.join(control.transPath(control.setting('library.tv')),'')
@@ -351,7 +570,8 @@ class libepisodes:
 
 
     def update(self, query=None, info='true'):
-        if not query == None:
+        manual = query is not None
+        if manual:
             control.idle()
         try:
             items = []
@@ -395,12 +615,18 @@ class libepisodes:
             if len(items) == 0:
                 raise Exception()
         except:
+            if manual:
+                control.infoDialog('No TV library .strm files found to update.', sound=True)
+                if self.library_setting == 'true' and not control.condVisibility('Library.IsScanningVideo'):
+                    control.execute('UpdateLibrary(video)')
             return
         try:
             lib = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetTVShows", "params": {"properties" : ["imdbnumber", "title", "year"]}, "id": 1}')
             lib = six.ensure_text(lib, errors='ignore')
             lib = json.loads(lib)['result']['tvshows']
         except:
+            if manual:
+                control.infoDialog('Could not read the Kodi video library.', sound=True)
             return
         if info == 'true' and not control.condVisibility('Window.IsVisible(infodialog)') and not control.condVisibility('Player.HasVideo'):
             control.infoDialog('Updating TV shows...', time=10000000)
@@ -426,25 +652,30 @@ class libepisodes:
             it = None
             if control.monitor.abortRequested():
                 return sys.exit()
+            if not manual:
+                try:
+                    dbcur.execute("SELECT * FROM tvshows WHERE id = '%s'" % item['imdb'])
+                    fetch = dbcur.fetchone()
+                    it = eval(six.ensure_str(fetch[1]))
+                except:
+                    pass
             try:
-                dbcur.execute("SELECT * FROM tvshows WHERE id = '%s'" % item['imdb'])
-                fetch = dbcur.fetchone()
-                it = eval(six.ensure_str(fetch[1]))
-            except:
-                pass
-            try:
-                if not it == None:
+                if not manual and not it == None:
                     raise Exception()
                 seasons = episodes.seasons().get(item['tvshowtitle'], item['year'], item['imdb'], item['tmdb'], meta=None, idx=False)
                 season = [i['season'] for i in seasons]
+                status = (seasons[0].get('status') or '').lower() if seasons else ''
+                it = []
                 for s in season:
-                    it = episodes.episodes().get(item['tvshowtitle'], item['year'], item['imdb'], item['tmdb'], meta=None, season=s, idx=False)
-                    status = seasons[0]['status'].lower()
-                    it = [{'title': i['title'], 'year': i['year'], 'imdb': i['imdb'], 'tmdb': i['tmdb'], 'season': i['season'], 'episode': i['episode'], 'tvshowtitle': i['tvshowtitle'], 'premiered': i['premiered']} for i in it]
-                if status in ['continuing', 'returning series']:
+                    eps = episodes.episodes().get(item['tvshowtitle'], item['year'], item['imdb'], item['tmdb'], meta=None, season=s, idx=False) or []
+                    it.extend([{'title': i['title'], 'year': i['year'], 'imdb': i['imdb'], 'tmdb': i['tmdb'], 'season': i['season'], 'episode': i['episode'], 'tvshowtitle': i['tvshowtitle'], 'premiered': i['premiered']} for i in eps])
+                if not it:
                     raise Exception()
-                dbcur.execute("INSERT INTO tvshows Values (?, ?)", (item['imdb'], repr(it)))
-                dbcon.commit()
+                if not manual and status in ['continuing', 'returning series']:
+                    raise Exception()
+                if not manual:
+                    dbcur.execute("INSERT INTO tvshows Values (?, ?)", (item['imdb'], repr(it)))
+                    dbcon.commit()
             except:
                 pass
             try:
@@ -476,8 +707,10 @@ class libepisodes:
                 except:
                     pass
         if self.infoDialog == True:
-            control.infoDialog('Process Complete', time=1)
-        if self.library_setting == 'true' and not control.condVisibility('Library.IsScanningVideo') and files_added > 0:
+            control.infoDialog('Process Complete' if files_added else 'Library is up to date.', time=3000)
+        elif manual:
+            control.infoDialog('Added %s new episode(s).' % files_added if files_added else 'Library is up to date.', sound=True)
+        if self.library_setting == 'true' and not control.condVisibility('Library.IsScanningVideo') and (files_added > 0 or manual):
             control.execute('UpdateLibrary(video)')
 
 
@@ -544,4 +777,21 @@ class libepisodes:
                 pass
             control.sleep(10000)
 
+
+def append_movie_library_cm(cm, sysaddon, lib, name, title, year, imdb, tmdb='0'):
+    systitle = urllib_parse.quote_plus(title)
+    if lib.has(title, year, imdb):
+        cm.append(('Update in Library', 'RunPlugin(%s?action=movie_refresh_library&name=%s&title=%s&year=%s&imdb=%s)' % (sysaddon, name, systitle, year, imdb)))
+        cm.append(('Remove from Library', 'RunPlugin(%s?action=movie_from_library&title=%s&year=%s&imdb=%s)' % (sysaddon, systitle, year, imdb)))
+    else:
+        cm.append(('Add to Library', 'RunPlugin(%s?action=movie_to_library&name=%s&title=%s&year=%s&imdb=%s&tmdb=%s)' % (sysaddon, name, systitle, year, imdb, tmdb)))
+
+
+def append_tvshow_library_cm(cm, sysaddon, lib, tvshowtitle, year, imdb, tmdb):
+    systitle = urllib_parse.quote_plus(tvshowtitle)
+    if lib.has(tvshowtitle, year, imdb, tmdb):
+        cm.append(('Update in Library', 'RunPlugin(%s?action=tvshow_refresh_library&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s)' % (sysaddon, systitle, year, imdb, tmdb)))
+        cm.append(('Remove from Library', 'RunPlugin(%s?action=tvshow_from_library&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s)' % (sysaddon, systitle, year, imdb, tmdb)))
+    else:
+        cm.append(('Add to Library', 'RunPlugin(%s?action=tvshow_to_library&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s)' % (sysaddon, systitle, year, imdb, tmdb)))
 

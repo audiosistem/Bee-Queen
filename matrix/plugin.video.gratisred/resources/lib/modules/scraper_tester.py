@@ -23,7 +23,7 @@ from resources.lib.modules import control
 from resources.lib.modules import log_utils
 
 try:
-    # The addon's own client is preferred (honors cookies, UA, etc.).
+    # The addon's own client is preferred (honors cookies, UA, FlareSolverr, etc.).
     from resources.lib.modules import client as _client
 except Exception:
     _client = None
@@ -38,6 +38,21 @@ WORKING_DIR = os.path.join(control.addonPath, 'resources', 'lib', 'sources', 'wo
 _UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
        '(KHTML, like Gecko) Chrome/122.0 Safari/537.36')
 
+# Cloudflare providers that rely on FlareSolverr during real scrapes.
+FLARESOLVERR_SCRAPERS = frozenset({
+    'bstsrs_one',
+    'projectfreetv_cyou',
+    'projectfreetv_lol',
+    'watchseries_cyou',
+})
+
+
+def _flaresolverr_configured():
+    try:
+        return bool((control.setting('flaresolverr.url') or '').strip())
+    except Exception:
+        return False
+
 
 def _list_working_scrapers():
     """Return a sorted list of scraper module names present in sources/working/."""
@@ -51,9 +66,22 @@ def _list_working_scrapers():
     return names
 
 
-def _probe(url, timeout=8):
+def _probe(url, timeout=8, use_flaresolverr=False):
     """HEAD/GET the url. Return (ok, status_code_or_err, elapsed_ms)."""
     started = time.time()
+    # FlareSolverr scrapers: use scrapePage so the probe matches real behaviour.
+    if use_flaresolverr and _client is not None:
+        try:
+            page = _client.scrapePage(url, timeout=timeout)
+            elapsed = int((time.time() - started) * 1000)
+            if page is None:
+                return False, 'NO-RESP', elapsed
+            code = str(getattr(page, 'status_code', '') or '')
+            ok = code.startswith('2') or code.startswith('3')
+            return ok, code or 'NO-CODE', elapsed
+        except Exception as e:
+            return False, type(e).__name__, int((time.time() - started) * 1000)
+
     # Try the addon's own client first - it mirrors the real scraper behaviour.
     if _client is not None:
         try:
@@ -95,6 +123,7 @@ def _test_one(name):
     result = {
         'name': name,
         'ok': False,
+        'cf': False,
         'status': 'LOAD-FAIL',
         'base': '-',
         'used': '-',
@@ -104,12 +133,14 @@ def _test_one(name):
     if inst is None:
         return result
 
-    base = getattr(inst, 'base_link', None) or ''
+    base = getattr(inst, 'probe_link', None) or getattr(inst, 'base_link', None) or ''
     domains = list(getattr(inst, 'domains', []) or [])
     result['base'] = base or '(no base_link)'
 
+    fs_scraper = name in FLARESOLVERR_SCRAPERS
+    use_fs = fs_scraper and _flaresolverr_configured()
+
     tried = []
-    # Primary base_link first, then each domain (http->https auto via probe).
     candidates = []
     if base:
         candidates.append(base)
@@ -122,12 +153,16 @@ def _test_one(name):
 
     for url in candidates:
         tried.append(url)
-        ok, code, ms = _probe(url)
+        ok, code, ms = _probe(url, use_flaresolverr=use_fs)
         if ok:
-            result.update(ok=True, status=code, used=url, ms=ms)
+            result.update(ok=True, cf=False, status=code, used=url, ms=ms)
             return result
-        # keep the last failure if nothing succeeds
-        result.update(ok=False, status=code, used=url, ms=ms)
+        # CF / FlareSolverr providers: a failed probe is not grounds to treat as dead.
+        if fs_scraper and code in ('403', '503', 'ConnectionError', 'NO-RESP', 'NO-CODE'):
+            tag = ('CF-%s' % code) if code in ('403', '503') else ('FS-%s' % code)
+            result.update(ok=False, cf=True, status=tag, used=url, ms=ms)
+            return result
+        result.update(ok=False, cf=False, status=code, used=url, ms=ms)
 
     if not tried:
         result['status'] = 'NO-URL'
@@ -135,8 +170,14 @@ def _test_one(name):
 
 
 def _format_line(r):
-    icon = '[COLOR lime]OK[/COLOR]' if r['ok'] else '[COLOR red]DEAD[/COLOR]'
-    return '[B]%s[/B]  %s  [I]%s[/I]  (%s, %dms)' % (r['name'], icon, r['status'], r['used'], r['ms'])
+    if r.get('cf'):
+        icon = '[COLOR yellow]CF[/COLOR]'
+    elif r['ok']:
+        icon = '[COLOR lime]OK[/COLOR]'
+    else:
+        icon = '[COLOR red]DEAD[/COLOR]'
+    fs_note = ' [I](FlareSolverr)[/I]' if r.get('fs') else ''
+    return '[B]%s[/B]  %s  [I]%s[/I]  (%s, %dms)%s' % (r['name'], icon, r['status'], r['used'], r['ms'], fs_note)
 
 
 def test_all():
@@ -151,6 +192,7 @@ def test_all():
 
     results = []
     alive = 0
+    cf = 0
     total = len(names)
     for i, name in enumerate(names):
         if pd.iscanceled():
@@ -158,35 +200,43 @@ def test_all():
         pd.update(int((i / float(total)) * 100),
                   'Testing [B]%s[/B]  (%d / %d)' % (name, i + 1, total))
         r = _test_one(name)
+        r['fs'] = name in FLARESOLVERR_SCRAPERS
         if r['ok']:
             alive += 1
+        elif r.get('cf'):
+            cf += 1
         results.append(r)
 
     pd.close()
 
-    # Summary header + detailed lines.
-    header = '[B]Scraper Tester Report[/B]  -  [COLOR lime]%d alive[/COLOR] / [COLOR red]%d dead[/COLOR] (of %d)' % (
-        alive, len(results) - alive, len(results)
-    )
+    dead = len(results) - alive - cf
+    header = ('[B]Scraper Tester Report[/B]  -  '
+              '[COLOR lime]%d alive[/COLOR] / '
+              '[COLOR yellow]%d CF[/COLOR] / '
+              '[COLOR red]%d dead[/COLOR] (of %d)' % (alive, cf, dead, len(results)))
     lines = [header, '']
-    for r in results:
-        lines.append(_format_line(r))
+    if cf and not _flaresolverr_configured():
+        lines.append('[COLOR yellow]CF[/COLOR] = Cloudflare block — configure FlareSolverr in Playback Settings.')
+        lines.append('')
+    elif cf:
+        lines.append('[COLOR yellow]CF[/COLOR] = FlareSolverr provider — probe failed but may still work during playback.')
+        lines.append('')
+    lines.extend(_format_line(r) for r in results)
     body = '\n'.join(lines)
 
-    # textviewer = scrollable, closes on OK.
     try:
         xbmcgui.Dialog().textviewer('Gratis Red - Scraper Tester', body)
     except Exception:
         control.okDialog(body, 'Gratis Red - Scraper Tester')
 
-    # Persist last report to the addon data folder for support/debug.
     try:
         out = os.path.join(control.dataPath, 'scraper_tester_last.txt')
         with open(out, 'w') as f:
             f.write('Gratis Red Scraper Tester - %s\n' % time.strftime('%Y-%m-%d %H:%M:%S'))
             for r in results:
+                tag = 'OK' if r['ok'] else ('CF' if r.get('cf') else 'DEAD')
                 f.write('%s\t%s\t%s\t%s\t%dms\n' % (
-                    r['name'], 'OK' if r['ok'] else 'DEAD', r['status'], r['used'], r['ms']))
+                    r['name'], tag, r['status'], r['used'], r['ms']))
     except Exception:
         pass
 
@@ -210,6 +260,7 @@ def test_one():
         pd = None
 
     r = _test_one(name)
+    r['fs'] = name in FLARESOLVERR_SCRAPERS
 
     try:
         if pd is not None:
@@ -218,6 +269,8 @@ def test_one():
         pass
 
     msg = _format_line(r)
+    if r.get('cf') and not _flaresolverr_configured():
+        msg += '[CR][CR][COLOR yellow]Cloudflare-protected — set FlareSolverr URL in Playback Settings.[/COLOR]'
     try:
         xbmcgui.Dialog().textviewer('Gratis Red - Scraper Tester', msg)
     except Exception:

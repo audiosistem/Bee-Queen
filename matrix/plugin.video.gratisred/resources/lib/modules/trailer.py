@@ -36,16 +36,11 @@ class source:
         self.trailers_trakt = control.setting('trailers.trakt') or 'true'
         self.youtube_lang = control.apiLanguage().get('youtube', 'en') or 'en'
         self.tmdb_lang = control.apiLanguage().get('tmdb', 'en') or 'en'
-        # YouTube is now an optional fallback only. No bundled API keys are shipped with the add-on.
-        # The user can either:
-        #   1. Pair with plugin.video.youtube (its configured key will be used), or
-        #   2. Supply their own key in this add-on's settings (youtube.api).
+        # YouTube trailers use plugin.video.youtube when installed (no separate API key here).
         if control.condVisibility('System.HasAddon(plugin.video.youtube)'):
             self.youtube_key = control.addon('plugin.video.youtube').getSetting('youtube.api.key') or ''
         else:
             self.youtube_key = ''
-        if not self.youtube_key:
-            self.youtube_key = control.setting('youtube.api') or ''
         self.imdb_link = 'https://www.imdb.com/_json/video/'
         self.youtube_link = 'https://youtube.com'
         self.youtube_watch_link = self.youtube_link + '/watch?v='
@@ -61,8 +56,7 @@ class source:
     def youtube_trailers(self, name='', url='', tmdb='', imdb='', season='', episode=''):
         trailer_list = []
         try:
-            # Fallback source: requires a user-supplied YouTube API key
-            # (either from this add-on's settings or paired plugin.video.youtube).
+            # Requires plugin.video.youtube with a configured API key.
             if not self.youtube_key:
                 return trailer_list
             if self.content not in ['tvshows', 'seasons', 'episodes']:

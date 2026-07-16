@@ -23,6 +23,7 @@ from resources.lib.modules import client
 from resources.lib.modules import client_utils
 from resources.lib.modules import cache
 from resources.lib.modules import playcount
+from resources.lib.modules import libtools
 from resources.lib.modules import workers
 from resources.lib.modules import views
 #from resources.lib.modules import log_utils
@@ -335,11 +336,13 @@ class seasons:
 
 
     def seasonDirectory(self, items):
-        if items == None or len(items) == 0:
-            control.idle()
-            #sys.exit()
         sysaddon = sys.argv[0]
         syshandle = int(sys.argv[1])
+        if items == None or len(items) == 0:
+            control.idle()
+            control.content(syshandle, 'seasons')
+            control.directory(syshandle, cacheToDisc=False)
+            return
         addonPoster = control.addonPoster()
         addonBanner = control.addonBanner()
         addonFanart = control.addonFanart()
@@ -352,6 +355,7 @@ class seasons:
             pass
         watchedMenu = 'Watched in Trakt' if trakt.getTraktIndicatorsInfo() == True else 'Watched in Gratis Red'
         unwatchedMenu = 'Unwatched in Trakt' if trakt.getTraktIndicatorsInfo() == True else 'Unwatched in Gratis Red'
+        tv_library = libtools.libtvshows()
         for i in items:
             try:
                 label = 'Season %s' % i['season']
@@ -378,7 +382,8 @@ class seasons:
                 sysmeta = urllib_parse.quote_plus(json.dumps(ep_meta))
                 imdb, tvdb, tmdb, year, season, fanart, duration, status = i['imdb'], i['tvdb'], i['tmdb'], i['year'], i['season'], i['fanart'], i['duration'], i['status']
                 meta = dict((k,v) for k, v in six.iteritems(i) if not v == '0')
-                meta.update({'mediatype': 'tvshow'})
+                meta.update({'mediatype': 'season'})
+                meta.update({'title': label, 'tvshowtitle': i['tvshowtitle']})
                 meta.update({'code': tmdb, 'imdbnumber': imdb, 'imdb_id': imdb, 'tvdb_id': tvdb})
                 meta.update({'trailer': '%s?action=trailer&name=%s&tmdb=%s&imdb=%s&season=%s' % (sysaddon, systitle, tmdb, imdb, season)})
                 if not 'duration' in i:
@@ -403,7 +408,7 @@ class seasons:
                     cm.append(('Trakt Manager', 'RunPlugin(%s?action=trakt_manager&name=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, tmdb)))
                 if tmdbCredentials == True:
                     cm.append(('TMDb Manager', 'RunPlugin(%s?action=tmdb_manager&name=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, tmdb)))
-                cm.append(('Add to Library', 'RunPlugin(%s?action=tvshow_to_library&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s)' % (sysaddon, systitle, year, imdb, tmdb)))
+                libtools.append_tvshow_library_cm(cm, sysaddon, tv_library, i['tvshowtitle'], year, imdb, tmdb)
                 if kodi_version < 17:
                     cm.append(('Information', 'Action(Info)'))
                 try:
@@ -444,10 +449,12 @@ class seasons:
                     else:
                         cast = [(p['name'], p['role']) for p in castwiththumb]
                         meta.update({'cast': cast})
+                season_info = control.metadataClean(meta)
+                season_info.pop('tvshowtitle', None)
                 if kodi_version >= 20:
-                    info_tag.set_info(control.metadataClean(meta))
+                    info_tag.set_info(season_info)
                 else:
-                    item.setInfo(type='Video', infoLabels=control.metadataClean(meta))
+                    item.setInfo(type='Video', infoLabels=season_info)
                 video_streaminfo = {'codec': 'h264'}
                 if kodi_version >= 20:
                     info_tag.add_stream_info('video', video_streaminfo)
@@ -464,8 +471,8 @@ class seasons:
             #log_utils.log('seasonDirectory', 1)
             pass
         control.content(syshandle, 'seasons')
-        control.directory(syshandle, cacheToDisc=True)
-        views.setView('seasons', {'skin.aeon.nox.silvo' : 50, 'skin.estuary': 55, 'skin.confluence': 500}) #View 50 List #View 501 LowList
+        control.directory(syshandle, cacheToDisc=False)
+        views.setView('seasons')
 
 
 class episodes:
@@ -714,27 +721,33 @@ class episodes:
             if trakt.getTraktCredentialsInfo() == False:
                 raise Exception()
             activity = trakt.getActivity()
-            # CACHE: 5 min Trakt-only cache - avoids re-walking personal
-            # *and* liked list pagination on every directory re-entry.
-            # See modules/trakt_cache.py for rationale.
             from resources.lib.modules import trakt_cache
             userlists += trakt_cache.get(
-                self.trakt_user_list,
+                trakt.user_list_directory_episode,
                 trakt_cache.TTL_LISTS_SEC,
                 self.trakt_lists_link,
+                self.trakt_list_link,
                 self.trakt_user,
             )
             userlists += trakt_cache.get(
-                self.trakt_user_list,
+                trakt.user_list_directory_episode,
                 trakt_cache.TTL_LISTS_SEC,
                 self.trakt_likedlists_link,
+                self.trakt_list_link,
                 self.trakt_user,
             )
         except:
             pass
         self.list = userlists
+        if not self.list:
+            if trakt.getTraktCredentialsInfo() == False:
+                control.infoDialog('Connect Trakt in Settings > Account Settings to see your lists.', sound=True)
+            else:
+                control.infoDialog('No Trakt episode or TV lists found.', sound=True)
         for i in range(0, len(self.list)):
-            self.list[i].update({'image': 'userlists.png', 'action': 'calendar'})
+            if not self.list[i].get('action'):
+                self.list[i].update({'action': 'calendar'})
+            self.list[i].update({'image': 'userlists.png'})
         self.addDirectory(self.list, queue=True)
         return self.list
 
@@ -1877,6 +1890,7 @@ class episodes:
         playbackMenu = 'Select Source' if control.setting('hosts.mode') == '2' else 'Auto Play'
         watchedMenu = 'Watched in Trakt' if trakt.getTraktIndicatorsInfo() == True else 'Watched in Gratis Red'
         unwatchedMenu = 'Unwatched in Trakt' if trakt.getTraktIndicatorsInfo() == True else 'Unwatched in Gratis Red'
+        tv_library = libtools.libtvshows()
         for i in items:
             try:
                 if not 'label' in i:
@@ -1947,7 +1961,7 @@ class episodes:
                     cm.append(('Trakt Manager', 'RunPlugin(%s?action=trakt_manager&name=%s&tmdb=%s&content=tvshow)' % (sysaddon, systvshowtitle, tmdb)))
                 if tmdbCredentials == True:
                     cm.append(('TMDb Manager', 'RunPlugin(%s?action=tmdb_manager&name=%s&tmdb=%s&content=tvshow)' % (sysaddon, systvshowtitle, tmdb)))
-                cm.append(('Add to Library', 'RunPlugin(%s?action=tvshow_to_library&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s)' % (sysaddon, systvshowtitle, year, imdb, tmdb)))
+                libtools.append_tvshow_library_cm(cm, sysaddon, tv_library, i['tvshowtitle'], year, imdb, tmdb)
                 if kodi_version < 17:
                     cm.append(('Information', 'Action(Info)'))
                 try:
@@ -2015,11 +2029,11 @@ class episodes:
         if self.episode_views == 'true':
             control.content(syshandle, 'seasons')
             control.directory(syshandle, cacheToDisc=True)
-            views.setView('seasons', {'skin.aeon.nox.silvo' : 50, 'skin.estuary': 55, 'skin.confluence': 500}) #View 50 List #View 501 LowList
+            views.setView('seasons')
         else:
             control.content(syshandle, 'episodes')
             control.directory(syshandle, cacheToDisc=True)
-            views.setView('episodes', {'skin.aeon.nox.silvo' : 50, 'skin.estuary': 55, 'skin.confluence': 504}) #View 50 List #View 501 LowList
+            views.setView('episodes')
 
 
     def addDirectory(self, items, queue=False):
@@ -2029,17 +2043,10 @@ class episodes:
         sysaddon = sys.argv[0]
         syshandle = int(sys.argv[1])
         addonFanart = control.addonFanart()
-        addonThumb = control.addonThumb()
-        artPath = control.artPath()
         for i in items:
             try:
                 name = i['name']
-                if i['image'].startswith('http'):
-                    thumb = i['image']
-                elif not artPath == None:
-                    thumb = os.path.join(artPath, i['image'])
-                else:
-                    thumb = addonThumb
+                image = i['image']
                 url = '%s?action=%s' % (sysaddon, i['action'])
                 try:
                     url += '&url=%s' % urllib_parse.quote_plus(i['url'])
@@ -2053,13 +2060,13 @@ class episodes:
                     item = control.item(label=name, offscreen=True)
                 except:
                     item = control.item(label=name)
-                item.setArt({'icon': thumb, 'thumb': thumb, 'fanart': addonFanart})
+                control.set_menu_item_art(item, image, fanart=addonFanart)
                 item.addContextMenuItems(cm)
                 control.addItem(handle=syshandle, url=url, listitem=item, isFolder=True)
             except:
                 #log_utils.log('addDirectory', 1)
                 pass
-        control.content(syshandle, 'addons')
-        control.directory(syshandle, cacheToDisc=True)
+        from resources.lib.modules import views
+        views.endMenuDirectory(syshandle)
 
 

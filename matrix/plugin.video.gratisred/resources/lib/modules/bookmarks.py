@@ -7,6 +7,7 @@ except:
 
 from resources.lib.modules import control
 from resources.lib.modules import trakt
+from resources.lib.modules import trakt_cache
 
 
 def _indicators():
@@ -60,7 +61,7 @@ def get(media_type, imdb, season, episode, local=False):
     if control.setting('bookmarks.source') == '1' and trakt.getTraktCredentialsInfo() == True and local == False:
         try:
             if media_type == 'episode':
-                traktInfo = trakt.getTraktAsJson('https://api.trakt.tv/sync/playback/episodes?extended=full')
+                traktInfo = trakt_cache.get(trakt.getPlaybackEpisodes, trakt_cache.TTL_HISTORY_SEC) or []
                 for i in traktInfo:
                     if imdb == i['show']['ids']['imdb']:
                         if int(season) == i['episode']['season'] and int(episode) == i['episode']['number']:
@@ -70,7 +71,7 @@ def get(media_type, imdb, season, episode, local=False):
                             else:
                                 offset = 0
             else:
-                traktInfo = trakt.getTraktAsJson('https://api.trakt.tv/sync/playback/movies?extended=full')
+                traktInfo = trakt_cache.get(trakt.getPlaybackMovies, trakt_cache.TTL_HISTORY_SEC) or []
                 for i in traktInfo:
                     if imdb == i['movie']['ids']['imdb']:
                         seekable = 1 < i['progress'] < 92

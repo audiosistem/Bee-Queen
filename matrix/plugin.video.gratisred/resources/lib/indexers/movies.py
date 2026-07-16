@@ -24,6 +24,7 @@ from resources.lib.modules import client
 from resources.lib.modules import client_utils
 from resources.lib.modules import control
 from resources.lib.modules import favorites
+from resources.lib.modules import libtools
 from resources.lib.modules import metacache
 from resources.lib.modules import playcount
 from resources.lib.modules import tmdb_utils
@@ -471,21 +472,22 @@ class movies:
             if trakt.getTraktCredentialsInfo() == False:
                 raise Exception()
             activity = trakt.getActivity()
-            # CACHE: wrap the (potentially many-round-trip) list-directory
-            # fetch in a 5 minute cache.  See modules/trakt_cache.py for why
-            # this is a dedicated cache and not the generic 12h one.
             from resources.lib.modules import trakt_cache
             userlists += trakt_cache.get(
-                self.trakt_user_list,
+                trakt.user_list_directory_movie,
                 trakt_cache.TTL_LISTS_SEC,
                 self.trakt_lists_link,
+                self.trakt_list_link,
                 self.trakt_user,
             )
         except:
             pass
         self.list = userlists
-        for i in range(0, len(self.list)):
-            self.list[i].update({'action': 'movies'})
+        if not self.list:
+            if trakt.getTraktCredentialsInfo() == False:
+                control.infoDialog('Connect Trakt in Settings > Account Settings to see your lists.', sound=True)
+            else:
+                control.infoDialog('No Trakt movie lists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k['image'], k['name'].lower()))
         self.addDirectory(self.list, queue=True)
         return self.list
@@ -497,20 +499,22 @@ class movies:
             if trakt.getTraktCredentialsInfo() == False:
                 raise Exception()
             activity = trakt.getActivity()
-            # CACHE: liked-lists can be *many* pages on heavy Trakt users;
-            # a 5 min cache hides the paginated round-trips on re-entry.
             from resources.lib.modules import trakt_cache
             userlists += trakt_cache.get(
-                self.trakt_user_list,
+                trakt.user_list_directory_movie,
                 trakt_cache.TTL_LISTS_SEC,
                 self.trakt_likedlists_link,
+                self.trakt_list_link,
                 self.trakt_user,
             )
         except:
             pass
         self.list = userlists
-        for i in range(0, len(self.list)):
-            self.list[i].update({'action': 'movies'})
+        if not self.list:
+            if trakt.getTraktCredentialsInfo() == False:
+                control.infoDialog('Connect Trakt in Settings > Account Settings to see your lists.', sound=True)
+            else:
+                control.infoDialog('No Trakt movie lists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k['image'], k['name'].lower()))
         self.addDirectory(self.list, queue=True)
         return self.list
@@ -521,14 +525,25 @@ class movies:
         try:
             if tmdb_utils.getTMDbCredentialsInfo() == False:
                 raise Exception()
-            userlists += tmdb_utils.get_created_lists(self.tmdb_userlists_link)
+            userlists += tmdb_utils.get_created_lists(self.tmdb_userlists_link, list_type='movie')
         except:
             pass
         self.list = userlists
-        for i in range(0, len(self.list)):
-            self.list[i].update({'action': 'movies'})
+        if not self.list:
+            if tmdb_utils.getTMDbCredentialsInfo() == False:
+                control.infoDialog('Authorize TMDb in Settings > Account Settings to see your lists.', sound=True)
+            else:
+                control.infoDialog('No TMDb movie lists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k['image'], k['name'].lower()))
         self.addDirectory(self.list, queue=True)
+        return self.list
+
+
+    def local_library(self):
+        self.list = libtools.libmovies().scan_local_items()
+        if not self.list:
+            control.infoDialog('No movies found in your local library folder.', sound=True)
+        self.movieDirectory(self.list)
         return self.list
 
 
@@ -598,12 +613,12 @@ class movies:
                         imdb = 'tt' + re.sub(r'[^0-9]', '', str(imdb))
                     tmdb = item.get('ids', {}).get('tmdb')
                     if not tmdb:
-                        tmdb == '0'
+                        tmdb = '0'
                     else:
                         tmdb = str(tmdb)
                     paused_at = item.get('paused_at')
                     if not paused_at:
-                        paused_at == '0'
+                        paused_at = '0'
                     else:
                         paused_at = re.sub(r'[^0-9]+', '', str(paused_at))
                     self.list.append({'title': title, 'originaltitle': title, 'year': year, 'imdb': imdb, 'tmdb': tmdb, 'tvdb': '0', 'next': next, 'paused_at': paused_at})
@@ -674,8 +689,11 @@ class movies:
                 items = result['parts']
             elif 'cast' in result:
                 items = result['cast']
-            for item in items:
+            for raw in items:
                 try:
+                    media_type, item = tmdb_utils.unwrap_tmdb_list_item(raw)
+                    if media_type != 'movie' or not item:
+                        raise Exception()
                     if 'media_type' in item and not item['media_type'] == 'movie':
                         raise Exception()
                     title = item['title']
@@ -1224,11 +1242,13 @@ class movies:
 
 
     def movieDirectory(self, items):
-        if items == None or len(items) == 0:
-            control.idle()
-            #sys.exit()
         sysaddon = sys.argv[0]
         syshandle = int(sys.argv[1])
+        if items == None or len(items) == 0:
+            control.idle()
+            control.content(syshandle, 'movies')
+            control.directory(syshandle, cacheToDisc=True)
+            return
         addonPoster, addonBanner = control.addonPoster(), control.addonBanner()
         addonFanart = control.addonFanart()
         traktCredentials = trakt.getTraktCredentialsInfo()
@@ -1244,6 +1264,7 @@ class movies:
             favitems = [i[0] for i in favitems]
         except:
             pass
+        movie_library = libtools.libmovies()
         for i in items:
             try:
                 if 'channel' in i:
@@ -1286,7 +1307,7 @@ class movies:
                     cm.append(('Trakt Manager', 'RunPlugin(%s?action=trakt_manager&name=%s&imdb=%s&content=movie)' % (sysaddon, sysname, imdb)))
                 if tmdbCredentials == True:
                     cm.append(('TMDb Manager', 'RunPlugin(%s?action=tmdb_manager&name=%s&tmdb=%s&content=movie)' % (sysaddon, sysname, tmdb)))
-                cm.append(('Add to Library', 'RunPlugin(%s?action=movie_to_library&name=%s&title=%s&year=%s&imdb=%s&tmdb=%s)' % (sysaddon, sysname, systitle, year, imdb, tmdb)))
+                libtools.append_movie_library_cm(cm, sysaddon, movie_library, sysname, title, year, imdb, tmdb)
                 if action == 'movieFavorites':
                     cm.append(('Remove from MyFavorites', 'RunPlugin(%s?action=deleteFavorite&meta=%s&content=movie)' % (sysaddon, sysmeta)))
                 else:
@@ -1383,8 +1404,7 @@ class movies:
             pass
         control.content(syshandle, 'movies')
         control.directory(syshandle, cacheToDisc=True)
-        control.sleep(1000)
-        views.setView('movies', {'skin.aeon.nox.silvo' : 50, 'skin.estuary': 55, 'skin.confluence': 500}) #View 50 List #View 501 LowList
+        views.setView('movies')
 
 
     def addDirectory(self, items, queue=False):
@@ -1394,17 +1414,10 @@ class movies:
         sysaddon = sys.argv[0]
         syshandle = int(sys.argv[1])
         addonFanart = control.addonFanart()
-        addonThumb = control.addonThumb()
-        artPath = control.artPath()
         for i in items:
             try:
                 name = i['name']
-                if i['image'].startswith('http'):
-                    thumb = i['image']
-                elif not artPath == None:
-                    thumb = os.path.join(artPath, i['image'])
-                else:
-                    thumb = addonThumb
+                image = i['image']
                 url = '%s?action=%s' % (sysaddon, i['action'])
                 try:
                     url += '&url=%s' % urllib_parse.quote_plus(i['url'])
@@ -1422,15 +1435,14 @@ class movies:
                     item = control.item(label=name, offscreen=True)
                 except:
                     item = control.item(label=name)
-                poster = i['poster'] if 'poster' in i and not (i['poster'] == '0' or i['poster'] == None) else thumb
                 fanart = i['fanart'] if 'fanart' in i and not (i['fanart'] == '0' or i['fanart'] == None) else addonFanart
-                item.setArt({'icon': thumb, 'thumb': poster, 'fanart': fanart})
+                control.set_menu_item_art(item, image, fanart=fanart)
                 item.addContextMenuItems(cm)
                 control.addItem(handle=syshandle, url=url, listitem=item, isFolder=True)
             except:
                 #log_utils.log('addDirectory', 1)
                 pass
-        control.content(syshandle, 'addons')
-        control.directory(syshandle, cacheToDisc=True)
+        from resources.lib.modules import views
+        views.endMenuDirectory(syshandle)
 
 

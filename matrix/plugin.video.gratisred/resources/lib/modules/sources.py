@@ -986,21 +986,21 @@ class sources:
             sourceDict = self.sourceDict
             log_provider_domains = control.setting('addon.log_providerdomains') or 'false'
             for i in sourceDict:
-                provider = i[0]
-                base_link = i[1].base_link
                 try:
-                    domains = i[1].domains
+                    provider = i[0]
+                    call = i[1]
+                    domains = getattr(call, 'domains', None) or []
                     domains = [domain for domain in domains][:3]
-                    domains_label = '[CR]-Last 3 Domains :  %s[CR]' % domains
+                    domains_label = '[CR]-Last 3 Domains :  %s[CR]' % domains if domains else '[CR]'
+                    base_link = getattr(call, 'base_link', '') or ''
+                    if not base_link and domains:
+                        base_link = domains[0] if str(domains[0]).startswith('http') else 'https://%s' % domains[0]
+                    notes = getattr(call, 'notes', '') or ''
+                    notes_label = '-Notes :  %s[CR]' % notes if notes else ''
+                    scraper_label = '[B]%s :[/B]  %s%s%s' % (provider, base_link, domains_label, notes_label)
+                    list.append(scraper_label)
                 except:
-                    domains_label = '[CR]'
-                try:
-                    notes = i[1].notes
-                    notes_label = '-Notes :  %s[CR]' % notes
-                except:
-                    notes_label = ''
-                scraper_label = '[B]%s :[/B]  %s%s%s' % (provider, base_link, domains_label, notes_label)
-                list.append(scraper_label)
+                    continue
             for i in range(len(list)):
                 text += "[CR][" + str(i+1) + "] " + list[i]
             if log_provider_domains == 'true':

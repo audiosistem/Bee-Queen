@@ -18,7 +18,6 @@ sysaddon = sys.argv[0]
 syshandle = int(sys.argv[1])
 #control.moderator()
 
-tmdbCredentials = tmdb_utils.getTMDbCredentialsInfo()
 traktCredentials = trakt.getTraktCredentialsInfo()
 traktIndicators = trakt.getTraktIndicatorsInfo()
 
@@ -345,14 +344,14 @@ class navigator:
 
 
     def mytmdbmovies(self):
-        if tmdbCredentials == True:
+        if tmdb_utils.getTMDbCredentialsInfo() == True:
             self.addDirectoryItem('Favorites', 'movies&url=tmdb_favorites', 'tmdb.png', 'DefaultMovies.png', queue=True)
             self.addDirectoryItem('Watchlist', 'movies&url=tmdb_watchlist', 'tmdb.png', 'DefaultMovies.png', queue=True)
         self.endDirectory()
 
 
     def mytmdbtvshows(self):
-        if tmdbCredentials == True:
+        if tmdb_utils.getTMDbCredentialsInfo() == True:
             self.addDirectoryItem('Favorites', 'tvshows&url=tmdb_favorites', 'tmdb.png', 'DefaultTVShows.png')
             self.addDirectoryItem('Watchlist', 'tvshows&url=tmdb_watchlist', 'tmdb.png', 'DefaultTVShows.png')
         self.endDirectory()
@@ -416,11 +415,10 @@ class navigator:
     def library(self):
         movie_library = control.setting('library.movie')
         if len(control.listDir(movie_library)[0]) > 0:
-            self.addDirectoryItem('Library Movie Folder', movie_library, 'movies.png', 'DefaultMovies.png', isAction=False)
+            self.addDirectoryItem('Library Movies', 'library_movies', 'movies.png', 'DefaultMovies.png')
         tv_library = control.setting('library.tv')
         if len(control.listDir(tv_library)[0]) > 0:
-            self.addDirectoryItem('Library TV Show Folder', tv_library, 'tvshows.png', 'DefaultTVShows.png', isAction=False)
-        self.addDirectoryItem('Library Settings', 'open_settings&query=6.0', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.addDirectoryItem('Library TV Shows', 'library_tvshows', 'tvshows.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Update Library', 'update_library&query=tool', 'library_update.png', 'DefaultAddonProgram.png', isFolder=False)
         if traktCredentials == True:
             self.addDirectoryItem('Import Trakt Movie Collection...', 'movies_to_library&url=trakt_collection', 'trakt.png', 'DefaultMovies.png', isFolder=False)
@@ -447,13 +445,13 @@ class navigator:
         self.addDirectoryItem('ResolveURL Settings', 'open_resolveurl_settings', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         self.addDirectoryItem('Setup ViewTypes', 'views_menu', 'tools.png', 'DefaultAddonProgram.png')
         #self.addDirectoryItem('Authorize TMDb', 'auth_tmdb', 'tmdb.png', 'DefaultAddonProgram.png', isFolder=False)
-        self.addDirectoryItem('Authorize Trakt', 'auth_trakt', 'trakt.png', 'DefaultAddonProgram.png', isFolder=False)
+        if not trakt.getTraktCredentialsInfo():
+            self.addDirectoryItem('Authorize Trakt (QR Code)', 'auth_trakt', 'trakt.png', 'DefaultAddonProgram.png', isFolder=False)
         self.addDirectoryItem('[COLOR red]Changelog[/COLOR]', 'changelog', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
-        self.addDirectoryItem('[COLOR orange]Scrubs v2 Changelog[/COLOR]', 'scrubsv2_changelog', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         #if control.condVisibility('System.HasAddon(plugin.program.lazylinks)'):
         #    self.addDirectoryItem('Open LazyLinks', 'plugin://plugin.program.lazylinks', 'tools.png', 'DefaultAddonProgram.png', isAction=False)
         self.addDirectoryItem('Optional Installs', 'installs_menu', 'tools.png', 'DefaultAddonProgram.png')
-        self.endDirectory()
+        self.endDirectory(cached=False)
 
 
     def devtools(self):
@@ -462,12 +460,11 @@ class navigator:
         self.addDirectoryItem('Test Movies (TMDb)', 'movies&url=tmdb_jewtestmovies', 'movies.png', 'DefaultMovies.png')
         self.addDirectoryItem('Test TV Shows (TMDb)', 'tvshows&url=tmdb_jewtestshows', 'tvshows.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Provider Domains', 'get_provider_domains', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
-        self.addDirectoryItem('Provider Settings', 'open_settings&query=4.0', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
+        self.addDirectoryItem('Settings', 'open_settings&query=4.0', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         self.addDirectoryItem('View Debug Log', 'view_debuglog', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         self.addDirectoryItem('Clear Debug Log', 'clear_debuglog', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         self.addDirectoryItem('Cleaning Tools', 'cleantools_menu', 'tools.png', 'DefaultAddonProgram.png')
-        self.addDirectoryItem('Force Open SideMenu/SlideMenu', 'open_sidemenu', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
-        self.endDirectory()
+        self.endDirectory(cached=False)
 
 
     def cleantools(self):
@@ -513,65 +510,64 @@ class navigator:
         #else:
         #    self.addDirectoryItem('script.gratisred.artwork - Open Settings', 'open_settings&query=0.0', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         if not control.condVisibility('System.HasAddon(script.trakt)'):
-            self.addDirectoryItem('script.trakt - Install Addon', 'installAddon&id=script.trakt', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.addDirectoryItem('script.trakt - Install Addon', 'installAddon&id=script.trakt&refresh=installs_menu', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         else:
             self.addDirectoryItem('script.trakt - Open Settings', 'open_settings&id=script.trakt', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         if not control.condVisibility('System.HasAddon(plugin.video.youtube)'):
-            self.addDirectoryItem('plugin.video.youtube - Install Addon', 'installAddon&id=plugin.video.youtube', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.addDirectoryItem('plugin.video.youtube - Install Addon', 'installAddon&id=plugin.video.youtube&refresh=installs_menu', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         else:
             self.addDirectoryItem('plugin.video.youtube - Open Settings', 'open_settings&id=plugin.video.youtube', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         #if not control.condVisibility('System.HasAddon(plugin.video.json_iptv)'):
-        #    self.addDirectoryItem('plugin.video.json_iptv - Install Addon', 'installAddon&id=plugin.video.json_iptv', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
+        #    self.addDirectoryItem('plugin.video.json_iptv - Install Addon', 'installAddon&id=plugin.video.json_iptv&refresh=installs_menu', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         #else:
         #    self.addDirectoryItem('plugin.video.json_iptv - Open Settings', 'open_settings&id=plugin.video.json_iptv', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         if not control.condVisibility('System.HasAddon(service.subtitles.a4ksubtitles)'):
-            self.addDirectoryItem('service.subtitles.a4ksubtitles - Install Addon', 'installAddon&id=service.subtitles.a4ksubtitles', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.addDirectoryItem('service.subtitles.a4ksubtitles - Install Addon', 'installAddon&id=service.subtitles.a4ksubtitles&refresh=installs_menu', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         else:
             self.addDirectoryItem('service.subtitles.a4ksubtitles - Open Settings', 'open_settings&id=service.subtitles.a4ksubtitles', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         self.endDirectory()
 
 
-    def views(self):
+    def views_menu(self):
+        self.addDirectoryItem('Menus', 'views_pick&content=menus', 'tools.png', 'DefaultAddonProgram.png')
+        self.addDirectoryItem('Movies', 'views_pick&content=movies', 'movies.png', 'DefaultMovies.png')
+        self.addDirectoryItem('TV Shows', 'views_pick&content=tvshows', 'tvshows.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('Seasons', 'views_pick&content=seasons', 'mytvshows.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('Episodes', 'views_pick&content=episodes', 'latest-episodes.png', 'DefaultRecentlyAddedEpisodes.png')
+        self.endDirectory()
+
+
+    def views_pick(self, content):
         try:
-            items = [('Movies', 'movies')]
-            items += [('TV Shows', 'tvshows')]
-            items += [('Seasons', 'seasons')]
-            items += [('Episodes', 'episodes')]
-            select = control.selectDialog([i[0] for i in items], 'Setup ViewTypes')
-            if select == -1:
-                return
-            content = items[select][1]
-            title = 'Click Here To Save View'
-            url = '%s?action=add_view&content=%s' % (sysaddon, content)
+            from resources.lib.modules import views
+            content = views.normalize_view_content(content)
+            title = 'Set view, then click here to save'
+            content_param = views.view_content_param(content)
+            url = '%s?action=add_view&content=%s' % (sysaddon, content_param)
             poster = control.addonPoster()
             banner = control.addonBanner()
             fanart = control.addonFanart()
-            #item = control.item(label=title) # Could probably swap it all back and remove the kodi_v20 changes as none of this seems to give any issues or errors.
-            ##New Starts
             try:
                 item = control.item(label=title, offscreen=True)
             except:
                 item = control.item(label=title)
-            ##New Ends
             item.setArt({'icon': poster, 'thumb': poster, 'poster': poster, 'banner': banner})
             item.setProperty('Fanart_Image', fanart)
-            ##New Starts
             if kodi_version >= 20:
                 info_tag = ListItemInfoTag(item, 'video')
                 info_tag.set_info({'title': title})
             else:
                 item.setInfo(type='Video', infoLabels={'title': title})
-            ##New Ends
-            #item.setInfo(type='Video', infoLabels={'title': title}) # Seems to be a useless line of code lol. (been commented out since before the kodi_v20 changes.)
             control.addItem(handle=syshandle, url=url, listitem=item, isFolder=False)
-            ## Added in to help those to disable the TopBar lol.
-            self.addDirectoryItem('Force Open SideMenu/SlideMenu', 'open_sidemenu', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
             control.content(syshandle, content)
-            control.directory(syshandle, cacheToDisc=True)
-            from resources.lib.modules import views
-            views.setView(content, {})
+            control.directory(syshandle, cacheToDisc=False)
+            views.setView(content)
         except:
             return
+
+
+    def views(self):
+        self.views_menu()
 
 
     def clearCache(self):
@@ -661,9 +657,8 @@ class navigator:
 
     def addDirectoryItem(self, name, query, thumb, icon, context=None, queue=False, isAction=True, isFolder=True):
         url = '%s?action=%s' % (sysaddon, query) if isAction == True else query
-        artPath = control.artPath()
         fanart = control.addonFanart()
-        thumb = os.path.join(artPath, thumb) if not (artPath == None or thumb == None) else icon
+        thumb_img = control.menu_image(thumb, icon)
         cm = []
         cm.append(('[B]View Changelog[/B]', 'RunPlugin(%s?action=view_changelog)' % sysaddon))
         cm.append(('[B]Clean Tools Widget[/B]', 'RunPlugin(%s?action=cleantools_widget)' % sysaddon))
@@ -676,7 +671,7 @@ class navigator:
         except:
             item = control.item(label=name)
         item.addContextMenuItems(cm)
-        item.setArt({'icon': thumb, 'thumb': thumb, 'fanart': fanart})
+        control.set_menu_item_art(item, thumb_img, fanart=fanart)
         control.addItem(handle=syshandle, url=url, listitem=item, isFolder=isFolder)
 
 
@@ -689,14 +684,14 @@ class navigator:
             try:
                 url = '%s?action=%s&url=%s' % (sysaddon, i['action'], i['url'])
                 title = i['title']
-                icon = i['image'] if 'image' in i and not i['image'] == (None or 'None' or '0') else 'DefaultVideo.png'
+                image = i['image'] if 'image' in i and not i['image'] == (None or 'None' or '0') else 'DefaultVideo.png'
                 fanart = i['fanart'] if 'fanart' in i and not i['fanart'] == (None or 'None' or '0') else sysfanart
                 try:
                     item = control.item(label=title, offscreen=True)
                 except:
                     item = control.item(label=title)
                 item.setProperty('IsPlayable', 'true')
-                item.setArt({'icon': icon, 'thumb': icon, 'fanart': fanart})
+                control.set_menu_item_art(item, image, fanart=fanart)
                 control.addItem(handle=syshandle, url=url, listitem=item, isFolder=isFolder)
             except Exception:
                 #log_utils.log('addDirectory', 1)
@@ -704,8 +699,8 @@ class navigator:
         self.endDirectory()
 
 
-    def endDirectory(self, cached=True):
-        control.content(syshandle, 'addons')
-        control.directory(syshandle, cacheToDisc=cached)
+    def endDirectory(self, cached=False):
+        from resources.lib.modules import views
+        views.endMenuDirectory(syshandle)
 
 

@@ -8,7 +8,9 @@
         <setting id="show.artwork" type="bool" label="Theme Artwork PopUp" default="true" enable="!eq(-1,true)" visible="!System.HasAddon(script.gratisred.artwork)" />
         <setting id="theme.1" type="select" label="Theme" values="Transparent|Exodus|Scrubs v2 Grey|Scrubs v2 Purple|Venom" default="Transparent" visible="System.HasAddon(script.gratisred.artwork)" />
         <setting id="api.language" type="select" label="Info Language" values="AUTO|Bulgarian|Chinese|Croatian|Czech|Danish|Dutch|English|Finnish|French|German|Greek|Hebrew|Hungarian|Italian|Japanese|Korean|Norwegian|Polish|Portuguese|Romanian|Russian|Serbian|Slovak|Slovenian|Spanish|Swedish|Thai|Turkish|Ukrainian" default="AUTO" />
-        <!--<setting id="show.changelog" type="bool" label="Show Changelog After Updates" default="true" />-->
+        <setting id="show.changelog" type="bool" label="Show Changelog After Updates" default="false" />
+        <setting id="addon.lastversion" type="text" label="Last seen version (internal)" default="" visible="false" />
+        <setting id="addon.changelog.dismissed" type="bool" label="Changelog dismissed (internal)" default="false" visible="false" />
         <setting id="show.noyear" type="bool" label="Show Items Without/Future Year/AirDate" default="false" />
         <setting id="showunaired" type="bool" label="Show Unaired Items" default="true" />
         <setting id="unaired.color" type="action" label="Unaired Color" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=color_choice&amp;setting=unaired.color&amp;query=0.8)" default="darkred" subsetting="true" enable="!eq(-1,false)" visible="eq(-1,true)" />
@@ -80,7 +82,7 @@
         <setting id="remove.captcha" type="bool" label="Remove Pair/Captcha Sources" default="false" />
         <setting id="remove.dupes" type="bool" label="Remove Duplicate Sources" default="true" />
         <setting type="lsep" label="Cloudflare Bypass (FlareSolverr)" />
-        <setting id="flaresolverr.url" type="text" label="FlareSolverr URL (e.g. http://127.0.0.1:8191/v1)" default="http://127.0.0.1:8191/v1" />
+        <setting id="flaresolverr.url" type="text" label="FlareSolverr URL:" default="http://127.0.0.1:8191/v1" enable="true" />
     </category>
 
     <category label="Account Settings">
@@ -92,24 +94,23 @@
         <setting type="lsep" label="FilePursuit" />
         <setting id="filepursuit.api" type="text" label="API:" default="" />
         <setting type="lsep" label="Trakt" />
-        <setting id="trakt.user" type="action" label="Authorize Trakt" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=auth_trakt)" />
         <setting id="trakt.token" type="text" label="" default="" enable="false" visible="false" />
         <setting id="trakt.refresh" type="text" label="" default="" enable="false" visible="false" />
+        <setting id="trakt.expires" type="text" label="" default="" enable="false" visible="false" />
+        <setting id="trakt.authorize" type="action" label="Authorize Trakt (QR Code)" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=auth_trakt&amp;source=settings)" visible="eq(-3,)" />
+        <setting id="trakt.revoke" type="action" label="Revoke Trakt Account" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=revoke_trakt&amp;source=settings)" visible="!eq(-4,)" />
+        <setting id="trakt.user" type="text" label="Trakt Account:" default="" enable="false" visible="!eq(-5,)" />
         <setting type="lsep" label="TMDb" />
-        <setting id="tmdb.api" type="text" label="API:" default="" />
-        <setting id="tmdb.user" type="text" label="Username:" default="" />
-        <setting id="tmdb.pass" type="text" label="Password:" default="" option="hidden" />
-        <setting id="tmdb.auth" type="action" label="Authorize TMDb" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=auth_tmdb)" />
-        <setting id="tmdb.id" type="text" label="Account ID:" default="" enable="false" visible="true" />
-        <setting id="tmdb.session" type="text" label="Account Session:" default="" enable="false" visible="true" />
-        <setting type="lsep" label="YouTube (Optional Fallback)" />
-        <setting id="youtube.api" type="text" label="YouTube API Key (user-supplied):" default="" />
+        <setting id="tmdb.session" type="text" label="" default="" enable="false" visible="false" />
+        <setting id="tmdb.lists_read_token" type="text" label="" default="eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhMGJmMjA3YzVmZjZjMGNhYWJhYzAzMjdlMzliMWNkMiIsIm5iZiI6MTUwMzk0ODAxMC43NTQsInN1YiI6IjU5YTQ2Y2U4YzNhMzY4MGIxMjAwMjgxYiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.2pYaMVzWy-TNg2SBlkP_CrYWpaxcU7LZIZLPdgJp9jw" enable="false" visible="false" />
+        <setting id="tmdb.auth" type="action" label="Authorize TMDb (QR Code)" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=auth_tmdb&amp;source=settings)" visible="eq(-2,)" />
+        <setting id="tmdb.revoke" type="action" label="Revoke TMDb Account" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=revoke_tmdb&amp;source=settings)" visible="!eq(-3,)" />
+        <setting id="tmdb.api" type="text" label="TMDb v3 API Key (Optional):" default="" />
+        <setting id="tmdb.api.note" type="text" label="Leave blank to use the built-in default v3 key." enable="false" subsetting="true" />
+        <setting id="tmdb.user" type="text" label="Username:" default="" enable="false" subsetting="true" visible="!eq(-6,)" />
+        <setting id="tmdb.id" type="text" label="Account ID:" default="" enable="false" visible="false" />
         <setting type="lsep" label="Fanart.tv" />
         <setting id="fanart.api" type="text" label="API:" default="" />
-        <setting type="sep" />
-        <!--<setting type="lsep" label="Opensubtitles.org" />-->
-        <!--<setting id="os.user" type="text" label="Username:" default="" />-->
-        <!--<setting id="os.pass" type="text" label="Password:" default="" option="hidden" />-->
     </category>
 
     <category label="Special Settings">
@@ -134,14 +135,19 @@
         <setting type="sep" />
         <setting id="dl.text1" type="text" label="Downloading Features Are Disabled By Default." enable="false" visible="eq(-5,true)" />
         <setting id="dl.text2" type="text" label="Set Up Your Download Folders In Order To Enable Them." enable="false" visible="eq(-6,true)" />
-        <setting type="lsep" label="Subtitles" />
+        <setting type="lsep" label="Subtitles (OpenSubtitles.com)" />
         <setting id="subtitles" type="bool" label="Enable Subtitles" default="false" />
+        <setting id="opensubs.username" type="text" label="OpenSubtitles Username:" default="" subsetting="true" enable="!eq(-1,false)" visible="eq(-1,true)" />
+        <setting id="opensubs.password" type="text" label="OpenSubtitles Password:" default="" option="hidden" subsetting="true" enable="!eq(-2,false)" visible="eq(-2,true)" />
+        <setting id="opensubs.check" type="action" label="Check OpenSubtitles Account" subsetting="true" enable="!eq(-3,false)" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=opensubs_check&amp;source=settings)" visible="eq(-3,true)" />
+        <setting id="subtitles.lang.1" type="select" label="Primary Language" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" subsetting="true" enable="!eq(-4,false)" default="English" visible="eq(-4,true)" />
+        <setting id="subtitles.lang.2" type="select" label="Secondary Language" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" subsetting="true" enable="!eq(-5,false)" default="English" visible="eq(-5,true)" />
+        <setting id="subtitles.notify" type="bool" label="Show Notifications" subsetting="true" enable="!eq(-6,false)" default="false" visible="eq(-6,true)" />
+        <setting id="opensubs.api_key" type="text" label="" default="GpubxF50wjXZXtRlq83Heh9serfjCFyI" enable="false" visible="false" />
+        <setting id="opensubs.token" type="text" label="" default="" enable="false" visible="false" />
         <setting type="sep" />
-        <setting id="subtitles.lang.1" type="select" label="Primary Language" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" enable="!eq(-2,false)" default="English" visible="eq(-2,true)" />
-        <setting id="subtitles.lang.2" type="select" label="Secondary Language" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" enable="!eq(-3,false)" default="English" visible="eq(-3,true)" />
-        <setting type="sep" />
-        <setting id="subtitles.utf" type="bool" label="Convert Subtitles To UTF-8" enable="!eq(-5,false)" default="false" visible="eq(-5,true)" />
-        <setting id="subtitles.notify" type="bool" label="Show Notifications" enable="!eq(-6,false)" default="false" visible="eq(-6,true)" />
+        <setting id="subtitles.alt" type="text" label="Optional: a4kSubtitles can be used instead via Tools > Optional Installs." enable="false" />
+        <setting id="a4ksubtitles.install" type="action" label="Install a4kSubtitles" enable="true" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=installAddon&amp;id=service.subtitles.a4ksubtitles)" visible="!System.HasAddon(service.subtitles.a4ksubtitles)" />
         <setting id="a4ksubtitles.settings" type="action" label="Open a4kSubtitles Settings" enable="true" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=open_settings&amp;id=service.subtitles.a4ksubtitles)" visible="System.HasAddon(service.subtitles.a4ksubtitles)" />
     </category>
 
@@ -159,21 +165,23 @@
         <setting id="provider.anymovies_co" type="bool" label="provider.anymovies_co" default="true" />
         <setting id="provider.bluray7_com" type="bool" label="provider.bluray7_com" default="true" />
         <setting id="provider.bnwmovies_com" type="bool" label="provider.bnwmovies_com" default="true" />
-        <setting id="provider.bstsrs_one" type="bool" label="provider.bstsrs_one" default="true" />
+        <setting id="provider.bstsrs_one" type="bool" label="provider.bstsrs_one (FlareSolverr)" default="true" />
+        <setting id="provider.fmovie_core_sites" type="bool" label="provider.fmovie_core_sites (MoviesFree / Ghostplayer)" default="true" />
         <setting id="provider.fzmovies_live" type="bool" label="provider.fzmovies_live" default="true" />
+        <setting id="provider.hdhub_stremio" type="bool" label="provider.hdhub_stremio (HdHub direct links)" default="true" />
         <setting id="provider.hollymoviehd_cc" type="bool" label="provider.hollymoviehd_cc (False Positives)" default="false" />
         <setting id="provider.levidia_ch" type="bool" label="provider.levidia_ch" default="true" />
         <setting id="provider.myvideolinks_net" type="bool" label="provider.myvideolinks_net" default="true" />
         <setting id="provider.naijavault_com" type="bool" label="provider.naijavault_com" default="true" />
-        <setting id="provider.projectfreetv_cyou" type="bool" label="provider.projectfreetv_cyou (False Positives)" default="false" />
-        <setting id="provider.projectfreetv_lol" type="bool" label="provider.projectfreetv_lol" default="true" />
+        <setting id="provider.projectfreetv_cyou" type="bool" label="provider.projectfreetv_cyou (FlareSolverr)" default="true" />
+        <setting id="provider.projectfreetv_lol" type="bool" label="provider.projectfreetv_lol (FlareSolverr)" default="true" />
         <setting id="provider.seriesloaded_ng" type="bool" label="provider.seriesloaded_ng" default="true" />
-        <setting id="provider.srstop_link" type="bool" label="provider.srstop_link (FlareSolverr)" default="true" />
+        <setting id="provider.srstop_link" type="bool" label="provider.srstop_link" default="true" />
         <setting id="provider.stagatv_com" type="bool" label="provider.stagatv_com" default="true" />
         <setting id="provider.tvmovieflix_com" type="bool" label="provider.tvmovieflix_com" default="true" />
         <setting id="provider.tvseries_in" type="bool" label="provider.tvseries_in" default="true" />
         <setting id="provider.tvseries_video" type="bool" label="provider.tvseries_video" default="true" />
-        <setting id="provider.watchseries_cyou" type="bool" label="provider.watchseries_cyou" default="true" />
+        <setting id="provider.watchseries_cyou" type="bool" label="provider.watchseries_cyou (FlareSolverr)" default="true" />
     </category>
 
     <category label="Developer Settings">
