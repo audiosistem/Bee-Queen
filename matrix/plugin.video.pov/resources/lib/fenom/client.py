@@ -7,8 +7,6 @@ from random import choice, randrange
 import re
 from sys import version_info
 from time import sleep
-from fenom import cache
-from fenom import dom_parser
 from http import cookiejar
 from html import unescape
 from io import BytesIO
@@ -16,6 +14,8 @@ import urllib.request as urllib2
 from urllib.parse import quote_plus, urlencode, parse_qs, urlparse, urljoin
 from urllib.response import addinfourl
 from urllib.error import HTTPError
+from fenom import cache
+from fenom.dom_parser import parseDOM
 
 
 def request(url, close=True, redirect=True, error=False, proxy=None, post=None, headers=None, mobile=False, XHR=False, limit=None,
@@ -285,18 +285,6 @@ def _get_result(response, limit=None, ret_code=None):
 		except: encoding = None
 		if encoding == 'gzip': result = gzip.GzipFile(fileobj=BytesIO(result)).read()
 		return result
-	except:
-		from fenom import log_utils
-		log_utils.error()
-
-def parseDOM(html, name='', attrs=None, ret=False):
-	try:
-		if attrs:
-			attrs = dict((key, re.compile(value + ('$' if value else ''))) for key, value in iter(attrs.items()))
-		results = dom_parser.parse_dom(html, name, attrs, ret)
-		if ret: results = [result.attrs[ret.lower()] for result in results]
-		else: results = [result.content for result in results]
-		return results
 	except:
 		from fenom import log_utils
 		log_utils.error()

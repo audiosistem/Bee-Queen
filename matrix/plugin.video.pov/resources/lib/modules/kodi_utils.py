@@ -29,8 +29,9 @@ scrapers_path  = 'special://home/addons/plugin.video.pov/resources/lib/scrapers/
 databases_path = 'special://profile/addon_data/plugin.video.pov/'
 packages_path  = 'special://home/addons/packages/'
 
-current_dbs           = ('settings.xml', 'debridcache.db', 'watched.db', 'maincache.db', 'metacache.db', 'fenomundesirables.db',
-						'navigator.db', 'providerscache.db', 'traktcache.db', 'mdblcache.db', 'views.db', 'fenomcache.db')
+current_dbs           = ('debridcache.db', 'maincache.db', 'mdblcache.db', 'metacache.db', 'navigator.db',
+						'providerscache.db', 'traktcache.db', 'views.db', 'watched.db', 'settings.xml',
+						'fenomundesirables.db', 'fenomcache.db')
 indicators_dict       = {0: watched_db, 1: trakt_db, 2: mdbl_db}
 myvideos_db_paths     = {19: '119', 20: '121', 21: '131', 22: '146'}
 

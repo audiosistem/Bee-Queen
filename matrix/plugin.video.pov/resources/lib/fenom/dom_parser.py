@@ -1,140 +1,158 @@
-"""
-    Based on Parsedom for XBMC plugins
-    Copyright (C) 2010-2011 Tobias Ussing And Henrik Mosgaard Jensen
-"""
-
 import re
 from collections import namedtuple
+from html.parser import HTMLParser
 
 DomMatch = namedtuple('DOMMatch', ['attrs', 'content'])
-re_type = type(re.compile(r''))
+re_type = type(re.compile(''))
 
-
-		# ----- FUTURE -----
-# def parseDOM(html, name='', attrs=None, ret=False):
-	# try:
-		# if attrs:
-			# attrs = dict((key, re.compile(value + ('$' if value else ''))) for key, value in iter(attrs.items()))
-		# results = parse_dom(html, name, attrs, ret)
-		# if ret: results = [result.attrs[ret.lower()] for result in results]
-		# else: results = [result.content for result in results]
-		# return results
-	# except:
-		# from fenom import log_utils
-		# log_utils.error()
-
-def __get_dom_content(html, name, match):
+def parseDOM(html, name='', attrs=None, ret=False):
+	results = []
 	try:
-		if match.endswith('/>'): return ''
-		# override tag name with tag from match if possible
-		tag = re.match(r'<([^\s/>]+)', match)
-		if tag: name = tag.group(1)
-		start_str = '<%s' % name
-		end_str = "</%s" % name
-		# start/end tags without matching case cause issues
-		start = html.find(match)
-		end = html.find(end_str, start)
-		pos = html.find(start_str, start + 1)
-
-		while pos < end and pos != -1:  # Ignore too early </endstr> return
-			tend = html.find(end_str, end + len(end_str))
-			if tend != -1: end = tend
-			pos = html.find(start_str, pos + 1)
-
-		if start == -1 and end == -1: result = ''
-		elif start > -1 and end > -1: result = html[start + len(match):end]
-		elif end > -1: result = html[:end]
-		elif start > -1: result = html[start + len(match):]
-		else: result = ''
-		return result
-	except:
-		from fenom import log_utils
-		log_utils.error()
-		return ''
-
-def __get_dom_elements(item, name, attrs):
-	try:
-		if not attrs:
-			pattern = r'(<%s(?:\s[^>]*>|/?>))' % name
-			this_list = re.findall(pattern, item, re.M | re.S | re.I)
-		else:
-			last_list = None
-
-			for key, value in iter(attrs.items()):
-				value_is_regex = isinstance(value, re_type)
-				value_is_str = isinstance(value, str)
-				pattern = r'''(<{tag}[^>]*\s{key}=(?P<delim>['"])(.*?)(?P=delim)[^>]*>)'''.format(tag=name, key=key)
-				re_list = re.findall(pattern, item, re.M | re.S | re.I)
-				if value_is_regex:
-					this_list = [r[0] for r in re_list if re.match(value, r[2])]
+		# If attrs is passed and has string values, compile them as usual
+		if attrs:
+			processed_attrs = {}
+			for key, value in attrs.items():
+				if isinstance(value, str):
+					processed_attrs[key] = re.compile(value + ('$' if value else ''))
 				else:
-					temp_value = [value] if value_is_str else value
-					this_list = [r[0] for r in re_list if set(temp_value) <= set(r[2].split(' '))]
+					processed_attrs[key] = value
+			attrs = processed_attrs
 
-				if not this_list:
-					has_space = (value_is_regex and ' ' in value.pattern) or (value_is_str and ' ' in value)
-					if not has_space:
-						pattern = r'''(<{tag}[^>]*\s{key}=((?:[^\s>]|/>)*)[^>]*>)'''.format(tag=name, key=key)
-						re_list = re.findall(pattern, item, re.M | re.S | re.I)
-						if value_is_regex:
-							this_list = [r[0] for r in re_list if re.match(value, r[1])]
-						else:
-							this_list = [r[0] for r in re_list if value == r[1]]
+		results = parse_dom(html, name, attrs, ret)
 
-				if last_list is None: last_list = this_list
-				else: last_list = [item for item in this_list if item in last_list]
-			this_list = last_list
-		return this_list
-	except:
-		from fenom import log_utils
-		log_utils.error()
-		return this_list
+		if ret:
+			results = [i.attrs.get(ret.lower(), '') for i in results]
+		else:
+			results = [i.content for i in results]
+	except: pass
+	return results
 
-def __get_attribs(element):
-	try:
-		attribs = {}
-		for match in re.finditer(r'''\s+(?P<key>[^=]+)=\s*(?:(?P<delim>["'])(?P<value1>.*?)(?P=delim)|(?P<value2>[^"'][^>\s]*))''', element):
-			match = match.groupdict()
-			value1 = match.get('value1')
-			value2 = match.get('value2')
-			value = value1 if value1 is not None else value2
-			if value is None: continue
-			attribs[match['key'].lower().strip()] = value
-		return attribs
-	except:
-		from fenom import log_utils
-		log_utils.error()
-		return attribs
+class DOMParser(HTMLParser):
+	def __init__(self, target_tag, target_attrs):
+		HTMLParser.__init__(self)
+
+		# 1. Handle Tag Sequences (e.g. ['div', 'section', 'article'])
+		if isinstance(target_tag, (list, tuple, set)):
+			self.target_tags = {i.lower() for i in target_tag}
+		else:
+			self.target_tags = {target_tag.lower()}
+
+		# 2. Normalize target attributes
+		self.target_attrs = {}
+		if target_attrs:
+			for k, v in target_attrs.items():
+				k_lower = k.lower()
+				# If the value is already a compiled regex or list/set, preserve it
+				if isinstance(v, (re_type, list, tuple, set)):
+					self.target_attrs[k_lower] = v
+				elif isinstance(v, str):
+					self.target_attrs[k_lower] = re.compile(v + ('$' if v else ''))
+				else:
+					self.target_attrs[k_lower] = v
+
+		self.matches = []
+		self.depth = 0
+		self.recording = False
+		self.recorded_chunks = []
+		self.current_attrs = None
+		self.active_tag = None  # Track which tag opened the current capture
+
+	def _attr_matches(self, attrs_dict):
+		for k, target_val in self.target_attrs.items():
+			if k not in attrs_dict:
+				return False
+			val = attrs_dict[k]
+
+			# Handle Regex Match
+			if isinstance(target_val, re_type):
+				if not target_val.match(val):
+					return False
+			# Handle Sequence/List of acceptable attribute strings (OR Match)
+			elif isinstance(target_val, (list, tuple, set)):
+				current_values = set(val.split(' '))
+				# If none of our target values exist in the tag's attribute, fail
+				if not any(i in current_values for i in target_val):
+					return False
+			else:
+				# Standard subset match
+				temp_target = [target_val] if isinstance(target_val, str) else target_val
+				if not set(temp_target) <= set(val.split(' ')):
+					return False
+		return True
+
+	def handle_starttag(self, tag, attrs):
+		tag_lower = tag.lower()
+		attrs_dict = {k.lower(): v or '' for k, v in attrs}
+
+		if self.recording:
+			if tag_lower == self.active_tag:
+				self.depth += 1
+			attr_str = ''.join([f' {k}="{v}"' for k, v in attrs])
+			self.recorded_chunks.append(f"<{tag}{attr_str}>")
+			return
+
+		# Check if tag is in our allowed target_tags sequence
+		if tag_lower in self.target_tags and self._attr_matches(attrs_dict):
+			self.recording = True
+			self.active_tag = tag_lower  # Lock the recording context to this specific tag type
+			self.depth = 1
+			self.current_attrs = attrs_dict
+			self.recorded_chunks = []
+
+	def handle_endtag(self, tag):
+		tag_lower = tag.lower()
+		if self.recording:
+			if tag_lower == self.active_tag:
+				self.depth -= 1
+				if self.depth == 0:
+					self.recording = False
+					content = ''.join(self.recorded_chunks)
+					self.matches.append(DomMatch(self.current_attrs, content))
+					self.active_tag = None
+					return
+			self.recorded_chunks.append(f"</{tag}>")
+
+	def handle_data(self, data):
+		if self.recording:
+			self.recorded_chunks.append(data)
+
+	def handle_comment(self, data):
+		if self.recording:
+			self.recorded_chunks.append(f"<!--{data}-->")
 
 def parse_dom(html, name='', attrs=None, req=False, exclude_comments=False):
+	all_results = []
 	try:
 		if attrs is None: attrs = {}
-		name = name.strip()
+
+		# Clean the name(s)
+		if isinstance(name, str):
+			name = name.strip()
+		elif isinstance(name, (list, tuple, set)):
+			name = [i.strip() for i in name if isinstance(i, str)]
+
 		if isinstance(html, str) or isinstance(html, DomMatch): html = [html]
 		elif not isinstance(html, list): return ''
-
 		if not name: return ''
 		if not isinstance(attrs, dict): return ''
 
 		if req:
 			if not isinstance(req, list): req = [req]
-			req = set([key.lower() for key in req])
+			req = set([i.lower() for i in req])
 
-		all_results = []
 		for item in html:
-			if isinstance(item, DomMatch): item = item.content
-			if exclude_comments: item = re.sub(re.compile(r'<!--.*?-->', re.S), '', item)
-			results = []
-			for element in __get_dom_elements(item, name, attrs):
-				attribs = __get_attribs(element)
-				if req and not req <= set(attribs.keys()): continue
-				temp = __get_dom_content(item, name, element).strip()
-				results.append(DomMatch(attribs, temp))
-				item = item[item.find(temp, item.find(element)):]
+			if isinstance(item, DomMatch):
+				item = item.content
+			if exclude_comments:
+				item = re.sub(r'<!--.*?-->', '', item, flags=re.S)
+
+			parser = DOMParser(name, attrs)
+			parser.feed(item)
+			results = parser.matches
+
+			if req: results = [i for i in results if req <= set(i.attrs.keys())]
+
 			all_results += results
-		return all_results
-	except:
-		from fenom import log_utils
-		log_utils.error()
-		return ''
+	except: pass
+	return all_results
 

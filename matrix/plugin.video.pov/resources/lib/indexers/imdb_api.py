@@ -5,7 +5,6 @@ from caches.main_cache import cache_object
 # from modules.kodi_utils import logger
 
 graphql_url = 'https://api.graphql.imdb.com/'
-api_url = 'https://api.imdbapi.dev'
 base_url = 'https://www.imdb.com/%s'
 timeout = 10.0
 session = requests.Session()
@@ -25,21 +24,13 @@ def people_get_imdb_id(actor_name, actor_tmdbID=None):
 	return cache_object(get_imdb, string, params, 8736)[0]
 
 def imdb_extended_info(imdb_id):
-	url = imdb_id
 	string = 'imdb_extended_info_%s' % imdb_id
-	params = {'url': url, 'action': 'imdb_extended_info'}
+	params = {'url': imdb_id, 'action': 'imdb_extended_info'}
 	return cache_object(get_imdb, string, params, 168)[0]
 
 def imdb_tagged_images(imdb_id):
-	url = '%s/names/%s/images' % (api_url, imdb_id)
 	string = 'imdb_images_tagged_%s' % imdb_id
-	params = {'url': url, 'action': 'imdb_tagged_images'}
-	return cache_object(get_imdb, string, params, 168)[0]
-
-def imdb_parentsguide(imdb_id):
-	url = '%s/titles/%s/parentsGuide' % (api_url, imdb_id)
-	string = 'imdb_parentsguide_%s' % imdb_id
-	params = {'url': url, 'action': 'imdb_parentsguide'}
+	params = {'url': imdb_id, 'action': 'imdb_tagged_images'}
 	return cache_object(get_imdb, string, params, 168)[0]
 
 def imdb_movie_year(imdb_id):
@@ -49,6 +40,7 @@ def imdb_movie_year(imdb_id):
 	return cache_object(get_imdb, string, params, 720)[0]
 
 def get_imdb(params):
+	graphql_headers = {'Content-Type': 'application/json', 'x-imdb-user-country': 'EN'}
 	imdb_list = []
 	action = params['action']
 	url = params['url']
@@ -72,39 +64,35 @@ def get_imdb(params):
 				imdb_list = next((i['id'] for i in result if i['l'].lower() == name))
 		except: pass
 	elif action == 'imdb_tagged_images':
+		imdb_extended_query, excluded_types = (
+			'query{name(id:"%s"){id nameText{text}'
+			'images(first:500){edges{node{url caption{plainText} type}}}}}'
+		), {'still_frame', 'poster', 'product'}
 		try:
-			params = {'pageSize': 50}
-			result = session.get(url, params=params, timeout=timeout)
-			result = result.json()['images']
-			imdb_list = [i for i in result if i['type'] not in ('still_frame', 'poster', 'product')]
-		except: pass
-	elif action == 'imdb_parentsguide':
-		try:
-			append = imdb_list.append
-			result = session.get(url, timeout=timeout)
-			result = result.json()['parentsGuide']
-			for i in result:
-				try:
-					listings = [x['text'] for x in i.get('reviews', [])]
-					rank = max(i['severityBreakdowns'], key=lambda k: k['voteCount'])['severityLevel']
-					append({'title': i['category'].lower(), 'ranking': rank, 'listings': listings})
-				except: pass
+			data = {'query': imdb_extended_query % url}
+			result = session.post(graphql_url, json=data, headers=graphql_headers, timeout=timeout)
+			if not result.ok: result.raise_for_status()
+			result = result.json().get('data', {}).get('name', {})
+			imdb_list = [
+				{'type': i['node']['caption']['plainText'].strip(), 'url': i['node']['url']}
+				for i in result['images']['edges'] if i['node']['type'] not in excluded_types
+			]
+		except requests.RequestException as e:
+			from modules.kodi_utils import logger
+			logger('imdb error', str(e))
 		except: pass
 	elif action == 'imdb_extended_info':
 		""" thanks https://github.com/tveronesi """
 		imdb_extended_query, trivia, blunders, reviews, parentsguide = (
-			'query{title(id:"%s"){id titleText{text}trivia(first:20){edges{node{displ'
-			'ayableArticle{body{plaidHtml}}interestScore{usersVoted}}}}goofs(first:20'
-			'){edges{node{displayableArticle{body{plaidHtml}}interestScore{usersVoted'
-			'}}}}reviews(first:20){edges{node{spoiler author{nickName}authorRating su'
-			'mmary{originalText}text{originalText{plaidHtml}}submissionDate}}}parents'
-			'Guide{categories{category{id}guideItems(first:10){edges{node{isSpoiler t'
-			'ext{plaidHtml}}}}severity{id votedFor}}}}}'
+			'query{title(id:"%s"){id titleText{text}'
+			'trivia(first:20){edges{node{displayableArticle{body{plaidHtml}}interestScore{usersVoted}}}}'
+			'goofs(first:20){edges{node{displayableArticle{body{plaidHtml}}interestScore{usersVoted}}}}'
+			'reviews(first:20){edges{node{spoiler author{nickName}authorRating summary{originalText}text{originalText{plaidHtml}}submissionDate}}}'
+			'parentsGuide{categories{category{id}guideItems(first:10){edges{node{isSpoiler text{plaidHtml}}}}severity{id votedFor}}}}}'
 		), [], [], [], []
 		try:
-			headers = {'Content-Type': 'application/json', 'x-imdb-user-country': 'EN'}
 			data = {'query': imdb_extended_query % url}
-			result = session.post(graphql_url, json=data, headers=headers, timeout=timeout)
+			result = session.post(graphql_url, json=data, headers=graphql_headers, timeout=timeout)
 			if not result.ok: result.raise_for_status()
 			result = result.json().get('data', {}).get('title', {})
 			try: trivia.extend(

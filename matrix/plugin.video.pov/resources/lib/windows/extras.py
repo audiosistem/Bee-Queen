@@ -108,7 +108,7 @@ class Extras(BaseDialog):
 				return videoplayer(chosen, self.close, type(self)('extras.xml', location, **kwargs).run)
 			elif chosen_var == extrainfo_id:
 				text = media_extra_info(self.mediatype, self.meta)
-				self.open_window(('windows.extras', 'ShowTextMedia'), 'textviewer_media.xml', text=text, poster=self.poster)
+				self.open_window(('windows.extras', 'TextviewerMedia'), 'textviewer_media.xml', text=text, poster=self.poster)
 			elif chosen_var == genre_id:
 				if not self.genre: return
 				base_media = 'movies' if self.is_movie else 'tv'
@@ -150,7 +150,7 @@ class Extras(BaseDialog):
 					listings = json.loads(chosen_var)
 					if not listings: return
 					chosen_var = '\n\n'.join(['%02d. %s' % (count, i) for count, i in enumerate(listings, 1)])
-				self.open_window(('windows.extras', 'ShowTextMedia'), 'textviewer_media.xml', text=chosen_var, poster=self.poster)
+				self.open_window(('windows.extras', 'TextviewerMedia'), 'textviewer_media.xml', text=chosen_var, poster=self.poster)
 			elif self.control_id in art_ids:
 				slideshow_params = {'mode': 'slideshow_image', 'all_images': chosen_var, 'current_index': self.get_position(self.control_id)}
 				ending_position = images.Images().run(slideshow_params)
@@ -599,7 +599,7 @@ class Extras(BaseDialog):
 			'tikiskins.extras.enable_scrollbars': self.enable_scrollbars
 		}.items(): self.setProperty(k, str(v))
 
-class ShowTextMedia(BaseDialog):
+class TextviewerMedia(BaseDialog):
 	def __init__(self, *args, **kwargs):
 		BaseDialog.__init__(self, args)
 		self.text = kwargs.get('text')

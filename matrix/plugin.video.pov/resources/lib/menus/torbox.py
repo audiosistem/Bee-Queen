@@ -43,8 +43,8 @@ class Menu(Debrid):
 				else: airlock_value, func_str, res_str = 'true', _add_str, folder_str
 				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, res_str, clean_file_name(item['name']).upper())
 				url_params = {'mode': 'torbox.tb_browse_cloud', 'folder_id': item['folder_id']}
-				airlock_params = {'mode': 'torbox.tb_airlock', 'folder_id': item['folder_id'], 'airlock': airlock_value}
 				delete_params = {'mode': 'torbox.tb_delete', 'folder_id': item['folder_id']}
+				airlock_params = {'mode': 'torbox.tb_airlock', 'folder_id': item['folder_id'], 'airlock': airlock_value}
 				cm_append(('[B]%s %s[/B]' % (delete_str, folder_str.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))
 				cm_append(('[B]%s %s[/B]' % (func_str, airlock_str.capitalize()), 'RunPlugin(%s)' % build_url(airlock_params)))
 				url = build_url(url_params)

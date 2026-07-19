@@ -62,6 +62,11 @@ class Thread(thread):
 def log_utils_error(*args):
 	return log_utils.error(*args)
 
+def scraper_error(provider):
+	import traceback
+	failure = traceback.format_exc()
+	log_utils.log(provider.upper() + ' - Exception: \n' + str(failure), caller='scraper_error', level=log_utils.LOGERROR)
+
 def get_undesirables():
 	if not getSetting('filter.undesirables') == 'true' or home_getProperty('fs_filterless_search') == 'true' : return []
 	try: undesirables = Undesirables().get_enabled()
@@ -479,11 +484,6 @@ def base32_to_hex(hash, caller):
 	hex = b32decode(hash).hex()
 	log_utils.log('%s: base32 hash  "%s"  converted to hex 40  "%s" ' % (caller, hash, hex), __name__, log_utils.LOGDEBUG)
 	return hex
-
-def scraper_error(provider):
-	import traceback
-	failure = traceback.format_exc()
-	log_utils.log(provider.upper() + ' - Exception: \n' + str(failure), caller='scraper_error', level=log_utils.LOGERROR)
 
 def is_host_valid(url, domains):
 	try:

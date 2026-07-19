@@ -1,8 +1,23 @@
-[COLORcyan] VERSION 1.4.7[/COLOR]
+[COLORcyan] VERSION 1.4.9[/COLOR]
+
 
 
 Settings & Configuration Framework
 
+• Improved reliability across supported providers.
+• Improved handling of provider responses and timeouts.
+• Enhanced source parsing for increased accuracy.
+• General performance optimizations throughout the scraper engine.
+• Better scraper stability during source aggregation.
+• Improved scraper initialization speed throughout the addon.
+• Artwork updated.
+• Optimized addon startup and initialization routines for improved performance.
+• Improved overall addon responsiveness during navigation and content loading.
+• Enhanced backend stability across all supported providers and scraping systems.
+• Reworked multiple internal processes to improve reliability and reduce unexpected failures.
+• Improved source retrieval efficiency for faster scraping and result gathering.
+• Enhanced provider communication and response validation.
+• Improved handling of incomplete, malformed, or failed provider responses.
 • Completely refactored the settings architecture, delivering a redesigned configuration interface with improved navigation, logical categorisation, and enhanced overall usability.
 • Reorganised all provider settings into dedicated categories, separating recommended providers from secondary providers to simplify configuration and improve long-term maintainability.
 • Introduced a dedicated Pack Providers category, allowing users to easily identify providers capable of returning complete Season Packs and Series Packs for improved scraping efficiency.
@@ -74,17 +89,11 @@ Enhanced source detection and retrieval performance when using DDM configuration
 Optimized communication between Gears Scraper and DDM modules for greater reliability.
 Reduced setup complexity, allowing users to get up and running faster.
 
-[COLORcyan]Improvements[/B][/COLOR]
 
-Better scraper stability during source aggregation.
-Improved handling of provider responses and timeouts.
-Enhanced source parsing for increased accuracy.
-General performance optimizations throughout the scraper engine.
 
 [COLORcyan]Benefits[/B][/COLOR]
 
 Faster source discovery.
-Improved reliability across supported providers.
 Easier setup and maintenance.
 More consistent scraping performance.
 Better overall user experience.
@@ -202,15 +211,8 @@ This release includes extensive backend optimization work designed to improve ov
 
 [B]General Improvements[/B]
 
-• Optimized addon startup and initialization routines for improved performance.
-• Improved overall addon responsiveness during navigation and content loading.
-• Enhanced backend stability across all supported providers and scraping systems.
-• Reworked multiple internal processes to improve reliability and reduce unexpected failures.
-• Improved source retrieval efficiency for faster scraping and result gathering.
-• Enhanced provider communication and response validation.
-• Improved handling of incomplete, malformed, or failed provider responses.
+
 • Reduced unnecessary background processing and memory usage.
-• Improved scraper initialization speed throughout the addon.
 • Streamlined configuration management and provider setup handling.
 • Enhanced error recovery systems to improve stability during heavy usage.
 • Improved request processing and timeout handling.

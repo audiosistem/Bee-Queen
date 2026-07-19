@@ -796,31 +796,29 @@ class ExternalSource:
 			self.sources.extend(sources)
 
 	def process_sources(self, provider, sources):
-		try:
-			for i in sources:
+		for i in sources:
+			try:
+				i_get = i.get
+				if 'hash' in i: i['hash'] = str(i['hash']).lower()
+				URLName = source_utils.clean_file_name(i_get('name')).replace('html', ' ')
+				quality, extraInfo = get_file_info(name_info=i_get('name_info'))
+				size, size_label, divider = 0, None, None
 				try:
-					i_get = i.get
-					if 'hash' in i: i['hash'] = str(i['hash']).lower()
-					URLName = source_utils.clean_file_name(i_get('name')).replace('html', ' ')
-					quality, extraInfo = get_file_info(name_info=i_get('name_info'))
-					size, size_label, divider = 0, None, None
-					try:
-						size = i_get('size')
-						if 'package' in i and not i_get('true_size', False):
-							if i_get('package') == 'season': divider = self.season_divider
-							else: divider = self.show_divider
-							size = float(size) / divider
-							size_label = '%.2f GB' % size
-						else: size_label = '%.2f GB' % size
-					except: pass
-					i.update({
-						'external': True, 'provider': provider, 'scrape_provider': self.scrape_provider, 'URLName': URLName,
-						'extraInfo': extraInfo, 'quality': quality, 'size_label': size_label, 'size': round(size, 2)
-					})
-					if quality not in self.resolutions: self.resolutions['SD'] += 1
-					else: self.resolutions[quality] += 1
-					self.resolutions['total'] += 1
+					size = i_get('size')
+					if 'package' in i and not i_get('true_size', False):
+						if i_get('package') == 'season': divider = self.season_divider
+						else: divider = self.show_divider
+						size = float(size) / divider
+						size_label = '%.2f GB' % size
+					else: size_label = '%.2f GB' % size
 				except: pass
-		except: pass
+				i.update({
+					'external': True, 'provider': provider, 'scrape_provider': self.scrape_provider, 'URLName': URLName,
+					'extraInfo': extraInfo, 'quality': quality, 'size_label': size_label, 'size': round(size, 2)
+				})
+				if quality not in self.resolutions: self.resolutions['SD'] += 1
+				else: self.resolutions[quality] += 1
+				self.resolutions['total'] += 1
+			except: pass
 		return sources
 

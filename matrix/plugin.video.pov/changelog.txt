@@ -8,7 +8,6 @@
   attempt to source the "Next Episode" from watched history or S01E01 if no
   watched history.  When enabled a Browse option is added to the Options... context menu.
 - Added bitsearch.
-- Removed torrentdownload.
 
   [COLOR dodgerblue][B]Version 6.06[/B][/COLOR]
 - Changed cloud scrapers to "Filter Results with Aliases".

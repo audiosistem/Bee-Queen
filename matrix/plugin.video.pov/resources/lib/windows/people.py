@@ -47,7 +47,7 @@ class People(BaseDialog):
 			elif controlID == 11:
 				Images().run({**actor, 'mode': 'people_tagged_image_results'})
 			elif controlID == 50:
-				self.open_window(('windows.extras', 'ShowTextMedia'), 'textviewer_media.xml', **kwargs)
+				self.open_window(('windows.extras', 'TextviewerMedia'), 'textviewer_media.xml', **kwargs)
 		else: self.control_id = controlID
 
 	def onAction(self, action):
