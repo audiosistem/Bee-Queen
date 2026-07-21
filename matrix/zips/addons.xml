@@ -1368,14 +1368,14 @@ In addition to what livestreams allowed you to do, you can now,
         <news>v1.4.8 — FIX (Trakt / SIMKL / Bingebase OAuth): token is now persisted to BOTH the addon settings (primary) and the local JSON file (backup). HTTP 409 ("code already used") is now handled. New "Show token status" debug actions confirm exactly what is stored.</news>
         <news>v1.1.0 — Trakt scrobbling, watched / resume indicators, 10s stall auto-fallback. Secondary source toggle, server sub-picker, per-show quality memory.</news>
     </extension>
-</addon><addon id="plugin.video.vixmovie" name="VixMovie" version="2.3" provider-name="1x,Geamanu,apoyotech">
+</addon><addon id="plugin.video.vixmovie" name="VixMovie" version="2.4" provider-name="1x,Geamanu,apoyotech">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.requests" version="2.25.1" />
     <import addon="inputstream.adaptive" version="19.0.0" />
     <import addon="plugin.video.themoviedb.helper" />
   </requires>
-  <extension point="xbmc.python.pluginsource" library="addon.py">
+  <extension point="xbmc.python.pluginsource" library="main.py">
     <provides>video</provides>
   </extension>
   
