@@ -1,0 +1,290 @@
+# ThraxTV Kodi Add-on – English strings
+msgid ""
+msgstr ""
+
+# ── Main menu ──────────────────────────────────────────────────────────────
+msgctxt "#32000"
+msgid "Favorites"
+msgstr ""
+
+msgctxt "#32001"
+msgid "Countries"
+msgstr ""
+
+msgctxt "#32002"
+msgid "Categories"
+msgstr ""
+
+msgctxt "#32003"
+msgid "Search"
+msgstr ""
+
+msgctxt "#32004"
+msgid "Clear cache"
+msgstr ""
+
+# ── Favorites ──────────────────────────────────────────────────────────────
+msgctxt "#32005"
+msgid "You have no favorite channels."
+msgstr ""
+
+msgctxt "#32006"
+msgid "Removed from Favorites."
+msgstr ""
+
+msgctxt "#32007"
+msgid "Added to Favorites."
+msgstr ""
+
+msgctxt "#32008"
+msgid "Remove from Favorites"
+msgstr ""
+
+msgctxt "#32009"
+msgid "Add to Favorites"
+msgstr ""
+
+# ── Navigation ─────────────────────────────────────────────────────────────
+msgctxt "#32010"
+msgid "All channels"
+msgstr ""
+
+msgctxt "#32011"
+msgid "Next page (%d)"
+msgstr ""
+
+# ── Search ─────────────────────────────────────────────────────────────────
+msgctxt "#32012"
+msgid "Search for a TV channel"
+msgstr ""
+
+msgctxt "#32013"
+msgid "No results found for '%s'."
+msgstr ""
+
+msgctxt "#32014"
+msgid "← New search"
+msgstr ""
+
+msgctxt "#32015"
+msgid "Results for: %s"
+msgstr ""
+
+# ── EPG ────────────────────────────────────────────────────────────────────
+msgctxt "#32017"
+msgid "EPG unavailable"
+msgstr ""
+
+msgctxt "#32018"
+msgid "Now"
+msgstr ""
+
+msgctxt "#32019"
+msgid "Now:"
+msgstr ""
+
+msgctxt "#32020"
+msgid "Next"
+msgstr ""
+
+msgctxt "#32021"
+msgid "Next:"
+msgstr ""
+
+msgctxt "#32022"
+msgid "Full EPG"
+msgstr ""
+
+msgctxt "#32023"
+msgid "No program found."
+msgstr ""
+
+msgctxt "#32024"
+msgid "Schedule for %s – %s"
+msgstr ""
+
+msgctxt "#32025"
+msgid "Today's schedule"
+msgstr ""
+
+# ── Sources / Playback ─────────────────────────────────────────────────────
+msgctxt "#32026"
+msgid "Choose source for: %s"
+msgstr ""
+
+msgctxt "#32027"
+msgid "Channel %s"
+msgstr ""
+
+msgctxt "#32028"
+msgid "No source available"
+msgstr ""
+
+msgctxt "#32029"
+msgid "No working source found!"
+msgstr ""
+
+msgctxt "#32030"
+msgid "unknown"
+msgstr ""
+
+# ── Status badges ──────────────────────────────────────────────────────────
+msgctxt "#32031"
+msgid "green"
+msgstr ""
+
+msgctxt "#32032"
+msgid "orange"
+msgstr ""
+
+msgctxt "#32033"
+msgid "dead"
+msgstr ""
+
+# ── Errors ─────────────────────────────────────────────────────────────────
+msgctxt "#32034"
+msgid "Error"
+msgstr ""
+
+msgctxt "#32035"
+msgid "Could not get sources: %s"
+msgstr ""
+
+msgctxt "#32036"
+msgid "Vavoo CID missing."
+msgstr ""
+
+msgctxt "#32037"
+msgid "ThraxTV server unavailable (sig)"
+msgstr ""
+
+msgctxt "#32038"
+msgid "Vavoo server did not respond"
+msgstr ""
+
+msgctxt "#32039"
+msgid "Resolution failed: %s"
+msgstr ""
+
+msgctxt "#32040"
+msgid "Source unavailable."
+msgstr ""
+
+msgctxt "#32041"
+msgid "Cache cleared: %d item(s) removed."
+msgstr ""
+
+# ── Category names (from API) ──────────────────────────────────────────────
+msgctxt "#32050"
+msgid "General"
+msgstr ""
+
+msgctxt "#32051"
+msgid "News"
+msgstr ""
+
+msgctxt "#32052"
+msgid "Sports"
+msgstr ""
+
+msgctxt "#32053"
+msgid "Movies"
+msgstr ""
+
+msgctxt "#32054"
+msgid "Entertainment"
+msgstr ""
+
+msgctxt "#32055"
+msgid "Music"
+msgstr ""
+
+msgctxt "#32056"
+msgid "Documentaries"
+msgstr ""
+
+msgctxt "#32057"
+msgid "Kids"
+msgstr ""
+
+msgctxt "#32058"
+msgid "Religious"
+msgstr ""
+
+msgctxt "#32059"
+msgid "Local"
+msgstr ""
+
+msgctxt "#32060"
+msgid "Misc"
+msgstr ""
+
+# ── Settings labels ────────────────────────────────────────────────────────
+msgctxt "#32089"
+msgid "Interface language (overrides Kodi setting)"
+msgstr ""
+
+msgctxt "#32080"
+msgid "Playback"
+msgstr ""
+
+msgctxt "#32081"
+msgid "Automatic playback of first source"
+msgstr ""
+
+msgctxt "#32082"
+msgid "Custom User-Agent (optional)"
+msgstr ""
+
+msgctxt "#32083"
+msgid "Display"
+msgstr ""
+
+msgctxt "#32084"
+msgid "Items per page"
+msgstr ""
+
+msgctxt "#32085"
+msgid "Preload EPG for current pages"
+msgstr ""
+
+msgctxt "#32086"
+msgid "Maximum EPG threads"
+msgstr ""
+
+msgctxt "#32087"
+msgid "Advanced"
+msgstr ""
+
+msgctxt "#32088"
+msgid "Enable detailed HTTP log (DEBUG)"
+msgstr ""
+
+# ── Sport Live ──────────────────────────────────────────────────────────────
+msgctxt "#32061"
+msgid "Sports Live"
+msgstr "Sports Live"
+
+msgctxt "#32062"
+msgid "No sports events"
+msgstr "No sports events"
+
+msgctxt "#32063"
+msgid "World Cup 2026"
+msgstr ""
+
+msgctxt "#32064"
+msgid "No matches available"
+msgstr ""
+
+msgctxt "#32065"
+msgid "No channels found for this match"
+msgstr ""
+
+msgctxt "#32090"
+msgid "Radio"
+msgstr ""
+
+msgctxt "#32091"
+msgid "No radio stations found for this country"
+msgstr ""

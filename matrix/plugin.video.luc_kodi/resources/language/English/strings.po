@@ -4836,6 +4836,14 @@ msgstr ""
 
 msgctxt "#45013"
 msgid "SIMKL Latest Unwatched Episodes"
+msgstr "SIMKL Next Unwatched Episode"
+
+msgctxt "#45014"
+msgid "SIMKL My Progress (Movies)"
+msgstr ""
+
+msgctxt "#45015"
+msgid "SIMKL My Progress (Episodes)"
 msgstr ""
 
 msgctxt "#400730"
@@ -4854,11 +4862,11 @@ msgctxt "#400733"
 msgid "Menus"
 msgstr ""
 
-msgctxt "#45014"
+msgctxt "#45023"
 msgid "Rotate posters periodically (TMDb alternates)"
 msgstr ""
 
-msgctxt "#45015"
+msgctxt "#45024"
 msgid "Rotation interval"
 msgstr ""
 

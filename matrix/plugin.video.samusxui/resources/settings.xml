@@ -1,0 +1,65 @@
+<settings>
+    <category label="Interfață" id="interface">
+        <setting id="ui_mode" type="labelenum" label="Mod interfață" values="SamusXUI|Nativ (skin)" default="SamusXUI" />
+    </category>
+    <category label="Redare" id="playback">
+        <setting id="resolver_timeout" type="number" label="Timeout rezolvare surse (secunde)" default="10" />
+        <setting id="history_enabled" type="bool" label="Activează istoricul vizionărilor" default="true" />
+        <setting id="autoplay_next" type="bool" label="Auto-play episod următor (seriale)" default="true" />
+        <setting id="autoplay_countdown" type="number" label="Pornire automată cu N secunde înainte de final" default="60" visible="eq(-1,true)" />
+        <setting id="auto_select_provider" type="bool" label="Auto-selectează providerul memorat (sare dialogul de surse)" default="true" />
+    </category>
+    <category label="Surse" id="sources">
+        <setting id="use_primesrc" type="bool" label="Vidsrcme.ru" default="true" />
+        <setting id="use_primesrcme" type="bool" label="PrimeSrc.me" default="true" />
+        <setting id="use_vsembed" type="bool" label="VSEmbed" default="true" />
+        <setting id="use_thrax" type="bool" label="Thrax" default="true" />
+        <setting id="use_flixer" type="bool" label="Flixer" default="true" />
+        <setting id="use_vixsrc" type="bool" label="VixSrc" default="true" />
+        <setting id="use_hdhub" type="bool" label="HDHub" default="true" />
+        <setting id="use_webstreamr" type="bool" label="Webstreamr" default="true" />
+        <setting id="use_vidrock" type="bool" label="VidRock" default="true" />
+        <setting id="use_hydrahd" type="bool" label="HydraHD" default="false" />
+        <setting id="use_sooti" type="bool" label="Sooti (VixSrc/HDHub/UHDMovies aggregator)" default="false" />
+        <setting id="use_cinesu" type="bool" label="CineSu (HLS direct)" default="true" />
+        <setting id="use_vidapi" type="bool" label="VidAPI (vaplayer.ru)" default="true" />
+        <setting id="use_webtor" type="bool" label="Webtor.io (biblioteca personală de torrente)" default="false" />
+        <setting id="use_penguplay" type="bool" label="PenguPlay (HLS direct, fără torrent)" default="true" />
+        <setting id="use_multiembed" type="bool" label="MultiEmbed" default="true" />
+        <setting id="use_quality_filter" type="bool" label="Filtru calitate (dialog înainte de selecție)" default="false" />
+        <setting id="use_pandamovies" type="bool" label="PandaMovies (resolver adult)" default="false" visible="Addon.Setting(use_adult)" />
+    </category>
+    <category label="Torrents" id="torrents">
+        <setting id="torrent_engine" type="labelenum" label="Motor torrent" values="TorrServer|libtorrent" default="TorrServer" />
+        <setting id="torrserver_mode" type="labelenum" label="Mod TorrServer" values="Extern (manual)|Auto (incorporat)" default="Extern (manual)" visible="eq(-1,0)" />
+        <setting id="torrserver_start_mode" type="labelenum" label="Mod pornire redare TorrServer" values="Normal|Rapid (pct≥100%)|Imediat (status=2)" default="Normal" visible="eq(-2,0)" />
+        <setting id="use_torrentio" type="bool" label="Torrentio" default="false" />
+        <setting id="use_torrentdb" type="bool" label="TorrentDB" default="false" />
+        <setting id="use_velaflow" type="bool" label="VelaFlow" default="false" />
+        <setting id="use_mediafusion" type="bool" label="MediaFusion" default="false" />
+        <setting id="use_comet" type="bool" label="Comet" default="false" />
+        <setting id="use_perflix" type="bool" label="Peerflix" default="false" />
+        <setting id="use_pelispanda" type="bool" label="PelisPanda (torrente ES/EN)" default="false" />
+        <setting id="use_filelist" type="bool" label="FileList.io (tracker privat RO)" default="false" />
+        <setting id="fl_username" type="text" label="FileList username" default="" visible="eq(-1,true)" />
+        <setting id="fl_password" type="text" label="FileList parolă" default="" visible="eq(-2,true)" option="hidden" />
+        <setting id="fl_passkey" type="text" label="FileList passkey (auto-completat)" default="" visible="eq(-3,true)" />
+    </category>
+    <category label="Subtitrări">
+        <setting id="subs_enabled" type="bool" label="Caută automat subtitrări (vdrk + Wyzie)" default="true" />
+        <setting id="subs_languages" type="text" label="Limbi pentru subtitrări" default="ro,en" />
+        <setting id="subs_format" type="enum" label="Format preferat" values="srt|vtt|ssa" default="srt" />
+        <setting id="subs_encoding" type="labelenum" label="Encoding subtitrări" values="utf-8|latin-1|cp1252" default="utf-8" />
+    </category>
+    <category label="Conturi" id="accounts">
+        <setting id="api_key" type="text" label="TMDb API Key" default="69ef972e0d191aff7ab5b8e396619cb2" />
+        <setting id="language" type="labelenum" label="Limbă TMDb" values="ro|en|fr|de|it" default="ro" />
+        <setting id="provider_region" type="enum" label="Țară pentru furnizori TMDb" values="RO|US|GB|DE|FR|All" default="RO" />
+        <setting id="use_adult" type="bool" label="Conținut adult (TMDb)" default="false" />
+        <setting id="trakt_client_id" type="text" label="Trakt Client ID" default="2d29a7597164bb74e1d463bc4ebf8dc8b528f2beea715068de1744e88f80f764" />
+        <setting id="trakt_client_secret" type="text" label="Trakt Client Secret" default="f71fa83d63e64a06a9cecf676a0f5e0485c4f2c1b5a48946d26c4630cef159fb" />
+        <setting id="trakt_access_token" type="text" label="Trakt Access Token (completat automat)" default="" />
+        <setting id="trakt_refresh_token" type="text" label="Trakt Refresh Token (completat automat)" default="" />
+        <setting id="trakt_expires_at" type="text" label="Trakt expiră la (timestamp)" default="0" />
+    </category>
+</settings>

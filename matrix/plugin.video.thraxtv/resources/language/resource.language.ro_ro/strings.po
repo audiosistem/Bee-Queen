@@ -1,0 +1,290 @@
+# ThraxTV Kodi Add-on – Română
+msgid ""
+msgstr ""
+
+# ── Meniu principal ────────────────────────────────────────────────────────
+msgctxt "#32000"
+msgid "Favorites"
+msgstr "Favorite"
+
+msgctxt "#32001"
+msgid "Countries"
+msgstr "Țări"
+
+msgctxt "#32002"
+msgid "Categories"
+msgstr "Categorii"
+
+msgctxt "#32003"
+msgid "Search"
+msgstr "Căutare"
+
+msgctxt "#32004"
+msgid "Clear cache"
+msgstr "Șterge cache"
+
+# ── Favorite ───────────────────────────────────────────────────────────────
+msgctxt "#32005"
+msgid "You have no favorite channels."
+msgstr "Nu ai posturi favorite."
+
+msgctxt "#32006"
+msgid "Removed from Favorites."
+msgstr "Șters din Favorite."
+
+msgctxt "#32007"
+msgid "Added to Favorites."
+msgstr "Adăugat la Favorite."
+
+msgctxt "#32008"
+msgid "Remove from Favorites"
+msgstr "Șterge din Favorite"
+
+msgctxt "#32009"
+msgid "Add to Favorites"
+msgstr "Adaugă la Favorite"
+
+# ── Navigare ───────────────────────────────────────────────────────────────
+msgctxt "#32010"
+msgid "All channels"
+msgstr "Toate canalele"
+
+msgctxt "#32011"
+msgid "Next page (%d)"
+msgstr "Pagina următoare (%d)"
+
+# ── Căutare ────────────────────────────────────────────────────────────────
+msgctxt "#32012"
+msgid "Search for a TV channel"
+msgstr "Caută un post TV"
+
+msgctxt "#32013"
+msgid "No results found for '%s'."
+msgstr "Niciun rezultat găsit pentru '%s'."
+
+msgctxt "#32014"
+msgid "← New search"
+msgstr "← Căutare nouă"
+
+msgctxt "#32015"
+msgid "Results for: %s"
+msgstr "Rezultate pentru: %s"
+
+# ── EPG ────────────────────────────────────────────────────────────────────
+msgctxt "#32017"
+msgid "EPG unavailable"
+msgstr "EPG indisponibil"
+
+msgctxt "#32018"
+msgid "Now"
+msgstr "Acum"
+
+msgctxt "#32019"
+msgid "Now:"
+msgstr "Acum:"
+
+msgctxt "#32020"
+msgid "Next"
+msgstr "Urmează"
+
+msgctxt "#32021"
+msgid "Next:"
+msgstr "Urmează:"
+
+msgctxt "#32022"
+msgid "Full EPG"
+msgstr "EPG complet"
+
+msgctxt "#32023"
+msgid "No program found."
+msgstr "Niciun program găsit."
+
+msgctxt "#32024"
+msgid "Schedule for %s – %s"
+msgstr "Program pentru %s – %s"
+
+msgctxt "#32025"
+msgid "Today's schedule"
+msgstr "Programul de azi"
+
+# ── Surse / Redare ─────────────────────────────────────────────────────────
+msgctxt "#32026"
+msgid "Choose source for: %s"
+msgstr "Alege sursa pentru: %s"
+
+msgctxt "#32027"
+msgid "Channel %s"
+msgstr "Canal %s"
+
+msgctxt "#32028"
+msgid "No source available"
+msgstr "Nicio sursă disponibilă"
+
+msgctxt "#32029"
+msgid "No working source found!"
+msgstr "Nicio sursă funcțională!"
+
+msgctxt "#32030"
+msgid "unknown"
+msgstr "necunoscut"
+
+# ── Status badges ──────────────────────────────────────────────────────────
+msgctxt "#32031"
+msgid "green"
+msgstr "verde"
+
+msgctxt "#32032"
+msgid "orange"
+msgstr "portocaliu"
+
+msgctxt "#32033"
+msgid "dead"
+msgstr "mort"
+
+# ── Erori ──────────────────────────────────────────────────────────────────
+msgctxt "#32034"
+msgid "Error"
+msgstr "Eroare"
+
+msgctxt "#32035"
+msgid "Could not get sources: %s"
+msgstr "Nu s-au putut obține sursele: %s"
+
+msgctxt "#32036"
+msgid "Vavoo CID missing."
+msgstr "CID vavoo lipsă."
+
+msgctxt "#32037"
+msgid "ThraxTV server unavailable (sig)"
+msgstr "Server ThraxTV indisponibil (sig)"
+
+msgctxt "#32038"
+msgid "Vavoo server did not respond"
+msgstr "Serverul Vavoo nu a răspuns"
+
+msgctxt "#32039"
+msgid "Resolution failed: %s"
+msgstr "Rezolvare eșuată: %s"
+
+msgctxt "#32040"
+msgid "Source unavailable."
+msgstr "Sursă indisponibilă."
+
+msgctxt "#32041"
+msgid "Cache cleared: %d item(s) removed."
+msgstr "Cache șters: %d fișier(e) eliminate."
+
+# ── Nume categorii (din API) ───────────────────────────────────────────────
+msgctxt "#32050"
+msgid "General"
+msgstr "Generaliste"
+
+msgctxt "#32051"
+msgid "News"
+msgstr "Știri"
+
+msgctxt "#32052"
+msgid "Sports"
+msgstr "Sport"
+
+msgctxt "#32053"
+msgid "Movies"
+msgstr "Filme"
+
+msgctxt "#32054"
+msgid "Entertainment"
+msgstr "Divertisment"
+
+msgctxt "#32055"
+msgid "Music"
+msgstr "Muzică"
+
+msgctxt "#32056"
+msgid "Documentaries"
+msgstr "Documentare"
+
+msgctxt "#32057"
+msgid "Kids"
+msgstr "Copii"
+
+msgctxt "#32058"
+msgid "Religious"
+msgstr "Religioase"
+
+msgctxt "#32059"
+msgid "Local"
+msgstr "Locale"
+
+msgctxt "#32060"
+msgid "Misc"
+msgstr "Diverse"
+
+# ── Etichete setări ────────────────────────────────────────────────────────
+msgctxt "#32089"
+msgid "Interface language (overrides Kodi setting)"
+msgstr "Limbă interfață (suprascrie setarea Kodi)"
+
+msgctxt "#32080"
+msgid "Playback"
+msgstr "Redare"
+
+msgctxt "#32081"
+msgid "Automatic playback of first source"
+msgstr "Redare automată a primei surse"
+
+msgctxt "#32082"
+msgid "Custom User-Agent (optional)"
+msgstr "User-Agent personalizat (opțional)"
+
+msgctxt "#32083"
+msgid "Display"
+msgstr "Afișare"
+
+msgctxt "#32084"
+msgid "Items per page"
+msgstr "Număr de posturi pe pagină"
+
+msgctxt "#32085"
+msgid "Preload EPG for current pages"
+msgstr "Preîncarcă EPG pentru paginile curente"
+
+msgctxt "#32086"
+msgid "Maximum EPG threads"
+msgstr "Număr maxim de thread-uri EPG"
+
+msgctxt "#32087"
+msgid "Advanced"
+msgstr "Avansat"
+
+msgctxt "#32088"
+msgid "Enable detailed HTTP log (DEBUG)"
+msgstr "Activează log HTTP detaliat (DEBUG)"
+
+# ── Sport Live ──────────────────────────────────────────────────────────────
+msgctxt "#32061"
+msgid "Sports Live"
+msgstr "Sport Live"
+
+msgctxt "#32062"
+msgid "No sports events"
+msgstr "Nu există evenimente sportive"
+
+msgctxt "#32063"
+msgid "World Cup 2026"
+msgstr "Cupa Mondială 2026"
+
+msgctxt "#32064"
+msgid "No matches available"
+msgstr "Nu există meciuri disponibile"
+
+msgctxt "#32065"
+msgid "No channels found for this match"
+msgstr "Niciun canal găsit pentru acest meci"
+
+msgctxt "#32090"
+msgid "Radio"
+msgstr "Radio"
+
+msgctxt "#32091"
+msgid "No radio stations found for this country"
+msgstr "Niciun post radio găsit pentru această țară"

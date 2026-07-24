@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addon id="plugin.video.luc_kodi" name="[B][COLOR ff00fa9a]luc_[/COLOR]kodi[/B]" provider-name="[COLOR fffdb515]apoyotech[/COLOR]" version="1.0.31">
+<addon id="plugin.video.luc_kodi" name="[B][COLOR ff00fa9a]luc_[/COLOR]kodi[/B]" provider-name="[COLOR fffdb515]apoyotech[/COLOR]" version="1.0.47">
 	<requires>
 		<import addon="xbmc.python" version="3.0.1" />
 		<import addon="script.module.requests" />
@@ -13,12 +13,11 @@
 	<extension point="xbmc.python.module" library="resources/lib/" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
-		<summary lang="en">We do not host any of the contents</summary>
-		<description lang="en">[COLOR ff00fa9a]The author of this addon does not host any of the content in this addon and takes no responsibility for content found[/COLOR]</description>
+		<summary lang="en">Front-end for third-party torrent indexers and debrid services that you configure with your own accounts. Hosts no content and provides no links.</summary>
+		<description lang="en">[COLOR ffa9d3c5]luc_kodi is a front-end (user interface) for third-party services that you configure with your own accounts: debrid services such as Real-Debrid, AllDebrid, Premiumize or TorBox, and torrent indexers. The add-on does not host, store, upload or distribute any media, and it does not embed or include any links to content. Every source is located and resolved at run time by the third-party services you have configured with your own credentials. The author takes no responsibility for the content those services return, or for how the add-on is used.[/COLOR]</description>
 		<platform>all</platform>
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
-		<forum />
-		<disclaimer lang="en">[COLOR ffc75453]This addon simply searches websites for content. Use at your own risk![/COLOR]</disclaimer>
+		<disclaimer lang="en">[COLOR ffc75453]This add-on hosts no content and includes no links of its own. It only queries third-party services that you set up with your own accounts. You are solely responsible for the sources you choose to enable and for complying with the copyright laws of your country. Use at your own risk.[/COLOR]</disclaimer>
 	  <assets>
 		<icon>icon.png</icon>
 		<fanart>fanart.jpg</fanart>

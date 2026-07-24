@@ -1,6 +1,6 @@
 import json
 import sqlite3 as database
-from urllib.parse import urlencode, parse_qsl
+from urllib.parse import urlencode, urlparse, parse_qsl
 import xbmc, xbmcgui, xbmcplugin, xbmcvfs
 from xbmcaddon import Addon
 
@@ -29,11 +29,9 @@ scrapers_path  = 'special://home/addons/plugin.video.pov/resources/lib/scrapers/
 databases_path = 'special://profile/addon_data/plugin.video.pov/'
 packages_path  = 'special://home/addons/packages/'
 
-current_dbs           = ('debridcache.db', 'maincache.db', 'mdblcache.db', 'metacache.db', 'navigator.db',
-						'providerscache.db', 'traktcache.db', 'views.db', 'watched.db', 'settings.xml',
-						'fenomundesirables.db', 'fenomcache.db')
-indicators_dict       = {0: watched_db, 1: trakt_db, 2: mdbl_db}
-myvideos_db_paths     = {19: '119', 20: '121', 21: '131', 22: '146'}
+current_dbs     = ('debridcache.db', 'maincache.db', 'mdblcache.db', 'metacache.db', 'navigator.db',
+					'providerscache.db', 'traktcache.db', 'views.db', 'watched.db', 'settings.xml', 'fenomcache.db')
+indicators_dict = {0: watched_db, 1: trakt_db, 2: mdbl_db}
 
 def logger(heading, function):
 	xbmc.log('>> %s <<: %s' % (heading, function), 1)
@@ -41,6 +39,10 @@ def logger(heading, function):
 def argv1():
 	try: return __import__('sys').argv[1]
 	except: return '-1'
+
+def parsed_query(url):
+	try: return dict(parse_qsl(urlparse(url).query))
+	except: return {}
 
 def database_connect(file, **kwargs):
 	return database.connect(translate_path(file), **kwargs)
@@ -103,6 +105,9 @@ def convert_language(lang, format='long'):
 def supported_media():
 	return xbmc.getSupportedMedia('video')
 
+def translate_path(path):
+	return xbmcvfs.translatePath(path)
+
 def path_exists(path):
 	return xbmcvfs.exists(path)
 
@@ -137,9 +142,6 @@ def local_string(string):
 	except: _string = addon_object.getLocalizedString(_string)
 	return _string or string
 
-def translate_path(path):
-	return xbmcvfs.translatePath(path)
-
 def sleep(time):
 	return xbmc.sleep(time)
 
@@ -159,7 +161,8 @@ def current_window_id():
 	return xbmcgui.Window(xbmcgui.getCurrentWindowId())
 
 def get_video_database_path():
-	return 'special://profile/Database/MyVideos%s.db' % myvideos_db_paths[get_kodi_version()]
+	version = {19: '119', 20: '121', 21: '131', 22: '146'}[get_kodi_version()]
+	return 'special://profile/Database/MyVideos%s.db' % version
 
 def show_busy_dialog():
 	return execute_builtin('ActivateWindow(busydialognocancel)')
@@ -303,9 +306,9 @@ def clear_view(view_type):
 		dbcur.execute("""PRAGMA synchronous = OFF""")
 		dbcur.execute("""PRAGMA journal_mode = OFF""")
 		dbcur.execute("""SELECT view_type FROM views""")
-		for item in dbcur.fetchall():
-			dbcur.execute("""DELETE FROM views WHERE view_type = ?""", (item[0],))
-			clear_property('pov_%s' % item[0])
+		for item in dbcur.fetchall(): clear_property('pov_%s' % item[0])
+		dbcur.execute("""DELETE FROM views""")
+		dbcur.execute("""VACUUM""")
 		dbcon = database_connect('special://profile/Database/ViewModes6.db')
 		dbcur = dbcon.cursor()
 		dbcur.execute("""DELETE FROM view WHERE path LIKE 'plugin://plugin.video.pov/%'""")

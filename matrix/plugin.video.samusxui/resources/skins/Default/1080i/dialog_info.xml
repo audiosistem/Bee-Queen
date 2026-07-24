@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <defaultcontrol always="true">500</defaultcontrol>
+    <animation effect="fade" start="0"   end="100" time="180">WindowOpen</animation>
+    <animation effect="fade" start="100" end="0"   time="120">WindowClose</animation>
+
+    <controls>
+
+        <!-- ═══ BACKGROUND ═══ -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="FF080808">white.png</texture>
+        </control>
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <aspectratio>scale</aspectratio>
+            <texture colordiffuse="14FFFFFF">$INFO[Window.Property(fanart)]</texture>
+            <visible>!String.IsEmpty(Window.Property(fanart))</visible>
+        </control>
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="E8080808">white.png</texture>
+        </control>
+        <!-- Accent bar -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>3</height>
+            <texture colordiffuse="FF7B5CF4">white.png</texture>
+        </control>
+
+        <!-- ═══ POSTER (stânga) ═══ -->
+        <control type="image">
+            <left>50</left><top>65</top><width>360</width><height>540</height>
+            <colordiffuse>FF0E0E0E</colordiffuse>
+            <texture border="16">panel_rounded.png</texture>
+        </control>
+        <control type="image" id="10">
+            <left>50</left><top>65</top><width>360</width><height>540</height>
+            <aspectratio>scale</aspectratio>
+            <texture fallback="DefaultVideoCover.png">$INFO[Window.Property(poster)]</texture>
+        </control>
+        <control type="image">
+            <left>50</left><top>65</top><width>360</width><height>540</height>
+            <texture border="16">panel_corner_mask.png</texture>
+        </control>
+
+        <!-- ═══ INFO (dreapta posterului) ═══ -->
+
+        <!-- Titlu -->
+        <control type="label">
+            <left>445</left><top>65</top><width>1425</width><height>80</height>
+            <font>font24</font><textcolor>white</textcolor>
+            <aligny>center</aligny>
+            <label>$INFO[Window.Property(title)]</label>
+        </control>
+
+        <!-- An · Rating · Durată -->
+        <control type="label">
+            <left>445</left><top>150</top><width>1425</width><height>34</height>
+            <font>font13</font><textcolor>FFAAAAAA</textcolor>
+            <label>$INFO[Window.Property(meta)]</label>
+        </control>
+
+        <!-- Genuri -->
+        <control type="label">
+            <left>445</left><top>188</top><width>1425</width><height>34</height>
+            <font>font13</font><textcolor>FFAAAAAA</textcolor>
+            <label>$INFO[Window.Property(genres)]</label>
+        </control>
+
+        <!-- ═══ BUTOANE ACȚIUNI ═══ -->
+
+        <!-- Buton principal: Redă (film) / Sezoane (serial) — id=500 -->
+        <control type="button" id="500">
+            <left>445</left><top>228</top><width>220</width><height>52</height>
+            <font>font20</font>
+            <textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+            <align>center</align>
+            <texturenofocus colordiffuse="28FFFFFF">white.png</texturenofocus>
+            <texturefocus   colordiffuse="FF7B5CF4">white.png</texturefocus>
+            <label>Redă</label>
+            <onright>501</onright>
+            <ondown>400</ondown>
+        </control>
+
+        <!-- Buton Surse — id=501 -->
+        <control type="button" id="501">
+            <left>673</left><top>228</top><width>220</width><height>52</height>
+            <font>font20</font>
+            <textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+            <align>center</align>
+            <texturenofocus colordiffuse="28FFFFFF">white.png</texturenofocus>
+            <texturefocus   colordiffuse="FF7B5CF4">white.png</texturefocus>
+            <label>Surse</label>
+            <onleft>500</onleft>
+            <onright>502</onright>
+            <ondown>400</ondown>
+        </control>
+
+        <!-- Buton Trailer — id=502 -->
+        <control type="button" id="502">
+            <left>901</left><top>228</top><width>220</width><height>52</height>
+            <font>font20</font>
+            <textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+            <align>center</align>
+            <texturenofocus colordiffuse="28FFFFFF">white.png</texturenofocus>
+            <texturefocus   colordiffuse="FF7B5CF4">white.png</texturefocus>
+            <label>Trailer</label>
+            <onleft>501</onleft>
+            <onright>503</onright>
+            <ondown>400</ondown>
+        </control>
+
+        <!-- Buton Colecție — id=503, vizibil doar când filmul aparține unei colecții -->
+        <control type="button" id="503">
+            <left>1129</left><top>228</top><width>220</width><height>52</height>
+            <font>font20</font>
+            <textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+            <align>center</align>
+            <texturenofocus colordiffuse="28FFFFFF">white.png</texturenofocus>
+            <texturefocus   colordiffuse="FF7B5CF4">white.png</texturefocus>
+            <label>Colecție</label>
+            <onleft>502</onleft>
+            <ondown>400</ondown>
+            <visible>!String.IsEmpty(Window.Property(info.has_collection))</visible>
+        </control>
+
+        <!-- Plot -->
+        <control type="textbox" id="11">
+            <left>445</left><top>284</top><width>1425</width><height>330</height>
+            <font>font13</font><textcolor>FFDEDEDE</textcolor>
+            <autoscroll delay="4000" time="2000" repeat="8000">true</autoscroll>
+        </control>
+
+        <!-- ═══ SEPARATOR ═══ -->
+        <control type="image">
+            <left>50</left><top>623</top><width>1820</width><height>2</height>
+            <texture colordiffuse="FF1E1E1E">white.png</texture>
+        </control>
+
+        <!-- ═══ CAST ═══ -->
+
+        <!-- Etichetă "Distribuție" -->
+        <control type="label">
+            <left>50</left><top>635</top><width>400</width><height>36</height>
+            <font>font14</font><textcolor>white</textcolor>
+            <label>Distribuție</label>
+        </control>
+
+        <!-- Panel orizontal actori (id=400) -->
+        <control type="panel" id="400">
+            <left>50</left><top>678</top>
+            <width>1820</width><height>372</height>
+            <onleft>400</onleft>
+            <onright>400</onright>
+            <onup>500</onup>
+            <ondown>400</ondown>
+            <scrolltime>200</scrolltime>
+            <orientation>horizontal</orientation>
+
+            <!-- Layout normal -->
+            <itemlayout height="360" width="210">
+                <control type="image">
+                    <left>10</left><top>0</top><width>190</width><height>360</height>
+                    <colordiffuse>FF141414</colordiffuse>
+                    <texture border="16">panel_rounded.png</texture>
+                </control>
+                <control type="image">
+                    <left>17</left><top>7</top><width>176</width><height>264</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture fallback="DefaultActorSolid.png" background="true">$INFO[ListItem.Thumb]</texture>
+                </control>
+                <control type="label">
+                    <left>17</left><top>280</top><width>176</width><height>68</height>
+                    <font>font12</font><textcolor>FFCCCCCC</textcolor>
+                    <align>center</align>
+                    <wrapmultiline>true</wrapmultiline>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+            </itemlayout>
+
+            <!-- Layout focusat -->
+            <focusedlayout height="360" width="210">
+                <control type="image">
+                    <left>10</left><top>0</top><width>190</width><height>360</height>
+                    <colordiffuse>FF7B5CF4</colordiffuse>
+                    <texture border="16">panel_rounded.png</texture>
+                    <visible>Control.HasFocus(400)</visible>
+                </control>
+                <control type="image">
+                    <left>12</left><top>2</top><width>186</width><height>356</height>
+                    <colordiffuse>FF141414</colordiffuse>
+                    <texture border="14">panel_rounded.png</texture>
+                    <visible>Control.HasFocus(400)</visible>
+                </control>
+                <control type="image">
+                    <left>10</left><top>0</top><width>190</width><height>360</height>
+                    <colordiffuse>FF141414</colordiffuse>
+                    <texture border="16">panel_rounded.png</texture>
+                    <visible>!Control.HasFocus(400)</visible>
+                </control>
+                <control type="image">
+                    <left>17</left><top>7</top><width>176</width><height>264</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture fallback="DefaultActorSolid.png" background="true">$INFO[ListItem.Thumb]</texture>
+                </control>
+                <control type="label">
+                    <left>17</left><top>280</top><width>176</width><height>68</height>
+                    <font>font12</font><textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                    <wrapmultiline>true</wrapmultiline>
+                    <label>$INFO[ListItem.Label]</label>
+                    <visible>Control.HasFocus(400)</visible>
+                </control>
+                <control type="label">
+                    <left>17</left><top>280</top><width>176</width><height>68</height>
+                    <font>font12</font><textcolor>FFCCCCCC</textcolor>
+                    <align>center</align>
+                    <wrapmultiline>true</wrapmultiline>
+                    <label>$INFO[ListItem.Label]</label>
+                    <visible>!Control.HasFocus(400)</visible>
+                </control>
+            </focusedlayout>
+        </control>
+
+    </controls>
+</window>

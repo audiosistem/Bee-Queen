@@ -80,7 +80,7 @@ class Menu(Debrid):
 
 	def cloud_delete(self, folder_id):
 		if not kodi_utils.confirm_dialog(): return
-		result = self.get_function(folder_id, True)(folder_id)
+		result = self.delete_torrent(folder_id)
 		if not result: return kodi_utils.notification(32574)
 		self.clear_cache()
 		kodi_utils.container_refresh()

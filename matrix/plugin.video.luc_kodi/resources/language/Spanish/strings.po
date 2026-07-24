@@ -127,7 +127,15 @@ msgstr "SIMKL Tendencias - Este Mes"
 
 msgctxt "#45013"
 msgid "SIMKL Latest Unwatched Episodes"
-msgstr "SIMKL Últimos Episodios Sin Ver"
+msgstr "SIMKL Siguiente Episodio Sin Ver"
+
+msgctxt "#45014"
+msgid "SIMKL My Progress (Movies)"
+msgstr "SIMKL Mi Progreso (Películas)"
+
+msgctxt "#45015"
+msgid "SIMKL My Progress (Episodes)"
+msgstr "SIMKL Mi Progreso (Episodios)"
 
 msgctxt "#400730"
 msgid "Default"
@@ -145,11 +153,11 @@ msgctxt "#400733"
 msgid "Menus"
 msgstr "Menús"
 
-msgctxt "#45014"
+msgctxt "#45023"
 msgid "Rotate posters periodically (TMDb alternates)"
 msgstr "Rotar pósters periódicamente (alternativos de TMDb)"
 
-msgctxt "#45015"
+msgctxt "#45024"
 msgid "Rotation interval"
 msgstr "Intervalo de rotación"
 

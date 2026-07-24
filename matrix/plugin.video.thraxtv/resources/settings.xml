@@ -1,0 +1,307 @@
+<settings>
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!--                      EUROPA                                -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <category label="Europa" id="europe">
+    <!-- Bifează țările pe care vrei să le AFIȘEZI în addon. -->
+    <setting id="use_ax" type="bool" label="Aland (AX)" default="false" />
+    <setting id="use_al" type="bool" label="Albania (AL)" default="true" />
+    <setting id="use_ad" type="bool" label="Andorra (AD)" default="false" />
+    <setting id="use_am" type="bool" label="Armenia (AM)" default="false" />
+    <setting id="use_at" type="bool" label="Austria (AT)" default="true" />
+    <setting id="use_az" type="bool" label="Azerbaijan (AZ)" default="false" />
+    <setting id="use_by" type="bool" label="Belarus (BY)" default="false" />
+    <setting id="use_be" type="bool" label="Belgium (BE)" default="false" />
+    <setting id="use_ba" type="bool" label="Bosnia and Herzegovina (BA)" default="false" />
+    <setting id="use_bg" type="bool" label="Bulgaria (BG)" default="true" />
+    <setting id="use_hr" type="bool" label="Croatia (HR)" default="false" />
+    <setting id="use_cy" type="bool" label="Cyprus (CY)" default="false" />
+    <setting id="use_cz" type="bool" label="Czech Republic (CZ)" default="false" />
+    <setting id="use_dk" type="bool" label="Denmark (DK)" default="false" />
+    <setting id="use_ee" type="bool" label="Estonia (EE)" default="false" />
+    <setting id="use_fo" type="bool" label="Faroe Islands (FO)" default="false" />
+    <setting id="use_fi" type="bool" label="Finland (FI)" default="false" />
+    <setting id="use_fr" type="bool" label="France (FR)" default="false" />
+    <setting id="use_ge" type="bool" label="Georgia (GE)" default="false" />
+    <setting id="use_de" type="bool" label="Germany (DE)" default="true" />
+    <setting id="use_gi" type="bool" label="Gibraltar (GI)" default="false" />
+    <setting id="use_gr" type="bool" label="Greece (GR)" default="false" />
+    <setting id="use_gg" type="bool" label="Guernsey (GG)" default="false" />
+    <setting id="use_hu" type="bool" label="Hungary (HU)" default="false" />
+    <setting id="use_is" type="bool" label="Iceland (IS)" default="false" />
+    <setting id="use_ie" type="bool" label="Ireland (IE)" default="false" />
+    <setting id="use_im" type="bool" label="Isle of Man (IM)" default="false" />
+    <setting id="use_it" type="bool" label="Italy (IT)" default="false" />
+    <setting id="use_je" type="bool" label="Jersey (JE)" default="false" />
+    <setting id="use_xk" type="bool" label="Kosovo (XK)" default="false" />
+    <setting id="use_lv" type="bool" label="Latvia (LV)" default="false" />
+    <setting id="use_li" type="bool" label="Liechtenstein (LI)" default="false" />
+    <setting id="use_lt" type="bool" label="Lithuania (LT)" default="false" />
+    <setting id="use_lu" type="bool" label="Luxembourg (LU)" default="false" />
+    <setting id="use_mt" type="bool" label="Malta (MT)" default="false" />
+    <setting id="use_md" type="bool" label="Moldova (MD)" default="true" />
+    <setting id="use_mc" type="bool" label="Monaco (MC)" default="false" />
+    <setting id="use_me" type="bool" label="Montenegro (ME)" default="false" />
+    <setting id="use_nl" type="bool" label="Netherlands (NL)" default="false" />
+    <setting id="use_mk" type="bool" label="North Macedonia (MK)" default="false" />
+    <setting id="use_no" type="bool" label="Norway (NO)" default="false" />
+    <setting id="use_pl" type="bool" label="Poland (PL)" default="false" />
+    <setting id="use_pt" type="bool" label="Portugal (PT)" default="false" />
+    <setting id="use_ro" type="bool" label="Romania (RO)" default="true" />
+    <setting id="use_ru" type="bool" label="Russia (RU)" default="false" />
+    <setting id="use_sm" type="bool" label="San Marino (SM)" default="false" />
+    <setting id="use_rs" type="bool" label="Serbia (RS)" default="false" />
+    <setting id="use_sk" type="bool" label="Slovakia (SK)" default="false" />
+    <setting id="use_si" type="bool" label="Slovenia (SI)" default="false" />
+    <setting id="use_es" type="bool" label="Spain (ES)" default="false" />
+    <setting id="use_sj" type="bool" label="Svalbard and Jan Mayen (SJ)" default="false" />
+    <setting id="use_se" type="bool" label="Sweden (SE)" default="false" />
+    <setting id="use_ch" type="bool" label="Switzerland (CH)" default="false" />
+    <setting id="use_tr" type="bool" label="Turkey (TR)" default="false" />
+    <setting id="use_ua" type="bool" label="Ukraine (UA)" default="false" />
+    <setting id="use_uk" type="bool" label="United Kingdom (UK)" default="false" />
+    <setting id="use_va" type="bool" label="Vatican City (VA)" default="false" />
+  </category>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!--                      ASIA                                  -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <category label="Asia" id="asia">
+    <setting id="use_af" type="bool" label="Afghanistan (AF)" default="false" />
+    <setting id="use_bh" type="bool" label="Bahrain (BH)" default="false" />
+    <setting id="use_bd" type="bool" label="Bangladesh (BD)" default="false" />
+    <setting id="use_bt" type="bool" label="Bhutan (BT)" default="false" />
+    <setting id="use_bn" type="bool" label="Brunei (BN)" default="false" />
+    <setting id="use_kh" type="bool" label="Cambodia (KH)" default="false" />
+    <setting id="use_cn" type="bool" label="China (CN)" default="false" />
+    <setting id="use_tl" type="bool" label="East Timor (TL)" default="false" />
+    <setting id="use_hk" type="bool" label="Hong Kong (HK)" default="false" />
+    <setting id="use_in" type="bool" label="India (IN)" default="false" />
+    <setting id="use_id" type="bool" label="Indonesia (ID)" default="false" />
+    <setting id="use_ir" type="bool" label="Iran (IR)" default="false" />
+    <setting id="use_iq" type="bool" label="Iraq (IQ)" default="false" />
+    <setting id="use_il" type="bool" label="Israel (IL)" default="false" />
+    <setting id="use_jp" type="bool" label="Japan (JP)" default="false" />
+    <setting id="use_jo" type="bool" label="Jordan (JO)" default="false" />
+    <setting id="use_kz" type="bool" label="Kazakhstan (KZ)" default="false" />
+    <setting id="use_kw" type="bool" label="Kuwait (KW)" default="false" />
+    <setting id="use_kg" type="bool" label="Kyrgyzstan (KG)" default="false" />
+    <setting id="use_la" type="bool" label="Laos (LA)" default="false" />
+    <setting id="use_lb" type="bool" label="Lebanon (LB)" default="false" />
+    <setting id="use_mo" type="bool" label="Macao (MO)" default="false" />
+    <setting id="use_my" type="bool" label="Malaysia (MY)" default="false" />
+    <setting id="use_mv" type="bool" label="Maldives (MV)" default="false" />
+    <setting id="use_mn" type="bool" label="Mongolia (MN)" default="false" />
+    <setting id="use_mm" type="bool" label="Myanmar (MM)" default="false" />
+    <setting id="use_np" type="bool" label="Nepal (NP)" default="false" />
+    <setting id="use_kp" type="bool" label="North Korea (KP)" default="false" />
+    <setting id="use_om" type="bool" label="Oman (OM)" default="false" />
+    <setting id="use_pk" type="bool" label="Pakistan (PK)" default="false" />
+    <setting id="use_ps" type="bool" label="Palestine (PS)" default="false" />
+    <setting id="use_ph" type="bool" label="Philippines (PH)" default="false" />
+    <setting id="use_qa" type="bool" label="Qatar (QA)" default="false" />
+    <setting id="use_sa" type="bool" label="Saudi Arabia (SA)" default="false" />
+    <setting id="use_sg" type="bool" label="Singapore (SG)" default="false" />
+    <setting id="use_kr" type="bool" label="South Korea (KR)" default="false" />
+    <setting id="use_lk" type="bool" label="Sri Lanka (LK)" default="false" />
+    <setting id="use_sy" type="bool" label="Syria (SY)" default="false" />
+    <setting id="use_tw" type="bool" label="Taiwan (TW)" default="false" />
+    <setting id="use_tj" type="bool" label="Tajikistan (TJ)" default="false" />
+    <setting id="use_th" type="bool" label="Thailand (TH)" default="false" />
+    <setting id="use_tm" type="bool" label="Turkmenistan (TM)" default="false" />
+    <setting id="use_ae" type="bool" label="United Arab Emirates (AE)" default="false" />
+    <setting id="use_uz" type="bool" label="Uzbekistan (UZ)" default="false" />
+    <setting id="use_vn" type="bool" label="Vietnam (VN)" default="false" />
+    <setting id="use_ye" type="bool" label="Yemen (YE)" default="false" />
+    <setting id="use_io" type="bool" label="British Indian Ocean Territory (IO)" default="false" />
+  </category>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!--                      AFRICA                                -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <category label="Africa" id="africa">
+    <setting id="use_dz" type="bool" label="Algeria (DZ)" default="false" />
+    <setting id="use_ao" type="bool" label="Angola (AO)" default="false" />
+    <setting id="use_bj" type="bool" label="Benin (BJ)" default="false" />
+    <setting id="use_bw" type="bool" label="Botswana (BW)" default="false" />
+    <setting id="use_bf" type="bool" label="Burkina Faso (BF)" default="false" />
+    <setting id="use_bi" type="bool" label="Burundi (BI)" default="false" />
+    <setting id="use_cv" type="bool" label="Cape Verde (CV)" default="false" />
+    <setting id="use_cm" type="bool" label="Cameroon (CM)" default="false" />
+    <setting id="use_cf" type="bool" label="Central African Republic (CF)" default="false" />
+    <setting id="use_td" type="bool" label="Chad (TD)" default="false" />
+    <setting id="use_km" type="bool" label="Comoros (KM)" default="false" />
+    <setting id="use_cd" type="bool" label="Democratic Republic of the Congo (CD)" default="false" />
+    <setting id="use_dj" type="bool" label="Djibouti (DJ)" default="false" />
+    <setting id="use_eg" type="bool" label="Egypt (EG)" default="false" />
+    <setting id="use_gq" type="bool" label="Equatorial Guinea (GQ)" default="false" />
+    <setting id="use_er" type="bool" label="Eritrea (ER)" default="false" />
+    <setting id="use_et" type="bool" label="Ethiopia (ET)" default="false" />
+    <setting id="use_ga" type="bool" label="Gabon (GA)" default="false" />
+    <setting id="use_gm" type="bool" label="Gambia (GM)" default="false" />
+    <setting id="use_gh" type="bool" label="Ghana (GH)" default="false" />
+    <setting id="use_gn" type="bool" label="Guinea (GN)" default="false" />
+    <setting id="use_gw" type="bool" label="Guinea-Bissau (GW)" default="false" />
+    <setting id="use_ci" type="bool" label="Ivory Coast (CI)" default="false" />
+    <setting id="use_ke" type="bool" label="Kenya (KE)" default="false" />
+    <setting id="use_ls" type="bool" label="Lesotho (LS)" default="false" />
+    <setting id="use_lr" type="bool" label="Liberia (LR)" default="false" />
+    <setting id="use_ly" type="bool" label="Libya (LY)" default="false" />
+    <setting id="use_mg" type="bool" label="Madagascar (MG)" default="false" />
+    <setting id="use_mw" type="bool" label="Malawi (MW)" default="false" />
+    <setting id="use_ml" type="bool" label="Mali (ML)" default="false" />
+    <setting id="use_mr" type="bool" label="Mauritania (MR)" default="false" />
+    <setting id="use_mu" type="bool" label="Mauritius (MU)" default="false" />
+    <setting id="use_yt" type="bool" label="Mayotte (YT)" default="false" />
+    <setting id="use_ma" type="bool" label="Morocco (MA)" default="false" />
+    <setting id="use_mz" type="bool" label="Mozambique (MZ)" default="false" />
+    <setting id="use_na" type="bool" label="Namibia (NA)" default="false" />
+    <setting id="use_ne" type="bool" label="Niger (NE)" default="false" />
+    <setting id="use_ng" type="bool" label="Nigeria (NG)" default="false" />
+    <setting id="use_cg" type="bool" label="Republic of the Congo (CG)" default="false" />
+    <setting id="use_re" type="bool" label="Reunion (RE)" default="false" />
+    <setting id="use_rw" type="bool" label="Rwanda (RW)" default="false" />
+    <setting id="use_sh" type="bool" label="Saint Helena (SH)" default="false" />
+    <setting id="use_st" type="bool" label="Sao Tome and Principe (ST)" default="false" />
+    <setting id="use_sn" type="bool" label="Senegal (SN)" default="false" />
+    <setting id="use_sc" type="bool" label="Seychelles (SC)" default="false" />
+    <setting id="use_sl" type="bool" label="Sierra Leone (SL)" default="false" />
+    <setting id="use_so" type="bool" label="Somalia (SO)" default="false" />
+    <setting id="use_za" type="bool" label="South Africa (ZA)" default="false" />
+    <setting id="use_ss" type="bool" label="South Sudan (SS)" default="false" />
+    <setting id="use_sd" type="bool" label="Sudan (SD)" default="false" />
+    <setting id="use_sz" type="bool" label="Swaziland (SZ)" default="false" />
+    <setting id="use_tz" type="bool" label="Tanzania (TZ)" default="false" />
+    <setting id="use_tg" type="bool" label="Togo (TG)" default="false" />
+    <setting id="use_tn" type="bool" label="Tunisia (TN)" default="false" />
+    <setting id="use_ug" type="bool" label="Uganda (UG)" default="false" />
+    <setting id="use_eh" type="bool" label="Western Sahara (EH)" default="false" />
+    <setting id="use_zm" type="bool" label="Zambia (ZM)" default="false" />
+    <setting id="use_zw" type="bool" label="Zimbabwe (ZW)" default="false" />
+  </category>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!--                      AMERICAS                              -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <category label="Americas" id="americas">
+    <setting id="use_ai" type="bool" label="Anguilla (AI)" default="false" />
+    <setting id="use_ag" type="bool" label="Antigua and Barbuda (AG)" default="false" />
+    <setting id="use_ar" type="bool" label="Argentina (AR)" default="false" />
+    <setting id="use_aw" type="bool" label="Aruba (AW)" default="false" />
+    <setting id="use_bs" type="bool" label="Bahamas (BS)" default="false" />
+    <setting id="use_bb" type="bool" label="Barbados (BB)" default="false" />
+    <setting id="use_bz" type="bool" label="Belize (BZ)" default="false" />
+    <setting id="use_bm" type="bool" label="Bermuda (BM)" default="false" />
+    <setting id="use_bo" type="bool" label="Bolivia (BO)" default="false" />
+    <setting id="use_bq" type="bool" label="Bonaire (BQ)" default="false" />
+    <setting id="use_br" type="bool" label="Brazil (BR)" default="false" />
+    <setting id="use_vg" type="bool" label="British Virgin Islands (VG)" default="false" />
+    <setting id="use_ca" type="bool" label="Canada (CA)" default="false" />
+    <setting id="use_ky" type="bool" label="Cayman Islands (KY)" default="false" />
+    <setting id="use_cl" type="bool" label="Chile (CL)" default="false" />
+    <setting id="use_co" type="bool" label="Colombia (CO)" default="false" />
+    <setting id="use_cr" type="bool" label="Costa Rica (CR)" default="false" />
+    <setting id="use_cu" type="bool" label="Cuba (CU)" default="false" />
+    <setting id="use_cw" type="bool" label="Curacao (CW)" default="false" />
+    <setting id="use_dm" type="bool" label="Dominica (DM)" default="false" />
+    <setting id="use_do" type="bool" label="Dominican Republic (DO)" default="false" />
+    <setting id="use_ec" type="bool" label="Ecuador (EC)" default="false" />
+    <setting id="use_sv" type="bool" label="El Salvador (SV)" default="false" />
+    <setting id="use_fk" type="bool" label="Falkland Islands (FK)" default="false" />
+    <setting id="use_gf" type="bool" label="French Guiana (GF)" default="false" />
+    <setting id="use_gl" type="bool" label="Greenland (GL)" default="false" />
+    <setting id="use_gd" type="bool" label="Grenada (GD)" default="false" />
+    <setting id="use_gp" type="bool" label="Guadeloupe (GP)" default="false" />
+    <setting id="use_gt" type="bool" label="Guatemala (GT)" default="false" />
+    <setting id="use_gy" type="bool" label="Guyana (GY)" default="false" />
+    <setting id="use_ht" type="bool" label="Haiti (HT)" default="false" />
+    <setting id="use_hn" type="bool" label="Honduras (HN)" default="false" />
+    <setting id="use_jm" type="bool" label="Jamaica (JM)" default="false" />
+    <setting id="use_mq" type="bool" label="Martinique (MQ)" default="false" />
+    <setting id="use_mx" type="bool" label="Mexico (MX)" default="false" />
+    <setting id="use_ms" type="bool" label="Montserrat (MS)" default="false" />
+    <setting id="use_ni" type="bool" label="Nicaragua (NI)" default="false" />
+    <setting id="use_pa" type="bool" label="Panama (PA)" default="false" />
+    <setting id="use_py" type="bool" label="Paraguay (PY)" default="false" />
+    <setting id="use_pe" type="bool" label="Peru (PE)" default="false" />
+    <setting id="use_pr" type="bool" label="Puerto Rico (PR)" default="false" />
+    <setting id="use_bl" type="bool" label="Saint Barthélemy (BL)" default="false" />
+    <setting id="use_kn" type="bool" label="Saint Kitts and Nevis (KN)" default="false" />
+    <setting id="use_lc" type="bool" label="Saint Lucia (LC)" default="false" />
+    <setting id="use_mf" type="bool" label="Saint Martin (MF)" default="false" />
+    <setting id="use_pm" type="bool" label="Saint Pierre and Miquelon (PM)" default="false" />
+    <setting id="use_vc" type="bool" label="Saint Vincent and the Grenadines (VC)" default="false" />
+    <setting id="use_sr" type="bool" label="Suriname (SR)" default="false" />
+    <setting id="use_tt" type="bool" label="Trinidad and Tobago (TT)" default="false" />
+    <setting id="use_tc" type="bool" label="Turks and Caicos Islands (TC)" default="false" />
+    <setting id="use_um" type="bool" label="U.S. Minor Outlying Islands (UM)" default="false" />
+    <setting id="use_vi" type="bool" label="U.S. Virgin Islands (VI)" default="false" />
+    <setting id="use_us" type="bool" label="United States (US)" default="false" />
+    <setting id="use_uy" type="bool" label="Uruguay (UY)" default="false" />
+    <setting id="use_ve" type="bool" label="Venezuela (VE)" default="false" />
+    <setting id="use_sx" type="bool" label="Sint Maarten (SX)" default="false" />
+  </category>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!--                      OCEANIA                               -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <category label="Oceania" id="oceania">
+    <setting id="use_as" type="bool" label="American Samoa (AS)" default="false" />
+    <setting id="use_aq" type="bool" label="Antarctica (AQ)" default="false" />
+    <setting id="use_au" type="bool" label="Australia (AU)" default="false" />
+    <setting id="use_cx" type="bool" label="Christmas Island (CX)" default="false" />
+    <setting id="use_cc" type="bool" label="Cocos (Keeling) Islands (CC)" default="false" />
+    <setting id="use_ck" type="bool" label="Cook Islands (CK)" default="false" />
+    <setting id="use_fj" type="bool" label="Fiji (FJ)" default="false" />
+    <setting id="use_pf" type="bool" label="French Polynesia (PF)" default="false" />
+    <setting id="use_tf" type="bool" label="French Southern Territories (TF)" default="false" />
+    <setting id="use_gu" type="bool" label="Guam (GU)" default="false" />
+    <setting id="use_hm" type="bool" label="Heard Island and McDonald Islands (HM)" default="false" />
+    <setting id="use_ki" type="bool" label="Kiribati (KI)" default="false" />
+    <setting id="use_mh" type="bool" label="Marshall Islands (MH)" default="false" />
+    <setting id="use_fm" type="bool" label="Micronesia (FM)" default="false" />
+    <setting id="use_nr" type="bool" label="Nauru (NR)" default="false" />
+    <setting id="use_nc" type="bool" label="New Caledonia (NC)" default="false" />
+    <setting id="use_nz" type="bool" label="New Zealand (NZ)" default="false" />
+    <setting id="use_nu" type="bool" label="Niue (NU)" default="false" />
+    <setting id="use_nf" type="bool" label="Norfolk Island (NF)" default="false" />
+    <setting id="use_mp" type="bool" label="Northern Mariana Islands (MP)" default="false" />
+    <setting id="use_pw" type="bool" label="Palau (PW)" default="false" />
+    <setting id="use_pg" type="bool" label="Papua New Guinea (PG)" default="false" />
+    <setting id="use_pn" type="bool" label="Pitcairn Islands (PN)" default="false" />
+    <setting id="use_ws" type="bool" label="Samoa (WS)" default="false" />
+    <setting id="use_sb" type="bool" label="Solomon Islands (SB)" default="false" />
+    <setting id="use_tk" type="bool" label="Tokelau (TK)" default="false" />
+    <setting id="use_to" type="bool" label="Tonga (TO)" default="false" />
+    <setting id="use_tv" type="bool" label="Tuvalu (TV)" default="false" />
+    <setting id="use_vu" type="bool" label="Vanuatu (VU)" default="false" />
+    <setting id="use_wf" type="bool" label="Wallis and Futuna (WF)" default="false" />
+    <setting id="use_gs" type="bool" label="South Georgia (GS)" default="false" />
+    <setting id="use_bv" type="bool" label="Bouvet Island (BV)" default="false" />
+  </category>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!--                        REDARE                              -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <category label="32080">
+    <setting id="auto_play" type="bool" label="32081" default="true" />
+    <setting id="manual_user_agent" type="text" label="32082" default="" />
+  </category>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!--                        AFIȘARE                             -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <category label="32083">
+    <setting id="ui_language" type="select" label="32089" values="Auto|Română|English" default="0" />
+    <setting id="items_per_page" type="number" label="32084" default="25" />
+    <setting id="preload_epg" type="bool" label="32085" default="true" />
+    <setting id="max_epg_threads" type="number" label="32086" default="5" />
+  </category>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!--                       AVANSAT                              -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <category label="32087">
+    <setting id="debug_http" type="bool" label="32088" default="false" />
+  </category>
+</settings>

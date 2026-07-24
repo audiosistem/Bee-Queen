@@ -169,23 +169,19 @@ class VersionIsUpdateCheck:
 			if isUpdate:
 				window.setProperty('luc_kodi.updated', 'true')
 				curVersion = control.getluc_kodiVersion()
-				clearDB_version = '6.5.6' # set to desired version to force any db clearing needed
-				do_cacheClear = (int(oldVersion.replace('.', '')) < int(clearDB_version.replace('.', '')) <= int(curVersion.replace('.', '')))
+				# NOTE: el antiguo borrado de caché por versión (umbral '6.5.6')
+				# era HEREDADO del framework jacksparrow y no aplica a la
+				# numeración 1.0.x de luc_kodi. Peor aún: en una instalación
+				# limpia oldVersion='0' (< 656) disparaba un wipe innecesario de
+				# metacache/cache. Queda DESACTIVADO por defecto.
+				#
+				# Si alguna migración futura necesita forzar un clear puntual,
+				# poner aquí una condición ACOTADA a ese salto concreto, p.ej.:
+				#   do_cacheClear = (oldVersion == '1.0.41' and curVersion == '1.0.42')
+				# y llamar a cache.clrCache_version_update(...) solo en ese caso.
+				do_cacheClear = False
 				if do_cacheClear:
-					clr_fanarttv = False
 					cache.clrCache_version_update(clr_providers=False, clr_metacache=True, clr_cache=True, clr_search=False, clr_bookmarks=False)
-					from resources.lib.database import traktsync
-					clr_traktSync = {'bookmarks': False, 'hiddenProgress': False, 'liked_lists': False, 'movies_collection': False, 'movies_watchlist': False, 'popular_lists': False,
-											'public_lists': False, 'shows_collection': False, 'shows_watchlist': False, 'trending_lists': False, 'user_lists': False, 'watched': False}
-					cleared = traktsync.delete_tables(clr_traktSync)
-					if cleared:
-						control.notification(message='Forced traktsync clear for version update complete.')
-						control.log('[ plugin.video.luc_kodi ]  Forced traktsync clear for version update complete.', LOGINFO)
-					if clr_fanarttv:
-						from resources.lib.database import fanarttv_cache
-						cleared = fanarttv_cache.cache_clear()
-						control.notification(message='Forced fanarttv.db clear for version update complete.')
-						control.log('[ plugin.video.luc_kodi ]  Forced fanarttv.db clear for version update complete.', LOGINFO)
 				# FIX: save Trakt + subtitle credentials BEFORE the settings write that may reset settings.xml to defaults
 				import xbmcaddon as _xa
 				_addon_pre = _xa.Addon()
@@ -218,7 +214,69 @@ class VersionIsUpdateCheck:
 						_addon_post.setSetting(_k, _v)
 				control.log('[ plugin.video.luc_kodi ]  VersionIsUpdateCheck: Subtitle settings restored after settings write', LOGINFO)
 
+				# v1.0.41 FIX: una versión anterior llevaba la API key del autor
+				# como fallback (DEFAULT_APIKEY). Cualquier usuario sin OAuth propio
+				# quedaba con el username del autor guardado en mdblist.username (y
+				# posiblemente su key en mdblist.apikey). Si NO hay token OAuth
+				# propio, limpiamos esos restos para que no se muestre una cuenta
+				# ajena. A quien autorizó su cuenta (tiene mdblist.token) no se le
+				# toca nada.
+				try:
+					_LEAKED_MDB_APIKEY = 'xma2hxonarl718z4w7adchsef'
+					_mdb_token = (_addon_post.getSetting('mdblist.token') or '').strip()
+					if not _mdb_token or _mdb_token in ('0', 'empty_setting'):
+						_mdb_apikey = (_addon_post.getSetting('mdblist.apikey') or '').strip()
+						if _mdb_apikey == _LEAKED_MDB_APIKEY:
+							_addon_post.setSetting('mdblist.apikey', '')
+						# El username sólo es válido si hay credencial propia; sin
+						# OAuth ni key propia no debe persistir ningún username.
+						if (_addon_post.getSetting('mdblist.username') or '').strip():
+							_addon_post.setSetting('mdblist.username', '')
+						control.log('[ plugin.video.luc_kodi ]  VersionIsUpdateCheck: cleared leaked MDBList credentials/username (no own OAuth)', LOGINFO)
+				except Exception:
+					log_utils.error()
+
 				control.log('[ plugin.video.luc_kodi ]  Forced new User Data settings.xml saved', LOGINFO)
+
+				# v1.0.45 MIGRACIÓN (una sola vez, acotada): los cambios de la API de
+				# Trakt del 30-jun-2026 hicieron que versiones <=1.0.44 guardaran en
+				# traktsync.db un watchlist vacío/truncado (actualizando además el
+				# marcador last_watchlisted_at, con lo que el servicio nunca volvía a
+				# sincronizar) y cachearan un Progress vacío durante 12h en cache.db.
+				# Forzamos un resync completo en segundo plano para autocurar el
+				# estado envenenado sin que el usuario tenga que hacer Force Sync.
+				try:
+					_old_t = tuple(int(x) for x in str(oldVersion).split('.') if x.isdigit())
+				except Exception:
+					_old_t = (0,)
+				if _old_t < (1, 0, 46):
+					import time as _time
+					from threading import Thread as _Thread
+					def _trakt_2026_resync():
+						try:
+							from resources.lib.modules import trakt as _trakt
+							from resources.lib.database import traktsync as _ts
+							if not _trakt.getTraktCredentialsInfo(): return
+							# Espera 45s: deja que los primeros menus del usuario se
+							# construyan sin competir con la migracion por el rate limit.
+							if control.monitor.waitForAbort(45): return
+							control.log('[ plugin.video.luc_kodi ]  VersionIsUpdateCheck: Trakt 2026 API migration resync starting (bg)...', LOGINFO)
+							_start = int(_time.time())
+							_trakt.sync_watch_list(forced=True) # barato y visible: primero
+							_trakt.sync_watchedProgress(forced=True) # refresca cache 12h del Progress
+							# watched: lo mas pesado. Si un menu ya disparo el crawl
+							# (single-flight) durante la espera, no lo repetimos.
+							if _ts.timeout(_trakt.syncMovies) < _start:
+								_trakt.cachesyncMovies()
+							if _ts.timeout(_trakt.syncTVShows) < _start:
+								_trakt.cachesyncTVShows()
+							_trakt.service_syncSeasons() # ya throttled con Semaphore(8)
+							_ts.insert_syncSeasons_at()
+							control.log('[ plugin.video.luc_kodi ]  VersionIsUpdateCheck: Trakt 2026 API migration resync complete', LOGINFO)
+						except Exception:
+							log_utils.error()
+					_Thread(target=_trakt_2026_resync).start()
+
 				control.log('[ plugin.video.luc_kodi ]  Plugin updated to v%s' % curVersion, LOGINFO)
 		except:
 			log_utils.error()
@@ -404,6 +462,13 @@ def main():
 		TorBoxUsenetMigration().run()
 		CheckUndesirablesDatabase().run()
 		GUIResolutionService().run()  # non-blocking — lanza hilo daemon
+		# v1.0.49: micro-servidor localhost que sirve el MPD de tráilers a
+		# inputstream.adaptive (su pila CURL no lee special:// ni archivos).
+		try:
+			from resources.lib.modules import trailer_httpd
+			trailer_httpd.start()  # non-blocking — hilo daemon
+		except Exception:
+			log_utils.error()
 		ReuseLanguageInvokerCheck().run()
 		if control.setting('library.service.update') == 'true':
 			libraryService = Thread(target=LibraryService().run)

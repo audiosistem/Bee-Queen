@@ -1,3 +1,72 @@
+[B][COLOR ff00fa9a]Version 1.0.47[/COLOR][/B]
+-FIX: Premium Services > TorBox
+[B][COLOR ff00fa9a]Version 1.0.46[/COLOR][/B]
+-A setting is available under "Play trailer" to enable or disable AV1 and VP9 (10-bit) video codecs.
+[B][COLOR ff00fa9a]Version 1.0.45[/COLOR][/B]
+-SIMKL updated
+[B][COLOR ff00fa9a]Version 1.0.44[/COLOR][/B]
+-New Trakt API compliance added
+[B][COLOR ff00fa9a]Version 1.0.43[/COLOR][/B]
+- NEW: "Play Trailer" context menu item on Movies and TV shows.
+- NEW: "Skip Intro" for episodes button during playback — community-verified timestamps from TheIntroDB
+[B][COLOR ff00fa9a]Version 1.0.42[/COLOR][/B]
+-Add Vix and JustWatch TV to Streaming in Movies
+[B][COLOR ff00fa9a]Version 1.0.41[/COLOR][/B]
+-Small bugs resolved
+[B][COLOR ff00fa9a]Version 1.0.40[/COLOR][/B]
+-Added a short DISCLAIMER.txt in the add-on root, consistent with the description in addon.xml: the add-on hosts no content and includes no links, and only connects to third-party services you configure with your own accounts.
+-Updated the add-on description and disclaimer in addon.xml to accurately describe what the add-on does: it hosts no content and includes no links, and only queries third-party indexer/debrid services that you configure with your own accounts. 
+[B][COLOR ff00fa9a]Version 1.0.39[/COLOR][/B]
+-Fixed: automatic subtitles stopped working after the first playback - the internal "subtitle lookup in progress" guard was never released, so every later attempt was skipped until Kodi was restarted. The flag is now always cleared when the lookup finishes
+-Fixed: PlayNext subtitle timing could throw an internal error on exit (a leftover cleanup referenced an undefined value); removed it
+-Fixed: Real-Debrid could fail to resolve a magnet when the title was missing/empty (it now tolerates an empty title, matching AllDebrid/Premiumize/TorBox). Symptom was a link that silently would not play
+-Fixed: the welcome/notification window now logs errors correctly instead of masking them
+-Fixed: removed a duplicate "Enable Debug"/"Logging Location" pair in Settings (an inherited leftover); the proper localized Debug section is unchanged
+-Future-proofing: scraper and cloud-scraper loaders rewritten with importlib (the old loader API was removed in Python 3.12 / Kodi 22+, which would have left you with no scrapers). No change on current Kodi versions
+[B][COLOR ff00fa9a]Version 1.0.38[/COLOR][/B]
+-Much faster startup catalog refresh: on boot it now warms only page 1 of each list (what you actually see first) instead of 3 pages, cutting startup network work to roughly a third
+-Catalog lists now refresh in parallel under a shared cap on concurrent TMDb requests, instead of one list after another - no flood of simultaneous requests
+-"Real freshness" on boot: the refresh invalidates the cached metadata ONLY for the visible titles (page 1), so their posters/metadata are genuinely up to date, without re-downloading the whole catalog (the rest keeps its normal 30-day cache)
+-MAJOR speed fix - removed a settings-reading storm that was forcing hundreds of slow settings.xml re-parses during the refresh. The settings cache is now the single source of truth (no redundant per-setting lookups to Kodi), internal markers are pre-seeded so they never hit the slow path, and the cache is pre-warmed before the refresh starts. This speeds up the WHOLE add-on, not just startup
+-Empty API keys no longer cost anything to read (TMDb/fanart use a built-in fallback key when you don't enter your own, so they're empty on purpose - reading them is now free)
+-Shorter initial delay before the catalog refresh begins (3s instead of 10s)
+-Net result: the "catalog/posters updated" notification now appears in about 6-7 seconds instead of ~15
+-TV Shows: fixed the Wall view not sticking past page 1 - every page now stays in Wall (poster grid), just like Movies already did. Following pages no longer fall back to List
+-Episodes: the Wall view is now applied reliably here too, with TMDb artwork
+-Pages 2+ inside a category still load on demand (when you scroll to them), exactly as before - only the boot warm-up changed
+[B][COLOR ff00fa9a]Version 1.0.37[/COLOR][/B]
+-MDBList: scrobbling is now built into the plugin (no longer needs the separate service.luc_kodi.mdblist add-on)
+-MDBList: works FULLY standalone - you can use only MDBList without Trakt or SIMKL
+-MDBList: authorization with PIN + QR code (OAuth Device Flow), just like Trakt and SIMKL - no keyboard needed
+-MDBList: your account shows up in "Authorized Apps" on MDBList with the luc_kodi name/icon
+-Add DMM scraper
+[B][COLOR ff00fa9a]Version 1.0.36[/COLOR][/B]
+-Fixed: no longer wipes cache/metadata on install or update (removed an inherited version gate that fired on clean installs)
+-Fixed: RAM source cache now actually works (Back/return after scraping is instant) - it was disabled by a settings-ID mismatch
+-RAM cache: bounded memory (LRU, keeps the 12 most recent titles) so heavy browsing won't grow RAM on tablets
+-RAM cache: TTL default aligned to 20 min in both the UI and the code
+-Comet: converted to a custom scraper
+-Comet: Setup Wizard (browser-based, no keyboard needed) to paste the Manifest URL
+-Comet: custom mode resolves through YOUR Debrid (RD/AD/TB/PM) - credentials travel inside the config token, no separate login in Kodi
+-Comet: auto-detects the Debrid service(s) from the token
+-Comet: moved to the "Custom" providers section
+[B][COLOR ff00fa9a]Version 1.0.35[/COLOR][/B]
+-Torz: Setup Wizard (browser-based, no keyboard needed) to paste the Manifest URL
+-Torz: auto-detects the Debrid service from the token (RD/AD/TB/PM)
+-Torz: moved to the "Custom" providers section (it is a custom scraper now)
+-Fixed: SIMKL My Progress labels
+[B][COLOR ff00fa9a]Version 1.0.34[/COLOR][/B]
+-Small bugs resolved
+[B][COLOR ff00fa9a]Version 1.0.33[/COLOR][/B]
+-Update Sootio
+-SIMKL add for Movies or TV Shows "My Progress"
+[B][COLOR ff00fa9a]Version 1.0.32[/COLOR][/B]
+- 2160p skin: regenerated bg.png eliminating upscale artifact
+- 2160p skin: regenerated star.png for crisp render at 50px
+- 2160p skin: regenerated box2.png for clean 150px list render  
+- 2160p skin: regenerated shadow.png native render size
+- 2160p skin: regenerated button3.png native button canvas
+- 2160p skin: scrollbars regenerated with proper border-9slice geometry
 [B][COLOR ff00fa9a]Version 1.0.31[/COLOR][/B]
 -Meteor update with setup wizard 
 -Sootio update

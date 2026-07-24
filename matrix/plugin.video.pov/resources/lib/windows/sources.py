@@ -123,7 +123,7 @@ class SourceResults(BaseDialog):
 					source = get('source')
 					quality = get('quality', 'SD')
 					basic_quality, quality_icon = self.get_quality_and_path(lower(quality))
-					try: name = upper(get('URLName', 'N/A'))
+					try: name = upper(get('display_name', 'N/A'))
 					except: name = 'N/A'
 					pack = get('package', 'false') in pack_check
 #					if pack: extra_info = '[B]PACK[/B] | %s' % get('extraInfo', '')

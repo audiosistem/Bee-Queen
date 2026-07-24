@@ -7,6 +7,7 @@ from hashlib import md5
 from json import dumps as jsdumps, loads as jsloads
 from sys import argv, exit as sysexit
 from sqlite3 import dbapi2 as database
+from time import time
 import threading
 import xbmc
 from resources.lib.database.cache import clear_local_bookmarks
@@ -17,6 +18,7 @@ from resources.lib.modules import log_utils
 from resources.lib.modules import playcount
 from resources.lib.modules import trakt
 from resources.lib.modules import simkl
+from resources.lib.modules import mdblist
 from resources.lib.modules import opensubs
 from difflib import SequenceMatcher
 from resources.lib.modules.source_utils import seas_ep_filter
@@ -81,6 +83,8 @@ class Player(xbmc.Player):
 		self.traktCredentials = trakt.getTraktCredentialsInfo()
 		# v1.0.18: cache SIMKL creds the same way Trakt does, to avoid checking on every event.
 		self.simklCredentials = simkl.getSimklCredentialsInfo()
+		# v1.0.37: MDBList scrobbling now lives in-plugin too (no external service).
+		self.mdblistCredentials = mdblist.getMDBListScrobbleInfo()
 		self.subtitletime = None
 
 	def play_source(self, title, year, season, episode, imdb, tmdb, tvdb, url, meta, debridPackCall=False):
@@ -316,6 +320,19 @@ class Player(xbmc.Player):
 			except:
 				log_utils.error()
 
+		# ── Skip Intro / Recap / Preview (TheIntroDB) ──────────────────
+		# Hilo daemon: consulta timestamps comunitarios por TMDb/IMDb id y
+		# muestra la píldora "Skip Intro" (o auto-salta). Se lanza ANTES del
+		# sleep(5000) para llegar a tiempo a recaps/previews que empiezan en
+		# el segundo 0. El hilo espera él mismo a que el reloj avance y
+		# captura su propio running_path; muere solo al parar o cambiar de
+		# archivo, así que no interfiere con playlist_skip ni con playnext.
+		try:
+			from resources.lib.modules import skip_intro
+			skip_intro.start(self)
+		except:
+			log_utils.error()
+
 		xbmc.sleep(5000)
 		playlist_skip = False
 		try: running_path = self.getPlayingFile() # original video that playlist playback started with
@@ -324,6 +341,26 @@ class Player(xbmc.Player):
 		if playerWindow.getProperty('luc_kodi.playlistStart_position'): pass
 		else:
 			if control.playlist.size() > 1: playerWindow.setProperty('luc_kodi.playlistStart_position', str(control.playlist.getposition()))
+
+		# Periodic SIMKL resume-point save: SIMKL no recibe el resume si Kodi
+		# pasa al siguiente o se cierra de golpe (solo se guarda en onPlayBackStopped).
+		# Enviamos /scrobble/pause cada _simkl_pause_interval segundos mientras se
+		# reproduce, así el punto queda guardado pase lo que pase. Autónomo: solo SIMKL.
+		_simkl_scrobble_on = (self.simklCredentials and getSetting('simkl.scrobble') == 'true')
+		_simkl_pause_interval = 90  # segundos
+		_simkl_last_pause = time()
+
+		# v1.0.37: igual que SIMKL, MDBList guarda el resume periódicamente
+		# (/scrobble/pause) para no perderlo si Kodi salta de episodio o se
+		# cierra de golpe. Intervalo configurable (mdblist.interval.seconds).
+		_mdblist_scrobble_on = (self.mdblistCredentials and getSetting('mdblist.event.interval') != 'false')
+		try:
+			_mdblist_pause_interval = int(getSetting('mdblist.interval.seconds') or 60)
+		except Exception:
+			_mdblist_pause_interval = 60
+		if _mdblist_pause_interval < 30:
+			_mdblist_pause_interval = 30
+		_mdblist_last_pause = time()
 
 		while self.isPlayingVideo() and not control.monitor.abortRequested():
 			try:
@@ -337,6 +374,34 @@ class Player(xbmc.Player):
 				except: pass
 				watcher = (self.getWatchedPercent() >= 85)
 				property = homeWindow.getProperty(pname)
+
+				# ── Guardado periódico de progreso en SIMKL (resume) ──────────
+				# Solo cuando el progreso está en rango de "a medias" (15%-80%):
+				# por debajo no merece la pena, por encima ya cuenta como visto.
+				if _simkl_scrobble_on:
+					try:
+						_now = time()
+						if (_now - _simkl_last_pause) >= _simkl_pause_interval and self.media_length:
+							_pct = (self.current_time / self.media_length) * 100
+							if 15 <= _pct < 80 and int(self.current_time) > 180:
+								simkl.scrobblePause(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
+													season=self.season, episode=self.episode, watched_percent=_pct)
+							_simkl_last_pause = _now
+					except: pass
+
+				# ── Guardado periódico de progreso en MDBList (resume) ────────
+				# v1.0.37: mismo criterio que SIMKL. Solo en rango 15%-80%.
+				# IMPORTANTE: bloque INDEPENDIENTE de SIMKL (MDBList autónomo).
+				if _mdblist_scrobble_on:
+					try:
+						_now = time()
+						if (_now - _mdblist_last_pause) >= _mdblist_pause_interval and self.media_length:
+							_pct = (self.current_time / self.media_length) * 100
+							if 15 <= _pct < 80 and int(self.current_time) > 180:
+								mdblist.scrobblePause(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
+														season=self.season, episode=self.episode, watched_percent=_pct)
+							_mdblist_last_pause = _now
+					except: pass
 
 				if self.media_type == 'movie':
 					try:
@@ -586,14 +651,16 @@ class Player(xbmc.Player):
 				self.seekTime(_seek)
 			self.playback_resumed = True
 		
-		if self.traktCredentials:
-			trakt.scrobbleReset(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb, season=self.season, episode=self.episode, refresh=False) # refresh issues container.refresh()
+		if self.traktCredentials and getSetting('trakt.scrobble') == 'true':
+			try: trakt.scrobbleReset(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb, season=self.season, episode=self.episode, refresh=False) # refresh issues container.refresh()
+			except Exception: log_utils.error()
 		# v1.0.21 SIMKL: fire /scrobble/start so the user's "Watching now" shows up,
 		# and an optional /scrobble/checkin if the user enabled the fire-and-forget fallback.
 		# Same pattern Umbrella uses (its onAVStarted line 651). Works when the Player
 		# instance is kept alive by keepAlive() — sources.py playItem now properly
 		# routes through play_source for both auto and manual source selection paths.
-		if self.simklCredentials and (getSetting('simkl.scrobble') == 'true'):
+		_simkl_scrobble_setting = getSetting('simkl.scrobble')
+		if self.simklCredentials and (_simkl_scrobble_setting == 'true'):
 			try:
 				control.log('[ luc_kodi ] onAVStarted — calling simkl.scrobbleStart()', LOGINFO)
 				simkl.scrobbleStart(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
@@ -601,6 +668,15 @@ class Player(xbmc.Player):
 				if getSetting('simkl.scrobble.checkin') == 'true':
 					simkl.scrobbleCheckin(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
 										  season=self.season, episode=self.episode)
+			except Exception:
+				log_utils.error()
+		# v1.0.37: MDBList /scrobble/start para que aparezca "viendo ahora"
+		# y se cree la sesión de resume. INDEPENDIENTE de SIMKL (MDBList autónomo).
+		if self.mdblistCredentials and getSetting('mdblist.event.start') != 'false':
+			try:
+				control.log('[ luc_kodi ] onAVStarted — calling mdblist.scrobbleStart()', LOGINFO)
+				mdblist.scrobbleStart(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
+									  season=self.season, episode=self.episode, watched_percent=0)
 			except Exception:
 				log_utils.error()
 		# Double-check via xbmcaddon direct API in case settings cache isn't updated yet
@@ -647,7 +723,8 @@ class Player(xbmc.Player):
 				Bookmarks().reset(self.current_time, self.media_length, self.name, self.year)
 				# v1.0.18: call set_scrobble if EITHER Trakt or SIMKL is enabled with creds.
 				if ((self.traktCredentials and getSetting('trakt.scrobble') == 'true') or
-					(self.simklCredentials and getSetting('simkl.scrobble') == 'true')):
+					(self.simklCredentials and getSetting('simkl.scrobble') == 'true') or
+					(self.mdblistCredentials and getSetting('mdblist.scrobble') == 'true')):
 					Bookmarks().set_scrobble(self.current_time, self.media_length, self.media_type, self.imdb, self.tmdb, self.tvdb, self.season, self.episode)
 				watcher = self.getWatchedPercent()
 				seekable = (int(self.current_time) > 180 and (watcher < 85))
@@ -671,7 +748,8 @@ class Player(xbmc.Player):
 		# Natural end of playback: Kodi may not fire onPlayBackStopped here, so notify Trakt/SIMKL
 		# explicitly. set_scrobble at >=85% (Trakt) or >=80% (SIMKL) calls /scrobble/stop -> watched indicator syncs.
 		if ((self.traktCredentials and getSetting('trakt.scrobble') == 'true') or
-			(self.simklCredentials and getSetting('simkl.scrobble') == 'true')):
+			(self.simklCredentials and getSetting('simkl.scrobble') == 'true') or
+			(self.mdblistCredentials and getSetting('mdblist.scrobble') == 'true')):
 			try:
 				Bookmarks().set_scrobble(self.current_time, self.media_length, self.media_type, self.imdb, self.tmdb, self.tvdb, self.season, self.episode)
 			except: log_utils.error()
@@ -979,6 +1057,13 @@ class Subtitles:
 					Player().subtitletime = 'default'
 		except:
 			log_utils.error()
+		finally:
+			# Libera SIEMPRE el guard global puesto al inicio de get(), tanto en
+			# éxito como en error. Sin esto el flag quedaba en 'true' de forma
+			# permanente y todas las llamadas posteriores salían por el guard
+			# ("already running, skipping"), dejando los subtítulos automáticos
+			# inoperativos hasta reiniciar Kodi.
+			homeWindow.clearProperty(_FLAG)
 
 	def downloadForPlayNext(self, title, year, imdb, season, episode, media_length):
 		"""
@@ -1125,10 +1210,8 @@ class Subtitles:
 				log_utils.error()
 				return 'default'
 		except Exception as e:
-			control.log('[ luc_kodi ] Subtitles.get() OUTER EXCEPTION: %s' % str(e), LOGINFO)
+			control.log('[ luc_kodi ] Subtitles.downloadForPlayNext() OUTER EXCEPTION: %s' % str(e), LOGINFO)
 			return 'default'
-		finally:
-			homeWindow.clearProperty(_FLAG)
 
 ##############################
 
@@ -1320,14 +1403,24 @@ class Bookmarks:
 
 	def set_scrobble(self, current_time, media_length, media_type, imdb='', tmdb='', tvdb='', season='', episode=''):
 		try:
-			if media_length == 0: return
+			if media_length == 0:
+				return
 			percent = float((current_time / media_length)) * 100
 			seekable = (int(current_time) > 180 and (percent < 85))
-			if seekable: trakt.scrobbleMovie(imdb, tmdb, percent) if media_type == 'movie' else trakt.scrobbleEpisode(imdb, tmdb, tvdb, season, episode, percent)
-			# At >= 85% playback, /scrobble/stop tells Trakt the item is watched (adds to /sync/history)
-			# AND clears the resume point in one call. Previously only scrobbleReset was used,
-			# which cleared the resume but never reported the watch -> Trakt indicators never lit up.
-			if percent >= 85: trakt.scrobbleStop(imdb=imdb, tmdb=tmdb, tvdb=tvdb, season=season, episode=episode, watched_percent=percent)
+			# TRAKT: solo si Trakt tiene credenciales Y su scrobble está activo.
+			# NOTA: set_scrobble está en la clase Bookmarks (no Player), así que
+			# NO existe self.traktCredentials aquí — hay que consultar la función
+			# directamente. Antes esto petaba con AttributeError y abortaba TODO
+			# el scrobble (incluido SIMKL) antes de llegar a la parte de SIMKL.
+			_trakt_on = (trakt.getTraktCredentialsInfo() and getSetting('trakt.scrobble') == 'true')
+			if _trakt_on:
+				try:
+					if seekable:
+						trakt.scrobbleMovie(imdb, tmdb, percent) if media_type == 'movie' else trakt.scrobbleEpisode(imdb, tmdb, tvdb, season, episode, percent)
+					if percent >= 85:
+						trakt.scrobbleStop(imdb=imdb, tmdb=tmdb, tvdb=tvdb, season=season, episode=episode, watched_percent=percent)
+				except Exception:
+					log_utils.error()  # un fallo de Trakt NO debe propagarse ni romper SIMKL
 
 			# v1.0.18 SIMKL: branches MUTUALLY EXCLUSIVE per SIMKL docs.
 			# - >=80% on stop event = /scrobble/stop (auto-marks watched)
@@ -1346,6 +1439,22 @@ class Bookmarks:
 						elif int(current_time) > 180:
 							_simkl.scrobblePause(imdb=imdb, tmdb=tmdb, tvdb=tvdb,
 												 season=season, episode=episode, watched_percent=percent)
+				except Exception:
+					log_utils.error()
+
+			# v1.0.37 MDBList: ramas mutuamente excluyentes igual que SIMKL.
+			#  >=80% en stop = /scrobble/stop (marca visto)
+			#  <80% pero >3 min = /scrobble/pause (guarda resume)
+			if getSetting('mdblist.scrobble') == 'true':
+				try:
+					from resources.lib.modules import mdblist as _mdblist
+					if _mdblist.getMDBListScrobbleInfo():
+						if percent >= 80:
+							_mdblist.scrobbleStop(imdb=imdb, tmdb=tmdb, tvdb=tvdb,
+												  season=season, episode=episode, watched_percent=percent)
+						elif int(current_time) > 180:
+							_mdblist.scrobblePause(imdb=imdb, tmdb=tmdb, tvdb=tvdb,
+												   season=season, episode=episode, watched_percent=percent)
 				except Exception:
 					log_utils.error()
 		except:

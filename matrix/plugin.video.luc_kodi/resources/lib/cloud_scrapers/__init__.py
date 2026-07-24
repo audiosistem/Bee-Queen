@@ -13,7 +13,10 @@ def cloudSources():
 			if is_pkg or 'cloud_utils' in module_name: continue
 			if enabledCheck(module_name):
 				try:
-					module = loader.find_module(module_name).load_module(module_name)
+					# importlib.import_module: compatible Py3.6 -> 3.12+. find_module()/
+					# load_module() fueron eliminados en Python 3.12 (Kodi 22+).
+					import importlib
+					module = importlib.import_module('resources.lib.cloud_scrapers.%s' % module_name)
 					sourceDict.append((module_name, module.source))
 				except Exception as e:
 					if debug_enabled:

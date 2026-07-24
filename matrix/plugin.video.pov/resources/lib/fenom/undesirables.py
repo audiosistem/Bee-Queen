@@ -52,9 +52,6 @@ class Undesirables():
 		self.make_cursor()
 
 	def check_database(self):
-		from fenom import control # remove migration in next update
-		if existsPath(control.undesirablescacheLegacy) and control.xbmcvfs.delete(control.cacheFile):
-			control.xbmcvfs.copy(control.undesirablescacheLegacy, control.cacheFile)
 		if not existsPath(dataPath): makeFile(dataPath)
 		self.make_database_objects()
 		try:

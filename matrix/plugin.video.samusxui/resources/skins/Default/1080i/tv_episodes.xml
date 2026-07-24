@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="window" id="10005">
+    <defaultcontrol>131</defaultcontrol>
+    <controls>
+
+        <!-- ═══════════════ GLOBAL BACKGROUND ═══════════════ -->
+        <control type="image" id="1">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="FF0E0E1A">white.png</texture>
+        </control>
+
+        <!-- ═══════════════ HERO BACKDROP ═══════════════ -->
+        <control type="image" id="100">
+            <left>0</left><top>-155</top><width>1920</width><height>1080</height>
+            <texture>-</texture>
+            <aspectratio>scale</aspectratio>
+        </control>
+
+        <!-- Dark overlay -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>650</height>
+            <texture colordiffuse="40000000">white.png</texture>
+        </control>
+
+        <!-- Clip solid under hero -->
+        <control type="image">
+            <left>0</left><top>650</top><width>1920</width><height>540</height>
+            <texture colordiffuse="FF0E0E1A">white.png</texture>
+        </control>
+
+        <!-- Left gradient -->
+        <control type="image" id="101">
+            <left>0</left><top>0</top><width>720</width><height>650</height>
+            <texture>grad_l.png</texture>
+            <aspectratio>stretch</aspectratio>
+        </control>
+
+        <!-- Bottom gradient (aliniat ca top-ul opac să fie exact la y=650) -->
+        <control type="image" id="102">
+            <left>0</left><top>370</top><width>1920</width><height>280</height>
+            <texture>grad_b.png</texture>
+            <aspectratio>stretch</aspectratio>
+        </control>
+
+        <!-- ═══════════════ HEADER ═══════════════ -->
+
+        <!-- Header background strip -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>72</height>
+            <texture colordiffuse="88060610">white.png</texture>
+        </control>
+
+        <!-- Purple left accent -->
+        <control type="image">
+            <left>0</left><top>0</top><width>4</width><height>72</height>
+            <texture colordiffuse="FF7B5CF4">white.png</texture>
+        </control>
+
+        <!-- Back / section label (set from Python) -->
+        <control type="label" id="5">
+            <left>20</left><top>16</top><width>900</width><height>40</height>
+            <label>←</label>
+            <font>font20</font>
+            <textcolor>FF7B5CF4</textcolor>
+        </control>
+
+        <!-- Bottom separator under header -->
+        <control type="image">
+            <left>0</left><top>72</top><width>1920</width><height>1</height>
+            <texture colordiffuse="20FFFFFF">white.png</texture>
+        </control>
+
+        <!-- ═══════════════ HERO TEXT ═══════════════ -->
+
+        <!-- Logo show -->
+        <control type="image" id="115">
+            <left>30</left><top>90</top><width>580</width><height>155</height>
+            <texture>-</texture>
+            <aspectratio>keep</aspectratio>
+        </control>
+
+        <!-- Titlu text (fallback) -->
+        <control type="label" id="110">
+            <left>30</left><top>94</top><width>900</width><height>120</height>
+            <label>...</label>
+            <font>font48</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <shadowcolor>CC000000</shadowcolor>
+        </control>
+
+        <!-- Meta -->
+        <control type="label" id="111">
+            <left>30</left><top>260</top><width>950</width><height>36</height>
+            <label>...</label>
+            <font>font20</font>
+            <textcolor>FFCCCCCC</textcolor>
+        </control>
+
+        <!-- Plot -->
+        <control type="label" id="113">
+            <left>30</left><top>306</top><width>700</width><height>160</height>
+            <label>...</label>
+            <font>font20</font>
+            <textcolor>FF999999</textcolor>
+            <wrapmultiline>true</wrapmultiline>
+        </control>
+
+        <!-- ═══════════════ ACTION BUTTONS ═══════════════ -->
+
+        <!-- PLAY -->
+        <control type="button" id="120">
+            <left>30</left><top>545</top><width>158</width><height>52</height>
+            <label>[B]PLAY[/B]</label>
+            <font>font20</font>
+            <align>center</align>
+            <textcolor>FFAAAAAA</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus>
+            <texturenofocus colordiffuse="28FFFFFF">white.png</texturenofocus>
+            <onright>121</onright>
+            <ondown>131</ondown>
+        </control>
+
+        <!-- SURSE -->
+        <control type="button" id="121">
+            <left>202</left><top>545</top><width>158</width><height>52</height>
+            <label>[B]SURSE[/B]</label>
+            <font>font20</font>
+            <align>center</align>
+            <textcolor>FFAAAAAA</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus>
+            <texturenofocus colordiffuse="28FFFFFF">white.png</texturenofocus>
+            <onleft>120</onleft>
+            <ondown>131</ondown>
+        </control>
+
+        <!-- ═══════════════ EPISODE LIST ═══════════════ -->
+
+        <control type="list" id="131">
+            <left>5</left><top>650</top><width>1910</width><height>310</height>
+            <orientation>horizontal</orientation>
+            <onup>120</onup>
+            <scrolltime>180</scrolltime>
+            <itemlayout height="210" width="330">
+                <control type="image">
+                    <left>5</left><top>5</top><width>320</width><height>180</height>
+                    <info>ListItem.Thumb</info>
+                    <aspectratio>stretch</aspectratio>
+                </control>
+                <control type="label">
+                    <left>5</left><top>188</top><width>320</width><height>20</height>
+                    <info>ListItem.Label</info>
+                    <font>font10</font>
+                    <textcolor>FFCCCCCC</textcolor>
+                </control>
+            </itemlayout>
+            <focusedlayout height="210" width="330">
+                <control type="image">
+                    <left>2</left><top>2</top><width>326</width><height>186</height>
+                    <texture colordiffuse="FF7B5CF4">white.png</texture>
+                </control>
+                <control type="image">
+                    <left>5</left><top>5</top><width>320</width><height>180</height>
+                    <info>ListItem.Thumb</info>
+                    <aspectratio>stretch</aspectratio>
+                </control>
+                <control type="label">
+                    <left>5</left><top>188</top><width>320</width><height>20</height>
+                    <info>ListItem.Label</info>
+                    <font>font10</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                </control>
+            </focusedlayout>
+        </control>
+
+        <!-- ═══════════════ EMPTY STATE ═══════════════ -->
+        <control type="label" id="150">
+            <left>0</left><top>460</top><width>1920</width><height>60</height>
+            <label>-</label>
+            <font>font27</font>
+            <textcolor>FF2A2A3A</textcolor>
+            <align>center</align>
+        </control>
+
+    </controls>
+</window>

@@ -469,7 +469,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
       <screenshot>resources/images/screenshot-3.jpg</screenshot>
     </assets>
   </extension>
-</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.191">
+</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.192">
     <requires>
         <import addon="script.module.six" />
         <import addon="script.module.kodi-six" />
@@ -902,7 +902,7 @@ In addition to what livestreams allowed you to do, you can now,
 			<fanart>fanart.jpg</fanart>
 		</assets>
 	</extension>
-</addon><addon id="plugin.video.luc_kodi" name="[B][COLOR ff00fa9a]luc_[/COLOR]kodi[/B]" provider-name="[COLOR fffdb515]apoyotech[/COLOR]" version="1.0.31">
+</addon><addon id="plugin.video.luc_kodi" name="[B][COLOR ff00fa9a]luc_[/COLOR]kodi[/B]" provider-name="[COLOR fffdb515]apoyotech[/COLOR]" version="1.0.47">
 	<requires>
 		<import addon="xbmc.python" version="3.0.1" />
 		<import addon="script.module.requests" />
@@ -916,12 +916,11 @@ In addition to what livestreams allowed you to do, you can now,
 	<extension point="xbmc.python.module" library="resources/lib/" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
-		<summary lang="en">We do not host any of the contents</summary>
-		<description lang="en">[COLOR ff00fa9a]The author of this addon does not host any of the content in this addon and takes no responsibility for content found[/COLOR]</description>
+		<summary lang="en">Front-end for third-party torrent indexers and debrid services that you configure with your own accounts. Hosts no content and provides no links.</summary>
+		<description lang="en">[COLOR ffa9d3c5]luc_kodi is a front-end (user interface) for third-party services that you configure with your own accounts: debrid services such as Real-Debrid, AllDebrid, Premiumize or TorBox, and torrent indexers. The add-on does not host, store, upload or distribute any media, and it does not embed or include any links to content. Every source is located and resolved at run time by the third-party services you have configured with your own credentials. The author takes no responsibility for the content those services return, or for how the add-on is used.[/COLOR]</description>
 		<platform>all</platform>
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
-		<forum />
-		<disclaimer lang="en">[COLOR ffc75453]This addon simply searches websites for content. Use at your own risk![/COLOR]</disclaimer>
+		<disclaimer lang="en">[COLOR ffc75453]This add-on hosts no content and includes no links of its own. It only queries third-party services that you set up with your own accounts. You are solely responsible for the sources you choose to enable and for complying with the copyright laws of your country. Use at your own risk.[/COLOR]</disclaimer>
 	  <assets>
 		<icon>icon.png</icon>
 		<fanart>fanart.jpg</fanart>
@@ -1018,7 +1017,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.07.07" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.07.89" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -1026,7 +1025,7 @@ In addition to what livestreams allowed you to do, you can now,
 	<extension point="xbmc.python.pluginsource" library="resources/lib/router.py">
 		<provides>video</provides>
 	</extension>
-	<extension point="xbmc.service" library="resources/lib/service.py" />
+	
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
@@ -1175,6 +1174,35 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.webp</fanart>
         </assets>
     </extension>
+</addon><addon id="plugin.video.samusxui" version="0.0.28" name="SamusXUI" provider-name="derzis">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.pycryptodome" />
+        <import addon="script.module.beautifulsoup4" />
+        <import addon="script.module.resolveurl" />
+        <import addon="script.module.torrserver" optional="true" />
+        <import addon="script.module.libtorrent" optional="true" />
+        <import addon="inputstream.adaptive" optional="true" />
+        <import addon="script.module.yt-dlp" optional="true" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.python.script" library="default.py" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="ro">SamusXUI — interfață Netflix-style</summary>
+        <description lang="ro">UI personalizat pentru Samus cu design Netflix-style. "I'm many, We're one"[CR][COLOR FFFF2222]Somnul rațiunii naște monștri[/COLOR]</description>
+        <platform>all</platform>
+        <website>https://t.me/derz1s</website>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+            <screenshot>resources/screenshot/screenshot-01.jpg</screenshot>
+            <screenshot>resources/screenshot/screenshot-02.jpg</screenshot>
+            <screenshot>resources/screenshot/screenshot-03.jpg</screenshot>
+        </assets>
+    </extension>
 </addon><addon id="plugin.video.scrubsv2" version="5.1.57" name="[COLOR orange]Scrubs v2[/COLOR]" provider-name="JewBMX, [COLOR red]The Red Wizard[/COLOR]">
     <requires>
         <import addon="script.module.six" />
@@ -1299,6 +1327,162 @@ In addition to what livestreams allowed you to do, you can now,
     <screenshot>resources/screenshot-02.jpg</screenshot>
   </assets>
 </extension>
+</addon><addon id="plugin.video.thraxtv" name="ThraxTV" version="2.0.53" provider-name="derzis">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" />
+        <import addon="inputstream.adaptive" />
+        <import addon="script.module.yt-dlp" version="2026.03.17-1" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="ro">Addon pentru canale TV live de pe ThraxTV</summary>
+        <summary lang="en">Live TV channels addon powered by ThraxTV</summary>
+        <description lang="ro">
+            Addon Kodi pentru vizionarea canalelor TV live prin intermediul serviciului ThraxTV.
+            Suportă navigare pe țări și categorii, EPG (program TV), căutare canale și redare
+            prin mai mulți furnizori cu fallback automat.
+        </description>
+        <description lang="en">
+            Kodi addon for watching live TV channels via the ThraxTV service.
+            Supports browsing by country and category, EPG, channel search,
+            and multi-provider playback with automatic fallback.
+        </description>
+        <news>
+            v2.0.53 - Secțiune nouă "Radio": catalog global de posturi radio (reconstruit din
+                      radio-browser.info, ~63.000 posturi, 241 țări), navigabile pe țară
+                      (endpoint-uri noi /radio/countries, /radio/stations/{cc}, /radio/stream/{id}
+                      pe server), cu redare directă. Filtrare pe țări în Radio reutilizând bifele
+                      deja existente din Setări pentru LiveTV (un singur set de bife pentru
+                      ambele secțiuni). Catalogul de posturi RO curățat manual de duplicate și
+                      surse mislabeled/moarte (fixuri fallback multiple pe sursă per post).
+                      Iconițe fără text pentru meniul principal și posterele/categoriile LiveTV
+                      (simboluri universale în loc de text românesc bătut în imagine), pentru
+                      userii non-vorbitori de română — eticheta rămâne localizată separat, prin
+                      strings.po.
+            v2.0.52 - Fix canale-tv (provider HLS live cu CORS strict, ex. Prima TV/dokagents.site):
+                      adăugat în _HLS_PROVIDERS ca să primească inputstream.adaptive + manifest_type
+                      hls + headere explicite (manifest_headers/stream_headers); anterior demuxer-ul
+                      eșua fiindcă headerele necesare nu ajungeau la cererile pentru segmente.
+            v2.0.49 - RDSLive simplificat: revenit la resolve server-side; tokenul e time-limited
+                      (3 min) dar nu IP-bound — serverul reînnoiește automat tokenul la fiecare
+                      fetch variantă m3u8 via /livetv/playlist?securetoken=1; stream stabil indefinit.
+            v2.0.48 - RDSLive rezolvat client-side (retras în 2.0.49 — inutil, tokenul nu e IP-bound).
+            v2.0.45 - Fix fus orar WC 2026: pluginul citește ora locală a device-ului și trimite
+                      offset-ul UTC la server; serverul calculează "ziua curentă" din perspectiva
+                      clientului — userii din SUA/Asia nu mai pierd meciurile zilei.
+            v2.0.44 - WC 2026: afișare 7 zile în avans (anterior 4); canale sortate: RO primele,
+                      apoi broadcasteri oficiali confirmați, apoi EPG alte țări.
+                      Sport Live: fereastră configurabilă (6/12/24 ore) la deschiderea meniului;
+                      limită 50 evenimente/sport (anterior 30).
+            v2.0.43 - find_working_stream rescris paralel: sursele sunt testate simultan în thread
+                      daemon; queue.Queue returnează primul răspuns OK; latență = cel mai rapid
+                      stream funcțional.
+            v2.0.42 - Redare paralelă: toate sursele sunt testate simultan, prima care răspunde
+                      OK câștigă și redarea începe imediat; latență = cel mai rapid stream
+                      funcțional, nu suma secvențială; sursele moarte nu mai blochează 6s fiecare.
+            v2.0.41 - Iconițe meniu principal: sport.png (verde, minge+dot LIVE) și wc2026.png
+                      (auriu, trofeu+stea) în stilul celorlalte iconițe meniu (320x450, grilă,
+                      cerc colorat, bară jos). Iconițe sport înlocuite cu imagini reale (golf,
+                      handbal, polo/înot, atletism, volei).
+            v2.0.40 - Sport Live: iconițe complete pentru toate cele 15 categorii (generate
+                      programatic cu Pillow în stil consistent cu cele din plugin.video.sport):
+                      volleyball, handball, athletics, golf, swimming, winter, sport (trofeu).
+            v2.0.39 - Sport Live: iconițe thumbnail pentru categorii (soccer, tennis, basketball,
+                      motorsport, hockey, fights, cycling, rugby) din resources/icons/sport/;
+                      emoji eliminat din label, înlocuit cu thumb Kodi; fallback icon.png pentru
+                      categorii fără iconiță dedicată (volei, handbal, atletism, golf, inot, ski).
+            v2.0.38 - WC 2026: badge [EPG] (verde, program confirmat) vs [WC] (galben, drept
+                      oficial confirmat fără EPG în fereastra curentă) în lista canale meci.
+            v2.0.37 - Campionatul Mondial de Fotbal 2026: meniu nou în pagina principală cu
+                      meciurile pe 4 zile (scoruri live, status FT/programat), canale disponibile
+                      din catalog (inclusiv posturi naționale cu EPG potrivit), redare directă.
+                      Sursa datelor: ESPN unofficial API.
+            v2.0.36 - Sport Live: meniu nou cu evenimente sportive live/upcoming din EPG, grupate
+                      pe 13 categorii (fotbal, tenis, baschet, motorsport etc.), fereastră 6h
+                      configurabilă.
+            v2.0.34 - Suport DASH MPD via inputstream.adaptive pentru streamuri cu manifest_type=mpd
+                      (ex. tvonline24 Vodafone): manifest_type propagat din resolver prin
+                      find_working_stream; play_channel și choose_source setează automat ISA.
+            v2.0.33 - Localizare completă via strings.po (en_gb + ro_ro): limbă configurabilă
+                      din setările addon-ului (Auto/Română/English), independent de limba Kodi;
+                      categoriile din API traduse; etichete setări localizate; fix EPG zstd
+                      urllib3/Python 3.14; fix thumb categorie Generaliste (logo/generaliste.png).
+            v2.0.32 - Fix status badges: înlocuite simboluri unicode (✓⚠✗ / ●) cu text ASCII
+                      (verde/portocaliu/mort) și bara | — fontul dialogului Kodi nu include
+                      glyphurile unicode, afișa dreptunghiuri colorate.
+            v2.0.31 - Status surse vizual: dot colorat (●) în label canal din listare
+                      (verde/portocaliu/roșu, din cache local, fără request-uri extra);
+                      badge-uri ✓/⚠/✗ cu culori în dialogul choose_source.
+            v2.0.30 - Fix vavoo Kodi 25: înlocuit requests cu http.client (stdlib) pentru
+                      request-ul de resolve → nu se trimite Accept-Encoding, serverul
+                      returnează JSON plain, evitat complet bug-ul urllib3/zstd Python 3.14.
+            v2.0.29 - Fix vavoo Kodi 25: serverul Vavoo răspunde cu zstd; urllib3 din Kodi 25
+                      are bug la decompresia zstd → forțat accept-encoding: gzip, deflate.
+            v2.0.28 - Vavoo: logging detaliat în vavoo_resolver (unde anume eșuează — sig sau
+                      request vavoo); mesaj eroare specific în UI (server ThraxTV vs. server Vavoo).
+            v2.0.27 - Performanță: eliminat t.join(1.5s) din prefetch → UI deblochează imediat;
+                      cache pentru _should_preload_epg() și _get_playback_mode() → evită apeluri
+                      Kodi API repetate per canal; _play_dash_mpd folosește mkstemp (no race);
+                      eliminat bloc vavoo mort din play_channel.
+            v2.0.26 - Iconițe locale pentru meniul principal (favorite, tari, categorii,
+                      cautare, sterge_cache) din resources/icons/meniu/.
+            v2.0.25 - ytdlp rezolvat local în plugin (IP client): URL-uri YouTube bound la
+                      IP-ul clientului → 4K funcțional fără proxy server; DASH cu ISA.
+                      Adăugată dependință script.module.yt-dlp.
+            v2.0.22 - Fix vavoo în afara rețelei: choose_source rezolvă local (IP client)
+                      în loc de server-side; URL sunshine generat pentru IP-ul clientului.
+            v2.0.21 - Fix Python 3.8: `str | None` înlocuit cu `Optional[str]` în
+                      vavoo_resolver.py (TypeError pe Windows/Kodi cu Python 3.8).
+            v2.0.20 - Favorite: EPG now/next afișat în lista de favorite (paralel, respectă
+                      setarea preload_epg).
+            v2.0.19 - Favorite: meniu principal, adaugă/șterge din context menu (RunPlugin),
+                      stocare în favorites.json în profilul addon-ului.
+            v2.0.18 - Vavoo rezolvat server-side (ca orice provider cu resolve=true): serverul
+                      cachează URL sunshine 5 min/CID → a doua redare nu mai contactează
+                      mediahubmx-resolve.json, elimină rate-limit-ul la redări repetate.
+            v2.0.16 - Vavoo scos din inputstream.adaptive (native player); fix resolve=false.
+            v2.0.14 - inputstream.adaptive activat pentru vavoo și dinbox (master HLS playlist).
+            v2.0.13 - Fix vavoo: resolve local din plugin (URL sunshine bound la IP client).
+            v2.0.12 - choose_source afișează toate sursele imediat (fără pre-rezolvare); rezolvă
+                      doar sursa selectată de user → sursele dinbox/vavoo/rotv123 apar în dialog.
+            v2.0.11 - inputstream.adaptive adăugat ca dependință în addon.xml.
+            v2.0.10 - Paginare server-side și în categorii (country+category); paginare rezultate
+                      căutare; cache EPG pe disc (10 min, evită request-uri repetate); cleanup
+                      pasiv cache memorie; prefetch pagina următoare mai fiabil (join 1.5s).
+            v2.0.9 - Paginare server-side: se încarcă doar pagina curentă de la API (nu toate
+                     canalele deodată); cache per pagină pe disc; prefetch pagina următoare în
+                     background thread. Încărcare și reîncărcare după stream semnificativ mai rapide.
+            v2.0.8 - inputstream.adaptive activat pentru provider "peertube" (HLS master playlist).
+            v2.0.7 - inputstream.adaptive activat și pentru sultan și antenaplay (cu transmiterea
+                     corectă a User-Agent și headere către manifest_headers/stream_headers);
+                     eliminată categoria "Vavoo Resolver" din setări (rezolvare server-side).
+            v2.0.5 - Adăugat "Șterge cache" în meniul principal: șterge cache-ul de pe disc
+                     și din memorie (fișierele cache_*.json din profilul addonului).
+            v2.0.4 - Fix: _test_url primește acum headerele sursei (Referer, Origin etc.);
+                     sursele directe care cer Origin nu mai sunt marcate fals ca moarte.
+            v2.0.3 - Fallback automat: la redare se testează sursele în ordine și se folosește
+                     prima funcțională (surse cu status=red sunt sărite automat).
+                   - Cache local pe disc pentru datele canalului (24 h); după prima redare,
+                     sursele sunt disponibile fără apel API suplimentar.
+                   - Fix: _fetch_epg_threaded itera futures dict în loc de as_completed.
+                   - Fix: eliminată variabila moartă country_logo din list_country_categories.
+            v2.0.2 - Fix: sursele rdslive trimiteau parametrul 'cid' în loc de 'source_cid';
+                     serverul ignora selecția și întotdeauna alegea prima sursă.
+            v2.0.0 - Cache API în memorie (TTL 5 min), cod DRY pentru ListItem-uri,
+                     corectare endOfDirectory după setResolvedUrl, filtrul nostream funcțional,
+                     token Vavoo configurabil din setări, log HTTP controlabil, EPG fără durată fictivă.
+            v1.0.0 - Versiunea inițială.
+        </news>
+        <platform>all</platform>
+        <license>GPL-2.0-only</license>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
 </addon><addon id="plugin.video.vavooto" name="VAVOO.TO" version="2026.02.15" provider-name="kasi,michaz,1X">
 	<requires>
 		<import addon="script.module.requests" />
@@ -3437,7 +3621,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
 	<extension point="xbmc.python.pluginsource" library="lib/router.py">
 		<provides>executable video</provides>
 	</extension>
-	<extension point="xbmc.service" library="lib/service.py" />
+	
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>

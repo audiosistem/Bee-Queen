@@ -505,7 +505,7 @@ def history(mediatype, view_mode):
 		try:
 			cm = []
 			cm_append = cm.append
-			item = eval(item)
+			item = json.loads(item)
 			url_params = {'mode': item['mode'], 'action': item['action'], 'query': item['query'], 'name': item['name'], 'iconImage': default_icon}
 			display = '%s | %s' % (count, item['name'])
 			url = build_url(url_params)

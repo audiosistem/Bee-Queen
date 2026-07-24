@@ -73,8 +73,14 @@ _last_scrobble_at = {'ts': 0.0}
 # HTTP session with retry pool (same pattern as trakt.py)
 # ---------------------------------------------------------------------------
 session = requests.Session()
-retries = Retry(total=4, backoff_factor=0.3,
-				status_forcelist=[429, 500, 502, 503, 504, 520, 521, 522, 524, 530])
+# OJO: NO reintentar 429 aquí. El 429 se gestiona MANUALMENTE en getSimkl()
+# respetando Retry-After. Reintentar 429 a nivel urllib3 con backoff corto
+# dispara el detector de ráfagas de SIMKL (3+ peticiones/segundo desde la
+# misma IP = badge BURST en API Analytics) y puede acabar en bloqueo
+# automático del client_id (412 para TODOS los usuarios del addon).
+# backoff_factor=1.0: reintentos de 5xx a ~1s, 2s, 4s — nunca en ráfaga.
+retries = Retry(total=3, backoff_factor=1.0,
+				status_forcelist=[500, 502, 503, 504, 520, 521, 522, 524, 530])
 session.mount('https://api.simkl.com', HTTPAdapter(max_retries=retries, pool_maxsize=100))
 
 highlight_color = control.getHighlightColor()
@@ -677,7 +683,7 @@ def _scrobble_call(action, imdb, tmdb, tvdb, season, episode, progress):
 		body = _build_scrobble_body(imdb, tmdb, tvdb, season, episode, progress)
 		r = getSimkl('/scrobble/%s' % action, post=body, silent=True)
 		if r is None:
-			log_utils.log('SIMKL scrobble %s failed (imdb=%s tvdb=%s S%sE%s prog=%s)' %
+			log_utils.log('SIMKL scrobble/%s failed (imdb=%s tvdb=%s S%sE%s prog=%s)' %
 							(action, imdb, tvdb, season, episode, progress),
 							__name__, log_utils.LOGDEBUG)
 			return False
@@ -700,6 +706,26 @@ def scrobblePause(imdb=None, tmdb=None, tvdb=None, season=None, episode=None, wa
 	if not getSimklCredentialsInfo(): return False
 	return _scrobble_call('pause', imdb, tmdb, tvdb, season, episode, watched_percent)
 
+def invalidateSectionCaches():
+	"""Invalida los caches de las secciones SIMKL (siguiente-no-visto y
+	Mi-Progreso) para que se refresquen al instante tras un scrobble/stop.
+
+	Autónomo: solo toca caches de SIMKL. Se llama tras marcar un episodio o
+	película como visto al >=80%, para que 'el siguiente episodio' aparezca
+	inmediatamente sin esperar al tick del servicio (~15 min).
+	"""
+	try:
+		from resources.lib.database import cache
+		from resources.lib.menus.episodes import Episodes
+		ep = Episodes(notifications=False)
+		try: cache.remove(ep.simkl_progress_list, ep.simklprogress_link)
+		except Exception: pass
+		try: cache.remove(ep.simkl_playback_list, ep.simklplayback_link)
+		except Exception: pass
+	except Exception:
+		log_utils.error()
+
+
 def scrobbleStop(imdb=None, tmdb=None, tvdb=None, season=None, episode=None, watched_percent=100):
 	"""/scrobble/stop with progress >= 80 auto-marks watched. Mirror of trakt.scrobbleStop.
 
@@ -711,9 +737,19 @@ def scrobbleStop(imdb=None, tmdb=None, tvdb=None, season=None, episode=None, wat
 	/sync/activities) will pick up the change within the configured interval
 	(default 15 min). Acceptable trade-off: indicator may lag by ~15 min,
 	but no perf hit on the player thread.
+
+	BUT: the SIMKL "siguiente episodio no visto" / "Mi Progreso" sections read
+	from cheap, section-specific caches. When we mark something watched at
+	>=80% we invalidate ONLY those (not the full library sync), so the next
+	episode shows up immediately without the ~15 min lag. This is light: it
+	just deletes two cache rows, no API call on the player thread.
 	"""
 	if not getSimklCredentialsInfo(): return False
-	return _scrobble_call('stop', imdb, tmdb, tvdb, season, episode, watched_percent)
+	ok = _scrobble_call('stop', imdb, tmdb, tvdb, season, episode, watched_percent)
+	if ok and float(watched_percent) >= 80:
+		try: invalidateSectionCaches()
+		except Exception: log_utils.error()
+	return ok
 
 def scrobbleCheckin(imdb=None, tmdb=None, tvdb=None, season=None, episode=None):
 	"""Fire-and-forget alternative to start/pause/stop. Opt-in via settings."""
@@ -759,9 +795,27 @@ def deletePlaybackSession(session_id):
 # ---------------------------------------------------------------------------
 # Service sync loop — mirror of trakt_service_sync()
 # ---------------------------------------------------------------------------
+def _bust_section_caches_on_version_change():
+	"""Si la versión del addon cambió desde el último arranque, invalida los
+	caches de las secciones SIMKL una sola vez. Evita que un caché viejo (TTL
+	hasta 12h, invalidación atada a getEpisodesWatchedActivity) siga tapando
+	cambios de código tras una actualización. Idempotente: solo dispara cuando
+	la versión guardada difiere de la instalada."""
+	try:
+		current = control.getluc_kodiVersion()
+		stored = getSetting('simkl._cache_bust_version')
+		if stored != current:
+			invalidateSectionCaches()
+			control.setSetting('simkl._cache_bust_version', current)
+			log_utils.log('[luc_kodi-SIMKL] section caches busted for version %s' % current, __name__, log_utils.LOGDEBUG)
+	except Exception:
+		log_utils.error()
+
+
 def simkl_service_sync():
 	"""Background loop. Wakes every service_syncInterval minutes and runs
 	activity-gated delta-syncs. Skips when offline or unauthenticated."""
+	_bust_section_caches_on_version_change()
 	while not control.monitor.abortRequested():
 		control.sleep(5000)  # device wake guard
 		if control.condVisibility('System.InternetState') and getSimklCredentialsInfo():
@@ -894,4 +948,223 @@ def simkl_list(url):
 			out.append(values)
 		except Exception:
 			log_utils.error()
+	return out
+
+
+# ---------------------------------------------------------------------------
+# Playback progress lists — "Mi Progreso" sections (Movies + Episodes)
+# ---------------------------------------------------------------------------
+# SIMKL's /sync/playback/{movie|episode} returns temporary pause/resume
+# sessions with `progress` as a percentage float 0..100. These power the two
+# "Mi Progreso" menus. We only surface genuinely *in-progress* items: at least
+# PROGRESS_MIN_PCT watched (so a single accidental tap doesn't clutter the
+# list) and strictly below PROGRESS_MAX_PCT (>=85% is effectively "watched"
+# and belongs in history, not in-progress).
+# PROGRESS_MIN_PCT: 5.0 (antes 15.0). Un 15% ocultaba paradas tempranas
+# legítimas: parar un episodio de 49 min al minuto 6 (~11%) es un caso real
+# de "lo dejé a medias" y desaparecía de Mi Progreso sin explicación. El 5%
+# sigue filtrando el tap accidental (unos segundos) sin comerse medias reales.
+PROGRESS_MIN_PCT = 5.0
+PROGRESS_MAX_PCT = 85.0
+
+
+def _playback_in_range(progress):
+	try:
+		p = float(progress)
+	except Exception:
+		return False
+	return PROGRESS_MIN_PCT <= p < PROGRESS_MAX_PCT
+
+
+def _get_playback_sessions():
+	"""GET /sync/playback → todas las sesiones pausadas (movie + episode).
+
+	Pedimos SIN sufijo de tipo: la doc de SIMKL es inconsistente sobre si el
+	filtro es /movie|/episode o /movies|/episodes, así que traemos todo y
+	filtramos por el campo `type` de cada sesión en cliente. hide_watched=true
+	(default) ya descarta lo que el usuario terminó después de pausar.
+	"""
+	try:
+		if not getSimklCredentialsInfo():
+			log_utils.log('SIMKL playback: sin credenciales — sección vacía.', __name__, log_utils.LOGWARNING)
+			return []
+		sessions = getSimklAsJson('/sync/playback', method='GET', silent=True)
+		if sessions is None:
+			# None = la petición FALLÓ (401/412/429/red) o el servidor devolvió
+			# JSON null (= cero sesiones pausadas). Ver Playback Progress
+			# Manager en simkl.com para confirmar el lado servidor.
+			log_utils.log('SIMKL playback: respuesta None (fallo de peticion o cero sesiones en el servidor).',
+							__name__, log_utils.LOGWARNING)
+			return []
+		if not isinstance(sessions, list):
+			log_utils.log('SIMKL playback: respuesta con forma inesperada (%s) — se descarta.'
+							% type(sessions).__name__, __name__, log_utils.LOGWARNING)
+			return []
+		in_range = len([s for s in sessions if _playback_in_range(s.get('progress'))])
+		log_utils.log('SIMKL playback: %d sesiones recibidas, %d dentro del rango %d%%-%d%%.'
+						% (len(sessions), in_range, int(PROGRESS_MIN_PCT), int(PROGRESS_MAX_PCT)),
+						__name__, log_utils.LOGDEBUG)
+		return sessions
+	except Exception:
+		log_utils.error()
+		return []
+
+
+def getMoviesProgress():
+	"""Películas pausadas entre 15% y <85% (de /sync/playback, type=movie).
+
+	Returns the minimal shape the movies worker pipeline expects, plus the
+	`progress` / `paused_at` fields used for sorting and the progress badge.
+	"""
+	sessions = _get_playback_sessions()
+	out = []
+	for s in sessions:
+		try:
+			if (s.get('type') or '').lower() != 'movie': continue
+			if not _playback_in_range(s.get('progress')): continue
+			movie = s.get('movie') or {}
+			ids = movie.get('ids') or {}
+			tmdb_id = ids.get('tmdb')
+			imdb_id = ids.get('imdb')
+			if not tmdb_id and not imdb_id: continue
+			out.append({
+				'next':          '',
+				'tmdb':          str(tmdb_id or ''),
+				'imdb':          str(imdb_id or ''),
+				'tvdb':          '',
+				'title':         movie.get('title', '') or '',
+				'originaltitle': movie.get('title', '') or '',
+				'year':          str(movie.get('year', '') or ''),
+				'progress':      float(s.get('progress') or 0),
+				'paused_at':     s.get('paused_at', '') or '',
+				'metacache':     False,
+			})
+		except Exception:
+			log_utils.error()
+	return out
+
+
+def getEpisodesProgress():
+	"""Episodios pausados entre 15% y <85% (de /sync/playback, type=episode).
+
+	Returns per-episode dicts with snum/enum + show ids so the episodes worker
+	can hydrate full metadata. progress/paused_at kept for sorting + badge.
+	"""
+	sessions = _get_playback_sessions()
+	out = []
+	for s in sessions:
+		try:
+			if (s.get('type') or '').lower() != 'episode': continue
+			if not _playback_in_range(s.get('progress')): continue
+			ep = s.get('episode') or {}
+			show = s.get('show') or {}
+			ids = show.get('ids') or {}
+			# Prefer TVDB numbering when present (matches our TMDb-based meta),
+			# else fall back to SIMKL's season/episode.
+			# OJO: SIMKL es inconsistente y el número del episodio viene unas
+			# veces como 'number' y otras como 'episode'. Aceptamos ambos, o
+			# el item se descartaba (enum=None) y la lista salía vacía.
+			snum = ep.get('tvdb_season')
+			enum = ep.get('tvdb_number')
+			if snum is None: snum = ep.get('season')
+			if enum is None: enum = ep.get('number')
+			if enum is None: enum = ep.get('episode')
+			if snum is None or enum is None: continue
+			tmdb_id = ids.get('tmdb')
+			imdb_id = ids.get('imdb')
+			tvdb_id = ids.get('tvdb')
+			if not (tmdb_id or imdb_id or tvdb_id): continue
+			title = show.get('title')
+			if not title: continue
+			out.append({
+				'snum':          int(snum),
+				'enum':          int(enum),
+				'tvshowtitle':   title,
+				'year':          show.get('year'),
+				'tmdb':          str(tmdb_id or ''),
+				'imdb':          str(imdb_id or ''),
+				'tvdb':          str(tvdb_id or ''),
+				'progress':      float(s.get('progress') or 0),
+				'paused_at':     s.get('paused_at', '') or '',
+			})
+		except Exception:
+			log_utils.error()
+	return out
+
+
+def getWatchingShows():
+	"""GET /sync/all-items/shows/watching?extended=full → series que el usuario
+	sigue, INCLUYENDO los episodios que ha visto EN SIMKL.
+
+	Cada item devuelve `seasons[].episodes[].number` con los episodios vistos
+	según el propio histórico de SIMKL (campo añadido por extended=full). Esto
+	hace la sección 100% autónoma: no consulta Trakt ni ningún otro servicio.
+	Si SIMKL no tiene episodios vistos de una serie, `watched` saldrá vacío y
+	el llamador devolverá 1x01 (empezar desde el principio).
+	"""
+	try:
+		if not getSimklCredentialsInfo(): return []
+		# SIMKL separa los tipos: una petición a /shows/ NUNCA devuelve anime.
+		# Muchas series (no solo japonesas de nicho) están clasificadas como
+		# `anime` en SIMKL, así que hay que consultar AMBOS tipos o esas
+		# series desaparecen de la sección de progreso.
+		result = getSimklAsJson('/sync/all-items/shows/watching', params={'extended': 'full'}, method='GET', silent=True)
+		# full_anime_seasons: igual que full pero cada episodio trae un bloque
+		# tvdb:{season,episode} con la numeración TVDB/TMDb. Sin esto, SIMKL
+		# numera el anime según AniDB (todo "temporada 1") y el cálculo del
+		# siguiente episodio contra los metadatos de TMDb sale descuadrado.
+		result_anime = getSimklAsJson('/sync/all-items/anime/watching', params={'extended': 'full_anime_seasons'}, method='GET', silent=True)
+		# Diagnóstico: "Nothing found" en el menú debe dejar rastro en el log.
+		# result=None => la petición falló (401/412/429/red); ver kodi.log y el
+		# panel Debug/API Analytics en simkl.com/settings/developer.
+		if result is None and result_anime is None:
+			log_utils.log('SIMKL getWatchingShows: AMBAS peticiones (/shows y /anime) '
+							'devolvieron None — fallo de red/auth/quota, no lista vacía. '
+							'Revisa API Analytics en tu panel de developer de SIMKL.',
+							__name__, log_utils.LOGWARNING)
+			return []
+		if not result and not result_anime: return []
+	except Exception:
+		log_utils.error()
+		return []
+	out = []
+	result = result or {}
+	result_anime = result_anime or {}
+	shows = result.get('shows') or []
+	anime = (result.get('anime') or []) + (result_anime.get('anime') or []) + (result_anime.get('shows') or [])
+	for item in (shows + anime):
+		try:
+			show = item.get('show') or item.get('anime') or {}
+			ids = show.get('ids') or {}
+			title = show.get('title')
+			if not title: continue
+			# Episodios vistos según SIMKL: set de (season, episode).
+			watched = set()
+			for season in (item.get('seasons') or []):
+				snum = season.get('number')
+				if snum is None: continue
+				for ep in (season.get('episodes') or []):
+					# Anime (full_anime_seasons): preferir la numeración TVDB
+					# del bloque tvdb:{season,episode} para casar con TMDb.
+					tvdb_map = ep.get('tvdb') or {}
+					e_snum = tvdb_map.get('season', snum)
+					enum = tvdb_map.get('episode', ep.get('number'))
+					if enum is None: continue
+					try: watched.add((int(e_snum), int(enum)))
+					except: pass
+			out.append({
+				'tvshowtitle': title,
+				'year':        show.get('year'),
+				'imdb':        str(ids.get('imdb') or ''),
+				'tmdb':        str(ids.get('tmdb') or ''),
+				'tvdb':        str(ids.get('tvdb') or ''),
+				'lastplayed':  item.get('last_watched_at') or '',
+				'added':       item.get('added_to_watchlist_at') or '',
+				'simkl_watched': watched,  # histórico propio de SIMKL
+			})
+		except Exception:
+			log_utils.error()
+	log_utils.log('SIMKL getWatchingShows: %d shows(tv) + %d anime -> %d items, %d con historico de episodios'
+					% (len(shows), len(anime), len(out), len([i for i in out if i.get('simkl_watched')])),
+					__name__, log_utils.LOGDEBUG)
 	return out

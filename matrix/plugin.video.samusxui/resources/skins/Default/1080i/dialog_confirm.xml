@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <defaultcontrol>1</defaultcontrol>
+    <controls>
+
+        <!-- Overlay scrim -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="B0000000">white.png</texture>
+        </control>
+
+        <!-- Card rotunjit 760x230, 9-slice (colturi 16px, accent violet 8px sus) -->
+        <control type="image">
+            <left>580</left><top>425</top><width>760</width><height>230</height>
+            <texture border="16">card_confirm.png</texture>
+        </control>
+
+        <!-- Titlu centrat (continut setat din Python) -->
+        <control type="label" id="100">
+            <left>580</left><top>450</top><width>760</width><height>44</height>
+            <label>Modificari nesalvate</label>
+            <font>font20</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <align>center</align>
+        </control>
+
+        <!-- Separator -->
+        <control type="image">
+            <left>596</left><top>501</top><width>728</width><height>1</height>
+            <texture colordiffuse="22FFFFFF">white.png</texture>
+        </control>
+
+        <!-- Buton 1: Salveaza si iesi -->
+        <control type="button" id="1">
+            <left>594</left><top>536</top><width>356</width><height>58</height>
+            <label>Salveaz&#x103; &#x219;i ie&#x219;i</label>
+            <font>font20</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus   colordiffuse="FF7B5CF4">white.png</texturefocus>
+            <texturenofocus colordiffuse="1AFFFFFF">white.png</texturenofocus>
+            <align>center</align>
+            <onright>2</onright>
+        </control>
+
+        <!-- Buton 2: Iesi fara salvare -->
+        <control type="button" id="2">
+            <left>970</left><top>536</top><width>356</width><height>58</height>
+            <label>Ie&#x219;i f&#x103;r&#x103; salvare</label>
+            <font>font20</font>
+            <textcolor>FF888899</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus   colordiffuse="FFCC3344">white.png</texturefocus>
+            <texturenofocus colordiffuse="0DFFFFFF">white.png</texturenofocus>
+            <align>center</align>
+            <onleft>1</onleft>
+        </control>
+
+    </controls>
+</window>

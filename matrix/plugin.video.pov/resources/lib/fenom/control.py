@@ -37,7 +37,6 @@ except: dataPath = transPath(addonInfo('profile'))
 #undesirablescacheFile = joinPath(dataPath, 'undesirables.db')
 cacheFile = joinPath(dataPath, 'fenomcache.db')
 undesirablescacheFile = joinPath(dataPath, 'fenomcache.db')
-undesirablescacheLegacy = joinPath(dataPath, 'fenomundesirables.db')
 settingsFile = joinPath(dataPath, 'settings.xml')
 
 

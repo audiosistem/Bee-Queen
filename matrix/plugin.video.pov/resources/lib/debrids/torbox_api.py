@@ -40,13 +40,6 @@ class TorBoxAPI:
 	def headers(self):
 		return {'User-Agent': user_agent, 'Authorization': 'Bearer %s' % self.token}
 
-	def get_function(self, request_id, delete=False):
-		action = 'delete_%s' if delete else 'unrestrict_%s'
-		if 'usenet' in request_id: mediatype = 'usenet'
-		elif 'webdl' in request_id: mediatype = 'webdl'
-		else: mediatype = 'torrent' if delete else 'link'
-		return getattr(self, action % mediatype)
-
 	def days_remaining(self):
 		from datetime import datetime
 		try:
@@ -60,64 +53,38 @@ class TorBoxAPI:
 		url = 'user/me'
 		return self._get(url)
 
-	def torrent_info(self, request_id):
-		url = 'torrents/mylist?id=%s' % request_id
+	def torrent_info(self, request_id, path='torrents'):
+		if 'usenet' in path: url = 'usenet/mylist?id=%s' % request_id
+		else: url = 'torrents/mylist?id=%s' % request_id
 		return self._get(url)
 
-	def nzb_info(self, request_id):
-		url = 'usenet/mylist?id=%s' % request_id
-		return self._get(url)
+	def toggle_airlock(self, mediatype, request_id, airlock_value):
+		if 'usenet' in mediatype: path, key = 'usenet/editusenetdownload', 'usenet_download_id'
+		elif 'webdl' in mediatype: path, key = 'webdl/editwebdownload', 'webdl_id'
+		else: path, key = 'torrents/edittorrent', 'torrent_id'
+		data = {key: request_id, 'airlocked': airlock_value in ('true', True)}
+		result = self._request('put', path, json=data)
+		return True if result is not None and result['success'] else False
 
 	def delete_torrent(self, request_id):
-		if isinstance(request_id, str): ids = request_id.split(',')
-		else: ids = [request_id]
-		data = {'torrent_id': int(ids[0]), 'operation': 'delete'}
-		url = 'torrents/controltorrent'
-		result = self._post(url, json=data)
-		return True if result is not None and result['success'] else False
-
-	def delete_usenet(self, request_id):
-		if isinstance(request_id, str): ids = request_id.split(',')
-		else: ids = [request_id]
-		data = {'usenet_id': int(ids[0]), 'operation': 'delete'}
-		url = 'usenet/controlusenetdownload'
-		result = self._post(url, json=data)
-		return True if result is not None and result['success'] else False
-
-	def delete_webdl(self, request_id):
-		if isinstance(request_id, str): ids = request_id.split(',')
-		else: ids = [request_id]
-		data = {'webdl_id': int(ids[0]), 'operation': 'delete'}
-		url = 'webdl/controlwebdownload'
-		result = self._post(url, json=data)
+		if 'usenet' in request_id: path, key = 'usenet/controlusenetdownload', 'usenet_id'
+		elif 'webdl' in request_id: path, key = 'webdl/controlwebdownload', 'webdl_id'
+		else: path, key = 'torrents/controltorrent', 'torrent_id'
+		ids = request_id.split(',')
+		data = {key: int(ids[0]), 'operation': 'delete'}
+		result = self._post(path, json=data)
 		return True if result is not None and result['success'] else False
 
 	def unrestrict_link(self, file_id):
+		if 'usenet' in file_id: path, key = 'usenet/requestdl', 'usenet_id'
+		elif 'webdl' in file_id: path, key = 'webdl/requestdl', 'webdl_id'
+		else: path, key = 'torrents/requestdl', 'torrent_id'
 		try: user_ip = requests.get(ip_url, timeout=2.0).text
 		except: user_ip = ''
 		params = {'user_ip': user_ip} if user_ip else {}
 		ids = file_id.split(',')
-		params.update({'token': self.token, 'torrent_id': ids[0], 'file_id': ids[1]})
-		url = 'torrents/requestdl'
-		return self._get(url, params=params)
-
-	def unrestrict_usenet(self, file_id):
-		try: user_ip = requests.get(ip_url, timeout=2.0).text
-		except: user_ip = ''
-		params = {'user_ip': user_ip} if user_ip else {}
-		ids = file_id.split(',')
-		params.update({'token': self.token, 'usenet_id': ids[0], 'file_id': ids[1]})
-		url = 'usenet/requestdl'
-		return self._get(url, params=params)
-
-	def unrestrict_webdl(self, file_id):
-		try: user_ip = requests.get(ip_url, timeout=2.0).text
-		except: user_ip = ''
-		params = {'user_ip': user_ip} if user_ip else {}
-		ids = file_id.split(',')
-		params.update({'token': self.token, 'web_id': ids[0], 'file_id': ids[1]})
-		url = 'webdl/requestdl'
-		return self._get(url, params=params)
+		params.update({'token': self.token, key: ids[0], 'file_id': ids[1]})
+		return self._get(path, params=params)
 
 	def check_cache(self, hashes):
 		data = {'hashes': hashes}
@@ -145,20 +112,19 @@ class TorBoxAPI:
 		from modules.source_utils import supported_video_extensions
 		try:
 			extensions = supported_video_extensions()
+			path = 'torrents' if magnet_url.startswith('magnet') else 'usenet'
 			torrent_id = self.create_transfer(magnet_url)
-			if magnet_url.startswith('magnet'):
-				torrent_files = self.torrent_info(torrent_id)
-			else: torrent_files = self.nzb_info(torrent_id)
+			torrent_files = self.torrent_info(torrent_id, path)
 			return [
-				{'link': '%s,%s' % (torrent_id, item['id']),
+				{'link': '%s,%s,%s' % (torrent_id, item['id'], path),
 				 'size': item['size'],
-				 'torrent_id': torrent_id,
+				 'torrent_id': '%s,%s' % (torrent_id, path),
 				 'filename': item['short_name']}
 				for item in torrent_files['files']
 				if item['short_name'].lower().endswith(tuple(extensions))
 			]
 		except Exception as e:
-			if torrent_id: self.delete_torrent(torrent_id)
+			if torrent_id: self.delete_torrent('%s,%s' % (torrent_id, path))
 
 	def user_cloud(self, mediatype, cached=True):
 		string = 'pov_tb_user_cloud_%s' % mediatype
@@ -176,14 +142,6 @@ class TorBoxAPI:
 		for i in result['files']: i['link'] = '%s,%s,%s' % (request_id, i['id'], mediatype)
 		result = result['files']
 		return result
-
-	def toggle_airlock(self, mediatype, request_id, airlock_value):
-		if 'usenet' in mediatype: path, key = 'usenet/editusenetdownload', 'usenet_download_id'
-		elif 'webdl' in mediatype: path, key = 'webdl/editwebdownload', 'webdl_id'
-		else: path, key = 'torrents/edittorrent', 'torrent_id'
-		data = {key: request_id, 'airlocked': airlock_value in ('true', True)}
-		result = self._request('put', path, json=data)
-		return True if result is not None and result['success'] else False
 
 	def clear_cache(*args):
 		from modules.kodi_utils import clear_property, path_exists, database_connect, maincache_db

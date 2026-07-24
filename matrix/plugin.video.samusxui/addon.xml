@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="plugin.video.samusxui" version="0.0.28" name="SamusXUI" provider-name="derzis">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.requests"/>
+        <import addon="script.module.pycryptodome"/>
+        <import addon="script.module.beautifulsoup4"/>
+        <import addon="script.module.resolveurl"/>
+        <import addon="script.module.torrserver" optional="true"/>
+        <import addon="script.module.libtorrent" optional="true"/>
+        <import addon="inputstream.adaptive" optional="true"/>
+        <import addon="script.module.yt-dlp" optional="true"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.python.script" library="default.py"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="ro">SamusXUI — interfață Netflix-style</summary>
+        <description lang="ro">UI personalizat pentru Samus cu design Netflix-style. "I'm many, We're one"[CR][COLOR FFFF2222]Somnul rațiunii naște monștri[/COLOR]</description>
+        <platform>all</platform>
+        <website>https://t.me/derz1s</website>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+            <screenshot>resources/screenshot/screenshot-01.jpg</screenshot>
+            <screenshot>resources/screenshot/screenshot-02.jpg</screenshot>
+            <screenshot>resources/screenshot/screenshot-03.jpg</screenshot>
+        </assets>
+    </extension>
+</addon>

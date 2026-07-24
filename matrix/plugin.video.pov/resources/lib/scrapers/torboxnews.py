@@ -33,7 +33,7 @@ class source:
 					try: size = int(item['size'])
 					except: size = 0
 
-					URLName = clean_file_name(item['filename']).replace('html', ' ')
+					display_name = clean_file_name(item['filename']).replace('html', ' ')
 					size = round(float(size)/1073741824, 2)
 					size_label = '%.2f GB' % size
 					video_quality, details = get_file_info(name_info=normalized)
@@ -42,12 +42,12 @@ class source:
 					source.update({
 						# source module definition
 						'source': 'usenet', 'language': 'en', 'direct': False, 'debridonly': True,
-						'provider': 'torboxnews', 'hash': hash, 'url': url, 'name': URLName, 'name_info': details,
+						'provider': 'torboxnews', 'hash': hash, 'url': url, 'name': display_name, 'name_info': details,
 						'quality': video_quality, 'info': size_label, 'size': size, 'seeders': seeders,
 						'tracker': item['indexer'] or self.scrape_provider,
 						# added by addon in process_sources
 						'scrape_provider': 'external', 'external': True,
-						'URLName': URLName, 'extraInfo': details, 'size_label': size_label
+						'display_name': display_name, 'extraInfo': details, 'size_label': size_label
 					})
 					sources_append(source)
 				except: pass

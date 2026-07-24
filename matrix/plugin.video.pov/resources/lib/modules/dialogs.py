@@ -314,8 +314,7 @@ def options_menu(params, meta=None):
 		return container_refresh()
 	if choice == 'toggle_torrents_display_uncached': set_setting('torrent.display.uncached', uncached_toggle)
 	elif choice == 'set_results_xml_display': results_layout_choice()
-#	elif choice == 'reload_widgets': return kodi_utils.widget_refresh()
-	elif choice == 'reload_widgets': return execute_builtin('ReloadSkin()')
+	elif choice == 'reload_widgets': return kodi_utils.widget_refresh()
 	options_menu(params, meta=meta)
 
 def extras_menu(params):

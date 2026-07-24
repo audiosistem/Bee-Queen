@@ -9,7 +9,7 @@ from __future__ import absolute_import
 
 import re
 import time
-from threading import Thread
+from threading import Thread, Semaphore
 
 import xbmc
 
@@ -26,6 +26,17 @@ S_NOTIFY = 'catalog.auto_update.notify'
 S_LASTRUN = 'catalog.auto_update.last_run'  # internal timestamp (seconds)
 
 CHECK_EVERY_SECONDS = 300  # 5 minutes
+
+# Tope global de peticiones TMDb concurrentes durante el precache. El diseño
+# anterior corría las 9 listas en SECUENCIA, y cada lista lanzaba ~20 hilos de
+# meta: 9 tandas de 20 una detrás de otra. Ahora las 9 listas se procesan a la
+# vez bajo un único semáforo que limita el TOTAL de peticiones de meta en vuelo,
+# así el arranque acaba antes sin saturar la CPU/red del Shield ni a TMDb.
+# v1.0.38: 16. Probamos 28 y NO ayudó — el cuello no era la concurrencia de red
+# sino una tormenta de lecturas de settings (ya resuelta en control.setting) más
+# la latencia propia de TMDb. Con el fix de settings, 16 hilos van sobrados y no
+# saturan el parseo de settings ni compiten de más con el arranque de Kodi.
+PRECACHE_MAX_WORKERS = 16
 
 def _now():
     return int(time.time())
@@ -114,17 +125,39 @@ def _get_tmdb_links():
 
     return movie_links, tv_links
 
-def precache_tmdb_catalog(pages=3, silent=False, force_refresh=False):
+def precache_tmdb_catalog(pages=1, silent=False, force_refresh=False, fresh_meta=False):
     """
-    Fetches TMDB lists to warm luc_kodi cache.
-    force_refresh=True invalida primero la entrada cacheada de cada lista
-    (TTL 96h/168h) para traer datos realmente nuevos en el arranque, en vez de
-    servir lo cacheado. Las imágenes/metadatos por título siguen su propio TTL.
+    Precarga las listas TMDb para que widgets/menús abran rápido tras iniciar Kodi.
+
+    Cambios v1.0.38 (rendimiento de arranque):
+      - pages=1 por defecto: solo se precarga lo que el usuario ve primero
+        (~180 títulos en vez de ~540). Las páginas 2+ se cargan bajo demanda.
+      - POOL GLOBAL ACOTADO: en vez de procesar las 9 listas en secuencia (cada
+        una con su propia tanda de ~20 hilos de meta), todas las listas se lanzan
+        en paralelo bajo un único semáforo que limita el total de peticiones
+        concurrentes (PRECACHE_MAX_WORKERS). Mismo coste de red, reparto óptimo,
+        arranque más corto.
+      - fresh_meta=True (FRESCURA REAL): antes de enriquecer, invalida en metacache
+        SOLO las metas de los títulos de página 1. Así el arranque trae pósters y
+        metadatos realmente nuevos de lo visible, sin destruir el resto del
+        catálogo cacheado (que sigue su TTL de 30 días).
+
+    `force_refresh` se mantiene: invalida la entrada cacheada de las LISTAS (no de
+    las metas por título). Útil para detectar títulos que entran/salen de la lista.
+
     Returns True/False.
     """
     try:
-        # No "Starting..." notification — avoids overlap with "Completed."
-        # IMPORTANT: luc_kodi implements tmdb_list() on Movies/TVshows, not on TMDb base.
+        # Pre-calienta el dict de settings (window property) UNA vez antes de
+        # lanzar los hilos. Así todos los workers leen settings desde el dict ya
+        # poblado en vez de provocar parseos concurrentes del settings.xml. Junto
+        # con el fix de control.setting() (re-consulta a xbmcaddon limitada a
+        # credenciales), esto elimina la tormenta de ~1000 parseos que añadía ~8s.
+        try:
+            control.make_settings_dict()
+        except: pass
+
+        # luc_kodi implementa tmdb_list()/tmdb_list_ids() en Movies/TVshows.
         from resources.lib.indexers.tmdb import Movies as TMDbMovies, TVshows as TMDbTVshows
 
         movies_idx = TMDbMovies()
@@ -136,29 +169,66 @@ def precache_tmdb_catalog(pages=3, silent=False, force_refresh=False):
                 _notify(control.lang(400704))  # "TMDB Catalog: No TMDB links found."
             return False
 
-        log_utils.log('[luc_kodi] TMDB Catalog: precache start (pages=%s, force=%s)' % (pages, force_refresh), level=LOGINFO)
+        log_utils.log('[luc_kodi] TMDB Catalog: precache start (pages=%s, force=%s, fresh_meta=%s)' % (pages, force_refresh, fresh_meta), level=LOGINFO)
 
-        if force_refresh:
-            # Invalida la entrada cacheada de cada lista/página con la MISMA clave
-            # que usa tmdb_list (cache.get(self.get_request, ttl, url % API_key)).
-            try:
-                from resources.lib.database import cache
-                for idx, links in ((movies_idx, movie_links), (tv_idx, tv_links)):
-                    for url in links:
-                        for p in range(1, int(pages) + 1):
-                            try: cache.remove(idx.get_request, _page_url(url, p) % idx.API_key)
-                            except: pass
-            except: log_utils.error()
-
+        # Trabajos (idx, url_con_pagina, nº_pagina) de las 9 listas × N páginas.
+        jobs = []
         for url in movie_links:
             for p in range(1, int(pages) + 1):
-                movies_idx.tmdb_list(_page_url(url, p))
-
+                jobs.append((movies_idx, _page_url(url, p), p))
         for url in tv_links:
             for p in range(1, int(pages) + 1):
-                tv_idx.tmdb_list(_page_url(url, p))
+                jobs.append((tv_idx, _page_url(url, p), p))
 
-        log_utils.log('[luc_kodi] TMDB Catalog: precache finished', level=LOGINFO)
+        if force_refresh:
+            # Invalida la entrada cacheada de cada LISTA/página (clave de tmdb_list).
+            try:
+                from resources.lib.database import cache
+                for idx, page_url, _p in jobs:
+                    try: cache.remove(idx.get_request, page_url % idx.API_key)
+                    except: pass
+            except: log_utils.error()
+
+        # ── FRESCURA REAL: invalidar metacache solo de los títulos de página 1 ──
+        # Se hace ANTES de enriquecer, leyendo los ids con tmdb_list_ids (consulta
+        # barata que reutiliza la caché de lista). Tras esto, metacache.fetch verá
+        # esos títulos como ausentes y los re-descargará con datos frescos; el
+        # resto del catálogo no se toca.
+        if fresh_meta:
+            try:
+                from resources.lib.database import metacache
+                fresh_ids = []
+                for idx, page_url, p in jobs:
+                    if p != 1:  # solo refrescamos lo visible (página 1)
+                        continue
+                    try: fresh_ids.extend(idx.tmdb_list_ids(page_url))
+                    except: pass
+                fresh_ids = list(dict.fromkeys([i for i in fresh_ids if i]))  # dedup, preserva orden
+                if fresh_ids:
+                    removed = metacache.remove_by_ids(fresh_ids)
+                    log_utils.log('[luc_kodi] TMDB Catalog: fresh_meta invalidó %s metas (página 1)' % removed, level=LOGINFO)
+            except: log_utils.error()
+
+        # ── Enriquecimiento con POOL GLOBAL ACOTADO ──
+        # Las 9 listas corren todas en paralelo (son pocas), pero el TOPE real de
+        # peticiones de red lo pone un semáforo GLOBAL compartido que acota las
+        # metas individuales de TODAS las listas a la vez. Sin esto, 9 listas ×
+        # ~20 títulos lanzarían ~180 peticiones HTTP simultáneas a TMDb en el
+        # arranque (saturación de sockets / throttling / competencia con Kodi).
+        # Con el semáforo, nunca hay más de PRECACHE_MAX_WORKERS metas en vuelo.
+        meta_sem = Semaphore(PRECACHE_MAX_WORKERS)
+
+        def _run(idx, page_url):
+            try: idx.tmdb_list(page_url, meta_sem=meta_sem)
+            except:
+                from resources.lib.modules import log_utils as _lu
+                _lu.error()
+
+        threads = [Thread(target=_run, args=(idx, page_url)) for idx, page_url, _p in jobs]
+        [t.start() for t in threads]
+        [t.join() for t in threads]
+
+        log_utils.log('[luc_kodi] TMDB Catalog: precache finished (%s listas)' % len(jobs), level=LOGINFO)
 
         if not silent:
             _notify(control.lang(400702))  # "TMDB Catalog: Completed."
@@ -178,8 +248,11 @@ class CatalogService:
 
         monitor = control.monitor
 
-        # small delay after Kodi starts to avoid competing with other services
-        monitor.waitForAbort(10)
+        # Pequeño retardo tras el arranque de Kodi para no competir con el resto
+        # de servicios (skin, otros addons). v1.0.38: bajado de 10s a 3s — el
+        # precache ya es ligero (solo página 1 + pool acotado), así que no
+        # necesita esperar tanto. El semáforo de metas evita saturar la red.
+        monitor.waitForAbort(3)
 
         did_startup = False  # guard por sesión: el refresco de arranque corre UNA vez por inicio de Kodi
 
@@ -198,11 +271,13 @@ class CatalogService:
                     interval = _get_int(S_INTERVAL, default=6)
 
                     # On startup: en CADA inicio de Kodi (no solo la primera vez).
-                    # force_refresh=True para máxima frescura: invalida las listas
-                    # TMDb cacheadas y trae datos nuevos. El guard de sesión evita
-                    # repetirlo dentro del mismo arranque.
+                    # pages=1 + fresh_meta=True: solo lo visible (página 1), con
+                    # frescura REAL (invalida metacache solo de esos títulos para
+                    # traer pósters/metadatos nuevos). force_refresh=True detecta
+                    # además títulos que han entrado/salido de cada lista. El guard
+                    # de sesión evita repetirlo dentro del mismo arranque.
                     if on_start and not did_startup:
-                        precache_tmdb_catalog(pages=3, silent=not notify, force_refresh=True)
+                        precache_tmdb_catalog(pages=1, silent=not notify, force_refresh=True, fresh_meta=True)
                         _set_last_run(_now())
                         did_startup = True
                         try:
@@ -210,9 +285,11 @@ class CatalogService:
                         except:
                             pass
 
-                    # Scheduled run
+                    # Scheduled run: refresco ligero de página 1 sin invalidar
+                    # metas (estas ya rotan por su propio TTL); solo re-evalúa
+                    # listas para captar novedades.
                     elif _is_due(interval):
-                        precache_tmdb_catalog(pages=3, silent=not notify)
+                        precache_tmdb_catalog(pages=1, silent=not notify)
                         _set_last_run(_now())
                         try:
                             control.trigger_widget_refresh()

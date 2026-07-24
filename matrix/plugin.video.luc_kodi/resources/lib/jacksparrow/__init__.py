@@ -23,7 +23,12 @@ def sources(specified_folders=None, ret_all=False):
 				if is_pkg: continue
 				if ret_all or enabledCheck(module_name):
 					try:
-						module = loader.find_module(module_name).load_module(module_name)
+						# importlib.import_module: compatible Py3.6 -> 3.12+. El antiguo
+						# loader.find_module().load_module() fue eliminado en Python 3.12
+						# (Kodi 22+) y dejaba sourceDict vacío => sin scrapers, en silencio.
+						import importlib
+						full_name = 'resources.lib.jacksparrow.%s.%s.%s' % (sourceFolder, i, module_name)
+						module = importlib.import_module(full_name)
 						append((module_name, module.source))
 					except Exception as e:
 						if debug:

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <defaultcontrol>300</defaultcontrol>
+    <controls>
+
+        <!-- Scrim -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="B0000000">white.png</texture>
+        </control>
+
+        <!-- Card -->
+        <control type="image">
+            <left>480</left><top>150</top><width>960</width><height>760</height>
+            <texture colordiffuse="FF0E0E1A">white.png</texture>
+        </control>
+
+        <!-- Purple left accent -->
+        <control type="image">
+            <left>480</left><top>150</top><width>4</width><height>760</height>
+            <texture colordiffuse="FF7B5CF4">white.png</texture>
+        </control>
+
+        <!-- Top border -->
+        <control type="image">
+            <left>480</left><top>150</top><width>960</width><height>1</height>
+            <texture colordiffuse="40FFFFFF">white.png</texture>
+        </control>
+
+        <!-- Bottom border -->
+        <control type="image">
+            <left>480</left><top>909</top><width>960</width><height>1</height>
+            <texture colordiffuse="40FFFFFF">white.png</texture>
+        </control>
+
+        <!-- Trakt icon -->
+        <control type="image">
+            <left>812</left><top>168</top><width>36</width><height>36</height>
+            <texture>sidebar_trakt3.png</texture>
+            <aspectratio>keep</aspectratio>
+        </control>
+
+        <!-- Titlu (dinamic din Python) -->
+        <control type="label" id="310">
+            <left>858</left><top>165</top><width>340</width><height>44</height>
+            <label>Liste Trakt</label>
+            <font>font20</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <aligny>center</aligny>
+        </control>
+
+        <!-- Header separator -->
+        <control type="image">
+            <left>480</left><top>218</top><width>960</width><height>1</height>
+            <texture colordiffuse="22FFFFFF">white.png</texture>
+        </control>
+
+        <!-- Lista de liste — fără scrollbar, 8 iteme × 72px = 576px -->
+        <control type="list" id="300">
+            <left>480</left><top>226</top><width>960</width><height>576</height>
+            <pagecontrol>-</pagecontrol>
+            <ondown>301</ondown>
+            <scrolltime>100</scrolltime>
+            <itemlayout height="72" width="960">
+                <control type="label">
+                    <left>20</left><top>0</top><width>900</width><height>28</height>
+                    <info>ListItem.Label</info>
+                    <font>font20</font>
+                    <textcolor>FFCCCCCC</textcolor>
+                </control>
+                <control type="label">
+                    <left>20</left><top>32</top><width>900</width><height>22</height>
+                    <info>ListItem.Label2</info>
+                    <font>font16</font>
+                    <textcolor>FF777788</textcolor>
+                </control>
+            </itemlayout>
+            <focusedlayout height="72" width="960">
+                <control type="image">
+                    <left>0</left><top>0</top><width>960</width><height>72</height>
+                    <texture colordiffuse="407B5CF4">white.png</texture>
+                </control>
+                <control type="image">
+                    <left>0</left><top>4</top><width>4</width><height>52</height>
+                    <texture colordiffuse="FF7B5CF4">white.png</texture>
+                </control>
+                <control type="label">
+                    <left>20</left><top>0</top><width>900</width><height>28</height>
+                    <info>ListItem.Label</info>
+                    <font>font20</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                </control>
+                <control type="label">
+                    <left>20</left><top>32</top><width>900</width><height>22</height>
+                    <info>ListItem.Label2</info>
+                    <font>font16</font>
+                    <textcolor>FFAAAACC</textcolor>
+                </control>
+            </focusedlayout>
+        </control>
+
+        <!-- List / button separator -->
+        <control type="image">
+            <left>480</left><top>808</top><width>960</width><height>1</height>
+            <texture colordiffuse="22FFFFFF">white.png</texture>
+        </control>
+
+        <!-- Buton Anulează -->
+        <control type="button" id="301">
+            <left>792</left><top>820</top><width>336</width><height>52</height>
+            <label>Anulează</label>
+            <font>font20</font>
+            <align>center</align>
+            <textcolor>FF888899</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus   colordiffuse="22FFFFFF">white.png</texturefocus>
+            <texturenofocus colordiffuse="0DFFFFFF">white.png</texturenofocus>
+            <onup>300</onup>
+        </control>
+
+    </controls>
+</window>

@@ -108,6 +108,39 @@ def insert(meta):
 			dbcon.close()
 		except Exception:
 			pass
+def remove_by_ids(tmdb_ids):
+	"""Borrado SELECTIVO de metas por tmdb id (no toca el resto de la caché).
+	Lo usa el precache de arranque para forzar frescura real SOLO de los títulos
+	visibles (página 1) sin destruir las ~miles de metas restantes del catálogo,
+	que seguirían su TTL normal de 30 días. Devuelve nº de filas eliminadas.
+
+	`tmdb_ids`: iterable de strings/ints. Vacío => no-op (devuelve 0)."""
+	ids = [str(i) for i in tmdb_ids if i not in (None, '', 'None')]
+	if not ids: return 0
+	removed = 0
+	try:
+		dbcon = get_connection()
+		dbcur = get_connection_cursor(dbcon)
+		ck_table = dbcur.execute('''SELECT * FROM sqlite_master WHERE type='table' AND name='meta';''').fetchone()
+		if not ck_table: return 0
+		# Trocear para no superar el límite de variables de SQLite (999) ni montar
+		# un IN gigante. 500 ids por lote sobra para una página (~20 títulos).
+		for off in range(0, len(ids), 500):
+			chunk = ids[off:off+500]
+			placeholders = ','.join('?' * len(chunk))
+			dbcur.execute('DELETE FROM meta WHERE tmdb IN (%s)' % placeholders, chunk)
+			removed += dbcur.rowcount if dbcur.rowcount and dbcur.rowcount > 0 else 0
+		dbcur.connection.commit()
+	except:
+		from resources.lib.modules import log_utils
+		log_utils.error()
+	finally:
+		try: dbcur.close()
+		except Exception: pass
+		try: dbcon.close()
+		except Exception: pass
+	return removed
+
 def cache_clear_meta():
 	cleared = False
 	try:

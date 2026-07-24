@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <animation effect="fade" start="0" end="100" time="150">WindowOpen</animation>
+    <animation effect="fade" start="100" end="0" time="100">WindowClose</animation>
+    <coordinates>
+        <left>0</left>
+        <top>0</top>
+        <width>1920</width>
+        <height>1080</height>
+    </coordinates>
+
+    <controls>
+
+        <!-- Background -->
+        <control type="group">
+            <width>1920</width>
+            <height>1080</height>
+            <control type="image">
+                <texture colordiffuse="FF000000">white.png</texture>
+            </control>
+            <control type="image">
+                <texture background="true">$INFO[Window(Home).Property(resolving.fanart)]</texture>
+                <aspectratio>scale</aspectratio>
+                <colordiffuse>33ffffff</colordiffuse>
+                <animation effect="fade" start="0" end="100" time="500">WindowOpen</animation>
+            </control>
+        </control>
+
+        <control type="group">
+            <animation type="WindowOpen" reversible="false">
+                <effect type="fade" end="100" time="400" />
+            </animation>
+
+            <!-- Top-left label -->
+            <control type="label">
+                <left>50</left>
+                <top>36</top>
+                <width>700</width>
+                <height>36</height>
+                <font>font13</font>
+                <textcolor>FF888888</textcolor>
+                <label>[B]SAMUS[/B] | SE REZOLVĂ SURSA</label>
+            </control>
+
+            <!-- Movie title -->
+            <control type="label">
+                <top>300</top>
+                <width>1920</width>
+                <height>80</height>
+                <font>font20</font>
+                <textcolor>white</textcolor>
+                <align>center</align>
+                <label>[B]$INFO[Window(Home).Property(resolving.title)][/B]</label>
+            </control>
+
+            <!-- Spinner GIF (centered) -->
+            <control type="image">
+                <centerleft>50%</centerleft>
+                <centertop>50%</centertop>
+                <width>120</width>
+                <height>120</height>
+                <texture>spinner_nodot.gif</texture>
+            </control>
+
+            <!-- Status text -->
+            <control type="label">
+                <top>650</top>
+                <width>1920</width>
+                <height>50</height>
+                <font>font13</font>
+                <align>center</align>
+                <textcolor>FF888888</textcolor>
+                <label>$INFO[Window(Home).Property(resolving.status)]</label>
+            </control>
+
+            <!-- ── Torrent stats card ── vizibil doar când există date torrent -->
+            <control type="group">
+                <left>560</left>
+                <top>710</top>
+                <width>800</width>
+                <height>220</height>
+                <visible>!String.IsEmpty(Window(Home).Property(resolving.speed_dl))</visible>
+
+                <!-- Card background -->
+                <control type="image">
+                    <left>0</left><top>0</top>
+                    <width>800</width><height>220</height>
+                    <texture colordiffuse="CC0D0D1A">white.png</texture>
+                </control>
+
+                <!-- Left violet accent -->
+                <control type="image">
+                    <left>0</left><top>0</top>
+                    <width>4</width><height>220</height>
+                    <texture colordiffuse="FF7B5CF4">white.png</texture>
+                </control>
+
+                <!-- VITEZĂ label -->
+                <control type="label">
+                    <left>24</left><top>20</top>
+                    <width>360</width><height>28</height>
+                    <font>font12</font>
+                    <textcolor>FF666688</textcolor>
+                    <label>VITEZĂ</label>
+                </control>
+
+                <!-- PEERS label -->
+                <control type="label">
+                    <left>430</left><top>20</top>
+                    <width>340</width><height>28</height>
+                    <font>font12</font>
+                    <textcolor>FF666688</textcolor>
+                    <label>PEERS</label>
+                </control>
+
+                <!-- Speed values -->
+                <control type="label">
+                    <left>24</left><top>46</top>
+                    <width>370</width><height>32</height>
+                    <font>font13</font>
+                    <textcolor>white</textcolor>
+                    <label>[B]$INFO[Window(Home).Property(resolving.speed_dl)][/B]  [COLOR FF888899]$INFO[Window(Home).Property(resolving.speed_ul)][/COLOR]</label>
+                </control>
+
+                <!-- Peers values -->
+                <control type="label">
+                    <left>430</left><top>46</top>
+                    <width>340</width><height>32</height>
+                    <font>font13</font>
+                    <textcolor>white</textcolor>
+                    <label>[B]$INFO[Window(Home).Property(resolving.seeders)][/B] [COLOR FF888899]seederi[/COLOR]  $INFO[Window(Home).Property(resolving.peers)] [COLOR FF888899]peers[/COLOR]</label>
+                </control>
+
+                <!-- Separator -->
+                <control type="image">
+                    <left>24</left><top>92</top>
+                    <width>752</width><height>1</height>
+                    <texture colordiffuse="22ffffff">white.png</texture>
+                </control>
+
+                <!-- DESCĂRCAT label + value -->
+                <control type="label">
+                    <left>24</left><top>108</top>
+                    <width>500</width><height>28</height>
+                    <font>font12</font>
+                    <textcolor>FF666688</textcolor>
+                    <label>DESCĂRCAT  [COLOR white]$INFO[Window(Home).Property(resolving.loaded)][/COLOR]</label>
+                </control>
+
+                <!-- BUFFER % (right-aligned) -->
+                <control type="label">
+                    <left>24</left><top>108</top>
+                    <width>752</width><height>28</height>
+                    <font>font12</font>
+                    <textcolor>FF666688</textcolor>
+                    <align>right</align>
+                    <label>BUFFER  [COLOR FF7B5CF4][B]$INFO[Window(Home).Property(resolving.progress_pct)][/B][/COLOR]</label>
+                </control>
+
+                <!-- Progress bar background -->
+                <control type="image">
+                    <left>24</left><top>150</top>
+                    <width>752</width><height>6</height>
+                    <texture colordiffuse="33ffffff">white.png</texture>
+                </control>
+
+                <!-- Progress bar foreground (width set from Python) -->
+                <control type="image" id="6010">
+                    <left>24</left><top>150</top>
+                    <width>0</width><height>6</height>
+                    <texture colordiffuse="FF7B5CF4">white.png</texture>
+                </control>
+
+            </control>
+
+        </control>
+    </controls>
+</window>

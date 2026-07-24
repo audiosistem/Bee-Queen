@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="window" id="10006">
+    <defaultcontrol>131</defaultcontrol>
+    <controls>
+
+        <!-- ═══════════════ GLOBAL BACKGROUND ═══════════════ -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="FF0E0E1A">white.png</texture>
+        </control>
+
+        <!-- ═══════════════ HERO BACKDROP (credit focusat) ═══════════════ -->
+        <control type="image" id="100">
+            <left>0</left><top>-120</top><width>1920</width><height>1080</height>
+            <texture>-</texture>
+            <aspectratio>scale</aspectratio>
+        </control>
+        <!-- Overlay întunecat pe backdrop -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>620</height>
+            <texture colordiffuse="88000000">white.png</texture>
+        </control>
+        <!-- Clip solid jos -->
+        <control type="image">
+            <left>0</left><top>620</top><width>1920</width><height>460</height>
+            <texture colordiffuse="FF0E0E1A">white.png</texture>
+        </control>
+        <!-- Gradient bottom -->
+        <control type="image">
+            <left>0</left><top>360</top><width>1920</width><height>260</height>
+            <texture>grad_b.png</texture>
+            <aspectratio>stretch</aspectratio>
+        </control>
+
+        <!-- ═══════════════ HEADER ═══════════════ -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>72</height>
+            <texture colordiffuse="AA060610">white.png</texture>
+        </control>
+        <control type="image">
+            <left>0</left><top>0</top><width>4</width><height>72</height>
+            <texture colordiffuse="FF7B5CF4">white.png</texture>
+        </control>
+        <control type="label" id="5">
+            <left>20</left><top>16</top><width>900</width><height>40</height>
+            <label>←</label>
+            <font>font20</font>
+            <textcolor>FF7B5CF4</textcolor>
+        </control>
+        <control type="image">
+            <left>0</left><top>72</top><width>1920</width><height>1</height>
+            <texture colordiffuse="20FFFFFF">white.png</texture>
+        </control>
+
+        <!-- ═══════════════ INFO ACTOR (stânga, static) ═══════════════ -->
+
+        <!-- Foto profil -->
+        <control type="image" id="115">
+            <left>20</left><top>90</top><width>180</width><height>270</height>
+            <texture>-</texture>
+            <aspectratio>keep</aspectratio>
+        </control>
+
+        <!-- Nume -->
+        <control type="label" id="110">
+            <left>220</left><top>90</top><width>780</width><height>66</height>
+            <label>...</label>
+            <font>font48</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <shadowcolor>CC000000</shadowcolor>
+        </control>
+
+        <!-- Meta -->
+        <control type="label" id="111">
+            <left>220</left><top>165</top><width>780</width><height>30</height>
+            <label>...</label>
+            <font>font20</font>
+            <textcolor>FFCCCCCC</textcolor>
+        </control>
+
+        <!-- Biografie -->
+        <control type="textbox" id="113">
+            <left>20</left><top>378</top><width>980</width><height>210</height>
+            <font>font16</font>
+            <textcolor>FF888888</textcolor>
+            <focusedcolor>FFAAAAAA</focusedcolor>
+            <ondown>141</ondown>
+            <autoscroll time="3000" delay="1000" repeat="8000">true</autoscroll>
+        </control>
+
+        <!-- ═══════════════ CARD DREAPTA — credit focusat (dinamic) ═══════════════ -->
+
+        <!-- Gradient card — fade din stânga (dark) spre dreapta (transparent) -->
+        <control type="image">
+            <left>1340</left><top>82</top><width>560</width><height>144</height>
+            <texture colordiffuse="CC000000">grad_l.png</texture>
+            <aspectratio>stretch</aspectratio>
+        </control>
+        <!-- Accent violet stânga -->
+        <control type="image">
+            <left>1340</left><top>82</top><width>4</width><height>144</height>
+            <texture colordiffuse="FF7B5CF4">white.png</texture>
+        </control>
+
+        <!-- Film/Serial: Titlu -->
+        <control type="label" id="202">
+            <left>1358</left><top>100</top><width>524</width><height>28</height>
+            <label>...</label>
+            <font>font20</font>
+            <textcolor>FFFFFFFF</textcolor>
+        </control>
+
+        <!-- An: {an} -->
+        <control type="label" id="203">
+            <left>1358</left><top>140</top><width>524</width><height>24</height>
+            <label>...</label>
+            <font>font16</font>
+            <textcolor>FF888899</textcolor>
+        </control>
+
+        <!-- Rol: {personaj} -->
+        <control type="label" id="204">
+            <left>1358</left><top>176</top><width>524</width><height>24</height>
+            <label>...</label>
+            <font>font16</font>
+            <textcolor>FFAA99FF</textcolor>
+        </control>
+
+        <!-- ═══════════════ FILTRE FILMOGRAFIE ═══════════════ -->
+
+        <control type="list" id="141">
+            <left>20</left><top>608</top><width>480</width><height>52</height>
+            <orientation>horizontal</orientation>
+            <onup>113</onup>
+            <ondown>131</ondown>
+            <scrolltime>0</scrolltime>
+            <itemlayout height="52" width="150">
+                <control type="image">
+                    <left>4</left><top>4</top><width>142</width><height>44</height>
+                    <texture colordiffuse="507B5CF4">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(active))</visible>
+                </control>
+                <control type="image">
+                    <left>4</left><top>4</top><width>142</width><height>44</height>
+                    <texture colordiffuse="28FFFFFF">white.png</texture>
+                    <visible>String.IsEmpty(ListItem.Property(active))</visible>
+                </control>
+                <control type="label">
+                    <left>4</left><top>4</top><width>142</width><height>44</height>
+                    <label>$INFO[ListItem.Label]</label>
+                    <font>font20</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                </control>
+            </itemlayout>
+            <focusedlayout height="52" width="150">
+                <control type="image">
+                    <left>4</left><top>4</top><width>142</width><height>44</height>
+                    <texture colordiffuse="FF7B5CF4">white.png</texture>
+                </control>
+                <control type="label">
+                    <left>4</left><top>4</top><width>142</width><height>44</height>
+                    <label>$INFO[ListItem.Label]</label>
+                    <font>font20</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                </control>
+            </focusedlayout>
+            <selectedlayout height="52" width="150">
+                <control type="image">
+                    <left>4</left><top>4</top><width>142</width><height>44</height>
+                    <texture colordiffuse="507B5CF4">white.png</texture>
+                </control>
+                <control type="label">
+                    <left>4</left><top>4</top><width>142</width><height>44</height>
+                    <label>$INFO[ListItem.Label]</label>
+                    <font>font20</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                </control>
+            </selectedlayout>
+        </control>
+
+        <!-- ═══════════════ STRIP FILMOGRAFIE (postere curate) ═══════════════ -->
+
+        <control type="list" id="131">
+            <left>5</left><top>668</top><width>1910</width><height>390</height>
+            <orientation>horizontal</orientation>
+            <onup>141</onup>
+            <scrolltime>180</scrolltime>
+
+            <itemlayout height="380" width="200">
+                <control type="image">
+                    <left>5</left><top>5</top><width>190</width><height>285</height>
+                    <info>ListItem.Thumb</info>
+                    <aspectratio>stretch</aspectratio>
+                </control>
+            </itemlayout>
+
+            <focusedlayout height="380" width="200">
+                <control type="image">
+                    <left>2</left><top>2</top><width>196</width><height>291</height>
+                    <texture colordiffuse="FF7B5CF4">white.png</texture>
+                </control>
+                <control type="image">
+                    <left>5</left><top>5</top><width>190</width><height>285</height>
+                    <info>ListItem.Thumb</info>
+                    <aspectratio>stretch</aspectratio>
+                </control>
+            </focusedlayout>
+        </control>
+
+        <!-- ═══════════════ EMPTY STATE ═══════════════ -->
+        <control type="label" id="150">
+            <left>0</left><top>800</top><width>1920</width><height>60</height>
+            <label>-</label>
+            <font>font27</font>
+            <textcolor>FF2A2A3A</textcolor>
+            <align>center</align>
+        </control>
+
+    </controls>
+</window>

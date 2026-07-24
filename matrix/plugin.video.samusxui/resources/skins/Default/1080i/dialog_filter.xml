@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+
+    <animation effect="fade" start="0" end="100" time="150">WindowOpen</animation>
+    <animation effect="fade" start="100" end="0" time="100">WindowClose</animation>
+    <controls>
+
+        <!-- Scrim -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="B0000000">white.png</texture>
+        </control>
+
+        <!-- Chenar violet uniform (2px pe toate laturile) -->
+        <control type="image">
+            <left>658</left><top>198</top><width>604</width><height>684</height>
+            <texture colordiffuse="FF7B5CF4">white.png</texture>
+        </control>
+
+        <!-- Card interior întunecat -->
+        <control type="image">
+            <left>660</left><top>200</top><width>600</width><height>680</height>
+            <texture colordiffuse="FF0E0E1A">white.png</texture>
+        </control>
+
+        <!-- Titlu -->
+        <control type="label" id="310">
+            <left>680</left><top>210</top><width>560</width><height>46</height>
+            <label>Filtrează</label>
+            <font>font20</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <aligny>center</aligny>
+        </control>
+
+        <!-- Separator sub titlu -->
+        <control type="image">
+            <left>660</left><top>260</top><width>600</width><height>1</height>
+            <texture colordiffuse="30FFFFFF">white.png</texture>
+        </control>
+
+        <!-- Lista opțiuni -->
+        <control type="list" id="300">
+            <left>660</left><top>261</top><width>600</width><height>619</height>
+            <pagecontrol>-</pagecontrol>
+            <scrolltime>100</scrolltime>
+            <itemlayout height="56" width="600">
+                <control type="label">
+                    <left>24</left><top>0</top><width>552</width><height>56</height>
+                    <info>ListItem.Label</info>
+                    <font>font20</font>
+                    <textcolor>FFAAAAAA</textcolor>
+                    <aligny>center</aligny>
+                </control>
+            </itemlayout>
+            <focusedlayout height="56" width="600">
+                <control type="image">
+                    <left>0</left><top>0</top><width>600</width><height>56</height>
+                    <texture colordiffuse="257B5CF4">white.png</texture>
+                </control>
+                <control type="image">
+                    <left>0</left><top>6</top><width>3</width><height>44</height>
+                    <texture colordiffuse="FF7B5CF4">white.png</texture>
+                </control>
+                <control type="label">
+                    <left>24</left><top>0</top><width>552</width><height>56</height>
+                    <info>ListItem.Label</info>
+                    <font>font20</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <aligny>center</aligny>
+                </control>
+            </focusedlayout>
+        </control>
+
+    </controls>
+</window>

@@ -53,6 +53,7 @@ class Episodes:
 		self.trakthistory_link = 'https://api.trakt.tv/users/me/history/shows?limit=%s&page=1' % self.count
 		self.progress_link = 'https://api.trakt.tv/users/me/watched/shows'
 		self.simklprogress_link = 'https://api.simkl.com/sync/all-items/shows/watching'
+		self.simklplayback_link = 'https://api.simkl.com/sync/playback/episode'
 		self.mycalendarRecent_link = 'https://api.trakt.tv/calendars/my/shows/date[30]/33/'
 		self.mycalendarUpcoming_link = 'https://api.trakt.tv/calendars/my/shows/date[0]/33/'
 		self.mycalendarPremiers_link = 'https://api.trakt.tv/calendars/my/shows/premieres/date[0]/33'
@@ -172,6 +173,9 @@ class Episodes:
 				if trakt.getProgressActivity() > cache.timeout(self.trakt_progress_list, url, self.trakt_user, self.lang, self.trakt_directProgressScrape, True):
 					self.list = cache.get(self.trakt_progress_list, 0, url, self.trakt_user, self.lang, self.trakt_directProgressScrape, True)
 				else: self.list = cache.get(self.trakt_progress_list, 12, url, self.trakt_user, self.lang, self.trakt_directProgressScrape, True)
+				# 2026 self-heal: cache vacio no persiste, reintenta fresco
+				if not self.list:
+					self.list = cache.get(self.trakt_progress_list, 0, url, self.trakt_user, self.lang, self.trakt_directProgressScrape, True)
 				try:
 					if not self.list: raise Exception()
 					for i in range(len(self.list)):
@@ -193,6 +197,7 @@ class Episodes:
 		try: url = getattr(self, url + '_link')
 		except: pass
 		if url == self.simklprogress_link: cache.remove(self.simkl_progress_list, url)
+		elif url == self.simklplayback_link: cache.remove(self.simkl_playback_list, url)
 		else: cache.remove(self.trakt_progress_list, url, self.trakt_user, self.lang, self.trakt_directProgressScrape)
 		control.sleep(200)
 		control.refresh()
@@ -207,6 +212,11 @@ class Episodes:
 				if trakt.getProgressActivity() > cache.timeout(self.trakt_progress_list, url, self.trakt_user, self.lang, self.trakt_directProgressScrape):
 					self.list = cache.get(self.trakt_progress_list, 0, url, self.trakt_user, self.lang, self.trakt_directProgressScrape)
 				else: self.list = cache.get(self.trakt_progress_list, 12, url, self.trakt_user, self.lang, self.trakt_directProgressScrape)
+				# 2026 self-heal: un cache VACIO no debe persistir 12h (mismo patron
+				# que la rama SIMKL). Las versiones <=1.0.44 cachearon una lista vacia
+				# tras el cambio de API de Trakt del 30-jun-2026; reintenta fresco.
+				if not self.list:
+					self.list = cache.get(self.trakt_progress_list, 0, url, self.trakt_user, self.lang, self.trakt_directProgressScrape)
 				self.sort(type='progress')
 				if self.list is None: self.list = []
 				# place new season ep1's at top of list for 1 week
@@ -220,6 +230,11 @@ class Episodes:
 				if simkl.getEpisodesWatchedActivity() > cache.timeout(self.simkl_progress_list, url):
 					self.list = cache.get(self.simkl_progress_list, 0, url)
 				else: self.list = cache.get(self.simkl_progress_list, 12, url)
+				# Un cache VACÍO no debe persistir 12h: si quedó vacío (p.ej. se
+				# consultó antes de ver nada), reintenta fresco para no quedarse
+				# mostrando "Nothing Found" cuando ya hay datos en SIMKL.
+				if not self.list:
+					self.list = cache.get(self.simkl_progress_list, 0, url)
 				if self.list is None: self.list = []
 				# "Latest Unwatched": las series vistas mas recientemente primero
 				self.list = sorted(self.list, key=lambda k: k.get('lastplayed') or '', reverse=True)
@@ -381,50 +396,126 @@ class Episodes:
 		return list
 
 	def simkl_progress_list(self, url):
-		"""SIMKL Latest Unwatched Episodes.
-		GET /sync/all-items/shows/watching -> cada item trae next_to_watch
-		("S03E05") directamente, asi que no hay que calcular el siguiente
-		episodio como en trakt_progress_list. Cumple la politica de SIMKL:
-		la rama de calendar() solo refresca cuando getEpisodesWatchedActivity()
-		supera el timeout de la cache (mismo patron que Trakt progress).
+		"""SIMKL "Siguiente episodio no visto" — 100% AUTÓNOMO.
+
+		Toma las series de la lista `watching` de SIMKL e ignora el campo
+		`next_to_watch` de SIMKL (poco fiable). Calcula el siguiente episodio
+		no visto usando EXCLUSIVAMENTE el histórico propio de SIMKL: los
+		episodios vistos vienen en cada serie (extended=full) como el set
+		`simkl_watched`. NO consulta Trakt ni ningún otro servicio.
+
+		REGLA: esta sección es CONTINUAR, no EMPEZAR. Una serie solo aparece
+		si tiene AL MENOS un episodio COMPLETADO (≥85%) en SIMKL. Si el set
+		`simkl_watched` sale vacío (serie solo "empezada": scrobble start la
+		mete en /watching antes de completar nada), se descarta — no tiene
+		"siguiente episodio" porque no se ha continuado ningún episodio. Los
+		episodios dejados a medias (15%–<85%) salen en "Mi Progreso"
+		(simkl_playback_list), no aquí. Así cada sección tiene un único papel:
+		  - Mi Progreso  -> episodios pausados 15%–<85% (continuar a medias)
+		  - Siguiente     -> series con ≥1 episodio acabado (saltar al próximo)
 		"""
 		try:
 			if not simkl.getSimklCredentialsInfo(): return
-			result = simkl.getSimklAsJson('/sync/all-items/shows/watching', method='GET', silent=True)
-			if not result: return
+			shows = simkl.getWatchingShows()
+			if not shows: return
 		except: return
-		items = []
 		progress_showunaired = getSetting('trakt.progress.showunaired') == 'true'
-		shows = result.get('shows') or []
-		anime = result.get('anime') or []
-		for item in (shows + anime):
+
+		def _next_unwatched(tmdb, seen):
+			"""Devuelve (snum, enum) del episodio que SIGUE al más alto visto.
+
+			OJO — NO es "el primer hueco desde 1x01". SIMKL devuelve visionados
+			NO contiguos (p.ej. FROM: vistos 4x03, 4x06, 4x07). Buscar el primer
+			hueco daría 1x01 (porque faltan 1x01, 1x02...), mandándote al
+			principio de una serie que vas por la temporada 4. Lo correcto para
+			"siguiente episodio" es: tomar el episodio MÁS ALTO visto (4x07) y
+			devolver el primer episodio EMITIDO posterior a ese que no esté visto
+			(4x08, o 5x01 si la T4 acabó). seen es el set de (s,e) vistos según
+			SIMKL. None si no hay visionados / todo lo posterior visto / sin datos.
+			"""
 			try:
-				ntw = item.get('next_to_watch')
-				if not ntw: continue
-				m = re.search(r'S(\d+)E(\d+)', ntw)
-				if m: snum, enum = int(m.group(1)), int(m.group(2))
-				else:
-					# anime: numeracion absoluta "E05" -> intentamos S1 (mejor esfuerzo)
-					m = re.search(r'E(\d+)', ntw)
-					if not m: continue
-					snum, enum = 1, int(m.group(1))
-				if snum == 0 and not self.showspecials: continue
-				show = item.get('show') or item.get('anime') or {}
-				ids = show.get('ids') or {}
+				if not seen: return None  # sin histórico -> nada que continuar
+				showSeasons = cache.get(tmdb_indexer().get_showSeasons_meta, 96, tmdb)
+				if not showSeasons: return None
+				seasons = sorted([s for s in showSeasons.get('seasons', [])], key=lambda k: k.get('season_number', 0))
+				today_int = int(re.sub(r'[^0-9]', '', str(self.today_date)))
+				# Episodio más alto visto (orden lexicográfico temporada, episodio).
+				# Ignora la temporada 0 (especiales) salvo que el usuario los vea,
+				# para que un especial visto no dispare el "siguiente".
+				watched_norm = set()
+				for (ws, we) in seen:
+					try:
+						ws, we = int(ws), int(we)
+					except: continue
+					if ws == 0 and not self.showspecials: continue
+					watched_norm.add((ws, we))
+				if not watched_norm: return None
+				max_seen = max(watched_norm)  # (snum, enum) más alto visto
+				# Recorre episodios EMITIDOS en orden y devuelve el primero
+				# estrictamente posterior a max_seen que no esté visto.
+				for s in seasons:
+					snum = s.get('season_number')
+					if snum is None: continue
+					if snum == 0 and not self.showspecials: continue
+					seasonEpisodes = cache.get(tmdb_indexer().get_seasonEpisodes_meta, 96, tmdb, snum)
+					if not seasonEpisodes: continue
+					eps = sorted(seasonEpisodes.get('episodes', []), key=lambda k: k.get('episode', 0))
+					for ep in eps:
+						enum = ep.get('episode')
+						if enum is None: continue
+						try: cur = (int(snum), int(enum))
+						except: continue
+						# solo lo estrictamente posterior al último visto
+						if cur <= max_seen: continue
+						# saltar no emitidos salvo que el usuario quiera verlos
+						prem = ep.get('premiered') or ''
+						if not progress_showunaired:
+							if not prem: continue
+							try:
+								if int(re.sub(r'[^0-9]', '', str(prem))) > today_int: continue
+							except: continue
+						if cur not in watched_norm:
+							return cur
+				return None  # nada posterior pendiente (al día / esperando emisión)
+			except:
+				return None
+
+		items = []
+		for sh in shows:
+			try:
+				imdb = sh.get('imdb') or ''
+				tmdb = sh.get('tmdb') or ''
+				tvdb = sh.get('tvdb') or ''
+				if not tmdb and (imdb or tvdb):
+					try:
+						res = cache.get(tmdb_indexer().IdLookup, 96, imdb, tvdb)
+						tmdb = str(res.get('id', '')) if res.get('id') else ''
+					except: tmdb = ''
+				if not tmdb: continue
+				seen = sh.get('simkl_watched') or set()  # histórico SOLO de SIMKL
+				# "Siguiente no visto" es CONTINUAR, no EMPEZAR: una serie sin
+				# NINGÚN episodio completado (≥85%) en SIMKL no tiene nada que
+				# continuar. Sin histórico -> fuera de esta sección. Si el usuario
+				# la dejó a medias (15%–<85%) aparecerá en "Mi Progreso"; si ni
+				# llegó al 15%, no aparece en ningún sitio. Esto evita que la
+				# sección se llene de 1x01 de series solo "empezadas" (scrobble
+				# start mete la serie en /watching antes de completar nada).
+				if not seen: continue  # sin episodios completados -> no es progreso
+				nxt = _next_unwatched(tmdb, seen)
+				if not nxt: continue  # todo visto en SIMKL -> no aparece
+				snum, enum = nxt
 				values = {}
 				values['snum'], values['enum'] = snum, enum
-				values['tvshowtitle'] = show.get('title')
-				if not values['tvshowtitle']: continue
-				values['year'] = show.get('year')
-				values['imdb'] = str(ids.get('imdb') or '')
-				values['tmdb'] = str(ids.get('tmdb') or '')
-				values['tvdb'] = str(ids.get('tvdb') or '')
-				values['lastplayed'] = item.get('last_watched_at') or ''
-				values['added'] = item.get('added_to_watchlist_at') or ''
-				values['watched_episodes_count'] = item.get('watched_episodes_count')
-				values['total_episodes_count'] = item.get('total_episodes_count')
+				values['tvshowtitle'] = sh.get('tvshowtitle')
+				values['year'] = sh.get('year')
+				values['imdb'] = str(imdb or '')
+				values['tmdb'] = str(tmdb or '')
+				values['tvdb'] = str(tvdb or '')
+				values['lastplayed'] = sh.get('lastplayed') or ''
+				values['added'] = sh.get('added') or ''
 				items.append(values)
 			except: pass
+
 		def items_list(i):
 			try:
 				values = i
@@ -480,21 +571,108 @@ class Episodes:
 		[i.join() for i in threads]
 		return self.list
 
+	def simkl_playback_list(self, url):
+		"""SIMKL "Mi Progreso" (episodios). Sesiones de /sync/playback/episode
+		con progreso entre 15% y <85%. Hidrata meta TMDb para cada episodio
+		exacto que quedó a medias y ordena por pausa más reciente."""
+		try:
+			if not simkl.getSimklCredentialsInfo(): return
+			items = simkl.getEpisodesProgress()
+			if not items: return
+		except: return
+
+		def items_list(i):
+			try:
+				values = dict(i)
+				imdb, tmdb, tvdb = i.get('imdb'), i.get('tmdb'), i.get('tvdb')
+				if not tmdb and (imdb or tvdb):
+					try:
+						res = cache.get(tmdb_indexer().IdLookup, 96, imdb, tvdb)
+						values['tmdb'] = str(res.get('id', '')) if res.get('id') else ''
+						tmdb = values['tmdb']
+					except: return
+				if not tmdb: return
+				showSeasons = cache.get(tmdb_indexer().get_showSeasons_meta, 96, tmdb)
+				if not showSeasons: return
+				seasonEpisodes = cache.get(tmdb_indexer().get_seasonEpisodes_meta, 96, tmdb, i['snum'])
+				if not seasonEpisodes: return
+				seasonEpisodes = dict((k, v) for k, v in iter(seasonEpisodes.items()) if v is not None and v != '')
+				try: episode_meta = [x for x in seasonEpisodes.get('episodes') if x.get('episode') == i['enum']][0]
+				except: return
+				if not episode_meta.get('plot'): episode_meta['plot'] = showSeasons.get('plot')
+				progress = values.get('progress')
+				paused_at = values.get('paused_at')
+				values.update(showSeasons)
+				values.update(seasonEpisodes)
+				values.update(episode_meta)
+				for k in ('episodes', 'snum', 'enum'): values.pop(k, None)
+				values['progress'] = progress
+				values['paused_at'] = paused_at
+				values['simklPlayback'] = True
+				values['extended'] = True
+				if self.enable_fanarttv:
+					extended_art = fanarttv_cache.get(FanartTv().get_tvshow_art, 336, tvdb)
+					if extended_art: values.update(extended_art)
+				self.list.append(values)
+			except:
+				from resources.lib.modules import log_utils
+				log_utils.error()
+		threads = []
+		for i in items:
+			threads.append(Thread(target=items_list, args=(i,)))
+		[i.start() for i in threads]
+		[i.join() for i in threads]
+		self.list = sorted(self.list, key=lambda k: k.get('paused_at') or '', reverse=True)
+		return self.list
+
+	def progress_playback(self, url):
+		"""Render de "Mi Progreso" (episodios). Mismo patrón de refresco por
+		activity-timestamp que simklprogress."""
+		self.list = []
+		try:
+			try: url = getattr(self, url + '_link')  # 'simklplayback' -> full link (cache key igual que clr_progress_cache)
+			except: pass
+			if simkl.getPausedActivity() > cache.timeout(self.simkl_playback_list, url):
+				self.list = cache.get(self.simkl_playback_list, 0, url)
+			else: self.list = cache.get(self.simkl_playback_list, 12, url)
+			# Un cache VACÍO no debe persistir 12h: reintenta fresco para que el
+			# episodio que acabas de dejar a medias aparezca sin esperar.
+			if not self.list:
+				self.list = cache.get(self.simkl_playback_list, 0, url)
+			if self.list is None: self.list = []
+			self.episodeDirectory(self.list, unfinished=True, next=False)
+			return self.list
+		except:
+			from resources.lib.modules import log_utils
+			log_utils.error()
+			if not self.list:
+				control.hide()
+				if self.notifications: control.notification(title=32326, message=33049)
+
 	def trakt_progress_list(self, url, user, lang, direct=False, upcoming=False):
 		try:
-			url += '?extended=full'
-			result = trakt.getTrakt(url).json()
+			# 2026-06-30 Trakt API: /watched is paginated (100-item cap without params)
+			# and the seasons array now requires extended=progress (noseason default).
+			result = trakt.getTraktAsJsonPaginated(url + '?extended=full,progress', page_size=250, silent=True)
 		except: return
+		if not result: return
 		items = []
 		progress_showunaired = getSetting('trakt.progress.showunaired') == 'true'
 		for item in result:
 			try:
 				values = {} ; num_1 = 0
-				if not upcoming and item['show']['status'].lower() == 'ended': # only chk ended cases for all watched otherwise airing today cases get dropped.
+				if not item.get('seasons'): continue # no season progress returned; skip instead of raising
+				# 2026 fix: con extended=progress el objeto show puede venir sin 'status'
+				# ni 'aired_episodes'. El acceso directo lanzaba KeyError -> except:pass
+				# descartaba TODOS los items SOLO en la rama no-upcoming (el cortocircuito
+				# 'not upcoming and ...' evitaba el acceso en Upcoming: por eso Upcoming
+				# funcionaba y Progress quedaba vacio). Acceso defensivo:
+				_status = (item.get('show', {}).get('status') or '').lower()
+				if not upcoming and _status == 'ended': # only chk ended cases for all watched otherwise airing today cases get dropped.
 					for i in range(0, len(item['seasons'])):
 						if item['seasons'][i]['number'] > 0: num_1 += len(item['seasons'][i]['episodes'])
-					num_2 = int(item['show']['aired_episodes']) # trakt slow to update "aired_episodes" count on day item airs
-					if num_1 >= num_2: continue
+					num_2 = int(item['show'].get('aired_episodes') or 0) # trakt slow to update "aired_episodes" count on day item airs
+					if num_2 and num_1 >= num_2: continue
 				season_sort = sorted(item['seasons'][:], key=lambda k: k['number'], reverse=False) # trakt sometimes places season0 at end and episodes out of order. So we sort it to be sure.
 				values['snum'] = season_sort[-1]['number']
 				episode = [x for x in season_sort[-1]['episodes'] if 'number' in x]
@@ -1041,6 +1219,12 @@ class Episodes:
 				if not i.get('unaired') == 'true':
 					if not runtime: runtime = 45
 					resumetime = Bookmarks().get(name=blabel, imdb=imdb, tmdb=tmdb, tvdb=tvdb, season=season, episode=episode, year=str(year), runtime=runtime, ck=True)
+					# "Mi Progreso" (SIMKL playback): si no hay bookmark local todavía,
+					# derivamos el resume desde el % de SIMKL (runtime en minutos).
+					try:
+						if (not resumetime or float(resumetime) == 0) and i.get('simklPlayback') and i.get('progress'):
+							resumetime = round(float(runtime) * float(i['progress']) / 100.0, 2)
+					except: pass
 					# item.setProperty('TotalTime', str(runtime)) # Adding this property causes the Kodi bookmark CM items to be added
 					item.setProperty('ResumeTime', str(resumetime)) if KODI_VERSION < 20 else item.getVideoInfoTag().setResumePoint(float(resumetime))
 					try: item.setProperty('percentplayed', str(round(float(resumetime) / float(runtime) * 100, 1))) # resumetime and runtime are both in minutes
@@ -1088,10 +1272,12 @@ class Episodes:
 		if isMultiList and multi_unwatchedEnabled: # Show multi episodes as show, in order to display unwatched count if enabled.
 			control.content(syshandle, 'tvshows')
 			control.directory(syshandle, cacheToDisc=False) # disable cacheToDisc so unwatched counts loads fresh data counts if changes made
+			control.sleep(200) # da tiempo al skin a renderizar antes de forzar el view (igual que movieDirectory)
 			views.setView('tvshows', {'skin.estuary': 500, 'skin.confluence': 500})
 		else:
 			control.content(syshandle, 'episodes')
 			control.directory(syshandle, cacheToDisc=False) # disable cacheToDisc so unwatched counts loads fresh data counts if changes made
+			control.sleep(200) # da tiempo al skin a renderizar antes de forzar el view (igual que movieDirectory)
 			views.setView('episodes', {'skin.estuary': 500, 'skin.confluence': 504})
 
 	def addDirectory(self, items, queue=False):

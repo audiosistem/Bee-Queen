@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <defaultcontrol always="true">5001</defaultcontrol>
+    <animation effect="slide" start="0,-250" end="0,0" time="260" tween="cubic" easing="out">WindowOpen</animation>
+    <animation effect="fade" start="100" end="0" time="180">WindowClose</animation>
+
+    <controls>
+
+        <!-- ── Panel background ── -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>240</height>
+            <texture colordiffuse="F0111111">white.png</texture>
+        </control>
+
+        <!-- ── Purple left accent bar ── -->
+        <control type="image">
+            <left>0</left><top>0</top><width>4</width><height>240</height>
+            <texture colordiffuse="FF7B5CF4">white.png</texture>
+        </control>
+
+        <!-- ── Poster serial ── -->
+        <control type="image">
+            <left>20</left><top>19</top><width>87</width><height>130</height>
+            <texture>$INFO[Window(Home).Property(samus.next_poster)]</texture>
+            <visible>!String.IsEmpty(Window(Home).Property(samus.next_poster))</visible>
+        </control>
+
+        <!-- ── "EPISOD URMĂTOR" header ── -->
+        <control type="label">
+            <left>125</left><top>20</top><width>1340</width><height>22</height>
+            <font>font10</font>
+            <textcolor>FF888888</textcolor>
+            <label>EPISOD URMĂTOR</label>
+        </control>
+
+        <!-- ── Show name ── -->
+        <control type="label">
+            <left>125</left><top>44</top><width>1340</width><height>26</height>
+            <font>font13</font>
+            <textcolor>FFAAAAAA</textcolor>
+            <label>$INFO[Window(Home).Property(samus.next_show)]</label>
+        </control>
+
+        <!-- ── Episode code + title ── -->
+        <control type="label">
+            <left>125</left><top>72</top><width>1340</width><height>28</height>
+            <font>font14</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <scroll>true</scroll>
+            <scrollspeed>40</scrollspeed>
+            <label>[B]$INFO[Window(Home).Property(samus.next_ep)][/B]</label>
+        </control>
+
+        <!-- ── Overview episod ── -->
+        <control type="label">
+            <left>125</left><top>114</top><width>1340</width><height>64</height>
+            <font>font10</font>
+            <textcolor>FF888888</textcolor>
+            <wrapmultiline>true</wrapmultiline>
+            <label>$INFO[Window(Home).Property(samus.next_overview)]</label>
+        </control>
+
+        <!-- ── Countdown text ── -->
+        <control type="label">
+            <left>125</left><top>180</top><width>1340</width><height>22</height>
+            <font>font10</font>
+            <textcolor>FF666666</textcolor>
+            <label>$INFO[Window(Home).Property(samus.countdown_text)]</label>
+        </control>
+
+        <!-- ── Button: Play (ID 5001) ── -->
+        <control type="button" id="5001">
+            <left>1580</left><top>80</top><width>160</width><height>40</height>
+            <font>font20</font>
+            <textcolor>FFAAAAAA</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <align>center</align>
+            <texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus>
+            <texturenofocus colordiffuse="28FFFFFF">white.png</texturenofocus>
+            <label>[B]PLAY[/B]</label>
+            <onright>5002</onright>
+        </control>
+
+        <!-- ── Button: Cancel (ID 5002) ── -->
+        <control type="button" id="5002">
+            <left>1752</left><top>80</top><width>148</width><height>40</height>
+            <font>font20</font>
+            <textcolor>FFAAAAAA</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <align>center</align>
+            <texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus>
+            <texturenofocus colordiffuse="28FFFFFF">white.png</texturenofocus>
+            <label>CANCEL</label>
+            <onleft>5001</onleft>
+        </control>
+
+        <!-- ── Progress bar background ── -->
+        <control type="image">
+            <left>0</left><top>234</top><width>1920</width><height>6</height>
+            <texture colordiffuse="33FFFFFF">white.png</texture>
+        </control>
+
+        <!-- ── Progress bar foreground (purple, shrinks via setWidth) ── -->
+        <control type="image" id="5010">
+            <left>0</left><top>234</top><width>1920</width><height>6</height>
+            <texture colordiffuse="FF7B5CF4">white.png</texture>
+        </control>
+
+    </controls>
+</window>

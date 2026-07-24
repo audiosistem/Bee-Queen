@@ -26,7 +26,7 @@ class RealDebridAPI:
 			response.request.headers['Authorization'] = 'Bearer %s' % self.token
 			response = session.send(response.request, timeout=timeout)
 		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
-		return response.json() if len(response.content) else response
+		return response.json() if response.content else response
 
 	def _get(self, path):
 		return self._request('get', path)

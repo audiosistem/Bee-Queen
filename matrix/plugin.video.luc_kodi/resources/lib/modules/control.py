@@ -86,7 +86,7 @@ fanarttvCacheFile = joinPath(dataPath, 'fanarttv.db')
 watchedcacheFile = joinPath(dataPath, 'watched.db')
 subsFile         = joinPath(dataPath, 'substitute.db')
 subtitlesPath    = joinPath(dataPath, 'subtitles')
-trailer = 'plugin://plugin.video.youtube/play/?video_id=%s'
+trailer = 'plugin://plugin.video.luc_kodi/?action=play_Trailer&url=%s' # v1.0.44: keyless — antes plugin.video.youtube
 KODI_VERSION = int(xbmc.getInfoLabel("System.BuildVersion")[:2])
 
 def getKodiVersion(full=False):
@@ -94,40 +94,60 @@ def getKodiVersion(full=False):
 	else: return int(xbmc.getInfoLabel("System.BuildVersion")[:2])
 
 def setting(id, fallback=None):
+	# Lee del dict cacheado en la window property. make_settings_dict() lo rellena
+	# desde el settings.xml de userdata (incluye TODOS los valores reales del
+	# usuario, credenciales incluidas), y el SettingsMonitor (service.py) lo
+	# regenera vía onSettingsChanged() cada vez que el usuario cambia un ajuste.
+	# Por eso el dict es la fuente de verdad y NO re-consultamos xbmcaddon por
+	# cada setting.
+	#
+	# PERF (v1.0.38): la versión anterior re-consultaba xbmcaddon.Addon().getSetting()
+	# para CUALQUIER setting vacío — en Android eso fuerza un parseo del settings.xml
+	# en "formato antiguo". Bajo el precache, decenas de hilos leyendo settings
+	# vacíos/ausentes (db.maintenance.lastrun, poster.rotation.lastclean,
+	# migration.torboxnews_2026, y credenciales que el plugin deja vacías a propósito
+	# para usar su fallback hardcoded, p.ej. tmdb.api.key) disparaban ~1000 parseos
+	# del XML y añadían ~8s al arranque. Con el dict como única fuente, ese coste
+	# desaparece y los getSetting() vacíos devuelven '' al instante (el código que
+	# llama ya aplica su propio fallback: `key = getSetting(x) or HARDCODED`).
 	try: settings_dict = jsloads(homeWindow.getProperty('luc_kodi_settings'))
 	except: settings_dict = make_settings_dict()
 	if settings_dict is None: settings_dict = settings_fallback(id)
-	# Kodi may not write default values into userdata/addon_data/.../settings.xml on some platforms (e.g. iOS).
-	# If the key is missing from the parsed settings dict, fall back to xbmcaddon so we still get the default.
-	# FIX: also fall back when key exists but has empty value — this covers the case where a version update
-	# triggers a settings.xml rewrite that resets credentials (e.g. Trakt token) to their default empty string.
-	# Without this, an empty-string value in the cache dict would be returned directly, bypassing Kodi's
-	# internal settings store which may still hold the real non-empty value.
 	if id in settings_dict:
 		value = settings_dict.get(id, '')
-		if value == '':
-			try:
-				api_value = xbmcaddon.Addon().getSetting(id)
-				if api_value:
-					value = api_value
-					settings_dict[id] = value
-					homeWindow.setProperty('luc_kodi_settings', jsdumps(settings_dict))
-			except: pass
 	else:
+		# Setting ausente del settings.xml (p.ej. Kodi no escribió el default en
+		# algunas plataformas como iOS, o es un marcador interno aún sin valor).
+		# Lo resolvemos UNA vez vía xbmcaddon y lo cacheamos en el dict para no
+		# repetir. Solo persistimos la property si hay valor real que cachear:
+		# para '' no reescribimos (evita que múltiples hilos se pisen la property
+		# en bucle durante el precache).
 		try: value = xbmcaddon.Addon().getSetting(id)
 		except: value = ''
-		try:
-			settings_dict[id] = value
-			homeWindow.setProperty('luc_kodi_settings', jsdumps(settings_dict))
-		except: pass
+		if value != '':
+			try:
+				settings_dict[id] = value
+				homeWindow.setProperty('luc_kodi_settings', jsdumps(settings_dict))
+			except: pass
 	if fallback is None: return value
 	if value == '': return fallback
 	return value
+
 def settings_fallback(id):
 	return {id: xbmcaddon.Addon().getSetting(id)}
 
+
 def setSetting(id, value):
 	xbmcaddon.Addon().setSetting(id, value)
+
+# Marcadores internos (no visibles, sin valor por defecto útil) que distintos
+# servicios consultan en bucle. Sembrarlos vacíos en el dict evita el coste de
+# xbmcaddon.getSetting() repetido. Ampliar esta lista si se añaden más marcadores.
+_INTERNAL_EMPTY_KEYS = (
+	'poster.rotation.lastclean',
+	'db.maintenance.lastrun',
+	'migration.torboxnews_2026',
+)
 
 def make_settings_dict(): # service runs upon a setting change
 	try:
@@ -140,6 +160,15 @@ def make_settings_dict(): # service runs upon a setting change
 			if setting_value is None: setting_value = ''
 			dict_item = {setting_id: setting_value}
 			settings_dict.update(dict_item)
+		# PERF (v1.0.38): siembra claves internas que el código lee pero que Kodi
+		# puede no haber escrito aún al settings.xml de userdata (marcadores de
+		# último-run, migraciones, etc.). Sin esto caen en la rama 'else' de
+		# setting() y cada lectura fuerza un xbmcaddon.getSetting() lento (parseo
+		# del XML en formato antiguo). Sembradas como '' entran al dict y se
+		# resuelven al instante. Si más tarde Kodi/el usuario les da valor real,
+		# onSettingsChanged regenera el dict y el valor correcto prevalece.
+		for _k in _INTERNAL_EMPTY_KEYS:
+			if _k not in settings_dict: settings_dict[_k] = ''
 		homeWindow.setProperty('luc_kodi_settings', jsdumps(settings_dict))
 		refresh_playAction()
 		refresh_libPath()
@@ -286,6 +315,7 @@ def notification(title=None, message=None, icon=None, time=3000, sound=(setting(
 			win.show_and_close(duration=duration_secs)
 			del win
 		except Exception:
+			from resources.lib.modules import log_utils
 			log_utils.error()
 
 	import threading

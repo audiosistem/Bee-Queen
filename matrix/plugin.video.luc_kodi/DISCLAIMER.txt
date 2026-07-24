@@ -1,0 +1,22 @@
+luc_kodi - Disclaimer
+=====================
+
+This add-on is a front-end (a user interface) for third-party services that you
+configure with your own accounts: debrid services (such as Real-Debrid,
+AllDebrid, Premiumize, TorBox) and torrent indexers.
+
+This add-on hosts no content and includes no links. It does not host, store,
+upload, stream or distribute any media, and it does not embed or include any
+links or magnets to content. Every source is located and resolved at run time by
+the third-party services you have configured with your own credentials. Without
+your own accounts and configuration, the add-on returns no playable sources.
+
+You are responsible for the sources you choose to enable and for complying with
+the laws of your country, including copyright law. The author takes no
+responsibility for the content third-party services return, or for how the
+add-on is used. Use at your own risk.
+
+Licensed under the GNU General Public License v3.0 or later (GPL-3.0-or-later).
+See LICENSE.txt for the full text.
+
+Copyright concerns: https://github.com/apoyotech/luc_repo/issues

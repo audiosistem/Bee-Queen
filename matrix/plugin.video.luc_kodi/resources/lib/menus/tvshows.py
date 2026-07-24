@@ -76,7 +76,7 @@ class TVshows:
 		self.traktwatchlist_link = 'https://api.trakt.tv/users/me/watchlist/shows?limit=%s&page=1' % self.page_limit # this is now a dummy link for pagination to work
 		self.traktcollection_link = 'https://api.trakt.tv/users/me/collection/shows?limit=%s&page=1' % self.page_limit # this is now a dummy link for pagination to work
 		self.traktlist_link = 'https://api.trakt.tv/users/%s/lists/%s/items/shows?limit=%s&page=1' % ('%s', '%s', self.page_limit) # local pagination, limit and page used to advance, pulled from request
-		self.progress_link = 'https://api.trakt.tv/sync/watched/shows?extended=noseasons'
+		self.progress_link = 'https://api.trakt.tv/sync/watched/shows' # 2026-06-30: noseason(s) deprecated; no-seasons + full info is the default now
 		self.trakttrending_link = 'https://api.trakt.tv/shows/trending?page=1&limit=%s' % self.page_limit
 		self.traktpopular_link = 'https://api.trakt.tv/shows/popular?page=1&limit=%s' % self.page_limit
 		self.traktrecommendations_link = 'https://api.trakt.tv/recommendations/shows?limit=40'
@@ -598,6 +598,18 @@ class TVshows:
 			q = dict(parse_qsl(urlsplit(url).query))
 			index = int(q['page']) - 1
 			self.list = traktsync.fetch_watch_list('shows_watchlist')
+			# 2026 self-heal: si la tabla local esta vacia pero hay credenciales
+			# Trakt, el marcador last_watchlisted_at quedo envenenado por una
+			# sync fallida (cambio de API 30-jun-2026) y el servicio nunca
+			# reintenta. Forzamos una sync inline con backoff de 10 min.
+			if not self.list and trakt.getTraktCredentialsInfo():
+				import time as _t
+				_prop = 'luc_kodi.watchlist_selfheal.shows_watchlist'
+				_last = control.homeWindow.getProperty(_prop)
+				if not _last or (int(_t.time()) - int(_last)) > 600:
+					control.homeWindow.setProperty(_prop, str(int(_t.time())))
+					trakt.sync_watch_list(forced=True)
+					self.list = traktsync.fetch_watch_list('shows_watchlist')
 			self.sort(type='shows.watchlist') # sort before local pagination
 			if getSetting('trakt.paginate.lists') == 'true' and self.list:
 				paginated_ids = [self.list[x:x + int(self.page_limit)] for x in range(0, len(self.list), int(self.page_limit))]
@@ -640,7 +652,12 @@ class TVshows:
 	def trakt_list(self, url, user):
 		self.list = []
 		if ',return' in url: url = url.split(',return')[0]
-		items = trakt.getTraktAsJson(url)
+		# 2026-06-30 Trakt API: /watched endpoints are paginated (100-item cap without
+		# params). If the caller did not build local pagination into the url, fetch all pages.
+		if '/watched/' in url and 'limit=' not in url:
+			items = trakt.getTraktAsJsonPaginated(url, page_size=250)
+		else:
+			items = trakt.getTraktAsJson(url)
 		if not items: return
 		try:
 			q = dict(parse_qsl(urlsplit(url).query))
@@ -1060,6 +1077,8 @@ class TVshows:
 						cm.append((watchedMenu, 'RunPlugin(%s?action=playcount_TVShow&name=%s&imdb=%s&tvdb=%s&query=5)' % (sysaddon, systitle, imdb, tvdb)))
 				except: pass
 				cm.append((findSimilarMenu, 'Container.Update(%s?action=tvshows&url=%s)' % (sysaddon, quote_plus('https://api.trakt.tv/shows/%s/related?limit=20&page=1,return' % imdb))))
+				# v1.0.44: tráiler keyless — usa el id de TMDb ya presente en meta['trailer'] si existe
+				cm.append(('Play Trailer', 'PlayMedia(%s?action=play_Trailer&type=show&name=%s&year=%s&imdb=%s&tmdb=%s&url=%s)' % (sysaddon, systitle, year, imdb, tmdb, quote_plus(trailer) if trailer else '')))
 				cm.append((playRandom, 'RunPlugin(%s?action=play_Random&rtype=season&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s&tvdb=%s&art=%s)' % (sysaddon, systitle, year, imdb, tmdb, tvdb, sysart)))
 				# cm.append((queueMenu, 'RunPlugin(%s?action=playlist_QueueItem&name=%s)' % (sysaddon, systitle)))
 				# cm.append((showPlaylistMenu, 'RunPlugin(%s?action=playlist_Show)' % sysaddon))
@@ -1124,6 +1143,7 @@ class TVshows:
 				log_utils.error()
 		control.content(syshandle, 'tvshows')
 		control.directory(syshandle, cacheToDisc=False) # disable cacheToDisc so unwatched counts loads fresh data counts if changes made
+		control.sleep(200) # da tiempo al skin a renderizar antes de forzar el view (igual que movieDirectory); sin esto las páginas 2+ se quedan en list en vez de wall
 		views.setView('tvshows', {'skin.estuary': 500, 'skin.confluence': 500})
 
 	def addDirectory(self, items, queue=False):

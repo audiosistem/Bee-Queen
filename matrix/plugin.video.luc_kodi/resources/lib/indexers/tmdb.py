@@ -174,7 +174,7 @@ class Movies(TMDb):
 		# self.user = str(self.imdb_user) + str(self.API_key)
 		self.user = str(self.API_key)
 
-	def tmdb_list(self, url):
+	def tmdb_list(self, url, meta_sem=None):
 		try:
 			result = cache.get(self.get_request, 96, url % self.API_key)
 			if result is None: return
@@ -205,6 +205,11 @@ class Movies(TMDb):
 
 		def items_list(i):
 			if self.list[i]['metacache']: return
+			# meta_sem (opcional): semáforo GLOBAL compartido por el precache de
+			# arranque para acotar el TOTAL de peticiones de meta concurrentes
+			# entre TODAS las listas. Sin él, el comportamiento es el de siempre
+			# (un hilo por título, sin tope) — los menús normales no lo pasan.
+			if meta_sem is not None: meta_sem.acquire()
 			try:
 				values = {}
 				tmdb = self.list[i].get('tmdb', '')
@@ -221,6 +226,8 @@ class Movies(TMDb):
 			except:
 				from resources.lib.modules import log_utils
 				log_utils.error()
+			finally:
+				if meta_sem is not None: meta_sem.release()
 
 		self.list = metacache.fetch(self.list, self.lang, self.user)
 		threads = []
@@ -237,6 +244,18 @@ class Movies(TMDb):
 		for i in sortList:
 			sorted_list += [item for item in self.list if item['tmdb'] == i] # resort to match TMDb list because threading will lose order.
 		return sorted_list
+
+	def tmdb_list_ids(self, url):
+		"""Devuelve SOLO los tmdb ids de una lista, sin enriquecer (sin las ~20
+		peticiones de meta por título). Lo usa el precache de arranque para saber
+		QUÉ títulos invalidar en metacache antes de re-enriquecer (frescura real).
+		Reutiliza exactamente la misma clave de caché que tmdb_list, así que no
+		añade tráfico: si la lista ya se pidió, sale de caché."""
+		try:
+			result = cache.get(self.get_request, 96, url % self.API_key)
+			if not result or '404:NOT FOUND' in result: return []
+			return [str(i['id']) for i in result.get('results', []) if i.get('id')]
+		except: return []
 
 	def jw_list(self, jw_package_code):
 		# Alternative to tmdb_list(): sources TMDb IDs from JustWatch's GraphQL API
@@ -485,7 +504,10 @@ class Movies(TMDb):
 				except: pass
 			if meta['mpaa']: meta['mpaa'] = getSetting('mpa.prefix') + meta['mpaa']
 			try:
-				trailer = [x for x in result['videos']['results'] if x['site'] == 'YouTube' and x['type'] in ('Trailer', 'Teaser')][0]['key']
+				# v1.0.46: prefiere Trailer oficial de mayor resolución; Teaser solo como último recurso
+				_vids = [x for x in result['videos']['results'] if x['site'] == 'YouTube' and x['type'] in ('Trailer', 'Teaser')]
+				_vids.sort(key=lambda x: (x['type'] != 'Trailer', not x.get('official'), -(x.get('size') or 0)))
+				trailer = _vids[0]['key']
 				meta['trailer'] = control_trailer % trailer
 			except: meta['trailer'] = ''
 			# make aliases match what trakt returns in sources module for title checking scrape results
@@ -592,7 +614,9 @@ class Movies(TMDb):
 		curated = [
 			('Netflix',             8,    'https://i.postimg.cc/25VTZBr9/pngwing-com-(2).png'),
 			('Amazon Prime Video',  9,    'https://i.postimg.cc/FH4WdKBq/prime-video-(1).png'),
-			('Paramount+',          2303, 'https://i.postimg.cc/50xnPkV6/paramount-plus.png'),
+            ('JustWatch TV',        2285, 'https://i.postimg.cc/WbMNhfB1/justwatch-(2).png'),
+            ('Vix',                 457,  'https://i.postimg.cc/sXsZqr9z/vix-logo-01.png'),
+            ('Paramount+',          2303, 'https://i.postimg.cc/50xnPkV6/paramount-plus.png'),
 			('SkyShowtime',         1773, 'https://i.postimg.cc/76GpVGxT/skyshowtime-2022-color.png', 'ES'),
 			('The CW',              83,   'https://i.postimg.cc/4NnRNxHk/The-CW-(2006-2024).png'),
 			('HBO Max',             1899, 'https://i.postimg.cc/BnD29cZq/HBO-Max-Logo-svg.png'),
@@ -602,7 +626,7 @@ class Movies(TMDb):
 			('Disney+',             337,  'https://i.postimg.cc/1zGXMvmX/Disney-svg.png'),
             ('Starz',               43,   'https://i.postimg.cc/LXpsYw1B/starz-(1).png'),
 			('AMC+',                526,  'https://i.postimg.cc/SxqxRW7Y/AMC.png'),
-			('Crunchyroll',         283,  'https://i.postimg.cc/T1tSqv5D/crunchyroll.png'),
+			('Crunchyroll',         283,  'https://i.postimg.cc/L5GsD8YR/crunchyroll.png'),
 			('MUBI',                11,   'https://i.postimg.cc/GtCQRFtZ/Mubi.png'),
 			('Shudder',             99,   'https://i.postimg.cc/nhXr6vZb/shudder.png'),
 			('Google Play Movies',  3,    'https://i.postimg.cc/nLX7Kwkp/pngwing-com.png'),
@@ -662,7 +686,7 @@ class TVshows(TMDb):
 		self.date_time = datetime.now()
 		self.today_date = (self.date_time).strftime('%Y-%m-%d')
 
-	def tmdb_list(self, url):
+	def tmdb_list(self, url, meta_sem=None):
 		if not url: return
 		try:
 			result = cache.get(self.get_request, 96, url % self.API_key)
@@ -692,6 +716,7 @@ class TVshows(TMDb):
 
 		def items_list(i):
 			if self.list[i]['metacache']: return
+			if meta_sem is not None: meta_sem.acquire()
 			try:
 				values = {}
 				tmdb = self.list[i].get('tmdb', '')
@@ -709,6 +734,8 @@ class TVshows(TMDb):
 			except:
 				from resources.lib.modules import log_utils
 				log_utils.error()
+			finally:
+				if meta_sem is not None: meta_sem.release()
 
 		self.list = metacache.fetch(self.list, self.lang, self.user)
 		threads = []
@@ -725,6 +752,16 @@ class TVshows(TMDb):
 		for i in sortList:
 			sorted_list += [item for item in self.list if str(item['tmdb']) == str(i)]
 		return sorted_list
+
+	def tmdb_list_ids(self, url):
+		"""Igual que Movies.tmdb_list_ids: devuelve solo los tmdb ids de la lista
+		sin enriquecer. Reutiliza la clave de caché de tmdb_list (no añade tráfico)."""
+		if not url: return []
+		try:
+			result = cache.get(self.get_request, 96, url % self.API_key)
+			if not result or '404:NOT FOUND' in result: return []
+			return [str(i['id']) for i in result.get('results', []) if i.get('id')]
+		except: return []
 
 	def tmdb_collections_list(self, url):
 		if not url: return
@@ -907,7 +944,10 @@ class TVshows(TMDb):
 			try: meta['aliases'] = [{'title': x['title'], 'country': x['iso_3166_1'].lower()} for x in result.get('alternative_titles', {}).get('results') if x.get('iso_3166_1').lower() in ('us', 'uk', 'gb')]
 			except: meta['aliases'] = []
 			try:
-				meta['trailer'] = [x for x in result['videos']['results'] if x['site'] == 'YouTube' and x['type'] in ('Trailer', 'Teaser')][0]['key']
+				# v1.0.46: prefiere Trailer oficial de mayor resolución; Teaser solo como último recurso
+				_vids = [x for x in result['videos']['results'] if x['site'] == 'YouTube' and x['type'] in ('Trailer', 'Teaser')]
+				_vids.sort(key=lambda x: (x['type'] != 'Trailer', not x.get('official'), -(x.get('size') or 0)))
+				meta['trailer'] = _vids[0]['key']
 				meta['trailer'] = control_trailer % meta['trailer']
 			except: meta['trailer'] = ''
 			# meta['banner'] = '' # not available from TMDb

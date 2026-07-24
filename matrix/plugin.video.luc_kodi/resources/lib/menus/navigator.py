@@ -74,6 +74,12 @@ class Navigator:
 			self.addDirectoryItem(45001, 'movies&url=simkltrendingweek',  'simkl.png', 'DefaultMovies.png')
 		if getMenuEnabled('navi.movie.simkl.trendingMonth'):
 			self.addDirectoryItem(45002, 'movies&url=simkltrendingmonth', 'simkl.png', 'DefaultMovies.png')
+		if getMenuEnabled('navi.movie.simkl.playback'):
+			try:
+				from resources.lib.modules import simkl
+				if simkl.getSimklCredentialsInfo():
+					self.addDirectoryItem(45014, 'moviesSimklProgress&url=simklplayback', 'simkl.png', 'DefaultInProgressShows.png', queue=True)
+			except: pass
 		if getMenuEnabled('navi.movie.tmdb.genres'):
 			self.addDirectoryItem(32486 if self.indexLabels else 32455, 'movieGenres&url=tmdb_genre', 'tmdb.png' if self.iconLogos else 'genres.png', 'DefaultGenre.png')
 		if getMenuEnabled('navi.movie.tmdb.years'):
@@ -139,6 +145,12 @@ class Navigator:
 				from resources.lib.modules import simkl
 				if simkl.getSimklCredentialsInfo():
 					self.addDirectoryItem(45013, 'calendar&url=simklprogress', 'simkl.png', 'DefaultTVShows.png', queue=True, context=(32072, 'episodes_clrProgressCache&url=simklprogress'))
+			except: pass
+		if getMenuEnabled('navi.tv.simkl.playback'):
+			try:
+				from resources.lib.modules import simkl
+				if simkl.getSimklCredentialsInfo():
+					self.addDirectoryItem(45015, 'episodesSimklProgress&url=simklplayback', 'simkl.png', 'DefaultInProgressShows.png', queue=True, context=(32072, 'episodes_clrProgressCache&url=simklplayback'))
 			except: pass
 		if getMenuEnabled('navi.tv.tmdb.genres'):
 			self.addDirectoryItem(32486 if self.indexLabels else 32455, 'tvGenres&url=tmdb_genre', 'tmdb.png' if self.iconLogos else 'genres.png', 'DefaultGenre.png')
@@ -333,8 +345,8 @@ class Navigator:
 
 	def torbox_service(self):
 		if getSetting('torbox.username'):
-			self.addDirectoryItem('TorBox: Search', 'en_Search', 'search.png', 'DefaultAddonsSearch.png')
-			self.addDirectoryItem('TorBox: Account Info', 'en_AccountInfo', 'torbox.png', 'DefaultAddonService.png', isFolder=False)
+			self.addDirectoryItem('TorBox: Cloud (Torrents & Usenet)', 'tb_CloudStorage', 'torbox.png', 'DefaultAddonService.png')
+			self.addDirectoryItem('TorBox: Account Info', 'tb_AccountInfo', 'torbox.png', 'DefaultAddonService.png', isFolder=False)
 		else:
 			self.addDirectoryItem('[I]Please visit My Accounts for setup[/I]', 'tools_openSettings&query=7.0', 'torbox.png', 'DefaultAddonService.png', isFolder=False)
 		self.endDirectory()

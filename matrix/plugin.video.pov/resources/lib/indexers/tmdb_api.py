@@ -404,8 +404,8 @@ def _get_tmdblist_paginated_list(url):
 	except: return []
 	if pages <= 1: return items
 	args = ({'path': url, 'params': {**params, 'page': page}} for page in range(2, pages + 1))
-	with ThreadPoolExecutor() as tpe: # keep max_workers as default, min(32, os.cpu_count() + 4)
-		for result in tpe.map(get_tmdblist, args): # ThreadPoolExecutor map preserves order
+	with ThreadPoolExecutor() as executor: # keep max_workers as default, min(32, os.cpu_count() + 4)
+		for result in executor.map(get_tmdblist, args): # ThreadPoolExecutor map preserves order
 			if isinstance(result, dict): items.extend(result['results']) # caution, hides thread exceptions
 	return items
 

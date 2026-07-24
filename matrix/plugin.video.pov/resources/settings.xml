@@ -173,6 +173,7 @@
 		<setting label="UTC Time Offset" type="lsep" />
 		<setting id="datetime.offset" label="UTC (+/-)" type="slider" default="0" range="-15,1,15" option="int" />
 		<!-- Hidden -->
+		<setting id="database.merge_status" type="text" default="false" visible="false" />
 		<setting id="database.maintenance.due" type="text" default="0" visible="false" />
 		<setting id="reuse_language_invoker" type="text" default="true" visible="false" />
 	</category>

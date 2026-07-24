@@ -18,6 +18,7 @@ from resources.lib.modules.playcount import getMovieIndicators, getMovieOverlay
 from resources.lib.modules import tools
 from resources.lib.modules import poster_rotator
 from resources.lib.modules import trakt
+from resources.lib.modules import simkl
 from resources.lib.modules import views
 
 getLS = control.lang
@@ -232,6 +233,21 @@ class Movies:
 			if idx: self.worker()
 			self.list = sorted(self.list, key=lambda k: k['paused_at'], reverse=True)
 			if self.list is None: self.list = []
+			if create_directory: self.movieDirectory(self.list, unfinished=True, next=False)
+			return self.list
+		except:
+			from resources.lib.modules import log_utils
+			log_utils.error()
+
+	def simkl_progress(self, url, idx=True, create_directory=True):
+		"""SIMKL "Mi Progreso" (películas). Sesiones de /sync/playback/movie
+		con progreso entre 15% y <85%, ordenadas por pausa más reciente."""
+		self.list = []
+		try:
+			self.list = simkl.getMoviesProgress()
+			if not self.list: self.list = []
+			if idx: self.worker()
+			self.list = sorted(self.list, key=lambda k: k.get('paused_at') or '', reverse=True)
 			if create_directory: self.movieDirectory(self.list, unfinished=True, next=False)
 			return self.list
 		except:
@@ -648,6 +664,18 @@ class Movies:
 			q = dict(parse_qsl(urlsplit(url).query))
 			index = int(q['page']) - 1
 			self.list = traktsync.fetch_watch_list('movies_watchlist')
+			# 2026 self-heal: si la tabla local esta vacia pero hay credenciales
+			# Trakt, el marcador last_watchlisted_at quedo envenenado por una
+			# sync fallida (cambio de API 30-jun-2026) y el servicio nunca
+			# reintenta. Forzamos una sync inline con backoff de 10 min.
+			if not self.list and trakt.getTraktCredentialsInfo():
+				import time as _t
+				_prop = 'luc_kodi.watchlist_selfheal.movies_watchlist'
+				_last = control.homeWindow.getProperty(_prop)
+				if not _last or (int(_t.time()) - int(_last)) > 600:
+					control.homeWindow.setProperty(_prop, str(int(_t.time())))
+					trakt.sync_watch_list(forced=True)
+					self.list = traktsync.fetch_watch_list('movies_watchlist')
 			self.sort(type='movies.watchlist') # sort before local pagination
 			if getSetting('trakt.paginate.lists') == 'true' and self.list:
 				paginated_ids = [self.list[x:x + int(self.page_limit)] for x in range(0, len(self.list), int(self.page_limit))]
@@ -1110,6 +1138,8 @@ class Movies:
 						meta.update({'playcount': 0, 'overlay': 4})
 				except: pass
 				cm.append((playlistManagerMenu, 'RunPlugin(%s?action=playlist_Manager&name=%s&url=%s&meta=%s&art=%s)' % (sysaddon, sysname, sysurl, sysmeta, sysart)))
+				# v1.0.44: tráiler keyless — usa el id de TMDb ya presente en meta['trailer'] si existe
+				cm.append(('Play Trailer', 'PlayMedia(%s?action=play_Trailer&type=movie&name=%s&year=%s&imdb=%s&tmdb=%s&url=%s)' % (sysaddon, sysname, year, imdb, tmdb, quote_plus(trailer) if trailer else '')))
 				cm.append((queueMenu, 'RunPlugin(%s?action=playlist_QueueItem&name=%s)' % (sysaddon, sysname)))
 				cm.append((addToLibrary, 'RunPlugin(%s?action=library_movieToLibrary&name=%s&title=%s&year=%s&imdb=%s&tmdb=%s)' % (sysaddon, sysname, systitle, year, imdb, tmdb)))
 				cm.append((findSimilarMenu, 'Container.Update(%s?action=movies&url=%s)' % (sysaddon, quote_plus('https://api.trakt.tv/movies/%s/related?limit=20&page=1,return' % imdb))))
@@ -1147,6 +1177,12 @@ class Movies:
 				if is_widget: item.setProperty('isluc_kodi_widget', 'true')
 				if self.unairedcolor not in labelProgress:
 					resumetime = Bookmarks().get(name=label, imdb=imdb, tmdb=tmdb, year=str(year), runtime=runtime, ck=True)
+					# "Mi Progreso" (SIMKL playback): respaldo si aún no hay bookmark
+					# local. runtime aquí está en segundos.
+					try:
+						if (not resumetime or float(resumetime) == 0) and i.get('progress') and runtime:
+							resumetime = round(float(runtime) * float(i['progress']) / 100.0, 2)
+					except: pass
 					# item.setProperty('TotalTime', str(meta['duration'])) # Adding this property causes the Kodi bookmark CM items to be added
 					item.setProperty('ResumeTime', str(resumetime)) if KODI_VERSION < 20 else item.getVideoInfoTag().setResumePoint(float(resumetime))
 					try:

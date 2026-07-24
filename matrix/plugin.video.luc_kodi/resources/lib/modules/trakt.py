@@ -8,7 +8,7 @@ from json import dumps as jsdumps
 import re
 import requests
 from requests.adapters import HTTPAdapter
-from threading import Thread
+from threading import Thread, Lock
 from time import time
 from urllib3.util.retry import Retry
 from urllib.parse import urljoin, quote_plus
@@ -103,6 +103,11 @@ def getTrakt(url, post=None, extended=False, silent=False):
 	return None
 
 def error_handler(url, response, status_code, silent=False):
+	# TEMP DIAG v1.0.48: log de TODOS los no-2xx sin gate de debug.enabled (quitar tras resolver watchlist)
+	if status_code not in ('200', '201'):
+		try: _body = str(response.text)[:300]
+		except: _body = ''
+		control.log('[ plugin.video.luc_kodi ]  TEMP-DIAG Trakt HTTP %s: URL=%s BODY=%s' % (status_code, url, _body), 1)
 	if status_code.startswith('5') or (response and isinstance(response, str) and '<html' in response) or not str(response): # covers Maintenance html responses ["Bad Gateway", "We're sorry, but something went wrong (500)"])
 		log_utils.log('Temporary Trakt Server Problem: %s:%s' % (status_code, response), level=log_utils.LOGINFO)
 		if (not silent) and server_notification: control.notification(title=32315, message=33676)
@@ -124,26 +129,59 @@ def getTraktAsJson(url, post=None, silent=False):
 		return r
 	except: log_utils.error()
 
-def getTraktAsJsonPaginated(url, page_size=1000, max_pages=1000, silent=False):
-	# 2026 Trakt API: pagination is mandatory on /users/{u}/collection, /sync/collection and
-	# /users/{u}/lists/{id}/items. Default page size will drop to 10 items by end of March 2026
-	# when no pagination params are provided. This helper appends limit/page and loops until
-	# a page returns fewer items than page_size (= last page reached).
-	# NOTE: this module shadows the builtin `list` with a function at the bottom (def list(id)),
-	# so we use `type(items) is not list` reaching the builtin via __builtins__ instead of
-	# `isinstance(items, list)` to avoid TypeError ("isinstance() arg 2 must be a type").
+def getTraktAsJsonPaginated(url, page_size=250, max_pages=40, silent=False):
+	# 2026 Trakt API: pagination is mandatory on collection, list items and, as of
+	# June 30 2026, also on /users/{u}/watched/{type} and /sync/watched/{type}.
+	# Max page size is now 250 and Trakt warns the APPLIED limit may be lower than
+	# the REQUESTED limit (especially with extended=progress). So we must NOT stop
+	# when len(items) < page_size. Robust stop logic per Trakt's guidance:
+	#   1. use the X-Pagination-Page-Count header when present
+	#   2. otherwise keep looping until an empty [] page
+	#   3. if no pagination headers at all -> endpoint is unpaginated, single shot
+	# NOTE: this module shadows the builtin `list` with a function at the bottom
+	# (def list(id)), so we grab the real type via builtins.
 	import builtins
 	_list_type = builtins.list
+	if page_size > 250: page_size = 250 # 2026 hard cap
 	all_items = []
 	page = 1
+	prev_first = None
 	sep = '&' if '?' in url else '?'
 	while page <= max_pages:
 		paged_url = '%s%slimit=%d&page=%d' % (url, sep, page_size, page)
-		items = getTraktAsJson(paged_url, silent=silent)
-		if items is None: break
-		if not isinstance(items, _list_type): break
+		res_headers = {}
+		try:
+			r = getTrakt(url=paged_url, extended=True, silent=silent)
+			if isinstance(r, tuple) and len(r) == 2: r, res_headers = r[0], r[1]
+			if not r:
+				control.log('[ plugin.video.luc_kodi ]  TEMP-DIAG paginated fetch FAILED (getTrakt returned None): %s' % paged_url, 1) # TEMP DIAG v1.0.48: quitar tras resolver watchlist
+				return None # request failed: signal error, do NOT persist partial data
+			items = r.json()
+		except:
+			control.log('[ plugin.video.luc_kodi ]  TEMP-DIAG paginated fetch EXCEPTION: %s' % paged_url, 1) # TEMP DIAG v1.0.48
+			log_utils.error()
+			return None # failure mid-pagination: better no data than partial data wiping the db
+		if not isinstance(items, _list_type): return None
+		if not items: break # empty [] page = past the last page
+		# defensa contra APIs que devuelven la ULTIMA pagina repetida al pedir
+		# page > page_count: si la pagina empieza igual que la anterior, hemos
+		# terminado (evita crawls descontrolados que agotan el rate limit)
+		cur_first = repr(items[0])[:512]
+		if cur_first == prev_first: break
+		prev_first = cur_first
 		all_items.extend(items)
-		if len(items) < page_size: break
+		page_count = res_headers.get('X-Pagination-Page-Count')
+		item_count = res_headers.get('X-Pagination-Item-Count')
+		if page_count:
+			try:
+				if page >= int(page_count): break
+			except: pass
+		elif item_count:
+			try:
+				if len(all_items) >= int(item_count): break
+			except: pass
+		elif 'X-Pagination-Page' not in res_headers:
+			break # endpoint not paginated, first response is everything
 		page += 1
 	return all_items
 
@@ -751,14 +789,19 @@ def getProgressActivity(activities=None):
 		return activity
 	except: log_utils.error()
 
+_syncMovies_lock = Lock()
 def cachesyncMovies(timeout=0):
-	indicators = traktsync.get(syncMovies, timeout)
+	# 2026 single-flight: la primera llamada hace el crawl paginado; las demas
+	# esperan y releen la cache recien escrita en vez de lanzar crawls duplicados.
+	with _syncMovies_lock:
+		indicators = traktsync.get(syncMovies, timeout)
 	return indicators
 
 def syncMovies():
 	try:
 		if not getTraktCredentialsInfo(): return
-		indicators = getTraktAsJson('/users/me/watched/movies')
+		# 2026-06-30 Trakt API: /watched is paginated (100-item cap without params)
+		indicators = getTraktAsJsonPaginated('/users/me/watched/movies', silent=True)
 		if not indicators: return None
 		indicators = [i['movie']['ids'] for i in indicators]
 		indicators = [str(i['imdb']) for i in indicators if 'imdb' in i]
@@ -772,7 +815,8 @@ def timeoutsyncMovies():
 def watchedMovies():
 	try:
 		if not getTraktCredentialsInfo(): return
-		return getTraktAsJson('/users/me/watched/movies?extended=full')
+		# 2026-06-30 Trakt API: full info is now the default; paginate to get everything
+		return getTraktAsJsonPaginated('/users/me/watched/movies', silent=True)
 	except: log_utils.error()
 
 def watchedMoviesTime(imdb):
@@ -786,7 +830,9 @@ def watchedMoviesTime(imdb):
 def watchedShows():
 	try:
 		if not getTraktCredentialsInfo(): return
-		return getTraktAsJson('/users/me/watched/shows?extended=full')
+		# 2026-06-30 Trakt API: noseason is the default now; seasons array requires
+		# extended=progress. Pages may come back smaller than requested with progress.
+		return getTraktAsJsonPaginated('/users/me/watched/shows?extended=full,progress', silent=True)
 	except: log_utils.error()
 
 def watchedShowsTime(tvdb, season, episode):
@@ -814,18 +860,23 @@ def cachesyncTV(imdb, tvdb): # sync full watched shows then sync imdb_id "season
 		traktsync.insert_syncSeasons_at()
 	except: log_utils.error()
 
+_syncTVShows_lock = Lock()
 def cachesyncTVShows(timeout=0):
-	indicators = traktsync.get(syncTVShows, timeout)
+	# 2026 single-flight: idem cachesyncMovies. El crawl de /watched/shows con
+	# extended=progress es caro; jamas debe correr duplicado en paralelo.
+	with _syncTVShows_lock:
+		indicators = traktsync.get(syncTVShows, timeout)
 	return indicators
 
 def syncTVShows(): # sync all watched shows ex. [({'imdb': 'tt12571834', 'tvdb': '384435', 'tmdb': '105161', 'trakt': '163639'}, 16, [(1, 16)]), ({'imdb': 'tt11761194', 'tvdb': '377593', 'tmdb': '119845', 'trakt': '158621'}, 2, [(1, 1), (1, 2)])]
 	try:
 		if not getTraktCredentialsInfo(): return
-		indicators = getTraktAsJson('/users/me/watched/shows?extended=full')
+		# 2026-06-30 Trakt API: extended=progress required for the seasons array
+		indicators = getTraktAsJsonPaginated('/users/me/watched/shows?extended=full,progress', silent=True)
 		if not indicators: return None
 # /shows/ID/progress/watched  endpoint only accepts imdb or trakt ID so write all ID's
-		indicators = [({'imdb': i['show']['ids']['imdb'], 'tvdb': str(i['show']['ids']['tvdb']), 'tmdb': str(i['show']['ids']['tmdb']), 'trakt': str(i['show']['ids']['trakt'])}, \
-							i['show']['aired_episodes'], sum([[(s['number'], e['number']) for e in s['episodes']] for s in i['seasons']], [])) for i in indicators]
+		indicators = [({'imdb': i['show']['ids'].get('imdb'), 'tvdb': str(i['show']['ids'].get('tvdb')), 'tmdb': str(i['show']['ids'].get('tmdb')), 'trakt': str(i['show']['ids'].get('trakt'))}, \
+							i['show'].get('aired_episodes') or 0, sum([[(s['number'], e['number']) for e in (s.get('episodes') or [])] for s in (i.get('seasons') or [])], [])) for i in indicators]
 		indicators = [(i[0], int(i[1]), i[2]) for i in indicators]
 		return indicators
 	except: log_utils.error()
@@ -909,13 +960,22 @@ def update_syncMovies(imdb, remove_id=False):
 
 def service_syncSeasons(): # season indicators and counts for watched shows ex. [['1', '2', '3'], {1: {'total': 8, 'watched': 8, 'unwatched': 0}, 2: {'total': 10, 'watched': 10, 'unwatched': 0}}]
 	try:
+		from threading import Semaphore
 		indicators = traktsync.cache_existing(syncTVShows) # use cached data from service cachesyncTVShows() just written fresh
+		if not indicators: return
+		# 2026 fix: antes lanzaba UN HILO POR SERIE VISTA simultaneamente (cientos de
+		# peticiones a /shows/{id}/progress/watched de golpe) y agotaba el rate limit
+		# de Trakt (1000 GET/5min), provocando tormentas de 429 que congelaban los
+		# menus. Throttled a 8 concurrentes, mismo patron que sync_popular_lists.
+		sem = Semaphore(8)
+		def _throttled(imdb, tvdb, trakt_id):
+			with sem: cachesyncSeasons(imdb, tvdb, trakt_id)
 		threads = []
 		for indicator in indicators:
 			imdb = indicator[0].get('imdb', '') if indicator[0].get('imdb') else ''
 			tvdb = str(indicator[0].get('tvdb', '')) if indicator[0].get('tvdb') else ''
-			trakt = str(indicator[0].get('trakt', '')) if indicator[0].get('trakt') else ''
-			threads.append(Thread(target=cachesyncSeasons, args=(imdb, tvdb, trakt))) # season indicators and counts for an entire show
+			trakt_id = str(indicator[0].get('trakt', '')) if indicator[0].get('trakt') else ''
+			threads.append(Thread(target=_throttled, args=(imdb, tvdb, trakt_id))) # season indicators and counts for an entire show
 		[i.start() for i in threads]
 		[i.join() for i in threads]
 	except: log_utils.error()
@@ -1533,9 +1593,9 @@ def sync_collection(activities=None, forced=False):
 		link = '/users/me/collection/%s?extended=full'
 		if forced:
 			items = getTraktAsJsonPaginated(link % 'movies', silent=True)
-			traktsync.insert_collection(items, 'movies_collection')
+			if items is not None: traktsync.insert_collection(items, 'movies_collection')
 			items = getTraktAsJsonPaginated(link % 'shows', silent=True)
-			traktsync.insert_collection(items, 'shows_collection')
+			if items is not None: traktsync.insert_collection(items, 'shows_collection')
 			log_utils.log('Forced - Trakt Collection Sync Complete', __name__, log_utils.LOGDEBUG)
 		else:
 			db_last_collected = traktsync.last_sync('last_collected_at')
@@ -1545,35 +1605,46 @@ def sync_collection(activities=None, forced=False):
 									(str(db_last_collected), str(collectedActivity)), __name__, log_utils.LOGDEBUG)
 				# indicators = cachesyncMovies() # could maybe check watched status here to satisfy sort method
 				items = getTraktAsJsonPaginated(link % 'movies', silent=True)
-				traktsync.insert_collection(items, 'movies_collection')
+				if items is not None: traktsync.insert_collection(items, 'movies_collection')
 				# indicators = cachesyncTVShows() # could maybe check watched status here to satisfy sort method
 				items = getTraktAsJsonPaginated(link % 'shows', silent=True)
-				traktsync.insert_collection(items, 'shows_collection')
+				if items is not None: traktsync.insert_collection(items, 'shows_collection')
 	except: log_utils.error()
 
 def sync_watch_list(activities=None, forced=False):
 	try:
-		# 2026 Trakt API: watchlist is currently "Pagination Optional" but Free
-		# accounts cap at 250 items and VIP at 5000. We paginate explicitly with
-		# limit=1000 to be future-proof against the end-of-March 2026 default
-		# (10 items) potentially being extended to optional-pagination endpoints.
+		# 2026 Trakt API: watchlist paginated via helper (max limit is 250 as of
+		# June 30 2026). insert only when fetch succeeded (None = error) so a
+		# transient API failure can never wipe the local watchlist tables.
 		link = '/users/me/watchlist/%s?extended=full'
 		if forced:
-			items = getTraktAsJsonPaginated(link % 'movies', page_size=1000, silent=True)
-			traktsync.insert_watch_list(items, 'movies_watchlist')
-			items = getTraktAsJsonPaginated(link % 'shows', page_size=1000, silent=True)
-			traktsync.insert_watch_list(items, 'shows_watchlist')
+			items = getTraktAsJsonPaginated(link % 'movies', silent=True)
+			control.log('[ plugin.video.luc_kodi ]  TEMP-DIAG sync_watch_list movies fetched: %s' % ('None (error)' if items is None else len(items)), 1) # TEMP DIAG v1.0.48
+			if items is not None: traktsync.insert_watch_list(items, 'movies_watchlist')
+			items = getTraktAsJsonPaginated(link % 'shows', silent=True)
+			control.log('[ plugin.video.luc_kodi ]  TEMP-DIAG sync_watch_list shows fetched: %s' % ('None (error)' if items is None else len(items)), 1) # TEMP DIAG v1.0.48
+			if items is not None: traktsync.insert_watch_list(items, 'shows_watchlist')
 			log_utils.log('Forced - Trakt Watch List Sync Complete', __name__, log_utils.LOGDEBUG)
 		else:
 			db_last_watchList = traktsync.last_sync('last_watchlisted_at')
 			watchListActivity = getWatchListedActivity(activities)
-			if watchListActivity - db_last_watchList >= 60: # do not sync unless 1 min difference or more
+			needs_sync = (watchListActivity - db_last_watchList >= 60) # do not sync unless 1 min difference or more
+			if not needs_sync and watchListActivity > 0:
+				# 2026 self-heal: si Trakt reporta actividad de watchlist pero las
+				# tablas locales estan vacias, el marcador quedo envenenado por una
+				# sync fallida. Resincroniza aunque el marcador diga lo contrario.
+				try:
+					if not traktsync.fetch_watch_list('shows_watchlist') and not traktsync.fetch_watch_list('movies_watchlist'):
+						needs_sync = True
+						log_utils.log('Trakt Watch List Sync self-heal: local tables empty but trakt reports watchlist activity', __name__, log_utils.LOGDEBUG)
+				except: pass
+			if needs_sync:
 				log_utils.log('Trakt Watch List Sync Update...(local db latest "watchlist_at" = %s, trakt api latest "watchlisted_at" = %s)' % \
 									(str(db_last_watchList), str(watchListActivity)), __name__, log_utils.LOGDEBUG)
-				items = getTraktAsJsonPaginated(link % 'movies', page_size=1000, silent=True)
-				traktsync.insert_watch_list(items, 'movies_watchlist')
-				items = getTraktAsJsonPaginated(link % 'shows', page_size=1000, silent=True)
-				traktsync.insert_watch_list(items, 'shows_watchlist')
+				items = getTraktAsJsonPaginated(link % 'movies', silent=True)
+				if items is not None: traktsync.insert_watch_list(items, 'movies_watchlist')
+				items = getTraktAsJsonPaginated(link % 'shows', silent=True)
+				if items is not None: traktsync.insert_watch_list(items, 'shows_watchlist')
 	except: log_utils.error()
 
 def sync_popular_lists(forced=False):

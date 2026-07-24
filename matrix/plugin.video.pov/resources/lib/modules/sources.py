@@ -1,6 +1,6 @@
+import re
 import json
 import time
-import re, random
 from concurrent.futures import ThreadPoolExecutor as TPE, as_completed
 from threading import Thread
 from magneto import sources as magneto_sources
@@ -145,9 +145,10 @@ class Sources:
 		start_time = time.monotonic()
 		end_time = start_time + timeout
 		self.progress_dialog.make(self.meta)
-		while alive_threads := [x.name for x in _threads if x.is_alive()]:
-			if monitor.abortRequested() or time.monotonic() > end_time: break
+		while not monitor.abortRequested() and time.monotonic() <= end_time:
 			try:
+				alive_threads = [x.name for x in _threads if x.is_alive()]
+				if not alive_threads: break
 				self.scraper_processor.process_internal_results()
 				int_totals = [_total_format % v for v in self.internal_resolutions.values()]
 				current_progress = time.monotonic() - start_time
@@ -227,7 +228,7 @@ class Sources:
 					if monitor.abortRequested(): break
 					elif self.progress_dialog.full_screen and self.progress_dialog.iscanceled(): break
 					percent = int(((total_items := len(items))-count)/total_items*100)
-					name = (item.get('URLName') or item['name']).upper()
+					name = (item.get('display_name') or item['name']).upper()
 					line1 = item.get('scrape_provider'), item.get('cache_provider'), item.get('provider')
 					if source_index is not None: line1 = ('[B]%02d[/B]' % (source_index + count), *line1)
 					line2 = item.get('size_label', ''), item.get('extraInfo', '')
@@ -578,6 +579,12 @@ class ExternalManager:
 	def dialog_hook(function):
 		def wrapper(instance, *args, **kwargs):
 			if not instance.background:
+				if instance.internal_activated or instance.internal_prescraped:
+					instance.string3 = int_format % (instance.int_dialog_highlight, '%s')
+					instance.string4 = ext_format % (instance.ext_dialog_highlight, '%s')
+				else:
+					instance.string3 = ''
+					instance.string4 = ext_scr_format % (instance.ext_dialog_highlight, ls(32118))
 				hide_busy_dialog()
 				if not instance.progress_dialog.full_screen:
 					progressDialogBG.create('POV', 'POV loading...')
@@ -615,79 +622,69 @@ class ExternalManager:
 
 	@dialog_hook
 	def results(self, info):
-		self.threads = set()
 		tpe = TPE(max(1, len(self.source_dict), len(self.debrid_torrents)))
 		try:
-			random.shuffle(self.source_dict)
-			# shuffle because tpe returns order submitted without as_completed
-			# chose not to use as_completed because status monitored by done and absolute scrape timeout
+			threads = set()
+			total_results = []
 			for provider, module, *pack in self.source_dict:
 				args = (provider, module, *pack) if pack else (provider, module)
 				fut = tpe.submit(ExternalSource(self.meta, self.resolutions).results, info, args)
 				fut.name = pack_display % (provider, *pack) if pack and pack[0] else provider
-				self.threads.add(fut)
-			self.wait()
-			providers = [i for fut in self.threads for i in (fut.result() if fut.done() else [])]
-			if self.meta.get('mediatype') not in ('movie', 'movies'):
-				try: providers.sort(key=lambda k: k.get('package') or '', reverse=True)
-				except: pass
-			self.sources.extend(self.process_duplicates(providers))
+				threads.add(fut)
+			self.thread_monitor(threads, ls(32676))
+			threads = [i for i in threads if i.done() and not i.exception()]
+			for fut in as_completed(threads): total_results.extend(fut.result())
+			self.sources.extend(self.process_duplicates(total_results))
 			torrent_sources = [i for i in self.sources if 'torrent' in i['source']]
 			result_hashes = list({i['hash'] for i in torrent_sources})
 			DebridCheck.set_cached_hashes(result_hashes)
-			self.threads = set()
+			threads = set()
 			for item in self.debrid_torrents:
 				fut = tpe.submit(DebridCheck(self.meta, item).cache_check)
 				fut.name = item
-				self.threads.add(fut)
-			self.wait(debrid_check=True)
-			for name, hashes in ((fut.name, fut.result() if fut.done() else []) for fut in self.threads):
-				if name in ('real-debrid', 'alldebrid'): uncached = 'Unchecked %s' % name
-				else: uncached = 'Uncached %s' % name
+				threads.add(fut)
+			self.thread_monitor(threads, ls(32579))
+			threads = [i for i in threads if i.done() and not i.exception()]
+			for name, hashes in ((fut.name, fut.result()) for fut in threads):
+				if name in ('real-debrid', 'alldebrid'): uncached = '%s %s' % ('Unchecked', name)
+				else: uncached = '%s %s' % ('Uncached', name)
 				self.final_sources.extend(
 					{**i, 'cache_provider': name if i['hash'] in hashes else uncached, 'debrid': name}
-				for i in torrent_sources)
+					for i in torrent_sources
+				)
 		except: notification(32574)
 		finally: tpe.shutdown(False)
 		return self.final_sources
 
-	def wait(self, debrid_check=False):
-		if not self.background:
-			if self.internal_activated or self.internal_prescraped:
-				string3 = int_format % (self.int_dialog_highlight, '%s')
-				string4 = ext_format % (self.ext_dialog_highlight, '%s')
-			else: string4 = ext_scr_format % (self.ext_dialog_highlight, ls(32118))
-			string1, string2 = ls(32579) if debrid_check else ls(32676), ls(32677)
-			line1 = line2 = line3 = ''
-		len_threads = len(self.threads)
+	def thread_monitor(self, threads, status_line=''):
+		len_threads = len(threads)
 		end_time = time.monotonic() + self.timeout
-		while alive_threads := (
-			*[x.name for x in self.threads if not x.done()],
-			*[x.name for x in self.internal_scrapers if x.is_alive()]
-		):
-			if monitor.abortRequested() or time.monotonic() > end_time: break
-			if not self.background:
-				try:
-					if self.progress_dialog.full_screen and self.progress_dialog.iscanceled(): break
-					ext_totals = [self.ext_total % v for v in self.resolutions.values()]
-					len_alive_threads = len(alive_threads)
-					progress = int((len_threads-len_alive_threads)/len_threads*100)
-					if self.internal_activated or self.internal_prescraped:
-#						alive_threads.extend(self.process_internal_results())
-						self.process_internal_results()
-						int_totals = [self.int_total % v for v in self.internal_resolutions.values()]
-						line1 = string3 % diag_format % tuple(int_totals)
-						line2 = string4 % diag_format % tuple(ext_totals)
-					else:
-						line1 = string4
-						line2 = diag_format % tuple(ext_totals)
-					if len_alive_threads > 5: line3 = string1 % str(len_threads-len_alive_threads)
-					else: line3 = string1 % ', '.join(alive_threads).upper()
-					if self.progress_dialog.full_screen:
-						self.progress_dialog.update(format_line % (line1, line2, line3), progress)
-					else: progressDialogBG.update(progress, line3)
-				except: pass
+		while not monitor.abortRequested() and time.monotonic() <= end_time:
+			alive_threads = [x.name for x in self.internal_scrapers if x.is_alive()]
+			alive_threads.extend(x.name for x in threads if not x.done())
+			if not alive_threads: break
+			if not self.background: self.progress_update(alive_threads, len_threads, status_line)
 			sleep(self.sleep_time)
+
+	def progress_update(self, alive_threads, len_threads, string1):
+		try:
+			ext_totals = [self.ext_total % v for v in self.resolutions.values()]
+			len_alive_threads = len(alive_threads)
+			progress = int((len_threads-len_alive_threads)/len_threads*100)
+			if self.internal_activated or self.internal_prescraped:
+				self.process_internal_results()
+				int_totals = [self.int_total % v for v in self.internal_resolutions.values()]
+				line1 = self.string3 % diag_format % tuple(int_totals)
+				line2 = self.string4 % diag_format % tuple(ext_totals)
+			else:
+				line1 = self.string4
+				line2 = diag_format % tuple(ext_totals)
+			if len_alive_threads > 5: line3 = string1 % str(len_threads-len_alive_threads)
+			else: line3 = string1 % ', '.join(alive_threads).upper()
+			if self.progress_dialog.full_screen:
+				self.progress_dialog.update(format_line % (line1, line2, line3), progress)
+			else: progressDialogBG.update(progress, line3)
+		except: pass
 
 	def process_duplicates(self, sources):
 		uniqueURLs, uniqueHashes = set(), set()
@@ -800,7 +797,7 @@ class ExternalSource:
 			try:
 				i_get = i.get
 				if 'hash' in i: i['hash'] = str(i['hash']).lower()
-				URLName = source_utils.clean_file_name(i_get('name')).replace('html', ' ')
+				display_name = source_utils.clean_file_name(i_get('name')).replace('html', ' ')
 				quality, extraInfo = get_file_info(name_info=i_get('name_info'))
 				size, size_label, divider = 0, None, None
 				try:
@@ -813,8 +810,10 @@ class ExternalSource:
 					else: size_label = '%.2f GB' % size
 				except: pass
 				i.update({
-					'external': True, 'provider': provider, 'scrape_provider': self.scrape_provider, 'URLName': URLName,
-					'extraInfo': extraInfo, 'quality': quality, 'size_label': size_label, 'size': round(size, 2)
+					'external': True, 'scrape_provider': self.scrape_provider,
+					'provider': provider, 'display_name': display_name,
+					'extraInfo': extraInfo, 'quality': quality,
+					'size_label': size_label, 'size': round(size, 2)
 				})
 				if quality not in self.resolutions: self.resolutions['SD'] += 1
 				else: self.resolutions[quality] += 1

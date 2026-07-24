@@ -404,7 +404,7 @@ class RealDebrid:
 			torrent_id = self.add_magnet(magnet_url) # add_magent() returns id
 			torrent_files = torrent_files[info_hash]['rd']
 			if not torrent_files: failed_reason = 'magnet is no longer cached'
-			compare_title = re.sub(r'[^A-Za-z0-9-]+', '.', title.replace('\'', '').replace('&', 'and').replace('%', '.percent')).lower()
+			compare_title = re.sub(r'[^A-Za-z0-9-]+', '.', (title or '').replace('\'', '').replace('&', 'and').replace('%', '.percent')).lower()
 			#######################################
 			# sort torrent_files so vid only at top
 			vid_only = [item for item in torrent_files if self.video_only(item, extensions)]
@@ -497,7 +497,7 @@ class RealDebrid:
 				return None
 			selected_files = [(idx, i) for idx, i in enumerate([i for i in torrent_info['files'] if i['selected'] == 1 and i['path'].lower().endswith(tuple(extensions))])]
 			selected_files = sorted(selected_files, key=lambda x: x[1]['bytes'], reverse=True)
-			compare_title = re.sub(r'[^A-Za-z0-9-]+', '.', title.replace('\'', '').replace('&', 'and').replace('%', '.percent')).lower()
+			compare_title = re.sub(r'[^A-Za-z0-9-]+', '.', (title or '').replace('\'', '').replace('&', 'and').replace('%', '.percent')).lower()
 			if season:
 				correct_files = []
 				correct_file_check = False

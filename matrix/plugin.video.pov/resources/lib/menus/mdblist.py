@@ -83,7 +83,7 @@ class SearchMdblLists(BaseMdblList):
 
 	def add_next_page(self):
 		if int(self.pages) <= int(self.page): return
-		url = {'mode': 'build_mdbl_list.search_mdb_lists', 'search_title': self.search_title, 'new_page': int(self.page) + 1}
+		url = {'mode': 'build_mdbl_list.search_mdbl_lists', 'search_title': self.search_title, 'new_page': int(self.page) + 1}
 		kodi_utils.add_dir(self.handle, url, nextpage_str)
 
 class GetMdblLists(BaseMdblList):

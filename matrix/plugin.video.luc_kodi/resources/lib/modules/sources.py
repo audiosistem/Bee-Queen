@@ -62,6 +62,8 @@ class Sources:
 			# AIOStreams: resolves Debrid on its side -> returns direct URLs.
 			# MediaFusion: secret_str URL already encodes Debrid credentials.
 			# Sootio:     config token already encodes Debrid credentials.
+			# Torz:       config token (StremThru) already encodes Debrid creds.
+			# Comet:      config token (Comet web UI) already encodes Debrid creds.
 			_aio_active = (getSetting('provider.aiostreams') == 'true'
 			               and getSetting('aiostreams.uuid')
 			               and getSetting('aiostreams.password'))
@@ -71,7 +73,11 @@ class Sources:
 			                  and getSetting('sootio.config'))
 			_meteor_active = (getSetting('provider.meteor') == 'true'
 			                  and (getSetting('meteor.config_token') or getSetting('meteor.manifest_url')))
-			if not (_aio_active or _mf_active or _sootio_active or _meteor_active):
+			_torz_active = (getSetting('provider.torz') == 'true'
+			                and getSetting('torz.config'))
+			_comet_active = (getSetting('provider.comet') == 'true'
+			                 and getSetting('comet.config'))
+			if not (_aio_active or _mf_active or _sootio_active or _meteor_active or _torz_active or _comet_active):
 				control.sleep(200) ; control.hide()
 				homeWindow.clearProperty('luc_kodi.bingie_direct')
 				return control.notification(message=33034)
@@ -271,11 +277,11 @@ class Sources:
 			if rescrape: self.clr_item_providers(title, year, imdb, tmdb, tvdb, season, episode, tvshowtitle, premiered)
 			cache_id = self._build_ramcache_id(imdb, tmdb, tvdb, season, episode, year)
 			items = None
-			if not rescrape and not self.custom_query and getSetting('sources.ramcache.enabled') == 'true':
+			if not rescrape and not self.custom_query and getSetting('sources.ramcache') == 'true':
 				items = self._ramcache_get(cache_id)
 			if not items:
 				items = providerscache.get(self.getSources, 48, title, year, imdb, tmdb, tvdb, season, episode, tvshowtitle, premiered)
-				if items and not rescrape and not self.custom_query and getSetting('sources.ramcache.enabled') == 'true':
+				if items and not rescrape and not self.custom_query and getSetting('sources.ramcache') == 'true':
 					self._ramcache_set(cache_id, items)
 			if not items:
 				self.url = url
@@ -1516,6 +1522,63 @@ class Sources:
 			try:
 				direct = item['direct']
 				if direct:
+					# Scrapers estilo Stremio (Sootio, Torz custom, etc.) entregan
+					# URLs "lazy" /resolve/ o /v0/store/... que NO son archivos de
+					# vídeo: hay que pedirlas para que el servidor redirija al
+					# enlace directo. Cada scraper resuelve lo suyo de forma
+					# AUTÓNOMA (su token lleva embebidas las credenciales del debrid).
+					if item.get('provider') == 'torz':
+						# Torz en modo custom (StremThru con store/debrid embebido):
+						# resolve() sigue el redirect del propio StremThru. Si la URL
+						# ya es un archivo directo, resolve() la devuelve tal cual.
+						try:
+							from resources.lib.jacksparrow.sourcesdir.torrents import torz as torz_mod
+							resolved = torz_mod.source().resolve(url)
+							if resolved:
+								self.url = resolved
+								return resolved
+						except: log_utils.error()
+						# Si no se pudo resolver una URL lazy de StremThru, no la
+						# devolvemos cruda: None para que el autoplay pase al siguiente.
+						_torz_lazy = ('/v0/store/', '/resolve/', '/strem/', '/playback/', '/link/')
+						if any(_mk in url for _mk in _torz_lazy):
+							return
+						# URL ya directa: reproducir tal cual.
+						self.url = url
+						return url
+					if item.get('provider') == 'comet':
+						# Comet en modo custom (debrid embebido en el config):
+						# resolve() sigue el redirect 302 del endpoint /playback/
+						# de Comet hacia el CDN del debrid. Si la URL ya es un
+						# archivo directo, resolve() la devuelve tal cual.
+						try:
+							from resources.lib.jacksparrow.sourcesdir.torrents import comet as comet_mod
+							resolved = comet_mod.source().resolve(url)
+							if resolved:
+								self.url = resolved
+								return resolved
+						except: log_utils.error()
+						# Si no se pudo resolver una URL lazy de Comet, no la
+						# devolvemos cruda: None para que el autoplay pase al siguiente.
+						_comet_lazy = ('/playback/', '/resolve/', '/strem/', '/link/', '/download/')
+						if any(_mk in url for _mk in _comet_lazy):
+							return
+						# URL ya directa: reproducir tal cual.
+						self.url = url
+						return url
+					if item.get('provider') == 'sootio' or '/resolve/' in url:
+						try:
+							from resources.lib.jacksparrow.sourcesdir.torrents import sootio as sootio_mod
+							resolved = sootio_mod.source().resolve(url)
+							if resolved:
+								self.url = resolved
+								return resolved
+						except: log_utils.error()
+						# Si no se pudo resolver, NO devolvemos la URL /resolve/
+						# cruda (daría "Playback not supported"): None para que el
+						# siguiente source del autoplay tome el relevo.
+						if '/resolve/' in url:
+							return
 					direct_sources = ('ad_cloud', 'oc_cloud', 'pm_cloud', 'rd_cloud', 'tb_cloud')
 					if item['provider'] in direct_sources:
 						try:
@@ -2148,6 +2211,42 @@ class Sources:
 		except:
 			return None
 
+	# Máximo de entradas vivas en el RAM cache. Cada entrada es una lista de
+	# hasta 200 dicts serializada en una Window property. Limitarlas evita que
+	# navegar muchos títulos acumule memoria sin techo (importante en tablets
+	# con RAM ajustada). LRU simple: al superar el tope, se expulsa la más
+	# antigua. 12 entradas ≈ el historial de navegación reciente típico.
+	_RAMCACHE_MAX_ENTRIES = 12
+
+	def _ramcache_index_get(self):
+		try:
+			raw = homeWindow.getProperty('luc_kodi.ramcache_index')
+			return jsloads(raw) if raw else []
+		except:
+			return []
+
+	def _ramcache_index_set(self, keys):
+		try:
+			homeWindow.setProperty('luc_kodi.ramcache_index', jsdumps(keys))
+		except:
+			pass
+
+	def _ramcache_touch(self, cache_id):
+		"""Marca cache_id como el más reciente y expulsa los más antiguos si se
+		supera _RAMCACHE_MAX_ENTRIES, liberando sus Window properties."""
+		try:
+			keys = self._ramcache_index_get()
+			if cache_id in keys:
+				keys.remove(cache_id)
+			keys.append(cache_id)  # most-recent al final
+			# Expulsar los más antiguos que excedan el tope.
+			while len(keys) > self._RAMCACHE_MAX_ENTRIES:
+				evict = keys.pop(0)
+				self._ramcache_clear(evict)
+			self._ramcache_index_set(keys)
+		except:
+			pass
+
 	def _ramcache_set(self, cache_id, items):
 		try:
 			if not cache_id or not items: return
@@ -2159,6 +2258,8 @@ class Sources:
 			_to_cache = items[:200]
 			homeWindow.setProperty('luc_kodi.ramcache.' + cache_id, jsdumps(_to_cache))
 			homeWindow.setProperty('luc_kodi.ramcache_ts.' + cache_id, str(time()))
+			# Registrar en el índice LRU y expulsar entradas viejas si toca.
+			self._ramcache_touch(cache_id)
 		except:
 			pass
 

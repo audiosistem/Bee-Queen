@@ -39,7 +39,8 @@ class Source:
 		if ddl in ('false', False): self.direct_debrid_link = False
 		else: self.direct_debrid_link = True if ddl == 'true' else ddl
 		self.url_dl = params['id'] if self.direct_debrid_link else ''
-		return self
+		url = self.resolve_internal_sources(self.direct_debrid_link)
+		return kodi_utils.execute_builtin('PlayMedia(%s)' % url)
 
 	def dumps(self, depth=1, width=172):
 		from pprint import pformat
@@ -71,8 +72,8 @@ class Source:
 			extensions = supported_video_extensions()
 			extras_filtering_list = tuple(i for i in extras_filter() if i not in title.lower())
 			if self.url.startswith('magnet'):
-				is_nzb, store_to_cloud = False, settings.store_resolved_torrent_to_cloud(self.debrid)
-			else: is_nzb, store_to_cloud = True, settings.store_resolved_usenet_to_cloud(self.debrid)
+				store_to_cloud = settings.store_resolved_torrent_to_cloud(self.debrid)
+			else: store_to_cloud = settings.store_resolved_usenet_to_cloud(self.debrid)
 			if self.debrid in ('real-debrid', 'alldebrid'): args = self.url, self.hash, True
 			else: args = self.url, self.hash
 			api = import_debrid(self.debrid)
@@ -90,20 +91,18 @@ class Source:
 			if not selected_files: raise Exception('selected_files failed')
 			if not season: selected_files.sort(key=lambda k: k['size'], reverse=True)
 			file_key = next((i['link'] for i in selected_files), None)
-			if is_nzb: file_url = api.unrestrict_usenet(file_key)
-			else: file_url = api.unrestrict_link(file_key)
+			file_url = api.unrestrict_link(file_key)
 			if self.debrid in ('premiumize.me', 'offcloud'):
 				if store_to_cloud: Thread(target=api.create_transfer, args=(self.url,)).start()
 			if self.debrid in ('real-debrid', 'alldebrid', 'torbox'):
-				if not store_to_cloud: self._delete(api, torrent_id, is_nzb)
+				if not store_to_cloud: self._delete(api, torrent_id)
 			return file_url
 		except Exception as e:
 			kodi_utils.logger('resolve_external_sources exception', f"{e}\n{self.dumps()}")
-			if files and torrent_id: self._delete(api, torrent_id, is_nzb)
+			if files and torrent_id: self._delete(api, torrent_id)
 
-	def _delete(self, api, torrent_id, is_nzb):
-		target = api.delete_usenet if is_nzb else api.delete_torrent
-		Thread(target=target, args=(torrent_id,)).start()
+	def _delete(self, api, torrent_id):
+		Thread(target=api.delete_torrent, args=(torrent_id,)).start()
 
 	def resolve_internal_sources(self, direct_debrid_link=False):
 		try:
@@ -114,7 +113,7 @@ class Source:
 				if direct_debrid_link: url = self.url_dl
 				else: url = alldebrid_api.AllDebridAPI().unrestrict_link(self.id)
 			elif self.scrape_provider == 'tb_cloud':
-				url = torbox_api.TorBoxAPI().get_function(self.id)(self.id)
+				url = torbox_api.TorBoxAPI().unrestrict_link(self.id)
 			elif self.scrape_provider == 'easynews':
 				from debrids.easynews_api import EasyNewsAPI
 				url = EasyNewsAPI().unrestrict_link(self.url_dl)
@@ -174,7 +173,7 @@ class Source:
 				status = status_str % (data.get('download_state', '...').upper(), progress)
 				kodi_utils.progressDialog.update(progress, line % (line1, line2, status))
 				kodi_utils.sleep(500)
-				result = api.nzb_info(nzb_id)
+				result = api.torrent_info(nzb_id, 'usenet')
 				if result and 'id' in result: data = result
 			else: resolved_link = self.resolve_external_sources(title, season, episode)
 		finally: kodi_utils.progressDialog.close()

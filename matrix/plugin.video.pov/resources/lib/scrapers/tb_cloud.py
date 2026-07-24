@@ -38,14 +38,14 @@ class source(Debrid):
 						): continue
 					elif any(x in normalized for x in extras_filtering_list): continue
 
-					URLName = clean_file_name(item['filename']).replace('html', ' ')
+					display_name = clean_file_name(item['filename']).replace('html', ' ')
 					file_dl, size = item['link'], round(float(item['size'])/1073741824, 2)
 					video_quality, details = get_file_info(name_info=normalized)
 					sources_append({
 						'direct': True,
 						'source': self.scrape_provider, 'scrape_provider': self.scrape_provider,
 						'id': file_dl, 'url_dl': file_dl,
-						'name': URLName, 'URLName': URLName,
+						'name': display_name, 'display_name': display_name,
 						'extraInfo': details, 'quality': video_quality,
 						'size': size, 'size_label': '%.2f GB' % size
 					})

@@ -17,6 +17,10 @@
     <setting id="catalog.auto_update.notify" type="bool" label="400708" default="true" subsetting="true" visible="eq(-2,true)" />
     <setting id="catalog.auto_update.interval_hours" type="enum" label="400709" values="1|3|6|12|24" default="2" subsetting="true" visible="eq(-3,true)" />
     <setting id="catalog.auto_update.last_run" type="text" default="" visible="false" />
+    <setting id="poster.rotation.lastclean" type="text" default="" visible="false" />
+    <setting id="db.maintenance.lastrun" type="text" default="" visible="false" />
+    <setting id="migration.torboxnews_2026" type="text" default="" visible="false" />
+    <setting id="simkl._cache_bust_version" type="text" default="" visible="false" />
     <setting id="mpa.country" type="select" label="32391" values="Australia|Austria|Brazil|Bulgaria|Canada|China|Denmark|Estonia|Finland|France|Germany|Greece|Hungary|Hong Kong SAR China|India|Indonesia|Ireland|Italy|Japan|Kazakhstan|Latvia|Lithuania|Malaysia|Mexico|Netherlands|New Zealand|Norway|Philippines|Poland|Portugal|Romania|Russia|Saudi Arabia|Singapore|Slovakia|South Africa|South Korea|Spain|Sweden|Switzerland|Taiwan|Thailand|Turkey|Ukraine|United Arab Emirates|United Kingdom|United States|Vietnam" default="United States" />
     <setting id="mpa.prefix" type="text" label="32392" subsetting="true" default="" />
     <setting id="page.item.limit" type="slider" label="32011" default="20" range="10,60" option="int" />
@@ -27,8 +31,8 @@
     <setting type="action" label="32620" subsetting="true" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearMetaAndCache)" visible="eq(-2,true)" />
     <setting id="prefer.tmdbArt" type="bool" label="32079" subsetting="true" default="true" visible="eq(-3,true)" />
     <setting id="tmdb.imageResolutions" type="enum" label="32233" lvalues="32234|32235|32236|32237" default="1" />
-    <setting id="poster.rotation" type="bool" label="45014" default="false" />
-    <setting id="poster.rotation.interval" type="enum" label="45015" lvalues="45016|45017|45018|45019" default="3" subsetting="true" visible="eq(-1,true)" />
+    <setting id="poster.rotation" type="bool" label="45023" default="false" />
+    <setting id="poster.rotation.interval" type="enum" label="45024" lvalues="45016|45017|45018|45019" default="3" subsetting="true" visible="eq(-1,true)" />
     <setting id="poster.rotation.cleanup" type="bool" label="45020" default="true" subsetting="true" visible="eq(-2,true)" />
     <setting id="title.lang.en" type="bool" label="45021" default="true" />
     <setting id="db.maintenance" type="bool" label="45022" default="true" />
@@ -50,6 +54,19 @@
     <setting type="lsep" label="400710" />
     <setting id="gui.resolution.enabled" type="bool" label="400711" default="false" />
     <setting id="gui.resolution.target" type="enum" label="400712" lvalues="400713|400714" default="0" subsetting="true" visible="eq(-1,true)" />
+    <!-- v1.0.51: Trailers movido aquí desde TV Shows — aplica a todo el addon.
+         v1.0.52: Skip Intro devuelto a TV Shows (es una función de episodios). -->
+    <setting type="lsep" label="Trailers (no API key needed)" />
+    <setting id="trailer.player" type="enum" label="Trailer playback method" values="Auto (best available)|Built-in keyless resolver only|SlyGuy Trailers add-on|YouTube add-on" default="0" />
+      <setting id="trailer.official.only" type="bool" label="Official trailers only (no teasers, clips or shorts)" default="true" subsetting="true" />
+      <setting id="trailer.min.resolution" type="enum" label="Minimum trailer resolution" values="No minimum|480p|720p|1080p" default="2" subsetting="true" />
+      <!-- Filtro de códecs del MPD keyless: AV1 y VP9 Profile 2 (10-bit/HDR) no
+           tienen decodificación hardware en dispositivos muy extendidos (NVIDIA
+           Shield TV). Desactivados por defecto = máxima compatibilidad; quien
+           tenga hardware reciente (Google TV Streamer, Fire TV 2023+) los activa. -->
+      <setting id="trailer.codec.av1" type="bool" label="Allow AV1 video (requires hardware AV1 decoding — e.g. Google TV Streamer; NVIDIA Shield TV does NOT support it)" default="false" subsetting="true" />
+      <setting id="trailer.codec.vp92" type="bool" label="Allow VP9 Profile 2 video (10-bit/HDR — not supported on NVIDIA Shield TV)" default="false" subsetting="true" />
+    <setting id="trailer.invidious.instances" type="text" label="Invidious instances (comma separated)" default="inv.nadeko.net,invidious.nerdvpn.de,inv.thepixora.com" visible="false" />
   </category>
   <category label="32621">
     <setting type="lsep" label="32005" />
@@ -84,6 +101,7 @@
     <setting id="navi.movie.simkl.trendingToday" type="bool" label="45000" default="false" />
     <setting id="navi.movie.simkl.trendingWeek"  type="bool" label="45001" default="true" />
     <setting id="navi.movie.simkl.trendingMonth" type="bool" label="45002" default="false" />
+    <setting id="navi.movie.simkl.playback" type="bool" label="45014" default="true" />
     <setting type="lsep" label="MDBList" />
     <setting id="navi.movie.mdblist.continue"    type="bool" label="40231" default="true" />
     <setting id="navi.movie.mdblist.topLists"    type="bool" label="40232" default="true" />
@@ -107,6 +125,7 @@
     <setting id="navi.tv.simkl.trendingWeek"  type="bool" label="45011" default="true" />
     <setting id="navi.tv.simkl.trendingMonth" type="bool" label="45012" default="false" />
     <setting id="navi.tv.simkl.progress" type="bool" label="45013" default="true" />
+    <setting id="navi.tv.simkl.playback" type="bool" label="45015" default="true" />
     <setting type="lsep" label="MDBList" />
     <setting id="navi.tv.mdblist.continue"    type="bool" label="40234" default="true" />
     <setting id="navi.tv.mdblist.topLists"    type="bool" label="40235" default="true" />
@@ -122,7 +141,13 @@
     <setting id="tvshows.calendar.extended" type="bool" label="32023" default="false" />
     <setting type="lsep" label="40027" />
     <setting id="enable.playnext" type="bool" label="40028" default="false" />
-      <setting id="playnext.default.action" type="enum" label="Default action on timeout" lvalues="Play Next|Stop|Pause" default="0" subsetting="true" visible="eq(-1,true)" />
+      <setting id="playnext.default.action" type="enum" label="Default action on timeout" values="Play Next|Stop|Pause" default="0" subsetting="true" visible="eq(-1,true)" />
+    <setting type="lsep" label="Skip Intro / Recap (TheIntroDB community timestamps)" />
+    <setting id="skipintro.enabled" type="bool" label="Show 'Skip Intro' button during playback" default="true" />
+      <setting id="skipintro.recap" type="bool" label="Also offer skipping recaps and previews" default="true" subsetting="true" visible="eq(-1,true)" />
+      <setting id="skipintro.auto" type="bool" label="Auto-skip silently (no button)" default="false" subsetting="true" visible="eq(-2,true)" />
+      <setting id="skipintro.offset" type="number" label="Extra seconds to seek past segment end" default="0" subsetting="true" visible="eq(-3,true)" />
+      <setting id="tidb.api.key" type="text" label="TheIntroDB API key (optional, raises rate limits)" default="" option="hidden" subsetting="true" visible="eq(-4,true)" />
     <setting label="35056" type="lsep" />
     <setting id="sort.imdbshows.type" type="select" label="35054" lvalues="33564|33039|35187|35188|35391|35392|35393" default="0" />
     <setting id="sort.imdbshows.order" type="enum" label="33679" lvalues="33649|33650" default="0" subsetting="true" enable="!eq(-1,0)" />
@@ -157,8 +182,6 @@
     <setting id="filter.undesirables" label="Remove Undesirables" type="bool" default="true" />
     <setting label="Define User Undesirables" type="action" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=undesirablesInput)" />
     <setting label="Remove User Undesirables" type="action" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=undesirablesUserRemove)" />
-    <setting id="debug.enabled" label="Enable Debug" type="bool" default="false" />
-    <setting id="debug.location" label="Logging Location" type="enum" default="1" enable="eq(-1,true)" values="Kodi Log|Addon Log" visible="eq(-1,true)" />
     <setting label="Torrents" type="lsep" />
     <setting id="provider.torrentio" label="40082" type="bool" default="true" />
       <setting id="torrentio.url" label="Instance" type="enum" default="0" values="torrentio.strem.fun|strem.space" subsetting="true" visible="eq(-1,true)" />
@@ -171,18 +194,14 @@
       <!-->setting id="torrentio_es.comando"      label="Comando"      type="bool" default="true" subsetting="true" visible="eq(-5,true)" -->
       <!--setting id="torrentio_es.bludv"        label="BluDV"        type="bool" default="false" subsetting="true" visible="eq(-6,true)" -->
       <setting id="torrentio_es.min.seeders"  label="Min Seeders"  type="slider" default="0" range="0,100" option="int" subsetting="true" visible="eq(-5,true)" />
-    <setting id="provider.torz" label="40084" type="bool" default="true" />
-      <setting id="torz.url" label="torz instance" type="enum" default="0" values="stremthru.stremio.ru|13377001.xyz|midnightignite" subsetting="true" visible="eq(-1,true)" />
     <setting id="provider.torrentsdb" label="40089" type="bool" default="true" />
-    <setting id="provider.comet" label="40083" type="bool" default="true" />
-      <setting id="comet.url" label="Instance" type="enum" default="2" values="comet.stremio.ru|midnightignite|elfhosted  │  [COLOR fffdb515]https://comet.elfhosted.com[/COLOR]" subsetting="true" visible="eq(-1,true)" />
     <setting id="provider.piratebay" label="40087" type="bool" default="true" />
     <setting id="provider.peerflix" type="bool" label="40093" default="true" />
       <setting id="peerflix.language" label="Audio Language" type="enum" default="0" values="English (+ Multi)|Español (+ Multi)|English + Español (+ Multi)" subsetting="true" visible="eq(-1,true)" />
       <setting id="peerflix.qualityfilter" label="Exclude Quality" type="enum" default="1" values="None|CAM / Screener|CAM / Screener / SD" subsetting="true" visible="eq(-2,true)" />
       <setting id="peerflix.min.seeders" label="Min Seeders" type="slider" default="0" range="0,100" option="int" subsetting="true" visible="eq(-3,true)" />
-    <setting id="provider.torrentdownload" label="40086" type="bool" default="true" />
-    <!--setting id="provider.dmm" label="40088" type="bool" default="false" -->
+    <!--setting id="provider.torrentdownload" label="40086" type="bool" default="true" -->
+    <setting id="provider.dmm" label="40088" type="bool" default="true" />
     <setting id="provider.zilean" label="40081" type="bool" default="true" />
     <setting id="provider.knaben" type="bool" label="40090" default="true" />
     <setting id="provider.orion" type="bool" label="40095" default="false" />
@@ -193,6 +212,18 @@
 
     <setting id="provider.library" label="library" type="bool" default="false" visible="false" />
     <setting label="Custom" type="lsep" />
+    <setting id="provider.torz" label="40084" type="bool" default="false" />
+      <setting id="torz.url" label="Instance" type="enum" default="0" values="elfhosted  │  [COLOR fffdb515]https://stremthru.elfhosted.com[/COLOR]|stremio.ru  │  [COLOR fffdb515]https://stremthru.stremio.ru[/COLOR]|13377001  │  [COLOR fffdb515]https://stremthru.13377001.xyz[/COLOR]|midnightignite  │  [COLOR fffdb515]https://stremthrufortheweebs.midnightignite.me[/COLOR]" subsetting="true" visible="eq(-1,true)" />
+      <setting id="torz.config" label="Config Token  ([COLOR ff00fa9a]custom: own Debrid[/COLOR], from [COLOR fffdb515]/stremio/torz/configure[/COLOR])" type="text" default="" subsetting="true" visible="eq(-2,true)" />
+      <setting id="torz.debrid.detected" label="     Debrid detected" type="text" default="not configured" enable="false" subsetting="true" visible="eq(-3,true)" />
+      <setting id="torz.wizard" type="action" label="[COLOR ff00fa9a]Torz Setup Wizard  (easy setup, no keyboard needed)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_torzWizard)" subsetting="true" visible="eq(-4,true)" />
+      <setting id="torz.detect" type="action" label="     [COLOR fffdb515]Re-detect Debrid from token[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_torzDetect)" subsetting="true" visible="eq(-5,true)" />
+    <setting id="provider.comet" label="40083" type="bool" default="false" />
+      <setting id="comet.url" label="Instance" type="enum" default="2" values="stremio.ru  │  [COLOR fffdb515]https://comet.stremio.ru[/COLOR]|midnightignite  │  [COLOR fffdb515]https://cometfortheweebs.midnightignite.me[/COLOR]|elfhosted  │  [COLOR fffdb515]https://comet.elfhosted.com[/COLOR]" subsetting="true" visible="eq(-1,true)" />
+      <setting id="comet.config" label="Config Token  ([COLOR ff00fa9a]custom: own Debrid[/COLOR], from [COLOR fffdb515]/configure[/COLOR])" type="text" default="" subsetting="true" visible="eq(-2,true)" />
+      <setting id="comet.debrid.detected" label="     Debrid detected" type="text" default="not configured" enable="false" subsetting="true" visible="eq(-3,true)" />
+      <setting id="comet.wizard" type="action" label="[COLOR ff00fa9a]Comet Setup Wizard  (easy setup, no keyboard needed)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_cometWizard)" subsetting="true" visible="eq(-4,true)" />
+      <setting id="comet.detect" type="action" label="     [COLOR fffdb515]Re-detect Debrid from token[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_cometDetect)" subsetting="true" visible="eq(-5,true)" />
     <setting id="provider.mediafusion" label="40080" type="bool" default="false" />
       <setting id="mediafusion.url" label="Instance" type="enum" default="0" values="midnightignite  │  [COLOR fffdb515]https://mediafusionfortheweebs.midnightignite.me[/COLOR]|elfhosted  │  [COLOR fffdb515]https://mediafusion.elfhosted.com[/COLOR]" subsetting="true" visible="eq(-1,true)" />
       <setting id="mediafusion.secret" label="Secret Token  (from /configure URL)" type="text" default="" subsetting="true" visible="eq(-2,true)" />
@@ -282,7 +313,7 @@
     <setting id="autoplay.sd" type="bool" label="32656" default="false" />
     <setting id="validate.source.urls" type="bool" label="Validate source URL before playback (skip dead/HTML links)" default="true" />
     <setting id="sources.ramcache" type="bool" label="Cache source list in RAM for faster Back/return (Window properties)" default="true" />
-    <setting id="sources.ramcache.ttl" type="number" label="RAM cache TTL (minutes)" default="5" />
+    <setting id="sources.ramcache.ttl" type="slider" label="RAM cache TTL (minutes)" default="20" range="1,5,120" option="int" subsetting="true" visible="eq(-1,true)" />
   </category>
   <category label="32315">
     <setting type="lsep" label="32315" />
@@ -413,23 +444,31 @@
     <setting id="trakt.client_id" type="text" label="Trakt Client ID" default="b4234a570e2af88a042c873c629fcec5e77e4e8b5d91757e880a51f6688fd14d" visible="false" />
 	<setting id="trakt.client_secret" type="text" label="Trakt Client Secret" default="51e40ebb7aeec24cb5d87308e303729264ef192b36e1886282beddf8a0b3f6c1" visible="false" />
 	<setting type="lsep" label="MDBList" />
-	<setting id="mdblist.enable" type="bool" label="Enable MDBList scrobbling" default="false" />
-	<setting id="mdblist.url" type="text" label="MDBList API URL" default="https://api.mdblist.com" subsetting="true" visible="eq(-1,true)" />
-	<setting id="mdblist.apikey" type="text" label="MDBList API Key" default="" option="hidden" subsetting="true" visible="eq(-2,true)" />
-	<setting id="mdblist.notify" type="bool" label="MDBList notifications" default="true" subsetting="true" visible="eq(-3,true)" />
-	<setting id="mdblist.interval.enabled" type="bool" label="MDBList interval updates" default="true" subsetting="true" visible="eq(-4,true)" />
-	<setting id="mdblist.interval.seconds" type="slider" label="MDBList interval (seconds)" option="int" range="10,10,300" default="60" subsetting="true" visible="eq(-5,true) + eq(-1,true)" />
-	<setting id="mdblist.event.start" type="bool" label="MDBList event: start" default="true" subsetting="true" visible="eq(-6,true)" />
-	<setting id="mdblist.event.pause" type="bool" label="MDBList event: pause" default="true" subsetting="true" visible="eq(-7,true)" />
-	<setting id="mdblist.event.resume" type="bool" label="MDBList event: resume" default="true" subsetting="true" visible="eq(-8,true)" />
+	<setting type="action" label="[B]MDBList: Authorize (PIN + QR)[/B]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=mdblist_Authorize)" />
+	<setting type="action" label="MDBList: Account information" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=mdblist_AccountInfo)" />
+	<setting type="action" label="MDBList: Deauthorize" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=mdblist_Deauthorize)" />
+	<setting id="mdblist.username" type="text" label="MDBList: Username" default="" enable="false" />
+	<setting id="mdblist.scrobble" type="bool" label="MDBList: Enable scrobbling (to YOUR account)" default="false" />
+	<setting id="mdblist.client_id" type="text" label="MDBList Client ID" default="QaD4kr5BnGQuIGbWxPoN2E0vPokG1227YWvc2wCo" visible="false" />
+	<setting id="mdblist.token" type="text" label="MDBList token" default="" visible="false" />
+	<setting id="mdblist.refresh" type="text" label="MDBList refresh" default="" visible="false" />
+	<setting id="mdblist.enable" type="bool" label="MDBList enable" default="true" visible="false" />
+	<setting id="mdblist.url" type="text" label="MDBList API URL" default="https://api.mdblist.com" visible="false" />
+	<setting id="mdblist.apikey" type="text" label="MDBList API Key" default="" option="hidden" visible="false" />
+	<setting id="mdblist.notify" type="bool" label="MDBList notifications" default="true" visible="false" />
+	<setting id="mdblist.interval.enabled" type="bool" label="MDBList interval updates" default="true" visible="false" />
+	<setting id="mdblist.interval.seconds" type="slider" label="MDBList interval (seconds)" option="int" range="10,10,300" default="60" visible="false" />
+	<setting id="mdblist.event.start" type="bool" label="MDBList event: start" default="true" visible="false" />
+	<setting id="mdblist.event.pause" type="bool" label="MDBList event: pause" default="true" visible="false" />
+	<setting id="mdblist.event.resume" type="bool" label="MDBList event: resume" default="true" visible="false" />
 	<setting type="lsep" label="Ratings" />
 	<setting id="omdb.apikey" type="text" label="OMDb API" default="" option="hidden" />
-	<setting id="mdblist.event.stop" type="bool" label="MDBList event: stop" default="true" subsetting="true" visible="eq(-9,true)" />
-	<setting id="mdblist.event.end" type="bool" label="MDBList event: end" default="true" subsetting="true" visible="eq(-10,true)" />
-	<setting id="mdblist.event.seek" type="bool" label="MDBList event: seek" default="true" subsetting="true" visible="eq(-11,true)" />
-	<setting id="mdblist.event.interval" type="bool" label="MDBList event: interval" default="true" subsetting="true" visible="eq(-12,true)" />
-	<setting id="mdblist.mediatype.movie" type="bool" label="MDBList mediatype: movies" default="true" subsetting="true" visible="eq(-13,true)" />
-	<setting id="mdblist.mediatype.episode" type="bool" label="MDBList mediatype: episodes" default="true" subsetting="true" visible="eq(-14,true)" />
+	<setting id="mdblist.event.stop" type="bool" label="MDBList event: stop" default="true" visible="false" />
+	<setting id="mdblist.event.end" type="bool" label="MDBList event: end" default="true" visible="false" />
+	<setting id="mdblist.event.seek" type="bool" label="MDBList event: seek" default="true" visible="false" />
+	<setting id="mdblist.event.interval" type="bool" label="MDBList event: interval" default="true" visible="false" />
+	<setting id="mdblist.mediatype.movie" type="bool" label="MDBList mediatype: movies" default="true" visible="false" />
+	<setting id="mdblist.mediatype.episode" type="bool" label="MDBList mediatype: episodes" default="true" visible="false" />
 	<setting type="lsep" label="Gemini AI" />
 	<setting type="action" label="40600" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=GeminiAPI)" />
 	<setting id="gemini.api.key" type="text" label="40601" option="hidden" default="" />

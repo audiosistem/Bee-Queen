@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Píldora "Skip Intro" flotante, abajo-derecha, sobre el vídeo.
+     Label del botón lo pone Python (Skip Intro / Skip Recap / Skip Preview).
+     2160p = este archivo con coordenadas, tamaños y border ×2 (ids iguales). -->
+<window>
+    <defaultcontrol always="true">4501</defaultcontrol>
+    <controls>
+        <control type="group">
+            <left>1560</left><top>930</top>
+            <width>300</width><height>62</height>
+
+            <animation type="WindowOpen" reversible="false">
+                <effect type="fade"  start="0"    end="100" time="260" />
+                <effect type="slide" start="40,0" end="0,0" time="260" tween="cubic" easing="out" />
+            </animation>
+            <animation type="WindowClose" reversible="false">
+                <effect type="fade"  start="100" end="0"    time="200" />
+                <effect type="slide" start="0,0" end="40,0" time="200" tween="cubic" easing="in" />
+            </animation>
+
+            <!-- Sombra suave desplazada -->
+            <control type="image">
+                <left>2</left><top>3</top>
+                <width>300</width><height>62</height>
+                <texture border="18">common/white_rounded.png</texture>
+                <colordiffuse>66000000</colordiffuse>
+            </control>
+
+            <control type="button" id="4501">
+                <left>0</left><top>0</top>
+                <width>300</width><height>62</height>
+                <align>center</align><aligny>center</aligny>
+                <font>font13</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <focusedcolor>FF111111</focusedcolor>
+                <shadowcolor>99000000</shadowcolor>
+                <texturenofocus border="18" colordiffuse="C0141414">common/white_rounded.png</texturenofocus>
+                <texturefocus border="18" colordiffuse="F2FFFFFF">common/white_rounded.png</texturefocus>
+                <label>Skip Intro</label>
+            </control>
+        </control>
+    </controls>
+</window>

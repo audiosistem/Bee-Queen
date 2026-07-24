@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <defaultcontrol>210</defaultcontrol>
+    <controls>
+
+        <!-- Scrim -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="B0000000">white.png</texture>
+        </control>
+
+        <!-- Card 760x330 centrat -->
+        <control type="image">
+            <left>580</left><top>375</top><width>760</width><height>330</height>
+            <texture border="16">card_confirm.png</texture>
+        </control>
+
+        <!-- Icon Trakt + Titlu — grupate centrat: icon 36px + 10px gap + text ~250px = ~296px, start=812 -->
+        <control type="image">
+            <left>812</left><top>396</top><width>36</width><height>36</height>
+            <texture>sidebar_trakt3.png</texture>
+        </control>
+
+        <!-- Titlu -->
+        <control type="label">
+            <left>858</left><top>393</top><width>270</width><height>42</height>
+            <label>Trakt — Autentificare</label>
+            <font>font20</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <align>left</align>
+            <aligny>center</aligny>
+        </control>
+
+        <!-- Separator -->
+        <control type="image">
+            <left>596</left><top>442</top><width>728</width><height>1</height>
+            <texture colordiffuse="22FFFFFF">white.png</texture>
+        </control>
+
+        <!-- ═══════════════════════════════════════════
+             PANEL PROMPT (gestionat prin setVisible)
+             ═══════════════════════════════════════════ -->
+
+        <!-- Mesaj -->
+        <control type="label" id="201">
+            <left>596</left><top>456</top><width>728</width><height>72</height>
+            <label>Această secțiune necesită un cont Trakt conectat.</label>
+            <font>font20</font>
+            <textcolor>FFCCCCCC</textcolor>
+            <align>center</align>
+            <aligny>center</aligny>
+            <wrapmultiline>true</wrapmultiline>
+        </control>
+
+        <!-- Buton Conectează-te -->
+        <control type="button" id="210">
+            <left>594</left><top>538</top><width>356</width><height>58</height>
+            <label>Conectează-te</label>
+            <font>font20</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus   colordiffuse="FF7B5CF4">white.png</texturefocus>
+            <texturenofocus colordiffuse="1AFFFFFF">white.png</texturenofocus>
+            <align>center</align>
+            <onleft>211</onleft>
+            <onright>211</onright>
+            <onup>210</onup>
+            <ondown>210</ondown>
+        </control>
+
+        <!-- Buton Anulează (prompt) -->
+        <control type="button" id="211">
+            <left>970</left><top>538</top><width>356</width><height>58</height>
+            <label>Anulează</label>
+            <font>font20</font>
+            <textcolor>FF888899</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus   colordiffuse="FFCC3344">white.png</texturefocus>
+            <texturenofocus colordiffuse="0DFFFFFF">white.png</texturenofocus>
+            <align>center</align>
+            <onleft>210</onleft>
+            <onright>210</onright>
+            <onup>211</onup>
+            <ondown>211</ondown>
+        </control>
+
+        <!-- ═══════════════════════════════════════════
+             PANEL CODE (gestionat prin setVisible)
+             ═══════════════════════════════════════════ -->
+
+        <!-- Instrucțiune -->
+        <control type="label" id="220">
+            <left>596</left><top>456</top><width>728</width><height>30</height>
+            <label>Accesează pe telefon sau browser:</label>
+            <font>font20</font>
+            <textcolor>FFCCCCCC</textcolor>
+            <align>center</align>
+        </control>
+
+        <!-- URL -->
+        <control type="label" id="222">
+            <left>596</left><top>490</top><width>728</width><height>30</height>
+            <label>trakt.tv/activate</label>
+            <font>font20</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <align>center</align>
+        </control>
+
+        <!-- Cod (mare, galben) -->
+        <control type="label" id="221">
+            <left>596</left><top>526</top><width>728</width><height>62</height>
+            <label></label>
+            <font>font37</font>
+            <textcolor>FFFFD700</textcolor>
+            <align>center</align>
+            <aligny>center</aligny>
+        </control>
+
+        <!-- Countdown -->
+        <control type="label" id="223">
+            <left>596</left><top>594</top><width>728</width><height>26</height>
+            <label></label>
+            <font>font16</font>
+            <textcolor>FF888899</textcolor>
+            <align>center</align>
+        </control>
+
+        <!-- Buton Anulează (code) -->
+        <control type="button" id="225">
+            <left>782</left><top>626</top><width>356</width><height>52</height>
+            <label>Anulează</label>
+            <font>font20</font>
+            <textcolor>FF888899</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus   colordiffuse="FFCC3344">white.png</texturefocus>
+            <texturenofocus colordiffuse="0DFFFFFF">white.png</texturenofocus>
+            <align>center</align>
+            <onleft>225</onleft>
+            <onright>225</onright>
+            <onup>225</onup>
+            <ondown>225</ondown>
+        </control>
+
+    </controls>
+</window>

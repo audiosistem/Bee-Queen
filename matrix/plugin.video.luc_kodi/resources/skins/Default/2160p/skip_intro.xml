@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Píldora "Skip Intro" flotante, abajo-derecha, sobre el vídeo.
+     Versión 2160p = 1080i ×2 en coordenadas, tamaños y border; ids sin escalar. -->
+<window>
+    <defaultcontrol always="true">4501</defaultcontrol>
+    <controls>
+        <control type="group">
+            <left>3120</left><top>1860</top>
+            <width>600</width><height>124</height>
+
+            <animation type="WindowOpen" reversible="false">
+                <effect type="fade"  start="0"    end="100" time="260" />
+                <effect type="slide" start="80,0" end="0,0" time="260" tween="cubic" easing="out" />
+            </animation>
+            <animation type="WindowClose" reversible="false">
+                <effect type="fade"  start="100" end="0"    time="200" />
+                <effect type="slide" start="0,0" end="80,0" time="200" tween="cubic" easing="in" />
+            </animation>
+
+            <!-- Sombra suave desplazada -->
+            <control type="image">
+                <left>4</left><top>6</top>
+                <width>600</width><height>124</height>
+                <texture border="36">common/white_rounded.png</texture>
+                <colordiffuse>66000000</colordiffuse>
+            </control>
+
+            <control type="button" id="4501">
+                <left>0</left><top>0</top>
+                <width>600</width><height>124</height>
+                <align>center</align><aligny>center</aligny>
+                <font>font13</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <focusedcolor>FF111111</focusedcolor>
+                <shadowcolor>99000000</shadowcolor>
+                <texturenofocus border="36" colordiffuse="C0141414">common/white_rounded.png</texturenofocus>
+                <texturefocus border="36" colordiffuse="F2FFFFFF">common/white_rounded.png</texturefocus>
+                <label>Skip Intro</label>
+            </control>
+        </control>
+    </controls>
+</window>

@@ -730,3 +730,50 @@ class source:
 			search_series=search_series, total_seasons=total_seasons,
 			bypass_filter=bypass_filter, title=title,
 			aliases=aliases, year=year, imdb=imdb)
+
+	# --- Resolución on-demand -------------------------------------------------
+
+	def resolve(self, url):
+		"""Resuelve una URL de stream de Sootio a un enlace directo reproducible.
+
+		Sootio (igual que el addon de Stremio) usa "lazy resolution": las URLs
+		que entrega son endpoints `/resolve/<debrid>/<id>/<magnet|hash>` que NO
+		son archivos de vídeo. Hay que hacer un GET que el servidor responde con
+		un redirect (302) al enlace directo final del debrid. Si no se resuelve,
+		Kodi recibe la URL de /resolve/ tal cual y da "Playback not supported".
+
+		Es totalmente autónomo: el token de Sootio lleva embebidas las
+		credenciales del debrid, así que el plugin no consulta RD/PM/AD/etc.
+		directamente. Solo sigue el redirect del propio Sootio.
+		"""
+		try:
+			if not url: return None
+			# URLs que NO necesitan resolución (ya son un archivo directo):
+			# si no contiene el patrón /resolve/ la devolvemos tal cual.
+			if '/resolve/' not in url:
+				return url
+			# GET siguiendo redirects -> URL final del archivo. output='geturl'
+			# devuelve response.geturl() tras seguir la cadena de 30x.
+			final = client.request(url, output='geturl', redirect=True, timeout=self.timeout)
+			if final and final != url and not final.endswith('/resolve/') and '/resolve/' not in final:
+				log_utils.log('SOOTIO: resolve() -> %s' % final[:80], level=log_utils.LOGINFO)
+				return final
+			# Algunos despliegues devuelven el enlace en el cuerpo (texto plano
+			# o JSON {"url": "..."}) en lugar de un redirect. Probamos eso.
+			body = client.request(url, timeout=self.timeout)
+			if body:
+				body = body.strip()
+				if body.startswith('http'):
+					return body.split('\n')[0].strip()
+				try:
+					j = jsloads(body)
+					cand = j.get('url') or j.get('link') or j.get('location')
+					if cand and cand.startswith('http'):
+						return cand
+				except Exception:
+					pass
+			log_utils.log('SOOTIO: resolve() could not resolve %s' % url[:80], level=log_utils.LOGINFO)
+			return None
+		except Exception:
+			source_utils.scraper_error('SOOTIO')
+			return None

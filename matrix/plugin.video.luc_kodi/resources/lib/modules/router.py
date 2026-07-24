@@ -130,6 +130,9 @@ def router(params):
 	elif action == 'moviesUnfinished':
 		from resources.lib.menus import movies
 		movies.Movies().unfinished(url)
+	elif action == 'moviesSimklProgress':
+		from resources.lib.menus import movies
+		movies.Movies().simkl_progress(url)
 	elif action == 'movieUserlists':
 		from resources.lib.menus import movies
 		movies.Movies().userlists()
@@ -448,6 +451,9 @@ def router(params):
 	elif action == 'episodesUnfinished':
 		from resources.lib.menus import episodes
 		episodes.Episodes().unfinished(url)
+	elif action == 'episodesSimklProgress':
+		from resources.lib.menus import episodes
+		episodes.Episodes().progress_playback(url)
 	elif action == 'episodes_traktUnfinishedManager':
 		from resources.lib.menus import episodes
 		episodes.Episodes().unfinishedManager()
@@ -652,6 +658,15 @@ def router(params):
 		elif action == 'simkl_ForceSync':
 			from resources.lib.modules import simkl
 			simkl.force_simklSync()
+	elif action == 'mdblist_Authorize':
+		from resources.lib.modules import mdblist
+		mdblist.auth()
+	elif action == 'mdblist_Deauthorize':
+		from resources.lib.modules import mdblist
+		mdblist.deauth()
+	elif action == 'mdblist_AccountInfo':
+		from resources.lib.modules import mdblist
+		mdblist.account_info_to_dialog()
 	elif action and action.startswith('tmdb_'):
 		if action == 'tmdb_Auth':
 			from resources.lib.indexers import tmdb
@@ -835,6 +850,21 @@ def router(params):
 		elif action == 'tools_meteorWizard':
 			from resources.lib.modules import meteor_wizard
 			meteor_wizard.run()
+		elif action == 'tools_torzWizard':
+			from resources.lib.modules import torz_wizard
+			torz_wizard.run()
+		elif action == 'tools_torzDetect':
+			from resources.lib.modules import torz_wizard
+			torz_wizard.detect()
+		elif action == 'tools_cometWizard':
+			from resources.lib.modules import comet_wizard
+			comet_wizard.run()
+		elif action == 'tools_mdblistWizard':
+			from resources.lib.modules import mdblist_wizard
+			mdblist_wizard.run()
+		elif action == 'tools_cometDetect':
+			from resources.lib.modules import comet_wizard
+			comet_wizard.detect()
 		elif action == 'tools_openSubsTest':
 			from resources.lib.modules import opensubs
 			opensubs.Opensubs().getAccountStatus()
@@ -957,7 +987,7 @@ def router(params):
 			from resources.lib.modules import trailer
 			windowedtrailer = params.get('windowedtrailer')
 			windowedtrailer = int(windowedtrailer) if windowedtrailer in ("0","1") else 0
-			trailer.Trailer().play(params.get('type'), name, year, url, imdb, windowedtrailer)
+			trailer.Trailer().play(params.get('type'), name, year, url, imdb, windowedtrailer, tmdb=params.get('tmdb', ''))
 		elif action == 'play_Random':
 			rtype = params.get('rtype')
 			if rtype == 'movie':

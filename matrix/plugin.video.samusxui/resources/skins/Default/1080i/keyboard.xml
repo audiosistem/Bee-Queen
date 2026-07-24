@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <defaultcontrol>1299</defaultcontrol>
+    <controls>
+
+        <!-- Overlay scrim -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <texture colordiffuse="C0000000">white.png</texture>
+        </control>
+
+        <!-- Border violet 2px -->
+        <control type="image">
+            <left>198</left><top>193</top><width>1524</width><height>596</height>
+            <colordiffuse>FF7B5CF4</colordiffuse>
+            <texture border="16">panel_rounded.png</texture>
+        </control>
+
+        <!-- Card bg -->
+        <control type="image">
+            <left>200</left><top>195</top><width>1520</width><height>592</height>
+            <colordiffuse>FF141428</colordiffuse>
+            <texture border="16">panel_rounded.png</texture>
+        </control>
+
+        <!-- Title (id=1010) -->
+        <control type="label" id="1010">
+            <left>220</left><top>208</top><width>1480</width><height>34</height>
+            <label>Input</label><font>font20</font>
+            <textcolor>FF888899</textcolor><align>center</align>
+        </control>
+
+        <!-- Text display background -->
+        <control type="image">
+            <left>220</left><top>248</top><width>1480</width><height>56</height>
+            <colordiffuse>FF0E0E1A</colordiffuse>
+            <texture border="8">panel_rounded.png</texture>
+        </control>
+
+        <!-- Text display (id=1000) -->
+        <control type="label" id="1000">
+            <left>236</left><top>256</top><width>1448</width><height>40</height>
+            <label>[COLOR FF7B5CF4]|[/COLOR]</label>
+            <font>font20</font><textcolor>FFFFFFFF</textcolor>
+            <scroll>true</scroll>
+        </control>
+
+        <!-- Separator -->
+        <control type="image">
+            <left>220</left><top>311</top><width>1480</width><height>1</height>
+            <texture colordiffuse="1AFFFFFF">white.png</texture>
+        </control>
+
+        <!-- Virtual focus highlight — în spatele butoanelor (id=1298) -->
+        <!-- Inițial off-screen; Python îl mută pe butonul curent -->
+        <control type="image" id="1298">
+            <left>-200</left><top>-200</top><width>118</width><height>66</height>
+            <colordiffuse>FF7B5CF4</colordiffuse>
+            <texture border="8">panel_rounded.png</texture>
+        </control>
+
+        <!-- ═══ ROW 0: Cifre + DEL (top=319, left=314, step=118) ═══ -->
+        <control type="button" id="1200"><left>314</left><top>319</top><width>112</width><height>60</height><label>x</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1201"><left>432</left><top>319</top><width>112</width><height>60</height><label>x</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1202"><left>550</left><top>319</top><width>112</width><height>60</height><label>x</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1203"><left>668</left><top>319</top><width>112</width><height>60</height><label>x</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1204"><left>786</left><top>319</top><width>112</width><height>60</height><label>x</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1205"><left>904</left><top>319</top><width>112</width><height>60</height><label>x</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1206"><left>1022</left><top>319</top><width>112</width><height>60</height><label>x</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1207"><left>1140</left><top>319</top><width>112</width><height>60</height><label>x</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1208"><left>1258</left><top>319</top><width>112</width><height>60</height><label>x</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1209"><left>1376</left><top>319</top><width>112</width><height>60</height><label>x</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1210"><left>1494</left><top>319</top><width>112</width><height>60</height><label>DEL</label><font>font20</font><textcolor>FFCC6666</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FFCC2233">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+
+        <!-- ═══ ROW 1: QWERTY (top=387, left=373, step=118) ═══ -->
+        <control type="button" id="1211"><left>373</left><top>387</top><width>112</width><height>60</height><label>q</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1212"><left>491</left><top>387</top><width>112</width><height>60</height><label>w</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1213"><left>609</left><top>387</top><width>112</width><height>60</height><label>e</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1214"><left>727</left><top>387</top><width>112</width><height>60</height><label>r</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1215"><left>845</left><top>387</top><width>112</width><height>60</height><label>t</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1216"><left>963</left><top>387</top><width>112</width><height>60</height><label>y</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1217"><left>1081</left><top>387</top><width>112</width><height>60</height><label>u</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1218"><left>1199</left><top>387</top><width>112</width><height>60</height><label>i</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1219"><left>1317</left><top>387</top><width>112</width><height>60</height><label>o</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1220"><left>1435</left><top>387</top><width>112</width><height>60</height><label>p</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+
+        <!-- ═══ ROW 2: ASDF (top=455, left=432, step=118) ═══ -->
+        <control type="button" id="1221"><left>432</left><top>455</top><width>112</width><height>60</height><label>a</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1222"><left>550</left><top>455</top><width>112</width><height>60</height><label>s</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1223"><left>668</left><top>455</top><width>112</width><height>60</height><label>d</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1224"><left>786</left><top>455</top><width>112</width><height>60</height><label>f</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1225"><left>904</left><top>455</top><width>112</width><height>60</height><label>g</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1226"><left>1022</left><top>455</top><width>112</width><height>60</height><label>h</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1227"><left>1140</left><top>455</top><width>112</width><height>60</height><label>j</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1228"><left>1258</left><top>455</top><width>112</width><height>60</height><label>k</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1229"><left>1376</left><top>455</top><width>112</width><height>60</height><label>l</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+
+        <!-- ═══ ROW 3: ZXCVBNM + Românești (top=523, left=255, step=118, 12 taste) ═══ -->
+        <control type="button" id="1230"><left>255</left><top>523</top><width>112</width><height>60</height><label>z</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1231"><left>373</left><top>523</top><width>112</width><height>60</height><label>x</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1232"><left>491</left><top>523</top><width>112</width><height>60</height><label>c</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1233"><left>609</left><top>523</top><width>112</width><height>60</height><label>v</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1234"><left>727</left><top>523</top><width>112</width><height>60</height><label>b</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1235"><left>845</left><top>523</top><width>112</width><height>60</height><label>n</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1236"><left>963</left><top>523</top><width>112</width><height>60</height><label>m</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1260"><left>1081</left><top>523</top><width>112</width><height>60</height><label>&#x103;</label><font>font20</font><textcolor>FF9999FF</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="28AAAAFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1261"><left>1199</left><top>523</top><width>112</width><height>60</height><label>&#xEE;</label><font>font20</font><textcolor>FF9999FF</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="28AAAAFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1262"><left>1317</left><top>523</top><width>112</width><height>60</height><label>&#xE2;</label><font>font20</font><textcolor>FF9999FF</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="28AAAAFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1263"><left>1435</left><top>523</top><width>112</width><height>60</height><label>&#x219;</label><font>font20</font><textcolor>FF9999FF</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="28AAAAFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1264"><left>1553</left><top>523</top><width>112</width><height>60</height><label>&#x21B;</label><font>font20</font><textcolor>FF9999FF</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="28AAAAFF">white.png</texturenofocus><align>center</align></control>
+
+        <!-- ═══ ROW 4: Simboluri (top=591, left=314, step=118) ═══ -->
+        <control type="button" id="1237"><left>314</left><top>591</top><width>112</width><height>60</height><label>.</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1238"><left>432</left><top>591</top><width>112</width><height>60</height><label>,</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1239"><left>550</left><top>591</top><width>112</width><height>60</height><label>/</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1240"><left>668</left><top>591</top><width>112</width><height>60</height><label>:</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1241"><left>786</left><top>591</top><width>112</width><height>60</height><label>;</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1242"><left>904</left><top>591</top><width>112</width><height>60</height><label>&apos;</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1243"><left>1022</left><top>591</top><width>112</width><height>60</height><label>-</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1244"><left>1140</left><top>591</top><width>112</width><height>60</height><label>_</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1245"><left>1258</left><top>591</top><width>112</width><height>60</height><label>@</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1246"><left>1376</left><top>591</top><width>112</width><height>60</height><label>[</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+        <control type="button" id="1247"><left>1494</left><top>591</top><width>112</width><height>60</height><label>]</label><font>font20</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor><texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus><texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus><align>center</align></control>
+
+        <!-- ═══ ROW 5: Special (top=659) ═══ -->
+        <control type="button" id="1250">
+            <left>381</left><top>659</top><width>160</width><height>60</height>
+            <label>SHIFT</label><font>font20</font>
+            <textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus   colordiffuse="FF886600">white.png</texturefocus>
+            <texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus>
+            <align>center</align>
+        </control>
+        <control type="button" id="1251">
+            <left>547</left><top>659</top><width>660</width><height>60</height>
+            <label>SPATIU</label><font>font20</font>
+            <textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus   colordiffuse="FF7B5CF4">white.png</texturefocus>
+            <texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus>
+            <align>center</align>
+        </control>
+        <control type="button" id="1252">
+            <left>1213</left><top>659</top><width>160</width><height>60</height>
+            <label>OK</label><font>font20</font>
+            <textcolor>FF44BB66</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus   colordiffuse="FF22AA55">white.png</texturefocus>
+            <texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus>
+            <align>center</align>
+        </control>
+        <control type="button" id="1253">
+            <left>1379</left><top>659</top><width>160</width><height>60</height>
+            <label>CANCEL</label><font>font20</font>
+            <textcolor>FFCC6666</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus   colordiffuse="FFCC2233">white.png</texturefocus>
+            <texturenofocus colordiffuse="1EFFFFFF">white.png</texturenofocus>
+            <align>center</align>
+        </control>
+
+        <!-- Edit invizibil — captură input tastatură fizică (id=1299) -->
+        <!-- 1×1px în colț — când e focusat Kodi îi trimite caracterele direct,
+             ocolind keymap-ul global; dimensiunea nu contează pentru input capture -->
+        <control type="edit" id="1299">
+            <left>0</left><top>0</top><width>1</width><height>1</height>
+            <font>font20</font>
+            <textcolor>00000000</textcolor>
+            <focusedcolor>00000000</focusedcolor>
+            <texturenofocus colordiffuse="00000000">white.png</texturenofocus>
+            <texturefocus   colordiffuse="00000000">white.png</texturefocus>
+        </control>
+
+    </controls>
+</window>
