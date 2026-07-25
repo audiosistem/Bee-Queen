@@ -366,7 +366,7 @@ class SyncMonitorService(kodi_utils.xbmc_monitor):
 			logger('POV', self.service_string % ('POV TraktMonitor - Success. No Changes Needed', next_update_str))
 
 	def sync_mdblist(self, next_update_str):
-		try: status = self.mdbl_sync_activities(monitor=self)
+		try: status = self.mdbl_sync_activities(init_callback=True, monitor=self)
 		except: status = 'failed'
 		if status == 'success':
 			logger('POV', self.service_string % ('POV MDBListMonitor - Success', 'MDBList Update Performed'))

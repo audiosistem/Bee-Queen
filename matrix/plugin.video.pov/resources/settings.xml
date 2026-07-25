@@ -141,7 +141,9 @@
 		<setting id="trakt.reverse" label="Reverse Added/Released Sort Direction" type="bool" default="false" />
 		<!-- MDBList -->
 		<setting label="MDBList" type="lsep" />
-		<setting id="mdblist.token" label="API Key" type="text" default="" visible="false" />
+		<setting id="mdblist.refresh" type="text" default="" visible="false" />
+		<setting id="mdblist.expires" type="text" default="" visible="false" />
+		<setting id="mdblist.token" type="text" default="" visible="false" />
 		<setting id="mdblist_user" label="Username" type="text" default="" enable="false" />
 		<!-- TMDB -->
 		<setting label="TMDB Lists" type="lsep" />
@@ -335,6 +337,8 @@
 		<!-- Trakt -->
 		<setting id="trakt.client_id" type="text" default="6bc29124c3d9466e06a3ed19a7b5976fcb28311008401e1ce04cf08196f8b16a" visible="false" />
 		<setting id="trakt.client_secret" type="text" default="99478842b17d44d7accafef45c6c1bbba235792753c195069ae149595cd3a919" visible="false" />
+		<!-- MDBList -->
+		<setting id="mdblist.client_id" type="text" default="TlibB0hxTOxCFONKaR1W8J35eHc0ls7SP9ZhqHCl" visible="false" />
 	</category>
 	<!-- Context Menu -->
 	<category label="Context Menu">

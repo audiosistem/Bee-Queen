@@ -1,6 +1,7 @@
 
   [COLOR dodgerblue][B]Version 6.07[/B][/COLOR]
 - Shuffling the deck chairs on the Titanic.
+- Changed to MDBList pin authorization.
 - Added My Services/TorBox Cloud/Add or Remove Airlock to folders context menu.
 - Added Airlock to Cloud to context menu for TorBox cached results.
 - Added Settings/Features/Smart Play/Play Next Episode From TV Shows.

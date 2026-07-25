@@ -444,10 +444,20 @@ class Trakt:
 class MDBList:
 	icon = 'mdblist.png'
 	def __init__(self):
+		self.grant_type = 'urn:ietf:params:oauth:grant-type:device_code'
+		self.client_id = get_setting('mdblist.client_id')
+		if not self.client_id: setattr(self, 'client_id', kodi_utils.addon().getSetting('mdblist.client_id'))
 		self.token = get_setting('mdblist.token')
+		self.created_at = time.time()
 
 	def base_url(self, path):
 		return 'https://api.mdblist.com/%s' % path
+
+	def poll_auth(self, data):
+		response = requests.post(self.base_url('oauth/token/'), data=data, timeout=timeout)
+		if not response.ok: return
+		data.update(response.json())
+		self.token = data['access_token']
 
 	@watch_indicators
 	def set(self):
@@ -456,20 +466,46 @@ class MDBList:
 			if not confirm_dialog(): return
 			set_setting('mdblist_user', '')
 			set_setting('mdblist.token', '')
+			set_setting('mdblist.refresh', '')
+			set_setting('mdblist.expires', '')
 			set_setting('mdbl_indicators_active', 'false')
 			set_setting('watched_indicators', '0')
 			sleep(500)
 			clear_cache('mdblist', silent=True)
 			return notification('Removed %s Authorization' % cls_name)
 
-		api_key = kodi_utils.dialog.input('MDBList API Key:').strip()
-		if not api_key: return
-		params = {'apikey': api_key}
-		response = requests.get(self.base_url('user'), params=params, timeout=timeout)
+		data = {'client_id': self.client_id, 'scope': 'write'}
+		response = requests.post(self.base_url('oauth/device-authorization/'), data=data, timeout=timeout)
+		result = response.json()
+		data = {'device_code': result['device_code'], 'client_id': self.client_id, 'grant_type': self.grant_type}
+		expires_in, expires_at = result['expires_in'], result['expires_in'] + time.monotonic()
+		try: qr_icon = qr_str % '&data=%s' % quote(result['verification_uri'])
+		except: qr_icon = ''
+		meta = {**dict.fromkeys(meta_keys.split(), ''), 'poster': qr_icon}
+		detail = code_str % result['user_code'], nav2_str % result['verification_uri']
+		progress_dialog = _make_progress_dialog(meta=meta)
+		timer = RepeatTimer(result['interval'], self.poll_auth, args=(data,))
+		timer.start()
+		for i in range(1, expires_in + 1):
+			if self.token or progress_dialog.iscanceled(): break
+			lines = await_str % divmod(expires_at - time.monotonic(), 60), *detail
+			progress = 100 - int(100 * i / expires_in)
+			progress_dialog.update('[CR]'.join(lines), progress)
+			sleep(1000)
+		timer.cancel()
+		progress_dialog.close()
+		if progress_dialog.iscanceled(): return False
+		if not self.token: return notification(32574)
+		headers = {'Authorization': 'Bearer %s' % self.token}
+		response = requests.get(self.base_url('user'), headers=headers, timeout=timeout)
 		result = response.json()
 		user_id, username = result['user_id'], result['username']
+		expires = int(self.created_at) + int(data['expires_in'])
+		refresh, token = data['refresh_token'], data['access_token']
 		set_setting('mdblist_user', str(username))
-		set_setting('mdblist.token', api_key)
+		set_setting('mdblist.token', token)
+		set_setting('mdblist.refresh', refresh)
+		set_setting('mdblist.expires', str(expires))
 		set_setting('mdbl_indicators_active', 'true')
 		set_setting('watched_indicators', '2')
 		notification('Set %s Authorization' % cls_name)
