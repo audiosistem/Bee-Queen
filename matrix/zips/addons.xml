@@ -1017,7 +1017,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.07.90" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.07.91" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />

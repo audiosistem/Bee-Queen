@@ -31,6 +31,11 @@ def debrid_enabled():
 def debrid_type_enabled(debrid_type, enabled_debrids):
 	return [i[0] for i in debrid_list if i[0] in enabled_debrids and get_setting('%s.%s.enabled' % (i[1], debrid_type)) == 'true']
 
+def play_from_cloud(params):
+	source = Source.fromcloud(params)
+	url = source.resolve_internal_sources(source.direct_debrid_link)
+	return kodi_utils.execute_builtin('PlayMedia(%s)' % url)
+
 class Source:
 	@classmethod
 	def fromcloud(cls, params):
@@ -39,8 +44,7 @@ class Source:
 		if ddl in ('false', False): self.direct_debrid_link = False
 		else: self.direct_debrid_link = True if ddl == 'true' else ddl
 		self.url_dl = params['id'] if self.direct_debrid_link else ''
-		url = self.resolve_internal_sources(self.direct_debrid_link)
-		return kodi_utils.execute_builtin('PlayMedia(%s)' % url)
+		return self
 
 	def dumps(self, depth=1, width=172):
 		from pprint import pformat

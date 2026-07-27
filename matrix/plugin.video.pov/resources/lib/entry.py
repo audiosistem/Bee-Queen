@@ -10,7 +10,7 @@ get_setting, set_setting, make_settings_dict = kodi_utils.get_setting, kodi_util
 POV_ROUTES = {
 	'smart_play_media': lambda p, pg: _import('modules.episode_tools', 'SmartPlay')(p),
 	'play_media': lambda p, pg: _import('modules.sources', 'Sources').factory(p),
-	'media_play': lambda p, pg: _import('modules.debrid', 'Source').fromcloud(p),
+	'media_play': lambda p, pg: _import('modules.debrid', 'play_from_cloud')(p),
 	'downloader': lambda p, pg: _import('modules.downloader', 'factory')(p),
 
 	'scraper_color_choice': lambda p, pg: _import('modules.dialogs', 'scraper_color_choice')(p['setting']),
