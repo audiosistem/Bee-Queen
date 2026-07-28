@@ -64,7 +64,7 @@ class TVShows:
 			tmdb_id, tvdb_id, imdb_id = meta_get('tmdb_id'), meta_get('tvdb_id'), meta_get('imdb_id')
 			try: tags = [i for i in (imdb_id, string(tmdb_id), string(tvdb_id)) if i not in ('', 'None', None)]
 			except: tags = []
-			valid_seasons = (True for i in meta_get('season_data') if i['episode_count'] and i['season_number'])
+			valid_seasons = (True for i in meta_get('season_data') if i['episode_count'])
 			if self.smart_play == 2 or (self.smart_play == 1 and self.is_widget):
 				url_params = build_url({'mode': 'smart_play_media', 'tmdb_id': tmdb_id})
 			elif self.all_episodes == 2 or (self.all_episodes == 1 and sum(valid_seasons) == 1):

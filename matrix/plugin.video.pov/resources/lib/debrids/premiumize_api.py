@@ -12,7 +12,6 @@ session.mount('https://www.premiumize.me', requests.adapters.HTTPAdapter(max_ret
 
 class PremiumizeAPI:
 	icon = 'premiumize.png'
-	defaults_to_cloud = False
 
 	def __init__(self):
 		self.token = get_setting('pm.token')

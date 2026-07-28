@@ -12,7 +12,6 @@ session.mount('https://api.alldebrid.com', requests.adapters.HTTPAdapter(max_ret
 
 class AllDebridAPI:
 	icon = 'alldebrid.png'
-	defaults_to_cloud = True
 
 	@staticmethod
 	def flatten_magnet_files(files_list):

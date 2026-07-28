@@ -10,7 +10,7 @@ get_setting, set_setting, make_settings_dict = kodi_utils.get_setting, kodi_util
 POV_ROUTES = {
 	'smart_play_media': lambda p, pg: _import('modules.episode_tools', 'SmartPlay')(p),
 	'play_media': lambda p, pg: _import('modules.sources', 'Sources').factory(p),
-	'media_play': lambda p, pg: _import('modules.debrid', 'play_from_cloud')(p),
+	'media_play': lambda p, pg: _import('modules.debrid', 'Source').fromcloud(p),
 	'downloader': lambda p, pg: _import('modules.downloader', 'factory')(p),
 
 	'scraper_color_choice': lambda p, pg: _import('modules.dialogs', 'scraper_color_choice')(p['setting']),
@@ -83,7 +83,6 @@ POV_ROUTES = {
 	'undesirablesInput': lambda p, pg: _import('caches.undesirables_cache', 'undesirablesInput')(),
 	'undesirablesUserRemove': lambda p, pg: _import('caches.undesirables_cache', 'undesirablesUserRemove')(),
 	'speedTest': lambda p, pg: _import('fenom.speedtest', 'magneto')(),
-	'aioHelp': lambda p, pg: _import('scrapers.aiostreams', 'aio_help')(),
 }
 
 def _import(module_path, attr_name):
@@ -367,7 +366,7 @@ class SyncMonitorService(kodi_utils.xbmc_monitor):
 			logger('POV', self.service_string % ('POV TraktMonitor - Success. No Changes Needed', next_update_str))
 
 	def sync_mdblist(self, next_update_str):
-		try: status = self.mdbl_sync_activities(init_callback=True, monitor=self)
+		try: status = self.mdbl_sync_activities(monitor=self)
 		except: status = 'failed'
 		if status == 'success':
 			logger('POV', self.service_string % ('POV MDBListMonitor - Success', 'MDBList Update Performed'))

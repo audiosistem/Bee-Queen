@@ -90,29 +90,24 @@ class GetMdblLists(BaseMdblList):
 	def __init__(self, params):
 		super().__init__(params)
 		self.sort_method = 'label'
-		self.list_type = params['list_type']
 
 	def fetch_results(self):
 		self.lists = []
-		if self.list_type == 'liked_lists': lists = ('liked_lists',)
-		else: lists = ('my_lists', 'external')
-		for i in lists:
+		for i in ('my_lists', 'external'):
 			items = mdblist_api.mdbl_get_lists(i)
 			if isinstance(items, list): self.lists.extend(items)
 
 	def parse_item(self, item):
-		if self.list_type == 'liked_lists': list_type = 'liked_lists'
-		else: list_type = 'external' if 'source' in item else 'my_lists'
+		list_type = 'external' if 'source' in item else 'my_lists'
 		return item, list_type
 
 	def get_display_and_plot(self, item, name, item_count, user):
-		privacy = item.get('private')
-		if self.list_type == 'liked_lists':
-			display = '%s (x%s) - [I]%s[/I]' % (name, item_count, user) if item_count else '%s - [I]%s[/I]' % (name, user)
-		else:
-			display = '%s (x%s)' % (name, item_count) if item_count else name
-			if privacy: display = '[I]%s[/I]' % display
-		return display, None
+		display = '%s (x%s)' % (name, item_count) if item_count else name
+		if 'source' in item: display = '[COLOR cyan][I]%s[/I][/COLOR]' % display
+		elif item.get('dynamic'): display = '[COLOR magenta][I]%s[/I][/COLOR]' % display
+		elif item.get('private'): display = '[I]%s[/I]' % display
+		plot = '[B]Likes[/B]: %s' % item.get('likes')
+		return display, plot
 
 class GetTopLists(BaseMdblList):
 	def fetch_results(self):

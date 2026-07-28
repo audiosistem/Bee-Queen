@@ -80,12 +80,14 @@ class Sources:
 	def get_sources(self):
 		start_time = time.monotonic()
 		self.progress_dialog = DialogProgress(getattr(self, 'full_screen', False))
+		self.scraper_processor.prepare_internal()
 		if self.prescrape and any(x in self.active_internal_scrapers for x in default_internal_scrapers):
 			results = self.collect_prescrape_results()
 			if results: results = self.results_processor.process(results)
 		else: results = []
 		if not results:
 			self.prescrape = False
+			if self.active_external: self.scraper_processor.activate_external()
 			self.orig_results = self.collect_results()
 			results = self.results_processor.process(self.orig_results)
 		self.meta.update({'scrape_time': time.monotonic() - start_time})
@@ -93,13 +95,12 @@ class Sources:
 
 	def collect_results(self):
 		self.sources.extend(self.prescrape_sources)
-		self.scraper_processor.activate_internal(False)
+		self.providers.extend(self.scraper_processor.internal_sources(self.active_internal_scrapers, self.mediatype))
 		if self.providers:
-			threads = ((self.activate_providers, (i[0], i[1], False), i[2]) for i in self.providers)
-			self.threads.extend([Thread(target=i[0], args=i[1], name=i[2]) for i in threads])
+			threads = (Thread(target=self.activate_providers, args=(i[0], i[1], False), name=i[2]) for i in self.providers)
+			self.threads.extend(threads)
 			for i in self.threads: i.start()
-		self.scraper_processor.activate_external()
-		if self.external_providers or self.background:
+		if self.active_external or self.background:
 			if self.active_external:
 				args = (
 					self.meta, self.external_providers, self.debrid_torrent_enabled, # self.internal_scraper_names,
@@ -111,10 +112,10 @@ class Sources:
 		return self.sources
 
 	def collect_prescrape_results(self):
-		self.scraper_processor.activate_internal(True)
+		self.prescrape_scrapers.extend(self.scraper_processor.internal_sources(self.active_internal_scrapers, self.mediatype, True))
 		if not self.prescrape_scrapers: return []
-		threads = ((self.activate_providers, (i[0], i[1], True), i[2]) for i in self.prescrape_scrapers)
-		self.prescrape_threads.extend([Thread(target=i[0], args=i[1], name=i[2]) for i in threads])
+		threads = (Thread(target=self.activate_providers, args=(i[0], i[1], True), name=i[2]) for i in self.prescrape_scrapers)
+		self.prescrape_threads.extend(threads)
 		for i in self.prescrape_threads: i.start()
 		self.remove_scrapers.extend(i[2] for i in self.prescrape_scrapers)
 		if self.background: [i.join() for i in self.prescrape_threads]
@@ -143,8 +144,7 @@ class Sources:
 		timeout = self.timeout
 		start_time = time.monotonic()
 		end_time = start_time + timeout
-		if self.progress_dialog.full_screen: self.progress_dialog.make(self.meta)
-		else: progressDialogBG.create('POV', 'POV loading...')
+		self.progress_dialog.make(self.meta)
 		while not monitor.abortRequested() and time.monotonic() <= end_time:
 			try:
 				alive_threads = [x.name for x in _threads if x.is_alive()]
@@ -155,13 +155,10 @@ class Sources:
 				line2 = dialog_format % (int_dialog_hl, line2_inst, *int_totals)
 				line3 = remaining_format % ', '.join(alive_threads).upper()
 				percent = int((current_progress/float(timeout))*100)
-				if self.progress_dialog.full_screen:
-					self.progress_dialog.update(format_line % (line1, line2, line3), percent)
-				else: progressDialogBG.update(percent, line3)
+				self.progress_dialog.update(format_line % (line1, line2, line3), percent)
 			except: pass
 			sleep(self.sleep_time)
-		if self.progress_dialog.full_screen: self.progress_dialog.kill()
-		else: progressDialogBG.close()
+		self.progress_dialog.kill()
 
 	def _process_post_results(self):
 		if self.ignore_results_filter and self.orig_results:
@@ -212,8 +209,6 @@ class Sources:
 		else: return self.display_results(results)
 
 	def play_file(self, results, source=None):
-		def _fast_to_resolve(item):
-			return 'unrestricted_link' in item or item.get('scrape_provider') == 'aiostreams'
 		try:
 			if source is None:
 				source_index, items = 0, results
@@ -243,8 +238,9 @@ class Sources:
 						self.progress_dialog.update(format_line % (line1, line2, name), percent)
 					else: progressDialogBG.update(percent, name)
 				except: pass
-				if _fast_to_resolve(item): sleep(500)
-				if 'unrestricted_link' in item: link = item['unrestricted_link']
+				if 'unrestricted_link' in item:
+					link = item['unrestricted_link']
+					sleep(500)
 				else: link = Source(item, self.meta).resolve_sources()
 				if link is not None: break
 			else:
@@ -275,7 +271,7 @@ class ConfigLoader:
 	def apply(self, source, params=None):
 		if params: source.params = params
 		params_get = source.params.get
-		if params: source.prescrape = self._as_bool(params_get('prescrape'), True)
+		source.prescrape = self._as_bool(params_get('prescrape'), True)
 		source.background = self._as_bool(params_get('background'), False)
 		if source.background: hide_busy_dialog()
 		else: show_busy_dialog()
@@ -406,31 +402,32 @@ class MetaBuilder:
 		return ep_name
 
 class ScraperProcessor:
+	@staticmethod
+	def internal_sources(active_sources, mediatype, prescrape=False):
+		source_list = []
+		source_list_append = source_list.append
+		files = kodi_utils.list_dirs(kodi_utils.scrapers_path)[1]
+		for item in files:
+			try:
+				module_name = item.split('.')[0]
+				if module_name in ('__init__',): continue
+				if module_name not in active_sources: continue
+				if prescrape and not check_prescrape_sources(module_name, mediatype): continue
+				module = manual_function_import('scrapers.%s' % module_name, 'source')
+				source_list_append(('internal', module, module_name))
+			except: pass
+		return source_list
+
 	def __init__(self, source_instance):
 		self.source = source_instance
 
 	def prepare_internal(self):
-		if self.source.active_external and ''.join(self.source.active_internal_scrapers) == 'external': return
+		if self.source.active_external and len(self.source.active_internal_scrapers) == 1: return
 		active_internal_scrapers = [i for i in self.source.active_internal_scrapers if i not in self.source.remove_scrapers]
 		self.source.internal_scraper_names = active_internal_scrapers[:]
 		self.source.active_internal_scrapers = active_internal_scrapers
 
-	def activate_internal(self, prescrape=False):
-		self.prepare_internal()
-		list_append = self.source.prescrape_scrapers.append if prescrape else self.source.providers.append
-		source_path = kodi_utils.translate_path(kodi_utils.scrapers_path)
-		for loader, module_name, is_pkg in __import__('pkgutil').iter_modules([source_path]):
-			try:
-				if is_pkg: continue
-				if module_name not in self.source.active_internal_scrapers: continue
-				if prescrape and not check_prescrape_sources(module_name, self.source.mediatype): continue
-				module = loader.find_spec(module_name).loader.load_module(module_name).source
-				list_append(('internal', module, module_name))
-			except: pass
-
 	def activate_external(self):
-		self.source.external_providers = []
-		if 'aiostreams' in self.source.active_internal_scrapers: return
 		self.source.debrid_enabled = debrid_enabled()
 		self.source.debrid_torrent_enabled = debrid_type_enabled('torrent', self.source.debrid_enabled)
 		if not self.source.debrid_torrent_enabled:
@@ -439,10 +436,10 @@ class ScraperProcessor:
 			return notification(32854) if ''.join(self.source.active_internal_scrapers) == 'external' else None
 #		if not self.source.debrid_torrent_enabled: self.source.exclude_list.extend(scraper_names('torrents'))
 		external_providers = magneto_sources(ret_all=self.source.disabled_ignored)
-		self.source.external_providers.extend([
+		self.source.external_providers = [
 			i for i in external_providers if i[0] not in self.source.exclude_list
 			and (i[1].hasEpisodes if self.source.mediatype == 'episode' else i[1].hasMovies)
-		])
+		]
 		if self.source.mediatype != 'episode': return
 		self.source.external_providers = [(i[0], i[1], '') for i in self.source.external_providers]
 		season_packs, show_packs = pack_enable_check(self.source.meta, self.source.season, self.source.episode)
@@ -468,7 +465,6 @@ class ResultsProcessor:
 		self.source = source_instance
 
 	def process(self, results):
-		if 'aiostreams' in self.source.active_internal_scrapers: return results
 		if self.source.prescrape:
 			self.source.all_scrapers = self.source.active_internal_scrapers
 		else:
@@ -635,7 +631,7 @@ class ExternalManager:
 				fut = tpe.submit(ExternalSource(self.meta, self.resolutions).results, info, args)
 				fut.name = pack_display % (provider, *pack) if pack and pack[0] else provider
 				threads.add(fut)
-			self.thread_monitor(threads, ls(32676), False)
+			self.thread_monitor(threads, ls(32676))
 			threads = [i for i in threads if i.done() and not i.exception()]
 			for fut in as_completed(threads): total_results.extend(fut.result())
 			self.sources.extend(self.process_duplicates(total_results))
@@ -647,10 +643,10 @@ class ExternalManager:
 				fut = tpe.submit(DebridCheck(self.meta, item).cache_check)
 				fut.name = item
 				threads.add(fut)
-			self.thread_monitor(threads, ls(32579), True)
+			self.thread_monitor(threads, ls(32579))
 			threads = [i for i in threads if i.done() and not i.exception()]
 			for name, hashes in ((fut.name, fut.result()) for fut in threads):
-				if name in ('realdebrid', 'alldebrid'): uncached = '%s %s' % ('Unchecked', name)
+				if name in ('real-debrid', 'alldebrid'): uncached = '%s %s' % ('Unchecked', name)
 				else: uncached = '%s %s' % ('Uncached', name)
 				self.final_sources.extend(
 					{**i, 'cache_provider': name if i['hash'] in hashes else uncached, 'debrid': name}
@@ -660,12 +656,12 @@ class ExternalManager:
 		finally: tpe.shutdown(False)
 		return self.final_sources
 
-	def thread_monitor(self, threads, status_line='', debrid=False):
+	def thread_monitor(self, threads, status_line=''):
 		len_threads = len(threads)
 		end_time = time.monotonic() + self.timeout
 		while not monitor.abortRequested() and time.monotonic() <= end_time:
-			alive_threads = [x.name for x in threads if not x.done()]
-			if not debrid: alive_threads.extend(x.name for x in self.internal_scrapers if x.is_alive())
+			alive_threads = [x.name for x in self.internal_scrapers if x.is_alive()]
+			alive_threads.extend(x.name for x in threads if not x.done())
 			if not alive_threads: break
 			if not self.background: self.progress_update(alive_threads, len_threads, status_line)
 			sleep(self.sleep_time)

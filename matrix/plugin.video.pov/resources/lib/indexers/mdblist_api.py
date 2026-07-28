@@ -10,28 +10,18 @@ from modules.cache import check_databases
 from modules.utils import sort_for_article, jsondate_to_datetime, paginate_list, get_datetime
 
 EXPIRES_1_HOURS, MAX_LIST_ITEMS = 1, 250_000
-get_setting, set_setting, logger = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.logger
+get_setting, logger = kodi_utils.get_setting, kodi_utils.logger
 base_url = 'https://api.mdblist.com/%s'
-timeout = 10.05
+timeout = 5.05
 session = requests.Session()
 retry = requests.adapters.Retry(total=None, status=1, status_forcelist=(502, 503, 504))
 session.mount('https://api.mdblist.com', requests.adapters.HTTPAdapter(pool_maxsize=100, max_retries=retry))
 
 def call_mdblist(path, params=None, json=None, method=None):
-	headers = None
 	params = params or {}
-	if get_setting('mdblist.refresh', '') != '':
-		headers = {'Authorization': 'Bearer %s' % get_setting('mdblist.token')}
-	else: params['apikey'] = get_setting('mdblist.token')
+	params['apikey'] = get_setting('mdblist.token')
 	try:
-		response = session.request(
-			method or 'get',
-			base_url % path,
-			params=params,
-			json=json,
-			headers=headers,
-			timeout=timeout
-		)
+		response = session.request(method or 'get', base_url % path, params=params, json=json, timeout=timeout)
 		result = response.json() if 'json' in response.headers.get('Content-Type', '') else response.text
 		if not response.ok: response.raise_for_status()
 		if isinstance(result, list):
@@ -55,30 +45,6 @@ def _get_mdbl_paginated_list(url):
 			params['cursor'] = result['pagination']['next_cursor']
 	except: pass
 	return items
-
-def mdbl_refresh():
-	try:
-		created_at = __import__('time').time()
-		data = {'grant_type': 'refresh_token'}
-		data['refresh_token'] = get_setting('mdblist.refresh')
-		data['client_id'] = get_setting('mdblist.client_id')
-		response = requests.post(base_url % 'oauth/token/', data=data, timeout=timeout).json()
-		expires = int(created_at) + int(response['expires_in'])
-		refresh, token = response['refresh_token'], response['access_token']
-		set_setting('mdblist.token', token)
-		set_setting('mdblist.refresh', refresh)
-		set_setting('mdblist.expires', str(expires))
-		kodi_utils.sleep(500)
-	except Exception as e: logger('mdbl_refresh error', str(e))
-
-def mdbl_expires():
-	if not get_setting('mdblist.refresh', ''): return
-	from datetime import datetime, timezone
-	expires = float(get_setting('mdblist.expires', '0'))
-	interval = settings.trakt_sync_interval()[1]
-	current = datetime.now(timezone.utc).timestamp()
-	current = (-1 * current // 1 * -1) + interval
-	if current >= expires: mdbl_refresh()
 
 def mdbl_top_lists():
 	string = 'mdbl_top_lists'
@@ -147,10 +113,9 @@ def get_mdbl_list_contents(list_type, list_id):
 	return mdbl_cache.cache_mdbl_object(_get_mdbl_paginated_list, string, url)['items']
 
 def mdbl_get_lists(list_type):
-	if list_type == 'liked_lists': key, string, url = 'lists', 'mdbl_liked_lists', 'lists/liked'
-	elif list_type == 'external': key, string, url = 'items', 'mdbl_external', 'external/lists/user'
-	else: key, string, url = 'items', 'mdbl_my_lists', 'lists/user'
-	return mdbl_cache.cache_mdbl_object(call_mdblist, string, url)[key]
+	if list_type == 'external': string, url = 'mdbl_external', 'external/lists/user'
+	else: string, url = 'mdbl_my_lists', 'lists/user'
+	return mdbl_cache.cache_mdbl_object(call_mdblist, string, url)['items']
 
 def add_to_collection(data):
 	result = call_mdblist('sync/collection', json=data, method='post')
@@ -387,15 +352,12 @@ def mdbl_get_activity():
 def mdbl_sync_activities_thread(*args, **kwargs):
 	Thread(target=mdbl_sync_activities, args=args, kwargs=kwargs).start()
 
-def mdbl_sync_activities(force_update=False, init_callback=None, monitor=None):
+def mdbl_sync_activities(force_update=False, monitor=None):
 	def _compare(latest, cached):
 		try: return (latest or '') > (cached or '')
 		except: return True
 	if not get_setting('mdblist_user', ''): return 'no account'
 	if monitor and monitor.abortRequested(): return
-	if callable(init_callback): init_callback()
-	elif init_callback is True: mdbl_expires()
-	else: pass
 	if force_update:
 		check_databases()
 		mdbl_cache.clear_all_mdbl_cache_data(refresh=False)
@@ -416,7 +378,7 @@ def mdbl_sync_activities(force_update=False, init_callback=None, monitor=None):
 			func(*args)
 	if _compare(latest['list_updated_at'], cached['list_updated_at']):
 		success = 'success'
-		for i in ('external', 'liked_lists', 'my_lists'):
+		for i in ('external', 'my_lists'):
 			mdbl_cache.clear_mdbl_list_data(i)
 			mdbl_cache.clear_mdbl_list_contents_data(i)
 	refresh_movies_watched = _compare(latest['watched_at'], cached['watched_at'])

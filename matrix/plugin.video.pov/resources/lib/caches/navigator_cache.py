@@ -64,7 +64,8 @@ class NavigatorCache(BaseCache):
 	def get_shortcut_folder_contents(self, list_name):
 		try:
 			contents = self.dbcur.execute(GET_FOLDER_CONTENTS, (list_name, 'shortcut_folder')).fetchone()[0]
-			contents = self.jsloads(contents)
+			try: contents = self.jsloads(contents)
+			except: pass
 		except: contents = []
 		return contents
 
