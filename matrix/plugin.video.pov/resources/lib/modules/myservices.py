@@ -31,20 +31,18 @@ def _make_progress_dialog(**kwargs):
 
 def authorize():
 	def _builder():
-		for name, api in services:
+		for api in services:
 			item = kodi_utils.make_listitem()
-			item.setLabel('[B]%s[/B]' % name.upper())
+			item.setLabel('[B]%s[/B]' % api.__name__.upper())
 			item.setLabel2(auth_str if api().token else noauth_str)
 			item.setArt({'icon': '%s%s' % (icon_path, api.icon)})
-			yield(item)
-	icon_path, services = kodi_utils.media_path(), (
-		('trakt', Trakt), ('mdblist', MDBList), ('tmdblist', TMDBList),
-		('real-debrid', RealDebrid), ('premiumize.me', Premiumize), ('alldebrid', AllDebrid),
-		('torbox', TorBox), ('offcloud', Offcloud), ('easynews', EasyNews)
-	)
+			yield item
+	services, icon_path = (
+		Trakt, MDBList, TMDBList, Premiumize, TorBox, Offcloud, RealDebrid, AllDebrid, EasyNews
+	), kodi_utils.media_path()
 	service = kodi_utils.dialog.select('My Services', list(_builder()), useDetails=True)
 	if service < 0: return
-	try: success = services[service][1]().set()
+	try: success = services[service]().set()
 	except: kodi_utils.logger('myservices error', f"\n{__import__('traceback').format_exc()}")
 	else: return success
 	return notification(32574)
@@ -72,7 +70,6 @@ class RealDebrid:
 		self.secret = data['client_secret']
 
 	def set(self):
-		cls_name = 'Real Debrid'
 		if self.token:
 			if not confirm_dialog(): return
 			set_setting('rd.username', '')
@@ -81,7 +78,7 @@ class RealDebrid:
 			set_setting('rd.refresh', '')
 			set_setting('rd.secret', '')
 			clear_cache('rd_cloud', silent=True)
-			return notification('Removed %s Authorization' % cls_name)
+			return notification('Removed %s Authorization' % self.__class__.__name__)
 
 		params = {'client_id': self.client_id, 'new_credentials': 'yes'}
 		response = requests.get(self.base_url('oauth/v2/device/code'), params=params, timeout=timeout)
@@ -118,7 +115,7 @@ class RealDebrid:
 		set_setting('rd.token', token)
 		set_setting('rd.refresh', refresh)
 		set_setting('rd.secret', secret)
-		notification('Set %s Authorization' % cls_name)
+		notification('Set %s Authorization' % self.__class__.__name__)
 		return True
 
 class Premiumize:
@@ -137,13 +134,12 @@ class Premiumize:
 		self.token = data['access_token']
 
 	def set(self):
-		cls_name = 'Premiumize.me'
 		if self.token:
 			if not confirm_dialog(): return
 			set_setting('pm.account_id', '')
 			set_setting('pm.token', '')
 			clear_cache('pm_cloud', silent=True)
-			return notification('Removed %s Authorization' % cls_name)
+			return notification('Removed %s Authorization' % self.__class__.__name__)
 
 		data = {'client_id': self.client_id, 'response_type': 'device_code'}
 		response = requests.post(self.base_url('token'), json=data, timeout=timeout)
@@ -174,7 +170,7 @@ class Premiumize:
 		token = str(data['access_token'])
 		set_setting('pm.account_id', str(username))
 		set_setting('pm.token', token)
-		notification('Set %s Authorization' % cls_name)
+		notification('Set %s Authorization' % self.__class__.__name__)
 		return True
 
 class AllDebrid:
@@ -191,13 +187,12 @@ class AllDebrid:
 		self.token = result.get('apikey', '')
 
 	def set(self):
-		cls_name = self.__class__.__name__
 		if self.token:
 			if not confirm_dialog(): return
 			set_setting('ad.account_id', '')
 			set_setting('ad.token', '')
 			clear_cache('ad_cloud', silent=True)
-			return notification('Removed %s Authorization' % cls_name)
+			return notification('Removed %s Authorization' % self.__class__.__name__)
 
 		response = requests.get(self.base_url('v4/pin/get'), timeout=timeout)
 		result = response.json()['data']
@@ -226,7 +221,7 @@ class AllDebrid:
 		username = result['user']['username']
 		set_setting('ad.account_id', str(username))
 		set_setting('ad.token', self.token)
-		notification('Set %s Authorization' % cls_name)
+		notification('Set %s Authorization' % self.__class__.__name__)
 		return True
 
 class TorBox:
@@ -244,13 +239,12 @@ class TorBox:
 		self.token = data
 
 	def set(self):
-		cls_name = self.__class__.__name__
 		if self.token:
 			if not confirm_dialog(): return
 			set_setting('tb.token', '')
 			set_setting('tb.account_id', '')
 			clear_cache('tb_cloud', silent=True)
-			return notification('Removed %s Authorization' % cls_name)
+			return notification('Removed %s Authorization' % self.__class__.__name__)
 
 		params = {'app': user_agent}
 		response = requests.get(self.base_url('user/auth/device/start'), params=params, timeout=timeout)
@@ -280,7 +274,7 @@ class TorBox:
 		customer = result['data']['customer']
 		set_setting('tb.account_id', str(customer))
 		set_setting('tb.token', self.token)
-		notification('Set %s Authorization' % cls_name)
+		notification('Set %s Authorization' % self.__class__.__name__)
 		return True
 
 class Offcloud:
@@ -298,13 +292,12 @@ class Offcloud:
 		self.token = data['access_token']
 
 	def set(self):
-		cls_name = self.__class__.__name__
 		if self.token:
 			if not confirm_dialog(): return
 			set_setting('oc.token', '')
 			set_setting('oc.account_id', '')
 			clear_cache('oc_cloud', silent=True)
-			return notification('Removed %s Authorization' % cls_name)
+			return notification('Removed %s Authorization' % self.__class__.__name__)
 
 		response = requests.post(self.base_url('oauth/device/code'), timeout=timeout)
 		result = response.json()
@@ -333,7 +326,7 @@ class Offcloud:
 		customer = result['user_id']
 		set_setting('oc.account_id', str(customer))
 		set_setting('oc.token', self.token)
-		notification('Set %s Authorization' % cls_name)
+		notification('Set %s Authorization' % self.__class__.__name__)
 		return True
 
 class EasyNews:
@@ -345,14 +338,13 @@ class EasyNews:
 
 	def set(self):
 		from debrids.easynews_api import EasyNewsAPI, clear_media_results_database
-		cls_name = self.__class__.__name__
 		if self.token:
 			if not confirm_dialog(): return
 			set_setting('easynews_user', '')
 			set_setting('easynews_password', '')
 			set_setting('provider.easynews', 'false')
 			clear_media_results_database()
-			return notification('Removed %s Authorization' % cls_name)
+			return notification('Removed %s Authorization' % self.__class__.__name__)
 
 		username = kodi_utils.dialog.input('EasyNews Username:').strip()
 		password = kodi_utils.dialog.input('EasyNews Password:').strip()
@@ -365,7 +357,7 @@ class EasyNews:
 		set_setting('easynews_user', username)
 		set_setting('easynews_password', password)
 		set_setting('provider.easynews', 'true')
-		notification('Set %s Authorization' % cls_name)
+		notification('Set %s Authorization' % self.__class__.__name__)
 		return True
 
 class Trakt:
@@ -386,7 +378,6 @@ class Trakt:
 
 	@watch_indicators
 	def set(self):
-		cls_name = self.__class__.__name__
 		if self.token:
 			if not confirm_dialog(): return
 			data = {'token': self.token, 'client_id': self.client_id, 'client_secret': self.secret}
@@ -399,7 +390,7 @@ class Trakt:
 			set_setting('watched_indicators', '0')
 			sleep(500)
 			clear_cache('trakt', silent=True)
-			return notification('Removed %s Authorization' % cls_name)
+			return notification('Removed %s Authorization' % self.__class__.__name__)
 
 		data = {'client_id': self.client_id, 'client_secret': self.secret, 'code': ''}
 		response = requests.post(self.base_url('oauth/device/code'), json=data, timeout=timeout)
@@ -436,7 +427,7 @@ class Trakt:
 		set_setting('trakt.expires', str(expires))
 		set_setting('trakt_indicators_active', 'true')
 		set_setting('watched_indicators', '1')
-		notification('Set %s Authorization' % cls_name)
+		notification('Set %s Authorization' % self.__class__.__name__)
 		sleep(500)
 		clear_cache('trakt', silent=True)
 		return True
@@ -446,7 +437,6 @@ class MDBList:
 	def __init__(self):
 		self.grant_type = 'urn:ietf:params:oauth:grant-type:device_code'
 		self.client_id = get_setting('mdblist.client_id')
-		if not self.client_id: setattr(self, 'client_id', kodi_utils.addon().getSetting('mdblist.client_id'))
 		self.token = get_setting('mdblist.token')
 		self.created_at = time.time()
 
@@ -461,7 +451,6 @@ class MDBList:
 
 	@watch_indicators
 	def set(self):
-		cls_name = self.__class__.__name__
 		if self.token:
 			if not confirm_dialog(): return
 			set_setting('mdblist_user', '')
@@ -472,7 +461,7 @@ class MDBList:
 			set_setting('watched_indicators', '0')
 			sleep(500)
 			clear_cache('mdblist', silent=True)
-			return notification('Removed %s Authorization' % cls_name)
+			return notification('Removed %s Authorization' % self.__class__.__name__)
 
 		data = {'client_id': self.client_id, 'scope': 'write'}
 		response = requests.post(self.base_url('oauth/device-authorization/'), data=data, timeout=timeout)
@@ -508,7 +497,7 @@ class MDBList:
 		set_setting('mdblist.expires', str(expires))
 		set_setting('mdbl_indicators_active', 'true')
 		set_setting('watched_indicators', '2')
-		notification('Set %s Authorization' % cls_name)
+		notification('Set %s Authorization' % self.__class__.__name__)
 		sleep(500)
 		clear_cache('mdblist', silent=True)
 		return True
@@ -531,7 +520,6 @@ class TMDBList:
 		self.token = data['access_token']
 
 	def set(self):
-		cls_name = self.__class__.__name__
 		if self.token:
 			if not confirm_dialog(): return
 			data = {'session_id': self.session_id}
@@ -548,7 +536,7 @@ class TMDBList:
 			set_setting('tmdb.account_id', '')
 			set_setting('tmdb.token', '')
 			clear_cache('tmdblist', silent=True)
-			return notification('Removed %s Authorization' % cls_name)
+			return notification('Removed %s Authorization' % self.__class__.__name__)
 
 		response = requests.post(self.base_url('4/auth/request_token'), headers=self.headers, timeout=timeout)
 		result = response.json()
@@ -579,7 +567,7 @@ class TMDBList:
 		account_id, access_token = str(data['account_id']), str(data['access_token'])
 		set_setting('tmdb.account_id', account_id)
 		set_setting('tmdb.token', access_token)
-		notification('Set %s Authorization' % cls_name)
+		notification('Set %s Authorization' % self.__class__.__name__)
 		sleep(500)
 		if not self.token and not get_setting('tmdb.token'): return
 		access_token = self.token or get_setting('tmdb.token')

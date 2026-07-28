@@ -14,6 +14,7 @@ session.mount('https://api.torbox.app', requests.adapters.HTTPAdapter(max_retrie
 
 class TorBoxAPI:
 	icon = 'torbox.png'
+	defaults_to_cloud = True
 
 	def __init__(self):
 		self.token = get_setting('tb.token')

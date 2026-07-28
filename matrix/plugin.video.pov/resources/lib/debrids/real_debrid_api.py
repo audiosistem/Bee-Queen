@@ -13,6 +13,7 @@ session.mount('https://app.real-debrid.com', requests.adapters.HTTPAdapter(max_r
 
 class RealDebridAPI:
 	icon = 'realdebrid.png'
+	defaults_to_cloud = True
 
 	def __init__(self):
 		self.token = get_setting('rd.token')

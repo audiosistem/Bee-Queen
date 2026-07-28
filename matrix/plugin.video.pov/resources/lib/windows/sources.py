@@ -109,6 +109,7 @@ class SourceResults(BaseDialog):
 			elif 'manual_add_magnet_to_cloud' in choice: Source(source, self.meta).manual_add_magnet_to_cloud()
 			elif 'manual_airlock_to_cloud' in choice: Source(source, self.meta).manual_airlock_to_cloud()
 			elif 'unchecked_magnet_status' in choice: Source(source, self.meta).unchecked_magnet_status()
+			elif 'aio_add_to_cloud' in choice: Source(source, self.meta).aio_add_to_cloud()
 			else: self.execute_code(choice)
 
 	def make_items(self):
@@ -135,7 +136,7 @@ class SourceResults(BaseDialog):
 						if 'usenet' in source: source_site = get('tracker')
 						else: source_site = get('provider')
 						source_site = upper(source_site)
-						provider = upper(get('debrid', source_site).replace('.me', ''))
+						provider = upper(get('debrid', source_site))
 						provider_lower = lower(provider)
 						provider_icon = self.get_provider_and_path(provider_lower)[1]
 						if 'cache_provider' in item and 'Uncached' in item['cache_provider']:
@@ -158,6 +159,28 @@ class SourceResults(BaseDialog):
 							else: key = basic_quality
 							set_property('tikiskins.source_type', source)
 							set_property('tikiskins.highlight', self.info_highlights_dict[key])
+						set_property('tikiskins.name', name)
+						set_property('tikiskins.provider', provider)
+					elif scrape_provider == 'aiostreams':
+						source_site = get('provider') or get('source')
+						source_site = upper(source_site)
+						provider = upper(get('debrid', source_site))
+						provider_lower = lower(provider)
+						provider_icon = self.get_provider_and_path(provider_lower)[1]
+						if get('library'): status = '[B]LIBRARY[/B]'
+						elif get('cached'):
+							if pack: status = 'CACHED [B]%s[/B]' % upper(get('package'))
+							else: status = 'CACHED'
+						else: status = upper(source)
+						if highlight_type == 0:
+							if 'debrid' in get('source'): key = 'torrent_highlight'
+							else: key = 'hoster_highlight'
+						elif highlight_type == 1:
+							if provider_lower in self.info_highlights_dict: key = provider_lower
+							else: key = 'hoster_highlight'
+						else: key = basic_quality
+						set_property('tikiskins.source_type', status)
+						set_property('tikiskins.highlight', self.info_highlights_dict[key])
 						set_property('tikiskins.name', name)
 						set_property('tikiskins.provider', provider)
 					else:
@@ -237,7 +260,6 @@ class SourceResults(BaseDialog):
 		else:
 			if main_choice == 'provider':
 				sort_ranks = provider_sort_ranks()
-				sort_ranks['premiumize'] = sort_ranks.pop('premiumize.me', 99)
 				choice_sorter = sorted(sort_ranks.keys(), key=sort_ranks.get)
 				choice_sorter = [upper(i) for i in choice_sorter]
 			else: choice_sorter = quality_choices
@@ -337,7 +359,7 @@ class ResultsContextMenu(BaseDialog):
 		name, provider_source = self.item.get('name'), self.item.get('source')
 		magnet_url, info_hash = self.item.get('url', 'None'), self.item.get('hash', 'None')
 		scrape_provider, cache_provider = self.item.get('scrape_provider'), self.item.get('cache_provider', 'None')
-		if next((True for x in ('real-debrid', 'alldebrid') if x in cache_provider), False):
+		if next((True for x in ('realdebrid', 'alldebrid') if x in cache_provider), False):
 			append(self.make_contextmenu_item(check_str, run_plugin_str, {'mode': 'unchecked_magnet_status'}))
 		if 'easynews' in scrape_provider:
 			append(self.make_contextmenu_item(en_seek_str, run_plugin_str, {'mode': 'seekable_easynews'}))
@@ -346,6 +368,12 @@ class ResultsContextMenu(BaseDialog):
 		else: append(self.make_contextmenu_item(filter_str, run_plugin_str, {'mode': 'results_filter'}))
 		append(self.make_contextmenu_item(extra_info_str, run_plugin_str, {'mode': 'results_info'}))
 		if 'Uncached' in cache_provider: return
+		if scrape_provider == 'aiostreams':
+			down_params = {'mode': 'downloader', 'action': 'None', 'url': self.item.get('url_dl')}
+			cloud_params = {'mode': 'aio_add_to_cloud'} if self.item.get('debrid') else {}
+			append(self.make_contextmenu_item(down_file_str, run_plugin_str, down_params))
+			if cloud_params: append(self.make_contextmenu_item(cloud_str, run_plugin_str, cloud_params))
+			return
 		down_params = {
 			'mode': 'downloader', 'highlight': self.highlight, 'url': None,
 			'source': source_json, 'meta': meta_json, 'name': self.meta.get('rootname', ''),

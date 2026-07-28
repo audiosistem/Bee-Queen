@@ -27,6 +27,17 @@
 		<setting id="provider.zilean" label="zilean" type="bool" default="false" />
 			<setting id="zilean.url" label="zilean instance" type="enum" default="0" values="Kuu-lection|Midnightignite" subsetting="true" visible="eq(-1,true)" />
 		<setting id="provider.dmm" label="dmm" type="bool" default="false" />
+		<setting label="AIOStreams" type="lsep" />
+		<setting id="provider.aiostreams" label="Enable" type="bool" default="false" />
+		<setting id="aio.instance" type="enum" label="Provider" default="0" values="Kuu|Custom|Viren|Yeb|Midnight" enable="true" />
+		<setting id="aio.ku_url" type="text" label="Url" default="https://aiostreams.stremio.ru" enable="false" visible="eq(-1,0)" />
+		<setting id="aio.custom_url" type="text" label="Url" default="" visible="eq(-2,1)" />
+		<setting id="aio.viren_url" type="text" label="Url" default="https://aiostreams.viren070.me" enable="false" visible="eq(-3,2)" />
+		<setting id="aio.yeb_url" type="text" label="Url" default="https://aiostreams.fortheweak.cloud" enable="false" visible="eq(-4,3)" />
+		<setting id="aio.midnight_url" type="text" label="Url" default="https://aiostreamsfortheweebsstable.midnightignite.me" enable="false" visible="eq(-5,4)" />
+		<setting id="aio.username" type="text" label="Username" default="" />
+		<setting id="aio.password" type="text" label="Password" default="" />
+		<setting label="-- Help --" type="action" action="RunPlugin(plugin://plugin.video.pov/?mode=aioHelp)" />
 	</category>
 	<!-- Provider Accounts -->
 	<category label="My Services">
@@ -37,7 +48,7 @@
 		<setting id="pm.account_id" label="Customer ID" type="text" default="" enable="false" visible="eq(-1,true)+!eq(-2,)" />
 		<setting id="pm.torrent.enabled" label="Use Torrent Services" type="bool" default="true" enable="true" visible="eq(-2,true)+!eq(-3,)" />
 		<setting id="pm.hoster.enabled" label="Use Hoster Services" type="bool" default="false" enable="false" visible="false" />
-		<setting id="store_torrent.premiumize.me" label="Add Resolved Torrents to Cloud" type="bool" default="false" visible="eq(-4,true)+!eq(-5,)" />
+		<setting id="store_torrent.premiumize" label="Add Resolved Torrents to Cloud" type="bool" default="false" visible="eq(-4,true)+!eq(-5,)" />
 		<setting id="provider.pm_cloud" label="Search PM Cloud" type="bool" default="false" visible="eq(-5,true)+!eq(-6,)" />
 			<setting id="pm_cloud.title_filter" label="Filter Results with Aliases" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-6,true)+!eq(-7,)" />
 			<setting id="check.pm_cloud" label="Check Before Full Search" type="bool" default="false" subsetting="true" visible="eq(-2,true)+eq(-7,true)+!eq(-8,)" />
@@ -86,7 +97,7 @@
 		<setting id="rd.username" label="Username" type="text" default="" enable="false" visible="eq(-1,true)+!eq(-2,)" />
 		<setting id="rd.torrent.enabled" label="Use Torrent Services" type="bool" default="true" enable="true" visible="eq(-2,true)+!eq(-3,)" />
 		<setting id="rd.hoster.enabled" label="Use Hoster Services" type="bool" default="false" enable="false" visible="false" />
-		<setting id="store_torrent.real-debrid" label="Add Resolved Torrents to Cloud" type="bool" default="false" visible="eq(-4,true)+!eq(-5,)" />
+		<setting id="store_torrent.realdebrid" label="Add Resolved Torrents to Cloud" type="bool" default="false" visible="eq(-4,true)+!eq(-5,)" />
 		<setting id="provider.rd_cloud" label="Search RD Cloud" type="bool" default="false" visible="eq(-5,true)+!eq(-6,)" />
 			<setting id="rd_cloud.title_filter" label="Filter Results with Aliases" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-6,true)+!eq(-7,)" />
 			<setting id="check.rd_cloud" label="Check Before Full Search" type="bool" default="false" subsetting="true" visible="eq(-2,true)+eq(-7,true)+!eq(-8,)" />

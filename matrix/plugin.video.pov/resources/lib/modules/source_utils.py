@@ -290,8 +290,12 @@ def check_title(title, release_title, aliases=None, year=''):
 	try:
 		if isinstance(aliases, list): all_titles = [title, *aliases]
 		else: all_titles = [title]
-		all_titles = (re.escape(clean_title(i)) for i in all_titles)
-		pattern = re.compile(r'\b(?:%s)\b' % '|'.join(all_titles), re.I)
+		filter = []
+		for i in all_titles:
+			t = clean_title(i)
+			if t: filter.append(re.escape(t))
+		if not filter: return False
+		pattern = re.compile(r'\b(?:%s)\b' % '|'.join(filter), re.I)
 		return bool(pattern.search(clean_title(release_title)))
 	except: pass
 

@@ -83,6 +83,7 @@ POV_ROUTES = {
 	'undesirablesInput': lambda p, pg: _import('caches.undesirables_cache', 'undesirablesInput')(),
 	'undesirablesUserRemove': lambda p, pg: _import('caches.undesirables_cache', 'undesirablesUserRemove')(),
 	'speedTest': lambda p, pg: _import('fenom.speedtest', 'magneto')(),
+	'aioHelp': lambda p, pg: _import('scrapers.aiostreams', 'aio_help')(),
 }
 
 def _import(module_path, attr_name):
