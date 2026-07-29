@@ -14,8 +14,8 @@ default_external_scrapers = ('external',)
 plswait_str, checking_debrid_str, remaining_debrid_str = ls(32577), ls(32578), ls(32579)
 
 debrid_list = (
-	('real-debrid', 'rd', real_debrid_api.RealDebridAPI),
-	('premiumize.me', 'pm', premiumize_api.PremiumizeAPI),
+	('realdebrid', 'rd', real_debrid_api.RealDebridAPI),
+	('premiumize', 'pm', premiumize_api.PremiumizeAPI),
 	('alldebrid', 'ad', alldebrid_api.AllDebridAPI),
 	('torbox', 'tb', torbox_api.TorBoxAPI),
 	('offcloud', 'oc', offcloud_api.OffcloudAPI),
@@ -31,6 +31,11 @@ def debrid_enabled():
 def debrid_type_enabled(debrid_type, enabled_debrids):
 	return [i[0] for i in debrid_list if i[0] in enabled_debrids and get_setting('%s.%s.enabled' % (i[1], debrid_type)) == 'true']
 
+def play_from_cloud(params):
+	source = Source.fromcloud(params)
+	url = source.resolve_internal_sources(source.direct_debrid_link)
+	return kodi_utils.execute_builtin('PlayMedia(%s)' % url)
+
 class Source:
 	@classmethod
 	def fromcloud(cls, params):
@@ -39,8 +44,7 @@ class Source:
 		if ddl in ('false', False): self.direct_debrid_link = False
 		else: self.direct_debrid_link = True if ddl == 'true' else ddl
 		self.url_dl = params['id'] if self.direct_debrid_link else ''
-		url = self.resolve_internal_sources(self.direct_debrid_link)
-		return kodi_utils.execute_builtin('PlayMedia(%s)' % url)
+		return self
 
 	def dumps(self, depth=1, width=172):
 		from pprint import pformat
@@ -74,7 +78,7 @@ class Source:
 			if self.url.startswith('magnet'):
 				store_to_cloud = settings.store_resolved_torrent_to_cloud(self.debrid)
 			else: store_to_cloud = settings.store_resolved_usenet_to_cloud(self.debrid)
-			if self.debrid in ('real-debrid', 'alldebrid'): args = self.url, self.hash, True
+			if self.debrid in ('realdebrid', 'alldebrid'): args = self.url, self.hash, True
 			else: args = self.url, self.hash
 			api = import_debrid(self.debrid)
 			files = api.parse_magnet_pack(*args)
@@ -92,9 +96,9 @@ class Source:
 			if not season: selected_files.sort(key=lambda k: k['size'], reverse=True)
 			file_key = next((i['link'] for i in selected_files), None)
 			file_url = api.unrestrict_link(file_key)
-			if self.debrid in ('premiumize.me', 'offcloud'):
+			if not api.defaults_to_cloud:
 				if store_to_cloud: Thread(target=api.create_transfer, args=(self.url,)).start()
-			if self.debrid in ('real-debrid', 'alldebrid', 'torbox'):
+			if api.defaults_to_cloud:
 				if not store_to_cloud: self._delete(api, torrent_id)
 			return file_url
 		except Exception as e:
@@ -215,6 +219,18 @@ class Source:
 		result = api.create_transfer(self.url)
 		hide_busy_dialog()
 		if result: notification(32576)
+		else: notification(32575)
+
+	def aio_add_to_cloud(self):
+		if not confirm_dialog(text=ls(32831) % self.debrid.upper()): return
+		if not getattr(self, 'url_dl', False): return notification(32576)
+		url, *headers = self.url_dl.rsplit('|', 1)
+		try: headers = dict(kodi_utils.parse_qsl(*headers))
+		except: headers = dict()
+		response = requests.get(url, headers=headers, stream=True, timeout=10)
+		if not response.ok: return notification(32576)
+		chunk = next(response.iter_content(chunk_size=1048576), b'')
+		if len(chunk): notification(32576)
 		else: notification(32575)
 
 class DebridCheck:

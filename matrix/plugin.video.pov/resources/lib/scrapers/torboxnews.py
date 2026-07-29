@@ -79,5 +79,5 @@ x_aiostreams_user_data, x_aiostreams_url = (
 	's":["usenet"],"mediaTypes":[],"useMultipleInstances":false,"userSearchEn'
 	'gines":true,"onlyShowUserSearchResults":%s}}],"services":[{"id":"torbox"'
 	',"enabled":true,"credentials":{"apiKey":"%s"}}]}'
-), 'https://aiostreamsfortheweebsstable.midnightignite.me'
+), 'https://aiostreams.fortheweak.cloud'
 

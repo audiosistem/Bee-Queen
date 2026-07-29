@@ -75,11 +75,10 @@ def trakt_refresh():
 def trakt_expires():
 	if not get_setting('trakt.refresh', ''): return
 	from datetime import datetime, timezone
-	expires = float(get_setting('trakt.expires', '0'))
 	interval = settings.trakt_sync_interval()[1]
-	current = datetime.now(timezone.utc).timestamp()
-	current = (-1 * current // 1 * -1) + interval
-	if current >= expires: trakt_refresh()
+	current = int(datetime.now(timezone.utc).timestamp())
+	expires = int(get_setting('trakt.expires', '0'))
+	if interval + current >= expires: trakt_refresh()
 
 def trakt_official_status(mediatype):
 	if not kodi_utils.addon_installed('script.trakt'): return True
@@ -95,6 +94,15 @@ def trakt_official_status(mediatype):
 	except: scrobble = ''
 	if scrobble in ('false', ''): return True
 	return False
+
+def trakt_calendar_days(recently_aired, current_date):
+	from datetime import timedelta
+	if recently_aired: return (current_date - timedelta(days=7)).strftime('%Y-%m-%d'), '7'
+	previous_days = int(get_setting('trakt.calendar_previous_days', '3'))
+	future_days = int(get_setting('trakt.calendar_future_days', '7'))
+	start = (current_date - timedelta(days=previous_days)).strftime('%Y-%m-%d')
+	finish = str(previous_days + future_days)
+	return start, finish
 
 def trakt_movies_trending(page_no):
 	params = {'limit': 20, 'page': page_no}
@@ -160,7 +168,7 @@ def trakt_tvanime_most_watched(page_no):
 
 def trakt_trending_popular_lists(list_type):
 	string = 'trakt_%s_user_lists' % list_type
-	url = {'path': 'lists/%s' % list_type, 'params': {'limit': 100}, 'with_auth': False}
+	url = {'path': 'lists/%s' % list_type, 'params': {'limit': 250}, 'with_auth': False}
 	return cache_object(call_trakt, string, url)
 
 def trakt_search_lists(search_title, page):
@@ -176,6 +184,40 @@ def trakt_recommendations(mediatype):
 def trakt_droplist(mediatype, page_no):
 	results = trakt_get_hidden_items('dropped')
 	return [{'media_ids': {'tmdb': i}} for i in results], 1
+
+def trakt_calendar_data(url, exclude_anime=False):
+	result = []
+	seen = set()
+	for i in call_trakt(url) or []:
+		try:
+			if i['episode']['season'] <= 0: continue
+			if exclude_anime and 'anime' in i['show']['genres']: continue
+			season, episode = i['episode']['season'], i['episode']['number']
+			sort_title = '%s s%02d e%02d' % (i['show']['title'], season, episode)
+			if sort_title not in seen and not seen.add(sort_title): result.append({
+				'sort_title': sort_title, 'first_aired': i['first_aired'],
+				'media_ids': i['show']['ids'], 'season': season, 'episode': episode
+			})
+		except: pass
+	return result
+
+def trakt_get_my_calendar(recently_aired, current_date):
+	start, finish = trakt_calendar_days(recently_aired, current_date)
+	string = 'trakt_get_my_calendar_%s_%s' % (start, finish)
+	url = {'path': 'calendars/my/shows/%s/%s' % (start, finish), 'params': {'extended': 'full'}}
+	return trakt_cache.cache_trakt_object(lambda u: trakt_calendar_data(u, exclude_anime=True), string, url)
+
+def trakt_get_my_anime_calendar(current_date):
+	start, finish = trakt_calendar_days(False, current_date)
+	string = 'trakt_get_my_calendar_anime_%s_%s' % (start, finish)
+	url = {'path': 'calendars/my/shows/%s/%s' % (start, finish), 'params': {'genres': 'anime'}}
+	return trakt_cache.cache_trakt_object(lambda u: trakt_calendar_data(u, exclude_anime=False), string, url)
+
+def trakt_anime_calendar(current_date):
+	start, finish = trakt_calendar_days(False, current_date)
+	string = 'trakt_anime_calendar_%s_%s' % (start, finish)
+	url = {'path': 'calendars/all/shows/%s/%s' % (start, finish), 'params': {'genres': 'anime'}, 'with_auth': False}
+	return trakt_cache.cache_trakt_object(lambda u: trakt_calendar_data(u, exclude_anime=False), string, url)
 
 def trakt_collection_lists(mediatype, param1):
 	data = trakt_fetch_collection_watchlist('collection', mediatype)
@@ -493,60 +535,6 @@ def trakt_get_hidden_items(list_type):
 		return results
 	string = 'trakt_hidden_items_%s' % list_type
 	url = 'users/hidden/dropped?type=show'
-	return trakt_cache.cache_trakt_object(_process, string, url)
-
-def trakt_calendar_days(recently_aired, current_date):
-	from datetime import timedelta
-	if recently_aired: return (current_date - timedelta(days=7)).strftime('%Y-%m-%d'), '7'
-	previous_days = int(get_setting('trakt.calendar_previous_days', '3'))
-	future_days = int(get_setting('trakt.calendar_future_days', '7'))
-	start = (current_date - timedelta(days=previous_days)).strftime('%Y-%m-%d')
-	finish = str(previous_days + future_days)
-	return start, finish
-
-def trakt_get_my_calendar(recently_aired, current_date):
-	def _process(dummy):
-		data = [
-			{'sort_title': '%s s%s e%s' % (i['show']['title'], str(i['episode']['season']).zfill(2), str(i['episode']['number']).zfill(2)),
-			'media_ids': i['show']['ids'], 'season': i['episode']['season'], 'episode': i['episode']['number'], 'first_aired': i['first_aired']}
-			for i in call_trakt(url)
-			if i['episode']['season'] > 0 and 'anime' not in i['show']['genres']
-		]
-		seen = set()
-		return [item for item in data if item['sort_title'] not in seen and not seen.add(item['sort_title'])]
-	start, finish = trakt_calendar_days(recently_aired, current_date)
-	string = 'trakt_get_my_calendar_%s_%s' % (start, finish)
-	url = {'path': 'calendars/my/shows/%s/%s' % (start, finish), 'params': {'extended': 'full'}}
-	return trakt_cache.cache_trakt_object(_process, string, url)
-
-def trakt_get_my_anime_calendar(current_date):
-	def _process(dummy):
-		data = [
-			{'sort_title': '%s s%s e%s' % (i['show']['title'], str(i['episode']['season']).zfill(2), str(i['episode']['number']).zfill(2)),
-			'media_ids': i['show']['ids'], 'season': i['episode']['season'], 'episode': i['episode']['number'], 'first_aired': i['first_aired']}
-			for i in call_trakt(url)
-			if i['episode']['season'] > 0
-		]
-		seen = set()
-		return [item for item in data if item['sort_title'] not in seen and not seen.add(item['sort_title'])]
-	start, finish = trakt_calendar_days(False, current_date)
-	string = 'trakt_get_my_calendar_anime_%s_%s' % (start, finish)
-	url = {'path': 'calendars/my/shows/%s/%s' % (start, finish), 'params': {'genres': 'anime'}}
-	return trakt_cache.cache_trakt_object(_process, string, url)
-
-def trakt_anime_calendar(current_date):
-	def _process(dummy):
-		data = [
-			{'sort_title': '%s s%s e%s' % (i['show']['title'], str(i['episode']['season']).zfill(2), str(i['episode']['number']).zfill(2)),
-			'media_ids': i['show']['ids'], 'season': i['episode']['season'], 'episode': i['episode']['number'], 'first_aired': i['first_aired']}
-			for i in call_trakt(url)
-			if i['episode']['season'] > 0
-		]
-		seen = set()
-		return [item for item in data if item['sort_title'] not in seen and not seen.add(item['sort_title'])]
-	start, finish = trakt_calendar_days(False, current_date)
-	string = 'trakt_anime_calendar_%s_%s' % (start, finish)
-	url = {'path': 'calendars/all/shows/%s/%s' % (start, finish), 'params': {'genres': 'anime'}, 'with_auth': False}
 	return trakt_cache.cache_trakt_object(_process, string, url)
 
 def trakt_playback_progress():

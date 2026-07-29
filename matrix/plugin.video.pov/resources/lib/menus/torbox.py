@@ -86,7 +86,7 @@ class Menu(Debrid):
 		kodi_utils.container_refresh()
 
 	def cloud_airlock(self, folder_id, airlock_value):
-		if 'false' == airlock_value and not kodi_utils.confirm_dialog(): return
+		if airlock_value == 'false' and not kodi_utils.confirm_dialog(): return
 		request_id, mediatype = folder_id.split(',')
 		result = self.toggle_airlock(mediatype, request_id, airlock_value)
 		if not result: return kodi_utils.notification(32574)

@@ -288,11 +288,18 @@ def get_file_info(name_info=None, url=None):
 
 def check_title(title, release_title, aliases=None, year=''):
 	try:
-		if isinstance(aliases, list): all_titles = [title, *aliases]
-		else: all_titles = [title]
-		all_titles = (re.escape(clean_title(i)) for i in all_titles)
-		pattern = re.compile(r'\b(?:%s)\b' % '|'.join(all_titles), re.I)
-		return bool(pattern.search(clean_title(release_title)))
+		cleaned_title = clean_title(title)
+		if not cleaned_title: return False
+		cleaned_release = clean_title(release_title)
+		if not cleaned_release: return False
+		filter_list = [cleaned_title]
+		if isinstance(aliases, list):
+			for alias in aliases:
+				a = clean_title(alias)
+				if a: filter_list.append(a)
+		escaped_titles = '|'.join(re.escape(i) for i in filter_list)
+		pattern = re.compile(r'\b(?:' + escaped_titles + r')\b', re.I)
+		return bool(pattern.search(cleaned_release))
 	except: pass
 
 def clean_title(title):

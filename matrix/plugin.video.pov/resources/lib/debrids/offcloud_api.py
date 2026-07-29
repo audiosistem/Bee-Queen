@@ -12,6 +12,7 @@ session.mount('https://offcloud.com', requests.adapters.HTTPAdapter(max_retries=
 
 class OffcloudAPI:
 	icon = 'offcloud.png'
+	defaults_to_cloud = False
 
 	def __init__(self):
 		self.token = get_setting('oc.token')
