@@ -437,6 +437,26 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
 - See Changelog on Tools menu
         </news>
     </extension>
+</addon><addon id="plugin.video.bnwmovie19" name="Black and White Movies" version="420.1.0" provider-name="Anonymous">
+  <requires>
+    <import addon="xbmc.python" version="3.0.1" />
+    <import addon="script.module.requests" />
+    <import addon="script.module.unidecode" />
+    <import addon="script.module.inputstreamhelper" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Black and White Movies</summary>
+    <platform>all</platform>
+    <language>en</language>
+    <license>GPL-2.0-or-later</license>
+	<assets>
+		<icon>icon.png</icon>
+		<fanart>fanart.jpg</fanart>
+  </assets>
+  </extension>
 </addon><addon id="plugin.video.cinebox" version="3.1.1" name="CINEBOX [COLOR red]TrainAgain[/COLOR]" provider-name="@TrainAgain2">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -902,6 +922,30 @@ In addition to what livestreams allowed you to do, you can now,
 			<fanart>fanart.jpg</fanart>
 		</assets>
 	</extension>
+</addon><addon id="plugin.video.lookmovietomb" name="LookMovie" version="0.9" provider-name="mbebe">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.inputstreamhelper" version="0.3.3" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.six" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.service" library="serverHTTP.py" />
+    <extension point="xbmc.addon.metadata">
+        <description lang="en">https://www.lookmovie2.to</description>
+        <disclaimer lang="en">https://github.com/mbebe/blomqvist</disclaimer>    
+        <summary lang="en">https://www.lookmovie2.to</summary>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
+        <website>https://github.com/mbebe/blomqvist</website>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
 </addon><addon id="plugin.video.luc_kodi" name="[B][COLOR ff00fa9a]luc_[/COLOR]kodi[/B]" provider-name="[COLOR fffdb515]apoyotech[/COLOR]" version="1.0.47">
 	<requires>
 		<import addon="xbmc.python" version="3.0.1" />
@@ -1327,7 +1371,7 @@ In addition to what livestreams allowed you to do, you can now,
     <screenshot>resources/screenshot-02.jpg</screenshot>
   </assets>
 </extension>
-</addon><addon id="plugin.video.thraxtv" name="ThraxTV" version="2.0.53" provider-name="derzis">
+</addon><addon id="plugin.video.thraxtv" name="ThraxTV" version="2.0.54" provider-name="derzis">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />
@@ -1351,6 +1395,9 @@ In addition to what livestreams allowed you to do, you can now,
             and multi-provider playback with automatic fallback.
         </description>
         <news>
+            v2.0.54 - Eliminată secțiunea World Cup 2026 (competiția s-a încheiat):
+                      meniul, listele de meciuri/canale și apelul către /wc2026/schedule.
+                      Endpointul a fost scos și de pe server.
             v2.0.53 - Secțiune nouă "Radio": catalog global de posturi radio (reconstruit din
                       radio-browser.info, ~63.000 posturi, 241 țări), navigabile pe țară
                       (endpoint-uri noi /radio/countries, /radio/stations/{cc}, /radio/stream/{id}

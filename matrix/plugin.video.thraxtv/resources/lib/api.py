@@ -907,26 +907,6 @@ def get_channel_status_cached(channel_id: str) -> Optional[str]:
 
 
 
-def get_wc2026_schedule(days: int = 3) -> Optional[dict]:
-    """Returnează meciurile CM 2026 cu canalele disponibile."""
-    from datetime import datetime as _dt
-    try:
-        tz_offset = round((_dt.now() - _dt.utcnow()).total_seconds() / 3600)
-    except Exception:
-        tz_offset = 0
-    cache_key = f"wc2026:{days}:{tz_offset}"
-    cached = _mem_get(cache_key)
-    if cached is not None:
-        return cached
-    try:
-        data = _get("/wc2026/schedule", params={"days": days, "tz_offset": tz_offset}, base="root")
-        _mem_set(cache_key, data)
-        return data
-    except Exception as e:
-        _loge(f"get_wc2026_schedule: {e}")
-        return None
-
-
 def get_sports_schedule(hours: int = 6, country: Optional[str] = None, limit_per_sport: int = 50) -> Optional[dict]:
     """Returnează evenimentele sportive live/viitoare grupate pe tip de sport."""
     cache_key = f"sports_schedule:{hours}:{country or ''}:{limit_per_sport}"

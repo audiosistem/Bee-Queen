@@ -1,4 +1,4 @@
-<addon id="plugin.video.thraxtv" name="ThraxTV" version="2.0.53" provider-name="derzis">
+<addon id="plugin.video.thraxtv" name="ThraxTV" version="2.0.54" provider-name="derzis">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests"/>
@@ -22,6 +22,9 @@
             and multi-provider playback with automatic fallback.
         </description>
         <news>
+            v2.0.54 - Eliminată secțiunea World Cup 2026 (competiția s-a încheiat):
+                      meniul, listele de meciuri/canale și apelul către /wc2026/schedule.
+                      Endpointul a fost scos și de pe server.
             v2.0.53 - Secțiune nouă "Radio": catalog global de posturi radio (reconstruit din
                       radio-browser.info, ~63.000 posturi, 241 țări), navigabile pe țară
                       (endpoint-uri noi /radio/countries, /radio/stations/{cc}, /radio/stream/{id}

@@ -32,7 +32,6 @@ from resources.lib.api import (
     remove_favorite,
     get_channel,
     get_sports_schedule,
-    get_wc2026_schedule,
     RADIO_STREAM_URL,
     get_radio_countries,
     get_radio_stations,
@@ -100,7 +99,6 @@ _S = {
     "cache_cleared":     32041,
     "menu_sports":       32061,
     "sport_no_events":   32062,
-    "menu_wc2026":       32063,
     "wc_no_matches":     32064,
     "wc_no_channels":    32065,
 }
@@ -549,7 +547,6 @@ def main_menu():
         (_t("menu_countries"),   {"action": "list_countries"},   True,  "tari"),
         (_t("menu_categories"),  {"action": "list_categories"},  True,  "categorii"),
         (_t("menu_sports"),      {"action": "list_sports_menu"}, True,  "sport"),
-        (_t("menu_wc2026"),      {"action": "list_wc2026"},      True,  "wc2026"),
         (_t("menu_radio"),       {"action": "radio_countries"},  True,  "tari"),
         (_t("menu_search"),      {"action": "search"},           True,  "cautare"),
         (_t("menu_clear_cache"), {"action": "clear_cache"},      False, "sterge_cache"),
@@ -1328,154 +1325,6 @@ _WC_STATUS_COLOR = {
     "STATUS_FINAL":        "orange",
 }
 
-_WC_DAYS = 7   # câte zile înainte să afișăm
-
-
-def list_wc2026():
-    from datetime import datetime as _dt
-    xbmcplugin.setContent(addon_handle, "addons")
-
-    data = get_wc2026_schedule(days=_WC_DAYS)
-    if not data or not data.get("matches"):
-        xbmcgui.Dialog().notification("ThraxTV", _t("wc_no_matches"), xbmcgui.NOTIFICATION_INFO, 3000)
-        xbmcplugin.endOfDirectory(addon_handle)
-        return
-
-    import time as _time
-    now_ts = int(_time.time())
-
-    for m in data["matches"]:
-        h = m["home"]; a = m["away"]
-        start_ts   = m["start_ts"]
-        status     = m.get("status", "")
-        clock      = m.get("clock", "")
-        ch_count   = len(m.get("channels", []))
-        ch_ro      = sum(1 for c in m.get("channels", []) if c.get("country") == "ro")
-
-        try:
-            time_str = _dt.fromtimestamp(start_ts).strftime("%d %b  %H:%M")
-        except Exception:
-            time_str = "??"
-
-        score_str = f"  {h['score']} - {a['score']}" if status in ("STATUS_IN_PROGRESS", "STATUS_FINAL") else ""
-        color = _WC_STATUS_COLOR.get(status, "gray")
-
-        if status == "STATUS_IN_PROGRESS":
-            status_label = "[COLOR=lime][LIVE %s][/COLOR]" % clock if clock else "[COLOR=lime][LIVE][/COLOR]"
-        elif status == "STATUS_FINAL":
-            status_label = "[COLOR=orange][FT][/COLOR]"
-        else:
-            # trecut fără scor → afișăm ora
-            status_label = "[COLOR=gray]%s[/COLOR]" % time_str
-
-        # Afișare canale disponibile
-        if ch_count:
-            ch_badge = "  [COLOR=lime]%d canale[/COLOR]" % ch_count
-            if ch_ro:
-                ch_badge += " [COLOR=yellow](%d RO)[/COLOR]" % ch_ro
-        else:
-            ch_badge = "  [COLOR=gray]—[/COLOR]"
-
-        label = "%s  [B]%s[/B]%s[B]%s[/B]%s" % (
-            status_label, h["name"], score_str + "  ", a["name"], ch_badge
-        )
-
-        # plot: data, ora, stadion, canale
-        plot_lines = [
-            "[B]%s vs %s[/B]" % (h["name"], a["name"]),
-            time_str,
-        ]
-        if m.get("venue"):
-            plot_lines.append(m["venue"])
-        if ch_count:
-            ch_names = ", ".join(c["name"] for c in m["channels"][:5])
-            plot_lines.append("Canale: " + ch_names)
-        else:
-            plot_lines.append("[COLOR=gray]Niciun canal disponibil în catalog[/COLOR]")
-
-        li = xbmcgui.ListItem(label=label)
-        li.setArt({"thumb": h["logo"] or ""})
-        li.setInfo("video", {"title": "%s vs %s" % (h["name"], a["name"]), "plot": "\n".join(plot_lines)})
-
-        match_id = m["id"]
-        url = build_url({"action": "list_wc2026_channels", "match_id": match_id})
-        xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
-
-    xbmcplugin.setPluginCategory(addon_handle, _t("menu_wc2026"))
-    xbmcplugin.endOfDirectory(addon_handle)
-
-
-def list_wc2026_channels(params):
-    xbmcplugin.setContent(addon_handle, "videos")
-    match_id = params.get("match_id", "")
-
-    data = get_wc2026_schedule(days=_WC_DAYS)
-    if not data:
-        xbmcplugin.endOfDirectory(addon_handle)
-        return
-
-    match = next((m for m in data.get("matches", []) if m["id"] == match_id), None)
-    if not match:
-        xbmcplugin.endOfDirectory(addon_handle)
-        return
-
-    channels = match.get("channels", [])
-    if not channels:
-        xbmcgui.Dialog().notification("ThraxTV", _t("wc_no_channels"), xbmcgui.NOTIFICATION_INFO, 3000)
-        xbmcplugin.endOfDirectory(addon_handle)
-        return
-
-    favs = set(get_favorites())
-    for ch in channels:
-        ch_id   = ch["id"]
-        ch_name = ch["name"]
-        logo    = ch.get("logo", "")
-        program = ch.get("program", "")
-        country = ch.get("country", "")
-
-        confirmed = ch.get("confirmed", False)
-        from datetime import datetime as _dt
-        ps = ch.get("prog_start")
-        pe = ch.get("prog_stop")
-        try:
-            ts_s = _dt.fromtimestamp(ps).strftime("%H:%M")
-            ts_e = _dt.fromtimestamp(pe).strftime("%H:%M")
-            time_range = "%s-%s" % (ts_s, ts_e)
-        except Exception:
-            time_range = ""
-
-        if confirmed:
-            meta = "[COLOR=yellow][WC][/COLOR]  [COLOR=gray]%s (%s)[/COLOR]" % (time_range, country.upper())
-        else:
-            meta = "[COLOR=lime][EPG][/COLOR]  [COLOR=gray]%s  %s  (%s)[/COLOR]" % (time_range, program, country.upper())
-
-        label = "[B]%s[/B]  %s" % (ch_name, meta)
-
-        li = xbmcgui.ListItem(label=label)
-        li.setArt({"thumb": logo})
-        li.setInfo("video", {"title": ch_name, "plot": program})
-        li.setProperty("IsPlayable", "true")
-
-        is_fav = ch_id in favs
-        fav_label = _t("fav_remove_cm") if is_fav else _t("fav_add_cm")
-        cc = country.lower() or "ro"
-        cm = [
-            (_t("epg_cm"), "RunPlugin(%s)" % build_url({"action": "show_epg", "id": ch_id, "country": cc})),
-            (fav_label, "RunPlugin(%s)" % build_url({"action": "toggle_favorite", "id": ch_id, "is_fav": "1" if is_fav else "0"})),
-        ]
-        li.addContextMenuItems(cm)
-
-        if _get_playback_mode():
-            play_url = build_url({"action": "play", "id": ch_id})
-        else:
-            play_url = build_url({"action": "choose_source", "id": ch_id, "title": ch_name})
-        xbmcplugin.addDirectoryItem(handle=addon_handle, url=play_url, listitem=li, isFolder=False)
-
-    title = "%s vs %s" % (match["home"]["name"], match["away"]["name"])
-    xbmcplugin.setPluginCategory(addon_handle, title)
-    xbmcplugin.endOfDirectory(addon_handle)
-
-
 # ──────────────── Dispatcher ────────────────────────────────────
 
 params = dict(parse_qs(sys.argv[2][1:]))
@@ -1516,9 +1365,5 @@ if "action" in params:
         list_sports_menu()
     elif action == "list_sport_events":
         list_sport_events(flat)
-    elif action == "list_wc2026":
-        list_wc2026()
-    elif action == "list_wc2026_channels":
-        list_wc2026_channels(flat)
 else:
     main_menu()
