@@ -1,0 +1,58 @@
+v2.5.2
+-New Icons thanks to chains
+
+v2.5.1
+- MOVIE DETAIL PAGE: Renamed the 6 rows to "Find Link", "Trailer",
+  "Extras", "Recommended", "Similar To", "Add to Favourites".
+  Set the InfoTag title equal to the button label (mediatype='video')
+  so Kodi skins display the row's purpose instead of repeating the
+  movie title 6 times. Each row also gets its own placeholder icon
+  in resources/lib/media/.
+
+v2.5.0
+- LINK PICKER LABEL: Replaced movie/show title with quality-tag label,
+  e.g. "4K | REMUX | DTS | 5.1 | PixelDrain". Stream parser now extracts
+  audio codec (DTS/Atmos/AC3/AAC) and channels (5.1/7.1/2.0) separately.
+- DOWNLOADS: New "Download" context menu on each link. Streams the file
+  to disk in a background thread with toast notifications on start and
+  on completion (size + duration). Existing files prompt before overwrite.
+- "My Downloads" top-level menu — lists everything you've downloaded and
+  plays them directly. Includes Delete and Open-Folder context items.
+- SETTINGS: New Downloads category with a configurable download folder
+  (default: special://home/userdata/addon_data/plugin.video.9movies/downloads/).
+- MEDIA ICONS: New resources/lib/media/ folder with 46 placeholder PNG icons
+  (main menu + every submenu + every genre). Replace any file with your own
+  artwork — same filename — and the plugin will pick it up automatically.
+
+v2.4.1
+- Previous baseline (Bento link picker, favourites, trailers, extras).
+
+v1.0.4
+- LIVE NAV DISCOVERY: Plugin reads real category/genre URLs directly
+  from the site homepage nav on every open — no more wrong hardcoded
+  slugs causing 404 errors, works even if the site changes URLs
+- GENRES MENU: Full genres list (Action, Adventure, Animation,
+  Biography, Comedy, Crime, Documentary, Drama, Family, Fantasy,
+  History, Horror, Mystery, Romance, Sci-Fi, Sport, Thriller,
+  War, Western) — discovered live from site or from built-in fallback
+- NULL BYTE CRASH FIXED: All xbmc.log() calls now strip null bytes
+  before logging so ValueError never crashes the plugin again
+- SCRAPER IMPROVED: Filters out "How To Download" and non-movie posts
+  Uses og:description for plot text instead of body content
+- ZIP filename now includes version number for clean Kodi installs
+
+v1.0.3
+- Added BeautifulSoup4 scraper (bs4 already installed in Kodi)
+- Added null byte sanitisation (_san helper)
+- Added optional deps for requests + beautifulsoup4 in addon.xml
+- Added all genre categories to menu
+
+v1.0.2
+- Updated addon.xml with icon and fanart declarations
+
+v1.0.1
+- Fixed crash: addSortMethod (not addSortMethods)
+- Updated InfoTagVideo API for Kodi Omega v21
+
+v1.0.0
+- Initial release by Zeus768

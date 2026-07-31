@@ -1,3 +1,24 @@
+2026.07.20
+- harden song and album downloads: stream to a per-process .part file, validate HTTP status / size / audio magic (reject HTML error bodies), then atomically replace the final .mp3
+- Content-Length checks skip when Content-Encoding is present (avoids false failures on decoded streams)
+- failed downloads leave any existing local .mp3 untouched and do not update downloads.list
+- album downloads create the downloading.txt lock up front, clear it in finally, and skip-and-continue on individual track failures
+- keep-downloads / playback cache filenames use the same album storage artist+album keys as downloads
+
+2026.07.19
+- flat Artist - Album storage escapes embedded " - " (and path-invalid characters) so distinct artist/album pairs no longer share one folder or overwrite each other
+- playback prefers the new unambiguous flat path, then falls back to legacy flat folders and pre-2026.07.16 album-only folders with ID3 verification
+
+2026.07.18
+- legacy Music/<Album>/ local playback kept for older downloads; when ID3 artist/album tags are present they must match so same-title albums from different artists no longer play the wrong file
+
+2026.07.17
+- fix single-track downloads from album pages with collaborative/contributing artists using the track artist as the folder owner — they now store beside full-album downloads under the album artist + album title folder (thanks JMAN730)
+
+2026.07.16
+- fix album downloads from different artists with the same title overwriting each other — album folders are keyed by album artist plus album title again (thanks Cursor daily review)
+- album playback and stream-cache paths use the same album storage helper and track-numbered filenames as album downloads
+
 2026.07.15
 - genre menu icons: rename thrash_speedmetal typo, add topworld/nordicfolk/topclassical from parent genre art, rename r&b folder to r_b to match path code; resolve genre icons with parent fallbacks
 

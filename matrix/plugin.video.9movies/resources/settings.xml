@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="Playback">
+        <setting id="autoplay" label="Autoplay (skip quality menu, play best stream)" type="bool" default="false"/>
+        <setting id="autoplay_quality" label="Autoplay quality" type="select"
+                 values="Best Available|4K|1080p|720p|480p" default="0"/>
+        <setting id="autonext" label="Auto-load next episode button" type="bool" default="true"/>
+        <setting id="use_inputstream" label="Use Inputstream Adaptive (HLS streams)" type="bool" default="true"/>
+    </category>
+    <category label="Display">
+        <setting id="results_per_page" label="Results per page" type="select"
+                 values="20|40|60" default="0"/>
+        <setting id="show_ratings" label="Show ratings in titles" type="bool" default="false"/>
+    </category>
+    <category label="Downloads">
+        <setting id="download_path" label="Downloads folder" type="folder"
+                 default="special://home/userdata/addon_data/plugin.video.9movies/downloads/"/>
+    </category>
+</settings>

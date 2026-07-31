@@ -39,7 +39,7 @@
       <screenshot>resources/screenshot-3.jpg</screenshot>
     </assets>
   </extension>
-</addon><addon id="plugin.audio.mp3streams" name="MP3 Streams" version="2026.07.15" provider-name="Jon Bovi, [COLOR crimson]King Krimson[/COLOR]">
+</addon><addon id="plugin.audio.mp3streams" name="MP3 Streams" version="2026.07.20" provider-name="Jon Bovi, [COLOR crimson]King Krimson[/COLOR]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.future" />
@@ -55,10 +55,14 @@
         <platform>all</platform>
         <summary>A Music Streaming Collection</summary>
         <description>MP3 Streams for Kodi 19+</description>
-        <news>2026.07.15 - Fixed missing genre icons. 2026.07.14 - Kodi 19+ metadata compliance (language .po, service declaration), single-track downloads keep track numbers, collab albums download flat, thank you JMAN730. See the changelog. Enjoy!</news>
+        <news>2026.07.20 - Harden audio downloads: atomic .part handoff, validate status/size/magic bytes, skip failed album tracks, clear download lock on failure; keep-download cache uses album storage keys.
+2026.07.19 - Flat Artist - Album folders escape embedded separators so distinct albums no longer collide; legacy flat and album-only folders still resolve with ID3 checks.
+2026.07.18 - ID3 tag check prevents wrong artist when two albums share a title.
+2026.07.17 - Single-track album downloads from collab/soundtrack albums use the same album folder as full-album download.
+See the changelog. Enjoy!</news>
         <assets>
-            <icon>art/icon.png</icon>
-            <fanart>art/fanart.jpg</fanart>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
 </addon><addon id="plugin.audio.radio_de_light" name="Radio light" provider-name="fivebanger, Publish3r" version="1.0.2">
@@ -306,6 +310,61 @@ Added support for Kodi v19 (Matrix)
 				<screenshot />
 		</assets>
 	</extension>
+</addon><addon id="plugin.video.9movies" name="9Movies" version="2.5.3" provider-name="Zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" version="2.9.1" optional="true" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">9Movies — TMDB-powered Movies &amp; TV with HdHub streams</summary>
+        <description lang="en_GB">
+Browse thousands of Movies and TV Shows via TMDB — New Releases, Trending,
+Oscar Winners, Popular, Most Watched, Top Box Office, Blockbusters, Genres, Years.
+TV: Trending, Popular, Premieres, Most Watched, Airing Today, Upcoming, Genres, Networks.
+Streams sourced from the HdHub library in 4K, 1080p and 720p with Hindi and English audio.
+        </description>
+        <disclaimer lang="en_GB">This addon uses publicly accessible APIs. Use at your own risk.</disclaimer>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL v2</license>
+		 <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+        <news>
+v2.5.1
+- MOVIE DETAIL: Renamed rows to "Find Link", "Trailer", "Extras",
+  "Recommended", "Similar To", "Add to Favourites". InfoTag title now
+  matches each button label so skins no longer replace them with the
+  movie title. Each row has its own placeholder icon in resources/lib/media/.
+
+v2.5.0
+- LINK PICKER: Stream rows now show quality tags only
+  (e.g. "4K | REMUX | DTS | 5.1 | PixelDrain"), no movie/show title.
+- DOWNLOADS: New "Download" context menu on every link — actually saves
+  the file to disk in the background with start/complete toast notifications.
+- My Downloads: New top-level menu item that lists every downloaded file,
+  playable directly. Includes "Delete" context menu.
+- SETTINGS: Configurable Downloads folder under a new Downloads category.
+- ICONS: New resources/lib/media/ folder with placeholder PNGs for every
+  main menu and submenu item — drop in your own art to replace them.
+
+v2.0.0
+- COMPLETE REWRITE: Now powered by TMDB for browsing and HdHub Stremio addon for streams.
+- MOVIES menu: New Releases, Trending, Oscar Winners, Popular, Most Watched,
+  Top Box Office, Blockbusters, Genres (19 genres), Years (1980-2025).
+- TV SHOWS menu: Trending, Popular, Premieres, Most Watched, Airing Today,
+  Upcoming, Genres (13 genres), Networks (17 major networks).
+- Full Season and Episode picker for TV shows.
+- Streams labelled with quality, audio language, server and file size.
+- Search across movies and TV shows simultaneously.
+- TMDB posters, backdrops, ratings and descriptions for every title.
+- Settings simplified — no API keys exposed to users.
+        </news>
+    </extension>
 </addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.1.0+matrix" provider-name="RomyCupidon">  
 <requires>
     <import addon="xbmc.python" version="3.0.0" />

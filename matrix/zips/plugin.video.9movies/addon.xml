@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.9movies" name="9Movies" version="2.5.3" provider-name="Zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.requests" version="2.9.1" optional="true"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">9Movies — TMDB-powered Movies &amp; TV with HdHub streams</summary>
+        <description lang="en_GB">
+Browse thousands of Movies and TV Shows via TMDB — New Releases, Trending,
+Oscar Winners, Popular, Most Watched, Top Box Office, Blockbusters, Genres, Years.
+TV: Trending, Popular, Premieres, Most Watched, Airing Today, Upcoming, Genres, Networks.
+Streams sourced from the HdHub library in 4K, 1080p and 720p with Hindi and English audio.
+        </description>
+        <disclaimer lang="en_GB">This addon uses publicly accessible APIs. Use at your own risk.</disclaimer>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL v2</license>
+		 <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+        <news>
+v2.5.1
+- MOVIE DETAIL: Renamed rows to "Find Link", "Trailer", "Extras",
+  "Recommended", "Similar To", "Add to Favourites". InfoTag title now
+  matches each button label so skins no longer replace them with the
+  movie title. Each row has its own placeholder icon in resources/lib/media/.
+
+v2.5.0
+- LINK PICKER: Stream rows now show quality tags only
+  (e.g. "4K | REMUX | DTS | 5.1 | PixelDrain"), no movie/show title.
+- DOWNLOADS: New "Download" context menu on every link — actually saves
+  the file to disk in the background with start/complete toast notifications.
+- My Downloads: New top-level menu item that lists every downloaded file,
+  playable directly. Includes "Delete" context menu.
+- SETTINGS: Configurable Downloads folder under a new Downloads category.
+- ICONS: New resources/lib/media/ folder with placeholder PNGs for every
+  main menu and submenu item — drop in your own art to replace them.
+
+v2.0.0
+- COMPLETE REWRITE: Now powered by TMDB for browsing and HdHub Stremio addon for streams.
+- MOVIES menu: New Releases, Trending, Oscar Winners, Popular, Most Watched,
+  Top Box Office, Blockbusters, Genres (19 genres), Years (1980-2025).
+- TV SHOWS menu: Trending, Popular, Premieres, Most Watched, Airing Today,
+  Upcoming, Genres (13 genres), Networks (17 major networks).
+- Full Season and Episode picker for TV shows.
+- Streams labelled with quality, audio language, server and file size.
+- Search across movies and TV shows simultaneously.
+- TMDB posters, backdrops, ratings and descriptions for every title.
+- Settings simplified — no API keys exposed to users.
+        </news>
+    </extension>
+</addon>

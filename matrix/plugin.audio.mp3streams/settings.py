@@ -115,6 +115,33 @@ def sanitize_filename(text):
         text = text.replace(char, replacement)
     return text.strip()
 
+FLAT_ALBUM_SEPARATOR = ' - '
+_FLAT_ALBUM_ESCAPES = (
+    ('%', '%25'),
+    ('/', '%2F'),
+    ('\\', '%5C'),
+    (':', '%3A'),
+    ('*', '%2A'),
+    ('?', '%3F'),
+    ('"', '%22'),
+    ('<', '%3C'),
+    ('>', '%3E'),
+    ('|', '%7C'),
+)
+
+def flat_album_component(text):
+    """Escape path-invalid chars and embedded ' - ' so flat Artist - Album folders stay unique."""
+    text = decode_text(text or '')
+    for char, replacement in _FLAT_ALBUM_ESCAPES:
+        text = text.replace(char, replacement)
+    return text.replace(FLAT_ALBUM_SEPARATOR, '%20-%20').strip()
+
+def flat_album_folder_name(artist, album):
+    return FLAT_ALBUM_SEPARATOR.join((flat_album_component(artist), flat_album_component(album))).strip()
+
+def legacy_flat_album_folder_name(artist, album):
+    return sanitize_filename(decode_text(artist or '') + FLAT_ALBUM_SEPARATOR + decode_text(album or ''))
+
 def create_directory(dir_path, dir_name=None):
     if dir_name:
         dir_path = os.path.join(dir_path, sanitize_filename(dir_name))
@@ -122,6 +149,37 @@ def create_directory(dir_path, dir_name=None):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
     return dir_path
+
+def album_storage_folder(artist, album, create=True):
+    """One folder per album (album artist + title) — collab albums stay together; same title, different artist do not."""
+    artist = decode_text(artist or '')
+    album = decode_text(album or '')
+    base = music_dir()
+    if folder_structure() == "0":
+        path = os.path.join(base, sanitize_filename(artist), sanitize_filename(album))
+    else:
+        path = os.path.join(base, flat_album_folder_name(artist, album))
+    path = path.strip()
+    if create and not os.path.exists(path):
+        os.makedirs(path)
+    return path
+
+def legacy_flat_album_storage_folder(artist, album):
+    return os.path.join(music_dir(), legacy_flat_album_folder_name(artist, album)).strip()
+
+def album_track_basename(track, songname):
+    songname = decode_text(songname or '')
+    track = str(track or '').replace('track', '').strip()
+    if not track:
+        return sanitize_filename(songname)
+    prefix = '%s. ' % track
+    if songname.startswith(prefix):
+        return sanitize_filename(songname)
+    return sanitize_filename('%s. %s' % (track, songname))
+
+def album_track_file_path(artist, album, track, songname, create_dir=True):
+    folder = album_storage_folder(artist, album, create=create_dir)
+    return os.path.join(folder, album_track_basename(track, songname) + '.mp3')
 
 def create_file(dir_path, file_name=None):
     if file_name:
