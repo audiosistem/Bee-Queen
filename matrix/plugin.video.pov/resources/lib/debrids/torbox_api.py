@@ -7,7 +7,6 @@ ls, get_setting = kodi_utils.local_string, kodi_utils.get_setting
 user_agent = 'POV/%s' % kodi_utils.get_addoninfo('version')
 ip_url = 'https://api.ipify.org'
 base_url = 'https://api.torbox.app/v1/api/'
-timeout = 20.0
 session = requests.Session()
 session.custom_errors = requests.exceptions.ConnectionError, requests.exceptions.Timeout
 session.mount('https://api.torbox.app', requests.adapters.HTTPAdapter(max_retries=1))
@@ -17,12 +16,13 @@ class TorBoxAPI:
 	defaults_to_cloud = True
 
 	def __init__(self):
+		self.timeout = int(get_setting('scrapers.timeout.1') or 10)
 		self.token = get_setting('tb.token')
 		session.headers.update(self.headers())
 
 	def _request(self, method, path, params=None, json=None, data=None):
 		url = base_url + path
-		try: response = session.request(method, url, params=params, json=json, data=data, timeout=timeout)
+		try: response = session.request(method, url, params=params, json=json, data=data, timeout=self.timeout)
 		except session.custom_errors: return kodi_utils.notification('%s timeout' % __name__)
 		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
 		response = response.json() if 'json' in response.headers.get('Content-Type', '') else response
@@ -36,7 +36,7 @@ class TorBoxAPI:
 		return self._request('post', path, params=params, json=json, data=data)
 
 	def _is_control(self, path):
-		return any(i in path for i in ('control', 'edit'))
+		return any(i in path for i in ('/control', '/edit'))
 
 	def headers(self):
 		return {'User-Agent': user_agent, 'Authorization': 'Bearer %s' % self.token}
@@ -78,7 +78,7 @@ class TorBoxAPI:
 
 	def unrestrict_link(self, file_id):
 		if 'usenet' in file_id: path, key = 'usenet/requestdl', 'usenet_id'
-		elif 'webdl' in file_id: path, key = 'webdl/requestdl', 'webdl_id'
+		elif 'webdl' in file_id: path, key = 'webdl/requestdl', 'web_id'
 		else: path, key = 'torrents/requestdl', 'torrent_id'
 		try: user_ip = requests.get(ip_url, timeout=2.0).text
 		except: user_ip = ''

@@ -42,7 +42,7 @@ def argv1():
 
 def parsed_query(url):
 	try: return dict(parse_qsl(urlparse(url).query))
-	except: return {}
+	except: return dict()
 
 def database_connect(file, **kwargs):
 	return database.connect(translate_path(file), **kwargs)
@@ -292,10 +292,9 @@ def set_view_mode(view_type, content='files', is_widget=None):
 	if not view_id: return
 	try:
 		for _ in range(60):
-			if container_content() == content: break
 			sleep(50)
-		else: return
-		execute_builtin('Container.SetViewMode(%s)' % view_id)
+			if container_content() != content: continue
+			return execute_builtin('Container.SetViewMode(%s)' % view_id)
 	except: pass
 
 def clear_view(view_type):
@@ -406,7 +405,7 @@ def make_settings_dict():
 	except Exception as e: logger('make_settings_dict error', str(e))
 	return settings_dict
 
-def clean_settings():
+def clean_settings(silent=False):
 	import xml.etree.ElementTree as ET
 	addon_ids = 'plugin.video.pov'
 	default_xml = 'special://home/addons/%s/resources/settings.xml' % addon_ids
@@ -423,8 +422,9 @@ def clean_settings():
 		for item in removed_settings: root.remove(item)
 		with open_file(profile_xml, 'w') as xml_file: xml_file.write(ET.tostring(root))
 		text = local_string(32813) % len(removed_settings) if removed_settings else 32576
-		notification(text, 1500)
-	except: notification(32574, 1500)
+		if not silent: notification(text, 1500)
+	except:
+		if not silent: notification(32574, 1500)
 
 def open_settings(query, addon='plugin.video.pov'):
 	hide_busy_dialog()

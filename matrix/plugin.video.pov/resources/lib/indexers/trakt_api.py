@@ -63,7 +63,7 @@ def trakt_refresh():
 		data['refresh_token'] = get_setting('trakt.refresh')
 		data['client_secret'] = get_setting('trakt.client_secret')
 		data['client_id'] = get_setting('trakt.client_id')
-		response = requests.post(base_url % 'oauth/token', json=data, timeout=timeout).json()
+		response = requests.post('https://auth.trakt.tv/oauth/token', json=data, timeout=timeout).json()
 		expires = int(response['created_at']) + int(response['expires_in'])
 		refresh, token = response['refresh_token'], response['access_token']
 		set_setting('trakt.token', token)
@@ -217,7 +217,7 @@ def trakt_anime_calendar(current_date):
 	start, finish = trakt_calendar_days(False, current_date)
 	string = 'trakt_anime_calendar_%s_%s' % (start, finish)
 	url = {'path': 'calendars/all/shows/%s/%s' % (start, finish), 'params': {'genres': 'anime'}, 'with_auth': False}
-	return trakt_cache.cache_trakt_object(lambda u: trakt_calendar_data(u, exclude_anime=False), string, url)
+	return cache_object(lambda u: trakt_calendar_data(u, exclude_anime=False), string, url)
 
 def trakt_collection_lists(mediatype, param1):
 	data = trakt_fetch_collection_watchlist('collection', mediatype)
@@ -257,7 +257,7 @@ def trakt_watchlist(mediatype, page_no):
 	if not settings.show_unaired_watchlist():
 		current_date = get_datetime()
 		original_list = [i for i in original_list if first_aired(i)]
-	sort_key = settings.lists_sort_order('watchlist')
+	sort_key = settings.lists_sort_order('watchlist', mediatype)
 	if   sort_key == 2: original_list.sort(key=itemgetter('premiered'), reverse=True)
 	elif sort_key == 1: original_list.sort(key=itemgetter('collected_at'), reverse=True)
 	else: original_list = sort_for_article(original_list, 'title', settings.ignore_articles())

@@ -4,8 +4,12 @@ from html import unescape
 from caches.main_cache import cache_object
 # from modules.kodi_utils import logger
 
-graphql_headers = {'user-agent': 'curl/7.55.1', 'x-imdb-user-country': 'EN'}
-graphql_url = 'https://api.graphql.imdb.com/'
+graphql_headers, graphql_url = {
+	'User-Agent': 'curl/7.55.1',
+	'x-imdb-client-name': 'imdb-web-next-localized',
+	'x-imdb-user-language': 'en-US',
+	'x-imdb-user-country': 'US'
+}, 'https://api.graphql.imdb.com/'
 base_url = 'https://www.imdb.com/%s'
 timeout = 10.0
 session = requests.Session()
@@ -83,7 +87,9 @@ def imdb_extended_info_handler(imdb_id):
 			 'ranking': i['severity']['id'].replace('Votes', '')}
 			for i in result['parentsGuide']['categories'])
 		except: pass
-	except: pass
+	except requests.RequestException as e:
+		from modules.kodi_utils import logger
+		logger('imdb error', str(e))
 	return {'trivia': trivia, 'blunders': blunders, 'reviews': reviews, 'parentsguide': parentsguide}
 
 def imdb_tagged_images(imdb_id):
@@ -104,7 +110,9 @@ def imdb_tagged_images_handler(imdb_id):
 			{'type': i['node']['caption']['plainText'].strip(), 'url': i['node']['url']}
 			for i in result['images']['edges'] if i['node']['type'] not in excluded_types
 		]
-	except: pass
+	except requests.RequestException as e:
+		from modules.kodi_utils import logger
+		logger('imdb error', str(e))
 	return []
 
 def imdb_movie_year(imdb_id):

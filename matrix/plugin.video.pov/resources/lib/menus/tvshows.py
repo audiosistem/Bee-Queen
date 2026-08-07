@@ -165,7 +165,7 @@ class TVShows:
 class Menu(TVShows):
 	personal_dict = {'watched_tvshows': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'), 'favorites_tvshows': ('caches.favorites_cache', 'get_favorites'), 'dropped_tvshows': ('caches.favorites_cache', 'get_dropped')}
 	tmdb_special_key_dict = {'tmdb_tv_networks': 'network_id', 'tmdb_tv_year': 'year', 'tmdb_tvanime_year': 'year'}
-	tmdb_main = ('tmdb_tv_popular', 'tmdb_tv_premieres', 'tmdb_tv_upcoming', 'tmdb_tvanime_popular', 'tmdb_tvanime_premieres')
+	tmdb_main = ('tmdb_tv_trending', 'tmdb_tv_popular', 'tmdb_tv_premieres', 'tmdb_tv_upcoming', 'tmdb_tvanime_popular', 'tmdb_tvanime_premieres')
 	trakt_main = ('trakt_tv_trending', 'trakt_tv_trending_recent', 'trakt_tv_most_watched', 'trakt_tvanime_trending', 'trakt_tvanime_most_watched')
 	tmdb_personal = ('tmdb_watchlist', 'tmdb_favorites', 'tmdb_recommendations')
 	trakt_personal = ('trakt_collection', 'trakt_watchlist', 'trakt_favorites', 'trakt_droplist', 'trakt_collection_lists', 'trakt_watchlist_lists')

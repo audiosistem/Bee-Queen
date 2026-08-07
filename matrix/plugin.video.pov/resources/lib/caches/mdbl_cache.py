@@ -101,6 +101,12 @@ def clear_mdbl_list_data(list_type):
 		dbcur.execute(DELETE, (string,))
 	except: pass
 
+def clear_mdbl_calendar():
+	try:
+		dbcur = TraktCache().dbcur
+		dbcur.execute(DELETE_LIKE, ('mdbl_get_my_calendar_%',))
+	except: return
+
 def clear_all_mdbl_cache_data(refresh=True):
 	try:
 		dbcur = MDBLCache().dbcur

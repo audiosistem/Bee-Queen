@@ -17,8 +17,14 @@ class source:
 	hasEpisodes = True
 	def __init__(self):
 		self.language = ['en', 'de', 'fr', 'ko', 'pl', 'pt', 'ru']
-		self.domains = ['1337x.to', '1337x.st', '1337x.ws', '1337x.eu', '1337x.se', '1337x.is'] # all are behind cloudflare except .to
-		self.base_link = "https://1337x.to"
+		self.domains = ['1377x.to', '1337xx.to', '1337x.to', '1337x.st', '1337x.ws', '1337x.eu', '1337x.se', '1337x.is'] # all are behind cloudflare except .to
+		self.base_link = "https://www.1377x.to"
+		# NOTE: 1337x/1377x has a known site-side relevance bug -- combining a
+		# real query with an additional qualifier (year, category filter, or a
+		# leading "The") against certain common multi-word titles silently
+		# returns unrelated/zero results, while the bare query alone works
+		# fine. Confirmed live across multiple titles; this is a site-side
+		# limitation, not something fixable from the scraper side.
 		self.tvsearch = '/sort-category-search/%s/TV/size/desc/1/'
 		self.moviesearch = '/sort-category-search/%s/Movies/size/desc/1/'
 		self.min_seeders = 1

@@ -18,7 +18,7 @@ class source:
 	hasEpisodes = True
 	def __init__(self):
 		self.language = ['en']
-		self.base_link = "https://torrentproject2.com"
+		self.base_link = "https://torrentproject2.org"
 		self.search_link = '/?t=%s&orderby=seeders'
 		self.min_seeders = 1
 

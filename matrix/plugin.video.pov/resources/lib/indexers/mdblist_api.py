@@ -78,6 +78,15 @@ def mdbl_expires():
 	expires = int(get_setting('mdblist.expires', '0'))
 	if interval + current >= expires: mdbl_refresh()
 
+def mdbl_calendar_days(recently_aired, current_date):
+	from datetime import timedelta
+	if recently_aired: return (current_date - timedelta(days=7)).strftime('%Y-%m-%d'), '7'
+	previous_days = int(get_setting('trakt.calendar_previous_days', '3'))
+	future_days = int(get_setting('trakt.calendar_future_days', '7'))
+	start = (current_date - timedelta(days=previous_days)).strftime('%Y-%m-%d')
+	finish = (current_date + timedelta(days=future_days)).strftime('%Y-%m-%d')
+	return start, finish
+
 def mdbl_top_lists():
 	string = 'mdbl_top_lists'
 	url = 'lists/top'
@@ -92,6 +101,28 @@ def mdbl_search_lists(query):
 def mdblist_droplist(mediatype, page_no):
 	results = mdbl_get_hidden_items('dropped')
 	return [{'imdb_id': '', 'id': i} for i in results], 1
+
+def mdbl_calendar_data(url):
+	result = []
+	seen = set()
+	for i in call_mdblist(url)['events'] or []:
+		try:
+			if i['type'] != 'episode' or i['season_number'] <= 0: continue
+			tmdb_id = i.get('show_tmdb') or i.get('show_id') or ''
+			season, episode = i['season_number'], i['episode_number']
+			sort_title = '%s s%02d e%02d' % (i['title'], season, episode)
+			if sort_title not in seen and not seen.add(sort_title): result.append({
+				'sort_title': sort_title, 'first_aired': i['start'],
+				'media_ids': {'tmdb': tmdb_id}, 'season': season, 'episode': episode
+			})
+		except: pass
+	return result
+
+def mdbl_get_my_calendar(recently_aired, current_date):
+	start, finish = mdbl_calendar_days(recently_aired, current_date)
+	string = 'mdbl_get_my_calendar_%s_%s' % (start, finish)
+	url = 'calendar/events?limit=1000&start=%s&end=%s' % (start, finish)
+	return mdbl_cache.cache_mdbl_object(lambda u: mdbl_calendar_data(u), string, url)
 
 def mdblist_collection(mediatype, page_no):
 	string = 'mdbl_collection'
@@ -128,7 +159,7 @@ def mdblist_watchlist(mediatype, page_no):
 	if not settings.show_unaired_watchlist():
 		current_date = get_datetime()
 		original_list = [i for i in original_list if first_aired(i)]
-	sort_key = settings.lists_sort_order('watchlist')
+	sort_key = settings.lists_sort_order('watchlist', mediatype)
 	if   sort_key == 2: original_list.sort(key=itemgetter('release_date') or '', reverse=True)
 	elif sort_key == 1: original_list.sort(key=itemgetter('watchlist_at'), reverse=True)
 	else: original_list = sort_for_article(original_list, 'title', settings.ignore_articles())
@@ -356,7 +387,7 @@ def mdbl_progress_tv(progress_info):
 
 def mdbl_get_hidden_items(list_type):
 	def _process(url):
-		response = call_mdblist(url)
+		response = _get_mdbl_paginated_list(url)
 		hidden_data = response.get('shows', []) if response else []
 		if not hidden_data: return []
 		results, lookup_list = [], []
@@ -397,6 +428,7 @@ def mdbl_sync_activities(force_update=False, init_callback=None, monitor=None):
 	if force_update:
 		check_databases()
 		mdbl_cache.clear_all_mdbl_cache_data(refresh=False)
+	mdbl_cache.clear_mdbl_calendar()
 	latest = mdbl_get_activity()
 	if latest is None:
 		mdbl_cache.clear_all_mdbl_cache_data(refresh=False)

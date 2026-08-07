@@ -5,7 +5,6 @@ from modules import kodi_utils
 
 ls, get_setting = kodi_utils.local_string, kodi_utils.get_setting
 base_url = 'https://offcloud.com/api/'
-timeout = 10.0
 session = requests.Session()
 session.custom_errors = requests.exceptions.ConnectionError, requests.exceptions.Timeout
 session.mount('https://offcloud.com', requests.adapters.HTTPAdapter(max_retries=1))
@@ -15,12 +14,13 @@ class OffcloudAPI:
 	defaults_to_cloud = False
 
 	def __init__(self):
+		self.timeout = int(get_setting('scrapers.timeout.1') or 10)
 		self.token = get_setting('oc.token')
 		session.headers.update(self.headers())
 
 	def _request(self, method, path, params=None, data=None):
 		url = base_url + path
-		try: response = session.request(method, url, params=params, json=data, timeout=timeout)
+		try: response = session.request(method, url, params=params, json=data, timeout=self.timeout)
 		except session.custom_errors: return kodi_utils.notification('%s timeout' % __name__)
 		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
 		return response.json() if 'json' in response.headers.get('Content-Type', '') else response

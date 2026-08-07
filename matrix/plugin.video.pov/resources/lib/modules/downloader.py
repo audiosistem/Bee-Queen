@@ -102,7 +102,7 @@ class Downloader:
 		if url in (None, 'None', ''):
 			if 'meta' in self.action and 'pack_files' in self.params:
 				link = self.params_get('pack_files')['link']
-				debrid_function = debrid.import_debrid(self.provider)
+				debrid_function = debrid.import_debrid(self.provider.split()[-1])
 				url = debrid_function.unrestrict_link(link)
 			else:
 				source = json.loads(self.params_get('source'))

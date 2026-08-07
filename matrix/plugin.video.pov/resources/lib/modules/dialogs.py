@@ -288,7 +288,7 @@ def options_menu(params, meta=None):
 		append(('clear_mdbl_cache', ls(32497) % 'MDBList', ''))
 	if content in ('movie', 'tvshow') and meta:
 		append(('clear_media_cache', ls(32604) % (ls(32028) if content == 'movie' else ls(32029)), title, poster))
-	listing.append(('open_pov_settings', '%s %s %s' % (open_str, ls(32036), settings_str), ''))
+	listing.append(('open_pov_settings', '%s %s %s' % (open_str, ls(32000), settings_str), ''))
 	if is_widget: listing.append(('reload_widgets', 'POV: Refresh Widgets', ''))
 	list_items = [
 		{'line1': item[1], 'line2': item[2] or item[1], **({'icon': item[3]} if len(item) == 4 else {})}

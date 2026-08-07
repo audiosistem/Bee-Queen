@@ -122,6 +122,9 @@ class Source:
 				from debrids.easynews_api import EasyNewsAPI
 				url = EasyNewsAPI().unrestrict_link(self.url_dl)
 				if not direct_debrid_link: url += '|seekable=0'
+			elif self.scrape_provider == 'aiostreams':
+				from scrapers.aiostreams import unrestrict_link
+				url = unrestrict_link(self.url_dl)
 			else: url = self.url_dl
 			return url
 		except Exception as e:
@@ -147,6 +150,16 @@ class Source:
 		url_dl = chosen_result['link']
 		return api.unrestrict_link(url_dl)
 
+	def manual_add_magnet_to_cloud(self):
+		if not confirm_dialog(text=ls(32831) % self.debrid.upper()): return
+		show_busy_dialog()
+		api = import_debrid(self.debrid)
+		api.clear_cache()
+		result = api.create_transfer(self.url)
+		hide_busy_dialog()
+		if result: notification(32576)
+		else: notification(32575)
+
 	def unchecked_magnet_status(self):
 		show_busy_dialog()
 		api = import_debrid(self.debrid)
@@ -157,47 +170,6 @@ class Source:
 		if torrent_id: Thread(target=api.delete_torrent, args=(torrent_id,)).start()
 		ok_dialog(text='Cached at [B]%s[/B]' % self.debrid.upper())
 
-	def nzb_cache_and_play(self):
-		line, status_str = '%s[CR]%s[CR]STATUS: %s', '[B]%s[/B] (%2d%%)'
-		title, season, episode = self.meta['title'], self.meta['season'], self.meta['episode']
-		if season and episode: line1 = '%s (S%sE%s)' % (title, season, episode)
-		else: line1 = '%s (%s)' % (title, self.meta['year'])
-		kodi_utils.progressDialog.create('POV', '')
-		kodi_utils.progressDialog.update(0, line % (line1, '', '[B]GRAB...[/B]'))
-		try:
-			api = import_debrid(self.debrid)
-			nzb_id = api.create_transfer(self.url, self.name)
-			if not nzb_id: return kodi_utils.notification(32574)
-			resolved_link = None
-			data = {'files': []}
-			while not data['files']:
-				if kodi_utils.progressDialog.iscanceled(): return kodi_utils.notification(32736)
-				line2 = 'ETA: %s' % data.get('eta', 'NA')
-				progress = int(float(data.get('progress', '0')) * 100)
-				status = status_str % (data.get('download_state', '...').upper(), progress)
-				kodi_utils.progressDialog.update(progress, line % (line1, line2, status))
-				kodi_utils.sleep(500)
-				result = api.torrent_info(nzb_id, 'usenet')
-				if result and 'id' in result: data = result
-			else: resolved_link = self.resolve_external_sources(title, season, episode)
-		finally: kodi_utils.progressDialog.close()
-		return kodi_utils.notification(32574) if not resolved_link else resolved_link
-
-	def manual_add_nzb_to_cloud(self):
-		if self.debrid in ('torbox',) and self.meta:
-			args = 'POV', '[CR]%s' % ls(32831) % self.debrid.upper()
-			choice = kodi_utils.dialog.yesnocustom(*args, customlabel='Cache/Play')
-		else: choice = confirm_dialog(text=ls(32831) % self.debrid.upper())
-		if choice == 2: return self.nzb_cache_and_play()
-		if choice in (-1, 0, False): return
-		show_busy_dialog()
-		api = import_debrid(self.debrid)
-		api.clear_cache()
-		result = api.create_transfer(self.url, self.name)
-		hide_busy_dialog()
-		if result: notification(32576)
-		else: notification(32575)
-
 	def manual_airlock_to_cloud(self):
 		if not confirm_dialog(text=ls(32831) % self.debrid.upper()): return
 		show_busy_dialog()
@@ -207,16 +179,6 @@ class Source:
 		if not request_id: return notification(32575)
 		mediatype = 'torrents' if self.url.startswith('magnet') else 'usenet'
 		result = api.toggle_airlock(mediatype, request_id, True)
-		hide_busy_dialog()
-		if result: notification(32576)
-		else: notification(32575)
-
-	def manual_add_magnet_to_cloud(self):
-		if not confirm_dialog(text=ls(32831) % self.debrid.upper()): return
-		show_busy_dialog()
-		api = import_debrid(self.debrid)
-		api.clear_cache()
-		result = api.create_transfer(self.url)
 		hide_busy_dialog()
 		if result: notification(32576)
 		else: notification(32575)

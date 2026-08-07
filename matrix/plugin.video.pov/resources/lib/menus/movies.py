@@ -156,7 +156,7 @@ class Movies:
 class Menu(Movies):
 	personal_dict = {'watched_movies': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_movies': ('caches.watched_cache', 'get_in_progress_items'), 'favorites_movies': ('caches.favorites_cache', 'get_favorites')}
 	tmdb_special_key_dict = {'tmdb_movies_networks': 'company', 'tmdb_movies_year': 'year', 'tmdb_moviesanime_year': 'year'}
-	tmdb_main = ('tmdb_movies_popular', 'tmdb_movies_latest_releases', 'tmdb_movies_premieres', 'tmdb_movies_upcoming', 'tmdb_movies_blockbusters', 'tmdb_oscar_winners', 'tmdb_moviesanime_popular', 'tmdb_moviesanime_latest_releases')
+	tmdb_main = ('tmdb_movies_trending', 'tmdb_movies_popular', 'tmdb_movies_latest_releases', 'tmdb_movies_premieres', 'tmdb_movies_upcoming', 'tmdb_movies_blockbusters', 'tmdb_oscar_winners', 'tmdb_moviesanime_popular', 'tmdb_moviesanime_latest_releases')
 	trakt_main = ('trakt_movies_trending', 'trakt_movies_trending_recent', 'trakt_movies_most_watched', 'trakt_moviesanime_trending', 'trakt_moviesanime_most_watched')
 	tmdb_personal = ('tmdb_watchlist', 'tmdb_favorites', 'tmdb_recommendations')
 	trakt_personal = ('trakt_collection', 'trakt_watchlist', 'trakt_favorites', 'trakt_collection_lists', 'trakt_watchlist_lists')

@@ -42,11 +42,11 @@ class Navigator:
 		from modules.debrid import debrid_enabled
 		easynews, debrids = ks.easynews_active(), debrid_enabled()
 		if easynews: self.easynews()
-		if 'realdebrid' in debrids: self.real_debrid()
 		if 'premiumize' in debrids: self.premiumize()
-		if 'alldebrid' in debrids: self.alldebrid()
 		if 'torbox' in debrids: self.torbox()
 		if 'offcloud' in debrids: self.offcloud()
+		if 'realdebrid' in debrids: self.real_debrid()
+		if 'alldebrid' in debrids: self.alldebrid()
 		self._end_directory()
 
 	def easynews(self):
@@ -109,7 +109,8 @@ class Navigator:
 	def my_content(self):
 		trakt_str, coll_str, wlist_str, fav_str, ls_str, ll_str = ls(32037), ls(32499), ls(32500), ls(32453), ls(32501), ls(32502)
 		t_n_ins, m_n_ins = _in_str % (trakt_str.upper(), ''), _in_str % ('MDBList'.upper(), '')
-		t_str, user_str, l_str, ai_str, ml_str, drp_str = ls(32037), ls(32065), ls(32501), ls(32494), ls(32454), 'Dropped TV Shows'
+		t_str, user_str, l_str, ai_str, ml_str = ls(32037), ls(32065), ls(32501), ls(32494), ls(32454)
+		drp_str, cal_str = 'Dropped TV Shows', 'MDBList Calendar'
 		tu_str, pu_str = '%s %s %s' % (ls(32458), user_str, l_str), '%s %s %s' % (ls(32459), user_str, l_str)
 		sea_str, n_ins = '%s %s' % (ls(32477), l_str), _in_str % (t_str.upper(), '')
 		mdb_mc_str, mdb_tc_str = 'My %s %s' % (coll_str, mov_str), 'My %s %s' % (coll_str, tv_str)
@@ -134,6 +135,7 @@ class Navigator:
 			self._add_item({'mode': 'build_movie_list', 'action': 'mdblist_collection',           'name': mdb_mc_str}, 'mdblist.png', m_n_ins)
 			self._add_item({'mode': 'build_tvshow_list', 'action': 'mdblist_collection',          'name': mdb_tc_str}, 'mdblist.png', m_n_ins)
 			self._add_item({'mode': 'build_tvshow_list', 'action': 'mdblist_droplist',            'name': drp_str   }, 'mdblist.png', m_n_ins)
+			self._add_item({'mode': 'build_my_calendar_mdbl',                                     'name': cal_str   }, 'mdblist.png', m_n_ins)
 			self._add_item({'mode': 'mdblist.mdbl_account_info',                                  'name': ai_str    }, 'mdblist.png', m_n_ins, False)
 			self._add_item({'mode': 'build_mdbl_list.get_mdbl_top_lists',                         'name': pu_str    }, 'mdblist.png', m_n_ins)
 			self._add_item({'mode': 'build_mdbl_list.search_mdbl_lists',                          'name': sea_str   }, 'mdblist.png', m_n_ins)
@@ -174,7 +176,7 @@ class Navigator:
 		self._add_item({'mode': 'build_movie_list', 'action': 'trakt_watchlist_lists', 'new_page': 'random',  'name': mran_str }, 'trakt.png', n_ins)
 		self._add_item({'mode': 'build_tvshow_list', 'action': 'trakt_watchlist_lists', 'new_page': 'recent', 'name': tvrec_str}, 'trakt.png', n_ins)
 		self._add_item({'mode': 'build_tvshow_list', 'action': 'trakt_watchlist_lists', 'new_page': 'random', 'name': tvran_str}, 'trakt.png', n_ins)
-		self._add_item({'mode': 'build_my_calendar', 'recently_aired': 'true',                                'name': ra_str   }, 'trakt.png', n_ins)
+		self._add_item({'mode': 'build_my_calendar_trakt', 'recently_aired': 'true',                          'name': ra_str   }, 'trakt.png', n_ins)
 		self._end_directory()
 
 	def trakt_favorites(self):
@@ -193,7 +195,7 @@ class Navigator:
 		self._add_item({'mode': 'build_trakt_list.get_trakt_lists', 'list_type': 'liked_lists', 'name': ll_str }, 'trakt.png', n_ins)
 		self._add_item({'mode': 'navigator.trakt_recommendations',                              'name': rec_str}, 'trakt.png', n_ins)
 		self._add_item({'mode': 'build_tvshow_list', 'action': 'trakt_droplist',                'name': drp_str}, 'trakt.png', n_ins)
-		self._add_item({'mode': 'build_my_calendar',                                            'name': cal_str}, 'trakt.png', n_ins)
+		self._add_item({'mode': 'build_my_calendar_trakt',                                      'name': cal_str}, 'trakt.png', n_ins)
 		self._add_item({'mode': 'build_my_anime_calendar',                                      'name': ani_str}, 'trakt.png', n_ins)
 		self._end_directory()
 
@@ -214,20 +216,28 @@ class Navigator:
 		self._end_directory()
 
 	def settings(self):
-		pov_str, manager_str, changelog_str, short_str = ls(32036), ls(32513), ls(32508), ls(32514)
+		manager_str, changelog_str, short_str = ls(32513), ls(32508), ls(32514)
 		log_utils, views_str, clean_str, lang_inv_str, ms_str = ls(32777), ls(32510), ls(32512), ls(32978), ls(32455)
 		settings_str, changelog_log_viewer_str = ls(32247), '%s & %s' % (changelog_str, log_utils)
 		shortcut_manager_str = '%s %s' % (short_str, manager_str)
-		n_ins, l_str = _in_str % (settings_str.upper(), ''), _in_str % ('LINKS', '')
+		n_ins = _in_str % (settings_str.upper(), '')
+		pov_vstr, pov_istr = ku.get_addoninfo('version'), ku.get_addoninfo('id')
+		kl_loc, mt_str = 'special://logpath/kodi.log', 'special://home/addons/%s/changelog.txt' % pov_istr
+		pov_str, cl_str, lut_str, k_str, lv_str = ls(32000), ls(32508), ls(32777), ls(32538), ls(32509)
+		mh_str, klv_h, klu_h = '%s  [I](v.%s)[/I]' % (pov_str, pov_vstr), '%s %s' % (k_str, lv_str), ls(32853)
+		cl_n_ins, lu_n_ins, k_n_ins = _in_str % (cl_str.upper(), ''), _in_str % (lut_str.upper(), ''), _in_str % ('Kodi'.upper(), '')
 		self._add_item({'mode': 'open_settings', 'query': '4.0', 'name': pov_str                 }, 'pov.png', n_ins, False)
 		self._add_item({'mode': 'myservices',                    'name': ms_str                  }, 'settings.png', n_ins, False)
 		self._add_item({'mode': 'navigator.clear_info',          'name': clean_str               }, 'settings.png', n_ins)
-		self._add_item({'mode': 'navigator.log_utils',           'name': changelog_log_viewer_str}, 'settings.png', n_ins)
+#		self._add_item({'mode': 'navigator.log_utils',           'name': changelog_log_viewer_str}, 'settings.png', n_ins)
 		self._add_item({'mode': 'navigator.set_view_modes',      'name': views_str               }, 'settings.png', n_ins)
 		self._add_item({'mode': 'navigator.shortcut_folders',    'name': shortcut_manager_str    }, 'settings.png', n_ins)
 		self._add_item({'mode': 'toggle_language_invoker',       'name': lang_inv_str            }, 'settings.png', n_ins, False)
-		self._add_item({'mode': 'refer_link', 'query': 'rd',     'name': 'Real Debrid Referral Link'}, 'realdebrid.png', l_str, False)
-		self._add_item({'mode': 'refer_link', 'query': 'tb',     'name': 'TorBox Referral Link'     }, 'torbox.png',     l_str, False)
+		self._add_item({'mode': 'show_text', 'heading': mh_str, 'file': mt_str,                    'exclude_external': 'true', 'name': mh_str}, 'lists.png', cl_n_ins, False)
+		self._add_item({'mode': 'show_text', 'heading': klv_h, 'file': kl_loc, 'kodi_log': 'true', 'exclude_external': 'true', 'name': klv_h }, 'lists.png', lu_n_ins, False)
+		self._add_item({'mode': 'upload_logfile',                                                  'exclude_external': 'true', 'name': klu_h }, 'lists.png', lu_n_ins, False)
+		self._add_item({'mode': 'clear_streams',                                                    'name': 'Clear Stale Kodi Stream Details'}, 'tools.png', k_n_ins, False)
+		self._add_item({'mode': 'clear_thumbnails',                                                     'name': 'Clear Stale Kodi Thumbnails'}, 'tools.png', k_n_ins, False)
 		self._end_directory()
 
 	def clear_info(self):
@@ -273,19 +283,6 @@ class Navigator:
 		self._add_item({'mode': 'choose_view', 'view_type': 'view.episodes_lists', 'content': 'episodes', 'exclude_external': 'true', 'name': ep_lists_str     }, 'settings.png', n_ins)
 		self._add_item({'mode': 'choose_view', 'view_type': 'view.premium', 'content': 'files', 'exclude_external': 'true',           'name': premium_files_str}, 'settings.png', n_ins)
 		self._add_item({'mode': 'clear_view', 'view_type': 'all',                                                                     'name': reset_str        }, 'settings.png', n_ins, False)
-		self._end_directory()
-
-	def log_utils(self):
-		pov_vstr, pov_istr = ku.get_addoninfo('version'), ku.get_addoninfo('id')
-		kl_loc, mt_str = 'special://logpath/kodi.log', 'special://home/addons/%s/changelog.txt' % pov_istr
-		pov_str, cl_str, lut_str, k_str, lv_str = ls(32036), ls(32508), ls(32777), ls(32538), ls(32509)
-		mh_str, klv_h, klu_h = '%s  [I](v.%s)[/I]' % (pov_str, pov_vstr), '%s %s' % (k_str, lv_str), ls(32853)
-		cl_n_ins, lu_n_ins, k_n_ins = _in_str % (cl_str.upper(), ''), _in_str % (lut_str.upper(), ''), _in_str % ('Kodi'.upper(), '')
-		self._add_item({'mode': 'show_text', 'heading': mh_str, 'file': mt_str, 'exclude_external': 'true',                    'name': mh_str}, 'lists.png', cl_n_ins, False)
-		self._add_item({'mode': 'show_text', 'heading': klv_h, 'file': kl_loc, 'kodi_log': 'true', 'exclude_external': 'true', 'name': klv_h }, 'lists.png', lu_n_ins, False)
-		self._add_item({'mode': 'upload_logfile', 'exclude_external': 'true',                                                  'name': klu_h }, 'lists.png', lu_n_ins, False)
-		self._add_item({'mode': 'clear_streams',                                                    'name': 'Clear Stale Kodi Stream Details'}, 'tools.png', k_n_ins, False)
-		self._add_item({'mode': 'clear_thumbnails',                                                     'name': 'Clear Stale Kodi Thumbnails'}, 'tools.png', k_n_ins, False)
 		self._end_directory()
 
 	def years(self):

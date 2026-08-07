@@ -2,6 +2,8 @@
 <settings>
 	<!-- Sources -->
 	<category label="Sources">
+		<setting label="Timeout" type="lsep" />
+		<setting id="scrapers.timeout.1" label="Scraper/Debrid Timeout (secs)" type="number" default="20" />
 		<setting label="External Scrapers" type="lsep" />
 		<setting id="provider.external" label="Enable" type="bool" default="true" />
 		<setting id="filter.foreign.single.audio" label="Remove identified Foreign single audio sources" type="bool" default="true" />
@@ -11,7 +13,7 @@
 		<setting id="debug.enabled" label="Enable Debug" type="bool" default="false" />
 		<setting id="debug.location" label="Logging Location" type="enum" default="0" values="Kodi Log|Addon Log" enable="eq(-1,true)" visible="eq(-1,true)" />
 		<setting label="Test All Source Providers (Magneto)" type="action" action="RunPlugin(plugin://plugin.video.pov/?mode=speedTest)" />
-		<setting label="Sources" type="lsep" />
+		<setting label="External Sources" type="lsep" />
 		<setting id="provider.bitsearch" label="bitsearch" type="bool" default="false" />
 		<setting id="provider.nyaa" label="nyaa" type="bool" default="false" />
 		<setting id="provider.piratebay" label="piratebay" type="bool" default="true" />
@@ -57,21 +59,17 @@
 		<setting id="pm.expires" label="Premium Expires Notification (days)" type="slider" default="0" range="0,1,7" option="int" visible="eq(-10,true)+!eq(-11,)" />
 		<!-- TorBox-->
 		<setting label="TorBox" type="lsep" />
-		<setting id="tb_refer_link" type="text" default="https://tinyurl.com/2d2ra6jq" visible="false" />
 		<setting id="tb.token" label="tb token" type="text" default="" visible="false" />
 		<setting id="tb.enabled" label="Enable" type="bool" default="true" visible="!eq(-1,)" />
 		<setting id="tb.account_id" label="Customer ID" type="text" default="" enable="false" visible="eq(-1,true)+!eq(-2,)" />
 		<setting id="tb.torrent.enabled" label="Use Torrent Services" type="bool" default="true" enable="true" visible="eq(-2,true)+!eq(-3,)" />
 		<setting id="store_torrent.torbox" label="Add Resolved Torrents to Cloud" type="bool" default="false" visible="eq(-3,true)+!eq(-4,)" />
-		<setting id="provider.torboxnews" label="Use Usenet Services" type="bool" default="false" visible="eq(-4,true)+!eq(-5,)" />
-		<setting id="store_usenet.torbox" label="Add Resolved Usenet to Cloud" type="bool" default="false" visible="eq(-5,true)+!eq(-6,)" />
-		<setting id="tb.user_engines_only" label="Filter User Usenet Services Only" type="bool" default="false" visible="eq(-6,true)+!eq(-7,)" />
-		<setting id="provider.tb_cloud" label="Search TB Cloud" type="bool" default="false" visible="eq(-7,true)+!eq(-8,)" />
-			<setting id="tb_cloud.title_filter" label="Filter Results with Aliases" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-8,true)+!eq(-9,)" />
-			<setting id="check.tb_cloud" label="Check Before Full Search" type="bool" default="false" subsetting="true" visible="eq(-2,true)+eq(-9,true)+!eq(-10,)" />
-			<setting id="results.sort_tbcloud_first" label="Show Results at Top" type="bool" default="true" subsetting="true" visible="eq(-3,true)+eq(-10,true)+!eq(-11,)" />
-		<setting id="tb.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="9" range="1,1,10" option="int" visible="eq(-11,true)+!eq(-12,)" />
-		<setting id="tb.expires" label="Premium Expires Notification (days)" type="slider" default="0" range="0,1,7" option="int" visible="eq(-12,true)+!eq(-13,)" />
+		<setting id="provider.tb_cloud" label="Search TB Cloud" type="bool" default="false" visible="eq(-4,true)+!eq(-5,)" />
+			<setting id="tb_cloud.title_filter" label="Filter Results with Aliases" type="bool" default="false" subsetting="true" visible="eq(-1,true)+eq(-5,true)+!eq(-6,)" />
+			<setting id="check.tb_cloud" label="Check Before Full Search" type="bool" default="false" subsetting="true" visible="eq(-2,true)+eq(-6,true)+!eq(-7,)" />
+			<setting id="results.sort_tbcloud_first" label="Show Results at Top" type="bool" default="true" subsetting="true" visible="eq(-3,true)+eq(-7,true)+!eq(-8,)" />
+		<setting id="tb.priority" label="Priority (Lower Number Equals Higher Priority)" type="slider" default="9" range="1,1,10" option="int" visible="eq(-8,true)+!eq(-9,)" />
+		<setting id="tb.expires" label="Premium Expires Notification (days)" type="slider" default="0" range="0,1,7" option="int" visible="eq(-9,true)+!eq(-10,)" />
 		<!-- Offcloud -->
 		<setting label="Offcloud" type="lsep" />
 		<setting id="oc.token" label="oc token" type="text" default="" visible="false" />
@@ -88,7 +86,6 @@
 	<category label="My Services">
 		<!-- Real Debrid -->
 		<setting label="Real Debrid" type="lsep" />
-		<setting id="rd_refer_link" type="text" default="https://tinyurl.com/2db65q28" visible="false" />
 		<setting id="rd.client_id" type="text" default="" visible="false" />
 		<setting id="rd.secret" type="text" default="" visible="false" />
 		<setting id="rd.refresh" type="text" default="" visible="false" />
@@ -134,7 +131,8 @@
 	<!-- My Lists -->
 	<category label="My Lists">
 		<!-- Trakt Calendar -->
-		<setting label="Trakt Calendar" type="lsep" />
+		<setting label="Trakt/MDBList Calendar" type="lsep" />
+		<setting id="calendar.include_airdate" label="Include Airdate In Title" type="bool" default="true" />
 		<setting id="trakt.calendar_focus_today" label="Set Focus to Today's Date" type="bool" default="true" />
 		<setting id="trakt.calendar_sort_order" label="Sort Order" type="enum" default="0" values="Descending|Ascending" />
 		<setting id="trakt.calendar_previous_days" label="Show Previous Days" type="number" default="7" />
@@ -238,7 +236,8 @@
 		<setting id="sort.progress" label="In Progress Sort Type" type="enum" default="0" values="Title|Recently Watched" />
 		<setting id="sort.watched" label="Watched Sort Type" type="enum" default="0" values="Title|Recently Watched" />
 		<setting id="sort.collection" label="Collection Sort Type" type="enum" default="0" values="Title|Date Added|Release Date" />
-		<setting id="sort.watchlist" label="Watchlist Sort Type" type="enum" default="0" values="Title|Date Added|Release Date" />
+		<setting id="sort.watchlist_movies" label="Watchlist Sort Type (Movies)" type="enum" default="0" values="Title|Date Added|Release Date" />
+		<setting id="sort.watchlist_shows" label="Watchlist Sort Type (TV Shows)" type="enum" default="0" values="Title|Date Added|Release Date" />
 		<setting id="ignore_articles" label="Ignore Articles When Sorting Lists" type="bool" default="true" />
 	</category>
 	<!-- Playback -->
@@ -287,7 +286,6 @@
 		<setting id="torrent.display.uncached" label="Display Uncached Torrents" type="bool" default="false" />
 		<setting id="search.enable.yearcheck" label="Check Year Before Search" type="bool" default="false" />
 		<setting id="ignore_results_filter" label="Ignore All Filters When No Results Available" type="bool" default="true" />
-		<setting id="scrapers.timeout.1" label="Scraper Timeout" type="number" default="10" />
 		<!-- Language -->
 		<setting label="Language" type="lsep" />
 		<setting id="results.language_filter" label="Priority Language Sort to Top" type="bool" default="false" />

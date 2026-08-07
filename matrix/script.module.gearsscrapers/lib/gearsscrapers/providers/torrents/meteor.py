@@ -11,7 +11,7 @@ from gearsscrapers.modules import source_utils
 
 class source:
 	timeout = 10
-	priority = 1
+	priority = 2
 	pack_capable = True
 	hasMovies = True
 	hasEpisodes = True
@@ -62,7 +62,7 @@ class source:
 		for file in files:
 			try:
 				hash = file['infoHash']
-				file_title = file['title'].split('\n')
+				file_title = file['description'].split('\n')
 				file_info = [x for x in file_title if _INFO.match(x)][0]
 
 				name = source_utils.clean_name(file_title[0])
@@ -75,7 +75,7 @@ class source:
 				url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name)
 
 				try:
-					seeders = int(re.search(r'👤\s*(\d+)', file['title']).group(1))
+					seeders = int(re.search(r'👥\s*(\d+)', file['description']).group(1))
 					if self.min_seeders > seeders: continue
 				except: seeders = 0
 
@@ -106,7 +106,10 @@ class source:
 			imdb = data['imdb']
 			year = data['year']
 			season = data['season']
-			url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, data['episode']))
+			# dead code removed: building a per-episode url here always raised
+			# KeyError('episode') during season-pack searches (data has no
+			# 'episode' key), which silently zeroed sources_packs() for every
+			# provider that copied this pattern.
 			files = self._queue.get(timeout=self.timeout + 1)
 			_INFO = re.compile(r'💾.*')
 			undesirables = source_utils.get_undesirables()
@@ -118,7 +121,7 @@ class source:
 		for file in files:
 			try:
 				hash = file['infoHash']
-				file_title = file['title'].split('\n')
+				file_title = file['description'].split('\n')
 				file_info = [x for x in file_title if _INFO.match(x)][0]
 
 				name = source_utils.clean_name(file_title[0])
@@ -143,7 +146,7 @@ class source:
 
 				url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name)
 				try:
-					seeders = int(re.search(r'👤\s*(\d+)', file['title']).group(1))
+					seeders = int(re.search(r'👥\s*(\d+)', file['description']).group(1))
 					if self.min_seeders > seeders: continue
 				except: seeders = 0
 

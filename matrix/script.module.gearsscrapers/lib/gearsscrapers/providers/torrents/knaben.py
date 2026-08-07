@@ -15,7 +15,7 @@ RE_MAGNET = re.compile(r'href\s*=\s*["\'](magnet:[^"\']+)["\']', re.I)
 
 
 class source:
-	priority = 3
+	priority = 1
 	pack_capable = True
 	hasMovies = True
 	hasEpisodes = True

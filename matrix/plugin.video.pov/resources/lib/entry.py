@@ -8,82 +8,83 @@ get_property, set_property, clear_property = kodi_utils.get_property, kodi_utils
 get_setting, set_setting, make_settings_dict = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.make_settings_dict
 
 POV_ROUTES = {
-	'smart_play_media': lambda p, pg: _import('modules.episode_tools', 'SmartPlay')(p),
-	'play_media': lambda p, pg: _import('modules.sources', 'Sources').factory(p),
-	'media_play': lambda p, pg: _import('modules.debrid', 'play_from_cloud')(p),
-	'downloader': lambda p, pg: _import('modules.downloader', 'factory')(p),
+	'smart_play_media': lambda p: _import('modules.episode_tools', 'SmartPlay')(p),
+	'play_media': lambda p: _import('modules.sources', 'Sources').factory(p),
+	'media_play': lambda p: _import('modules.debrid', 'play_from_cloud')(p),
+	'downloader': lambda p: _import('modules.downloader', 'factory')(p),
 
-	'scraper_color_choice': lambda p, pg: _import('modules.dialogs', 'scraper_color_choice')(p['setting']),
-	'scraper_dialog_color_choice': lambda p, pg: _import('modules.dialogs', 'scraper_dialog_color_choice')(p['setting']),
-	'scraper_quality_color_choice': lambda p, pg: _import('modules.dialogs', 'scraper_quality_color_choice')(p['setting']),
-	'set_quality_choice': lambda p, pg: _import('modules.dialogs', 'set_quality_choice')(p['quality_setting']),
-	'results_sorting_choice': lambda p, pg: _import('modules.dialogs', 'results_sorting_choice')(),
-	'results_layout_choice': lambda p, pg: _import('modules.dialogs', 'results_layout_choice')(),
-	'options_menu_choice': lambda p, pg: _import('modules.dialogs', 'options_menu')(p),
-	'meta_language_choice': lambda p, pg: _import('modules.dialogs', 'meta_language_choice')(),
-	'extras_menu_choice': lambda p, pg: _import('modules.dialogs', 'extras_menu')(p),
-	'favorites_choice': lambda p, pg: _import('modules.dialogs', 'favorites_choice')(p),
-	'set_language_filter_choice': lambda p, pg: _import('modules.dialogs', 'set_language_filter_choice')(p['filter_setting']),
-	'extras_lists_choice': lambda p, pg: _import('modules.dialogs', 'extras_lists_choice')(),
-	'random_choice': lambda p, pg: _import('modules.dialogs', 'random_choice')(p['mode'], p),
-	'trakt_manager_choice': lambda p, pg: _import('menus.trakt', 'TraktManager')(p).manage(),
-	'mdbl_manager_choice': lambda p, pg: _import('menus.mdblist', 'MdbListManager')(p).manage(),
-	'tmdb_manager_choice': lambda p, pg: _import('menus.tmdb', 'TmdbManager')(p).manage(),
+	'scraper_color_choice': lambda p: _import('modules.dialogs', 'scraper_color_choice')(p['setting']),
+	'scraper_dialog_color_choice': lambda p: _import('modules.dialogs', 'scraper_dialog_color_choice')(p['setting']),
+	'scraper_quality_color_choice': lambda p: _import('modules.dialogs', 'scraper_quality_color_choice')(p['setting']),
+	'set_quality_choice': lambda p: _import('modules.dialogs', 'set_quality_choice')(p['quality_setting']),
+	'results_sorting_choice': lambda p: _import('modules.dialogs', 'results_sorting_choice')(),
+	'results_layout_choice': lambda p: _import('modules.dialogs', 'results_layout_choice')(),
+	'options_menu_choice': lambda p: _import('modules.dialogs', 'options_menu')(p),
+	'meta_language_choice': lambda p: _import('modules.dialogs', 'meta_language_choice')(),
+	'extras_menu_choice': lambda p: _import('modules.dialogs', 'extras_menu')(p),
+	'favorites_choice': lambda p: _import('modules.dialogs', 'favorites_choice')(p),
+	'set_language_filter_choice': lambda p: _import('modules.dialogs', 'set_language_filter_choice')(p['filter_setting']),
+	'extras_lists_choice': lambda p: _import('modules.dialogs', 'extras_lists_choice')(),
+	'random_choice': lambda p: _import('modules.dialogs', 'random_choice')(p['mode'], p),
+	'trakt_manager_choice': lambda p: _import('menus.trakt', 'TraktManager')(p).manage(),
+	'mdbl_manager_choice': lambda p: _import('menus.mdblist', 'MdbListManager')(p).manage(),
+	'tmdb_manager_choice': lambda p: _import('menus.tmdb', 'TmdbManager')(p).manage(),
 
-	'build_movie_list': lambda p, pg: _import('menus.movies', 'Menu')(p).run(),
-	'build_tvshow_list': lambda p, pg: _import('menus.tvshows', 'Menu')(p).run(),
-	'build_season_list': lambda p, pg: _import('menus.seasons', 'Seasons')(p).run(),
-	'build_episode_list': lambda p, pg: _import('menus.seasons', 'Episodes')(p).run(),
-	'build_in_progress_episode': lambda p, pg: _import('menus.episodes', 'Menu')(p).run(),
-	'build_next_episode': lambda p, pg: _import('menus.episodes', 'Menu')(p).run(),
-	'build_my_calendar': lambda p, pg: _import('menus.episodes', 'Menu')(p).run(),
-	'build_my_anime_calendar': lambda p, pg: _import('menus.episodes', 'Menu')(p).run(),
-	'build_anime_calendar': lambda p, pg: _import('menus.episodes', 'Menu')(p).run(),
-	'build_navigate_to_page': lambda p, pg: _import('modules.dialogs', 'build_navigate_to_page')(p),
-	'build_popular_people': lambda p, pg: _import('menus.people', 'popular_people')(),
+	'build_movie_list': lambda p: _import('menus.movies', 'Menu')(p).run(),
+	'build_tvshow_list': lambda p: _import('menus.tvshows', 'Menu')(p).run(),
+	'build_season_list': lambda p: _import('menus.seasons', 'Seasons')(p).run(),
+	'build_episode_list': lambda p: _import('menus.seasons', 'Episodes')(p).run(),
+	'build_in_progress_episode': lambda p: _import('menus.episodes', 'Menu')(p).run(),
+	'build_next_episode': lambda p: _import('menus.episodes', 'Menu')(p).run(),
+	'build_my_calendar_trakt': lambda p: _import('menus.episodes', 'Menu')(p).run(),
+	'build_my_anime_calendar': lambda p: _import('menus.episodes', 'Menu')(p).run(),
+	'build_my_calendar_mdbl': lambda p: _import('menus.episodes', 'Menu')(p).run(),
+	'build_anime_calendar': lambda p: _import('menus.episodes', 'Menu')(p).run(),
+	'build_navigate_to_page': lambda p: _import('modules.dialogs', 'build_navigate_to_page')(p),
+	'build_popular_people': lambda p: _import('menus.people', 'popular_people')(),
 
-	'open_settings': lambda p, pg: _import('modules.kodi_utils', 'open_settings')(pg('query')),
-	'clean_settings': lambda p, pg: _import('modules.kodi_utils', 'clean_settings')(),
-	'clean_settings_window_properties': lambda p, pg: _import('modules.kodi_utils', 'clean_settings_window_properties')(),
-	'clear_all_cache': lambda p, pg: _import('modules.cache', 'clear_all_cache')(),
-	'clear_cache': lambda p, pg: _import('modules.cache', 'clear_cache')(pg('cache')),
-	'clean_databases': lambda p, pg: _import('modules.cache', 'clean_databases')(),
-	'clear_streams': lambda p, pg: _import('modules.tuneup', 'clear_streams')(),
-	'clear_thumbnails': lambda p, pg: _import('modules.tuneup', 'clear_thumbnails')(),
+	'open_settings': lambda p: _import('modules.kodi_utils', 'open_settings')(p.get('query')),
+	'clean_settings': lambda p: _import('modules.kodi_utils', 'clean_settings')(),
+	'clean_settings_window_properties': lambda p: _import('modules.kodi_utils', 'clean_settings_window_properties')(),
+	'clear_all_cache': lambda p: _import('modules.cache', 'clear_all_cache')(),
+	'clear_cache': lambda p: _import('modules.cache', 'clear_cache')(p.get('cache')),
+	'clean_databases': lambda p: _import('modules.cache', 'clean_databases')(),
+	'clear_streams': lambda p: _import('modules.tuneup', 'clear_streams')(),
+	'clear_thumbnails': lambda p: _import('modules.tuneup', 'clear_thumbnails')(),
 
-	'search_history': lambda p, pg: _import('menus.history', 'search_history')(p),
-	'clear_search_history': lambda p, pg: _import('menus.history', 'clear_search_history')(p),
-	'remove_from_history': lambda p, pg: _import('menus.history', 'remove_from_search_history')(p),
-	'discover_remove_from_history': lambda p, pg: _import('menus.discover', 'remove_from_history')(p),
-	'discover_remove_all_history': lambda p, pg: _import('menus.discover', 'remove_all_history')(p),
-	'get_search_term': lambda p, pg: _import('menus.history', 'get_search_term')(p),
-	'person_search': lambda p, pg: _import('menus.people', 'person_search')(p['query']),
-	'person_data_dialog': lambda p, pg: _import('menus.people', 'person_data_dialog')(p),
+	'search_history': lambda p: _import('menus.history', 'search_history')(p),
+	'clear_search_history': lambda p: _import('menus.history', 'clear_search_history')(p),
+	'remove_from_history': lambda p: _import('menus.history', 'remove_from_search_history')(p),
+	'discover_remove_from_history': lambda p: _import('menus.discover', 'remove_from_history')(p),
+	'discover_remove_all_history': lambda p: _import('menus.discover', 'remove_all_history')(p),
+	'get_search_term': lambda p: _import('menus.history', 'get_search_term')(p),
+	'person_search': lambda p: _import('menus.people', 'person_search')(p['query']),
+	'person_data_dialog': lambda p: _import('menus.people', 'person_data_dialog')(p),
 
-	'mark_as_watched_unwatched_episode': lambda p, pg: _import('caches.watched_cache', 'mark_as_watched_unwatched_episode')(p),
-	'mark_as_watched_unwatched_season': lambda p, pg: _import('caches.watched_cache', 'mark_as_watched_unwatched_season')(p),
-	'mark_as_watched_unwatched_tvshow': lambda p, pg: _import('caches.watched_cache', 'mark_as_watched_unwatched_tvshow')(p),
-	'mark_as_watched_unwatched_movie': lambda p, pg: _import('caches.watched_cache', 'mark_as_watched_unwatched_movie')(p),
-	'watched_unwatched_erase_bookmark': lambda p, pg: _import('caches.watched_cache', 'erase_bookmark')(
-		pg('mediatype'), pg('tmdb_id'), pg('season', ''), pg('episode', ''), pg('refresh', 'false')
+	'mark_as_watched_unwatched_episode': lambda p: _import('caches.watched_cache', 'mark_as_watched_unwatched_episode')(p),
+	'mark_as_watched_unwatched_season': lambda p: _import('caches.watched_cache', 'mark_as_watched_unwatched_season')(p),
+	'mark_as_watched_unwatched_tvshow': lambda p: _import('caches.watched_cache', 'mark_as_watched_unwatched_tvshow')(p),
+	'mark_as_watched_unwatched_movie': lambda p: _import('caches.watched_cache', 'mark_as_watched_unwatched_movie')(p),
+	'watched_unwatched_erase_bookmark': lambda p: _import('caches.watched_cache', 'erase_bookmark')(
+		p.get('mediatype'), p.get('tmdb_id'), p.get('season', ''), p.get('episode', ''), p.get('refresh', 'false')
 	),
 
-	'choose_view': lambda p, pg: _import('modules.kodi_utils', 'choose_view')(p['view_type'], pg('content', '')),
-	'set_view': lambda p, pg: _import('modules.kodi_utils', 'set_view')(p['view_type']),
-	'clear_view': lambda p, pg: _import('modules.kodi_utils', 'clear_view')(p['view_type']),
-	'show_text': lambda p, pg: _import('modules.kodi_utils', 'show_text')(
-		pg('heading'), pg('text'), pg('file'), pg('font_size', 'small'), pg('kodi_log', 'false') == 'true'
+	'choose_view': lambda p: _import('modules.kodi_utils', 'choose_view')(p['view_type'], p.get('content', '')),
+	'set_view': lambda p: _import('modules.kodi_utils', 'set_view')(p['view_type']),
+	'clear_view': lambda p: _import('modules.kodi_utils', 'clear_view')(p['view_type']),
+	'show_text': lambda p: _import('modules.kodi_utils', 'show_text')(
+		p.get('heading'), p.get('text'), p.get('file'), p.get('font_size', 'small'), p.get('kodi_log', 'false') == 'true'
 	),
 
-	'toggle_provider': lambda p, pg: _import('modules.utils', 'toggle_provider')(),
-	'toggle_language_invoker': lambda p, pg: _import('modules.kodi_utils', 'toggle_language_invoker')(),
-	'upload_logfile': lambda p, pg: _import('modules.kodi_utils', 'upload_logfile')(),
-	'myservices': lambda p, pg: _import('modules.myservices', 'authorize')(),
-	'refer_link': lambda p, pg: _import('modules.myservices', 'refer_link')(p['query']),
-	'undesirablesInput': lambda p, pg: _import('caches.undesirables_cache', 'undesirablesInput')(),
-	'undesirablesUserRemove': lambda p, pg: _import('caches.undesirables_cache', 'undesirablesUserRemove')(),
-	'speedTest': lambda p, pg: _import('fenom.speedtest', 'magneto')(),
-	'aioHelp': lambda p, pg: _import('scrapers.aiostreams', 'aio_help')(),
+	'toggle_provider': lambda p: _import('modules.utils', 'toggle_provider')(),
+	'toggle_language_invoker': lambda p: _import('modules.kodi_utils', 'toggle_language_invoker')(),
+	'upload_logfile': lambda p: _import('modules.kodi_utils', 'upload_logfile')(),
+	'myservices': lambda p: _import('modules.myservices', 'authorize')(),
+	'refer_link': lambda p: _import('modules.myservices', 'refer_link')(p['query']),
+	'undesirablesInput': lambda p: _import('caches.undesirables_cache', 'undesirablesInput')(),
+	'undesirablesUserRemove': lambda p: _import('caches.undesirables_cache', 'undesirablesUserRemove')(),
+	'speedTest': lambda p: _import('fenom.speedtest', 'magneto')(),
+	'aioHelp': lambda p: _import('scrapers.aiostreams', 'aio_help')(),
 }
 
 def _import(module_path, attr_name):
@@ -110,10 +111,9 @@ def _run_dynamic_func(module_path, mode, params):
 
 def routing(sys_obj):
 	params = kodi_utils.parsed_query(sys_obj.argv[2])
-	params_get = params.get
-	mode = params_get('mode', 'navigator.main')
+	mode = params.get('mode', 'navigator.main')
 
-	if mode in POV_ROUTES: return POV_ROUTES[mode](params, params_get)
+	if mode in POV_ROUTES: return POV_ROUTES[mode](params)
 
 	if mode.startswith('navigator.'): return _run_class_method('menus.navigator', 'Navigator', params, mode)
 
@@ -172,8 +172,6 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 
 	def run(self):
 		with self:
-			try: aiostreamsReset()
-			except: pass
 			try: databaseMaintenance()
 			except: pass
 			try: viewsSetWindowProperties()
@@ -209,11 +207,6 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 		if method == 'System.OnSleep': set_property('pov_pause_services', 'true')
 		elif method == 'System.OnWake': clear_property('pov_pause_services')
 
-def aiostreamsReset():
-	aio_enabled = get_setting('provider.aiostreams') == 'true'
-	aio_auth = get_setting('aio.username'), get_setting('aio.password')
-	if aio_enabled and not all(aio_auth): set_setting('provider.aiostreams', 'false')
-
 def initializeDatabases():
 	from modules.cache import check_databases
 	logger('POV', 'InitializeDatabases Service Starting')
@@ -235,16 +228,15 @@ def checkSettingsFile():
 	return logger('POV', 'CheckSettingsFile Service Finished')
 
 def databaseMaintenance():
-	from caches.navigator_cache import navigator_cache
-	navigator_cache.rebuild_folders()
 	from caches.meta_cache import MetaCache
-	from modules.cache import clean_databases
 	MetaCache().prefetch()
 	current_time = int(datetime.now().timestamp())
 	next_clean = current_time + 259200 # 3 days
 	due_clean = int(get_setting('database.maintenance.due', '0'))
 	if current_time < due_clean: return
 	logger('POV', 'Database Maintenance Service Starting')
+	kodi_utils.clean_settings(silent=True)
+	from modules.cache import clean_databases
 	clean_databases(current_time, database_check=False, silent=True)
 	set_setting('database.maintenance.due', str(next_clean))
 	return logger('POV', 'Database Maintenance Service Finished')

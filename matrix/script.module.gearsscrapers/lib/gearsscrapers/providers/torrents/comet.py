@@ -107,7 +107,9 @@ class source:
 			imdb = data['imdb']
 			year = data['year']
 			season = data['season']
-			url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, data['episode']))
+			# dead code removed: building a per-episode url here always raised
+			# KeyError('episode') during season-pack searches (data has no
+			# 'episode' key), which silently zeroed sources_packs().
 			files = self._queue.get(timeout=self.timeout + 1)
 			_INFO = re.compile(r'💾.*')
 			undesirables = source_utils.get_undesirables()

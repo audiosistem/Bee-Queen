@@ -51,15 +51,6 @@ class SourceResults(BaseDialog):
 		hide_busy_dialog()
 		return self.selected
 
-	def get_provider_and_path(self, provider):
-		if provider in info_icons_dict: provider_path = info_icons_dict[provider]
-		else: provider, provider_path = 'folders', info_icons_dict['folders']
-		return provider, provider_path
-
-	def get_quality_and_path(self, quality):
-		quality_path = info_icons_dict[quality]
-		return quality, quality_path
-
 	def onAction(self, action):
 		chosen_listitem = self.get_listitem(self.window_id)
 		if action in self.closing_actions:
@@ -76,12 +67,8 @@ class SourceResults(BaseDialog):
 				return self.close()
 #			source = json.loads(chosen_listitem.getProperty('source'))
 			source = self._results[chosen_listitem.getProperty('source')]
-			magnet_url = str(source.get('url')).startswith('magnet')
-			if magnet_url: link = Source(source, self.meta).manual_add_magnet_to_cloud()
-			else: link = Source(source, self.meta).manual_add_nzb_to_cloud()
-			if link is None: return
-			self.selected = ('play', {**source, 'unrestricted_link': link})
-			return self.close()
+			if not str(source.get('url')).startswith('magnet'): return
+			Source(source, self.meta).manual_add_magnet_to_cloud()
 		elif action == self.info_actions:
 			self.open_info_window(chosen_listitem)
 		elif action in self.context_actions:
@@ -112,6 +99,15 @@ class SourceResults(BaseDialog):
 			elif 'aio_add_to_cloud' in choice: Source(source, self.meta).aio_add_to_cloud()
 			else: self.execute_code(choice)
 
+	def get_provider_and_path(self, provider):
+		if provider in info_icons_dict: provider_path = info_icons_dict[provider]
+		else: provider, provider_path = 'folders', info_icons_dict['folders']
+		return provider, provider_path
+
+	def get_quality_and_path(self, quality):
+		quality_path = info_icons_dict[quality]
+		return quality, quality_path
+
 	def make_items(self):
 		def builder():
 			for count, item in enumerate(self.results, 1):
@@ -124,8 +120,8 @@ class SourceResults(BaseDialog):
 					source = get('source')
 					quality = get('quality', 'SD')
 					basic_quality, quality_icon = self.get_quality_and_path(lower(quality))
-					try: name = upper(get('display_name') or 'N/A')
-					except: name = 'N/A'
+					name = get('display_name') or 'N/A'
+					name = upper(name)
 					pack = get('package', 'false') in pack_check
 #					if pack: extra_info = '[B]PACK[/B] | %s' % get('extraInfo', '')
 #					else: extra_info = get('extraInfo', 'N/A')
@@ -133,8 +129,7 @@ class SourceResults(BaseDialog):
 					extra_info = get('extraInfo', '') or 'N/A'
 					extra_info = extra_info.rstrip('| ')
 					if scrape_provider == 'external':
-						if 'usenet' in source: source_site = get('tracker')
-						else: source_site = get('provider')
+						source_site = get('provider')
 						source_site = upper(source_site)
 						provider = upper(get('debrid', source_site))
 						provider_lower = lower(provider)
@@ -167,10 +162,9 @@ class SourceResults(BaseDialog):
 						provider = upper(get('debrid', source_site))
 						provider_lower = lower(provider)
 						provider_icon = self.get_provider_and_path(provider_lower)[1]
+						status = upper(source)
+						if get('cached'): status = cache_str[1] % upper(get('package')) if pack else cache_str[0]
 						if get('library'): status = '[B]LIBRARY[/B]'
-						elif get('cached'):
-							status = cache_str[1] % upper(get('package')) if pack else cache_str[0]
-						else: status = upper(source)
 						if highlight_type == 0:
 							if 'debrid' in get('source'): key = 'torrent_highlight'
 							else: key = 'hoster_highlight'
@@ -231,8 +225,8 @@ class SourceResults(BaseDialog):
 		self.setProperty('tikiskins.scrape_time', '%.2f' % self.meta['scrape_time'])
 
 	def open_info_window(self, chosen_listitem):
-			kwargs = {'item': chosen_listitem, 'fanart': self.fanart}
-			self.open_window(('windows.sources', 'ResultsInfo'), 'sources_info.xml', **kwargs)
+		kwargs = {'item': chosen_listitem, 'fanart': self.fanart}
+		self.open_window(('windows.sources', 'ResultsInfo'), 'sources_info.xml', **kwargs)
 
 	def filter_results(self):
 		choices = [(filter_quality, 'quality'), (filter_provider, 'provider'), (filter_title, 'keyword_title'), (filter_extraInfo, 'extra_info')]
@@ -349,7 +343,7 @@ class ResultsContextMenu(BaseDialog):
 			chosen_listitem = self.get_listitem(self.window_id)
 			self.selected = chosen_listitem.getProperty('tikiskins.context.action')
 			return self.close()
-		elif action in self.context_actions: return self.close()
+		if action in self.context_actions: return self.close()
 
 	def make_menu(self):
 		append = self.item_list.append

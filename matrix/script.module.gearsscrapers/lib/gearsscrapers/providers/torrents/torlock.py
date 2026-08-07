@@ -53,7 +53,11 @@ class source:
 				columns = re.findall(r'<td.*?>(.+?)</td>', row, re.DOTALL)
 				for column in columns:
 					try:
-						linkpart = re.search(r'href\s*=\s*["\']/(.+?)["\']>', column, re.I).group(1).split('/')
+						# torlock2.com's listing rows now render href attributes
+						# unquoted (href=/torrent/...html>) -- confirmed live,
+						# this used to require quotes and silently matched zero
+						# rows once the site dropped them.
+						linkpart = re.search(r'href\s*=\s*["\']?/(.+?)["\']?>', column, re.I).group(1).split('/')
 						linkpart1 = linkpart[1]
 						linkpart2 = linkpart[2]
 						link = '/torrent/'+linkpart1+'/'+linkpart2
@@ -94,13 +98,16 @@ class source:
 				if any(re.search(item, name_lower) for item in ep_strings): return
 
 			try:
-				seeders = int(re.search(r'>SWARM.*?>\s*([0-9]+?)\s*<', result, re.I).group(1).replace(',', ''))
+				# torlock2.com's detail page redesign replaced the old
+				# "SWARM"-labeled table with a rd-tile/rd-stat div layout --
+				# number-then-label for seeders, label-then-value for size.
+				seeders = int(re.search(r'<div class="n">(\d+)</div>\s*<div class="l">Seeders</div>', result, re.I).group(1).replace(',', ''))
 				if self.min_seeders > seeders: return
 			except: seeders = 0
 
 			quality, info = source_utils.get_release_quality(name_info, url)
 			try:
-				size = re.search(r'>\s*SIZE.*?>\s*(\d.*?[a-z]{2})', result, re.I).group(1)
+				size = re.search(r'<div class="k">Size</div>\s*<div class="v">([\d.,]+\s*[A-Za-z]{2,3})', result, re.I).group(1)
 				dsize, isize = source_utils._size(size)
 				info.insert(0, isize)
 			except: dsize = 0

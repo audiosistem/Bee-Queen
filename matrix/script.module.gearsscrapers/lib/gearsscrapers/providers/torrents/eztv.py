@@ -4,6 +4,7 @@
 """
 
 import re
+from json import loads as jsloads
 from urllib.parse import quote_plus, unquote_plus
 from gearsscrapers.modules import client
 from gearsscrapers.modules import source_utils
@@ -37,14 +38,16 @@ class source:
 			url = '%s%s' % (self.base_link, url)
 			# log_utils.log('url = %s' % url)
 			results = client.request(url, timeout=5)
-			if not results: return sources
+			if not results:
+				return self._api_sources(data)
 			rows = client.parseDOM(results, 'tr')
-			if not rows: return sources
+			if not rows:
+				return self._api_sources(data)
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
 		except:
 			source_utils.scraper_error('EZTV')
-			return sources
+			return self._api_sources(data)
 
 		for row in rows:
 			try:
@@ -154,6 +157,69 @@ class source:
 							'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize, 'package': package}
 				if episode_start: item.update({'episode_start': episode_start, 'episode_end': episode_end}) # for partial season packs
 				sources_append(item)
+			except:
+				source_utils.scraper_error('EZTV')
+		return sources
+
+	def _api_sources(self, data):
+		"""Fallback to EZTV's official API when the CF-walled HTML scrape
+		returns nothing or raises. Re-derives everything from data directly
+		rather than accepting it as args, since it can be called from any
+		failure point above."""
+		sources = []
+		if not data: return sources
+		sources_append = sources.append
+		try:
+			title = data['tvshowtitle'].replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ').replace('$', 's')
+			aliases = data['aliases']
+			episode_title = data['title']
+			year = data['year']
+			season, episode = int(data['season']), int(data['episode'])
+			hdlr = 'S%02dE%02d' % (season, episode)
+			imdb = data.get('imdb') or ''
+			imdb_id = imdb[2:] if imdb.lower().startswith('tt') else imdb
+			if not imdb_id: return sources
+
+			url = '%sapi/get-torrents?limit=100&page=1&imdb_id=%s' % (self.base_link, imdb_id)
+			results = client.request(url, timeout=8)
+			if not results: return sources
+			payload = jsloads(results)
+			torrents = payload.get('torrents') or []
+			if not torrents: return sources
+			undesirables = source_utils.get_undesirables()
+			check_foreign_audio = source_utils.check_foreign_audio()
+		except:
+			source_utils.scraper_error('EZTV')
+			return sources
+
+		for t in torrents:
+			try:
+				name = source_utils.clean_name(t.get('title', ''))
+				if not name: continue
+				hash = (t.get('hash') or '').lower()
+				if not hash: continue
+
+				if not source_utils.check_title(title, aliases, name, hdlr, year): continue
+				name_info = source_utils.info_from_name(name, title, year, hdlr, episode_title)
+				if source_utils.remove_lang(name_info, check_foreign_audio): continue
+				if undesirables and source_utils.remove_undesirables(name_info, undesirables): continue
+
+				url = t.get('magnet_url') or ('magnet:?xt=urn:btih:%s&dn=%s' % (hash, name))
+				try:
+					seeders = int(t.get('seeds') or 0)
+					if self.min_seeders > seeders: continue
+				except: seeders = 0
+
+				quality, info = source_utils.get_release_quality(name_info, url)
+				try:
+					size_bytes = int(t.get('size_bytes') or 0)
+					dsize, isize = source_utils._size('%d MB' % (size_bytes // 1_048_576)) if size_bytes else (0, '')
+					if isize: info.insert(0, isize)
+				except: dsize = 0
+				info = ' | '.join(info)
+
+				sources_append({'provider': 'eztv', 'source': 'torrent', 'seeders': seeders, 'hash': hash, 'name': name, 'name_info': name_info,
+								'quality': quality, 'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize})
 			except:
 				source_utils.scraper_error('EZTV')
 		return sources

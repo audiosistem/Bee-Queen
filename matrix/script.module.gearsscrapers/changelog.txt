@@ -1,8 +1,26 @@
-[COLORcyan] VERSION 1.5.0[/COLOR]
+[COLORcyan] VERSION 1.5.2[/COLOR]
 
+ • A new batch of Starfleet-Ported Providers has now been integrated into Gears Scrapers, expanding source coverage and improving search reliability.
 
+ New Providers Added And Fixed.
 
-Settings & Configuration Framework
+ Improvements
+
+• Added 12 new Starfleet-ported providers.
+• Expanded torrent index coverage.
+• Improved source availability across supported content.
+• Increased provider redundancy for more consistent results.
+• All new providers can be individually enabled or disabled from the Gears Scrapers settings.
+
+ Gears Scrapers Improved.
+
+• Enhanced source aggregation across multiple providers for faster, more efficient source collection.
+• Refined and stabilized the Other scraper, improving provider compatibility and delivering more consistent results.
+• Optimized scraper communication and processing pipelines to reduce source retrieval latency.
+• Eliminated redundant processing routines, improving overall scraper efficiency.
+• Improved memory management to reduce resource consumption during intensive scraping operations.
+• Enhanced caching mechanisms to minimize duplicate requests, reduce unnecessary network traffic, and accelerate subsequent searches.
+• General scraper optimizations and backend refinements for improved stability, reliability, and overall performance. Settings & Configuration Framework
 
 • Improved reliability across supported providers.
 • Improved handling of provider responses and timeouts.
@@ -105,14 +123,6 @@ Better overall user experience.
 
 • AIO Scraper has been updated with multiple fixes and enhancements, resolving issues that could affect source retrieval while improving compatibility with supported providers.
 
-• Other Scraper has been fixed and refined, delivering more consistent results and better handling of provider responses.
-
-• Improved source aggregation across multiple providers, allowing results to be collected faster and more efficiently.
-
-• Optimized scraper communication and processing routines to reduce delays when gathering sources.
-
-• Enhanced caching mechanisms to minimize duplicate requests, reduce unnecessary network traffic, and improve overall search speed.
-
 • Reduced scraper initialization and startup times, resulting in faster search launches and improved responsiveness throughout the addon.
 
 • Improved error handling and recovery processes to help prevent scraper failures and ensure more reliable source retrieval.
@@ -148,8 +158,6 @@ This release includes extensive backend optimization work focused on improving r
 [B]Core Framework Improvements[/B]
 
 • Significant internal code cleanup and restructuring completed.
-• Reduced redundant processing throughout scraper execution pipelines.
-• Improved memory management to lower resource usage during intensive scraping sessions.
 • Optimized thread handling and background task execution.
 • Reduced bottlenecks affecting large multi-provider searches.
 • Improved handling of provider initialization and shutdown procedures.

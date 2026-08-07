@@ -1,5 +1,7 @@
 from indexers import mdblist_api, list_helper
+from menus.episodes import Episodes
 from menus.movies import Movies
+from menus.seasons import Seasons
 from menus.tvshows import TVShows
 from modules import kodi_utils
 # logger = kodi_utils.logger
@@ -131,13 +133,22 @@ class MdblistBuilder(list_helper.BaseMediaListBuilder):
 
 	def process_media_types(self, queue, process_list):
 		movies, tvshows = Movies({'id_type': 'trakt_dict'}), TVShows({'id_type': 'trakt_dict'})
+		episodes, seasons = Episodes({'id_type': 'trakt_dict'}), Seasons({'id_type': 'trakt_dict'})
 		for idx, tag in enumerate(process_list, 1):
 			mtype = tag['mediatype']
 			if   mtype == 'movie':
 				queue.put((movies.build_movie_content, idx, {'imdb': tag['imdb_id'], 'tmdb': tag['id']}))
 			elif mtype == 'show':
 				queue.put((tvshows.build_tvshow_content, idx, {'imdb': tag['imdb_id'], 'tmdb': tag['id']}))
-		return {'movies': movies, 'tvshows': tvshows}
+			elif mtype == 'episode':
+				tmdb_id = tag.get('show_id') or tag.get('show_tmdb') or ''
+				ids = {'media_ids': {'tmdb': tmdb_id}, 'season': tag['season_number'], 'episode': tag['episode_number']}
+				queue.put((episodes.build_episode_content, idx, ids))
+			elif mtype == 'season':
+				tmdb_id = tag.get('show_id') or tag.get('show_tmdb') or ''
+				ids = {'tmdb_id': tmdb_id, 'season': tag['season_number'], 'sort': idx}
+				queue.put((seasons.build_season_list, ids))
+		return {'movies': movies, 'tvshows': tvshows, 'episodes': episodes, 'seasons': seasons}
 
 class MdbListManager(list_helper.BaseListManager):
 	setting_key = 'mdblist_user'

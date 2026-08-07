@@ -12,7 +12,7 @@ from gearsscrapers.modules.control import setting as getSetting
 
 class source:
 	timeout = 5
-	priority = 1
+	priority = 2
 	pack_capable = True
 	hasMovies = True
 	hasEpisodes = True
@@ -97,7 +97,9 @@ class source:
 			imdb = data['imdb']
 			year = data['year']
 			season = data['season']
-			url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, data['episode']))
+			# dead code removed: building a per-episode url here always raised
+			# KeyError('episode') during season-pack searches (data has no
+			# 'episode' key), which silently zeroed sources_packs().
 			files = self._queue.get(timeout=self.timeout + 1)
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()

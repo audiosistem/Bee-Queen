@@ -368,7 +368,7 @@ class Trakt:
 		self.secret = get_setting('trakt.client_secret')
 
 	def base_url(self, path):
-		return 'https://api.trakt.tv/%s' % path
+		return 'https://auth.trakt.tv/%s' % path
 
 	def poll_auth(self, data):
 		response = requests.post(self.base_url('oauth/device/token'), json=data, timeout=timeout)
@@ -417,7 +417,7 @@ class Trakt:
 		sleep(500)
 		headers = {'trakt-api-key': self.client_id, 'trakt-api-version': '2', 'Content-Type': 'application/json'}
 		headers.update({'Authorization': 'Bearer %s' % self.token})
-		response = requests.get(self.base_url('users/me'), headers=headers, timeout=timeout)
+		response = requests.get('https://api.trakt.tv/users/me', headers=headers, timeout=timeout)
 		username = response.json()['username']
 		expires = int(data['created_at']) + int(data['expires_in'])
 		refresh, token = data['refresh_token'], data['access_token']
@@ -585,21 +585,4 @@ class TMDBList:
 		set_setting('tmdb.session_id', session_id)
 		set_setting('tmdb.session_account_id', session_account_id)
 		return True
-
-def refer_link(service):
-	url = kodi_utils.addon().getSetting('%s_refer_link' % service)
-	if not url: return notification(32574)
-	expires_in, expires_at = 20, 20 + time.monotonic()
-	try: qr_icon = qr_str % '&data=%s' % quote(url)
-	except: qr_icon = kodi_utils.media_path('%s.png' % service)
-	meta = {**dict.fromkeys(meta_keys.split(), ''), 'poster': qr_icon}
-	detail = nav2_str % url, ''
-	progress_dialog = _make_progress_dialog(meta=meta)
-	for i in range(1, expires_in + 1):
-		if progress_dialog.iscanceled(): break
-		lines = await_str % divmod(expires_at - time.monotonic(), 60), *detail
-		progress = 100 - int(100 * i / expires_in)
-		progress_dialog.update('[CR]'.join(lines), progress)
-		sleep(1000)
-	progress_dialog.close()
 

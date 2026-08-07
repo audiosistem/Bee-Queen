@@ -45,6 +45,21 @@
         <setting id="prowlarr.url" type="text" label="PROWLARR url" subsetting="true" default="" visible="eq(-2,true)" />
 </category>
 
+<category label="Starfleet-Ported Providers">
+    <setting id="provider.zooqle" type="bool" label="Zooqle" default="true" />
+    <setting id="provider.torrentgalaxy" type="bool" label="TorrentGalaxy" default="false" />
+    <setting id="provider.yourbittorrent" type="bool" label="YourBitTorrent" default="false" />
+    <setting id="provider.bitlord" type="bool" label="Bitlord" default="true" />
+    <setting id="provider.magnetdl" type="bool" label="MagnetDL" default="true" />
+    <setting id="provider.torrentdownloads" type="bool" label="TorrentDownloads" default="true" />
+    <setting id="provider.glodls" type="bool" label="Glodls" default="false" />
+    <setting id="provider.extto" type="bool" label="EXTto" default="true" />
+    <setting id="provider.therarbg" type="bool" label="TheRarBG" default="false" />
+    <setting id="provider.torrentfunk" type="bool" label="TorrentFunk" default="false" />
+    <setting id="provider.bittorrented" type="bool" label="BitTorrented" default="true" />
+    <setting id="provider.limetorrents" type="bool" label="LimeTorrents" default="true" />
+</category>
+
 <category label="Filters">
     <setting id="filter.foreign.single.audio" type="bool" label="Remove Foreign Audio" default="false" />
     <setting id="filter.undesirables" type="bool" label="Remove Undesirables" default="false" />

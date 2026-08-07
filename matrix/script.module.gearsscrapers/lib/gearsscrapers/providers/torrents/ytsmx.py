@@ -16,7 +16,7 @@ class source:
 	hasEpisodes = False
 	def __init__(self):
 		self.language = ['en']
-		self.base_link = "https://yts.mx"
+		self.base_links = ["https://yts.lt", "https://yts.am", "https://yts.mx"]
 		self.search_link = '/api/v2/list_movies.json?query_term=%s' #accepts imdb_id as query_term
 		self.min_seeders = 0
 
@@ -30,9 +30,11 @@ class source:
 			hdlr = year = data['year']
 			years = [str(int(year)-1), str(year), str(int(year)+1)]
 			imdb = data['imdb']
-			url = '%s%s' % (self.base_link, self.search_link % imdb)
-			# log_utils.log('url = %s' % url)
-			rjson = client.request(url, timeout=5)
+			rjson = None
+			for base_link in self.base_links:
+				url = '%s%s' % (base_link, self.search_link % imdb)
+				rjson = client.request(url, timeout=5)
+				if rjson: break
 			if not rjson: return sources
 			files = jsloads(rjson)
 			if files.get('status') == 'error' or files.get('data').get('movie_count') == 0: return sources

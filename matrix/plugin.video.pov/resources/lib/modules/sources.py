@@ -142,7 +142,7 @@ class Sources:
 		_total_format = total_format % (int_dialog_hl, '%s')
 		timeout = self.timeout
 		start_time = time.monotonic()
-		end_time = start_time + timeout
+		end_time = start_time + timeout + 1
 		if self.progress_dialog.full_screen: self.progress_dialog.make(self.meta)
 		else: progressDialogBG.create('POV', 'POV loading...')
 		while not monitor.abortRequested() and time.monotonic() <= end_time:
@@ -409,14 +409,16 @@ class ScraperProcessor:
 	def __init__(self, source_instance):
 		self.source = source_instance
 
-	def prepare_internal(self):
+	def prepare_internal(self, prescrape=False):
 		if self.source.active_external and ''.join(self.source.active_internal_scrapers) == 'external': return
+		if not prescrape and 'aiostreams' in self.source.active_internal_scrapers:
+			self.source.active_internal_scrapers = ['aiostreams']
 		active_internal_scrapers = [i for i in self.source.active_internal_scrapers if i not in self.source.remove_scrapers]
 		self.source.internal_scraper_names = active_internal_scrapers[:]
 		self.source.active_internal_scrapers = active_internal_scrapers
 
 	def activate_internal(self, prescrape=False):
-		self.prepare_internal()
+		self.prepare_internal(prescrape)
 		append = self.source.prescrape_scrapers.append if prescrape else self.source.providers.append
 		source_path = kodi_utils.translate_path(kodi_utils.scrapers_path)
 		for loader, module_name, is_pkg in __import__('pkgutil').iter_modules([source_path]):
@@ -466,12 +468,9 @@ class ResultsProcessor:
 		self.source = source_instance
 
 	def process(self, results):
-		if 'aiostreams' in self.source.active_internal_scrapers: return results
-		if self.source.prescrape:
-			self.source.all_scrapers = self.source.active_internal_scrapers
-		else:
-			all_scrapers = {*self.source.active_internal_scrapers, *self.source.remove_scrapers}
-			self.source.all_scrapers = list(all_scrapers)
+		if self.source.prescrape: self.source.all_scrapers = self.source.active_internal_scrapers
+		elif 'aiostreams' in self.source.active_internal_scrapers: return results
+		else: self.source.all_scrapers = list({*self.source.active_internal_scrapers, *self.source.remove_scrapers})
 		if self.source.ignore_scrape_filters:
 			self.source.filters_ignored = True
 			results = self.sort_results(results)
@@ -614,7 +613,7 @@ class ExternalManager:
 		self.processed_internal_scrapers_append = self.processed_internal_scrapers.append
 		self.hostDict, self.sources, self.final_sources = [], [], []
 		self.sleep_time = settings.display_sleep_time()
-		self.timeout = int(self.meta.get('scrape_timeout', '10')) + 1
+		self.timeout = int(self.meta.get('search_info', {}).get('scrape_timeout', '10'))
 		self.int_dialog_highlight = get_setting('int_dialog_highlight', 'dodgerblue')
 		self.ext_dialog_highlight = get_setting('ext_dialog_highlight', 'magenta')
 		self.int_total = total_format % (self.int_dialog_highlight, '%s')
@@ -660,7 +659,7 @@ class ExternalManager:
 
 	def thread_monitor(self, threads, status_line='', debrid=False):
 		len_threads = len(threads)
-		end_time = time.monotonic() + self.timeout
+		end_time = time.monotonic() + self.timeout + 1
 		while not monitor.abortRequested() and time.monotonic() <= end_time:
 			alive_threads = [x.name for x in threads if not x.done()]
 			if not debrid: alive_threads.extend(x.name for x in self.internal_scrapers if x.is_alive())

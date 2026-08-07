@@ -1,5 +1,5 @@
 import requests
-from urllib.parse import urlencode
+from urllib.parse import urlencode, parse_qsl
 from modules.kodi_utils import get_setting, show_text
 from modules import source_utils
 # from modules.kodi_utils import logger
@@ -28,16 +28,17 @@ class source:
 				url = item_get('url')
 				headers = item['requestHeaders'] if item['type'] == 'http' else None
 				if headers: url = '|'.join((url, urlencode(headers)))
+				nzb_url = item_get('nzbUrl') or ''
 				pack = 'season' if item['parsedFile'].get('seasonPack') else 'false'
 				addon = item_get('addon') or ''
 				indexer = item_get('indexer') or ''
 				service = item_get('service') or 'direct'
 				hash = item_get('infoHash') or ''
-				name = clean_file_name(item_get('folderName') or item_get('filename') or title)
+				name = clean_file_name(item_get('folderName') or item_get('filename'))
 				seeders = item_get('seeders') or 0
 				size = round((item_get('size') or 0)/1073741824, 2)
-				name_info, details = self._make_name_info(item['parsedFile'].get)
-				quality, details = get_file_info(name_info=details)
+				name_info = self._make_name_info(item['parsedFile'].get)
+				quality, details = get_file_info(name_info=name_info)
 				sources_append({
 					'direct': True,
 					'source': item_get('type'),
@@ -45,6 +46,7 @@ class source:
 					'hash': hash.lower(),
 					'id': url,
 					'url_dl': url,
+					'nzb_dl': nzb_url,
 					'name': name,
 					'display_name': name,
 					'name_info': name_info,
@@ -91,29 +93,38 @@ class source:
 		self.auth = get_setting('aio.username'), get_setting('aio.password')
 
 	def _make_name_info(self, data_get):
-		resolution = data_get('resolution') or ''
-		quality = data_get('quality') or ''
-		quality = quality.split() if quality else [quality]
+		quality = (data_get('quality') or '').replace(' ', '.')
 		file_info = (
+			data_get('resolution'),
 			data_get('network'),
-			*quality,
+			quality,
 			data_get('encode'),
 			*data_get('visualTags'),
 			*data_get('subtitles'),
 			*data_get('audioTags'),
 			*data_get('audioChannels'),
-			*data_get('languages')
+			*data_get('languages'),
 		)
-		name_info = '.'.join(dict.fromkeys(i for i in file_info if i)).lower()
-		if resolution: file_info = (resolution, *file_info)
-		detail_info = '.'.join(dict.fromkeys(i for i in file_info if i)).lower()
-		return name_info, detail_info
+		return '.'.join(dict.fromkeys(i for i in file_info if i)).lower()
 
 	def resolve_aio_instance(self):
 		setting_id = (
 			'aio.ku_url', 'aio.custom_url', 'aio.viren_url', 'aio.yeb_url', 'aio.midnight_url'
 		)[int(get_setting('aio.instance', '0'))]
 		return get_setting(setting_id)
+
+def unrestrict_link(url):
+	url, *headers = url.rsplit('|', 1)
+	try: headers = dict(parse_qsl(*headers))
+	except: headers = dict()
+	try: # some servers do not accept HEAD requests, must use GET + stream
+		with requests.get(url, headers=headers, stream=True, timeout=30) as response:
+			response.raise_for_status() # 3xx passes, 4xx/5xx raises
+		if headers: return '|'.join((response.url, urlencode(headers)))
+		return response.url
+	except requests.exceptions.RequestException as e:
+		from modules.kodi_utils import logger
+		logger('unrestrict_link error', f"{type(e)}: {e}")
 
 def aio_help():
 	return show_text('AIOStreams', text=(
@@ -134,7 +145,7 @@ A custom url may be entered, but is not "supported" (YMMV).
 
 Any result that contains the type 'p2p' are skipped.
 
-Ensure Settings/Results/Scraper Timeout is as long as longest AIOStreams timeout.
+Ensure Settings/Sources/Scraper Timeout is as long as longest AIOStreams timeout.
 
 Create an account and copy/paste your UUID/password into the
 Username/Password settings.  Be sure to select the correct provider,
