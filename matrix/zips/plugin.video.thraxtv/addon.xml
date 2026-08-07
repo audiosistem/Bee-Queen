@@ -1,4 +1,4 @@
-<addon id="plugin.video.thraxtv" name="ThraxTV" version="2.0.54" provider-name="derzis">
+<addon id="plugin.video.thraxtv" name="ThraxTV" version="2.0.55" provider-name="derzis">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests"/>
@@ -22,6 +22,11 @@
             and multi-provider playback with automatic fallback.
         </description>
         <news>
+            v2.0.55 - Reparată redarea surselor TVZoneHD. Site-ul și-a schimbat fluxul, iar
+                      URL-ul de la CDN se termină în ".htm", nu ".m3u8", deși conținutul e HLS:
+                      Kodi ghicea containerul din extensie și nu deschidea fluxul. Acum primește
+                      explicit mimetype-ul. Nu prin inputstream.adaptive — nici segmentele n-au
+                      extensie, deci ISA cădea pe container greșit și pornea doar sunetul.
             v2.0.54 - Eliminată secțiunea World Cup 2026 (competiția s-a încheiat):
                       meniul, listele de meciuri/canale și apelul către /wc2026/schedule.
                       Endpointul a fost scos și de pe server.

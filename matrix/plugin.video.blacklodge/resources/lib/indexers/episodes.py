@@ -446,8 +446,8 @@ class episodes:
         #self.mycalendar_link = 'https://api.trakt.tv/calendars/my/shows/date[29]/60/'
         self.mycalendar_link = 'https://api.trakt.tv/calendars/my/shows/date[30]/31/' #go back 30 and show all shows aired until tomorrow
         self.trakthistory_link = 'https://api.trakt.tv/users/me/history/shows?limit=50&page=1'
-        self.progresswatched_link = 'https://api.trakt.tv/users/me/watched/shows?watched'
-        self.progressaired_link = 'https://api.trakt.tv/users/me/watched/shows?aired'
+        self.progresswatched_link = 'https://api.trakt.tv/users/me/watched/shows?page=1&limit=100&extended=progress|watched'
+        self.progressaired_link = 'https://api.trakt.tv/users/me/watched/shows?page=1&limit=100&extended=progress|aired'
         self.hiddenprogress_link = 'https://api.trakt.tv/users/hidden/progress_watched?limit=1000&type=show'
         self.traktondeck_link = 'https://api.trakt.tv/sync/playback/episodes?limit=50'
         self.traktlists_link = 'https://api.trakt.tv/users/me/lists'
@@ -737,12 +737,17 @@ class episodes:
 
 
     def trakt_progress_list(self, url):
+        url, query = url.split('|')
+        items = []
+
         try:
-            query = url.split('?')[1]
-            url = url.split('?')[0] + '?extended=full'
-            result = trakt.getTrakt(url)
-            #log_utils.log('prog_res: ' + str(result))
-            items = []
+            activity = trakt.getWatchedActivity()
+            if activity > cache.timeout(trakt.getPaginatedResponse, url):
+                result = cache.get(trakt.getPaginatedResponse, 0, url)
+            else:
+                result = cache.get(trakt.getPaginatedResponse, 360, url)
+            if not result or not isinstance(result, list):
+                return
         except:
             return
 
@@ -768,6 +773,9 @@ class episodes:
                 year = re.sub('[^0-9]', '', str(year))
                 if int(year) > int(self.datetime.strftime('%Y')): raise Exception()
 
+                status = item['show'].get('status')
+                if not status: status = '0'
+
                 imdb = item['show']['ids']['imdb']
                 if not imdb: imdb = '0'
 
@@ -779,29 +787,14 @@ class episodes:
                 if not tmdb: tmdb = '0'
                 else: tmdb = str(tmdb)
 
-                studio = item['show']['network']
-                if not studio: studio = '0'
-
-                duration = item['show']['runtime']
-                if not duration: duration = '0'
-
-                mpaa = item['show']['certification']
-                if not mpaa: mpaa = '0'
-
-                status = item['show']['status']
-                if not status: status = '0'
-
-                genre = item['show']['genres']
-                if not genre: genre = '0'
-                else: genre = ' / '.join(genre)
-
                 last_watched = item['last_watched_at']
                 if last_watched == None or last_watched == '': last_watched = '0'
                 else: last_watched = re.sub('[^0-9]+', '', last_watched)
 
-                items.append({'imdb': imdb, 'tvdb': tvdb, 'tmdb': tmdb, 'tvshowtitle': tvshowtitle, 'year': year, 'studio': studio, 'duration': duration,
-                              'mpaa': mpaa, 'status': status, 'genre': genre, 'snum': season, 'enum': episode, 'last_watched': last_watched})
+                items.append({'imdb': imdb, 'tvdb': tvdb, 'tmdb': tmdb, 'tvshowtitle': tvshowtitle, 'year': year, 'snum': season, 'enum': episode,
+                              'status': status, 'last_watched': last_watched})
             except:
+                #log_utils.log('TProgress0', 1)
                 pass
 
         try:
@@ -850,6 +843,7 @@ class episodes:
                 r.raise_for_status()
                 r.encoding = 'utf-8'
                 item = r.json() if six.PY3 else utils.json_loads_as_str(r.text)
+                #log_utils.log(item)
 
                 try: premiered = item['air_date']
                 except: premiered = ''
@@ -887,6 +881,8 @@ class episodes:
                 except: plot = ''
                 if not plot: plot = '0'
 
+                duration = str(item.get('runtime') or 0)
+
                 try:
                     r_crew = item['crew']
                     director = [d for d in r_crew if d['job'] == 'Director']
@@ -914,8 +910,25 @@ class episodes:
                 if not tvdb == '0':
                     poster, fanart, banner, landscape, clearlogo, clearart = self.fanart_tv_art(tvdb)
 
-                self.list.append({'title': title, 'season': season, 'episode': episode, 'tvshowtitle': i['tvshowtitle'], 'year': i['year'], 'premiered': premiered, 'studio': i['studio'],
-                                  'genre': i['genre'], 'status': i['status'], 'duration': i['duration'], 'rating': rating, 'votes': votes, 'mpaa': i['mpaa'], 'director': director, 'writer': writer,
+                if poster == '0':
+                    try:
+                        url = seasons().tmdb_show_link % (tmdb, self.lang)
+                        r = requests.get(url, timeout=20)
+                        r.raise_for_status()
+                        r.encoding = 'utf-8'
+                        tmdb_item = r.json() if six.PY3 else utils.json_loads_as_str(r.text)
+                        try: poster_path = tmdb_item['poster_path']
+                        except: poster_path = ''
+                        if not poster_path: poster = '0'
+                        else: poster = self.tmdb_img_link % ('500', poster_path)
+                        try: backdrop_path = tmdb_item['backdrop_path']
+                        except: backdrop_path = ''
+                        if backdrop_path: fanart = self.tmdb_img_link % ('1280', backdrop_path)
+                    except:
+                        pass
+
+                self.list.append({'title': title, 'season': season, 'episode': episode, 'tvshowtitle': i['tvshowtitle'], 'year': i['year'], 'premiered': premiered,
+                                  'duration': duration, 'rating': rating, 'votes': votes, 'director': director, 'writer': writer,
                                   'castwiththumb': castwiththumb, 'plot': plot, 'poster': poster, 'banner': banner, 'fanart': fanart, 'thumb': thumb, 'clearlogo': clearlogo, 'clearart': clearart,
                                   'landscape': landscape, 'snum': i['snum'], 'enum': i['enum'], 'action': 'episodes', 'unaired': unaired, 'last_watched': i['last_watched'],
                                   'imdb': imdb, 'imdbnumber': imdb, 'tvdb': tvdb, 'tmdb': tmdb, 'list_prov': 'trakt', 'mediatype': 'episode'}) # '_sort_key': max(i['last_watched'], premiered)
@@ -1022,6 +1035,23 @@ class episodes:
 
                 if not tvdb == '0':
                     poster, fanart, banner, landscape, clearlogo, clearart = self.fanart_tv_art(tvdb)
+
+                if poster == '0':
+                    try:
+                        url = seasons().tmdb_show_link % (tmdb, self.lang)
+                        r = requests.get(url, timeout=20)
+                        r.raise_for_status()
+                        r.encoding = 'utf-8'
+                        tmdb_item = r.json() if six.PY3 else utils.json_loads_as_str(r.text)
+                        try: poster_path = tmdb_item['poster_path']
+                        except: poster_path = ''
+                        if not poster_path: poster = '0'
+                        else: poster = self.tmdb_img_link % ('500', poster_path)
+                        try: backdrop_path = tmdb_item['backdrop_path']
+                        except: backdrop_path = ''
+                        if backdrop_path: fanart = self.tmdb_img_link % ('1280', backdrop_path)
+                    except:
+                        pass
 
                 self.list.append({'title': title, 'season': season, 'episode': episode, 'tvshowtitle': tvshowtitle, 'year': year, 'premiered': premiered, 'status': status, 'studio': studio, 'genre': genre,
                                   'duration': duration, 'rating': rating, 'votes': votes, 'mpaa': mpaa, 'director': director, 'writer': writer, 'castwiththumb': castwiththumb, 'plot': plot,

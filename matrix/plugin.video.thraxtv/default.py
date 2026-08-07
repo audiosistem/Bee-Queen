@@ -191,6 +191,13 @@ def _cat_name(cat: dict) -> str:
 # ─────────── inputstream.adaptive ───────────────────────────────
 
 _HLS_PROVIDERS  = {"primaplay", "sultan", "antenaplay", "peertube", "dinbox", "canale-tv"}
+
+# HLS care merge doar prin demuxerul ffmpeg, nu prin inputstream.adaptive: la
+# tvzonehd nici manifestul („.htm"), nici segmentele n-au extensie recunoscută,
+# iar ISA nu poate deduce containerul („Cannot detect container type from media
+# url" → fallback TS greșit). ffmpeg citește conținutul, deci se descurcă — are
+# nevoie doar de mimetype, fiindcă altfel Kodi ghicește după extensie.
+_HLS_MIME_ONLY  = {"tvzonehd"}
 _DASH_PROVIDERS = {"ytdlp"}          # MPEG-DASH MPD generat server-side
 
 def _apply_inputstream_for_provider(li, url, provider=""):
@@ -209,6 +216,15 @@ def _apply_inputstream_for_provider(li, url, provider=""):
                 li.setPath(clean_url)
                 li.setProperty("inputstream.adaptive.manifest_headers", header_str)
                 li.setProperty("inputstream.adaptive.stream_headers", header_str)
+        except Exception:
+            pass
+
+    elif prov in _HLS_MIME_ONLY:
+        try:
+            li.setMimeType("application/x-mpegURL")
+            # Lăsăm Kodi să citească tipul real de la server: fluxul e HEVC în TS,
+            # iar din URL nu se poate deduce nici containerul, nici codecul.
+            li.setContentLookup(True)
         except Exception:
             pass
 

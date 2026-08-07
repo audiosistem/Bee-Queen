@@ -9,7 +9,7 @@ from resources.lib.modules import cache
 from resources.lib.modules import control
 from resources.lib.modules import source_utils
 from resources.lib.modules import log_utils
-
+from base64 import b64decode
 
 api_url = 'https://api.opensubtitles.com/api/v1/'
 headers = {'User-Agent': 'Whitelodge v%s' % control.addonInfo('version'), 'Content-Type': 'application/json', 'Accept': 'application/json', 'Api-Key': api_keys.opensubtitles_key}
@@ -142,9 +142,31 @@ def getSubs(imdb, season, episode):
 
         if not link:
             if result['remaining'] <= 0:
-                control.sleep(1000)
-                control.infoDialog('Next quota reset in %s' % result['reset_time'], heading='Max subtitles downloads reached', time=5000)
-            raise Exception()
+                pre_keys = [  {'User-Agent': 'z4CMuEjdg4WanVHbwBSak92Sg02bj5yclxGdpRnY1NnblB3T', 'Api-Key': 'YDaQ9mYhpmVipVM1h1VplkdYNnSIl0dYBVMzF1dy8Wc'},
+                                {'User-Agent': 'AjLw4CMukTMgMXZsRXa0JWdT5WZw9ULul2Z1xGUt4WamlHbsVmS', 'Api-Key': 'QFbEV2QENGUWZkROlEMNR1blNXetBlMnF0bHdFTDV1Z'},
+                                {'User-Agent': 'AjLyEjLzIjdgIXZ5FGbQ10U', 'Api-Key': '00dmNDNRNnZSpkSvh1NYJncJZTdKtUduRlWzU0YYRma'},
+                                {'User-Agent': 'zV3bpJXYmVmb', 'Api-Key': 'gVcMx0NWRjTmVERR5GetdzM1YUbWZme5wUSS1ET3cET'},
+                                {'User-Agent': 'UnQvt0R', 'Api-Key': 'klRBV3QPFHMiV0R2l0aHFUUrZWbqdFWRFEMOlXMwJWV'}]
+                altheaders = []
+                for _x in pre_keys:
+                    ua = b64decode(_x.get('User-Agent')[::-1]+'==').decode('utf-8')
+                    api = b64decode(_x.get('Api-Key')[::-1]+'==').decode('utf-8')
+                    altheaders.append({'User-Agent': ua, 'Api-Key': api})
+
+                for hdr in altheaders:
+                    session.headers.update(hdr)
+                    result = session.post(api_url + 'download', json=data).json()
+                    link = result.get('link')
+                    if link:
+                        # control.infoDialog(hdr.get('User-Agent'), heading='OS User agent', time=5000)
+                        break
+                    else:
+                        continue
+                if not link:
+                    if result['remaining'] <= 0:
+                        control.sleep(1000)
+                        control.infoDialog('Next quota reset in %s' % result['reset_time'], heading='Max subtitles downloads reached', time=5000)
+                    raise Exception()
 
         content = session.get(link)
         content.raise_for_status()
@@ -167,7 +189,6 @@ def getSubs(imdb, season, episode):
         log_utils.log('subtitles get fail', 1)
         pass
 
-'''
 def getSubsLegacy(imdb, season, episode):
     import re, base64, codecs, gzip
     import six
@@ -295,4 +316,3 @@ def getSubsLegacy(imdb, season, episode):
     except:
         log_utils.log('subtitles get fail', 1)
         pass
-'''

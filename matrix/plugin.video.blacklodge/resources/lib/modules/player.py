@@ -23,7 +23,7 @@ class player(xbmc.Player):
 
     def run(self, title, year, season, episode, imdb, tmdb, url, meta):
         try:
-            control.sleep(200)
+            control.sleep(1000)
 
             self.totalTime = 0 ; self.currentTime = 0
             self.content = 'movie' if season == None or episode == None else 'episode'

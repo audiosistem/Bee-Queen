@@ -258,6 +258,8 @@ class sources:
 
         control.content(syshandle, 'files')
         control.directory(syshandle, cacheToDisc=True)
+        from resources.lib.modules import views
+        views.setView('files', {'skin.estuary': 55, 'skin.confluence': 500})
 
 
     def playItem(self, title, source, browse=False):
@@ -317,7 +319,7 @@ class sources:
                     break
 
             items = json.loads(source)
-            items = [i for i in items+nxt+prev][:40]
+            items = [i for i in items+nxt+prev][:200]
 
             header = control.addonInfo('name') + ': Resolving...'
 
@@ -1036,6 +1038,9 @@ class sources:
                 else:
                     filter += [dict(i.items()) for i in torrentSources]
             filter += [dict(list(i.items()) + [('debrid', d.name)]) for i in self.sources if i['source'] in valid_hoster and 'magnet:' not in i['url']]
+
+        if size_sort == 'true':
+            filter = sorted(filter, key=lambda k: k.get('size', 0.0), reverse=True)
 
         filter += [i for i in self.sources if not i['source'].lower() in self.hostprDict and i['debridonly'] == False]
 
