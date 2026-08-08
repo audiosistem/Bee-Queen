@@ -3,7 +3,7 @@
 import re
 import requests
 from blackscrapers import parse_qs, urlencode, quote_plus
-from blackscrapers.modules import source_utils
+from blackscrapers.modules import cleantitle, source_utils
 
 from blackscrapers import custom_base_link
 custom_base = custom_base_link(__name__)
@@ -76,42 +76,26 @@ class source:
                     try:
                         parts = file['title']
                         name_part, info_part = parts.split('\n', 1)
-                        name = name_part.strip()
+                        name = cleantitle.get_title(name_part)
                         url = file['url']
                         if 'video-downloads.googleusercontent' in url:
                             continue
                         url = url.replace('pixeldrain.dev/u/', 'pixeldrain.dev/api/file/')
                         try:
-                            dsize = file['behaviorHints']['videoSize']
-                            isize = source_utils.convert_size(dsize)
+                            size_bytes = file['behaviorHints']['videoSize']
+                            dsize, isize = source_utils._size(size_bytes, is_bytes=True)
                         except:
                             try:
-                                size_info = file.get('size','')
-                                if size_info:
-                                    rsize = re.search(r'([\d.]+)\s*(KB|MB|GB|TB)', size_info, re.IGNORECASE)
-                                else:
-                                    rsize = re.search(r'([\d.]+)\s*(KB|MB|GB|TB)', info_part, re.IGNORECASE)
-                                value = float(rsize.group(1))
-                                unit = rsize.group(2).upper()
-                                multipliers = {
-                                    'KB': 1024,
-                                    'MB': 1024 ** 2,
-                                    'GB': 1024 ** 3,
-                                    'TB': 1024 ** 4,
-                                }
-
-                                size_bytes = int(value * multipliers[unit])
-                                dsize = size_bytes
-                                isize = source_utils.convert_size(dsize)
+                                size_info = file.get('size', info_part)
+                                dsize, isize = source_utils._size(size_info)
                             except:
-                                dsize = 0
-                                isize = ''
+                                dsize, isize = 0, ''
                         quality, info = source_utils.get_release_quality(name)
                         info.insert(0, isize)
                         info = ' | '.join(info)
                         # if quality == 'cam' and not 'tvshowtitle' in data: continue
-                        sources.append({'source': 'direct', 'quality': quality, 'language': 'en', 'url': url, 'info': info, 
-                                'direct': True, 'debridonly': False, 'name': name, 'size': dsize})
+                        sources.append({'source': 'direct', 'quality': quality, 'language': 'en', 'url': url, 'info': info,
+                                        'direct': True, 'debridonly': False, 'name': name, 'size': dsize})
                     except:
                         pass
 

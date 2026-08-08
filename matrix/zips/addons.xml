@@ -3469,7 +3469,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="script.module.blackscrapers" name="Blackscrapers Module" version="1.00.37g" provider-name="janedoe">
+</addon><addon id="script.module.blackscrapers" name="Blackscrapers Module" version="1.00.41g2" provider-name="janedoe">
     <requires>
         <import addon="script.module.beautifulsoup4" />
         <import addon="script.module.requests" />

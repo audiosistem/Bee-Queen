@@ -2,8 +2,8 @@
 
 import re
 import requests
-from blackscrapers import parse_qs, urlencode, quote_plus
-from blackscrapers.modules import source_utils
+from blackscrapers import parse_qs, urlencode, quote_plus, urlparse
+from blackscrapers.modules import cleantitle, source_utils
 
 from blackscrapers import custom_base_link
 custom_base = custom_base_link(__name__)
@@ -13,7 +13,7 @@ class source:
     def __init__(self):
         self.priority = 1
         self.language = ['en', 'el']
-        self.domains = ['sootiofortheweebs.midnightignite.me']
+        self.domains = ['sooti.click', 'sooti.info', 'sootiofortheweebs.midnightignite.me']
         self.base_link = custom_base or 'https://sootiofortheweebs.midnightignite.me'
         self.base_params = '/%7B%22DebridServices%22%3A%5B%7B%22provider%22%3A%22httpstreaming%22%2C%22http4khdhub%22%3Atrue%2C%22httpHDHub4u%22%3Atrue%2C%22httpUHDMovies%22%3Atrue%2C%22httpMoviesDrive%22%3Atrue%2C%22httpMKVCinemas%22%3Atrue%7D%5D%2C%22Languages%22%3A%5B%5D%2C%22Scrapers%22%3A%5B%5D%2C%22IndexerScrapers%22%3A%5B%22stremthru%22%5D%2C%22minSize%22%3A0%2C%22maxSize%22%3A200%2C%22ShowCatalog%22%3Atrue%2C%22DebridProvider%22%3A%22httpstreaming%22%7D'
         self.movieSearch_link = '/stream/movie/%s.json'
@@ -61,15 +61,22 @@ class source:
                 year = data['year']
                 imdb = data['imdb']
                 self.base_link += self.base_params
-                if 'tvshowtitle' in data:
-                    season = data['season']
-                    episode = data['episode']
-                    hdlr = 'S%02dE%02d' % (int(season), int(episode))
-                    url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, episode))
-                else:
-                    url = '%s%s' % (self.base_link, self.movieSearch_link % imdb)
-                    hdlr = year
-                files = requests.get(url, timeout=30).json()['streams']
+                for domain in self.domains:
+                    self.base_link = self.base_link.replace(urlparse(self.base_link).netloc, domain)
+                    if 'tvshowtitle' in data:
+                        season = data['season']
+                        episode = data['episode']
+                        hdlr = 'S%02dE%02d' % (int(season), int(episode))
+                        url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, episode))
+                    else:
+                        url = '%s%s' % (self.base_link, self.movieSearch_link % imdb)
+                        hdlr = year
+                    try:
+                        files = requests.get(url, timeout=10).json()['streams']
+                        if files:
+                            break
+                    except:
+                        continue
             except:
                 return sources
 
@@ -79,36 +86,20 @@ class source:
                         parts = file['title'].replace('🇮🇳','').replace('🇬🇧','').replace('🇺🇸','').replace('🌐','')
                         name_part, info_part = parts.split('\n', 1)
                         host = info_part.split('|')[1].strip()
-                        name = name_part.strip()
+                        name = cleantitle.get_title(name_part)
                         url = file['url']
                         if 'video-downloads.googleusercontent' in url:
                             continue
                         url = url.replace('pixeldrain.dev/u/', 'pixeldrain.dev/api/file/')
                         try:
-                            dsize = file['behaviorHints']['videoSize']
-                            isize = source_utils.convert_size(dsize)
+                            size_bytes = file['behaviorHints']['videoSize']
+                            dsize, isize = source_utils._size(size_bytes, is_bytes=True)
                         except:
                             try:
-                                size_info = file.get('size','')
-                                if size_info:
-                                    rsize = re.search(r'([\d.]+)\s*(KB|MB|GB|TB)', size_info, re.IGNORECASE)
-                                else:
-                                    rsize = re.search(r'([\d.]+)\s*(KB|MB|GB|TB)', info_part, re.IGNORECASE)
-                                value = float(rsize.group(1))
-                                unit = rsize.group(2).upper()
-                                multipliers = {
-                                    'KB': 1024,
-                                    'MB': 1024 ** 2,
-                                    'GB': 1024 ** 3,
-                                    'TB': 1024 ** 4,
-                                }
-
-                                size_bytes = int(value * multipliers[unit])
-                                dsize = size_bytes
-                                isize = source_utils.convert_size(dsize)
+                                size_info = file.get('size', info_part)
+                                dsize, isize = source_utils._size(size_info)
                             except:
-                                dsize = 0
-                                isize = ''
+                                dsize, isize = 0, ''
                         quality, info = source_utils.get_release_quality(name)
                         try:
                             quality = file['resolution']
@@ -117,8 +108,8 @@ class source:
                         info.insert(0, isize)
                         info = ' | '.join(info)
                         # if quality == 'cam' and not 'tvshowtitle' in data: continue
-                        sources.append({'source': host, 'quality': quality, 'language': 'en', 'url': url, 'info': info, 
-                                'direct': True, 'debridonly': False, 'name': name, 'size': dsize})
+                        sources.append({'source': host, 'quality': quality, 'language': 'en', 'url': url, 'info': info,
+                                        'direct': True, 'debridonly': False, 'name': name, 'size': dsize})
                     except:
                         pass
 
