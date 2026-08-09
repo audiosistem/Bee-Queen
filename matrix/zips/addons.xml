@@ -2299,68 +2299,68 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
 		</assets>
     </extension>
-</addon><addon id="repository.cralin" name="cralin's Repository" version="1.0.11" provider-name="cralin">
+</addon><addon id="repository.cralin" name="cralin's Repository" version="1.0.13" provider-name="cralin">
 	<extension point="xbmc.addon.repository" name="cralin's Repository">
 		<dir>
 			<hashes>false</hashes>
-			<info compressed="false">http://188.245.162.204/kodi/addons/repository.cralin/addons.xml</info>
-			<checksum>http://188.245.162.204/kodi/addons/repository.cralin/addons.xml.md5</checksum>
-			<datadir zip="true">http://188.245.162.204/kodi/addons/repository.cralin/.packages</datadir>
+			<info compressed="false">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/repository.cralin/addons.xml</info>
+			<checksum>https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/repository.cralin/addons.xml.md5</checksum>
+			<datadir zip="true">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/repository.cralin/.packages</datadir>
 		</dir>
 		<dir>
 			<hashes>false</hashes>
-			<info compressed="false">http://188.245.162.204/kodi/addons/subtitles.subsroteam/addons.xml</info>
-			<checksum>http://188.245.162.204/kodi/addons/subtitles.subsroteam/addons.xml.md5</checksum>
-			<datadir zip="true">http://188.245.162.204/kodi/addons/subtitles.subsroteam/.packages</datadir>
+			<info compressed="false">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/subtitles.subsroteam/addons.xml</info>
+			<checksum>https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/subtitles.subsroteam/addons.xml.md5</checksum>
+			<datadir zip="true">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/subtitles.subsroteam/.packages</datadir>
 		</dir>
 
 		<dir minversion="20.0.0" maxversion="20.80.00">
 			<hashes>false</hashes>
-			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_20/addons.xml</info>
-			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_20/addons.xml.md5</checksum>
-			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_20/.packages</datadir>
+			<info compressed="false">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_20/addons.xml</info>
+			<checksum>https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_20/addons.xml.md5</checksum>
+			<datadir zip="true">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_20/.packages</datadir>
 		</dir>
 
 		<dir minversion="21.0.0" maxversion="21.80.00">
 			<hashes>false</hashes>
-			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_21/addons.xml</info>
-			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_21/addons.xml.md5</checksum>
-			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_21/.packages</datadir>
+			<info compressed="false">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_21/addons.xml</info>
+			<checksum>https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_21/addons.xml.md5</checksum>
+			<datadir zip="true">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_21/.packages</datadir>
 		</dir>
 
 		<dir minversion="21.90.00" maxversion="22.80.00">
 			<hashes>false</hashes>
-			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_22/addons.xml</info>
-			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_22/addons.xml.md5</checksum>
-			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_22/.packages</datadir>
+			<info compressed="false">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_22/addons.xml</info>
+			<checksum>https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_22/addons.xml.md5</checksum>
+			<datadir zip="true">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_22/.packages</datadir>
 		</dir>
 
 		<dir minversion="22.90.00" maxversion="23.80.00">
 			<hashes>false</hashes>
-			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_23/addons.xml</info>
-			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_23/addons.xml.md5</checksum>
-			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_23/.packages</datadir>
+			<info compressed="false">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_23/addons.xml</info>
+			<checksum>https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_23/addons.xml.md5</checksum>
+			<datadir zip="true">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_23/.packages</datadir>
 		</dir>
 
 		<dir minversion="23.90.00" maxversion="24.80.00">
 			<hashes>false</hashes>
-			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_24/addons.xml</info>
-			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_24/addons.xml.md5</checksum>
-			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_24/.packages</datadir>
+			<info compressed="false">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_24/addons.xml</info>
+			<checksum>https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_24/addons.xml.md5</checksum>
+			<datadir zip="true">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_24/.packages</datadir>
 		</dir>
 
 		<dir minversion="24.90.00" maxversion="25.80.00">
 			<hashes>false</hashes>
-			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_25/addons.xml</info>
-			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_25/addons.xml.md5</checksum>
-			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_25/.packages</datadir>
+			<info compressed="false">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_25/addons.xml</info>
+			<checksum>https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_25/addons.xml.md5</checksum>
+			<datadir zip="true">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_25/.packages</datadir>
 		</dir>
 
 		<dir minversion="25.90.00" maxversion="26.80.00">
 			<hashes>false</hashes>
-			<info compressed="false">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_26/addons.xml</info>
-			<checksum>http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_26/addons.xml.md5</checksum>
-			<datadir zip="true">http://188.245.162.204/kodi/addons/TVOnline.ro/Kodi_26/.packages</datadir>
+			<info compressed="false">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_26/addons.xml</info>
+			<checksum>https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_26/addons.xml.md5</checksum>
+			<datadir zip="true">https://sos-de-muc-1.exo.io/cralins-public-kodi-repository/addons/TVOnline.ro/Kodi_26/.packages</datadir>
 		</dir>
 
 	</extension>
