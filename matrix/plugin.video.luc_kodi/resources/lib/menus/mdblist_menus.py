@@ -263,6 +263,72 @@ class MDBListContinueEpisodes:
 
 
 # ============================================================
+# CALENDAR — upcoming/recent episodes + movie releases
+# (equivalente al Calendar de mdblist.com, construido con /upnext
+#  y Media Info Batch porque la API no expone /calendar)
+# ============================================================
+class MDBListCalendar:
+    def episodes(self, mode='upcoming'):
+        try:
+            from resources.lib.menus.episodes import Episodes
+            from resources.lib.modules.mdblist import getCalendarEpisodes
+            ep = Episodes()
+            raw = cache.get(getCalendarEpisodes, 1, mode)
+            # REGLA reuselanguageinvoker: aunque la lista venga vacía hay que
+            # cargar un directorio vacío (episodeDirectory ya notifica "Nothing
+            # Found" y llama a endOfDirectory). Un return temprano deja la
+            # CGUIMediaWindow en "updating in progress" y al retroceder Kodi
+            # se cierra en nativo (visto en kodi.log de la tablet, ago-2026).
+            if raw:
+                enriched = cache.get(
+                    ep.trakt_episodes_list, 0,
+                    ep.traktunfinished_link, ep.trakt_user, ep.lang,
+                    raw,  # items precargados — no llama a Trakt
+                )
+                ep.list = enriched or raw
+                # los hilos del enriquecimiento pierden el orden: reordenar por fecha
+                reverse = (mode != 'upcoming')
+                ep.list = sorted(ep.list, key=lambda k: k.get('sort_date', ''), reverse=reverse)
+            else:
+                ep.list = []
+            ep.episodeDirectory(ep.list, unfinished=False, next=False)
+        except Exception:
+            log_utils.error()
+            self._empty_directory()
+
+    def movies(self):
+        try:
+            from resources.lib.menus.movies import Movies
+            from resources.lib.modules.mdblist import getCalendarMovies
+            mv = Movies()
+            raw = cache.get(getCalendarMovies, 6)
+            # misma regla que en episodes(): directorio vacío, nunca return temprano
+            if raw:
+                mv.list = raw
+                mv.worker()  # enriquecimiento TMDB (metadatos + arte)
+                # worker() puede reordenar/rellenar: reimponer orden por fecha de estreno
+                mv.list = sorted(mv.list, key=lambda k: k.get('mdb_calendar_date', ''))
+            else:
+                mv.list = []
+            mv.movieDirectory(mv.list, next=False)
+        except Exception:
+            log_utils.error()
+            self._empty_directory()
+
+    def _empty_directory(self):
+        # Red de seguridad si el propio builder revienta: cerrar SIEMPRE el
+        # directorio para no dejar la ventana en "updating in progress".
+        try:
+            from sys import argv
+            control.hide()
+            control.notification(title='MDBList', message=32049)
+            control.content(int(argv[1]), '')
+            control.directory(int(argv[1]), cacheToDisc=False)
+        except Exception:
+            pass
+
+
+# ============================================================
 # USER WATCHLIST & LISTS — MOVIES
 # ============================================================
 class MDBListMovies:

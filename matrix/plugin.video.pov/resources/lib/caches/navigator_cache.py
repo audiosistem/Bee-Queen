@@ -76,13 +76,5 @@ class NavigatorCache(BaseCache):
 	def rebuild_database(self):
 		for list_name in default_menus.default_menu_items: self.set_list(list_name, 'default', main_menus[list_name])
 
-	def rebuild_folders(self):
-		try:
-			command = 'SELECT list_name, list_type, list_contents FROM navigator'
-			for i in self.dbcur.execute(command).fetchall():
-				try: contents = self.jsloads(i[2])
-				except: self.set_list(i[0], i[1], eval(i[2]))
-		except: pass
-
 navigator_cache = NavigatorCache()
 

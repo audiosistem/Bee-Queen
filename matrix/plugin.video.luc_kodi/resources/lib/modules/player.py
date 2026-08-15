@@ -709,8 +709,16 @@ class Player(xbmc.Player):
 		control.log('[ plugin.video.luc_kodi ] onQueueNextItem callback', LOGINFO)
 
 
+	def _cleanup_pm_nzb(self):
+		# Auto-borrado del NZB reproducido desde la nube de Premiumize (si procede).
+		try:
+			from resources.lib.debrid.premiumize import Premiumize
+			Premiumize.cleanup_nzb_transfer()
+		except: pass
+
 	def onPlayBackStopped(self):
 		try:
+			self._cleanup_pm_nzb()
 			playerWindow.clearProperty('luc_kodi.preResolved_nextUrl')
 			playerWindow.clearProperty('luc_kodi.playlistStart_position')
 			playerWindow.clearProperty('luc_kodi.nextEpisode_playUrl')
@@ -743,6 +751,7 @@ class Player(xbmc.Player):
 
 	def onPlayBackEnded(self):
 		self.ended_naturally = True  # video reached the natural end
+		self._cleanup_pm_nzb()
 		Bookmarks().reset(self.current_time, self.media_length, self.name, self.year)
 		self.libForPlayback()
 		# Natural end of playback: Kodi may not fire onPlayBackStopped here, so notify Trakt/SIMKL
@@ -763,6 +772,7 @@ class Player(xbmc.Player):
 
 
 	def onPlayBackError(self):
+		self._cleanup_pm_nzb()
 		playerWindow.clearProperty('luc_kodi.preResolved_nextUrl')
 		playerWindow.clearProperty('luc_kodi.playlistStart_position')
 		playerWindow.clearProperty('luc_kodi.nextEpisode_playUrl')
@@ -1344,7 +1354,12 @@ class Bookmarks:
 				dbcur.execute('''CREATE TABLE IF NOT EXISTS bookmark (idFile TEXT, timeInSeconds TEXT, Name TEXT, year TEXT, UNIQUE(idFile));''')
 				if not year or year == 'None': return offset
 				years = [str(year), str(int(year)+1), str(int(year)-1)]
-				match = dbcur.execute('''SELECT * FROM bookmark WHERE Name="%s" AND year IN (%s)''' % (name, ','.join(i for i in years))).fetchone() # helps fix random cases where trakt and imdb, or tvdb, differ by a year for eps
+				# v1.0.54: consulta parametrizada. El título iba interpolado a pelo
+				# ("...Name=\"%s\"...") y cualquier título con comillas dobles
+				# (p.ej. entradas TMDb con el título entrecomillado) rompía el SQL:
+				# OperationalError near "...": syntax error, y el punto de
+				# reanudación se perdía para ese título.
+				match = dbcur.execute('''SELECT * FROM bookmark WHERE Name=? AND year IN (?, ?, ?)''', (name, years[0], years[1], years[2])).fetchone() # helps fix random cases where trakt and imdb, or tvdb, differ by a year for eps
 			except:
 				log_utils.error()
 				return offset
@@ -1387,7 +1402,10 @@ class Bookmarks:
 			dbcur = dbcon.cursor()
 			dbcur.execute('''CREATE TABLE IF NOT EXISTS bookmark (idFile TEXT, timeInSeconds TEXT, Name TEXT, year TEXT, UNIQUE(idFile));''')
 			years = [str(year), str(int(year) + 1), str(int(year) - 1)]
-			dbcur.execute('''DELETE FROM bookmark WHERE Name="%s" AND year IN (%s)''' % (name, ','.join(i for i in years))) #helps fix random cases where trakt and imdb, or tvdb, differ by a year for eps
+			# v1.0.54: parametrizada por el mismo motivo que el SELECT de get():
+			# títulos con comillas dobles rompían el DELETE y el marcador viejo
+			# nunca se limpiaba antes de insertar el nuevo.
+			dbcur.execute('''DELETE FROM bookmark WHERE Name=? AND year IN (?, ?, ?)''', (name, years[0], years[1], years[2])) #helps fix random cases where trakt and imdb, or tvdb, differ by a year for eps
 			if seekable:
 				dbcur.execute('''INSERT INTO bookmark Values (?, ?, ?, ?)''', (idFile, timeInSeconds, name, year))
 				minutes, seconds = divmod(float(timeInSeconds), 60)

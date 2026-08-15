@@ -21,11 +21,11 @@ POV_ROUTES = {
 	'results_layout_choice': lambda p: _import('modules.dialogs', 'results_layout_choice')(),
 	'options_menu_choice': lambda p: _import('modules.dialogs', 'options_menu')(p),
 	'meta_language_choice': lambda p: _import('modules.dialogs', 'meta_language_choice')(),
-	'extras_menu_choice': lambda p: _import('modules.dialogs', 'extras_menu')(p),
 	'favorites_choice': lambda p: _import('modules.dialogs', 'favorites_choice')(p),
 	'set_language_filter_choice': lambda p: _import('modules.dialogs', 'set_language_filter_choice')(p['filter_setting']),
 	'extras_lists_choice': lambda p: _import('modules.dialogs', 'extras_lists_choice')(),
 	'random_choice': lambda p: _import('modules.dialogs', 'random_choice')(p['mode'], p),
+	'extras_menu_choice': lambda p: _import('windows.extras', 'extras_menu')(p),
 	'trakt_manager_choice': lambda p: _import('menus.trakt', 'TraktManager')(p).manage(),
 	'mdbl_manager_choice': lambda p: _import('menus.mdblist', 'MdbListManager')(p).manage(),
 	'tmdb_manager_choice': lambda p: _import('menus.tmdb', 'TmdbManager')(p).manage(),
@@ -83,7 +83,7 @@ POV_ROUTES = {
 	'refer_link': lambda p: _import('modules.myservices', 'refer_link')(p['query']),
 	'undesirablesInput': lambda p: _import('caches.undesirables_cache', 'undesirablesInput')(),
 	'undesirablesUserRemove': lambda p: _import('caches.undesirables_cache', 'undesirablesUserRemove')(),
-	'speedTest': lambda p: _import('fenom.speedtest', 'magneto')(),
+	'speedTest': lambda p: _import('magneto.modules.speedtest', 'magneto')(),
 	'aioHelp': lambda p: _import('scrapers.aiostreams', 'aio_help')(),
 }
 
@@ -301,7 +301,7 @@ def checkUndesirablesDatabase():
 	logger('POV', 'CheckUndesirablesDatabase Service Starting')
 	path = 'special://home/addons/%s/resources/unwanted.json' % kodi_utils.get_addoninfo('id')
 	with kodi_utils.open_file(path) as file: set_property('pov_unwanted', str(file.read()))
-	from fenom.undesirables import Undesirables, add_new_default_keywords
+	from magneto.modules.undesirables import Undesirables, add_new_default_keywords
 	old_database = Undesirables().check_database()
 	if old_database: add_new_default_keywords()
 	return logger('POV', 'CheckUndesirablesDatabase Service Finished')

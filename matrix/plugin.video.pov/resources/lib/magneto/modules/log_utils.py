@@ -4,7 +4,7 @@
 
 from datetime import datetime
 import inspect
-from fenom.control import transPath, setting as getSetting, lang, joinPath, existsPath
+from magneto.modules.control import transPath, setting as getSetting, lang, joinPath, existsPath
 
 LOGDEBUG = 0
 LOGINFO = 1
@@ -94,7 +94,7 @@ def error(message=None, exception=True):
 def clear_logFile():
 	cleared = False
 	try:
-		from fenom.control import yesnoDialog
+		from magneto.modules.control import yesnoDialog
 		if not yesnoDialog(lang(32060), '', ''): return 'canceled'
 		log_file = joinPath(LOGPATH, 'fenomscrapers.log')
 		if not existsPath(log_file):
@@ -112,11 +112,11 @@ def clear_logFile():
 
 def view_LogFile(name):
 	try:
-		from fenom.textviewer import TextViewerXML
-		from fenom.control import addonPath
+		from magneto.modules.textviewer import TextViewerXML
+		from magneto.modules.control import addonPath
 		log_file = joinPath(LOGPATH, '%s.log' % name.lower())
 		if not existsPath(log_file):
-			from fenom.control import notification
+			from magneto.modules.control import notification
 			return notification(message='Log File not found, likely logging is not enabled.')
 		f = open(log_file, 'r', encoding='utf-8', errors='ignore')
 		text = f.read()
@@ -129,14 +129,14 @@ def view_LogFile(name):
 		error()
 
 def upload_LogFile():
-	from fenom.control import notification
+	from magneto.modules.control import notification
 	url = 'https://paste.kodi.tv/'
 	log_file = joinPath(LOGPATH, 'fenomscrapers.log')
 	if not existsPath(log_file):
 		return notification(message='Log File not found, likely logging is not enabled.')
 	try:
 		import requests
-		from fenom.control import addonVersion, selectDialog
+		from magneto.modules.control import addonVersion, selectDialog
 		f = open(log_file, 'r', encoding='utf-8', errors='ignore')
 		text = f.read()
 		f.close()
@@ -153,7 +153,7 @@ def upload_LogFile():
 			if supported_platform: list += [('[COLOR %s]  -- Copy url To Clipboard[/COLOR]' % highlight_color, ' ')]
 			select = selectDialog([i[0] for i in list], lang(32059))
 			if 'Copy url To Clipboard' in list[select][0]:
-				from fenom.source_utils import copy2clip
+				from magneto.modules.source_utils import copy2clip
 				copy2clip(list[select - 1][1])
 		elif 'message' in response.json():
 			notification(message='FenomScrapers Log upload failed: %s' % str(response.json()['message']))

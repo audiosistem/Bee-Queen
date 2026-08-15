@@ -45,19 +45,27 @@ class DisplayWelcomeXML(xbmcgui.WindowXMLDialog):
 
 	def onAction(self, action):
 		if action.getId() in (9, 10, 13, 92):
+			self._user_closed = True
 			self.close()
 
 	def show_and_close(self, duration=None):
 		"""Acquire the module lock so notifications never overlap."""
 		secs = duration or self.duration
+		self._user_closed = False
 		with _show_lock:
 			try:
 				self.show()
 				elapsed = 0
 				while elapsed < secs and not monitor.abortRequested():
-					monitor.waitForAbort(1)
-					elapsed += 1
-				self.close()
+					# Si el usuario cierra el dialogo (Back/OK), salir YA: seguir
+					# esperando bloqueaba al CPythonInvoker ("waiting on thread")
+					# el resto de la duracion y provocaba un segundo close() sobre
+					# un dialogo ya cerrado, ampliando la ventana de carrera con
+					# la reinicializacion del interprete (reuselanguageinvoker).
+					if self._user_closed: break
+					monitor.waitForAbort(0.25)
+					elapsed += 0.25
+				if not self._user_closed: self.close()
 			except Exception:
 				log_utils.error()
 			finally:

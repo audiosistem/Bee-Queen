@@ -141,7 +141,7 @@ class RealDebrid:
 	def auth_loop(self):
 		url = 'client_id=%s&code=%s' % (self.client_ID, self.device_code)
 		url = oauth_base_url + credentials_url % url
-		response = session.get(url)
+		response = session.get(url, timeout=15)
 		if 'error' in response.text:
 			return # control.okDialog(title='default', message=40019)
 		else:
@@ -160,7 +160,7 @@ class RealDebrid:
 		self.client_ID = 'X245A4XAIBGVM'
 		url = 'client_id=%s&new_credentials=yes' % self.client_ID
 		url = oauth_base_url + device_code_url % url
-		response = session.get(url).json()
+		response = session.get(url, timeout=15).json()
 		verification_url = getLS(32513) % (control.getHighlightColor(), str(response['verification_url']))
 		user_code = getLS(32514) % (control.getHighlightColor(), str(response['user_code']))
 		try:
@@ -302,7 +302,7 @@ class RealDebrid:
 			if not control.yesnoDialog(getLS(40050) % '?\n' + name, '', ''): return
 			ck_token = self._get('user', token_ck=True) # check token, and refresh if needed
 			url = torrents_delete_url + "/%s&auth_token=%s" % (media_id, self.token)
-			response = session.delete(rest_base_url + url)
+			response = session.delete(rest_base_url + url, timeout=15)
 			if not 'error' in response:
 				if self.server_notifications: control.notification(message='Real-Debrid: %s was removed from your active Torrents' % name, icon=rd_icon)
 				log_utils.log('Real-Debrid: %s was removed from your active Torrents' % name, __name__, log_utils.LOGDEBUG)
@@ -316,7 +316,7 @@ class RealDebrid:
 		try:
 			ck_token = self._get('user', token_ck=True) # check token, and refresh if needed
 			url = 'downloads?page=%s&auth_token=%s' % (page, self.token)
-			response = session.get(rest_base_url + url)
+			response = session.get(rest_base_url + url, timeout=15)
 			total_count = float(response.headers['X-Total-Count'])
 			pages = int(math.ceil(total_count / 50.0))
 			return response.json(), pages
@@ -376,7 +376,7 @@ class RealDebrid:
 			if not control.yesnoDialog(getLS(40050) % '?\n' + name, '', ''): return
 			ck_token = self._get('user', token_ck=True) # check token, and refresh if needed
 			url = downloads_delete_url + "/%s&auth_token=%s" % (media_id, self.token)
-			response = session.delete(rest_base_url + url)
+			response = session.delete(rest_base_url + url, timeout=15)
 			if not 'error' in response:
 				if self.server_notifications: control.notification(message='Real-Debrid: %s was removed from your MyDownloads' % name, icon=rd_icon)
 				log_utils.log('Real-Debrid: %s was removed from your MyDownloads' % name, __name__, log_utils.LOGDEBUG)
@@ -748,7 +748,7 @@ class RealDebrid:
 		try:
 			ck_token = self._get('user', token_ck=True) # check token, and refresh if needed
 			url = torrents_delete_url + "/%s&auth_token=%s" % (torrent_id, self.token)
-			response = session.delete(rest_base_url + url)
+			response = session.delete(rest_base_url + url, timeout=15)
 			if not 'error' in response:
 				log_utils.log('Real-Debrid: Torrent ID %s was removed from your active torrents' % torrent_id, __name__, log_utils.LOGDEBUG)
 		except: log_utils.error('Real-Debrid Error: DELETE TORRENT %s : ')
@@ -846,7 +846,7 @@ class RealDebrid:
 		try:
 			url = oauth_base_url + 'token'
 			postData = {'client_id': self.client_ID, 'client_secret': self.secret, 'code': self.device_code, 'grant_type': 'http://oauth.net/grant_type/device/1.0'}
-			response = session.post(url, data=postData)
+			response = session.post(url, data=postData, timeout=15)
 			# log_utils.log('Authorizing Real Debrid Result: | %s |' % response, level=log_utils.LOGDEBUG)
 			if '[204]' in str(response): return False, str(response)
 			if 'Temporarily Down For Maintenance' in response.text:

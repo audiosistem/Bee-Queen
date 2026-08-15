@@ -949,11 +949,15 @@ class Episodes:
 				if not values['thumb']: values['thumb'] = values['poster']
 				studio = item.get('show').get('webChannel') or item.get('show').get('network')
 				values['studio'] = studio.get('name') or ''
-				values['genre'] = []
-				for i in item['show']['genres']: values['genre'].append(i.title())
+				# infoTagger espera una CADENA separada por ', ' (hace arg.split(', ')):
+				# dejarlo como lista lanzaba AttributeError y abortaba el item entero
+				values['genre'] = ', '.join([i.title() for i in (item.get('show', {}).get('genres') or [])])
 				try: values['duration'] = int(item.get('show', {}).get('runtime', '')) * 60
 				except: values['duration'] = ''
-				values['rating'] = str(item.get('show', {}).get('rating', {}).get('average', ''))
+				# TVmaze devuelve rating.average = null en muchas series: str(None) daba
+				# el literal 'None' y reventaba float() en infoTagger, abortando el item
+				_rating = (item.get('show', {}).get('rating') or {}).get('average')
+				values['rating'] = str(_rating) if _rating is not None else ''
 				try: values['status'] = str(item.get('show', {}).get('status', ''))
 				except: values['status'] = 'Continuing'
 				try:

@@ -1,15 +1,15 @@
 import requests
 from threading import Thread
-from operator import itemgetter
 from concurrent.futures import ThreadPoolExecutor
 from caches import mdbl_cache
 from caches.main_cache import cache_object
 from indexers.tmdb_api import movie_external_id, tvshow_external_id
+from magneto.modules import client
 from modules import kodi_utils, settings
 from modules.cache import check_databases
 from modules.utils import sort_for_article, jsondate_to_datetime, paginate_list, get_datetime
 
-EXPIRES_1_HOURS, MAX_LIST_ITEMS = 1, 250_000
+EXPIRES_1_HOURS, EXPIRES_2_DAYS, MAX_LIST_ITEMS = 1, 48, 250_000
 get_setting, set_setting, logger = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.logger
 base_url = 'https://api.mdblist.com/%s'
 timeout = 10.05
@@ -87,6 +87,26 @@ def mdbl_calendar_days(recently_aired, current_date):
 	finish = (current_date + timedelta(days=future_days)).strftime('%Y-%m-%d')
 	return start, finish
 
+def mdbl_ratings_info(mediatype, imdb_id):
+	mediatype = 'movie' if mediatype == 'movie' else 'show'
+	string = 'mdbl_ratings_%s_%s' % (mediatype, imdb_id)
+	url = '%s/%s/%s' % ('https://mdblist.com', mediatype, imdb_id)
+	return cache_object(mdbl_ratings_info_handler, string, url, expiration=EXPIRES_2_DAYS)
+
+def mdbl_ratings_info_handler(url):
+	html = client.request(url, timeout=6.05)
+	labels = client.parseDOM(html, 'span', {'class': ['mdblist-label', 'movie-rating-name']})
+	scores = client.parseDOM(html, 'span', {'class': ['mdblist-rating', 'movie-rating-score']})
+	sources = ('imdb', 'metacritic', 'mdblist', 'tomatoes', 'trakt', 'tmdb')
+	data = []
+	for k, v in zip(labels, scores):
+		try:
+			k, v = k.split()[0].strip().lower(), v.strip()
+			if k not in sources: continue
+			data.append({'source': k, 'value': v})
+		except: pass
+	return data
+
 def mdbl_top_lists():
 	string = 'mdbl_top_lists'
 	url = 'lists/top'
@@ -99,8 +119,25 @@ def mdbl_search_lists(query):
 	return cache_object(call_mdblist, string, url, expiration=EXPIRES_1_HOURS)['items']
 
 def mdblist_droplist(mediatype, page_no):
-	results = mdbl_get_hidden_items('dropped')
-	return [{'imdb_id': '', 'id': i} for i in results], 1
+	def _process(url):
+		response = _get_mdbl_paginated_list(url)
+		hidden_data = response.get('shows', []) if response else []
+		if not hidden_data: return []
+		results = []
+		for item in hidden_data:
+			show_ids = item['show']['ids']
+			tmdb_id = show_ids.get('tmdb')
+			if tmdb_id: results.append({
+				'id': tmdb_id,
+				'title': item['show']['title']
+			})
+		return results
+	string = 'mdbl_hidden_items_dropped'
+	url = 'sync/dropped'
+	data = mdbl_cache.cache_mdbl_object(_process, string, url)
+	if page_no == 'all': return data
+	original_list = sort_for_article(data, 'title', settings.ignore_articles())
+	return original_list, 1
 
 def mdbl_calendar_data(url):
 	result = []
@@ -132,15 +169,21 @@ def mdblist_collection(mediatype, page_no):
 		original_list = original_list['movies'] + original_list['shows']
 		for i in original_list: i.update({'id': i['movie' if 'movie' in i else 'show']['ids']['tmdb']})
 		return original_list
-	original_list = original_list[mediatype]
+	def _year(item):
+		if isinstance(item.get('year'), int): return str(item['year'])
+		return item.get('year')
 	key = 'movie' if mediatype in ('movie', 'movies') else 'show'
-	for i in original_list: i.update({
-		'id': i[key]['ids']['tmdb'], 'imdb_id': i[key]['ids']['imdb'],
-		'title': i[key]['title'], 'year': i[key]['year']
-	})
+	original_list = [
+		{'collected_at': i['collected_at'],
+		 'id': i[key]['ids']['tmdb'],
+		 'imdb_id': i[key]['ids']['imdb'],
+		 'title': i[key]['title'],
+		 'year': _year(i[key])}
+		for i in original_list[mediatype]
+	] # only endpoint with nested media. no response to feature req to flatten.
 	sort_key = settings.lists_sort_order('collection')
-	if   sort_key == 2: original_list.sort(key=itemgetter('year'), reverse=True)
-	elif sort_key == 1: original_list.sort(key=itemgetter('collected_at'), reverse=True)
+	if   sort_key == 2: original_list.sort(key=lambda k: k.get('year') or '', reverse=True)
+	elif sort_key == 1: original_list.sort(key=lambda k: k['collected_at'], reverse=True)
 	else: original_list = sort_for_article(original_list, 'title', settings.ignore_articles())
 	if settings.paginate(): return paginate_list(original_list, page_no, settings.page_limit())
 	return original_list, 1
@@ -160,8 +203,8 @@ def mdblist_watchlist(mediatype, page_no):
 		current_date = get_datetime()
 		original_list = [i for i in original_list if first_aired(i)]
 	sort_key = settings.lists_sort_order('watchlist', mediatype)
-	if   sort_key == 2: original_list.sort(key=itemgetter('release_date') or '', reverse=True)
-	elif sort_key == 1: original_list.sort(key=itemgetter('watchlist_at'), reverse=True)
+	if   sort_key == 2: original_list.sort(key=lambda k: k.get('release_date') or '', reverse=True)
+	elif sort_key == 1: original_list.sort(key=lambda k: k['watchlist_at'], reverse=True)
 	else: original_list = sort_for_article(original_list, 'title', settings.ignore_articles())
 	if settings.paginate(): return paginate_list(original_list, page_no, settings.page_limit())
 	return original_list, 1
@@ -284,6 +327,10 @@ def hide_unhide_mdbl_items(action, mediatype, media_id, list_type):
 	mdbl_sync_activities()
 	kodi_utils.container_refresh()
 
+def mdbl_get_hidden_items(list_type):
+	results = mdblist_droplist('shows', 'all')
+	return [i['id'] for i in results]
+
 def get_mdbl_movie_id(item):
 	if item.get('tmdb'): return item['tmdb']
 	for k, v in (('imdb_id', 'imdb'),):
@@ -385,26 +432,6 @@ def mdbl_progress_tv(progress_info):
 		insert_list.append(('episode', str(tmdb_id), season, episode, p_str, 0, item['paused_at'], item['id'], show['title']))
 	mdbl_cache.MDBLCache().set_bulk_tvshow_progress(insert_list)
 
-def mdbl_get_hidden_items(list_type):
-	def _process(url):
-		response = _get_mdbl_paginated_list(url)
-		hidden_data = response.get('shows', []) if response else []
-		if not hidden_data: return []
-		results, lookup_list = [], []
-		for item in hidden_data:
-			show_ids = item['show']['ids']
-			tmdb_id = show_ids.get('tmdb')
-			if tmdb_id: results.append(tmdb_id)
-			else: lookup_list.append(show_ids)
-		if lookup_list:
-			with ThreadPoolExecutor() as executor:
-				thread_results = executor.map(get_mdbl_tvshow_id, lookup_list)
-			results.extend([i for i in thread_results if i is not None])
-		return results
-	string = 'mdbl_hidden_items_%s' % list_type
-	url = 'sync/dropped'
-	return mdbl_cache.cache_mdbl_object(_process, string, url)
-
 def mdbl_playback_progress():
 	url = 'sync/playback'
 	return call_mdblist(url)
@@ -430,7 +457,8 @@ def mdbl_sync_activities(force_update=False, init_callback=None, monitor=None):
 		mdbl_cache.clear_all_mdbl_cache_data(refresh=False)
 	mdbl_cache.clear_mdbl_calendar()
 	latest = mdbl_get_activity()
-	if latest is None:
+	if not isinstance(latest, dict):
+		logger('mdblist error', str(latest))
 		mdbl_cache.clear_all_mdbl_cache_data(refresh=False)
 		return 'failed'
 	cached = mdbl_cache.reset_activity(latest)

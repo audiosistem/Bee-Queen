@@ -7,7 +7,7 @@ from hashlib import md5
 import re
 from time import time
 from sqlite3 import dbapi2 as db
-from fenom.control import existsPath, dataPath, makeFile, cacheFile
+from magneto.modules.control import existsPath, dataPath, makeFile, cacheFile
 
 
 def get(function, duration, *args):
@@ -39,7 +39,7 @@ def get(function, duration, *args):
 			cache_insert(key, fresh_result)
 			return literal_eval(fresh_result)
 	except:
-		from fenom import log_utils
+		from magneto.modules import log_utils
 		log_utils.error()
 		return None
 
@@ -57,7 +57,7 @@ def cache_get(key):
 		results = dbcur.execute('''SELECT * FROM cache WHERE key=?''', (key,)).fetchone()
 		return results
 	except:
-		from fenom import log_utils
+		from magneto.modules import log_utils
 		log_utils.error()
 		return None
 	finally:
@@ -74,7 +74,7 @@ def cache_insert(key, value):
 			dbcur.execute('''INSERT INTO cache Values (?, ?, ?)''', (key, value, now))
 		dbcur.connection.commit()
 	except:
-		from fenom import log_utils
+		from magneto.modules import log_utils
 		log_utils.error()
 	finally:
 		dbcur.close() ; dbcon.close()

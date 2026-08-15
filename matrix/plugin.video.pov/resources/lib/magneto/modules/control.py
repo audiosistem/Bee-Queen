@@ -120,7 +120,7 @@ def isVersionUpdate():
 			return True
 		else: return False
 	except:
-		from fenom import log_utils
+		from magneto.modules import log_utils
 		log_utils.error()
 		return False
 
@@ -171,7 +171,7 @@ def clean_settings():
 		sleep(200)
 		notification(title=addon_name, message=lang(32042).format(str(len(removed_settings))))
 	except:
-		from fenom import log_utils
+		from magneto.modules import log_utils
 		log_utils.error()
 		notification(title=addon_name, message=32043)
 

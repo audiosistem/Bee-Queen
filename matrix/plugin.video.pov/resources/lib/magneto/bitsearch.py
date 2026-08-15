@@ -6,8 +6,8 @@
 import re
 from html import unescape
 from urllib.parse import quote_plus, parse_qs, urlparse
-from fenom import client
-from fenom import source_utils
+from magneto.modules import client
+from magneto.modules import source_utils
 
 
 target_class = r'(?=.*items-start).*'

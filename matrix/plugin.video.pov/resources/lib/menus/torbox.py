@@ -11,7 +11,7 @@ _add_str, _rem_str, airlock_str = ls(32602).replace(' To', ''), ls(32603).replac
 fanart = kodi_utils.get_addoninfo('fanart')
 default_icon = kodi_utils.media_path(Debrid.icon)
 default_art = {'icon': default_icon, 'poster': default_icon, 'thumb': default_icon, 'fanart': fanart, 'banner': default_icon}
-extensions = supported_video_extensions()
+extensions = tuple(supported_video_extensions())
 
 class Menu(Debrid):
 	def run(self, params):
@@ -58,7 +58,7 @@ class Menu(Debrid):
 	def browse_cloud(sel, items):
 		for count, item in enumerate(items, 1):
 			try:
-				if not item['short_name'].lower().endswith(tuple(extensions)): continue
+				if not item['short_name'].lower().endswith(extensions): continue
 				cm = []
 				cm_append = cm.append
 				name = clean_file_name(item['short_name']).upper()

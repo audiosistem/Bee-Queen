@@ -71,7 +71,7 @@ class TMDb:
 		try:
 			try: response = session.get(url, timeout=20)
 			except requests.exceptions.SSLError:
-				response = session.get(url, verify=False)
+				response = session.get(url, timeout=20)
 		except requests.exceptions.ConnectionError:
 			notification(message=32024)
 			from resources.lib.modules import log_utils
@@ -256,6 +256,56 @@ class Movies(TMDb):
 			if not result or '404:NOT FOUND' in result: return []
 			return [str(i['id']) for i in result.get('results', []) if i.get('id')]
 		except: return []
+
+	def tmdb_list_visual_refresh(self, url):
+		"""v1.0.54 — arranque ligero. Refresca SOLO los campos visuales de la
+		parrilla (fanart, rating, votos, plot, fecha y, si no se prefieren
+		títulos en inglés, el póster primario) de los títulos que YA están en
+		metacache, tomándolos de la propia respuesta de LISTA de TMDb: cero
+		peticiones de detalle por título. El detalle completo (reparto, logos,
+		posters_all, certificaciones, tráilers) NO se toca aquí — lo renueva el
+		ciclo fresh_meta cada meta_hours. Los títulos sin meta previa (o cuya
+		meta la política de frescura de metacache da por caducada) se dejan
+		intactos: tmdb_list los traerá completos justo después.
+		Devuelve el número de metas actualizadas."""
+		try:
+			result = cache.get(self.get_request, 96, url % self.API_key)
+			if not result or '404:NOT FOUND' in result: return 0
+			items = result.get('results') or []
+			if not items: return 0
+		except: return 0
+		refs = [{'tmdb': str(i.get('id') or ''), 'imdb': '', 'tvdb': '', 'metacache': False} for i in items]
+		try: refs = metacache.fetch(refs, self.lang, self.user)
+		except: return 0
+		updates = []
+		for ref, item in zip(refs, items):
+			try:
+				if not ref.get('metacache'): continue # sin meta previa o caducada: la traerá completa tmdb_list
+				values = dict(ref)
+				for k in ('metacache', 'next'): values.pop(k, None)
+				if not values.get('tmdb'): values['tmdb'] = str(item.get('id') or '')
+				if item.get('backdrop_path'): values['fanart'] = '%s%s' % (self.fanart_path, item['backdrop_path'])
+				# El póster de la lista es el primario localizado. Si el usuario
+				# prefiere arte en inglés, el póster elegido por el detalle
+				# completo (bloque images) puede ser otro: en ese caso no se pisa.
+				if item.get('poster_path') and not self.prefer_en_titles:
+					values['poster'] = '%s%s' % (self.poster_path, item['poster_path'])
+				if item.get('vote_average') is not None: values['rating'] = item.get('vote_average')
+				if item.get('vote_count') is not None: values['votes'] = item.get('vote_count')
+				if item.get('overview'): values['plot'] = item['overview']
+				premiered = item.get('release_date') or ''
+				if premiered:
+					values['premiered'] = str(premiered)
+					values['year'] = str(premiered)[:4]
+				updates.append({'imdb': values.get('imdb', ''), 'tmdb': values.get('tmdb', ''), 'tvdb': values.get('tvdb', ''),
+						'lang': self.lang, 'user': self.user, 'item': values})
+			except: pass
+		if updates:
+			try: metacache.insert(updates)
+			except:
+				from resources.lib.modules import log_utils
+				log_utils.error()
+		return len(updates)
 
 	def jw_list(self, jw_package_code):
 		# Alternative to tmdb_list(): sources TMDb IDs from JustWatch's GraphQL API
@@ -762,6 +812,52 @@ class TVshows(TMDb):
 			if not result or '404:NOT FOUND' in result: return []
 			return [str(i['id']) for i in result.get('results', []) if i.get('id')]
 		except: return []
+
+	def tmdb_list_visual_refresh(self, url):
+		"""v1.0.54 — arranque ligero (variante series). Igual que en Movies:
+		refresca solo los campos visuales desde la respuesta de LISTA (name,
+		first_air_date, vote_average...), sin peticiones de detalle por título.
+		El estado de emisión (status / next_episode_to_air) NO se toca: la
+		política de frescura de metacache para series en emisión sigue mandando,
+		y las metas que dé por caducadas no se tocan aquí (metacache=False) —
+		tmdb_list las trae completas justo después.
+		Devuelve el número de metas actualizadas."""
+		if not url: return 0
+		try:
+			result = cache.get(self.get_request, 96, url % self.API_key)
+			if not result or '404:NOT FOUND' in result: return 0
+			items = result.get('results') or []
+			if not items: return 0
+		except: return 0
+		refs = [{'tmdb': str(i.get('id') or ''), 'imdb': '', 'tvdb': '', 'metacache': False} for i in items]
+		try: refs = metacache.fetch(refs, self.lang, self.user)
+		except: return 0
+		updates = []
+		for ref, item in zip(refs, items):
+			try:
+				if not ref.get('metacache'): continue # sin meta previa o caducada: la traerá completa tmdb_list
+				values = dict(ref)
+				for k in ('metacache', 'next'): values.pop(k, None)
+				if not values.get('tmdb'): values['tmdb'] = str(item.get('id') or '')
+				if item.get('backdrop_path'): values['fanart'] = '%s%s' % (self.fanart_path, item['backdrop_path'])
+				if item.get('poster_path') and not self.prefer_en_titles:
+					values['poster'] = '%s%s' % (self.poster_path, item['poster_path'])
+				if item.get('vote_average') is not None: values['rating'] = item.get('vote_average')
+				if item.get('vote_count') is not None: values['votes'] = item.get('vote_count')
+				if item.get('overview'): values['plot'] = item['overview']
+				premiered = item.get('first_air_date') or ''
+				if premiered:
+					values['premiered'] = str(premiered)
+					if not values.get('year'): values['year'] = str(premiered)[:4]
+				updates.append({'imdb': values.get('imdb', ''), 'tmdb': values.get('tmdb', ''), 'tvdb': values.get('tvdb', ''),
+						'lang': self.lang, 'user': self.user, 'item': values})
+			except: pass
+		if updates:
+			try: metacache.insert(updates)
+			except:
+				from resources.lib.modules import log_utils
+				log_utils.error()
+		return len(updates)
 
 	def tmdb_collections_list(self, url):
 		if not url: return

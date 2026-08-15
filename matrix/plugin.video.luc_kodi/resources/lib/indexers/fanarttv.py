@@ -27,7 +27,7 @@ class FanartTv:
 		try:
 			try: result = session.get(url, headers=self.headers, timeout=20)
 			except requests.exceptions.SSLError:
-				result = session.get(url, headers=self.headers, verify=False)
+				result = session.get(url, headers=self.headers, timeout=20)
 		except requests.exceptions.ConnectionError:
 			notification(message='FANART.TV Temporary Server Problems')
 			from resources.lib.modules import log_utils

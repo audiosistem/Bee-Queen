@@ -40,6 +40,28 @@ class TorBoxUsenetMigration:
 		except Exception:
 			log_utils.error()
 
+class DmmReenableMigration:
+	"""One-shot migration (v1.0.56): el scraper DMM vuelve a estar ACTIVO.
+	La v1.0.54 lo apago leyendo el 429 como un cierre a terceros, pero el
+	429 lo devuelve el limitador ANTES de tocar el handler: en el codigo
+	publico de DMM /api/torrents esta topado a 1 peticion cada 2 segundos
+	por IP (RATE_LIMIT_CONFIGS.torrents), y el scraper pedia las paginas 0
+	y 1 en paralelo — la segunda chocaba siempre. Con una sola peticion
+	serializada por busqueda el scraper funciona. Esta migracion vuelve a
+	encender provider.dmm UNA sola vez en las instalaciones que lo tenian
+	apagado por la migracion anterior; a partir de ahi manda el usuario
+	(marker one-shot, patron TorBoxUsenetMigration)."""
+	MARKER = 'migration.dmm_on_2026'
+	def run(self):
+		try:
+			if control.setting(self.MARKER) != 'true':
+				if control.setting('provider.dmm') != 'true':
+					control.setSetting('provider.dmm', 'true')
+					control.log('[ plugin.video.luc_kodi ]  Migration: provider.dmm -> true (rate-limit handled, see changelog 1.0.56)', LOGINFO)
+				control.setSetting(self.MARKER, 'true')
+		except Exception:
+			log_utils.error()
+
 class CheckSettingsFile:
 	def run(self):
 		try:
@@ -460,6 +482,7 @@ def main():
 		libraryService = None
 		CheckSettingsFile().run()
 		TorBoxUsenetMigration().run()
+		DmmReenableMigration().run()
 		CheckUndesirablesDatabase().run()
 		GUIResolutionService().run()  # non-blocking — lanza hilo daemon
 		# v1.0.49: micro-servidor localhost que sirve el MPD de tráilers a

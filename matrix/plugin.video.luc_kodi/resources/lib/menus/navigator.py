@@ -12,6 +12,12 @@ from resources.lib.modules.mdblist import getMDBListCredentialsInfo
 getLS = control.lang
 getSetting = control.setting
 getMenuEnabled = control.getMenuEnabled
+
+def getMenuEnabledDefaultOn(menu_title):
+	# Igual que getMenuEnabled() pero un valor vacio cuenta como activado.
+	# Necesario para ajustes nuevos: al actualizar, la clave aun no existe en
+	# el settings.xml de userdata y getMenuEnabled() la leeria como 'false'.
+	return getSetting(menu_title).strip() != 'false'
 KODI_VERSION = control.getKodiVersion()
 
 
@@ -61,6 +67,8 @@ class Navigator:
 			self.addDirectoryItem(40525 if self.indexLabels else 40525, 'movies&url=traktanticipated', 'trakt.png' if self.iconLogos else 'in-theaters.png', 'DefaultMovies.png')
 		if getMenuEnabled('navi.movie.tmdb.upcoming'):
 			self.addDirectoryItem(40527 if self.indexLabels else 40527, 'tmdbmovies&url=tmdb_upcoming', 'tmdb.png' if self.iconLogos else 'upcoming.png', 'DefaultMovies.png')
+		if getMenuEnabled('navi.movie.tmdb.calendar'):
+			self.addDirectoryItem(40254, 'movie_calendarNavigator', 'tmdb.png' if self.iconLogos else 'calendar.png', 'DefaultYear.png')
 		if getMenuEnabled('navi.movie.trakt.boxoffice'):
 			self.addDirectoryItem(40521 if self.indexLabels else 40521, 'movies&url=traktboxoffice', 'trakt.png' if self.iconLogos else 'box-office.png', 'DefaultMovies.png')
 		if getMenuEnabled('navi.movie.tmdb.toprated'):
@@ -97,6 +105,11 @@ class Navigator:
 		if getMenuEnabled('navi.movie.trakt.searchList'):
 			self.addDirectoryItem(32419, 'movies_SearchLists&media_type=movies', 'trakt.png' if self.iconLogos else 'movies.png', 'DefaultMovies.png', isFolder=False)
 		if self.mdblistCredentials:
+			# Carpeta MDBList: da acceso a Watchlist, My Lists, Top Lists, Search Lists,
+			# Browse User e Import by URL. Sin esta entrada el submenu era inalcanzable
+			# y el usuario no podia llegar nunca a sus propias listas.
+			if getMenuEnabledDefaultOn('navi.movie.mdblist.folder'):
+				self.addDirectoryItem(40210, 'mdblist_movieNavigator', 'mdblist.png', 'DefaultVideoPlaylists.png')
 			if getMenuEnabled('navi.movie.mdblist.continue'):
 				self.addDirectoryItem(40231, 'mdblist_continueMovies', 'mdblist.png', 'DefaultVideoPlaylists.png', queue=True)
 			if getMenuEnabled('navi.movie.mdblist.topLists'):
@@ -165,6 +178,8 @@ class Navigator:
 			self.addDirectoryItem(40529 if self.indexLabels else 40529, 'tmdbTvshows&url=tmdb_ontheair', 'tmdb.png' if self.iconLogos else 'new-tvshows.png', 'DefaultRecentlyAddedEpisodes.png')
 		if getMenuEnabled('navi.tv.tvmaze.calendar'):
 			self.addDirectoryItem(32450 if self.indexLabels else 32027, 'calendars', 'tvmaze.png' if self.iconLogos else 'calendar.png', 'DefaultYear.png')
+		if getMenuEnabled('navi.tv.tmdb.calendar'):
+			self.addDirectoryItem(40258, 'tv_calendarNavigator', 'tmdb.png' if self.iconLogos else 'calendar.png', 'DefaultYear.png')
 		if getMenuEnabled('navi.tv.trakt.popularList'):
 			self.addDirectoryItem(32417, 'tv_PublicLists&url=trakt_popularLists', 'trakt.png' if self.iconLogos else 'tvshows.png', 'DefaultMovies.png')
 		if getMenuEnabled('navi.tv.trakt.trendingList'):
@@ -172,6 +187,10 @@ class Navigator:
 		if getMenuEnabled('navi.tv.trakt.searchList'):
 			self.addDirectoryItem(32419, 'tv_SearchLists&media_type=shows', 'trakt.png' if self.iconLogos else 'tvshows.png', 'DefaultMovies.png', isFolder=False)
 		if self.mdblistCredentials:
+			# Ver comentario equivalente en movies(): sin esta entrada el submenu
+			# mdblist_tv() (Watchlist / My Lists / ...) no tenia ningun enlace.
+			if getMenuEnabledDefaultOn('navi.tv.mdblist.folder'):
+				self.addDirectoryItem(40211, 'mdblist_tvNavigator', 'mdblist.png', 'DefaultVideoPlaylists.png')
 			if getMenuEnabled('navi.tv.mdblist.continue'):
 				self.addDirectoryItem(40234, 'mdblist_continueEpisodes', 'mdblist.png', 'DefaultVideoPlaylists.png', queue=True)
 			if getMenuEnabled('navi.tv.mdblist.topLists'):
@@ -200,7 +219,20 @@ class Navigator:
 			self.addDirectoryItem('My Liked Lists', 'shows_LikedLists', 'trakt.png', 'trakt.png', queue=True)
 		self.endDirectory()
 
+	def movie_calendar(self):
+		self.addDirectoryItem(40255, 'tmdbmovies&url=tmdb_calendarTheaters', 'tmdb.png' if self.iconLogos else 'in-theaters.png', 'DefaultMovies.png')
+		self.addDirectoryItem(40256, 'tmdbmovies&url=tmdb_calendarSoon', 'tmdb.png' if self.iconLogos else 'upcoming.png', 'DefaultMovies.png')
+		self.addDirectoryItem(40257, 'tmdbmovies&url=tmdb_calendarDigital', 'tmdb.png' if self.iconLogos else 'new-movies.png', 'DefaultMovies.png')
+		self.endDirectory()
+
+	def tv_calendar(self):
+		self.addDirectoryItem(40259, 'tmdbTvshows&url=tmdb_calendarPremieres', 'tmdb.png' if self.iconLogos else 'upcoming.png', 'DefaultTVShows.png')
+		self.addDirectoryItem(40260, 'tmdbTvshows&url=tmdb_calendarNew', 'tmdb.png' if self.iconLogos else 'new-tvshows.png', 'DefaultTVShows.png')
+		self.addDirectoryItem(32450 if self.indexLabels else 32027, 'calendars', 'tvmaze.png' if self.iconLogos else 'calendar.png', 'DefaultYear.png')
+		self.endDirectory()
+
 	def mdblist_movies(self):
+		self.addDirectoryItem(40250, 'mdblist_calendarMovies', 'mdblist.png', 'DefaultYear.png', queue=True)
 		self.addDirectoryItem(40212, 'mdblist_movieWatchlist', 'mdblist.png', 'DefaultVideoPlaylists.png', queue=True)
 		self.addDirectoryItem(40213, 'mdblist_movieUserLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
 		self.addDirectoryItem(40214, 'mdblist_movieTopLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
@@ -210,6 +242,8 @@ class Navigator:
 		self.endDirectory()
 
 	def mdblist_tv(self):
+		self.addDirectoryItem(40251, 'mdblist_calendarUpcoming', 'mdblist.png', 'DefaultYear.png', queue=True)
+		self.addDirectoryItem(40252, 'mdblist_calendarRecent', 'mdblist.png', 'DefaultYear.png', queue=True)
 		self.addDirectoryItem(40216, 'mdblist_showWatchlist', 'mdblist.png', 'DefaultVideoPlaylists.png', queue=True)
 		self.addDirectoryItem(40217, 'mdblist_showUserLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
 		self.addDirectoryItem(40218, 'mdblist_showTopLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
@@ -344,11 +378,24 @@ class Navigator:
 		self.endDirectory()
 
 	def torbox_service(self):
+		# v1.0.52: estas dos entradas apuntaban a las acciones en_* (Easynews)
+		# por un copy/paste heredado: "TorBox: Search" abría el buscador de
+		# Easynews y "TorBox: Account Info" el diálogo de cuenta de Easynews.
 		if getSetting('torbox.username'):
-			self.addDirectoryItem('TorBox: Cloud (Torrents & Usenet)', 'tb_CloudStorage', 'torbox.png', 'DefaultAddonService.png')
+			self.addDirectoryItem('TorBox: Cloud Storage', 'tb_CloudStorage', 'torbox.png', 'DefaultAddonService.png')
 			self.addDirectoryItem('TorBox: Account Info', 'tb_AccountInfo', 'torbox.png', 'DefaultAddonService.png', isFolder=False)
 		else:
 			self.addDirectoryItem('[I]Please visit My Accounts for setup[/I]', 'tools_openSettings&query=7.0', 'torbox.png', 'DefaultAddonService.png', isFolder=False)
+		self.endDirectory()
+
+	def easynews_service(self):
+		# v1.0.52: el router llamaba a este método desde en_ServiceNavigator
+		# pero no existía -> AttributeError. Ahora sí existe.
+		if getSetting('easynews.username'):
+			self.addDirectoryItem('Easynews: Search', 'en_Search', 'search.png', 'DefaultAddonsSearch.png')
+			self.addDirectoryItem('Easynews: Account Info', 'en_AccountInfo', 'easynews.png', 'DefaultAddonService.png', isFolder=False)
+		else:
+			self.addDirectoryItem('[I]Please visit My Accounts for setup[/I]', 'tools_openSettings&query=7.0', 'easynews.png', 'DefaultAddonService.png', isFolder=False)
 		self.endDirectory()
 
 	def furk_service(self):

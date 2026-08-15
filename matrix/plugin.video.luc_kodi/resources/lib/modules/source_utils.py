@@ -99,6 +99,20 @@ def seas_ep_filter(season, episode, release_title, split=False):
 def extras_filter():
 	return ('sample', 'extra', 'deleted', 'unused', 'footage', 'inside', 'blooper', 'making.of', 'feature', 'featurette', 'behind.the.scenes', 'trailer')
 
+def is_archive_part(path):
+	"""v1.0.54: True si el fichero es una PARTE de un archivo multivolumen.
+	Las listas invalid_extensions solo cubrian '.rar' y '.zip', asi que las
+	partes numeradas (.z01/.z03, .r00, .part1.rar, .001) pasaban el filtro y,
+	al ser enormes, ganaban el max(size) de la seleccion de fichero: el
+	reproductor recibia un trozo de archivo y Kodi respondia "Playback not
+	supported" (visto en kodi.log con un .z03 de un COMPLETE UHD BLURAY).
+	Nada de esto es reproducible en streaming: hay que descomprimirlo antes."""
+	try:
+		low = str(path or '').lower().split('?')[0].split('|')[0]
+		# .z01..z99 / .r00..r99 / .7z.001 / .part01.rar / .001..999
+		return bool(re.search(r'\.(z\d{2}|r\d{2}|part\d+\.rar|\d{3})$', low))
+	except: return False
+
 def supported_video_extensions():
 	try:
 		from xbmc import getSupportedMedia

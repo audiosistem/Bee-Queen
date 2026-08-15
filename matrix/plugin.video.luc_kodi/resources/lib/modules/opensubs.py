@@ -58,13 +58,13 @@ class Opensubs():
 				'Authorization': self.jwt_token,
 				'User-Agent': 'luc_kodi v' + version
 			}
-			response = requests.get(url_info, headers=headers2)
+			response = requests.get(url_info, headers=headers2, timeout=20)
 			xbmc.log('[ luc_kodi ] opensubs.auth() token check: status=%s' % response.status_code, xbmc.LOGINFO)
 			if response.status_code == 200:
 				return True
 			else:
 				# Token expired – get a new one
-				response2 = requests.post(url, headers=self.headers, json=data)
+				response2 = requests.post(url, headers=self.headers, json=data, timeout=20)
 				xbmc.log('[ luc_kodi ] opensubs.auth() re-login: status=%s' % response2.status_code, xbmc.LOGINFO)
 				if response2.status_code == 200:
 					control.setSetting('opensubstoken', response2.json().get('token'))
@@ -74,7 +74,7 @@ class Opensubs():
 		else:
 			# First login
 			xbmc.log('[ luc_kodi ] opensubs.auth() — first login attempt', xbmc.LOGINFO)
-			response = requests.post(url, headers=self.headers, json=data)
+			response = requests.post(url, headers=self.headers, json=data, timeout=20)
 			xbmc.log('[ luc_kodi ] opensubs.auth() first login: status=%s' % response.status_code, xbmc.LOGINFO)
 			response = response.json()
 			token = response.get('token')
@@ -104,7 +104,7 @@ class Opensubs():
 				'User-Agent': 'luc_kodi v' + version
 			}
 			xbmc.log('[ luc_kodi ] OpenSubs Searching: IMDB:%s Season:%s Episode:%s Language:%s URL:%s' % (imdb, season, episode, language, url), xbmc.LOGINFO)
-			response = requests.get(url, headers=headers)
+			response = requests.get(url, headers=headers, timeout=20)
 			xbmc.log('[ luc_kodi ] OpenSubs Search response: status=%s' % response.status_code, xbmc.LOGINFO)
 			response = response.json()
 			response = response['data']
@@ -149,7 +149,7 @@ class Opensubs():
 				'User-Agent': 'luc_kodi v' + version
 			}
 			data = {'file_id': fileID}
-			response = requests.post(url, headers=headers, json=data)
+			response = requests.post(url, headers=headers, json=data, timeout=20)
 			response = response.json()
 			link = response.get('link')
 			xbmc.log('[ luc_kodi ] OpenSubs download link: %s  file: %s' % (link, fileName), xbmc.LOGINFO)
@@ -176,7 +176,7 @@ class Opensubs():
 				'Api-Key': api_key,
 				'User-Agent': 'luc_kodi v' + version
 			}
-			response = requests.post(url, headers=headers, json=data)
+			response = requests.post(url, headers=headers, json=data, timeout=20)
 			response = response.json()
 			responseUser  = response.get('user')
 			responseToken = response.get('token')

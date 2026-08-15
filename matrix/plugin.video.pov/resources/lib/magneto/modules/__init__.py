@@ -4,7 +4,7 @@
 
 import os
 from pkgutil import walk_packages
-from fenom.control import setting as getSetting
+from magneto.modules.control import setting as getSetting
 
 debug = getSetting('debug.enabled') == 'true'
 sourceFolder = 'providers'
@@ -27,11 +27,11 @@ def sources(specified_folders=None, ret_all=False):
 						append((module_name, module.source))
 					except Exception as e:
 						if debug:
-							from fenom import log_utils
+							from magneto.modules import log_utils
 							log_utils.log('Error: Loading module: "%s": %s' % (module_name, e), level=log_utils.LOGWARNING)
 		return sourceDict
 	except:
-		from fenom import log_utils
+		from magneto.modules import log_utils
 		log_utils.error()
 		return []
 
@@ -40,7 +40,7 @@ def enabledCheck(module_name):
 		if getSetting('provider.' + module_name) == 'true': return True
 		else: return False
 	except:
-		from fenom import log_utils
+		from magneto.modules import log_utils
 		log_utils.error()
 		return True
 

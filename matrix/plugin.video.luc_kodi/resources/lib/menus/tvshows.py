@@ -105,6 +105,12 @@ class TVshows:
 		self.tmdb_networks_link = 'https://api.themoviedb.org/3/discover/tv?api_key=%s&with_networks=%s&sort_by=%s&page=1' % ('%s', '%s', self.tmdb_DiscoverSort())
 		self.tmdb_genre_link = 'https://api.themoviedb.org/3/discover/tv?api_key=%s&with_genres=%s&include_null_first_air_dates=false&sort_by=%s&page=1' % ('%s', '%s', self.tmdb_DiscoverSort())
 		self.tmdb_year_link = 'https://api.themoviedb.org/3/discover/tv?api_key=%s&language=en-US&include_null_first_air_dates=false&first_air_date_year=%s&sort_by=%s&page=1' % ('%s', '%s', self.tmdb_DiscoverSort())
+		# --- Premiere calendar (global, NOT watchlist-based) -----------------
+		# Ventana de fechas sobre first_air_date de todo el catalogo TMDb, igual
+		# que la seccion "Premieres" del calendario de Trakt.
+		_cal = lambda days: (self.date_time + timedelta(days=days)).strftime('%Y-%m-%d')
+		self.tmdb_calendarPremieres_link = 'https://api.themoviedb.org/3/discover/tv?api_key=%s&language=en-US&include_null_first_air_dates=false&first_air_date.gte=%s&first_air_date.lte=%s&sort_by=popularity.desc&page=1' % ('%s', _cal(1), _cal(180))
+		self.tmdb_calendarNew_link = 'https://api.themoviedb.org/3/discover/tv?api_key=%s&language=en-US&include_null_first_air_dates=false&first_air_date.gte=%s&first_air_date.lte=%s&sort_by=popularity.desc&page=1' % ('%s', _cal(-60), self.today_date)
 		# Ticket is in to add this feature but currently not available
 		# self.tmdb_certification_link = 'https://api.themoviedb.org/3/discover/tv?api_key=%s&language=en-US&certification_country=US&certification=%s&sort_by=%s&page=1' % ('%s', '%s', self.tmdb_DiscoverSort())
 

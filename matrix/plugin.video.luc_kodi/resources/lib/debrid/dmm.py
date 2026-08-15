@@ -15,7 +15,25 @@ class DMMCache:
 		data = {**self.params, 'imdbId': imdb, 'hashes': [i for i in unchecked_hashes_chunk if len(i) == 40]}
 		try:
 			results = requests.post(self.availability_check_link, json=data, timeout=self.timeout)
-			available_hashes = results.json()['available']
+			# v1.0.54 DIAGNOSTICO (mismo motivo que el scraper dmm.py): si la
+			# respuesta ya no trae 'available', volcar estado + cuerpo crudo en
+			# vez de tragarnos el fallo — asi el log dice que devuelve DMM ahora.
+			try: payload = results.json()
+			except Exception: payload = None
+			available_hashes = payload.get('available') if isinstance(payload, dict) else None
+			if available_hashes is None:
+				from resources.lib.modules import log_utils
+				body = (results.text or '')[:300].replace('\n', ' ').replace('\r', ' ')
+				# v1.0.56: matiz sobre el veredicto de la v1.0.54 — el limitador
+				# de DMM (1 peticion / 2 s por IP) cubre /api/torrents, NO este
+				# endpoint (/api/availability/check no lleva withRateLimit en el
+				# codigo publico). Un 429 aqui vendria de la capa Cloudflare, asi
+				# que se mantiene en DEBUG para no llenar el log de los usuarios
+				# de Real-Debrid; cualquier OTRA anomalia sigue en WARNING.
+				level = log_utils.LOGDEBUG if results.status_code == 429 else log_utils.LOGWARNING
+				log_utils.log('DMM availability diagnostic: HTTP %s | Content-Type=%s | body[:300]=%r'
+						% (results.status_code, results.headers.get('Content-Type', ''), body), level)
+				return {}
 			files = {file['hash']: file['files'] for file in available_hashes if 'hash' in file}
 		except: files = {}
 

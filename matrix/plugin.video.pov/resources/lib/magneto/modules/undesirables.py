@@ -3,7 +3,7 @@
 """
 
 import sqlite3 as db
-from fenom.control import existsPath, dataPath, makeFile, undesirablescacheFile, lang
+from magneto.modules.control import existsPath, dataPath, makeFile, undesirablescacheFile, lang
 
 
 class Undesirables():
@@ -64,7 +64,7 @@ class Undesirables():
 			return False
 
 	def set_defaults(self):
-		from fenom.source_utils import UNDESIRABLES
+		from magneto.modules.source_utils import UNDESIRABLES
 		self.set_many([(i, False, True) for i in UNDESIRABLES])
 
 	def process_keywords(self, results):
@@ -73,8 +73,8 @@ class Undesirables():
 		return keywords
 
 def undesirablesSelect():
-	from fenom.control import multiselectDialog
-	from fenom.source_utils import UNDESIRABLES
+	from magneto.modules.control import multiselectDialog
+	from magneto.modules.source_utils import UNDESIRABLES
 	undesirables_cache = Undesirables()
 	chosen = undesirables_cache.get_enabled()
 	try: preselect = [UNDESIRABLES.index(i) for i in chosen]
@@ -87,7 +87,7 @@ def undesirablesSelect():
 	undesirables_cache.set_many(new_settings)
 
 def undesirablesUserRemove():
-	from fenom.control import multiselectDialog, notification
+	from magneto.modules.control import multiselectDialog, notification
 	undesirables_cache = Undesirables()
 	user_undesirables = undesirables_cache.get_user_defined()
 	if not user_undesirables: return notification(message=32084)
@@ -97,7 +97,7 @@ def undesirablesUserRemove():
 	undesirables_cache.remove_many(removals)
 
 def undesirablesUserRemoveAll():
-	from fenom.control import yesnoDialog, notification
+	from magneto.modules.control import yesnoDialog, notification
 	undesirables_cache = Undesirables()
 	user_undesirables = undesirables_cache.get_user_defined()
 	if not user_undesirables: return notification(message=32084)
@@ -107,7 +107,7 @@ def undesirablesUserRemoveAll():
 	notification(message=32087)
 
 def undesirablesInput():
-	from fenom.control import dialog
+	from magneto.modules.control import dialog
 	undesirables_cache = Undesirables()
 	user_defined = undesirables_cache.get_user_defined()
 	if user_defined: current_user_string = ','.join(user_defined)
@@ -119,7 +119,7 @@ def undesirablesInput():
 	undesirables_cache.set_many(new_settings)
 
 def add_new_default_keywords():
-	from fenom.source_utils import UNDESIRABLES
+	from magneto.modules.source_utils import UNDESIRABLES
 	undesirables_cache = Undesirables()
 	current_undesirables = undesirables_cache.get_default()
 	new_undesirables = [i for i in UNDESIRABLES if not i in current_undesirables]

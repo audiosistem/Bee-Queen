@@ -269,16 +269,15 @@ class Discover:
 
 	def export(self):
 		try:
+			icon = 'discover.png'
 			mediatype = self.discover_params['mediatype']
 			query = self.discover_params['final_string']
 			name = self.discover_params['name']
 			set_history(mediatype, name, query)
-			if mediatype == 'movie': final_params = {'mode': 'build_movie_list', 'action': 'tmdb_movies_discover'}
-			else: final_params = {'mode': 'build_tvshow_list', 'action': 'tmdb_tv_discover'}
-			final_params.update({'name': name, 'query': query, 'iconImage': 'discover.png'})
-			if self.key == 'folder': mode = 'menu_editor.shortcut_folder_add_item'
-			else: mode = 'menu_editor.add_external'
-			url_params = {'mode': mode, 'name': name, 'menu_item': json.dumps(final_params), 'iconImage': 'discover.png'}
+			mode = 'build_movie_list' if mediatype == 'movie' else 'build_tvshow_list'
+			params = {'mode': mode, 'action': 'tmdb_media_discover', 'name': name, 'query': query, 'iconImage': icon}
+			mode = 'menu_editor.shortcut_folder_add_item' if self.key == 'folder' else 'menu_editor.add_external'
+			url_params = {'mode': mode, 'name': name, 'menu_item': json.dumps(params), 'iconImage': icon}
 			kodi_utils.execute_builtin('RunPlugin(%s)' % build_url(url_params))
 		except: kodi_utils.notification(32574)
 
@@ -290,23 +289,18 @@ class Discover:
 
 	def _set_default_params(self, mediatype):
 		self._clear_property()
-		if mediatype == 'movie': url_mediatype, param_mediatype = 'movie', 'Movies'
-		else: url_mediatype, param_mediatype = 'tv', 'TV Shows'
-		params = '?language=en-US&page=%s'
-		base_url = tmdb_api.base_url
-		search = {
-			'base': '%s/discover/%s%s' % (base_url, url_mediatype, params),
-			'base_similar': '%s/%s/%s/similar%s' % (base_url, url_mediatype, '%s', params),
-			'base_recommended': '%s/%s/%s/recommendations%s' % (base_url, url_mediatype, '%s', params)
-		}
+		url_media, param_media = ('movie', 'Movies') if mediatype == 'movie' else ('tv', 'TV Shows')
+		search = {'base': 'discover/{}?language=en-US&page=%s'.format(url_media)}
+		search['base_similar'] = '{}/%s/similar?language=en-US&page=%s'.format(url_media)
+		search['base_recommended'] = '{}/%s/recommendations?language=en-US&page=%s'.format(url_media)
 		self.discover_params['mediatype'] = mediatype
-		self.discover_params['search_name'] = {'mediatype': param_mediatype}
-		self.discover_params['search_string'] =  search
+		self.discover_params['search_name'] = {'mediatype': param_media}
+		self.discover_params['search_string'] = search
 		self._set_property()
 
 	def _add_defaults(self):
-		if self.discover_params['mediatype'] == 'movie': mode, action = 'build_movie_list', 'tmdb_movies_discover'
-		else: mode, action = 'build_tvshow_list', 'tmdb_tv_discover'
+		if self.discover_params['mediatype'] == 'movie': mode, action = 'build_movie_list', 'tmdb_media_discover'
+		else: mode, action = 'build_tvshow_list', 'tmdb_media_discover'
 		name = self.discover_params.get('name', '...')
 		query = self.discover_params.get('final_string', '')
 		self._add_dir({'mode': mode, 'action': action, 'query': query, 'name': name, 'list_name': ls(32666) % name},
@@ -538,13 +532,8 @@ def set_history(mediatype, name, query):
 	maincache = MainCache()
 	cache = maincache.get(string)
 	if cache: return
-	if mediatype == 'movie':
-		mode = 'build_movie_list'
-		action = 'tmdb_movies_discover'
-	else:
-		mode = 'build_tvshow_list'
-		action = 'tmdb_tv_discover'
-	data = {'mode': mode, 'action': action, 'name': name, 'query': query}
+	mode = 'build_movie_list' if mediatype == 'movie' else 'build_tvshow_list'
+	data = {'mode': mode, 'action': 'tmdb_media_discover', 'name': name, 'query': query}
 	maincache.set(string, data, expiration=timedelta(days=7))
 
 def remove_from_history(params):

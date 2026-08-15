@@ -25,6 +25,7 @@ ad_icon = control.joinPath(control.artPath(), 'alldebrid.png')
 #ad_qr = control.joinPath(control.artPath(), 'alldebridqr.png')
 addonFanart = control.addonFanart()
 invalid_extensions = ('.bmp', '.exe', '.gif', '.jpg', '.nfo', '.part', '.png', '.rar', '.sample.', '.srt', '.txt', '.zip', '.clpi', '.mpls', '.bdmv', '.xml', '.crt', 'crl', 'sig')
+from resources.lib.modules.source_utils import is_archive_part  # v1.0.54
 
 session = requests.Session()
 retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
@@ -115,7 +116,7 @@ class AllDebrid:
 		control.sleep(5000)
 		data = {'check': self.check, 'pin': self.pin}
 		url = base_url + 'pin/check'
-		response = session.post(url, data).json()
+		response = session.post(url, data, timeout=20).json()
 		response = response.get('data')
 		if 'error' in response:
 			self.token = 'failed'
@@ -430,7 +431,7 @@ class AllDebrid:
 					continue
 				low = name.lower().strip()
 
-				if low.endswith(invalid_extensions):
+				if low.endswith(invalid_extensions) or is_archive_part(low):
 					continue
 
 				if not low.endswith(tuple(extensions)):

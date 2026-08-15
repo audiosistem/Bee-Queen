@@ -239,17 +239,28 @@ def addonIcon():
 	if not (art is None and theme in ('-', '')): return joinPath(art, 'icon.png')
 	return addonInfo('icon')
 
+def _themeArt(art, filename, fallback='icon.png'):
+	# Un tema puede no traer todos los ficheros (poster.png falta en el tema por
+	# defecto): devolver la ruta a ciegas hacia Kodi a ensuciar el log con
+	# "GetImageHash - unable to stat url ..." una vez por cada item de la lista.
+	path = joinPath(art, filename)
+	if existsPath(path): return path
+	alt = joinPath(art, fallback)
+	return alt if existsPath(alt) else None
+
 def addonThumb():
 	theme = appearance()
 	art = artPath()
-	if not (art is None and theme in ('-', '')): return joinPath(art, 'poster.png')
-	elif theme == '-': return 'DefaultFolder.png'
+	if not (art is None and theme in ('-', '')):
+		if (path := _themeArt(art, 'poster.png')): return path
+	if theme == '-': return 'DefaultFolder.png'
 	return addonInfo('icon')
 
 def addonPoster():
 	theme = appearance()
 	art = artPath()
-	if not (art is None and theme in ('-', '')): return joinPath(art, 'poster.png')
+	if not (art is None and theme in ('-', '')):
+		if (path := _themeArt(art, 'poster.png')): return path
 	return 'DefaultVideo.png'
 
 def addonFanart():
@@ -540,9 +551,12 @@ def infoTagger(item, meta=None):
 		infotag.setCast([xbmc.Actor(**actor) for actor in meta_get('castandart', [])])
 		for key in infotag_dict:
 			if not key in meta or not (arg := meta[key]): continue
-			if   key in {'director', 'genre', 'studio', 'writer'}: arg = arg.split(', ')
+			if   key in {'director', 'genre', 'studio', 'writer'}:
+				arg = list(arg) if isinstance(arg, (list, tuple)) else arg.split(', ') # algunas fuentes ya dan lista
 			elif key in {'episode', 'season', 'year'}: arg = int(arg)
-			elif key == 'rating': arg = float(arg)
+			elif key == 'rating':
+				try: arg = float(arg)
+				except (TypeError, ValueError): continue # 'None'/'N/A' de fuentes externas
 			elif key == 'votes': arg = votes
 			func = getattr(infotag, infotag_dict[key])
 			func(arg)

@@ -4365,6 +4365,10 @@ msgctxt "#400709"
 msgid "Check interval (hours)"
 msgstr ""
 
+msgctxt "#400715"
+msgid "Full metadata refresh at most every (hours)"
+msgstr ""
+
 
 msgctxt "#40110"
 msgid "[COLOR ffc75453]For You • Movies[/COLOR]"
@@ -4444,6 +4448,26 @@ msgstr ""
 
 msgctxt "#40205"
 msgid "MDBList: Action failed"
+msgstr ""
+
+msgctxt "#40206"
+msgid "Add to MDBList list..."
+msgstr ""
+
+msgctxt "#40207"
+msgid "Remove from MDBList list..."
+msgstr ""
+
+msgctxt "#40208"
+msgid "No editable MDBList lists found. Only static lists can be edited - dynamic, AI, external and feed lists are refreshed automatically from their source."
+msgstr ""
+
+msgctxt "#40209"
+msgid "Added to %s"
+msgstr ""
+
+msgctxt "#40240"
+msgid "Removed from %s"
 msgstr ""
 
 msgctxt "#40210"
@@ -4548,6 +4572,50 @@ msgstr ""
 
 msgctxt "#40248"
 msgid "New substitute added"
+msgstr ""
+
+msgctxt "#40250"
+msgid "My Calendar - Watchlist Releases"
+msgstr ""
+
+msgctxt "#40251"
+msgid "My Calendar - Upcoming Episodes"
+msgstr ""
+
+msgctxt "#40252"
+msgid "My Calendar - Recently Aired"
+msgstr ""
+
+msgctxt "#40253"
+msgid "Nothing on your calendar yet"
+msgstr ""
+
+msgctxt "#40254"
+msgid "Release Calendar"
+msgstr ""
+
+msgctxt "#40255"
+msgid "In Cinemas Now"
+msgstr ""
+
+msgctxt "#40256"
+msgid "Coming to Cinemas"
+msgstr ""
+
+msgctxt "#40257"
+msgid "New on Digital"
+msgstr ""
+
+msgctxt "#40258"
+msgid "Premiere Calendar"
+msgstr ""
+
+msgctxt "#40259"
+msgid "Upcoming Premieres"
+msgstr ""
+
+msgctxt "#40260"
+msgid "Recently Premiered"
 msgstr ""
 
 msgctxt "#40503"

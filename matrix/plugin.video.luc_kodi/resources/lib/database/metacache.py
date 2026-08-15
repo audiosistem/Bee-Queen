@@ -53,25 +53,46 @@ def fetch(items, lang='en', user=''):
 				if update: continue
 				item = literal_eval(match[5])
 
-				if item['mediatype'] == 'tvshow':
-					status = item['status'].lower()
-					if not any(value in status for value in ('ended', 'canceled')):
-						from resources.lib.modules.cleandate import timestamp_from_string
-						next_episode_to_air = timestamp_from_string(item.get('next_episode_to_air', {}).get('air_date', ''))
-						if not next_episode_to_air:
-							update = (abs(t2 - t1) / 3600) >= 168 # 7 days for returning shows with None for next_episode_to_air
-							if update: continue
-						else:
-							if next_episode_to_air+(18*3600) <= t2 and (abs(t2 - t1) / 3600) >= 1: # refresh meta when next_episode_to_air is less than or equal to system date, every 1hr starting at 6pm till it flips
-								from resources.lib.database.traktsync import cache_existing
-								from resources.lib.modules.trakt import syncTVShows
-								imdb = item.get('imdb', '')
-								indicators = cache_existing(syncTVShows)
-								watching = [i[0] for i in indicators if i[0] == imdb]
-								if watching:
-									from resources.lib.modules.trakt import cachesyncSeasons
-									cachesyncSeasons(imdb) # refreshes only shows you are "watching"
-								continue
+				# v1.0.64 -- LA COMPROBACION DE FRESCURA NO PUEDE TIRAR LA CACHE.
+				# Antes esto iba suelto dentro del try grande de mas abajo: en
+				# cuanto algo aqui lanzaba (y lanzaba: cache_existing() devuelve
+				# None por diseno cuando Trakt no esta sincronizado, y luego se
+				# iteraba -> TypeError: 'NoneType' object is not iterable), el
+				# except de fuera se lo tragaba y se saltaba el
+				# items[i].update(item) del final. Resultado: el acierto de
+				# cache se DESCARTABA y la ficha se volvia a pedir a TMDb.
+				# Por eso la metacache "no iba bien" aunque el error pareciera
+				# inofensivo en el log.
+				# Ahora esto vive en su propio try: si falla, se registra y se
+				# usa igualmente la metadata cacheada, que es lo correcto.
+				_stale = False
+				try:
+					if item.get('mediatype') == 'tvshow':
+						status = (item.get('status') or '').lower()
+						if not any(value in status for value in ('ended', 'canceled')):
+							from resources.lib.modules.cleandate import timestamp_from_string
+							# `or {}` en vez de default: la clave puede EXISTIR con
+							# valor None, y entonces .get() sobre None reventaba.
+							_next = (item.get('next_episode_to_air') or {}).get('air_date', '') or ''
+							next_episode_to_air = timestamp_from_string(_next)
+							if not next_episode_to_air:
+								_stale = (abs(t2 - t1) / 3600) >= 168 # 7 days for returning shows with None for next_episode_to_air
+							else:
+								if next_episode_to_air+(18*3600) <= t2 and (abs(t2 - t1) / 3600) >= 1: # refresh meta when next_episode_to_air is less than or equal to system date, every 1hr starting at 6pm till it flips
+									from resources.lib.database.traktsync import cache_existing
+									from resources.lib.modules.trakt import syncTVShows
+									imdb = item.get('imdb', '')
+									indicators = cache_existing(syncTVShows) or []
+									watching = [i[0] for i in indicators if i and i[0] == imdb]
+									if watching:
+										from resources.lib.modules.trakt import cachesyncSeasons
+										cachesyncSeasons(imdb) # refreshes only shows you are "watching"
+									_stale = True
+				except:
+					from resources.lib.modules import log_utils
+					log_utils.error()
+				if _stale: continue
+
 				item = dict((k, v) for k, v in iter(item.items()) if v is not None and v != '')
 				items[i].update(item)
 				items[i].update({'metacache': True})

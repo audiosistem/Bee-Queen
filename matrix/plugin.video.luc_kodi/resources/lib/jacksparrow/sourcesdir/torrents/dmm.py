@@ -3,9 +3,31 @@
 	jacksparrowscrapers Project
 """
 
-import ctypes, random, time
-import re, requests
+import ctypes, random, threading, time
+import requests
 from resources.lib.jacksparrow import client, source_utils
+from resources.lib.jacksparrow.control import setting as getSetting
+
+
+# v1.0.56 — Limitador de DMM (verificado en el codigo publico del proyecto,
+# src/services/rateLimit/middlewareRateLimiter.ts):
+#     torrents: { rateLimit: 1, windowSeconds: 2 }
+# O sea /api/torrents/* admite UNA peticion cada 2 segundos POR IP, y el 429
+# se devuelve ANTES de validar el token (withIpRateLimit envuelve al handler),
+# por eso el diagnostico de la v1.0.54 nunca llego a ver si la autenticacion
+# era valida. No es un cierre a terceros: es una cuota. Este candado serializa
+# las peticiones del addon y respeta el hueco minimo + la cabecera Retry-After.
+#
+# v1.0.57 — el candado ya NO se mantiene tomado durante la peticion HTTP. El
+# servidor cuenta la ventana desde que le LLEGA la peticion, asi que reservar
+# el hueco antes de salir (y soltar el candado acto seguido) espacia igual de
+# bien y evita que un hilo hermano se quede bloqueado hasta 7 s enteros
+# esperando a que termine una peticion ajena.
+_RATE_LOCK = threading.Lock()
+_NEXT_ALLOWED = [0.0]  # epoch a partir del cual se puede volver a llamar
+_MIN_GAP = 2.2         # ventana de 2 s + margen
+_MAX_WAIT = 3.0        # tope de espera por reintento (presupuesto del scraper)
+_PAGE_ROWS = 50        # filas por tabla y pagina que sirve DMM (offset = page * 50)
 
 
 class source:
@@ -20,6 +42,9 @@ class source:
 		self.movieSearch_link = '/api/torrents/movie?imdbId=%s'
 		self.tvSearch_link = '/api/torrents/tv?imdbId=%s&seasonNum=%s'
 		self.min_seeders = 0
+		# v1.0.57: segunda pagina opcional. Cuesta un hueco mas del limitador
+		# (~2,2 s de latencia extra) y por eso viene apagada por defecto.
+		self.deep_search = getSetting('dmm.deep_search') == 'true'
 
 	def sources(self, data, hostDict):
 		self.sources = []
@@ -30,7 +55,10 @@ class source:
 			self.title = self.title.replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
 			self.aliases = data['aliases']
 			self.episode_title = data['title'] if 'tvshowtitle' in data else None
-			self.total_seasons = data['total_seasons'] if 'tvshowtitle' in data else None
+			# v1.0.57: .get() en vez de indexar. Si el host llamaba sin
+			# 'total_seasons' el KeyError caia en el except de abajo y se
+			# perdia la busqueda ENTERA, no solo la deteccion de packs.
+			self.total_seasons = data.get('total_seasons') if 'tvshowtitle' in data else None
 			self.year = data['year']
 			self.imdb = data['imdb']
 			self.season = data['season'] if 'tvshowtitle' in data else None
@@ -41,29 +69,96 @@ class source:
 			self.undesirables = source_utils.get_undesirables()
 			self.check_foreign_audio = source_utils.check_foreign_audio()
 
-			threads = []
-			append = threads.append
-			for page in range(2):
-				if self.season: url = '%s%s&page=%s' % (self.base_link, self.tvSearch_link % (self.imdb, self.season), page)
-				else: url = '%s%s&page=%s' % (self.base_link, self.movieSearch_link % self.imdb, page)
-				append(i := source_utils.Thread(self.get_sources, url))
-				i.start()
-			[i.join() for i in threads]
+			# v1.0.56: UNA sola peticion por busqueda, sin hilos. Pedir las
+			# paginas 0 y 1 en paralelo garantizaba un 429 en la segunda (1
+			# peticion / 2 s por IP). La pagina 0 ya devuelve hasta 50 filas
+			# de cada una de las dos tablas del servidor (scrapedTrue +
+			# scraped, offset = page * 50), suficiente de sobra para el panel.
+			# v1.0.57: con "Busqueda profunda" activada se pide ademas la
+			# pagina 1, pero SERIALIZADA detras del mismo candado — nunca en
+			# paralelo. Solo tiene sentido si la 0 vino llena: si el servidor
+			# devolvio menos filas de las que caben, no hay pagina siguiente.
+			if self.season: base = '%s%s' % (self.base_link, self.tvSearch_link % (self.imdb, self.season))
+			else: base = '%s%s' % (self.base_link, self.movieSearch_link % self.imdb)
+
+			rows = self.get_sources('%s&page=0' % base)
+			if self.deep_search and rows >= _PAGE_ROWS:
+				self.get_sources('%s&page=1' % base)
 			return self.sources
 		except:
 			source_utils.scraper_error('DMM')
 			return self.sources
 
-	def get_sources(self, url):
-		try:
-			dmmProblemKey, solution = get_secret()
-			headers = {'User-Agent': client.randomagent(), 'Accept-Encoding': 'gzip, deflate, br', 'Accept': '*/*'}
+	def api_get(self, url):
+		"""Peticion serializada a /api/torrents con un unico reintento ante 429.
+		Devuelve la lista de resultados, o None si no hay nada que parsear."""
+		from resources.lib.modules import log_utils
+		headers = {'User-Agent': client.randomagent(), 'Accept-Encoding': 'gzip, deflate, br', 'Accept': '*/*'}
+		attempts = 2
+		while attempts:
+			attempts -= 1
+			# El token lleva su propia marca de tiempo (validez +-5 min en el
+			# servidor), asi que se genera DESPUES de esperar el hueco.
+			# v1.0.57: el hueco siguiente se reserva AQUI, antes de soltar el
+			# candado, y la peticion sale ya fuera de la seccion critica.
+			with _RATE_LOCK:
+				gap = _NEXT_ALLOWED[0] - time.time()
+				if gap > 0: time.sleep(min(gap, _MAX_WAIT))
+				_NEXT_ALLOWED[0] = time.time() + _MIN_GAP
+				dmmProblemKey, solution = get_secret()
 			params = {'dmmProblemKey': dmmProblemKey, 'solution': solution}
-			results = requests.get(url, params=params, headers=headers, timeout=self.timeout)
-			files = results.json()['results']
+			# v1.0.57: un corte de red o un timeout ya no sube como excepcion
+			# hasta el except desnudo de get_sources() — eso volcaba un
+			# traceback entero por cada hipo de la conexion.
+			try: results = requests.get(url, params=params, headers=headers, timeout=self.timeout)
+			except requests.exceptions.RequestException as e:
+				log_utils.log('DMM: fallo de red (%s: %s)' % (type(e).__name__, e), log_utils.LOGDEBUG)
+				return None
+			status = results.status_code
+			if status == 200:
+				try: payload = results.json()
+				except Exception: payload = None
+				files = payload.get('results') if isinstance(payload, dict) else None
+				if files is None:
+					body = (results.text or '')[:300].replace('\n', ' ').replace('\r', ' ')
+					log_utils.log('DMM: 200 sin clave "results" | Content-Type=%s | body[:300]=%r'
+							% (results.headers.get('Content-Type', ''), body), log_utils.LOGWARNING)
+				return files
+			if status == 204:
+				# Titulo aun no indexado: DMM lo acaba de encolar para scrapear.
+				# En la siguiente busqueda del mismo titulo ya suele haber datos.
+				log_utils.log('DMM: 204, titulo no indexado todavia (encolado) | %s' % url, log_utils.LOGDEBUG)
+				return None
+			if status == 429:
+				retry_after = 0.0
+				try: retry_after = float(results.headers.get('Retry-After') or 0)
+				except Exception: pass
+				if attempts:
+					with _RATE_LOCK:
+						_NEXT_ALLOWED[0] = max(_NEXT_ALLOWED[0], time.time() + min(max(retry_after, _MIN_GAP), _MAX_WAIT))
+					continue
+				log_utils.log('DMM: 429 tras el reintento (limite 1 peticion/2 s por IP)', log_utils.LOGDEBUG)
+				return None
+			if status == 403:
+				# El token no valida: reloj del dispositivo desviado mas de 5
+				# minutos, o DMM ha rotado el salt de su cliente web.
+				log_utils.log('DMM: 403 Authentication error — comprobar la hora del dispositivo o un cambio de salt en debridmediamanager.com', log_utils.LOGWARNING)
+				return None
+			body = (results.text or '')[:300].replace('\n', ' ').replace('\r', ' ')
+			log_utils.log('DMM: HTTP %s | Content-Type=%s | body[:300]=%r'
+					% (status, results.headers.get('Content-Type', ''), body), log_utils.LOGWARNING)
+			return None
+		return None
+
+	def get_sources(self, url):
+		"""Parsea una pagina. Devuelve cuantas filas CRUDAS trajo el servidor
+		(no cuantas pasaron el filtro), para decidir si pedir la siguiente."""
+		try:
+			files = self.api_get(url)
+			if not files: return 0
 		except:
 			source_utils.scraper_error('DMM')
-			return
+			return 0
 
 		for file in files:
 			try:
@@ -104,6 +199,7 @@ class source:
 				self.sources_append(item)
 			except:
 				source_utils.scraper_error('DMM')
+		return len(files)
 
 
 def get_secret():
@@ -145,4 +241,3 @@ def get_secret():
 
 	solution = slice_hash(s, n)
 	return dmmProblemKey, solution
-

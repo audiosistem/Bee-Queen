@@ -1,7 +1,26 @@
 """
 	luc_kodi Add-on
 """
-from ast import literal_eval
+from ast import literal_eval as _ast_literal_eval
+import threading as _threading
+
+# ── v1.0.54: literal_eval serializado ──────────────────────────────────
+# Los ~17 scrapers corren en hilos y cada uno hace literal_eval() del blob
+# cacheado en rel_src. En Python 3.13 (Kodi 21/22) la construccion del AST
+# lleva el contador de recursion en el estado del hilo y, con varias
+# llamadas simultaneas sobre literales grandes, revienta con:
+#   SystemError: AST constructor recursion depth mismatch (before=N, after=M)
+# El except lo tragaba y ese scraper se quedaba sin sus fuentes cacheadas,
+# de ahi el "no stream" intermitente. Easynews lo destapo porque devuelve
+# hasta 250 items con URLs y nombres muy largos: el blob mas grande que
+# se ha escrito nunca en esa cache.
+_literal_eval_lock = _threading.Lock()
+
+
+def literal_eval(value):
+	with _literal_eval_lock:
+		return _ast_literal_eval(value)
+# ───────────────────────────────────────────────────────────────────────
 
 from collections import deque
 from datetime import datetime, timedelta
@@ -27,6 +46,33 @@ homeWindow = control.homeWindow
 playerWindow = control.playerWindow
 getLS = control.lang
 getSetting = control.setting
+
+
+def _pm_available():
+	"""Premiumize activo y con token."""
+	try:
+		return getSetting('premiumize.enable') == 'true' and bool(getSetting('premiumize.token'))
+	except Exception:
+		return False
+
+
+def _tb_available():
+	"""TorBox activo y con token. Solo lo usa torboxnews (buscador interno de
+	TorBox), que es funcionalidad propia suya desde la v1.0.19."""
+	try:
+		return getSetting('torbox.enable') == 'true' and bool(getSetting('torbox.token'))
+	except Exception:
+		return False
+
+
+# v1.0.59: el scraper generico Newznab queda ATADO a Premiumize.
+# Antes se elegia el debrid con un ajuste 'newznab.debrid' (Auto/TorBox/
+# Premiumize). Se elimina esa eleccion: la ruta de TorBox exige el plan de
+# 10 $/mes (Usenet+NNTP viene tachado en los de 3 $ y 5 $), asi que para el
+# indexer propio no aportaba nada que el usuario pudiera usar. Premiumize
+# resuelve NZB con la suscripcion que ya se tiene.
+NEWZNAB_DEBRID = 'Premiumize.me'
+
 sourceFile = control.providercacheFile
 single_expiry = timedelta(hours=6)
 season_expiry = timedelta(hours=48)
@@ -413,6 +459,21 @@ class Sources:
 				log_utils.error()
 				resolve_items = items if isinstance(items, list) else [items] if items else []
 
+			# -- Usenet (NZB) guard ----------------------------------------
+			# NZB resolution on debrid (TorBox/Premiumize) is SLOW (a full
+			# server-side Usenet download) and each call starts a persistent
+			# transfer. The neighbour pre-cache above would spawn one download
+			# per source and blow the debrid's active-transfer cap. For a
+			# usenet pick, resolve ONLY the chosen source -- never neighbours.
+			# Easynews is excluded: its items carry direct=True (the URL is
+			# already the file), so they are cheap and need no restriction.
+			try:
+				_chosen0 = chosen_source[0] if (isinstance(chosen_source, list) and chosen_source) else chosen_source
+				if isinstance(_chosen0, dict) and 'usenet' in (_chosen0.get('source', '') or '') and not _chosen0.get('direct'):
+					resolve_items = [_chosen0]
+			except Exception:
+				pass
+
 			header = homeWindow.getProperty(self.labelProperty) + ': Resolving...'
 			try:
 				if getSetting('progress.dialog') == '0':
@@ -435,7 +496,13 @@ class Sources:
 					except: self.progressDialog.update(int((100 / float(len(resolve_items))) * i), '[B][COLOR %s]Resolving...[/COLOR]%s[/B]' % (self.highlight_color, resolve_items[i]['name']))
 					w = Thread(target=self.sourcesResolve, args=(resolve_items[i],))
 					w.start()
-					for x in range(50):
+					# Usenet (NZB) resolves take minutes (server-side download);
+					# wait for it to finish instead of moving on after ~15s and
+					# spawning another persistent transfer. Easynews (direct)
+					# keeps the normal cap.
+					_it_i = resolve_items[i]
+					_wait_cap = 100000 if ('usenet' in (_it_i.get('source', '') or '') and not _it_i.get('direct')) else 50
+					for x in range(_wait_cap):
 						try:
 							if control.monitor.abortRequested(): return sysexit()
 							if self.progressDialog == control.progressDialogBG and self.progressDialog.iscanceled():
@@ -765,6 +832,10 @@ class Sources:
 			if getSetting('autoplay.sd') == 'true': next_sources = [i for i in next_sources if not i['quality'] in ('4K', '1080p', '720p')]
 			uncached_filter = [i for i in next_sources if re.match(r'^uncached.*torrent', i['source'])]
 			next_sources = [i for i in next_sources if i not in uncached_filter]
+			# Never pre-resolve NZB usenet: each would start a persistent
+			# server-side debrid download and blow the active-transfer cap.
+			# Easynews (direct=True) is cheap and stays eligible.
+			next_sources = [i for i in next_sources if not ('usenet' in (i.get('source', '') or '') and not i.get('direct'))]
 		except:
 			log_utils.error()
 			return playerWindow.clearProperty('luc_kodi.preResolved_nextUrl')
@@ -891,7 +962,10 @@ class Sources:
 					db_showPacks_valid = abs(self.time - timestamp) < show_expiry
 					if db_showPacks_valid:
 						sources = literal_eval(db_showPacks[4])
-						sources = [i for i in sources if i.get('last_season') >= int(season)] # filter out range items that do not apply to current season for return
+						# v1.0.60: `or 0` blinda contra scrapers que marcan package='show' sin
+						# fijar last_season -> daba TypeError (NoneType >= int) y se perdian TODOS
+						# sus packs, ademas de quedar el fallo cacheado en rel_src.
+						sources = [i for i in sources if (i.get('last_season') or 0) >= int(season)] # filter out range items that do not apply to current season for return
 						return self.scraper_sources.extend(sources)
 			except: log_utils.error()
 
@@ -913,7 +987,12 @@ class Sources:
 		elif pack == 'season': # seasonPacks scraper call
 			try:
 				sources = []
-				sources = call().sources_packs(data, self.hostprDict, bypass_filter=self.dev_disable_season_filter)
+				_scraper = call()
+				# v1.0.60: dmm, peerflix y torboxnews no implementan sources_packs().
+				# Llamarlo lanzaba AttributeError en cada busqueda de serie y
+				# llenaba el log de ruido. Se salta limpiamente.
+				if not hasattr(_scraper, 'sources_packs'): return
+				sources = _scraper.sources_packs(data, self.hostprDict, bypass_filter=self.dev_disable_season_filter)
 				if sources:
 					dbcur.execute('''INSERT OR REPLACE INTO rel_src Values (?, ?, ?, ?, ?, ?)''', (source, imdb, season,'', repr(sources), datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")))
 					dbcur.connection.commit()
@@ -924,11 +1003,16 @@ class Sources:
 		elif pack == 'show': # showPacks scraper call
 			try:
 				sources = []
-				sources = call().sources_packs(data, self.hostprDict, search_series=True, total_seasons=self.total_seasons, bypass_filter=self.dev_disable_show_filter)
+				_scraper = call()
+				if not hasattr(_scraper, 'sources_packs'): return
+				sources = _scraper.sources_packs(data, self.hostprDict, search_series=True, total_seasons=self.total_seasons, bypass_filter=self.dev_disable_show_filter)
 				if sources:
 					dbcur.execute('''INSERT OR REPLACE INTO rel_src Values (?, ?, ?, ?, ?, ?)''', (source, imdb, '', '', repr(sources), datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")))
 					dbcur.connection.commit()
-					sources = [i for i in sources if i.get('last_season') >= int(season)] # filter out range items that do not apply to current season for return
+					# v1.0.60: `or 0` blinda contra scrapers que marcan package='show' sin
+					# fijar last_season -> daba TypeError (NoneType >= int) y se perdian TODOS
+					# sus packs, ademas de quedar el fallo cacheado en rel_src.
+					sources = [i for i in sources if (i.get('last_season') or 0) >= int(season)] # filter out range items that do not apply to current season for return
 					return self.scraper_sources.extend(sources)
 			except: log_utils.error()
 
@@ -1085,37 +1169,74 @@ class Sources:
 					except: log_utils.error()
 			[i.join() for i in threads]
 
-		# ── TorBox 2026: usenet integration ───────────────────────────────
-		# Usenet items (source == 'usenet') bypass the magnet-only pipeline
-		# above. When TorBox is enabled, route them into self.filter so they
-		# appear in the picker as proper "cached usenet" results.
+		# ── Usenet (NZB) integration ──────────────────────────────────────
+		# Los items Usenet (source == 'usenet' CON hash) saltan el pipeline de
+		# magnets de arriba. v1.0.59: se enrutan por PROVEEDOR, no por un ajuste
+		# global, porque cada scraper tiene su propio debrid:
 		#
-		# v1.0.12 strategy (mirrors POV / Umbrella):
-		# - Trust the per-item 'cached_remote' field set by the torboxnews
-		#   scraper, which comes directly from TorBox's search-api response
-		#   (`item['cached']`). One call already; no extra round-trip.
-		# - Items WITHOUT cached_remote (other scrapers, legacy paths) fall
-		#   back to POST /usenet/checkcached for verification.
+		#   newznab   -> Premiumize.me  SIEMPRE. Es tu indexer propio y PM lo
+		#                resuelve con la suscripcion que ya tienes. No hay
+		#                cache-check barato en PM, asi que se presentan todos
+		#                los items y se resuelven bajo demanda en resolve_nzb().
+		#
+		#   torboxnews -> TorBox. Es el buscador INTERNO de TorBox, funcionalidad
+		#                propia suya desde la v1.0.19 y requiere su plan de pago.
+		#                Se mantiene intacto para quien lo tenga: desvincular
+		#                newznab de TorBox no debe romper esto.
+		#
+		# Easynews queda fuera de todo este bloque: tambien marca source='usenet'
+		# (por la skin) pero llega con direct=True y hash vacio, y entra en
+		# self.filter por la lista `direct` de mas abajo. Re-etiquetarlo con un
+		# debrid lo mandaria a la rama NZB de sourcesResolve y romperia la
+		# reproduccion.
 		try:
-			if getSetting('torbox.enable') == 'true' and getSetting('torbox.token'):
-				_usenet_items = [i for i in self.sources if i.get('source') == 'usenet' and i.get('hash')]
-				if _usenet_items:
+			_usenet_items = [i for i in self.sources
+				if i.get('source') == 'usenet' and i.get('hash') and not i.get('direct')]
+			# Salud Usenet: ordenar por grabs (campo 'seeders') descendente.
+			# Grabs = descargas confirmadas por otros usuarios: el mejor proxy
+			# de que los articulos siguen completos (no hay seeders en Usenet).
+			# Sort estable: a igualdad de grabs se conserva el orden previo.
+			try: _usenet_items.sort(key=lambda i: int(i.get('seeders') or 0), reverse=True)
+			except Exception: pass
+
+			_nz_items = [i for i in _usenet_items if i.get('provider') == 'newznab']
+			_tb_items = [i for i in _usenet_items if i.get('provider') != 'newznab']
+
+			# ── newznab -> Premiumize ─────────────────────────────────────
+			if _nz_items:
+				if _pm_available():
+					for _it in _nz_items:
+						_new = dict(_it)
+						_new['source'] = 'usenet'
+						_new['debrid'] = NEWZNAB_DEBRID
+						self.filter.append(_new)
+					log_utils.log(
+						'Usenet (newznab -> Premiumize): %d items presented (no cache-check; '
+						'resolved on-demand via transfer/create)' % len(_nz_items),
+						level=log_utils.LOGDEBUG)
+				else:
+					log_utils.log(
+						'Usenet (newznab): %d NZB items found but Premiumize is not enabled; dropped. '
+						'The Newznab scraper resolves through Premiumize only.' % len(_nz_items),
+						level=log_utils.LOGDEBUG)
+
+			# ── torboxnews -> TorBox (sin cambios respecto a la oficial) ──
+			if _tb_items:
+				if _tb_available():
 					_cached_only = getSetting('torbox.add_only_if_cached') in ('', 'true')
 					_pre_cached_set = set()
 					_unknown_items = []
-					for _it in _usenet_items:
-						if 'cached_remote' in _it:
-							if _it['cached_remote']:
-								_pre_cached_set.add((_it.get('hash') or '').lower())
+					for _it in _tb_items:
+						if _it.get('cached_remote'):
+							_pre_cached_set.add((_it.get('hash') or '').lower())
 						else:
 							_unknown_items.append(_it)
-					# Network fallback only for items whose cached state we don't yet know
 					if _unknown_items:
 						from resources.lib.debrid.torbox import TorBox as _TB
 						_hashes = [i['hash'] for i in _unknown_items]
 						_pre_cached_set |= (_TB().check_cache_usenet(_hashes) or set())
 					_added = _dropped = 0
-					for _it in _usenet_items:
+					for _it in _tb_items:
 						_h = (_it.get('hash') or '').lower()
 						_is_cached = _h in _pre_cached_set
 						if _cached_only and not _is_cached:
@@ -1127,12 +1248,17 @@ class Sources:
 						self.filter.append(_new)
 						_added += 1
 					log_utils.log(
-						'TorBox 2026: usenet -- %d items (%d cached, %d trusted from API, %d probed); %d uncached dropped (cached_only=%s)'
-						% (_added, len(_pre_cached_set), len(_usenet_items) - len(_unknown_items), len(_unknown_items), _dropped, _cached_only),
+						'Usenet (torboxnews -> TorBox): %d items (%d cached in set, %d probed); '
+						'%d uncached dropped (cached_only=%s)'
+						% (_added, len(_pre_cached_set), len(_unknown_items), _dropped, _cached_only),
 						level=log_utils.LOGDEBUG)
+				else:
+					log_utils.log(
+						'Usenet (torboxnews): %d NZB items found but TorBox is not enabled; dropped'
+						% len(_tb_items), level=log_utils.LOGDEBUG)
 		except Exception:
 			log_utils.error()
-		# ── end TorBox 2026 usenet integration ────────────────────────────
+		# ── end Usenet (NZB) integration ──────────────────────────────────
 
 		self.filter += direct # add direct links in to be considered in priority sorting
 		try:
@@ -1468,7 +1594,27 @@ class Sources:
 		# via TorBox's /usenet/* endpoints, not the magnet or hoster branches.
 		# Without this they fell through to the hoster branch (RD/PM/AD only) and
 		# never produced a playable URL.
-		if 'usenet' in item.get('source', ''):
+		# ── Easynews: resolver PRIMERO ────────────────────────────────────
+		# v1.0.55: en la 1.0.54 se etiquetaron los items de Easynews como
+		# source='usenet' para arreglar la etiqueta superpuesta de la skin.
+		# Efecto colateral: caian en la rama NZB de TorBox de aqui abajo,
+		# que hace `else: return` para cualquier debrid que no sea TorBox.
+		# Resultado: la fuente se seleccionaba y no reproducia nada, sin
+		# dejar ni una linea en el log. Easynews NO usa NZB: su URL ya es
+		# el fichero. Se resuelve aqui, antes de cualquier otra rama.
+		if item.get('provider') == 'easynews':
+			try:
+				from resources.lib.jacksparrow.sourcesdir.torrents import easynews as easynews_mod
+				resolved = easynews_mod.source().resolve(url)
+				if resolved:
+					self.url = resolved
+					return resolved
+			except: log_utils.error()
+			# Sin credenciales validas no se devuelve la URL cruda: daria un
+			# 401 y un error de reproduccion al usuario.
+			return
+		# ──────────────────────────────────────────────────────────────────
+		if 'usenet' in item.get('source', '') and not item.get('direct'):
 			try:
 				meta = homeWindow.getProperty(self.metaProperty)
 				if meta:
@@ -1480,6 +1626,14 @@ class Sources:
 					title = homeWindow.getProperty(self.titleProperty)
 				if debrid_provider == 'TorBox':
 					from resources.lib.debrid.torbox import TorBox as debrid_function
+					url = debrid_function().resolve_nzb(url, item.get('hash'), season, episode, title)
+					self.url = url
+					return url
+				elif debrid_provider == 'Premiumize.me':
+					# Premiumize no tiene ruta instantanea para NZB: resolve_nzb()
+					# sube el .nzb a /transfer/create y espera a que PM lo baje de
+					# Usenet a su nube antes de devolver el link reproducible.
+					from resources.lib.debrid.premiumize import Premiumize as debrid_function
 					url = debrid_function().resolve_nzb(url, item.get('hash'), season, episode, title)
 					self.url = url
 					return url
@@ -1818,7 +1972,17 @@ class Sources:
 		self.debrid_resolvers = debrid.debrid_resolvers()
 
 		self.prem_providers = [] # for sorting by debrid and direct source links priority
-		if getSetting('easynews.username'): self.prem_providers += [('easynews', int(getSetting('easynews.priority')))]
+		# v1.0.52: esta línea era código muerto (los ajustes easynews.* no
+		# existían en settings.xml) y además reventaba con ValueError si
+		# alguna vez el usuario tenía usuario pero no prioridad.
+		if getSetting('easynews.username') and getSetting('provider.easynews') == 'true':
+			try: _en_priority = int(getSetting('easynews.priority') or 8)
+			except Exception: _en_priority = 8
+			# v1.0.54: la etiqueta DEBE coincidir exactamente con item['debrid']
+			# ('Easynews'). Con 'easynews' en minusculas, el sort de prioridad
+			# de abajo hacia prem_providers.index('Easynews') -> ValueError,
+			# y el orden por prioridad se perdia en silencio.
+			self.prem_providers += [('Easynews', _en_priority)]
 		self.prem_providers += [(d.name, int(d.sort_priority)) for d in self.debrid_resolvers]
 
 		def cache_prDict():

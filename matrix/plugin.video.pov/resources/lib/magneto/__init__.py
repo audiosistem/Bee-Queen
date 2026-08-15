@@ -19,14 +19,14 @@ def sources(ret_all=False):
 			except Exception as e: logger('POV', 'Error: Loading module: "%s": %s' % (module_name, e))
 		return sourceDict
 	except:
-		from fenom import log_utils
+		from magneto.modules import log_utils
 		log_utils.error()
 		return []
 
 def enabledCheck(module_name):
 	try: return get_setting('provider.' + module_name) == 'true'
 	except:
-		from fenom import log_utils
+		from magneto.modules import log_utils
 		log_utils.error()
 		return True
 

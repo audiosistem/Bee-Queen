@@ -16,10 +16,14 @@
     <setting id="catalog.auto_update.on_start" type="bool" label="400707" default="true" subsetting="true" visible="eq(-1,true)" />
     <setting id="catalog.auto_update.notify" type="bool" label="400708" default="true" subsetting="true" visible="eq(-2,true)" />
     <setting id="catalog.auto_update.interval_hours" type="enum" label="400709" values="1|3|6|12|24" default="2" subsetting="true" visible="eq(-3,true)" />
+    <setting id="catalog.auto_update.meta_hours" type="enum" label="400715" values="6|12|24|48" default="1" subsetting="true" visible="eq(-4,true)" />
     <setting id="catalog.auto_update.last_run" type="text" default="" visible="false" />
+    <setting id="catalog.auto_update.last_meta" type="text" default="" visible="false" />
     <setting id="poster.rotation.lastclean" type="text" default="" visible="false" />
     <setting id="db.maintenance.lastrun" type="text" default="" visible="false" />
     <setting id="migration.torboxnews_2026" type="text" default="" visible="false" />
+    <setting id="migration.dmm_off_2026" type="text" default="" visible="false" />
+    <setting id="migration.dmm_on_2026" type="text" default="" visible="false" />
     <setting id="simkl._cache_bust_version" type="text" default="" visible="false" />
     <setting id="mpa.country" type="select" label="32391" values="Australia|Austria|Brazil|Bulgaria|Canada|China|Denmark|Estonia|Finland|France|Germany|Greece|Hungary|Hong Kong SAR China|India|Indonesia|Ireland|Italy|Japan|Kazakhstan|Latvia|Lithuania|Malaysia|Mexico|Netherlands|New Zealand|Norway|Philippines|Poland|Portugal|Romania|Russia|Saudi Arabia|Singapore|Slovakia|South Africa|South Korea|Spain|Sweden|Switzerland|Taiwan|Thailand|Turkey|Ukraine|United Arab Emirates|United Kingdom|United States|Vietnam" default="United States" />
     <setting id="mpa.prefix" type="text" label="32392" subsetting="true" default="" />
@@ -86,6 +90,7 @@
     <setting id="navi.movie.tmdb.nowplaying" type="bool" label="32423" default="true" />
     <setting id="navi.movie.trakt.anticipated" type="bool" label="32425" default="true" />
     <setting id="navi.movie.tmdb.upcoming" type="bool" label="32427" default="true" />
+    <setting id="navi.movie.tmdb.calendar" type="bool" label="40254" default="true" />
     <setting id="navi.movie.tmdb.boxoffice" type="bool" label="40520" default="true" />
     <setting id="navi.movie.trakt.boxoffice" type="bool" label="40521" default="true" />
     <setting id="navi.movie.tmdb.toprated" type="bool" label="32441" default="true" />
@@ -103,6 +108,7 @@
     <setting id="navi.movie.simkl.trendingMonth" type="bool" label="45002" default="false" />
     <setting id="navi.movie.simkl.playback" type="bool" label="45014" default="true" />
     <setting type="lsep" label="MDBList" />
+    <setting id="navi.movie.mdblist.folder"      type="bool" label="40210" default="true" />
     <setting id="navi.movie.mdblist.continue"    type="bool" label="40231" default="true" />
     <setting id="navi.movie.mdblist.topLists"    type="bool" label="40232" default="true" />
     <setting id="navi.movie.mdblist.searchList"  type="bool" label="40233" default="true" />
@@ -117,6 +123,7 @@
     <setting id="navi.tv.tmdb.airingtoday" type="bool" label="32467" default="true" />
     <setting id="navi.tv.tmdb.ontv" type="bool" label="32472" default="true" />
     <setting id="navi.tv.tvmaze.calendar" type="bool" label="32450" default="true" />
+    <setting id="navi.tv.tmdb.calendar" type="bool" label="40258" default="true" />
     <setting id="navi.tv.trakt.popularList" type="bool" label="32417" default="true" />
     <setting id="navi.tv.trakt.trendingList" type="bool" label="32418" default="true" />
     <setting id="navi.tv.trakt.searchList" type="bool" label="32419" default="true" />
@@ -127,6 +134,7 @@
     <setting id="navi.tv.simkl.progress" type="bool" label="45013" default="true" />
     <setting id="navi.tv.simkl.playback" type="bool" label="45015" default="true" />
     <setting type="lsep" label="MDBList" />
+    <setting id="navi.tv.mdblist.folder"      type="bool" label="40211" default="true" />
     <setting id="navi.tv.mdblist.continue"    type="bool" label="40234" default="true" />
     <setting id="navi.tv.mdblist.topLists"    type="bool" label="40235" default="true" />
     <setting id="navi.tv.mdblist.searchList"  type="bool" label="40236" default="true" />
@@ -202,6 +210,7 @@
       <setting id="peerflix.min.seeders" label="Min Seeders" type="slider" default="0" range="0,100" option="int" subsetting="true" visible="eq(-3,true)" />
     <!--setting id="provider.torrentdownload" label="40086" type="bool" default="true" -->
     <setting id="provider.dmm" label="40088" type="bool" default="true" />
+      <setting id="dmm.deep_search" label="Deep search (2nd page, slower)" type="bool" default="false" subsetting="true" visible="eq(-1,true)" />
     <setting id="provider.zilean" label="40081" type="bool" default="true" />
     <setting id="provider.knaben" type="bool" label="40090" default="true" />
     <setting id="provider.orion" type="bool" label="40095" default="false" />
@@ -241,6 +250,15 @@
       <setting id="aiostreams.url" label="Instance" type="enum" default="0" values="midnightignite  │  [COLOR fffdb515]https://aiostreamsfortheweebsstable.midnightignite.me[/COLOR]|stremio.ru  │  [COLOR fffdb515]https://aiostreams.stremio.ru[/COLOR]|viren070  │  [COLOR fffdb515]https://aiostreams.viren070.me[/COLOR]|cloud  │  [COLOR fffdb515]https://aiostreamsfortheweak.cloud[/COLOR]|omni's  │  [COLOR fffdb515]https://aiostreams.12312023.xyz[/COLOR]|elfhosted  │  [COLOR fffdb515]https://aiostreams.elfhosted.com[/COLOR]" subsetting="true" visible="eq(-1,true)" />
       <setting id="aiostreams.uuid" label="UUID  (from /configure)" type="text" default="" subsetting="true" visible="eq(-2,true)" />
       <setting id="aiostreams.password" label="Password  (from /configure)" type="text" default="" subsetting="true" visible="eq(-3,true)" />
+    <setting label="Custom Usenet (NZB)" type="lsep" />
+    <setting id="provider.newznab" label="Newznab  ([COLOR ff00fa9a]your own Usenet indexer[/COLOR] — resolved by Premiumize)" type="bool" default="false" />
+      <setting id="newznab.url" label="Indexer URL  (e.g. [COLOR fffdb515]https://your-indexer.tld/api[/COLOR])" type="text" default="" subsetting="true" visible="eq(-1,true)" />
+      <setting id="newznab.apikey" label="API Key" type="text" default="" subsetting="true" visible="eq(-2,true)" />
+      <setting id="newznab.wizard" type="action" label="[COLOR ff00fa9a]Newznab Setup Wizard  (easy setup, no keyboard needed)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_newznabWizard)" subsetting="true" visible="eq(-3,true)" />
+      <setting id="newznab.test" type="action" label="     [COLOR fffdb515]Test indexer connection[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_newznabTest)" subsetting="true" visible="eq(-4,true)" />
+      <setting id="newznab.pm_autodelete" label="Premiumize: delete NZB from cloud after playback  (keeps cloud clean; re-downloads on replay)" type="bool" default="true" subsetting="true" visible="eq(-5,true)" />
+      <setting id="newznab.pm_stall_secs" label="Premiumize: give up if the download does not advance for (seconds)" type="slider" option="int" range="60,30,600" default="180" subsetting="true" visible="eq(-6,true)" />
+      <setting id="newznab.episodes_only" label="Single episodes only  ([COLOR ff00fa9a]skip season/show packs[/COLOR] — a 4K season pack is ~113 GB and takes ~30 min to fetch)" type="bool" default="true" subsetting="true" visible="eq(-7,true)" />
     <setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=Providers)" />
   </category>
   <category label="32074">
@@ -314,6 +332,11 @@
     <setting id="validate.source.urls" type="bool" label="Validate source URL before playback (skip dead/HTML links)" default="true" />
     <setting id="sources.ramcache" type="bool" label="Cache source list in RAM for faster Back/return (Window properties)" default="true" />
     <setting id="sources.ramcache.ttl" type="slider" label="RAM cache TTL (minutes)" default="20" range="1,5,120" option="int" subsetting="true" visible="eq(-1,true)" />
+    <setting type="lsep" label="Custom Badges  (Dolby Atmos, HDR, Dolby Vision icons, etc.)" />
+    <setting id="badges.custom.wizard" type="action" label="[COLOR ff00fa9a]Custom Badges Setup Wizard  (easy install, no keyboard needed)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_badgesWizard)" />
+    <setting id="badges.custom.enabled" type="bool" label="Use custom badge pack" default="false" />
+      <setting id="badges.custom.name" label="     Installed pack" type="text" default="not installed" enable="false" subsetting="true" visible="eq(-1,true)" />
+      <setting id="badges.custom.reset" type="action" label="     [COLOR fffdb515]Restore default icons[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_badgesReset)" subsetting="true" visible="eq(-2,true)" />
   </category>
   <category label="32315">
     <setting type="lsep" label="32315" />
@@ -428,6 +451,15 @@
 	<setting type="action" label="32153" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tb_AccountInfo)" visible="!eq(-7,) + eq(-8,true)" />
 	<setting id="torbox.add_only_if_cached" type="bool" label="TorBox: only add downloads that are already cached" default="true"/>
 	<setting id="torbox.use_cache_lookup" type="bool" label="TorBox: use cache_lookup for torrent info (faster re-lookups)" default="false"/>
+	<setting type="lsep" label="Easynews" />
+	<setting id="easynews.username" type="text" label="40006" default="" />
+	<setting id="easynews.password" type="text" option="hidden" label="Password" default="" />
+	<setting id="provider.easynews" type="bool" label="Enable Easynews Search" default="false" visible="!eq(-2,)" />
+	<setting id="easynews.priority" type="slider" label="40005" option="int" range="1,1,10" default="8" visible="!eq(-3,) + eq(-1,true)" />
+	<setting id="easynews.api_version" type="labelenum" label="Search API Version" values="2.0|3.0" default="2.0" visible="!eq(-4,) + eq(-2,true)" />
+	<setting id="easynews.max_size" type="slider" label="Max File Size (GB, 0 = no limit)" option="int" range="0,1,60" default="20" visible="!eq(-5,) + eq(-3,true)" />
+	<setting id="easynews.moderation" type="bool" label="Adult Content Filter" default="true" visible="!eq(-6,) + eq(-4,true)" />
+	<setting type="action" label="32153" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=en_AccountInfo)" visible="!eq(-7,)" />
   </category>
   <category label="32390">
     <setting type="lsep" label="FANART.TV" />

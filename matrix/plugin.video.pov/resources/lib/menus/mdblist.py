@@ -42,7 +42,7 @@ def mdbl_account_info():
 		append('[B]API Request Limit:[/B] %s' % api_requests)
 		append('[B]API Request Remaining:[/B] %s' % remaining)
 		kodi_utils.hide_busy_dialog()
-		return kodi_utils.show_text('MDBList'.upper(), '\n\n'.join(body), font_size='large')
+		return kodi_utils.show_text('MDBList'.upper(), '[CR]'.join(body), font_size='large')
 	except: kodi_utils.hide_busy_dialog()
 
 class BaseMdblList(list_helper.BaseList):

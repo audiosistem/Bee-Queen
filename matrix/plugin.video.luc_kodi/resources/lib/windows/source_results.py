@@ -264,6 +264,11 @@ class SourceResultsXML(BaseDialog):
 
 	def make_items(self):
 		def builder():
+			# Resolver de badges: built-in por defecto, o el pack custom del
+			# usuario si hay uno instalado y activo. Se resuelve UNA vez por
+			# lista (nada de I/O ni lectura de settings por cada source).
+			from resources.lib.modules import badges_config
+			_badge_resolver = badges_config.get_resolver()
 			for count, item in enumerate(self.results, 1):
 				try:
 					listitem = self.make_listitem()
@@ -357,50 +362,13 @@ class SourceResultsXML(BaseDialog):
 					# ($INFO[ListItem.Property]) resolves correctly. So we compute the
 					# ordered, gap-free list of icon paths here and expose them as
 					# luc_kodi.flag0..flagN; the skin shows one image per slot.
-					def _flag_icons(parts):
-						up = [p.upper() for p in parts]
-						def has(tok): return any(tok in u for u in up)
-						out = []
-						# video / source (same order & rules as the old strip)
-						if has('DOLBY-VISION'): out.append('source/dv.png')
-						if has('HDR') and not has('HDRIP'): out.append('source/hdr.png')
-						if has('HDR10'): out.append('source/hdr10plus.png')
-						if has('SDR'): out.append('source/sdr.png')
-						if has('HEVC') or ((has('DOLBY-VISION') or has('HDR')) and not has('HDRIP') and not has('AVC')):
-							out.append('source/hevc.png')
-						if has('AVC'): out.append('source/h264.png')
-						if has('MPEG'): out.append('source/mpeg_video.png')
-						if has('REMUX'): out.append('source/REMUX.png')
-						if has('AV1'): out.append('source/AV1.png')
-						if has('MKV'): out.append('source/mkv2.png')
-						if has('AVI'): out.append('source/avc.png')
-						if has('XVID'): out.append('source/xvid.png')
-						if has('BLURAY'): out.append('source/bluray.png')
-						if has('M2TS'): out.append('source/m2ts.png')
-						if has('HDTV'): out.append('source/hdtv.png')
-						if has('WEB'): out.append('source/web-dl.png')
-						if has('DVDRIP'): out.append('source/dvd.png')
-						# audio
-						if has('ATMOS'): out.append('audio/atmos.png')
-						if has('DOLBY-TRUEHD'): out.append('audio/dolbytruehd.png')
-						if has('DOLBYDIGITAL'): out.append('audio/dolbydigital.png')
-						if has('DD') and not has('DD-EX'): out.append('audio/eac3.png')
-						if has('DTS-HD MA'): out.append('audio/dtshd_ma.png')
-						if has('DTS-X'): out.append('audio/dts_x.png')
-						if has('DTS') and not has('DTS-X') and not has('DTS-HD MA'): out.append('audio/dts2.png')
-						if has('AAC'): out.append('audio/aac.png')
-						if has('MP3'): out.append('audio/mp3.png')
-						if has('FLAC'): out.append('audio/flac.png')
-						if has('MULTI-LANG'): out.append('audio/multi_lingual.png')
-						# channels
-						if has('2CH'): out.append('channels/2.png')
-						if has('6CH'): out.append('channels/6.png')
-						if has('8CH'): out.append('channels/8.png')
-						return out
+					# Built-in icon set, unless the user installed+enabled a custom
+					# badge pack via the Setup Wizard (Nuvio Badges Studio format),
+					# in which case its regex rules take over.
 					_FLAG_SLOTS = 14
-					_icons = _flag_icons(_parts)
+					_icons = _badge_resolver(quality, item.get('name') or '', _parts, skin_media)
 					for _i in range(_FLAG_SLOTS):
-						_val = joinPath(skin_media, _icons[_i]) if _i < len(_icons) else ''
+						_val = _icons[_i] if _i < len(_icons) else ''
 						listitem.setProperty('luc_kodi.flag%d' % _i, _val)
 					listitem.setProperty('luc_kodi.url', item.get('url'))
 					listitem.setProperty('luc_kodi.extra_info', extra_info)
@@ -505,7 +473,7 @@ class SourceResultsXML(BaseDialog):
 			try:
 				from resources.lib.modules import mdblist
 				if mdblist.getMDBListCredentialsInfo():
-					data = mdblist.getMediaInfo(imdb_id)
+					data = mdblist.getMediaInfo(imdb_id, mediatype)
 					if data:
 						ratings = data.get('ratings') or []
 						score_map = {}

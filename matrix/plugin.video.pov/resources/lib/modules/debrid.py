@@ -73,7 +73,7 @@ class Source:
 	def resolve_external_sources(self, title, season, episode):
 		from modules.source_utils import supported_video_extensions, seas_ep_filter, extras_filter
 		try:
-			extensions = supported_video_extensions()
+			extensions = tuple(supported_video_extensions())
 			extras_filtering_list = tuple(i for i in extras_filter() if i not in title.lower())
 			if self.url.startswith('magnet'):
 				store_to_cloud = settings.store_resolved_torrent_to_cloud(self.debrid)
@@ -87,7 +87,7 @@ class Source:
 			for i in files or []:
 				torrent_id, filename = i.get('torrent_id'), i['filename'].lower()
 				if filename.endswith('.m2ts'): raise Exception('_m2ts_check failed')
-				if not filename.endswith(tuple(extensions)): continue
+				if not filename.endswith(extensions): continue
 				if season:
 					if not seas_ep_filter(season, episode, filename): continue
 				elif any(x in filename for x in extras_filtering_list): continue
@@ -248,7 +248,7 @@ class DebridCheck:
 		return checked_hashes
 
 import re, random, requests
-from fenom.client import randomagent
+from magneto.modules.client import randomagent
 
 session = requests.session()
 session.headers.update({'User-Agent': randomagent(), 'Accept': 'application/json'})

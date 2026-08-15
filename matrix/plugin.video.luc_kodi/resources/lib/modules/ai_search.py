@@ -276,10 +276,33 @@ def _discover_has_results(discover_url):
 # ──────────────────────────────────────────────────────────────────────
 
 def _intent_keyword_terms(intent):
-	"""Combine keywords + tone descriptors, but skip terms that are also names."""
-	people_terms = {_normalize(p) for p in intent.get('people', []) if p}
+	"""Combine keywords + tone descriptors, but skip terms that are also names.
+
+	The model asked for "gritty Scorsese crime films" will often place
+	"Martin Scorsese" in people and a bare "scorsese" in tone_descriptors.
+	Whole-string comparison misses that ("scorsese" != "martin scorsese"),
+	so the surname slipped through and resolved to a spurious TMDb keyword
+	that narrowed the query to nothing. Matching is done on tokens instead:
+	a term is dropped when every one of its tokens belongs to some person's
+	name. This can misfire on a keyword that happens to be a surname ("bay"
+	alongside a request naming Michael Bay) at the cost of one lost keyword,
+	which is far cheaper than the empty result set the alternative produces."""
+	name_tokens, full_names = set(), set()
+	for person in intent.get('people', []):
+		normalized = _normalize(person)
+		if not normalized: continue
+		full_names.add(normalized)
+		name_tokens.update(normalized.split())
+
+	def _is_name(term):
+		normalized = _normalize(term)
+		if not normalized: return True
+		if normalized in full_names: return True
+		tokens = normalized.split()
+		return bool(tokens) and all(token in name_tokens for token in tokens)
+
 	combined = list(intent.get('keywords', [])) + list(intent.get('tone_descriptors', []))
-	return [t for t in combined if _normalize(t) not in people_terms]
+	return [t for t in combined if not _is_name(t)]
 
 
 def _year_range(intent):

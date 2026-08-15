@@ -66,6 +66,15 @@ class Movies:
 		self.tmdb_year_link = 'https://api.themoviedb.org/3/discover/movie?api_key=%s&language=en-US&region=US&primary_release_date.lte=%s&certification_country=US&primary_release_year=%s&sort_by=%s&page=1' % ('%s', self.today_date, '%s', self.tmdb_DiscoverSort())
 		self.tmdb_certification_link = 'https://api.themoviedb.org/3/discover/movie?api_key=%s&language=en-US&region=US&primary_release_date.lte=%s&certification_country=US&certification=%s&sort_by=%s&page=1' % ('%s', self.today_date, '%s', self.tmdb_DiscoverSort())
 		self.tmdb_watchproviders_link = 'https://api.themoviedb.org/3/discover/movie?api_key=%s&language=en-US&region=US&watch_region=US&with_watch_providers=%s&sort_by=%s&vote_count.gte=100&page=1' % ('%s', '%s', self.tmdb_DiscoverSort())
+		# --- Release calendar (global, NOT watchlist-based) ------------------
+		# Lo mismo que hace el calendario de Trakt: ventana de fechas sobre el
+		# catalogo entero. TMDb release types: 1 premiere, 2 limited, 3 theatrical,
+		# 4 digital, 5 physical, 6 TV. El filtro region= ya descarta el ruido de
+		# titulos sin estreno real en ese mercado.
+		_cal = lambda days: (self.date_time + timedelta(days=days)).strftime('%Y-%m-%d')
+		self.tmdb_calendarTheaters_link = 'https://api.themoviedb.org/3/discover/movie?api_key=%s&language=en-US&region=US&with_release_type=3|2&release_date.gte=%s&release_date.lte=%s&sort_by=popularity.desc&page=1' % ('%s', _cal(-45), self.today_date)
+		self.tmdb_calendarSoon_link = 'https://api.themoviedb.org/3/discover/movie?api_key=%s&language=en-US&region=US&with_release_type=3|2&release_date.gte=%s&release_date.lte=%s&sort_by=popularity.desc&page=1' % ('%s', _cal(1), _cal(180))
+		self.tmdb_calendarDigital_link = 'https://api.themoviedb.org/3/discover/movie?api_key=%s&language=en-US&region=US&with_release_type=4&release_date.gte=%s&release_date.lte=%s&sort_by=popularity.desc&page=1' % ('%s', _cal(-60), _cal(45))
 
 		self.imdb_link = 'https://www.imdb.com'
 		self.persons_link = 'https://www.imdb.com/search/name/?count=100&name='
@@ -1090,6 +1099,13 @@ class Movies:
 					try:
 						air_datetime = tools.convert_time(stringTime=i.get('lastplayed', ''), zoneFrom='utc', zoneTo='local', formatInput='%Y-%m-%dT%H:%M:%S.000Z', formatOutput='%b %d %Y %I:%M %p', remove_zeroes=True)
 						labelProgress = labelProgress + '[COLOR %s]  [%s][/COLOR]' % (self.highlight_color, air_datetime)
+					except: pass
+				if i.get('mdb_calendar_date'): # MDBList calendar: release date + type
+					try:
+						from datetime import datetime as _dt
+						rel = _dt.strptime(i['mdb_calendar_date'], '%Y-%m-%d').strftime('%b %d %Y')
+						kind = 'Digital' if i.get('mdb_calendar_kind') == 'digital' else 'Cinema'
+						labelProgress = labelProgress + '[COLOR %s]  [%s · %s][/COLOR]' % (self.highlight_color, rel, kind)
 					except: pass
 				sysname, systitle = quote_plus(label), quote_plus(title)
 				meta = dict((k, v) for k, v in iter(i.items()) if v is not None and v != '')

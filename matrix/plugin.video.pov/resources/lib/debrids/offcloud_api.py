@@ -80,14 +80,14 @@ class OffcloudAPI:
 	def parse_magnet_pack(self, magnet_url, info_hash):
 		from modules.source_utils import supported_video_extensions
 		try:
-			extensions = supported_video_extensions()
+			extensions = tuple(supported_video_extensions())
 			torrent_files = self.instant_transfer(magnet_url)
 			return [
 				{'link': item['url'],
 				 'size': item['size'],
 				 'filename': item['filename']}
 				for item in torrent_files
-				if item['filename'].lower().endswith(tuple(extensions))
+				if item['filename'].lower().endswith(extensions)
 			]
 		except: pass
 

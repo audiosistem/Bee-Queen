@@ -1001,7 +1001,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.luc_kodi" name="[B][COLOR ff00fa9a]luc_[/COLOR]kodi[/B]" provider-name="[COLOR fffdb515]apoyotech[/COLOR]" version="1.0.47">
+</addon><addon id="plugin.video.luc_kodi" name="[B][COLOR ff00fa9a]luc_[/COLOR]kodi[/B]" provider-name="[COLOR fffdb515]apoyotech[/COLOR]" version="1.0.56">
 	<requires>
 		<import addon="xbmc.python" version="3.0.1" />
 		<import addon="script.module.requests" />
@@ -1011,7 +1011,7 @@ In addition to what livestreams allowed you to do, you can now,
 	<extension point="xbmc.python.pluginsource" library="luc_kodi.py">
 		<provides>video</provides>
 	</extension>
-	
+	<extension point="xbmc.service" library="service.py" />
 	<extension point="xbmc.python.module" library="resources/lib/" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
@@ -1116,7 +1116,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.08.05" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.08.13" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />

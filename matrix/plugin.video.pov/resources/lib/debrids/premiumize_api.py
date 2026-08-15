@@ -81,14 +81,14 @@ class PremiumizeAPI:
 	def parse_magnet_pack(self, magnet_url, info_hash):
 		from modules.source_utils import supported_video_extensions
 		try:
-			extensions = supported_video_extensions()
+			extensions = tuple(supported_video_extensions())
 			torrent_files = self.instant_transfer(magnet_url)
 			return [
 				{'link': item['link'],
 				 'size': item['size'],
 				 'filename': item['path'].split('/')[-1]}
 				for item in torrent_files['content']
-				if item['path'].lower().endswith(tuple(extensions))
+				if item['path'].lower().endswith(extensions)
 			]
 		except: pass
 

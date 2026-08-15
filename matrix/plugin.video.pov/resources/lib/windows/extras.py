@@ -1,9 +1,9 @@
 import json
 import concurrent.futures
 from datetime import datetime, timedelta
-from windows import BaseDialog, location, videoplayer
+from windows import BaseDialog, location, open_window, videoplayer
 from caches import watched_cache as ws
-from indexers import metadata, tmdb_api, imdb_api
+from indexers import metadata, tmdb_api, imdb_api, mdblist_api
 from menus import images, people, trakt, mdblist, tmdb
 from modules import settings, dialogs, downloader
 from modules.meta_lists import networks as meta_networks
@@ -32,6 +32,12 @@ parentsguide_dict = {
 	'nudity': (ls(32990), 'porn.png')
 }
 
+def extras_menu(params):
+	function = metadata.movie_meta if params['mediatype'] == 'movie' else metadata.tvshow_meta
+	meta = function('tmdb_id', params['tmdb_id'], settings.metadata_user_info(), get_datetime())
+	kwargs = {'meta': meta, 'is_widget': params.get('is_widget', 'false'), 'is_home': params.get('is_home', 'false')}
+	open_window(('windows.extras', 'Extras'), 'extras.xml', **kwargs)
+
 class Extras(BaseDialog):
 	def __init__(self, *args, **kwargs):
 		BaseDialog.__init__(self, args)
@@ -44,6 +50,7 @@ class Extras(BaseDialog):
 		tpe = concurrent.futures.ThreadPoolExecutor()
 		try:
 			futures = [
+				tpe.submit(self.make_ratings),
 				tpe.submit(self.make_imdb_extended_info),
 				tpe.submit(self.make_recommended),
 				tpe.submit(self.make_videos),
@@ -143,8 +150,8 @@ class Extras(BaseDialog):
 				function = metadata.movie_meta if self.is_movie else metadata.tvshow_meta
 				meta = function('tmdb_id', chosen_var, settings.metadata_user_info(), get_datetime())
 				if not meta: return
-				params = {'mode': 'extras_menu_choice', 'tmdb_id': chosen_var, 'mediatype': self.mediatype, 'is_widget': self.is_widget, 'is_home': self.is_home}
-				return dialogs.extras_menu(params)
+				kwargs = {'meta': meta, 'is_widget': self.is_widget, 'is_home': self.is_home}
+				return self.open_window(('windows.extras', 'Extras'), 'extras.xml', **kwargs)
 			elif self.control_id in imdb_list_ids:
 				if self.control_id == parentsguide_id:
 					listings = json.loads(chosen_var)
@@ -253,6 +260,11 @@ class Extras(BaseDialog):
 			parts = sorted(data['parts'], key=lambda k: k['release_date'] or '2050')
 			self.make_tmdb_listitems(collection_id, parts, 'more_from_collection')
 		except: pass
+
+	def make_ratings(self):
+		data = mdblist_api.mdbl_ratings_info(self.mediatype, self.imdb_id)
+		if not data: return
+		for i in data: self.setProperty('tikiskins.extras.rating.%s' % i['source'], i['value'])
 
 	def make_imdb_extended_info(self):
 		try: self.imdb_extended_info = imdb_api.imdb_extended_info(self.imdb_id)

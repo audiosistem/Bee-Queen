@@ -172,6 +172,21 @@ def router(params):
 	elif action == 'mdblist_continueMovies':
 		from resources.lib.menus.mdblist_menus import MDBListContinueMovies
 		MDBListContinueMovies().get()
+	elif action == 'movie_calendarNavigator':
+		from resources.lib.menus import navigator
+		navigator.Navigator().movie_calendar()
+	elif action == 'tv_calendarNavigator':
+		from resources.lib.menus import navigator
+		navigator.Navigator().tv_calendar()
+	elif action == 'mdblist_calendarMovies':
+		from resources.lib.menus.mdblist_menus import MDBListCalendar
+		MDBListCalendar().movies()
+	elif action == 'mdblist_calendarUpcoming':
+		from resources.lib.menus.mdblist_menus import MDBListCalendar
+		MDBListCalendar().episodes('upcoming')
+	elif action == 'mdblist_calendarRecent':
+		from resources.lib.menus.mdblist_menus import MDBListCalendar
+		MDBListCalendar().episodes('recent')
 	elif action == 'mdblist_movieTopListsPublic':
 		from resources.lib.menus.mdblist_menus import MDBListTopMovies
 		MDBListTopMovies().topLists()
@@ -746,7 +761,11 @@ def router(params):
 				control.busy()
 				try:
 					from resources.lib.modules import downloader
-					downloader.download(name, image, url)
+					# v1.0.53: la URL llega limpia; la cabecera Basic se adjunta aqui
+					# para que las credenciales no viajen en el menu contextual.
+					from resources.lib.jacksparrow.sourcesdir.torrents import easynews as _en_mod
+					_dl = _en_mod.source().resolve(url) or url
+					downloader.download(name, image, _dl)
 				except:
 					import traceback
 					traceback.print_exc()
@@ -833,7 +852,11 @@ def router(params):
 			views.clearViews()
 		elif action == 'tools_updateCatalog':
 			from resources.lib.modules import catalog_updater
-			catalog_updater.precache_tmdb_catalog(pages=5, silent=False)
+			# v1.0.54: el botón manual es el refresco COMPLETO garantizado
+			# (fresh_meta re-pide el detalle de página 1 y renueva el sello
+			# meta_hours; force_refresh re-lee las listas). El arranque diario
+			# ya no hace esto: usa el ciclo ligero.
+			catalog_updater.precache_tmdb_catalog(pages=5, silent=False, force_refresh=True, fresh_meta=True)
 			control.trigger_widget_refresh()
 		elif action == 'tools_personalRankerStats':
 			from resources.lib.modules import personal_ranker_ui
@@ -856,9 +879,21 @@ def router(params):
 		elif action == 'tools_torzDetect':
 			from resources.lib.modules import torz_wizard
 			torz_wizard.detect()
+		elif action == 'tools_newznabWizard':
+			from resources.lib.modules import newznab_wizard
+			newznab_wizard.run()
+		elif action == 'tools_newznabTest':
+			from resources.lib.modules import newznab_wizard
+			newznab_wizard.test()
 		elif action == 'tools_cometWizard':
 			from resources.lib.modules import comet_wizard
 			comet_wizard.run()
+		elif action == 'tools_badgesWizard':
+			from resources.lib.modules import badges_wizard
+			badges_wizard.run()
+		elif action == 'tools_badgesReset':
+			from resources.lib.modules import badges_wizard
+			badges_wizard.run_reset()
 		elif action == 'tools_mdblistWizard':
 			from resources.lib.modules import mdblist_wizard
 			mdblist_wizard.run()

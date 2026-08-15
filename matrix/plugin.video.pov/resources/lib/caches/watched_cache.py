@@ -2,10 +2,10 @@ from threading import Thread
 from operator import itemgetter
 from types import MappingProxyType
 from datetime import datetime, timezone
-from caches.favorites_cache import get_hidden_items
 from caches.mdbl_cache import clear_mdbl_collection_watchlist_data
 from caches.trakt_cache import clear_trakt_collection_watchlist_data
 from indexers import metadata
+from indexers.local_api import local_get_hidden_items
 from indexers.mdblist_api import mdbl_watched_unwatched, mdbl_progress, mdbl_get_hidden_items
 from indexers.trakt_api import trakt_watched_unwatched, trakt_progress, trakt_get_hidden_items, trakt_official_status
 from modules import kodi_utils, settings
@@ -311,7 +311,7 @@ def get_dropped_info_tv(watched_indicators):
 	try:
 		if   watched_indicators == 1: hidden_data.update(trakt_get_hidden_items('dropped'))
 		elif watched_indicators == 2: hidden_data.update(mdbl_get_hidden_items('dropped'))
-		else: hidden_data.update(get_hidden_items('dropped'))
+		else: hidden_data.update(local_get_hidden_items('dropped'))
 	except: pass
 	return hidden_data
 

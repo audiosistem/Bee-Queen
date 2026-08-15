@@ -103,8 +103,22 @@ class source:
 				url = unquote_plus(columns[1]).replace('&amp;', '&')
 				try: url = re.search(r'(magnet:.+?)&tr=', url, re.I).group(1).replace(' ', '.')
 				except: continue
-				hash = re.search(r'btih:(.*?)&', url, re.I).group(1)
-				name = source_utils.clean_name(unquote_plus(url.split('&dn=')[1])) # some links on kickass dbl encoded
+				# v1.0.54: la regex antigua exigia un '&' DETRAS del hash, asi que
+				# cuando btih era el ultimo parametro del magnet la fila reventaba
+				# con AttributeError y se perdia. Ahora el hash se captura por su
+				# propio alfabeto (hex 40 / base32 32) sin depender de lo de detras.
+				hash_m = re.search(r'btih:([a-zA-Z0-9]{32,40})', url, re.I)
+				if not hash_m: continue
+				hash = hash_m.group(1)
+				# v1.0.54: si el magnet no trae '&dn=' (mismos magnets minimos que
+				# antes reventaban en la regex del hash), el nombre se saca de la
+				# columna de titulo de la propia fila en vez de perder el resultado
+				# con IndexError.
+				if '&dn=' in url:
+					name = source_utils.clean_name(unquote_plus(url.split('&dn=')[1])) # some links on kickass dbl encoded
+				else:
+					name = source_utils.clean_name(re.sub(r'<[^>]+>', '', columns[0]).strip())
+					if not name: continue
 
 				if not source_utils.check_title(self.title, self.aliases, name, self.hdlr, self.year): continue
 				name_info = source_utils.info_from_name(name, self.title, self.year, self.hdlr, self.episode_title)
@@ -188,8 +202,22 @@ class source:
 				try: url = re.search(r'(magnet:.+?)&tr=', url, re.I).group(1).replace(' ', '.')
 				except: continue
 				
-				hash = re.search(r'btih:(.*?)&', url, re.I).group(1)
-				name = source_utils.clean_name(unquote_plus(url.split('&dn=')[1])) # some links on kickass dbl encoded
+				# v1.0.54: la regex antigua exigia un '&' DETRAS del hash, asi que
+				# cuando btih era el ultimo parametro del magnet la fila reventaba
+				# con AttributeError y se perdia. Ahora el hash se captura por su
+				# propio alfabeto (hex 40 / base32 32) sin depender de lo de detras.
+				hash_m = re.search(r'btih:([a-zA-Z0-9]{32,40})', url, re.I)
+				if not hash_m: continue
+				hash = hash_m.group(1)
+				# v1.0.54: si el magnet no trae '&dn=' (mismos magnets minimos que
+				# antes reventaban en la regex del hash), el nombre se saca de la
+				# columna de titulo de la propia fila en vez de perder el resultado
+				# con IndexError.
+				if '&dn=' in url:
+					name = source_utils.clean_name(unquote_plus(url.split('&dn=')[1])) # some links on kickass dbl encoded
+				else:
+					name = source_utils.clean_name(re.sub(r'<[^>]+>', '', columns[0]).strip())
+					if not name: continue
 
 				episode_start, episode_end = 0, 0
 				if not self.search_series:

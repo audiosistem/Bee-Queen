@@ -107,8 +107,8 @@ def extras_lists_choice():
 	list_items = [{'line1': item} for item in dl]
 	kwargs = {'items': json.dumps(list_items), 'heading': 'POV', 'multi_choice': 'true', 'preselect': preselect}
 	selection = select_dialog(fl, multi_line='false', **kwargs)
-	if selection == []: return set_setting('extras.enabled_menus', 'noop')
-	elif selection is None: return
+	if selection is None: return
+	if not len(selection): return set_setting('extras.enabled_menus', '2050')
 	selection = ','.join(map(str, selection))
 	set_setting('extras.enabled_menus', selection)
 
@@ -211,37 +211,31 @@ def meta_language_choice():
 	clear_cache('meta', silent=True)
 
 def favorites_choice(params):
-	from caches.favorites_cache import Favorites
-	favorites = Favorites()
-	icon = media_path('favorites.png')
-	if params.get('cache'):
-		list = [('%s %s' % (ls(32028), ls(32453)), 'movie'), ('%s %s' % (ls(32029), ls(32453)), 'tvshow')]
-		list_items = [{'line1': item[0], 'icon': icon} for item in list]
-		kwargs = {'items': json.dumps(list_items), 'heading': ls(32453)}
-		mediatype = select_dialog([item[1] for item in list], **kwargs)
-		if mediatype is None: return
-		notification(32576) if favorites.clear(mediatype) else notification(32574)
+	from indexers.local_api import local_favorites, add_to_sync, remove_from_sync
+	mediatype, tmdb_id, title = params['mediatype'], params['tmdb_id'], params['title']
+	current_favorites = local_favorites(None, mediatype, 'all')
+	if str(tmdb_id) in {i['tmdb_id'] for i in current_favorites}:
+		action, refresh = remove_from_sync, True
+		text = '%s[CR][CR]%s POV %s?' % (title, ls(32603), ls(32453))
 	else:
-		mediatype, tmdb_id, title = params['mediatype'], params['tmdb_id'], params['title']
-		current_favorites, refresh = favorites.get(mediatype), False
-		if tmdb_id in {i['tmdb_id'] for i in current_favorites}:
-			action, refresh = favorites.remove, True
-			text = '%s POV %s?' % (ls(32603), ls(32453))
-		else: action, text = favorites.add, '%s POV %s?' % (ls(32602), ls(32453))
-		if not confirm_dialog(text='%s[CR][CR]%s' % (title, text)): return
-		notification(32576) if action(mediatype, tmdb_id, title) else notification(32574)
-		if refresh: container_refresh()
+		action, refresh = add_to_sync, False
+		text = '%s[CR][CR]%s POV %s?' % (title, ls(32602), ls(32453))
+	if not confirm_dialog(text=text): return
+	notification(32576) if action('favorites', mediatype, tmdb_id, title) else notification(32574)
+	if refresh: container_refresh()
 
 def dropped_choice(params):
-	from caches.favorites_cache import Dropped
-	dropped = Dropped()
+	from indexers.local_api import local_droplist, add_to_sync, remove_from_sync
 	mediatype, tmdb_id, title = params['mediatype'], params['tmdb_id'], params['title']
-	current_favorites = dropped.get(mediatype)
-	if tmdb_id in {int(i['tmdb_id']) for i in current_favorites}:
-		action, text = dropped.remove, '%s POV %s?' % (ls(32603), 'Dropped')
-	else: action, text = dropped.add, '%s POV %s?' % (ls(32602), 'Dropped')
-	if not confirm_dialog(text='%s[CR][CR]%s' % (title, text)): return
-	notification(32576) if action(mediatype, tmdb_id, title) else notification(32574)
+	current_dropped = local_droplist(None, mediatype, 'all')
+	if str(tmdb_id) in {i['tmdb_id'] for i in current_dropped}:
+		action = remove_from_sync
+		text = '%s[CR][CR]%s POV %s?' % (title, ls(32603), 'Dropped')
+	else:
+		action = add_to_sync
+		text = '%s[CR][CR]%s POV %s?' % (title, ls(32602), 'Dropped')
+	if not confirm_dialog(text=text): return
+	notification(32576) if action('dropped', mediatype, tmdb_id, title) else notification(32574)
 	container_refresh()
 
 def options_menu(params, meta=None):
@@ -316,13 +310,6 @@ def options_menu(params, meta=None):
 	elif choice == 'set_results_xml_display': results_layout_choice()
 	elif choice == 'reload_widgets': return kodi_utils.widget_refresh()
 	options_menu(params, meta=meta)
-
-def extras_menu(params):
-	from windows import open_window
-	function = metadata.movie_meta if params['mediatype'] == 'movie' else metadata.tvshow_meta
-	meta = function('tmdb_id', params['tmdb_id'], settings.metadata_user_info(), get_datetime())
-	kwargs = {'meta': meta, 'is_widget': params.get('is_widget', 'false'), 'is_home': params.get('is_home', 'false')}
-	open_window(('windows.extras', 'Extras'), 'extras.xml', **kwargs)
 
 def refresh_cached_meta(meta):
 	from caches.meta_cache import MetaCache
@@ -488,7 +475,7 @@ def scrapers_status(folder='all'):
 
 def enable_disable(folder):
 	try:
-		icon = 'special://home/addons/plugin.video.pov/resources/lib/fenom/fenom_icon.png'
+		icon = 'special://home/addons/plugin.video.pov/fenom_icon.png'
 		enabled, disabled = scrapers_status(folder)
 		all_sources = sorted(enabled + disabled)
 		preselect = [all_sources.index(i) for i in enabled]

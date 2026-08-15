@@ -103,7 +103,7 @@ def clear_mdbl_list_data(list_type):
 
 def clear_mdbl_calendar():
 	try:
-		dbcur = TraktCache().dbcur
+		dbcur = MDBLCache().dbcur
 		dbcur.execute(DELETE_LIKE, ('mdbl_get_my_calendar_%',))
 	except: return
 
@@ -126,10 +126,12 @@ def default_activities():
 			'season_watched_at': '',
 			'episode_watched_at': '',
 			'rated_at': '',
+			'journal_at': '',
 			'collected_at': '',
 			'dropped_at': '',
 			'paused_at': '',
 			'episode_paused_at': '',
-			'list_updated_at': ''
+			'list_updated_at': '',
+			'server_time': ''
 			}
 

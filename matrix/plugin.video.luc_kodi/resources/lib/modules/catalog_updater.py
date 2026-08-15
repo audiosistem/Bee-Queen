@@ -24,6 +24,19 @@ S_ON_START = 'catalog.auto_update.on_start'
 S_INTERVAL = 'catalog.auto_update.interval_hours'
 S_NOTIFY = 'catalog.auto_update.notify'
 S_LASTRUN = 'catalog.auto_update.last_run'  # internal timestamp (seconds)
+# v1.0.54: el refresco COMPLETO de metadatos (fresh_meta: invalidar metacache y
+# re-pedir el detalle por título a TMDb) ya no corre en cada arranque — es lo que
+# costaba 6-7s. Ahora se limita a una vez cada N horas (ajuste meta_hours); el
+# resto de arranques solo hacen el refresco VISUAL ligero (ver
+# tmdb_list_visual_refresh en indexers/tmdb.py), que pinta la parrilla al
+# instante desde metacache con póster/fanart/rating frescos de la propia lista.
+S_META_HOURS = 'catalog.auto_update.meta_hours'  # enum: índice sobre _META_HOURS
+S_LASTMETA = 'catalog.auto_update.last_meta'     # internal timestamp (seconds)
+
+# Los settings type="enum" de Kodi devuelven el ÍNDICE seleccionado, no el valor.
+# Mapeos índice -> horas para los dos enums de este módulo.
+_INTERVAL_HOURS = (1, 3, 6, 12, 24)   # catalog.auto_update.interval_hours
+_META_HOURS = (6, 12, 24, 48)         # catalog.auto_update.meta_hours
 
 CHECK_EVERY_SECONDS = 300  # 5 minutes
 
@@ -72,6 +85,42 @@ def _is_due(interval_hours):
     if last == 0:
         return True
     return (_now() - last) >= (int(interval_hours) * 3600)
+
+def _enum_hours(setting_id, table, default_hours):
+    """Los enum de Kodi guardan el ÍNDICE; traducir a horas con `table`.
+    Si el valor almacenado no es un índice válido, caer a default_hours."""
+    try:
+        v = control.setting(setting_id)
+        if v == '':
+            return default_hours
+        idx = int(v)
+        if 0 <= idx < len(table):
+            return table[idx]
+        return default_hours
+    except:
+        return default_hours
+
+def _get_last_meta():
+    try:
+        v = control.setting(S_LASTMETA)
+        return int(v) if v else 0
+    except:
+        return 0
+
+def _set_last_meta(ts):
+    try:
+        control.setSetting(S_LASTMETA, str(int(ts)))
+    except:
+        pass
+
+def _meta_refresh_due():
+    """True si toca el refresco COMPLETO de metadatos (fresh_meta). La primera
+    vez (sin marca) siempre toca, para que una instalación nueva se llene."""
+    last = _get_last_meta()
+    if last == 0:
+        return True
+    hours = _enum_hours(S_META_HOURS, _META_HOURS, 12)
+    return (_now() - last) >= (hours * 3600)
 
 def _notify(msg):
     try:
@@ -128,6 +177,17 @@ def _get_tmdb_links():
 def precache_tmdb_catalog(pages=1, silent=False, force_refresh=False, fresh_meta=False):
     """
     Precarga las listas TMDb para que widgets/menús abran rápido tras iniciar Kodi.
+
+    v1.0.54 — dos niveles de refresco:
+      - LIGERO (fresh_meta=False, el arranque típico): re-lee las listas y
+        actualiza los campos visuales de la parrilla (póster/fanart/rating/
+        votos/plot/fecha) directamente desde la respuesta de lista para los
+        títulos ya cacheados (tmdb_list_visual_refresh). Solo los títulos
+        nuevos o caducados piden su detalle completo. Coste: ~9 peticiones.
+      - COMPLETO (fresh_meta=True): invalida en metacache las metas de página 1
+        y re-pide el detalle entero por título (reparto, logos, posters_all...).
+        Corre como mucho cada meta_hours (sello S_LASTMETA, se renueva aquí al
+        terminar bien) o al pulsar el botón manual de Tools.
 
     Cambios v1.0.38 (rendimiento de arranque):
       - pages=1 por defecto: solo se precarga lo que el usuario ve primero
@@ -209,6 +269,28 @@ def precache_tmdb_catalog(pages=1, silent=False, force_refresh=False, fresh_meta
                     log_utils.log('[luc_kodi] TMDB Catalog: fresh_meta invalidó %s metas (página 1)' % removed, level=LOGINFO)
             except: log_utils.error()
 
+        # ── REFRESCO VISUAL LIGERO (v1.0.54, solo cuando NO toca fresh_meta) ──
+        # La respuesta de LISTA de TMDb ya trae poster_path, backdrop_path,
+        # vote_average, vote_count, overview y fecha: todo lo que la parrilla
+        # necesita ver fresco. Para los títulos que YA están en metacache se
+        # actualizan esos campos directamente desde la lista — CERO peticiones
+        # de detalle por título. El detalle completo (reparto, logos,
+        # posters_all, certificaciones, tráilers) lo renueva el ciclo fresh_meta
+        # cada N horas (meta_hours), no cada arranque. Con esto el arranque
+        # típico queda en las 9 peticiones de lista (~1-2s) en vez de ~180
+        # peticiones de detalle (~6-7s).
+        if not fresh_meta:
+            def _visual(idx, page_url, p):
+                if p != 1: return  # solo lo visible
+                try:
+                    n = idx.tmdb_list_visual_refresh(page_url)
+                    if n: log_utils.log('[luc_kodi] TMDB Catalog: visual refresh %s metas <- %s' % (n, page_url.split('?')[0]), level=LOGINFO)
+                except:
+                    log_utils.error()
+            vthreads = [Thread(target=_visual, args=(idx, page_url, _p)) for idx, page_url, _p in jobs]
+            [t.start() for t in vthreads]
+            [t.join() for t in vthreads]
+
         # ── Enriquecimiento con POOL GLOBAL ACOTADO ──
         # Las 9 listas corren todas en paralelo (son pocas), pero el TOPE real de
         # peticiones de red lo pone un semáforo GLOBAL compartido que acota las
@@ -229,6 +311,13 @@ def precache_tmdb_catalog(pages=1, silent=False, force_refresh=False, fresh_meta
         [t.join() for t in threads]
 
         log_utils.log('[luc_kodi] TMDB Catalog: precache finished (%s listas)' % len(jobs), level=LOGINFO)
+
+        # El sello del refresco completo se pone AQUÍ (única fuente de verdad):
+        # cualquier llamada con fresh_meta=True que termine bien lo renueva,
+        # venga del servicio de arranque, del tick programado o del botón
+        # manual "Update Catalog" de Tools.
+        if fresh_meta:
+            _set_last_meta(_now())
 
         if not silent:
             _notify(control.lang(400702))  # "TMDB Catalog: Completed."
@@ -261,23 +350,41 @@ class CatalogService:
                 # Skip iteration entirely if user is actively watching — avoid
                 # competing with the stream for bandwidth, disk I/O and CPU.
                 if xbmc.Player().isPlayingVideo():
-                    monitor.waitForAbort(CHECK_EVERY_SECONDS)
+                    # v1.0.55: si el refresco de ARRANQUE aun no ha corrido, no
+                    # se pospone 5 minutos enteros — se reintenta en 15s.
+                    # Motivo (visto en kodi.log): muchos skins reproducen un
+                    # video de intro al iniciar Kodi (p.ej. intro-omega.mp4,
+                    # ~10s). La primera iteracion cae dentro de ese intro, el
+                    # guard la salta y el refresco de catalogo (y su
+                    # notificacion) se iba a los 5 minutos EN CADA ARRANQUE:
+                    # para entonces el usuario ya lleva rato en el menu con los
+                    # widgets sin refrescar. El guard sigue intacto para la
+                    # reproduccion real: mientras se ve algo, no se compite por
+                    # ancho de banda; solo cambia cada cuanto se vuelve a mirar.
+                    monitor.waitForAbort(15 if not did_startup else CHECK_EVERY_SECONDS)
                     continue
 
                 enabled = _get_bool(S_ENABLED, default=False)
                 if enabled:
                     on_start = _get_bool(S_ON_START, default=True)
                     notify = _get_bool(S_NOTIFY, default=True)
-                    interval = _get_int(S_INTERVAL, default=6)
+                    # v1.0.54 FIX: interval_hours es un enum y Kodi devuelve el
+                    # ÍNDICE (0-4), no las horas. Antes se usaba el índice como
+                    # horas ("2" -> 2h en vez de las 6h de la etiqueta).
+                    interval = _enum_hours(S_INTERVAL, _INTERVAL_HOURS, 6)
 
-                    # On startup: en CADA inicio de Kodi (no solo la primera vez).
-                    # pages=1 + fresh_meta=True: solo lo visible (página 1), con
-                    # frescura REAL (invalida metacache solo de esos títulos para
-                    # traer pósters/metadatos nuevos). force_refresh=True detecta
-                    # además títulos que han entrado/salido de cada lista. El guard
-                    # de sesión evita repetirlo dentro del mismo arranque.
+                    # On startup (v1.0.54): en CADA inicio de Kodi se hace el
+                    # ciclo LIGERO — force_refresh=True re-lee las 9 listas
+                    # (títulos que entran/salen) y el refresco visual actualiza
+                    # póster/fanart/rating de lo cacheado desde la propia lista.
+                    # El ciclo COMPLETO (fresh_meta: invalidar metacache y
+                    # re-pedir ~180 detalles a TMDb) solo corre si han pasado
+                    # meta_hours desde el último completo: era lo que costaba
+                    # 6-7s en cada arranque. El guard de sesión evita repetirlo
+                    # dentro del mismo arranque.
                     if on_start and not did_startup:
-                        precache_tmdb_catalog(pages=1, silent=not notify, force_refresh=True, fresh_meta=True)
+                        heavy = _meta_refresh_due()
+                        precache_tmdb_catalog(pages=1, silent=not notify, force_refresh=True, fresh_meta=heavy)
                         _set_last_run(_now())
                         did_startup = True
                         try:
@@ -285,11 +392,13 @@ class CatalogService:
                         except:
                             pass
 
-                    # Scheduled run: refresco ligero de página 1 sin invalidar
-                    # metas (estas ya rotan por su propio TTL); solo re-evalúa
-                    # listas para captar novedades.
+                    # Scheduled run: refresco ligero de página 1. Si en sesiones
+                    # largas vence meta_hours, el ciclo completo corre aquí (con
+                    # force_refresh para que las listas también sean frescas);
+                    # si no, solo se re-evalúan listas para captar novedades.
                     elif _is_due(interval):
-                        precache_tmdb_catalog(pages=1, silent=not notify)
+                        heavy = _meta_refresh_due()
+                        precache_tmdb_catalog(pages=1, silent=not notify, force_refresh=heavy, fresh_meta=heavy)
                         _set_last_run(_now())
                         try:
                             control.trigger_widget_refresh()

@@ -6,9 +6,9 @@ import re
 import unicodedata
 from string import printable
 from threading import Thread as thread
-from fenom import cleantitle, log_utils
-from fenom.undesirables import Undesirables
-from fenom.control import homeWindow, jsloads, setting as getSetting, setSetting
+from magneto.modules import cleantitle, log_utils
+from magneto.modules.undesirables import Undesirables
+from magneto.modules.control import homeWindow, jsloads, setting as getSetting, setSetting
 
 
 LANG = ('arabic', 'bgaudio', 'castellano', 'chinese', 'dutch', 'finnish', 'french', 'german', 'greek', 'hebrew', 'italian', 'korean', 'latino', 'polish',

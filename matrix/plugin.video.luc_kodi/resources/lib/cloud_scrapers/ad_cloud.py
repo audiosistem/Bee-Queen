@@ -12,6 +12,7 @@ from resources.lib.modules.control import setting as getSetting
 from resources.lib.jacksparrow import source_utils as fs_utils
 
 invalid_extensions = ('.bmp', '.gif', '.jpg', '.nfo', '.part', '.png', '.rar', '.sample.', '.srt', '.txt', '.zip')
+from resources.lib.modules.source_utils import is_archive_part  # v1.0.54
 
 class source:
 	priority = 0
@@ -54,7 +55,7 @@ class source:
 				if not cloud_utils.cloud_check_title(title, aliases, folder_name): continue
 				files = folder.get('links', '')
 				# files = [i for i in files if i['filename'].lower().endswith(tuple(supported_video_extensions()))]
-				files = [i for i in files if not i['filename'].lower().endswith(invalid_extensions)]
+				files = [i for i in files if not i['filename'].lower().endswith(invalid_extensions) and not is_archive_part(i['filename'])]
 				if not files: continue
 				path = folder_name.lower()
 			except:
@@ -65,7 +66,7 @@ class source:
 			for file in files:
 				try:
 					name = file.get('filename', '')
-					if name.lower().endswith(invalid_extensions): continue
+					if name.lower().endswith(invalid_extensions) or is_archive_part(name): continue
 					rt = cloud_utils.release_title_format(name)
 					if any(value in rt for value in extras_filter): continue
 					if '.m2ts' in str(file.get('files')):
@@ -88,7 +89,7 @@ class source:
 									else:
 										link = cache.get(AllDebrid().unrestrict_link, 168, file['link'], True)
 										name = link.get('filename', '')
-										if name.lower().endswith(invalid_extensions): continue
+										if name.lower().endswith(invalid_extensions) or is_archive_part(name): continue
 										rt = cloud_utils.release_title_format(name)
 										if any(value in rt for value in extras_filter): continue
 										if all(not bool(re.search(i, rt)) for i in query_list): continue

@@ -142,7 +142,7 @@ def upload_LogFile(name):
 		text = f.read()
 		f.close()
 		UserAgent = 'luc_kodi %s' % addonVersion('plugin.video.luc_kodi')
-		response = requests.post(url + 'documents', data=text.encode('utf-8', errors='ignore', timeout=15), headers={'User-Agent': UserAgent})
+		response = requests.post(url + 'documents', data=text.encode('utf-8', errors='ignore'), timeout=15, headers={'User-Agent': UserAgent})
 		if 'key' in response.json():
 			result = url + response.json()['key']
 			log('%s log file uploaded to: %s' % (name, result))

@@ -5,7 +5,7 @@ from modules.settings import filter_by_name, easynews_language_filter
 
 internal_results, check_title = source_utils.internal_results, source_utils.check_title
 clean_file_name, clean_title = source_utils.clean_file_name, source_utils.clean_title
-get_file_info = source_utils.get_file_info
+get_file_info, seas_ep_filter = source_utils.get_file_info, source_utils.seas_ep_filter
 
 class source(Debrid):
 	scrape_provider = 'easynews'
@@ -26,6 +26,8 @@ class source(Debrid):
 				try:
 					if filter_lang and not any(i in lang_filters for i in item['language']) : continue
 					if not check_title(title, item['name'], self.aliases): continue
+					if season:
+						if not seas_ep_filter(season, episode, item['name']): continue
 					normalized = clean_title(item['name'])
 
 					display_name = clean_file_name(item['name']).replace('html', ' ')

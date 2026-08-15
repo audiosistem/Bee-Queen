@@ -482,6 +482,133 @@ def getUpNext(hide_unreleased=True, limit=40):
 
 
 # ---------------------------------------------------------------------------
+# Calendar — contenido futuro/reciente construido con datos de MDBList
+#
+# La web de MDBList tiene un "Calendar" propio (mdblist.com/calendar) pero NO
+# expone endpoint /calendar en la API publica (verificado contra el OpenAPI
+# 1.0.0 y el apiary oficial, ago-2026). Se construye el equivalente con lo que
+# la API SI da:
+#   - Episodios: GET /upnext SIN hide_unreleased -> siguiente episodio no
+#     visto de cada serie en curso, incluidos los aun no emitidos (air_date).
+#   - Peliculas: watchlist + Media Info Batch (POST /imdb/movie, hasta 200
+#     ids por llamada) -> campos released / released_digital.
+# ---------------------------------------------------------------------------
+
+def _upnext_all(limit=100):
+    """Como getUpNext pero SIN ocultar episodios sin emitir: materia prima del
+    calendario. air_date llega como YYYY-MM-DD; se convierte al formato UTC de
+    Trakt (YYYY-MM-DDT00:00:00.000Z) para reutilizar sin tocar nada las ramas
+    calendar_unaired / calendar_recent de episodeDirectory()."""
+    data = _get('/upnext', params={'limit': limit})
+    if not data or not isinstance(data, dict):
+        return []
+    out = []
+    for it in (data.get('items') or []):
+        try:
+            sh = it.get('show') or {}
+            ne = it.get('next_episode') or {}
+            sids = sh.get('ids') or {}
+            air = (ne.get('air_date') or '')[:10]
+            if not air:
+                continue  # sin fecha no hay calendario
+            out.append({
+                'type': 'episode',
+                'imdb': str(sids.get('imdb') or sids.get('imdbid') or ''),
+                'tmdb': str(sids.get('tmdb') or sids.get('tmdbid') or '') if (sids.get('tmdb') or sids.get('tmdbid')) else '',
+                'tvdb': str(sids.get('tvdb') or sids.get('tvdbid') or '') if (sids.get('tvdb') or sids.get('tvdbid')) else '',
+                'title': ne.get('title', ''),
+                'originaltitle': ne.get('title', ''),
+                'tvshowtitle': sh.get('title', ''),
+                'year': str(sh.get('year', '')),
+                'season': int(ne.get('season') or 0),
+                'episode': int(ne.get('episode') or 0),
+                'premiered': '%sT00:00:00.000Z' % air,
+                'sort_date': air,
+                'duration': int((ne.get('runtime') or 0)) * 60,
+                'next': '',
+            })
+        except Exception:
+            pass
+    return out
+
+
+def getCalendarEpisodes(mode='upcoming', recent_days=30):
+    """Calendario de episodios de las series que sigues en MDBList.
+    mode='upcoming': aun sin emitir (hoy incluido), ascendente por fecha.
+    mode='recent'  : emitidos y sin ver en los ultimos recent_days, descendente."""
+    from datetime import datetime, timedelta, timezone
+    _now = datetime.now(timezone.utc)
+    today = _now.strftime('%Y-%m-%d')
+    items = _upnext_all()
+    if mode == 'upcoming':
+        items = [i for i in items if i['sort_date'] >= today]
+        items.sort(key=lambda k: k['sort_date'])
+        for i in items:
+            i['calendar_unaired'] = True
+    else:
+        floor = (_now - timedelta(days=recent_days)).strftime('%Y-%m-%d')
+        items = [i for i in items if floor <= i['sort_date'] < today]
+        items.sort(key=lambda k: k['sort_date'], reverse=True)
+        for i in items:
+            i['calendar_recent'] = True
+    return items
+
+
+def getCalendarMovies(recent_days=30):
+    """Calendario de peliculas de tu watchlist MDBList: estrenos en cine y en
+    digital desde hace recent_days hasta el futuro, ascendente por fecha. Cada
+    item lleva mdb_calendar_date (la fecha relevante) y mdb_calendar_kind
+    ('theatrical'|'digital') para la etiqueta."""
+    from datetime import datetime, timedelta, timezone
+    if not getMDBListCredentialsInfo():
+        return []
+    watchlist = getWatchlistMovies() or []
+    ids = [w['imdb'] for w in watchlist if w.get('imdb')]
+    if not ids:
+        return []
+    _now = datetime.now(timezone.utc)
+    today = _now.strftime('%Y-%m-%d')
+    floor = (_now - timedelta(days=recent_days)).strftime('%Y-%m-%d')
+    out = []
+    for chunk_start in range(0, len(ids), 200):  # limite documentado del batch
+        chunk = ids[chunk_start:chunk_start + 200]
+        data = _post('/imdb/movie', json_data={'ids': chunk}, silent=True)
+        if not data or not isinstance(data, list):
+            continue
+        for m in data:
+            try:
+                mids = m.get('ids') or {}
+                theatrical = (m.get('released') or '')[:10]
+                digital = (m.get('released_digital') or '')[:10]
+                # fecha "relevante": la digital si aun no ha llegado (o si el
+                # estreno en cine ya paso), si no la de cine; siempre dentro
+                # de la ventana [floor, futuro)
+                cal_date, cal_kind = '', ''
+                if theatrical and theatrical >= floor:
+                    cal_date, cal_kind = theatrical, 'theatrical'
+                if digital and digital >= floor:
+                    if not cal_date or (theatrical < today and digital >= cal_date):
+                        cal_date, cal_kind = digital, 'digital'
+                if not cal_date:
+                    continue
+                out.append({
+                    'title': m.get('title', ''),
+                    'originaltitle': m.get('title', ''),
+                    'year': str(m.get('year', '')),
+                    'imdb': str(mids.get('imdb') or ''),
+                    'tmdb': str(mids.get('tmdb') or '') if mids.get('tmdb') else '',
+                    'tvdb': '',
+                    'mdb_calendar_date': cal_date,
+                    'mdb_calendar_kind': cal_kind,
+                    'next': '',
+                })
+            except Exception:
+                pass
+    out.sort(key=lambda k: k['mdb_calendar_date'])
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Watched history  (GET/POST /sync/watched)
 # ---------------------------------------------------------------------------
 
@@ -561,6 +688,108 @@ def getUserLists():
     return data if isinstance(data, list) else []
 
 
+# ---------------------------------------------------------------------------
+# Edicion de listas estaticas  (POST /lists/<id>/items/<add|remove>)
+# ---------------------------------------------------------------------------
+# Solo las listas ESTATICAS son editables a mano. Las dinamicas se regeneran
+# desde filtros de busqueda, las de IA desde un prompt guardado y las externas
+# se parsean de Trakt/IMDb/Letterboxd: meterles un item duraria hasta el
+# siguiente refresco, asi que se excluyen del selector.
+
+def _list_is_editable(lst, media_type=None):
+    """True si la lista es estatica, propia y del tipo de medio pedido."""
+    try:
+        if lst.get('dynamic'):
+            return False
+        # 'external', 'feed' y 'linked' no siempre traen dynamic=True.
+        for flag in ('external', 'feed', 'linked'):
+            if lst.get(flag):
+                return False
+        if media_type:
+            mt = str(lst.get('mediatype') or '').lower()
+            # '' o 'any' = lista mixta, vale para ambos.
+            if mt and mt not in ('any', 'mixed'):
+                want = ('show', 'tv', 'tvshow', 'series') if media_type == 'show' else ('movie', 'movies')
+                if mt not in want:
+                    return False
+        return True
+    except Exception:
+        return False
+
+
+def getEditableLists(media_type=None):
+    """Listas del usuario en las que SI se pueden anadir/quitar items."""
+    return [l for l in (getUserLists() or []) if _list_is_editable(l, media_type)]
+
+
+def _modify_list(list_id, action, imdb_id, media_type):
+    """POST /lists/<id>/items/<add|remove>.
+
+    El cuerpo lleva los ids planos ({'imdb': 'tt...'}), que es la forma que usa
+    el cliente oficial contra este endpoint. El de watchlist acepta ademas la
+    forma anidada {'ids': {...}}, asi que si la plana no encuentra el titulo se
+    reintenta con la anidada antes de darlo por fallido.
+    """
+    key = 'movies' if media_type == 'movie' else 'shows'
+    for payload in ({key: [{'imdb': imdb_id}]}, {key: [{'ids': {'imdb': imdb_id}}]}):
+        data = _post('/lists/%s/items/%s' % (list_id, action), json_data=payload)
+        if data is None:
+            return False
+        if _modify_ok(data, action, key):
+            return True
+    return False
+
+
+def _modify_ok(data, action, key):
+    """La API responde 200 aunque no encuentre el titulo: hay que mirar los
+    contadores added/existing/not_found en vez de fiarse del codigo HTTP."""
+    try:
+        if not isinstance(data, dict):
+            return False
+        def n(section):
+            blk = data.get(section) or {}
+            return int(blk.get(key, 0) or 0) if isinstance(blk, dict) else 0
+        if n('not_found') > 0:
+            return False
+        if action == 'add':
+            return (n('added') + n('existing')) > 0
+        return (n('removed') + n('deleted')) > 0 or not data.get('not_found')
+    except Exception:
+        return False
+
+
+def addToList(list_id, imdb_id, media_type):
+    ok = _modify_list(list_id, 'add', imdb_id, media_type)
+    if ok:
+        invalidateListCaches(list_id)
+    return ok
+
+
+def removeFromList(list_id, imdb_id, media_type):
+    ok = _modify_list(list_id, 'remove', imdb_id, media_type)
+    if ok:
+        invalidateListCaches(list_id)
+    return ok
+
+
+def invalidateListCaches(list_id):
+    """Tira la cache de los items de esa lista y del indice de listas, para que
+    el cambio se vea al momento y no tras los 60 min de TTL."""
+    try:
+        from resources.lib.database import cache
+        for args in ((list_id, 'movie'), (list_id, 'show'), (list_id,)):
+            try:
+                cache.remove(getListItems, *args)
+            except Exception:
+                pass
+        try:
+            cache.remove(getUserLists)
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
 def _build_movie(m):
     return {
         'title': m.get('title', ''),
@@ -615,8 +844,13 @@ def searchLists(query):
     return []
 
 
-def getMediaInfo(imdb_id):
-    return _get('/imdb/movie/%s' % imdb_id)
+def getMediaInfo(imdb_id, mediatype='movie'):
+    """v1.0.54: la ruta depende del tipo de medio. Antes siempre se pedia
+    '/imdb/movie/...', asi que con una serie MDBList respondia 404 y las
+    valoraciones (IMDb/TMDB/Trakt/Letterboxd...) del panel de fuentes se
+    quedaban sin rellenar por MDBList — habia que esperar al Tier 2."""
+    path = '/imdb/show/%s' if str(mediatype or '').lower() in ('tvshow', 'show', 'episode', 'season', 'tv') else '/imdb/movie/%s'
+    return _get(path % imdb_id)
 
 
 def resolveShowIds(ids_dict):
@@ -704,7 +938,8 @@ def getListItemsFromUrl(mdblist_url):
 # ---------------------------------------------------------------------------
 
 def manager(name, imdb, media_type):
-    items = [control.lang(40201), control.lang(40202)]
+    items = [control.lang(40201), control.lang(40202),
+             control.lang(40206), control.lang(40207)]
     select = control.selectDialog(items, control.lang(40200))
     if select == 0:
         ok = addToWatchlist(imdb, media_type)
@@ -714,6 +949,56 @@ def manager(name, imdb, media_type):
         ok = removeFromWatchlist(imdb, media_type)
         control.notification(title='MDBList', message=control.lang(40204) if ok else control.lang(40205))
         control.refresh()
+    elif select in (2, 3):
+        _listManager(imdb, media_type, 'add' if select == 2 else 'remove')
+
+
+def _listResultMessage(ok, action, list_name):
+    """El texto nunca debe decidir el resultado: si una traduccion pierde el %s
+    el formateo falla, y antes eso convertia una escritura correcta en un aviso
+    de "accion fallida". Se cae al nombre de la lista a secas."""
+    if not ok:
+        return control.lang(40205)
+    try:
+        return control.lang(40209 if action == 'add' else 40240) % list_name
+    except Exception:
+        return list_name
+
+
+def _listManager(imdb, media_type, action):
+    """Segundo dialogo: elegir en que lista estatica anadir/quitar el titulo."""
+    try:
+        control.busy()
+        try:
+            lists = getEditableLists(media_type)
+        finally:
+            control.hide()
+        if not lists:
+            # Sin listas estaticas no hay nada que ofrecer: se explica el porque
+            # en vez de mostrar un selector vacio.
+            control.okDialog(title='MDBList', message=control.lang(40208))
+            return
+        labels = []
+        for l in lists:
+            n_items = l.get('items', 0)
+            labels.append('%s  [COLOR %s](%s)[/COLOR]' % (l.get('name', '?'),
+                                                          control.getHighlightColor(), n_items))
+        choice = control.selectDialog(labels, control.lang(40206 if action == 'add' else 40207))
+        if choice < 0:
+            return
+        target = lists[choice]
+        list_id = target.get('id')
+        list_name = target.get('name', '?')
+        if action == 'add':
+            ok = addToList(list_id, imdb, media_type)
+        else:
+            ok = removeFromList(list_id, imdb, media_type)
+        control.notification(title='MDBList',
+                             message=_listResultMessage(ok, action, list_name))
+        control.refresh()
+    except Exception:
+        log_utils.error()
+        control.notification(title='MDBList', message=control.lang(40205))
 
 
 # ---------------------------------------------------------------------------

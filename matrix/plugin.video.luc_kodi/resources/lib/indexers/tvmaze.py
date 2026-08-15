@@ -33,7 +33,7 @@ class TVMaze:
 			try:
 				response = session.get(url, timeout=20)
 			except requests.exceptions.SSLError:
-				response = session.get(url, verify=False)
+				response = session.get(url, timeout=20)
 		except requests.exceptions.ConnectionError:
 			return notification(message=32024)
 		if response.status_code in (200, 201): return response.json()

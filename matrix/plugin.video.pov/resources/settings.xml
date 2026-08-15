@@ -176,15 +176,14 @@
 		<setting id="pov.max_threads" label="Maximum threads" type="slider" default="100" range="20,10,100" option="int" />
 		<!-- Downloads -->
 		<setting label="Downloads" type="lsep" />
-		<setting id="movie_download_directory" label="Movies Directory" type="folder" default="special://profile/addon_data/plugin.video.pov/Movies Downloads/" />
-		<setting id="tvshow_download_directory" label="TV Shows Directory" type="folder" default="special://profile/addon_data/plugin.video.pov/TV Show Downloads/" />
-		<setting id="premium_download_directory" label="Premium Files Directory" type="folder" default="special://profile/addon_data/plugin.video.pov/Premium Downloads/" />
-		<setting id="image_download_directory" label="Image Files Directory" type="folder" default="special://profile/addon_data/plugin.video.pov/Image Downloads/" />
+		<setting id="movie_download_directory" label="Movies Directory" type="folder" option="writeable" default="special://profile/addon_data/plugin.video.pov/Movies Downloads/" />
+		<setting id="tvshow_download_directory" label="TV Shows Directory" type="folder" option="writeable" default="special://profile/addon_data/plugin.video.pov/TV Show Downloads/" />
+		<setting id="premium_download_directory" label="Premium Files Directory" type="folder" option="writeable" default="special://profile/addon_data/plugin.video.pov/Premium Downloads/" />
+		<setting id="image_download_directory" label="Image Files Directory" type="folder" option="writeable" default="special://profile/addon_data/plugin.video.pov/Image Downloads/" />
 		<!-- UTC Time Offset -->
 		<setting label="UTC Time Offset" type="lsep" />
 		<setting id="datetime.offset" label="UTC (+/-)" type="slider" default="0" range="-15,1,15" option="int" />
 		<!-- Hidden -->
-		<setting id="database.merge_status" type="text" default="false" visible="false" />
 		<setting id="database.maintenance.due" type="text" default="0" visible="false" />
 		<setting id="reuse_language_invoker" type="text" default="true" visible="false" />
 	</category>

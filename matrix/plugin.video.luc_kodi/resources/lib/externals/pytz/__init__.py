@@ -75,11 +75,17 @@ else:  # Python 2.x
         return s.encode('ASCII')
 
 
+_tzdata_zip = None
+
 def open_resource(name):
     """Open a resource from the zoneinfo subdir for reading.
 
-    Uses the pkg_resources module if available and no standard file
-    found at the calculated location.
+    The timezone database ships as a single zoneinfo.zip next to this module
+    rather than as ~600 loose extensionless files: several Android file
+    managers flatten deep archive trees when unpacking an addon by hand,
+    which turned the whole tz database into garbage filenames. A loose
+    zoneinfo/ directory still wins if one is present, so a custom or system
+    database can be dropped in and takes precedence.
 
     It is possible to specify different location for zoneinfo
     subdir by using the PYTZ_TZDATADIR environment variable.
@@ -95,16 +101,18 @@ def open_resource(name):
         filename = os.path.join(os.path.dirname(__file__),
                                 'zoneinfo', *name_parts)
         if not os.path.exists(filename):
-            # http://bugs.launchpad.net/bugs/383171 - we avoid using this
-            # unless absolutely necessary to help when a broken version of
-            # pkg_resources is installed.
+            global _tzdata_zip
+            if _tzdata_zip is None:
+                import zipfile
+                _tzdata_zip = zipfile.ZipFile(os.path.join(
+                    os.path.dirname(__file__), 'zoneinfo.zip'))
             try:
-                from pkg_resources import resource_stream
-            except ImportError:
-                resource_stream = None
-
-            if resource_stream is not None:
-                return resource_stream(__name__, 'zoneinfo/' + name)
+                # BytesIO: build_tzinfo needs a seekable file-like object,
+                # and ZipFile members are not reliably seekable.
+                from io import BytesIO
+                return BytesIO(_tzdata_zip.read('/'.join(name_parts)))
+            except KeyError:
+                raise IOError('Resource not found: %s' % name)
     return open(filename, 'rb')
 
 

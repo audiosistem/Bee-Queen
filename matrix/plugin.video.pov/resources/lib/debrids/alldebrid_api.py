@@ -97,7 +97,7 @@ class AllDebridAPI:
 	def parse_magnet_pack(self, magnet_url, info_hash, errors=False):
 		from modules.source_utils import supported_video_extensions
 		try:
-			extensions = supported_video_extensions()
+			extensions = tuple(supported_video_extensions())
 			torrent_id = self.create_transfer(magnet_url)
 			for key in ['completionDate'] * 3:
 				kodi_utils.sleep(500)
@@ -111,7 +111,7 @@ class AllDebridAPI:
 				 'torrent_id': torrent_id,
 				 'filename': item['n']}
 				for item in torrent_info['links']
-				if item['n'].lower().endswith(tuple(extensions))
+				if item['n'].lower().endswith(extensions)
 			]
 		except Exception as e:
 			if torrent_id: self.delete_torrent(torrent_id)

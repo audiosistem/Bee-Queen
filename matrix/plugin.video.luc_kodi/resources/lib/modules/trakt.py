@@ -4,7 +4,7 @@
 """
 
 from datetime import datetime, timezone
-from json import dumps as jsdumps
+from json import dumps as jsdumps, loads as jsloads
 import re
 import requests
 from requests.adapters import HTTPAdapter
@@ -32,15 +32,76 @@ highlight_color = control.getHighlightColor()
 server_notification = getSetting('trakt.server.notifications') == 'true'
 service_syncInterval = int(getSetting('trakt.service.syncInterval')) if getSetting('trakt.service.syncInterval') else 15
 
+# 2026-08 OAuth hardening.
+# Trakt rota el refresh_token en cada renovacion: el token viejo queda invalido
+# de inmediato. Con N hilos golpeando la API a la vez, dos 401 simultaneos
+# lanzaban dos refresh con el MISMO refresh_token -> el segundo devuelve
+# invalid_grant -> la cuenta queda desautorizada. Desde el limite de "1 Community
+# App" en cuentas gratuitas (Trakt, 22-07-2026) reconectar ya no es trivial:
+# una desautorizacion accidental puede dejar al usuario sin poder volver a
+# vincular. De ahi el single-flight + el refresco proactivo.
+_refresh_lock = Lock()
+_REFRESH_MARGIN = 1209600 # 14 dias: renovamos antes de caducar, no al fallar.
+
+# --- Anti-spam de "Please Re-Authorize" -------------------------------------
+# Cuando el refresh_token muere (invalid_grant: dispositivo desvinculado por
+# inactividad, limite de dispositivos, etc.) CADA llamada a Trakt devuelve 401
+# y cada hilo (navegador + service + widgets) reintentaba el refresh y lanzaba
+# su propia notificacion 33677 -> rafaga de notificaciones identicas en bucle.
+# Solucion: marcar el refresh como "muerto" en una window property (compartida
+# entre el invoker del plugin y el service) y:
+#   1) no reintentar el refresh durante _DEAD_RETRY_SECS (evita martillear el
+#      endpoint /oauth/token con un token ya quemado), y
+#   2) mostrar la notificacion como mucho una vez por _NOTICE_EVERY_SECS.
+# La marca se limpia sola al primer refresh valido o al reautorizar en auth().
+_PROP_REFRESH_DEAD = 'luc_kodi.trakt.refresh_dead'
+_PROP_REAUTH_NOTICE = 'luc_kodi.trakt.reauth_notice'
+_DEAD_RETRY_SECS = 300    # 5 min entre reintentos de refresh con token muerto
+_NOTICE_EVERY_SECS = 3600 # 1 h entre notificaciones de re-autorizacion
+
+def _prop_age(prop):
+	# Segundos desde que se escribio la property; None si no existe.
+	try:
+		val = control.homeWindow.getProperty(prop)
+		if not val: return None
+		return time() - float(val)
+	except: return None
+
+def _refresh_is_dead():
+	age = _prop_age(_PROP_REFRESH_DEAD)
+	return age is not None and age < _DEAD_RETRY_SECS
+
+def _mark_refresh_dead():
+	try:
+		control.homeWindow.setProperty(_PROP_REFRESH_DEAD, str(time()))
+		age = _prop_age(_PROP_REAUTH_NOTICE)
+		if age is None or age >= _NOTICE_EVERY_SECS:
+			control.homeWindow.setProperty(_PROP_REAUTH_NOTICE, str(time()))
+			control.notification(title=32315, message=33677)
+	except: log_utils.error('_mark_refresh_dead Error: ')
+
+def clear_refresh_dead():
+	try:
+		control.homeWindow.clearProperty(_PROP_REFRESH_DEAD)
+		control.homeWindow.clearProperty(_PROP_REAUTH_NOTICE)
+	except: pass
+
 
 def getTrakt(url, post=None, extended=False, silent=False):
 	try:
 		if not url.startswith(BASE_URL): url = urljoin(BASE_URL, url)
 		if post: post = jsdumps(post)
-		if getTraktCredentialsInfo(): headers['Authorization'] = 'Bearer %s' % getSetting('trakt.token')
+		used_token = ''
+		if getTraktCredentialsInfo():
+			ensure_token() # refresco proactivo (single-flight) si esta a punto de caducar
+			used_token = getSetting('trakt.token')
+			headers['Authorization'] = 'Bearer %s' % used_token # compat: hay llamadas que usan el dict global
+		# Copia local: el dict global lo mutan otros hilos, y sin esto una peticion
+		# podia salir firmada con el token de otro hilo justo tras una renovacion.
+		req_headers = dict(headers)
 
-		if post: response = session.post(url, data=post, headers=headers, timeout=20)
-		else: response = session.get(url, headers=headers, timeout=20)
+		if post: response = session.post(url, data=post, headers=req_headers, timeout=20)
+		else: response = session.get(url, headers=req_headers, timeout=20)
 		status_code = str(response.status_code)
 
 		# if status_code.startswith('5') or '<html' in response: # temp to log html maintenance response
@@ -56,8 +117,12 @@ def getTrakt(url, post=None, extended=False, silent=False):
 			if extended: return response, response.headers
 			else: return response
 		elif status_code == '401': # Re-Auth token
-			success = refresh_token(headers)
-			if success: return getTrakt(url, extended=extended, silent=silent)
+			# stale_token: si otro hilo ya renovo mientras esperabamos el lock,
+			# refresh_token() no vuelve a quemar el refresh_token rotado.
+			success = refresh_token(stale_token=used_token)
+			# El 'post' ya viene serializado aqui; reenviarlo tal cual haria un
+			# doble jsdumps en la llamada recursiva -> lo pasamos deserializado.
+			if success: return getTrakt(url, post=jsloads(post) if post else None, extended=extended, silent=silent)
 		elif status_code == '429':
 			# 2026 Trakt API rate limits: GET 1000 req/5min, POST/PUT/DELETE 1/sec.
 			# Replaced unbounded recursion with bounded loop (max 3 reintentos) to
@@ -69,8 +134,8 @@ def getTrakt(url, post=None, extended=False, silent=False):
 				control.sleep((throttleTime + 1) * 1000)
 				for _ in range(3):
 					try:
-						if post: response = session.post(url, data=post, headers=headers, timeout=20)
-						else: response = session.get(url, headers=headers, timeout=20)
+						if post: response = session.post(url, data=post, headers=req_headers, timeout=20)
+						else: response = session.get(url, headers=req_headers, timeout=20)
 					except: return None
 					status_code = str(response.status_code)
 					if status_code in ('200', '201'):
@@ -103,11 +168,6 @@ def getTrakt(url, post=None, extended=False, silent=False):
 	return None
 
 def error_handler(url, response, status_code, silent=False):
-	# TEMP DIAG v1.0.48: log de TODOS los no-2xx sin gate de debug.enabled (quitar tras resolver watchlist)
-	if status_code not in ('200', '201'):
-		try: _body = str(response.text)[:300]
-		except: _body = ''
-		control.log('[ plugin.video.luc_kodi ]  TEMP-DIAG Trakt HTTP %s: URL=%s BODY=%s' % (status_code, url, _body), 1)
 	if status_code.startswith('5') or (response and isinstance(response, str) and '<html' in response) or not str(response): # covers Maintenance html responses ["Bad Gateway", "We're sorry, but something went wrong (500)"])
 		log_utils.log('Temporary Trakt Server Problem: %s:%s' % (status_code, response), level=log_utils.LOGINFO)
 		if (not silent) and server_notification: control.notification(title=32315, message=33676)
@@ -154,11 +214,9 @@ def getTraktAsJsonPaginated(url, page_size=250, max_pages=40, silent=False):
 			r = getTrakt(url=paged_url, extended=True, silent=silent)
 			if isinstance(r, tuple) and len(r) == 2: r, res_headers = r[0], r[1]
 			if not r:
-				control.log('[ plugin.video.luc_kodi ]  TEMP-DIAG paginated fetch FAILED (getTrakt returned None): %s' % paged_url, 1) # TEMP DIAG v1.0.48: quitar tras resolver watchlist
 				return None # request failed: signal error, do NOT persist partial data
 			items = r.json()
 		except:
-			control.log('[ plugin.video.luc_kodi ]  TEMP-DIAG paginated fetch EXCEPTION: %s' % paged_url, 1) # TEMP DIAG v1.0.48
 			log_utils.error()
 			return None # failure mid-pagination: better no data than partial data wiping the db
 		if not isinstance(items, _list_type): return None
@@ -185,12 +243,52 @@ def getTraktAsJsonPaginated(url, page_size=250, max_pages=40, silent=False):
 		page += 1
 	return all_items
 
-def refresh_token(headers):
+def _token_expiring_soon():
+	# True si falta menos de _REFRESH_MARGIN para caducar (o si no hay fecha).
+	try:
+		expires = getSetting('trakt.expires')
+		if not expires: return False
+		return (float(expires) - time()) < _REFRESH_MARGIN
+	except: return False
+
+def ensure_token():
+	# Refresco proactivo: renueva ANTES de que el token caduque, en vez de
+	# esperar al 401. Barato: solo compara un float salvo que toque renovar.
+	try:
+		if not _token_expiring_soon(): return
+		if _refresh_is_dead(): return # invalid_grant reciente: no martillear /oauth/token
+		with _refresh_lock:
+			if not _token_expiring_soon(): return # otro hilo lo renovo mientras esperabamos
+			if _refresh_is_dead(): return
+			_do_refresh_token()
+	except: log_utils.error('ensure_token Error: ')
+
+def refresh_token(stale_token=None):
+	# Entrada reactiva (401). Single-flight: si mientras esperabamos el lock otro
+	# hilo ya renovo, el token guardado habra cambiado -> no relanzamos el refresh
+	# (quemaria el refresh_token rotado y provocaria invalid_grant), basta con
+	# reintentar la peticion con el token nuevo.
+	try:
+		if _refresh_is_dead(): return False # invalid_grant reciente: no reintentar aun
+		with _refresh_lock:
+			if stale_token and getSetting('trakt.token') != stale_token:
+				log_utils.log('Trakt token already refreshed by another thread, reusing it', level=log_utils.LOGDEBUG)
+				return True
+			if _refresh_is_dead(): return False # otro hilo acaba de confirmar el invalid_grant
+			return _do_refresh_token()
+	except:
+		log_utils.error('refresh_token Error: ')
+		return False
+
+def _do_refresh_token():
+	# Ejecuta la renovacion. SIEMPRE se llama con _refresh_lock adquirido.
 	try:
 		log_utils.log('Re-Authenticating Trakt Token', level=log_utils.LOGINFO)
 		oauth = urljoin(BASE_URL, '/oauth/token')
 		opost = {'client_id': V2_API_KEY, 'client_secret': CLIENT_SECRET, 'redirect_uri': REDIRECT_URI, 'grant_type': 'refresh_token', 'refresh_token': getSetting('trakt.refresh')}
-		response = session.post(url=oauth, data=jsdumps(opost), headers=headers, timeout=20)
+		auth_headers = dict(headers)
+		auth_headers.pop('Authorization', None) # el endpoint de token no lleva Bearer
+		response = session.post(url=oauth, data=jsdumps(opost), headers=auth_headers, timeout=20)
 		status_code = str(response.status_code)
 
 		error_handler(oauth, response, status_code)
@@ -202,7 +300,7 @@ def refresh_token(headers):
 				return False
 			if 'error' in response and response['error'] == 'invalid_grant':
 				log_utils.log('Please Re-Authorize your Trakt Account: %s : %s' % (status_code, str(response)), __name__, level=log_utils.LOGWARNING)
-				control.notification(title=32315, message=33677)
+				_mark_refresh_dead() # notificacion debounced (1/h) + cooldown de reintentos
 				return False
 
 			token, refresh = response['access_token'], response['refresh_token']
@@ -211,6 +309,8 @@ def refresh_token(headers):
 			setSetting('trakt.token', token)
 			setSetting('trakt.refresh', refresh)
 			setSetting('trakt.expires', expires)
+			headers['Authorization'] = 'Bearer %s' % token # llamadas directas a session.* usan el dict global
+			clear_refresh_dead() # el token vuelve a estar vivo: reactivar avisos futuros
 			log_utils.log('Trakt Token Successfully Re-Authorized: expires on %s' % str(datetime.fromtimestamp(float(expires))), level=log_utils.LOGDEBUG)
 			return True
 		else:
@@ -306,7 +406,7 @@ def like_list(list_owner, list_name, list_id):
 	try:
 		headers['Authorization'] = 'Bearer %s' % getSetting('trakt.token')
 		# resp_code = client._basic_request('https://api.trakt.tv/users/%s/lists/%s/like' % (list_owner, list_id), headers=headers, method='POST', ret_code=True)
-		resp_code = session.post('https://api.trakt.tv/users/%s/lists/%s/like' % (list_owner, list_id), headers=headers).status_code
+		resp_code = session.post('https://api.trakt.tv/users/%s/lists/%s/like' % (list_owner, list_id), headers=headers, timeout=20).status_code
 		if resp_code == 204:
 			control.notification(title=32315, message='Successfuly Liked list:  [COLOR %s]%s[/COLOR]' % (highlight_color, list_name))
 			sync_liked_lists()
@@ -318,7 +418,7 @@ def unlike_list(list_owner, list_name, list_id):
 	try:
 		headers['Authorization'] = 'Bearer %s' % getSetting('trakt.token')
 		# resp_code = client._basic_request('https://api.trakt.tv/users/%s/lists/%s/like' % (list_owner, list_id), headers=headers, method='DELETE', ret_code=True)
-		resp_code = session.delete('https://api.trakt.tv/users/%s/lists/%s/like' % (list_owner, list_id), headers=headers).status_code
+		resp_code = session.delete('https://api.trakt.tv/users/%s/lists/%s/like' % (list_owner, list_id), headers=headers, timeout=20).status_code
 		if resp_code == 204:
 			control.notification(title=32315, message='Successfuly Unliked list:  [COLOR %s]%s[/COLOR]' % (highlight_color, list_name))
 			traktsync.delete_liked_list(list_id)
@@ -336,7 +436,7 @@ def remove_liked_lists(trakt_ids):
 			list_id = id.get('trakt_id')
 			list_name = id.get('list_name')
 			# resp_code = client._basic_request('https://api.trakt.tv/users/%s/lists/%s/like' % (list_owner, list_id), headers=headers, method='DELETE', ret_code=True)
-			resp_code = session.delete('https://api.trakt.tv/users/%s/lists/%s/like' % (list_owner, list_id), headers=headers).status_code
+			resp_code = session.delete('https://api.trakt.tv/users/%s/lists/%s/like' % (list_owner, list_id), headers=headers, timeout=20).status_code
 			if resp_code == 204:
 				control.notification(title=32315, message='Successfuly Unliked list:  [COLOR %s]%s[/COLOR]' % (highlight_color, list_name))
 				traktsync.delete_liked_list(list_id)
@@ -530,7 +630,7 @@ def manager(name, imdb=None, tvdb=None, season=None, episode=None, refresh=True,
 		items += [(getLS(33576) % highlight_color, '/sync/collection/remove')]
 		items += [(getLS(33579), '/users/me/lists/%s/items')]
 
-		result = getTraktAsJson('/users/me/lists')
+		result = getTraktAsJsonPaginated('/users/me/lists')
 		lists = [(i['name'], i['ids']['slug']) for i in result]
 		lists = [lists[i//2] for i in range(len(lists)*2)]
 
@@ -621,7 +721,10 @@ def listAdd(successNotification=True):
 		return None
 
 def lists(id=None):
-	return cache.get(getTraktAsJson, 48, 'https://api.trakt.tv/users/me/lists' + ('' if not id else ('/' + str(id))))
+	# El indice (/users/me/lists) es un array paginado; /users/me/lists/<id> devuelve
+	# UN objeto -> no se puede paginar, se deja como estaba.
+	if not id: return cache.get(getTraktAsJsonPaginated, 48, 'https://api.trakt.tv/users/me/lists')
+	return cache.get(getTraktAsJson, 48, 'https://api.trakt.tv/users/me/lists/' + str(id))
 
 def list(id):
 	return lists(id=id)
@@ -897,9 +1000,10 @@ def syncSeasons(imdb, tvdb, trakt=None): # season indicators and counts for watc
 		id = imdb or trakt
 		if not id and tvdb:
 			log_utils.log('syncSeasons missing imdb_id, pulling trakt id from watched shows database', level=log_utils.LOGDEBUG)
-			db_watched = traktsync.cache_existing(syncTVShows) # pull trakt ID from db because imdb ID is missing
-			ids = [i[0] for i in db_watched if i[0].get('tvdb') == tvdb]
-			id = ids[0].get('trakt', '') if ids[0].get('trakt') else ''
+			db_watched = traktsync.cache_existing(syncTVShows) or [] # v1.0.64: devuelve None si Trakt no esta sincronizado
+			ids = [i[0] for i in db_watched if i and i[0].get('tvdb') == tvdb]
+			# v1.0.64: ids puede venir vacia -> ids[0] daba IndexError
+			id = (ids[0].get('trakt', '') if ids else '') or ''
 			if not id:
 				log_utils.log("syncSeasons FAILED: missing required imdb and trakt ID's for tvdb=%s" % tvdb, level=log_utils.LOGDEBUG)
 				return
@@ -952,8 +1056,15 @@ def timeoutsyncSeasons(imdb, tvdb):
 def update_syncMovies(imdb, remove_id=False):
 	try:
 		indicators = traktsync.cache_existing(syncMovies)
-		if remove_id: indicators.remove(imdb)
-		else: indicators.append(imdb)
+		# v1.0.64: None cuando aun no hay sync de Trakt -> .remove()/.append() petaban
+		if indicators is None:
+			if remove_id: return
+			indicators = []
+		if remove_id:
+			if imdb in indicators: indicators.remove(imdb)
+			else: return
+		elif imdb not in indicators:
+			indicators.append(imdb)
 		key = traktsync._hash_function(syncMovies, ())
 		traktsync.cache_insert(key, repr(indicators))
 	except: log_utils.error()
@@ -1293,7 +1404,7 @@ def scrobbleReset(imdb, tmdb=None, tvdb=None, season=None, episode=None, refresh
 		resume_info = traktsync.fetch_bookmarks(imdb, tmdb, tvdb, season, episode, ret_type='resume_info')
 		if resume_info == '0': return control.hide() # returns string "0" if no data in db 
 		headers['Authorization'] = 'Bearer %s' % getSetting('trakt.token')
-		success = session.delete('https://api.trakt.tv/sync/playback/%s' % resume_info[1], headers=headers).status_code == 204
+		success = session.delete('https://api.trakt.tv/sync/playback/%s' % resume_info[1], headers=headers, timeout=20).status_code == 204
 		if content_type == 'movie':
 			items = [{'type': 'movie', 'movie': {'ids': {'imdb': imdb}}}]
 			label_string = resume_info[0]
@@ -1328,7 +1439,7 @@ def scrobbleResetItems(imdb_ids, tvdb_dicts=None, refresh=True, widgetRefresh=Fa
 					resume_dict = resume_info[resume_info_index]
 					resume_id = resume_dict['resume_id']
 					headers['Authorization'] = 'Bearer %s' % getSetting('trakt.token')
-					success = session.delete('https://api.trakt.tv/sync/playback/%s' % resume_id, headers=headers).status_code == 204
+					success = session.delete('https://api.trakt.tv/sync/playback/%s' % resume_id, headers=headers, timeout=20).status_code == 204
 					items = [{'type': 'movie', 'movie': {'ids': {'imdb': imdb}}}]
 					timestamp = datetime.now(timezone.utc).replace(tzinfo=None).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 					items[0].update({'paused_at': timestamp})
@@ -1348,7 +1459,7 @@ def scrobbleResetItems(imdb_ids, tvdb_dicts=None, refresh=True, widgetRefresh=Fa
 					resume_dict = resume_info[resume_info_index]
 					resume_id = resume_dict['resume_id']
 					headers['Authorization'] = 'Bearer %s' % getSetting('trakt.token')
-					success = session.delete('https://api.trakt.tv/sync/playback/%s' % resume_id, headers=headers).status_code == 204
+					success = session.delete('https://api.trakt.tv/sync/playback/%s' % resume_id, headers=headers, timeout=20).status_code == 204
 					items = [{'type': 'episode', 'episode': {'season': season, 'number': episode}, 'show': {'ids': {'imdb': imdb, 'tvdb': tvdb}}}]
 					timestamp = datetime.now(timezone.utc).replace(tzinfo=None).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 					items[0].update({'paused_at': timestamp})
@@ -1428,7 +1539,7 @@ def sync_playbackProgress(activities=None, forced=False):
 	try:
 		link = '/sync/playback/?extended=full'
 		if forced:
-			items = getTraktAsJson(link, silent=True)
+			items = getTraktAsJsonPaginated(link, silent=True)
 			if items: traktsync.insert_bookmarks(items)
 			log_utils.log('Forced - Trakt Playback Progress Sync Complete', __name__, log_utils.LOGDEBUG)
 		else:
@@ -1437,7 +1548,7 @@ def sync_playbackProgress(activities=None, forced=False):
 			if activity - db_last_paused >= 120: # do not sync unless 2 min difference or more
 				log_utils.log('Trakt Playback Progress Sync Update...(local db latest "paused_at" = %s, trakt api latest "paused_at" = %s)' % \
 									(str(db_last_paused), str(activity)), __name__, log_utils.LOGDEBUG)
-				items = getTraktAsJson(link, silent=True)
+				items = getTraktAsJsonPaginated(link, silent=True)
 				if items: traktsync.insert_bookmarks(items)
 	except: log_utils.error()
 
@@ -1493,7 +1604,7 @@ def sync_user_lists(activities=None, forced=False):
 		# We only need to know if the list contains movies/shows -> request limit=1 (cheapest).
 		list_link = '/users/me/lists/%s/items/%s?limit=1&page=1'
 		if forced:
-			items = getTraktAsJson(link, silent=True)
+			items = getTraktAsJsonPaginated(link, silent=True)
 			if not items: return
 			for i in items:
 				i['content_type'] = ''
@@ -1513,7 +1624,7 @@ def sync_user_lists(activities=None, forced=False):
 			if user_listActivity > db_last_lists_updatedat:
 				log_utils.log('Trakt User Lists Sync Update...(local db latest "lists_updatedat" = %s, trakt api latest "lists_updatedat" = %s)' % \
 									(str(db_last_lists_updatedat), str(user_listActivity)), __name__, log_utils.LOGDEBUG)
-				items = getTraktAsJson(link, silent=True)
+				items = getTraktAsJsonPaginated(link, silent=True)
 				if not items: return
 				for i in items:
 					i['content_type'] = ''
@@ -1571,9 +1682,11 @@ def sync_liked_lists(activities=None, forced=False):
 
 def sync_hidden_progress(activities=None, forced=False):
 	try:
-		link = '/users/hidden/progress_watched?limit=1000&type=show'
+		# 2026 Trakt API: limit=1000 se ignora (tope 250). Sin paginar, un usuario
+		# con muchos shows ocultos perdia entradas y le reaparecian en Progress.
+		link = '/users/hidden/progress_watched?type=show'
 		if forced:
-			items = getTraktAsJson(link, silent=True)
+			items = getTraktAsJsonPaginated(link, silent=True)
 			traktsync.insert_hidden_progress(items)
 			log_utils.log('Forced - Trakt Hidden Progress Sync Complete', __name__, log_utils.LOGDEBUG)
 		else:
@@ -1582,7 +1695,7 @@ def sync_hidden_progress(activities=None, forced=False):
 			if hiddenActivity > db_last_hidden:
 				log_utils.log('Trakt Hidden Progress Sync Update...(local db latest "hidden_at" = %s, trakt api latest "hidden_at" = %s)' % \
 									(str(db_last_hidden), str(hiddenActivity)), __name__, log_utils.LOGDEBUG)
-				items = getTraktAsJson(link, silent=True)
+				items = getTraktAsJsonPaginated(link, silent=True)
 				traktsync.insert_hidden_progress(items)
 	except: log_utils.error()
 
@@ -1619,10 +1732,8 @@ def sync_watch_list(activities=None, forced=False):
 		link = '/users/me/watchlist/%s?extended=full'
 		if forced:
 			items = getTraktAsJsonPaginated(link % 'movies', silent=True)
-			control.log('[ plugin.video.luc_kodi ]  TEMP-DIAG sync_watch_list movies fetched: %s' % ('None (error)' if items is None else len(items)), 1) # TEMP DIAG v1.0.48
 			if items is not None: traktsync.insert_watch_list(items, 'movies_watchlist')
 			items = getTraktAsJsonPaginated(link % 'shows', silent=True)
-			control.log('[ plugin.video.luc_kodi ]  TEMP-DIAG sync_watch_list shows fetched: %s' % ('None (error)' if items is None else len(items)), 1) # TEMP DIAG v1.0.48
 			if items is not None: traktsync.insert_watch_list(items, 'shows_watchlist')
 			log_utils.log('Forced - Trakt Watch List Sync Complete', __name__, log_utils.LOGDEBUG)
 		else:
@@ -1651,7 +1762,7 @@ def sync_popular_lists(forced=False):
 	try:
 		from datetime import timedelta
 		from threading import Semaphore
-		link = '/lists/popular?limit=300'
+		link = '/lists/popular'
 		# 2026 Trakt API: split into two limit=1 probes (one per type) - robust against the
 		# end-of-March 2026 change that drops the default limit to 10 items.
 		list_link = '/users/%s/lists/%s/items/%s?limit=1&page=1'
@@ -1661,7 +1772,7 @@ def sync_popular_lists(forced=False):
 		if (cache_expiry > db_last_popularList) or forced:
 			if not forced: log_utils.log('Trakt Popular Lists Sync Update...(local db latest "popularlist_at" = %s, cache expiry = %s)' % \
 								(str(db_last_popularList), str(cache_expiry)), __name__, log_utils.LOGDEBUG)
-			items = getTraktAsJson(link, silent=True)
+			items = getTraktAsJsonPaginated(link, page_size=150, max_pages=2, silent=True)
 			if not items: return
 			thrd_items = []
 			# 2026 fix: cap concurrent probes at 8 to stay under Trakt's per-user
@@ -1700,7 +1811,7 @@ def sync_trending_lists(forced=False):
 	try:
 		from datetime import timedelta
 		from threading import Semaphore
-		link = '/lists/trending?limit=300'
+		link = '/lists/trending'
 		# 2026 Trakt API: split into two limit=1 probes (one per type) - robust against the
 		# end-of-March 2026 change that drops the default limit to 10 items.
 		list_link = '/users/%s/lists/%s/items/%s?limit=1&page=1'
@@ -1710,7 +1821,7 @@ def sync_trending_lists(forced=False):
 		if (cache_expiry > db_last_trendingList) or forced:
 			if not forced: log_utils.log('Trakt Trending Lists Sync Update...(local db latest "trendinglist_at" = %s, cache expiry = %s)' % \
 								(str(db_last_trendingList), str(cache_expiry)), __name__, log_utils.LOGDEBUG)
-			items = getTraktAsJson(link, silent=True)
+			items = getTraktAsJsonPaginated(link, page_size=150, max_pages=2, silent=True)
 			if not items: return
 			thrd_items = []
 			# 2026 fix: cap concurrent probes at 8 (see sync_popular_lists for rationale).
@@ -1802,6 +1913,7 @@ def auth():
 	if token:
 		token, refresh = token['access_token'], token['refresh_token']
 		expires = str(time() + 7776000)
+		clear_refresh_dead() # re-autorizado a mano: resetear anti-spam
 		control.sleep(1000)
 		headers['Authorization'] = 'Bearer %s' % token
 		user = getTraktAsJson('users/me')

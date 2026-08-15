@@ -30,9 +30,29 @@ def build_tzinfo(zone, fp):
     # Make sure it is a tzfile(5) file
     assert magic == _byte_string('TZif'), 'Got magic %s' % repr(magic)
 
+    # TZif version 2/3 files carry a second, 64-bit data block after the
+    # legacy 32-bit one. Modern "slim" databases (zic -b slim, which is what
+    # the tzdata package and most distros now ship) leave the legacy block
+    # EMPTY -- timecnt == 0 -- and put every transition in the 64-bit block.
+    # This parser used to read only the legacy block, so with those files each
+    # zone silently resolved to a fixed UTC offset. Read the v2 block instead
+    # whenever it is present and the legacy one is empty.
+    time_size = 4          # 'l' in the legacy block, 'q' in the v2 block
+    if format in (_byte_string('2'), _byte_string('3')) and timecnt == 0:
+        # Skip the (empty or short) legacy data block: transitions, local time
+        # indices, ttinfo structs, tz name chars, leap seconds, std/gmt flags.
+        skip = (timecnt * 5) + (typecnt * 6) + charcnt + (leapcnt * 8) \
+            + ttisstdcnt + ttisgmtcnt
+        fp.read(skip)
+        (magic, format, ttisgmtcnt, ttisstdcnt, leapcnt, timecnt,
+            typecnt, charcnt) = unpack(head_fmt, fp.read(head_size))
+        assert magic == _byte_string('TZif'), 'Got magic %s' % repr(magic)
+        time_size = 8
+
     # Read out the transition times, localtime indices and ttinfo structures.
-    data_fmt = '>%(timecnt)dl %(timecnt)dB %(ttinfo)s %(charcnt)ds' % dict(
-        timecnt=timecnt, ttinfo='lBB' * typecnt, charcnt=charcnt)
+    time_code = 'q' if time_size == 8 else 'l'
+    data_fmt = '>%(timecnt)d%(tc)s %(timecnt)dB %(ttinfo)s %(charcnt)ds' % dict(
+        timecnt=timecnt, tc=time_code, ttinfo='lBB' * typecnt, charcnt=charcnt)
     data_size = calcsize(data_fmt)
     data = unpack(data_fmt, fp.read(data_size))
 

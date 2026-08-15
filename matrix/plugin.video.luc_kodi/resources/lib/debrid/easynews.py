@@ -16,15 +16,21 @@ en_icon = control.joinPath(control.artPath(), 'easynews.png')
 addonFanart = control.addonFanart()
 
 SORT = {'s1': 'relevance', 's1d': '-', 's2': 'dsize', 's2d': '-', 's3': 'dtime', 's3d': '-'}
-SEARCH_PARAMS = {'st': 'adv', 'sb': 1, 'fex': 'm4v,3gp,mov,divx,xvid,wmv,avi,mpg,mpeg,mp4,mkv,avc,flv,webm', 'fty[]': 'VIDEO', 'spamf': 1, 'u': '1', 'gx': 1, 'pno': 1, 'sS': 3}
+# v1.0.52: alineado con la implementacion de referencia vigente (AIOStreams,
+# builtins/easynews-search). El endpoint /advanced con st='adv' es el modo
+# antiguo; hoy la webapp usa la raiz solr-search/ con st='basic', fly=2
+# (respuesta JSON) y vv=1 (metadatos de video: codecs y resolucion real).
+SEARCH_PARAMS = {'st': 'basic', 'fly': 2, 'sb': 1, 'chxu': 1, 'chxgx': 1, 'vv': 1,
+				 'fex': 'm4v,3gp,mov,divx,xvid,wmv,avi,mpg,mpeg,mp4,mkv,avc,flv,webm',
+				 'fty[]': 'VIDEO', 'spamf': 1, 'u': '1', 'gx': 1, 'pno': 1, 'sS': 3}
 SEARCH_PARAMS.update(SORT)
 
 
 class EasyNews:
 	def __init__(self):
 		self.base_link = 'https://members.easynews.com'
-		self.search_link = '/2.0/search/solr-search/advanced'
-		self.moderation = 1 if getSetting('easynews_moderation') == 'true' else 0
+		self.search_link = '/2.0/search/solr-search/'
+		self.moderation = 1 if getSetting('easynews.moderation') == 'true' else 0
 		self.auth = self._get_auth()
 		self.account_link = 'https://account.easynews.com/editinfo.php'
 		self.usage_link = 'https://account.easynews.com/usageview.php'
@@ -122,7 +128,7 @@ class EasyNews:
 			downloadMenu = control.lang(40048)
 			url = '%s%s' % (self.base_link, self.search_link)
 			params = SEARCH_PARAMS
-			params['pby'] = 350 # Results per Page
+			params['pby'] = 250 # Results per Page (tope real de la API 2.0)
 			params['safeO'] = self.moderation # 1 is the moderation (adult filter) ON, 0 is OFF.
 			# params['gps'] = params['sbj'] = query # gps stands for "group search" and does so by keywords, sbj=subject and can limit results, use gps only
 			params['gps'] = query
@@ -160,30 +166,53 @@ class EasyNews:
 			for item in files:
 				try:
 					valid_result = True
-					post_hash, size, post_title, ext, duration = item['0'], item['4'], item['10'], item['11'], item['14']
+					size, post_title, ext, duration = item['4'], item['10'], item['11'], item['14']
+					# v1.0.52: en el formato objeto 'hash' viene pelado y 'id' aporta el
+					# sufijo de 4 caracteres que la URL de descarga necesita. El campo
+					# '0' del formato antiguo ya trae el hash completo.
+					post_hash = item.get('0') or ''
+					if not post_hash:
+						_sig = item.get('id')
+						post_hash = '%s%s' % (item.get('hash') or '', '' if _sig is None else str(_sig))
+					if not post_hash: continue
 					if 'alangs' in item and item['alangs']: language = item['alangs']
 					else: language = ''
 					if 'type' in item and item['type'].upper() != 'VIDEO': valid_result = False
 					elif 'virus' in item and item['virus']: valid_result = False
+					elif item.get('passwd'): valid_result = False # post protegido con contrasena
 					elif re.match(r'^\d+s', duration) or re.match(r'^[0-5]m', duration): valid_result = False
 					if not valid_result: continue
+					# v1.0.53: URL limpia. La cabecera Basic se adjunta en
+					# _with_auth() justo antes de reproducir o descargar, para que
+					# la contrasena no acabe en el directorio cacheado en disco
+					# (directory(..., cacheToDisc=True)) ni en el menu contextual.
 					stream_url = down_url + quote('/%s/%s/%s%s/%s%s' % (dl_farm, dl_port, post_hash, ext, post_title, ext))
-					file_dl = stream_url + '|Authorization=%s' % (quote(self.auth))
-					result = {'name': post_title, 'size': size, 'rawSize': item['rawSize'], 'url_dl': file_dl, 'version': 'version2', 'full_item': item, 'language': language}
+					result = {'name': post_title, 'size': size, 'rawSize': item['rawSize'], 'url_dl': stream_url, 'version': 'version2', 'full_item': item, 'language': language}
 					yield result
 				except:
 					from resources.lib.modules import log_utils
 					log_utils.error()
-		down_url = results.get('downURL')
-		dl_farm = results.get('dlFarm')
-		dl_port = results.get('dlPort')
+		down_url = results.get('downURL') or '%s/dl' % self.base_link
+		dl_farm = results.get('dlFarm') or 'auto'
+		dl_port = results.get('dlPort') or 'auto'
 		files = results.get('data', [])
 		sources = list(_process())
 		return sources
 
+	def _with_auth(self, url):
+		"""Adjunta la cabecera Basic justo antes de usar la URL."""
+		if not url: return None
+		if '|Authorization=' in url: return url
+		if not url.startswith(self.base_link) and '/dl/' not in url: return url
+		if not self.auth: return None
+		return '%s|Authorization=%s' % (url, quote(self.auth))
+
 	def resolve_forPlayback(self, url):
 		from resources.lib.modules import player
-		return player.Player().play(url)
+		play_url = self._with_auth(url)
+		if not play_url:
+			return control.notification(message='Easynews: no credentials set', icon=en_icon)
+		return player.Player().play(play_url)
 
 	def account(self):
 		account_info = usage_info = None
