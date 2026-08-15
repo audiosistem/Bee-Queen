@@ -57,9 +57,75 @@ def _delete_record(media_type, imdb, season, episode):
     dbcon.commit()
 
 
-def get(media_type, imdb, season, episode, local=False):
-    if control.setting('bookmarks.source') == '1' and trakt.getTraktCredentialsInfo() == True and local == False:
+def _runtime_minutes(*candidates):
+    for value in candidates:
         try:
+            if value in (None, '', 0, '0'):
+                continue
+            runtime = float(value)
+            if runtime > 0:
+                return runtime
+        except Exception:
+            pass
+    return 0
+
+
+def _ids_match(imdb_n, tmdb_n, item_imdb, item_tmdb):
+    imdb_ok = imdb_n not in ('0', '') and item_imdb not in ('0', '') and imdb_n == item_imdb
+    tmdb_ok = tmdb_n not in ('0', '') and item_tmdb not in ('0', '') and tmdb_n == item_tmdb
+    return imdb_ok or tmdb_ok
+
+
+def _simkl_resume(media_type, imdb, season, episode, tmdb=None):
+    """Return (offset_seconds, progress_percent). Seconds may be 0 when runtime unknown."""
+    from resources.lib.modules import simkl
+    if not simkl.getSimklCredentialsInfo():
+        return 0, 0
+    try:
+        imdb_n = simkl._normalize_imdb(imdb)
+        tmdb_n = str(tmdb or '0')
+        media_filter = 'episodes' if media_type == 'episode' else 'movies'
+        for item in simkl.get_playback(media_filter):
+            try:
+                progress = float(item.get('progress') or 0)
+            except Exception:
+                continue
+            if not (1 < progress < 92):
+                continue
+            if media_type == 'episode':
+                show = item.get('show') or {}
+                ep = item.get('episode') or {}
+                ids = show.get('ids') or {}
+                try:
+                    if int(season) != int(ep.get('season')):
+                        continue
+                    if int(episode) != int(ep.get('number') or ep.get('episode') or -1):
+                        continue
+                except Exception:
+                    continue
+                if not _ids_match(imdb_n, tmdb_n, simkl._normalize_imdb(ids.get('imdb')), str(ids.get('tmdb') or '0')):
+                    continue
+                runtime = _runtime_minutes(ep.get('runtime'), show.get('runtime'), item.get('runtime'))
+            else:
+                movie = item.get('movie') or item
+                ids = movie.get('ids') or {}
+                if not _ids_match(imdb_n, tmdb_n, simkl._normalize_imdb(ids.get('imdb')), str(ids.get('tmdb') or '0')):
+                    continue
+                runtime = _runtime_minutes(movie.get('runtime'), item.get('runtime'))
+            if runtime:
+                return (float(progress) / 100.0) * runtime * 60.0, progress
+            return 0, progress
+    except Exception:
+        pass
+    return 0, 0
+
+
+def get_resume(media_type, imdb, season, episode, local=False, tmdb=None):
+    """Return (offset_seconds, progress_percent). Percent is for Simkl when runtime is unknown."""
+    source = control.setting('bookmarks.source')
+    if source == '1' and trakt.getTraktCredentialsInfo() == True and local == False:
+        try:
+            offset = 0
             if media_type == 'episode':
                 traktInfo = trakt_cache.get(trakt.getPlaybackEpisodes, trakt_cache.TTL_HISTORY_SEC) or []
                 for i in traktInfo:
@@ -70,6 +136,7 @@ def get(media_type, imdb, season, episode, local=False):
                                 offset = (float(i['progress'] / 100) * int(i['episode']['runtime']) * 60)
                             else:
                                 offset = 0
+                            return offset, float(i.get('progress') or 0) if seekable else 0
             else:
                 traktInfo = trakt_cache.get(trakt.getPlaybackMovies, trakt_cache.TTL_HISTORY_SEC) or []
                 for i in traktInfo:
@@ -79,28 +146,37 @@ def get(media_type, imdb, season, episode, local=False):
                             offset = (float(i['progress'] / 100) * int(i['movie']['runtime']) * 60)
                         else:
                             offset = 0
-            return offset
+                        return offset, float(i.get('progress') or 0) if seekable else 0
+            return offset, 0
         except:
-            return 0
-    else:
-        try:
-            sql_select = "SELECT * FROM bookmarks WHERE imdb = '%s'" % imdb
-            if media_type == 'episode':
-                sql_select += " AND season = '%s' AND episode = '%s'" % (season, episode)
-            control.makeFile(control.dataPath)
-            dbcon = database.connect(control.bookmarksFile)
-            dbcur = dbcon.cursor()
-            dbcur.execute("CREATE TABLE IF NOT EXISTS bookmarks (""timeInSeconds TEXT, ""type TEXT, ""imdb TEXT, ""season TEXT, ""episode TEXT, ""playcount INTEGER, ""overlay INTEGER, ""UNIQUE(imdb, season, episode)"");")
-            dbcur.execute(sql_select)
-            match = dbcur.fetchone()
-            if match:
-                offset = match[0]
-                return float(offset)
-            else:
-                return 0
-            dbcon.commit()
-        except:
-            return 0
+            return 0, 0
+    if source == '2' and local == False:
+        from resources.lib.modules import simkl
+        if simkl.getSimklCredentialsInfo():
+            return _simkl_resume(media_type, imdb, season, episode, tmdb=tmdb)
+    try:
+        sql_select = "SELECT * FROM bookmarks WHERE imdb = '%s'" % imdb
+        if media_type == 'episode':
+            sql_select += " AND season = '%s' AND episode = '%s'" % (season, episode)
+        control.makeFile(control.dataPath)
+        dbcon = database.connect(control.bookmarksFile)
+        dbcur = dbcon.cursor()
+        dbcur.execute("CREATE TABLE IF NOT EXISTS bookmarks (""timeInSeconds TEXT, ""type TEXT, ""imdb TEXT, ""season TEXT, ""episode TEXT, ""playcount INTEGER, ""overlay INTEGER, ""UNIQUE(imdb, season, episode)"");")
+        dbcur.execute(sql_select)
+        match = dbcur.fetchone()
+        if match:
+            offset = match[0]
+            return float(offset), 0
+        else:
+            return 0, 0
+        dbcon.commit()
+    except:
+        return 0, 0
+
+
+def get(media_type, imdb, season, episode, local=False, tmdb=None):
+    offset, _percent = get_resume(media_type, imdb, season, episode, local=local, tmdb=tmdb)
+    return offset
 
 
 def reset(current_time, total_time, media_type, imdb, season='', episode=''):
@@ -151,5 +227,3 @@ def reset(current_time, total_time, media_type, imdb, season='', episode=''):
         dbcon.commit()
     except:
         pass
-
-

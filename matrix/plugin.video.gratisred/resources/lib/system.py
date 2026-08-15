@@ -86,6 +86,59 @@ def router(_argv):
         trakt.revokeTrakt(reopen_settings=reopen)
 
 
+    elif action == 'auth_simkl':
+        from resources.lib.modules import simkl
+        reopen = (params.get('source') or '').lower() == 'settings'
+        simkl.authSimkl(reopen_settings=reopen)
+
+
+    elif action == 'revoke_simkl':
+        from resources.lib.modules import simkl
+        reopen = (params.get('source') or '').lower() == 'settings'
+        simkl.revokeSimkl(reopen_settings=reopen)
+
+
+    elif action == 'refresh_simkl_cache':
+        from resources.lib.modules import simkl
+        simkl.refreshSimklCache()
+
+
+    elif action == 'simkl_list_sort':
+        from resources.lib.modules import simkl
+        simkl.choose_list_sort(params.get('media'), params.get('status'))
+
+
+    elif action == 'trakt_list_sort':
+        from resources.lib.modules import trakt
+        trakt.choose_list_sort(params.get('media'), params.get('status'), label=params.get('label'))
+
+
+    elif action == 'tmdb_list_sort':
+        from resources.lib.modules import tmdb_utils
+        tmdb_utils.choose_list_sort(params.get('media'), params.get('status'), label=params.get('label'))
+
+
+    elif action == 'choose_indicators':
+        from resources.lib.modules import simkl
+        reopen = (params.get('source') or '').lower() == 'settings'
+        simkl.choose_indicators(reopen_settings=reopen)
+
+
+    elif action == 'my_simkl_menu':
+        from resources.lib.indexers import navigator
+        navigator.navigator().mysimkl()
+
+
+    elif action == 'my_simkl_movies_menu':
+        from resources.lib.indexers import navigator
+        navigator.navigator().mysimklmovies()
+
+
+    elif action == 'my_simkl_tvshows_menu':
+        from resources.lib.indexers import navigator
+        navigator.navigator().mysimkltvshows()
+
+
     elif action == 'opensubs_check':
         from resources.lib.apis import opensubs_api
         reopen = (params.get('source') or '').lower() == 'settings'
@@ -277,7 +330,7 @@ def router(_argv):
 
     elif action == 'movies_playcount':
         from resources.lib.modules import playcount
-        playcount.movies(imdb, query)
+        playcount.movies(imdb, query, tmdb=tmdb)
 
 
     elif action == 'movies_tmdb_certifications':
@@ -383,6 +436,11 @@ def router(_argv):
     elif action == 'movies_trakt_menu':
         from resources.lib.indexers import navigator
         navigator.navigator().movieTrakt()
+
+
+    elif action == 'movies_simkl_menu':
+        from resources.lib.indexers import navigator
+        navigator.navigator().movieSimkl()
 
 
     elif action == 'movies_trakt_moviemosts':
@@ -540,6 +598,11 @@ def router(_argv):
         trakt.manager(name, imdb, tmdb, content)
 
 
+    elif action == 'simkl_manager':
+        from resources.lib.modules import simkl
+        simkl.manager(name, imdb, tmdb, content)
+
+
     elif action == 'tvshow_to_library':
         from resources.lib.modules import libtools
         libtools.libtvshows().add(tvshowtitle, year, imdb, tmdb)
@@ -643,6 +706,11 @@ def router(_argv):
     elif action == 'tvshows_trakt_menu':
         from resources.lib.indexers import navigator
         navigator.navigator().tvTrakt()
+
+
+    elif action == 'tvshows_simkl_menu':
+        from resources.lib.indexers import navigator
+        navigator.navigator().tvSimkl()
 
 
     elif action == 'tvshows_trakt_showmosts':
@@ -889,10 +957,6 @@ def router(_argv):
             TVShow_season = '1'
             TVShow_episode = '4'
             """
-            
-            #from resources.lib.modules import simkl_utils
-            #api = simkl_utils.SimklApi()
-            #test = api.get_movie_trending(interval='month')
             
             log_utils.log('Testing - test: ' + repr(test))
         except:

@@ -73,6 +73,53 @@ skin = xbmc.getSkinDir()
 player = xbmc.Player()
 playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
 resolve = xbmcplugin.setResolvedUrl
+PROP_RESOLVE_DONE = 'plugin.video.gratisred.resolve_done'
+
+
+def plugin_handle():
+    try:
+        return int(sys.argv[1])
+    except Exception:
+        return -1
+
+
+def clear_resolve_state():
+    try:
+        window.clearProperty(PROP_RESOLVE_DONE)
+    except Exception:
+        pass
+
+
+def mark_resolve_sent():
+    try:
+        window.setProperty(PROP_RESOLVE_DONE, 'true')
+    except Exception:
+        pass
+
+
+def abort_plugin_resolve():
+    # Kodi 22 widget / PlayMedia: exit without setResolvedUrl(True|False) leaves plugin://
+    # "not playable" → "One or more items failed to play".
+    try:
+        if window.getProperty(PROP_RESOLVE_DONE) == 'true':
+            return False
+    except Exception:
+        pass
+    handle = plugin_handle()
+    if handle <= 0:
+        return False
+    try:
+        resolve(handle, False, item(offscreen=True))
+        mark_resolve_sent()
+        return True
+    except Exception:
+        try:
+            resolve(handle, False, item())
+            mark_resolve_sent()
+            return True
+        except Exception:
+            return False
+
 
 legalFilename = xbmc.makeLegalFilename if getKodiVersion() < 19 else xbmcvfs.makeLegalFilename
 
@@ -284,6 +331,103 @@ def busy():
 
 
 def refresh():
+    return execute('Container.Refresh')
+
+
+def refresh_folder(folder=None):
+    """Reload the open shelf after Manager remove — deferred, non-blocking.
+
+    RunPlugin(-1) + Container.Refresh(wait=True) deadlocks (busy spinner).
+    Container.Refresh(url) / Update(...,replace) collapse ParentPath so Back
+    from page 2+ jumps to the addon root. Schedule a plain Container.Refresh
+    after this plugin returns; exclusions drop the removed title on rebuild.
+    """
+    def _later():
+        try:
+            # Let RunPlugin(-1) finish before touching the container.
+            xbmc.sleep(250)
+            xbmc.executebuiltin('Container.Refresh')
+        except Exception:
+            pass
+    try:
+        from threading import Thread
+        Thread(target=_later).start()
+        return True
+    except Exception:
+        return execute('Container.Refresh')
+
+
+def last_search_term(select):
+    """Most recent term from search.db for this select table (movie/tvshow/...)."""
+    try:
+        from sqlite3 import dbapi2 as database
+        dbcon = database.connect(searchFile)
+        dbcur = dbcon.cursor()
+        dbcur.execute("SELECT term FROM %s ORDER BY ID DESC LIMIT 1" % select)
+        row = dbcur.fetchone()
+        dbcur.close()
+        return row[0] if row else None
+    except Exception:
+        return None
+
+
+def folder_is_trakt_shelf(content, shelf):
+    """True when Container.FolderPath is already the given My Trakt shelf."""
+    try:
+        from six.moves import urllib_parse
+        folder_raw = urllib_parse.unquote(infoLabel('Container.FolderPath') or '')
+        if addonInfo('id') not in folder_raw:
+            return False
+        url_key = {
+            'watchlist': 'trakt_watchlist',
+            'collection': 'trakt_collection',
+            'favorites': 'trakt_favorites',
+            'watchedlist': 'trakt_watchedlist',
+            'history': 'trakt_history',
+        }.get(shelf)
+        if url_key and ('url=%s' % url_key) in folder_raw:
+            return True
+        media = 'movies' if content == 'movie' else 'shows'
+        path_map = {
+            'watchlist': '/users/me/watchlist/%s' % media,
+            'collection': '/users/me/collection/%s' % media,
+            'favorites': '/users/me/favorites/%s' % media,
+            'watchedlist': '/users/me/watched/%s' % media,
+            'history': '/users/me/history/%s' % media,
+        }
+        needle = path_map.get(shelf)
+        return bool(needle and needle in folder_raw)
+    except Exception:
+        return False
+
+
+def refresh_list():
+    """Reload the current addon folder without rewriting history."""
+    try:
+        from six.moves import urllib_parse
+        folder = infoLabel('Container.FolderPath') or ''
+        if addonInfo('id') not in folder:
+            return execute('Container.Refresh')
+        if any(x in folder for x in (
+            'action=add_item', 'action=play_item', 'action=play_', 'action=sources'
+        )):
+            return execute('Container.Refresh')
+        # Typed Search without name=: reload results with the last term,
+        # without replace so Search menu history stays intact.
+        if 'searchterm' in folder and 'name=' not in folder:
+            args = dict(urllib_parse.parse_qsl(folder.split('?', 1)[-1]))
+            select = args.get('select') or ''
+            action = args.get('action') or ''
+            q = last_search_term(select) if select else None
+            if not q or not action:
+                return
+            folder = '%s?action=%s&select=%s&name=%s' % (
+                folder.split('?', 1)[0], action, select, urllib_parse.quote_plus(q)
+            )
+            execute('Container.Update(%s)' % folder)
+            return
+    except Exception:
+        pass
     return execute('Container.Refresh')
 
 
@@ -633,13 +777,12 @@ def reopen_settings_category(category, setting=0):
 
 def finish_auth_ui(reopen_settings=False):
     """Refresh addon menus after auth changes; optionally return to Account Settings."""
+    refresh_addon_container()
     if reopen_settings:
         try:
             reopen_account_settings()
         except Exception:
             pass
-    else:
-        refresh_addon_container()
 
 
 def installAddon(id, refresh_menu=False):

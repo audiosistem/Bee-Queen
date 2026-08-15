@@ -159,3 +159,16 @@ def clear():
     except Exception as e:
         log_utils.log('trakt_cache.clear failed: %s' % e)
         return False
+
+
+def clear_shelf_caches():
+    """After Trakt Manager add/remove: drop short-TTL shelves and any legacy
+    12h ``trakt_list`` rows in the generic cache (pre-1.2.1 path)."""
+    ok = clear()
+    try:
+        cur = _base_cache._get_connection_cursor()
+        cur.execute("DELETE FROM %s WHERE key LIKE ?" % _base_cache.cache_table, ['%trakt_list%'])
+        cur.connection.commit()
+    except Exception as e:
+        log_utils.log('trakt_cache.clear_shelf_caches generic wipe failed: %s' % e)
+    return ok

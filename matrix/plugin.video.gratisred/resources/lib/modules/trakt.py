@@ -170,7 +170,7 @@ def __getTraktALT(url, post=None):
         pass
 
 
-def __getTrakt(url, post=None):
+def __getTrakt(url, post=None, timeout=30):
     # ---------------------------------------------------------------------
     # FIX (Trakt lists missing): the original implementation returned a bare
     # ``None`` on any server / rate-limit / transport error.  Every caller in
@@ -195,9 +195,9 @@ def __getTrakt(url, post=None):
             _ensureTraktTokenFresh()
             headers.update({'Authorization': 'Bearer %s' % control.setting('trakt.token')})
         if not post:
-            r = requests.get(url, headers=headers, timeout=30)
+            r = requests.get(url, headers=headers, timeout=timeout)
         else:
-            r = requests.post(url, data=post, headers=headers, timeout=30)
+            r = requests.post(url, data=post, headers=headers, timeout=timeout)
         r.encoding = 'utf-8'
         resp_code = str(r.status_code)
         resp_header = r.headers
@@ -221,9 +221,9 @@ def __getTrakt(url, post=None):
             log_utils.log('Trakt Rate Limit %s - sleeping %ss then retrying %s' % (resp_code, wait, url))
             time.sleep(wait)
             if not post:
-                r = requests.get(url, headers=headers, timeout=30)
+                r = requests.get(url, headers=headers, timeout=timeout)
             else:
-                r = requests.post(url, data=post, headers=headers, timeout=30)
+                r = requests.post(url, data=post, headers=headers, timeout=timeout)
             r.encoding = 'utf-8'
             if str(r.status_code) == '200':
                 return r.text, r.headers
@@ -239,9 +239,9 @@ def __getTrakt(url, post=None):
             return None, resp_header
         headers['Authorization'] = 'Bearer %s' % token
         if not post:
-            r = requests.get(url, headers=headers, timeout=30)
+            r = requests.get(url, headers=headers, timeout=timeout)
         else:
-            r = requests.post(url, data=post, headers=headers, timeout=30)
+            r = requests.post(url, data=post, headers=headers, timeout=timeout)
         r.encoding = 'utf-8'
         return r.text, r.headers
     except Exception as e:
@@ -262,24 +262,238 @@ def _released_key(item):
 
 def sort_list(sort_key, sort_direction, list_data):
     reverse = False if sort_direction == 'asc' else True
-    if sort_key == 'rank':
-        return sorted(list_data, key=lambda x: x['rank'], reverse=reverse)
-    elif sort_key == 'added':
-        return sorted(list_data, key=lambda x: x['listed_at'], reverse=reverse)
-    elif sort_key == 'title':
-        return sorted(list_data, key=lambda x: x[x['type']].get('title'), reverse=reverse)
-    elif sort_key == 'released':
-        return sorted(list_data, key=lambda x: _released_key(x[x['type']]), reverse=reverse)
-    elif sort_key == 'runtime':
-        return sorted(list_data, key=lambda x: x[x['type']].get('runtime', 0), reverse=reverse)
-    elif sort_key == 'popularity':
-        return sorted(list_data, key=lambda x: x[x['type']].get('votes', 0), reverse=reverse)
-    elif sort_key == 'percentage':
-        return sorted(list_data, key=lambda x: x[x['type']].get('rating', 0), reverse=reverse)
-    elif sort_key == 'votes':
-        return sorted(list_data, key=lambda x: x[x['type']].get('votes', 0), reverse=reverse)
-    else:
+    if not isinstance(list_data, list):
         return list_data
+    try:
+        if sort_key == 'rank':
+            return sorted(list_data, key=lambda x: x.get('rank') or 0, reverse=reverse)
+        elif sort_key == 'added':
+            return sorted(list_data, key=lambda x: x.get('listed_at') or '', reverse=reverse)
+        elif sort_key == 'title':
+            def _title(x):
+                try:
+                    return (x.get(x.get('type')) or {}).get('title') or ''
+                except Exception:
+                    return ''
+            return sorted(list_data, key=_title, reverse=reverse)
+        elif sort_key == 'released':
+            def _released(x):
+                try:
+                    return _released_key(x.get(x.get('type')) or {})
+                except Exception:
+                    return '0'
+            return sorted(list_data, key=_released, reverse=reverse)
+        elif sort_key == 'runtime':
+            def _runtime(x):
+                try:
+                    return (x.get(x.get('type')) or {}).get('runtime') or 0
+                except Exception:
+                    return 0
+            return sorted(list_data, key=_runtime, reverse=reverse)
+        elif sort_key == 'popularity':
+            def _votes(x):
+                try:
+                    return (x.get(x.get('type')) or {}).get('votes') or 0
+                except Exception:
+                    return 0
+            return sorted(list_data, key=_votes, reverse=reverse)
+        elif sort_key == 'percentage':
+            def _rating(x):
+                try:
+                    return (x.get(x.get('type')) or {}).get('rating') or 0
+                except Exception:
+                    return 0
+            return sorted(list_data, key=_rating, reverse=reverse)
+        elif sort_key == 'votes':
+            def _votes(x):
+                try:
+                    return (x.get(x.get('type')) or {}).get('votes') or 0
+                except Exception:
+                    return 0
+            return sorted(list_data, key=_votes, reverse=reverse)
+    except Exception:
+        return list_data
+    return list_data
+
+
+def choose_list_sort(media, shelf, label=None):
+    """Context-menu picker for My Trakt shelves and personal lists."""
+    from resources.lib.modules import shelf_sort
+    shelf_sort.choose_list_sort(
+        'trakt', media, shelf, sortable=shelf_sort.TRAKT_SORTABLE, heading_label=label)
+
+
+def apply_my_shelf_sort(items, url, media):
+    """Apply user sort to My Trakt sync shelves or personal / liked lists."""
+    from resources.lib.modules import shelf_sort
+    shelf = shelf_sort.trakt_shelf_from_url(url)
+    if not shelf:
+        return items
+    return shelf_sort.sort_items(items, 'trakt', media, shelf, sortable=shelf_sort.TRAKT_SORTABLE)
+
+
+# Home-window property: shelf removals that must not reappear in directory
+# listings even if Trakt's list endpoint lags behind sync/remove.
+_SHELF_EXCLUDE_PROP = 'gratisred.trakt_shelf_exclude'
+
+
+def _exclude_window():
+    from kodi_six import xbmcgui
+    return xbmcgui.Window(10000)
+
+
+def _parse_shelf_exclusions():
+    """Return {shelf: set([id, ...])} from the home window property."""
+    out = {}
+    try:
+        raw = _exclude_window().getProperty(_SHELF_EXCLUDE_PROP) or ''
+    except Exception:
+        return out
+    if not raw:
+        return out
+    for chunk in raw.split(';'):
+        if ':' not in chunk:
+            continue
+        shelf, _, ids = chunk.partition(':')
+        shelf = (shelf or '').strip()
+        if not shelf:
+            continue
+        out[shelf] = set(x for x in ids.split(',') if x)
+    return out
+
+
+def _save_shelf_exclusions(data):
+    parts = []
+    for shelf in sorted(data.keys()):
+        ids = sorted(x for x in (data.get(shelf) or set()) if x)
+        if ids:
+            parts.append('%s:%s' % (shelf, ','.join(ids[:80])))
+    try:
+        _exclude_window().setProperty(_SHELF_EXCLUDE_PROP, ';'.join(parts))
+    except Exception:
+        pass
+
+
+def _shelf_exclusion_allowed(shelf):
+    if shelf in ('watchlist', 'collection'):
+        return True
+    try:
+        from resources.lib.modules import shelf_sort
+        return shelf_sort.is_personal_shelf(shelf)
+    except Exception:
+        return False
+
+
+def note_shelf_exclusion(shelf, imdb=None, tmdb=None):
+    """Hide this title on Watchlist/Library/personal lists until added again."""
+    if not _shelf_exclusion_allowed(shelf):
+        return
+    data = _parse_shelf_exclusions()
+    bucket = data.setdefault(shelf, set())
+    if tmdb and str(tmdb) not in ('0', '', 'None'):
+        bucket.add(str(tmdb))
+    if imdb and str(imdb) not in ('0', '', 'None'):
+        bucket.add(str(imdb))
+    _save_shelf_exclusions(data)
+
+
+def clear_shelf_exclusion(shelf, imdb=None, tmdb=None):
+    """Clear a prior remove-exclusion after a successful add."""
+    if not _shelf_exclusion_allowed(shelf):
+        return
+    data = _parse_shelf_exclusions()
+    bucket = data.get(shelf) or set()
+    if not bucket:
+        return
+    if tmdb and str(tmdb) in bucket:
+        bucket.discard(str(tmdb))
+    if imdb and str(imdb) in bucket:
+        bucket.discard(str(imdb))
+    if bucket:
+        data[shelf] = bucket
+    else:
+        data.pop(shelf, None)
+    _save_shelf_exclusions(data)
+
+
+def filter_shelf_exclusions(items, url):
+    """Drop locally excluded titles from a My Trakt shelf / personal list page."""
+    try:
+        from resources.lib.modules import shelf_sort
+        shelf = shelf_sort.trakt_shelf_from_url(url)
+        if not _shelf_exclusion_allowed(shelf) or not items:
+            return items
+        excluded = _parse_shelf_exclusions().get(shelf) or set()
+        if not excluded:
+            return items
+        kept = []
+        for item in items:
+            tmdb = str((item or {}).get('tmdb') or '')
+            imdb = str((item or {}).get('imdb') or '')
+            if tmdb in excluded or imdb in excluded:
+                continue
+            kept.append(item)
+        return kept
+    except Exception:
+        return items
+
+
+def _manager_shelf_from_path(path):
+    """Return (shelf_key, list_slug_or_None) for Manager add/remove paths."""
+    path = path or ''
+    if '/sync/watchlist' in path:
+        return 'watchlist', None
+    if '/sync/collection' in path:
+        return 'collection', None
+    if path.startswith('/users/') and '/lists/' in path:
+        parts = path.split('/')
+        # /users/{user}/lists/{slug}/items[/remove]
+        if len(parts) >= 6 and parts[3] == 'lists':
+            try:
+                from resources.lib.modules import shelf_sort
+                return shelf_sort.personal_shelf_key(parts[2], parts[4]), parts[4]
+            except Exception:
+                return None, parts[4]
+    return None, None
+
+
+def _folder_matches_manager_shelf(folder_raw, shelf, list_slug=None):
+    """True when the open container is the shelf/list just changed."""
+    folder_raw = folder_raw or ''
+    if not folder_raw:
+        return False
+    if list_slug:
+        return (
+            ('/lists/%s/' % list_slug) in folder_raw
+            or ('/lists/%s/items' % list_slug) in folder_raw
+        )
+    if shelf in ('watchlist', 'collection'):
+        return (
+            ('url=trakt_%s' % shelf) in folder_raw
+            or ('/%s/' % shelf) in folder_raw
+            or '/users/me/%s/' % shelf in folder_raw
+        )
+    return False
+
+
+def _trakt_id_from_sync(kind, content, ids):
+    """Return Trakt's numeric id for a watchlist/collection member, if found."""
+    try:
+        media = 'movies' if content == 'movie' else 'shows'
+        media_key = 'movie' if content == 'movie' else 'show'
+        items = _trakt_paged_cached('/users/me/%s/%s' % (kind, media))
+        if not items:
+            return None
+        for item in items:
+            block = (item or {}).get(media_key) or {}
+            if not _ids_match(block.get('ids'), ids):
+                continue
+            trakt_id = (block.get('ids') or {}).get('trakt')
+            if trakt_id not in (None, '', 'None', 0, '0'):
+                return int(trakt_id)
+    except Exception:
+        pass
+    return None
 
 
 def getTraktAsJson(url, post=None):
@@ -292,8 +506,13 @@ def getTraktAsJson(url, post=None):
         if not r:
             return None
         r = client_utils.json_loads_as_str(r)
-        if 'X-Sort-By' in res_headers and 'X-Sort-How' in res_headers:
-            r = sort_list(res_headers['X-Sort-By'], res_headers['X-Sort-How'], r)
+        # Never let header re-sort wipe a page (KeyError on missing rank/listed_at
+        # used to make getTraktAsJson return None → empty Watchlist page).
+        if isinstance(r, list) and res_headers and 'X-Sort-By' in res_headers and 'X-Sort-How' in res_headers:
+            try:
+                r = sort_list(res_headers['X-Sort-By'], res_headers['X-Sort-How'], r)
+            except Exception:
+                pass
         return r
     except:
         pass
@@ -360,16 +579,15 @@ def getTraktAsJsonPaged(url, page_size=None):
 
             r, res_headers = __getTrakt(page_url, None)
             if not r:
-                # Transport/5xx error on this page: stop but return what we
-                # already have rather than dropping the whole enumeration.
-                break
+                # Incomplete page walks must not look like "not a member".
+                return None
             try:
                 data = client_utils.json_loads_as_str(r)
             except Exception:
-                break
+                return None
             if not isinstance(data, list):
                 # Unexpected payload (e.g. an error dict); bail.
-                return data
+                return None
             merged.extend(data)
 
             # Determine total pages from Trakt's response headers.  If the
@@ -398,7 +616,7 @@ def getTraktAsJsonPaged(url, page_size=None):
         return merged
     except Exception as e:
         log_utils.log('getTraktAsJsonPaged failed for %s : %s' % (url, e))
-        return []
+        return None
 
 
 def revokeTrakt(reopen_settings=False):
@@ -429,6 +647,11 @@ def revokeTrakt(reopen_settings=False):
         control.setSetting('trakt.token', '')
         control.setSetting('trakt.refresh', '')
         control.setSetting('trakt.expires', '')
+        try:
+            from resources.lib.modules import simkl
+            simkl.fallback_indicators_on_revoke('trakt')
+        except Exception:
+            pass
         control.infoDialog('Trakt Account Revoked.', sound=True)
         control.finish_auth_ui(reopen_settings=reopen_settings)
     except Exception:
@@ -495,6 +718,13 @@ def authTrakt(reopen_settings=False):
         control.setSetting('trakt.token', token)
         control.setSetting('trakt.refresh', refresh)
         _set_trakt_expires(token_result.get('expires_in', 7200))
+        if control.yesnoDialog('Set Trakt as your Watched Indicators provider?', heading='Watched Status Provider'):
+            try:
+                from resources.lib.modules import simkl
+                simkl.set_watched_provider('1', notify=True)
+            except Exception:
+                control.setSetting('indicators.alt', '1')
+                control.setSetting('bookmarks.source', '1')
         control.infoDialog('Trakt Account Authorised.', sound=True)
         control.finish_auth_ui(reopen_settings=reopen_settings)
     except Exception:
@@ -505,46 +735,127 @@ def authTrakt(reopen_settings=False):
 
 
 def getTraktIndicatorsInfo():
-    indicators = control.setting('indicators') if getTraktCredentialsInfo() == False else control.setting('indicators.alt')
-    indicators = True if indicators == '1' else False
-    return indicators
+    # True only when Indicators is Trakt (not Local / Simkl).
+    try:
+        from resources.lib.modules import simkl
+        return simkl.getIndicatorsProvider() == 'trakt'
+    except Exception:
+        indicators = control.setting('indicators') if getTraktCredentialsInfo() == False else control.setting('indicators.alt')
+        return True if indicators == '1' else False
 
 
 def getTraktAddonMovieInfo():
+    """True when official script.trakt should own movie scrobble (we defer)."""
+    try:
+        if not control.condVisibility('System.HasAddon(script.trakt)'):
+            return False
+    except Exception:
+        return False
+    try:
+        authorization = control.addon('script.trakt').getSetting('authorization')
+    except Exception:
+        authorization = ''
+    # Match Red Light: unauthorised / empty token → we scrobble ourselves.
+    if not authorization:
+        return False
     try:
         scrobble = control.addon('script.trakt').getSetting('scrobble_movie')
-    except:
+    except Exception:
         scrobble = ''
     try:
         ExcludeHTTP = control.addon('script.trakt').getSetting('ExcludeHTTP')
-    except:
+    except Exception:
         ExcludeHTTP = ''
-    try:
-        authorization = control.addon('script.trakt').getSetting('authorization')
-    except:
-        authorization = ''
-    if scrobble == 'true' and ExcludeHTTP == 'false' and not authorization == '':
-        return True
-    else:
+    # ExcludeHTTP true/empty → plugin HTTP playback is excluded; we scrobble.
+    if ExcludeHTTP in ('true', ''):
         return False
+    return scrobble == 'true'
 
 
 def getTraktAddonEpisodeInfo():
+    """True when official script.trakt should own episode scrobble (we defer)."""
+    try:
+        if not control.condVisibility('System.HasAddon(script.trakt)'):
+            return False
+    except Exception:
+        return False
+    try:
+        authorization = control.addon('script.trakt').getSetting('authorization')
+    except Exception:
+        authorization = ''
+    if not authorization:
+        return False
     try:
         scrobble = control.addon('script.trakt').getSetting('scrobble_episode')
-    except:
+    except Exception:
         scrobble = ''
     try:
         ExcludeHTTP = control.addon('script.trakt').getSetting('ExcludeHTTP')
-    except:
+    except Exception:
         ExcludeHTTP = ''
+    if ExcludeHTTP in ('true', ''):
+        return False
+    return scrobble == 'true'
+
+
+def _trakt_scrobble_payload(media_type, percent, tmdb=None, imdb=None, tvdb=None, season=None, episode=None):
+    """Build /scrobble/* body. Prefer TMDb, then IMDb, then TVDb."""
+    ids = {}
     try:
-        authorization = control.addon('script.trakt').getSetting('authorization')
-    except:
-        authorization = ''
-    if scrobble == 'true' and ExcludeHTTP == 'false' and not authorization == '':
-        return True
-    else:
+        if tmdb not in (None, '', '0', 0):
+            ids['tmdb'] = int(tmdb)
+    except Exception:
+        pass
+    if imdb not in (None, '', '0'):
+        ids['imdb'] = str(imdb)
+    try:
+        if tvdb not in (None, '', '0', 0):
+            ids['tvdb'] = int(tvdb)
+    except Exception:
+        pass
+    if not ids:
+        return None
+    progress = float(percent or 0)
+    if media_type == 'movie':
+        return {'movie': {'ids': ids}, 'progress': progress}
+    try:
+        return {
+            'show': {'ids': ids},
+            'episode': {'season': int(season), 'number': int(episode)},
+            'progress': progress
+        }
+    except Exception:
+        return None
+
+
+def trakt_scrobble(action, media_type, percent=0, tmdb=None, imdb=None, tvdb=None, season=None, episode=None):
+    """Native Trakt live scrobble (Playing now). Standalone when Indicators = Trakt.
+
+    Defers when official script.trakt is authorised and set to scrobble that media type
+    with ExcludeHTTP off (same idea as Simkl / Red Light).
+    Short request timeout — never block Kodi player teardown on a hung Trakt call.
+    """
+    if not getTraktIndicatorsInfo():
+        return False
+    if not getTraktCredentialsInfo():
+        return False
+    if media_type == 'movie' and getTraktAddonMovieInfo():
+        return False
+    if media_type != 'movie' and getTraktAddonEpisodeInfo():
+        return False
+    path = {'start': '/scrobble/start', 'pause': '/scrobble/pause', 'stop': '/scrobble/stop'}.get(action)
+    if not path:
+        return False
+    payload = _trakt_scrobble_payload(media_type, percent, tmdb=tmdb, imdb=imdb, tvdb=tvdb, season=season, episode=episode)
+    if not payload:
+        return False
+    try:
+        body, _headers = __getTrakt(path, post=payload, timeout=8)
+        ok = body is not None
+        log_utils.log('Trakt scrobble %s %s percent=%s ok=%s' % (action, media_type, percent, ok))
+        return ok
+    except Exception as e:
+        log_utils.log('Trakt scrobble %s failed: %s' % (action, e))
         return False
 
 
@@ -620,7 +931,16 @@ def build_user_list_directory(url, trakt_list_link, menu_type=None, image='trakt
             action = _trakt_userlist_action(menu_type, item_types, item_count)
             if menu_type and action is None:
                 continue
-            entries.append({'name': name, 'url': list_url, 'context': list_url, 'image': image, 'action': action or 'movies'})
+            from resources.lib.modules import shelf_sort
+            entries.append({
+                'name': name,
+                'url': list_url,
+                'context': list_url,
+                'image': image,
+                'action': action or 'movies',
+                'sort_provider': 'trakt',
+                'sort_key': shelf_sort.personal_shelf_key(username, list_slug),
+            })
         except:
             pass
     return entries
@@ -638,28 +958,256 @@ def user_list_directory_episode(url, trakt_list_link, user=None):
     return build_user_list_directory(url, trakt_list_link, menu_type='episode')
 
 
+def _manager_ids(imdb=None, tmdb=None):
+    """Build a Trakt ids object; omit empty / placeholder values."""
+    ids = {}
+    if tmdb and str(tmdb) not in ('0', '', 'None'):
+        try:
+            ids['tmdb'] = int(tmdb)
+        except Exception:
+            pass
+    if imdb and str(imdb) not in ('0', '', 'None'):
+        imdb = str(imdb)
+        if not imdb.startswith('tt'):
+            imdb = 'tt' + re.sub(r'[^0-9]', '', imdb)
+        if imdb not in ('tt', 'tt0'):
+            ids['imdb'] = imdb
+    return ids
+
+
+def _manager_post(content, imdb=None, tmdb=None):
+    ids = _manager_ids(imdb=imdb, tmdb=tmdb)
+    if not ids:
+        return None
+    if content == 'movie':
+        return {'movies': [{'ids': ids}]}
+    return {'shows': [{'ids': ids}]}
+
+
+def _ids_match(item_ids, wanted):
+    if not isinstance(item_ids, dict) or not isinstance(wanted, dict):
+        return False
+    for key in ('tmdb', 'imdb'):
+        item_value = item_ids.get(key)
+        wanted_value = wanted.get(key)
+        if item_value in (None, '', 'None', 0, '0') or wanted_value in (None, '', 'None', 0, '0'):
+            continue
+        if str(item_value) == str(wanted_value):
+            return True
+    return False
+
+
+def _entry_media_ids(item, content):
+    if not isinstance(item, dict):
+        return None
+    media_key = 'movie' if content == 'movie' else 'show'
+    block = item.get(media_key)
+    if isinstance(block, dict) and block.get('ids'):
+        return block.get('ids')
+    if content != 'movie':
+        show = item.get('show')
+        if isinstance(show, dict) and show.get('ids'):
+            return show.get('ids')
+    return None
+
+
+def _trakt_paged_cache_payload(url):
+    """Wrap paged results so empty lists still store in trakt_cache (falsy-safe)."""
+    items = getTraktAsJsonPaged(url)
+    if items is None:
+        return None
+    return {'items': items}
+
+
+def _trakt_paged_cached(url):
+    """Short-TTL paged Trakt fetch for manager membership (same table as shelves)."""
+    from resources.lib.modules import trakt_cache
+    data = trakt_cache.get(_trakt_paged_cache_payload, trakt_cache.TTL_LISTS_SEC, url)
+    if data is None:
+        return None
+    if isinstance(data, dict) and 'items' in data:
+        return data['items']
+    return data if isinstance(data, list) else None
+
+
+def _item_in_sync(kind, content, ids):
+    """Return True/False if membership is known, or None if the check failed."""
+    try:
+        media = 'movies' if content == 'movie' else 'shows'
+        items = _trakt_paged_cached('/users/me/%s/%s' % (kind, media))
+        if items is None:
+            return None
+        for item in items:
+            if _ids_match(_entry_media_ids(item, content), ids):
+                return True
+        return False
+    except Exception:
+        return None
+
+
+def _item_in_personal_list(slug, content, ids):
+    """Return True/False if membership is known, or None if the check failed."""
+    try:
+        items = _trakt_paged_cached('/users/me/lists/%s/items' % slug)
+        if items is None:
+            return None
+        for item in items:
+            if _ids_match(_entry_media_ids(item, content), ids):
+                return True
+        return False
+    except Exception:
+        return None
+
+
+def _manager_still_member(path, content, ids):
+    """Return True/False/None (None = membership check failed)."""
+    path = path or ''
+    if path == '/sync/collection/remove':
+        return _item_in_sync('collection', content, ids)
+    if path == '/sync/watchlist/remove':
+        return _item_in_sync('watchlist', content, ids)
+    if path.startswith('/users/me/lists/') and path.endswith('/items/remove'):
+        # /users/me/lists/{slug}/items/remove
+        parts = path.split('/')
+        if len(parts) >= 6:
+            return _item_in_personal_list(parts[4], content, ids)
+    return True
+
+
+def _manager_remove_label(path):
+    path = path or ''
+    if path == '/sync/collection/remove':
+        return 'Library'
+    if path == '/sync/watchlist/remove':
+        return 'Watchlist'
+    if path.startswith('/users/me/lists/') and path.endswith('/items/remove'):
+        return 'list'
+    return 'list'
+
+
+def _sync_counts(bucket, keys):
+    bucket = bucket or {}
+    total = 0
+    for key in keys:
+        try:
+            total += int(bucket.get(key, 0) or 0)
+        except Exception:
+            pass
+    return total
+
+
+def _not_found_count(data):
+    not_found = (data or {}).get('not_found') or {}
+    if not isinstance(not_found, dict):
+        return 0
+    total = 0
+    for key in ('movies', 'shows', 'seasons', 'episodes', 'people'):
+        try:
+            total += len(not_found.get(key) or [])
+        except Exception:
+            pass
+    return total
+
+
+def _manager_sync_outcome(path, data):
+    """Interpret Trakt sync JSON; never treat not_found / zero-adds as success."""
+    if not isinstance(data, dict):
+        return 'error'
+    path = path or ''
+    is_remove = path.endswith('/remove') or '/remove' in path
+    if '/sync/collection' in path:
+        # Shows are stored as collected episodes; some payloads also count shows.
+        keys = ('movies', 'episodes', 'shows')
+        if is_remove:
+            # Non-zero deleted counts are definitive. Zero counts are common for
+            # show-level Library removes — caller must confirm via membership.
+            if _sync_counts(data.get('deleted'), keys):
+                return 'deleted'
+            return 'error'
+        if _sync_counts(data.get('added'), keys):
+            return 'added'
+        if _sync_counts(data.get('existing'), keys):
+            return 'existing'
+        return 'error'
+    if '/sync/watchlist' in path or '/users/me/lists/' in path:
+        keys = ('movies', 'shows', 'seasons', 'episodes', 'people')
+        if is_remove:
+            # Do not treat deleted:0 as success — that left Watchlist items
+            # (e.g. One Piece) still on Trakt while the UI toasted Removed.
+            if _sync_counts(data.get('deleted'), keys):
+                return 'deleted'
+            return 'error'
+        if _sync_counts(data.get('added'), keys):
+            return 'added'
+        if _sync_counts(data.get('existing'), keys):
+            return 'existing'
+        return 'error'
+    return 'ok' if data else 'error'
+
+
 def manager(name, imdb, tmdb, content):
     try:
-        post = {"movies": [{"ids": {"imdb": imdb}}]} if content == 'movie' else {"shows": [{"ids": {"tmdb": tmdb}}]}
-        items = [('Add to [B]Collection[/B]', '/sync/collection')]
-        items += [('Remove from [B]Collection[/B]', '/sync/collection/remove')]
-        items += [('Add to [B]Watchlist[/B]', '/sync/watchlist')]
-        items += [('Remove from [B]Watchlist[/B]', '/sync/watchlist/remove')]
-        items += [('Add to [B]new List[/B]', '/users/me/lists/%s/items')]
+        if not getTraktCredentialsInfo():
+            return control.infoDialog('Authorise Trakt first.', sound=True, icon='ERROR')
+        # Capture before selectDialog — after RunPlugin(-1) + dialogs,
+        # Container.FolderPath is often wrong/empty so Refresh misses the shelf.
+        folder_at_open = ''
+        try:
+            folder_at_open = control.infoLabel('Container.FolderPath') or ''
+        except Exception:
+            folder_at_open = ''
+        ids = _manager_ids(imdb=imdb, tmdb=tmdb)
+        post = _manager_post(content, imdb=imdb, tmdb=tmdb)
+        if not post:
+            return control.infoDialog('Missing IDs for Trakt Lists Manager.', heading=str(name), sound=True, icon='ERROR')
+        items = []
+        # State-aware Library, Watchlist, and personal lists (Add OR Remove).
+        # If a personal-list membership check fails (rate-limit), show both for
+        # that list only so Manager stays usable.
+        if _item_in_sync('collection', content, ids):
+            items.append(('Remove from [B]Library[/B]', '/sync/collection/remove'))
+        else:
+            items.append(('Add to [B]Library[/B]', '/sync/collection'))
+        if _item_in_sync('watchlist', content, ids):
+            items.append(('Remove from [B]Watchlist[/B]', '/sync/watchlist/remove'))
+        else:
+            items.append(('Add to [B]Watchlist[/B]', '/sync/watchlist'))
+        items.append(('Add to [B]new List[/B]', '/users/me/lists/%s/items'))
         result = getTraktAsJsonPaged('/users/me/lists') or []
-        lists = [(i['name'], i['ids']['slug']) for i in result]
-        lists = [lists[i//2] for i in range(len(lists)*2)]
-        for i in range(0, len(lists), 2):
-            lists[i] = ((ensure_str('Add to [B]%s[/B]' % lists[i][0])), '/users/me/lists/%s/items' % lists[i][1])
-        for i in range(1, len(lists), 2):
-            lists[i] = ((ensure_str('Remove from [B]%s[/B]' % lists[i][0])), '/users/me/lists/%s/items/remove' % lists[i][1])
-        items += lists
-        select = control.selectDialog([i[0] for i in items], 'Trakt Manager')
+        for entry in result:
+            try:
+                list_name = entry['name']
+                slug = entry['ids']['slug']
+            except Exception:
+                continue
+            in_list = _item_in_personal_list(slug, content, ids)
+            if in_list is True:
+                items.append((
+                    ensure_str('Remove from [B]%s[/B]' % list_name),
+                    '/users/me/lists/%s/items/remove' % slug
+                ))
+            elif in_list is False:
+                items.append((
+                    ensure_str('Add to [B]%s[/B]' % list_name),
+                    '/users/me/lists/%s/items' % slug
+                ))
+            else:
+                items.append((
+                    ensure_str('Add to [B]%s[/B]' % list_name),
+                    '/users/me/lists/%s/items' % slug
+                ))
+                items.append((
+                    ensure_str('Remove from [B]%s[/B]' % list_name),
+                    '/users/me/lists/%s/items/remove' % slug
+                ))
+        select = control.selectDialog([i[0] for i in items], 'Trakt Lists Manager')
         if select == -1:
             return
-        elif select == 4:
+        path = items[select][1]
+        if '%s' in path:
             t = 'Add to [B]new List[/B]'
-            k = control.keyboard('', t) ; k.doModal()
+            k = control.keyboard('', t)
+            k.doModal()
             new = k.getText() if k.isConfirmed() else None
             if (new == None or new == ''):
                 return
@@ -667,14 +1215,101 @@ def manager(name, imdb, tmdb, content):
             try:
                 slug = client_utils.json_loads_as_str(result)['ids']['slug']
             except:
-                return control.infoDialog('Trakt Manager', heading=str(name), sound=True, icon='ERROR')
-            result = __getTrakt(items[select][1] % slug, post=post)[0]
+                return control.infoDialog('Could not create list.', heading=str(name), sound=True, icon='ERROR')
+            path = path % slug
+        result = __getTrakt(path, post=post)[0]
+        if result is None:
+            return control.infoDialog('Trakt request failed.', heading=str(name), sound=True, icon='ERROR')
+        try:
+            data = client_utils.json_loads_as_str(result) if not isinstance(result, dict) else result
+        except Exception:
+            data = None
+        outcome = _manager_sync_outcome(path, data)
+        is_remove = path.endswith('/remove') or '/remove' in path
+        # Watchlist / personal lists: trust Trakt deleted counts only (same as
+        # Red Light). Re-paging membership after remove was slow and, when
+        # rate-limited mid-walk, toasted Removed while the title stayed on Trakt.
+        # Library show-level removes often return deleted:0 even when they worked
+        # — confirm with one membership check only in that case.
+        if is_remove and '/sync/collection' in path and outcome != 'deleted':
+            still = _item_in_sync('collection', content, ids)
+            if still is False:
+                outcome = 'deleted'
+            elif still is True:
+                outcome = 'error'
+        try:
+            from kodi_six import xbmc as _xbmc
+            _xbmc.log(
+                '[Gratis Red] Trakt Manager path=%s post=%s response=%s outcome=%s' % (
+                    path, post, data, outcome),
+                _xbmc.LOGINFO)
+        except Exception:
+            pass
+        label = _manager_remove_label(path)
+        try:
+            chosen = items[select][0]
+            if '[B]' in chosen and '[/B]' in chosen:
+                label = chosen.split('[B]', 1)[1].split('[/B]', 1)[0]
+        except Exception:
+            pass
+        if outcome == 'error':
+            return control.infoDialog('Trakt did not update this item.', heading=str(name), sound=True, icon='ERROR')
+        if outcome == 'existing':
+            return control.infoDialog('Already on %s.' % label, heading=str(name), sound=True)
+        if outcome == 'deleted':
+            message = 'Removed from %s.' % label
         else:
-            result = __getTrakt(items[select][1], post=post)[0]
-        icon = control.infoLabel('ListItem.Icon') if not result == None else 'ERROR'
-        control.infoDialog('Trakt Manager', heading=str(name), sound=True, icon=icon)
-    except:
-        return
+            message = 'Added to %s.' % label
+        try:
+            from resources.lib.modules import trakt_cache
+            trakt_cache.clear_shelf_caches()
+        except Exception:
+            pass
+        shelf, list_slug = _manager_shelf_from_path(path)
+        try:
+            if shelf and is_remove and outcome == 'deleted':
+                note_shelf_exclusion(shelf, imdb=imdb, tmdb=tmdb)
+                still = _manager_still_member(path, content, ids)
+                try:
+                    from kodi_six import xbmc as _xbmc
+                    _xbmc.log(
+                        '[Gratis Red] Trakt Manager after-remove still_member=%s shelf=%s ids=%s folder=%s' % (
+                            still, shelf, ids, folder_at_open),
+                        _xbmc.LOGINFO)
+                except Exception:
+                    pass
+                if still is True and shelf in ('watchlist', 'collection'):
+                    trakt_id = _trakt_id_from_sync(shelf, content, ids)
+                    if trakt_id:
+                        retry_post = (
+                            {'movies': [{'ids': {'trakt': trakt_id}}]}
+                            if content == 'movie' else
+                            {'shows': [{'ids': {'trakt': trakt_id}}]}
+                        )
+                        try:
+                            __getTrakt(path, post=retry_post)
+                        except Exception:
+                            pass
+            elif shelf and not is_remove and outcome in ('added', 'existing', 'ok'):
+                clear_shelf_exclusion(shelf, imdb=imdb, tmdb=tmdb)
+        except Exception:
+            pass
+        try:
+            # Refresh the open shelf/list — exclusion drops the row on rebuild.
+            if shelf and is_remove and outcome == 'deleted' and folder_at_open:
+                from six.moves import urllib_parse
+                folder_raw = urllib_parse.unquote(folder_at_open)
+                if _folder_matches_manager_shelf(folder_raw, shelf, list_slug):
+                    control.refresh_folder(folder_at_open)
+        except Exception:
+            pass
+        control.infoDialog(message, heading=str(name), sound=True, icon=control.infoLabel('ListItem.Icon'))
+    except Exception as e:
+        try:
+            log_utils.log('Trakt Manager failed: %s' % e)
+        except Exception:
+            pass
+        control.infoDialog('Trakt Lists Manager failed.', heading=str(name), sound=True, icon='ERROR')
 
 
 def getPlaybackEpisodes():
@@ -743,25 +1378,51 @@ def timeoutsyncMovies():
     return timeout
 
 
-def syncTVShows(user):
+def syncTVShows(user, sync_version='progress_v1'):
+    """Watched TV indicators for overlays.
+
+    Trakt no longer returns season/episode breakdown with extended=full (#775).
+    Use /sync/watched/shows?extended=progress (same pattern as Red Light).
+    sync_version busts the local cache key after the progress migration.
+    """
     try:
         if getTraktCredentialsInfo() == False:
             return
-        indicators = getTraktAsJsonPaged('/users/me/watched/shows?extended=full') or []
-        indicators = [(i['show']['ids']['tmdb'], i['show']['aired_episodes'], sum([[(s['number'], e['number']) for e in s['episodes']] for s in i['seasons']], [])) for i in indicators]
-        indicators = [(str(i[0]), int(i[1]), i[2]) for i in indicators]
-        return indicators
+        indicators = getTraktAsJsonPaged('/sync/watched/shows?extended=progress') or []
+        rows = []
+        for item in indicators:
+            try:
+                show = item.get('show') or {}
+                tmdb = (show.get('ids') or {}).get('tmdb')
+                if not tmdb:
+                    continue
+                aired = show.get('aired_episodes') or 0
+                watched = []
+                for season in item.get('seasons') or []:
+                    try:
+                        snum = int(season.get('number'))
+                    except Exception:
+                        continue
+                    for ep in season.get('episodes') or []:
+                        try:
+                            watched.append((snum, int(ep.get('number'))))
+                        except Exception:
+                            continue
+                rows.append((str(tmdb), int(aired), watched))
+            except Exception:
+                continue
+        return rows
     except:
         pass
 
 
 def cachesyncTVShows(timeout=0):
-    indicators = cache.get(syncTVShows, timeout, control.setting('trakt.user').strip())
+    indicators = cache.get(syncTVShows, timeout, control.setting('trakt.user').strip(), 'progress_v1')
     return indicators
 
 
 def timeoutsyncTVShows():
-    timeout = cache.timeout(syncTVShows, control.setting('trakt.user').strip())
+    timeout = cache.timeout(syncTVShows, control.setting('trakt.user').strip(), 'progress_v1')
     if not timeout:
         timeout = 0
     return timeout
@@ -780,34 +1441,105 @@ def syncSeason(imdb):
         pass
 
 
-def markMovieAsWatched(imdb):
-    if not imdb.startswith('tt'):
-        imdb = 'tt' + imdb
-    return __getTrakt('/sync/history', {"movies": [{"ids": {"imdb": imdb}}]})[0]
+def _history_id_candidates(imdb=None, tmdb=None, tvdb=None):
+    """Ordered (key, value) attempts for sync/history — TMDb, then TVDb, then IMDb."""
+    candidates = []
+    if tmdb and str(tmdb) not in ('0', '', 'None'):
+        try:
+            candidates.append(('tmdb', int(tmdb)))
+        except Exception:
+            pass
+    if tvdb and str(tvdb) not in ('0', '', 'None'):
+        try:
+            candidates.append(('tvdb', int(tvdb)))
+        except Exception:
+            pass
+    if imdb and str(imdb) not in ('0', '', 'None'):
+        imdb = str(imdb).strip()
+        if not imdb.startswith('tt'):
+            imdb = 'tt' + re.sub(r'[^0-9]', '', imdb)
+        if imdb not in ('tt', 'tt0'):
+            candidates.append(('imdb', imdb))
+    return candidates
 
 
-def markMovieAsNotWatched(imdb):
-    if not imdb.startswith('tt'):
-        imdb = 'tt' + imdb
-    return __getTrakt('/sync/history/remove', {"movies": [{"ids": {"imdb": imdb}}]})[0]
+def _history_sync_success(body, path, success_key):
+    if not body:
+        return False
+    try:
+        data = client_utils.json_loads_as_str(body) if not isinstance(body, dict) else body
+    except Exception:
+        try:
+            data = json.loads(body)
+        except Exception:
+            return False
+    if not isinstance(data, dict):
+        return False
+    result_key = 'deleted' if ('/remove' in (path or '')) else 'added'
+    try:
+        return int((data.get(result_key) or {}).get(success_key, 0) or 0) > 0
+    except Exception:
+        return False
 
 
-def markTVShowAsWatched(imdb):
-    return __getTrakt('/sync/history', {"shows": [{"ids": {"imdb": imdb}}]})[0]
+def _history_mark(path, media, imdb=None, tmdb=None, tvdb=None, season=None, episode=None):
+    """Post sync/history with Red Light-style ID fallback (tmdb → tvdb → imdb)."""
+    candidates = _history_id_candidates(imdb=imdb, tmdb=tmdb, tvdb=tvdb)
+    if not candidates:
+        return None
+    # Trakt history responses count TV under "episodes" (even for whole-show marks).
+    success_key = 'movies' if media == 'movies' else 'episodes'
+    if season is not None:
+        season = int('%01d' % int(season))
+    if episode is not None:
+        episode = int('%01d' % int(episode))
+    last_body = None
+    for key, value in candidates:
+        if media == 'movies':
+            payload = {'movies': [{'ids': {key: value}}]}
+        elif season is not None and episode is not None:
+            payload = {'shows': [{'ids': {key: value}, 'seasons': [{'number': season, 'episodes': [{'number': episode}]}]}]}
+        elif season is not None:
+            payload = {'shows': [{'ids': {key: value}, 'seasons': [{'number': season}]}]}
+        else:
+            payload = {'shows': [{'ids': {key: value}}]}
+        body, _headers = __getTrakt(path, post=payload)
+        last_body = body
+        if _history_sync_success(body, path, success_key):
+            return body
+    return last_body
 
 
-def markTVShowAsNotWatched(imdb):
-    return __getTrakt('/sync/history/remove', {"shows": [{"ids": {"imdb": imdb}}]})[0]
+def markMovieAsWatched(imdb, tmdb=None, tvdb=None):
+    return _history_mark('/sync/history', 'movies', imdb=imdb, tmdb=tmdb, tvdb=tvdb)
 
 
-def markEpisodeAsWatched(imdb, season, episode):
-    season, episode = int('%01d' % int(season)), int('%01d' % int(episode))
-    return __getTrakt('/sync/history', {"shows": [{"seasons": [{"episodes": [{"number": episode}], "number": season}], "ids": {"imdb": imdb}}]})[0]
+def markMovieAsNotWatched(imdb, tmdb=None, tvdb=None):
+    return _history_mark('/sync/history/remove', 'movies', imdb=imdb, tmdb=tmdb, tvdb=tvdb)
 
 
-def markEpisodeAsNotWatched(imdb, season, episode):
-    season, episode = int('%01d' % int(season)), int('%01d' % int(episode))
-    return __getTrakt('/sync/history/remove', {"shows": [{"seasons": [{"episodes": [{"number": episode}], "number": season}], "ids": {"imdb": imdb}}]})[0]
+def markTVShowAsWatched(imdb, tmdb=None, tvdb=None):
+    return _history_mark('/sync/history', 'shows', imdb=imdb, tmdb=tmdb, tvdb=tvdb)
+
+
+def markTVShowAsNotWatched(imdb, tmdb=None, tvdb=None):
+    return _history_mark('/sync/history/remove', 'shows', imdb=imdb, tmdb=tmdb, tvdb=tvdb)
+
+
+def markSeasonAsWatched(imdb, season, tmdb=None, tvdb=None):
+    return _history_mark('/sync/history', 'shows', imdb=imdb, tmdb=tmdb, tvdb=tvdb, season=season)
+
+
+def markSeasonAsNotWatched(imdb, season, tmdb=None, tvdb=None):
+    return _history_mark('/sync/history/remove', 'shows', imdb=imdb, tmdb=tmdb, tvdb=tvdb, season=season)
+
+
+def markEpisodeAsWatched(imdb, season, episode, tmdb=None, tvdb=None):
+    return _history_mark('/sync/history', 'shows', imdb=imdb, tmdb=tmdb, tvdb=tvdb, season=season, episode=episode)
+
+
+def markEpisodeAsNotWatched(imdb, season, episode, tmdb=None, tvdb=None):
+    return _history_mark('/sync/history/remove', 'shows', imdb=imdb, tmdb=tmdb, tvdb=tvdb, season=season, episode=episode)
 
 
 def getMovieTranslation(id, lang, full=False):

@@ -283,7 +283,17 @@ def get_created_lists(url=None, list_type=None):
                     continue
                 list_url = url % list_id
                 action = 'movies' if resolved == 'movie' else 'tvshows'
-                items.append({'name': list_name, 'url': list_url, 'context': list_url, 'list_id': list_id, 'image': 'tmdb.png', 'action': action})
+                from resources.lib.modules import shelf_sort
+                items.append({
+                    'name': list_name,
+                    'url': list_url,
+                    'context': list_url,
+                    'list_id': list_id,
+                    'image': 'tmdb.png',
+                    'action': action,
+                    'sort_provider': 'tmdb',
+                    'sort_key': shelf_sort.personal_shelf_key(list_id),
+                })
             page += 1
         return items
     except:
@@ -419,62 +429,114 @@ def remove_from_watchlist(tmdb, media_type):
         return False
 
 
+def choose_list_sort(media, shelf, label=None):
+    from resources.lib.modules import shelf_sort
+    shelf_sort.choose_list_sort(
+        'tmdb', media, shelf, sortable=shelf_sort.TMDB_SORTABLE, heading_label=label)
+
+
+def apply_my_shelf_sort(items, url, media):
+    from resources.lib.modules import shelf_sort
+    shelf = shelf_sort.tmdb_shelf_from_url(url)
+    if not shelf:
+        return items
+    return shelf_sort.sort_items(items, 'tmdb', media, shelf, sortable=shelf_sort.TMDB_SORTABLE)
+
+
+def _item_in_created_list(tmdb, list_id):
+    try:
+        url = API_URL + 'list/%s/item_status?api_key=%s&session_id=%s&media_id=%s' % (
+            list_id, _tmdb_api_key(), _tmdb_account_settings()['session_id'], tmdb)
+        result = requests.get(url, headers=HEADERS, timeout=20).json()
+        return bool(result.get('item_present'))
+    except Exception:
+        return False
+
+
+def _account_favorite_watchlist(tmdb, media_type):
+    try:
+        states = get_movie_account_states(tmdb) if media_type == 'movie' else get_tvshow_account_states(tmdb)
+        if not isinstance(states, dict):
+            return False, False
+        return bool(states.get('favorite')), bool(states.get('watchlist'))
+    except Exception:
+        return False, False
+
+
 def manager(name, imdb, tmdb, content):
     try:
-        media_type = "movie" if content == "movie" else "tv"
-        items = [('Add to [B]Favorites[/B]', 'add_to_favorites')]
-        items += [('Remove from [B]Favorites[/B]', 'remove_from_favorites')]
-        items += [('Add to [B]Watchlist[/B]', 'add_to_watchlist')]
-        items += [('Remove from [B]Watchlist[/B]', 'remove_from_watchlist')]
-        items += [('Add to [B]new List[/B]', '%s')]
-        result = get_created_lists()
-        lists = [(i['name'], i['list_id']) for i in result]
-        lists = [lists[i//2] for i in range(len(lists)*2)]
-        for i in range(0, len(lists), 2):
-            lists[i] = (('Add to [B]%s[/B]' % lists[i][0]), '%s' % lists[i][1])
-        for i in range(1, len(lists), 2):
-            lists[i] = (('Remove from [B]%s[/B]' % lists[i][0]), '%s' % lists[i][1])
-        items += lists
-        select = control.selectDialog([i[0] for i in items], 'TMDb Manager')
-        if select == -1:
-            return
-        elif select == 0:
-            add_to_favorites(tmdb, media_type)
-        elif select == 1:
-            remove_from_favorites(tmdb, media_type)
-        elif select == 2:
-            add_to_watchlist(tmdb, media_type)
-        elif select == 3:
-            remove_from_watchlist(tmdb, media_type)
-        elif select == 4:
-            t = 'Add to [B]new List[/B]'
-            k = control.keyboard('', t) ; k.doModal()
-            new = k.getText() if k.isConfirmed() else None
-            if (new == None or new == ''):
-                return
-            try:
-                list_id = create_list(new)
-                if not list_id:
-                    raise Exception()
-                result = add_to_list(tmdb, list_id)
-            except:
-                return control.infoDialog('TMDb Manager: ' + repr(items[select][0]), heading=str(name), sound=True, icon='ERROR')
+        if not getTMDbCredentialsInfo():
+            return control.infoDialog('Authorise TMDb first.', sound=True, icon='ERROR')
+        if not tmdb:
+            return control.infoDialog('Missing TMDb ID for Lists Manager.', heading=str(name), sound=True, icon='ERROR')
+        media_type = 'movie' if content == 'movie' else 'tv'
+        in_favorites, in_watchlist = _account_favorite_watchlist(tmdb, media_type)
+        choices = []
+        if in_favorites:
+            choices.append(('Remove from [B]Favorites[/B]', 'favorites_remove', None, 'Favorites'))
         else:
-            if items[select][0].startswith('Add'):
-                result = add_to_list(tmdb, items[select][1])
-            elif items[select][0].startswith('Remove'):
-                result = remove_from_list(tmdb, items[select][1])
-        icon = control.infoLabel('ListItem.Icon') if not result == None else 'ERROR'
-        control.infoDialog('TMDb Manager: ' + repr(items[select][0]), heading=str(name), sound=True, icon=icon)
-    except:
+            choices.append(('Add to [B]Favorites[/B]', 'favorites_add', None, 'Favorites'))
+        if in_watchlist:
+            choices.append(('Remove from [B]Watchlist[/B]', 'watchlist_remove', None, 'Watchlist'))
+        else:
+            choices.append(('Add to [B]Watchlist[/B]', 'watchlist_add', None, 'Watchlist'))
+        choices.append(('Add to [B]new List[/B]', 'list_new', None, 'new List'))
+        for entry in get_created_lists(list_type=media_type):
+            list_id = entry.get('list_id')
+            list_name = entry.get('name') or ''
+            if not list_id or not list_name:
+                continue
+            if _item_in_created_list(tmdb, list_id):
+                choices.append(('Remove from [B]%s[/B]' % list_name, 'list_remove', list_id, list_name))
+            else:
+                choices.append(('Add to [B]%s[/B]' % list_name, 'list_add', list_id, list_name))
+        select = control.selectDialog([c[0] for c in choices], 'TMDb Lists Manager')
+        if select < 0:
+            return
+        _, action, list_id, label = choices[select]
+        ok = False
+        if action == 'favorites_add':
+            ok = add_to_favorites(tmdb, media_type)
+        elif action == 'favorites_remove':
+            ok = remove_from_favorites(tmdb, media_type)
+        elif action == 'watchlist_add':
+            ok = add_to_watchlist(tmdb, media_type)
+        elif action == 'watchlist_remove':
+            ok = remove_from_watchlist(tmdb, media_type)
+        elif action == 'list_new':
+            k = control.keyboard('', 'Add to [B]new List[/B]')
+            k.doModal()
+            new = k.getText() if k.isConfirmed() else None
+            if new is None or new == '':
+                return
+            created_id = create_list(new)
+            if not created_id:
+                return control.infoDialog('Could not create list.', heading=str(name), sound=True, icon='ERROR')
+            ok = add_to_list(tmdb, created_id)
+            label = new
+            action = 'list_add'
+        elif action == 'list_add':
+            ok = add_to_list(tmdb, list_id)
+        elif action == 'list_remove':
+            ok = remove_from_list(tmdb, list_id)
+        if not ok:
+            verb = 'add to' if 'add' in action or action == 'list_new' else 'remove from'
+            return control.infoDialog('Could not %s %s.' % (verb, label), heading=str(name), sound=True, icon='ERROR')
+        message = ('Added to %s.' if 'add' in action else 'Removed from %s.') % label
+        try:
+            control.refresh_list()
+        except Exception:
+            pass
+        control.infoDialog(message, heading=str(name), sound=True, icon=control.infoLabel('ListItem.Icon'))
+    except Exception:
         #log_utils.log('manager', 1)
-        return
+        control.infoDialog('TMDb Lists Manager failed.', heading=str(name), sound=True, icon='ERROR')
 
 
 def get_movie_account_states(tmdb):
     try:
         url = API_URL + 'movie/%s/account_states?api_key=%s&session_id=%s' % (tmdb, _tmdb_api_key(), _tmdb_account_settings()['session_id'])
-        result = requests.get(url, headers=HEADERS)
+        result = requests.get(url, headers=HEADERS, timeout=20)
         return result.json()
     except:
         #log_utils.log('get_movie_account_states', 1)
@@ -484,11 +546,12 @@ def get_movie_account_states(tmdb):
 def get_tvshow_account_states(tmdb):
     try:
         url = API_URL + 'tv/%s/account_states?api_key=%s&session_id=%s' % (tmdb, _tmdb_api_key(), _tmdb_account_settings()['session_id'])
-        result = requests.get(url, headers=HEADERS)
+        result = requests.get(url, headers=HEADERS, timeout=20)
         return result.json()
     except:
         #log_utils.log('get_tvshow_account_states', 1)
         return
+
 
 
 def get_movie_alternative_titles(tmdb):

@@ -8,8 +8,6 @@ except:
 from resources.lib.modules import control
 
 
-_MENU_VIEW_DEFAULTS = {'skin.estuary': '55', 'skin.confluence': '500', 'skin.aeon.nox.silvo': '50'}
-_ESTUARY_CONTENT_DEFAULTS = {'': '55', 'movies': '500', 'tvshows': '500', 'seasons': '500', 'episodes': '55'}
 _KNOWN_VIEW_IDS = frozenset({'50', '51', '52', '53', '54', '55', '500', '501', '502', '503', '504', '505', '507', '508', '509', '510', '511', '512', '513', '514', '515', '516', '517', '518', '519', '520', '521', '522', '523', '524', '525', '526', '527', '528', '529', '530', '531', '532', '533', '534', '535', '536', '537', '538', '539', '540', '541', '542', '543', '544', '545', '546', '547', '548', '549', '550'})
 
 
@@ -106,53 +104,29 @@ def _lookup_saved_view(content):
     return None
 
 
-def _menu_view_default():
-    skin = (control.skin or '').lower()
-    for key, view_id in _MENU_VIEW_DEFAULTS.items():
-        if key in skin:
-            return view_id
-    return None
-
-
-def _content_view_default(content):
-    skin = (control.skin or '').lower()
-    if 'estuary' in skin:
-        return _ESTUARY_CONTENT_DEFAULTS.get(content)
-    if content == control.MENU_FOLDER_CONTENT:
-        return _menu_view_default()
-    return None
-
-
-def _resolve_view_for_content(content, apply_default=True):
-    view = _lookup_saved_view(content)
-    if view:
-        return view
-    if apply_default:
-        if content == control.MENU_FOLDER_CONTENT:
-            return _menu_view_default()
-        return _content_view_default(content)
-    return None
-
-
 def _current_view_id():
     return control.getCurrentViewId() or ''
 
 
 def setView(content, apply_default=True):
-    """Apply saved view modes; browse menus also share one skin default so layout stays consistent."""
-    control.sleep(100)
-    view = _resolve_view_for_content(content, apply_default=apply_default)
+    """Apply a view only when the user saved one via Tools > Setup ViewTypes.
+
+    Hardcoded skin defaults were removed: forcing Container.SetViewMode after every
+    folder load caused a visible jump through another view while browsing menus.
+    """
+    view = _lookup_saved_view(content)
     if not view:
         return
     view = str(_resolve_view_id(view, content))
+    if _container_ready(content) and str(_current_view_id()) == view:
+        return
     for _ in range(0, 200):
         if not _container_ready(content):
-            control.sleep(50)
+            control.sleep(25)
             continue
         if str(_current_view_id()) == view:
             return
         control.execute('Container.SetViewMode(%s)' % view)
-        control.sleep(150)
         return
 
 
@@ -161,7 +135,7 @@ def setMenuView():
 
 
 def endMenuDirectory(handle):
-    """Finish a browse/menu folder with consistent layout across all addon menus."""
+    """Finish a browse/menu folder. View changes only if Setup ViewTypes saved one."""
     control.content(handle, control.MENU_FOLDER_CONTENT)
     control.directory(handle, cacheToDisc=False)
     setMenuView()

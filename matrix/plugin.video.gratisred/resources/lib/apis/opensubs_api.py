@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import json
 import os
 import re
 
@@ -9,7 +10,20 @@ from resources.lib.modules import control
 
 BASE_URL = 'https://api.opensubtitles.com/api/v1'
 TIMEOUT = 20.0
-_DEFAULT_API_KEY = 'GpubxF50wjXZXtRlq83Heh9serfjCFyI'
+# Dedicated Gratis Red consumer (1.2.0+). Former shared Red Wizard key kept for migrate-only.
+_DEFAULT_API_KEY = 'irBMFkGPwDdOkhEL1IeHe8EM1sjOk9Oc'
+_LEGACY_SHARED_API_KEY = 'GpubxF50wjXZXtRlq83Heh9serfjCFyI'
+_api_key_migrated = False
+# Phrases in tiny provider error bodies wrapped as fake .srt downloads.
+# Do NOT match bare "429" — that is a normal SRT cue index on long episodes.
+_ERROR_CONTENT_RE = re.compile(
+    r'scs:\s*an error occurred|provider error|api error|rate limit(?:ed| exceeded)?'
+    r'|too many requests|try again later|invalid api key|unauthorized|http\s*429|\bstatus\s*429\b',
+    re.I,
+)
+# Real episode subs are long; rate-limit stubs are a few lines / one cue.
+_ERROR_PAYLOAD_MAX_CHARS = 800
+_ERROR_PAYLOAD_MAX_CUES = 1
 
 
 def _setting(key, default=''):
@@ -19,8 +33,28 @@ def _setting(key, default=''):
     return str(value).strip()
 
 
+def ensure_api_key_migrated():
+    """Move installs off the shared Red Wizard key; clear JWT so login uses the new consumer."""
+    global _api_key_migrated
+    if _api_key_migrated:
+        return
+    _api_key_migrated = True
+    try:
+        stored = _setting('opensubs.api_key')
+        if stored == _LEGACY_SHARED_API_KEY or not stored:
+            # Empty setting still used the old shared default in code before 1.2.0.
+            if _setting('opensubs.token'):
+                control.setSetting('opensubs.token', '')
+            control.setSetting('opensubs.api_key', _DEFAULT_API_KEY)
+    except Exception:
+        pass
+
+
 def effective_api_key():
+    ensure_api_key_migrated()
     key = _setting('opensubs.api_key')
+    if key == _LEGACY_SHARED_API_KEY:
+        return _DEFAULT_API_KEY
     return key or _DEFAULT_API_KEY
 
 
@@ -286,17 +320,79 @@ def _download_subtitle_content(file_id):
         return None
 
 
-def _looks_like_subtitle_content(content):
-    if not content or not isinstance(content, str):
+def _subtitle_text(content):
+    if not content:
+        return ''
+    if not isinstance(content, str):
+        try:
+            content = content.decode('utf-8-sig', 'ignore')
+        except Exception:
+            try:
+                content = content.decode('utf-8', 'ignore')
+            except Exception:
+                return ''
+    return content.replace('\r\n', '\n').replace('\r', '\n')
+
+
+def _is_error_content(content):
+    text = _subtitle_text(content).strip()
+    if not text:
+        return True
+    sample = text.lstrip()[:256].lower()
+    if sample.startswith('<!doctype') or sample.startswith('<html'):
+        return True
+    if sample.startswith('{'):
+        try:
+            data = json.loads(text)
+            if isinstance(data, dict) and (data.get('error') or data.get('message')):
+                return True
+        except Exception:
+            pass
+    # Multi-cue / long files are real subs (dialogue can contain "try again later",
+    # and cue index 429 must never be treated as HTTP 429).
+    if len(text) > _ERROR_PAYLOAD_MAX_CHARS or _count_subtitle_cues(text) > _ERROR_PAYLOAD_MAX_CUES:
         return False
-    sample = content.lstrip()[:512].lower()
-    if '-->' in sample:
-        return True
-    if sample.startswith('webvtt'):
-        return True
-    if '[script info]' in sample or '[events]' in sample:
+    if _ERROR_CONTENT_RE.search(text):
         return True
     return False
+
+
+def _count_subtitle_cues(content):
+    text = _subtitle_text(content)
+    if text.lstrip().startswith('WEBVTT'):
+        return len(re.findall(
+            r'\d{2}:\d{2}:\d{2}\.\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}\.\d{3}',
+            text,
+        ))
+    return len(re.findall(r'\d{1,2}:\d{2}:\d{2}[,\.]\d{2,3}\s*-->', text))
+
+
+def _looks_like_subtitle_content(content):
+    text = _subtitle_text(content)
+    if not text or _is_error_content(text):
+        return False
+    sample = text.lstrip()[:512].lower()
+    if sample.startswith('<!doctype') or sample.startswith('<html'):
+        return False
+    if '[script info]' in sample or '[events]' in sample:
+        return True
+    if sample.startswith('webvtt') or '-->' in sample:
+        return _count_subtitle_cues(text) >= 2
+    return bool(re.search(r'\d{1,2}:\d{2}:\d{2}', text)) and _count_subtitle_cues(text) >= 2
+
+
+def _prepare_subtitle_content(content):
+    text = _subtitle_text(content)
+    if not text or _is_error_content(text):
+        return None
+    if not _looks_like_subtitle_content(text):
+        return None
+    return text
+
+
+def usable_subtitle_text(content):
+    """Public wrapper — True/text when content is a real subtitle (not an error stub)."""
+    return _prepare_subtitle_content(content)
 
 
 def fetch_playback_subtitle(imdb_id, season=None, episode=None, year=None, languages='en', title=None):
@@ -306,8 +402,8 @@ def fetch_playback_subtitle(imdb_id, season=None, episode=None, year=None, langu
     match = _pick_best_subtitle(results, season, episode)
     if not match:
         return None, None
-    content = _download_subtitle_content(match.get('file_id'))
-    if not _looks_like_subtitle_content(content):
+    content = _prepare_subtitle_content(_download_subtitle_content(match.get('file_id')))
+    if not content:
         return None, None
     return content, match.get('file_name') or 'subtitle.srt'
 

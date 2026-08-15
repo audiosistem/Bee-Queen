@@ -16,6 +16,32 @@ def syncTraktLibrary():
         pass
 
 
+def syncSimklWatched():
+    try:
+        from resources.lib.modules import simkl
+        if simkl.syncSimklWatched(silent=True):
+            log_utils.log('Simkl Watched Sync Successful.')
+        else:
+            log_utils.log('Simkl Watched Sync Skipped.')
+    except Exception:
+        log_utils.log('Simkl Watched Sync Failed.', 1)
+        pass
+
+
+try:
+    from resources.lib.modules import simkl
+    simkl.ensure_indicators_valid()
+except Exception:
+    pass
+
+
+try:
+    from resources.lib.apis import opensubs_api
+    opensubs_api.ensure_api_key_migrated()
+except Exception:
+    pass
+
+
 try:
     control.execute('RunPlugin(plugin://%s)' % 'plugin.video.gratisred/?action=service')
     log_utils.log('Service Process Successful.')
@@ -44,6 +70,21 @@ try:
             syncTraktLibrary()
 except Exception:
     log_utils.log('Trakt Library Sync Failed.', 1)
+    pass
+
+
+try:
+    if control.setting('simkl.sync') == 'true':
+        synctime = control.setting('simkl.synctime') or '0'
+        if int(synctime) > 0:
+            timeout = 3600 * int(synctime)
+            log_utils.log('Simkl Watched Sync Delayed: ' + str(synctime) + ' Hours.')
+            schedSimkl = threading.Timer(timeout, syncSimklWatched)
+            schedSimkl.start()
+        else:
+            syncSimklWatched()
+except Exception:
+    log_utils.log('Simkl Watched Sync Failed.', 1)
     pass
 
 

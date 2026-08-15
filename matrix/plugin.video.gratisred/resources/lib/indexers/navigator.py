@@ -4,6 +4,7 @@ import os
 import sys
 
 from resources.lib.modules import control
+from resources.lib.modules import simkl
 from resources.lib.modules import trakt
 from resources.lib.modules import tmdb_utils
 from resources.lib.modules import log_utils
@@ -18,10 +19,27 @@ sysaddon = sys.argv[0]
 syshandle = int(sys.argv[1])
 #control.moderator()
 
-traktCredentials = trakt.getTraktCredentialsInfo()
-traktIndicators = trakt.getTraktIndicatorsInfo()
-
 kodi_version = control.getKodiVersion()
+
+
+def _trakt_credentials():
+    return trakt.getTraktCredentialsInfo()
+
+
+def _trakt_indicators():
+    return trakt.getTraktIndicatorsInfo()
+
+
+def _simkl_credentials():
+    return simkl.getSimklCredentialsInfo()
+
+
+def _simkl_indicators():
+    return simkl.getSimklIndicatorsInfo()
+
+
+def _tmdb_credentials():
+    return tmdb_utils.getTMDbCredentialsInfo()
 
 
 class navigator:
@@ -38,7 +56,7 @@ class navigator:
             pass
         self.addDirectoryItem('Movies', 'movies_menu', 'movies.png', 'DefaultMovies.png')
         self.addDirectoryItem('TV Shows', 'tvshows_menu', 'tvshows.png', 'DefaultTVShows.png')
-        #if (traktIndicators == True and not control.setting('episode.widget.alt') == '0') or (traktIndicators == False and not control.setting('episode.widget') == '0'):
+        #if (_trakt_indicators() == True and not control.setting('episode.widget.alt') == '0') or (_trakt_indicators() == False and not control.setting('episode.widget') == '0'):
             #self.addDirectoryItem(self.episode_widget(), 'episode_widget', 'latest-episodes.png', 'DefaultRecentlyAddedEpisodes.png')
         #if not control.setting('lists.widget') == '0':
         self.addDirectoryItem('My Stuff', 'mylists_menu', 'mymovies.png', 'DefaultSets.png')
@@ -51,7 +69,7 @@ class navigator:
 
     #def episode_widget(self):
         #widgetChoice = 'Episodes (Widget) [I]- %s[/I]'
-        #if traktIndicators == True:
+        #if _trakt_indicators() == True:
             #setting = control.setting('episode.widget.alt')
         #else:
             #setting = control.setting('episode.widget')
@@ -79,6 +97,7 @@ class navigator:
 
 
     def movies(self):
+        self.addDirectoryItem('Explore Simkl', 'movies_simkl_menu', 'simkl.png', 'DefaultMovies.png')
         self.addDirectoryItem('Explore TMDb', 'movies_tmdb_menu', 'tmdb.png', 'DefaultMovies.png')
         self.addDirectoryItem('Explore Trakt', 'movies_trakt_menu', 'trakt.png', 'DefaultMovies.png')
         self.addDirectoryItem('TV Passport Channels', 'tvpassport_menu', 'channels.png', 'DefaultSets.png')
@@ -87,6 +106,7 @@ class navigator:
 
 
     def tvshows(self):
+        self.addDirectoryItem('Explore Simkl', 'tvshows_simkl_menu', 'simkl.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Explore TMDb', 'tvshows_tmdb_menu', 'tmdb.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Explore Trakt', 'tvshows_trakt_menu', 'trakt.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Explore TVmaze', 'tvshows_tvmaze_menu', 'networks.png', 'DefaultTVShows.png')
@@ -151,6 +171,14 @@ class navigator:
         self.endDirectory()
 
 
+    def movieSimkl(self):
+        # Attribution: Simkl trending CDN requires "Simkl" in the section title.
+        self.addDirectoryItem('Simkl Trending Today', 'movies&url=simkl_trending_today', 'simkl.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Simkl Trending This Week', 'movies&url=simkl_trending_week', 'simkl.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Simkl Trending This Month', 'movies&url=simkl_trending_month', 'simkl.png', 'DefaultMovies.png')
+        self.endDirectory()
+
+
     def tvTrakt(self):
         self.addDirectoryItem('Most Popular', 'tvshows&url=trakt_popular', 'most-popular.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Featured', 'tvshows&url=trakt_featured', 'featured.png', 'DefaultTVShows.png')
@@ -158,6 +186,13 @@ class navigator:
         self.addDirectoryItem('Anticipated', 'tvshows&url=trakt_anticipated', 'new-tvshows.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Premiere', 'tvshows&url=trakt_premieres', 'new-tvshows.png', 'DefaultTVShows.png')
         self.addDirectoryItem('TV Show Mosts', 'tvshows_trakt_showmosts', 'trakt.png', 'DefaultTVShows.png')
+        self.endDirectory()
+
+
+    def tvSimkl(self):
+        self.addDirectoryItem('Simkl Trending Today', 'tvshows&url=simkl_trending_today', 'simkl.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('Simkl Trending This Week', 'tvshows&url=simkl_trending_week', 'simkl.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('Simkl Trending This Month', 'tvshows&url=simkl_trending_month', 'simkl.png', 'DefaultTVShows.png')
         self.endDirectory()
 
 
@@ -289,9 +324,14 @@ class navigator:
 
 
     def mylists(self):
-        self.addDirectoryItem('My Trakt', 'my_trakt_menu', 'trakt.png', 'DefaultSets.png')
-        self.addDirectoryItem('My TMDb', 'my_tmdb_menu', 'tmdb.png', 'DefaultSets.png')
-        self.addDirectoryItem('My Userlists', 'my_userlists_menu', 'userlists.png', 'DefaultSets.png')
+        if _simkl_credentials():
+            self.addDirectoryItem('My Simkl', 'my_simkl_menu', 'simkl.png', 'DefaultSets.png')
+        if _tmdb_credentials():
+            self.addDirectoryItem('My TMDb', 'my_tmdb_menu', 'tmdb.png', 'DefaultSets.png')
+        if _trakt_credentials():
+            self.addDirectoryItem('My Trakt', 'my_trakt_menu', 'trakt.png', 'DefaultSets.png')
+        if _trakt_credentials() or _tmdb_credentials():
+            self.addDirectoryItem('My UserLists', 'my_userlists_menu', 'userlists.png', 'DefaultSets.png')
         self.addDirectoryItem('My Favorites', 'favoritesNavigator', 'most-popular.png', 'DefaultFolder.png')
         self.addDirectoryItem('My Library', 'library_menu', 'mymovies.png', 'DefaultAddonProgram.png')
         self.addDirectoryItem('My Downloads', 'download_menu', 'downloads.png', 'DefaultFolder.png')
@@ -299,82 +339,171 @@ class navigator:
 
 
     def mytrakt(self):
-        self.addDirectoryItem('My Trakt Movies', 'my_trakt_movies_menu', 'trakt.png', 'DefaultSets.png')
-        self.addDirectoryItem('My Trakt TV Shows', 'my_trakt_tvshows_menu', 'trakt.png', 'DefaultSets.png')
-        # "Refresh Trakt Cache" - manual override for the new 5 min
-        # short-TTL cache (see modules/trakt_cache.py).  Placed at the
-        # bottom of the My Trakt menu so it's visible the moment a user
-        # suspects Trakt data is stale (list added / removed upstream)
-        # without hunting through the global cache-clear menus.
-        # ``isFolder=False`` because it's an action, not navigation.
+        if not _trakt_credentials():
+            self.addDirectoryItem('Authorize Trakt (QR Code)', 'auth_trakt', 'trakt.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.endDirectory()
+            return
+        self.addDirectoryItem('My Trakt Movies', 'my_trakt_movies_menu', 'mymovies.png', 'DefaultMovies.png')
+        self.addDirectoryItem('My Trakt TV Shows', 'my_trakt_tvshows_menu', 'mytvshows.png', 'DefaultTVShows.png')
+        # "Refresh Trakt Cache" - manual override for the short-TTL cache
+        # (see modules/trakt_cache.py). ``isFolder=False`` — action, not navigation.
         self.addDirectoryItem('Refresh Trakt Cache', 'refresh_trakt_cache', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         self.endDirectory()
 
 
+    def mysimkl(self):
+        if not _simkl_credentials():
+            self.addDirectoryItem('Authorize Simkl (QR Code)', 'auth_simkl', 'simkl.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.endDirectory()
+            return
+        self.addDirectoryItem('My Simkl Movies', 'my_simkl_movies_menu', 'mymovies.png', 'DefaultMovies.png')
+        self.addDirectoryItem('My Simkl TV Shows', 'my_simkl_tvshows_menu', 'mytvshows.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('Refresh Simkl Cache', 'refresh_simkl_cache', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
+        self.endDirectory()
+
+
+    def mysimklmovies(self):
+        if not _simkl_credentials():
+            self.addDirectoryItem('Authorize Simkl (QR Code)', 'auth_simkl', 'simkl.png', 'DefaultAddonProgram.png', isFolder=False)
+        else:
+            sort = lambda status: ('Set Sort Order', 'simkl_list_sort&media=movies&status=%s' % status)
+            lib = lambda url: ('Add to Library', 'movies_to_library&url=%s' % url)
+            self.addDirectoryItem('Plan to Watch', 'movies&url=simkl_plantowatch', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+                sort('plantowatch'), lib('simkl_plantowatch')])
+            self.addDirectoryItem('In Progress', 'movies&url=simkl_ondeck', 'people-watching.png', 'DefaultMovies.png', queue=True, context=[
+                lib('simkl_ondeck')])
+            self.addDirectoryItem('Completed', 'movies&url=simkl_completed', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+                sort('completed'), lib('simkl_completed')])
+            self.addDirectoryItem('Dropped', 'movies&url=simkl_dropped', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+                sort('dropped'), lib('simkl_dropped')])
+        self.endDirectory()
+
+
+    def mysimkltvshows(self):
+        if not _simkl_credentials():
+            self.addDirectoryItem('Authorize Simkl (QR Code)', 'auth_simkl', 'simkl.png', 'DefaultAddonProgram.png', isFolder=False)
+        else:
+            sort = lambda status: ('Set Sort Order', 'simkl_list_sort&media=tvshows&status=%s' % status)
+            lib = lambda url: ('Add to Library', 'tvshows_to_library&url=%s' % url)
+            self.addDirectoryItem('Plan to Watch', 'tvshows&url=simkl_plantowatch', 'mytvshows.png', 'DefaultTVShows.png', queue=True, context=[
+                sort('plantowatch'), lib('simkl_plantowatch')])
+            self.addDirectoryItem('Watching', 'tvshows&url=simkl_watching', 'people-watching.png', 'DefaultTVShows.png', queue=True, context=[
+                sort('watching'), lib('simkl_watching')])
+            self.addDirectoryItem('Upcoming Episodes', 'calendar&url=simkl_mycalendar', 'calendar.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
+            self.addDirectoryItem('Continue Watching', 'calendar&url=simkl_progress', 'people-watching.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
+            self.addDirectoryItem('In Progress Episodes', 'calendar&url=simkl_ondeck', 'latest-episodes.png', 'DefaultTVShows.png')
+            self.addDirectoryItem('Completed', 'tvshows&url=simkl_completed', 'mytvshows.png', 'DefaultTVShows.png', queue=True, context=[
+                sort('completed'), lib('simkl_completed')])
+            self.addDirectoryItem('On Hold', 'tvshows&url=simkl_hold', 'mytvshows.png', 'DefaultTVShows.png', queue=True, context=[
+                sort('hold'), lib('simkl_hold')])
+            self.addDirectoryItem('Dropped', 'tvshows&url=simkl_dropped', 'mytvshows.png', 'DefaultTVShows.png', queue=True, context=[
+                sort('dropped'), lib('simkl_dropped')])
+        self.endDirectory()
+
+
     def mytraktmovies(self):
-        if traktCredentials == True:
-            self.addDirectoryItem('Library', 'movies&url=trakt_collection', 'trakt.png', 'DefaultMovies.png', queue=True, context=('Add to Library', 'movies_to_library&url=trakt_collection'))
-            self.addDirectoryItem('Watchlist', 'movies&url=trakt_watchlist', 'trakt.png', 'DefaultMovies.png', queue=True, context=('Add to Library', 'movies_to_library&url=trakt_watchlist'))
-            self.addDirectoryItem('Favorites', 'movies&url=trakt_favorites', 'trakt.png', 'DefaultMovies.png', queue=True, context=('Add to Library', 'movies_to_library&url=trakt_favorites'))
-        if traktIndicators == True:
-            self.addDirectoryItem('In Progress', 'movies&url=trakt_ondeck', 'trakt.png', 'DefaultMovies.png', queue=True)
-            self.addDirectoryItem('History', 'movies&url=trakt_history', 'trakt.png', 'DefaultMovies.png', queue=True)
-            self.addDirectoryItem('Watched', 'movies&url=trakt_watchedlist', 'trakt.png', 'DefaultMovies.png')
+        if not _trakt_credentials():
+            self.addDirectoryItem('Authorize Trakt (QR Code)', 'auth_trakt', 'trakt.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.endDirectory()
+            return
+        sort = lambda shelf: ('Set Sort Order', 'trakt_list_sort&media=movies&status=%s' % shelf)
+        self.addDirectoryItem('Library', 'movies&url=trakt_collection', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+            sort('collection'), ('Add to Library', 'movies_to_library&url=trakt_collection')])
+        self.addDirectoryItem('Watchlist', 'movies&url=trakt_watchlist', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+            sort('watchlist'), ('Add to Library', 'movies_to_library&url=trakt_watchlist')])
+        self.addDirectoryItem('Favorites', 'movies&url=trakt_favorites', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+            sort('favorites'), ('Add to Library', 'movies_to_library&url=trakt_favorites')])
+        if _trakt_indicators():
+            self.addDirectoryItem('In Progress', 'movies&url=trakt_ondeck', 'people-watching.png', 'DefaultMovies.png', queue=True)
+            self.addDirectoryItem('History', 'movies&url=trakt_history', 'latest-movies.png', 'DefaultMovies.png', queue=True)
+            self.addDirectoryItem('Watched', 'movies&url=trakt_watchedlist', 'mymovies.png', 'DefaultMovies.png')
         self.endDirectory()
 
 
     def mytrakttvshows(self):
-        if traktCredentials == True:
-            self.addDirectoryItem('Library', 'tvshows&url=trakt_collection', 'trakt.png', 'DefaultTVShows.png', context=('Add to Library', 'tvshows_to_library&url=trakt_collection'))
-            self.addDirectoryItem('Watchlist', 'tvshows&url=trakt_watchlist', 'trakt.png', 'DefaultTVShows.png', context=('Add to Library', 'tvshows_to_library&url=trakt_watchlist'))
-            self.addDirectoryItem('Favorites', 'tvshows&url=trakt_favorites', 'trakt.png', 'DefaultTVShows.png', context=('Add to Library', 'tvshows_to_library&url=trakt_favorites'))
-        if traktIndicators == True:
-            self.addDirectoryItem('Upcoming Episodes', 'calendar&url=trakt_mycalendar', 'trakt.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
-            self.addDirectoryItem('Continue Watching', 'calendar&url=trakt_progress', 'trakt.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
-            self.addDirectoryItem('In Progress Episodes', 'calendar&url=trakt_ondeck', 'trakt.png', 'DefaultTVShows.png')
-            self.addDirectoryItem('History', 'calendar&url=trakt_history', 'trakt.png', 'DefaultTVShows.png', queue=True)
-            self.addDirectoryItem('Watched', 'tvshows&url=trakt_watchedlist', 'trakt.png', 'DefaultTVShows.png')
+        if not _trakt_credentials():
+            self.addDirectoryItem('Authorize Trakt (QR Code)', 'auth_trakt', 'trakt.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.endDirectory()
+            return
+        sort = lambda shelf: ('Set Sort Order', 'trakt_list_sort&media=tvshows&status=%s' % shelf)
+        self.addDirectoryItem('Library', 'tvshows&url=trakt_collection', 'mytvshows.png', 'DefaultTVShows.png', context=[
+            sort('collection'), ('Add to Library', 'tvshows_to_library&url=trakt_collection')])
+        self.addDirectoryItem('Watchlist', 'tvshows&url=trakt_watchlist', 'mytvshows.png', 'DefaultTVShows.png', context=[
+            sort('watchlist'), ('Add to Library', 'tvshows_to_library&url=trakt_watchlist')])
+        self.addDirectoryItem('Favorites', 'tvshows&url=trakt_favorites', 'mytvshows.png', 'DefaultTVShows.png', context=[
+            sort('favorites'), ('Add to Library', 'tvshows_to_library&url=trakt_favorites')])
+        if _trakt_indicators():
+            self.addDirectoryItem('Upcoming Episodes', 'calendar&url=trakt_mycalendar', 'calendar.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
+            self.addDirectoryItem('Continue Watching', 'calendar&url=trakt_progress', 'people-watching.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
+            self.addDirectoryItem('In Progress Episodes', 'calendar&url=trakt_ondeck', 'latest-episodes.png', 'DefaultTVShows.png')
+            self.addDirectoryItem('History', 'calendar&url=trakt_history', 'latest-episodes.png', 'DefaultTVShows.png', queue=True)
+            self.addDirectoryItem('Watched', 'tvshows&url=trakt_watchedlist', 'mytvshows.png', 'DefaultTVShows.png')
         self.endDirectory()
 
 
     def mytmdb(self):
-        self.addDirectoryItem('My TMDb Movies', 'my_tmdb_movies_menu', 'tmdb.png', 'DefaultSets.png')
-        self.addDirectoryItem('My TMDb TV Shows', 'my_tmdb_tvshows_menu', 'tmdb.png', 'DefaultSets.png')
+        if not _tmdb_credentials():
+            self.addDirectoryItem('Authorize TMDb (QR Code)', 'auth_tmdb', 'tmdb.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.endDirectory()
+            return
+        self.addDirectoryItem('My TMDb Movies', 'my_tmdb_movies_menu', 'mymovies.png', 'DefaultMovies.png')
+        self.addDirectoryItem('My TMDb TV Shows', 'my_tmdb_tvshows_menu', 'mytvshows.png', 'DefaultTVShows.png')
         self.endDirectory()
 
 
     def mytmdbmovies(self):
-        if tmdb_utils.getTMDbCredentialsInfo() == True:
-            self.addDirectoryItem('Favorites', 'movies&url=tmdb_favorites', 'tmdb.png', 'DefaultMovies.png', queue=True)
-            self.addDirectoryItem('Watchlist', 'movies&url=tmdb_watchlist', 'tmdb.png', 'DefaultMovies.png', queue=True)
+        if not _tmdb_credentials():
+            self.addDirectoryItem('Authorize TMDb (QR Code)', 'auth_tmdb', 'tmdb.png', 'DefaultAddonProgram.png', isFolder=False)
+        else:
+            sort = lambda shelf: ('Set Sort Order', 'tmdb_list_sort&media=movies&status=%s' % shelf)
+            self.addDirectoryItem('Favorites', 'movies&url=tmdb_favorites', 'mymovies.png', 'DefaultMovies.png', queue=True, context=sort('favorites'))
+            self.addDirectoryItem('Watchlist', 'movies&url=tmdb_watchlist', 'mymovies.png', 'DefaultMovies.png', queue=True, context=sort('watchlist'))
         self.endDirectory()
 
 
     def mytmdbtvshows(self):
-        if tmdb_utils.getTMDbCredentialsInfo() == True:
-            self.addDirectoryItem('Favorites', 'tvshows&url=tmdb_favorites', 'tmdb.png', 'DefaultTVShows.png')
-            self.addDirectoryItem('Watchlist', 'tvshows&url=tmdb_watchlist', 'tmdb.png', 'DefaultTVShows.png')
+        if not _tmdb_credentials():
+            self.addDirectoryItem('Authorize TMDb (QR Code)', 'auth_tmdb', 'tmdb.png', 'DefaultAddonProgram.png', isFolder=False)
+        else:
+            sort = lambda shelf: ('Set Sort Order', 'tmdb_list_sort&media=tvshows&status=%s' % shelf)
+            self.addDirectoryItem('Favorites', 'tvshows&url=tmdb_favorites', 'mytvshows.png', 'DefaultTVShows.png', context=sort('favorites'))
+            self.addDirectoryItem('Watchlist', 'tvshows&url=tmdb_watchlist', 'mytvshows.png', 'DefaultTVShows.png', context=sort('watchlist'))
         self.endDirectory()
 
 
     def myuserlists(self):
-        self.addDirectoryItem('Movie UserLists', 'my_userlists_movies_menu', 'mymovies.png', 'DefaultMovies.png')
-        self.addDirectoryItem('TV Show UserLists', 'my_userlists_tvshows_menu', 'mytvshows.png', 'DefaultTVShows.png')
-        self.addDirectoryItem('Episode UserLists', 'episodes_userlists', 'mytvshows.png', 'DefaultTVShows.png')
+        if _trakt_credentials() or _tmdb_credentials():
+            self.addDirectoryItem('Movie UserLists', 'my_userlists_movies_menu', 'mymovies.png', 'DefaultMovies.png')
+            self.addDirectoryItem('TV Show UserLists', 'my_userlists_tvshows_menu', 'mytvshows.png', 'DefaultTVShows.png')
+        if _trakt_credentials():
+            self.addDirectoryItem('Episode UserLists', 'episodes_userlists', 'mytvshows.png', 'DefaultTVShows.png')
+        if not (_trakt_credentials() or _tmdb_credentials()):
+            self.addDirectoryItem('Authorize TMDb (QR Code)', 'auth_tmdb', 'tmdb.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.addDirectoryItem('Authorize Trakt (QR Code)', 'auth_trakt', 'trakt.png', 'DefaultAddonProgram.png', isFolder=False)
         self.endDirectory()
 
 
     def myuserlistsmovies(self):
-        self.addDirectoryItem('Trakt UserLists', 'movies_userlists_trakt', 'trakt.png', 'DefaultMovies.png')
-        self.addDirectoryItem('Trakt Liked UserLists', 'movies_userlists_trakt_liked', 'trakt.png', 'DefaultMovies.png')
-        self.addDirectoryItem('TMDb UserLists', 'movies_userlists_tmdb', 'tmdb.png', 'DefaultMovies.png')
+        if _tmdb_credentials():
+            self.addDirectoryItem('TMDb UserLists', 'movies_userlists_tmdb', 'tmdb.png', 'DefaultMovies.png')
+        if _trakt_credentials():
+            self.addDirectoryItem('Trakt UserLists', 'movies_userlists_trakt', 'trakt.png', 'DefaultMovies.png')
+            self.addDirectoryItem('Trakt Liked UserLists', 'movies_userlists_trakt_liked', 'trakt.png', 'DefaultMovies.png')
+        if not (_trakt_credentials() or _tmdb_credentials()):
+            self.addDirectoryItem('Authorize TMDb (QR Code)', 'auth_tmdb', 'tmdb.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.addDirectoryItem('Authorize Trakt (QR Code)', 'auth_trakt', 'trakt.png', 'DefaultAddonProgram.png', isFolder=False)
         self.endDirectory()
 
 
     def myuserliststvshows(self):
-        self.addDirectoryItem('Trakt UserLists', 'tvshows_userlists_trakt', 'trakt.png', 'DefaultTVShows.png')
-        self.addDirectoryItem('Trakt Liked UserLists', 'tvshows_userlists_trakt_liked', 'trakt.png', 'DefaultTVShows.png')
-        self.addDirectoryItem('TMDb UserLists', 'tvshows_userlists_tmdb', 'tmdb.png', 'DefaultTVShows.png')
+        if _tmdb_credentials():
+            self.addDirectoryItem('TMDb UserLists', 'tvshows_userlists_tmdb', 'tmdb.png', 'DefaultTVShows.png')
+        if _trakt_credentials():
+            self.addDirectoryItem('Trakt UserLists', 'tvshows_userlists_trakt', 'trakt.png', 'DefaultTVShows.png')
+            self.addDirectoryItem('Trakt Liked UserLists', 'tvshows_userlists_trakt_liked', 'trakt.png', 'DefaultTVShows.png')
+        if not (_trakt_credentials() or _tmdb_credentials()):
+            self.addDirectoryItem('Authorize TMDb (QR Code)', 'auth_tmdb', 'tmdb.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.addDirectoryItem('Authorize Trakt (QR Code)', 'auth_trakt', 'trakt.png', 'DefaultAddonProgram.png', isFolder=False)
         self.endDirectory()
 
 
@@ -420,7 +549,17 @@ class navigator:
         if len(control.listDir(tv_library)[0]) > 0:
             self.addDirectoryItem('Library TV Shows', 'library_tvshows', 'tvshows.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Update Library', 'update_library&query=tool', 'library_update.png', 'DefaultAddonProgram.png', isFolder=False)
-        if traktCredentials == True:
+        if _simkl_credentials():
+            self.addDirectoryItem('Import Simkl Movie Plan to Watch...', 'movies_to_library&url=simkl_plantowatch', 'simkl.png', 'DefaultMovies.png', isFolder=False)
+            self.addDirectoryItem('Import Simkl Movie In Progress...', 'movies_to_library&url=simkl_ondeck', 'simkl.png', 'DefaultMovies.png', isFolder=False)
+            self.addDirectoryItem('Import Simkl Movie Completed...', 'movies_to_library&url=simkl_completed', 'simkl.png', 'DefaultMovies.png', isFolder=False)
+            self.addDirectoryItem('Import Simkl Movie Dropped...', 'movies_to_library&url=simkl_dropped', 'simkl.png', 'DefaultMovies.png', isFolder=False)
+            self.addDirectoryItem('Import Simkl TV Show Plan to Watch...', 'tvshows_to_library&url=simkl_plantowatch', 'simkl.png', 'DefaultTVShows.png', isFolder=False)
+            self.addDirectoryItem('Import Simkl TV Show Watching...', 'tvshows_to_library&url=simkl_watching', 'simkl.png', 'DefaultTVShows.png', isFolder=False)
+            self.addDirectoryItem('Import Simkl TV Show Completed...', 'tvshows_to_library&url=simkl_completed', 'simkl.png', 'DefaultTVShows.png', isFolder=False)
+            self.addDirectoryItem('Import Simkl TV Show On Hold...', 'tvshows_to_library&url=simkl_hold', 'simkl.png', 'DefaultTVShows.png', isFolder=False)
+            self.addDirectoryItem('Import Simkl TV Show Dropped...', 'tvshows_to_library&url=simkl_dropped', 'simkl.png', 'DefaultTVShows.png', isFolder=False)
+        if _trakt_credentials() == True:
             self.addDirectoryItem('Import Trakt Movie Collection...', 'movies_to_library&url=trakt_collection', 'trakt.png', 'DefaultMovies.png', isFolder=False)
             self.addDirectoryItem('Import Trakt Movie Watchlist...', 'movies_to_library&url=trakt_watchlist', 'trakt.png', 'DefaultMovies.png', isFolder=False)
             self.addDirectoryItem('Import Trakt TV Show Collection...', 'tvshows_to_library&url=trakt_collection', 'trakt.png', 'DefaultTVShows.png', isFolder=False)
@@ -444,8 +583,11 @@ class navigator:
         #self.addDirectoryItem('Provider Settings', 'open_settings&query=4.0', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         self.addDirectoryItem('ResolveURL Settings', 'open_resolveurl_settings', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         self.addDirectoryItem('Setup ViewTypes', 'views_menu', 'tools.png', 'DefaultAddonProgram.png')
-        #self.addDirectoryItem('Authorize TMDb', 'auth_tmdb', 'tmdb.png', 'DefaultAddonProgram.png', isFolder=False)
-        if not trakt.getTraktCredentialsInfo():
+        if not _simkl_credentials():
+            self.addDirectoryItem('Authorize Simkl (QR Code)', 'auth_simkl', 'simkl.png', 'DefaultAddonProgram.png', isFolder=False)
+        if not _tmdb_credentials():
+            self.addDirectoryItem('Authorize TMDb (QR Code)', 'auth_tmdb', 'tmdb.png', 'DefaultAddonProgram.png', isFolder=False)
+        if not _trakt_credentials():
             self.addDirectoryItem('Authorize Trakt (QR Code)', 'auth_trakt', 'trakt.png', 'DefaultAddonProgram.png', isFolder=False)
         self.addDirectoryItem('[COLOR red]Changelog[/COLOR]', 'changelog', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         #if control.condVisibility('System.HasAddon(plugin.program.lazylinks)'):
@@ -509,6 +651,10 @@ class navigator:
         #    self.addDirectoryItem('script.gratisred.artwork - Install Addon', 'installAddon&id=script.gratisred.artwork', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         #else:
         #    self.addDirectoryItem('script.gratisred.artwork - Open Settings', 'open_settings&query=0.0', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
+        if not control.condVisibility('System.HasAddon(script.simkl)'):
+            self.addDirectoryItem('script.simkl - Install Addon', 'installAddon&id=script.simkl&refresh=installs_menu', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
+        else:
+            self.addDirectoryItem('script.simkl - Open Settings', 'open_settings&id=script.simkl', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         if not control.condVisibility('System.HasAddon(script.trakt)'):
             self.addDirectoryItem('script.trakt - Install Addon', 'installAddon&id=script.trakt&refresh=installs_menu', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         else:
@@ -622,9 +768,9 @@ class navigator:
         # intact - fast and non-destructive.  No confirm dialog: this is
         # an everyday convenience, not a dangerous operation.
         from resources.lib.modules import trakt_cache
-        if trakt_cache.clear():
+        if trakt_cache.clear_shelf_caches():
             control.infoDialog('Trakt Cache Refreshed.', sound=True, icon='INFO')
-            control.refresh()
+            control.refresh_list()
         else:
             control.infoDialog('Trakt Cache Refresh Failed.', sound=True, icon='ERROR')
 
@@ -660,12 +806,16 @@ class navigator:
         fanart = control.addonFanart()
         thumb_img = control.menu_image(thumb, icon)
         cm = []
-        cm.append(('[B]View Changelog[/B]', 'RunPlugin(%s?action=view_changelog)' % sysaddon))
         cm.append(('[B]Clean Tools Widget[/B]', 'RunPlugin(%s?action=cleantools_widget)' % sysaddon))
         if queue == True:
             cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
         if not context == None:
-            cm.append((context[0], 'RunPlugin(%s?action=%s)' % (sysaddon, context[1])))
+            contexts = context if isinstance(context, list) else [context]
+            for ctx in contexts:
+                try:
+                    cm.append((ctx[0], 'RunPlugin(%s?action=%s)' % (sysaddon, ctx[1])))
+                except Exception:
+                    pass
         try:
             item = control.item(label=name, offscreen=True)
         except:
