@@ -66,9 +66,9 @@ def ad_cloud(folder_id=None):
 		kodi_utils.hide_busy_dialog()
 	handle = int(sys.argv[1])
 	kodi_utils.add_items(handle, list(_builder()))
-	kodi_utils.set_content(handle, 'files')
+	kodi_utils.set_content(handle, kodi_utils.MENU_FOLDER_CONTENT)
 	kodi_utils.end_directory(handle, cacheToDisc=False)
-	kodi_utils.set_view_mode('view.premium')
+	kodi_utils.set_view_mode('view.premium', kodi_utils.MENU_FOLDER_CONTENT)
 
 
 def ad_downloads():
@@ -156,9 +156,9 @@ def ad_downloads():
 			kodi_utils.notification('All Debrid: No transfers in history', 2500)
 	handle = int(sys.argv[1])
 	kodi_utils.add_items(handle, list(_builder()))
-	kodi_utils.set_content(handle, 'files')
+	kodi_utils.set_content(handle, kodi_utils.MENU_FOLDER_CONTENT)
 	kodi_utils.end_directory(handle, cacheToDisc=False)
-	kodi_utils.set_view_mode('view.premium')
+	kodi_utils.set_view_mode('view.premium', kodi_utils.MENU_FOLDER_CONTENT)
 
 
 def ad_saved_links():
@@ -195,9 +195,9 @@ def ad_saved_links():
 		kodi_utils.hide_busy_dialog()
 	handle = int(sys.argv[1])
 	kodi_utils.add_items(handle, list(_builder()))
-	kodi_utils.set_content(handle, 'files')
+	kodi_utils.set_content(handle, kodi_utils.MENU_FOLDER_CONTENT)
 	kodi_utils.end_directory(handle, cacheToDisc=False)
-	kodi_utils.set_view_mode('view.premium')
+	kodi_utils.set_view_mode('view.premium', kodi_utils.MENU_FOLDER_CONTENT)
 
 
 def browse_ad_cloud(folder_id):
@@ -232,9 +232,9 @@ def browse_ad_cloud(folder_id):
 	handle = int(sys.argv[1])
 	icon, fanart = kodi_utils.get_icon('alldebrid'), kodi_utils.get_addon_fanart()
 	kodi_utils.add_items(handle, list(_builder()))
-	kodi_utils.set_content(handle, 'files')
+	kodi_utils.set_content(handle, kodi_utils.MENU_FOLDER_CONTENT)
 	kodi_utils.end_directory(handle, cacheToDisc=False)
-	kodi_utils.set_view_mode('view.premium')
+	kodi_utils.set_view_mode('view.premium', kodi_utils.MENU_FOLDER_CONTENT)
 
 
 def resolve_ad(params):
@@ -258,31 +258,19 @@ def ad_delete(file_id):
 
 def ad_account_info():
 	try:
+		from modules.service_expiry import append_expiry_lines, fetch_expiry_summary
 		kodi_utils.show_busy_dialog()
 		account_info = AllDebrid.account_info()['user']
 		username = account_info['username']
 		email = account_info['email']
 		status = 'Premium' if account_info['isPremium'] else 'Not Active'
-		expires = datetime.fromtimestamp(account_info['premiumUntil'])
-		days_remaining = (expires - datetime.today()).days
 		body = []
 		append = body.append
 		append('[B]Username:[/B] %s' % username)
 		append('[B]Email:[/B] %s' % email)
 		append('[B]Status:[/B] %s' % status)
-		append('[B]Expires:[/B] %s' % expires)
-		append('[B]Days Remaining:[/B] %s' % days_remaining)
+		append_expiry_lines(body, fetch_expiry_summary('ad'))
 		kodi_utils.hide_busy_dialog()
 		return kodi_utils.show_text('ALL DEBRID', '\n\n'.join(body), font_size='large')
 	except:
 		kodi_utils.hide_busy_dialog()
-
-
-def active_days():
-	try:
-		account_info = AllDebrid.account_info()['user']
-		expires = datetime.fromtimestamp(account_info['premiumUntil'])
-		days_remaining = (expires - datetime.today()).days
-	except:
-		days_remaining = 0
-	return days_remaining

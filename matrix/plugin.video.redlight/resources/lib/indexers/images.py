@@ -4,7 +4,7 @@ import json
 from windows.base_window import open_window
 from apis.tmdb_api import tmdb_people_info, tmdb_people_full_info, tmdb_popular_people, tmdb_trending_people_day, tmdb_trending_people_week, tmdb_media_images
 from apis.easynews_api import EasyNews
-from modules.kodi_utils import notification, make_listitem, list_dirs, delete_file, show_busy_dialog, hide_busy_dialog, get_icon, image_extensions
+from modules.kodi_utils import make_listitem, list_dirs, delete_file, show_busy_dialog, hide_busy_dialog, get_icon, image_extensions, make_directories
 # from modules.kodi_utils import logger
 
 class Images():
@@ -28,7 +28,10 @@ class Images():
 		elif self.mode == 'browser_image': self.browser_image()
 		hide_busy_dialog()
 		if self.direct_search_result: return
-		if len(self.list_items) == 0: return notification('None Found')
+		if len(self.list_items) == 0 and self.mode == 'browser_image' and self.params.get('folder_path'):
+			from modules import kodi_utils
+			kodi_utils.container_update({'mode': 'downloader.viewer', 'folder_type': 'image', 'name': 'Images'})
+			return
 		if not 'in_progress' in params: self.open_window_xml()
 		else: return self.list_items, self.next_page_params
 
@@ -212,12 +215,19 @@ class Images():
 				except: pass
 		fallback_image = get_icon('empty_person')
 		if not folder_path: folder_path = self.params.get('folder_path')
+		if not folder_path:
+			self.list_items = []
+			return self.list_items if return_items else None
+		make_directories(folder_path)
 		thumbs_path = os.path.join(folder_path, '.thumbs')
+		make_directories(thumbs_path)
 		extensions = image_extensions()
-		image_info = list_dirs(folder_path)[1]
+		try: image_info = list_dirs(folder_path)[1]
+		except: image_info = []
 		image_info = [i for i in image_info if i.endswith(extensions)]
 		image_info.sort()
-		thumbs_info = list_dirs(thumbs_path)[1]
+		try: thumbs_info = list_dirs(thumbs_path)[1]
+		except: thumbs_info = []
 		thumbs_info = [i for i in thumbs_info if i.endswith(extensions)]
 		thumbs_info.sort()
 		all_images = [(os.path.join(folder_path, i), i) for i in image_info]

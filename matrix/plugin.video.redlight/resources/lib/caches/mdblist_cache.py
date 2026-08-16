@@ -51,7 +51,7 @@ class MdblistWatched:
 	def _delete(self, command, args):
 		dbcon = connect_database('mdblist_db')
 		dbcon.execute(command, args)
-		dbcon.execute('VACUUM')
+		# No VACUUM here — watched bulk sync must not rewrite the whole DB on the playback path.
 
 mdblist_watched_cache = MdblistWatched()
 
@@ -92,6 +92,13 @@ def clear_mdblist_list_contents_data(list_type):
 
 def clear_mdblist_list_data(list_type):
 	mdblist_cache.delete('mdblist_%s' % list_type)
+
+def clear_mdblist_calendar_data():
+	try:
+		dbcon = connect_database('mdblist_db')
+		dbcon.execute('DELETE FROM mdblist_data WHERE id LIKE ?', ('mdblist_calendar_airings%',))
+		dbcon.execute('DELETE FROM mdblist_data WHERE id = ?', ('mdblist_calendar_events',))
+	except: pass
 
 def clear_all_mdblist_cache_data(silent=False, refresh=True):
 	try:

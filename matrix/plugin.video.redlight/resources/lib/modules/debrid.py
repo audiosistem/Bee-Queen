@@ -18,7 +18,7 @@ def debrid_enabled():
 
 def debrid_cache_check_available(enabled_debrid=None):
 	if not enabled_debrid: enabled_debrid = debrid_enabled()
-	return any(p in enabled_debrid for p in ('Real-Debrid', 'TorBox', 'Premiumize.me', 'Offcloud', 'AllDebrid'))
+	return any(p in enabled_debrid for p in ('Real-Debrid', 'TorBox', 'Premiumize.me', 'Offcloud'))
 
 NO_DOWNLOAD_URL_MSG = 'No URL found for Download. Pick another Source'
 NO_CLOUD_ADD_MSG = 'No URL found for Add to Cloud. Pick another Source'
@@ -205,10 +205,30 @@ def AD_check(hash_list, cached_hashes, data, active_debrid):
 		cached_results = set()
 		api = AllDebridAPI()
 		api_responded = False
-		for hash_chunk in chunks(unchecked_hashes, 100):
+		api_errors = []
+		try:
+			_, err = api._probe_magnets_get('&magnet=%s' % unchecked_hashes[0])
+			if err in ('NO_SERVER', 'MAGNET_NO_SERVER'):
+				from modules.kodi_utils import set_property, logger
+				set_property('redlight.debrid_cache_api_error', str(err))
+				logger('DebridCacheCheck', 'provider=AllDebrid preflight=%s unchecked=%d' % (err, len(unchecked_hashes)))
+				return cached_hashes
+		except: pass
+		for hash_chunk in chunks(unchecked_hashes, 50):
 			try:
 				response = api.check_cache(hash_chunk)
-				magnets = (response or {}).get('magnets')
+				if not response: continue
+				if response.get('error'):
+					err_code = str(response.get('error'))
+					api_errors.append(err_code)
+					if err_code in ('NO_SERVER', 'MAGNET_NO_SERVER'):
+						try:
+							from modules.kodi_utils import set_property
+							set_property('redlight.debrid_cache_api_error', err_code)
+						except: pass
+						break
+					continue
+				magnets = response.get('magnets')
 				if not magnets: continue
 				api_responded = True
 				chunk_hashes = [h.lower() for h in hash_chunk]
@@ -219,14 +239,36 @@ def AD_check(hash_list, cached_hashes, data, active_debrid):
 					if magnet_hash: cached_results.add(magnet_hash)
 			except: pass
 		if not api_responded:
-			add_to_local_cache([(h, 'False') for h in unchecked_hashes], 'ad', 2)
-			return cached_hashes
-		remaining = [h for h in unchecked_hashes if h not in cached_results]
-		if remaining and 'AllDebrid' in active_debrid:
+			from modules.kodi_utils import get_property
+			if 'AllDebrid' in active_debrid and not get_property('redlight.debrid_cache_api_error'):
+				try:
+					fallback = get_external_cache_status('AllDebrid', unchecked_hashes, data, active_debrid) or []
+					cached_results.update(str(i).lower() for i in fallback if i)
+				except: pass
+			if not cached_results:
+				if not get_property('redlight.debrid_cache_api_error'):
+					add_to_local_cache([(h, 'False') for h in unchecked_hashes], 'ad', 2)
+				try:
+					from modules.kodi_utils import logger, set_property, clear_property
+					logger('DebridCacheCheck', 'provider=AllDebrid unchecked=%d cached=0 api=%s errors=%s' % (
+						len(unchecked_hashes), api_responded, ','.join(api_errors[:3]) or 'none'))
+					if api_errors and all(e in ('NO_SERVER', 'MAGNET_NO_SERVER') for e in api_errors):
+						set_property('redlight.debrid_cache_api_error', 'NO_SERVER')
+					elif not get_property('redlight.debrid_cache_api_error'):
+						clear_property('redlight.debrid_cache_api_error')
+				except: pass
+				return cached_hashes
 			try:
-				fallback = get_external_cache_status('AllDebrid', remaining, data, active_debrid) or []
-				cached_results.update(str(i).lower() for i in fallback if i)
+				from modules.kodi_utils import clear_property
+				clear_property('redlight.debrid_cache_api_error')
 			except: pass
+		else:
+			remaining = [h for h in unchecked_hashes if h not in cached_results]
+			if remaining and 'AllDebrid' in active_debrid:
+				try:
+					fallback = get_external_cache_status('AllDebrid', remaining, data, active_debrid) or []
+					cached_results.update(str(i).lower() for i in fallback if i)
+				except: pass
 		cached_append = cached_hashes.append
 		process_list = []
 		process_append = process_list.append
@@ -238,6 +280,12 @@ def AD_check(hash_list, cached_hashes, data, active_debrid):
 			process_append((h, cached))
 		if not cached_results: expires = 2
 		add_to_local_cache(process_list, 'ad', expires)
+		try:
+			from modules.kodi_utils import logger, clear_property
+			clear_property('redlight.debrid_cache_api_error')
+			logger('DebridCacheCheck', 'provider=AllDebrid unchecked=%d cached=%d api=%s errors=%s' % (
+				len(unchecked_hashes), len(cached_results), api_responded, ','.join(api_errors[:3]) or 'none'))
+		except: pass
 	return cached_hashes
 
 def PM_check(hash_list, cached_hashes):

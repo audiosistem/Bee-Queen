@@ -1,4 +1,24 @@
-[COLORcyan] VERSION 1.5.5[/COLOR]
+[COLORcyan] VERSION 1.5.6[/COLOR]
+
+ New Scrapers Added
+
+ YourBittorrent
+
+• Added YourBittorrent scraper for additional torrent search coverage.
+• Provides another source for movie and TV results.
+
+ Snowfl
+
+• Added Snowfl scraper.
+• Adds meta-search coverage across multiple torrent sources.
+• Includes additional results and alternative sources where available.
+
+ Improvements
+
+• Expanded overall scraper coverage.
+• More sources available when searching for content.
+• Improved variety of results across different releases and qualities.
+
 
  GEARS SCRAPERS — UPDATE
 

@@ -6,24 +6,37 @@ from modules import kodi_utils
 from modules.kodi_utils import external, get_property
 # from modules.kodi_utils import logger
 
-def sys_exit_check():
-	from caches.settings_cache import get_setting
+def sys_exit_check(mode='navigator.main'):
+	from caches.settings_cache import get_setting, is_directory_listing_mode
 	if get_setting('redlight.reuse_language_invoker', 'true') == 'false': return False
-	return external()
+	# First open still has external() true before Container.PluginName updates; never discard a built list.
+	if is_directory_listing_mode(mode): return False
+	if mode == 'open_settings': return False
+	if not external(): return False
+	return True
+
+def prepare_directory_listing(mode):
+	from caches.settings_cache import is_directory_listing_mode
+	if not is_directory_listing_mode(mode): return
+	try:
+		from caches.base_cache import ensure_listing_databases_ready
+		ensure_listing_databases_ready()
+	except Exception as e:
+		kodi_utils.logger('routing', 'prepare listing: %s' % e)
 
 def routing(sys):
 	params = dict(parse_qsl(sys.argv[2][1:], keep_blank_values=True))
-	if not external():
-		from caches.settings_cache import bootstrap_settings_properties, refresh_widgets_after_db_migration
-		from caches.settings_cache import run_deferred_setup_if_needed, run_deferred_setup_background_if_needed, is_directory_listing_mode
-		try: bootstrap_settings_properties()
-		except Exception as e: kodi_utils.logger('routing', 'bootstrap: %s' % e)
-		try: refresh_widgets_after_db_migration()
-		except Exception as e: kodi_utils.logger('routing', 'refresh widgets: %s' % e)
 	mode = params.get('mode', 'navigator.main')
-	if not external():
-		try: run_deferred_setup_if_needed()
-		except Exception as e: kodi_utils.logger('routing', 'deferred: %s' % e)
+	try:
+		from caches.settings_cache import sync_kodi_profile_context
+		sync_kodi_profile_context()
+	except Exception as e:
+		kodi_utils.logger('routing', 'profile context: %s' % e)
+	prepare_directory_listing(mode)
+	from caches.settings_cache import ensure_settings_properties_loaded, should_block_bootstrap_on_entry
+	if should_block_bootstrap_on_entry(mode):
+		try: ensure_settings_properties_loaded()
+		except Exception as e: kodi_utils.logger('routing', 'bootstrap: %s' % e)
 	if 'navigator.' in mode:
 		from indexers.navigator import Navigator
 		return exec('Navigator(params).%s()' % mode.split('.')[1])
@@ -39,6 +52,9 @@ def routing(sys):
 	elif 'easynews.' in mode:
 		from indexers import easynews
 		return exec('easynews.%s(params)' % mode.split('.')[1])
+	elif mode.startswith('nzb.'):
+		from indexers import nzb
+		return exec('nzb.%s(params)' % mode.split('.')[1])
 	elif 'playback.' in mode:
 		from modules.kodi_utils import player_check
 		return player_check(mode, params)
@@ -57,6 +73,15 @@ def routing(sys):
 	elif 'mdblist.' in mode:
 		from apis import mdblist_api
 		return exec('mdblist_api.%s(params)' % mode.split('.')[1])
+	elif 'punchplay.' in mode:
+		if '.list.' in mode:
+			from indexers import punchplay_lists
+			return exec('punchplay_lists.%s(params)' % mode.split('.')[2])
+		from apis import punchplay_api
+		return exec('punchplay_api.%s(params)' % mode.split('.')[1])
+	elif 'wetrakr.' in mode:
+		from apis import wetrakr_api
+		return exec('wetrakr_api.%s(params)' % mode.split('.')[1])
 	elif 'trakt.' in mode:
 		if '.list' in mode:
 			from indexers import trakt_lists
@@ -88,6 +113,21 @@ def routing(sys):
 		elif mode == 'build_my_calendar':
 			from indexers.episodes import build_single_episode
 			return build_single_episode('episode.trakt', params)
+		elif mode == 'build_mdbl_calendar':
+			from indexers.episodes import build_single_episode
+			return build_single_episode('episode.mdblist', params)
+		elif mode == 'build_punchplay_calendar':
+			from indexers.episodes import build_single_episode
+			return build_single_episode('episode.punchplay', params)
+		elif mode == 'build_simkl_calendar':
+			from indexers.episodes import build_single_episode
+			return build_single_episode('episode.simkl', params)
+		elif mode == 'build_simkl_public_calendar':
+			from indexers.episodes import build_single_episode
+			return build_single_episode('episode.simkl_public', params)
+		elif mode == 'build_mdbl_next_up':
+			from indexers.episodes import build_single_episode
+			return build_single_episode('episode.mdblist_next', params)
 		elif mode == 'build_next_episode_manager':
 			from modules.episode_tools import build_next_episode_manager
 			return build_next_episode_manager()
@@ -257,6 +297,9 @@ def routing(sys):
 		elif mode == 'torbox.delete':
 			from indexers.torbox import tb_delete
 			return tb_delete(params.get('folder_id'), params.get('media_type'))
+		elif mode == 'torbox.airlock':
+			from indexers.torbox import tb_airlock
+			return tb_airlock(params.get('folder_id'), params.get('media_type'))
 		elif mode == 'torbox.send_webdl':
 			from indexers.torbox import tb_send_webdl
 			tb_send_webdl()
@@ -294,16 +337,18 @@ def routing(sys):
 	elif 'downloader.' in mode:
 		from modules import downloader
 		return exec('downloader.%s(params)' % mode.split('.')[1])
-	elif 'updater' in mode:
-		from modules import updater
-		return exec('updater.%s()' % mode.split('.')[1])
-	##EXTRA modes##
 	elif 'local_backup.' in mode:
 		from modules import local_backup
 		return getattr(local_backup, mode.split('.', 1)[1])(params)
+	elif 'settings_backup.' in mode:
+		from modules import settings_backup
+		return getattr(settings_backup, mode.split('.', 1)[1])(params)
+	elif 'kodi_favorites.' in mode:
+		from modules import kodi_favorites_backup
+		return getattr(kodi_favorites_backup, mode.split('.', 1)[1])(params)
 	elif mode == 'set_view':
-		from modules.kodi_utils import set_view
-		return kodi_utils.set_view(params.get('view_type'))
+		from indexers.navigator import Navigator
+		return Navigator(params).set_view()
 	elif mode == 'sync_settings':
 		from caches.settings_cache import sync_settings
 		return sync_settings(params)
@@ -315,7 +360,10 @@ def routing(sys):
 		return kodi_refresh()
 	elif mode == 'refresh_widgets':
 		from modules.kodi_utils import refresh_widgets
-		return refresh_widgets(params.get('silent', 'false') == 'true', params.get('reload_skin', 'false') == 'true')
+		return refresh_widgets(
+			params.get('silent', 'false') == 'true',
+			params.get('reload_skin', 'false') == 'true',
+			params.get('defer_browsing', 'false') == 'true')
 	elif mode == 'person_data_dialog':
 		from indexers.people import person_data_dialog
 		return person_data_dialog(params)
@@ -342,10 +390,22 @@ def routing(sys):
 		return Sources().debridPacks(params.get('provider'), params.get('name'), params.get('magnet_url'), params.get('info_hash'), source_item=source_item)
 	elif mode == 'open_settings':
 		from modules.kodi_utils import open_settings
-		return open_settings()
+		return open_settings(params.get('section'))
+	elif mode == 'opensubs_test_login':
+		from apis.opensubs_api import check_account
+		return check_account()
+	elif mode == 'opensubs_check_account':
+		from apis.opensubs_api import check_account
+		return check_account()
+	elif mode == 'opensubs_revoke':
+		from apis.opensubs_api import revoke_access
+		return revoke_access()
 	elif mode == 'hide_unhide_progress_items':
 		from modules.watched_status import hide_unhide_progress_items
 		return hide_unhide_progress_items(params)
+	elif mode in ('external_scraper_clear_slot', 'external_scraper_move_slot'):
+		from indexers import dialogs
+		return exec('dialogs.%s(params)' % mode)
 	elif mode == 'open_external_scraper_settings':
 		from modules.kodi_utils import external_scraper_settings
-		return external_scraper_settings()
+		return external_scraper_settings(params)

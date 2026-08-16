@@ -82,6 +82,17 @@
                     <label>[UPPERCASE][COLOR $INFO[Window.Property(highlight)]][B]Site: [/B][/COLOR]$INFO[Window.Property(source_site)][/UPPERCASE]</label>
                 </control>
                 <control type="label">
+                    <visible>!String.IsEmpty(Window.Property(scraper_module))</visible>
+                    <top>125</top>
+                    <width max="1275">auto</width>
+                    <height>20</height>
+                    <font>font14</font> <!-- REDLIGHT_33 -->
+                    <textcolor>FFCCCCCC</textcolor>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <label>[UPPERCASE][COLOR $INFO[Window.Property(highlight)]][B]$INFO[Window.Property(scraper_module_label)]: [/B][/COLOR]$INFO[Window.Property(scraper_module)][/UPPERCASE]</label>
+                </control>
+                <control type="label">
                     <top>150</top>
                     <width max="1275">auto</width>
                     <height>20</height>

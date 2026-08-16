@@ -414,7 +414,8 @@ class ExtrasUtils:
 				template = template.format(**insert_values)
 				finished_templates.append(template)
 			body = ''.join(finished_templates)
-			content = self.prefix_template().format(first_container=first_container, last_container=last_container) + body + self.suffix_template()
+			fmt = {'first_container': first_container, 'last_container': last_container}
+			content = self.prefix_template().format(**fmt) + body + self.suffix_template().format(**fmt)
 			with kodi_utils.open_file(file, 'w') as f: f.write(content)
 			FontUtils().execute_custom_fonts(skin_files=[skin_file])
 		except Exception as e:
@@ -677,7 +678,7 @@ class ExtrasUtils:
 		return '''\
 <?xml version="1.0" encoding="UTF-8"?>
 <window>
-    <defaultcontrol always="true">10</defaultcontrol>
+    <defaultcontrol>10</defaultcontrol>
     <controls>
         <control type="group">
             <width>1920</width>
@@ -783,316 +784,318 @@ class ExtrasUtils:
                     </control>
                 </control>
             </control>
-            <control type="group">
-                <animation effect="fade" start="100" end="0" time="0" condition="!Control.HasFocus(10) + !Control.HasFocus(11) + !Control.HasFocus(12) + !Control.HasFocus(13) + !Control.HasFocus(14) + !Control.HasFocus(15) + !Control.HasFocus(16) + !Control.HasFocus(17)">Conditional</animation>
-                <top>295</top>
-                <left>50</left>
-                <control type="group">
-                    <animation effect="slide" end="0,25" time="0" condition="String.IsEqual(Window.Property(display_extra_ratings),false)">Conditional</animation>
-                    <control type="label">
-                        <width max="1150">auto</width>
-                        <height>25</height>
-                        <font>font14</font> <!-- REDLIGHT_33 -->
-                        <textcolor>FFCCCCCC</textcolor>
-                        <align>center</align>
-                        <label>[I]$INFO[Window.Property(genre)][/I]</label>
-                    </control>
-                    <control type="grouplist">
-                        <top>55</top>
-                        <width max="1150">auto</width>
-                        <orientation>horizontal</orientation>
-                        <itemgap>10</itemgap>
-                        <align>center</align>
-                        <control type="image" id="203">
-                            <width>45</width>
-                            <height>45</height>
-                            <aspectratio>keep</aspectratio>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                        </control>
-                        <control type="label" id="2001">
-                            <width max="1026">auto</width>
-                            <height>32</height>
-                            <font>font13</font> <!-- REDLIGHT_30 -->
-                            <textcolor>FFCCCCCC</textcolor>
-                            <align>left</align>
-                        </control>
-                    </control>
-                    <control type="label" id="3001">
-                        <top>105</top>
-                        <width max="1150">auto</width>
-                        <height>25</height>
-                        <font>font14</font> <!-- REDLIGHT_33 -->
-                        <textcolor>FFCCCCCC</textcolor>
-                        <align>center</align>
-                    </control>
-                    <control type="grouplist">
-                        <top>165</top>
-                        <width max="1110">auto</width>
-                        <orientation>horizontal</orientation>
-                        <itemgap>30</itemgap>
-                        <align>center</align>
-                        <control type="grouplist">
-                            <width>130</width>
-                            <orientation>horizontal</orientation>
-                            <itemgap>0</itemgap>
-                            <align>center</align>
-                            <visible>String.IsEqual(Window.Property(metascore_rating),true)</visible>
-                            <control type="image" id="4101">
-                                <width>52</width>
-                                <height>32</height>
-                                <aspectratio>keep</aspectratio>
-                                <align>right</align>
-                                <aligny>center</aligny>
-                            </control>
-                            <control type="label" id="4001">
-                                <width max="75">auto</width>
-                                <height>32</height>
-                                <font>font13</font> <!-- REDLIGHT_30 -->
-                                <textcolor>FFCCCCCC</textcolor>
-                                <align>left</align>
-                                <aligny>center</aligny>
-                            </control>
-                        </control>
-                        <control type="grouplist">
-                            <width>130</width>
-                            <orientation>horizontal</orientation>
-                            <itemgap>0</itemgap>
-                            <align>center</align>
-                            <visible>String.IsEqual(Window.Property(tomatometer_rating),true)</visible>
-                            <control type="image" id="4102">
-                                <width>52</width>
-                                <height>32</height>
-                                <aspectratio>keep</aspectratio>
-                                <align>right</align>
-                                <aligny>center</aligny>
-                            </control>
-                            <control type="label" id="4002">
-                                <width max="75">auto</width>
-                                <height>32</height>
-                                <font>font13</font> <!-- REDLIGHT_30 -->
-                                <textcolor>FFCCCCCC</textcolor>
-                                <align>left</align>
-                                <aligny>center</aligny>
-                            </control>
-                        </control>
-                        <control type="grouplist">
-                            <width>130</width>
-                            <orientation>horizontal</orientation>
-                            <itemgap>0</itemgap>
-                            <align>center</align>
-                            <visible>String.IsEqual(Window.Property(tomatousermeter_rating),true)</visible>
-                            <control type="image" id="4103">
-                                <width>52</width>
-                                <height>32</height>
-                                <aspectratio>keep</aspectratio>
-                                <align>right</align>
-                                <aligny>center</aligny>
-                            </control>
-                            <control type="label" id="4003">
-                                <width max="75">auto</width>
-                                <height>32</height>
-                                <font>font13</font> <!-- REDLIGHT_30 -->
-                                <textcolor>FFCCCCCC</textcolor>
-                                <align>left</align>
-                                <aligny>center</aligny>
-                            </control>
-                        </control>
-                        <control type="grouplist">
-                            <width>130</width>
-                            <orientation>horizontal</orientation>
-                            <itemgap>10</itemgap>
-                            <align>center</align>
-                            <visible>String.IsEqual(Window.Property(imdb_rating),true)</visible>
-                            <control type="image" id="4104">
-                                <width>52</width>
-                                <height>32</height>
-                                <aspectratio>keep</aspectratio>
-                                <align>right</align>
-                                <aligny>center</aligny>
-                            </control>
-                            <control type="label" id="4004">
-                                <width max="75">auto</width>
-                                <height>32</height>
-                                <font>font13</font> <!-- REDLIGHT_30 -->
-                                <textcolor>FFCCCCCC</textcolor>
-                                <align>left</align>
-                                <aligny>center</aligny>
-                            </control>
-                        </control>
-                        <control type="grouplist">
-                            <width>130</width>
-                            <orientation>horizontal</orientation>
-                            <itemgap>0</itemgap>
-                            <align>center</align>
-                            <visible>String.IsEqual(Window.Property(tmdb_rating),true)</visible>
-                            <control type="image" id="4105">
-                                <width>52</width>
-                                <height>32</height>
-                                <aspectratio>keep</aspectratio>
-                                <align>right</align>
-                                <aligny>center</aligny>
-                            </control>
-                            <control type="label" id="4005">
-                                <width max="75">auto</width>
-                                <height>32</height>
-                                <font>font13</font> <!-- REDLIGHT_30 -->
-                                <textcolor>FFCCCCCC</textcolor>
-                                <align>left</align>
-                                <aligny>center</aligny>
-                            </control>
-                        </control>
-                    </control>
-                </control>
-            </control>
+            <!-- Title/logo stay fixed. Genre/ratings + action buttons scroll with the lists (no focus-linked fade/slide — those break mouse). -->
             <control type="grouplist">
-                <animation effect="slide" end="0,-220" time="0" reversible="true" condition="[!Control.HasFocus(10) + !Control.HasFocus(11) + !Control.HasFocus(12) + !Control.HasFocus(13) + !Control.HasFocus(14) + !Control.HasFocus(15) + !Control.HasFocus(16) + !Control.HasFocus(17)]">Conditional</animation>
-                <top>520</top>
+                <top>295</top>
                 <left>35</left>
                 <width>1190</width>
-                <height>780</height>
+                <height>785</height>
                 <orientation>vertical</orientation>
                 <scrolltime tween="sine">500</scrolltime>
                 <itemgap>-300</itemgap>
                 <usecontrolcoords>true</usecontrolcoords>
                 <control type="group">
-                    <height>500</height>
+                    <height>730</height>
                     <control type="group">
-                        <control type="button" id="10">
-                            <width>275</width>
-                            <height>70</height>
-                            <onleft>13</onleft>
-                            <onright>11</onright>
-                            <onup>{last_container}</onup>
-                            <ondown>14</ondown>
-                            <label>$INFO[Window.Property(button10.label)]</label>
-                            <font>font13</font> <!-- REDLIGHT_30 -->
-                            <textcolor>FFCCCCCC</textcolor>
-                            <focusedcolor>FF1F2020</focusedcolor>
-                            <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
-                            <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                        </control>
-                        <control type="button" id="11">
-                            <left>300</left>
-                            <width>275</width>
-                            <height>70</height>
-                            <onleft>10</onleft>
-                            <onright>12</onright>
-                            <onup>{last_container}</onup>
-                            <ondown>15</ondown>
-                            <label>$INFO[Window.Property(button11.label)]</label>
-                            <font>font13</font> <!-- REDLIGHT_30 -->
-                            <textcolor>FFCCCCCC</textcolor>
-                            <focusedcolor>FF1F2020</focusedcolor>
-                            <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
-                            <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>  
-                            <align>center</align>
-                            <aligny>center</aligny>
-                        </control>
-                        <control type="button" id="12">
-                            <left>600</left>
-                            <width>275</width>
-                            <height>70</height>
-                            <onleft>11</onleft>
-                            <onright>13</onright>
-                            <onup>{last_container}</onup>
-                            <ondown>16</ondown>
-                            <label>$INFO[Window.Property(button12.label)]</label>
-                            <font>font13</font> <!-- REDLIGHT_30 -->
-                            <textcolor>FFCCCCCC</textcolor>
-                            <focusedcolor>FF1F2020</focusedcolor>
-                            <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
-                            <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>  
-                            <align>center</align>
-                            <aligny>center</aligny>
-                        </control>
-                        <control type="button" id="13">
-                            <left>900</left>
-                            <width>275</width>
-                            <height>70</height>
-                            <onleft>12</onleft>
-                            <onright>10</onright>
-                            <onup>{last_container}</onup>
-                            <ondown>17</ondown>
-                            <label>$INFO[Window.Property(button13.label)]</label>
-                            <font>font13</font> <!-- REDLIGHT_30 -->
-                            <textcolor>FFCCCCCC</textcolor>
-                            <focusedcolor>FF1F2020</focusedcolor>
-                            <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
-                            <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>  
-                            <align>center</align>
-                            <aligny>center</aligny>
+                        <left>15</left>
+                        <control type="group">
+                            <animation effect="slide" end="0,25" time="0" condition="String.IsEqual(Window.Property(display_extra_ratings),false)">Conditional</animation>
+                            <control type="label">
+                                <width max="1150">auto</width>
+                                <height>25</height>
+                                <font>font14</font> <!-- REDLIGHT_33 -->
+                                <textcolor>FFCCCCCC</textcolor>
+                                <align>center</align>
+                                <label>[I]$INFO[Window.Property(genre)][/I]</label>
+                            </control>
+                            <control type="grouplist">
+                                <top>55</top>
+                                <width max="1150">auto</width>
+                                <orientation>horizontal</orientation>
+                                <itemgap>10</itemgap>
+                                <align>center</align>
+                                <control type="image" id="203">
+                                    <width>45</width>
+                                    <height>45</height>
+                                    <aspectratio>keep</aspectratio>
+                                    <align>center</align>
+                                    <aligny>center</aligny>
+                                </control>
+                                <control type="label" id="2001">
+                                    <width max="1026">auto</width>
+                                    <height>32</height>
+                                    <font>font13</font> <!-- REDLIGHT_30 -->
+                                    <textcolor>FFCCCCCC</textcolor>
+                                    <align>left</align>
+                                </control>
+                            </control>
+                            <control type="label" id="3001">
+                                <top>105</top>
+                                <width max="1150">auto</width>
+                                <height>25</height>
+                                <font>font14</font> <!-- REDLIGHT_33 -->
+                                <textcolor>FFCCCCCC</textcolor>
+                                <align>center</align>
+                            </control>
+                            <control type="grouplist">
+                                <top>165</top>
+                                <width max="1110">auto</width>
+                                <orientation>horizontal</orientation>
+                                <itemgap>30</itemgap>
+                                <align>center</align>
+                                <control type="grouplist">
+                                    <width>130</width>
+                                    <orientation>horizontal</orientation>
+                                    <itemgap>0</itemgap>
+                                    <align>center</align>
+                                    <visible>String.IsEqual(Window.Property(metascore_rating),true)</visible>
+                                    <control type="image" id="4101">
+                                        <width>52</width>
+                                        <height>32</height>
+                                        <aspectratio>keep</aspectratio>
+                                        <align>right</align>
+                                        <aligny>center</aligny>
+                                    </control>
+                                    <control type="label" id="4001">
+                                        <width max="75">auto</width>
+                                        <height>32</height>
+                                        <font>font13</font> <!-- REDLIGHT_30 -->
+                                        <textcolor>FFCCCCCC</textcolor>
+                                        <align>left</align>
+                                        <aligny>center</aligny>
+                                    </control>
+                                </control>
+                                <control type="grouplist">
+                                    <width>130</width>
+                                    <orientation>horizontal</orientation>
+                                    <itemgap>0</itemgap>
+                                    <align>center</align>
+                                    <visible>String.IsEqual(Window.Property(tomatometer_rating),true)</visible>
+                                    <control type="image" id="4102">
+                                        <width>52</width>
+                                        <height>32</height>
+                                        <aspectratio>keep</aspectratio>
+                                        <align>right</align>
+                                        <aligny>center</aligny>
+                                    </control>
+                                    <control type="label" id="4002">
+                                        <width max="75">auto</width>
+                                        <height>32</height>
+                                        <font>font13</font> <!-- REDLIGHT_30 -->
+                                        <textcolor>FFCCCCCC</textcolor>
+                                        <align>left</align>
+                                        <aligny>center</aligny>
+                                    </control>
+                                </control>
+                                <control type="grouplist">
+                                    <width>130</width>
+                                    <orientation>horizontal</orientation>
+                                    <itemgap>0</itemgap>
+                                    <align>center</align>
+                                    <visible>String.IsEqual(Window.Property(tomatousermeter_rating),true)</visible>
+                                    <control type="image" id="4103">
+                                        <width>52</width>
+                                        <height>32</height>
+                                        <aspectratio>keep</aspectratio>
+                                        <align>right</align>
+                                        <aligny>center</aligny>
+                                    </control>
+                                    <control type="label" id="4003">
+                                        <width max="75">auto</width>
+                                        <height>32</height>
+                                        <font>font13</font> <!-- REDLIGHT_30 -->
+                                        <textcolor>FFCCCCCC</textcolor>
+                                        <align>left</align>
+                                        <aligny>center</aligny>
+                                    </control>
+                                </control>
+                                <control type="grouplist">
+                                    <width>130</width>
+                                    <orientation>horizontal</orientation>
+                                    <itemgap>10</itemgap>
+                                    <align>center</align>
+                                    <visible>String.IsEqual(Window.Property(imdb_rating),true)</visible>
+                                    <control type="image" id="4104">
+                                        <width>52</width>
+                                        <height>32</height>
+                                        <aspectratio>keep</aspectratio>
+                                        <align>right</align>
+                                        <aligny>center</aligny>
+                                    </control>
+                                    <control type="label" id="4004">
+                                        <width max="75">auto</width>
+                                        <height>32</height>
+                                        <font>font13</font> <!-- REDLIGHT_30 -->
+                                        <textcolor>FFCCCCCC</textcolor>
+                                        <align>left</align>
+                                        <aligny>center</aligny>
+                                    </control>
+                                </control>
+                                <control type="grouplist">
+                                    <width>130</width>
+                                    <orientation>horizontal</orientation>
+                                    <itemgap>0</itemgap>
+                                    <align>center</align>
+                                    <visible>String.IsEqual(Window.Property(tmdb_rating),true)</visible>
+                                    <control type="image" id="4105">
+                                        <width>52</width>
+                                        <height>32</height>
+                                        <aspectratio>keep</aspectratio>
+                                        <align>right</align>
+                                        <aligny>center</aligny>
+                                    </control>
+                                    <control type="label" id="4005">
+                                        <width max="75">auto</width>
+                                        <height>32</height>
+                                        <font>font13</font> <!-- REDLIGHT_30 -->
+                                        <textcolor>FFCCCCCC</textcolor>
+                                        <align>left</align>
+                                        <aligny>center</aligny>
+                                    </control>
+                                </control>
+                            </control>
                         </control>
                     </control>
                     <control type="group">
-                        <top>90</top>
-                        <control type="button" id="14">
-                            <width>275</width>
-                            <height>70</height>
-                            <onleft>17</onleft>
-                            <onright>15</onright>
-                            <onup>10</onup>
-                            <ondown>{first_container}</ondown>
-                            <label>$INFO[Window.Property(button14.label)]</label>
-                            <font>font13</font> <!-- REDLIGHT_30 -->
-                            <textcolor>FFCCCCCC</textcolor>
-                            <focusedcolor>FF1F2020</focusedcolor>
-                            <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
-                            <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus> 
-                            <align>center</align>
-                            <aligny>center</aligny>
+                        <top>225</top>
+                        <control type="group">
+                            <control type="button" id="10">
+                                <width>275</width>
+                                <height>70</height>
+                                <onleft>13</onleft>
+                                <onright>11</onright>
+                                <onup>{last_container}</onup>
+                                <ondown>14</ondown>
+                                <label>$INFO[Window.Property(button10.label)]</label>
+                                <font>font13</font> <!-- REDLIGHT_30 -->
+                                <textcolor>FFCCCCCC</textcolor>
+                                <focusedcolor>FF1F2020</focusedcolor>
+                                <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
+                                <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>
+                                <align>center</align>
+                                <aligny>center</aligny>
+                            </control>
+                            <control type="button" id="11">
+                                <left>300</left>
+                                <width>275</width>
+                                <height>70</height>
+                                <onleft>10</onleft>
+                                <onright>12</onright>
+                                <onup>{last_container}</onup>
+                                <ondown>15</ondown>
+                                <label>$INFO[Window.Property(button11.label)]</label>
+                                <font>font13</font> <!-- REDLIGHT_30 -->
+                                <textcolor>FFCCCCCC</textcolor>
+                                <focusedcolor>FF1F2020</focusedcolor>
+                                <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
+                                <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>
+                                <align>center</align>
+                                <aligny>center</aligny>
+                            </control>
+                            <control type="button" id="12">
+                                <left>600</left>
+                                <width>275</width>
+                                <height>70</height>
+                                <onleft>11</onleft>
+                                <onright>13</onright>
+                                <onup>{last_container}</onup>
+                                <ondown>16</ondown>
+                                <label>$INFO[Window.Property(button12.label)]</label>
+                                <font>font13</font> <!-- REDLIGHT_30 -->
+                                <textcolor>FFCCCCCC</textcolor>
+                                <focusedcolor>FF1F2020</focusedcolor>
+                                <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
+                                <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>
+                                <align>center</align>
+                                <aligny>center</aligny>
+                            </control>
+                            <control type="button" id="13">
+                                <left>900</left>
+                                <width>275</width>
+                                <height>70</height>
+                                <onleft>12</onleft>
+                                <onright>10</onright>
+                                <onup>{last_container}</onup>
+                                <ondown>17</ondown>
+                                <label>$INFO[Window.Property(button13.label)]</label>
+                                <font>font13</font> <!-- REDLIGHT_30 -->
+                                <textcolor>FFCCCCCC</textcolor>
+                                <focusedcolor>FF1F2020</focusedcolor>
+                                <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
+                                <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>
+                                <align>center</align>
+                                <aligny>center</aligny>
+                            </control>
                         </control>
-                        <control type="button" id="15">
-                            <left>300</left>
-                            <width>275</width>
-                            <height>70</height>
-                            <onleft>14</onleft>
-                            <onright>16</onright>
-                            <onup>11</onup>
-                            <ondown>{first_container}</ondown>
-                            <label>$INFO[Window.Property(button15.label)]</label>
-                            <font>font13</font> <!-- REDLIGHT_30 -->
-                            <textcolor>FFCCCCCC</textcolor>
-                            <focusedcolor>FF1F2020</focusedcolor>
-                            <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
-                            <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>                         <align>center</align>
-                            <aligny>center</aligny>
-                        </control>
-                        <control type="button" id="16">
-                            <left>600</left>
-                            <width>275</width>
-                            <height>70</height>
-                            <onleft>15</onleft>
-                            <onright>17</onright>
-                            <onup>12</onup>
-                            <ondown>{first_container}</ondown>
-                            <label>$INFO[Window.Property(button16.label)]</label>
-                            <font>font13</font> <!-- REDLIGHT_30 -->
-                            <textcolor>FFCCCCCC</textcolor>
-                            <focusedcolor>FF1F2020</focusedcolor>
-                            <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
-                            <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                        </control>
-                        <control type="button" id="17">
-                            <left>900</left>
-                            <width>275</width>
-                            <height>70</height>
-                            <onleft>16</onleft>
-                            <onup>13</onup>
-                            <onright>14</onright>
-                            <ondown>{first_container}</ondown>
-                            <label>$INFO[Window.Property(button17.label)]</label>
-                            <font>font13</font> <!-- REDLIGHT_30 -->
-                            <textcolor>FFCCCCCC</textcolor>
-                            <focusedcolor>FF1F2020</focusedcolor>
-                            <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
-                            <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>
-                            <align>center</align>
-                            <aligny>center</aligny>
+                        <control type="group">
+                            <top>90</top>
+                            <control type="button" id="14">
+                                <width>275</width>
+                                <height>70</height>
+                                <onleft>17</onleft>
+                                <onright>15</onright>
+                                <onup>10</onup>
+                                <ondown>{first_container}</ondown>
+                                <label>$INFO[Window.Property(button14.label)]</label>
+                                <font>font13</font> <!-- REDLIGHT_30 -->
+                                <textcolor>FFCCCCCC</textcolor>
+                                <focusedcolor>FF1F2020</focusedcolor>
+                                <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
+                                <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>
+                                <align>center</align>
+                                <aligny>center</aligny>
+                            </control>
+                            <control type="button" id="15">
+                                <left>300</left>
+                                <width>275</width>
+                                <height>70</height>
+                                <onleft>14</onleft>
+                                <onright>16</onright>
+                                <onup>11</onup>
+                                <ondown>{first_container}</ondown>
+                                <label>$INFO[Window.Property(button15.label)]</label>
+                                <font>font13</font> <!-- REDLIGHT_30 -->
+                                <textcolor>FFCCCCCC</textcolor>
+                                <focusedcolor>FF1F2020</focusedcolor>
+                                <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
+                                <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>
+                                <align>center</align>
+                                <aligny>center</aligny>
+                            </control>
+                            <control type="button" id="16">
+                                <left>600</left>
+                                <width>275</width>
+                                <height>70</height>
+                                <onleft>15</onleft>
+                                <onright>17</onright>
+                                <onup>12</onup>
+                                <ondown>{first_container}</ondown>
+                                <label>$INFO[Window.Property(button16.label)]</label>
+                                <font>font13</font> <!-- REDLIGHT_30 -->
+                                <textcolor>FFCCCCCC</textcolor>
+                                <focusedcolor>FF1F2020</focusedcolor>
+                                <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
+                                <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>
+                                <align>center</align>
+                                <aligny>center</aligny>
+                            </control>
+                            <control type="button" id="17">
+                                <left>900</left>
+                                <width>275</width>
+                                <height>70</height>
+                                <onleft>16</onleft>
+                                <onup>13</onup>
+                                <onright>14</onright>
+                                <ondown>{first_container}</ondown>
+                                <label>$INFO[Window.Property(button17.label)]</label>
+                                <font>font13</font> <!-- REDLIGHT_30 -->
+                                <textcolor>FFCCCCCC</textcolor>
+                                <focusedcolor>FF1F2020</focusedcolor>
+                                <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>
+                                <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme.extras)]" border="30">redlight_common/circle.png</texturenofocus>
+                                <align>center</align>
+                                <aligny>center</aligny>
+                            </control>
                         </control>
                     </control>
                 </control>
@@ -1100,7 +1103,7 @@ class ExtrasUtils:
 '''
 
 	def suffix_template(self):
-		return '''/
+		return '''\
             </control>
         </control>
     </controls>

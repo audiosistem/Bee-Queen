@@ -83,6 +83,16 @@ class PersonalListsCache:
 			return 'Success'
 		except: return 'Error'
 
+	def get_all_sort_orders(self):
+		"""Every list's stored sort_order. Raises on a locked database - deliberately, unlike its
+		neighbours: its only caller is the one-time sort migration, which must be able to tell an
+		empty store from an unreadable one. Returning {} on failure would look like a clean success,
+		let the migration record itself as done, and delete every stored preference on the next sync.
+		"""
+		dbcon = connect_database('personal_lists_db')
+		rows = dbcon.execute('SELECT name, author, sort_order FROM personal_lists').fetchall()
+		return dict(((i[0], i[1]), i[2]) for i in rows)
+
 	def get_list_names_and_authors(self):
 		data = self.get_lists()
 		return [(i['name'], i['author']) for i in data]

@@ -3,7 +3,8 @@ EasyNews is a great source, but there have always been issues with playback of f
 
 There is a setting in Red Light to help mitigate this, and you can choose the method that best suits you.
 
-The setting is found in Playback->Playback Utilities. Setting name is "EasyNews Playback Method".
+The setting is found in Playback > Playback Utilities. Setting name is "EasyNews Playback Method".
+It appears when EasyNews and/or AIOStreams is enabled, and applies to both native EasyNews and AIOStreams EN rows.
 
 Below is a brief explanation of the options you have here....
 

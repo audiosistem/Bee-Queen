@@ -4,74 +4,83 @@ import os
 from datetime import datetime
 from caches.base_cache import connect_database, make_database
 from modules import kodi_utils, settings
+from modules.import_export_utils import offer_save_export_directory, pick_export_folder
 from modules.watched_status import get_database
 
 BACKUP_FORMAT = 1
 BACKUP_MASK = '.json'
 PROGRESS_MIN_PERCENT = 1.0
 
-_EXTERNAL_PROGRESS_PROVIDERS = {1: 'Trakt', 2: 'Simkl', 3: 'MDBList'}
+_EXTERNAL_HISTORY_PROVIDERS = {1: 'Trakt', 2: 'Simkl', 3: 'MDBList', 4: 'PunchPlay'}
 
 
-def _external_progress_provider_name():
-	return _EXTERNAL_PROGRESS_PROVIDERS.get(settings.watched_indicators())
+def _local_history_active():
+	return settings.watched_indicators() == 0
 
 
-def _progress_not_included_message():
-	provider = _external_progress_provider_name()
+def _external_history_provider_name():
+	return _EXTERNAL_HISTORY_PROVIDERS.get(settings.watched_indicators())
+
+
+def _history_not_included_message():
+	provider = _external_history_provider_name()
 	if not provider:
 		return None
-	return 'Progress not included[CR](%s Indicators)' % provider
+	return 'Watch history not included[CR](%s Indicators)' % provider
+
+
+def _history_count_line(progress_count, watched_count):
+	parts = []
+	if progress_count:
+		parts.append('%s in progress' % progress_count)
+	if watched_count:
+		parts.append('%s watched' % watched_count)
+	return ', '.join(parts) if parts else '0 history'
+
+
+def _has_history_counts(counts):
+	return counts.get('progress', 0) or counts.get('watched', 0)
 
 
 def _default_backup_dir():
-	return settings.import_export_directory()
+	return settings.import_export_directory_setting()
+
 
 def _pick_import_file(default_dir):
-	path = kodi_utils.browse_file(BACKUP_MASK, default_dir)
+	path = kodi_utils.browse_file(BACKUP_MASK, default_dir, heading='Choose favorites & history backup', force_defaultt=True)
 	if not path:
 		return None
 	tpath = kodi_utils.translate_path(path)
 	if not os.path.isfile(tpath):
 		return None
 	if not tpath.lower().endswith('.json'):
-		kodi_utils.ok_dialog(heading='Red Light import', text='Please select a Red Light backup (.json) file.')
+		kodi_utils.ok_dialog(heading='Import favorites & history', text='Please choose a Red Light backup (.json).')
 		return None
 	return tpath
-
-
-def _pick_export_folder(default_dir):
-	folder = kodi_utils.browse_directory(default_dir)
-	if not folder:
-		return None
-	tfolder = kodi_utils.translate_path(folder)
-	if not os.path.isdir(tfolder):
-		return None
-	return tfolder
 
 
 def export_data(params):
 	payload, counts = _build_export_payload()
 	if not payload:
-		return kodi_utils.ok_dialog(heading='Red Light export', text='Nothing to export — no Red Light favorites or in-progress resume data on this device.')
-	default_dir = _default_backup_dir()
-	folder = _pick_export_folder(default_dir)
+		return kodi_utils.ok_dialog(heading='Export favorites & history', text='Nothing to export on this device.')
+	folder = pick_export_folder(heading='Choose export folder')
 	if not folder:
 		return
 	filename = 'redlight-backup-%s.json' % datetime.now().strftime('%Y%m%d-%H%M%S')
 	path = os.path.join(folder, filename)
 	preview = _export_preview_text(filename, counts)
-	if not kodi_utils.confirm_dialog(heading='Red Light export preview', text=preview, ok_label='Export', cancel_label='Cancel', default_control=10, scroll=True):
+	if not kodi_utils.confirm_dialog(heading='Export favorites & history', text=preview, ok_label='Export', cancel_label='Cancel', default_control=10, scroll=True):
 		return
 	try:
 		kodi_utils.make_directory(folder)
 		with open(path, 'w', encoding='utf-8') as handle:
 			json.dump(payload, handle, indent=2, ensure_ascii=False)
 	except Exception as e:
-		return kodi_utils.ok_dialog(heading='Red Light export failed', text=str(e))
+		return kodi_utils.ok_dialog(heading='Export failed', text=str(e))
 	summary = _export_summary(counts, filename)
-	kodi_utils.ok_dialog(heading='Red Light export complete', text=summary.replace('; ', '[CR]'), scroll=True)
+	kodi_utils.ok_dialog(heading='Export complete', text=summary, scroll=True)
 	kodi_utils.notification(summary, 6500)
+	offer_save_export_directory(folder)
 
 
 def import_data(params):
@@ -83,38 +92,48 @@ def import_data(params):
 		with open(path, 'r', encoding='utf-8') as handle:
 			payload = json.load(handle)
 	except Exception as e:
-		return kodi_utils.ok_dialog(heading='Red Light import failed', text='Could not read backup file.[CR][CR]%s' % e)
+		return kodi_utils.ok_dialog(heading='Import failed', text='Could not read that file.[CR][CR]%s' % e)
 	file_stats = _payload_stats(payload)
-	if not file_stats['favorites'] and not file_stats['progress']:
-		return kodi_utils.ok_dialog(heading='Red Light import', text='This backup file contains no Red Light favorites or progress data.')
+	if not file_stats['favorites'] and not _has_history_counts(file_stats):
+		return kodi_utils.ok_dialog(heading='Import favorites & history', text='That file contains no favorites or watch history.')
 	local_stats = _local_stats()
-	preview = _preview_text(path, payload, file_stats, local_stats)
-	if not kodi_utils.confirm_dialog(heading='Red Light import preview', text=preview, ok_label='Continue', cancel_label='Cancel', default_control=10, scroll=True):
+	empty_dest = not _local_has_data(local_stats)
+	preview = _preview_text(path, file_stats, local_stats)
+	if not kodi_utils.confirm_dialog(
+		heading='Import favorites & history',
+		text=preview,
+		ok_label='Import' if empty_dest else 'Continue',
+		cancel_label='Cancel',
+		default_control=10,
+		scroll=True,
+	):
 		return
-	mode_choices = [
-		('Merge — combine with this device; furthest watch position wins', 'merge'),
-		('Replace — overwrite local favorites and progress with the backup', 'replace'),
-	]
-	list_items = [{'line1': i[0]} for i in mode_choices]
-	kwargs = {'items': json.dumps(list_items), 'heading': 'Red Light import mode', 'narrow_window': 'true'}
-	mode = kodi_utils.select_dialog([i[1] for i in mode_choices], **kwargs)
-	if not mode:
-		return
-	rules = _import_rules_text(mode, file_stats)
-	if not kodi_utils.confirm_dialog(heading='Confirm Red Light import (%s)' % mode.capitalize(), text=rules, ok_label='Import', cancel_label='Cancel', default_control=10, scroll=True):
-		return
-	if mode == 'replace' and (file_stats['favorites'] or file_stats['progress']):
-		warn = 'Local Red Light favorites and progress will be replaced by this backup.'
-		if not kodi_utils.confirm_dialog(heading='Replace Red Light data?', text=warn, ok_label='Replace', cancel_label='Cancel', default_control=10):
+	if empty_dest:
+		mode = 'merge'
+	else:
+		mode_choices = [
+			('Merge — add from backup; keep what is already here', 'merge'),
+			('Replace — remove local data first, then import backup', 'replace'),
+		]
+		list_items = [{'line1': i[0]} for i in mode_choices]
+		kwargs = {'items': json.dumps(list_items), 'heading': 'Import mode', 'narrow_window': 'true'}
+		mode = kodi_utils.select_dialog([i[1] for i in mode_choices], **kwargs)
+		if not mode:
 			return
+		rules = _import_rules_text(mode, file_stats)
+		if not kodi_utils.confirm_dialog(heading='Import %s' % mode, text=rules, ok_label='Import', cancel_label='Cancel', default_control=10, scroll=True):
+			return
+		if mode == 'replace':
+			if not kodi_utils.confirm_dialog(heading='Replace local data?', text=_replace_warning(local_stats), ok_label='Replace', cancel_label='Cancel', default_control=10):
+				return
 	try:
 		make_database('favorites_db')
 		make_database('watched_db')
 		summary = _apply_import(payload, mode, file_stats)
 	except Exception as e:
-		return kodi_utils.ok_dialog(heading='Red Light import failed', text=str(e))
-	kodi_utils.ok_dialog(heading='Red Light import complete', text=summary.replace('; ', '[CR]'), scroll=True)
-	kodi_utils.notification(summary, 6500)
+		return kodi_utils.ok_dialog(heading='Import failed', text=str(e))
+	kodi_utils.ok_dialog(heading='Import complete', text=summary, scroll=True)
+	kodi_utils.notification('Import complete', 6500)
 	kodi_utils.kodi_refresh()
 
 
@@ -128,8 +147,9 @@ def _addon_version():
 def _build_export_payload():
 	favorites = _export_favorites()
 	progress = _export_progress()
-	counts = {'favorites': len(favorites), 'progress': len(progress)}
-	if not counts['favorites'] and not counts['progress']:
+	watched = _export_watched()
+	counts = {'favorites': len(favorites), 'progress': len(progress), 'watched': len(watched)}
+	if not counts['favorites'] and not _has_history_counts(counts):
 		return None, counts
 	payload = {
 		'format': BACKUP_FORMAT,
@@ -140,6 +160,8 @@ def _build_export_payload():
 		payload['favorites'] = favorites
 	if progress:
 		payload['progress'] = progress
+	if watched:
+		payload['watched'] = watched
 	return payload, counts
 
 
@@ -153,7 +175,7 @@ def _export_favorites():
 
 
 def _export_progress():
-	if settings.watched_indicators() != 0:
+	if not _local_history_active():
 		return []
 	dbcon = get_database(0)
 	try:
@@ -170,6 +192,19 @@ def _export_progress():
 	return result
 
 
+def _export_watched():
+	if not _local_history_active():
+		return []
+	dbcon = get_database(0)
+	try:
+		rows = dbcon.execute(
+			'SELECT db_type, media_id, season, episode, last_played, title FROM watched ORDER BY db_type, title'
+		).fetchall()
+	except:
+		rows = []
+	return [_watched_row_to_dict(row) for row in rows]
+
+
 def _progress_row_to_dict(row):
 	return {
 		'db_type': str(row[0]),
@@ -184,27 +219,44 @@ def _progress_row_to_dict(row):
 	}
 
 
+def _watched_row_to_dict(row):
+	return {
+		'db_type': str(row[0]),
+		'media_id': str(row[1]),
+		'season': row[2],
+		'episode': row[3],
+		'last_played': str(row[4] or ''),
+		'title': str(row[5] or ''),
+	}
+
+
 def _payload_stats(payload):
 	if not isinstance(payload, dict):
-		return {'favorites': 0, 'progress': 0, 'fav_keys': set(), 'progress_keys': set()}
+		return {'favorites': 0, 'progress': 0, 'watched': 0, 'fav_keys': set(), 'progress_keys': set(), 'watched_keys': set()}
 	favorites = payload.get('favorites') if isinstance(payload.get('favorites'), list) else []
 	progress = payload.get('progress') if isinstance(payload.get('progress'), list) else []
+	watched = payload.get('watched') if isinstance(payload.get('watched'), list) else []
 	return {
 		'favorites': len(favorites),
 		'progress': len(progress),
+		'watched': len(watched),
 		'fav_keys': {_favorite_key(i) for i in favorites if _favorite_key(i)},
-		'progress_keys': {_progress_key(i) for i in progress if _progress_key(i)},
+		'progress_keys': {_history_item_key(i) for i in progress if _history_item_key(i)},
+		'watched_keys': {_history_item_key(i) for i in watched if _history_item_key(i)},
 	}
 
 
 def _local_stats():
 	favorites = _export_favorites()
-	progress = _export_progress() if settings.watched_indicators() == 0 else []
+	progress = _export_progress() if _local_history_active() else []
+	watched = _export_watched() if _local_history_active() else []
 	return {
 		'favorites': len(favorites),
 		'progress': len(progress),
+		'watched': len(watched),
 		'fav_keys': {_favorite_key(i) for i in favorites},
-		'progress_keys': {_progress_key(i) for i in progress},
+		'progress_keys': {_history_item_key(i) for i in progress},
+		'watched_keys': {_history_item_key(i) for i in watched},
 	}
 
 
@@ -215,46 +267,46 @@ def _favorite_key(item):
 		return None
 
 
-def _progress_key(item):
+def _history_item_key(item):
 	try:
 		return (str(item['db_type']), str(item['media_id']), int(item.get('season') or 0), int(item.get('episode') or 0))
 	except:
 		return None
 
 
-def _preview_text(path, payload, file_stats, local_stats):
+def _local_has_data(local_stats):
+	return local_stats['favorites'] or _has_history_counts(local_stats)
+
+
+def _preview_text(path, file_stats, local_stats):
 	name = os.path.basename(path)
 	lines = [
 		'[B]%s[/B]' % name,
-		'Red Light %s' % (payload.get('addon_version') or 'unknown'),
-		'',
-		'Backup: %s favorite(s), %s progress' % (file_stats['favorites'], file_stats['progress']),
-		'Device: %s favorite(s), %s progress' % (local_stats['favorites'], local_stats['progress']),
+		'Backup: %s favorite(s), %s' % (file_stats['favorites'], _history_count_line(file_stats['progress'], file_stats['watched'])),
+		'This device: %s favorite(s), %s' % (local_stats['favorites'], _history_count_line(local_stats['progress'], local_stats['watched'])),
 	]
-	fav_overlap = len(file_stats['fav_keys'] & local_stats['fav_keys'])
-	prog_overlap = len(file_stats['progress_keys'] & local_stats['progress_keys'])
-	overlap_parts = []
-	if file_stats['favorites'] and local_stats['favorites'] and fav_overlap:
-		overlap_parts.append('%s favorite' % fav_overlap)
-	if file_stats['progress'] and local_stats['progress'] and prog_overlap:
-		overlap_parts.append('%s progress' % prog_overlap)
-	if overlap_parts:
-		lines.append('Overlap: %s' % ', '.join(overlap_parts))
-	if file_stats['progress'] and settings.watched_indicators() != 0:
-		lines.append('[COLOR yellow]Progress in backup will not be imported[CR](%s Indicators)[/COLOR]' % _external_progress_provider_name())
+	if _has_history_counts(file_stats) and not _local_history_active():
+		lines.append('[COLOR yellow]Watch history in the backup will be skipped (%s Indicators).[/COLOR]' % _external_history_provider_name())
 	return '[CR]'.join(lines)
+
+
+def _replace_warning(local_stats):
+	parts = []
+	if local_stats['favorites']:
+		parts.append('%s favorite(s)' % local_stats['favorites'])
+	if _has_history_counts(local_stats):
+		parts.append(_history_count_line(local_stats['progress'], local_stats['watched']))
+	return 'This will remove %s on this device before importing.' % ' and '.join(parts)
 
 
 def _export_preview_text(filename, counts):
 	lines = [
 		'[B]%s[/B]' % filename,
-		'Red Light %s' % _addon_version(),
-		'',
-		'Export: %s favorite(s), %s progress' % (counts['favorites'], counts['progress']),
+		'%s favorite(s), %s' % (counts['favorites'], _history_count_line(counts['progress'], counts['watched'])),
 	]
-	msg = _progress_not_included_message()
+	msg = _history_not_included_message()
 	if msg:
-		lines.append('[COLOR yellow]%s[/COLOR]' % msg)
+		lines.append('[COLOR yellow]%s[/COLOR]' % msg.replace('[CR]', ' '))
 	return '[CR]'.join(lines)
 
 
@@ -262,40 +314,30 @@ def _export_summary(counts, filename):
 	parts = []
 	if counts['favorites']:
 		parts.append('%s favorite(s)' % counts['favorites'])
-	if counts['progress']:
-		parts.append('%s progress row(s)' % counts['progress'])
-	return 'Exported %s to %s' % (' and '.join(parts), filename)
+	if _has_history_counts(counts) and _local_history_active():
+		parts.append(_history_count_line(counts['progress'], counts['watched']))
+	if parts:
+		return 'Exported %s to %s' % (' and '.join(parts), filename)
+	return 'Exported to %s' % filename
 
 
 def _import_rules_text(mode, file_stats):
 	lines = []
 	if file_stats['favorites']:
 		if mode == 'merge':
-			lines.extend([
-				'[B]Favorites — merge[/B]',
-				'• Add or update favorites from the backup.',
-				'• Favorites on this device that are not in the backup are kept.',
-			])
+			lines.append('Favorites: add from backup; keep existing entries.')
 		else:
-			lines.extend([
-				'[B]Favorites — replace[/B]',
-				'• Remove all local favorites, then import from the backup.',
-			])
-	if file_stats['progress'] and settings.watched_indicators() == 0:
+			lines.append('Favorites: replace everything on this device.')
+	if _has_history_counts(file_stats) and _local_history_active():
 		if mode == 'merge':
-			lines.extend([
-				'[B]Progress — merge[/B]',
-				'• Add or update progress from the backup.',
-				'• For the same title and episode, keep whichever is further along.',
-				'• Progress on this device that is not in the backup is kept.',
-			])
+			if file_stats['progress']:
+				lines.append('In progress: add from backup; keep the furthest position when both match.')
+			if file_stats['watched']:
+				lines.append('Watched: add from backup; keep the newer date when both match.')
 		else:
-			lines.extend([
-				'[B]Progress — replace[/B]',
-				'• Remove all local progress, then import from the backup.',
-			])
-	elif file_stats['progress'] and settings.watched_indicators() != 0:
-		lines.append('[B]Progress[/B]: not imported[CR](%s Indicators)' % _external_progress_provider_name())
+			lines.append('Watch history: replace everything on this device.')
+	elif _has_history_counts(file_stats):
+		lines.append('Watch history: skipped (%s Indicators).' % _external_history_provider_name())
 	return '[CR]'.join(lines) if lines else 'Nothing to import.'
 
 
@@ -303,11 +345,14 @@ def _apply_import(payload, mode, file_stats):
 	summary_parts = []
 	if file_stats['favorites']:
 		summary_parts.append(_import_favorites(payload.get('favorites') or [], mode))
-	if file_stats['progress'] and settings.watched_indicators() == 0:
-		summary_parts.append(_import_progress(payload.get('progress') or [], mode))
-	elif file_stats['progress']:
-		summary_parts.append('Progress skipped (%s Indicators)' % _external_progress_provider_name())
-	return 'Import complete — %s' % '; '.join([i for i in summary_parts if i])
+	if _local_history_active():
+		if file_stats['progress']:
+			summary_parts.append(_import_progress(payload.get('progress') or [], mode))
+		if file_stats['watched']:
+			summary_parts.append(_import_watched(payload.get('watched') or [], mode))
+	elif _has_history_counts(file_stats):
+		summary_parts.append('Watch history skipped (%s Indicators)' % _external_history_provider_name())
+	return 'Import complete — %s' % '; '.join([i for i in summary_parts if i]) if summary_parts else 'Import complete'
 
 
 def _import_favorites(items, mode):
@@ -333,8 +378,9 @@ def _import_progress(items, mode):
 	local = {}
 	try:
 		for row in dbcon.execute('SELECT db_type, media_id, season, episode, resume_point, curr_time, last_played, resume_id, title FROM progress').fetchall():
-			key = (str(row[0]), str(row[1]), int(row[2] or 0), int(row[3] or 0))
-			local[key] = _progress_row_to_dict(row)
+			key = _history_item_key(_progress_row_to_dict(row))
+			if key:
+				local[key] = _progress_row_to_dict(row)
 	except:
 		pass
 	if mode == 'replace':
@@ -342,7 +388,7 @@ def _import_progress(items, mode):
 		local = {}
 	added, updated, kept = 0, 0, 0
 	for item in items:
-		key = _progress_key(item)
+		key = _history_item_key(item)
 		if not key:
 			continue
 		winner = _merge_progress_row(local.get(key), item) if mode == 'merge' and key in local else item
@@ -361,7 +407,43 @@ def _import_progress(items, mode):
 				str(winner.get('last_played') or ''), int(winner.get('resume_id') or 0), str(winner.get('title') or ''),
 			)
 		)
-	return 'progress: %s added, %s updated, %s unchanged' % (added, updated, kept)
+	return 'in progress: %s added, %s updated, %s unchanged' % (added, updated, kept)
+
+
+def _import_watched(items, mode):
+	dbcon = get_database(0)
+	local = {}
+	try:
+		for row in dbcon.execute('SELECT db_type, media_id, season, episode, last_played, title FROM watched').fetchall():
+			key = _history_item_key(_watched_row_to_dict(row))
+			if key:
+				local[key] = _watched_row_to_dict(row)
+	except:
+		pass
+	if mode == 'replace':
+		dbcon.execute('DELETE FROM watched')
+		local = {}
+	added, updated, kept = 0, 0, 0
+	for item in items:
+		key = _history_item_key(item)
+		if not key:
+			continue
+		winner = _merge_watched_row(local.get(key), item) if mode == 'merge' and key in local else item
+		if key in local and mode == 'merge':
+			if winner is local.get(key):
+				kept += 1
+				continue
+			updated += 1
+		else:
+			added += 1
+		dbcon.execute(
+			'INSERT OR REPLACE INTO watched VALUES (?, ?, ?, ?, ?, ?)',
+			(
+				winner['db_type'], winner['media_id'], winner.get('season'), winner.get('episode'),
+				str(winner.get('last_played') or ''), str(winner.get('title') or ''),
+			)
+		)
+	return 'watched: %s added, %s updated, %s unchanged' % (added, updated, kept)
 
 
 def _merge_progress_row(local, incoming):
@@ -379,6 +461,14 @@ def _merge_progress_row(local, incoming):
 		return incoming
 	if local_pct > incoming_pct:
 		return local
+	if str(incoming.get('last_played') or '') > str(local.get('last_played') or ''):
+		return incoming
+	return local
+
+
+def _merge_watched_row(local, incoming):
+	if not local:
+		return incoming
 	if str(incoming.get('last_played') or '') > str(local.get('last_played') or ''):
 		return incoming
 	return local

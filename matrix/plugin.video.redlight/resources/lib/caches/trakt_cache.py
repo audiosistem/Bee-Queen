@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from threading import Thread
 from caches.base_cache import connect_database
-from modules.kodi_utils import sleep, confirm_dialog, close_all_dialog
+from modules.kodi_utils import sleep, confirm_dialog, close_all_dialog, notification
 # from modules.kodi_utils import logger
 
 class TraktCache:	
@@ -38,21 +38,25 @@ class TraktWatched():
 		dbcon.execute('INSERT OR REPLACE INTO trakt_data (id, data) VALUES (?, ?)', ('trakt_tvshow_status', repr(insert_dict),))
 
 	def set_bulk_movie_watched(self, insert_list):
+		if not insert_list: return
 		self._delete('DELETE FROM watched WHERE db_type = ?', ('movie',))
 		self._executemany('INSERT OR IGNORE INTO watched VALUES (?, ?, ?, ?, ?, ?)', insert_list)
 
 	def set_bulk_tvshow_watched(self, insert_list):
+		if not insert_list: return
 		self._delete('DELETE FROM watched WHERE db_type = ?', ('episode',))
 		self._executemany('INSERT OR IGNORE INTO watched VALUES (?, ?, ?, ?, ?, ?)', insert_list)
 
 	def set_bulk_movie_progress(self, insert_list):
 		dbcon = connect_database('trakt_db')
-		dbcon.execute('DELETE FROM progress WHERE db_type = ? AND resume_id != 0', ('movie',))
+		# Full replace (Simkl/MDBList/PunchPlay style). Local pause writes resume_id=0;
+		# deleting only resume_id != 0 left stale progress after remote clear.
+		dbcon.execute('DELETE FROM progress WHERE db_type = ?', ('movie',))
 		if insert_list: dbcon.executemany('INSERT OR REPLACE INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', insert_list)
 
 	def set_bulk_tvshow_progress(self, insert_list):
 		dbcon = connect_database('trakt_db')
-		dbcon.execute('DELETE FROM progress WHERE db_type = ? AND resume_id != 0', ('episode',))
+		dbcon.execute('DELETE FROM progress WHERE db_type = ?', ('episode',))
 		if insert_list: dbcon.executemany('INSERT OR REPLACE INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', insert_list)
 
 	def _executemany(self, command, insert_list):
@@ -62,7 +66,9 @@ class TraktWatched():
 	def _delete(self, command, args):
 		dbcon = connect_database('trakt_db')
 		dbcon.execute(command, args)
-		dbcon.execute('VACUUM')
+		# No VACUUM here — rewrites the whole DB and can stall Next Episodes / list
+		# rebuilds for many seconds after playback (esp. on SD / slow Android storage).
+		# Manual Clear Cache / Clean Databases still vacuum.
 
 trakt_watched_cache = TraktWatched()
 
@@ -97,23 +103,40 @@ def get_list_custom_sort(list_id):
 		return eval(cache_data[0])
 	except: return {}
 
+def get_all_lists_custom_sort_strict():
+	"""Every stored per-list custom sort. Raises on a locked database or a corrupt row.
+
+	The one-time sort migration reads the store through this, not through the swallowing
+	get_all_lists_custom_sort() below: an empty dict means "nothing stored" and lets the
+	migration record itself as done, so a read failure that returned {} would look exactly
+	like a clean success and delete every stored preference on the following sync.
+	"""
+	dbcon = connect_database('trakt_db')
+	all_cache_data = dbcon.execute('SELECT data FROM trakt_data WHERE id LIKE %s' % "'trakt_list_custom_sort_%'").fetchall()
+	all_cache_data = (eval(i[0]) for i in all_cache_data)
+	return dict([(i['list_id'], {'sort_by': i['sort_by'], 'sort_how': i['sort_how']}) for i in all_cache_data])
+
 def get_all_lists_custom_sort():
-	try:
-		dbcon = connect_database('trakt_db')
-		all_cache_data = dbcon.execute('SELECT data FROM trakt_data WHERE id LIKE %s' % "'trakt_list_custom_sort_%'").fetchall()
-		all_cache_data = (eval(i[0]) for i in all_cache_data)
-		return dict([(i['list_id'], {'sort_by': i['sort_by'], 'sort_how': i['sort_how']}) for i in all_cache_data])
+	try: return get_all_lists_custom_sort_strict()
 	except: return {}
+
+def valid_trakt_activities(data):
+	return isinstance(data, dict) and 'all' in data and isinstance(data.get('movies'), dict) and isinstance(data.get('episodes'), dict)
 
 def reset_activity(latest_activities):
 	string = 'trakt_get_activity'
 	try:
 		dbcon = connect_database('trakt_db')
 		data = dbcon.execute('SELECT data FROM trakt_data WHERE id = ?', (string,)).fetchone()
-		if data: cached_data = eval(data[0])
+		if data:
+			cached_data = eval(data[0])
+			if not valid_trakt_activities(cached_data):
+				cached_data = default_activities()
+				dbcon.execute('DELETE FROM trakt_data WHERE id=?', (string,))
 		else: cached_data = default_activities()
-		dbcon.execute('DELETE FROM trakt_data WHERE id=?', (string,))
-		trakt_cache.set(string, latest_activities)
+		if valid_trakt_activities(latest_activities):
+			dbcon.execute('DELETE FROM trakt_data WHERE id=?', (string,))
+			trakt_cache.set(string, latest_activities)
 	except: cached_data = default_activities()
 	return cached_data
 
@@ -176,8 +199,7 @@ def clear_trakt_favorites():
 
 def clear_all_trakt_cache_data(silent=False, refresh=True):
 	try:
-		start = silent or confirm_dialog()
-		if not start: return False
+		if not silent and not confirm_dialog(): return False
 		from caches.main_cache import main_cache
 		main_cache_dbcon = connect_database('maincache_db')
 		lists_with_media = main_cache_dbcon.execute('SELECT id FROM maincache WHERE id LIKE %s' % "'trakt_lists_with_media_%'").fetchall()
@@ -189,6 +211,7 @@ def clear_all_trakt_cache_data(silent=False, refresh=True):
 		for table in ('progress', 'watched', 'watched_status'): dbcon.execute('DELETE FROM %s' % table)
 		dbcon.execute('DELETE FROM trakt_data WHERE id NOT LIKE %s' % "'trakt_list_custom_sort_%'")
 		dbcon.execute('VACUUM')
+		if not silent: notification('Trakt Cache Cleared', 3000)
 		if refresh:
 			from apis.trakt_api import trakt_sync_activities
 			Thread(target=trakt_sync_activities, kwargs={'force_update': True}).start()

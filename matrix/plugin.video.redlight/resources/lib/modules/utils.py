@@ -3,13 +3,16 @@ import re
 import sys
 import time
 import random
+import inspect
 import _strptime
 import unicodedata
 from html import unescape
 from queue import SimpleQueue
+from contextlib import nullcontext
 from threading import Thread, activeCount
 from importlib import import_module
 from datetime import datetime, timedelta, date
+from caches.base_cache import open_db
 from modules.settings import max_threads
 from modules.kodi_utils import sleep, logger
 
@@ -17,31 +20,73 @@ class TaskPool:
 	def __init__(self):
 		self._queue = SimpleQueue()
 
-	def _thread_target(self, queue, target):
-		while not queue.empty():
-			try: target(*queue.get())
-			except Exception as e: logger('thread queue error', str(e))
+	def _thread_target(self, queue, target, db_name):
+		sig = inspect.signature(target)
+		uses_db = 'dbcon' in sig.parameters
+		context = open_db(db_name) if (uses_db and db_name) else nullcontext(None)
+		with context as dbcon:
+			while not queue.empty():
+				try:
+					args = queue.get()
+					if uses_db: target(*args, dbcon=dbcon)
+					else: target(*args)
+				except Exception as e: logger('thread queue error', str(e))
 
-	def tasks(self, _target, _list, _max_size=60):
+	def _worker_count(self, _max_size, list_len):
+		workers = max(1, min(int(_max_size or 1), int(list_len or 1)))
+		# Soft throttle when many widget/plugin invokers already hold threads
+		# (AF3 / Skin Variables home refresh — "can't start new thread").
+		try:
+			busy = activeCount()
+			if busy >= 48: workers = 1
+			elif busy >= 32: workers = min(workers, 2)
+			elif busy >= 24: workers = min(workers, 4)
+		except: pass
+		return workers
+
+	def _start_workers(self, _target, db_name, workers):
+		threads = []
+		for _ in range(workers):
+			thread = Thread(target=self._thread_target, args=(self._queue, _target, db_name))
+			try:
+				thread.start()
+				threads.append(thread)
+			except RuntimeError:
+				# OS/Kodi thread limit — keep workers already started; they still drain the queue.
+				break
+		if not threads:
+			# No spare threads: process on the calling invoker so lists/widgets still populate.
+			try: self._thread_target(self._queue, _target, db_name)
+			except Exception as e: logger('TaskPool sync fallback', str(e))
+		return threads
+
+	def tasks(self, _target, _list, _max_size=20, db_name=None):
 		if not _list: return []
 		if not isinstance(_list[0], tuple): _list = [(i,) for i in _list]
 		[self._queue.put(tag) for tag in _list]
-		threads = [Thread(target=self._thread_target, args=(self._queue, _target)) for i in range(_max_size)]
-		[i.start() for i in threads]
-		return threads
+		return self._start_workers(_target, db_name, self._worker_count(_max_size, len(_list)))
 
-	def tasks_enumerate(self, _target, _list, _max_size=60):
+	def tasks_enumerate(self, _target, _list, _max_size=20, db_name=None):
+		if not _list: return []
 		[self._queue.put((p, tag)) for p, tag in enumerate(_list, 1)]
-		threads = [Thread(target=self._thread_target, args=(self._queue, _target)) for i in range(_max_size)]
-		[i.start() for i in threads]
-		return threads
+		return self._start_workers(_target, db_name, self._worker_count(_max_size, len(_list)))
 
 def make_thread_list(_target, _list):
 	_max_threads = max_threads()
 	for item in _list:
 		while activeCount() > _max_threads: sleep(1)
 		threaded_object = Thread(target=_target, args=(item,))
-		threaded_object.start()
+		try:
+			threaded_object.start()
+		except RuntimeError:
+			for _ in range(50):
+				if activeCount() <= max(2, _max_threads // 2): break
+				sleep(20)
+			try: threaded_object.start()
+			except RuntimeError:
+				try: _target(item)
+				except Exception as e: logger('make_thread_list sync fallback', str(e))
+				continue
 		yield threaded_object
 
 def make_thread_list_enumerate(_target, _list):
@@ -49,7 +94,17 @@ def make_thread_list_enumerate(_target, _list):
 	for count, item in enumerate(_list):
 		while activeCount() > _max_threads: sleep(1)
 		threaded_object = Thread(target=_target, args=(count, item))
-		threaded_object.start()
+		try:
+			threaded_object.start()
+		except RuntimeError:
+			for _ in range(50):
+				if activeCount() <= max(2, _max_threads // 2): break
+				sleep(20)
+			try: threaded_object.start()
+			except RuntimeError:
+				try: _target(count, item)
+				except Exception as e: logger('make_thread_list_enumerate sync fallback', str(e))
+				continue
 		yield threaded_object
 
 def change_image_resolution(image, replace_res):
@@ -114,19 +169,56 @@ def adjust_premiered_date(orig_date, adjust_hours):
 	adjusted_string = adjusted_datetime.strftime('%Y-%m-%d')
 	return adjusted_datetime.date(), adjusted_string
 
-def make_day(today, date, date_format='%Y-%m-%d', use_words=True):
-	if use_words:
-		day_diff = (date - today).days
-		if day_diff == -1: day = 'YESTERDAY'
-		elif day_diff == 0: day = 'TODAY'
-		elif day_diff == 1: day = 'TOMORROW'
-		elif 1 < day_diff < 7: day = date.strftime('%A').upper()
-		else:
-			try: day = date.strftime(date_format)
-			except ValueError: day = date.strftime('%Y-%m-%d')
+def parse_calendar_air_datetime(service_first_aired):
+	"""Parse ISO calendar timestamp; return None for date-only / invalid."""
+	fa = str(service_first_aired or '').strip()
+	if not fa or 'T' not in fa: return None
+	normalized = fa[:-1] + '+00:00' if fa.endswith('Z') else fa
+	try: return datetime.fromisoformat(normalized)
+	except Exception: pass
+	try: return datetime_workaround(fa, '%Y-%m-%dT%H:%M:%S.%fZ')
+	except Exception: pass
+	try: return datetime_workaround(fa.split('.')[0].rstrip('Z'), '%Y-%m-%dT%H:%M:%S')
+	except Exception: return None
+
+def calendar_service_local_date(service_first_aired, utc_offset_hours=None):
+	"""Local calendar day for a service first_aired (ISO timestamp or date-only).
+
+	ISO timestamps apply UTC (+/-) hours. Date-only values keep their calendar day.
+	Returns (date, 'YYYY-MM-DD') or (None, None).
+	"""
+	fa = str(service_first_aired or '').strip()
+	if not fa: return None, None
+	dt = parse_calendar_air_datetime(fa)
+	if dt is not None:
+		if utc_offset_hours is None:
+			from modules.settings import datetime_utc_offset
+			utc_offset_hours = datetime_utc_offset()
+		adjusted = dt + timedelta(hours=utc_offset_hours)
+		return adjusted.date(), adjusted.strftime('%Y-%m-%d')
+	day = fa.split('T')[0][:10]
+	try: return date.fromisoformat(day), day
+	except Exception:
+		d = jsondate_to_datetime(day, '%Y-%m-%d', remove_time=True)
+		if d is not None: return d, day
+	return None, None
+
+def make_day(today, date, date_format='%Y-%m-%d', use_words=True, include_date=False):
+	try: formatted = date.strftime(date_format)
+	except ValueError: formatted = date.strftime('%Y-%m-%d')
+	if not use_words:
+		return formatted
+	day_diff = (date - today).days
+	if day_diff == -1: day = 'YESTERDAY'
+	elif day_diff == 0: day = 'TODAY'
+	elif day_diff == 1: day = 'TOMORROW'
+	# Weekday names for both past and future within ~1 week (calendars).
+	elif include_date or (1 < abs(day_diff) < 7):
+		day = date.strftime('%A').upper()
 	else:
-		try: day = date.strftime(date_format)
-		except ValueError: day = date.strftime('%Y-%m-%d')
+		return formatted
+	if include_date:
+		return '%s %s' % (day, formatted)
 	return day
 
 def subtract_dates(date1, date2):
@@ -198,8 +290,19 @@ def byteify(data, ignore_dicts=False):
 	return data
 
 def normalize(txt):
-	txt = re.sub(r'[^\x00-\x7f]',r'', txt)
-	return txt
+	"""Accent-fold then drop leftover non-ASCII (Pokémon→Pokemon, not Pokmon).
+
+	Cloud scrapers use this for folder/title gates. Stripping non-ASCII first
+	deleted base letters with accents; fold combining marks away first.
+	"""
+	try:
+		if txt is None: return txt
+		txt = str(txt)
+		txt = ''.join(c for c in unicodedata.normalize('NFKD', txt) if unicodedata.category(c) != 'Mn')
+		return re.sub(r'[^\x00-\x7f]', '', txt)
+	except Exception:
+		try: return re.sub(r'[^\x00-\x7f]', '', str(txt))
+		except Exception: return txt
 
 def safe_string(obj):
 	try:
@@ -278,44 +381,16 @@ def sec2time(sec, n_msec=3):
 	if d == 0: return pattern % (h, m, s)
 	return ('%d days, ' + pattern) % (d, h, m, s)
 
-def released_key(item):
-	if 'released' in item: return item['released'] or '2050-01-01'
-	if 'first_aired' in item: return item['first_aired'] or '2050-01-01'
-	return '2050-01-01'
-
 def title_key(title, ignore_articles):
-	if not ignore_articles: return title
-	try:
-		if title is None: title = ''
-		articles = ['the', 'a', 'an']
-		match = re.match(r'^((\w+)\s+)', title.lower())
-		if match and match.group(2) in articles: offset = len(match.group(1))
-		else: offset = 0
-		return title[offset:]
-	except: return title
+	from modules.list_sort import strip_articles
+	return strip_articles(title, ignore_articles)
 
 def sort_for_article(_list, _key, ignore_articles):
-	try:
-		if not ignore_articles: _list.sort(key=lambda k: k.get(_key))
-		else: _list.sort(key=lambda k: re.sub(r'(^the |^a |^an )', '', k.get(_key).lower()))
+	from modules.list_sort import strip_articles
+	try: _list.sort(key=lambda k: strip_articles(k.get(_key), ignore_articles))
 	except: pass
 	return _list
 	
-def sort_list(sort_key, sort_direction, list_data, ignore_articles):
-	try:
-		reverse = sort_direction != 'asc'
-		if sort_key == 'rank': return sorted(list_data, key=lambda x: x['rank'], reverse=reverse)
-		if sort_key == 'added': return sorted(list_data, key=lambda x: x['listed_at'], reverse=reverse)
-		if sort_key == 'title': return sorted(list_data, key=lambda x: title_key(x[x['type']].get('title'), ignore_articles), reverse=reverse)
-		if sort_key == 'released': return sorted(list_data, key=lambda x: released_key(x[x['type']]), reverse=reverse)
-		if sort_key == 'runtime': return sorted(list_data, key=lambda x: x[x['type']].get('runtime', 0), reverse=reverse)
-		if sort_key == 'popularity': return sorted(list_data, key=lambda x: x[x['type']].get('votes', 0), reverse=reverse)
-		if sort_key == 'percentage': return sorted(list_data, key=lambda x: x[x['type']].get('rating', 0), reverse=reverse)
-		if sort_key == 'votes': return sorted(list_data, key=lambda x: x[x['type']].get('votes', 0), reverse=reverse)
-		if sort_key == 'random': return sorted(list_data, key=lambda k: random.random())
-		return list_data
-	except: return list_data
-
 def paginate_list(item_list, page, limit=20, paginate_start=0):
 	if paginate_start:
 		item_list = item_list[paginate_start:]
@@ -338,32 +413,47 @@ def unzip(zip_location, destination_location, destination_check, show_busy=True)
 	if show_busy: hide_busy_dialog()
 	return status
 
-def _prune_qr_cache(folder, keep=30):
+def _prune_qr_cache(folder, keep=30, min_age_secs=86400):
+	'''Drop old QR PNGs on a cool path — never while auth dialogs may still reference them.'''
 	try:
 		import glob
 		from os import path, remove
+		from time import time
+		now = time()
 		files = sorted(glob.glob(path.join(folder, 'qr_*.png')), key=path.getmtime, reverse=True)
-		for stale in files[keep:]:
+		for idx, stale in enumerate(files):
+			if idx < keep:
+				continue
+			if (now - path.getmtime(stale)) < min_age_secs:
+				continue
 			try: remove(stale)
 			except: pass
 	except: pass
 
 def make_qrcode(url):
-	if url == None: return
+	if not url:
+		return
 	import segno
 	from hashlib import sha1
 	from os import path
 	from time import time
-	from modules.kodi_utils import addon_profile, translate_path
+	from modules.kodi_utils import addon_profile, translate_path, path_exists, make_directories, logger
 	try:
-		profile = addon_profile()
+		profile = translate_path(addon_profile())
+		make_directories(profile)
 		qr_id = sha1(url.encode('utf-8')).hexdigest()[:12]
-		art_path = path.join(profile, 'qr_%s_%s.png' % (qr_id, int(time() * 1000)))
-		qrcode = segno.make(url, micro=False)
-		qrcode.save(art_path, scale=20)
-		_prune_qr_cache(profile)
-	except: return
-	return translate_path(art_path)
+		stamp = int(time() * 1000)
+		art_path = path.join(profile, 'qr_%s_%s.png' % (qr_id, stamp))
+		segno.make(url, micro=False).save(art_path, scale=20)
+		if not path_exists(art_path):
+			import os
+			if not os.path.exists(art_path):
+				logger('Red Light', 'make_qrcode: missing after save %s' % art_path)
+				return
+		return translate_path(art_path)
+	except Exception as e:
+		logger('Red Light', 'make_qrcode failed: %s' % e)
+		return
 
 def make_tinyurl(url):
 	if not url:

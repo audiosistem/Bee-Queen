@@ -10,7 +10,7 @@ from caches.settings_cache import get_setting
 from modules.metadata import episodes_meta
 from modules.settings import date_offset
 from modules.kodi_utils import supported_media, get_property, set_property, notification
-from modules.utils import adjust_premiered_date, get_datetime, jsondate_to_datetime, subtract_dates, chunks
+from modules.utils import adjust_premiered_date, get_datetime, jsondate_to_datetime, subtract_dates, chunks, normalize as _utils_normalize
 # from modules.kodi_utils import logger
 
 def extras():
@@ -34,14 +34,49 @@ def audio_filter_choices():
 ('DTS', 'DTS'), ('DTS-HD MASTER AUDIO', 'DTS-HD MA'), ('DTS-X', 'DTS-X'), ('DTS-HD', 'DTS-HD'), ('AAC', 'AAC'), ('OPUS', 'OPUS'), ('MP3', 'MP3'),
 ('8CH AUDIO', '8CH'), ('7CH AUDIO', '7CH'), ('6CH AUDIO', '6CH'), ('2CH AUDIO', '2CH'))
 
+def audio_lang_choices():
+	# Alphabetical by display name (Sort To Top / filter menu order).
+	return (
+('ENGLISH AUDIO', 'ENG', ('.eng.', '.english.')),
+('FRENCH AUDIO', 'FRE', ('.fre.', '.french.', '.fra.', '.vff.', '.vfq.', '.truefrench.')),
+('GERMAN AUDIO', 'GER', ('.ger.', '.german.', '.deu.')),
+('HINDI AUDIO', 'HIN', ('.hin.', '.hindi.')),
+('ITALIAN AUDIO', 'ITA', ('.ita.', '.italian.')),
+('JAPANESE AUDIO', 'JPN', ('.jpn.', '.japanese.', '.jap.')),
+('KOREAN AUDIO', 'KOR', ('.kor.', '.korean.')),
+('PORTUGUESE AUDIO', 'POR', ('.por.', '.portuguese.', '.dublado.')),
+('RUSSIAN AUDIO', 'RUS', ('.rus.', '.russian.')),
+('SPANISH AUDIO', 'SPA', ('.spa.', '.spanish.', '.esp.', '.castellano.', '.latino.')))
+
+ENG_OR_UNTAGGED_FILTER = ('ENGLISH OR UNTAGGED', 'ENG-OR-UNTAGGED')
+
+def foreign_audio_lang_tags():
+	return frozenset(tag for _, tag, _ in audio_lang_choices() if tag != 'ENG')
+
+def matches_english_or_untagged(tags):
+	# ENG tag, or no other audio-language tag (plain English rips are usually untagged).
+	tag_set = set()
+	for tag in tags or ():
+		cleaned = str(tag).replace('[B]', '').replace('[/B]', '').strip()
+		if cleaned: tag_set.add(cleaned)
+	if 'ENG' in tag_set: return True
+	return not tag_set.intersection(foreign_audio_lang_tags())
+
+def audio_lang_filter_entries():
+	entries = []
+	for name, tag, _ in audio_lang_choices():
+		entries.append((name, tag))
+		if tag == 'ENG': entries.append(ENG_OR_UNTAGGED_FILTER)
+	return tuple(entries)
+
 def source_filters():
 	return (
 ('PACK', 'PACK'), ('DOLBY VISION', '[B]D/VISION[/B]'), ('HIGH DYNAMIC RANGE (HDR)', '[B]HDR[/B]'), ('IMAX', 'IMAX'), ('HYBRID', '[B]HYBRID[/B]'), ('AV1', '[B]AV1[/B]'),
 ('HEVC (X265)', '[B]HEVC[/B]'), ('REMUX', 'REMUX'), ('BLURAY', 'BLURAY'), ('AI ENHANCED/UPSCALED', '[B]AI ENHANCED/UPSCALED[/B]'), ('SDR', 'SDR'), ('3D', '[B]3D[/B]'),
 ('DOLBY ATMOS', 'ATMOS'), ('DOLBY TRUEHD', 'TRUEHD'), ('DOLBY DIGITAL EX', 'DD-EX'), ('DOLBY DIGITAL PLUS', 'DD+'), ('DOLBY DIGITAL', 'DD'),
 ('DTS-HD MASTER AUDIO', 'DTS-HD MA'), ('DTS-X', 'DTS-X'), ('DTS-HD', 'DTS-HD'), ('DTS', 'DTS'), ('AAC', 'AAC'), ('OPUS', 'OPUS'), ('MP3', 'MP3'), ('8CH AUDIO', '8CH'),
-('7CH AUDIO', '7CH'), ('6CH AUDIO', '6CH'), ('2CH AUDIO', '2CH'), ('DVD SOURCE', 'DVD'), ('WEB SOURCE', 'WEB'), ('MULTIPLE LANGUAGES', 'MULTI-LANG'),
-('SUBTITLES', 'SUBS'))
+('7CH AUDIO', '7CH'), ('6CH AUDIO', '6CH'), ('2CH AUDIO', '2CH'), ('DVD SOURCE', 'DVD'), ('WEB SOURCE', 'WEB'),
+('SUBTITLES', 'SUBS'), ('MULTIPLE LANGUAGES', 'MULTI-LANG')) + audio_lang_filter_entries()
 
 def include_exclude_filters():
 	return {'hevc': 'HEVC', '3d': '3D', 'hdr': 'HDR', 'dv': 'D/VISION', 'av1': 'AV1', 'enhanced_upscaled': 'AI ENHANCED/UPSCALED', 'hybrid': 'HYBRID'}
@@ -50,6 +85,57 @@ def get_aliases_titles(aliases):
 	try: result = [i['title'] for i in aliases]
 	except: result = []
 	return result
+
+_ALT_TITLE_COUNTRIES = ('US', 'GB', 'UK', 'JP', '')
+
+def _alt_title_usable(title, iso_3166_1=''):
+	"""Keep US/GB/UK/JP/blank alts, plus mostly-Latin names from other regions (romaji-style releases)."""
+	if not title: return False
+	iso = (iso_3166_1 or '').upper()
+	if iso in _ALT_TITLE_COUNTRIES: return True
+	try:
+		normalized = normalize(title)
+		letters = [c for c in normalized if c.isalpha()]
+		if len(letters) < 3: return False
+		# Basic Latin + Latin-1 Supplement + Latin Extended-A/B — skip CJK/Hangul/Thai/etc.
+		latin = sum(1 for c in letters if ord(c) < 0x0250)
+		return latin >= int(len(letters) * 0.85)
+	except: return False
+
+def filter_alternative_titles(entries, titles_key='results'):
+	"""Normalize TMDb movie (titles) / TV (results) alternative_titles into a usable string list."""
+	if not entries: return []
+	if isinstance(entries, dict):
+		alternatives = entries.get(titles_key) or entries.get('titles') or entries.get('results') or []
+	else:
+		alternatives = entries
+	out, seen = [], set()
+	for item in alternatives:
+		if not isinstance(item, dict): continue
+		title = item.get('title') or ''
+		if not _alt_title_usable(title, item.get('iso_3166_1', '')): continue
+		key = title.casefold()
+		if key in seen: continue
+		seen.add(key)
+		out.append(title)
+	return out
+
+def folder_title_queries(title, aliases=None):
+	"""Cleaned primary title + aliases for cloud folder substring gates."""
+	queries, seen = [], set()
+	for candidate in [title] + list(aliases or []):
+		if not candidate: continue
+		query = clean_title(normalize(candidate))
+		if not query or query in seen: continue
+		seen.add(query)
+		queries.append(query)
+	return queries
+
+def folder_name_matches(folder_name, title, aliases=None):
+	cleaned = clean_title(normalize(folder_name or ''))
+	if not cleaned: return True
+	queries = folder_title_queries(title, aliases)
+	return any(q in cleaned for q in queries)
 
 def make_alias_dict(meta, title):
 	aliases = []
@@ -66,11 +152,8 @@ def internal_results(provider, sources):
 	set_property('redlight.internal_results.%s' % provider, json.dumps(sources))
 
 def normalize(title):
-	import unicodedata
-	try:
-		title = ''.join(c for c in unicodedata.normalize('NFKD', title) if unicodedata.category(c) != 'Mn')
-		return str(title)
-	except: return title
+	"""Same accent-fold as modules.utils.normalize (single implementation)."""
+	return _utils_normalize(title)
 
 def pack_enable_check(meta, season, episode):
 	try:
@@ -98,6 +181,15 @@ def seas_ep_filter(season, episode, release_title, split=False, return_match=Fal
 	season_fill, episode_fill = str_season.zfill(2), str_episode.zfill(2)
 	str_ep_plus_1, str_ep_minus_1 = str(episode+1), str(episode-1)
 	release_title = re.sub(r'[^A-Za-z0-9-]+', '.', unquote(release_title).replace('\'', '')).lower()
+	# If the name has an explicit Sxx / NxN season, it must match. Stops S12E01-E02
+	# matching S01E02 via episode-only patterns like -e02 (complete show packs).
+	season_tags = re.findall(r'(?:^|[.-])s(\d{1,2})[.-]?e', release_title)
+	season_tags += re.findall(r'(?:^|[.-])(\d{1,2})x\d', release_title)
+	if season_tags:
+		requested = {str(int(season)), str_season, season_fill}
+		if not any(str(int(tag)) in requested or tag in requested for tag in season_tags):
+			if return_match: raise AttributeError('seas_ep season mismatch')
+			return False
 	string1 = r'(s<<S>>[.-]?e[p]?[.-]?<<E>>[.-])'
 	string2 = r'(season[.-]?<<S>>[.-]?episode[.-]?<<E>>[.-])'#|([s]?<<S>>[x.]<<E>>[.-])'
 	string3 = r'(s<<S>>e<<E1>>[.-]?e?<<E2>>[.-])'
@@ -129,10 +221,12 @@ def seas_ep_filter(season, episode, release_title, split=False, return_match=Fal
 	string_list_append(string8.replace('<<S>>', season_fill).replace('<<E>>', str_episode))
 	string_list_append(string8.replace('<<S>>', str_season).replace('<<E>>', str_episode))
 	final_string = '|'.join(string_list)
-	reg_pattern = re.compile(final_string)
-	if split: return release_title.split(re.search(reg_pattern, release_title).group(), 1)[1]
-	if return_match: return re.search(reg_pattern, release_title).group()
-	return bool(re.search(reg_pattern, release_title))
+	match = re.search(final_string, release_title)
+	if split:
+		if not match: return release_title
+		return release_title.split(match.group(), 1)[1]
+	if return_match: return match.group()
+	return bool(match)
 
 def seas_ep_filter_exact(season, episode, release_title):
 	"""Exact S/E only — for debrid cloud files (no multi-episode pack ranges)."""
@@ -153,49 +247,114 @@ def seas_ep_filter_exact(season, episode, release_title):
 			string_list.append(pattern.replace('<<S>>', s).replace('<<E>>', e))
 	return bool(re.search('|'.join(string_list), release_title))
 
+# Cloud filename S/E tokens (left-to-right). Prefer explicit season markers.
+# Covers S04E17, S4.E17, S4-E17, S4 -17, S4-17, S4.17, S4 - E17, S6x29, S6xE29, 4x17.
+# (?!\d) avoids treating long hash tags like S1E123456… as episode numbers.
+_CLOUD_SE_TOKEN_RE = re.compile(
+	r'(?:'
+	r's(\d{1,2})[.-]?e[p]?[.-]?(\d{1,3})(?!\d)'
+	r'|'
+	r's(\d{1,2})x(?:e)?(\d{1,3})(?!\d)'
+	r'|'
+	r's(\d{1,2})[.-]+(?:e[p]?[.-]*)?(\d{1,3})(?!\d)'
+	r'|'
+	r'(\d{1,2})x(\d{1,3})(?!\d)'
+	r')'
+)
+# Anime-style bare episode only when no Sxx/NxN token exists: "Show - 001 - Title", "Show - 255.mkv".
+_CLOUD_BARE_EP_RE = re.compile(r'(?:^|[.-])(\d{1,3})(?=[.-]|$)')
+_BARE_EP_BLOCKLIST = frozenset((480, 720, 1080, 2160))
+
+def _normalize_release_title(release_title):
+	return re.sub(r'[^A-Za-z0-9-]+', '.', unquote(release_title).replace('\'', '')).lower()
+
+def iter_season_episode_tokens(release_title):
+	"""Yield (season, episode) pairs from a release/file name, left to right."""
+	release_title = _normalize_release_title(release_title)
+	for match in _CLOUD_SE_TOKEN_RE.finditer(release_title):
+		try:
+			if match.group(1) is not None:
+				yield int(match.group(1)), int(match.group(2))
+			elif match.group(3) is not None:
+				yield int(match.group(3)), int(match.group(4))
+			elif match.group(5) is not None:
+				yield int(match.group(5)), int(match.group(6))
+			else:
+				yield int(match.group(7)), int(match.group(8))
+		except Exception:
+			continue
+
+def absolute_episode_from_season_data(season_data, season, episode):
+	"""Aired-order absolute episode for season-relative numbering (e.g. DBZ S09E02 → 255).
+	When TMDb already uses absolute episode numbers inside a season (One Piece S23E1170), return that episode."""
+	try:
+		season_i, episode_i = int(season), int(episode)
+	except Exception:
+		return None
+	if not season_data or season_i < 1 or episode_i < 1:
+		return None
+	try:
+		cur = next((i for i in season_data if int(i.get('season_number') or -1) == season_i), None)
+		ep_count = int((cur or {}).get('episode_count') or 0)
+		# Absolute-style numbers inside the season (episode exceeds that season's count).
+		if ep_count and episode_i > ep_count:
+			return episode_i
+		prior = sum(int(i.get('episode_count') or 0) for i in season_data if 0 < int(i.get('season_number') or -1) < season_i)
+		return prior + episode_i
+	except Exception:
+		return None
+
+def iter_bare_episode_numbers(release_title):
+	"""Yield bare episode candidates when the name has no explicit season token."""
+	normalized = _normalize_release_title(release_title)
+	if _CLOUD_SE_TOKEN_RE.search(normalized):
+		return
+	for match in _CLOUD_BARE_EP_RE.finditer(normalized):
+		try:
+			num = int(match.group(1))
+		except Exception:
+			continue
+		if num < 1 or num in _BARE_EP_BLOCKLIST:
+			continue
+		yield num
+
 def parse_episode_from_filename(release_title, season=None):
-	"""Parse SxxExx / 1x## from a filename; ignore season/episode folder path words."""
-	release_title = re.sub(r'[^A-Za-z0-9-]+', '.', unquote(release_title).replace('\'', '')).lower()
-	season_patterns = []
-	if season is not None:
-		sf, ss = str(season).zfill(2), str(season)
-		season_patterns = [sf, ss]
-	for pattern in (
-		r's(\d{1,2})[.-]?e[p]?[.-]?(\d{1,3})',
-		r'(\d{1,2})x(\d{1,3})',
-	):
-		for match in re.finditer(pattern, release_title):
-			try:
-				s_num, e_num = int(match.group(1)), int(match.group(2))
-			except Exception:
-				continue
-			if season_patterns and str(s_num) not in season_patterns and str(s_num).zfill(2) not in season_patterns:
-				continue
-			return e_num
+	"""Parse SxxExx / Sxx - ## / 1x## from a filename; prefer requested season; ignore later hash junk."""
+	for s_num, e_num in iter_season_episode_tokens(release_title):
+		if season is not None and int(s_num) != int(season):
+			continue
+		return e_num
 	return None
 
-def cloud_episode_matches(season, episode, filename):
-	"""Match requested episode using the file name only — not parent folder names like Episode 1/."""
-	str_season, str_episode = str(season), str(episode)
-	season_fill, episode_fill = str_season.zfill(2), str_episode.zfill(2)
-	filename = re.sub(r'[^A-Za-z0-9-]+', '.', unquote(filename).replace('\'', '')).lower()
+def cloud_episode_matches(season, episode, filename, absolute_episode=None):
+	"""Match requested episode using the file name only — not parent folder names like Episode 1/.
+
+	1) Explicit SxxExx / S# -## / NxN tokens (prefer these; never guess against them).
+	2) Else bare aired-order number: match absolute_episode when known, else S01 + episode only.
+	"""
 	if not filename:
 		return False
-	sxxexx_patterns = (
-		r'(s<<S>>[.-]?e[p]?[.-]?<<E>>[.-])',
-		r'([s]?<<S>>x<<E>>[.-])',
-		r'(\d{1,2}x<<E>>[.-])',
-	)
-	string_list = []
-	for pattern in sxxexx_patterns:
-		for s, e in ((season_fill, episode_fill), (str_season, episode_fill), (season_fill, str_episode), (str_season, str_episode)):
-			string_list.append(pattern.replace('<<S>>', s).replace('<<E>>', e))
-	if not re.search('|'.join(string_list), filename):
+	try:
+		season_i, episode_i = int(season), int(episode)
+	except Exception:
 		return False
-	parsed_ep = parse_episode_from_filename(filename, season)
-	if parsed_ep is not None:
-		return int(parsed_ep) == int(episode)
-	return True
+	tokens = list(iter_season_episode_tokens(filename))
+	if tokens:
+		return any(s_num == season_i and e_num == episode_i for s_num, e_num in tokens)
+	targets = set()
+	if absolute_episode is not None:
+		try:
+			abs_i = int(absolute_episode)
+			if abs_i > 0:
+				targets.add(abs_i)
+		except Exception:
+			pass
+	# Season 1 files often omit S01 ("Show - 001 - Title"); only when no absolute target or same value.
+	if season_i == 1:
+		targets.add(episode_i)
+	if not targets:
+		return False
+	return any(num in targets for num in iter_bare_episode_numbers(filename))
 
 def find_season_in_release_title(release_title):
 	release_title = re.sub(r'[^A-Za-z0-9-]+', '.', unquote(release_title).replace('\'', '')).lower()
@@ -251,7 +410,9 @@ def check_title(title, release_title, aliases, year, season, episode):
 	except: return True
 
 def strip_non_ascii_and_unprintable(text):
+	"""Accent-fold first so Filter-by-Name keeps Pokémon→Pokemon / Léon→Leon."""
 	try:
+		text = _utils_normalize(text)
 		result = ''.join(char for char in text if char in printable)
 		return result.encode('ascii', errors='ignore').decode('ascii', errors='ignore')
 	except: pass
@@ -407,6 +568,12 @@ def get_info(title):
 		info_append('AVI')
 	elif any(i in title for i in ('.mkv', 'matroska')):
 		info_append('MKV')
+	# audio language tags: subtitle-adjacent codes (eng.subs, subs.eng) are subtitles, not audio
+	lang_title = re.sub(r'\.(subs?|subbed)\.([a-z]{2,12})\.', '.', title)
+	lang_title = re.sub(r'\.([a-z]{2,12})\.(subs?|subbed)\.', '.', lang_title)
+	for _, lang_tag, lang_patterns in audio_lang_choices():
+		if any(i in lang_title for i in lang_patterns):
+			info_append(lang_tag)
 	if any(i in title for i in ('hindi.eng', 'ara.eng', 'ces.eng', 'chi.eng', 'cze.eng', 'dan.eng', 'dut.eng', 'ell.eng', 'esl.eng', 'esp.eng', 'fin.eng', 'fra.eng',
 		'fre.eng', 'frn.eng', 'gai.eng', 'ger.eng', 'gle.eng', 'gre.eng', 'gtm.eng', 'heb.eng', 'hin.eng', 'hun.eng', 'ind.eng', 'iri.eng', 'ita.eng', 'jap.eng',
 		'jpn.eng', 'kor.eng', 'lat.eng', 'lebb.eng', 'lit.eng', 'nor.eng', 'pol.eng', 'por.eng', 'rus.eng', 'som.eng', 'spa.eng', 'sve.eng', 'swe.eng', 'tha.eng',

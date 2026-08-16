@@ -3,10 +3,14 @@ from caches.settings_cache import get_setting
 from modules.utils import extract_json_object
 # from modules.kodi_utils import logger
 
-# GOOGLE_MODELS = ('gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash', 'gemma-3-27b-it', 'gemma-3-12b-it', 'gemma-3-1b-it', 'gemma-3-4b-it', 'gemini-3-flash-preview')
-
 def models():
-	return ('gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash', 'gemma-3-27b-it', 'gemma-3-12b-it', 'gemma-3-1b-it', 'gemma-3-4b-it', 'gemini-3-flash-preview')
+	# IDs confirmed against generativelanguage.googleapis.com/v1beta/models (2026-07).
+	return (
+		'gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-flash-lite-latest',
+		'gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest',
+		'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-3-flash-preview',
+		'gemma-4-31b-it', 'gemma-4-26b-a4b-it',
+	)
 
 def similar_prompt():
 	return '''

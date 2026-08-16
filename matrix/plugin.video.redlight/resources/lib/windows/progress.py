@@ -26,15 +26,18 @@ class Progress(BaseDialog):
 			self.close()
 
 	def set_controls(self):
-		self.set_image(200, self.icon)
+		if self.icon:
+			self.set_image(200, self.icon)
 		self.set_label(2000, self.heading)
+		self.setProperty('redlight.progress_ready', 'true')
 
 	def update(self, content='', percent=0, icon=None):
+		if icon:
+			self.icon = icon
 		try:
 			self.set_text(2001, content)
 			self.set_percent(5000, percent)
-			if icon:
-				self.icon = icon
-			if self.icon:
-				self.set_image(200, self.icon)
 		except: pass
+		if self.icon:
+			try: self.set_image(200, self.icon)
+			except: pass

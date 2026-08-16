@@ -56,12 +56,20 @@ class TMDbListsCache(BaseCache):
 			return True
 		except: return False
 
+	def get_sort_orders_strict(self):
+		"""Every stored per-list sort order. Raises on a locked database or a malformed row.
+
+		The one-time sort migration reads the store through this, not through the swallowing
+		get_sort_orders() below: an empty dict means "nothing stored" and lets the migration
+		record itself as done, so a read failure that returned {} would look exactly like a
+		clean success and delete every stored preference on the following sync.
+		"""
+		dbcon = self.manual_connect('tmdb_lists_db')
+		cache_data = dbcon.execute('SELECT id, data FROM tmdb_lists WHERE id LIKE %s' % "'sort_order_%'").fetchall()
+		return dict([(int(i[0].replace('sort_order_', '')), i[1]) for i in cache_data])
+
 	def get_sort_orders(self):
-		try:
-			dbcon = self.manual_connect('tmdb_lists_db')
-			cache_data = dbcon.execute('SELECT id, data FROM tmdb_lists WHERE id LIKE %s' % "'sort_order_%'").fetchall()
-			cache_data = dict([(int(i[0].replace('sort_order_', '')), i[1]) for i in cache_data])
-			return cache_data
+		try: return self.get_sort_orders_strict()
 		except: return {}
 
 tmdb_lists_cache = TMDbListsCache()

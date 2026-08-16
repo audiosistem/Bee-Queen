@@ -20,6 +20,7 @@ class source:
 			filter_title = filter_by_name(self.scrape_provider)
 			self.media_type, title = info.get('media_type'), info.get('title')
 			self.year, self.season, self.episode = int(info.get('year') or 0), info.get('season'), info.get('episode')
+			self.absolute_episode = info.get('absolute_episode')
 			self.title = title
 			self.folder_query = source_utils.clean_title(normalize(title))
 			self.year_query_list = tuple(map(str, range(self.year - 1, self.year + 2)))
@@ -32,7 +33,7 @@ class source:
 					try:
 						file_name = item['filename']
 						if self.media_type == 'episode':
-							if not source_utils.cloud_episode_matches(self.season, self.episode, file_name): continue
+							if not source_utils.cloud_episode_matches(self.season, self.episode, file_name, self.absolute_episode): continue
 							if filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, 'pack', self.episode): continue
 						elif filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, self.season, self.episode): continue
 						display_name = clean_file_name(file_name).replace('html', ' ').replace('+', ' ').replace('-', ' ')
@@ -81,12 +82,14 @@ class source:
 		if not folder_name and not raw_folder:
 			return False
 		if self.media_type == 'movie':
-			if not self.folder_query or self.folder_query not in folder_name:
+			if not self._title_match('', folder_name):
 				return False
 			if self.year and not self._contains_year(raw_folder):
 				return False
 			return True
 		if self.folder_query and self.folder_query in folder_name:
+			return True
+		if any(q and q in folder_name for q in self.title_queries):
 			return True
 		if source_utils.seas_ep_filter_exact(self.season, self.episode, raw_folder):
 			return True
@@ -95,8 +98,8 @@ class source:
 	def _cloud_file_matches(self, normalized, folder_name='', folder_prefiltered=False):
 		if self.media_type == 'movie':
 			filename = source_utils.clean_title(normalized)
-			return any(x in filename for x in self.year_query_list) and self.folder_query in filename
-		if not source_utils.cloud_episode_matches(self.season, self.episode, normalized):
+			return any(x in filename for x in self.year_query_list) and self._title_match(filename, folder_name)
+		if not source_utils.cloud_episode_matches(self.season, self.episode, normalized, self.absolute_episode):
 			return False
 		if folder_prefiltered:
 			return True

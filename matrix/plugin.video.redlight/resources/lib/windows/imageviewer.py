@@ -116,6 +116,11 @@ class ThumbImageViewer(BaseDialog):
 		self.ImagesInstance.delete_image(choice.getProperty('path'), choice.getProperty('thumb'))
 		self.reset_window(self.window_id)
 		self.list_items = self.ImagesInstance.browser_image(download_directory('image'), return_items=True)
+		if not self.list_items:
+			self.close()
+			from modules import kodi_utils
+			kodi_utils.container_update({'mode': 'downloader.viewer', 'folder_type': 'image', 'name': 'Images'})
+			return
 		self.make_page()
 		self.select_item(self.window_id, position)
 

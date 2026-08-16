@@ -11,7 +11,7 @@ from caches.tmdb_lists import tmdb_lists_cache
 from indexers.movies import Movies
 from indexers.tvshows import TVShows
 from modules.utils import paginate_list, sort_for_article, gen_md5, jsondate_to_datetime as js2date
-from modules.settings import paginate, page_limit, lists_sort_order, widget_hide_next_page, ignore_articles, jump_to_enabled, tmdblists_sort_order
+from modules.settings import paginate, page_limit, widget_hide_next_page, ignore_articles, jump_to_enabled
 from modules import kodi_utils
 # logger = kodi_utils.logger
 
@@ -34,13 +34,16 @@ def get_tmdb_lists(params):
 				custom_fanart = get_custom_image(list_name, 'fanart', all_fanart)
 				if custom_fanart: fanart = custom_fanart
 				else: fanart = background
-				mode = 'random.build_tmdb_lists_contents' if random else 'tmdblist.build_tmdb_list'
-				url_params = {'mode': mode, 'list_id': list_id, 'list_name': list_name, 'sort_order': sort_order, 'updated_at': updated_at, 'iconImage': poster, 'name': list_name}
-				if random: url_params['random'] = 'true'
-				if shuffle_lists: url_params['shuffle'] = 'true'
+				random_contents = random or shuffle_lists
+				mode = 'random.build_tmdb_lists_contents' if random_contents else 'tmdblist.build_tmdb_list'
+				url_params = {'mode': mode, 'list_id': list_id, 'list_name': list_name,
+				'sort_order': 'shuffle' if random_contents else sort_order, 'updated_at': updated_at, 'iconImage': poster, 'name': list_name}
+				if random_contents: url_params['random'] = 'true'
 				url = kodi_utils.build_folder_url(url_params)
 				display = '%s [I](x%02d)[/I]' % (list_name, item_count)
 				cm = [('[B]Make New List[/B]', 'RunPlugin(%s)' % build_url({'mode': 'tmdblist.make_new_tmdb_list'})),
+				('[B]Set Custom Sort[/B]', 'RunPlugin(%s)' % build_url({'mode': 'list_sort_override_choice', 'list_key': 'tmdb:%s' % list_id,
+					'adapter': 'tmdb', 'fallback': 'default:asc'})),
 				('[B]Edit Properties[/B]', 'RunPlugin(%s)' % build_url({'mode': 'tmdblist.adjust_tmdb_list_properties', 'list_id': list_id, 'updated_at': updated_at,
 					'original_list_name': list_name, 'original_sort_order': sort_order, 'custom_poster': custom_poster, 'custom_fanart': custom_fanart})),
 				('[B]Delete List[/B]', 'RunPlugin(%s)' % build_url({'mode': 'tmdblist.delete_tmdb_list', 'list_id': list_id})),
@@ -90,11 +93,11 @@ def get_tmdb_lists(params):
 		else: result = list(_new_process())
 		kodi_utils.add_items(handle, result)
 	except: pass
-	kodi_utils.set_content(handle, 'files')
+	kodi_utils.set_content(handle, kodi_utils.MENU_FOLDER_CONTENT)
 	kodi_utils.set_category(handle, params.get('category_name', ''))
 	if shuffle_lists and not returning_to_list: kodi_utils.focus_index(0)
-	kodi_utils.end_directory(handle)
-	kodi_utils.set_view_mode('view.main')
+	kodi_utils.end_directory(handle, cacheToDisc=not (random or shuffle_lists))
+	kodi_utils.set_view_mode('view.main', kodi_utils.MENU_FOLDER_CONTENT)
 
 def build_tmdb_list(params):
 	def _process(function, _list, _type):
@@ -153,13 +156,17 @@ def build_tmdb_list(params):
 		kodi_utils.set_view_mode('view.%s' % content, content, is_external)
 
 def adjust_tmdb_list_properties(params):
-	sort_order_dict = {'0': 'Title', '1': 'Release Date (asc)', '2': 'Release Date (desc)', '3': 'Shuffle'}
-	list_id, sort_order = params.get('list_id'), params.get('sort_order', '')
-	original_list_name, original_sort_order = params.get('original_list_name', ''), params.get('original_sort_order', '')
+	from modules import list_sort
+	list_id = params.get('list_id')
+	original_list_name = params.get('original_list_name', '')
 	custom_poster, custom_fanart = params.get('custom_poster', ''), params.get('custom_fanart', '')
-	current_name, current_sort_order = params.get('list_name', '') or original_list_name, sort_order or original_sort_order
+	current_name = params.get('list_name', '') or original_list_name
+	# The sort_order carried in the URL is the legacy column, which nothing reads any more. The label
+	# and the picker both go through the override store so the row states what the list actually does.
+	# 'default:asc' is get_tmdb_list's fallback: no override means the list is served in TMDb order.
+	current_sort = list_sort.resolve('tmdb:%s' % list_id, None, 'default:asc')
 	choices = [('Change Name', 'Currently [B]%s[/B]' % (current_name), 'list_name'),
-				('Change Sort Order', 'Currently [B]%s[/B]' % sort_order_dict.get(current_sort_order, 'None'), 'sort_order'),
+				('Change Sort Order', 'Currently [B]%s[/B]' % list_sort.spec_label(current_sort), 'sort_order'),
 				('Make Custom Poster', '', 'make_poster'),
 				('Make Custom Fanart', '', 'make_fanart')]
 	if custom_poster: choices.append(('Delete Custom Poster', '', 'delete_poster'))
@@ -184,11 +191,15 @@ def adjust_tmdb_list_properties(params):
 		current_name = list_name
 		params.update({'list_name': current_name, 'refresh_cache': 'true'})
 	elif action == 'sort_order':
-		sort_order = sort_order_tmdb_list()
-		if sort_order == None: return adjust_tmdb_list_properties(params)
-		if set_sort_order(list_id, sort_order):
-			current_sort_order = sort_order
-			params.update({'sort_order': current_sort_order, 'refresh': 'true'})
+		from caches.list_sort_cache import set_override
+		from indexers.dialogs import _pick_sort_spec
+		# No "Use Default" entry: a TMDb list is mixed media, so it has no mediatype default to fall
+		# back to. The equivalent choice is the adapter's own 'default' field (Provider Default),
+		# which stores 'default:asc' and hands back TMDb's ordering untouched.
+		spec = _pick_sort_spec('List Sort Order', 'tmdb', current=current_sort)
+		if spec == None: return adjust_tmdb_list_properties(params)
+		if set_override('tmdb:%s' % list_id, list_sort.format_spec(spec)): params.update({'refresh': 'true'})
+		else: kodi_utils.notification('Error Setting Sort Order', 3000)
 	elif action == 'make_poster':
 		new_poster = tmdb_image_maker(current_name, list_id, 'poster', custom_poster, shuffle_sort_order)
 		if new_poster is None: return adjust_tmdb_list_properties(params)
@@ -285,17 +296,17 @@ def rename_tmdb_list(current_name, list_id):
 	tmdb_list_api.rename_list(list_id, list_name)
 	return list_name
 
-def sort_order_tmdb_list():
-	choices = [('Title (asc)', '0'), ('Release Date (asc)', '1'), ('Release Date (desc)', '2'), ('Shuffle', '3'), ('Default From TMDb (None)', 'None')]
-	list_items = [{'line1': item[0]} for item in choices]
-	kwargs = {'items': json.dumps(list_items), 'heading': 'List Sort Order', 'narrow_window': 'true'}
-	sort_order = kodi_utils.select_dialog([i[1] for i in choices], **kwargs)
-	if sort_order == None: return None
-	return sort_order
-
 def check_item_status(list_id, media_type, media_id):
+	media_type = _tmdb_media_type(media_type)
+	try: media_id = int(media_id)
+	except: return False
+	cached = tmdb_lists_cache.get('get_list_details_%s' % list_id)
+	if cached is not None:
+		try:
+			return any(i.get('media_type') == media_type and int(i.get('id')) == media_id for i in cached)
+		except: return False
 	try:
-		item_status = tmdb_list_api.item_status(list_id, _tmdb_media_type(media_type), media_id)
+		item_status = tmdb_list_api.item_status(list_id, media_type, media_id)
 		return item_status.get('success', False) if item_status else False
 	except: return False
 
@@ -305,6 +316,38 @@ def check_item_status_watchfav(list_id, media_type, media_id):
 		items = tmdb_list_api.get_watchfavrecs_list_details(list_id, media_type) or []
 		return int(media_id) in [i['id'] for i in items]
 	except: return False
+
+def tmdb_lists_split_by_membership(media_type, media_id):
+	from modules.utils import TaskPool
+	from modules.settings import max_threads
+	results = []
+	results_append = results.append
+	def _check(item):
+		list_id = item.get('id')
+		if not list_id: return
+		entry = {
+			'name': item.get('name') or '',
+			'id': list_id,
+			'number_of_items': int(item.get('number_of_items') or 0)
+		}
+		results_append((entry, check_item_status(list_id, media_type, media_id)))
+	all_lists = get_all_tmdb_lists('0') or []
+	if not all_lists: return [], []
+	threads = TaskPool().tasks(_check, all_lists, min(len(all_lists), max_threads()) or 1)
+	[i.join() for i in threads]
+	in_lists, out_lists = [], []
+	for entry, is_in in results:
+		(in_lists if is_in else out_lists).append(entry)
+	in_lists.sort(key=lambda k: k['name'])
+	out_lists.sort(key=lambda k: k['name'])
+	return in_lists, out_lists
+
+def select_tmdb_lists(lists):
+	if not lists: return None
+	choices = [('%s [I](x%02d)[/I]' % (i['name'], i.get('number_of_items', 0)), i['id']) for i in lists]
+	list_items = [{'line1': i[0]} for i in choices]
+	kwargs = {'items': json.dumps(list_items), 'narrow_window': 'true'}
+	return kodi_utils.select_dialog([i[1] for i in choices], **kwargs)
 
 def make_new_tmdb_list(params):
 	suggested_list_name, chosen_list = '', None
@@ -378,22 +421,23 @@ def get_all_tmdb_lists(sort_order=None):
 	return contents
 
 def get_tmdb_list(params):
-	list_id, media_type, sort_order = params['list_id'], params.get('media_type'), params.get('sort_order', None)
+	list_id, media_type = params['list_id'], params.get('media_type')
 	if list_id in ('watchlist', 'favorites', 'recommendations'):
 		contents = [dict(i, **{'media_type': media_type}) for i in tmdb_list_api.get_watchfavrecs_list_details(list_id, media_type)]
-		sort_order = tmdblists_sort_order(list_id)
 	else:
 		contents = tmdb_list_api.get_list_details(list_id)
 	contents = [dict(i, **{'title': i.get('title') or i.get('name'), 'release_date': i.get('release_date') or i.get('first_air_date')}) for i in contents]
-	if sort_order:
-		try:
-			if sort_order in ('4', 'None', '', 'original_order'): contents.sort(key=lambda k: (k['original_order'] is None, k['original_order']))
-			elif sort_order in ('3', 'shuffle'): shuffle(contents)
-			elif sort_order in ('1', '2'): contents.sort(key=lambda k: (k['release_date'] is None, k['release_date']), reverse=sort_order != '1')
-			elif sort_order in ('', '0', 'None'): contents = sort_for_article(contents, 'title', ignore_articles())
-			else: pass
-		except: pass
-	return contents
+	from modules import list_sort
+	# No override means the list was never sorted client-side: the old getters fell back to code 4
+	# (original_order) for watchlist/favorites and to the stored 'None' for a user list. DEFAULT_SPEC
+	# would reorder every one of them to title on upgrade, with no legacy row left to migrate.
+	# Fixed shelves are media-split (tmdb.watchlist:movies / :shows) with media_type=None so
+	# "Use Default" / no override keeps TMDb provider order via fallback — not Content → Movies/TV.
+	# Custom My Lists stay mixed under tmdb:<id>.
+	if list_id in ('watchlist', 'favorites', 'recommendations'):
+		sort_media = 'movies' if media_type in ('movie', 'movies') else 'shows'
+		return list_sort.sort_source(contents, 'tmdb.%s:%s' % (list_id, sort_media), None, 'tmdb', fallback='default:asc')
+	return list_sort.sort_source(contents, 'tmdb:%s' % list_id, None, 'tmdb', fallback='default:asc')
 
 def cache_delete_all_tmdb(params=None):
 	tmdb_lists_cache.clear_all()
@@ -432,8 +476,8 @@ def process_trakt_list(chosen_list):
 		trakt_media_type = chosen_list.get('media_type')
 		result = trakt_fetch_collection_watchlist(trakt_list_type, trakt_media_type)
 		try:
-			from modules.settings import sort_trakt_sync_list
-			result = sort_trakt_sync_list(result, trakt_list_type)
+			from modules import list_sort
+			result = list_sort.sort_source(result, 'trakt.%s' % trakt_list_type, trakt_media_type, 'trakt_sync')
 		except: pass
 	else:
 		result = get_trakt_list_contents(trakt_list_type, chosen_list.get('user'), chosen_list.get('slug'), trakt_list_type == 'my_lists')
@@ -461,11 +505,6 @@ def process_add_to_list(list_id, new_contents):
 	except: pass
 	kodi_utils.hide_busy_dialog()
 	return success
-
-def set_sort_order(list_id, sort_order):
-	if tmdb_lists_cache.set_sort_order(list_id, sort_order): return True
-	kodi_utils.notification('Error Setting Sort Order', 3000)
-	return False
 
 def get_sort_orders():
 	return tmdb_lists_cache.get_sort_orders()

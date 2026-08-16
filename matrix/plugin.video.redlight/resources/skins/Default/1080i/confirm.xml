@@ -62,47 +62,61 @@
                 <texturesliderbarfocus colordiffuse="FFCCCCCC">redlight_common/white.png</texturesliderbarfocus>
                 <onleft>2070</onleft>
                 <onright>2070</onright>
-                <ondown>10</ondown>
+                <ondown condition="String.IsEqual(Window.Property(default_control),11)">3011</ondown>
+                <ondown>3010</ondown>
                 <showonepage>false</showonepage>
                 <orientation>vertical</orientation>
             </control>
-            <control type="button" id="10">
-                <description>True</description>
+            <control type="grouplist" id="3000">
+                <left>25</left>
                 <top>380</top>
-                <left>35</left>
-                <width>340</width>
+                <width>728</width>
                 <height>70</height>
-                <onleft>11</onleft>
-                <onright>11</onright>
+                <orientation>horizontal</orientation>
+                <itemgap>12</itemgap>
                 <onup>2070</onup>
-                <ondown>10</ondown>
-                <label>$INFO[Window.Property(ok_label)]</label>
-                <font>font12</font> <!-- REDLIGHT_26 -->
-                <textcolor>FFCCCCCC</textcolor>
-                <focusedcolor>FF1F2020</focusedcolor>
-                <texturefocus colordiffuse="CCCCCCCC" border="30">redlight_common/circle.png</texturefocus>
-                <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme_contrast)]" border="30">redlight_common/circle.png</texturenofocus>
-                <align>center</align>
-                <aligny>center</aligny>
-            </control>
-            <control type="button" id="11">
-                <description>False</description>
-                <top>380</top>
-                <left>400</left>
-                <width>340</width>
-                <height>70</height>
-                <onleft>10</onleft>
-                <onright>10</onright>
-                <onup>2070</onup>
-                <ondown>11</ondown>
-                <label>$INFO[Window.Property(cancel_label)]</label>
-                <font>font12</font> <!-- REDLIGHT_26 -->
-                <textcolor>FFCCCCCC</textcolor>
-                <focusedcolor>FF1F2020</focusedcolor>
-                <texturefocus colordiffuse="CCCCCCCC" border="30">redlight_common/circle.png</texturefocus>
-                <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme_contrast)]" border="30">redlight_common/circle.png</texturenofocus>
-                <align>center</align>
-                <aligny>center</aligny>
+                <control type="button" id="3010">
+                    <description>True</description>
+                    <width>358</width>
+                    <width condition="String.IsEqual(Window.Property(show_third_button),true)">234</width>
+                    <height>70</height>
+                    <label>$INFO[Window.Property(ok_label)]</label>
+                    <font>font12</font> <!-- REDLIGHT_26 -->
+                    <textcolor>FFCCCCCC</textcolor>
+                    <focusedcolor>FF1F2020</focusedcolor>
+                    <texturefocus colordiffuse="CCCCCCCC" border="30">redlight_common/circle.png</texturefocus>
+                    <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme_contrast)]" border="30">redlight_common/circle.png</texturenofocus>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                </control>
+                <control type="button" id="3011">
+                    <description>False</description>
+                    <width>358</width>
+                    <width condition="String.IsEqual(Window.Property(show_third_button),true)">234</width>
+                    <height>70</height>
+                    <label>$INFO[Window.Property(cancel_label)]</label>
+                    <font>font12</font> <!-- REDLIGHT_26 -->
+                    <textcolor>FFCCCCCC</textcolor>
+                    <focusedcolor>FF1F2020</focusedcolor>
+                    <texturefocus colordiffuse="CCCCCCCC" border="30">redlight_common/circle.png</texturefocus>
+                    <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme_contrast)]" border="30">redlight_common/circle.png</texturenofocus>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                </control>
+                <control type="button" id="3012">
+                    <description>Third</description>
+                    <visible>String.IsEqual(Window.Property(show_third_button),true)</visible>
+                    <width>234</width>
+                    <height>70</height>
+                    <label>$INFO[Window.Property(third_label)]</label>
+                    <font>font12</font> <!-- REDLIGHT_26 -->
+                    <textcolor>FFCCCCCC</textcolor>
+                    <focusedcolor>FF1F2020</focusedcolor>
+                    <texturefocus colordiffuse="CCCCCCCC" border="30">redlight_common/circle.png</texturefocus>
+                    <texturenofocus colordiffuse="$INFO[Window(10000).Property(redlight.window_theme_contrast)]" border="30">redlight_common/circle.png</texturenofocus>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                </control>
             </control>
         </control>
     </controls>

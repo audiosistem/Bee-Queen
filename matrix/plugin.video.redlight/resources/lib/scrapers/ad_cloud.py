@@ -17,21 +17,24 @@ class source:
 		try:
 			if not enabled_debrids_check('ad'): return source_utils.internal_results(self.scrape_provider, self.sources)
 			self.folder_results, self.scrape_results = [], []
-			filter_title = filter_by_name(self.scrape_provider)
+			self.filter_title = filter_by_name(self.scrape_provider)
 			self.media_type, title = info.get('media_type'), info.get('title')
 			self.year, self.season, self.episode = int(info.get('year')), info.get('season'), info.get('episode')
+			self.absolute_episode = info.get('absolute_episode')
 			self.tmdb_id = info.get('tmdb_id')
+			self.title = title
+			self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
 			self.folder_query = source_utils.clean_title(normalize(title))
+			self.folder_queries = source_utils.folder_title_queries(title, self.aliases)
 			self._scrape_history()
 			self._scrape_links()
 			self._scrape_cloud()
 			if not self.scrape_results: return source_utils.internal_results(self.scrape_provider, self.sources)
-			self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
 			def _process():
 				for item in self.scrape_results:
 					try:
 						file_name = normalize(item['n'])
-						if filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, self.season, self.episode): continue
+						if self.filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, self.season, self.episode): continue
 						display_name = clean_file_name(file_name).replace('html', ' ').replace('+', ' ').replace('-', ' ')
 						direct_debrid_link = item.get('direct_debrid_link', False)
 						file_dl, size = item['l'], round(float(int(item['s']))/1073741824, 2)
@@ -48,23 +51,49 @@ class source:
 		source_utils.internal_results(self.scrape_provider, self.sources)
 		return self.sources
 
+	def _dedupe_key(self, name):
+		return name.replace('/', '').lower()
+
+	def _already_scraped(self, name):
+		key = self._dedupe_key(name)
+		return key in {self._dedupe_key(d['n']) for d in self.scrape_results}
+
+	def _append_scrape_result(self, item):
+		if not item.get('l') or self._already_scraped(item.get('n', '')): return
+		self.scrape_results.append(item)
+
+	def _folder_matches(self, folder_name):
+		# Substring gate like RD/Fen — primary title or aliases (e.g. JP romaji).
+		if not folder_name: return True
+		if not self.filter_title: return True
+		cleaned = source_utils.clean_title(normalize(folder_name))
+		if not cleaned: return True
+		queries = getattr(self, 'folder_queries', None) or [self.folder_query]
+		return any(q and q in cleaned for q in queries)
+
+	def _file_matches(self, filename):
+		if self.media_type == 'movie':
+			if not any(x in normalize(filename) for x in self._year_query_list()): return False
+		elif self.media_type == 'episode' and not source_utils.cloud_episode_matches(self.season, self.episode, filename, self.absolute_episode):
+			return False
+		if not self.filter_title: return True
+		return source_utils.check_title(self.title, filename, self.aliases, self.year, self.season, self.episode)
+
 	def _scrape_history(self):
 		try:
 			history = self.AllDebrid.history()
 			my_history = history.get('links', []) or []
 			my_history = [i for i in my_history if not i.get('error')]
 			my_history = [i for i in my_history if i['filename'].lower().endswith(tuple(self.extensions))]
-			scrape_results_append = self.scrape_results.append
-			year_query_list = self._year_query_list()
 			for item in my_history:
-				normalized = normalize(item['filename'])
-				folder_name = source_utils.clean_title(normalized)
-				if not self.folder_query in folder_name: continue
-				if self.media_type == 'movie':
-					if not any(x in normalized for x in year_query_list): continue
-				elif not source_utils.seas_ep_filter(self.season, self.episode, normalized): continue
-				item = {'l': item.get('link_dl') or item.get('link'), 's': item['size'], 'n': item['filename'], 'direct_debrid_link': bool(item.get('link_dl'))}
-				if item['n'].replace('/', '').lower() not in [d['n'].replace('/', '').lower() for d in self.scrape_results]: scrape_results_append(item)
+				filename = item['filename']
+				if not self._file_matches(filename): continue
+				self._append_scrape_result({
+					'l': item.get('link_dl') or item.get('link'),
+					's': item['size'],
+					'n': filename,
+					'direct_debrid_link': bool(item.get('link_dl')),
+				})
 		except: pass
 
 	def _scrape_links(self):
@@ -72,17 +101,10 @@ class source:
 			links = self.AllDebrid.user_links()
 			my_links = links.get('links', []) or []
 			my_links = [i for i in my_links if i['filename'].lower().endswith(tuple(self.extensions))]
-			scrape_results_append = self.scrape_results.append
-			year_query_list = self._year_query_list()
 			for item in my_links:
-				normalized = normalize(item['filename'])
-				folder_name = source_utils.clean_title(normalized)
-				if not self.folder_query in folder_name: continue
-				if self.media_type == 'movie':
-					if not any(x in normalized for x in year_query_list): continue
-				elif not source_utils.seas_ep_filter(self.season, self.episode, normalized): continue
-				item = {'l': item['link'], 's': item['size'], 'n': item['filename']}
-				if item['n'].replace('/', '').lower() not in [d['n'].replace('/', '').lower() for d in self.scrape_results]: scrape_results_append(item)
+				filename = item['filename']
+				if not self._file_matches(filename): continue
+				self._append_scrape_result({'l': item['link'], 's': item['size'], 'n': filename})
 		except: pass
 
 	def _scrape_cloud(self):
@@ -92,33 +114,33 @@ class source:
 				my_cloud_files = [i for i in my_cloud_files if i['statusCode'] == 4]
 			except: return self.sources
 			threads = []
-			folder_results_append = self.folder_results.append
 			append = threads.append
-			year_query_list = self._year_query_list()
 			for item in my_cloud_files:
-				normalized = normalize(item['filename'])
-				folder_name = source_utils.clean_title(normalized)
-				if not folder_name: folder_results_append(item)
-				elif not self.folder_query in folder_name: continue
-				else:
-					if self.media_type == 'movie' and not any(x in normalized for x in year_query_list): continue
-					folder_results_append(item['id'])
+				folder_name = item.get('filename') or ''
+				if not self._folder_matches(folder_name): continue
+				if self.media_type == 'movie' and self.filter_title:
+					normalized = normalize(folder_name)
+					if normalized and not any(x in normalized for x in self._year_query_list()): continue
+				folder_id = item.get('id')
+				if folder_id: self.folder_results.append(folder_id)
 			if not self.folder_results: return self.sources
-			for i in self.folder_results: append(Thread(target=self._scrape_folders, args=(i,)))
+			for folder_id in self.folder_results:
+				append(Thread(target=self._scrape_folders, args=(folder_id,)))
 			[i.start() for i in threads]
 			[i.join() for i in threads]
 		except: pass
 
 	def _scrape_folders(self, folder_id):
 		try:
-			try: links = self.AllDebrid.parse_magnet(transfer_id=folder_id)[1]
-			except: links = []
-			append = self.scrape_results.append
-			links = [i for i in links if i['n'].lower().endswith(tuple(self.extensions))]
+			if isinstance(folder_id, dict):
+				folder_id = folder_id.get('id')
+			if not folder_id: return
+			links = self.AllDebrid.cloud_file_links(folder_id)
+			links = [i for i in links if i.get('n', '').lower().endswith(tuple(self.extensions)) and i.get('l')]
 			for item in links:
-				normalized = normalize(item['n'])
-				if self.media_type == 'episode' and not source_utils.seas_ep_filter(self.season, self.episode, normalized): continue
-				append(item)
+				if self.media_type == 'episode' and not source_utils.cloud_episode_matches(self.season, self.episode, item['n'], self.absolute_episode): continue
+				if self.filter_title and not source_utils.check_title(self.title, item['n'], self.aliases, self.year, self.season, self.episode): continue
+				self._append_scrape_result(item)
 		except: return
 
 	def _year_query_list(self):

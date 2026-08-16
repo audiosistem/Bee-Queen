@@ -26,6 +26,7 @@ class source:
 			self.media_type, title = info.get('media_type'), info.get('title')
 			self.year = int(info.get('year') or 0)
 			self.season, self.episode = info.get('season'), info.get('episode')
+			self.absolute_episode = info.get('absolute_episode')
 			self.tmdb_id = info.get('tmdb_id')
 			self.title = title
 			self.folder_query = source_utils.clean_title(normalize(title))
@@ -48,7 +49,7 @@ class source:
 							continue
 						file_name_latin = normalize(file_name) or file_name
 						if self.media_type == 'episode':
-							if not source_utils.cloud_episode_matches(self.season, self.episode, file_name_latin):
+							if not source_utils.cloud_episode_matches(self.season, self.episode, file_name_latin, self.absolute_episode):
 								continue
 							if filter_title and not source_utils.check_title(title, file_name_latin, self.aliases, self.year, 'pack', self.episode):
 								continue
@@ -71,6 +72,7 @@ class source:
 							'size_label': size_label, 'debrid': self.scrape_provider, 'extraInfo': details,
 							'url_dl': file_dl, 'id': file_dl, 'downloads': False, 'direct': True,
 							'source': self.scrape_provider, 'scrape_provider': self.scrape_provider,
+							'folder_id': item['folder_id'],
 							'cloud_media_type': item.get('cloud_media_type', 'torrent'),
 						}
 						yield source_item
@@ -135,12 +137,14 @@ class source:
 		if not folder_name and not raw_folder:
 			return False
 		if self.media_type == 'movie':
-			if not self.folder_query or self.folder_query not in folder_name:
+			if not self._title_match('', folder_name):
 				return False
 			if self.year and not self._contains_year(raw_folder):
 				return False
 			return True
 		if self.folder_query and self.folder_query in folder_name:
+			return True
+		if any(q and q in folder_name for q in self.title_queries):
 			return True
 		if source_utils.seas_ep_filter_exact(self.season, self.episode, raw_folder):
 			return True
@@ -148,7 +152,7 @@ class source:
 
 	def _match_cloud_file(self, normalized, folder_name='', raw_file='', raw_folder='', folder_prefiltered=False):
 		if self.media_type == 'episode':
-			return source_utils.cloud_episode_matches(self.season, self.episode, normalized)
+			return source_utils.cloud_episode_matches(self.season, self.episode, normalized, self.absolute_episode)
 		if folder_prefiltered:
 			return True
 		clean_file = source_utils.clean_title(normalized)

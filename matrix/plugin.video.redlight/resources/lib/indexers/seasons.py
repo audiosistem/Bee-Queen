@@ -3,7 +3,7 @@ import sys
 from modules import kodi_utils, settings
 from modules.metadata import tvshow_meta
 from modules.utils import get_datetime, adjust_premiered_date, TaskPool
-from modules.watched_status import get_database, watched_info_season, get_watched_status_season, get_progress_status_season
+from modules.watched_status import get_database, watched_info_season, get_watched_status_season, get_progress_status_season, count_aired_episodes
 # logger = kodi_utils.logger
 
 def build_season_list(params):
@@ -37,7 +37,9 @@ def build_season_list(params):
 				else:
 					if season_number < total_seasons:
 						episode_count += aired_eps
-					else: aired_eps = total_aired_eps - episode_count
+					else:
+						# Current/latest season: count by premiered date (same as episode unaired colour).
+						aired_eps = count_aired_episodes(meta, season=season_number, current_date=current_date, adjust_hours=adjust_hours)
 					playcount, watched, unwatched = get_watched_status_season(watched_info.get(season_number, None), aired_eps)
 					progress = get_progress_status_season(watched, aired_eps)
 				visible_progress = 0 if progress == 100 else progress
@@ -46,6 +48,7 @@ def build_season_list(params):
 				options_params = build_url({'mode': 'options_menu_choice', 'content': 'season', 'tmdb_id': tmdb_id, 'poster': show_poster, 'is_external': is_external})
 				cm_append(['extras', ('[B]Extras[/B]', 'RunPlugin(%s)' % extras_params)])
 				cm_append(['options', ('[B]Options[/B]', 'RunPlugin(%s)' % options_params)])
+				settings.append_external_scraper_settings_cm(cm_append, build_url)
 				if playcount:
 					if hide_watched: continue
 				elif not unaired and not season_special:

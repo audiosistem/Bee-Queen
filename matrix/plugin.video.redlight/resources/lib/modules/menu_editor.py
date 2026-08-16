@@ -8,17 +8,33 @@ from modules import kodi_utils
 class MenuEditor:
 	def __init__(self, params):
 		self.main_list_name_dict = {'RootList': 'Root', 'MovieList': 'Movies', 'TVShowList': 'TV Shows', 'AnimeList': 'Animes'}
-		self.name = self._get_menu_item(kodi_utils.get_infolabel('ListItem.FileNameAndPath')).get('name', '')
 		self.active_list = params.get('active_list')
 		self.position = int(params.get('position', '0'))
 		self.action = params.get('action')
 		self.url = params.get('url', None)
 		try: self.list_name = self.main_list_name_dict[self.active_list]
 		except: self.list_name = params.get('name')
+		self.name = params.get('name', '') or self._item_name_at_position()
+
+	def _active_list_items(self):
+		if self.active_list in navigator_cache.main_menus:
+			return navigator_cache.currently_used_list(self.active_list)
+		return navigator_cache.get_shortcut_folder_contents(self.active_list)
+
+	def _item_name_at_position(self):
+		try:
+			list_items = self._active_list_items()
+			if list_items and 0 <= self.position < len(list_items):
+				return list_items[self.position].get('name', '')
+		except: pass
+		try: return self._get_menu_item(kodi_utils.get_infolabel('ListItem.FileNameAndPath')).get('name', '')
+		except: return ''
 
 	def move(self):
 		list_items = navigator_cache.currently_used_list(self.active_list)
-		if len(list_items) == 1: return kodi_utils.notification('Cancelled', 1500)
+		if len(list_items) <= 1: return
+		if self.position < 0 or self.position >= len(list_items): return kodi_utils.notification('Cancelled', 1500)
+		if not self.name: self.name = list_items[self.position].get('name', '')
 		choice_items = [i for i in list_items if str(i['name']) != str(self.name)]
 		new_position = self._menu_select(choice_items, self.name, multi_line='true', position_list=True)
 		if new_position == None or new_position == self.position: return
@@ -29,7 +45,8 @@ class MenuEditor:
 		if not kodi_utils.confirm_dialog(): return kodi_utils.notification('Cancelled', 1500)
 		list_items = navigator_cache.currently_used_list(self.active_list)
 		if len(list_items) == 1: return kodi_utils.notification('Cancelled', 1500)
-		list_items = [i for i in list_items if str(i['name']) != str(self.name)]
+		if self.position < 0 or self.position >= len(list_items): return kodi_utils.notification('Cancelled', 1500)
+		list_items.pop(self.position)
 		self._db_execute('set', self.active_list, list_items)
 
 	def restore(self):
@@ -106,9 +123,10 @@ class MenuEditor:
 				list_items[self.position] == current_item
 			elif self.action == 'remove':
 				if not kodi_utils.confirm_dialog(): return kodi_utils.notification('Cancelled', 1500)
-				list_items = [i for i in list_items if str(i['name']) != str(self.name)]
+				if self.position < 0 or self.position >= len(list_items): return
+				list_items.pop(self.position)
 			elif self.action == 'move':
-				if len(list_items) == 1: return kodi_utils.notification('Cancelled', 1500)
+				if len(list_items) <= 1: return
 				choice_items = [i for i in list_items if str(i['name']) != str(self.name)]
 				new_position = self._menu_select(choice_items, self.name, multi_line='true', position_list=True)
 				if new_position == None or new_position == self.position: return
@@ -153,6 +171,7 @@ class MenuEditor:
 		browsed_result = self._path_browser()
 		if browsed_result == None: return
 		menu_item = self._get_menu_item(browsed_result['file'])
+		if menu_item.get('mode', '').startswith('random.'): menu_item['random'] = 'true'
 		name, icon = browsed_result['label'], self._get_icon_var(browsed_result['thumbnail'])
 		menu_name = self._get_external_name_input(name) or name
 		icon_choice = self._icon_select(default_icon=icon)
@@ -237,6 +256,15 @@ class MenuEditor:
 				self._db_execute('set', x[0], new_list, refresh=False)
 			except: pass
 
+	def _refresh_menu(self):
+		folder = kodi_utils.folder_path()
+		if folder and 'plugin.video.redlight' in folder:
+			return kodi_utils.container_update(kodi_utils.sanitize_folder_url(folder))
+		if self.active_list in navigator_cache.main_menus:
+			return kodi_utils.container_update(kodi_utils.build_folder_url({'mode': 'navigator.main', 'action': self.active_list}))
+		if self.active_list:
+			return kodi_utils.container_update(kodi_utils.build_folder_url({'mode': 'navigator.build_shortcut_folder_contents', 'name': self.active_list}))
+
 	def _db_execute(self, db_action, list_name, list_contents=[], list_type='edited', refresh=True):
 		if db_action == 'set': navigator_cache.set_list(list_name, list_type, list_contents)
 		elif db_action == 'delete': navigator_cache.delete_list(list_name, list_type)
@@ -244,7 +272,7 @@ class MenuEditor:
 		else: return kodi_utils.notification('Failed', 1500)
 		kodi_utils.notification('Success', 1500)
 		kodi_utils.sleep(500)
-		if refresh: kodi_utils.kodi_refresh()
+		if refresh: self._refresh_menu()
 
 	def _path_browser(self, label='', file='plugin://plugin.video.redlight?mode=navigator.main&full_list=true', thumbnail=''):
 		kodi_utils.show_busy_dialog()

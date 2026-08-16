@@ -7,12 +7,24 @@ from caches.external_cache import external_cache
 from caches.settings_cache import get_setting
 from modules import kodi_utils, source_utils
 from modules.debrid import RD_check, AD_check, OC_check, TB_check, PM_check, query_local_cache
-from modules.settings import debrid_cache_check
+from modules.settings import debrid_cache_check, max_threads
 from modules.utils import clean_file_name
 # logger = kodi_utils.logger
 
+_INTERNAL_PROGRESS_LABELS = {
+	'aiostreams': 'AIOStreams',
+	'easynews': 'EasyNews',
+	'nzb': 'NZB',
+	'rd_cloud': 'RD Cloud',
+	'pm_cloud': 'PM Cloud',
+	'ad_cloud': 'AD Cloud',
+	'oc_cloud': 'OC Cloud',
+	'tb_cloud': 'TB Cloud',
+	'folders': 'Folders',
+}
+
 class source:
-	def __init__(self, meta, source_dict, active_debrid, cache_check_override, internal_scrapers, prescrape_sources, progress_dialog, disabled_ext_ignored=False, cloud_scrapers=None):
+	def __init__(self, meta, source_dict, active_debrid, cache_check_override, internal_scrapers, prescrape_sources, progress_dialog, disabled_ext_ignored=False, cloud_scrapers=None, external_orchestration=None):
 		self.monitor = kodi_utils.kodi_monitor()
 		self.scrape_provider = 'external'
 		self.progress_dialog = progress_dialog
@@ -21,6 +33,7 @@ class source:
 		self.background = self.meta.get('background', False)
 		self.active_debrid = active_debrid
 		self.source_dict, self.host_dict = source_dict, []
+		self.external_orchestration = external_orchestration
 		self.sources, self.all_internal_sources, self.processed_internal_scrapers = [], [], []
 		self.processed_internal_scrapers_append = self.processed_internal_scrapers.append
 		self.internal_scrapers, self.prescrape_sources = [i for i in (internal_scrapers or []) if i != 'external'], prescrape_sources
@@ -37,6 +50,34 @@ class source:
 								'AllDebrid': ('AllDebrid', AD_check), 'Offcloud': ('Offcloud', OC_check), 'TorBox': ('TorBox', TB_check)}
 		self.cloud_scrapers = [i for i in (cloud_scrapers or []) if i != 'external']
 		self.processed_cloud_scrapers = set()
+
+	def _internal_progress_label(self, scraper_id):
+		return _INTERNAL_PROGRESS_LABELS.get(scraper_id, scraper_id.replace('_', ' ').title())
+
+	def _progress_poll_state(self):
+		external_threads = [x.getName() for x in self.threads if x.is_alive()]
+		internal_pending = []
+		if self.internal_activated or self.internal_prescraped:
+			internal_pending = self.process_internal_results()
+		self.poll_cloud_scrapers()
+		return external_threads, internal_pending
+
+	def _format_progress_line1(self, external_threads, internal_pending, wave_prefix=None):
+		external_part = ', '.join(external_threads).upper() if external_threads else ''
+		internal_part = ', '.join([self._internal_progress_label(i) for i in internal_pending]).upper() if internal_pending else ''
+		segments = []
+		if wave_prefix:
+			if external_part:
+				segments.append('%s: %s' % (wave_prefix, external_part))
+			elif not internal_part:
+				segments.append(wave_prefix)
+		elif external_part:
+			segments.append(external_part)
+		if internal_part:
+			segments.append(internal_part)
+		if not segments and wave_prefix:
+			segments.append(wave_prefix)
+		return ' | '.join(segments)
 
 	def results(self, info):
 		if not self.source_dict: return
@@ -56,24 +97,23 @@ class source:
 				self.data = {'imdb': info['imdb_id'], 'tvdb': info['tvdb_id'], 'tvshowtitle': self.title, 'aliases': aliases,'year': self.year,
 							'title': ep_name, 'season': str(self.season), 'episode': str(self.episode)}
 		except: return []
-		return self.get_sources()
+		if self.external_orchestration and len(self.external_orchestration.get('groups', [])) > 1:
+			return self._get_sources_orchestrated()
+		return self._get_sources_flat()
 
-	def get_sources(self):
+	def _get_sources_flat(self):
 		def _scraperDialog():
 			kodi_utils.hide_busy_dialog()
 			kodi_utils.sleep(200)
 			start_time = time.time()
 			while not self.progress_dialog.iscanceled() and not self.monitor.abortRequested():
 				try:
-					alive_threads = [x.getName() for x in self.threads if x.is_alive()]
-					if self.internal_activated or self.internal_prescraped: alive_threads.extend(self.process_internal_results())
-					self.poll_cloud_scrapers()
-					line1 =  ', '.join(alive_threads).upper()
-					percent = (max((time.time() - start_time), 0)/float(self.timeout))*100
+					external_threads, internal_pending = self._progress_poll_state()
+					line1 = self._format_progress_line1(external_threads, internal_pending)
+					percent = min(100, int((max((time.time() - start_time), 0) / float(self.timeout)) * 100))
 					self.progress_dialog.update_scraper(self.sources_sd, self.sources_720p, self.sources_1080p, self.sources_4k, self.sources_total, line1, percent)
 					if self.threads_completed:
-						len_alive_threads = len(alive_threads)
-						if len_alive_threads == 0: break
+						if not external_threads and not internal_pending: break
 					if percent >= 100:
 						self._join_scraper_threads_grace(8)
 						break
@@ -93,75 +133,228 @@ class source:
 		self.threads_append = self.threads.append
 		if self.media_type == 'movie': Thread(target=self.process_movie_threads).start()
 		else:
-			self.source_dict = [i for i in self.source_dict if i[1].hasEpisodes]
-			self.season_packs, self.show_packs = source_utils.pack_enable_check(self.meta, self.season, self.episode)
-			if self.season_packs:
-				self.source_dict = [(i[0], i[1], '') for i in self.source_dict]
-				pack_capable = [i for i in self.source_dict if i[1].pack_capable]
-				if pack_capable:
-					self.source_dict.extend([(i[0], i[1], 'Season') for i in pack_capable])
-					if self.show_packs: self.source_dict.extend([(i[0], i[1], 'Show') for i in pack_capable])
-					random.shuffle(self.source_dict)
-					self.source_dict.sort(key=lambda k: k[2])
+			self._prepare_episode_source_dict()
 			Thread(target=self.process_episode_threads).start()
 		if self.background: _background()
 		else: _scraperDialog()
+		if self._scrape_was_cancelled():
+			return []
 		current_results = list(self.sources)
 		if current_results: return self.process_results(current_results)
 		return []
 
+	def _scrape_was_cancelled(self):
+		try:
+			return bool(self.progress_dialog and self.progress_dialog.iscanceled())
+		except:
+			return False
+
+	def _prepare_episode_source_dict(self):
+		self.source_dict = [i for i in self.source_dict if i[1].hasEpisodes]
+		self.season_packs, self.show_packs = source_utils.pack_enable_check(self.meta, self.season, self.episode)
+		if self.season_packs:
+			base_entries = [self._source_entry(i) for i in self.source_dict]
+			self.source_dict = [(e[0], e[1], '', e[3], e[4], e[5]) for e in base_entries]
+			pack_capable = [e for e in base_entries if e[1].pack_capable]
+			if pack_capable:
+				self.source_dict.extend([(e[0], e[1], 'Season', e[3], e[4], e[5]) for e in pack_capable])
+				if self.show_packs: self.source_dict.extend([(e[0], e[1], 'Show', e[3], e[4], e[5]) for e in pack_capable])
+				random.shuffle(self.source_dict)
+				self.source_dict.sort(key=lambda k: k[2])
+
+	def _log_scrape_external_wave(self, wave_idx, wave_labels, wave_new, wave_total, skip_threshold, mode, stop_reason):
+		try:
+			kodi_utils.logger('ScrapeExternalWave', 'wave=%d modules=%s wave_new=%d total=%d threshold=%d mode=%s stop=%s' % (
+				wave_idx, ','.join(wave_labels), wave_new, wave_total, skip_threshold, mode, stop_reason))
+		except: pass
+
+	def _finish_orchestrated_scrape(self, stop_reason):
+		try:
+			kodi_utils.logger('ScrapeExternalWave', 'finished total=%d reason=%s' % (len(self.sources), stop_reason))
+		except: pass
+		if self._scrape_was_cancelled():
+			return []
+		current_results = list(self.sources)
+		if current_results: return self.process_results(current_results)
+		return []
+
+	def _get_sources_primary_dedicated(self, orch):
+		groups = orch['groups']
+		skip_threshold = int(orch.get('skip_threshold', 0))
+		mode = orch.get('mode', 'primary_parallel')
+		stop_reason = 'exhausted'
+		wave_idx = 0
+		primary = groups[0]
+		wave_idx += 1
+		baseline = len(self.sources)
+		self._run_provider_batch(list(primary['entries']), float(self.timeout), [primary['display_name']])
+		if self._scrape_was_cancelled():
+			return self._finish_orchestrated_scrape('cancelled')
+		wave_total = len(self.sources)
+		wave_new = wave_total - baseline
+		self._log_scrape_external_wave(wave_idx, [primary['display_name']], wave_new, wave_total, skip_threshold, mode, 'primary_done')
+		fallback_groups = groups[1:]
+		if fallback_groups:
+			wave_idx += 1
+			baseline = len(self.sources)
+			batch_entries, wave_labels = [], []
+			for group in fallback_groups:
+				wave_labels.append(group['display_name'])
+				batch_entries.extend(group['entries'])
+			self._run_provider_batch(batch_entries, float(self.timeout), wave_labels)
+			wave_total = len(self.sources)
+			wave_new = wave_total - baseline
+			self._log_scrape_external_wave(wave_idx, wave_labels, wave_new, wave_total, skip_threshold, '%s_fallback' % mode, 'exhausted')
+		return self._finish_orchestrated_scrape(stop_reason)
+
+	def _get_sources_orchestrated(self):
+		orch = self.external_orchestration
+		if orch.get('primary_dedicated'):
+			return self._get_sources_primary_dedicated(orch)
+		groups = orch['groups']
+		max_parallel = max(1, int(orch.get('max_parallel', 1)))
+		skip_threshold = int(orch.get('skip_threshold', 0))
+		early_stop = bool(orch.get('early_stop', False))
+		mode = orch.get('mode', 'series')
+		series_mode = max_parallel <= 1
+		wave_step = 1 if series_mode else max_parallel
+		phase_deadline = time.time() + self.timeout
+		wave_idx = 0
+		stop_reason = 'exhausted'
+		for wave_start in range(0, len(groups), wave_step):
+			remaining = phase_deadline - time.time()
+			if remaining <= 0:
+				stop_reason = 'timeout'
+				break
+			wave = groups[wave_start:wave_start + wave_step]
+			wave_idx += 1
+			baseline = len(self.sources)
+			wave_labels = [g['display_name'] for g in wave]
+			batch_entries = []
+			for group in wave:
+				batch_entries.extend(group['entries'])
+			self._run_provider_batch(batch_entries, remaining, wave_labels)
+			if self._scrape_was_cancelled():
+				stop_reason = 'cancelled'
+				break
+			wave_total = len(self.sources)
+			wave_new = wave_total - baseline
+			if series_mode and early_stop and wave_new > 0:
+				stop_reason = 'series_hit'
+			elif skip_threshold > 0 and wave_total > skip_threshold:
+				stop_reason = 'threshold'
+			self._log_scrape_external_wave(wave_idx, wave_labels, wave_new, wave_total, skip_threshold, mode, stop_reason)
+			if stop_reason in ('series_hit', 'threshold'):
+				break
+		return self._finish_orchestrated_scrape(stop_reason)
+
+	def _run_provider_batch(self, batch_entries, batch_timeout, wave_labels):
+		def _scraperDialog():
+			kodi_utils.hide_busy_dialog()
+			kodi_utils.sleep(200)
+			batch_start = time.time()
+			line1_prefix = ' | '.join(wave_labels).upper()
+			while not self.progress_dialog.iscanceled() and not self.monitor.abortRequested():
+				try:
+					external_threads, internal_pending = self._progress_poll_state()
+					line1 = self._format_progress_line1(external_threads, internal_pending, wave_prefix=line1_prefix)
+					elapsed = max((time.time() - batch_start), 0)
+					percent = min(100, (elapsed / float(batch_timeout)) * 100)
+					self.progress_dialog.update_scraper(self.sources_sd, self.sources_720p, self.sources_1080p, self.sources_4k, self.sources_total, line1, percent)
+					if self.threads_completed:
+						if not external_threads and not internal_pending: break
+					if time.time() >= batch_start + batch_timeout:
+						self._join_scraper_threads_grace(8)
+						break
+					kodi_utils.sleep(100)
+				except: pass
+		def _background():
+			kodi_utils.sleep(1500)
+			end_time = time.time() + batch_timeout
+			while time.time() < end_time:
+				alive_threads = [x for x in self.threads if x.is_alive()]
+				len_alive_threads = len(alive_threads)
+				kodi_utils.sleep(1000)
+				if len_alive_threads <= 5: return
+				if len(self.sources) >= 100 * len_alive_threads: return
+		self.source_dict = list(batch_entries)
+		self.threads = []
+		self.threads_append = self.threads.append
+		self.threads_completed = False
+		if self.media_type == 'movie': Thread(target=self.process_movie_threads).start()
+		else:
+			self._prepare_episode_source_dict()
+			Thread(target=self.process_episode_threads).start()
+		if self.background: _background()
+		else: _scraperDialog()
+
+	def _source_entry(self, item):
+		provider_label = item[0]
+		module = item[1]
+		pack = ''
+		if len(item) > 2:
+			pack = item[2] if item[2] in ('Season', 'Show') else ''
+		cache_key = item[3] if len(item) > 3 and item[3] else provider_label
+		source_provider = item[4] if len(item) > 4 and item[4] else provider_label
+		external_module = item[5] if len(item) > 5 else ''
+		return provider_label, module, pack, cache_key, source_provider, external_module
+
+	def _wait_for_thread_capacity(self):
+		limit = max_threads()
+		while sum(1 for x in self.threads if x.is_alive()) >= limit:
+			if self.monitor.abortRequested(): return
+			kodi_utils.sleep(100)
+
 	def process_movie_threads(self):
 		try:
 			for i in self.source_dict:
-				provider, module = i[0], i[1]
-				threaded_object = Thread(target=self.get_movie_source, args=(provider, module), name=provider)
+				provider_label, module, pack, cache_key, source_provider, external_module = self._source_entry(i)
+				self._wait_for_thread_capacity()
+				threaded_object = Thread(target=self.get_movie_source, args=(provider_label, module, cache_key, source_provider, external_module), name=provider_label)
 				try:
 					threaded_object.start()
 					self.threads_append(threaded_object)
 				except RuntimeError:
-					# If the runtime cannot spawn more threads, finish remaining work serially.
-					self.get_movie_source(provider, module)
+					self.get_movie_source(provider_label, module, cache_key, source_provider, external_module)
 		finally:
 			self.threads_completed = True
 
 	def process_episode_threads(self):
 		try:
 			for i in self.source_dict:
-				provider, module = i[0], i[1]
-				try: pack_arg = i[2]
-				except: pack_arg = ''
-				if pack_arg: provider_display = '%s (%s)' % (i[0], i[2])
-				else: provider_display = provider
-				threaded_object = Thread(target=self.get_episode_source, args=(provider, module, pack_arg), name=provider_display)
+				provider_label, module, pack, cache_key, source_provider, external_module = self._source_entry(i)
+				if pack: provider_display = '%s (%s)' % (provider_label, pack)
+				else: provider_display = provider_label
+				self._wait_for_thread_capacity()
+				threaded_object = Thread(target=self.get_episode_source, args=(provider_label, module, pack, cache_key, source_provider, external_module), name=provider_display)
 				try:
 					threaded_object.start()
 					self.threads_append(threaded_object)
 				except RuntimeError:
-					# If the runtime cannot spawn more threads, finish remaining work serially.
-					self.get_episode_source(provider, module, pack_arg)
+					self.get_episode_source(provider_label, module, pack, cache_key, source_provider, external_module)
 		finally:
 			self.threads_completed = True
 
-	def get_movie_source(self, provider, module):
-		sources = external_cache.get(provider, self.media_type, self.tmdb_id, self.title, self.year, '', '')
+	def get_movie_source(self, provider_label, module, cache_key, source_provider, external_module):
+		sources = external_cache.get(cache_key, self.media_type, self.tmdb_id, self.title, self.year, '', '')
 		if sources == None:
 			sources = module().sources(self.data, self.host_dict)			
-			sources = self.process_sources(provider, sources)
+			sources = self.process_sources(source_provider, sources, external_module)
 			if not sources: expiry_hours = 1
 			else: expiry_hours = self.single_expiry
-			external_cache.set(provider, self.media_type, self.tmdb_id, self.title, self.year, '', '', sources, expiry_hours)
+			external_cache.set(cache_key, self.media_type, self.tmdb_id, self.title, self.year, '', '', sources, expiry_hours)
 		if sources:
 			if not self.background: self.process_quality_count(sources)
 			self.sources.extend(sources)
 		del module
 
-	def get_episode_source(self, provider, module, pack):
+	def get_episode_source(self, provider_label, module, pack, cache_key, source_provider, external_module):
 		if pack in ('Season', 'Show'):
 			if pack == 'Show': s_check = ''
 			else: s_check = self.season
 			e_check = ''
 		else: s_check, e_check = self.season, self.episode
-		sources = external_cache.get(provider, self.media_type, self.tmdb_id, self.title, self.year, s_check, e_check)
+		sources = external_cache.get(cache_key, self.media_type, self.tmdb_id, self.title, self.year, s_check, e_check)
 		if sources == None:
 			if pack == 'Show':
 				expiry_hours = self.show_expiry
@@ -172,9 +365,9 @@ class source:
 			else:
 				expiry_hours = self.single_expiry
 				sources = module().sources(self.data, self.host_dict)
-			sources = self.process_sources(provider, sources)
+			sources = self.process_sources(source_provider, sources, external_module)
 			if not sources: expiry_hours = 1
-			external_cache.set(provider, self.media_type, self.tmdb_id, self.title, self.year, s_check, e_check, sources, expiry_hours)
+			external_cache.set(cache_key, self.media_type, self.tmdb_id, self.title, self.year, s_check, e_check, sources, expiry_hours)
 		if sources:
 			if pack == 'Season': sources = [i for i in sources if not 'episode_start' in i or i['episode_start'] <= self.episode <= i['episode_end']]
 			elif pack == 'Show': sources = [i for i in sources if i['last_season'] >= self.season]
@@ -183,6 +376,8 @@ class source:
 		del module
 
 	def process_results(self, results):
+		if self._scrape_was_cancelled():
+			return []
 		def _process_duplicates(all_results):
 			unique_urls, unique_hashes = set(), set()
 			unique_urls_add, unique_hashes_add = unique_urls.add, unique_hashes.add
@@ -211,12 +406,27 @@ class source:
 					cached = function(hash_list, cached_hashes)
 			else:
 				cached = hash_list
-			cached_set = set(str(i).lower() for i in cached)
-			if not self.background: self.process_quality_count_final([i for i in results if i.get('hash', '').lower() in cached_set])
-			batch = [dict(i, **{'cache_provider': provider if i.get('hash', '').lower() in cached_set else 'Uncached %s' % provider, 'debrid': provider}) for i in results]
+			api_blocked = kodi_utils.get_property('redlight.debrid_cache_api_error')
+			if api_blocked:
+				if not self.background:
+					self.process_quality_count_final(results)
+					kodi_utils.notification('AllDebrid cache check unavailable (%s). Showing unchecked sources.' % api_blocked, 6000)
+					kodi_utils.clear_property('redlight.debrid_cache_api_error')
+				batch = [dict(i, **{'cache_provider': provider, 'debrid': provider}) for i in results]
+				try:
+					kodi_utils.logger('DebridCacheCheck', 'fallback=unchecked provider=%s reason=%s total=%d' % (provider, api_blocked, len(batch)))
+				except: pass
+			else:
+				cached_set = set(str(i).lower() for i in cached)
+				if not self.background: self.process_quality_count_final([i for i in results if i.get('hash', '').lower() in cached_set])
+				batch = [dict(i, **{'cache_provider': provider if i.get('hash', '').lower() in cached_set else 'Uncached %s' % provider, 'debrid': provider}) for i in results]
 			with final_lock:
 				final_results.extend(batch)
 		def _debrid_check_dialog(debrid_deadline):
+			# Do not clear a user Back/cancel from the scrape phase — that made cancel
+			# look ignored while cache-check continued and could reopen progress UI.
+			if self.progress_dialog.iscanceled():
+				return
 			self.progress_dialog.reset_is_cancelled()
 			start_time = time.time()
 			debrid_timeout = max(1.0, debrid_deadline - start_time)
@@ -231,6 +441,13 @@ class source:
 					if len(remaining_debrids) == 0: break
 					if time.time() >= debrid_deadline: break
 				except: pass
+		def _log_debrid_cache_summary(final_results, providers_needing_api):
+			try:
+				uncached = sum(1 for i in final_results if 'Uncached' in i.get('cache_provider', ''))
+				cached = len(final_results) - uncached
+				kodi_utils.logger('DebridCacheCheck', 'enabled=%s providers=%s total=%d cached=%d uncached=%d' % (
+					bool(providers_needing_api), ','.join(providers_needing_api) or 'none', len(final_results), cached, uncached))
+			except: pass
 		try:
 			if not self.background and self.all_internal_sources: self.process_quality_count_final(self.all_internal_sources)
 			final_results = []
@@ -244,27 +461,45 @@ class source:
 						self.process_quality_count_final(results)
 					batch = [dict(i, **{'cache_provider': provider, 'debrid': provider}) for i in results]
 					final_results.extend(batch)
+				_log_debrid_cache_summary(final_results, providers_needing_api)
 				return final_results
 			debrid_check_threads = [Thread(target=_process_cache_check, args=self.debrid_runners[item], name=item) for item in providers_needing_api]
-			debrid_deadline = time.time() + max(30, min(60, self.timeout + 15))
+			hash_budget = max(0, len(hash_list))
+			debrid_timeout = max(45, min(240, 30 + (hash_budget // 25) * 8))
+			debrid_deadline = time.time() + debrid_timeout
 			for provider in self.active_debrid:
 				if provider in providers_needing_api:
 					continue
 				if not self.background:
 					self.process_quality_count_final(results)
 				final_results.extend([dict(i, **{'cache_provider': provider, 'debrid': provider}) for i in results])
-			[i.start() for i in debrid_check_threads]
-			if self.background:
-				for thread in debrid_check_threads:
-					thread.join(timeout=max(0.0, debrid_deadline - time.time()))
-			else:
+			if len(providers_needing_api) == 1 and not self.background:
+				debrid_check_threads[0].start()
 				_debrid_check_dialog(debrid_deadline)
-				for thread in debrid_check_threads:
-					thread.join(timeout=max(0.0, debrid_deadline - time.time()))
+				debrid_check_threads[0].join(timeout=max(0.0, debrid_deadline - time.time()))
+			else:
+				[i.start() for i in debrid_check_threads]
+				if self.background:
+					for thread in debrid_check_threads:
+						thread.join(timeout=max(0.0, debrid_deadline - time.time()))
+				else:
+					_debrid_check_dialog(debrid_deadline)
+					for thread in debrid_check_threads:
+						thread.join(timeout=max(0.0, debrid_deadline - time.time()))
+			if providers_needing_api and not final_results:
+				for provider in providers_needing_api:
+					if not self.background:
+						self.process_quality_count_final(results)
+					final_results.extend([dict(i, **{'cache_provider': 'Uncached %s' % provider, 'debrid': provider}) for i in results])
+				try:
+					kodi_utils.logger('DebridCacheCheck', 'warning=incomplete_check fallback=uncached providers=%s hashes=%d' % (
+						','.join(providers_needing_api), len(hash_list)))
+				except: pass
+			_log_debrid_cache_summary(final_results, providers_needing_api)
 			return final_results
 		except: return []
 
-	def process_sources(self, provider, sources):
+	def process_sources(self, provider, sources, external_module=''):
 		try:
 			for i in sources:
 				try:
@@ -284,8 +519,10 @@ class source:
 							size = float(size) / divider
 						size_label = '%.2f GB' % size
 					except: pass
-					i.update({'provider': provider, 'display_name': display_name, 'external': True, 'scrape_provider': self.scrape_provider, 'extraInfo': extraInfo,
-							'quality': quality, 'size_label': size_label, 'size': round(size, 2)})
+					extra = {'provider': provider, 'display_name': display_name, 'external': True, 'scrape_provider': self.scrape_provider, 'extraInfo': extraInfo,
+							'quality': quality, 'size_label': size_label, 'size': round(size, 2)}
+					if external_module: extra['external_module'] = external_module
+					i.update(extra)
 				except: pass
 		except: pass
 		return sources

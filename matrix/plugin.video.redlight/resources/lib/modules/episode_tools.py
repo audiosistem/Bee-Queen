@@ -11,6 +11,12 @@ from modules.utils import adjust_premiered_date, get_datetime, title_key, TaskPo
 from modules import kodi_utils
 # logger = kodi_utils.logger
 
+def _log_nextep_skip(title, season, episode, reason):
+	try:
+		kodi_utils.logger('Red Light', 'Next episode prep skipped: %s S%02dE%02d (%s)' % (title, int(season), int(episode), reason))
+	except:
+		pass
+
 class EpisodeTools:
 	def __init__(self, meta, nextep_settings=None):
 		self.meta = meta
@@ -18,21 +24,33 @@ class EpisodeTools:
 		self.nextep_settings = nextep_settings
 
 	def next_episode_info(self):
+		title = self.meta_get('title') or ''
+		current_season, current_episode = 0, 0
 		try:
 			play_type = self.nextep_settings['play_type']
 			season_data = self.meta_get('season_data')
 			watch_count = self.meta_get('watch_count')
 			current_season, current_episode = int(self.meta_get('season')), int(self.meta_get('episode'))
 			watched_info = watched_info_episode(self.meta_get('tmdb_id'))
-			season, episode = get_next(current_season, current_episode, watched_info, season_data, 0)
+			season, episode = get_next(current_season, current_episode, watched_info, season_data, 0, self.meta)
+			if season is None or episode is None:
+				_log_nextep_skip(title, current_season, current_episode, 'no next episode')
+				return 'no_next_episode'
+			kodi_utils.logger('Red Light', 'Next episode prep target: %s S%02dE%02d (literal next)' % (title, season, episode))
 			playcount = get_watched_status_episode(watched_info, (season, episode))
 			ep_data = episodes_meta(season, self.meta)
-			if not ep_data: return 'no_next_episode'
+			if not ep_data:
+				_log_nextep_skip(title, season, episode, 'episode list unavailable')
+				return 'no_next_episode'
 			ep_data = next((i for i in ep_data if i['episode'] == episode), None)
-			if not ep_data: return 'no_next_episode'
+			if not ep_data:
+				_log_nextep_skip(title, season, episode, 'episode not in metadata')
+				return 'no_next_episode'
 			adjust_hours, current_date = date_offset(), get_datetime()
 			episode_date, premiered = adjust_premiered_date(ep_data['premiered'], adjust_hours)
-			if not episode_date or current_date < episode_date: return 'no_next_episode'
+			if not episode_date or current_date < episode_date:
+				_log_nextep_skip(title, season, episode, 'episode not aired yet')
+				return 'no_next_episode'
 			custom_title = self.meta_get('custom_title', None)
 			title = custom_title or self.meta_get('title')
 			display_name = '%s - %dx%.2d' % (title, int(season), int(episode))
@@ -40,10 +58,11 @@ class EpisodeTools:
 							'episode': episode, 'premiered': premiered, 'plot': ep_data['plot']})
 			url_params = {'media_type': 'episode', 'tmdb_id': self.meta_get('tmdb_id'), 'tvshowtitle': self.meta_get('rootname'), 'season': season, 'playcount': playcount,
 						'episode': episode, 'background': 'true', 'nextep_settings': self.nextep_settings, 'play_type': play_type, 'watch_count': watch_count}
-			if play_type == 'autoscrape_nextep': url_params['prescrape'] = 'false'
 			if custom_title: url_params['custom_title'] = custom_title
 			if 'custom_year' in self.meta: url_params['custom_year'] = self.meta_get('custom_year')
-		except: url_params = 'error'
+		except Exception as exc:
+			kodi_utils.logger('Red Light', 'Next episode prep error: %s S%02dE%02d (%s)' % (title, current_season, current_episode, exc))
+			url_params = 'error'
 		return self.add_playback_key(url_params)
 
 	def get_random_episode(self, continual=False, first_run=True):
@@ -82,7 +101,9 @@ class EpisodeTools:
 							'episode': episode, 'premiered': premiered, 'plot': plot})
 			url_params = {'media_type': 'episode', 'tmdb_id': tmdb_id, 'tvshowtitle': self.meta_get('rootname'), 'season': season, 'episode': episode,
 						'playcount': playcount, 'autoplay': 'true'}
-			if continual: url_params['random_continual'] = 'true'
+			if continual:
+				url_params['random_continual'] = 'true'
+				url_params['watch_count'] = self.meta_get('watch_count', 1)
 			else: url_params['random'] = 'true'
 			if not first_run:
 				url_params['background'] = 'true'
@@ -97,15 +118,19 @@ class EpisodeTools:
 		if url_params == 'error': return kodi_utils.notification('Single Random Play Error', 3000)
 		return Sources().playback_prep(url_params)
 
-	def play_random_continual(self, first_run=True):
+	def play_random_continual(self, first_run=True, from_skip=False):
 		url_params = self.get_random_episode(continual=True, first_run=first_run)
 		if url_params == 'error': return kodi_utils.notification('Continual Random Play Error', 3000)
+		if from_skip and isinstance(url_params, dict):
+			url_params['continual_skip'] = 'true'
 		return Sources().playback_prep(url_params)
 
 	def auto_nextep(self):
 		url_params = self.next_episode_info()
 		if url_params == 'error': return kodi_utils.notification('Next Episode Error', 3000)
-		elif url_params == 'no_next_episode': return
+		elif url_params == 'no_next_episode':
+			kodi_utils.set_property('redlight.nextep_prep_declined', 'true')
+			return
 		return Sources().playback_prep(url_params)
 
 	def add_playback_key(self, url_params):
@@ -144,9 +169,9 @@ def build_next_episode_manager():
 	item_list = sorted(list_items, key=lambda k: (title_key(k['sort_title'], ignore_articles())), reverse=False)
 	item_list = [i['listitem'] for i in item_list]
 	kodi_utils.add_items(handle, item_list)
-	kodi_utils.set_content(handle, '')
+	kodi_utils.set_content(handle, kodi_utils.MENU_FOLDER_CONTENT)
 	kodi_utils.end_directory(handle, cacheToDisc=False)
-	kodi_utils.set_view_mode('view.main', '')
+	kodi_utils.set_view_mode('view.main', kodi_utils.MENU_FOLDER_CONTENT, False)
 
 def single_last_watched_episodes(data):
 	seen = set()

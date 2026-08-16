@@ -21,9 +21,9 @@ def search_easynews(params):
 		files = EasyNews.search(search_name)
 		easynews_file_browser(files, handle)
 	except: pass
-	kodi_utils.set_content(handle, 'files')
+	kodi_utils.set_content(handle, kodi_utils.MENU_FOLDER_CONTENT)
 	kodi_utils.end_directory(handle, cacheToDisc=False)
-	kodi_utils.set_view_mode('view.premium')
+	kodi_utils.set_view_mode('view.premium', kodi_utils.MENU_FOLDER_CONTENT)
 
 def easynews_file_browser(files, handle):
 	def _builder():
@@ -71,29 +71,18 @@ def resolve_easynews(params):
 
 def account_info(params):
 	try:
+		from modules.service_expiry import append_expiry_lines, fetch_expiry_summary
 		kodi_utils.show_busy_dialog()
 		account_info, usage_info = EasyNews.account()
 		if not account_info or not usage_info: return kodi_utils.ok_dialog(text='Error')
 		body = []
 		append = body.append
-		expires = jsondate_to_datetime(account_info[2], '%Y-%m-%d')
-		days_remaining = (expires - datetime.today()).days
 		append('[B]Account:[/B] %s' % account_info[1])
 		append('[B]Username:[/B] %s' % account_info[0])
 		append('[B]Status:[/B] %s' % account_info[3])
-		append('[B]Expires:[/B] %s' % expires)
-		append('[B]Days Remaining:[/B] %s' % days_remaining)
-		append('[B]Current Subscription:[/B] %s' % usage_info[2])
+		append_expiry_lines(body, fetch_expiry_summary('easynews'))
 		append('[B]Data Used:[/B] %s' % usage_info[0].replace('Gigs', 'GB'))
 		append('[B]Data Remaining:[/B] %s' % usage_info[1].replace('Gigs', 'GB'))
 		kodi_utils.hide_busy_dialog()
 		return kodi_utils.show_text('EASYNEWS', '\n\n'.join(body), font_size='large')
 	except: kodi_utils.hide_busy_dialog()
-
-def active_days():
-	try:
-		account_info = EasyNews.account_info()
-		expires = jsondate_to_datetime(account_info[2], '%Y-%m-%d')
-		days_remaining = (expires - datetime.today()).days
-	except: days_remaining = 0
-	return days_remaining

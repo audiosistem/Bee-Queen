@@ -40,7 +40,7 @@
                 <control type="textbox" id="2001">
                     <top>50</top>
                     <left>20</left>
-                    <width>1100</width>
+                    <width>1088</width>
                     <height>690</height>
                     <font>font14</font> <!-- REDLIGHT_33 -->
                     <align>center</align>
@@ -50,9 +50,9 @@
                     <autoscroll>false</autoscroll>
                 </control>
                 <control type="scrollbar" id="2099">
-                    <left>1140</left>
+                    <left>1120</left>
                     <top>35</top>
-                    <width>10</width>
+                    <width>32</width>
                     <height>740</height>
                     <texturesliderbackground colordiffuse="FF1F2020">redlight_common/white.png</texturesliderbackground>
                     <texturesliderbar colordiffuse="FF555556">redlight_common/white.png</texturesliderbar>

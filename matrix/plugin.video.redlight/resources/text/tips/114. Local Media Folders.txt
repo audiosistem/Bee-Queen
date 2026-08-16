@@ -14,7 +14,7 @@ Choose a Movie and TV Show directory for any of these scrapers, and Red Light wi
                         - Season 1 Folder
                                 - s01e01.file
 To Use:
-Go to Settings->Accounts->'Local Media Folders'. Turn ON 'Enable'. Also set any additional settings needed here.
+Go to Settings > Direct Sources > Local Media Folders. Turn ON Enable. Also set any additional settings needed here.
 Select "Set Folder Scrapers", and assign Network/Local folders, giving them a label and assigning their location.
 
 NOTE: You don't need to set both a Movie and TV Show folder for each of the Folder Scrapers, just leave which ever you don't want to use blank.

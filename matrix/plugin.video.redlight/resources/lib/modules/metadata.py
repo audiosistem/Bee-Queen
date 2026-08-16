@@ -6,14 +6,37 @@ from apis.tmdb_api import movie_details, tvshow_details, season_episodes_details
 from modules.utils import jsondate_to_datetime, subtract_dates
 # from modules.kodi_utils import logger
 
-def movie_meta(id_type, media_id, api_key, mpaa_region, current_date, current_time=None):
+_ID_EMPTY = (None, '', 'None', 'empty_setting', 0, '0')
+
+def _media_id_candidates(id_type, media_id, keys=('tmdb', 'imdb', 'tvdb')):
+	"""Ordered (id_type, id) lookups for trakt_dict maps. Prefer TMDb, then IMDb/TVDb."""
+	key_map = {'tmdb': 'tmdb_id', 'imdb': 'imdb_id', 'tvdb': 'tvdb_id'}
 	if id_type == 'trakt_dict':
-		if media_id.get('tmdb', None): id_type, media_id = 'tmdb_id', media_id['tmdb']
-		elif media_id.get('imdb', None): id_type, media_id = 'imdb_id', media_id['imdb']
-		else: id_type, media_id = None, None
+		if not isinstance(media_id, dict): return []
+		candidates = []
+		for key in keys:
+			value = media_id.get(key, None)
+			if value in _ID_EMPTY: continue
+			candidates.append((key_map[key], value))
+		return candidates
+	if media_id in _ID_EMPTY: return []
+	return [(id_type, media_id)]
+
+def movie_meta(id_type, media_id, api_key, mpaa_region, current_date, current_time=None, dbcon=None, _alt_ids=None):
+	if id_type == 'trakt_dict':
+		candidates = _media_id_candidates('trakt_dict', media_id, keys=('tmdb', 'imdb'))
+		if not candidates: return None
+		id_type, media_id = candidates[0]
+		_alt_ids = candidates[1:]
+	elif _alt_ids is None:
+		_alt_ids = []
 	if media_id == None: return None
-	meta = meta_cache.get('movie', id_type, media_id, current_time)
-	if meta: return meta
+	meta = meta_cache.get('movie', id_type, media_id, current_time, dbcon=dbcon)
+	if meta:
+		if meta.get('blank_entry') and _alt_ids:
+			nxt_type, nxt_id = _alt_ids[0]
+			return movie_meta(nxt_type, nxt_id, api_key, mpaa_region, current_date, current_time, dbcon, _alt_ids=_alt_ids[1:])
+		return meta
 	try:
 		if id_type in ('tmdb_id', 'imdb_id'): data = movie_details(media_id, api_key)
 		else:
@@ -24,7 +47,10 @@ def movie_meta(id_type, media_id, api_key, mpaa_region, current_date, current_ti
 		elif data.get('status_code') in (6, 34, 37):
 			if id_type == 'tmdb_id': meta = {'tmdb_id': media_id, 'imdb_id': 'tt0000000', 'tvdb_id': '0000000', 'blank_entry': True}
 			else: meta = {'tmdb_id': '0000000', 'imdb_id': media_id, 'tvdb_id': '0000000', 'blank_entry': True}
-			meta_cache.set('movie', id_type, meta, 24, current_time)
+			meta_cache.set('movie', id_type, meta, 24, current_time, dbcon=dbcon)
+			if _alt_ids:
+				nxt_type, nxt_id = _alt_ids[0]
+				return movie_meta(nxt_type, nxt_id, api_key, mpaa_region, current_date, current_time, dbcon, _alt_ids=_alt_ids[1:])
 			return meta
 		tmdb_image_url, youtube_url = 'https://image.tmdb.org/t/p/%s%s', 'plugin://plugin.video.youtube/play/?video_id=%s'
 		data_get = data.get
@@ -68,13 +94,13 @@ def movie_meta(id_type, media_id, api_key, mpaa_region, current_date, current_ti
 		try:
 			genres = data_get('genres')
 			genre = [i['name'] for i in genres]
-		except: genre == []
+		except: genre = []
 		rootname = '%s (%s)' % (title, year)
 		companies = data_get('production_companies')
 		if companies:
-			if len(companies) == 1: studio = ([i['name'] for i in companies][0],)
+			if len(companies) == 1: studio = [companies[0]['name']]
 			else:
-				try: studio = (next(i['name'] for i in companies if i['logo_path'] not in ('', 'None', None)) or next(i['name'] for i in companies),)
+				try: studio = [next(i['name'] for i in companies if i['logo_path'] not in ('', 'None', None)) or next(i['name'] for i in companies)]
 				except: pass
 		production_countries = data_get('production_countries', None)
 		if production_countries:
@@ -101,8 +127,8 @@ def movie_meta(id_type, media_id, api_key, mpaa_region, current_date, current_ti
 				except: pass
 		alternative_titles = data_get('alternative_titles', [])
 		if alternative_titles:
-			alternatives = alternative_titles['titles']
-			alternative_titles = [i['title'] for i in alternatives if i['iso_3166_1'] in ('US', 'GB', 'UK', '')]
+			from modules.source_utils import filter_alternative_titles
+			alternative_titles = filter_alternative_titles(alternative_titles, titles_key='titles')
 		else: alternative_titles = []
 		videos = data_get('videos', None)
 		if videos:
@@ -134,19 +160,27 @@ def movie_meta(id_type, media_id, api_key, mpaa_region, current_date, current_ti
 				'duration': duration, 'rootname': rootname, 'country': country, 'country_codes': country_codes, 'mpaa': mpaa,'writer': writer, 'all_trailers': all_trailers,
 				'director': director, 'alternative_titles': alternative_titles, 'plot': plot, 'studio': studio, 'extra_info': extra_info, 'mediatype': 'movie', 'tvdb_id': 'None',
 				'clearlogo': clearlogo, 'landscape': landscape, 'keywords': keywords, 'rpdb_poster': rpdb_poster, 'short_cast': short_cast, 'stinger_keys': stinger_keys}
-		meta_cache.set('movie', id_type, meta, movie_expiry(current_date, meta), current_time)
+		meta_cache.set('movie', id_type, meta, movie_expiry(current_date, meta), current_time, dbcon=dbcon)
 	except: pass
 	return meta
 
-def tvshow_meta(id_type, media_id, api_key, mpaa_region, current_date, current_time=None, is_anime_list=None):
+def tvshow_meta(id_type, media_id, api_key, mpaa_region, current_date, current_time=None, is_anime_list=None, dbcon=None, _alt_ids=None):
+	# Simkl (and others) sometimes attach a movie TMDb id / dead TV id to season-split anime.
+	# Keep TMDb first, but fall through to IMDb/TVDb so Plan to Watch still resolves.
 	if id_type == 'trakt_dict':
-		if media_id.get('tmdb', None): id_type, media_id = 'tmdb_id', media_id['tmdb']
-		elif media_id.get('imdb', None): id_type, media_id = 'imdb_id', media_id['imdb']
-		elif media_id.get('tvdb', None): id_type, media_id = 'tvdb_id', media_id['tvdb']
-		else: id_type, media_id = None, None
+		candidates = _media_id_candidates('trakt_dict', media_id)
+		if not candidates: return None
+		id_type, media_id = candidates[0]
+		_alt_ids = candidates[1:]
+	elif _alt_ids is None:
+		_alt_ids = []
 	if media_id == None: return None
-	meta = meta_cache.get('tvshow', id_type, media_id, current_time)
-	if meta: return meta_valid_check(meta, is_anime_list)
+	meta = meta_cache.get('tvshow', id_type, media_id, current_time, dbcon=dbcon)
+	if meta:
+		if meta.get('blank_entry') and _alt_ids:
+			nxt_type, nxt_id = _alt_ids[0]
+			return tvshow_meta(nxt_type, nxt_id, api_key, mpaa_region, current_date, current_time, is_anime_list, dbcon, _alt_ids=_alt_ids[1:])
+		return meta_valid_check(meta, is_anime_list)
 	try:
 		if id_type == 'tmdb_id': data = tvshow_details(media_id, api_key)
 		else:
@@ -157,7 +191,10 @@ def tvshow_meta(id_type, media_id, api_key, mpaa_region, current_date, current_t
 			if id_type == 'tmdb_id': meta = {'tmdb_id': media_id, 'imdb_id': 'tt0000000', 'tvdb_id': '0000000', 'blank_entry': True}
 			elif id_type == 'imdb_id': meta = {'tmdb_id': '0000000', 'imdb_id': media_id, 'tvdb_id': '0000000', 'blank_entry': True}
 			else: meta = {'tmdb_id': '0000000', 'imdb_id': 'tt0000000', 'tvdb_id': media_id, 'blank_entry': True}
-			meta_cache.set('tvshow', id_type, meta, 24, current_time)
+			meta_cache.set('tvshow', id_type, meta, 24, current_time, dbcon=dbcon)
+			if _alt_ids:
+				nxt_type, nxt_id = _alt_ids[0]
+				return tvshow_meta(nxt_type, nxt_id, api_key, mpaa_region, current_date, current_time, is_anime_list, dbcon, _alt_ids=_alt_ids[1:])
 			return meta
 		tmdb_image_url, youtube_url = 'https://image.tmdb.org/t/p/%s%s', 'plugin://plugin.video.youtube/play/?video_id=%s'
 		data_get = data.get
@@ -207,9 +244,9 @@ def tvshow_meta(id_type, media_id, api_key, mpaa_region, current_date, current_t
 		rootname = '%s (%s)' % (title, year)
 		networks = data_get('networks', None)
 		if networks:
-			if len(networks) == 1: studio = ([i['name'] for i in networks][0],)
+			if len(networks) == 1: studio = [networks[0]['name']]
 			else:
-				try: studio = (next(i['name'] for i in networks if i['logo_path'] not in ('', 'None', None)) or next(i['name'] for i in network),)
+				try: studio = [next(i['name'] for i in networks if i['logo_path'] not in ('', 'None', None)) or next(i['name'] for i in networks)]
 				except: pass
 		production_countries = data_get('production_countries', None)
 		if production_countries:
@@ -235,8 +272,9 @@ def tvshow_meta(id_type, media_id, api_key, mpaa_region, current_date, current_t
 				except: pass
 		alternative_titles = data_get('alternative_titles', [])
 		if alternative_titles:
-			alternatives = alternative_titles['results']
-			alternative_titles = [i['title'] for i in alternatives if i['iso_3166_1'] in ('US', 'GB', 'UK', '')]
+			from modules.source_utils import filter_alternative_titles
+			alternative_titles = filter_alternative_titles(alternative_titles, titles_key='results')
+		else: alternative_titles = []
 		videos = data_get('videos', None)
 		if videos:
 			try:
@@ -262,6 +300,15 @@ def tvshow_meta(id_type, media_id, api_key, mpaa_region, current_date, current_t
 		if ei_last_ep and not status in ('Ended', 'Canceled'):
 			total_aired_eps = sum([i['episode_count'] for i in season_data if i['season_number'] < ei_last_ep['season_number'] \
 																		and i['season_number'] != 0]) + ei_last_ep['episode_number']
+		elif ei_last_ep and status in ('Ended', 'Canceled'):
+			# Count through last aired only — TMDb number_of_episodes can include unaired placeholder
+			# seasons (e.g. S2E1 with no air_date after an Ended S1 finale).
+			last_s, last_e = ei_last_ep['season_number'], ei_last_ep['episode_number']
+			prior = sum(i['episode_count'] for i in season_data if 0 < i['season_number'] < last_s)
+			cur = next((i for i in season_data if i['season_number'] == last_s), None)
+			cur_count = (cur or {}).get('episode_count') or 0
+			if last_e <= cur_count: total_aired_eps = prior + last_e
+			else: total_aired_eps = prior + cur_count if (prior + cur_count) else data_get('number_of_episodes')
 		else: total_aired_eps = data_get('number_of_episodes')
 		extra_info = {'status': status, 'type': _type, 'homepage': homepage, 'created_by': ei_created_by, 'next_episode_to_air': ei_next_ep, 'last_episode_to_air': ei_last_ep}
 		meta = {'tmdb_id': tmdb_id, 'tvdb_id': tvdb_id, 'imdb_id': imdb_id, 'rating': rating, 'plot': plot, 'tagline': tagline, 'votes': votes, 'premiered': premiered, 'year': year,
@@ -270,7 +317,7 @@ def tvshow_meta(id_type, media_id, api_key, mpaa_region, current_date, current_t
 				'country_codes': country_codes, 'writer': writer, 'director': director, 'all_trailers': all_trailers, 'cast': cast, 'studio': studio, 'extra_info': extra_info,
 				'total_aired_eps': total_aired_eps, 'mediatype': 'tvshow', 'total_seasons': total_seasons, 'tvshowtitle': title, 'status': status, 'clearlogo': clearlogo,
 				'landscape': landscape, 'keywords': keywords, 'rpdb_poster': rpdb_poster, 'short_cast': short_cast}
-		meta_cache.set('tvshow', id_type, meta, tvshow_expiry(current_date, meta), current_time)
+		meta_cache.set('tvshow', id_type, meta, tvshow_expiry(current_date, meta), current_time, dbcon=dbcon)
 	except: pass
 	return meta_valid_check(meta, is_anime_list)
 
@@ -301,7 +348,7 @@ def movieset_meta(media_id, api_key, current_time=None):
 	except: pass
 	return meta
 
-def episodes_meta(season, meta):
+def episodes_meta(season, meta, force_refresh=False):
 	def _process():
 		midseason_premiere = False
 		for ep_data in details:
@@ -342,23 +389,39 @@ def episodes_meta(season, meta):
 					'duration': duration, 'premiered': premiered, 'season': season, 'episode': episode, 'rating': rating, 'votes': votes, 'thumb': thumb, 'guest_stars': guest_stars}
 	media_id, data = meta['tmdb_id'], None
 	prop_string = '%s_%s' % (media_id, season)
-	data = meta_cache.get_season(prop_string)
-	if data is not None: return data
+	if force_refresh:
+		try: meta_cache.delete_season(prop_string)
+		except: pass
+	else:
+		data = meta_cache.get_season(prop_string)
+		if data is not None: return data
 	try:
 		tmdb_image_url = 'https://image.tmdb.org/t/p/%s%s'
 		season, tvshow_status, total_seasons = int(season), meta['status'], meta['total_seasons']
 		if season == 1: season_type = 'premiere_finale' if (total_seasons == season and tvshow_status in ('Ended', 'Canceled')) else 'premiere'
 		else: season_type = 'finale' if (total_seasons == season and tvshow_status in ('Ended', 'Canceled')) else ''
+		# Airing current seasons need frequent refresh — weekly anime often lands mid-window.
 		if tvshow_status in ('Ended', 'Canceled') or total_seasons > int(season): expiration = 4368
-		else: expiration = 96
-		try:
-			details = season_episodes_details(media_id, season)['episodes']
-			total_episodes = len(details)
-			data = list(_process())
-		except: data, expiration = [], 96
-	except: data, expiration = [], 96
+		else: expiration = 12
+		details = season_episodes_details(media_id, season)['episodes']
+		total_episodes = len(details)
+		data = list(_process())
+	except:
+		# Do not cache [] on fetch failure — that poisons Next/In Progress for hours.
+		return []
 	meta_cache.set_season(prop_string, data, expiration)
 	return data
+
+def refresh_airing_show_meta(tmdb_id, season=None):
+	"""Drop cached show + season episode lists so newly aired eps can appear in Next/In Progress."""
+	try:
+		if not tmdb_id: return
+		meta_cache.delete('tvshow', 'tmdb_id', str(tmdb_id))
+		if season not in (None, '', 'None'):
+			meta_cache.delete_season('%s_%s' % (tmdb_id, int(season)))
+		else:
+			meta_cache.delete_all_seasons(str(tmdb_id))
+	except: pass
 
 def all_episodes_meta(meta, include_specials=False):
 	from threading import Thread
@@ -380,6 +443,26 @@ def episode_groups(media_id):
 	try: groups = episode_groups_data(media_id)['results']
 	except: groups = None
 	return groups or None
+
+def preferred_episode_group(groups, prefer_name=None):
+	"""Pick one TMDb episode group for Auto/fallback scrape remaps.
+
+	Order: optional exact name (e.g. anime "Seasons") → Original Air Date (type 1)
+	→ first group. Absolute and other types are not preferred.
+	"""
+	if not groups:
+		return None
+	if prefer_name:
+		named = next((g for g in groups if (g.get('name') or '').lower() == prefer_name.lower()), None)
+		if named:
+			return named
+	def _type(group):
+		try: return int(group.get('type'))
+		except: return 0
+	aired = next((g for g in groups if _type(g) == 1), None)
+	if aired:
+		return aired
+	return groups[0]
 
 def group_details(group_id):
 	return episode_group_details(group_id)
@@ -413,10 +496,15 @@ def tvshow_expiry(current_date, meta):
 	try:
 		if meta['status'] in ('Ended', 'Canceled'): expiration = 4368
 		else:
-			data = subtract_dates(jsondate_to_datetime(meta['extra_info']['next_episode_to_air']['air_date'], '%Y-%m-%d', remove_time=True), current_date) - 24
-			if data <= 1: expiration = 24
-			else: expiration = data*24
-	except: expiration = 96
+			try:
+				next_air = meta['extra_info']['next_episode_to_air']['air_date']
+				data = subtract_dates(jsondate_to_datetime(next_air, '%Y-%m-%d', remove_time=True), current_date) - 24
+				if data <= 1: expiration = 24
+				else: expiration = min(data * 24, 72)
+			except:
+				# Still-airing but TMDb has no next_episode_to_air yet — keep short for weekly anime.
+				expiration = 12
+	except: expiration = 12
 	return expiration
 
 def meta_valid_check(meta, is_anime_list):

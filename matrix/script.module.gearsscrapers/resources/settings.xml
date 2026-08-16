@@ -60,6 +60,7 @@
     <setting id="provider.kontrast" type="bool" label="KONTRAST" default="true" />
     <setting id="provider.torrentscsv" type="bool" label="TorrentsCSV" default="true" />
     <setting id="provider.btdig" type="bool" label="BitDig" default="true" />
+    <setting id="provider.snowfl" type="bool" label="Snowfl" default="true" />
 </category>
 
 <category label="Prowlarr">

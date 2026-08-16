@@ -19,17 +19,20 @@ class source:
 			filter_title = filter_by_name(self.scrape_provider)
 			self.media_type, title, self.tmdb_id = info.get('media_type'), info.get('title'), info.get('tmdb_id')
 			self.year, self.season, self.episode = int(info.get('year')), info.get('season'), info.get('episode')
+			self.absolute_episode = info.get('absolute_episode')
+			self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
 			self.folder_query = source_utils.clean_title(normalize(title))
+			self.folder_queries = source_utils.folder_title_queries(title, self.aliases)
 			self._scrape_downloads()
 			self._scrape_cloud()
 			if not self.scrape_results: return source_utils.internal_results(self.scrape_provider, self.sources)
-			aliases = source_utils.get_aliases_titles(info.get('aliases', []))
+			aliases = self.aliases
 			def _process():
 				for item in self.scrape_results:
 					try:
 						file_name = self._get_filename(item['path'])
 						if self.media_type == 'episode':
-							if not source_utils.cloud_episode_matches(self.season, self.episode, file_name): continue
+							if not source_utils.cloud_episode_matches(self.season, self.episode, file_name, self.absolute_episode): continue
 							if filter_title and not source_utils.check_title(title, file_name, aliases, self.year, 'pack', self.episode): continue
 						elif filter_title and not source_utils.check_title(title, file_name, aliases, self.year, self.season, self.episode): continue
 						display_name = clean_file_name(file_name).replace('html', ' ').replace('+', ' ').replace('-', ' ')
@@ -61,7 +64,7 @@ class source:
 				normalized = normalize(item['filename'])
 				folder_name = source_utils.clean_title(normalized)
 				if not folder_name: results_append(item['id'])
-				elif not self.folder_query in folder_name: continue
+				elif not any(q and q in folder_name for q in self.folder_queries): continue
 				else:
 					if self.media_type == 'movie' and not any(x in normalized for x in year_query_list): continue
 					results_append(item['id'])
@@ -85,7 +88,7 @@ class source:
 			contents.sort(key=lambda k: k['path'])
 			for item in contents:
 				normalized = normalize(item['path'])
-				if self.media_type == 'episode' and not source_utils.cloud_episode_matches(self.season, self.episode, normalized): continue
+				if self.media_type == 'episode' and not source_utils.cloud_episode_matches(self.season, self.episode, normalized, self.absolute_episode): continue
 				if item['path'].replace('/', '').lower() not in [d['path'].replace('/', '').lower() for d in self.scrape_results]:
 					item.update({'folder_id': folder_info, 'cache_type': 'torrent'})
 					scrape_results_append(item)
@@ -100,7 +103,7 @@ class source:
 			for item in my_downloads:
 				normalized = normalize(item['filename'])
 				folder_name = source_utils.clean_title(normalized)
-				if not self.folder_query in folder_name: continue
+				if not any(q and q in folder_name for q in self.folder_queries): continue
 				if self.media_type == 'movie':
 					if not any(x in normalized for x in year_query_list): continue
 				elif not source_utils.seas_ep_filter(self.season, self.episode, normalized): continue

@@ -9,13 +9,17 @@ from gearsscrapers.modules import client
 from gearsscrapers.modules import source_utils
 from gearsscrapers.modules import workers
 
-# YourBitTorrent now serves each detail page from a random per-torrent
-# subdomain (e.g. http://zuc4p4v.t0r.space/torrent/...) instead of a relative
-# path on the search domain -- match the absolute URL directly.
-_RE_LINK = re.compile(r'<a[^>]+href="(https?://[^"]+/torrent/[^"]+)"', re.IGNORECASE)
-_RE_HASH = re.compile(r'<kbd>([a-fA-F0-9]{40})<', re.IGNORECASE)
-_RE_NAME = re.compile(r'<h3 class="card-title">([^<]+)<', re.IGNORECASE)
-_RE_SIZE = re.compile(r'File size:</div><div class="col">([^<]+)<', re.IGNORECASE)
+# Site moved again since the note above was written: it's now plain
+# yourbittorrent.com with a redesigned page -- relative /torrent/<id>/<slug>
+# links (no more random per-torrent subdomain), infohash/size in a labeled
+# key/value grid instead of <kbd>/card-title tags, and the clean title is
+# in the page's own <title> tag. Confirmed live 2026-08-15 against the
+# real site; regexes rewritten to match (same fix applied to Starfleet's
+# own copy of this scraper).
+_RE_LINK = re.compile(r'href="(/torrent/[^"]+)"', re.IGNORECASE)
+_RE_HASH = re.compile(r'<div class="k">Infohash</div><div class="v"[^>]*>([a-fA-F0-9]{40})', re.IGNORECASE)
+_RE_NAME = re.compile(r'<title>([^<]+)</title>', re.IGNORECASE)
+_RE_SIZE = re.compile(r'<div class="k">Size</div><div class="v"[^>]*>([^<]+)', re.IGNORECASE)
 
 
 class source:
@@ -25,7 +29,7 @@ class source:
 	hasEpisodes = True
 	def __init__(self):
 		self.language = ['en']
-		self.base_link = 'https://yourbittorrent2.com'
+		self.base_link = 'https://yourbittorrent.com'
 		self.min_seeders = 0
 
 	def sources(self, data, hostDict):
@@ -74,13 +78,16 @@ class source:
 
 	def get_sources(self, link):
 		try:
-			detail = client.request(link, timeout=8)
+			detail = client.request(self.base_link + link, timeout=8)
 			if not detail: return
 			ih_m = _RE_HASH.search(detail)
 			nm_m = _RE_NAME.search(detail)
 			if not ih_m or not nm_m: return
 			hash = ih_m.group(1).lower()
-			name = source_utils.clean_name(nm_m.group(1).strip())
+			raw_name = nm_m.group(1).strip()
+			if raw_name.endswith(' Torrent Download'):
+				raw_name = raw_name[:-len(' Torrent Download')]
+			name = source_utils.clean_name(raw_name)
 
 			if not source_utils.check_title(self.title, self.aliases, name, self.hdlr, self.year): return
 			name_info = source_utils.info_from_name(name, self.title, self.year, self.hdlr, self.episode_title)
