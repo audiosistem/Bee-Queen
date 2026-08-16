@@ -8,24 +8,21 @@ from urllib.parse import urlencode
 from gearsscrapers.modules import client
 from gearsscrapers.modules import source_utils
 
-# TorrentFunk's HTML search.php is genuinely Cloudflare JS-challenge
-# protected (confirmed live) -- but the site documents/exposes a free,
-# keyless JSON API at /api/search.json with real server-side query search,
-# no CF in front of it at all. Ready-to-use magnet + infohash straight in
-# the response, no scraping needed.
+# torrents-csv.com -- clean JSON API, no Cloudflare, no auth. Real infohash
+# and seeders straight in the response, same category as TorrentFunk's own
+# official API: no scraping or per-item detail fetch needed at all.
 
-API_BASE = 'https://www.torrentfunk.com/api/search.json'
-_CAT = {'movie': 1, 'tv': 3}
+API_BASE = 'https://torrents-csv.com/service/search'
 
 
 class source:
-	priority = 3
+	priority = 4
 	pack_capable = False
 	hasMovies = True
 	hasEpisodes = True
 	def __init__(self):
 		self.language = ['en']
-		self.base_link = 'https://www.torrentfunk.com'
+		self.base_link = 'https://torrents-csv.com'
 		self.min_seeders = 0
 
 	def sources(self, data, hostDict):
@@ -33,33 +30,29 @@ class source:
 		if not data: return self.sources
 		self.sources_append = self.sources.append
 		try:
-			self.aliases = data['aliases']
-			self.year = data['year']
 			if 'tvshowtitle' in data:
 				self.title = data['tvshowtitle'].replace('&', 'and').replace('/', ' ').replace('$', 's')
 				self.episode_title = data['title']
 				self.hdlr = 'S%02dE%02d' % (int(data['season']), int(data['episode']))
-				cat = _CAT['tv']
 			else:
 				self.title = data['title'].replace('&', 'and').replace('/', ' ').replace('$', 's')
 				self.episode_title = None
-				self.hdlr = self.year
-				cat = _CAT['movie']
+				self.hdlr = data['year']
+			self.aliases = data['aliases']
+			self.year = data['year']
 			self.undesirables = source_utils.get_undesirables()
 			self.check_foreign_audio = source_utils.check_foreign_audio()
 
 			query = '%s %s' % (self.title, self.hdlr)
-			params = {'q': query[:100], 'limit': 20, 'sort': 'seeds', 'order': 'desc', 'category': cat}
-			url = '%s?%s' % (API_BASE, urlencode(params))
+			url = '%s?%s' % (API_BASE, urlencode({'size': 50, 'q': query}))
 			raw = client.request(url, timeout=8)
 			if not raw: return self.sources
 			payload = json.loads(raw)
-			if payload.get('status') != 'ok': return self.sources
 		except:
-			source_utils.scraper_error('TORRENTFUNK')
+			source_utils.scraper_error('TORRENTSCSV')
 			return self.sources
 
-		for item in payload.get('results', []):
+		for item in payload.get('torrents', []):
 			try:
 				hash = (item.get('infohash') or '').lower()
 				raw_name = item.get('name', '')
@@ -71,20 +64,21 @@ class source:
 				if source_utils.remove_lang(name_info, self.check_foreign_audio): continue
 				if self.undesirables and source_utils.remove_undesirables(name_info, self.undesirables): continue
 
-				magnet = item.get('magnet') or ('magnet:?xt=urn:btih:%s&dn=%s' % (hash, name))
-				quality, info = source_utils.get_release_quality(name_info, magnet)
+				url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name)
+				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
-					dsize, isize = source_utils._size(item.get('size', ''))
+					size_bytes = float(item.get('size_bytes') or 0)
+					dsize, isize = source_utils._size('%.2f GB' % (size_bytes / 1073741824))
 					info.insert(0, isize)
 				except: dsize = 0
 				info = ' | '.join(info)
 
-				seeders = item.get('seeds', 0) or 0
+				seeders = item.get('seeders', 0) or 0
 				if self.min_seeders > seeders: continue
 
-				self.sources_append({'provider': 'torrentfunk', 'source': 'torrent', 'seeders': seeders, 'hash': hash, 'name': name,
-					'name_info': name_info, 'quality': quality, 'language': 'en', 'url': magnet, 'info': info,
+				self.sources_append({'provider': 'torrentscsv', 'source': 'torrent', 'seeders': seeders, 'hash': hash, 'name': name,
+					'name_info': name_info, 'quality': quality, 'language': 'en', 'url': url, 'info': info,
 					'direct': False, 'debridonly': True, 'size': dsize})
 			except:
-				source_utils.scraper_error('TORRENTFUNK')
+				source_utils.scraper_error('TORRENTSCSV')
 		return self.sources

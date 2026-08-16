@@ -48,7 +48,25 @@ def getKodiVersion(full=False):
 	else: return int(xbmc.getInfoLabel("System.BuildVersion")[:2])
 
 def setting(id, fallback=None):
-	try: settings_dict = jsloads(homeWindow.getProperty('gearsscrapers_settings'))
+	# The window-10000 cache below is only ever rebuilt by a background
+	# service reacting to Kodi's own "onSettingsChanged" event -- which
+	# never fires for a settings.xml edited directly on disk (outside
+	# Kodi's own settings GUI). Confirmed live: providers re-enabled this
+	# way (provider.torrentfunk, provider.kontrast) stayed invisible to
+	# every already-running Kodi session despite the file on disk being
+	# correct, because setting() kept serving the stale cached dict from
+	# whenever it was last built. Comparing the file's mtime against what
+	# was cached at build time makes this self-healing -- any settings.xml
+	# change, from any source, gets picked up on the very next call instead
+	# of requiring a Kodi restart.
+	try:
+		cached_mtime = homeWindow.getProperty('gearsscrapers_settings_mtime')
+		try: current_mtime = str(os.path.getmtime(settingsFile))
+		except Exception: current_mtime = ''
+		if current_mtime and current_mtime != cached_mtime:
+			settings_dict = make_settings_dict()
+		else:
+			settings_dict = jsloads(homeWindow.getProperty('gearsscrapers_settings'))
 	except: settings_dict = make_settings_dict()
 	if settings_dict is None: settings_dict = settings_fallback(id)
 	value = settings_dict.get(id, '')
@@ -74,6 +92,8 @@ def make_settings_dict(): # service runs upon a setting change
 			dict_item = {setting_id: setting_value}
 			settings_dict.update(dict_item)
 		homeWindow.setProperty('gearsscrapers_settings', jsdumps(settings_dict))
+		try: homeWindow.setProperty('gearsscrapers_settings_mtime', str(os.path.getmtime(settingsFile)))
+		except Exception: pass
 		return settings_dict
 	except:
 		return None

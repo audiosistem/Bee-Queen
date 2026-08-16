@@ -18,7 +18,19 @@ class source:
 	_queue = queue.SimpleQueue()
 	def __init__(self):
 		self.language = ['en']
-		self.base_link = "https://aiostreamsfortheweebs.midnightignite.me"
+		# Community-hosted instances of the same open-source project -- any
+		# one can go dark or get rate-limited at any time (confirmed live:
+		# aiostreamsfortheweak.cloud was already unreachable when checked),
+		# so sources()/sources_packs() try each in turn instead of hardcoding
+		# a single host.
+		self.base_links = [
+			"https://aiostreamsfortheweebs.midnightignite.me",
+			"https://aiostreamsfortheweebsstable.midnightignite.me",
+			"https://aiostreams.stremio.ru",
+			"https://aiostreams.viren070.me",
+			"https://aiostreams.12312023.xyz",
+		]
+		self.base_link = self.base_links[0]
 		self.movieSearch_link = '/api/v1/search?type=movie&id=%s'
 		self.tvSearch_link = '/api/v1/search?type=series&id=%s:%s:%s'
 		self.min_seeders = 0
@@ -38,14 +50,24 @@ class source:
 				season = data['season']
 				episode = data['episode']
 				hdlr = 'S%02dE%02d' % (int(season), int(episode))
-				url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, episode))
+				link_tmpl = self.tvSearch_link % (imdb, season, episode)
 			else:
 				hdlr = year
-				url = '%s%s' % (self.base_link, self.movieSearch_link % imdb)
-			# log_utils.log('url = %s' % url)
+				link_tmpl = self.movieSearch_link % imdb
 			try:
-				results = client.request(url, headers=self._headers(), timeout=self.timeout)
-				files = jsloads(results)['data']['results']
+				files = []
+				for base in self.base_links:
+					try:
+						results = client.request(base + link_tmpl, headers=self._headers(), timeout=self.timeout)
+						candidate = jsloads(results)['data']['results']
+						if candidate:
+							files = candidate
+							self.base_link = base
+							break
+						if not files:
+							files = candidate  # keep first reachable-but-empty response as fallback
+					except:
+						continue
 			except:
 				files = []
 				raise
@@ -166,13 +188,16 @@ class source:
 		return sources
 
 	def _headers(self):
+		# Config adds seadex + neko-bt presets (2026-08-11) on top of the
+		# existing bitmagnet-only demo config -- both are anime-focused
+		# sources with no direct gearsscrapers equivalent (unlike
+		# comet/zilean/mediafusion/meteor/torrentsdb/knaben, which duplicate
+		# scrapers already run directly elsewhere in this project, so weren't
+		# added here). AIOStreams itself decides server-side whether a
+		# searched title is anime and only queries these two when it is --
+		# fires transparently through the existing sources()/sources_packs()
+		# calls above, no new media-type path needed. Kept identical to the
+		# same change made in plugin.video.starfleet's torrent_sources.py.
 		return {'x-aiostreams-user-data': (
-			'ewogICJzZXJ2aWNlcyI6IFsKICAgIHsKICAgICAgImlkIjogImFsbGRlYnJpZCIsCiAgICAgICJlbmFi'
-			'bGVkIjogdHJ1ZSwKICAgICAgImNyZWRlbnRpYWxzIjogeyJhcGlLZXkiOiAic3RhdGljRGVtb0FwaWtl'
-			'eVByZW0ifQogICAgfQogIF0sCiAgInByZXNldHMiOiBbCiAgICB7CiAgICAgICJ0eXBlIjogImJpdG1h'
-			'Z25ldCIsCiAgICAgICJpbnN0YW5jZUlkIjogIjNiMyIsCiAgICAgICJlbmFibGVkIjogdHJ1ZSwKICAg'
-			'ICAgIm9wdGlvbnMiOiB7Im5hbWUiOiAiQml0bWFnbmV0IiwgInRpbWVvdXQiOiAxMDAwMCwgIm1lZGlh'
-			'VHlwZXMiOiBbXX0KICAgIH0KICBdLAogICJmb3JtYXR0ZXIiOiB7CiAgICAiaWQiOiAidG9ycmVudGlv'
-			'IiwKICAgICJkZWZpbml0aW9uIjogeyJuYW1lIjogIiIsICJkZXNjcmlwdGlvbiI6ICIifQogIH0sCiAg'
-			'InNvcnRDcml0ZXJpYSI6IHsiZ2xvYmFsIjogW119Cn0='
+			'eyJzZXJ2aWNlcyI6IFt7ImlkIjogImFsbGRlYnJpZCIsICJlbmFibGVkIjogdHJ1ZSwgImNyZWRlbnRpYWxzIjogeyJhcGlLZXkiOiAic3RhdGljRGVtb0FwaWtleVByZW0ifX1dLCAicHJlc2V0cyI6IFt7InR5cGUiOiAiYml0bWFnbmV0IiwgImluc3RhbmNlSWQiOiAiM2IzIiwgImVuYWJsZWQiOiB0cnVlLCAib3B0aW9ucyI6IHsibmFtZSI6ICJCaXRtYWduZXQiLCAidGltZW91dCI6IDEwMDAwLCAibWVkaWFUeXBlcyI6IFtdfX0sIHsidHlwZSI6ICJzZWFkZXgiLCAiaW5zdGFuY2VJZCI6ICI0N2IiLCAiZW5hYmxlZCI6IHRydWUsICJvcHRpb25zIjogeyJuYW1lIjogIlNlYURleCIsICJ0aW1lb3V0IjogNzAwMCwgIm1lZGlhVHlwZXMiOiBbImFuaW1lIl19fSwgeyJ0eXBlIjogIm5la28tYnQiLCAiaW5zdGFuY2VJZCI6ICI1NmUiLCAiZW5hYmxlZCI6IHRydWUsICJvcHRpb25zIjogeyJuYW1lIjogIm5la29CVCIsICJ0aW1lb3V0IjogNzAwMCwgIm1lZGlhVHlwZXMiOiBbXSwgInNlYXJjaE1vZGUiOiAiYm90aCIsICJ1c2VNdWx0aXBsZUluc3RhbmNlcyI6IGZhbHNlLCAibGVhdmVBdXRvVGl0bGVUYWdzSW5GaWxlbmFtZSI6IGZhbHNlfX1dLCAiZm9ybWF0dGVyIjogeyJpZCI6ICJ0b3JyZW50aW8iLCAiZGVmaW5pdGlvbiI6IHsibmFtZSI6ICIiLCAiZGVzY3JpcHRpb24iOiAiIn19LCAic29ydENyaXRlcmlhIjogeyJnbG9iYWwiOiBbXX19'
 		)}

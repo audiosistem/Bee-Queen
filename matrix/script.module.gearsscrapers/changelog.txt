@@ -1,6 +1,22 @@
-[COLORcyan] VERSION 1.5.2[/COLOR]
+[COLORcyan] VERSION 1.5.5[/COLOR]
 
- • A new batch of Starfleet-Ported Providers has now been integrated into Gears Scrapers, expanding source coverage and improving search reliability.
+ GEARS SCRAPERS — UPDATE
+
+ Fixes & Improvements
+
+• Scrapers fixed — restored and improved scraper functionality.
+• Anime Providers section added to Gears Scrapers settings for easier management of anime sources.
+• Anime scrapers added — bringing more dedicated providers to Gears.
+
+ Anime Support
+
+Gears now has a dedicated Anime Providers settings section, making anime-specific sources easier to manage and configure.
+
+ Starfleet-Ported Providers
+
+• Expanded the Starfleet-Ported Providers section with additional scrapers, giving Gears even more provider coverage and source diversity.
+• More scrapers. More providers. Better coverage
+• A new batch of Starfleet-Ported Providers has now been integrated into Gears Scrapers, expanding source coverage and improving search reliability.
 
  New Providers Added And Fixed.
 

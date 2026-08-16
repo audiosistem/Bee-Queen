@@ -3,29 +3,33 @@
 	gearsscrapers Project
 """
 
-import json
-from urllib.parse import urlencode
+import re
+from urllib.parse import quote
 from gearsscrapers.modules import client
 from gearsscrapers.modules import source_utils
 
-# TorrentFunk's HTML search.php is genuinely Cloudflare JS-challenge
-# protected (confirmed live) -- but the site documents/exposes a free,
-# keyless JSON API at /api/search.json with real server-side query search,
-# no CF in front of it at all. Ready-to-use magnet + infohash straight in
-# the response, no scraping needed.
+# btdig.com -- a DHT-crawler search engine: indexes files actually seen live
+# on the DHT swarm rather than scraping a tracker site's own upload database,
+# so it turns up torrents pure tracker-scrapers miss. No live seeder count is
+# exposed (a DHT crawler only tracks "last seen" + the file listing, not
+# ongoing swarm health) and relevance can be loose (full-text match against
+# files INSIDE a torrent, not just its own name) -- source_utils.check_title
+# below is what actually filters out the wrong matches this site returns.
+# Magnet links are already inline on the search results page itself, no
+# per-item detail-page fetch needed (unlike torlock.py).
 
-API_BASE = 'https://www.torrentfunk.com/api/search.json'
-_CAT = {'movie': 1, 'tv': 3}
+_RE_NAME   = re.compile(r'class="torrent_name"[^>]*><a[^>]*>([^<]+)</a>', re.IGNORECASE)
+_RE_MAGNET = re.compile(r'href="(magnet:\?[^"]+)"', re.IGNORECASE)
 
 
 class source:
-	priority = 3
+	priority = 8
 	pack_capable = False
 	hasMovies = True
 	hasEpisodes = True
 	def __init__(self):
 		self.language = ['en']
-		self.base_link = 'https://www.torrentfunk.com'
+		self.base_link = 'https://btdig.com'
 		self.min_seeders = 0
 
 	def sources(self, data, hostDict):
@@ -39,31 +43,31 @@ class source:
 				self.title = data['tvshowtitle'].replace('&', 'and').replace('/', ' ').replace('$', 's')
 				self.episode_title = data['title']
 				self.hdlr = 'S%02dE%02d' % (int(data['season']), int(data['episode']))
-				cat = _CAT['tv']
 			else:
 				self.title = data['title'].replace('&', 'and').replace('/', ' ').replace('$', 's')
 				self.episode_title = None
 				self.hdlr = self.year
-				cat = _CAT['movie']
 			self.undesirables = source_utils.get_undesirables()
 			self.check_foreign_audio = source_utils.check_foreign_audio()
 
-			query = '%s %s' % (self.title, self.hdlr)
-			params = {'q': query[:100], 'limit': 20, 'sort': 'seeds', 'order': 'desc', 'category': cat}
-			url = '%s?%s' % (API_BASE, urlencode(params))
-			raw = client.request(url, timeout=8)
-			if not raw: return self.sources
-			payload = json.loads(raw)
-			if payload.get('status') != 'ok': return self.sources
+			query = quote('%s %s' % (self.title, self.hdlr))
+			url = '%s/search?q=%s' % (self.base_link, query)
+			html = client.request(url, timeout=10)
+			if not html: return self.sources
 		except:
-			source_utils.scraper_error('TORRENTFUNK')
+			source_utils.scraper_error('BTDIG')
 			return self.sources
 
-		for item in payload.get('results', []):
+		for block in html.split('class="one_result"')[1:]:
 			try:
-				hash = (item.get('infohash') or '').lower()
-				raw_name = item.get('name', '')
-				if not hash or not raw_name: continue
+				name_m = _RE_NAME.search(block)
+				magnet_m = _RE_MAGNET.search(block)
+				if not (name_m and magnet_m): continue
+				ih_m = re.search(r'btih:([a-fA-F0-9]{40})', magnet_m.group(1), re.IGNORECASE)
+				if not ih_m: continue
+				hash = ih_m.group(1).lower()
+				magnet = magnet_m.group(1).replace('&amp;', '&')
+				raw_name = name_m.group(1)
 				name = source_utils.clean_name(raw_name)
 
 				if not source_utils.check_title(self.title, self.aliases, name, self.hdlr, self.year): continue
@@ -71,20 +75,11 @@ class source:
 				if source_utils.remove_lang(name_info, self.check_foreign_audio): continue
 				if self.undesirables and source_utils.remove_undesirables(name_info, self.undesirables): continue
 
-				magnet = item.get('magnet') or ('magnet:?xt=urn:btih:%s&dn=%s' % (hash, name))
 				quality, info = source_utils.get_release_quality(name_info, magnet)
-				try:
-					dsize, isize = source_utils._size(item.get('size', ''))
-					info.insert(0, isize)
-				except: dsize = 0
 				info = ' | '.join(info)
-
-				seeders = item.get('seeds', 0) or 0
-				if self.min_seeders > seeders: continue
-
-				self.sources_append({'provider': 'torrentfunk', 'source': 'torrent', 'seeders': seeders, 'hash': hash, 'name': name,
+				self.sources_append({'provider': 'btdig', 'source': 'torrent', 'seeders': 0, 'hash': hash, 'name': name,
 					'name_info': name_info, 'quality': quality, 'language': 'en', 'url': magnet, 'info': info,
-					'direct': False, 'debridonly': True, 'size': dsize})
+					'direct': False, 'debridonly': True, 'size': 0})
 			except:
-				source_utils.scraper_error('TORRENTFUNK')
+				source_utils.scraper_error('BTDIG')
 		return self.sources

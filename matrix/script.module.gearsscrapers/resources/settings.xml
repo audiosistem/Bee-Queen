@@ -7,7 +7,7 @@
 
 <category label="Providers">
     <setting id="provider.aiostreams" type="bool" label="Aiostreams" default="false" />
-	<setting id="provider.torlock" type="bool" label="Torlock" default="false" />
+	<setting id="provider.torlock" type="bool" label="Torlock" default="true" />
 	<setting id="provider.torrentproject2" type="bool" label="Torrentproject" default="false" />
     <setting id="provider.torrentz2" type="bool" label="Torrentz" default="false" />
 	<setting id="provider.meteor" type="bool" label="Meteor" default="false" />
@@ -38,26 +38,35 @@
 	<setting id="provider.zilean" type="bool" label="Zilean" default="false" />
 </category>
 
-<category label="Prowlarr">
-    <setting label="Prowlarr" type="lsep" />
-    <setting id="provider.prowlarr" type="bool" label="PROWLARR" default="false" />
-        <setting id="prowlarr.token" type="text" label="PROWLARR apikey" subsetting="true" default="" visible="eq(-1,true)" />
-        <setting id="prowlarr.url" type="text" label="PROWLARR url" subsetting="true" default="" visible="eq(-2,true)" />
+<category label="Anime Providers">
+    <setting id="provider.nyaa" type="bool" label="Nyaa" default="false" />
+	<setting id="provider.animetosho" type="bool" label="AnimeTosho" default="true" />
+	<setting id="provider.nnmclub" type="bool" label="Nnmclub" default="true" />
 </category>
 
 <category label="Starfleet-Ported Providers">
     <setting id="provider.zooqle" type="bool" label="Zooqle" default="true" />
     <setting id="provider.torrentgalaxy" type="bool" label="TorrentGalaxy" default="false" />
     <setting id="provider.yourbittorrent" type="bool" label="YourBitTorrent" default="false" />
-    <setting id="provider.bitlord" type="bool" label="Bitlord" default="true" />
+    <setting id="provider.bitlord" type="bool" label="Bitlord" default="false" />
     <setting id="provider.magnetdl" type="bool" label="MagnetDL" default="true" />
     <setting id="provider.torrentdownloads" type="bool" label="TorrentDownloads" default="true" />
     <setting id="provider.glodls" type="bool" label="Glodls" default="false" />
     <setting id="provider.extto" type="bool" label="EXTto" default="true" />
     <setting id="provider.therarbg" type="bool" label="TheRarBG" default="false" />
-    <setting id="provider.torrentfunk" type="bool" label="TorrentFunk" default="false" />
+    <setting id="provider.torrentfunk" type="bool" label="TorrentFunk" default="true" />
     <setting id="provider.bittorrented" type="bool" label="BitTorrented" default="true" />
     <setting id="provider.limetorrents" type="bool" label="LimeTorrents" default="true" />
+    <setting id="provider.kontrast" type="bool" label="KONTRAST" default="true" />
+    <setting id="provider.torrentscsv" type="bool" label="TorrentsCSV" default="true" />
+    <setting id="provider.btdig" type="bool" label="BitDig" default="true" />
+</category>
+
+<category label="Prowlarr">
+    <setting label="Prowlarr" type="lsep" />
+    <setting id="provider.prowlarr" type="bool" label="PROWLARR" default="false" />
+        <setting id="prowlarr.token" type="text" label="PROWLARR apikey" subsetting="true" default="" visible="eq(-1,true)" />
+        <setting id="prowlarr.url" type="text" label="PROWLARR url" subsetting="true" default="" visible="eq(-2,true)" />
 </category>
 
 <category label="Filters">
