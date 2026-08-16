@@ -1590,6 +1590,25 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="plugin.video.tvzonehd" name="TVZoneHD" version="0.9.15" provider-name="Digitainer">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+    </requires>
+
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+
+    <extension point="xbmc.addon.metadata">
+        <summary lang="ro_RO">TVZoneHD pentru Kodi</summary>
+        <description lang="ro_RO">Canale TVZoneHD</description>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+        <platform>all</platform>
+        <license>GPL-3.0-only</license>
+    </extension>
 </addon><addon id="plugin.video.vavooto" name="VAVOO.TO" version="2026.02.15" provider-name="kasi,michaz,1X">
 	<requires>
 		<import addon="script.module.requests" />
