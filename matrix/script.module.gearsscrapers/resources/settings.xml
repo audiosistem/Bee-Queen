@@ -7,16 +7,18 @@
 
 <category label="Providers">
     <setting id="provider.aiostreams" type="bool" label="Aiostreams" default="false" />
+	<setting id="provider.apachetorrent" type="bool" label="apachetorrent" default="false" />
 	<setting id="provider.torlock" type="bool" label="Torlock" default="true" />
+	<setting id="provider.torseek" type="bool" label="Torseek" default="true" />
 	<setting id="provider.torrentproject2" type="bool" label="Torrentproject" default="false" />
     <setting id="provider.torrentz2" type="bool" label="Torrentz" default="false" />
 	<setting id="provider.meteor" type="bool" label="Meteor" default="false" />
     <setting id="provider.1337x" type="bool" label="1337x" default="false" />
     <setting id="provider.kickass2" type="bool" label="Kickass" default="false" />
     <setting id="provider.piratebay" type="bool" label="PirateBay" default="false" />
-    <setting id="provider.rutor" type="bool" label="Rutor" default="false" />
+	<setting id="provider.rutor" type="bool" label="Rutor" default="false" />
+    <setting id="provider.redetorrent" type="bool" label="Redetorrent" default="false" />
     <setting id="provider.knaben" type="bool" label="Knaben" default="false" />
-    <setting id="provider.nyaa" type="bool" label="Nyaa (Anime)" default="false" />
 	<setting id="provider.ytsmx" type="bool" label="Yts" default="false" />
 </category>
 
