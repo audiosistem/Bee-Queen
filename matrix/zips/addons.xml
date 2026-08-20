@@ -1834,7 +1834,7 @@ In addition to what livestreams allowed you to do, you can now,
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.4+unofficial.1" provider-name="anxdpanic, bromix, MoojMidge">
+</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.4+unofficial.2" provider-name="anxdpanic, bromix, MoojMidge">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.27.1" />
@@ -1953,6 +1953,7 @@ In addition to what livestreams allowed you to do, you can now,
         <disclaimer lang="zh_TW">此附加元件未由Google支持</disclaimer>
     <news>## v7.4.4
 ### Fixed
+- Fix refresh Android VR client profile #1482
 - Fix not including FolderPath in current container details
 - Fix current plugin item window properties sometimes not updating correctly
 - Fix not updating remote history upon consecutive playback events for certain video types

@@ -1,3 +1,7 @@
+## v7.4.4+unofficial.2
+### Fixed
+- Fix refresh Android VR client profile #1482
+
 ## v7.4.4
 ### Fixed
 - Fix not including FolderPath in current container details #1467
