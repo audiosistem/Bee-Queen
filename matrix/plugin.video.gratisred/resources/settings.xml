@@ -13,7 +13,8 @@
         <setting id="addon.changelog.dismissed" type="bool" label="Changelog dismissed (internal)" default="false" visible="false" />
         <setting id="show.noyear" type="bool" label="Show Items Without/Future Year/AirDate" default="false" />
         <setting id="showunaired" type="bool" label="Show Unaired Items" default="true" />
-        <setting id="unaired.color" type="action" label="Unaired Color" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=color_choice&amp;setting=unaired.color&amp;query=0.8)" default="darkred" subsetting="true" enable="!eq(-1,false)" visible="eq(-1,true)" />
+        <setting id="show.unaired.watchlist" type="bool" label="Include Unaired Media in Watchlists" default="true" />
+        <setting id="unaired.color" type="action" label="Unaired Color" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=color_choice&amp;setting=unaired.color&amp;query=0.8)" default="darkred" subsetting="true" enable="!eq(-2,false)" visible="eq(-2,true)" />
         <setting id="tv.specials" type="bool" label="Show Special Episodes/Season 0" default="false" />
         <setting id="studio.artwork" type="bool" label="Show Studio Info/Artwork" default="false" />
         <setting id="original.artwork" type="bool" label="Use TMDb Original Artwork Sizes (Bulky at times.)" default="false" />
@@ -28,8 +29,8 @@
         <setting type="lsep" label="Watched Status" />
         <setting id="indicators.alt" type="text" label="" default="0" enable="false" visible="false" />
         <setting id="indicators.choose" type="action" label="Change Watched Indicators..." option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=choose_indicators&amp;source=settings)" />
-        <setting id="indicators.alt.name" type="text" label="Using" default="Local" enable="false" subsetting="true" />
-        <setting id="indicators" type="enum" label="Indicators" values="Local" default="0" visible="false" />
+        <setting id="indicators.alt.name" type="text" label="Using" default="Gratis Red" enable="false" subsetting="true" />
+        <setting id="indicators" type="enum" label="Indicators" values="Gratis Red" default="0" visible="false" />
         <setting id="items.per.page" type="slider" label="Items Per Page" default="20" range="10,40" option="int" />
         <setting id="prgr.sortorder" type="enum" label="Sort Order for Watched Progress" values="Recently aired|Recently watched" default="1" />
         <setting id="trakt.item.limit" type="slider" label="Progress/Episodes Item Limit" default="100" range="50,50,150" option="int" />
@@ -56,7 +57,7 @@
         <setting id="bookmarks" type="bool" label="Resume Playback" default="true" />
         <setting id="bookmarks.auto" type="bool" label="Auto Resume" default="false" enable="!eq(-1,false)" subsetting="true" visible="eq(-1,true)" />
         <setting id="bookmarks.source" type="text" label="" default="0" enable="false" visible="false" />
-        <setting id="bookmarks.source.name" type="text" label="Using" default="Local" enable="false" subsetting="true" visible="eq(-3,true)" />
+        <setting id="bookmarks.source.name" type="text" label="Using" default="Gratis Red" enable="false" subsetting="true" visible="eq(-3,true)" />
         <setting type="lsep" label="When Playback Ends" />
         <setting id="crefresh" type="bool" label="Force Container Refresh/Watched Status" default="false" />
         <setting type="lsep" label="Source Settings" />
@@ -104,6 +105,18 @@
         <setting id="simkl.sync" type="bool" label="Simkl Watched Sync on Kodi Startup" default="false" visible="!eq(-7,)" />
         <setting id="simkl.synctime" type="slider" label="Delay Simkl Watched Sync _ Hour/s" default="0" range="0,24" option="int" subsetting="true" enable="!eq(-1,false)" visible="eq(-1,true)+!eq(-8,)" />
         <setting id="simkl.synctext" type="text" label="0 Value Disables Delay" subsetting="true" enable="!eq(-2,false)" visible="eq(-2,true)+!eq(-9,)" />
+        <setting type="lsep" label="MDBList" />
+        <setting id="mdblist.token" type="text" label="" default="" enable="false" visible="false" />
+        <setting id="mdblist.refresh" type="text" label="" default="" enable="false" visible="false" />
+        <setting id="mdblist.client" type="text" label="" default="" enable="false" visible="false" />
+        <setting id="mdblist.activities_json" type="text" label="" default="" enable="false" visible="false" />
+        <setting id="mdblist.authorize" type="action" label="Authorize MDBList (QR Code)" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=auth_mdblist&amp;source=settings)" visible="eq(-4,)" />
+        <setting id="mdblist.revoke" type="action" label="Revoke MDBList Account" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=revoke_mdblist&amp;source=settings)" visible="!eq(-5,)" />
+        <setting id="mdblist.user" type="text" label="MDBList Account:" default="" enable="false" visible="!eq(-6,)" />
+        <setting type="lsep" label="Auto MDBList Watched Syncing" visible="!eq(-7,)" />
+        <setting id="mdblist.sync" type="bool" label="MDBList Watched Sync on Kodi Startup" default="false" visible="!eq(-8,)" />
+        <setting id="mdblist.synctime" type="slider" label="Delay MDBList Watched Sync _ Hour/s" default="0" range="0,24" option="int" subsetting="true" enable="!eq(-1,false)" visible="eq(-1,true)+!eq(-9,)" />
+        <setting id="mdblist.synctext" type="text" label="0 Value Disables Delay" subsetting="true" enable="!eq(-2,false)" visible="eq(-2,true)+!eq(-10,)" />
         <setting type="lsep" label="TMDb" />
         <setting id="tmdb.session" type="text" label="" default="" enable="false" visible="false" />
         <setting id="tmdb.lists_read_token" type="text" label="" default="eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhMGJmMjA3YzVmZjZjMGNhYWJhYzAzMjdlMzliMWNkMiIsIm5iZiI6MTUwMzk0ODAxMC43NTQsInN1YiI6IjU5YTQ2Y2U4YzNhMzY4MGIxMjAwMjgxYiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.2pYaMVzWy-TNg2SBlkP_CrYWpaxcU7LZIZLPdgJp9jw" enable="false" visible="false" />
