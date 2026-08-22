@@ -16,6 +16,43 @@ def _provider():
         return 'trakt' if trakt.getTraktIndicatorsInfo() else 'local'
 
 
+# Movie vs TV caches are separate in Gratis. A movie mark must not skip the next episode-list sync.
+_LIST_SYNC_SKIP_PROPS = {
+    ('trakt', 'movie'): 'gratisred.trakt_skip_list_sync_movies',
+    ('trakt', 'tv'): 'gratisred.trakt_skip_list_sync_tv',
+    ('simkl', 'movie'): 'gratisred.simkl_skip_list_sync_movies',
+    ('simkl', 'tv'): 'gratisred.simkl_skip_list_sync_tv',
+    ('mdblist', 'movie'): 'gratisred.mdblist_skip_list_sync_movies',
+    ('mdblist', 'tv'): 'gratisred.mdblist_skip_list_sync_tv',
+}
+
+
+def _arm_provider_list_sync_skip(provider=None, media='tv'):
+    """Next matching list open already has a fresh local cache — skip that cloud pull only."""
+    provider = provider or _provider()
+    prop = _LIST_SYNC_SKIP_PROPS.get((provider, media))
+    if not prop:
+        return
+    try:
+        control.window.setProperty(prop, 'true')
+    except Exception:
+        pass
+
+
+def _consume_provider_list_sync_skip(provider=None, media='tv'):
+    provider = provider or _provider()
+    prop = _LIST_SYNC_SKIP_PROPS.get((provider, media))
+    if not prop:
+        return False
+    try:
+        if control.window.getProperty(prop) == 'true':
+            control.window.clearProperty(prop)
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def getMovieIndicators(refresh=False):
     provider = _provider()
     if provider == 'local':
@@ -23,9 +60,10 @@ def getMovieIndicators(refresh=False):
             return bookmarks._indicators()
         except Exception:
             return
+    skip_sync = refresh and _consume_provider_list_sync_skip(provider, 'movie')
     if provider == 'simkl':
         try:
-            if refresh:
+            if refresh and not skip_sync:
                 # Activities + date_from delta when possible (same idea as Trakt activity gate).
                 simkl.syncSimklWatched(silent=True)
             return simkl.cachesyncMovies(timeout=720)
@@ -33,13 +71,13 @@ def getMovieIndicators(refresh=False):
             return
     if provider == 'mdblist':
         try:
-            if refresh:
+            if refresh and not skip_sync:
                 mdblist.syncMdblistWatched(silent=True)
             return mdblist.cachesyncMovies(timeout=720)
         except Exception:
             return
     try:
-        if refresh == False:
+        if refresh == False or skip_sync:
             timeout = 720
         elif trakt.getWatchedActivity() < trakt.timeoutsyncMovies():
             timeout = 720
@@ -57,22 +95,23 @@ def getTVShowIndicators(refresh=False):
             return bookmarks._indicators()
         except Exception:
             return
+    skip_sync = refresh and _consume_provider_list_sync_skip(provider, 'tv')
     if provider == 'simkl':
         try:
-            if refresh:
+            if refresh and not skip_sync:
                 simkl.syncSimklWatched(silent=True)
             return simkl.cachesyncTVShows(timeout=720)
         except Exception:
             return
     if provider == 'mdblist':
         try:
-            if refresh:
+            if refresh and not skip_sync:
                 mdblist.syncMdblistWatched(silent=True)
             return mdblist.cachesyncTVShows(timeout=720)
         except Exception:
             return
     try:
-        if refresh == False:
+        if refresh == False or skip_sync:
             timeout = 720
         elif trakt.getWatchedActivity() < trakt.timeoutsyncTVShows():
             timeout = 720
@@ -172,12 +211,13 @@ def _notify_marked(watched):
         pass
 
 
-def _finish_manual_mark(watched):
-    """Toast + list refresh for Trakt / Simkl / Gratis Red manual mark (parity)."""
+def _finish_manual_mark(watched, media='tv'):
+    """Toast + list refresh for Trakt / Simkl / Gratis Red / MDBList manual mark."""
     try:
         control.idle()
     except Exception:
         pass
+    _arm_provider_list_sync_skip(media=media)
     _notify_marked(watched)
     try:
         control.refresh_list()
@@ -194,6 +234,7 @@ def markMovieDuringPlayback(imdb, watched, tmdb=None):
             else:
                 trakt.markMovieAsNotWatched(imdb, tmdb=tmdb)
             trakt.cachesyncMovies()
+            _arm_provider_list_sync_skip('trakt', 'movie')
             _flag_playback_marked()
             if trakt.getTraktAddonMovieInfo() == True:
                 trakt.markMovieAsNotWatched(imdb, tmdb=tmdb)
@@ -203,6 +244,7 @@ def markMovieDuringPlayback(imdb, watched, tmdb=None):
             else:
                 simkl.markMovieAsNotWatched(imdb, tmdb=tmdb)
             simkl.cachesyncMovies(timeout=0)
+            _arm_provider_list_sync_skip('simkl', 'movie')
             _flag_playback_marked()
             if simkl.getSimklAddonMovieInfo() == True:
                 simkl.markMovieAsNotWatched(imdb, tmdb=tmdb)
@@ -212,6 +254,7 @@ def markMovieDuringPlayback(imdb, watched, tmdb=None):
             else:
                 mdblist.markMovieAsNotWatched(imdb, tmdb=tmdb)
             mdblist.cachesyncMovies(timeout=0)
+            _arm_provider_list_sync_skip('mdblist', 'movie')
             _flag_playback_marked()
             if mdblist.mdblist_official_status():
                 mdblist.markMovieAsNotWatched(imdb, tmdb=tmdb)
@@ -233,6 +276,7 @@ def markEpisodeDuringPlayback(imdb, tmdb, season, episode, watched, tvdb=None):
             else:
                 trakt.markEpisodeAsNotWatched(imdb, season, episode, tmdb=tmdb, tvdb=tvdb)
             trakt.cachesyncTVShows()
+            _arm_provider_list_sync_skip('trakt', 'tv')
             _flag_playback_marked()
             if trakt.getTraktAddonEpisodeInfo() == True:
                 trakt.markEpisodeAsNotWatched(imdb, season, episode, tmdb=tmdb, tvdb=tvdb)
@@ -242,6 +286,7 @@ def markEpisodeDuringPlayback(imdb, tmdb, season, episode, watched, tvdb=None):
             else:
                 simkl.markEpisodeAsNotWatched(imdb, season, episode, tmdb=tmdb)
             simkl.cachesyncTVShows(timeout=0)
+            _arm_provider_list_sync_skip('simkl', 'tv')
             _flag_playback_marked()
             if simkl.getSimklAddonEpisodeInfo() == True:
                 simkl.markEpisodeAsNotWatched(imdb, season, episode, tmdb=tmdb)
@@ -251,6 +296,7 @@ def markEpisodeDuringPlayback(imdb, tmdb, season, episode, watched, tvdb=None):
             else:
                 mdblist.markEpisodeAsNotWatched(imdb, season, episode, tmdb=tmdb)
             mdblist.cachesyncTVShows(timeout=0)
+            _arm_provider_list_sync_skip('mdblist', 'tv')
             _flag_playback_marked()
             if mdblist.mdblist_official_status():
                 mdblist.markEpisodeAsNotWatched(imdb, season, episode, tmdb=tmdb)
@@ -296,7 +342,7 @@ def movies(imdb, watched, tmdb=None):
             bookmarks._delete_record('movie', imdb, '', '')
     except:
         pass
-    _finish_manual_mark(watched)
+    _finish_manual_mark(watched, media='movie')
 
 
 def episodes(imdb, tmdb, season, episode, watched):
@@ -332,7 +378,7 @@ def episodes(imdb, tmdb, season, episode, watched):
             bookmarks._delete_record('episode', imdb, season, episode)
     except:
         pass
-    _finish_manual_mark(watched)
+    _finish_manual_mark(watched, media='tv')
 
 
 def tvshows(tvshowtitle, imdb, tmdb, season, watched):
@@ -435,4 +481,4 @@ def tvshows(tvshowtitle, imdb, tmdb, season, watched):
             mdblist.cachesyncTVShows(timeout=0)
     except:
         pass
-    _finish_manual_mark(watched)
+    _finish_manual_mark(watched, media='tv')

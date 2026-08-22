@@ -763,7 +763,7 @@ v1.6.0 - My Free Flow + full Trakt integration</news>
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.gratisred" version="1.2.8" name="[COLOR red]Gratis Red[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]">
+</addon><addon id="plugin.video.gratisred" version="1.2.9" name="[COLOR red]Gratis Red[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]">
     <requires>
         <import addon="script.gratisred.artwork" version="1.0.5" />
         <import addon="script.module.kodi-six" />
@@ -792,9 +792,9 @@ v1.6.0 - My Free Flow + full Trakt integration</news>
 		<email>info@redwizard.xyz</email>
 		<source>https://github.com/The-Red-Wizard</source>
         <news>[COLOR red]2026-08-21
-- Summary of v1.2.8 (see Tools &gt; Changelog for the detail):
- * Optional Installs: service.mdblist-scrobbler (Install / Open Settings)
- * MDBList playback still defers scrobble when that add-on is authorised[/COLOR]</news>
+- Summary of v1.2.9 (see Tools &gt; Changelog for the detail):
+ * Mark Watched / Unwatched: next list open skips a blocking watched pull
+ * Local cache is already written; Simkl / Trakt / MDBList still sync in the background[/COLOR]</news>
         <assets>
             <icon>resources/images/icon.png</icon>
             <fanart>resources/images/fanart.jpg</fanart>
@@ -1183,7 +1183,7 @@ In addition to what livestreams allowed you to do, you can now,
 		<fanart>fanart.jpg</fanart>
   </assets>
   </extension>
-</addon><addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]" version="2.3.2">
+</addon><addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]" version="2.3.3">
     <requires>
         <import addon="xbmc.python" version="3.0.1" />
         <import addon="script.module.pil" version="1.1.7" />
