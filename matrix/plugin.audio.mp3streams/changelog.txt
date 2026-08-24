@@ -1,3 +1,17 @@
+2026.08.24
+- year-less album folder fallbacks (Artist/Album when the listing is Album (1994)) now run the ID3 check
+- reject that fallback only when the file has a date year that disagrees with the listing; missing tags still play so pre-2026.08.19 downloads keep working
+
+2026.08.22
+- fix bundled menu, genre, and cached artist icons missing on Android and Linux: decorate_art_url no longer treats absolute local paths (which start with /) as musicmp3.ru site-relative URLs (thanks to adamsbuilds)
+- remote album covers, Estuary WideList ListItem.Icon, empty list content, and musicmp3 UA/Referer on http(s) art are unchanged
+- local-path detection uses addon/profile prefixes plus exists(), so a failed stat cannot rewrite our own art
+
+2026.08.19
+- album download, keep-downloads cache, and local playback folders include the release year as Album (1979) so two albums by the same artist with the same title no longer share a folder
+- listing titles use Artist - Album (Year); older Artist - Album - Year favourites and year-less download folders still resolve
+- ID3 album title stays clean; year is written to the date tag when the folder has one
+
 2026.07.20
 - harden song and album downloads: stream to a per-process .part file, validate HTTP status / size / audio magic (reject HTML error bodies), then atomically replace the final .mp3
 - Content-Length checks skip when Content-Encoding is present (avoids false failures on decoded streams)

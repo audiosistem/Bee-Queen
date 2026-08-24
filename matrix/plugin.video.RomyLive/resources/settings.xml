@@ -9,6 +9,9 @@
         <setting id="daddylive_epg_enabled" type="bool" label="Activeaza EPG (XMLTV) pentru DaddyLive" default="false" />
         <setting id="daddylive_epg_url" type="text" label="URL XMLTV (.xml sau .xml.gz)" default="https://epgshare01.online/epgshare01/epg_ripper_ALL_SOURCES1.xml.gz" />
     </category>
+    <category label="Categorie Adulti (Canale TV Romania 2)">
+        <setting id="rdslive_adult_pin" type="text" label="PIN pentru categoria Adulti (4 cifre)" option="hidden" default="" />
+    </category>
     <category id="__internal__">
         <setting id="dinbox_cached_authkey" type="text" visible="false" />
         <setting id="dinbox_cached_sesskey" type="text" visible="false" />

@@ -1,5 +1,12 @@
-[B]Version 1.1.194[/B]
-- noodlemagazine - fix: thumbnais
-- archivebate - new site
-- chaturbate - additional search sites for model & search sites simultaneously and display the results in a unified view
-- Stripchat Show/Hide model info for increased loading speed
+[B]Version 1.1.196[/B]
+- anybunny - fix: listing, playback
+- missav - fix: listing, playback
+- chaturbate -  global search: notifications disabled
+- 3movs - new site
+- camwhoresbay - fix listing
+- camwhores.tw - fix listing
+- xtapes.la - new site
+- sextb - fix: studios, thumbnails, playback
+- Pornyteen new site 
+- Xtapes fix pagination
+- Save Search query between sessions
