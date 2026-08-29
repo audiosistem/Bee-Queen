@@ -6,14 +6,6 @@
 msgid ""
 msgstr ""
 
-msgctxt "#32000"
-msgid "POV"
-msgstr ""
-
-msgctxt "#32003"
-msgid "Databases"
-msgstr ""
-
 msgctxt "#32006"
 msgid "Scrape with ALL External Scrapers"
 msgstr ""
@@ -30,10 +22,6 @@ msgctxt "#32016"
 msgid "[B]Add to Cloud[/B]"
 msgstr ""
 
-msgctxt "#32027"
-msgid "Off"
-msgstr ""
-
 msgctxt "#32028"
 msgid "Movies"
 msgstr ""
@@ -42,28 +30,8 @@ msgctxt "#32029"
 msgid "TV Shows"
 msgstr ""
 
-msgctxt "#32037"
-msgid "Trakt"
-msgstr ""
-
 msgctxt "#32043"
 msgid "Most Watched This Week"
-msgstr ""
-
-msgctxt "#32054"
-msgid "Real Debrid"
-msgstr ""
-
-msgctxt "#32061"
-msgid "Premiumize"
-msgstr ""
-
-msgctxt "#32063"
-msgid "All Debrid"
-msgstr ""
-
-msgctxt "#32064"
-msgid "IMDb"
 msgstr ""
 
 msgctxt "#32065"
@@ -74,24 +42,8 @@ msgctxt "#32067"
 msgid "Sort Order"
 msgstr ""
 
-msgctxt "#32068"
-msgid "TMDb"
-msgstr ""
-
-msgctxt "#32070"
-msgid "Easynews"
-msgstr ""
-
-msgctxt "#32081"
-msgid "Trakt Calendar"
-msgstr ""
-
 msgctxt "#32089"
 msgid "Show"
-msgstr ""
-
-msgctxt "#32090"
-msgid "On"
 msgstr ""
 
 msgctxt "#32096"
@@ -106,28 +58,12 @@ msgctxt "#32118"
 msgid "External Scrapers"
 msgstr ""
 
-msgctxt "#32129"
-msgid "All"
-msgstr ""
-
 msgctxt "#32134"
 msgid "Multi File Pack Download Started..."
 msgstr ""
 
 msgctxt "#32135"
 msgid "Scrape with Custom Values"
-msgstr ""
-
-msgctxt "#32139"
-msgid "Results"
-msgstr ""
-
-msgctxt "#32140"
-msgid "Display"
-msgstr ""
-
-msgctxt "#32145"
-msgid "Set Language"
 msgstr ""
 
 msgctxt "#32152"
@@ -146,10 +82,6 @@ msgctxt "#32157"
 msgid "Filter by Provider"
 msgstr ""
 
-msgctxt "#32160"
-msgid "Display Uncached Torrents"
-msgstr ""
-
 msgctxt "#32169"
 msgid "Filter Extra Info"
 msgstr ""
@@ -164,10 +96,6 @@ msgstr ""
 
 msgctxt "#32189"
 msgid "Exclude"
-msgstr ""
-
-msgctxt "#32192"
-msgid "Auto"
 msgstr ""
 
 msgctxt "#32193"
@@ -278,10 +206,6 @@ msgctxt "#32463"
 msgid "Blockbusters"
 msgstr ""
 
-msgctxt "#32466"
-msgid "Non-binary"
-msgstr ""
-
 msgctxt "#32468"
 msgid "Oscar Winners"
 msgstr ""
@@ -332,10 +256,6 @@ msgstr ""
 
 msgctxt "#32483"
 msgid "Next Episodes"
-msgstr ""
-
-msgctxt "#32484"
-msgid "[B]%s: [/B]%s"
 msgstr ""
 
 msgctxt "#32485"
@@ -424,6 +344,10 @@ msgstr ""
 
 msgctxt "#32514"
 msgid "Shortcut Folders"
+msgstr ""
+
+msgctxt "#32523"
+msgid "Databases"
 msgstr ""
 
 msgctxt "#32524"
@@ -526,10 +450,6 @@ msgctxt "#32593"
 msgid "Recommended"
 msgstr ""
 
-msgctxt "#32598"
-msgid "Currently"
-msgstr ""
-
 msgctxt "#32602"
 msgid "Add To"
 msgstr ""
@@ -552,10 +472,6 @@ msgstr ""
 
 msgctxt "#32607"
 msgid "Reviews"
-msgstr ""
-
-msgctxt "#32611"
-msgid "[B]Play Random[/B]"
 msgstr ""
 
 msgctxt "#32612"
@@ -668,10 +584,6 @@ msgstr ""
 
 msgctxt "#32646"
 msgid "[B]Options...[/B]"
-msgstr ""
-
-msgctxt "#32648"
-msgid "[B]Hide from Recommendations[/B]"
 msgstr ""
 
 msgctxt "#32649"
@@ -839,39 +751,39 @@ msgid "Remove"
 msgstr ""
 
 msgctxt "#32716"
-msgid "Move [B]'%s'[/B] to a different position in the list"
+msgid "Move [B]%s[/B] to a different position in the list"
 msgstr ""
 
 msgctxt "#32717"
-msgid "Remove [B]'%s'[/B] from the list"
+msgid "Remove [B]%s[/B] from the list"
 msgstr ""
 
 msgctxt "#32718"
-msgid "Add [B]'%s'[/B] to a different Menu list"
+msgid "Add [B]%s[/B] to a different Menu list"
 msgstr ""
 
 msgctxt "#32719"
-msgid "Add [B]'%s'[/B] to a [B]Shortcut Folder[/B]"
+msgid "Add [B]%s[/B] to a [B]Shortcut Folder[/B]"
 msgstr ""
 
 msgctxt "#32721"
-msgid "Re-add a removed item from [B]'%s'[/B] Menu"
+msgid "Re-add a removed item from [B]%s[/B] Menu"
 msgstr ""
 
 msgctxt "#32722"
-msgid "Restore [B]'%s'[/B] Menu to default"
+msgid "Restore [B]%s[/B] Menu to default"
 msgstr ""
 
 msgctxt "#32723"
-msgid "Check if [B]'%s'[/B] Menu has New Menu items"
+msgid "Check if [B]%s[/B] Menu has New Menu items"
 msgstr ""
 
 msgctxt "#32724"
-msgid "Reload [B]'%s'[/B]"
+msgid "Reload [B]%s[/B]"
 msgstr ""
 
 msgctxt "#32725"
-msgid "Add a [B]Shortcut Folder[/B] to [B]'%s'[/B] Menu"
+msgid "Add a [B]Shortcut Folder[/B] to [B]%s[/B] Menu"
 msgstr ""
 
 msgctxt "#32727"
@@ -930,24 +842,8 @@ msgctxt "#32751"
 msgid "[B]Days Remaining:[/B] %s"
 msgstr ""
 
-msgctxt "#32752"
-msgid "[B]Points Used:[/B] %.f"
-msgstr ""
-
-msgctxt "#32753"
-msgid "[B]Space Used:[/B] %.2f"
-msgstr ""
-
-msgctxt "#32754"
-msgid "[B]Fair Use (Percentage Used):[/B] %s"
-msgstr ""
-
 msgctxt "#32755"
 msgid "[B]Username:[/B] %s"
-msgstr ""
-
-msgctxt "#32756"
-msgid "[B]Email:[/B] %s"
 msgstr ""
 
 msgctxt "#32757"
@@ -987,7 +883,7 @@ msgid "Log Utils"
 msgstr ""
 
 msgctxt "#32780"
-msgid "[B]Make a new Trakt list[/B]"
+msgid "[B]Make a new %s list[/B]"
 msgstr ""
 
 msgctxt "#32781"
@@ -1063,7 +959,7 @@ msgid "Clearing"
 msgstr ""
 
 msgctxt "#32821"
-msgid "Jump to %s Starting with '%s'"
+msgid "Jump to %s Starting with %s"
 msgstr ""
 
 msgctxt "#32822"
@@ -1110,14 +1006,6 @@ msgctxt "#32841"
 msgid "Options"
 msgstr ""
 
-msgctxt "#32843"
-msgid "Male"
-msgstr ""
-
-msgctxt "#32844"
-msgid "Female"
-msgstr ""
-
 msgctxt "#32847"
 msgid "Select Genres to Include in Search"
 msgstr ""
@@ -1148,18 +1036,6 @@ msgstr ""
 
 msgctxt "#32855"
 msgid "Show Log Errors Only?"
-msgstr ""
-
-msgctxt "#32857"
-msgid "New"
-msgstr ""
-
-msgctxt "#32859"
-msgid "True"
-msgstr ""
-
-msgctxt "#32860"
-msgid "False"
 msgstr ""
 
 msgctxt "#32964"

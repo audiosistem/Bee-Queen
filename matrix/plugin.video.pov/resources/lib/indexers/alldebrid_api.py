@@ -1,13 +1,11 @@
 import requests
-from caches.main_cache import cache_object
 from modules import kodi_utils
 # logger = kodi_utils.logger
 
-ls, get_setting = kodi_utils.local_string, kodi_utils.get_setting
 base_url = 'https://api.alldebrid.com/'
 timeout = 10.0
+custom_errors = requests.exceptions.ConnectionError, requests.exceptions.Timeout
 session = requests.Session()
-session.custom_errors = requests.exceptions.ConnectionError, requests.exceptions.Timeout
 session.mount('https://api.alldebrid.com', requests.adapters.HTTPAdapter(max_retries=1))
 
 class AllDebridAPI:
@@ -27,13 +25,13 @@ class AllDebridAPI:
 		return files
 
 	def __init__(self):
-		self.token = get_setting('ad.token')
+		self.token = kodi_utils.get_setting('ad.token')
 		session.headers.update(self.headers())
 
 	def _request(self, method, path, params=None, data=None):
 		url = base_url + path
 		try: response = session.request(method, url, params=params, data=data, timeout=timeout)
-		except session.custom_errors: return kodi_utils.notification('%s timeout' % __name__)
+		except custom_errors: return kodi_utils.notification('%s timeout' % __name__)
 		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
 		response = response.json() if 'json' in response.headers.get('Content-Type', '') else response
 		if 'data' in response and response.get('status') == 'success': response = response['data']
@@ -49,11 +47,11 @@ class AllDebridAPI:
 		return {'Authorization': 'Bearer %s' % self.token}
 
 	def days_remaining(self):
-		from datetime import datetime
+		from datetime import datetime, timezone
 		try:
 			account_info = self.account_info()['user']
-			expires = datetime.fromtimestamp(account_info['premiumUntil'])
-			days = (expires - datetime.today()).days
+			expires = datetime.fromtimestamp(account_info['premiumUntil'], tz=timezone.utc)
+			days = (expires - datetime.now(timezone.utc)).days
 		except: days = None
 		return days
 
@@ -61,6 +59,18 @@ class AllDebridAPI:
 		url = 'v4/user'
 		result = self._get(url)
 		return result
+
+	def downloads(self):
+		url = 'v4/user/history'
+		return self._get(url)
+
+	def user_cloud(self):
+		url = 'v4.1/magnet/status'
+		return self._get(url)
+
+	def user_folder(self, folder_id):
+		url = folder_id
+		return self.torrent_info(url)
 
 	def torrent_info(self, transfer_id):
 		url = 'v4.1/magnet/status'
@@ -117,18 +127,6 @@ class AllDebridAPI:
 			if torrent_id: self.delete_torrent(torrent_id)
 			if errors: raise
 
-	def downloads(self):
-		url = 'v4/user/history'
-		string = 'pov_ad_downloads'
-		return cache_object(self._get, string, url, 0.5)
-
-	def user_cloud(self, completed=True):
-		url = 'v4.1/magnet/status'
-		string = 'pov_ad_user_cloud'
-		result = cache_object(self._get, string, url, 0.5)
-		if completed: result['magnets'] = [i for i in result['magnets'] if i['statusCode'] == 4]
-		return result
-
 	def clear_cache(self):
 		from modules.kodi_utils import clear_property, path_exists, database_connect, maincache_db
 		try:
@@ -138,22 +136,25 @@ class AllDebridAPI:
 			dbcur = dbcon.cursor()
 			# USER CLOUD
 			try:
-				dbcur.execute("""DELETE FROM maincache WHERE id = ?""", ('pov_ad_user_cloud',))
-				clear_property('pov_ad_user_cloud')
-				dbcon.commit()
+				dbcur.execute("""SELECT id FROM maincache WHERE id LIKE ?""", ('pov_ad_user_cloud%',))
+				user_cloud_cache = [str(i[0]) for i in dbcur.fetchall()]
+				if user_cloud_cache:
+					for i in user_cloud_cache: clear_property(i)
+					dbcur.execute("""DELETE FROM maincache WHERE id LIKE ?""", ('pov_ad_user_cloud%',))
+					dbcon.commit()
 				user_cloud_success = True
 			except: user_cloud_success = False
 			# DOWNLOAD LINKS
 			try:
-				dbcur.execute("""DELETE FROM maincache WHERE id = ?""", ('pov_ad_downloads',))
 				clear_property('pov_ad_downloads')
+				dbcur.execute("""DELETE FROM maincache WHERE id = ?""", ('pov_ad_downloads',))
 				dbcon.commit()
 				download_links_success = True
 			except: download_links_success = False
 			# HOSTERS
 			try:
-				dbcur.execute("""DELETE FROM maincache WHERE id = ?""", ('pov_ad_valid_hosts',))
 				clear_property('pov_ad_valid_hosts')
+				dbcur.execute("""DELETE FROM maincache WHERE id = ?""", ('pov_ad_valid_hosts',))
 				dbcon.commit()
 				hoster_links_success = True
 			except: hoster_links_success = False

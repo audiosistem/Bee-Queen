@@ -3,7 +3,6 @@ from modules.kodi_utils import mdbl_db, database_connect
 from modules.utils import chunks
 # from modules.kodi_utils import logger
 
-timeout = 20
 SELECT = 'SELECT id FROM mdbl_data'
 DELETE = 'DELETE FROM mdbl_data WHERE id = ?'
 DELETE_LIKE = 'DELETE FROM mdbl_data WHERE id LIKE ?'
@@ -45,10 +44,10 @@ class MDBLCache:
 
 	def _delete(self, command, args):
 		self.dbcur.execute(command, args)
-		self.dbcur.execute("""VACUUM""")
+#		self.dbcur.execute("""VACUUM""")
 
 	def _connect_database(self):
-		self.dbcon = database_connect(mdbl_db, timeout=timeout, isolation_level=None)
+		self.dbcon = database_connect(mdbl_db, isolation_level=None)
 
 	def _set_PRAGMAS(self):
 		self.dbcur = self.dbcon.cursor()
@@ -79,6 +78,13 @@ def reset_activity(latest_activities):
 		dbcur.execute(MC_BASE_SET, (string, json.dumps(latest_activities)))
 	except: pass
 	return cached_data
+
+def clear_mdbl_hidden_data(list_type):
+	string = 'mdbl_hidden_items_%s' % list_type
+	try:
+		dbcur = MDBLCache().dbcur
+		dbcur.execute(DELETE, (string,))
+	except: pass
 
 def clear_mdbl_collection_watchlist_data(list_type):
 	string = 'mdbl_%s' % list_type

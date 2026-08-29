@@ -10,7 +10,7 @@ from indexers.metadata import movie_meta, tvshow_meta, season_episodes_meta, get
 from modules.debrid import debrid_enabled, debrid_type_enabled, Source, DebridCheck
 from modules import player, kodi_utils, settings, source_utils
 from modules.utils import manual_function_import, get_datetime, safe_string, string_to_float
-#from modules.kodi_utils import logger
+# from modules.kodi_utils import logger
 
 POVPlayer, progressDialogBG, notification = player.POVPlayer, kodi_utils.progressDialogBG, kodi_utils.notification
 show_busy_dialog, hide_busy_dialog, close_all_dialog = kodi_utils.show_busy_dialog, kodi_utils.hide_busy_dialog, kodi_utils.close_all_dialog
@@ -18,7 +18,7 @@ get_property, set_property, clear_property = kodi_utils.get_property, kodi_utils
 ls, monitor, sleep, get_setting = kodi_utils.local_string, kodi_utils.monitor, kodi_utils.sleep, kodi_utils.get_setting
 check_prescrape_sources, quality_filter, sort_to_top = settings.check_prescrape_sources, settings.quality_filter, settings.sort_to_top
 results_xml_style, results_xml_window_number = settings.results_xml_style, settings.results_xml_window_number
-default_internal_scrapers, cloud_scrapers = settings.default_internal_scrapers, settings.cloud_scrapers
+default_internal_scrapers, cloud_scrapers = settings.default_internal_scrapers(), settings.cloud_scrapers()
 pack_enable_check, sources_quality_count = source_utils.pack_enable_check, source_utils.sources_quality_count
 get_cache_expiry, get_file_info = source_utils.get_cache_expiry, source_utils.get_file_info
 quality_ranks = {'4K': 1, '1080p': 2, '720p': 3, 'SD': 4, 'SCR': 5, 'CAM': 5, 'TELE': 5}
@@ -311,9 +311,8 @@ class ConfigLoader:
 		source.size_filter = int(get_setting('results.size_filter', '0'))
 		source.include_unknown_size = self._as_bool(get_setting('results.include.unknown.size'), False)
 		source.sleep_time = settings.display_sleep_time()
-		if source.disabled_ignored:
-			source.timeout = int(get_setting('scrapers.timeout.1', '10')) * 2
-		else: source.timeout = int(get_setting('scrapers.timeout.1', '10'))
+		source.timeout = int(get_setting('scrapers_timeout', '10'))
+		if source.disabled_ignored: source.timeout = source.timeout * 2
 		if self._as_bool(get_setting('results.language_filter'), False):
 			source.priority_language = get_setting('results.language')
 		else: source.priority_language = None
@@ -420,7 +419,7 @@ class ScraperProcessor:
 	def activate_internal(self, prescrape=False):
 		self.prepare_internal(prescrape)
 		append = self.source.prescrape_scrapers.append if prescrape else self.source.providers.append
-		source_path = kodi_utils.translate_path(kodi_utils.scrapers_path)
+		source_path = kodi_utils.translate_path(kodi_utils.internal_path)
 		for loader, module_name, is_pkg in __import__('pkgutil').iter_modules([source_path]):
 			if is_pkg: continue
 			if module_name not in self.source.active_internal_scrapers: continue
@@ -653,7 +652,7 @@ class ExternalManager:
 					{**i, 'cache_provider': name if i['hash'] in hashes else uncached, 'debrid': name}
 					for i in torrent_sources
 				)
-		except: notification(32574)
+		except: kodi_utils.notify_error()
 		finally: tpe.shutdown(False)
 		return self.final_sources
 

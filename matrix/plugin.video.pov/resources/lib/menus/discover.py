@@ -15,10 +15,11 @@ poster = kodi_utils.media_path('box_office.png')
 default_icon = kodi_utils.media_path('discover.png')
 people_icon = kodi_utils.media_path('people.png')
 poster_url, profile_url = 'https://image.tmdb.org/t/p/w780%s', 'https://image.tmdb.org/t/p/h632/%s'
-base_str, heading_base = '[B]%s:[/B]  [I]%s[/I]', '%s %s - %s' % (ls(32000), ls(32451), '%s')
+heading_base = '%s %s - %s' % (kodi_utils.get_addoninfo('name'), ls(32451), '%s')
 include_base_str, exclude_base_str = '%s %s' % (ls(32188), '%s'), '%s %s' % (ls(32189), '%s')
-_ln_ins, menu_export_str, fold_export_str = '[B]%s %s:[/B]  [I]%s[/I]', 'MENU EXPORT', 'FOLDER EXPORT'
+base_str, _ln_ins = '[B]%s:[/B]  [I]%s[/I]', '[B]%s %s:[/B]  [I]%s[/I]'
 export_str, remove_str, clear_str = ls(32697), ls(32698), ls(32699)
+menu_export_str, fold_export_str = 'MENU EXPORT', 'FOLDER EXPORT'
 
 class Discover:
 	def __init__(self, params):
@@ -47,16 +48,16 @@ class Discover:
 			name, premiered, function = 'title', 'release_date', tmdb_api.tmdb_movies_title_year
 		else: name, premiered, function = 'name', 'first_air_date', tmdb_api.tmdb_tv_title_year
 		results = function(title, year)['results']
-		if len(results) == 0: return kodi_utils.notification(32575)
+		if len(results) == 0: return kodi_utils.no_results()
 		choice_list = []
-		append = choice_list.append
+		choice_list_append = choice_list.append
 		for item in results:
 			try: year = item[premiered].split('-')[0]
 			except: year = ''
 			title = item[name]
 			rootname = '%s (%s)' % (title, year) if year else title
 			icon = poster_url % item['poster_path'] if item.get('poster_path') else poster
-			append({'line1': rootname, 'line2': item['overview'], 'icon': icon, 'rootname': rootname, 'tmdb_id': str(item['id'])})
+			choice_list_append({'line1': rootname, 'line2': item['overview'], 'icon': icon, 'rootname': rootname, 'tmdb_id': str(item['id'])})
 		heading = heading_base % ('%s %s' % (ls(32193), ls(32228)))
 		kwargs = {'items': json.dumps(choice_list), 'heading': heading}
 		values = kodi_utils.select_dialog([(i['tmdb_id'], i['rootname']) for i in choice_list], **kwargs)
@@ -184,7 +185,7 @@ class Discover:
 		if not company: return
 		try: companies = tmdb_api.tmdb_company_id(company)['results']
 		except: companies = None
-		if not companies: return kodi_utils.notification(32760)
+		if not companies: return kodi_utils.no_results()
 		for item in companies:
 			item['line1'] = item['name']
 			item['line2'] = '%s (%s)' % (item['name'], item.get('origin_country') or 'N/A')
@@ -237,11 +238,11 @@ class Discover:
 		key = 'network'
 		if self._action(key) in ('clear', None): return
 		network_list = []
-		append = network_list.append
+		network_list_append = network_list.append
 		networks = sorted(meta_lists.networks, key=lambda k: k['name'])
 		for item in networks:
 			name = item['name']
-			append({'line1': name, 'icon': item['logo'], 'name': name, 'id': item['id']})
+			network_list_append({'line1': name, 'icon': item['logo'], 'name': name, 'id': item['id']})
 		heading = heading_base % ls(32480)
 		kwargs = {'items': json.dumps(network_list), 'heading': heading}
 		choice = kodi_utils.select_dialog(network_list, **kwargs)
@@ -262,7 +263,7 @@ class Discover:
 
 	def adult(self):
 		key = 'adult'
-		include_adult = self._selection_dialog((ls(32859), ls(32860)), ('true', 'false'), heading_base % include_base_str % ls(32665))
+		include_adult = self._selection_dialog(('True', 'False'), ('true', 'false'), heading_base % include_base_str % ls(32665))
 		if include_adult is None: return
 		values = ('&include_adult=%s' % include_adult, include_adult.capitalize())
 		self._process(key, values)
@@ -279,7 +280,7 @@ class Discover:
 			mode = 'menu_editor.shortcut_folder_add_item' if self.key == 'folder' else 'menu_editor.add_external'
 			url_params = {'mode': mode, 'name': name, 'menu_item': json.dumps(params), 'iconImage': icon}
 			kodi_utils.execute_builtin('RunPlugin(%s)' % build_url(url_params))
-		except: kodi_utils.notification(32574)
+		except: kodi_utils.notify_error()
 
 	def history(self):
 		return history(self.mediatype, self.view)
@@ -367,7 +368,7 @@ class Discover:
 			for i in ('region', 'companies', 'certification', 'cast', 'adult'): menu.pop(i, None)
 		else: menu.pop('network', None)
 		for k, v in menu.items():
-			if k == 'adult': list_name = base_str % (v, func.get(k, ls(32860)))
+			if k == 'adult': list_name = base_str % (v, func.get(k, 'False'))
 			else: list_name = base_str % (v, func.get(k, ''))
 			self._add_dir({'mode': 'discover.%s' % k, 'mediatype': mediatype, 'list_name': list_name})
 
@@ -403,7 +404,7 @@ class Discover:
 		mediatype = values['mediatype']
 		db_name = ls(32028) if mediatype == 'Movies' else ls(32029)
 		name = ['[B]%s[/B]' % db_name]
-		append = name.append
+		name_append = name.append
 		if 'similar' in values:
 			self.discover_params['name'] = '%s | %s %s' % (name[0], ls(32672), values['similar'])
 			return
@@ -412,40 +413,40 @@ class Discover:
 			return
 		if 'year_start' in values and 'year_end' in values:
 			if values['year_start'] != values['year_end']:
-				append('%s-%s' % (values['year_start'], values['year_end']))
-			else: append(values['year_start'])
+				name_append('%s-%s' % (values['year_start'], values['year_end']))
+			else: name_append(values['year_start'])
 		elif 'year_start' in values:
-			append(values['year_start'])
+			name_append(values['year_start'])
 		elif 'year_end' in values:
-			append(values['year_end'])
-		if 'language' in values: append(values['language'])
-		if 'region' in values: append(values['region'])
-		if 'network' in values: append(values['network'])
+			name_append(values['year_end'])
+		if 'language' in values: name_append(values['language'])
+		if 'region' in values: name_append(values['region'])
+		if 'network' in values: name_append(values['network'])
 		if 'include_genres' in values:
 			genre_str = values['include_genres']
 			if 'exclude_genres' in values:
 				genre_str += ' (%s %s)' % (ls(32189).lower(), values['exclude_genres'])
-			append(genre_str)
+			name_append(genre_str)
 		elif 'exclude_genres' in values:
-			append('%s %s' % (ls(32189).lower(), values['exclude_genres']))
-		if 'companies' in values: append(values['companies'])
-		if 'certification' in values: append(values['certification'])
+			name_append('%s %s' % (ls(32189).lower(), values['exclude_genres']))
+		if 'companies' in values: name_append(values['companies'])
+		if 'certification' in values: name_append(values['certification'])
 		if 'rating' in values:
 			rating_str = '%s+' % values['rating']
 			if 'rating_votes' in values: rating_str += ' (%s)' % values['rating_votes']
-			append(rating_str)
+			name_append(rating_str)
 		elif 'rating_votes' in values:
-			append('%s+ %s' % (values['rating_votes'], ls(32623).lower()))
+			name_append('%s+ %s' % (values['rating_votes'], ls(32623).lower()))
 		if 'cast' in values:
-			append('%s %s' % (ls(32664).lower(), values['cast']))
+			name_append('%s %s' % (ls(32664).lower(), values['cast']))
 		if 'include_keywords' in values:
-			append('%s %s: %s' % (ls(32188).lower(), ls(32657).lower(), values['include_keywords']))
+			name_append('%s %s: %s' % (ls(32188).lower(), ls(32657).lower(), values['include_keywords']))
 		if 'exclude_keywords' in values:
-			append('%s %s: %s' % (ls(32189).lower(), ls(32657).lower(), values['exclude_keywords']))
+			name_append('%s %s: %s' % (ls(32189).lower(), ls(32657).lower(), values['exclude_keywords']))
 		if 'sort_by' in values:
-			append(values['sort_by'])
-		if 'adult' in values and values['adult'] == ls(32859):
-			append('%s %s' % (ls(32188).lower(), ls(32665).lower()))
+			name_append(values['sort_by'])
+		if 'adult' in values and values['adult'] == 'True':
+			name_append('%s %s' % (ls(32188).lower(), ls(32665).lower()))
 		self.discover_params['name'] = ' | '.join(name)
 
 	def _listitem_position(self, key):
@@ -544,7 +545,7 @@ def remove_from_history(params):
 	dbcur.execute("""DELETE FROM maincache WHERE id = ?""", (params['data_id'],))
 	kodi_utils.clear_property(params['data_id'])
 	kodi_utils.container_refresh()
-	if not params['silent']: kodi_utils.notification(32576)
+	if not params['silent']: kodi_utils.notify_success()
 
 def remove_all_history(params):
 	mediatype = params['mediatype']
@@ -552,7 +553,7 @@ def remove_all_history(params):
 	all_history = get_history(mediatype)
 	for item in (i[0] for i in all_history):
 		remove_from_history({'data_id': item, 'silent': True})
-	kodi_utils.notification(32576)
+	kodi_utils.notify_success()
 
 def help(): return (
 """

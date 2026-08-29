@@ -313,31 +313,31 @@ def trakt_get_lists(list_type):
 def add_to_sync(list_type, data):
 	key = 'episodes' if list_type == 'collection' else 'shows'
 	result = call_trakt('sync/%s' % list_type, data=data)
-	if result['added']['movies'] + result['added'][key] == 0: return kodi_utils.notification(32574)
-	kodi_utils.notification(32576)
+	if result['added']['movies'] + result['added'][key] == 0: return kodi_utils.notify_failed()
+	kodi_utils.notify_success()
 	trakt_sync_activities()
 	return result
 
 def remove_from_sync(list_type, data):
 	key = 'episodes' if list_type == 'collection' else 'shows'
 	result = call_trakt('sync/%s/remove' % list_type, data=data)
-	if result['deleted']['movies'] + result['deleted'][key] == 0: return kodi_utils.notification(32574)
-	kodi_utils.notification(32576)
+	if result['deleted']['movies'] + result['deleted'][key] == 0: return kodi_utils.notify_failed()
+	kodi_utils.notify_success()
 	trakt_sync_activities()
 	kodi_utils.container_refresh()
 	return result
 
 def add_to_list(user, slug, data):
 	result = call_trakt('users/%s/lists/%s/items' % (user, slug), data=data)
-	if result['added']['movies'] + result['added']['shows'] == 0: return kodi_utils.notification(32574)
-	kodi_utils.notification(32576)
+	if result['added']['movies'] + result['added']['shows'] == 0: return kodi_utils.notify_failed()
+	kodi_utils.notify_success()
 	trakt_sync_activities()
 	return result
 
 def remove_from_list(user, slug, data):
 	result = call_trakt('users/%s/lists/%s/items/remove' % (user, slug), data=data)
-	if result['deleted']['movies'] + result['deleted']['shows'] == 0: return kodi_utils.notification(32574)
-	kodi_utils.notification(32576)
+	if result['deleted']['movies'] + result['deleted']['shows'] == 0: return kodi_utils.notify_failed()
+	kodi_utils.notify_success()
 	trakt_sync_activities()
 	kodi_utils.container_refresh()
 	return result
@@ -350,7 +350,7 @@ def make_new_trakt_list(params):
 	data = {'name': list_name, 'privacy': 'public', 'sort_by': 'added', 'sort_how': 'desc'}
 	call_trakt('users/me/lists', data=data)
 	trakt_sync_activities()
-	kodi_utils.notification(32576)
+	kodi_utils.notify_success()
 	kodi_utils.container_refresh()
 
 def delete_trakt_list(params):
@@ -360,7 +360,7 @@ def delete_trakt_list(params):
 	url = 'users/%s/lists/%s' % (user, list_slug)
 	call_trakt(url, method='delete')
 	trakt_sync_activities()
-	kodi_utils.notification(32576)
+	kodi_utils.notify_success()
 	kodi_utils.container_refresh()
 
 def trakt_like_a_list(params):
@@ -368,19 +368,19 @@ def trakt_like_a_list(params):
 	list_slug = params['list_slug']
 	try:
 		call_trakt('users/%s/lists/%s/like' % (user, list_slug), method='post')
-		kodi_utils.notification(32576)
+		kodi_utils.notify_success()
 		trakt_sync_activities()
-	except: kodi_utils.notification(32574)
+	except: kodi_utils.notify_error()
 
 def trakt_unlike_a_list(params):
 	user = params['user']
 	list_slug = params['list_slug']
 	try:
 		call_trakt('users/%s/lists/%s/like' % (user, list_slug), method='delete')
-		kodi_utils.notification(32576)
+		kodi_utils.notify_success()
 		trakt_sync_activities()
 		kodi_utils.container_refresh()
-	except: kodi_utils.notification(32574)
+	except: kodi_utils.notify_error()
 
 def trakt_watched_unwatched(action, media, media_id, tvdb_id=0, season=None, episode=None, key='tmdb'):
 	if action == 'mark_as_watched': url, result_key = 'sync/history', 'added'
@@ -417,7 +417,7 @@ def hide_unhide_trakt_items(action, mediatype, media_id, list_type):
 		try:
 			hidden_data = trakt_get_hidden_items('dropped')
 			action = 'unhide' if int(action) in hidden_data else 'hide'
-		except: return kodi_utils.notification(32574)
+		except: return kodi_utils.notify_error()
 	mediatype = 'movies' if mediatype in ('movie', 'movies') else 'shows'
 	key = 'tmdb' if mediatype == 'movies' else 'imdb'
 	url = 'users/hidden/dropped' if action == 'hide' else 'users/hidden/dropped/remove'

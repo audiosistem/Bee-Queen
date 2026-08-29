@@ -16,7 +16,7 @@ class source:
 			sources_append = sources.append
 			if not all(self.auth): return internal_results(self.scrape_provider, sources)
 			title, season, episode = info.get('title'), info.get('season'), info.get('episode')
-			if 'timeout' in info: self.timeout = info['timeout'] - 1
+			if 'timeout' in info: self.timeout = int(info['timeout'])
 			scrape_results = self.search(info['imdb_id'], season, episode)
 			from modules.kodi_utils import logger
 			if self.errors: logger(self.scrape_provider, f"{self.errors}")

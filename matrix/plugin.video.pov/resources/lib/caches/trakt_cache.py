@@ -3,7 +3,6 @@ from modules.kodi_utils import trakt_db, database_connect
 from modules.utils import chunks
 # from modules.kodi_utils import logger
 
-timeout = 20
 SELECT = 'SELECT id FROM trakt_data'
 DELETE = 'DELETE FROM trakt_data WHERE id = ?'
 DELETE_LIKE = 'DELETE FROM trakt_data WHERE id LIKE ?'
@@ -45,10 +44,10 @@ class TraktCache:
 
 	def _delete(self, command, args):
 		self.dbcur.execute(command, args)
-		self.dbcur.execute("""VACUUM""")
+#		self.dbcur.execute("""VACUUM""")
 
 	def _connect_database(self):
-		self.dbcon = database_connect(trakt_db, timeout=timeout, isolation_level=None)
+		self.dbcon = database_connect(trakt_db, isolation_level=None)
 
 	def _set_PRAGMAS(self):
 		self.dbcur = self.dbcon.cursor()

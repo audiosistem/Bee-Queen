@@ -136,7 +136,7 @@ class BaseListManager:
 		raise NotImplementedError
 
 	def manage(self):
-		if not self.check_auth(): return kodi_utils.notification(32760)
+		if not self.check_auth(): return kodi_utils.no_results()
 		heading = ls(self.heading_id).replace('[B]', '').replace('[/B]', '')
 		list1, list2 = self.get_custom_lists()
 		choices = list1 + self.get_default_choices() + list2

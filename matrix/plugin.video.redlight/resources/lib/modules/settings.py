@@ -107,6 +107,10 @@ def playback_key():
 def playback_settings():
 	return (int(get_setting('redlight.playback.watched_percent', '90')), int(get_setting('redlight.playback.resume_percent', '5')))
 
+def playback_watched_percent():
+	"""Percent at which playback writes a local watched tick. Follows Watched Status Provider."""
+	return 80 if watched_indicators() in (1, 2) else 90
+
 def limit_resolve():
 	return get_setting('redlight.playback.limit_resolve', 'false') == 'true'
 
@@ -189,6 +193,10 @@ def hide_unaired_watchlist_item(action, unaired):
 
 def lists_cache_duraton():
 	return int(get_setting('redlight.lists_cache_duraton', '48'))
+
+def premieres_newest_first():
+	"""Content > Premieres & Latest Releases Sort: date-desc instead of popularity."""
+	return get_setting('redlight.tmdb.premieres_sort', '0') == '1'
 
 def auto_start_redlight():
 	return get_setting('redlight.auto_start_redlight', 'false') == 'true'
@@ -496,7 +504,7 @@ def nextep_pipeline_headroom(play_type, scraper_time, still_watching_due=False):
 def auto_nextep_settings(play_type):
 	play_type = 'autoplay' if play_type == 'autoplay_nextep' else 'autoscrape'
 	window_percentage = 100 - int(get_setting('redlight.%s_next_window_percentage' % play_type, '95'))
-	alert_timing = _alert_timing_mode('%s_alert_timing' % play_type, '1')
+	alert_timing = _alert_timing_mode('%s_alert_timing' % play_type, '3')
 	watching_check = int(get_setting('redlight.autoplay_watching_check', '3'))
 	scraper_time = int(get_setting('redlight.results.timeout', '60')) + NEXTEP_SCRAPE_MARGIN_SEC
 	if play_type == 'autoplay':
@@ -1049,6 +1057,9 @@ def scraping_settings():
 def external_cache_check():
 	return any_external_cache_check()
 
+def fanarttv_api_key():
+	return get_setting('redlight.fanarttv_api', 'empty_setting')
+
 def omdb_api_key():
 	return get_setting('redlight.omdb_api', 'empty_setting')
 
@@ -1070,6 +1081,9 @@ def widget_hide_next_page():
 
 def widget_hide_watched():
 	return get_setting('redlight.widget_hide_watched', 'false') == 'true'
+
+def widget_hide_watched_fill():
+	return widget_hide_watched() and get_setting('redlight.widget_hide_watched_fill', 'false') == 'true'
 
 def calendar_sort_order():
 	return int(get_setting('redlight.trakt.calendar_sort_order', '0'))

@@ -56,8 +56,8 @@ class ExternalProvidersCache(BaseCache):
 		try:
 			self.dbcur.execute(FULL_DELETE)
 			self.dbcur.execute("""VACUUM""")
-			return 'success'
-		except: return 'failure'
+			return True
+		except: return False
 
 	def delete_cache_single(self, mediatype, tmdb_id):
 		try:

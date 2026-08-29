@@ -8,7 +8,7 @@ from menus import images, people, trakt, mdblist, tmdb
 from modules import settings, dialogs, downloader
 from modules.meta_lists import networks as meta_networks
 from modules.utils import get_datetime
-from modules.kodi_utils import media_path, notification, close_all_dialog, hide_busy_dialog, ok_dialog, fetch_kodi_imagecache, local_string as ls
+from modules.kodi_utils import media_path, notify_error, close_all_dialog, hide_busy_dialog, ok_dialog, fetch_kodi_imagecache, local_string as ls
 # from modules.kodi_utils import logger
 
 fanart_empty = BaseDialog.fanart
@@ -16,10 +16,11 @@ poster_empty = media_path('box_office.png')
 backup_thumbnail = media_path('box_office.png')
 backup_cast_thumbnail = media_path('people.png')
 tmdb_image_base = tmdb_api.tmdb_image_base
-button_ids = 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
-playbrowse_id, trailer_id, keywords_id, images_id, extrainfo_id, genre_id, director_id, trakt_id, mdbl_id, tmdbl_id = button_ids
-actions_id, cast_id, recommended_id, reviews_id, trivia_id, blunders_id, parentsguide_id = 2049, 2050, 2051, 2052, 2053, 2054, 2055
-videos_id, posters_id, backdrops_id, year_id, genres_id, networks_id, collection_id = 2056, 2057, 2058, 2059, 2060, 2061, 2062
+playbrowse_id, trailer_id, keywords_id, images_id, extrainfo_id = 10, 11, 12, 13, 14
+genre_id, director_id, trakt_id, mdbl_id, tmdbl_id = button_ids = 15, 16, 17, 18, 19
+actions_id, cast_id, recommended_id, reviews_id, trivia_id = 2049, 2050, 2051, 2052, 2053
+blunders_id, parentsguide_id, videos_id, posters_id, backdrops_id = 2054, 2055, 2056, 2057, 2058
+year_id, genres_id, networks_id, collection_id = 2059, 2060, 2061, 2062
 tmdb_list_ids = (recommended_id, year_id, genres_id, networks_id, collection_id)
 imdb_list_ids = (reviews_id, trivia_id, blunders_id, parentsguide_id)
 art_ids = (posters_id, backdrops_id)
@@ -739,6 +740,6 @@ def media_extra_info(mediatype, meta):
 			append('[B]%s:[/B] %s' % (seasons_str, meta['total_seasons']))
 			append('[B]%s:[/B] %s' % (episodes_str, meta['total_aired_eps']))
 			if 'homepage' in extra_info: append('[B]%s:[/B] %s' % (homepage_str, extra_info['homepage']))
-	except: return notification(32574)
+	except: return notify_error()
 	return '\n\n'.join(body)
 

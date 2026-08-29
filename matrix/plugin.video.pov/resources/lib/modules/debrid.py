@@ -1,24 +1,24 @@
 import json
 from threading import Thread
-from debrids import alldebrid_api, premiumize_api, real_debrid_api, torbox_api, offcloud_api
 from caches.debrid_cache import DebridCache
+from indexers import alldebrid_api, premiumize_api, real_debrid_api, torbox_api, offcloud_api
 from indexers import metadata
 from modules import kodi_utils, settings
 # from modules.kodi_utils import logger
 
-ls, get_setting, notification = kodi_utils.local_string, kodi_utils.get_setting, kodi_utils.notification
+ls, get_setting = kodi_utils.local_string, kodi_utils.get_setting
 show_busy_dialog, hide_busy_dialog = kodi_utils.show_busy_dialog, kodi_utils.hide_busy_dialog
-ok_dialog, confirm_dialog, select_dialog = kodi_utils.ok_dialog, kodi_utils.confirm_dialog, kodi_utils.select_dialog
-default_internal_scrapers, enabled_debrids_check = settings.default_internal_scrapers, settings.enabled_debrids_check
-default_external_scrapers = ('external',)
+confirm_dialog, select_dialog = kodi_utils.confirm_dialog, kodi_utils.select_dialog
+default_internal_scrapers = settings.default_internal_scrapers()
+default_external_scrapers = settings.default_external_scrapers()
 plswait_str, checking_debrid_str, remaining_debrid_str = ls(32577), ls(32578), ls(32579)
 
 debrid_list = (
-	('realdebrid', 'rd', real_debrid_api.RealDebridAPI),
 	('premiumize', 'pm', premiumize_api.PremiumizeAPI),
-	('alldebrid', 'ad', alldebrid_api.AllDebridAPI),
-	('torbox', 'tb', torbox_api.TorBoxAPI),
 	('offcloud', 'oc', offcloud_api.OffcloudAPI),
+	('torbox', 'tb', torbox_api.TorBoxAPI),
+	('realdebrid', 'rd', real_debrid_api.RealDebridAPI),
+	('alldebrid', 'ad', alldebrid_api.AllDebridAPI)
 )
 
 def import_debrid(debrid_provider):
@@ -26,7 +26,7 @@ def import_debrid(debrid_provider):
 	return cls() if cls else cls
 
 def debrid_enabled():
-	return [i[0] for i in debrid_list if enabled_debrids_check(i[1])]
+	return [i[0] for i in debrid_list if settings.enabled_debrids_check(i[1])]
 
 def debrid_type_enabled(debrid_type, enabled_debrids):
 	return [i[0] for i in debrid_list if i[0] in enabled_debrids and get_setting('%s.%s.enabled' % (i[1], debrid_type)) == 'true']
@@ -93,7 +93,7 @@ class Source:
 				elif any(x in filename for x in extras_filtering_list): continue
 				selected_files_append(i)
 			if not selected_files: raise Exception('selected_files failed')
-			if not season: selected_files.sort(key=lambda k: k['size'], reverse=True)
+			selected_files.sort(key=lambda k: k['size'], reverse=True)
 			file_key = next((i['link'] for i in selected_files), None)
 			file_url = api.unrestrict_link(file_key)
 			if not api.defaults_to_cloud:
@@ -110,20 +110,20 @@ class Source:
 
 	def resolve_internal_sources(self, direct_debrid_link=False):
 		try:
-			if self.scrape_provider == 'rd_cloud':
+			if self.scrape_provider == 'tb_cloud':
+				url = torbox_api.TorBoxAPI().unrestrict_link(self.id)
+			elif self.scrape_provider == 'rd_cloud':
 				if direct_debrid_link: url = self.url_dl
 				else: url = real_debrid_api.RealDebridAPI().unrestrict_link(self.id)
 			elif self.scrape_provider == 'ad_cloud':
 				if direct_debrid_link: url = self.url_dl
 				else: url = alldebrid_api.AllDebridAPI().unrestrict_link(self.id)
-			elif self.scrape_provider == 'tb_cloud':
-				url = torbox_api.TorBoxAPI().unrestrict_link(self.id)
 			elif self.scrape_provider == 'easynews':
-				from debrids.easynews_api import EasyNewsAPI
+				from indexers.easynews_api import EasyNewsAPI
 				url = EasyNewsAPI().unrestrict_link(self.url_dl)
 				if not direct_debrid_link: url += '|seekable=0'
 			elif self.scrape_provider == 'aiostreams':
-				from scrapers.aiostreams import unrestrict_link
+				from debrids.aiostreams import unrestrict_link
 				url = unrestrict_link(self.url_dl)
 			else: url = self.url_dl
 			return url
@@ -136,7 +136,7 @@ class Source:
 		api = import_debrid(self.debrid)
 		pack_choices = api.parse_magnet_pack(self.url, self.hash)
 		hide_busy_dialog()
-		if not pack_choices: return None if download else notification(32574)
+		if not pack_choices: return None if download else kodi_utils.no_results()
 		pack_choices.sort(key=lambda k: k['filename'].lower())
 		for item in pack_choices: item.update({
 			'icon': self.meta.get('poster') or api.icon,
@@ -157,18 +157,18 @@ class Source:
 		api.clear_cache()
 		result = api.create_transfer(self.url)
 		hide_busy_dialog()
-		if result: notification(32576)
-		else: notification(32575)
+		if result: kodi_utils.notify_success()
+		else: kodi_utils.notify_failed()
 
 	def unchecked_magnet_status(self):
 		show_busy_dialog()
 		api = import_debrid(self.debrid)
 		result = api.parse_magnet_pack(self.url, self.hash)
 		hide_busy_dialog()
-		if not result: return ok_dialog(text='Not Cached at [B]%s[/B]' % self.debrid.upper())
+		if not result: return kodi_utils.ok_dialog(text='Not Cached at [B]%s[/B]' % self.debrid.upper())
 		torrent_id = next((i['torrent_id'] for i in result if 'torrent_id' in i), None)
 		if torrent_id: Thread(target=api.delete_torrent, args=(torrent_id,)).start()
-		ok_dialog(text='Cached at [B]%s[/B]' % self.debrid.upper())
+		kodi_utils.ok_dialog(text='Cached at [B]%s[/B]' % self.debrid.upper())
 
 	def manual_airlock_to_cloud(self):
 		if not confirm_dialog(text=ls(32831) % self.debrid.upper()): return
@@ -176,24 +176,24 @@ class Source:
 		api = import_debrid(self.debrid)
 		api.clear_cache()
 		request_id = api.create_transfer(self.url)
-		if not request_id: return notification(32575)
+		if not request_id: return kodi_utils.notify_error()
 		mediatype = 'torrents' if self.url.startswith('magnet') else 'usenet'
 		result = api.toggle_airlock(mediatype, request_id, True)
 		hide_busy_dialog()
-		if result: notification(32576)
-		else: notification(32575)
+		if result: kodi_utils.notify_success()
+		else: kodi_utils.notify_failed()
 
 	def aio_add_to_cloud(self):
 		if not confirm_dialog(text=ls(32831) % self.debrid.upper()): return
-		if not getattr(self, 'url_dl', False): return notification(32576)
+		if not getattr(self, 'url_dl', False): return kodi_utils.notify_error()
 		url, *headers = self.url_dl.rsplit('|', 1)
 		try: headers = dict(kodi_utils.parse_qsl(*headers))
 		except: headers = dict()
 		response = requests.get(url, headers=headers, stream=True, timeout=10)
-		if not response.ok: return notification(32576)
+		if not response.ok: return kodi_utils.notify_error()
 		chunk = next(response.iter_content(chunk_size=1048576), b'')
-		if len(chunk): notification(32576)
-		else: notification(32575)
+		if len(chunk): kodi_utils.notify_success()
+		else: kodi_utils.notify_failed()
 
 class DebridCheck:
 	_debrid_dict = {i[0]: i for i in debrid_list}

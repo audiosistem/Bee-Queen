@@ -19,14 +19,22 @@ maincache_db   = 'special://profile/addon_data/plugin.video.pov/maincache.db'
 metacache_db   = 'special://profile/addon_data/plugin.video.pov/metacache.db'
 debridcache_db = 'special://profile/addon_data/plugin.video.pov/debridcache.db'
 external_db    = 'special://profile/addon_data/plugin.video.pov/providerscache.db'
-scrapers_path  = 'special://home/addons/plugin.video.pov/resources/lib/scrapers/'
 databases_path = 'special://profile/addon_data/plugin.video.pov/'
+internal_path  = 'special://home/addons/plugin.video.pov/resources/lib/debrids/'
+external_path  = 'special://home/addons/plugin.video.pov/resources/lib/magneto/'
 packages_path  = 'special://home/addons/packages/'
-indicators_dict = {0: watched_db, 1: trakt_db, 2: mdbl_db}
 
 def current_dbs():
 	return {'settings.xml', 'fenomcache.db', 'traktcache.db', 'mdblcache.db', 'watched.db',
 			'maincache.db', 'metacache.db', 'navigator.db', 'views.db', 'debridcache.db', 'providerscache.db'}
+
+def get_database(watched_indicators):
+	if watched_indicators == 1: return trakt_db
+	if watched_indicators == 2: return mdbl_db
+	return watched_db
+
+def database_connect(file, **kwargs):
+	return database.connect(translate_path(file), **kwargs)
 
 def logger(heading, function):
 	xbmc.log('>> %s <<: %s' % (heading, function), 1)
@@ -38,9 +46,6 @@ def argv1():
 def parsed_query(url):
 	try: return dict(parse_qsl(urlparse(url).query))
 	except: return dict()
-
-def database_connect(file, **kwargs):
-	return database.connect(translate_path(file), **kwargs)
 
 def media_path(*args):
 	path = 'special://home/addons/plugin.video.pov/resources/skins/Default/media/'
@@ -181,14 +186,17 @@ def widget_refresh():
 def container_refresh():
 	return execute_builtin('Container.Refresh')
 
-def ok_dialog(heading='POV', text='', highlight='dodgerblue', ok_label=local_string(32839), top_space=True):
+def ok_dialog(heading='POV', text='', highlight='dodgerblue', ok_label=None, top_space=True):
+	if not ok_label: ok_label = local_string(32839)
 	if isinstance(heading, int): heading = local_string(heading)
 	if isinstance(text, int): text = local_string(text)
 	if not text: top_space, text = True, local_string(32760)
 	if top_space: text = '[CR]%s' % text
 	return dialog.ok(heading, text)
 
-def confirm_dialog(heading='POV', text='', highlight='dodgerblue', ok_label=local_string(32839), cancel_label=local_string(32840), top_space=True, default_control=11):
+def confirm_dialog(heading='POV', text='', highlight='dodgerblue', ok_label=None, cancel_label=None, top_space=True, default_control=11):
+	if not ok_label: ok_label = local_string(32839)
+	if not cancel_label: cancel_label = local_string(32840)
 	if isinstance(heading, int): heading = local_string(heading)
 	if isinstance(text, int): text = local_string(text)
 	if isinstance(ok_label, int): ok_label = local_string(ok_label)
@@ -238,7 +246,7 @@ def show_text(heading, text=None, file=None, font_size='small', kodi_log=False):
 			if line[0].isdigit(): lines += [line]
 			else: lines[-1] += line
 		text = ''.join(i for i in reversed(lines) if any(x in i.lower() for x in ('exception', 'error')))
-	if not text: return notification(32760)
+	if not text: return no_results()
 	return dialog.textviewer(heading, text)
 
 def notification(line1, time=3000, icon=None, sound=False):
@@ -246,9 +254,21 @@ def notification(line1, time=3000, icon=None, sound=False):
 	icon = icon or get_addoninfo('icon')
 	dialog.notification('POV', line1, icon, time, sound)
 
+def notify_error(time=1500):
+	return notification(32574, time=time)
+
+def notify_failed(time=1500):
+	return notification(32575, time=time)
+
+def notify_success(time=1500):
+	return notification(32576, time=time)
+
+def no_results(time=1500):
+	return notification(32760, time=time)
+
 def choose_view(view_type, content):
 	from sys import argv
-	__handle__ = int(argv[1])
+	handle = int(argv[1])
 	label = local_string(32547)
 	fanart = get_addoninfo('fanart')
 	icon = media_path('settings.png')
@@ -256,9 +276,9 @@ def choose_view(view_type, content):
 	listitem = make_listitem()
 	listitem.setLabel(label)
 	listitem.setArt({'icon': icon, 'poster': icon, 'thumb': icon, 'fanart': fanart, 'banner': icon})
-	add_item(__handle__, params_url, listitem, False)
-	set_content(__handle__, content)
-	end_directory(__handle__)
+	add_item(handle, params_url, listitem, False)
+	set_content(handle, content)
+	end_directory(handle)
 	set_view_mode(view_type, content)
 
 def set_view(view_type):
@@ -308,13 +328,13 @@ def clear_view(view_type):
 		dbcur.execute("""DELETE FROM view WHERE path LIKE 'plugin://plugin.video.pov/%'""")
 		dbcon.commit()
 		dbcon.close()
-	except: return notification(32574, 1500)
-	notification(32576, 1500)
+		notify_success()
+	except: notify_error()
 
 def build_url(url_params):
 	return f"{'/vop.oediv.nigulp//:nigulp'[::-1]}?{urlencode(url_params)}"
 
-def add_dir(__handle__, url_params, list_name, iconImage=None, fanartImage=None, isFolder=True):
+def add_dir(handle, url_params, list_name, iconImage=None, fanartImage=None, isFolder=True):
 	if 'new_page' in url_params: list_name = f"{list_name} >> {url_params['new_page']} <<"
 	fanart = fanartImage or get_addoninfo('fanart')
 	icon = iconImage or media_path('item_next.png')
@@ -322,7 +342,7 @@ def add_dir(__handle__, url_params, list_name, iconImage=None, fanartImage=None,
 	listitem = make_listitem()
 	listitem.setLabel(list_name)
 	listitem.setArt({'icon': icon, 'poster': icon, 'thumb': icon, 'fanart': fanart, 'banner': icon})
-	add_item(__handle__, url, listitem, isFolder)
+	add_item(handle, url, listitem, isFolder)
 
 def remove_meta_keys(dict_item, dict_removals):
 	for k in dict_removals: dict_item.pop(k, None)
@@ -348,7 +368,7 @@ def focus_index(index, sleep_time=100):
 
 def clean_settings_window_properties():
 	clear_property('pov_settings')
-	notification(32576, 1500)
+	notify_success()
 
 def fetch_kodi_imagecache(image):
 	result = None
@@ -419,7 +439,7 @@ def clean_settings(silent=False):
 		text = local_string(32813) % len(removed_settings) if removed_settings else 32576
 		if not silent: notification(text, 1500)
 	except:
-		if not silent: notification(32574, 1500)
+		if not silent: notify_error()
 
 def open_settings(query, addon='plugin.video.pov'):
 	hide_busy_dialog()
@@ -431,7 +451,7 @@ def open_settings(query, addon='plugin.video.pov'):
 		menu, function = query.split('.')
 		execute_builtin('SetFocus(%i)' % (int(menu) - button))
 		execute_builtin('SetFocus(%i)' % (int(function) - control))
-	except: notification(32574)
+	except: notify_error()
 
 def toggle_language_invoker():
 	import xml.etree.ElementTree as ET
@@ -445,7 +465,7 @@ def toggle_language_invoker():
 	tree = ET.parse(addon_xml)
 	root = tree.getroot()
 	item = next(root.iter('reuselanguageinvoker'), None)
-	if item is None: return notification(32574, 1500)
+	if item is None: return notify_error()
 	item.text = new_value
 	tree.write(addon_xml)
 	set_setting('reuse_language_invoker', new_value)
@@ -466,11 +486,11 @@ def upload_logfile():
 		response = requests.post('%s%s' % (url, 'documents'), data=text, timeout=10.0).json()
 		if 'key' in response: ok_dialog(text=url + response['key'])
 		else: ok_dialog(text='Error. Log Upload Failed')
-	except: notification(32574, 1500)
+	except: notify_error()
 	hide_busy_dialog()
 
 def timeIt(func):
-	# Thanks to 123Venom
+	# Thanks 123Venom
 	import time
 	fnc_name = func.__name__
 	def wrap(*args, **kwargs):

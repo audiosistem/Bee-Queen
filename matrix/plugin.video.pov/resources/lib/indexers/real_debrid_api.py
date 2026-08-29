@@ -1,13 +1,12 @@
 import requests
-from caches.main_cache import cache_object
 from modules import kodi_utils
 # logger = kodi_utils.logger
 
-ls, get_setting, set_setting = kodi_utils.local_string, kodi_utils.get_setting, kodi_utils.set_setting
+get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting
 base_url = 'https://app.real-debrid.com/rest/1.0/'
 timeout = 10.0
+custom_errors = requests.exceptions.ConnectionError, requests.exceptions.Timeout
 session = requests.Session()
-session.custom_errors = requests.exceptions.ConnectionError, requests.exceptions.Timeout
 session.mount('https://app.real-debrid.com', requests.adapters.HTTPAdapter(max_retries=1))
 
 class RealDebridAPI:
@@ -21,7 +20,7 @@ class RealDebridAPI:
 	def _request(self, method, path, data=None):
 		url = base_url + path
 		try: response = session.request(method, url, data=data, timeout=timeout)
-		except session.custom_errors: return kodi_utils.notification('%s timeout' % __name__)
+		except custom_errors: return kodi_utils.notification('%s timeout' % __name__)
 		if response.status_code in (401,) and self.refresh_token() is True:
 			response.request.headers['Authorization'] = 'Bearer %s' % self.token
 			response = session.send(response.request, timeout=timeout)
@@ -65,6 +64,18 @@ class RealDebridAPI:
 		url = 'user'
 		result = self._get(url)
 		return result
+
+	def downloads(self):
+		url = 'downloads?limit=500'
+		return self._get(url)
+
+	def user_cloud(self):
+		url = 'torrents?limit=500'
+		return self._get(url)
+
+	def user_folder(self, folder_id):
+		url = folder_id
+		return self.torrent_info(url)
 
 	def torrent_info(self, folder_id):
 		url = 'torrents/info/%s' % folder_id
@@ -141,29 +152,6 @@ class RealDebridAPI:
 			if torrent_id: self.delete_torrent(torrent_id)
 			if errors: raise
 
-	def downloads(self, cached=True):
-		string = 'pov_rd_downloads'
-		url = 'downloads?limit=500'
-		if cached: result = cache_object(self._get, string, url, 0.5)
-		else: result = self._get(url)
-		return result
-
-	def user_cloud(self, cached=True):
-		string = 'pov_rd_user_cloud'
-		url = 'torrents?limit=500'
-		if cached: result = cache_object(self._get, string, url, 0.5)
-		else: result = self._get(url)
-		result = [i for i in result if i.get('ended')]
-		return result
-
-	def user_folder(self, folder_id):
-		string = 'pov_rd_user_cloud_%s' % folder_id
-		url = folder_id
-		result = cache_object(self.torrent_info, string, url, 0.5)
-		selected = (i for i in result['files'] if i['selected'])
-		result = [{**i, 'url_link': link} for i, link in zip(selected, result['links'])]
-		return result
-
 	def clear_cache(*args):
 		from modules.kodi_utils import clear_property, path_exists, database_connect, maincache_db
 		try:
@@ -176,22 +164,22 @@ class RealDebridAPI:
 				dbcur.execute("""SELECT id FROM maincache WHERE id LIKE ?""", ('pov_rd_user_cloud%',))
 				user_cloud_cache = [str(i[0]) for i in dbcur.fetchall()]
 				if user_cloud_cache:
-					dbcur.execute("""DELETE FROM maincache WHERE id LIKE ?""", ('pov_rd_user_cloud%',))
 					for i in user_cloud_cache: clear_property(i)
+					dbcur.execute("""DELETE FROM maincache WHERE id LIKE ?""", ('pov_rd_user_cloud%',))
 					dbcon.commit()
 				user_cloud_success = True
 			except: user_cloud_success = False
 			# DOWNLOAD LINKS
 			try:
-				dbcur.execute("""DELETE FROM maincache WHERE id = ?""", ('pov_rd_downloads',))
 				clear_property('pov_rd_downloads')
+				dbcur.execute("""DELETE FROM maincache WHERE id = ?""", ('pov_rd_downloads',))
 				dbcon.commit()
 				download_links_success = True
 			except: download_links_success = False
 			# HOSTERS
 			try:
-				dbcur.execute("""DELETE FROM maincache WHERE id = ?""", ('pov_rd_valid_hosts',))
 				clear_property('pov_rd_valid_hosts')
+				dbcur.execute("""DELETE FROM maincache WHERE id = ?""", ('pov_rd_valid_hosts',))
 				dbcon.commit()
 				hoster_links_success = True
 			except: hoster_links_success = False
