@@ -12,7 +12,7 @@
     <extension library="blacklodge.py" point="xbmc.python.pluginsource">
         <provides>video</provides>
     </extension>
-    <extension library="service.py" point="xbmc.service" start="startup" />
+    <!--<extension library="service.py" point="xbmc.service" start="startup" />-->
     <extension point="xbmc.addon.metadata">
         <reuselanguageinvoker>false</reuselanguageinvoker>
         <summary lang="en_GB">Blacklodge</summary>

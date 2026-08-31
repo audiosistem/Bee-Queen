@@ -1,4 +1,5 @@
-from tmdbhelper.lib.sync.mdblist.datatype import MDbListDataType, MDbListDataTypeEpisodesInShows, MDbListDataTypeEpisodesNotShows
+from tmdbhelper.lib.sync.mdblist.datatype import MDbListDataType, MDbListDataTypeEpisodesInShows, MDbListDataTypeEpisodesToShows, MDbListDataTypeNull
+from tmdbhelper.lib.sync.mdblist.dataconf import ConfigureEpisodeList
 from tmdbhelper.lib.addon.consts import HALFDAY_EXPIRY
 
 
@@ -37,8 +38,8 @@ class SyncPlayback(MDbListDataTypeEpisodesInShows):
         return data  # Data comes as a list already
 
 
-class SyncNextEpisodes(MDbListDataType):  # TODO: Check if should be basic datatype not episodes
-    keys = ('next_episode_id', 'next_episode_aired_at', 'last_watched_at', )
+class SyncNextEpisodes(MDbListDataType):
+    keys = ('next_episode_id', 'next_episode_aired_at', 'last_watched_at', 'aired_episodes', 'watched_episodes', )  # AIRED AND WATCHED DATA IN THIS ENDPOINT FOR MDBLIST
     last_activities_key = 'watched_at'
     method = 'upnext'
     sync_kwgs = {}
@@ -51,13 +52,63 @@ class SyncNextEpisodes(MDbListDataType):  # TODO: Check if should be basic datat
             pass
 
 
-class SyncWatched(MDbListDataTypeEpisodesNotShows):
-    keys = ('plays', 'last_watched_at', 'last_updated_at', 'aired_episodes', 'watched_episodes', 'reset_at', )
+class SyncWatched(MDbListDataTypeEpisodesToShows):
+    keys = ('plays', 'last_watched_at', )  # 'last_updated_at', 'aired_episodes', 'watched_episodes', 'reset_at',
     last_activities_key = 'watched_at'
     method = 'sync/watched'
-    aggregate_key = 'plays'
+
+    def get_data_list_by_type(self, data):
+        try:
+            return data[f'{self.sync_kwgs_mediatype}s']
+        except KeyError:
+            return
+
+    def get_response_sync(self, *args, **kwargs):
+        data = super().get_response_sync(*args, **kwargs)
+        return ConfigureEpisodeList(data).data if data and self.sync_kwgs_mediatype == 'episode' else data
+
+    def clear_columns(self, *args, **kwargs):
+        if self.timestamp:  # Skip clearing columns if we just update
+            return
+        super().clear_columns(*args, **kwargs)
+
+    @property
+    def sync_kwgs_mediatype(self):
+        if self.item_type in ('show', 'season', 'episode'):
+            return 'episode'
+        return self.item_type
 
     @property
     def sync_kwgs(self):
-        sync_kwgs = {'mediatype': self.item_type, 'plays': 'all'}
-        return sync_kwgs
+        sync_kwgs = (
+            ('mediatype', self.sync_kwgs_mediatype),
+            ('since', self.timestamp),  # TODO: DO THIS WITH JOURNAL INSTEAD AND REMOVE ITEMS too
+        )
+        return {k: v for k, v in sync_kwgs if v}
+
+
+class SyncAllNextEpisodes(MDbListDataTypeNull):  # TODO: CURRENTLY A DUMMY TYPE DOES NOTHING
+    keys = ('upnext_episode_id', )
+    last_activities_key = 'watched_at'
+    method = 'all_next_episodes'
+    expiry_time = HALFDAY_EXPIRY
+    sync_kwgs = {}
+
+
+class SyncHiddenProgressWatched(MDbListDataTypeNull):
+    keys = ('hidden_at', )
+    last_activities_key = 'hidden_at'
+    method = 'hidden/progress_watched'
+    key_prefix = 'progress_watched'
+
+
+class SyncHiddenProgressCollected(SyncHiddenProgressWatched):
+    last_activities_key = 'hidden_at'
+    method = 'hidden/progress_collected'
+    key_prefix = 'progress_collected'
+
+
+class SyncHiddenCalendar(MDbListDataTypeNull):
+    last_activities_key = 'hidden_at'
+    method = 'hidden/calendar'
+    key_prefix = 'calendar'
