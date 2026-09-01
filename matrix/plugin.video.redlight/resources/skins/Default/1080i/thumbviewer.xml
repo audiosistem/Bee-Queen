@@ -34,7 +34,7 @@
                     <left>1590</left>
                     <width max="300">auto</width>
                     <height>20</height>
-                    <font>font16</font> <!-- REDLIGHT_38 -->
+                    <font>font_medium</font> <!-- REDLIGHT_38 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <align>right</align>
                     <aligny>center</aligny>
@@ -45,7 +45,7 @@
                     <left>1540</left>
                     <width max="350">auto</width>
                     <height>20</height>
-                    <font>font10</font> <!-- REDLIGHT_21 -->
+                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <align>right</align>
                     <aligny>center</aligny>
@@ -56,7 +56,7 @@
                     <top>25</top>
                     <width>1520</width>
                     <height>20</height>
-                    <font>font10</font> <!-- REDLIGHT_21 -->
+                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                     <textcolor>FFFFFFFF</textcolor>
                     <align>left</align>
                     <aligny>center</aligny>

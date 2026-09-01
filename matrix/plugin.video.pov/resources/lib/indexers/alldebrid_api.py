@@ -3,7 +3,6 @@ from modules import kodi_utils
 # logger = kodi_utils.logger
 
 base_url = 'https://api.alldebrid.com/'
-timeout = 10.0
 custom_errors = requests.exceptions.ConnectionError, requests.exceptions.Timeout
 session = requests.Session()
 session.mount('https://api.alldebrid.com', requests.adapters.HTTPAdapter(max_retries=1))
@@ -25,12 +24,13 @@ class AllDebridAPI:
 		return files
 
 	def __init__(self):
+		self.timeout = int(kodi_utils.get_setting('scrapers_timeout') or 10)
 		self.token = kodi_utils.get_setting('ad.token')
 		session.headers.update(self.headers())
 
 	def _request(self, method, path, params=None, data=None):
 		url = base_url + path
-		try: response = session.request(method, url, params=params, data=data, timeout=timeout)
+		try: response = session.request(method, url, params=params, data=data, timeout=self.timeout)
 		except custom_errors: return kodi_utils.notification('%s timeout' % __name__)
 		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
 		response = response.json() if 'json' in response.headers.get('Content-Type', '') else response
@@ -127,7 +127,7 @@ class AllDebridAPI:
 			if torrent_id: self.delete_torrent(torrent_id)
 			if errors: raise
 
-	def clear_cache(self):
+	def clear_cache(*args):
 		from modules.kodi_utils import clear_property, path_exists, database_connect, maincache_db
 		try:
 			if not path_exists(maincache_db): return True
@@ -161,10 +161,45 @@ class AllDebridAPI:
 			dbcon.close()
 			# HASH CACHED STATUS
 			try:
-				DebridCache().clear_debrid_results('ad')
+				DebridCache().delete_cache_single('ad')
 				hash_cache_status_success = True
 			except: hash_cache_status_success = False
 		except: return False
 		if False in (user_cloud_success, download_links_success, hoster_links_success, hash_cache_status_success): return False
 		return True
+
+def aio_check_cache(imdb, season, episode):
+	if str(season).isdigit(): params = {'type': 'series', 'id': '%s:%s:%s' % (imdb, season, episode)}
+	else: params = {'type': 'movie', 'id': '%s' % imdb}
+	headers, url = {'x-aiostreams-user-data': (
+		'ewogICJzZXJ2aWNlcyI6IFsKICAgIHsKICAgICAgImlkIjogImFsbGRlYnJpZCIsCiAgICAgICJlbmFi'
+		'bGVkIjogdHJ1ZSwKICAgICAgImNyZWRlbnRpYWxzIjogeyJhcGlLZXkiOiAic3RhdGljRGVtb0FwaWtl'
+		'eVByZW0ifQogICAgfQogIF0sCiAgInByZXNldHMiOiBbCiAgICB7CiAgICAgICJ0eXBlIjogIm1lZGlh'
+		'ZnVzaW9uIiwKICAgICAgImluc3RhbmNlSWQiOiAiNWI4IiwKICAgICAgImVuYWJsZWQiOiB0cnVlLAog'
+		'ICAgICAib3B0aW9ucyI6IHsKICAgICAgICAibmFtZSI6ICJNZWRpYUZ1c2lvbiIsCiAgICAgICAgInRp'
+		'bWVvdXQiOiA2NTAwLAogICAgICAgICJyZXNvdXJjZXMiOiBbInN0cmVhbSJdLAogICAgICAgICJ1c2VD'
+		'YWNoZWRSZXN1bHRzT25seSI6IHRydWUsCiAgICAgICAgImVuYWJsZVdhdGNobGlzdENhdGFsb2dzIjog'
+		'ZmFsc2UsCiAgICAgICAgImRvd25sb2FkVmlhQnJvd3NlciI6IGZhbHNlLAogICAgICAgICJjb250cmli'
+		'dXRvclN0cmVhbXMiOiBmYWxzZSwKICAgICAgICAiY2VydGlmaWNhdGlvbkxldmVsc0ZpbHRlciI6IFtd'
+		'LAogICAgICAgICJudWRpdHlGaWx0ZXIiOiBbXSwKICAgICAgICAibWVkaWFUeXBlcyI6IFtdCiAgICAg'
+		'IH0KICAgIH0sCiAgICB7CiAgICAgICJ0eXBlIjogInN0cmVtdGhydVRvcnoiLAogICAgICAiaW5zdGFu'
+		'Y2VJZCI6ICI1NDgiLAogICAgICAiZW5hYmxlZCI6IHRydWUsCiAgICAgICJvcHRpb25zIjogewogICAg'
+		'ICAgICJuYW1lIjogIlN0cmVtVGhydSBUb3J6IiwKICAgICAgICAidGltZW91dCI6IDY1MDAsCiAgICAg'
+		'ICAgInJlc291cmNlcyI6IFsic3RyZWFtIl0sCiAgICAgICAgIm1lZGlhVHlwZXMiOiBbXSwKICAgICAg'
+		'ICAiaW5jbHVkZVAyUCI6IGZhbHNlLAogICAgICAgICJ1c2VNdWx0aXBsZUluc3RhbmNlcyI6IGZhbHNl'
+		'CiAgICAgIH0KICAgIH0KICBdLAogICJmb3JtYXR0ZXIiOiB7CiAgICAiaWQiOiAidG9ycmVudGlvIiwK'
+		'ICAgICJkZWZpbml0aW9uIjogewogICAgICAibmFtZSI6ICIiLAogICAgICAiZGVzY3JpcHRpb24iOiAi'
+		'IgogICAgfQogIH0sCiAgInNvcnRDcml0ZXJpYSI6IHsKICAgICJnbG9iYWwiOiBbXQogIH0sCiAgImRl'
+		'ZHVwbGljYXRvciI6IHsKICAgICJlbmFibGVkIjogZmFsc2UsCiAgICAia2V5cyI6IFsiaW5mb0hhc2gi'
+		'XSwKICAgICJtdWx0aUdyb3VwQmVoYXZpb3VyIjogImFnZ3Jlc3NpdmUiLAogICAgImNhY2hlZCI6ICJz'
+		'aW5nbGVfcmVzdWx0IiwKICAgICJ1bmNhY2hlZCI6ICJwZXJfc2VydmljZSIsCiAgICAicDJwIjogInNp'
+		'bmdsZV9yZXN1bHQiLAogICAgImV4Y2x1ZGVBZGRvbnMiOiBbXQogIH0sCiAgImV4Y2x1ZGVVbmNhY2hl'
+		'ZCI6IHRydWUKfQ=='
+	)}, 'https://aiostreams.fortheweak.cloud/api/v1/search'
+	try:
+		results = requests.get(url, params=params, headers=headers, timeout=7.05)
+		if not results.ok: results.raise_for_status()
+		files = results.json()['data']['results']
+		return [file['infoHash'] for file in files if file['cached'] and file.get('infoHash')]
+	except Exception as e: kodi_utils.logger('aio error', str(e))
 

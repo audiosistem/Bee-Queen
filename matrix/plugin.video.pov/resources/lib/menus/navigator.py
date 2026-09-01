@@ -30,7 +30,7 @@ class Navigator:
 	def premiumize(self):
 		pm_str, acc_str, his_str, cloud_str = 'Premiumize', ls(32494), ls(32486), ls(32496)
 		clca_str, n_ins = ls(32497) % pm_str, _in_str % (pm_str.upper(), '')
-		self._add_item({'mode': 'premiumize.pm_torrent_cloud',      'name': cloud_str}, 'premiumize.png', n_ins)
+		self._add_item({'mode': 'premiumize.pm_browse_cloud',       'name': cloud_str}, 'premiumize.png', n_ins)
 		self._add_item({'mode': 'premiumize.pm_downloads',          'name': his_str  }, 'premiumize.png', n_ins)
 		self._add_item({'mode': 'premiumize.show_account_info',     'name': acc_str  }, 'premiumize.png', n_ins, False)
 		self._add_item({'mode': 'clear_cache', 'cache': 'pm_cloud', 'name': clca_str }, 'premiumize.png', n_ins, False)
@@ -38,7 +38,7 @@ class Navigator:
 	def offcloud(self):
 		oc_str, acc_str, cloud_str = 'Offcloud', ls(32494), ls(32496)
 		clca_str, n_ins = ls(32497) % oc_str, _in_str % (oc_str.upper(), '')
-		self._add_item({'mode': 'offcloud.oc_torrent_cloud',        'name': cloud_str}, 'offcloud.png', n_ins)
+		self._add_item({'mode': 'offcloud.oc_browse_cloud',         'name': cloud_str}, 'offcloud.png', n_ins)
 		self._add_item({'mode': 'offcloud.show_account_info',       'name': acc_str  }, 'offcloud.png', n_ins, False)
 		self._add_item({'mode': 'clear_cache', 'cache': 'oc_cloud', 'name': clca_str }, 'offcloud.png', n_ins, False)
 
@@ -46,16 +46,16 @@ class Navigator:
 		tb_str, acc_str, cloud_str = 'TorBox', ls(32494), ls(32496)
 		clca_str, n_ins = ls(32497) % tb_str, _in_str % (tb_str.upper(), '')
 		tor_str, usenet_str, web_str = 'Torrent', 'Usenet', 'Web Download'
-		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'mediatype': 'torrents', 'name': tor_str   }, 'torbox.png', n_ins)
-		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'mediatype': 'usenet',   'name': usenet_str}, 'torbox.png', n_ins)
-		self._add_item({'mode': 'torbox.tb_torrent_cloud', 'mediatype': 'webdl',    'name': web_str   }, 'torbox.png', n_ins)
-		self._add_item({'mode': 'torbox.show_account_info',                         'name': acc_str   }, 'torbox.png', n_ins, False)
-		self._add_item({'mode': 'clear_cache', 'cache': 'tb_cloud',                 'name': clca_str  }, 'torbox.png', n_ins, False)
+		self._add_item({'mode': 'torbox.tb_browse_cloud', 'mediatype': 'torrents', 'name': tor_str   }, 'torbox.png', n_ins)
+		self._add_item({'mode': 'torbox.tb_browse_cloud', 'mediatype': 'usenet',   'name': usenet_str}, 'torbox.png', n_ins)
+		self._add_item({'mode': 'torbox.tb_browse_cloud', 'mediatype': 'webdl',    'name': web_str   }, 'torbox.png', n_ins)
+		self._add_item({'mode': 'torbox.show_account_info',                        'name': acc_str   }, 'torbox.png', n_ins, False)
+		self._add_item({'mode': 'clear_cache', 'cache': 'tb_cloud',                'name': clca_str  }, 'torbox.png', n_ins, False)
 
 	def realdebrid(self):
 		rd_str, acc_str, his_str, cloud_str = 'Real Debrid', ls(32494), ls(32486), ls(32496)
 		clca_str, n_ins = ls(32497) % rd_str, _in_str % (rd_str.upper(), '')
-		self._add_item({'mode': 'real_debrid.rd_torrent_cloud',     'name': cloud_str}, 'realdebrid.png', n_ins)
+		self._add_item({'mode': 'real_debrid.rd_browse_cloud',      'name': cloud_str}, 'realdebrid.png', n_ins)
 		self._add_item({'mode': 'real_debrid.rd_downloads',         'name': his_str  }, 'realdebrid.png', n_ins)
 		self._add_item({'mode': 'real_debrid.show_account_info',    'name': acc_str  }, 'realdebrid.png', n_ins, False)
 		self._add_item({'mode': 'clear_cache', 'cache': 'rd_cloud', 'name': clca_str }, 'realdebrid.png', n_ins, False)
@@ -63,7 +63,7 @@ class Navigator:
 	def alldebrid(self):
 		ad_str, acc_str, his_str, cloud_str = 'All Debrid', ls(32494), ls(32486), ls(32496)
 		clca_str, n_ins = ls(32497) % ad_str, _in_str % (ad_str.upper(), '')
-		self._add_item({'mode': 'alldebrid.ad_torrent_cloud',       'name': cloud_str}, 'alldebrid.png', n_ins)
+		self._add_item({'mode': 'alldebrid.ad_browse_cloud',        'name': cloud_str}, 'alldebrid.png', n_ins)
 		self._add_item({'mode': 'alldebrid.ad_downloads',           'name': his_str  }, 'alldebrid.png', n_ins)
 		self._add_item({'mode': 'alldebrid.show_account_info',      'name': acc_str  }, 'alldebrid.png', n_ins, False)
 		self._add_item({'mode': 'clear_cache', 'cache': 'ad_cloud', 'name': clca_str }, 'alldebrid.png', n_ins, False)
@@ -84,10 +84,10 @@ class Navigator:
 		self._end_directory()
 
 	def my_content(self):
-		coll_str, wlist_str, fav_str, ls_str, ll_str = ls(32499), ls(32500), ls(32453), ls(32501), ls(32502)
-		user_str, l_str, acc_str, ml_str = ls(32065), ls(32501), ls(32494), ls(32454)
-		tu_str, pu_str = '%s %s %s' % (ls(32458), user_str, l_str), '%s %s %s' % (ls(32459), user_str, l_str)
-		sea_str, n_ins, t_n_ins = '%s %s' % (ls(32477), l_str), _in_str % ('Trakt'.upper(), ''), _in_str % ('TMDb'.upper(), '')
+		coll_str, wlist_str, fav_str, user_str = ls(32499), ls(32500), ls(32453), ls(32493)
+		ls_str, ll_str, acc_str, ml_str = ls(32501), ls(32502), ls(32494), ls(32454)
+		tu_str, pu_str, sea_str = ['%s %s %s' % (ls(i), user_str, ls_str) for i in (32458, 32459, 32477)]
+		n_ins, t_n_ins = _in_str % ('Trakt'.upper(), ''), _in_str % ('TMDb'.upper(), '')
 		movc_str, tvc_str = '%s %s' % (mov_str, coll_str), '%s %s' % (tv_str, coll_str)
 		movwl_str, tvwl_str = '%s %s' % (mov_str, wlist_str), '%s %s' % (tv_str, wlist_str)
 		cal_str, drp_str, m_n_ins = 'MDBList Calendar', 'Dropped TV Shows', _in_str % ('MDBList'.upper(), '')
@@ -197,8 +197,8 @@ class Navigator:
 
 	def settings(self):
 		pov_str, pov_vstr, pov_istr = ku.get_addoninfo('name'), ku.get_addoninfo('version'), ku.get_addoninfo('id')
-		services_str, clean_str, views_str, lang_inv_str = ls(32455), ls(32512), ls(32510), ls(32978)
-		changelog_str, lut_str, k_str, klu_str = ls(32508), ls(32777), ls(32538), ls(32853)
+		services_str, clean_str, views_str, lang_inv_str = ls(32455), ls(32512), ls(32515), ls(32978)
+		changelog_str, lut_str, k_str, klu_str = ls(32508), ls(32510), ls(32540), ls(32853)
 		shortcuts_str = '%s %s' % (ls(32514), ls(32513))
 		cl_h, cl_loc = '%s [I](v.%s)[/I]' % (pov_str, pov_vstr), 'special://home/addons/%s/changelog.txt' % pov_istr
 		klv_h, kl_loc = '%s %s' % (k_str, ls(32509)), 'special://logpath/kodi.log'
@@ -207,8 +207,8 @@ class Navigator:
 		self._add_item({'mode': 'open_settings', 'name': pov_str}, 'pov.png', n_ins, False)
 		self._add_item({'mode': 'myservices', 'name': services_str}, 'settings.png', n_ins, False)
 		self._add_item({'mode': 'navigator.clear_info', 'name': clean_str}, 'settings.png', n_ins)
-		self._add_item({'mode': 'navigator.set_view_modes', 'name': views_str}, 'settings.png', n_ins)
 		self._add_item({'mode': 'navigator.shortcut_folders', 'name': shortcuts_str}, 'settings.png', n_ins)
+		self._add_item({'mode': 'navigator.set_view_modes', 'name': views_str}, 'settings.png', n_ins)
 		self._add_item({'mode': 'toggle_language_invoker', 'name': lang_inv_str}, 'settings.png', n_ins, False)
 		self._add_item({'mode': 'show_text', 'heading': cl_h, 'file': cl_loc, 'exclude_external': 'true', 'name': cl_h}, 'lists.png', cl_n_ins, False)
 		self._add_item({'mode': 'show_text', 'heading': klv_h, 'file': kl_loc, 'kodi_log': 'true', 'exclude_external': 'true', 'name': klv_h}, 'lists.png', lu_n_ins, False)
@@ -220,11 +220,11 @@ class Navigator:
 	def clear_info(self):
 		cache_str, clca_str, clean_str, all_str, settings_str = ls(32524), ls(32497), ls(32526), ls(32525), ls(32247)
 		clean_all_str = '%s %s %s' % (clean_str, all_str, settings_str)
-		clean_set_cache_str = '%s %s %s' % (clean_str, ls(32247), ls(32524))
+		clean_set_cache_str = '%s %s %s' % (clean_str, settings_str, cache_str)
 		clean_databases_str = '%s %s' % (clean_str, ls(32523))
 		clear_all_upper = '[B]%s[/B]' % (clca_str % all_str).upper()
 		clear_meta_str, clear_list_str = clca_str % ls(32527), clca_str % ls(32501)
-		clint_str, clext_str = clca_str % ls(32096), clca_str % ls(32118)
+		clint_str, clext_str = clca_str % ls(32117), clca_str % ls(32118)
 		clear_trakt_str, clear_mdbl_str, clear_imdb_str = clca_str % 'Trakt', clca_str % 'MDBList', clca_str % 'IMDb'
 		clear_pm_str, clear_oc_str, clear_tb_str = clca_str % 'Premiumize', clca_str % 'Offcloud', clca_str % 'TorBox'
 		clear_rd_str, clear_ad_str, clear_en_str = clca_str % 'Real Debrid', clca_str % 'All Debrid', clca_str % 'Easynews'
@@ -249,7 +249,7 @@ class Navigator:
 		self._end_directory()
 
 	def set_view_modes(self):
-		set_views_str, lists_str, root_str, movies_str = ls(32510), ls(32501), ls(32457), ls(32028)
+		set_views_str, lists_str, root_str, movies_str = ls(32515), ls(32501), ls(32457), ls(32028)
 		tvshows_str, season_str, episode_str = ls(32029), ls(32537), ls(32506)
 		premium_files_str, ep_lists_str = ls(32485), '%s %s' % (episode_str, lists_str)
 		n_ins, reset_str = _in_str % (set_views_str.upper(), ''), 'Reset All Views'
@@ -306,7 +306,7 @@ class Navigator:
 			from modules.meta_lists import tvshow_genres as genre_list
 			mode, action = 'build_tvshow_list', 'tmdb_tv_genres'
 		lst_ins = self.make_list_name(menu_type)
-		self._add_item({'mode': 'navigator.multiselect_genres', 'genre_list': json.dumps(genre_list), 'menu_type': menu_type, 'exclude_external': 'true', 'name': ls(32789)}, 'genres.png', isFolder=False)
+		self._add_item({'mode': 'navigator.multiselect_genres', 'genre_list': json.dumps(genre_list), 'menu_type': menu_type, 'exclude_external': 'true', 'name': ls(32846)}, 'genres.png', isFolder=False)
 		for genre, value in sorted(genre_list.items()):
 			list_name = '%s: %s %s' % (lst_ins.upper(), genre, ls(32470))
 			self._add_item({'mode': mode, 'action': action, 'genre_id': value[0], 'name': genre}, 'genres.png', list_name=list_name)

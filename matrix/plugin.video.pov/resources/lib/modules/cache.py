@@ -103,6 +103,7 @@ def purge_database(db, table, expiry):
 	dbcur.execute("""DELETE FROM %s WHERE expires <= ?""" % table, (expiry,))
 	dbcon.commit()
 	dbcur.execute("""VACUUM""")
+	dbcon.close()
 
 def limit_metacache_database(max_size=50):
 	with kodi_utils.open_file(metacache_db) as f: fsize = f.size()
@@ -117,6 +118,7 @@ def limit_metacache_database(max_size=50):
 	dbcur.execute("""DELETE FROM season_metadata WHERE ROWID IN (SELECT ROWID FROM season_metadata ORDER BY ROWID DESC LIMIT -1 OFFSET 100)""")
 	dbcon.commit()
 	dbcur.execute("""VACUUM""")
+	dbcon.close()
 
 def clear_cache(cache_type, silent=False):
 	def _confirm():
@@ -129,8 +131,8 @@ def clear_cache(cache_type, silent=False):
 	elif cache_type == 'external_scrapers':
 		from caches.providers_cache import ExternalProvidersCache
 		from caches.debrid_cache import DebridCache
-		providers_cache = ExternalProvidersCache().delete_cache()
-		debrid_cache = DebridCache().clear_database()
+		providers_cache = ExternalProvidersCache().clear_cache()
+		debrid_cache = DebridCache().clear_cache()
 		success = all((providers_cache, debrid_cache))
 	elif cache_type == 'trakt':
 		from caches.trakt_cache import clear_all_trakt_cache_data
@@ -146,22 +148,22 @@ def clear_cache(cache_type, silent=False):
 		success = clear_imdb_cache()
 	elif cache_type == 'pm_cloud':
 		from indexers.premiumize_api import PremiumizeAPI
-		success = PremiumizeAPI().clear_cache()
+		success = PremiumizeAPI.clear_cache()
 	elif cache_type == 'oc_cloud':
 		from indexers.offcloud_api import OffcloudAPI
-		success = OffcloudAPI().clear_cache()
+		success = OffcloudAPI.clear_cache()
 	elif cache_type == 'tb_cloud':
 		from indexers.torbox_api import TorBoxAPI
-		success = TorBoxAPI().clear_cache()
+		success = TorBoxAPI.clear_cache()
 	elif cache_type == 'rd_cloud':
-		from indexers.real_debrid_api import RealDebridAPI
-		success = RealDebridAPI().clear_cache()
+		from indexers.realdebrid_api import RealDebridAPI
+		success = RealDebridAPI.clear_cache()
 	elif cache_type == 'ad_cloud':
 		from indexers.alldebrid_api import AllDebridAPI
-		success = AllDebridAPI().clear_cache()
+		success = AllDebridAPI.clear_cache()
 	elif cache_type == 'easynews':
 		from indexers.easynews_api import EasyNewsAPI
-		success = EasyNewsAPI().clear_cache()
+		success = EasyNewsAPI.clear_cache()
 	elif cache_type == 'meta':
 		from caches.meta_cache import MetaCache
 		MetaCache().delete_all()
@@ -174,7 +176,7 @@ def clear_all_cache():
 	if not kodi_utils.confirm_dialog(): return
 	line = '[CR]%s: [B]%s %s[/B]'
 	caches = (
-		('internal_scrapers', ls(32096)), ('external_scrapers', ls(32118)),
+		('internal_scrapers', ls(32117)), ('external_scrapers', ls(32118)),
 		('trakt', 'Trakt'), ('mdblist', 'MDBList'), ('tmdblist', 'TMDbList'),
 		('imdb', 'IMDb'), ('list', ls(32815)), ('meta', ls(32527))
 	)

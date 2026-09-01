@@ -1,6 +1,6 @@
 from threading import Thread
 from caches.main_cache import cache_object
-from indexers.real_debrid_api import RealDebridAPI as Debrid
+from indexers.realdebrid_api import RealDebridAPI as Debrid
 from modules import kodi_utils, source_utils
 from modules.settings import enabled_debrids_check, filter_by_name
 from modules.utils import jsondate_to_datetime, get_datetime
@@ -17,17 +17,18 @@ default_icon = kodi_utils.media_path(Debrid.icon)
 default_art = {'icon': default_icon, 'poster': default_icon, 'thumb': default_icon, 'fanart': fanart, 'banner': default_icon}
 
 def _parse_selected(items):
-	selected = (i for i in items['files'] if i['selected'])
-	return [{**i, 'url_link': link} for i, link in zip(selected, items['links'])]
+	selected = [i for i in items['files'] if i['selected']]
+	for i, link in zip(selected, items['links']): i['url_link'] = link
+	return items
 
 class Menu(Debrid):
 	def run(self, params):
 		if   '_delete' in params['mode']:
 			return self.cloud_delete(params['id'], params['cache_type'])
+		elif '_browse_folder' in params['mode']:
+			items = self.parse_folder(params['id'])
 		elif '_browse_cloud' in params['mode']:
-			items = self.browse_cloud(params['id'])
-		elif '_torrent_cloud' in params['mode']:
-			items = self.torrent_cloud()
+			items = self.parse_user_cloud()
 		elif '_downloads' in params['mode']:
 			items = self.browse_downloads()
 		else: return getattr(self, params['mode'].split('.')[-1])()
@@ -37,7 +38,35 @@ class Menu(Debrid):
 		kodi_utils.end_directory(__handle__)
 		kodi_utils.set_view_mode('view.premium')
 
-	def torrent_cloud(self):
+	def show_account_info(self):
+		try:
+			kodi_utils.show_busy_dialog()
+			account_info = self.account_info()
+			username = account_info['username']
+			status = account_info['type'].capitalize()
+			expires = jsondate_to_datetime(account_info['expiration']).astimezone()
+			days_remaining = (expires.date() - get_datetime()).days
+			points_available = account_info['points']
+			body = []
+			append = body.append
+#			append(ls(32755) % username)
+			append(ls(32757) % status)
+			append(ls(32750) % expires.date() if hasattr(expires, 'date') else expires)
+			append(ls(32751) % days_remaining)
+			append(ls(32759) % points_available)
+			kodi_utils.hide_busy_dialog()
+			return kodi_utils.ok_dialog('Real Debrid'.upper(), '[CR]'.join(body), top_space=False)
+		except: kodi_utils.hide_busy_dialog()
+
+	def cloud_delete(self, file_id, cache_type):
+		if not kodi_utils.confirm_dialog(): return
+		if cache_type == 'torrent': result = self.delete_torrent(file_id)
+		else: result = self.delete_download(file_id) # cache_type: 'download'
+		if not result: return kodi_utils.notify_failed()
+		self.clear_cache()
+		kodi_utils.container_refresh()
+
+	def parse_user_cloud(self):
 		string = 'pov_rd_user_cloud'
 		items = cache_object(self.user_cloud, string, [], 0.5)
 		if not items: return []
@@ -49,7 +78,7 @@ class Menu(Debrid):
 				cm = []
 				cm_append = cm.append
 				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, folder_str, clean_file_name(item['filename']).upper())
-				url_params = {'mode': 'real_debrid.rd_browse_cloud', 'id': item['id']}
+				url_params = {'mode': 'real_debrid.rd_browse_folder', 'id': item['id']}
 				delete_params = {'mode': 'real_debrid.rd_delete', 'id': item['id'], 'cache_type': 'torrent'}
 				cm_append(('[B]%s %s[/B]' % (delete_str, folder_str.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))
 				url = build_url(url_params)
@@ -61,14 +90,14 @@ class Menu(Debrid):
 			except: pass
 		return folders
 
-	def browse_cloud(self, folder_id):
+	def parse_folder(self, folder_id):
 		string = 'pov_rd_user_cloud_%s' % folder_id
 		items = cache_object(self.user_folder, string, folder_id, 0.5)
 		if not items or not items['files']: return []
 		items = _parse_selected(items)
 		files = []
 		files_append = files.append
-		for count, item in enumerate(items, 1):
+		for count, item in enumerate(items['files'], 1):
 			try:
 				if not item['path'].lower().endswith(extensions): continue
 				cm = []
@@ -124,34 +153,6 @@ class Menu(Debrid):
 				folders_append((url, listitem, False))
 			except: pass
 		return folders
-
-	def cloud_delete(self, file_id, cache_type):
-		if not kodi_utils.confirm_dialog(): return
-		if cache_type == 'torrent': result = self.delete_torrent(file_id)
-		else: result = self.delete_download(file_id) # cache_type: 'download'
-		if not result: return kodi_utils.notify_failed()
-		self.clear_cache()
-		kodi_utils.container_refresh()
-
-	def show_account_info(self):
-		try:
-			kodi_utils.show_busy_dialog()
-			account_info = self.account_info()
-			username = account_info['username']
-			status = account_info['type'].capitalize()
-			expires = jsondate_to_datetime(account_info['expiration']).astimezone()
-			days_remaining = (expires.date() - get_datetime()).days
-			points_available = account_info['points']
-			body = []
-			append = body.append
-#			append(ls(32755) % username)
-			append(ls(32757) % status)
-			append(ls(32750) % expires.date() if hasattr(expires, 'date') else expires)
-			append(ls(32751) % days_remaining)
-			append(ls(32759) % points_available)
-			kodi_utils.hide_busy_dialog()
-			return kodi_utils.ok_dialog('Real Debrid'.upper(), '[CR]'.join(body), top_space=False)
-		except: kodi_utils.hide_busy_dialog()
 
 class source(Debrid):
 	scrape_provider = 'rd_cloud'
@@ -217,7 +218,7 @@ class source(Debrid):
 			results_append = self.scrape_results.append
 			folder = self.user_folder(folder_info['id'])
 			folder = _parse_selected(folder)
-			for item in folder:
+			for item in folder['files']:
 				try:
 					name = item['path'].replace('/', '')
 					item.update({'folder_name': folder_info['filename'], 'filename': name, 'link': item['url_link']})

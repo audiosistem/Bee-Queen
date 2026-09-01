@@ -12,10 +12,10 @@ fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
 item_jump = kodi_utils.media_path('item_jump.png')
 item_next = kodi_utils.media_path('item_next.png')
-watched_str, unwatched_str, favmanager_str, dropmanager_str = ls(32642), ls(32643), ls(32197), '[B]Dropped Manager[/B]'
+watched_str, unwatched_str, favmanager_str, dropmanager_str = ls(32642), ls(32643), ls(32197), ls(32196)
 extras_str, options_str, exit_str, browse_str = ls(32645), ls(32646), ls(32650), ls(32652)
-nextpage_str, switchjump_str, jumpto_str = ls(32799), ls(32784), ls(32964)
-traktmanager_str, mdblmanager_str, tmdbmanager_str = ls(32198), ls(32200), '[B]TMDb Lists Manager[/B]'
+traktmanager_str, mdblmanager_str, tmdbmanager_str = ls(32198), ls(32200), ls(32199)
+nextpage_str, jumpto_str = ls(32799), ls(32800)
 
 class TVShows:
 	def __init__(self, params):

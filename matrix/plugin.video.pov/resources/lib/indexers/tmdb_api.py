@@ -6,8 +6,7 @@ from caches.meta_cache import cache_function
 from modules import kodi_utils, settings
 from modules.utils import paginate_list, sort_for_article, jsondate_to_datetime, get_datetime, TaskPool
 
-ls, logger = kodi_utils.local_string, kodi_utils.logger
-get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting
+get_setting, set_setting, logger = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.logger
 EXPIRES_4_HOURS, EXPIRES_2_DAYS, EXPIRES_1_WEEK, EXPIRES_1_MONTH = 4, 48, 168, 672
 READ_TOKEN = kodi_utils.addon().getSetting('tmdb_read_token')
 movies_append = 'external_ids,videos,credits,release_dates,alternative_titles,translations,images'

@@ -430,7 +430,10 @@ def autoplay_next_episode():
 	else: return False
 
 def skip_intro_mode():
-	return int(get_setting('redlight.autoplay_skip_intro', '0'))
+	try:
+		return int(get_setting('redlight.autoplay_skip_intro', '0'))
+	except:
+		return 0
 
 def skip_intro_all_episodes():
 	return get_setting('redlight.skip_intro_all_episodes', 'true') == 'true'
@@ -919,6 +922,9 @@ def migrate_external_scraper_run_mode_for_upgrade(had_existing_settings):
 def filter_by_name(scraper):
 	if get_property('fs_filterless_search') == 'true': return False
 	return get_setting('redlight.%s.title_filter' % scraper, 'false') == 'true'
+
+def filter_by_episode_title(scraper):
+	return get_setting('redlight.%s.title_filter_episode' % scraper, 'true') == 'true'
 
 def uncached_min_seeders():
 	return int(get_setting('redlight.results.uncached_min_seeders', '0'))

@@ -17,9 +17,9 @@ extra_info_choices, quality_choices, pack_check = (
 	('REMUX', 'REMUX'), ('SDR', 'SDR'), ('BLURAY', 'BLURAY'), ('DVD SOURCE', 'DVD'), ('WEB SOURCE', 'WEB'),
 	('2 CHANNEL AUDIO', '2CH'), ('6 CHANNEL AUDIO', '6CH'), ('7 CHANNEL AUDIO', '7CH'), ('8 CHANNEL AUDIO', '8CH')
 ), ('4K', '1080P', '720P', 'SD', 'TELE', 'CAM', 'SCR'), ('true', 'show', 'season')
-extra_info_str, down_file_str, browse_pack_str, down_pack_str, cloud_str = ls(32605), ls(32747), ls(32746), ls(32007), ls(32016)
+extra_info_str, down_file_str, browse_pack_str, down_pack_str, cloud_str = ls(32151), ls(32747), ls(32746), ls(32745), ls(32744)
 filter_str, clr_filter_str, filters_ignored, start_full_scrape = ls(32152), ls(32153), ls(32686), ls(32529)
-filter_quality, filter_provider, filter_title, filter_extraInfo = ls(32154), ls(32157), ls(32679), ls(32169)
+filter_quality, filter_provider, filter_title, filter_extraInfo = ls(32154), ls(32157), ls(32170), ls(32169)
 run_plugin_str, ignored_str = 'RunPlugin(%s)', '[B][COLOR dodgerblue](%s)[/COLOR][/B]'
 en_seek_str, check_str = '[B]EN: PLAY (SEEK ENABLED)[/B]', '[B]CHECK CACHE STATUS[/B]'
 cache_str, airlock_str = ('CACHED', 'CACHED [B]%s[/B]'), cloud_str.replace('Add', 'Airlock')
@@ -29,7 +29,7 @@ class SourceResults(BaseDialog):
 	def __init__(self, *args, **kwargs):
 		BaseDialog.__init__(self, args)
 		self._results = {}
-		self.window_style = kwargs.get('window_style', 'list contrast details')
+		self.window_style = kwargs.get('window_style', 'list default')
 		self.window_id = kwargs.get('window_id')
 		self.results = kwargs.get('results')
 		self.meta = kwargs.get('meta')
@@ -263,7 +263,7 @@ class SourceResults(BaseDialog):
 			choice = select_dialog(provider_choices, **kwargs)
 			if choice is None: return
 			filtered_list = [i for i in self.item_list if any(x in i.getProperty(filter_property) for x in choice)]
-		if not filtered_list: return ok_dialog(text=32760)
+		if not filtered_list: return ok_dialog(text=32573)
 		self.filter_applied = True
 		self.win.reset()
 		self.win.addItems(filtered_list)

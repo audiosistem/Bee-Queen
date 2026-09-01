@@ -8,7 +8,7 @@ from modules.settings import paginate, page_limit, nav_jump_use_alphabet
 
 ls, get_setting, media_path = kodi_utils.local_string, kodi_utils.get_setting, kodi_utils.media_path
 item_jump = kodi_utils.media_path('item_jump.png')
-nextpage_str, jump2_str = ls(32799), ls(32964)
+nextpage_str, jump2_str = ls(32799), ls(32800)
 
 class BaseList:
 	def __init__(self, params):

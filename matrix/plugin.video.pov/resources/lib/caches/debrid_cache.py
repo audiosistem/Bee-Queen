@@ -5,8 +5,8 @@ from caches import BaseCache, debridcache_db
 GET_MANY = 'SELECT * FROM debrid_data WHERE hash in (%s)'
 SET_MANY = 'INSERT INTO debrid_data VALUES (?, ?, ?, ?)'
 REMOVE_MANY = 'DELETE FROM debrid_data WHERE hash = ?'
-CLEAR = 'DELETE FROM debrid_data'
-CLEAR_DEBRID = 'DELETE FROM debrid_data WHERE debrid = ?'
+SINGLE_DELETE = 'DELETE FROM debrid_data WHERE debrid = ?'
+FULL_DELETE = 'DELETE FROM debrid_data'
 
 class DebridCache(BaseCache):
 	db_file = debridcache_db
@@ -35,16 +35,16 @@ class DebridCache(BaseCache):
 			self.dbcur.executemany(REMOVE_MANY, cached_data)
 		except: pass
 
-	def clear_database(self):
+	def delete_cache_single(self, debrid):
 		try:
-			self.dbcur.execute(CLEAR)
-			self.dbcur.execute("""VACUUM""")
+			self.dbcur.execute(SINGLE_DELETE, (debrid,))
+#			self.dbcur.execute("""VACUUM""")
 			return True
 		except: return False
 
-	def clear_debrid_results(self, debrid):
+	def clear_cache(self):
 		try:
-			self.dbcur.execute(CLEAR_DEBRID, (debrid,))
+			self.dbcur.execute(FULL_DELETE)
 			self.dbcur.execute("""VACUUM""")
 			return True
 		except: return False

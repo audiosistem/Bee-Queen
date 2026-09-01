@@ -20,10 +20,10 @@ class Menu(Debrid):
 	def run(self, params):
 		if   '_delete' in params['mode']:
 			return self.cloud_delete(params['id'])
+		elif '_browse_folder' in params['mode']:
+			items = self.parse_folder(params['id'])
 		elif '_browse_cloud' in params['mode']:
-			items = self.browse_cloud(params['id'])
-		elif '_torrent_cloud' in params['mode']:
-			items = self.torrent_cloud()
+			items = self.parse_user_cloud()
 		elif '_downloads' in params['mode']:
 			items = self.browse_downloads()
 		else: return getattr(self, params['mode'].split('.')[-1])()
@@ -33,7 +33,34 @@ class Menu(Debrid):
 		kodi_utils.end_directory(__handle__)
 		kodi_utils.set_view_mode('view.premium')
 
-	def torrent_cloud(self):
+	def show_account_info(self):
+		try:
+			kodi_utils.show_busy_dialog()
+			account_info = self.account_info()['user']
+			username = account_info['username']
+			status = 'Premium' if account_info['isPremium'] else 'Expired'
+			if account_info['premiumUntil']:
+				expires = datetime.fromtimestamp(account_info['premiumUntil'], tz=timezone.utc)
+				days_remaining = (expires - datetime.now(timezone.utc)).days
+			else: expires, days_remaining = 'Expired', '0'
+			body = []
+			append = body.append
+#			append(ls(32755) % username)
+			append(ls(32757) % status)
+			append(ls(32750) % expires.date() if hasattr(expires, 'date') else expires)
+			append(ls(32751) % days_remaining)
+			kodi_utils.hide_busy_dialog()
+			return kodi_utils.ok_dialog('All Debrid'.upper(), '[CR]'.join(body), top_space=False)
+		except: kodi_utils.hide_busy_dialog()
+
+	def cloud_delete(self, file_id):
+		if not kodi_utils.confirm_dialog(): return
+		result = self.delete_torrent(file_id)
+		if not result: return kodi_utils.notify_failed()
+		self.clear_cache()
+		kodi_utils.container_refresh()
+
+	def parse_user_cloud(self):
 		string = 'pov_ad_user_cloud'
 		items = cache_object(self.user_cloud, string, [], 0.5)
 		if not items or not items['magnets']: return []
@@ -42,12 +69,12 @@ class Menu(Debrid):
 		folders_append = folders.append
 		for count, item in enumerate(items['magnets'], 1):
 			try:
-				if item['statusCode'] != 4: continue
+				if not item['statusCode'] == 4: continue
 				cm = []
 				cm_append = cm.append
 				folder_name = item['filename']
 				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, folder_str, clean_file_name(folder_name).upper())
-				url_params = {'mode': 'alldebrid.ad_browse_cloud', 'id': item['id']}
+				url_params = {'mode': 'alldebrid.ad_browse_folder', 'id': item['id']}
 				delete_params = {'mode': 'alldebrid.ad_delete', 'id': item['id']}
 				cm_append(('[B]%s %s[/B]' % (delete_str, folder_str.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))
 				url = build_url(url_params)
@@ -59,7 +86,7 @@ class Menu(Debrid):
 			except: pass
 		return folders
 
-	def browse_cloud(self, folder_id):
+	def parse_folder(self, folder_id):
 		string = 'pov_ad_user_cloud_%s' % folder_id
 		items = cache_object(self.user_folder, string, folder_id, 0.5)
 		if not items or not items['files']: return []
@@ -119,33 +146,6 @@ class Menu(Debrid):
 			except: pass
 		return folders
 
-	def cloud_delete(self, file_id):
-		if not kodi_utils.confirm_dialog(): return
-		result = self.delete_torrent(file_id)
-		if not result: return kodi_utils.notify_failed()
-		self.clear_cache()
-		kodi_utils.container_refresh()
-
-	def show_account_info(self):
-		try:
-			kodi_utils.show_busy_dialog()
-			account_info = self.account_info()['user']
-			username = account_info['username']
-			status = 'Premium' if account_info['isPremium'] else 'Expired'
-			if account_info['premiumUntil']:
-				expires = datetime.fromtimestamp(account_info['premiumUntil'], tz=timezone.utc)
-				days_remaining = (expires - datetime.now(timezone.utc)).days
-			else: expires, days_remaining = 'Expired', '0'
-			body = []
-			append = body.append
-#			append(ls(32755) % username)
-			append(ls(32757) % status)
-			append(ls(32750) % expires.date() if hasattr(expires, 'date') else expires)
-			append(ls(32751) % days_remaining)
-			kodi_utils.hide_busy_dialog()
-			return kodi_utils.ok_dialog('All Debrid'.upper(), '[CR]'.join(body), top_space=False)
-		except: kodi_utils.hide_busy_dialog()
-
 class source(Debrid):
 	scrape_provider = 'ad_cloud'
 	def results(self, info):
@@ -197,7 +197,7 @@ class source(Debrid):
 			append = threads.append
 			folders = self.user_cloud()
 			for item in folders['magnets']:
-				if item['statusCode'] != 4: continue
+				if not item['statusCode'] == 4: continue
 				if not check_title(title, item['filename'], self.aliases): continue
 				append(i := Thread(target=self._scrape_folders, args=(item,)))
 				i.start()

@@ -76,8 +76,8 @@ def random_choice(choice, meta):
 
 def playback_choice(content, poster, meta):
 	items = [
-		('clear_and_rescrape', ls(32014)),          ('rescrape_with_disabled', ls(32006)),
-		('scrape_with_filters_ignored', ls(32807)), ('scrape_with_custom_values', ls(32135))
+		('clear_and_rescrape', ls(32132)),          ('rescrape_with_disabled', ls(32133)),
+		('scrape_with_filters_ignored', ls(32134)), ('scrape_with_custom_values', ls(32135))
 	]
 	list_items = [{'line1': i[1], 'icon': poster} for i in items]
 	kwargs = {'items': json.dumps(list_items), 'heading': ls(32174)}
@@ -234,7 +234,7 @@ def options_menu(params, meta=None):
 	if not meta:
 		func = metadata.movie_meta if content == 'movie' else metadata.tvshow_meta
 		meta = func('tmdb_id', params['tmdb_id'], settings.metadata_user_info(), get_datetime())
-	scraper_options_str, open_str, settings_str = '%s %s' % (ls(32533), ls(32841)), ls(32641), ls(32247)
+	scraper_options_str, open_str, settings_str = '%s %s' % (ls(32842), ls(32841)), ls(32641), ls(32247)
 	browse_str = ls(32652).replace('[B]', '').replace('[/B]', '')
 	poster, title = meta.get('poster', ''), meta.get('title', '')
 	scrapable = content in ('movie', 'episode')
@@ -245,16 +245,16 @@ def options_menu(params, meta=None):
 	if content == 'episode':
 		listing_append(('scrape_from_episode_group', 'Scrape From Episode Group', scraper_options_str, poster))
 	if scrapable:
-		listing_append(('clear_and_rescrape', ls(32014), scraper_options_str, poster))
-		listing_append(('rescrape_with_disabled', ls(32006), scraper_options_str, poster))
-		listing_append(('scrape_with_filters_ignored', ls(32807), scraper_options_str, poster))
+		listing_append(('clear_and_rescrape', ls(32132), scraper_options_str, poster))
+		listing_append(('rescrape_with_disabled', ls(32133), scraper_options_str, poster))
+		listing_append(('scrape_with_filters_ignored', ls(32134), scraper_options_str, poster))
 		listing_append(('scrape_with_custom_values', ls(32135), scraper_options_str, poster))
 	if content == 'tvshow' and meta:
 		if smart_play == 2 or (smart_play == 1 and is_widget):
 			listing_append(('browse_choice', browse_str, title, poster))
 		listing_append(('play_random', ls(32541), title, poster))
 		listing_append(('play_random_continual', ls(32542), title, poster))
-	listing_append(('clear_scrapers_cache', ls(32637), ''))
+	listing_append(('clear_scrapers_cache', ls(32131), ''))
 	listing_append(('open_external_scrapers_choice', '%s %s' % (ls(32118), ls(32513)), ''))
 	if watched_indicators == 1:
 		listing_append(('clear_trakt_cache', ls(32497) % 'Trakt', ''))
@@ -412,13 +412,13 @@ def scrape_with_custom_values(mediatype, meta, season=None, episode=None):
 		if custom_year: play_params.update({'custom_year': custom_year})
 	else:
 		custom_season = kodi_utils.dialog.numeric(0, '%s (%s)' % (ls(32537).title(), ls(32669)), defaultt=str(season))
-		custom_episode = kodi_utils.dialog.numeric(0, '%s (%s)' % (ls(32203).title(), ls(32669)), defaultt=str(episode))
+		custom_episode = kodi_utils.dialog.numeric(0, '%s (%s)' % (ls(32538).title(), ls(32669)), defaultt=str(episode))
 		if custom_season and custom_episode: play_params.update({'custom_season': custom_season, 'custom_episode': custom_episode})
 	kwargs = {'meta': meta, 'enable_buttons': True, 'true_button': ls(32824), 'false_button': ls(32828), 'focus_button': 11}
-	choice = open_window(('windows.progress', 'ProgressMedia'), 'progress_media.xml', text='%s?' % ls(32006), **kwargs)
+	choice = open_window(('windows.progress', 'ProgressMedia'), 'progress_media.xml', text='%s?' % ls(32133), **kwargs)
 	if choice is None: return
 	if choice: play_params['disabled_ignored'] = 'true'
-	choice = open_window(('windows.progress', 'ProgressMedia'), 'progress_media.xml', text=ls(32808), **kwargs)
+	choice = open_window(('windows.progress', 'ProgressMedia'), 'progress_media.xml', text=ls(32136), **kwargs)
 	if choice is None: return
 	if choice:
 		play_params['ignore_scrape_filters'] = 'true'

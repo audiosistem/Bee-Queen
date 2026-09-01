@@ -255,7 +255,7 @@ class Discover:
 		if self._action(key) in ('clear', None): return
 		if self.discover_params['mediatype'] == 'movie': sort_by_list = self._movies_sort()
 		else: sort_by_list = self._tvshows_sort()
-		sort_by_value = self._selection_dialog([i[0] for i in sort_by_list], [i[1] for i in sort_by_list], heading_base % ls(32067))
+		sort_by_value = self._selection_dialog([i[0] for i in sort_by_list], [i[1] for i in sort_by_list], heading_base % ls(32223))
 		if sort_by_value is None: return
 		sort_by_name = [i[0] for i in sort_by_list if i[1] == sort_by_value][0]
 		values = (sort_by_value, sort_by_name)
@@ -455,7 +455,7 @@ class Discover:
 		except: return None
 
 	def _movies_sort(self):
-		pop_str, rel_str, rev_str, tit_str, rat_str, asc_str, desc_str = ls(32218), ls(32221), ls(32626), ls(32228), ls(32621), ls(32224), ls(32225)
+		pop_str, rel_str, rev_str, tit_str, rat_str, asc_str, desc_str = ls(32226), ls(32227), ls(32626), ls(32228), ls(32621), ls(32224), ls(32225)
 		return [
 			('%s (%s)' % (pop_str, asc_str), '&sort_by=popularity.asc'),            ('%s (%s)' % (pop_str, desc_str), '&sort_by=popularity.desc'),
 			('%s (%s)' % (rel_str, asc_str), '&sort_by=primary_release_date.asc'),  ('%s (%s)' % (rel_str, desc_str), '&sort_by=primary_release_date.desc'),
@@ -465,7 +465,7 @@ class Discover:
 		]
 
 	def _tvshows_sort(self):
-		pop_str, prem_str, rat_str, asc_str, desc_str = ls(32218), ls(32620), ls(32621), ls(32224), ls(32225)
+		pop_str, prem_str, rat_str, asc_str, desc_str = ls(32226), ls(32620), ls(32621), ls(32224), ls(32225)
 		return [
 			('%s (%s)' % (pop_str, asc_str), '&sort_by=popularity.asc'),       ('%s (%s)' % (pop_str, desc_str), '&sort_by=popularity.desc'),
 			('%s (%s)' % (prem_str, asc_str), '&sort_by=first_air_date.asc'),  ('%s (%s)' % (prem_str, desc_str), '&sort_by=first_air_date.desc'),
@@ -480,7 +480,7 @@ FILTER = MappingProxyType({
 	'companies': ls(32660),                              'certification': ls(32473),
 	'cast': include_base_str % ls(32664),                'network': ls(32480),
 	'rating': '%s %s' % (ls(32661), ls(32621)),          'rating_votes': '%s %s' % (ls(32661), ls(32663)),
-	'sort_by': ls(32067),                                'adult': include_base_str % ls(32665)
+	'sort_by': ls(32223),                                'adult': include_base_str % ls(32665)
 })
 
 listitem_position = {

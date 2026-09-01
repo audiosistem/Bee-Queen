@@ -409,10 +409,37 @@ def check_title(title, release_title, aliases, year, season, episode):
 		return True
 	except: return True
 
-def check_title_or_absolute(title, release_title, aliases, year, season, episode, absolute_episode=None):
+_EP_TITLE_STOPWORDS = frozenset((
+	'a', 'an', 'the', 'of', 'and', 'or', 'to', 'in', 'on', 'at', 'for', 'from', 'with', 'vs',
+))
+
+def _filename_tokens(text):
+	text = _utils_normalize(text or '').lower().replace('&', ' and ').replace("'", '')
+	return [t for t in re.split(r'[^a-z0-9]+', text) if t]
+
+def episode_title_keep_tokens(ep_name):
+	"""Distinctive TMDb episode-title words, or None when the name is too generic to keep a file."""
+	tokens = [t for t in _filename_tokens(ep_name)
+		if t not in _EP_TITLE_STOPWORDS and not t.isdigit() and len(t) >= 3]
+	if len(tokens) >= 2:
+		return tokens
+	if len(tokens) == 1 and len(tokens[0]) >= 8:
+		return tokens
+	return None
+
+def episode_title_in_release(ep_name, release_title):
+	needed = episode_title_keep_tokens(ep_name)
+	if not needed:
+		return False
+	hay = set(_filename_tokens(release_title))
+	return all(w in hay for w in needed)
+
+def check_title_or_absolute(title, release_title, aliases, year, season, episode, absolute_episode=None, ep_name=None, allow_episode_title=False):
 	"""Keep SxxExx hits via check_title, plus Sxx-less files whose bare/absolute episode matches.
 
 	Same title/alias rules as cloud scrapers (pack-style substring) on the absolute path.
+	The episode title can help searches find more candidates, but it must not bypass the
+	show/alias check unless allow_episode_title is True (EasyNews/NZB Filter by Name option).
 	"""
 	if check_title(title, release_title, aliases, year, season, episode):
 		return True
@@ -425,7 +452,11 @@ def check_title_or_absolute(title, release_title, aliases, year, season, episode
 		return False
 	if not cloud_episode_matches(season, episode, release_title, absolute_episode):
 		return False
-	return check_title(title, release_title, aliases, year, 'pack', episode)
+	if check_title(title, release_title, aliases, year, 'pack', episode):
+		return True
+	if allow_episode_title:
+		return episode_title_in_release(ep_name, release_title)
+	return False
 
 def strip_non_ascii_and_unprintable(text):
 	"""Accent-fold first so Filter-by-Name keeps Pokémon→Pokemon / Léon→Leon."""

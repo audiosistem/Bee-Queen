@@ -18,11 +18,11 @@ default_art = {'icon': default_icon, 'poster': default_icon, 'thumb': default_ic
 class Menu(Debrid):
 	def run(self, params):
 		if   '_delete' in params['mode']:
-			return self.cloud_delete(params['folder_id'])
+			return self.cloud_delete(params['id'])
+		elif '_browse_folder' in params['mode']:
+			items = self.parse_folder(params['id'])
 		elif '_browse_cloud' in params['mode']:
-			items = self.browse_cloud(params['folder_id'])
-		elif '_torrent_cloud' in params['mode']:
-			items = self.torrent_cloud()
+			items = self.parse_user_cloud()
 		else: return getattr(self, params['mode'].split('.')[-1])()
 		__handle__ = int(kodi_utils.argv1())
 		kodi_utils.add_items(__handle__, items)
@@ -30,7 +30,33 @@ class Menu(Debrid):
 		kodi_utils.end_directory(__handle__)
 		kodi_utils.set_view_mode('view.premium')
 
-	def torrent_cloud(self):
+	def show_account_info(self):
+		from datetime import date
+		try:
+			kodi_utils.show_busy_dialog()
+			account_info = self.account_info()
+			username = account_info['user_id']
+			status = 'Premium' if account_info['is_premium'] else 'Expired'
+			expires = date.fromisoformat(account_info['expiration_date'])
+			days_remaining = (expires - date.today()).days
+			body = []
+			append = body.append
+#			append(ls(32758) % username)
+			append(ls(32757) % status)
+			append(ls(32750) % expires)
+			append(ls(32751) % days_remaining)
+			kodi_utils.hide_busy_dialog()
+			return kodi_utils.ok_dialog('Offcloud'.upper(), '[CR]'.join(body), top_space=False)
+		except: kodi_utils.hide_busy_dialog()
+
+	def cloud_delete(self, folder_id):
+		if not kodi_utils.confirm_dialog(): return
+		result = self.delete_torrent(folder_id)
+		if not result: return kodi_utils.notify_failed()
+		self.clear_cache()
+		kodi_utils.container_refresh()
+
+	def parse_user_cloud(self):
 		string = 'pov_oc_user_cloud'
 		items = cache_object(self.user_cloud, string, [], 0.5)
 		if not items: return []
@@ -43,8 +69,8 @@ class Menu(Debrid):
 				cm_append = cm.append
 				request_id, folder_name = item['requestId'], item['fileName']
 				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, folder_str, clean_file_name(folder_name).upper())
-				url_params = {'mode': 'offcloud.oc_browse_cloud', 'folder_id': request_id}
-				delete_params = {'mode': 'offcloud.oc_delete', 'folder_id': request_id}
+				url_params = {'mode': 'offcloud.oc_browse_folder', 'id': request_id}
+				delete_params = {'mode': 'offcloud.oc_delete', 'id': request_id}
 				cm_append(('[B]%s %s[/B]' % (delete_str, folder_str.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))
 				url = build_url(url_params)
 				listitem = make_listitem()
@@ -55,7 +81,7 @@ class Menu(Debrid):
 			except: pass
 		return folders
 
-	def browse_cloud(self, folder_id):
+	def parse_folder(self, folder_id):
 		string = 'pov_oc_user_cloud_%s' % folder_id
 		items = cache_object(self.user_folder, string, folder_id, 0.5)
 		if not items or not items['files']: return []
@@ -83,32 +109,6 @@ class Menu(Debrid):
 				files_append((url, listitem, False))
 			except: pass
 		return files
-
-	def cloud_delete(self, folder_id):
-		if not kodi_utils.confirm_dialog(): return
-		result = self.delete_torrent(folder_id)
-		if not result: return kodi_utils.notify_failed()
-		self.clear_cache()
-		kodi_utils.container_refresh()
-
-	def show_account_info(self):
-		from datetime import date
-		try:
-			kodi_utils.show_busy_dialog()
-			account_info = self.account_info()
-			username = account_info['user_id']
-			status = 'Premium' if account_info['is_premium'] else 'Expired'
-			expires = date.fromisoformat(account_info['expiration_date'])
-			days_remaining = (expires - date.today()).days
-			body = []
-			append = body.append
-#			append(ls(32758) % username)
-			append(ls(32757) % status)
-			append(ls(32750) % expires)
-			append(ls(32751) % days_remaining)
-			kodi_utils.hide_busy_dialog()
-			return kodi_utils.ok_dialog('Offcloud'.upper(), '[CR]'.join(body), top_space=False)
-		except: kodi_utils.hide_busy_dialog()
 
 class source(Debrid):
 	scrape_provider = 'oc_cloud'

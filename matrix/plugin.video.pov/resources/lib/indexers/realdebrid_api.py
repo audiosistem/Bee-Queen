@@ -2,9 +2,7 @@ import requests
 from modules import kodi_utils
 # logger = kodi_utils.logger
 
-get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting
 base_url = 'https://app.real-debrid.com/rest/1.0/'
-timeout = 10.0
 custom_errors = requests.exceptions.ConnectionError, requests.exceptions.Timeout
 session = requests.Session()
 session.mount('https://app.real-debrid.com', requests.adapters.HTTPAdapter(max_retries=1))
@@ -14,16 +12,17 @@ class RealDebridAPI:
 	defaults_to_cloud = True
 
 	def __init__(self):
-		self.token = get_setting('rd.token')
+		self.timeout = int(kodi_utils.get_setting('scrapers_timeout') or 10)
+		self.token = kodi_utils.get_setting('rd.token')
 		session.headers.update(self.headers())
 
 	def _request(self, method, path, data=None):
 		url = base_url + path
-		try: response = session.request(method, url, data=data, timeout=timeout)
+		try: response = session.request(method, url, data=data, timeout=self.timeout)
 		except custom_errors: return kodi_utils.notification('%s timeout' % __name__)
 		if response.status_code in (401,) and self.refresh_token() is True:
 			response.request.headers['Authorization'] = 'Bearer %s' % self.token
-			response = session.send(response.request, timeout=timeout)
+			response = session.send(response.request, timeout=self.timeout)
 		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
 		return response.json() if response.content else response
 
@@ -39,14 +38,14 @@ class RealDebridAPI:
 	def refresh_token(self):
 		try:
 			data = {'grant_type': 'http://oauth.net/grant_type/device/1.0'}
-			data['code'] = get_setting('rd.refresh')
-			data['client_secret'] = get_setting('rd.secret')
-			data['client_id'] = get_setting('rd.client_id')
+			data['code'] = kodi_utils.get_setting('rd.refresh')
+			data['client_secret'] = kodi_utils.get_setting('rd.secret')
+			data['client_id'] = kodi_utils.get_setting('rd.client_id')
 			response = requests.post('https://app.real-debrid.com/oauth/v2/token', data=data).json()
 			self.token, refresh = response['access_token'], response['refresh_token']
 			session.headers.update(self.headers())
-			set_setting('rd.token', self.token)
-			set_setting('rd.refresh', refresh)
+			kodi_utils.set_setting('rd.token', self.token)
+			kodi_utils.set_setting('rd.refresh', refresh)
 		except Exception as e: kodi_utils.logger('refresh_token error', str(e))
 		else: return True
 		return False
@@ -186,10 +185,26 @@ class RealDebridAPI:
 			dbcon.close()
 			# HASH CACHED STATUS
 			try:
-				DebridCache().clear_debrid_results('rd')
+				DebridCache().delete_cache_single('rd')
 				hash_cache_status_success = True
 			except: hash_cache_status_success = False
 		except: return False
 		if False in (user_cloud_success, download_links_success, hoster_links_success, hash_cache_status_success): return False
 		return True
+
+def tio_check_cache(imdb, season, episode):
+	import re, secrets
+	from magneto.modules.client import randomagent
+	if str(season).isdigit(): url = 'series/%s:%s:%s.json' % (imdb, season, episode)
+	else: url = 'movie/%s.json' % (imdb)
+	params = 'realdebrid=%s' % str.upper(secrets.token_urlsafe(39)[:52])
+	url = 'https://torrentio.strem.fun/debridoptions=nodownloadlinks,nocatalog|%s/stream/%s' % (params, url)
+	headers = {'User-Agent': randomagent(), 'Accept': 'application/json'}
+	pattern = re.compile(r'\b\w{40}\b')
+	try:
+		results = requests.get(url, headers=headers, timeout=7.05)
+		if not results.ok: results.raise_for_status()
+		files = results.json()['streams']
+		return [pattern.findall(file['url'])[-1] for file in files if '+' in file['name'] and 'url' in file]
+	except Exception as e: kodi_utils.logger('tio error', str(e))
 

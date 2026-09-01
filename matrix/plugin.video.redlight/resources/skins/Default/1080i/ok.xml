@@ -32,7 +32,7 @@
                 <top>10</top>
                 <left>110</left>
                 <height>20</height>
-                <font>font12</font> <!-- REDLIGHT_26 -->
+                <font>font_tiny</font> <!-- REDLIGHT_26 -->
                 <textcolor>FFCCCCCC</textcolor>
                 <align>center</align>
                 <label>[UPPERCASE][B]$INFO[Window.Property(heading)][/B][/UPPERCASE]</label>
@@ -76,7 +76,7 @@
                 <onup>2070</onup>
                 <ondown>10</ondown>
                 <label>$INFO[Window.Property(ok_label)]</label>
-                <font>font12</font> <!-- REDLIGHT_26 -->
+                <font>font_tiny</font> <!-- REDLIGHT_26 -->
                 <textcolor>FFCCCCCC</textcolor>
                 <focusedcolor>FF1F2020</focusedcolor>
                 <texturefocus colordiffuse="FFCCCCCC" border="30">redlight_common/circle.png</texturefocus>

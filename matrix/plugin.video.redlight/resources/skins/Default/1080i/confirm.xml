@@ -32,7 +32,7 @@
                 <top>10</top>
                 <left>110</left>
                 <height>20</height>
-                <font>font12</font> <!-- REDLIGHT_26 -->
+                <font>font_tiny</font> <!-- REDLIGHT_26 -->
                 <textcolor>FFCCCCCC</textcolor>
                 <shadowcolor>FF000000</shadowcolor>
                 <align>center</align>
@@ -81,7 +81,7 @@
                     <width condition="String.IsEqual(Window.Property(show_third_button),true)">234</width>
                     <height>70</height>
                     <label>$INFO[Window.Property(ok_label)]</label>
-                    <font>font12</font> <!-- REDLIGHT_26 -->
+                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <focusedcolor>FF1F2020</focusedcolor>
                     <texturefocus colordiffuse="CCCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -95,7 +95,7 @@
                     <width condition="String.IsEqual(Window.Property(show_third_button),true)">234</width>
                     <height>70</height>
                     <label>$INFO[Window.Property(cancel_label)]</label>
-                    <font>font12</font> <!-- REDLIGHT_26 -->
+                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <focusedcolor>FF1F2020</focusedcolor>
                     <texturefocus colordiffuse="CCCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -109,7 +109,7 @@
                     <width>234</width>
                     <height>70</height>
                     <label>$INFO[Window.Property(third_label)]</label>
-                    <font>font12</font> <!-- REDLIGHT_26 -->
+                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <focusedcolor>FF1F2020</focusedcolor>
                     <texturefocus colordiffuse="CCCCCCCC" border="30">redlight_common/circle.png</texturefocus>

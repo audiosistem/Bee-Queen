@@ -64,11 +64,11 @@ class Extras(BaseDialog):
 			if self.is_movie: futures.append(tpe.submit(self.make_collection))
 			else: self.setProperty('tikiskins.extras.make.collection', 'false')
 			self.make_options()
+			self.setFocusId(self.focus_id)
 			self.make_cast()
 			self.set_poster()
 			concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
 		finally: tpe.shutdown(False)
-		self.setFocusId(self.focus_id)
 
 	def run(self):
 		self.doModal()
@@ -413,7 +413,7 @@ class Extras(BaseDialog):
 			remaining_time = ((100 - int(self.percent_watched))/100) * self.duration_data
 			finish_time = datetime.now() + timedelta(minutes=remaining_time)
 			finished = finish_time.strftime(_format)
-		return '%s: %s' % (ls(32791), finished)
+		return '%s: %s' % (ls(32789), finished)
 
 	def get_duration(self):
 		return ls(32788) % self.duration_data
@@ -458,7 +458,7 @@ class Extras(BaseDialog):
 		except: return ''
 		if info['episode_count'] >= episode:
 			next_episode = 'S%.2dE%.2d' % (season, episode)
-			return '%s: %s' % (ls(32999), next_episode)
+			return '%s %s' % (ls(32484), next_episode)
 		else: return ''
 
 	def get_stingers(self):
@@ -527,9 +527,8 @@ class Extras(BaseDialog):
 		if not self.current_poster: return self.setProperty('tikiskins.extras.active_poster', 'false')
 		self.getControl(200).setImage(self.current_poster)
 		self.getControl(201).setImage(self.poster)
-		total_time = 0
-		while not self.check_poster_cached(self.poster) and total_time < 200:
-			total_time += 1
+		for _ in range(200):
+			if self.check_poster_cached(self.poster): break
 			self.sleep(50)
 		self.getControl(200).setImage(self.poster)
 

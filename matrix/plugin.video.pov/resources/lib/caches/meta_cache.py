@@ -25,11 +25,9 @@ class MetaCache(BaseCache):
 	db_file = metacache_db
 
 	def _set_PRAGMAS(self):
-		self.dbcur.executescript("""
-			PRAGMA synchronous = OFF;
-			PRAGMA journal_mode = OFF;
-			PRAGMA mmap_size = 268435456;
-		""")
+		self.dbcur.execute("""PRAGMA synchronous = OFF""")
+		self.dbcur.execute("""PRAGMA journal_mode = OFF""")
+		self.dbcur.execute("""PRAGMA mmap_size = 268435456""")
 
 	def get(self, mediatype, id_type, media_id):
 		media_str = str(media_id)
@@ -75,15 +73,15 @@ class MetaCache(BaseCache):
 		else: prop_string = prop_get('meta_season', media_str)
 		cache_data = get_property(prop_string)
 		if not cache_data: return None
-		cache_data = self.jsloads(cache_data)
-		if cache_data[0] < current_time: return None
-		return cache_data[1]
+		expiry, meta = self.jsloads(cache_data)
+		if expiry < current_time: return None
+		return meta
 
 	def set_memory_cache(self, mediatype, id_type, meta, expires, media_id):
 		media_str = str(media_id)
-		if mediatype in movie_show:
-			cache_data, prop_string = (expires, meta), prop_get('meta', mediatype, id_type, media_str)
-		else: cache_data, prop_string = (expires, meta), prop_get('meta_season', media_str)
+		if mediatype in movie_show: prop_string = prop_get('meta', mediatype, id_type, media_str)
+		else: prop_string = prop_get('meta_season', media_str)
+		cache_data = (expires, meta)
 		set_property(prop_string, self.jsdumps(cache_data))
 
 	def delete_memory_cache(self, mediatype, id_type, media_id):

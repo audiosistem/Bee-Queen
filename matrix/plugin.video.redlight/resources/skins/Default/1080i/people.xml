@@ -34,7 +34,7 @@
                         <left>1590</left>
                         <width max="300">auto</width>
                         <height>20</height>
-                        <font>font16</font> <!-- REDLIGHT_38 -->
+                        <font>font_medium</font> <!-- REDLIGHT_38 -->
                         <textcolor>FFCCCCCC</textcolor>
                         <align>right</align>
                         <aligny>center</aligny>
@@ -45,7 +45,7 @@
                         <left>1540</left>
                         <width max="350">auto</width>
                         <height>20</height>
-                        <font>font10</font> <!-- REDLIGHT_21 -->
+                        <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                         <textcolor>FFCCCCCC</textcolor>
                         <align>right</align>
                         <aligny>center</aligny>
@@ -67,7 +67,7 @@
                     <control type="label">
                         <width max="600">auto</width>
                         <height>20</height>
-                        <font>font10</font> <!-- REDLIGHT_21 -->
+                        <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                         <textcolor>FFCCCCCC</textcolor>
                         <align>right</align>
                         <aligny>top</aligny>
@@ -83,7 +83,7 @@
                     <left>55</left>
                     <width max="1150">auto</width>
                     <height>30</height>
-                    <font>font60</font> <!-- REDLIGHT_60_BOLD -->
+                    <font>font_title_large</font> <!-- REDLIGHT_60_BOLD -->
                     <textcolor>FFCCCCCC</textcolor>
                     <align>center</align>
                     <aligny>bottom</aligny>
@@ -107,7 +107,7 @@
                 <control type="label">
                     <width max="1150">auto</width>
                     <height>25</height>
-                    <font>font14</font> <!-- REDLIGHT_33 -->
+                    <font>font_small</font> <!-- REDLIGHT_33 -->
                     <textcolor>FFB7B4BB</textcolor>
                     <align>center</align>
                     <label>[I]$INFO[Window.Property(place_of_birth)][/I]</label>
@@ -117,7 +117,7 @@
                     <top>70</top>
                     <width max="1150">auto</width>
                     <height>25</height>
-                    <font>font14</font> <!-- REDLIGHT_33 -->
+                    <font>font_small</font> <!-- REDLIGHT_33 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <align>center</align>
                 </control>
@@ -218,7 +218,7 @@
                         <control type="label">
                             <width max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- REDLIGHT_33 -->
+                            <font>font_small</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <align>left</align>
                             <aligny>bottom</aligny>
@@ -269,7 +269,7 @@
                         <control type="label">
                             <width min="30" max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- REDLIGHT_33 -->
+                            <font>font_small</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <label>[B]Movies $INFO[Window.Property(more_from_movie.number)][/B]</label>
                             <visible>!Control.HasFocus(2050)</visible>
@@ -277,7 +277,7 @@
                         <control type="label">
                             <width min="30" max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- REDLIGHT_33 -->
+                            <font>font_small</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <label>[B]Movies | [/B]$INFO[Container(2050).ListItem.Property(name)] • $INFO[Container(2050).ListItem.Property(release_date)] • $INFO[Container(2050).ListItem.Property(vote_average)]</label>
                             <visible>Control.HasFocus(2050)</visible>
@@ -369,7 +369,7 @@
                         <control type="label">
                             <width min="30" max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- REDLIGHT_33 -->
+                            <font>font_small</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <label>[B]TV Shows $INFO[Window.Property(more_from_tvshow.number)][/B]</label>
                             <visible>!Control.HasFocus(2051)</visible>
@@ -377,7 +377,7 @@
                         <control type="label">
                             <width min="30" max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- REDLIGHT_33 -->
+                            <font>font_small</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <label>[B]TV Shows | [/B]$INFO[Container(2051).ListItem.Property(name)] • $INFO[Container(2051).ListItem.Property(release_date)] • $INFO[Container(2051).ListItem.Property(vote_average)]</label>
                             <visible>Control.HasFocus(2051)</visible>
@@ -469,7 +469,7 @@
                         <control type="label">
                             <width max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- REDLIGHT_33 -->
+                            <font>font_small</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <align>left</align>
                             <aligny>bottom</aligny>
@@ -495,7 +495,7 @@
                                     <left>20</left>
                                     <width>540</width>
                                     <height>308</height>
-                                    <font>font12</font> <!-- REDLIGHT_26 -->
+                                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>top</aligny>
                                     <textcolor>FFCCCCCC</textcolor>
@@ -514,7 +514,7 @@
                                     <left>20</left>
                                     <width>540</width>
                                     <height>308</height>
-                                    <font>font12</font> <!-- REDLIGHT_26 -->
+                                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>top</aligny>
                                     <textcolor>FF1F2020</textcolor>
@@ -562,7 +562,7 @@
                         <control type="label">
                             <width min="30" max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- REDLIGHT_33 -->
+                            <font>font_small</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <label>[B]Movies Directed $INFO[Window.Property(more_from_director.number)][/B]</label>
                             <visible>!Control.HasFocus(2053)</visible>
@@ -570,7 +570,7 @@
                         <control type="label">
                             <width min="30" max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- REDLIGHT_33 -->
+                            <font>font_small</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <label>[B]Movies Directed | [/B]$INFO[Container(2053).ListItem.Property(name)] • $INFO[Container(2053).ListItem.Property(release_date)] • $INFO[Container(2053).ListItem.Property(vote_average)]</label>
                             <visible>Control.HasFocus(2053)</visible>

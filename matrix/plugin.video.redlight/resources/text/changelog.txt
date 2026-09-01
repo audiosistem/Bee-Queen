@@ -1,3 +1,20 @@
+[COLOR red][B]Version 2.4.0[/B][/COLOR]
+- [B]EasyNews / NZB[/B]: Filter Results by Name can keep a TV file with no show title when SxxExx or a bare/absolute number matches and the episode title is distinctive ([B]Allow episode title without show name[/B], on by default, separate EasyNews and NZB toggles). Turn that off to require the show title or an alias.
+- [B]PunchPlay[/B]: if Mark Show as Watched fails part-way through the seasons, earlier seasons from that attempt are rolled back so the show is not left half-marked.
+
+[COLOR red][B]Version 2.3.9[/B][/COLOR]
+- [B]Skip Intro[/B]: ignore TheIntroDB rows that are actually credits (same timestamps as credits, or starting in the second half of the episode) and use IntroDB / chapters instead.
+
+[COLOR red][B]Version 2.3.8[/B][/COLOR]
+- [B]EasyNews / NZB[/B]: Filter by Name can keep a file with no show title when SxxExx or a bare/absolute number still matches and the TMDb episode title is in the filename (skips generic names like Home).
+- [B]Tips / Changelog[/B]: wrapping a long line that uses [COLOR name] no longer leaks raw tags (e.g. Meta List Search magenta row).
+- [B]PunchPlay Manager[/B]: [B]Add To My List[/B] / [B]Remove from My List[/B] only for ordinary lists the title is (or is not) on. Dynamic, watchlist, and externally synced lists are skipped. PunchPlay lists are movie/show only (no episode rows).
+- [B]Trakt Lists Manager[/B]: [B]Add To NEW Personal List[/B] (after add/remove, same place as TMDb / Personal Lists) creates a private list and adds this title. From an episode row the new list gets the show.
+- [B]List Managers[/B]: the same toasts for add/remove/create — [I]Success[/I], [I]Error[/I], [I]Already In List[/I], [I]Item not in list[/I], [I]Added to …[/I] / [I]Removed from …[/I] when the list is named, [I]List Creation Cancelled[/I] / [I]Error Creating List[/I]. Cancelling create no longer also says Error Creating List.
+
+[COLOR red][B]Version 2.3.7[/B][/COLOR]
+- [B]Simkl[/B] ([I]#238[/I]): Mark Show as Watched no longer treats a shelf-only history add ([I]added.shows[/I] with 0 episodes) as success. If Simkl does not expand episode timestamps, Red Light POSTs each season number (same as Mark Season) so Force Sync does not bring the show back unwatched.
+
 [COLOR red][B]Version 2.3.6[/B][/COLOR]
 - [B]Next Episodes / episode widgets[/B]: landscape art uses the episode still (TMDb) when one exists, so FENtastic+ LandscapeInfo shows the episode rather than the show. Poster stays the show poster. [B]Avoid Episode Spoilers[/B] still hides stills on unwatched episodes.
 - [B]Artwork[/B]: when TMDb has no English landscape, the title's fanart is used in the landscape slot (movies and TV). Optional [B]Fanart.tv[/B] API key (Meta Accounts, above OMDb) then fills remaining empty landscape, clearlogo, poster, and fanart. TMDb wins when it already has the image. Does not add episode stills. Clear Meta Cache after adding a key so cached titles are re-fetched.

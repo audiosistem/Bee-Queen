@@ -19,14 +19,14 @@ default_art = {'icon': default_icon, 'poster': default_icon, 'thumb': default_ic
 class Menu(Debrid):
 	def run(self, params):
 		if   '_airlock' in params['mode']:
-			return self.cloud_airlock(params['folder_id'], params['airlock'])
+			return self.cloud_airlock(params['id'], params['airlock'])
 		elif '_delete' in params['mode']:
-			return self.cloud_delete(params['folder_id'])
+			return self.cloud_delete(params['id'])
+		elif '_browse_folder' in params['mode']:
+			folder_id, mediatype = params['id'].split(',')
+			items = self.parse_folder(mediatype, folder_id)
 		elif '_browse_cloud' in params['mode']:
-			folder_id, mediatype = params['folder_id'].split(',')
-			items = self.browse_cloud(mediatype, folder_id)
-		elif '_torrent_cloud' in params['mode']:
-			items = self.torrent_cloud(params['mediatype'])
+			items = self.parse_user_cloud(params['mediatype'])
 		else: return getattr(self, params['mode'].split('.')[-1])()
 		__handle__ = int(kodi_utils.argv1())
 		kodi_utils.add_items(__handle__, items)
@@ -34,7 +34,42 @@ class Menu(Debrid):
 		kodi_utils.end_directory(__handle__)
 		kodi_utils.set_view_mode('view.premium')
 
-	def torrent_cloud(self, mediatype):
+	def show_account_info(self):
+		from datetime import datetime, timezone
+		try:
+			kodi_utils.show_busy_dialog()
+			account_info = self.account_info()
+			username = account_info['customer']
+			status = ('Free', 'Essential', 'Pro', 'Standard')[account_info['plan']]
+			expires = datetime.fromisoformat(account_info['premium_expires_at'].replace('Z', '+00:00'))
+			days_remaining = (expires - datetime.now(timezone.utc)).days
+			body = []
+			append = body.append
+#			append(ls(32758) % username)
+			append(ls(32757) % status)
+			append(ls(32750) % expires.date() if hasattr(expires, 'date') else expires)
+			append(ls(32751) % days_remaining)
+			append('[B]Downloaded[/B]: %s' % account_info['total_downloaded'])
+			kodi_utils.hide_busy_dialog()
+			return kodi_utils.ok_dialog('TorBox'.upper(), '[CR]'.join(body), top_space=False)
+		except: kodi_utils.hide_busy_dialog()
+
+	def cloud_delete(self, folder_id):
+		if not kodi_utils.confirm_dialog(): return
+		result = self.delete_torrent(folder_id)
+		if not result: return kodi_utils.notify_failed()
+		self.clear_cache()
+		kodi_utils.container_refresh()
+
+	def cloud_airlock(self, folder_id, airlock_value):
+		if airlock_value == 'false' and not kodi_utils.confirm_dialog(): return
+		request_id, mediatype = folder_id.split(',')
+		result = self.toggle_airlock(mediatype, request_id, airlock_value)
+		if not result: return kodi_utils.notify_failed()
+		self.clear_cache()
+		kodi_utils.container_refresh()
+
+	def parse_user_cloud(self, mediatype):
 		string = 'pov_tb_user_cloud_%s' % mediatype
 		items = cache_object(self.user_cloud, string, mediatype, 0.5)
 		if not items: return []
@@ -49,9 +84,9 @@ class Menu(Debrid):
 				if item['airlocked']: airlock_value, func_str, res_str = 'false', _rem_str, airlock_str
 				else: airlock_value, func_str, res_str = 'true', _add_str, folder_str
 				display = '%02d | [B]%s[/B] | [I]%s [/I]' % (count, res_str, clean_file_name(item['name']).upper())
-				url_params = {'mode': 'torbox.tb_browse_cloud', 'folder_id': folder_id}
-				delete_params = {'mode': 'torbox.tb_delete', 'folder_id': folder_id}
-				airlock_params = {'mode': 'torbox.tb_airlock', 'folder_id': folder_id, 'airlock': airlock_value}
+				url_params = {'mode': 'torbox.tb_browse_folder', 'id': folder_id}
+				delete_params = {'mode': 'torbox.tb_delete', 'id': folder_id}
+				airlock_params = {'mode': 'torbox.tb_airlock', 'id': folder_id, 'airlock': airlock_value}
 				cm_append(('[B]%s %s[/B]' % (delete_str, folder_str.capitalize()), 'RunPlugin(%s)' % build_url(delete_params)))
 				cm_append(('[B]%s %s[/B]' % (func_str, airlock_str.capitalize()), 'RunPlugin(%s)' % build_url(airlock_params)))
 				url = build_url(url_params)
@@ -63,7 +98,7 @@ class Menu(Debrid):
 			except: pass
 		return folders
 
-	def browse_cloud(self, mediatype, folder_id):
+	def parse_folder(self, mediatype, folder_id):
 		string = 'pov_tb_user_cloud_%s_%s' % (mediatype, folder_id)
 		items = cache_object(self.user_folder, string, [mediatype, folder_id], 0.5)
 		if not items or not items['files']: return []
@@ -92,41 +127,6 @@ class Menu(Debrid):
 				files_append((url, listitem, False))
 			except: pass
 		return files
-
-	def cloud_delete(self, folder_id):
-		if not kodi_utils.confirm_dialog(): return
-		result = self.delete_torrent(folder_id)
-		if not result: return kodi_utils.notify_failed()
-		self.clear_cache()
-		kodi_utils.container_refresh()
-
-	def cloud_airlock(self, folder_id, airlock_value):
-		if airlock_value == 'false' and not kodi_utils.confirm_dialog(): return
-		request_id, mediatype = folder_id.split(',')
-		result = self.toggle_airlock(mediatype, request_id, airlock_value)
-		if not result: return kodi_utils.notify_failed()
-		self.clear_cache()
-		kodi_utils.container_refresh()
-
-	def show_account_info(self):
-		from datetime import datetime, timezone
-		try:
-			kodi_utils.show_busy_dialog()
-			account_info = self.account_info()
-			username = account_info['customer']
-			status = ('Free', 'Essential', 'Pro', 'Standard')[account_info['plan']]
-			expires = datetime.fromisoformat(account_info['premium_expires_at'].replace('Z', '+00:00'))
-			days_remaining = (expires - datetime.now(timezone.utc)).days
-			body = []
-			append = body.append
-#			append(ls(32758) % username)
-			append(ls(32757) % status)
-			append(ls(32750) % expires.date() if hasattr(expires, 'date') else expires)
-			append(ls(32751) % days_remaining)
-			append('[B]Downloaded[/B]: %s' % account_info['total_downloaded'])
-			kodi_utils.hide_busy_dialog()
-			return kodi_utils.ok_dialog('TorBox'.upper(), '[CR]'.join(body), top_space=False)
-		except: kodi_utils.hide_busy_dialog()
 
 class source(Debrid):
 	scrape_provider = 'tb_cloud'

@@ -32,7 +32,7 @@
                     <top>22</top>
                     <width max="1160">auto</width>
                     <height>20</height>
-                    <font>font10</font> <!-- REDLIGHT_21 -->
+                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                     <textcolor>FFFFFFFF</textcolor>
                     <align>left</align>
                     <aligny>center</aligny>
@@ -44,7 +44,7 @@
                     <top>22</top>
                     <width max="1160">auto</width>
                     <height>20</height>
-                    <font>font10</font> <!-- REDLIGHT_21 -->
+                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                     <textcolor>FFFFFFFF</textcolor>
                     <align>left</align>
                     <aligny>center</aligny>
@@ -69,7 +69,7 @@
                     <top>400</top>
                     <width>1920</width>
                     <height>30</height>
-                    <font>font60</font> <!-- REDLIGHT_60_BOLD -->
+                    <font>font_title_large</font> <!-- REDLIGHT_60_BOLD -->
                     <textcolor>FFCCCCCC</textcolor>
                     <align>center</align>
                     <aligny>bottom</aligny>
@@ -80,7 +80,7 @@
                     <top>480</top>
                     <width>1920</width>
                     <height>25</height>
-                    <font>font14</font> <!-- REDLIGHT_33 -->
+                    <font>font_small</font> <!-- REDLIGHT_33 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <align>center</align>
                     <aligny>bottom</aligny>
@@ -419,7 +419,7 @@
                             <height>0</height>
                             <align>center</align>
                             <aligny>center</aligny>
-                            <font>font12</font> <!-- REDLIGHT_26 -->
+                            <font>font_tiny</font> <!-- REDLIGHT_26 -->
                             <label>[COLOR FF7C7C7C][B]4K[/B][/COLOR]</label>
                         </control>
                         <control type="label">
@@ -429,7 +429,7 @@
                             <height>0</height>
                             <align>center</align>
                             <aligny>center</aligny>
-                            <font>font12</font> <!-- REDLIGHT_26 -->
+                            <font>font_tiny</font> <!-- REDLIGHT_26 -->
                             <label>[COLOR $INFO[Window(10000).Property(redlight.scrape.progress_4k_color)]][B]$INFO[Window(10000).Property(redlight.scrape.results_4k)][/B][/COLOR]</label>
                         </control>
                     </control>
@@ -442,7 +442,7 @@
                             <height>0</height>
                             <align>center</align>
                             <aligny>center</aligny>
-                            <font>font12</font> <!-- REDLIGHT_26 -->
+                            <font>font_tiny</font> <!-- REDLIGHT_26 -->
                             <label>[COLOR FF7C7C7C][B]1080[/B][/COLOR]</label>
                         </control>
                         <control type="label">
@@ -452,7 +452,7 @@
                             <height>0</height>
                             <align>center</align>
                             <aligny>center</aligny>
-                            <font>font12</font> <!-- REDLIGHT_26 -->
+                            <font>font_tiny</font> <!-- REDLIGHT_26 -->
                             <label>[COLOR $INFO[Window(10000).Property(redlight.scrape.progress_1080p_color)]][B]$INFO[Window(10000).Property(redlight.scrape.results_1080p)][/B][/COLOR]</label>
                         </control>
                     </control>
@@ -465,7 +465,7 @@
                             <height>0</height>
                             <align>center</align>
                             <aligny>center</aligny>
-                            <font>font12</font> <!-- REDLIGHT_26 -->
+                            <font>font_tiny</font> <!-- REDLIGHT_26 -->
                             <label>[COLOR FF7C7C7C][B]720[/B][/COLOR]</label>
                         </control>
                         <control type="label">
@@ -475,7 +475,7 @@
                             <height>0</height>
                             <align>center</align>
                             <aligny>center</aligny>
-                            <font>font12</font> <!-- REDLIGHT_26 -->
+                            <font>font_tiny</font> <!-- REDLIGHT_26 -->
                             <label>[COLOR $INFO[Window(10000).Property(redlight.scrape.progress_720p_color)]][B]$INFO[Window(10000).Property(redlight.scrape.results_720p)][/B][/COLOR]</label>
                         </control>
                     </control>
@@ -488,7 +488,7 @@
                             <height>0</height>
                             <align>center</align>
                             <aligny>center</aligny>
-                            <font>font12</font> <!-- REDLIGHT_26 -->
+                            <font>font_tiny</font> <!-- REDLIGHT_26 -->
                             <label>[COLOR FF7C7C7C][B]SD[/B][/COLOR]</label>
                         </control>
                         <control type="label">
@@ -498,7 +498,7 @@
                             <height>0</height>
                             <align>center</align>
                             <aligny>center</aligny>
-                            <font>font12</font> <!-- REDLIGHT_26 -->
+                            <font>font_tiny</font> <!-- REDLIGHT_26 -->
                             <label>[COLOR $INFO[Window(10000).Property(redlight.scrape.progress_sd_color)]][B]$INFO[Window(10000).Property(redlight.scrape.results_sd)][/B][/COLOR]</label>
                         </control>
                     </control>
@@ -511,7 +511,7 @@
                             <height>0</height>
                             <align>center</align>
                             <aligny>center</aligny>
-                            <font>font12</font> <!-- REDLIGHT_26 -->
+                            <font>font_tiny</font> <!-- REDLIGHT_26 -->
                             <label>[COLOR FF7C7C7C][B]TOTAL[/B][/COLOR]</label>
                         </control>
                         <control type="label">
@@ -521,7 +521,7 @@
                             <height>0</height>
                             <align>center</align>
                             <aligny>center</aligny>
-                            <font>font12</font> <!-- REDLIGHT_26 -->
+                            <font>font_tiny</font> <!-- REDLIGHT_26 -->
                             <label>[COLOR $INFO[Window(10000).Property(redlight.scrape.progress_total_color)]][B]$INFO[Window(10000).Property(redlight.scrape.results_total)][/B][/COLOR]</label>
                         </control>
                     </control>
@@ -533,7 +533,7 @@
                     <height>310</height>
                     <align>center</align>
                     <aligny>bottom</aligny>
-                    <font>font12</font> <!-- REDLIGHT_26 -->
+                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFFFFFFF</textcolor>
                 </control>
             </control>
@@ -545,7 +545,7 @@
                     <top>600</top>
                     <width>820</width>
                     <height>310</height>
-                    <font>font12</font> <!-- REDLIGHT_26 -->
+                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                     <align>center</align>
                     <aligny>bottom</aligny>
                     <textcolor>FFB7B4BB</textcolor>
@@ -556,7 +556,7 @@
                     <left>360</left>
                     <width>1200</width>
                     <height>100</height>
-                    <font>font12</font> <!-- REDLIGHT_26 -->
+                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                     <align>center</align>
                     <aligny>bottom</aligny>
                     <textcolor>FFB7B4BB</textcolor>
@@ -576,7 +576,7 @@
                     <onleft>3012</onleft>
                     <onright>3011</onright>
                     <label>$INFO[Window.Property(resume_btn_label)]</label>
-                    <font>font12</font> <!-- REDLIGHT_26 -->
+                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <focusedcolor>FF1F2020</focusedcolor>
                     <texturefocus colordiffuse="CCCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -591,7 +591,7 @@
                     <onleft>3010</onleft>
                     <onright>3012</onright>
                     <label>$INFO[Window.Property(startover_btn_label)]</label>
-                    <font>font12</font> <!-- REDLIGHT_26 -->
+                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <focusedcolor>FF1F2020</focusedcolor>
                     <texturefocus colordiffuse="CCCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -606,7 +606,7 @@
                     <onleft>3011</onleft>
                     <onright>3010</onright>
                     <label>$INFO[Window.Property(cancel_btn_label)]</label>
-                    <font>font12</font> <!-- REDLIGHT_26 -->
+                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <focusedcolor>FF1F2020</focusedcolor>
                     <texturefocus colordiffuse="CCCCCCCC" border="30">redlight_common/circle.png</texturefocus>

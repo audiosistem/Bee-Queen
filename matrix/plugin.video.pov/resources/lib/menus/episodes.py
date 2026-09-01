@@ -1,7 +1,7 @@
 from threading import Thread
 from caches import watched_cache as ws
 from indexers.metadata import tvshow_meta, season_episodes_meta, art_infodict, episode_infodict, info_tagger
-from indexers.mdblist_api import mdbl_get_my_calendar
+from indexers.mdblist_api import mdbl_get_my_calendar, mdblist_watchlist
 from indexers.trakt_api import trakt_fetch_collection_watchlist, trakt_get_my_calendar, trakt_get_my_anime_calendar, trakt_anime_calendar
 from modules import kodi_utils, settings
 from modules.utils import get_next_episode_pointer, adjust_premiered_date, make_day, get_datetime, title_key, date_difference, TaskPool
@@ -14,7 +14,7 @@ run_plugin, container_refresh, container_update = 'RunPlugin(%s)', 'Container.Re
 fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
 watched_str, unwatched_str, clearprog_str = ls(32642), ls(32643), ls(32651)
-extras_str, options_str, browse_str, browse_seas_str = ls(32645), ls(32646), ls(32652), ls(32544)
+extras_str, options_str, browse_str, browse_seas_str = ls(32645), ls(32646), ls(32652), ls(32653)
 traktmanager_str, mdblmanager_str, unaired_label, date_label = ls(32198), ls(32200), 'cyan', 'magenta'
 
 class Episodes:
@@ -53,7 +53,8 @@ class Episodes:
 			if self.list_type.startswith('next_episode'):
 				props = {'pov_last_played': ep_data_get('last_played', self.resinsert)}
 				sn, en = int(ep_data_get('season')), int(ep_data_get('episode'))
-				orig_season, orig_episode, new_season = get_next_episode_pointer(meta, sn, en)
+				if ep_data_get('unwatched'): orig_season, orig_episode, new_season = 1, 1, False
+				else: orig_season, orig_episode, new_season = get_next_episode_pointer(meta, sn, en)
 				if new_season and orig_season > meta_get('total_seasons'): return
 			else:
 				props = {'pov_sort_order': string(ep_data_get('sort', position))}
@@ -238,12 +239,16 @@ class Menu(Episodes):
 		self.nextep_include_airdate = nextep_disp_settings['include_airdate']
 		self.nextep_unwatched_color = nextep_disp_settings['unwatched_color']
 		self.nextep_unaired_color = nextep_disp_settings['unaired_color']
-#		if self.watched_indicators != 1: return
-#		if not self.nextep_settings['include_unwatched']: return
-#		items = trakt_fetch_collection_watchlist('watchlist', 'tvshow')
-#		watchlist = ({'media_ids': i['media_ids'], 'season': 1, 'episode': 0, 'unwatched': True} for i in items)
-#		try: self.list.extend(watchlist)
-#		except: pass
+		if self.watched_indicators not in (1, 2) or not self.nextep_settings['include_unwatched']: return
+		def _process(item):
+			if not isinstance(item, dict): return {}
+			if 'media_ids' in item: return item['media_ids']
+			return {'tmdb': item.get('id'), 'imdb': item.get('imdb_id')}
+		try:
+			if self.watched_indicators == 1: items = trakt_fetch_collection_watchlist('watchlist', 'tvshow')
+			if self.watched_indicators == 2: items = mdblist_watchlist('shows', 'all')
+			self.list.extend({'media_ids': _process(i), 'season': 1, 'episode': 0, 'unwatched': True} for i in items)
+		except: pass
 
 	def _setup_calendar_display(self):
 		calendar_display_settings = settings.calendar_display_settings()

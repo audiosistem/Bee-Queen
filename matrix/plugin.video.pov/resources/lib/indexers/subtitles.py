@@ -4,8 +4,8 @@ from modules import kodi_utils
 # logger = kodi_utils.logger
 
 ls, get_setting = kodi_utils.local_string, kodi_utils.get_setting
-subsfound_str, dlfound_str = ls(32852), ls(32792)
-nosubs_str, ratelimit_str = ls(32793), ls(32740)
+subsfound_str, dlfound_str = ls(32792), ls(32793)
+nosubs_str, ratelimit_str = ls(32794), ls(32791)
 timeout = 20.0
 
 def _get(url, params=None, stream=False, retry=False):

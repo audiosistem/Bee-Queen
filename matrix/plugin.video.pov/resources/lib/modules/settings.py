@@ -199,7 +199,7 @@ def nav_jump_use_alphabet():
 
 def nextep_content_settings():
 	include_unaired = get_setting('nextep.include_unaired') == 'true'
-	include_unwatched = False # get_setting('nextep.include_unwatched') == 'true'
+	include_unwatched = get_setting('nextep.include_unwatched') == 'true'
 	sort_type = int(get_setting('nextep.sort_type'))
 	sort_order = int(get_setting('nextep.sort_order'))
 	sort_direction = sort_order == 0
@@ -236,11 +236,11 @@ def results_sort_order():
 	)[int(get_setting('results.sort_order', '1'))]
 
 def results_xml_style():
-	return {'0': 'list', '1': 'widelist'}[get_setting('results.xml_style', '0')]
+	return {'0': 'list default', '1': 'widelist default', '2': 'infolist default'}[get_setting('results.xml_style', '0')]
 
 def results_xml_window_number(window_style=None):
 	if not window_style: window_style = results_xml_style()
-	return {'list': 2000, 'widelist': 2002}[window_style.split()[0]]
+	return {'list': 2000, 'infolist': 2001, 'widelist': 2002}[window_style.split()[0]]
 
 def rpdb_api_key():
 	return get_setting('rpdb_api_key'), get_setting('rpdb_theme')
@@ -301,7 +301,7 @@ def debrid_expiry_checks():
 		('pm.account_id', 'pm.expires', 'premiumize_api', 'PremiumizeAPI'),
 		('oc.account_id', 'oc.expires', 'offcloud_api', 'OffcloudAPI'),
 		('tb.account_id', 'tb.expires', 'torbox_api', 'TorBoxAPI'),
-		('rd.username', 'rd.expires', 'real_debrid_api', 'RealDebridAPI'),
+		('rd.username', 'rd.expires', 'realdebrid_api', 'RealDebridAPI'),
 		('ad.account_id', 'ad.expires', 'alldebrid_api', 'AllDebridAPI')
 	)
 

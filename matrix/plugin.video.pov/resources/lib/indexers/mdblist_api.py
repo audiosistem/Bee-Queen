@@ -9,8 +9,8 @@ from modules import kodi_utils, settings
 from modules.cache import check_databases
 from modules.utils import sort_for_article, jsondate_to_datetime, paginate_list, get_datetime
 
-EXPIRES_1_HOURS, EXPIRES_2_DAYS, MAX_LIST_ITEMS = 1, 48, 250_000
 get_setting, set_setting, logger = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.logger
+EXPIRES_1_HOURS, EXPIRES_2_DAYS, MAX_LIST_ITEMS = 1, 48, 250_000
 base_url = 'https://api.mdblist.com/%s'
 timeout = 10.05
 session = requests.Session()
@@ -128,8 +128,8 @@ def mdblist_droplist(mediatype, page_no):
 			show_ids = item['show']['ids']
 			tmdb_id = show_ids.get('tmdb')
 			if tmdb_id: results.append({
-				'id': tmdb_id,
-				'title': item['show']['title']
+				'title': item['show']['title'],
+				'id': tmdb_id
 			})
 		return results
 	string = 'mdbl_hidden_items_dropped'
@@ -149,8 +149,8 @@ def mdbl_calendar_data(url):
 			season, episode = i['season_number'], i['episode_number']
 			sort_title = '%s s%02d e%02d' % (i['title'], season, episode)
 			if sort_title not in seen and not seen.add(sort_title): result.append({
-				'sort_title': sort_title, 'first_aired': i['start'],
-				'media_ids': {'tmdb': tmdb_id}, 'season': season, 'episode': episode
+				'first_aired': i['start'], 'season': season, 'episode': episode,
+				'sort_title': sort_title, 'media_ids': {'tmdb': tmdb_id}
 			})
 		except: pass
 	return result
@@ -162,25 +162,23 @@ def mdbl_get_my_calendar(recently_aired, current_date):
 	return mdbl_cache.cache_mdbl_object(lambda u: mdbl_calendar_data(u), string, url)
 
 def mdblist_collection(mediatype, page_no):
-	string = 'mdbl_collection'
-	url = 'sync/collection'
-	original_list = mdbl_collection_watchlist_items(string, url)
-	if mediatype == 'all':
-		original_list = original_list['movies'] + original_list['shows']
-		for i in original_list: i.update({'id': i['movie' if 'movie' in i else 'show']['ids']['tmdb']})
-		return original_list
 	def _year(item):
 		if isinstance(item.get('year'), int): return str(item['year'])
 		return item.get('year')
+	string = 'mdbl_collection'
+	url = 'sync/collection'
+	original_list = mdbl_collection_watchlist_items(string, url)
+	original_list = original_list['movies' if mediatype in ('movie', 'movies') else 'shows']
 	key = 'movie' if mediatype in ('movie', 'movies') else 'show'
 	original_list = [
 		{'collected_at': i['collected_at'],
-		 'id': i[key]['ids']['tmdb'],
-		 'imdb_id': i[key]['ids']['imdb'],
+		 'year': _year(i[key]),
 		 'title': i[key]['title'],
-		 'year': _year(i[key])}
-		for i in original_list[mediatype]
+		 'id': i[key]['ids']['tmdb'],
+		 'imdb_id': i[key]['ids']['imdb']}
+		for i in original_list
 	] # only endpoint with nested media. no response to feature req to flatten.
+	if page_no == 'all': return original_list
 	sort_key = settings.lists_sort_order('collection')
 	if   sort_key == 2: original_list.sort(key=lambda k: k.get('year') or '', reverse=True)
 	elif sort_key == 1: original_list.sort(key=lambda k: k['collected_at'], reverse=True)
@@ -195,10 +193,8 @@ def mdblist_watchlist(mediatype, page_no):
 	string = 'mdbl_watchlist'
 	url = 'watchlist/items'
 	original_list = mdbl_collection_watchlist_items(string, url)
-	if mediatype == 'all':
-		original_list = original_list['movies'] + original_list['shows']
-		return original_list
-	original_list = original_list[mediatype]
+	original_list = original_list['movies' if mediatype in ('movie', 'movies') else 'shows']
+	if page_no == 'all': return original_list
 	if not settings.show_unaired_watchlist():
 		current_date = get_datetime()
 		original_list = [i for i in original_list if first_aired(i)]

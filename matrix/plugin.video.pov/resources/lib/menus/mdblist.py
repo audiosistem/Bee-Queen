@@ -26,29 +26,9 @@ def get_mdbl_top_lists(params):
 def build_mdbl_list(params):
 	return MdblistBuilder(params).build()
 
-def integrity_check():
-	try:
-		mdbl_db = kodi_utils.translate_path(kodi_utils.mdbl_db)
-		with kodi_utils.database.connect(mdbl_db) as dbcon:
-			dbcur = dbcon.cursor()
-			dbcur.execute("""PRAGMA integrity_check""")
-			result = dbcur.fetchone()
-			if 'ok' in result: status = 'passed'
-			else: raise kodi_utils.database.Error(result)
-			dbcur.execute("""VACUUM""")
-		return status
-	except kodi_utils.database.Error as e: status = str(e)
-	try:
-		with open(mdbl_db, 'w') as _: pass
-		from modules.cache import check_databases, clear_cache
-		check_databases()
-		clear_cache('mdblist', silent=True)
-		status = 'repaired'
-	except Exception as e: kodi_utils.logger('mdblist integrity error', '\n%s\n%s' % (status, e))
-	return status
-
 def mdbl_account_info():
 	from datetime import timedelta
+	from caches.mdbl_cache import integrity_check
 	from modules.utils import jsondate_to_datetime
 	try:
 		kodi_utils.show_busy_dialog()
@@ -226,8 +206,8 @@ class MdbListManager(list_helper.BaseListManager):
 		return False
 
 	def check_item_exists(self, choice_id):
-		if 'collection' in choice_id: list_items = self.api.mdblist_collection('all', None)
-		elif 'watchlist' in choice_id: list_items = self.api.mdblist_watchlist('all', None)
+		if 'collection' in choice_id: list_items = self.api.mdblist_collection(self.mediatype, 'all')
+		elif 'watchlist' in choice_id: list_items = self.api.mdblist_watchlist(self.mediatype, 'all')
 		else: list_items = self.api.get_mdbl_list_contents('my_lists', choice_id)
 		return self.tmdb_id in {i['id'] for i in list_items}
 

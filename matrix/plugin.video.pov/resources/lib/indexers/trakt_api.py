@@ -9,8 +9,7 @@ from modules import kodi_utils, settings
 from modules.cache import check_databases
 from modules.utils import sort_list, sort_for_article, jsondate_to_datetime, paginate_list, get_datetime
 
-ls, logger = kodi_utils.local_string, kodi_utils.logger
-get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting
+get_setting, set_setting, logger = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.logger
 EXPIRES_2_DAYS = 48
 READ_TOKEN = kodi_utils.addon().getSetting('trakt.client_id')
 base_url = 'https://api.trakt.tv/%s'
@@ -190,8 +189,8 @@ def trakt_droplist(mediatype, page_no):
 			show_ids = item['show']['ids']
 			tmdb_id = show_ids.get('tmdb')
 			if tmdb_id: results.append({
-				'media_ids': {'tmdb': tmdb_id},
-				'title': item['show']['title']
+				'title': item['show']['title'],
+				'media_ids': {'tmdb': tmdb_id}
 			})
 		return results
 	string = 'trakt_hidden_items_dropped'
@@ -211,8 +210,8 @@ def trakt_calendar_data(url, exclude_anime=False):
 			season, episode = i['episode']['season'], i['episode']['number']
 			sort_title = '%s s%02d e%02d' % (i['show']['title'], season, episode)
 			if sort_title not in seen and not seen.add(sort_title): result.append({
-				'sort_title': sort_title, 'first_aired': i['first_aired'],
-				'media_ids': i['show']['ids'], 'season': season, 'episode': episode
+				'first_aired': i['first_aired'], 'season': season, 'episode': episode,
+				'sort_title': sort_title, 'media_ids': i['show']['ids']
 			})
 		except: pass
 	return result
@@ -283,8 +282,10 @@ def trakt_watchlist(mediatype, page_no):
 def trakt_fetch_collection_watchlist(list_type, mediatype):
 	def _process(dummy):
 		return [
-			{'collected_at': i.get(collected_at), 'premiered': i[key].get(premiered) or '',
-			 'title': i[key]['title'], 'media_ids': i[key]['ids']}
+			{'collected_at': i.get(collected_at),
+			 'premiered': i[key].get(premiered) or '',
+			 'title': i[key]['title'],
+			 'media_ids': i[key]['ids']}
 			for i in _get_trakt_paginated_list(url)
 		]
 	if mediatype in ('movie', 'movies'):

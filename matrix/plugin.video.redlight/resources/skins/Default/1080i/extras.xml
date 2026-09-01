@@ -31,7 +31,7 @@
                         <left>1590</left>
                         <width max="300">auto</width>
                         <height>20</height>
-                        <font>font16</font> <!-- REDLIGHT_38 -->
+                        <font>font_medium</font> <!-- REDLIGHT_38 -->
                         <textcolor>FFCCCCCC</textcolor>
                         <align>right</align>
                         <aligny>center</aligny>
@@ -42,7 +42,7 @@
                         <left>1540</left>
                         <width max="350">auto</width>
                         <height>20</height>
-                        <font>font10</font> <!-- REDLIGHT_21 -->
+                        <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                         <textcolor>FFCCCCCC</textcolor>
                         <align>right</align>
                         <aligny>center</aligny>
@@ -64,7 +64,7 @@
                     <control type="label">
                         <width max="600">auto</width>
                         <height>20</height>
-                        <font>font10</font> <!-- REDLIGHT_21 -->
+                        <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                         <textcolor>FFCCCCCC</textcolor>
                         <align>right</align>
                         <aligny>bottom</aligny>
@@ -97,7 +97,7 @@
                         <left>70</left>
                         <width max="1130">auto</width>
                         <height>30</height>
-                        <font>font60</font> <!-- REDLIGHT_60_BOLD -->
+                        <font>font_title_large</font> <!-- REDLIGHT_60_BOLD -->
                         <textcolor>FFCCCCCC</textcolor>
                         <align>center</align>
                         <aligny>bottom</aligny>
@@ -125,7 +125,7 @@
                             <control type="label">
                                 <width max="1150">auto</width>
                                 <height>25</height>
-                                <font>font14</font> <!-- REDLIGHT_33 -->
+                                <font>font_small</font> <!-- REDLIGHT_33 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>center</align>
                                 <label>[I]$INFO[Window.Property(genre)][/I]</label>
@@ -155,7 +155,7 @@
                                 <top>105</top>
                                 <width max="1150">auto</width>
                                 <height>25</height>
-                                <font>font14</font> <!-- REDLIGHT_33 -->
+                                <font>font_small</font> <!-- REDLIGHT_33 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>center</align>
                             </control>
@@ -469,7 +469,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]Cast $INFO[Window.Property(cast.number)][/B]</label>
 				            <visible>!Control.HasFocus(2051)</visible>
@@ -477,7 +477,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]Cast | [/B]$INFO[ListItem.Property(name)]$INFO[ListItem.Property(release_date), • ]$INFO[ListItem.Property(vote_average), • ]</label>
 				            <visible>Control.HasFocus(2051)</visible>
@@ -509,7 +509,7 @@
 				                    <top>282</top>
 				                    <width>220</width>
 				                    <height>22</height>
-				                    <font>font10</font> <!-- REDLIGHT_21 -->
+				                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
 				                    <textcolor>FFCCCCCC</textcolor>
 				                    <align>center</align>
 				                    <aligny>center</aligny>
@@ -521,7 +521,7 @@
 				                    <top>304</top>
 				                    <width>220</width>
 				                    <height>22</height>
-				                    <font>font10</font> <!-- REDLIGHT_21 -->
+				                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
 				                    <textcolor>FF999999</textcolor>
 				                    <align>center</align>
 				                    <aligny>center</aligny>
@@ -556,7 +556,7 @@
 				                    <top>282</top>
 				                    <width>220</width>
 				                    <height>22</height>
-				                    <font>font10</font> <!-- REDLIGHT_21 -->
+				                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
 				                    <textcolor>FFCCCCCC</textcolor>
 				                    <align>center</align>
 				                    <aligny>center</aligny>
@@ -568,7 +568,7 @@
 				                    <top>304</top>
 				                    <width>220</width>
 				                    <height>22</height>
-				                    <font>font10</font> <!-- REDLIGHT_21 -->
+				                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
 				                    <textcolor>FF999999</textcolor>
 				                    <align>center</align>
 				                    <aligny>center</aligny>
@@ -616,7 +616,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]Recommended $INFO[Window.Property(recommended.number)][/B]</label>
 				            <visible>!Control.HasFocus(2052)</visible>
@@ -624,7 +624,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]Recommended | [/B]$INFO[ListItem.Property(name)]$INFO[ListItem.Property(release_date), • ]$INFO[ListItem.Property(vote_average), • ]</label>
 				            <visible>Control.HasFocus(2052)</visible>
@@ -715,7 +715,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]Related $INFO[Window.Property(related.number)][/B]</label>
 				            <visible>!Control.HasFocus(2053)</visible>
@@ -723,7 +723,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]Related | [/B]$INFO[ListItem.Property(name)]$INFO[ListItem.Property(release_date), • ]$INFO[ListItem.Property(vote_average), • ]</label>
 				            <visible>Control.HasFocus(2053)</visible>
@@ -814,7 +814,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]More Like This $INFO[Window.Property(more_like_this.number)][/B]</label>
 				            <visible>!Control.HasFocus(2054)</visible>
@@ -822,7 +822,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]More Like This | [/B]$INFO[ListItem.Property(name)]$INFO[ListItem.Property(release_date), • ]$INFO[ListItem.Property(vote_average), • ]</label>
 				            <visible>Control.HasFocus(2054)</visible>
@@ -913,7 +913,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]Similar $INFO[Window.Property(ai_similar.number)][/B]</label>
 				            <visible>!Control.HasFocus(2055)</visible>
@@ -921,7 +921,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]Similar | [/B]$INFO[ListItem.Property(name)]$INFO[ListItem.Property(release_date), • ]$INFO[ListItem.Property(vote_average), • ]</label>
 				            <visible>Control.HasFocus(2055)</visible>
@@ -1012,7 +1012,7 @@
 				        <control type="label">
 				            <width max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <align>left</align>
 				            <aligny>bottom</aligny>
@@ -1038,7 +1038,7 @@
 				                    <left>20</left>
 				                    <width>540</width>
 				                    <height>308</height>
-				                    <font>font12</font> <!-- REDLIGHT_26 -->
+				                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
 				                    <align>center</align>
 				                    <aligny>top</aligny>
 				                    <textcolor>FFCCCCCC</textcolor>
@@ -1057,7 +1057,7 @@
 				                    <left>20</left>
 				                    <width>540</width>
 				                    <height>308</height>
-				                    <font>font12</font> <!-- REDLIGHT_26 -->
+				                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
 				                    <align>center</align>
 				                    <aligny>top</aligny>
 				                    <textcolor>FF1F2020</textcolor>
@@ -1104,7 +1104,7 @@
 				        <control type="label">
 				            <width max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <align>left</align>
 				            <aligny>bottom</aligny>
@@ -1130,7 +1130,7 @@
 				                    <left>20</left>
 				                    <width>540</width>
 				                    <height>308</height>
-				                    <font>font12</font> <!-- REDLIGHT_26 -->
+				                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
 				                    <align>center</align>
 				                    <aligny>top</aligny>
 				                    <textcolor>FFCCCCCC</textcolor>
@@ -1149,7 +1149,7 @@
 				                    <left>20</left>
 				                    <width>540</width>
 				                    <height>308</height>
-				                    <font>font12</font> <!-- REDLIGHT_26 -->
+				                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
 				                    <align>center</align>
 				                    <aligny>top</aligny>
 				                    <textcolor>FF1F2020</textcolor>
@@ -1196,7 +1196,7 @@
 				        <control type="label">
 				            <width max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <align>left</align>
 				            <aligny>bottom</aligny>
@@ -1222,7 +1222,7 @@
 				                    <left>20</left>
 				                    <width>540</width>
 				                    <height>308</height>
-				                    <font>font12</font> <!-- REDLIGHT_26 -->
+				                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
 				                    <align>center</align>
 				                    <aligny>top</aligny>
 				                    <textcolor>FFCCCCCC</textcolor>
@@ -1241,7 +1241,7 @@
 				                    <left>20</left>
 				                    <width>540</width>
 				                    <height>308</height>
-				                    <font>font12</font> <!-- REDLIGHT_26 -->
+				                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
 				                    <align>center</align>
 				                    <aligny>top</aligny>
 				                    <textcolor>FF1F2020</textcolor>
@@ -1288,7 +1288,7 @@
 				        <control type="label">
 				            <width max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <align>left</align>
 				            <aligny>bottom</aligny>
@@ -1314,7 +1314,7 @@
 				                    <left>20</left>
 				                    <width>540</width>
 				                    <height>308</height>
-				                    <font>font12</font> <!-- REDLIGHT_26 -->
+				                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
 				                    <align>center</align>
 				                    <aligny>top</aligny>
 				                    <textcolor>FFCCCCCC</textcolor>
@@ -1333,7 +1333,7 @@
 				                    <left>20</left>
 				                    <width>540</width>
 				                    <height>308</height>
-				                    <font>font12</font> <!-- REDLIGHT_26 -->
+				                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
 				                    <align>center</align>
 				                    <aligny>top</aligny>
 				                    <textcolor>FF1F2020</textcolor>
@@ -1380,7 +1380,7 @@
                         <control type="label">
                             <width max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- REDLIGHT_33 -->
+                            <font>font_small</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <align>left</align>
                             <aligny>bottom</aligny>
@@ -1413,7 +1413,7 @@
                                     <top>6</top>
                                     <width>224</width>
                                     <height>75</height>
-                                    <font>font12</font> <!-- REDLIGHT_26 -->
+                                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>center</aligny>
                                     <textcolor>FFCCCCCC</textcolor>
@@ -1425,7 +1425,7 @@
                                     <top>280</top>
                                     <width>224</width>
                                     <height>75</height>
-                                    <font>font12</font> <!-- REDLIGHT_26 -->
+                                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>center</aligny>
                                     <textcolor>FFCCCCCC</textcolor>
@@ -1452,7 +1452,7 @@
                                     <top>6</top>
                                     <width>224</width>
                                     <height>75</height>
-                                    <font>font12</font> <!-- REDLIGHT_26 -->
+                                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>center</aligny>
                                     <textcolor>FF1F2020</textcolor>
@@ -1464,7 +1464,7 @@
                                     <top>280</top>
                                     <width>224</width>
                                     <height>75</height>
-                                    <font>font12</font> <!-- REDLIGHT_26 -->
+                                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>center</aligny>
                                     <textcolor>FF1F2020</textcolor>
@@ -1482,7 +1482,7 @@
                         <control type="label">
                             <width max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- REDLIGHT_33 -->
+                            <font>font_small</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <align>left</align>
                             <aligny>bottom</aligny>
@@ -1522,7 +1522,7 @@
                                     <top>10</top>
                                     <width>220</width>
                                     <height>340</height>
-                                    <font>font12</font> <!-- REDLIGHT_26 -->
+                                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>center</aligny>
                                     <textcolor>FFCCCCCC</textcolor>
@@ -1567,7 +1567,7 @@
                                     <top>10</top>
                                     <width>220</width>
                                     <height>340</height>
-                                    <font>font12</font> <!-- REDLIGHT_26 -->
+                                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>center</aligny>
                                     <textcolor>FF1F2020</textcolor>
@@ -1580,7 +1580,7 @@
                                     <top>10</top>
                                     <width>220</width>
                                     <height>340</height>
-                                    <font>font12</font> <!-- REDLIGHT_26 -->
+                                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                                     <align>center</align>
                                     <aligny>center</aligny>
                                     <textcolor>FFCCCCCC</textcolor>
@@ -1637,7 +1637,7 @@
                         <control type="label">
                             <width min="30" max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- REDLIGHT_33 -->
+                            <font>font_small</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <label>[B]Videos $INFO[Window.Property(youtube_videos.number)][/B]</label>
                             <visible>!Control.HasFocus(2062)</visible>
@@ -1645,7 +1645,7 @@
                         <control type="label">
                             <width min="30" max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- REDLIGHT_33 -->
+                            <font>font_small</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <label>[B]Videos | [/B]$INFO[ListItem.Property(name)]</label>
                             <visible>Control.HasFocus(2062)</visible>
@@ -1735,7 +1735,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]More from Year $INFO[Window.Property(more_from_year.number)][/B]</label>
 				            <visible>!Control.HasFocus(2063)</visible>
@@ -1743,7 +1743,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]More from Year | [/B]$INFO[ListItem.Property(name)]$INFO[ListItem.Property(release_date), • ]$INFO[ListItem.Property(vote_average), • ]</label>
 				            <visible>Control.HasFocus(2063)</visible>
@@ -1834,7 +1834,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]More from Genres $INFO[Window.Property(more_from_genres.number)][/B]</label>
 				            <visible>!Control.HasFocus(2064)</visible>
@@ -1842,7 +1842,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]More from Genres | [/B]$INFO[ListItem.Property(name)]$INFO[ListItem.Property(release_date), • ]$INFO[ListItem.Property(vote_average), • ]</label>
 				            <visible>Control.HasFocus(2064)</visible>
@@ -1933,7 +1933,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]More from Networks $INFO[Window.Property(more_from_networks.number)][/B]</label>
 				            <visible>!Control.HasFocus(2065)</visible>
@@ -1941,7 +1941,7 @@
 				        <control type="label">
 				            <width min="30" max="1160">auto</width>
 				            <height>20</height>
-				            <font>font14</font> <!-- REDLIGHT_33 -->
+				            <font>font_small</font> <!-- REDLIGHT_33 -->
 				            <textcolor>FFCCCCCC</textcolor>
 				            <label>[B]More from Networks | [/B]$INFO[ListItem.Property(name)]$INFO[ListItem.Property(release_date), • ]$INFO[ListItem.Property(vote_average), • ]</label>
 				            <visible>Control.HasFocus(2065)</visible>
@@ -2032,7 +2032,7 @@
                         <control type="label">
                             <width min="30" max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- REDLIGHT_33 -->
+                            <font>font_small</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <label>[B]$INFO[Window.Property(more_from_collection.name)] $INFO[Window.Property(more_from_collection.number)][/B]</label>
                             <visible>!Control.HasFocus(2066)</visible>
@@ -2040,7 +2040,7 @@
                         <control type="label">
                             <width min="30" max="1160">auto</width>
                             <height>20</height>
-                            <font>font14</font> <!-- REDLIGHT_33 -->
+                            <font>font_small</font> <!-- REDLIGHT_33 -->
                             <textcolor>FFCCCCCC</textcolor>
                             <label>[B]$INFO[Window.Property(more_from_collection.name)] | [/B]$INFO[ListItem.Property(name)]$INFO[ListItem.Property(release_date), • ]$INFO[ListItem.Property(vote_average), • ]</label>
                             <visible>Control.HasFocus(2066)</visible>
@@ -2072,7 +2072,7 @@
                                 <top>6</top>
                                 <width>218</width>
                                 <height>348</height>
-                                <font>font12</font> <!-- REDLIGHT_26 -->
+                                <font>font_tiny</font> <!-- REDLIGHT_26 -->
                                 <align>center</align>
                                 <aligny>center</aligny>
                                 <textcolor>FFCCCCCC</textcolor>

@@ -9,7 +9,7 @@ from caches.providers_cache import ExternalProvidersCache
 from indexers.metadata import movie_meta, tvshow_meta, season_episodes_meta, get_title
 from modules.debrid import debrid_enabled, debrid_type_enabled, Source, DebridCheck
 from modules import player, kodi_utils, settings, source_utils
-from modules.utils import manual_function_import, get_datetime, safe_string, string_to_float
+from modules.utils import get_datetime, safe_string, string_to_float
 # from modules.kodi_utils import logger
 
 POVPlayer, progressDialogBG, notification = player.POVPlayer, kodi_utils.progressDialogBG, kodi_utils.notification
@@ -27,8 +27,7 @@ total_format, int_format, ext_format = '[COLOR %s][B]%s[/B][/COLOR]', '[COLOR %s
 ext_scr_format, unfinshed_import_format, format_line = '[COLOR %s][B]%s[/B][/COLOR]', '[COLOR red]+%s[/COLOR]', '%s[CR]%s[CR]%s'
 diag_format, resolutions, pack_display = '4K: %s | 1080p: %s | 720p: %s | SD: %s | Total: %s', '4K 1080p 720p SD total', '%s (%s)'
 dialog_format = '[COLOR %s][B]%s[/B][/COLOR] 4K: %s | 1080p: %s | 720p: %s | SD: %s | Total: %s'
-remaining_format, season_str, show_str, nores_str = ls(32676), ls(32537), ls(32089), ls(32760)
-season_display, show_display = ls(32537), ls(32089)
+season_display, show_display, remaining_format, debrid_format = ls(32537), ls(32536), ls(32580), ls(32579)
 pack_check = (season_display, show_display)
 
 class Sources:
@@ -72,7 +71,8 @@ class Sources:
 	def source_select(self, params=None):
 		if self.clear_properties: self._clear_properties()
 		self.config_loader.apply(self, params)
-		if not hasattr(self, 'meta'): self.meta = self.meta_builder.get(self)
+		if not hasattr(self, 'meta'):
+			self.meta = self.meta_builder.build(self)
 		results = self.get_sources()
 		if not results: return self._process_post_results()
 		self.play_source(results)
@@ -101,11 +101,7 @@ class Sources:
 		self.scraper_processor.activate_external()
 		if self.external_providers or self.background:
 			if self.active_external:
-				args = (
-					self.meta, self.external_providers, self.debrid_torrent_enabled, # self.internal_scraper_names,
-					self.threads, self.prescrape_sources, self.progress_dialog, self.disabled_ignored
-				)
-				self.activate_providers('external', (ExternalManager, args), False)
+				self.activate_providers('external', (ExternalManager, self), False)
 			elif self.providers and self.background: [i.join() for i in self.threads]
 		else: self.scrapers_dialog('internal')
 		return self.sources
@@ -122,7 +118,7 @@ class Sources:
 		return self.prescrape_sources
 
 	def activate_providers(self, module_type, function, prescrape):
-		if module_type == 'external': module = function[0](*function[1])
+		if module_type == 'external': module = function[0](function[1])
 		else: module = function()
 		sources = module.results(self.meta['search_info'])
 		if not sources: return
@@ -131,9 +127,10 @@ class Sources:
 
 	def scrapers_dialog(self, scrape_type):
 		if scrape_type == 'internal':
-			scraper_list, _threads, line1_inst, line2_inst = self.providers, self.threads, ls(32096), 'Int:'
+			scraper_list, threads_list = self.providers, self.threads
+			line1_inst, line2_inst = ls(32117), 'Int:'
 		else:
-			scraper_list, _threads = self.prescrape_scrapers, self.prescrape_threads,
+			scraper_list, threads_list = self.prescrape_scrapers, self.prescrape_threads
 			line1_inst, line2_inst = '%s %s' % (ls(32829), ls(32830)), 'Pre:'
 		self.internal_scrapers = [i[2] for i in scraper_list]
 		if not self.internal_scrapers: return
@@ -147,9 +144,9 @@ class Sources:
 		else: progressDialogBG.create('POV', 'POV loading...')
 		while not monitor.abortRequested() and time.monotonic() <= end_time:
 			try:
-				alive_threads = [x.name for x in _threads if x.is_alive()]
+				alive_threads = [x.name for x in threads_list if x.is_alive()]
 				if not alive_threads: break
-				self.scraper_processor.process_internal_results()
+				self.results_processor.process_internal_results()
 				int_totals = [_total_format % v for v in self.internal_resolutions.values()]
 				current_progress = time.monotonic() - start_time
 				line2 = dialog_format % (int_dialog_hl, line2_inst, *int_totals)
@@ -180,7 +177,7 @@ class Sources:
 	def _no_results(self):
 		hide_busy_dialog()
 		if self.background: return
-		notification(nores_str)
+		notification(32573)
 
 	def _clear_properties(self):
 		for item in default_internal_scrapers: clear_property('%s.internal_results' % item)
@@ -336,7 +333,7 @@ class DialogProgress:
 		self.dialog_progress = None
 
 class MetaBuilder:
-	def get(self, source):
+	def build(self, source):
 		if 'meta' in source.params: meta = json.loads(source.params['meta'])
 		else: meta = self.get_meta(source)
 		for i in ('custom_title', 'custom_year', 'custom_season', 'custom_episode'):
@@ -347,16 +344,17 @@ class MetaBuilder:
 		year = self.get_search_year(source, meta)
 		ep_name = self.get_ep_name(meta)
 		search_info = {
-			'scrape_timeout': source.timeout, 'mediatype': source.mediatype, 'expiry_times': expiry_times,
-			'tmdb_id': source.tmdb_id, 'imdb_id': meta.get('imdb_id'), 'tvdb_id': meta.get('tvdb_id'),
+			'scrape_timeout': source.timeout, 'expiry_times': expiry_times,
+			'mediatype': source.mediatype, 'imdb_id': meta.get('imdb_id'),
+			'tmdb_id': source.tmdb_id, 'tvdb_id': meta.get('tvdb_id'),
 			'title': title, 'aliases': aliases, 'year': year, 'ep_name': ep_name,
 			'total_seasons': meta.get('total_seasons', ''),
 			'season': source.custom_season or source.season,
 			'episode': source.custom_episode or source.episode,
 		}
 		meta.update({
-			'search_info': search_info, 'background': source.background,
-			'mediatype': source.mediatype, 'season': source.season, 'episode': source.episode
+			'search_info': search_info, 'mediatype': source.mediatype,
+			'season': source.season, 'episode': source.episode
 		})
 		return meta
 
@@ -435,7 +433,7 @@ class ScraperProcessor:
 		if not self.source.debrid_torrent_enabled:
 			self.source.progress_dialog.kill()
 			self.source.active_external = False
-			return notification(32854) if ''.join(self.source.active_internal_scrapers) == 'external' else None
+			return notification(32130) if ''.join(self.source.active_internal_scrapers) == 'external' else None
 #		if not self.source.debrid_torrent_enabled: self.source.exclude_list.extend(scraper_names('torrents'))
 		external_providers = magneto_sources(ret_all=self.source.disabled_ignored)
 		self.source.external_providers.extend([
@@ -448,9 +446,13 @@ class ScraperProcessor:
 		if not season_packs: return
 		pack_capable = [i for i in self.source.external_providers if i[1].pack_capable]
 		if pack_capable:
-			self.source.external_providers.extend([(i[0], i[1], season_str) for i in pack_capable])
+			self.source.external_providers.extend([(i[0], i[1], season_display) for i in pack_capable])
 		if pack_capable and show_packs:
-			self.source.external_providers.extend([(i[0], i[1], show_str) for i in pack_capable])
+			self.source.external_providers.extend([(i[0], i[1], show_display) for i in pack_capable])
+
+class ResultsProcessor:
+	def __init__(self, source_instance):
+		self.source = source_instance
 
 	def process_internal_results(self):
 		for i in self.source.internal_scrapers:
@@ -461,10 +463,6 @@ class ScraperProcessor:
 			set_property('%s.internal_results' % i, 'checked')
 			for k in self.source.internal_resolutions:
 				self.source.internal_resolutions[k] += sources.get(k, 0)
-
-class ResultsProcessor:
-	def __init__(self, source_instance):
-		self.source = source_instance
 
 	def process(self, results):
 		if self.source.prescrape: self.source.all_scrapers = self.source.active_internal_scrapers
@@ -597,22 +595,18 @@ class ExternalManager:
 			return result
 		return wrapper
 
-	def __init__(
-		self, meta, source_dict, debrid_torrents, internal_scrapers,
-		prescrape_sources, progress_dialog, disabled_ignored=False
-	):
-		self.meta, self.background = meta, meta.get('background', False)
-		self.source_dict, self.debrid_torrents = source_dict, debrid_torrents
-		self.internal_scrapers, self.prescrape_sources = internal_scrapers, prescrape_sources
-		self.disabled_ignored, self.progress_dialog = disabled_ignored, progress_dialog
+	def __init__(self, source_instance):
+		self.meta, self.background = source_instance.meta, source_instance.background
+		self.external_providers, self.debrid_torrents = source_instance.external_providers, source_instance.debrid_torrent_enabled
+		self.internal_scrapers, self.prescrape_sources = source_instance.threads, source_instance.prescrape_sources
+		self.progress_dialog, self.disabled_ignored = source_instance.progress_dialog, source_instance.disabled_ignored
+		self.sleep_time, self.timeout = source_instance.sleep_time, source_instance.timeout
 		self.internal_activated = len(self.internal_scrapers) > 0
 		self.internal_prescraped = len(self.prescrape_sources) > 0
 		self.processed_prescrape = False
 		self.processed_internal_scrapers = []
 		self.processed_internal_scrapers_append = self.processed_internal_scrapers.append
 		self.hostDict, self.sources, self.final_sources = [], [], []
-		self.sleep_time = settings.display_sleep_time()
-		self.timeout = int(self.meta.get('search_info', {}).get('scrape_timeout', '10'))
 		self.int_dialog_highlight = get_setting('int_dialog_highlight', 'dodgerblue')
 		self.ext_dialog_highlight = get_setting('ext_dialog_highlight', 'magenta')
 		self.int_total = total_format % (self.int_dialog_highlight, '%s')
@@ -622,16 +616,16 @@ class ExternalManager:
 
 	@dialog_hook
 	def results(self, info):
-		tpe = TPE(max(1, len(self.source_dict), len(self.debrid_torrents)))
+		tpe = TPE(max(1, len(self.external_providers), len(self.debrid_torrents)))
 		try:
 			threads = set()
 			total_results = []
-			for provider, module, *pack in self.source_dict:
+			for provider, module, *pack in self.external_providers:
 				args = (provider, module, *pack) if pack else (provider, module)
 				fut = tpe.submit(ExternalSource(self.meta, self.resolutions).results, info, args)
 				fut.name = pack_display % (provider, *pack) if pack and pack[0] else provider
 				threads.add(fut)
-			self.thread_monitor(threads, ls(32676), False)
+			self.thread_monitor(threads, remaining_format, False)
 			threads = [i for i in threads if i.done() and not i.exception()]
 			for fut in as_completed(threads): total_results.extend(fut.result())
 			self.sources.extend(self.process_duplicates(total_results))
@@ -643,7 +637,7 @@ class ExternalManager:
 				fut = tpe.submit(DebridCheck(self.meta, item).cache_check)
 				fut.name = item
 				threads.add(fut)
-			self.thread_monitor(threads, ls(32579), True)
+			self.thread_monitor(threads, debrid_format, True)
 			threads = [i for i in threads if i.done() and not i.exception()]
 			for name, hashes in ((fut.name, fut.result()) for fut in threads):
 				if name in ('realdebrid', 'alldebrid'): uncached = '%s %s' % ('Unchecked', name)

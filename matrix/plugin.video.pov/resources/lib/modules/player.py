@@ -13,7 +13,7 @@ ls, get_setting = kodi_utils.local_string, kodi_utils.get_setting
 get_art_provider, meta_user_info = settings.get_art_provider, settings.metadata_user_info
 fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
-resumept_str, resume_str, start_str = ls(32790), ls(32832), ls(32833)
+resumept_str, resume_str, start_str = ls(32831), ls(32832), ls(32833)
 
 class MediaPlayer(kodi_utils.xbmc_player):
 	def __init__(self):
@@ -33,7 +33,7 @@ class MediaPlayer(kodi_utils.xbmc_player):
 class POVPlayer(MediaPlayer):
 	def __init__(self):
 		MediaPlayer.__init__(self)
-		self.set_resume, self.set_watched = 5, 90
+		self.set_resume, self.set_watched = 5, 80
 		self.media_marked, self.nextep_info_gathered = False, False
 		self.subs_searched, self.stingers_checked = False, False
 		self.nextep_started, self.play_random_continual = False, False

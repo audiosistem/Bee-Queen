@@ -5,7 +5,8 @@ from caches import BaseCache, maincache_db, get_property, set_property, clear_pr
 BASE_GET = 'SELECT data, expires FROM maincache WHERE id = ? AND expires > ?'
 BASE_SET = 'INSERT OR REPLACE INTO maincache VALUES (?, ?, ?)'
 BASE_DELETE = 'DELETE FROM maincache WHERE id = ?'
-LIKE_SELECT, LIKE_SELECT_ADD = 'SELECT id FROM maincache WHERE %s', 'id LIKE ?'
+LIKE_SELECT = 'SELECT id FROM maincache WHERE %s'
+LIKE_SELECT_ADD = 'id LIKE ?'
 
 class MainCache(BaseCache):
 	db_file = maincache_db
@@ -29,14 +30,13 @@ class MainCache(BaseCache):
 	def get_memory_cache(self, string, current_time):
 		cache_data = get_property(string)
 		if not cache_data: return None
-		cache_data = self.jsloads(cache_data)
-		if cache_data[0] < current_time: return None
-		return cache_data[1]
+		expiry, result = self.jsloads(cache_data)
+		if expiry < current_time: return None
+		return result
 
 	def set_memory_cache(self, data, string, expires):
 		cache_data = (expires, data)
-		cache_data = self.jsdumps(cache_data)
-		set_property(string, cache_data)
+		set_property(string, self.jsdumps(cache_data))
 
 	def delete(self, string, dbcon=None):
 		self.dbcur.execute(BASE_DELETE, (string,))

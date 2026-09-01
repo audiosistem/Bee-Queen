@@ -37,7 +37,7 @@
                 <top>22</top>
                 <width max="650">auto</width>
                 <height>20</height>
-                <font>font10</font> <!-- REDLIGHT_21 -->
+                <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                 <textcolor>FFFFFFFF</textcolor>
                 <align>left</align>
                 <aligny>center</aligny>
@@ -48,7 +48,7 @@
                 <top>22</top>
                 <width>1170</width>
                 <height>20</height>
-                <font>font10</font> <!-- REDLIGHT_21 -->
+                <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                 <textcolor>FFFFFFFF</textcolor>
                 <align>right</align>
                 <aligny>center</aligny>
@@ -79,7 +79,7 @@
                     <left>355</left>
                     <width max="1210">auto</width>
                     <height>30</height>
-                    <font>font60</font> <!-- REDLIGHT_60_BOLD -->
+                    <font>font_title_large</font> <!-- REDLIGHT_60_BOLD -->
                     <textcolor>FFCCCCCC</textcolor>
                     <align>center</align>
                     <aligny>top</aligny>
@@ -123,7 +123,7 @@
                             <left>20</left>
                             <visible>String.IsEmpty(ListItem.Property(perform_full_search))</visible>
                             <control type="label">
-                                <font>font14</font> <!-- REDLIGHT_33 -->
+                                <font>font_small</font> <!-- REDLIGHT_33 -->
                                 <align>left</align>
                                 <aligny>bottom</aligny>
                                 <label>[COLOR $INFO[ListItem.Property(highlight)]][B]$INFO[ListItem.Property(quality)][/B][/COLOR]</label>
@@ -131,7 +131,7 @@
                             </control>
                             <control type="label">
                                 <top>35</top>
-                                <font>font10</font> <!-- REDLIGHT_21 -->
+                                <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                 <align>left</align>
                                 <aligny>top</aligny>
                                 <label>[COLOR $INFO[ListItem.Property(highlight)]][B]$INFO[ListItem.Property(provider)][/B][/COLOR]</label>
@@ -145,7 +145,7 @@
                                 <left>210</left>
                                 <width max="950">auto</width>
                                 <height>12</height>
-                                <font>font10</font> <!-- REDLIGHT_21 -->
+                                <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
@@ -157,7 +157,7 @@
                                 <left>210</left>
                                 <width max="950">auto</width>
                                 <height>12</height>
-                                <font>font10</font> <!-- REDLIGHT_21 -->
+                                <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
@@ -169,7 +169,7 @@
                                 <left>210</left>
                                 <width max="950">auto</width>
                                 <height>12</height>
-                                <font>font10</font> <!-- REDLIGHT_21 -->
+                                <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
@@ -193,7 +193,7 @@
                                 <left>230</left>
                                 <width max="860">auto</width>
                                 <height>40</height>
-                                <font>font14</font> <!-- REDLIGHT_33 -->
+                                <font>font_small</font> <!-- REDLIGHT_33 -->
                                 <textcolor>FF9c9a9b</textcolor>
                                 <align>center</align>
                                 <aligny>center</aligny>
@@ -226,7 +226,7 @@
                                     <top>35</top>
                                     <left>20</left>
                                     <control type="label">
-                                        <font>font14</font> <!-- REDLIGHT_33 -->
+                                        <font>font_small</font> <!-- REDLIGHT_33 -->
                                         <textcolor>FF1F2020</textcolor>
                                         <align>left</align>
                                         <aligny>bottom</aligny>
@@ -234,7 +234,7 @@
                                     </control>
                                     <control type="label">
                                         <top>35</top>
-                                        <font>font10</font> <!-- REDLIGHT_21 -->
+                                        <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                         <textcolor>FF1F2020</textcolor>
                                         <align>left</align>
                                         <aligny>top</aligny>
@@ -246,7 +246,7 @@
                                     <left>210</left>
                                     <width max="950">auto</width>
                                     <height>12</height>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <textcolor>FF1F2020</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -258,7 +258,7 @@
                                     <left>210</left>
                                     <width max="950">auto</width>
                                     <height>12</height>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <textcolor>FF1F2020</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -270,7 +270,7 @@
                                     <left>210</left>
                                     <width max="950">auto</width>
                                     <height>12</height>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <textcolor>FF1F2020</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -286,7 +286,7 @@
                                     <top>35</top>
                                     <left>20</left>
                                     <control type="label">
-                                        <font>font14</font> <!-- REDLIGHT_33 -->
+                                        <font>font_small</font> <!-- REDLIGHT_33 -->
                                         <textcolor>FFFFFFFF</textcolor>
                                         <align>left</align>
                                         <aligny>bottom</aligny>
@@ -294,7 +294,7 @@
                                     </control>
                                     <control type="label">
                                         <top>35</top>
-                                        <font>font10</font> <!-- REDLIGHT_21 -->
+                                        <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                         <textcolor>FFFFFFFF</textcolor>
                                         <align>left</align>
                                         <aligny>top</aligny>
@@ -306,7 +306,7 @@
                                     <left>210</left>
                                     <width max="950">auto</width>
                                     <height>12</height>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <textcolor>FFFFFFFF</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -318,7 +318,7 @@
                                     <left>210</left>
                                     <width max="950">auto</width>
                                     <height>12</height>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <textcolor>FFFFFFFF</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -330,7 +330,7 @@
                                     <left>210</left>
                                     <width max="950">auto</width>
                                     <height>12</height>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <textcolor>FFFFFFFF</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -354,7 +354,7 @@
                                     <left>210</left>
                                     <width max="860">auto</width>
                                     <height>40</height>
-                                    <font>font14</font> <!-- REDLIGHT_33 -->
+                                    <font>font_small</font> <!-- REDLIGHT_33 -->
                                     <textcolor>FF1F2020</textcolor>
                                     <align>center</align>
                                     <aligny>center</aligny>
@@ -419,7 +419,7 @@
                     <left>355</left>
                     <width max="1210">auto</width>
                     <height>30</height>
-                    <font>font60</font> <!-- REDLIGHT_60_BOLD -->
+                    <font>font_title_large</font> <!-- REDLIGHT_60_BOLD -->
                     <textcolor>FFCCCCCC</textcolor>
                     <align>center</align>
                     <aligny>bottom</aligny>
@@ -454,7 +454,7 @@
                                 <top>35</top>
                                 <left>20</left>
                                 <control type="label">
-                                    <font>font14</font> <!-- REDLIGHT_33 -->
+                                    <font>font_small</font> <!-- REDLIGHT_33 -->
                                     <align>left</align>
                                     <aligny>bottom</aligny>
                                     <label>[COLOR $INFO[ListItem.Property(highlight)]][B]$INFO[ListItem.Property(quality)][/B][/COLOR]</label>
@@ -462,7 +462,7 @@
                                 </control>
                                 <control type="label">
                                     <top>35</top>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <align>left</align>
                                     <aligny>top</aligny>
                                     <label>[COLOR $INFO[ListItem.Property(highlight)]][B]$INFO[ListItem.Property(provider)][/B][/COLOR]</label>
@@ -474,7 +474,7 @@
                                 <left>185</left>
                                 <width max="725">auto</width>
                                 <height>12</height>
-                                <font>font10</font> <!-- REDLIGHT_21 -->
+                                <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
@@ -486,7 +486,7 @@
                                 <left>185</left>
                                 <width max="725">auto</width>
                                 <height>12</height>
-                                <font>font10</font> <!-- REDLIGHT_21 -->
+                                <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
@@ -498,7 +498,7 @@
                                 <left>185</left>
                                 <width max="725">auto</width>
                                 <height>12</height>
-                                <font>font10</font> <!-- REDLIGHT_21 -->
+                                <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
@@ -522,7 +522,7 @@
                                 <left>40</left>
                                 <width max="860">auto</width>
                                 <height>40</height>
-                                <font>font14</font> <!-- REDLIGHT_33 -->
+                                <font>font_small</font> <!-- REDLIGHT_33 -->
                                 <textcolor>FF9c9a9b</textcolor>
                                 <align>center</align>
                                 <aligny>center</aligny>
@@ -555,7 +555,7 @@
                                     <top>35</top>
                                     <left>20</left>
                                     <control type="label">
-                                        <font>font14</font> <!-- REDLIGHT_33 -->
+                                        <font>font_small</font> <!-- REDLIGHT_33 -->
                                         <textcolor>FF1F2020</textcolor>
                                         <align>left</align>
                                         <aligny>bottom</aligny>
@@ -563,7 +563,7 @@
                                     </control>
                                     <control type="label">
                                         <top>35</top>
-                                        <font>font10</font> <!-- REDLIGHT_21 -->
+                                        <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                         <textcolor>FF1F2020</textcolor>
                                         <align>left</align>
                                         <aligny>top</aligny>
@@ -575,7 +575,7 @@
                                     <left>185</left>
                                     <width max="725">auto</width>
                                     <height>12</height>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <textcolor>FF1F2020</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -587,7 +587,7 @@
                                     <left>185</left>
                                     <width max="725">auto</width>
                                     <height>12</height>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <textcolor>FF1F2020</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -599,7 +599,7 @@
                                     <left>185</left>
                                     <width max="725">auto</width>
                                     <height>12</height>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <textcolor>FF1F2020</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -615,7 +615,7 @@
                                     <top>35</top>
                                     <left>20</left>
                                     <control type="label">
-                                        <font>font14</font> <!-- REDLIGHT_33 -->
+                                        <font>font_small</font> <!-- REDLIGHT_33 -->
                                         <textcolor>FFFFFFFF</textcolor>
                                         <align>left</align>
                                         <aligny>bottom</aligny>
@@ -623,7 +623,7 @@
                                     </control>
                                     <control type="label">
                                         <top>35</top>
-                                        <font>font10</font> <!-- REDLIGHT_21 -->
+                                        <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                         <textcolor>FFFFFFFF</textcolor>
                                         <align>left</align>
                                         <aligny>top</aligny>
@@ -635,7 +635,7 @@
                                     <left>185</left>
                                     <width max="725">auto</width>
                                     <height>12</height>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <textcolor>FFFFFFFF</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -647,7 +647,7 @@
                                     <left>185</left>
                                     <width max="725">auto</width>
                                     <height>12</height>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <textcolor>FFFFFFFF</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -659,7 +659,7 @@
                                     <left>185</left>
                                     <width max="725">auto</width>
                                     <height>12</height>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <textcolor>FFFFFFFF</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -683,7 +683,7 @@
                                     <left>40</left>
                                     <width max="860">auto</width>
                                     <height>40</height>
-                                    <font>font14</font> <!-- REDLIGHT_33 -->
+                                    <font>font_small</font> <!-- REDLIGHT_33 -->
                                     <textcolor>FF1F2020</textcolor>
                                     <align>center</align>
                                     <aligny>center</aligny>
@@ -750,7 +750,7 @@
                     <left>355</left>
                     <width max="1210">auto</width>
                     <height>30</height>
-                    <font>font60</font> <!-- REDLIGHT_60_BOLD -->
+                    <font>font_title_large</font> <!-- REDLIGHT_60_BOLD -->
                     <textcolor>FFCCCCCC</textcolor>
                     <align>center</align>
                     <aligny>top</aligny>
@@ -787,7 +787,7 @@
                                 <top>35</top>
                                 <left>20</left>
                                 <control type="label">
-                                    <font>font14</font> <!-- REDLIGHT_33 -->
+                                    <font>font_small</font> <!-- REDLIGHT_33 -->
                                     <align>left</align>
                                     <aligny>bottom</aligny>
                                     <label>[COLOR $INFO[ListItem.Property(highlight)]][B]$INFO[ListItem.Property(quality)][/B][/COLOR]</label>
@@ -795,7 +795,7 @@
                                 </control>
                                 <control type="label">
                                     <top>35</top>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <align>left</align>
                                     <aligny>top</aligny>
                                     <label>[COLOR $INFO[ListItem.Property(highlight)]][B]$INFO[ListItem.Property(provider)][/B][/COLOR]</label>
@@ -807,7 +807,7 @@
                                 <left>210</left>
                                 <width max="1460">auto</width>
                                 <height>12</height>
-                                <font>font10</font> <!-- REDLIGHT_21 -->
+                                <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
@@ -819,7 +819,7 @@
                                 <left>210</left>
                                 <width max="1460">auto</width>
                                 <height>12</height>
-                                <font>font12</font> <!-- REDLIGHT_26 -->
+                                <font>font_tiny</font> <!-- REDLIGHT_26 -->
                                 <textcolor>FFCCCCCC</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
@@ -843,7 +843,7 @@
                                 <left>600</left>
                                 <width max="1460">auto</width>
                                 <height>40</height>
-                                <font>font14</font> <!-- REDLIGHT_33 -->
+                                <font>font_small</font> <!-- REDLIGHT_33 -->
                                 <textcolor>FF9c9a9b</textcolor>
                                 <align>left</align>
                                 <aligny>center</aligny>
@@ -875,7 +875,7 @@
                                     <top>35</top>
                                     <left>20</left>
                                     <control type="label">
-                                        <font>font14</font> <!-- REDLIGHT_33 -->
+                                        <font>font_small</font> <!-- REDLIGHT_33 -->
                                         <textcolor>FF1F2020</textcolor>
                                         <align>left</align>
                                         <aligny>bottom</aligny>
@@ -883,7 +883,7 @@
                                     </control>
                                     <control type="label">
                                         <top>35</top>
-                                        <font>font10</font> <!-- REDLIGHT_21 -->
+                                        <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                         <textcolor>FF1F2020</textcolor>
                                         <align>left</align>
                                         <aligny>top</aligny>
@@ -895,7 +895,7 @@
                                     <left>210</left>
                                     <width max="1460">auto</width>
                                     <height>12</height>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <textcolor>FF1F2020</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -907,7 +907,7 @@
                                     <left>210</left>
                                     <width max="1460">auto</width>
                                     <height>12</height>
-                                    <font>font12</font> <!-- REDLIGHT_26 -->
+                                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                                     <textcolor>FF1F2020</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -923,7 +923,7 @@
                                     <top>35</top>
                                     <left>20</left>
                                     <control type="label">
-                                        <font>font14</font> <!-- REDLIGHT_33 -->
+                                        <font>font_small</font> <!-- REDLIGHT_33 -->
                                         <textcolor>FFFFFFFF</textcolor>
                                         <align>left</align>
                                         <aligny>bottom</aligny>
@@ -931,7 +931,7 @@
                                     </control>
                                     <control type="label">
                                         <top>35</top>
-                                        <font>font10</font> <!-- REDLIGHT_21 -->
+                                        <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                         <textcolor>FFFFFFFF</textcolor>
                                         <align>left</align>
                                         <aligny>top</aligny>
@@ -943,7 +943,7 @@
                                     <left>210</left>
                                     <width max="1460">auto</width>
                                     <height>12</height>
-                                    <font>font10</font> <!-- REDLIGHT_21 -->
+                                    <font>font_statusbar</font> <!-- REDLIGHT_21 -->
                                     <textcolor>FFFFFFFF</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -955,7 +955,7 @@
                                     <left>210</left>
                                     <width max="1460">auto</width>
                                     <height>12</height>
-                                    <font>font12</font> <!-- REDLIGHT_26 -->
+                                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
                                     <textcolor>FFFFFFFF</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -979,7 +979,7 @@
                                     <left>600</left>
                                     <width max="1460">auto</width>
                                     <height>40</height>
-                                    <font>font14</font> <!-- REDLIGHT_33 -->
+                                    <font>font_small</font> <!-- REDLIGHT_33 -->
                                     <textcolor>FF1F2020</textcolor>
                                     <align>left</align>
                                     <aligny>center</aligny>
@@ -1053,7 +1053,7 @@
                 <top>10</top>
                 <left>110</left>
                 <height>20</height>
-                <font>font12</font> <!-- REDLIGHT_26 -->
+                <font>font_tiny</font> <!-- REDLIGHT_26 -->
                 <textcolor>FFCCCCCC</textcolor>
                 <shadowcolor>FF000000</shadowcolor>
                 <align>center</align>
@@ -1097,7 +1097,7 @@
                         <left>70</left>
                         <top>45</top>
                         <height>5</height>
-                        <font>font12</font> <!-- REDLIGHT_26 -->
+                        <font>font_tiny</font> <!-- REDLIGHT_26 -->
                         <textcolor>FFCCCCCC</textcolor>
                         <aligny>center</aligny>
                         <label>[UPPERCASE]$INFO[ListItem.Property(label)][/UPPERCASE]</label>
@@ -1114,7 +1114,7 @@
                         <top>45</top>
                         <height>5</height>
                         <width max="610">auto</width>
-                        <font>font12</font> <!-- REDLIGHT_26 -->
+                        <font>font_tiny</font> <!-- REDLIGHT_26 -->
                         <textcolor>FF1F2020</textcolor>
                         <aligny>center</aligny>
                         <label>[UPPERCASE]$INFO[ListItem.Property(label)][/UPPERCASE]</label>

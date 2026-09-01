@@ -14,8 +14,8 @@ item_jump = kodi_utils.media_path('item_jump.png')
 item_next = kodi_utils.media_path('item_next.png')
 watched_str, unwatched_str, favmanager_str, play_str = ls(32642), ls(32643), ls(32197), '[B]%s...[/B]' % ls(32174)
 extras_str, options_str, exit_str, clearprog_str = ls(32645), ls(32646), ls(32649), ls(32651)
-nextpage_str, switchjump_str, jumpto_str = ls(32799), ls(32784), ls(32964)
-traktmanager_str, mdblmanager_str, tmdbmanager_str = ls(32198), ls(32200), '[B]TMDb Lists Manager[/B]'
+traktmanager_str, mdblmanager_str, tmdbmanager_str = ls(32198), ls(32200), ls(32199)
+nextpage_str, jumpto_str = ls(32799), ls(32800)
 
 class Movies:
 	def __init__(self, params):

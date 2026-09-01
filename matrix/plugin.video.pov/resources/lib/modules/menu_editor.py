@@ -140,7 +140,7 @@ class MenuEditor:
 		default, edited = navigator_cache.get_main_lists(active_list)
 		list_type = 'edited' if edited else'default'
 		current_list = edited or default
-		if default == new_contents: return kodi_utils.notification(32983, 1500)
+		if default == new_contents: return kodi_utils.notification(32726, 1500)
 		new_entry = [i for i in new_contents if i not in default][0]
 		new_entry_translated_name = ls(new_entry.get('name'))
 		if not kodi_utils.confirm_dialog(text='%s[CR]%s' % (ls(32727) % new_entry_translated_name, ls(32728))): return _notify_cancelled()
