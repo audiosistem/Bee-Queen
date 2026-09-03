@@ -8,6 +8,7 @@ from modules.settings import debrid_cache_check, external_module_display_name
 from modules.utils import TaskPool
 from modules.source_utils import source_filters
 from modules.settings import provider_sort_ranks, avoid_episode_spoilers, show_loading_plot, max_threads
+from modules.native_torrents import NATIVE_INDEXER_SCRAPERS, NATIVE_TORRENT_SCRAPERS
 from modules.kodi_utils import get_icon, kodi_dialog, hide_busy_dialog, show_busy_dialog, close_dialog, addon_fanart, select_dialog, ok_dialog, notification, clear_property
 
 def _highlight_with_alpha(color, alpha):
@@ -265,6 +266,7 @@ class SourcesResults(BaseDialog):
 				listitem = self.make_listitem()
 				set_properties = listitem.setProperties
 				scrape_provider, source, quality, name = get('scrape_provider'), get('source'), get('quality', 'SD'), get('display_name')
+				source_site_label = 'Indexer' if scrape_provider in NATIVE_INDEXER_SCRAPERS else 'Site'
 				basic_quality, quality_icon = self.get_quality_and_path(quality.lower())
 				pack = get('package', 'false') in ('true', 'show', 'season')
 				extraInfo = get('extraInfo', '')
@@ -272,7 +274,7 @@ class SourcesResults(BaseDialog):
 				if pack: extraInfo = '[B]%s PACK[/B] | %s' % (get('package'), extraInfo)
 				if self.episode_group_label: extraInfo = '%s | %s' % (self.episode_group_label, extraInfo)
 				if not extraInfo: extraInfo = 'N/A'
-				if scrape_provider == 'external':
+				if scrape_provider == 'external' or scrape_provider in NATIVE_TORRENT_SCRAPERS:
 					source_site = get('provider').upper()
 					provider = get('debrid', source_site).replace('.me', '').upper()
 					provider_lower = provider.lower()
@@ -332,6 +334,11 @@ class SourcesResults(BaseDialog):
 						scraper_module_label = 'Scraper'
 						scraper_suffix = '     [COLOR %s][B]Scraper: [/B][/COLOR]%s' % (item_highlight, scraper_module.upper())
 						scraper_suffix_tint = '     [COLOR FFA8A8A8][B]Scraper: [/B][/COLOR][COLOR FFFFFFFF]%s[/COLOR]' % scraper_module.upper()
+				elif scrape_provider in NATIVE_TORRENT_SCRAPERS:
+					scraper_module = 'Internal'
+					scraper_module_label = 'Scraper'
+					scraper_suffix = '     [COLOR %s][B]Scraper: [/B][/COLOR]%s' % (item_highlight, scraper_module.upper())
+					scraper_suffix_tint = '     [COLOR FFA8A8A8][B]Scraper: [/B][/COLOR][COLOR FFFFFFFF]%s[/COLOR]' % scraper_module.upper()
 				elif scrape_provider == 'aiostreams':
 					scraper_module = get('aio_release_group') or ''
 					if scraper_module:
@@ -344,7 +351,7 @@ class SourcesResults(BaseDialog):
 						scraper_module_label = 'Site'
 						scraper_suffix = '     [COLOR %s][B]Site: [/B][/COLOR]%s' % (item_highlight, scraper_module.upper())
 						scraper_suffix_tint = '     [COLOR FFA8A8A8][B]Site: [/B][/COLOR][COLOR FFFFFFFF]%s[/COLOR]' % scraper_module.upper()
-				set_properties({'name': name.upper(), 'source_site': source_site, 'provider_icon': provider_icon, 'quality_icon': quality_icon, 'count': '%02d.' % count,
+				set_properties({'name': name.upper(), 'source_site': source_site, 'source_site_label': source_site_label, 'provider_icon': provider_icon, 'quality_icon': quality_icon, 'count': '%02d.' % count,
 						'size_label': get('size_label', 'N/A'), 'extraInfo': extraInfo, 'quality': quality.upper(), 'hash': get('hash', 'N/A'), 'source': json.dumps(item),
 						'highlight': item_highlight, 'highlight_bg': highlight_bg, 'highlight_tint_focused_background': 'true' if self.tint_focused_background else 'false',
 						'scraper_module': scraper_module.upper() if scraper_module else '', 'scraper_module_label': scraper_module_label,
@@ -700,6 +707,7 @@ class SourcesInfo(BaseDialog):
 		self.setProperty('name', self.item_get_property('name'))
 		self.setProperty('source_type', self.item_get_property('source_type'))
 		self.setProperty('source_site', self.item_get_property('source_site'))
+		self.setProperty('source_site_label', self.item_get_property('source_site_label') or 'Site')
 		self.setProperty('scraper_module', self.item_get_property('scraper_module'))
 		self.setProperty('scraper_module_label', self.item_get_property('scraper_module_label') or 'Scraper')
 		self.setProperty('size_label', self.item_get_property('size_label'))

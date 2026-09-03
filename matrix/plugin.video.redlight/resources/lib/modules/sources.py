@@ -14,6 +14,7 @@ from modules import debrid, kodi_utils, settings, metadata, watched_status
 from modules.player import RedLightPlayer
 from modules.source_utils import get_cache_expiry, make_alias_dict, include_exclude_filters, get_file_info, release_info_format, audio_lang_choices, matches_english_or_untagged
 from modules.release_groups import release_group_boost
+from modules.native_torrents import NATIVE_TORRENT_SCRAPERS
 from modules.utils import clean_file_name, string_to_float, safe_string, remove_accents, get_datetime, append_module_to_syspath, manual_function_import
 # logger = kodi_utils.logger
 
@@ -402,6 +403,7 @@ class Sources():
 		self.filter_keys = include_exclude_filters()
 		self.filter_keys.pop('hybrid')
 		self.default_internal_scrapers = ('easynews', 'aiostreams', 'nzb', 'rd_cloud', 'pm_cloud', 'ad_cloud', 'oc_cloud', 'tb_cloud', 'folders')
+		self.native_torrent_scrapers = NATIVE_TORRENT_SCRAPERS
 		self.debrids = {'Real-Debrid': ('apis.real_debrid_api', 'RealDebridAPI'), 'rd_cloud': ('apis.real_debrid_api', 'RealDebridAPI'),
 		'rd_browse': ('apis.real_debrid_api', 'RealDebridAPI'), 'Premiumize.me': ('apis.premiumize_api', 'PremiumizeAPI'), 'pm_cloud': ('apis.premiumize_api', 'PremiumizeAPI'),
 		'pm_browse': ('apis.premiumize_api', 'PremiumizeAPI'), 'AllDebrid': ('apis.alldebrid_api', 'AllDebridAPI'), 'ad_cloud': ('apis.alldebrid_api', 'AllDebridAPI'),
@@ -648,8 +650,8 @@ class Sources():
 		self.active_internal_scrapers = settings.active_internal_scrapers()
 		if not 'external' in self.active_internal_scrapers and self.disabled_ext_ignored: self.active_internal_scrapers.append('external')
 		self.active_external = 'external' in self.active_internal_scrapers
+		self.debrid_enabled = debrid.debrid_enabled()
 		if self.active_external:
-			self.debrid_enabled = debrid.debrid_enabled()
 			if not self.debrid_enabled:
 				return self.disable_external()
 			self.external_modules = settings.active_external_modules()
@@ -739,6 +741,7 @@ class Sources():
 				if self._user_cancelled_scrape():
 					return self._finish_scrape_cancel()
 				if not self.orig_results: self._kill_progress_dialog()
+				self.orig_results = self._stamp_native_torrent_cache(self.orig_results)
 				results = self.process_results(self.orig_results)
 			if self._user_cancelled_scrape():
 				return self._finish_scrape_cancel()
@@ -819,6 +822,8 @@ class Sources():
 	def process_results(self, results):
 		if not results: return results
 		self._touch_sources_busy()
+		results = self._stamp_native_torrent_cache(results)
+		if not results: return results
 		results = self.sort_results(results)
 		min_seeders = settings.uncached_min_seeders()
 		all_uncached_results = [i for i in results if 'Uncached' in i.get('cache_provider', '')]
@@ -880,6 +885,22 @@ class Sources():
 			combined = self.sort_results(combined)
 		self._log_custom_sort_summary(combined, pref_sort_ran)
 		return combined
+
+	def _stamp_native_torrent_cache(self, results):
+		native = [i for i in results if i.get('scrape_provider') in self.native_torrent_scrapers and i.get('hash') and not i.get('cache_provider')]
+		if not native:
+			return results
+		return debrid.stamp_torrent_cache(
+			results, getattr(self, 'debrid_enabled', None) or debrid.debrid_enabled(),
+			self.cache_check_override, self._native_torrent_data(),
+			background=self.background, progress_dialog=None if self.background else self.progress_dialog)
+
+	def _native_torrent_data(self):
+		info = getattr(self, 'search_info', None) or {}
+		if self.media_type == 'movie':
+			return {'imdb': info.get('imdb_id'), 'title': info.get('title'), 'year': info.get('year')}
+		return {'imdb': info.get('imdb_id'), 'tvshowtitle': info.get('title'), 'title': info.get('ep_name'),
+			'year': info.get('year'), 'season': str(info.get('season') or ''), 'episode': str(info.get('episode') or '')}
 
 	def _log_prescrape_settings(self):
 		try:
@@ -1175,7 +1196,8 @@ class Sources():
 		self.active_external, self.external_providers = False, []
 
 	def internal_sources(self, prescrape=False, cloud_early=False):
-		active_sources = [i for i in self.active_internal_scrapers if i in ['easynews', 'aiostreams', 'nzb', 'rd_cloud', 'pm_cloud', 'ad_cloud', 'oc_cloud', 'tb_cloud'] and i not in self.remove_scrapers]
+		internal_ids = ('easynews', 'aiostreams', 'nzb') + NATIVE_TORRENT_SCRAPERS + ('rd_cloud', 'pm_cloud', 'ad_cloud', 'oc_cloud', 'tb_cloud')
+		active_sources = [i for i in self.active_internal_scrapers if i in internal_ids and i not in self.remove_scrapers]
 		if not prescrape:
 			prescrape_ran = getattr(self, 'prescrape_ran_scrapers', set()) or set()
 			if prescrape_ran:
@@ -1251,14 +1273,20 @@ class Sources():
 	def _prescrape_autoplay_candidates(self, results):
 		autoplay_scrapers = self._cloud_scrapers() + ('easynews', 'aiostreams', 'nzb', 'folders')
 		candidates = [i for i in results if i.get('scrape_provider') in autoplay_scrapers and settings.autoplay_prescrape(i['scrape_provider'])]
-		return [i for i in candidates if i.get('scrape_provider') != 'nzb' or i.get('nzb_cached')]
+		playable = []
+		for item in candidates:
+			provider = item.get('scrape_provider')
+			if provider == 'nzb' and not item.get('nzb_cached'):
+				continue
+			playable.append(item)
+		return playable
 
 	def _is_cloud_result(self, item):
 		return item.get('scrape_provider') in self._cloud_scrapers()
 
 	def _external_autoplay_candidates(self, results):
-		"""Global Autoplay Movie/Episode — external scrapers only, not debrid cloud / AIO / EN / folders."""
-		return [i for i in results if i.get('scrape_provider') == 'external']
+		"""Global Autoplay Movie/Episode — debrid torrents (external + internal torrent scrapers), not cloud / AIO / EN / folders."""
+		return [i for i in results if i.get('scrape_provider') in ('external',) + self.native_torrent_scrapers]
 
 	def _release_empty_prescrape_cloud_scrapers(self):
 		"""Let cloud scrapers run again during full scrape when prescrape found nothing."""
@@ -1620,7 +1648,7 @@ class Sources():
 	def _playback_failed_default_message(self):
 		reasons = ['expired', 'removed']
 		item = getattr(self, 'playing_item', None) or {}
-		if item.get('scrape_provider') == 'external':
+		if item.get('scrape_provider') in ('external',) + self.native_torrent_scrapers:
 			provider = debrid.normalize_debrid_provider(item.get('debrid') or item.get('cache_provider'))
 			if provider and not self._external_cache_check_active(provider):
 				reasons.append('not cached on your debrid (cache check was off)')
@@ -1946,7 +1974,13 @@ class Sources():
 			absolute_episode = absolute_episode_from_season_data(self.meta.get('season_data'), season, episode)
 		self.search_info = {'media_type': self.media_type, 'title': title, 'year': year, 'tmdb_id': self.tmdb_id, 'imdb_id': self.meta.get('imdb_id'), 'aliases': aliases,
 							'season': season, 'episode': episode, 'tvdb_id': self.meta.get('tvdb_id'), 'ep_name': ep_name, 'expiry_times': expiry_times,
-							'total_seasons': self.meta.get('total_seasons', 1), 'absolute_episode': absolute_episode}
+							'total_seasons': self.meta.get('total_seasons', 1), 'absolute_episode': absolute_episode,
+							'total_aired_eps': self.meta.get('total_aired_eps', 1), 'season_episode_count': 1}
+		if self.media_type == 'episode':
+			try:
+				self.search_info['season_episode_count'] = [int(x['episode_count']) for x in (self.meta.get('season_data') or []) if int(x['season_number']) == int(season)][0]
+			except Exception:
+				self.search_info['season_episode_count'] = 1
 
 	def _get_module(self, module_type, function):
 		if module_type == 'external': module = function.source(*self.external_args)
@@ -1955,7 +1989,7 @@ class Sources():
 		return module
 
 	def _clear_properties(self):
-		def_internal = self.default_internal_scrapers
+		def_internal = self.default_internal_scrapers + self.native_torrent_scrapers
 		for item in def_internal: kodi_utils.clear_property('redlight.internal_results.%s' % item)
 		if self.active_folders:
 			for item in self.folder_info: kodi_utils.clear_property('redlight.internal_results.%s' % item[0])
@@ -2540,7 +2574,7 @@ class Sources():
 				resolve_item = dict(item)
 				scrape_provider = item['scrape_provider']
 				provider = scrape_provider
-				if provider == 'external': provider = item['debrid'].replace('.me', '')
+				if provider == 'external' or provider in self.native_torrent_scrapers: provider = item['debrid'].replace('.me', '')
 				elif provider == 'folders': provider = item['source']
 				elif provider == 'aiostreams': provider = item.get('aio_source_label') or provider
 				elif provider == 'nzb': provider = 'NZB'
