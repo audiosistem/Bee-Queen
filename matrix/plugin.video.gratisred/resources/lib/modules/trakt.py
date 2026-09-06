@@ -521,8 +521,7 @@ def getTraktAsJson(url, post=None):
 def getTraktAsJsonPaged(url, page_size=None):
     """
     Fetch a Trakt endpoint that supports pagination and return *all* results
-    concatenated, following every page reported by the ``X-Pagination-Page-Count``
-    response header.
+    concatenated.
 
     WHY THIS FUNCTION EXISTS
     ------------------------
@@ -533,16 +532,18 @@ def getTraktAsJsonPaged(url, page_size=None):
     first chunk, which is exactly the user-visible bug ("Trakt doesn't get
     all its lists – some kind of block").
 
+    Do not trust ``X-Pagination-Page-Count`` alone (Trakt discussion #681):
+    collection and similar sync lists can return a full page of 250 with a
+    page-count of 1.  Keep fetching until a short or empty page.
+
     The helper:
       * forces a sane ``limit`` (250 default, 100 for progress endpoints),
-      * starts at ``page=1`` and increments until
-        ``X-Pagination-Page-Count`` is reached (or the server stops
-        returning items),
+      * starts at ``page=1`` and increments until a short/empty page
+        (or a later page fails — first-page failure still returns None),
       * merges every page's JSON array into one flat list,
       * preserves Trakt's server-side sort when only a single page is
         returned (so behaviour is unchanged for small accounts),
-      * hard-caps at 50 pages as a safety belt in case a buggy server
-        sends absurd header values.
+      * hard-caps at 80 pages as a safety belt.
     """
     try:
         # Build the URL with explicit limit/page.  We respect any query
@@ -571,7 +572,8 @@ def getTraktAsJsonPaged(url, page_size=None):
 
         merged = []
         current_page = 1
-        max_pages = 50  # safety belt, see docstring
+        max_pages = 80  # safety belt, see docstring
+        res_headers = {}
         while current_page <= max_pages:
             existing['page'] = str(current_page)
             qs = '&'.join('%s=%s' % (k, v) for k, v in existing.items())
@@ -579,33 +581,32 @@ def getTraktAsJsonPaged(url, page_size=None):
 
             r, res_headers = __getTrakt(page_url, None)
             if not r:
-                # Incomplete page walks must not look like "not a member".
-                return None
+                # Incomplete later pages keep what we already have.
+                # First-page failure must not look like "not a member".
+                if current_page == 1:
+                    return None
+                break
             try:
                 data = client_utils.json_loads_as_str(r)
             except Exception:
-                return None
+                if current_page == 1:
+                    return None
+                break
             if not isinstance(data, list):
                 # Unexpected payload (e.g. an error dict); bail.
-                return None
-            merged.extend(data)
-
-            # Determine total pages from Trakt's response headers.  If the
-            # endpoint doesn't paginate (``/users/me/lists`` for example,
-            # which is non-paginated on most accounts) the header will be
-            # missing and we stop after the first page – exactly the old
-            # behaviour.
-            try:
-                total_pages = int(res_headers.get('X-Pagination-Page-Count', '1'))
-            except Exception:
-                total_pages = 1
-            if current_page >= total_pages:
+                if current_page == 1:
+                    return None
                 break
+            if not data:
+                break
+            merged.extend(data)
             if len(data) < limit:
                 # Server returned fewer items than we asked for => we've
                 # hit the end regardless of what the header claims.
                 break
             current_page += 1
+            if current_page > 1:
+                time.sleep(0.1)
 
         # Honour Trakt's sort hints only when the server returned a single
         # page; for multi-page merges the per-page order is already
@@ -1011,7 +1012,7 @@ def _entry_media_ids(item, content):
     return None
 
 
-def _trakt_paged_cache_payload(url):
+def _trakt_paged_cache_payload(url, cache_ver='paged_v2'):
     """Wrap paged results so empty lists still store in trakt_cache (falsy-safe)."""
     items = getTraktAsJsonPaged(url)
     if items is None:
@@ -1022,7 +1023,7 @@ def _trakt_paged_cache_payload(url):
 def _trakt_paged_cached(url):
     """Short-TTL paged Trakt fetch for manager membership (same table as shelves)."""
     from resources.lib.modules import trakt_cache
-    data = trakt_cache.get(_trakt_paged_cache_payload, trakt_cache.TTL_LISTS_SEC, url)
+    data = trakt_cache.get(_trakt_paged_cache_payload, trakt_cache.TTL_LISTS_SEC, url, 'paged_v2')
     if data is None:
         return None
     if isinstance(data, dict) and 'items' in data:
@@ -1356,7 +1357,7 @@ def getWatchedActivity():
         pass
 
 
-def syncMovies(user):
+def syncMovies(user, sync_version='paged_v2'):
     try:
         if getTraktCredentialsInfo() == False:
             return
@@ -1369,21 +1370,22 @@ def syncMovies(user):
 
 
 def cachesyncMovies(timeout=0):
-    indicators = cache.get(syncMovies, timeout, control.setting('trakt.user').strip())
+    indicators = cache.get(syncMovies, timeout, control.setting('trakt.user').strip(), 'paged_v2')
     return indicators
 
 
 def timeoutsyncMovies():
-    timeout = cache.timeout(syncMovies, control.setting('trakt.user').strip())
+    timeout = cache.timeout(syncMovies, control.setting('trakt.user').strip(), 'paged_v2')
     return timeout
 
 
-def syncTVShows(user, sync_version='progress_v1'):
+def syncTVShows(user, sync_version='progress_v2'):
     """Watched TV indicators for overlays.
 
     Trakt no longer returns season/episode breakdown with extended=full (#775).
     Use /sync/watched/shows?extended=progress (same pattern as Red Light).
-    sync_version busts the local cache key after the progress migration.
+    sync_version busts the local cache key after the progress migration
+    and after paged-fetch no longer trusts Trakt's page-count header.
     """
     try:
         if getTraktCredentialsInfo() == False:
@@ -1417,12 +1419,12 @@ def syncTVShows(user, sync_version='progress_v1'):
 
 
 def cachesyncTVShows(timeout=0):
-    indicators = cache.get(syncTVShows, timeout, control.setting('trakt.user').strip(), 'progress_v1')
+    indicators = cache.get(syncTVShows, timeout, control.setting('trakt.user').strip(), 'progress_v2')
     return indicators
 
 
 def timeoutsyncTVShows():
-    timeout = cache.timeout(syncTVShows, control.setting('trakt.user').strip(), 'progress_v1')
+    timeout = cache.timeout(syncTVShows, control.setting('trakt.user').strip(), 'progress_v2')
     if not timeout:
         timeout = 0
     return timeout

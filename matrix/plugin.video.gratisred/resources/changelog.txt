@@ -1,4 +1,7 @@
 
+[B]- 1.3.3 (2026-09-05)[/B] Trakt paged fetch (Red Light 2.5.2):
+ * [B]Trakt[/B]: full paged fetches (watched overlays, Lists Manager membership, personal/liked lists) keep loading after a full page of 250 instead of stopping when Trakt’s page-count header says there is only one page. A stale watched cache is dropped so existing installs pick up the rest.
+
 [B]- 1.3.2 (2026-08-29)[/B] Simkl Mark Show as Watched (Red Light 2.3.7):
  * [B]Simkl[/B]: Mark Show as Watched no longer treats a shelf-only history add ([I]added.shows[/I] with 0 episodes) as success. If Simkl does not expand episode timestamps, Gratis Red POSTs each season number so Force Refresh does not bring the show back unwatched.
 
