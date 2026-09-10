@@ -63,6 +63,9 @@
     <setting id="provider.torrentscsv" type="bool" label="TorrentsCSV" default="true" />
     <setting id="provider.btdig" type="bool" label="BitDig" default="true" />
     <setting id="provider.snowfl" type="bool" label="Snowfl" default="true" />
+    <setting id="provider.cleanbay" type="bool" label="Cleanbay" default="false" />
+    <setting id="provider.damagnet" type="bool" label="DaMagNet" default="false" />
+    <setting id="provider.rarbgdump" type="bool" label="RarbgDump" default="false" />
 </category>
 
 <category label="Prowlarr">

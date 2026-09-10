@@ -165,8 +165,7 @@ class AllDebridAPI:
 				hash_cache_status_success = True
 			except: hash_cache_status_success = False
 		except: return False
-		if False in (user_cloud_success, download_links_success, hoster_links_success, hash_cache_status_success): return False
-		return True
+		return all((user_cloud_success, download_links_success, hoster_links_success, hash_cache_status_success))
 
 def aio_check_cache(imdb, season, episode):
 	if str(season).isdigit(): params = {'type': 'series', 'id': '%s:%s:%s' % (imdb, season, episode)}

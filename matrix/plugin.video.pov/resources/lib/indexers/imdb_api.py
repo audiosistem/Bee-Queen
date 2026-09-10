@@ -137,8 +137,8 @@ def clear_imdb_cache(silent=False):
 		dbcur.execute("""SELECT id FROM maincache WHERE id LIKE ?""", ('imdb_%',))
 		imdb_results = [str(i[0]) for i in dbcur.fetchall()]
 		if not imdb_results: return True
-		dbcur.execute("""DELETE FROM maincache WHERE id LIKE ?""", ('imdb_%',))
 		for i in imdb_results: clear_property(i)
+		dbcur.execute("""DELETE FROM maincache WHERE id LIKE ?""", ('imdb_%',))
 		return True
 	except: return False
 

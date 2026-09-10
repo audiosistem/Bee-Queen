@@ -127,7 +127,7 @@ def clear_cache(cache_type, silent=False):
 	success = True
 	if cache_type == 'internal_scrapers':
 		items = 'pm_cloud', 'oc_cloud', 'tb_cloud', 'rd_cloud', 'ad_cloud', 'easynews'
-		for item in items: clear_cache(item, silent=True)
+		success = all(clear_cache(item, silent=True) for item in items)
 	elif cache_type == 'external_scrapers':
 		from caches.providers_cache import ExternalProvidersCache
 		from caches.debrid_cache import DebridCache
@@ -171,6 +171,7 @@ def clear_cache(cache_type, silent=False):
 		from caches.main_cache import MainCache
 		MainCache().delete_all_lists()
 	if not silent and success: kodi_utils.notify_success()
+	return success
 
 def clear_all_cache():
 	if not kodi_utils.confirm_dialog(): return

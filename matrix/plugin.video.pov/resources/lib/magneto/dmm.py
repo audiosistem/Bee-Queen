@@ -1,26 +1,26 @@
-# created for gearsscrapers
+# created by kodifitzwell for Fenomscrapers
 """
-	gearsscrapers Project
+	Fenomscrapers Project
 """
 
 from json import loads as jsloads
-import re, queue
-from gearsscrapers.modules import client
-from gearsscrapers.modules import source_utils
+import queue
+from magneto.modules import client
+from magneto.modules import source_utils
 
 
 class source:
-	timeout = 10
-	priority = 1
+	timeout = 7
+	priority = 3
 	pack_capable = True
 	hasMovies = True
 	hasEpisodes = True
 	_queue = queue.SimpleQueue()
 	def __init__(self):
 		self.language = ['en']
-		self.base_link = "https://meteorfortheweebs.midnightignite.me"
-		self.movieSearch_link = '/stream/movie/%s.json'
-		self.tvSearch_link = '/stream/series/%s:%s:%s.json'
+		self.base_link = "https://debridmediamanager.com"
+		self.movieSearch_link = '/api/torrents/movie?imdbId=%s'
+		self.tvSearch_link = '/api/torrents/tv?imdbId=%s&seasonNum=%s'
 		self.min_seeders = 0
 
 	def sources(self, data, hostDict):
@@ -30,7 +30,7 @@ class source:
 		try:
 			title = data['tvshowtitle'] if 'tvshowtitle' in data else data['title']
 			title = title.replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
-			aliases = data['aliases']
+			aliases = source_utils.aliases_to_array(data['aliases'])
 			episode_title = data['title'] if 'tvshowtitle' in data else None
 			year = data['year']
 			imdb = data['imdb']
@@ -38,62 +38,60 @@ class source:
 				season = data['season']
 				episode = data['episode']
 				hdlr = 'S%02dE%02d' % (int(season), int(episode))
-				url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, episode))
+				url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season))
 			else:
 				hdlr = year
 				url = '%s%s' % (self.base_link, self.movieSearch_link % imdb)
 			# log_utils.log('url = %s' % url)
+			if 'timeout' in data: self.timeout = int(data['timeout'])
+			headers = {'Referer': '%s/%s/%s' % (self.base_link, 'show' if 'tvshowtitle' in data else 'movie', imdb)}
 			try:
-				results = client.request(url, timeout=self.timeout)
-				files = jsloads(results)['streams']
+				results = client.request('%s/api/challenge' % self.base_link, headers=headers, timeout=3.05)
+				get_secret = jsloads(results)
+				url += '&dmmProblemKey=%s&solution=%s' % (get_secret['token'], get_secret['hash'])
+				results = client.request(url, headers=headers, timeout=self.timeout)
+				files = jsloads(results)['results']
 			except:
 				files = []
 				raise
 			finally:
 				self._queue.put_nowait(files) # if seasons
 				self._queue.put_nowait(files) # if shows
-			_INFO = re.compile(r'💾.*')
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
 		except:
-			source_utils.scraper_error('METEOR')
+			source_utils.scraper_error('DMM')
 			return sources
 
 		for file in files:
 			try:
-				hash = file['infoHash']
-				file_title = file['description'].split('\n')
-				file_info = [x for x in file_title if _INFO.match(x)][0]
+				hash = file['hash']
+				name = file['title']
 
-				name = source_utils.clean_name(file_title[0])
+				name = source_utils.clean_name(name)
 
-				if not source_utils.check_title(title, aliases, name.replace('.(Archie.Bunker', ''), hdlr, year): continue
+				if not source_utils.check_title(title, aliases, name, hdlr, year): continue
 				name_info = source_utils.info_from_name(name, title, year, hdlr, episode_title)
 				if source_utils.remove_lang(name_info, check_foreign_audio): continue
 				if undesirables and source_utils.remove_undesirables(name_info, undesirables): continue
 
 				url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name)
 
-				try:
-					seeders = int(re.search(r'👤\s*(\d+)', file['description']).group(1))
-					if self.min_seeders > seeders: continue
-				except: seeders = 0
-
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
-					size = re.search(r'((?:\d+\,\d+\.\d+|\d+\.\d+|\d+\,\d+|\d+)\s*(?:GB|GiB|Gb|MB|MiB|Mb))', file_info).group(0)
-					dsize, isize = source_utils._size(size)
+					size = float(file['fileSize']) * 1048576
+					dsize, isize = source_utils.convert_size(size)
 					info.insert(0, isize)
 				except: dsize = 0
 				info = ' | '.join(info)
 
 				sources_append({
 					'source': 'torrent', 'language': 'en', 'direct': False, 'debridonly': True,
-					'provider': 'meteor', 'hash': hash, 'url': url, 'name': name, 'name_info': name_info,
-					'quality': quality, 'info': info, 'size': dsize, 'seeders': seeders
+					'provider': 'dmm', 'hash': hash, 'url': url, 'name': name, 'name_info': name_info,
+					'quality': quality, 'info': info, 'size': dsize, 'seeders': 0
 				})
 			except:
-				source_utils.scraper_error('METEOR')
+				source_utils.scraper_error('DMM')
 		return sources
 
 	def sources_packs(self, data, hostDict, search_series=False, total_seasons=None, bypass_filter=False):
@@ -102,26 +100,23 @@ class source:
 		sources_append = sources.append
 		try:
 			title = data['tvshowtitle'].replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
-			aliases = data['aliases']
+			aliases = source_utils.aliases_to_array(data['aliases'])
 			imdb = data['imdb']
 			year = data['year']
 			season = data['season']
-			url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, data['episode']))
+			url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season))
+			if 'timeout' in data: self.timeout = int(data['timeout'])
 			files = self._queue.get(timeout=self.timeout + 1)
-			_INFO = re.compile(r'💾.*')
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
 		except:
-			source_utils.scraper_error('METEOR')
+			source_utils.scraper_error('DMM')
 			return sources
 
 		for file in files:
 			try:
-				hash = file['infoHash']
-				file_title = file['description'].split('\n')
-				file_info = [x for x in file_title if _INFO.match(x)][0]
-
-				name = source_utils.clean_name(file_title[0])
+				hash = file['hash']
+				name = file['title']
 
 				episode_start, episode_end = 0, 0
 				if not search_series:
@@ -142,27 +137,24 @@ class source:
 				if undesirables and source_utils.remove_undesirables(name_info, undesirables): continue
 
 				url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name)
-				try:
-					seeders = int(re.search(r'👤\s*(\d+)', file['description']).group(1))
-					if self.min_seeders > seeders: continue
-				except: seeders = 0
 
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
-					size = re.search(r'((?:\d+\,\d+\.\d+|\d+\.\d+|\d+\,\d+|\d+)\s*(?:GB|GiB|Gb|MB|MiB|Mb))', file_info).group(0)
-					dsize, isize = source_utils._size(size)
+					size = float(file['fileSize']) * 1048576
+					dsize, isize = source_utils.convert_size(size)
 					info.insert(0, isize)
 				except: dsize = 0
 				info = ' | '.join(info)
 
 				item = {
-					'source': 'torrent', 'language': 'en', 'direct': False, 'debridonly': True, 'true_size': True,
-					'provider': 'meteor', 'hash': hash, 'url': url, 'name': name, 'name_info': name_info,
-					'quality': quality, 'info': info, 'size': dsize, 'seeders': seeders, 'package': package
+					'source': 'torrent', 'language': 'en', 'direct': False, 'debridonly': True,
+					'provider': 'dmm', 'hash': hash, 'url': url, 'name': name, 'name_info': name_info,
+					'quality': quality, 'info': info, 'size': dsize, 'seeders': 0, 'package': package
 				}
 				if search_series: item.update({'last_season': last_season})
 				elif episode_start: item.update({'episode_start': episode_start, 'episode_end': episode_end}) # for partial season packs
 				sources_append(item)
 			except:
-				source_utils.scraper_error('METEOR')
+				source_utils.scraper_error('DMM')
 		return sources
+

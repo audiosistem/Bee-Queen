@@ -1,3 +1,49 @@
+[COLORcyan] VERSION 1.5.9[/COLOR]
+
+
+
+ Fixed/Updated
+
+• TORZ — Fixed scraper issues and restored functionality.
+• MediaFusion — Fixed scraper integration and improved reliability.
+• Meteor — Fixed scraper issues and restored functionality.
+
+ Improvements
+
+• Improved overall scraper stability.
+• Updated affected sources for more reliable results.
+• General performance and reliability improvements.
+
+ 3 New Scraper Sources Added
+
+ Gears Scrapers has been expanded with 3 brand-new scraper sources, ported the same day from Starfleet’s own torrent_sources.py.
+• Cleanbay
+• Real backend discovered by inspecting the site’s own JS bundle.
+• Uses a separate Render-hosted API, rather than scraping the frontend directly.
+• Metasearches multiple sources including:
+
+• PirateBay
+• YTS
+• EZTV
+• LinuxTracker
+• LibGen
+• Nyaa
+
+• RarbgDump
+• Clean JSON API based on RARBG’s frozen pre-2023 database.
+• Uses the real per-result category to filter results specifically to Movies & TV.
+
+• DaMagNet
+• Uses a two-step DHT-index lookup.
+• First retrieves the search listings, then performs a per-item detail-page request to obtain the actual magnet.
+• Follows the same general provider structure as the existing 1337x scraper.
+
+• Provider Status
+• All three new providers are OFF by default.
+• You can enable them under:
+• Settings → Providers → Starfleet-Ported Providers
+• This follows the same approach as the other newly ported and currently untested sources in this category.
+
 [COLORcyan] VERSION 1.5.7[/COLOR]
 
 

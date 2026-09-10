@@ -131,6 +131,5 @@ class OffcloudAPI:
 				hash_cache_status_success = True
 			except: hash_cache_status_success = False
 		except: return False
-		if False in (user_cloud_success, hash_cache_status_success): return False
-		return True
+		return all((user_cloud_success, hash_cache_status_success))
 
