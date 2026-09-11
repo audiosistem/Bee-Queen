@@ -518,8 +518,9 @@ def list_delete(list_id):
 	url = '%s/4/list/%s' % (base_url, list_id)
 	return get_tmdblist(url, method='delete')
 
-def tmdb_clean_watchlist(silent=False):
+def tmdb_clean_watchlist(silent=False, monitor=None):
 	if not get_setting('tmdb.token'): return
+	if monitor and monitor.abortRequested(): return
 	if not silent and not kodi_utils.confirm_dialog(): return
 	try:
 		from caches.watched_cache import get_watched_info_movie, get_watched_info_tv

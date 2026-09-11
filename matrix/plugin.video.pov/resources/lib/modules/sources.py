@@ -627,7 +627,7 @@ class ExternalManager:
 				fut = tpe.submit(ExternalSource(self.meta, self.resolutions).results, info, args)
 				fut.name = pack_display % (provider, *pack) if pack and pack[0] else provider
 				threads.add(fut)
-			self.thread_monitor(threads, remaining_format, False)
+			self.monitor(threads, remaining_format, False)
 			threads = [i for i in threads if i.done() and not i.exception()]
 			for fut in as_completed(threads): total_results.extend(fut.result())
 			self.sources.extend(self.process_duplicates(total_results))
@@ -639,7 +639,7 @@ class ExternalManager:
 				fut = tpe.submit(DebridCheck(self.meta, item).cache_check)
 				fut.name = item
 				threads.add(fut)
-			self.thread_monitor(threads, debrid_format, True)
+			self.monitor(threads, debrid_format, True)
 			threads = [i for i in threads if i.done() and not i.exception()]
 			for name, hashes in ((fut.name, fut.result()) for fut in threads):
 				if name in ('realdebrid', 'alldebrid'): uncached = '%s %s' % ('Unchecked', name)
@@ -652,7 +652,7 @@ class ExternalManager:
 		finally: tpe.shutdown(False)
 		return self.final_sources
 
-	def thread_monitor(self, threads, status_line='', debrid=False):
+	def monitor(self, threads, status_line='', debrid=False):
 		len_threads = len(threads)
 		end_time = time.monotonic() + self.timeout + 1
 		while not monitor.abortRequested() and time.monotonic() <= end_time:

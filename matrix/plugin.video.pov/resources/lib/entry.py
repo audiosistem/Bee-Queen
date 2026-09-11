@@ -3,7 +3,6 @@ from datetime import datetime
 from modules import kodi_utils, settings
 
 logger, path_exists, translate_path = kodi_utils.logger, kodi_utils.path_exists, kodi_utils.translate_path
-monitor, player_isplaying, get_visibility = kodi_utils.monitor, kodi_utils.player.isPlaying, kodi_utils.get_visibility
 get_property, set_property, clear_property = kodi_utils.get_property, kodi_utils.set_property, kodi_utils.clear_property
 get_setting, set_setting, make_settings_dict = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.make_settings_dict
 
@@ -158,59 +157,8 @@ class Router:
 		message = f"pov not in '{kodi_utils.get_infolabel('Container.PluginName')}'"
 		raise SystemExit(message)
 
-	def run(self, sys):
-		with self: return routing(sys)
-
-class POVMonitor(kodi_utils.xbmc_monitor):
-	def __enter__(self):
-		initializeDatabases()
-		checkSettingsFile()
-		self.threads = (Thread(target=SyncMonitorService().run), Thread(target=premAccntNotification))
-		return self
-
-	def __exit__(self, exc_type, exc_value, traceback):
-		for i in getattr(self, 'threads', ()): i.join()
-
-	def run(self):
-		logger('POV', 'Main Monitor Service Starting (%s)' % self.ver())
-		logger('POV', 'Settings Monitor Service Starting')
-		with self:
-			try: databaseMaintenance()
-			except: pass
-			try: viewsSetWindowProperties()
-			except: pass
-			try: reuseLanguageInvokerCheck()
-			except: pass
-			for i in getattr(self, 'threads', ()): i.start()
-			try: autoRun()
-			except: pass
-			try: clearSubs()
-			except: pass
-			try: checkUndesirablesDatabase()
-			except: pass
-			self.waitForAbort()
-		logger('POV', 'Settings Monitor Service Finished')
-		logger('POV', 'Main Monitor Service Finished')
-
-	def ver(*args):
-		return f"{kodi_utils.get_addoninfo('id')}-{kodi_utils.get_addoninfo('version')}"
-
-	def onSettingsChanged(self):
-		clear_property('pov_settings')
-		kodi_utils.sleep(50)
-		make_settings_dict()
-		set_property('pov_kodi_menu_cache', get_setting('kodi_menu_cache'))
-		set_property('pov_rli_fix', get_setting('rli_fix'))
-
-	def onScreensaverActivated(self):
-		set_property('pov_pause_services', 'true')
-
-	def onScreensaverDeactivated(self):
-		clear_property('pov_pause_services')
-
-	def onNotification(self, sender, method, data):
-		if method == 'System.OnSleep': set_property('pov_pause_services', 'true')
-		elif method == 'System.OnWake': clear_property('pov_pause_services')
+	def __call__(self):
+		with self: return routing(__import__('sys'))
 
 def initializeDatabases():
 	from modules.cache import check_databases
@@ -252,8 +200,8 @@ def viewsSetWindowProperties():
 	return logger('POV', 'ViewsSetWindowProperties Service Finished')
 
 def reuseLanguageInvokerCheck():
-	import xml.etree.ElementTree as ET
 	logger('POV', 'ReuseLanguageInvokerCheck Service Starting')
+	import xml.etree.ElementTree as ET
 	addon_xml = translate_path('special://home/addons/%s/addon.xml' % kodi_utils.get_addoninfo('id'))
 	tree = ET.parse(addon_xml)
 	root = tree.getroot()
@@ -307,9 +255,9 @@ def checkUndesirablesDatabase():
 	if old_database: add_new_default_keywords()
 	return logger('POV', 'CheckUndesirablesDatabase Service Finished')
 
-class SyncMonitorService(kodi_utils.xbmc_monitor):
-	def __init__(self):
-		kodi_utils.xbmc_monitor.__init__(self)
+class SyncMonitorService:
+	def __init__(self, monitor_obj=None):
+		self.monitor = monitor_obj or kodi_utils.xbmc_monitor()
 		from indexers.trakt_api import trakt_sync_activities
 		from indexers.mdblist_api import mdbl_sync_activities
 		from indexers.tmdb_api import tmdb_clean_watchlist, clear_tmdbl_cache
@@ -320,31 +268,29 @@ class SyncMonitorService(kodi_utils.xbmc_monitor):
 		self.service_string = 'SyncMonitor Service Update %s - %s'
 		self.update_string = 'Next Update in %s minutes...'
 
-	def run(self):
+	def __call__(self):
 		logger('POV', 'SyncMonitor Service Starting')
-		self.handle_first_run_cache()
-		while not self.abortRequested():
-			if get_property('pov_traktmonitor_first_run') != 'true': self.waitForAbort(5)
+		if get_property('pov_traktmonitor_first_run') != 'true':
+			set_property('pov_traktmonitor_first_run', 'true')
+			self.clear_tmdbl_cache()
+		while not self.monitor.abortRequested():
+			if get_property('pov_traktmonitor_first_run') != 'true':
+				self.monitor.waitForAbort(5)
 			else: self.wait_if_busy()
 			value, interval = settings.trakt_sync_interval()
 			next_update_str = self.update_string % value
 			self.sync_trakt(next_update_str)
 			self.sync_mdblist(next_update_str)
 			self.sync_tmdb()
-			self.waitForAbort(interval)
-		return logger('POV', 'SyncMonitor Service Finished')
-
-	def handle_first_run_cache(self):
-		if get_property('pov_traktmonitor_first_run') != 'true':
-			self.clear_tmdbl_cache()
-			set_property('pov_traktmonitor_first_run', 'true')
+			self.monitor.waitForAbort(interval)
+		logger('POV', 'SyncMonitor Service Finished')
 
 	def wait_if_busy(self):
 		while (
-			player_isplaying()
-			or get_visibility('Container.isUpdating')
-			or get_property('pov_pause_services') == 'true'
-		): self.waitForAbort(10)
+			kodi_utils.player.isPlaying() or
+			kodi_utils.get_visibility('Container.isUpdating') or
+			get_property('pov_pause_services') == 'true'
+		): self.monitor.waitForAbort(10)
 
 	def refresh_widgets(self, monitor_name):
 		if settings.trakt_sync_refresh_widgets():
@@ -354,7 +300,7 @@ class SyncMonitorService(kodi_utils.xbmc_monitor):
 			logger('POV', self.service_string % ('POV %s - Widgets Refresh' % monitor_name, 'Setting Disabled. Skipping Widget Refresh'))
 
 	def sync_trakt(self, next_update_str):
-		try: status = self.trakt_sync_activities(init_callback=True, monitor=self)
+		try: status = self.trakt_sync_activities(init_callback=True, monitor=self.monitor)
 		except: status = 'failed'
 		if status == 'success':
 			logger('POV', self.service_string % ('POV TraktMonitor - Success', 'Trakt Update Performed'))
@@ -367,7 +313,7 @@ class SyncMonitorService(kodi_utils.xbmc_monitor):
 			logger('POV', self.service_string % ('POV TraktMonitor - Success. No Changes Needed', next_update_str))
 
 	def sync_mdblist(self, next_update_str):
-		try: status = self.mdbl_sync_activities(init_callback=True, monitor=self)
+		try: status = self.mdbl_sync_activities(init_callback=True, monitor=self.monitor)
 		except: status = 'failed'
 		if status == 'success':
 			logger('POV', self.service_string % ('POV MDBListMonitor - Success', 'MDBList Update Performed'))
@@ -382,7 +328,49 @@ class SyncMonitorService(kodi_utils.xbmc_monitor):
 	def sync_tmdb(self):
 		try:
 			if get_setting('tmdb.token') and get_setting('tmdblist.watchlist_sync') == 'true':
-				status = self.tmdb_clean_watchlist(silent=True)
+				status = self.tmdb_clean_watchlist(silent=True, monitor=self.monitor)
 				if status: logger('POV', 'TMDb Lists Service Update - Success. %s' % status)
 		except: pass
+
+class SettingsMonitor(kodi_utils.xbmc_monitor):
+	def onSettingsChanged(self):
+		clear_property('pov_settings')
+		kodi_utils.sleep(50)
+		make_settings_dict()
+		set_property('pov_kodi_menu_cache', get_setting('kodi_menu_cache'))
+		set_property('pov_rli_fix', get_setting('rli_fix'))
+
+	def onScreensaverActivated(self):
+		set_property('pov_pause_services', 'true')
+
+	def onScreensaverDeactivated(self):
+		clear_property('pov_pause_services')
+
+	def onNotification(self, sender, method, data):
+		if method == 'System.OnSleep': set_property('pov_pause_services', 'true')
+		elif method == 'System.OnWake': clear_property('pov_pause_services')
+
+	def __call__(self):
+		ver = '%s-%s' % (kodi_utils.get_addoninfo('id'), kodi_utils.get_addoninfo('version'))
+		logger('POV', 'Settings Monitor Service Starting (%s)' % ver)
+		initializeDatabases()
+		checkSettingsFile()
+		try: databaseMaintenance()
+		except: pass
+		try: viewsSetWindowProperties()
+		except: pass
+		try: reuseLanguageInvokerCheck()
+		except: pass
+		try: threads = (Thread(target=premAccntNotification), Thread(target=SyncMonitorService(self)))
+		except: threads = ()
+		for i in threads: i.start()
+		try: autoRun()
+		except: pass
+		try: clearSubs()
+		except: pass
+		try: checkUndesirablesDatabase()
+		except: pass
+		self.waitForAbort()
+		for i in threads: i.join()
+		logger('POV', 'Settings Monitor Service Finished')
 

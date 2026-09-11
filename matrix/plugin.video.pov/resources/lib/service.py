@@ -1,5 +1,5 @@
 
 if __name__ == '__main__':
-	from entry import POVMonitor
-	POVMonitor().run()
+	from entry import SettingsMonitor
+	SettingsMonitor()()
 

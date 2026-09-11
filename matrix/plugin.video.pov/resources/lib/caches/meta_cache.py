@@ -122,10 +122,11 @@ class MetaCache(BaseCache):
 
 	def prefetch(self, limit=500):
 		command = 'SELECT db_type, tmdb_id, meta, expires FROM metadata ORDER BY expires DESC LIMIT ?'
-		for db_type, tmdb_id, meta, expires in self.dbcur.execute(command, (limit,)).fetchall():
+		cache_data = self.dbcur.execute(command, (limit,)).fetchall()
+		for i in (self.dbcur, self.dbcon): i.close()
+		for db_type, tmdb_id, meta, expires in cache_data:
 			try: self.set_memory_cache(db_type, 'tmdb_id', self.jsloads(meta), expires, tmdb_id)
 			except: pass
-		for i in (self.dbcur, self.dbcon): i.close()
 
 def cache_function(function, prop_string, url, expiration=96, json=False):
 	metacache = MetaCache()

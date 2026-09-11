@@ -24,57 +24,37 @@ class source:
 	hasEpisodes = True
 	def __init__(self):
 		self.language = ['en']
-		self.base_link = "https://bitsearch.to"
-		# self.search_link = '/search?q=%s&category=1&subcat=2&sort=seeders'
-# (1=other/video, 2=movies, 3=TV) but seem to produce bogus results, do not use
+		self.base_link = "https://bitsearch.eu"
 		self.search_link = '/search?limit=100&q=%s'
 		self.min_seeders = 0
 
 	def sources(self, data, hostDict):
-		self.sources = []
-		if not data: return self.sources
-		self.sources_append = self.sources.append
+		sources = []
+		if not data: return sources
+		sources_append = sources.append
 		try:
-			self.aliases = source_utils.aliases_to_array(data['aliases'])
-			self.year = data['year']
-			if 'tvshowtitle' in data:
-				self.title = data['tvshowtitle'].replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ').replace('$', 's')
-				self.episode_title = data['title']
-				self.hdlr = 'S%02dE%02d' % (int(data['season']), int(data['episode']))
-			else:
-				self.title = data['title'].replace('&', 'and').replace('/', ' ').replace('$', 's')
-				self.episode_title = None
-				self.hdlr = self.year
-			self.undesirables = source_utils.get_undesirables()
-			self.check_foreign_audio = source_utils.check_foreign_audio()
+			aliases = source_utils.aliases_to_array(data['aliases'])
+			title = data['tvshowtitle'] if 'tvshowtitle' in data else data['title']
+			title = title.replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
+			episode_title = data['title'] if 'tvshowtitle' in data else None
+			year = data['year']
+			hdlr = 'S%02dE%02d' % (int(data['season']), int(data['episode'])) if 'tvshowtitle' in data else year
+
+			query = '%s %s' % (title, hdlr)
+			query = re.sub(r'[^A-Za-z0-9\s\.-]+', '', query)
+			url = self.search_link % quote_plus(query)
+			url = '%s%s' % (self.base_link, url)
+			# log_utils.log('url = %s' % url)
+
 			if 'timeout' in data: self.timeout = int(data['timeout'])
-
-			query = '%s %s' % (re.sub(r'[^A-Za-z0-9\s\.-]+', '', self.title), self.hdlr)
-#			urls = []
-			url = '%s%s' % (self.base_link, self.search_link % quote_plus(query))
-#			urls.append(url)
-#			urls.append(url + '&page2')
-			# log_utils.log('urls = %s' % urls)
-#			threads = []
-#			append = threads.append
-#			for url in urls:
-#				append(source_utils.Thread(self.get_sources, url))
-#			[i.start() for i in threads]
-#			[i.join() for i in threads]
-			self.get_sources(url)
-			return self.sources
-		except:
-			source_utils.scraper_error('BITSEARCH')
-			return self.sources
-
-	def get_sources(self, url):
-		try:
 			results = client.request(url, timeout=self.timeout)
-			if not results: return
+			if not results: return sources
 			rows = client.parseDOM(results, 'div', attrs={'class': target_class})
+			undesirables = source_utils.get_undesirables()
+			check_foreign_audio = source_utils.check_foreign_audio()
 		except:
 			source_utils.scraper_error('BITSEARCH')
-			return
+			return sources
 
 		for row in rows:
 			try:
@@ -85,17 +65,17 @@ class source:
 				xt_param = parsed_query.get('xt', [''])[-1]
 				if not xt_param: continue
 				hash = xt_param.split(':')[-1]
-				title = parsed_query.get('dn', ['Unknown'])[-1]
-				name = source_utils.clean_name(title)
+				parsed_name = parsed_query.get('dn', ['Unknown'])[-1]
+				name = source_utils.clean_name(parsed_name)
 
-				if not source_utils.check_title(self.title, self.aliases, name, self.hdlr, self.year): continue
-				name_info = source_utils.info_from_name(name, self.title, self.year, self.hdlr, self.episode_title)
-				if source_utils.remove_lang(name_info, self.check_foreign_audio): continue
-				if self.undesirables and source_utils.remove_undesirables(name_info, self.undesirables): continue
+				if not source_utils.check_title(title, aliases, name, hdlr, year): continue
+				name_info = source_utils.info_from_name(name, title, year, hdlr, episode_title)
+				if source_utils.remove_lang(name_info, check_foreign_audio): continue
+				if undesirables and source_utils.remove_undesirables(name_info, undesirables): continue
 
 				url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name)
 
-				if not self.episode_title: #filter for eps returned in movie query (rare but movie and show exists for Run in 2020)
+				if not episode_title: #filter for eps returned in movie query (rare but movie and show exists for Run in 2020)
 					ep_strings = [r'[.-]s\d{2}e\d{2}([.-]?)', r'[.-]s\d{2}([.-]?)', r'[.-]season[.-]?\d{1,2}[.-]?']
 					name_lower = name.lower()
 					if any(re.search(item, name_lower) for item in ep_strings): continue
@@ -115,10 +95,11 @@ class source:
 				except: dsize = 0
 				info = ' | '.join(info)
 
-				self.sources_append({'provider': 'bitsearch', 'source': 'torrent', 'seeders': seeders, 'hash': hash, 'name': name, 'name_info': name_info,
+				sources_append({'provider': 'bitsearch', 'source': 'torrent', 'seeders': seeders, 'hash': hash, 'name': name, 'name_info': name_info,
 												'quality': quality, 'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize})
 			except:
 				source_utils.scraper_error('BITSEARCH')
+		return sources
 
 	def sources_packs(self, data, hostDict, search_series=False, total_seasons=None, bypass_filter=False):
 		self.sources = []
@@ -129,15 +110,15 @@ class source:
 			self.total_seasons = total_seasons
 			self.bypass_filter = bypass_filter
 
-			self.title = data['tvshowtitle'].replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ').replace('$', 's')
 			self.aliases = source_utils.aliases_to_array(data['aliases'])
+			self.title = data['tvshowtitle'].replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
 			self.imdb = data['imdb']
 			self.year = data['year']
 			self.season_x = data['season']
 			self.season_xx = self.season_x.zfill(2)
+			if 'timeout' in data: self.timeout = int(data['timeout'])
 			self.undesirables = source_utils.get_undesirables()
 			self.check_foreign_audio = source_utils.check_foreign_audio()
-			if 'timeout' in data: self.timeout = int(data['timeout'])
 
 			query = re.sub(r'[^A-Za-z0-9\s\.-]+', '', self.title)
 			if search_series:
@@ -178,8 +159,8 @@ class source:
 				xt_param = parsed_query.get('xt', [''])[-1]
 				if not xt_param: continue
 				hash = xt_param.split(':')[-1]
-				title = parsed_query.get('dn', ['Unknown'])[-1]
-				name = source_utils.clean_name(title)
+				parsed_name = parsed_query.get('dn', ['Unknown'])[-1]
+				name = source_utils.clean_name(parsed_name)
 
 				episode_start, episode_end = 0, 0
 				if not self.search_series:

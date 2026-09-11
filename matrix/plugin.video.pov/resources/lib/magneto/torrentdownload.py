@@ -26,9 +26,9 @@ class source:
 		if not data: return self.sources
 		self.sources_append = self.sources.append
 		try:
+			self.aliases = source_utils.aliases_to_array(data['aliases'])
 			self.title = data['tvshowtitle'] if 'tvshowtitle' in data else data['title']
 			self.title = self.title.replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
-			self.aliases = source_utils.aliases_to_array(data['aliases'])
 			self.episode_title = data['title'] if 'tvshowtitle' in data else None
 			self.year = data['year']
 			self.hdlr = 'S%02dE%02d' % (int(data['season']), int(data['episode'])) if 'tvshowtitle' in data else self.year
@@ -110,8 +110,8 @@ class source:
 			self.total_seasons = total_seasons
 			self.bypass_filter = bypass_filter
 
-			self.title = data['tvshowtitle'].replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
 			self.aliases = source_utils.aliases_to_array(data['aliases'])
+			self.title = data['tvshowtitle'].replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
 			self.imdb = data['imdb']
 			self.year = data['year']
 			self.season_x = data['season']

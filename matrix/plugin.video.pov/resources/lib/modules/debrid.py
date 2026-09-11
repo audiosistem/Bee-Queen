@@ -176,11 +176,12 @@ class Source:
 	def aio_add_to_cloud(self):
 		if not confirm_dialog(text=ls(32687) % self.debrid.upper()): return
 		if not getattr(self, 'url_dl', False): return kodi_utils.notify_error()
-		url, *headers = self.url_dl.rsplit('|', 1)
-		try: headers = dict(kodi_utils.parse_qsl(*headers))
-		except: headers = dict()
 		import requests
-		response = requests.get(url, headers=headers, stream=True, timeout=10)
+		base_url, *headers = self.url_dl.rsplit('|', 1)
+		try: req_headers = requests.structures.CaseInsensitiveDict(kodi_utils.parse_qsl(*headers))
+		except: req_headers = requests.structures.CaseInsensitiveDict()
+		if 'User-Agent' not in req_headers: req_headers['User-Agent'] = kodi_utils.xbmc.getUserAgent()
+		response = requests.get(base_url, headers=req_headers, stream=True, timeout=10)
 		if not response.ok: return kodi_utils.notify_error()
 		chunk = next(response.iter_content(chunk_size=1048576), b'')
 		if len(chunk): kodi_utils.notify_success()

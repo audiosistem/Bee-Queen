@@ -64,7 +64,6 @@ class Extras(BaseDialog):
 			if self.is_movie: futures.append(tpe.submit(self.make_collection))
 			else: self.setProperty('tikiskins.extras.make.collection', 'false')
 			self.make_options()
-			self.setFocusId(self.focus_id)
 			self.make_cast()
 			self.set_poster()
 			concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
@@ -191,6 +190,7 @@ class Extras(BaseDialog):
 			except: pass
 #			self.setProperty('tikiskins.extras.actions.number', '(x%02d)' % len(item_list))
 		self.add_items(actions_id, item_list)
+		self.setFocusId(self.focus_id)
 
 	def make_cast(self):
 		if cast_id not in self.enabled_lists: return

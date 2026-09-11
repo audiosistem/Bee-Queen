@@ -74,6 +74,7 @@ class source:
 		scrape_results = []
 		if episode: params = {'type': 'series', 'id': '%s:%s:%s' % (media_id, season, episode)}
 		else: params = {'type': 'movie', 'id': '%s' % media_id}
+		params['requiredFields'] = 'parsedFile'
 		try:
 			base_url = self.resolve_aio_instance()
 			search_link = '%s/api/v1/search' % base_url.strip().rstrip('/')
@@ -115,13 +116,15 @@ class source:
 		return get_setting(setting_id)
 
 def unrestrict_link(url):
-	url, *headers = url.rsplit('|', 1)
-	try: headers = dict(parse_qsl(*headers))
-	except: headers = dict()
+	from magneto.modules.client import randomagent
+	base_url, *headers = url.rsplit('|', 1)
+	try: req_headers = requests.structures.CaseInsensitiveDict(parse_qsl(*headers))
+	except: req_headers = requests.structures.CaseInsensitiveDict()
+	if 'User-Agent' not in req_headers: req_headers['User-Agent'] = randomagent()
 	try: # some servers do not accept HEAD requests, must use GET + stream
-		with requests.get(url, headers=headers, stream=True, timeout=30) as response:
+		with requests.get(base_url, headers=req_headers, stream=True, timeout=30) as response:
 			response.raise_for_status() # 3xx passes, 4xx/5xx raises
-		if headers: return '|'.join((response.url, urlencode(headers)))
+		if headers: return '|'.join((response.url, *headers))
 		return response.url
 	except requests.exceptions.RequestException as e:
 		from modules.kodi_utils import logger
