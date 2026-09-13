@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.audio.aerial.radio"
+       name="Aerial Radio Catalog"
+       version="0.5.2"
+       provider-name="TrainAgain2">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="main.py">
+    <provides>audio</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="pt_BR">Suas rádios ao vivo em um só lugar.</summary>
+    <summary lang="pt_PT">As suas rádios em direto num só lugar.</summary>
+    <summary lang="en_GB">Your live radio in one place.</summary>
+    <summary lang="es_ES">Tus radios en directo en un solo lugar.</summary>
+    <summary lang="fr_FR">Vos radios en direct réunies au même endroit.</summary>
+    <summary lang="de_DE">Ihre Live-Radios an einem Ort.</summary>
+    <summary lang="it_IT">Le tue radio in diretta in un unico posto.</summary>
+    <summary lang="ru_RU">Ваше радио в прямом эфире в одном месте.</summary>
+    <summary lang="zh_CN">在一个地方收听您的直播电台。</summary>
+    <summary lang="ja_JP">お気に入りのライブ ラジオをひとつの場所で。</summary>
+
+    <description lang="pt_BR">Ouça suas rádios favoritas em uma experiência simples, bonita e rápida.&#10;&#10;Criador: TrainAgain2&#10;&#10;• Guarde as rádios que mais gosta em Favoritos&#10;• Descubra as mais ouvidas e novidades&#10;• Explore coleções para relaxar, focar, dirigir, treinar e muito mais&#10;• Encontre rádios por país, gênero, tema ou nome&#10;• Acesse rádios em português e um catálogo disponível a qualquer momento&#10;&#10;Escolha uma rádio e aproveite a música.</description>
+    <description lang="pt_PT">Ouça as suas rádios favoritas numa experiência simples, bonita e rápida.&#10;&#10;Criador: TrainAgain2&#10;&#10;• Guarde as rádios de que mais gosta nos Favoritos&#10;• Descubra as mais ouvidas e as novidades&#10;• Explore coleções para relaxar, concentrar, conduzir, treinar e muito mais&#10;• Encontre rádios por país, género, tema ou nome&#10;• Aceda a rádios em português e a um catálogo disponível a qualquer momento&#10;&#10;Escolha uma rádio e aproveite a música.</description>
+    <description lang="en_GB">Listen to your favourite radio through a simple, beautiful and fast experience.&#10;&#10;Creator: TrainAgain2&#10;&#10;• Save the stations you love in Favourites&#10;• Discover popular stations and new additions&#10;• Explore collections for relaxing, focusing, driving, working out and more&#10;• Find radio by country, genre, theme or name&#10;• Enjoy Portuguese-language radio and an always-available catalogue&#10;&#10;Choose a station and enjoy the music.</description>
+    <description lang="es_ES">Escucha tus radios favoritas con una experiencia sencilla, bonita y rápida.&#10;&#10;Creador: TrainAgain2&#10;&#10;• Guarda las emisoras que más te gustan en Favoritos&#10;• Descubre las emisoras más escuchadas y las novedades&#10;• Explora colecciones para relajarte, concentrarte, conducir, entrenar y mucho más&#10;• Encuentra radio por país, género, tema o nombre&#10;• Disfruta de radio en portugués y de un catálogo siempre disponible&#10;&#10;Elige una emisora y disfruta de la música.</description>
+    <description lang="fr_FR">Écoutez vos radios préférées dans une expérience simple, élégante et rapide.&#10;&#10;Créateur : TrainAgain2&#10;&#10;• Enregistrez vos stations préférées dans Favoris&#10;• Découvrez les stations populaires et les nouveautés&#10;• Explorez des collections pour la détente, la concentration, la route, le sport et plus encore&#10;• Trouvez une radio par pays, genre, thème ou nom&#10;• Profitez des radios lusophones et d'un catalogue toujours disponible&#10;&#10;Choisissez une station et profitez de la musique.</description>
+    <description lang="de_DE">Hören Sie Ihre Lieblingsradios in einer einfachen, schönen und schnellen Oberfläche.&#10;&#10;Erstellt von: TrainAgain2&#10;&#10;• Speichern Sie Ihre Lieblingssender in Favoriten&#10;• Entdecken Sie beliebte Sender und neue Ergänzungen&#10;• Entdecken Sie Kollektionen zum Entspannen, Fokussieren, Fahren, Trainieren und mehr&#10;• Finden Sie Radios nach Land, Genre, Thema oder Name&#10;• Genießen Sie portugiesischsprachiges Radio und einen jederzeit verfügbaren Katalog&#10;&#10;Wählen Sie einen Sender und genießen Sie die Musik.</description>
+    <description lang="it_IT">Ascolta le tue radio preferite in un'esperienza semplice, bella e veloce.&#10;&#10;Creatore: TrainAgain2&#10;&#10;• Salva le radio preferite nei Preferiti&#10;• Scopri le stazioni più popolari e le novità&#10;• Esplora raccolte per relax, concentrazione, viaggio, allenamento e molto altro&#10;• Trova radio per paese, genere, tema o nome&#10;• Goditi le radio in portoghese e un catalogo sempre disponibile&#10;&#10;Scegli una stazione e goditi la musica.</description>
+    <description lang="ru_RU">Слушайте любимые радиостанции в простом, красивом и быстром интерфейсе.&#10;&#10;Создатель: TrainAgain2&#10;&#10;• Сохраняйте любимые станции в избранном&#10;• Открывайте популярные станции и новинки&#10;• Изучайте подборки для отдыха, концентрации, дороги, тренировок и многого другого&#10;• Находите радио по стране, жанру, теме или названию&#10;• Слушайте португалоязычные станции и пользуйтесь всегда доступным каталогом&#10;&#10;Выберите станцию и наслаждайтесь музыкой.</description>
+    <description lang="zh_CN">在简洁、美观、快速的界面中收听您喜爱的电台。&#10;&#10;创作者：TrainAgain2&#10;&#10;• 将喜爱的电台保存到收藏夹&#10;• 发现热门电台和最新加入的电台&#10;• 探索适合放松、专注、驾车、锻炼等场景的精选内容&#10;• 按国家、流派、主题或名称查找电台&#10;• 收听葡语电台，并使用随时可用的目录&#10;&#10;选择一个电台，享受音乐。</description>
+    <description lang="ja_JP">シンプルで美しく、すばやい操作でお気に入りのラジオを楽しめます。&#10;&#10;作成者: TrainAgain2&#10;&#10;• お気に入りのラジオを「お気に入り」に保存&#10;• 人気のラジオと新着のラジオを発見&#10;• リラックス、集中、ドライブ、ワークアウトなどに合うコレクションを探索&#10;• 国、ジャンル、テーマ、名前からラジオを検索&#10;• ポルトガル語のラジオといつでも使えるカタログを楽しむ&#10;&#10;ラジオを選んで音楽をお楽しみください。</description>
+
+    <news lang="pt_BR">Novidades TrainAgain2&#10;• Descrição mais simples e focada na experiência de escuta&#10;• Criador identificado na ficha do add-on&#10;• Informações no idioma do Kodi</news>
+    <news lang="pt_PT">Novidades TrainAgain2&#10;• Descrição mais simples e focada na experiência de escuta&#10;• Criador identificado na ficha do add-on&#10;• Informações no idioma do Kodi</news>
+    <news lang="en_GB">TrainAgain2 update&#10;• Simpler description focused on listening&#10;• Creator identified in the add-on details&#10;• Information follows the Kodi language</news>
+    <news lang="es_ES">Novedades de TrainAgain2&#10;• Descripción más simple y centrada en escuchar&#10;• Creador identificado en los detalles del add-on&#10;• Información según el idioma de Kodi</news>
+    <news lang="fr_FR">Mise à jour TrainAgain2&#10;• Description plus simple, centrée sur l'écoute&#10;• Créateur identifié dans les détails de l'extension&#10;• Informations dans la langue de Kodi</news>
+    <news lang="de_DE">TrainAgain2-Aktualisierung&#10;• Einfachere Beschreibung mit Fokus auf das Hören&#10;• Ersteller in den Add-on-Details genannt&#10;• Informationen in der Kodi-Sprache</news>
+    <news lang="it_IT">Aggiornamento TrainAgain2&#10;• Descrizione più semplice e dedicata all'ascolto&#10;• Creatore indicato nei dettagli dell'add-on&#10;• Informazioni nella lingua di Kodi</news>
+    <news lang="ru_RU">Обновление TrainAgain2&#10;• Более простое описание, посвященное прослушиванию&#10;• Создатель указан в сведениях о дополнении&#10;• Информация на языке Kodi</news>
+    <news lang="zh_CN">TrainAgain2 更新&#10;• 更简洁、更专注于收听体验的说明&#10;• 在插件详情中标明创作者&#10;• 信息跟随 Kodi 的界面语言</news>
+    <news lang="ja_JP">TrainAgain2 アップデート&#10;• 聴取体験に集中した、よりシンプルな説明&#10;• アドオン情報に作成者を明記&#10;• Kodi の表示言語に合わせた情報</news>
+
+    <platform>all</platform>
+    <license>Apache-2.0</license>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.png</fanart>
+      <screenshot>fanart.png</screenshot>
+      <screenshot>resources/media/menu-popular.png</screenshot>
+      <screenshot>resources/media/menu-countries.png</screenshot>
+    </assets>
+  </extension>
+</addon>

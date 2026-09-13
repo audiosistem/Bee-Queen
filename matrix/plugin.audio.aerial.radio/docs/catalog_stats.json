@@ -1,0 +1,178 @@
+{
+  "snapshot": "Aerial v0.7.1",
+  "release_commit": "343dd257e7d6e52b3c53fcd52d1c99561bafd859",
+  "station_records": 44142,
+  "unique_stream_urls": 44141,
+  "countries_or_regions": 218,
+  "unique_tags": 71,
+  "providers": {
+    "radio-browser": 41707,
+    "curated": 1359,
+    "ard": 192,
+    "global": 146,
+    "bbc": 128,
+    "bauer": 75,
+    "sr": 52,
+    "cbc": 43,
+    "rtve": 43,
+    "ert": 34,
+    "rtbf": 31,
+    "vatican-radio": 30,
+    "dr": 27,
+    "cesky-rozhlas": 26,
+    "nrk": 26,
+    "abc": 20,
+    "hrt": 17,
+    "npo": 15,
+    "rai": 15,
+    "orf": 14,
+    "srgssr": 14,
+    "rtp": 13,
+    "bnr": 12,
+    "mtva": 9,
+    "polskie-radio": 9,
+    "rtvslo": 9,
+    "wireless": 9,
+    "rtsh": 7,
+    "sbs": 7,
+    "yle": 7,
+    "err": 5,
+    "latvijas-radio": 5,
+    "rte": 5,
+    "btrc": 4,
+    "lrt": 4,
+    "rik": 4,
+    "rinse": 4,
+    "trm": 4,
+    "rtl-lu": 3,
+    "ruv": 3,
+    "rtk": 2,
+    "rtva": 2,
+    "bhrt": 1
+  },
+  "top_countries": [
+    {
+      "code": "US",
+      "stations": 5835
+    },
+    {
+      "code": "DE",
+      "stations": 4934
+    },
+    {
+      "code": "RU",
+      "stations": 2218
+    },
+    {
+      "code": "GB",
+      "stations": 1999
+    },
+    {
+      "code": "CN",
+      "stations": 1850
+    },
+    {
+      "code": "FR",
+      "stations": 1820
+    },
+    {
+      "code": "GR",
+      "stations": 1686
+    },
+    {
+      "code": "AU",
+      "stations": 1469
+    },
+    {
+      "code": "MX",
+      "stations": 1404
+    },
+    {
+      "code": "IT",
+      "stations": 1382
+    },
+    {
+      "code": "CA",
+      "stations": 1223
+    },
+    {
+      "code": "BR",
+      "stations": 1136
+    },
+    {
+      "code": "ES",
+      "stations": 1044
+    },
+    {
+      "code": "NL",
+      "stations": 984
+    },
+    {
+      "code": "PL",
+      "stations": 856
+    }
+  ],
+  "top_tags": [
+    {
+      "tag": "pop",
+      "stations": 5531
+    },
+    {
+      "tag": "rock",
+      "stations": 2645
+    },
+    {
+      "tag": "news",
+      "stations": 2642
+    },
+    {
+      "tag": "radio",
+      "stations": 2107
+    },
+    {
+      "tag": "public",
+      "stations": 2106
+    },
+    {
+      "tag": "talk",
+      "stations": 1663
+    },
+    {
+      "tag": "dance",
+      "stations": 1493
+    },
+    {
+      "tag": "oldies",
+      "stations": 1262
+    },
+    {
+      "tag": "classical",
+      "stations": 1193
+    },
+    {
+      "tag": "jazz",
+      "stations": 1007
+    },
+    {
+      "tag": "electronic",
+      "stations": 997
+    },
+    {
+      "tag": "alternative",
+      "stations": 687
+    },
+    {
+      "tag": "ambient",
+      "stations": 656
+    },
+    {
+      "tag": "house",
+      "stations": 640
+    },
+    {
+      "tag": "country",
+      "stations": 616
+    }
+  ],
+  "registry_gzip_sha256": "a11eff23b0f86213d31610de3c64c06c24029f4c525d530e66b067ec0392c054"
+}

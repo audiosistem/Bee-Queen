@@ -39,6 +39,187 @@
       <screenshot>resources/screenshot-3.jpg</screenshot>
     </assets>
   </extension>
+</addon><addon id="plugin.audio.aerial.radio" name="Aerial Radio Catalog" version="0.5.2" provider-name="TrainAgain2">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="main.py">
+    <provides>audio</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="pt_BR">Suas rádios ao vivo em um só lugar.</summary>
+    <summary lang="pt_PT">As suas rádios em direto num só lugar.</summary>
+    <summary lang="en_GB">Your live radio in one place.</summary>
+    <summary lang="es_ES">Tus radios en directo en un solo lugar.</summary>
+    <summary lang="fr_FR">Vos radios en direct réunies au même endroit.</summary>
+    <summary lang="de_DE">Ihre Live-Radios an einem Ort.</summary>
+    <summary lang="it_IT">Le tue radio in diretta in un unico posto.</summary>
+    <summary lang="ru_RU">Ваше радио в прямом эфире в одном месте.</summary>
+    <summary lang="zh_CN">在一个地方收听您的直播电台。</summary>
+    <summary lang="ja_JP">お気に入りのライブ ラジオをひとつの場所で。</summary>
+
+    <description lang="pt_BR">Ouça suas rádios favoritas em uma experiência simples, bonita e rápida.
+
+Criador: TrainAgain2
+
+• Guarde as rádios que mais gosta em Favoritos
+• Descubra as mais ouvidas e novidades
+• Explore coleções para relaxar, focar, dirigir, treinar e muito mais
+• Encontre rádios por país, gênero, tema ou nome
+• Acesse rádios em português e um catálogo disponível a qualquer momento
+
+Escolha uma rádio e aproveite a música.</description>
+    <description lang="pt_PT">Ouça as suas rádios favoritas numa experiência simples, bonita e rápida.
+
+Criador: TrainAgain2
+
+• Guarde as rádios de que mais gosta nos Favoritos
+• Descubra as mais ouvidas e as novidades
+• Explore coleções para relaxar, concentrar, conduzir, treinar e muito mais
+• Encontre rádios por país, género, tema ou nome
+• Aceda a rádios em português e a um catálogo disponível a qualquer momento
+
+Escolha uma rádio e aproveite a música.</description>
+    <description lang="en_GB">Listen to your favourite radio through a simple, beautiful and fast experience.
+
+Creator: TrainAgain2
+
+• Save the stations you love in Favourites
+• Discover popular stations and new additions
+• Explore collections for relaxing, focusing, driving, working out and more
+• Find radio by country, genre, theme or name
+• Enjoy Portuguese-language radio and an always-available catalogue
+
+Choose a station and enjoy the music.</description>
+    <description lang="es_ES">Escucha tus radios favoritas con una experiencia sencilla, bonita y rápida.
+
+Creador: TrainAgain2
+
+• Guarda las emisoras que más te gustan en Favoritos
+• Descubre las emisoras más escuchadas y las novedades
+• Explora colecciones para relajarte, concentrarte, conducir, entrenar y mucho más
+• Encuentra radio por país, género, tema o nombre
+• Disfruta de radio en portugués y de un catálogo siempre disponible
+
+Elige una emisora y disfruta de la música.</description>
+    <description lang="fr_FR">Écoutez vos radios préférées dans une expérience simple, élégante et rapide.
+
+Créateur : TrainAgain2
+
+• Enregistrez vos stations préférées dans Favoris
+• Découvrez les stations populaires et les nouveautés
+• Explorez des collections pour la détente, la concentration, la route, le sport et plus encore
+• Trouvez une radio par pays, genre, thème ou nom
+• Profitez des radios lusophones et d'un catalogue toujours disponible
+
+Choisissez une station et profitez de la musique.</description>
+    <description lang="de_DE">Hören Sie Ihre Lieblingsradios in einer einfachen, schönen und schnellen Oberfläche.
+
+Erstellt von: TrainAgain2
+
+• Speichern Sie Ihre Lieblingssender in Favoriten
+• Entdecken Sie beliebte Sender und neue Ergänzungen
+• Entdecken Sie Kollektionen zum Entspannen, Fokussieren, Fahren, Trainieren und mehr
+• Finden Sie Radios nach Land, Genre, Thema oder Name
+• Genießen Sie portugiesischsprachiges Radio und einen jederzeit verfügbaren Katalog
+
+Wählen Sie einen Sender und genießen Sie die Musik.</description>
+    <description lang="it_IT">Ascolta le tue radio preferite in un'esperienza semplice, bella e veloce.
+
+Creatore: TrainAgain2
+
+• Salva le radio preferite nei Preferiti
+• Scopri le stazioni più popolari e le novità
+• Esplora raccolte per relax, concentrazione, viaggio, allenamento e molto altro
+• Trova radio per paese, genere, tema o nome
+• Goditi le radio in portoghese e un catalogo sempre disponibile
+
+Scegli una stazione e goditi la musica.</description>
+    <description lang="ru_RU">Слушайте любимые радиостанции в простом, красивом и быстром интерфейсе.
+
+Создатель: TrainAgain2
+
+• Сохраняйте любимые станции в избранном
+• Открывайте популярные станции и новинки
+• Изучайте подборки для отдыха, концентрации, дороги, тренировок и многого другого
+• Находите радио по стране, жанру, теме или названию
+• Слушайте португалоязычные станции и пользуйтесь всегда доступным каталогом
+
+Выберите станцию и наслаждайтесь музыкой.</description>
+    <description lang="zh_CN">在简洁、美观、快速的界面中收听您喜爱的电台。
+
+创作者：TrainAgain2
+
+• 将喜爱的电台保存到收藏夹
+• 发现热门电台和最新加入的电台
+• 探索适合放松、专注、驾车、锻炼等场景的精选内容
+• 按国家、流派、主题或名称查找电台
+• 收听葡语电台，并使用随时可用的目录
+
+选择一个电台，享受音乐。</description>
+    <description lang="ja_JP">シンプルで美しく、すばやい操作でお気に入りのラジオを楽しめます。
+
+作成者: TrainAgain2
+
+• お気に入りのラジオを「お気に入り」に保存
+• 人気のラジオと新着のラジオを発見
+• リラックス、集中、ドライブ、ワークアウトなどに合うコレクションを探索
+• 国、ジャンル、テーマ、名前からラジオを検索
+• ポルトガル語のラジオといつでも使えるカタログを楽しむ
+
+ラジオを選んで音楽をお楽しみください。</description>
+
+    <news lang="pt_BR">Novidades TrainAgain2
+• Descrição mais simples e focada na experiência de escuta
+• Criador identificado na ficha do add-on
+• Informações no idioma do Kodi</news>
+    <news lang="pt_PT">Novidades TrainAgain2
+• Descrição mais simples e focada na experiência de escuta
+• Criador identificado na ficha do add-on
+• Informações no idioma do Kodi</news>
+    <news lang="en_GB">TrainAgain2 update
+• Simpler description focused on listening
+• Creator identified in the add-on details
+• Information follows the Kodi language</news>
+    <news lang="es_ES">Novedades de TrainAgain2
+• Descripción más simple y centrada en escuchar
+• Creador identificado en los detalles del add-on
+• Información según el idioma de Kodi</news>
+    <news lang="fr_FR">Mise à jour TrainAgain2
+• Description plus simple, centrée sur l'écoute
+• Créateur identifié dans les détails de l'extension
+• Informations dans la langue de Kodi</news>
+    <news lang="de_DE">TrainAgain2-Aktualisierung
+• Einfachere Beschreibung mit Fokus auf das Hören
+• Ersteller in den Add-on-Details genannt
+• Informationen in der Kodi-Sprache</news>
+    <news lang="it_IT">Aggiornamento TrainAgain2
+• Descrizione più semplice e dedicata all'ascolto
+• Creatore indicato nei dettagli dell'add-on
+• Informazioni nella lingua di Kodi</news>
+    <news lang="ru_RU">Обновление TrainAgain2
+• Более простое описание, посвященное прослушиванию
+• Создатель указан в сведениях о дополнении
+• Информация на языке Kodi</news>
+    <news lang="zh_CN">TrainAgain2 更新
+• 更简洁、更专注于收听体验的说明
+• 在插件详情中标明创作者
+• 信息跟随 Kodi 的界面语言</news>
+    <news lang="ja_JP">TrainAgain2 アップデート
+• 聴取体験に集中した、よりシンプルな説明
+• アドオン情報に作成者を明記
+• Kodi の表示言語に合わせた情報</news>
+
+    <platform>all</platform>
+    <license>Apache-2.0</license>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.png</fanart>
+      <screenshot>fanart.png</screenshot>
+      <screenshot>resources/media/menu-popular.png</screenshot>
+      <screenshot>resources/media/menu-countries.png</screenshot>
+    </assets>
+  </extension>
 </addon><addon id="plugin.audio.mp3streams" name="MP3 Streams" version="2026.08.22" provider-name="Jon Bovi, [COLOR crimson]King Krimson[/COLOR]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
@@ -4416,7 +4597,7 @@ v5.3.2 (2020-09-30)
 - Adaugat suport pentru cautare cand in nume apar coduri de tara (US, UK).
     </news>
   </extension>
-</addon><addon id="service.subtitles.subsro" name="[B][COLOR FFFDBD01]Subs.ro[/COLOR][/B]" version="2.5.29" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="service.subtitles.subsro" name="[B][COLOR FFFDBD01]Subs.ro[/COLOR][/B]" version="2.5.30" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" version="2.22.0" />
