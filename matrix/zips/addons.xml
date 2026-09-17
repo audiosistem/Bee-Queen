@@ -4411,7 +4411,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
         </assets>
         <news>Changed the fanart to be a simple small image that has a matching color tone to the theme chosen.</news>
     </extension>
-</addon><addon id="script.service.fastautosubs" name="[B][COLOR FF00BFFF]Fast AutoSubs[/COLOR][/B]" version="1.0.19" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="script.service.fastautosubs" name="[B][COLOR FF00BFFF]Fast AutoSubs[/COLOR][/B]" version="1.0.20" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.22.0" />
