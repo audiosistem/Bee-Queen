@@ -545,7 +545,7 @@ v2.0.0
 - Settings simplified — no API keys exposed to users.
         </news>
     </extension>
-</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.2.0+matrix" provider-name="RomyCupidon">
+</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.2.1+matrix" provider-name="RomyCupidon">
 <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
@@ -1506,6 +1506,27 @@ In addition to what livestreams allowed you to do, you can now,
             <screenshot>resources/screenshot/screenshot-03.jpg</screenshot>
         </assets>
     </extension>
+</addon><addon id="plugin.video.sarmis" name="Sarmis" version="1.4.88" provider-name="derzis">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.resolveurl" />
+        <import addon="inputstream.adaptive" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Filme și seriale online românești</summary>
+        <description>Listează conținut video de pe diverse site-uri românești.
+[COLOR FFFF0000]Capul plecat sabia nu-l taie dar la un moment dat va începe să pască.[/COLOR]</description>
+        <news lang="ro">[B]VSEmbed reparat[/B][CR]- Site-ul a schimbat complet lanțul de extracție, iar sursele VSEmbed nu mai porneau; resolverul de pe Thrax a fost rescris.[CR]- Tokenul CDN este legat de IP-ul care îl cere, deci este obținut acum din Kodi, înainte de redare; unul luat pe server era respins cu 403.</news>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.webp</fanart>
+        </assets>
+    </extension>
 </addon><addon id="plugin.video.scrubsv2" version="5.1.57" name="[COLOR orange]Scrubs v2[/COLOR]" provider-name="JewBMX, [COLOR red]The Red Wizard[/COLOR]">
     <requires>
         <import addon="script.module.six" />
@@ -1585,7 +1606,7 @@ In addition to what livestreams allowed you to do, you can now,
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.themoviedb.helper" version="6.17.1" name="TMDb Helper" provider-name="jurialmunkey">
+</addon><addon id="plugin.video.themoviedb.helper" version="6.17.3" name="TMDb Helper" provider-name="jurialmunkey">
 <requires>
   <import addon="xbmc.python" version="3.0.1" />
   <import addon="script.module.requests" version="2.9.1" />

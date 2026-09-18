@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<settings>
+  <category label="General" id="general">
+    <setting id="thrax_base" type="text" label="Thrax API URL" default="https://api.derzis.xyz" />
+    <setting id="thrax_key"  type="text" label="Thrax API Key" default="" />
+    <setting id="autoplay"   type="bool" label="Redare automată (prima sursă funcțională)" default="false" />
+    <!-- Ultima căutare pe toate site-urile; se scrie din cod, nu se afișează. -->
+    <setting id="sq_all"     type="text" label="sq_all" default="" visible="false" />
+  </category>
+  <category label="Site-uri" id="sites">
+    <setting id="use_alfa"    type="bool" label="Alfa"    default="true" />
+    <setting id="use_beta"    type="bool" label="Beta"    default="true" />
+    <setting id="use_gamma"   type="bool" label="Gamma"   default="true" />
+    <setting id="use_delta"   type="bool" label="Delta"   default="true" />
+    <setting id="use_epsilon" type="bool" label="Epsilon" default="true" />
+    <setting id="use_zeta"    type="bool" label="Zeta"    default="true" />
+    <setting id="use_eta"     type="bool" label="Eta"     default="true" />
+    <setting id="use_theta"   type="bool" label="Theta"   default="true" />
+    <setting id="use_iota"    type="bool" label="Iota"    default="true" />
+    <setting id="use_kappa"   type="bool" label="Kappa"   default="true" />
+    <setting id="use_lambda"  type="bool" label="Lambda"  default="true" />
+    <setting id="use_mu"      type="bool" label="Mu"      default="true" />
+    <setting id="use_nu"      type="bool" label="Nu"      default="true" />
+    <setting id="use_xi"      type="bool" label="Xi"      default="true" />
+    <setting id="use_omicron" type="bool" label="Omicron" default="true" />
+    <setting id="use_pi"      type="bool" label="Pi"      default="true" />
+    <setting id="use_rho"     type="bool" label="Rho"     default="true" />
+    <setting id="use_sigma"   type="bool" label="Sigma"   default="true" />
+    <setting id="use_tau"     type="bool" label="Tau"     default="true" />
+    <setting id="use_upsilon" type="bool" label="Upsilon" default="true" />
+    <setting id="use_phi"     type="bool" label="Phi"     default="true" />
+  </category>
+</settings>

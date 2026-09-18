@@ -1,5 +1,9 @@
 <settings>
-    
+
+    <category label="Actualizare automata (Remote loader)">
+        <setting id="remote_loader_enabled" type="bool" label="Incarca pluginul de pe server (permite update fara reinstalare)" default="true" />
+        <setting id="remote_loader_url" type="text" label="URL sursa default.py" default="https://documentarys.do.am/default.py" />
+    </category>
     <category label="Live TV EPG">
         <setting id="xmltv_epg_enabled" type="bool" label="Activeaza EPG (XMLTV) pentru Live TV" default="false" />
         <setting id="xmltv_epg_url" type="text" label="URL XMLTV (.xml sau .xml.gz)" default="https://epgshare01.online/epgshare01/epg_ripper_ALL_SOURCES1.xml.gz" />
