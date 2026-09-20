@@ -1,4 +1,18 @@
 
+[B]- 1.3.5 (2026-09-18)[/B] Continue Watching / Watched:
+ * [B]Trakt Continue Watching[/B]: uses paged [I]/sync/watched/shows?extended=progress[/I] (same feed as overlays and Red Light In Progress). [I]extended=full[/I] no longer includes seasons, so the list opened empty. Shows with TMDb but no TVDb are kept. Dropped and hidden-from-progress shows are excluded (paged [I]/users/hidden/dropped[/I] and [I]progress_watched[/I], shows and seasons, matching TMDb / IMDb / TVDb). Live list so Dropped changes are not stuck in the 12h cache. Hidden pages use Trakt’s 100-item page size so later Dropped pages are not skipped.
+ * [B]Trakt Watched[/B] (TV): completed shows only (every aired episode watched). Partially watched titles stay on Continue Watching; they are no longer listed here from [I]/users/me/watched/shows[/I] history.
+
+[B]- 1.3.4 (2026-09-18)[/B] Accounts, My Trakt, InfoTag, and scrape:
+ * [B]Accounts[/B] (Red Light 2.6.4): Authorise or Revoke in Account Settings is picked up by the running service without a Kodi restart. Settings were cached on the first Addon handle, so a new token in Settings could leave the service still using the old one (same class of issue as Red Light GitHub #253).
+ * [B]Trakt / Simkl / MDBList / TMDb Lists[/B] (Red Light 2.6.4): if token refresh is rejected (HTTP 401 or OAuth [I]invalid_grant[/I]), a once-per-session toast asks you to Revoke and Authorise again in Account Settings. Tokens are not auto-cleared.
+ * [B]Simkl Continue Watching[/B]: multi-season shows open the season you are actually on (Simkl [I]next_to_watch[/I] / last watched), with ticks on watched episodes. Watching with no history no longer defaults to S01. A cache-key argument no longer breaks the watched sync (empty list). Only shows you have started (at least one watched episode) appear here, same idea as Trakt / MDBList. Plan to Watch stays the Watchlist-style list on My Simkl Movies and TV.
+ * [B]Account Settings[/B] (Red Light 2.6.2): Revoke Authorisation asks first (Cancel focused) for Trakt, Simkl, MDBList, and TMDb. Account Settings stay open on Revoke or Cancel.
+ * [B]Lists[/B]: movie, TV, Search, source, trailer, and playback rows use InfoTag only. The old [I]ListItem.setInfo[/I] fallback (Matrix and earlier) is gone so Kodi 21/22 no longer warn. Kodi 19 Matrix is no longer supported.
+ * [B]My Trakt[/B]: In Progress, History, Watched, Upcoming, Continue Watching, and In Progress Episodes always show when Trakt is authorised (same as My MDBList / My Simkl). My Lists and Liked Lists sit on those Movies and TV folders.
+ * [B]Search[/B]: Clear Search History asks [I]Clear Search Cache?[/I] (that search type only). Tools > Clear All Search Cache still means every search.
+ * [B]Sources[/B]: HdHub streams whose filename names a different SxxExx or a longer title ([I]Batman: Caped Crusader[/I] vs [I]Batman[/I] 1966) are dropped, including Stremio [I]behaviorHints.filename[/I] and the filename on signed CDN URLs. Nameless PixelDrain links with no show title and no season tag are dropped too.
+
 [B]- 1.3.3 (2026-09-05)[/B] Trakt paged fetch (Red Light 2.5.2):
  * [B]Trakt[/B]: full paged fetches (watched overlays, Lists Manager membership, personal/liked lists) keep loading after a full page of 250 instead of stopping when Trakt’s page-count header says there is only one page. A stale watched cache is dropped so existing installs pick up the rest.
 

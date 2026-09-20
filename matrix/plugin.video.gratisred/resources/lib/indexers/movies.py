@@ -1472,28 +1472,12 @@ class movies:
                     percentPlayed = int(float(offset) / float(meta['duration']) * 100)
                     item.setProperty('resumetime', str(offset))
                     item.setProperty('percentplayed', str(percentPlayed))
-                ## New Code Starts... Olds Saved Above each line.
-                if kodi_version >= 20:
-                    info_tag = ListItemInfoTag(item, 'video')
+                info_tag = ListItemInfoTag(item, 'video')
                 castwiththumb = i.get('castwiththumb')
                 if castwiththumb and not castwiththumb == '0':
-                    if kodi_version >= 18:
-                        if kodi_version >= 20:
-                            info_tag.set_cast(castwiththumb)
-                        else:
-                            item.setCast(castwiththumb)
-                    else:
-                        cast = [(p['name'], p['role']) for p in castwiththumb]
-                        meta.update({'cast': cast})
-                if kodi_version >= 20:
-                    info_tag.set_info(control.metadataClean(meta))
-                else:
-                    item.setInfo(type='Video', infoLabels=control.metadataClean(meta))
-                video_streaminfo = {'codec': 'h264'}
-                if kodi_version >= 20:
-                    info_tag.add_stream_info('video', video_streaminfo)
-                else:
-                    item.addStreamInfo('video', video_streaminfo)
+                    info_tag.set_cast(castwiththumb)
+                info_tag.set_info(control.metadataClean(meta))
+                info_tag.add_stream_info('video', {'codec': 'h264'})
                 control.addItem(handle=syshandle, url=url, listitem=item, isFolder=False)
             except:
                 #log_utils.log('movieDirectory', 1)

@@ -11,11 +11,7 @@ from xbmc import log as kodi_log
 def set_info_tag(
         listitem, infolabels: dict,
         tag_type: str = 'video', type_check: bool = False,
-        old_method_keys: tuple = ('size', 'count', 'date', )):
-
-    if old_method_keys:
-        il = {k: infolabels[k] for k in old_method_keys if k in infolabels}
-        listitem.setInfo(tag_type, il)
+        old_method_keys: tuple = ()):
 
     info_tag = ListItemInfoTag(listitem, tag_type, type_check)
     info_tag.set_info(infolabels)

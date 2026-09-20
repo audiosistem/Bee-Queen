@@ -91,7 +91,15 @@ def _refreshTraktToken():
         headers = {'Content-Type': 'application/json', 'trakt-api-key': V2_API_KEY, 'trakt-api-version': '2'}
         opost = {'client_id': V2_API_KEY, 'client_secret': CLIENT_SECRET, 'redirect_uri': REDIRECT_URI,
                  'grant_type': 'refresh_token', 'refresh_token': control.setting('trakt.refresh')}
-        result = requests.post(oauth, data=json.dumps(opost), headers=headers, timeout=30).json()
+        resp = requests.post(oauth, data=json.dumps(opost), headers=headers, timeout=30)
+        try:
+            result = resp.json()
+        except Exception:
+            result = {}
+        if resp.status_code != 200 or not isinstance(result, dict) or 'access_token' not in result:
+            from resources.lib.modules.meta_auth_alerts import maybe_notify_refresh_failure
+            maybe_notify_refresh_failure('trakt', resp.status_code, result or resp.text)
+            return None
         token, refresh = result['access_token'], result['refresh_token']
         control.setSetting('trakt.token', token)
         control.setSetting('trakt.refresh', refresh)
@@ -155,13 +163,9 @@ def __getTraktALT(url, post=None):
             return
         if resp_code not in ['401', '405', '403']:
             return result, resp_header
-        oauth = urljoin(BASE_URL, '/oauth/token')
-        opost = {'client_id': V2_API_KEY, 'client_secret': CLIENT_SECRET, 'redirect_uri': REDIRECT_URI, 'grant_type': 'refresh_token', 'refresh_token': control.setting('trakt.refresh')}
-        result = client.request(oauth, post=json.dumps(opost), headers=headers)
-        result = client_utils.json_loads_as_str(result)
-        token, refresh = result['access_token'], result['refresh_token']
-        control.setSetting('trakt.token', token)
-        control.setSetting('trakt.refresh', refresh)
+        token = _refreshTraktToken()
+        if not token:
+            return
         headers['Authorization'] = 'Bearer %s' % token
         result = client.request(url, post=post, headers=headers, output='extended', error=True)
         result = client_utils.byteify(result)
@@ -600,9 +604,18 @@ def getTraktAsJsonPaged(url, page_size=None):
             if not data:
                 break
             merged.extend(data)
-            if len(data) < limit:
-                # Server returned fewer items than we asked for => we've
-                # hit the end regardless of what the header claims.
+            # Trakt may clamp our requested limit (hidden lists max out at
+            # 100). Treat a short page vs the *response* limit as the end,
+            # not vs the 250 we asked for — otherwise page 2+ of Dropped is
+            # never fetched and those shows stay on Continue Watching.
+            header_limit = limit
+            try:
+                hl = int(res_headers.get('X-Pagination-Limit') or 0)
+                if hl > 0:
+                    header_limit = hl
+            except Exception:
+                pass
+            if len(data) < header_limit:
                 break
             current_page += 1
             if current_page > 1:
@@ -620,10 +633,159 @@ def getTraktAsJsonPaged(url, page_size=None):
         return None
 
 
+def _add_hidden_id(keys, value, kind=None):
+    if value in (None, '', 0, '0'):
+        return
+    text = str(value)
+    keys.add(text)
+    if kind == 'imdb':
+        digits = re.sub(r'[^0-9]', '', text)
+        if digits:
+            keys.add(digits)
+            keys.add('tt' + digits)
+    elif text.isdigit():
+        try:
+            keys.add(str(int(text)))
+        except Exception:
+            pass
+
+
+def _collect_hidden_show_ids(item, keys):
+    show = item.get('show') if isinstance(item.get('show'), dict) else None
+    ids = (show.get('ids') if show else None) or {}
+    if not ids and isinstance(item.get('ids'), dict):
+        ids = item.get('ids') or {}
+    _add_hidden_id(keys, ids.get('tmdb'))
+    _add_hidden_id(keys, ids.get('tvdb'))
+    _add_hidden_id(keys, ids.get('imdb'), kind='imdb')
+
+
+def hidden_progress_keys():
+    """IDs Trakt hides from progress: Dropped plus progress_watched.
+
+    Dropped is its own hidden section (Red Light In Progress). Watched sync still
+    returns those shows; Continue Watching must filter them locally. Match TMDb,
+    IMDb, and TVDb so rows missing one id still drop. Hidden endpoints paginate
+    at 100, not 250.
+    """
+    keys = set()
+    for path in (
+        '/users/hidden/dropped?type=show',
+        '/users/hidden/dropped?type=season',
+        '/users/hidden/progress_watched?type=show',
+        '/users/hidden/progress_watched?type=season',
+    ):
+        rows = getTraktAsJsonPaged(path, page_size=100)
+        if not isinstance(rows, list):
+            continue
+        for item in rows:
+            try:
+                _collect_hidden_show_ids(item, keys)
+            except Exception:
+                continue
+    return keys
+
+
+def progress_item_hidden(item, keys):
+    if not keys or not item:
+        return False
+    for field, kind in (('tmdb', None), ('tvdb', None), ('imdb', 'imdb')):
+        val = item.get(field)
+        if val in (None, '', 0, '0'):
+            continue
+        text = str(val)
+        if text in keys:
+            return True
+        if kind == 'imdb':
+            digits = re.sub(r'[^0-9]', '', text)
+            if digits and (digits in keys or ('tt' + digits) in keys):
+                return True
+        elif text.isdigit():
+            try:
+                if str(int(text)) in keys:
+                    return True
+            except Exception:
+                pass
+    return False
+
+
+def hidden_progress_tmdb_ids():
+    """TMDb IDs only — prefer hidden_progress_keys() for Continue Watching."""
+    keys = hidden_progress_keys()
+    return set(k for k in keys if k.isdigit())
+
+
+def directory_watched_tvshows():
+    """My Trakt Watched TV: shows with every aired episode watched.
+
+    /users/me/watched/shows is any show with history, including Continue
+    Watching. Completion uses the same progress payload as overlays and
+    Continue Watching (regular seasons only; aired_episodes > 0).
+    """
+    if getTraktCredentialsInfo() == False:
+        return []
+    rows = getTraktAsJsonPaged('/sync/watched/shows?extended=progress')
+    if not isinstance(rows, list):
+        return []
+    out = []
+    for item in rows:
+        try:
+            show = item.get('show') or {}
+            ids = show.get('ids') or {}
+            tmdb = ids.get('tmdb')
+            if not tmdb:
+                continue
+            try:
+                aired = int(show.get('aired_episodes') or 0)
+            except Exception:
+                aired = 0
+            watched_n = 0
+            for season in item.get('seasons') or []:
+                try:
+                    snum = int(season.get('number'))
+                except Exception:
+                    continue
+                if snum < 1:
+                    continue
+                watched_n += len(season.get('episodes') or [])
+            if aired <= 0 or watched_n < aired:
+                continue
+            title = show.get('title') or 'Unknown'
+            title = re.sub(r'\s(|[(])(UK|US|AU|\d{4})(|[)])$', '', title)
+            title = client_utils.replaceHTMLCodes(title)
+            year = show.get('year') or '0'
+            try:
+                year = re.sub(r'[^0-9]', '', str(year)) or '0'
+            except Exception:
+                year = '0'
+            imdb = ids.get('imdb')
+            if not imdb:
+                imdb = '0'
+            else:
+                imdb = 'tt' + re.sub(r'[^0-9]', '', str(imdb))
+            tvdb = ids.get('tvdb')
+            if not tvdb:
+                tvdb = '0'
+            else:
+                tvdb = re.sub(r'[^0-9]', '', str(tvdb))
+            collected_at = item.get('last_watched_at') or item.get('last_updated_at') or ''
+            out.append({
+                'title': title, 'originaltitle': title, 'year': year,
+                'imdb': imdb, 'tmdb': str(tmdb), 'tvdb': tvdb, 'next': '',
+                'paused_at': '0', 'collected_at': collected_at,
+            })
+        except Exception:
+            continue
+    return out
+
+
 def revokeTrakt(reopen_settings=False):
     """Revoke tokens at Trakt and clear local credentials."""
     if not getTraktCredentialsInfo():
         control.infoDialog('No Trakt account is authorised.', sound=True)
+        control.finish_auth_ui(reopen_settings=reopen_settings)
+        return
+    if not control.confirm_revoke('Trakt', reopen_settings):
         return
     try:
         token = (control.setting('trakt.token') or '').strip()
@@ -648,6 +810,8 @@ def revokeTrakt(reopen_settings=False):
         control.setSetting('trakt.token', '')
         control.setSetting('trakt.refresh', '')
         control.setSetting('trakt.expires', '')
+        from resources.lib.modules.meta_auth_alerts import clear_alert
+        clear_alert('trakt')
         try:
             from resources.lib.modules import simkl
             simkl.fallback_indicators_on_revoke('trakt')
@@ -719,6 +883,8 @@ def authTrakt(reopen_settings=False):
         control.setSetting('trakt.token', token)
         control.setSetting('trakt.refresh', refresh)
         _set_trakt_expires(token_result.get('expires_in', 7200))
+        from resources.lib.modules.meta_auth_alerts import clear_alert
+        clear_alert('trakt')
         if control.yesnoDialog('Set Trakt as your Watched Indicators provider?', heading='Watched Status Provider'):
             try:
                 from resources.lib.modules import simkl

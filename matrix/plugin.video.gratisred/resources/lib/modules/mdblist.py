@@ -91,6 +91,9 @@ def call_mdblist(path, params=None, json_data=None, method=None, _retried=False)
             method or 'get', BASE_URL % path.lstrip('/'),
             params=params, json=json_data, headers=headers, timeout=30)
         if response.status_code == 401 and not _retried:
+            new_token = _token()
+            if new_token and new_token != token:
+                return call_mdblist(path, params=params, json_data=json_data, method=method, _retried=True)
             if _refresh_access_token():
                 return call_mdblist(path, params=params, json_data=json_data, method=method, _retried=True)
         if not response.ok:
@@ -123,6 +126,8 @@ def _refresh_access_token():
             'client_id': _client_id(),
         }, timeout=20)
         if response.status_code != 200:
+            from resources.lib.modules.meta_auth_alerts import maybe_notify_refresh_failure
+            maybe_notify_refresh_failure('mdblist', response.status_code, response.text)
             return False
         data = response.json() or {}
         access = data.get('access_token')
@@ -365,6 +370,8 @@ def authMdblist(reopen_settings=False):
         info = _fetch_user_profile(access) or {}
         user = _username_from_profile(info) or _username_from_lists(access) or 'MDBList User'
         control.setSetting('mdblist.user', user)
+        from resources.lib.modules.meta_auth_alerts import clear_alert
+        clear_alert('mdblist')
         if control.yesnoDialog('Set MDBList as your Watched Indicators provider?', heading='Watched Status Provider'):
             from resources.lib.modules import simkl
             simkl.set_watched_provider('3', notify=True)
@@ -385,11 +392,16 @@ def authMdblist(reopen_settings=False):
 def revokeMdblist(reopen_settings=False):
     if not getMdblistCredentialsInfo():
         control.infoDialog('No MDBList account is authorised.', sound=True)
+        control.finish_auth_ui(reopen_settings=reopen_settings)
+        return
+    if not control.confirm_revoke('MDBList', reopen_settings):
         return
     try:
         control.setSetting('mdblist.user', '')
         control.setSetting('mdblist.token', '')
         control.setSetting('mdblist.refresh', '')
+        from resources.lib.modules.meta_auth_alerts import clear_alert
+        clear_alert('mdblist')
         _store_cached_activities({})
         from resources.lib.modules import simkl
         simkl.fallback_indicators_on_revoke('mdblist')

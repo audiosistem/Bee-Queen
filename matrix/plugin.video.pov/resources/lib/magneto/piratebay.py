@@ -1,11 +1,11 @@
-# modified by Venom for Fenomscrapers (updated 3-30-2022)
+# modified by kodifitzwell for Fenomscrapers
 """
 	Fenomscrapers Project
 """
 
 from json import loads as jsloads
 import re
-from urllib.parse import quote
+from urllib.parse import quote_plus
 from magneto.modules import client
 from magneto.modules import source_utils
 
@@ -24,9 +24,19 @@ class source:
 		self.search_link = '/q.php?q=%s&cat=0'
 		self.min_seeders = 0
 
+	def get_sources(self, url):
+		try:
+			rjson = client.request(url, timeout=self.timeout)
+			if not rjson or any(value in rjson for value in SERVER_ERROR): return
+			files = jsloads(rjson)
+			self.results.extend(files)
+		except:
+			source_utils.scraper_error('PIRATEBAY')
+
 	def sources(self, data, hostDict):
+		if not data: return []
+		self.results = []
 		sources = []
-		if not data: return sources
 		sources_append = sources.append
 		try:
 			aliases = source_utils.aliases_to_array(data['aliases'])
@@ -38,21 +48,18 @@ class source:
 
 			query = '%s %s' % (title, hdlr)
 			query = re.sub(r'[^A-Za-z0-9\s\.-]+', '', query)
-			url = self.search_link % quote(query)
+			url = self.search_link % quote_plus(query)
 			url = '%s%s' % (self.base_link, url)
 			# log_utils.log('url = %s' % url)
-
 			if 'timeout' in data: self.timeout = int(data['timeout'])
-			rjson = client.request(url, timeout=self.timeout)
-			if not rjson or any(value in rjson for value in SERVER_ERROR): return sources
-			files = jsloads(rjson)
+			self.get_sources(url)
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
 		except:
 			source_utils.scraper_error('PIRATEBAY')
 			return sources
 
-		for file in files:
+		for file in self.results:
 			try:
 				hash = file['info_hash']
 				name = source_utils.clean_name(file['name'])
@@ -76,88 +83,71 @@ class source:
 
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
-					dsize, isize = source_utils.convert_size(float(file["size"]), to='GB')
+					size = float(file['size'])
+					dsize, isize = source_utils.convert_size(size)
 					info.insert(0, isize)
 				except: dsize = 0
 				info = ' | '.join(info)
 
 				sources_append({'provider': 'piratebay', 'source': 'torrent', 'seeders': seeders, 'hash': hash, 'name': name, 'name_info': name_info,
-							'quality': quality, 'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize})
+									'quality': quality, 'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize})
 			except:
 				source_utils.scraper_error('PIRATEBAY')
 		return sources
 
 	def sources_packs(self, data, hostDict, search_series=False, total_seasons=None, bypass_filter=False):
-		self.sources = []
-		if not data: return self.sources
-		self.sources_append = self.sources.append
+		if not data: return []
+		self.results = []
+		sources = []
+		sources_append = sources.append
 		try:
-			self.search_series = search_series
-			self.total_seasons = total_seasons
-			self.bypass_filter = bypass_filter
+			aliases = source_utils.aliases_to_array(data['aliases'])
+			title = data['tvshowtitle'].replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
+			imdb = data['imdb']
+			year = data['year']
+			season_x = data['season']
+			season_xx = season_x.zfill(2)
 
-			self.aliases = source_utils.aliases_to_array(data['aliases'])
-			self.title = data['tvshowtitle'].replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
-			self.imdb = data['imdb']
-			self.year = data['year']
-			self.season_x = data['season']
-			self.season_xx = self.season_x.zfill(2)
+			query = re.sub(r'[^A-Za-z0-9\s\.-]+', '', title)
+			if search_series: urls = [
+				self.base_link + self.search_link % quote_plus(query + ' Season'),
+				self.base_link + self.search_link % quote_plus(query + ' Complete')]
+			else: urls = [
+				self.base_link + self.search_link % quote_plus(query + ' S%s' % season_xx),
+				self.base_link + self.search_link % quote_plus(query + ' Season %s' % season_x)]
 			if 'timeout' in data: self.timeout = int(data['timeout'])
-			self.undesirables = source_utils.get_undesirables()
-			self.check_foreign_audio = source_utils.check_foreign_audio()
-
-			query = re.sub(r'[^A-Za-z0-9\s\.-]+', '', self.title)
-			if search_series:
-				queries = [
-						self.search_link % quote(query + ' Season'),
-						self.search_link % quote(query + ' Complete')]
-			else:
-				queries = [
-						self.search_link % quote(query + ' S%s' % self.season_xx),
-						self.search_link % quote(query + ' Season %s' % self.season_x)]
-			threads = []
-			append = threads.append
-			for url in queries:
-				link = '%s%s' % (self.base_link, url)
-				append(source_utils.Thread(self.get_sources_packs, link))
-			[i.start() for i in threads]
-			[i.join() for i in threads]
-			return self.sources
+			thread = source_utils.Thread(self.get_sources, urls[0])
+			thread.start()
+			self.get_sources(urls[1])
+			thread.join()
+			undesirables = source_utils.get_undesirables()
+			check_foreign_audio = source_utils.check_foreign_audio()
 		except:
 			source_utils.scraper_error('PIRATEBAY')
-			return self.sources
+			return sources
 
-	def get_sources_packs(self, link):
-		try:
-			rjson = client.request(link, timeout=self.timeout)
-			if not rjson or any(value in rjson for value in SERVER_ERROR): return
-			files = jsloads(rjson)
-		except:
-			source_utils.scraper_error('PIRATEBAY')
-			return
-
-		for file in files:
+		for file in self.results:
 			try:
 				hash = file['info_hash']
 				name = source_utils.clean_name(file['name'])
 
 				episode_start, episode_end = 0, 0
-				if not self.search_series:
-					if not self.bypass_filter:
-						valid, episode_start, episode_end = source_utils.filter_season_pack(self.title, self.aliases, self.year, self.season_x, name)
+				if not search_series:
+					if not bypass_filter:
+						valid, episode_start, episode_end = source_utils.filter_season_pack(title, aliases, year, season_x, name)
 						if not valid: continue
 					package = 'season'
 
-				elif self.search_series:
-					if not self.bypass_filter:
-						valid, last_season = source_utils.filter_show_pack(self.title, self.aliases, self.imdb, self.year, self.season_x, name, self.total_seasons)
+				elif search_series:
+					if not bypass_filter:
+						valid, last_season = source_utils.filter_show_pack(title, aliases, imdb, year, season_x, name, total_seasons)
 						if not valid: continue
-					else: last_season = self.total_seasons
+					else: last_season = total_seasons
 					package = 'show'
 
-				name_info = source_utils.info_from_name(name, self.title, self.year, season=self.season_x, pack=package)
-				if source_utils.remove_lang(name_info, self.check_foreign_audio): continue
-				if self.undesirables and source_utils.remove_undesirables(name_info, self.undesirables): continue
+				name_info = source_utils.info_from_name(name, title, year, season=season_x, pack=package)
+				if source_utils.remove_lang(name_info, check_foreign_audio): continue
+				if undesirables and source_utils.remove_undesirables(name_info, undesirables): continue
 
 				url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name)
 				try:
@@ -167,16 +157,19 @@ class source:
 
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
-					dsize, isize = source_utils.convert_size(float(file["size"]), to='GB')
+					size = float(file['size'])
+					dsize, isize = source_utils.convert_size(size)
 					info.insert(0, isize)
 				except: dsize = 0
 				info = ' | '.join(info)
 
-				item = {'provider': 'piratebay', 'source': 'torrent', 'seeders': seeders, 'hash': hash, 'name': name, 'name_info': name_info, 'quality': quality,
-							'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize, 'package': package}
-				if self.search_series: item.update({'last_season': last_season})
+				item = {'provider': 'piratebay', 'source': 'torrent', 'seeders': seeders, 'hash': hash, 'name': name, 'name_info': name_info,
+							'quality': quality, 'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize,
+							'package': package}
+				if search_series: item.update({'last_season': last_season})
 				elif episode_start: item.update({'episode_start': episode_start, 'episode_end': episode_end}) # for partial season packs
-				self.sources_append(item)
+				sources_append(item)
 			except:
 				source_utils.scraper_error('PIRATEBAY')
+		return sources
 

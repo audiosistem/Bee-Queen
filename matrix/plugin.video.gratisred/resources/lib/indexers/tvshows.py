@@ -146,6 +146,8 @@ class tvshows:
         # libraries instead of dumping every show on one directory page.
         self.trakt_collection_link = self.trakt_link + '/users/me/collection/shows?limit=%s&page=1' % self.items_per_page
         self.trakt_watchlist_link = self.trakt_link + '/users/me/watchlist/shows?limit=%s&page=1' % self.items_per_page
+        # Key only — get() uses directory_watched_tvshows() (completed shows).
+        # The old /users/me/watched/shows?extended=noseasons list is any history.
         self.trakt_watchedlist_link = self.trakt_link + '/users/me/watched/shows?extended=noseasons'
         self.trakt_favorites_link = self.trakt_link + '/users/me/favorites/shows?limit=%s&page=1' % self.items_per_page
         self.trakt_played1_link = self.trakt_link + '/shows/played/weekly?limit=%s&page=1' % self.items_per_page
@@ -1465,7 +1467,12 @@ class tvshows:
                 u = urllib_parse.urlparse(url).netloc.lower()
             except:
                 pass
-            if u in self.tmdb_link and ('/list/' in url or '/collection/' in url):
+            if u in self.trakt_link and '/users/me/watched/shows' in (url or ''):
+                self.cacheToDisc = False
+                self.list = trakt.directory_watched_tvshows() or []
+                if idx == True:
+                    self.worker()
+            elif u in self.tmdb_link and ('/list/' in url or '/collection/' in url):
                 if self.addon_caching == 'true':
                     self.list = cache.get(self.tmdb_list, self.addon_caching_timeout, url)
                 else:
@@ -1669,27 +1676,12 @@ class tvshows:
                     art.update({'clearart': i['clearart']})
                 item.setArt(art)
                 item.addContextMenuItems(cm)
-                if kodi_version >= 20:
-                    info_tag = ListItemInfoTag(item, 'video')
+                info_tag = ListItemInfoTag(item, 'video')
                 castwiththumb = i.get('castwiththumb')
                 if castwiththumb and not castwiththumb == '0':
-                    if kodi_version >= 18:
-                        if kodi_version >= 20:
-                            info_tag.set_cast(castwiththumb)
-                        else:
-                            item.setCast(castwiththumb)
-                    else:
-                        cast = [(p['name'], p['role']) for p in castwiththumb]
-                        meta.update({'cast': cast})
-                if kodi_version >= 20:
-                    info_tag.set_info(control.metadataClean(meta))
-                else:
-                    item.setInfo(type='Video', infoLabels=control.metadataClean(meta))
-                video_streaminfo = {'codec': 'h264'}
-                if kodi_version >= 20:
-                    info_tag.add_stream_info('video', video_streaminfo)
-                else:
-                    item.addStreamInfo('video', video_streaminfo)
+                    info_tag.set_cast(castwiththumb)
+                info_tag.set_info(control.metadataClean(meta))
+                info_tag.add_stream_info('video', {'codec': 'h264'})
                 url = '%s?action=seasons&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s&meta=%s' % (sysaddon, systitle, year, imdb, tmdb, seas_meta)
                 control.addItem(handle=syshandle, url=url, listitem=item, isFolder=True)
             except:

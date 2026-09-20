@@ -1,12 +1,10 @@
-[B]Version 1.1.196[/B]
-- anybunny - fix: listing, playback
-- missav - fix: listing, playback
-- chaturbate -  global search: notifications disabled
-- 3movs - new site
-- camwhoresbay - fix listing
-- camwhores.tw - fix listing
-- xtapes.la - new site
-- sextb - fix: studios, thumbnails, playback
-- Pornyteen new site 
-- Xtapes fix pagination
-- Save Search query between sessions
+[B]Version 1.1.199[/B]
+- anybunny - fixed playback, listing
+- Xvideos fixed player for AI generated
+- hobbyporn fixed player
+- pornobae new site
+- AllPornStream new site
+- MegaTube new site
+- 8k Porner new site
+- Camcaps small fix player
+- stripchat optimization

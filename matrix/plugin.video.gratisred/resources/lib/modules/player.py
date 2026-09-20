@@ -90,11 +90,8 @@ class player(xbmc.Player):
                 item.setArt({'icon': thumb, 'thumb': thumb, 'poster': poster, 'fanart': fanart, 'clearlogo': clearlogo, 'clearart': clearart, 'discart': discart})
             else:
                 item.setArt({'icon': thumb, 'thumb': thumb, 'tvshow.poster': poster, 'season.poster': poster, 'fanart': fanart, 'clearlogo': clearlogo, 'clearart': clearart})
-            if kodi_version >= 20:
-                info_tag = ListItemInfoTag(item, 'video')
-                info_tag.set_info(control.metadataClean(meta))
-            else:
-                item.setInfo(type='Video', infoLabels=control.metadataClean(meta))
+            info_tag = ListItemInfoTag(item, 'video')
+            info_tag.set_info(control.metadataClean(meta))
             # Prefer setResolvedUrl when the plugin handle expects it (Kodi 22 widgets /
             # PlayMedia). Player().play() from a plugin is unsupported and can leave the
             # original plugin:// item unresolved → "One or more items failed to play".

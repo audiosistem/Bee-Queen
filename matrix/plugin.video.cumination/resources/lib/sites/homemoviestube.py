@@ -36,8 +36,9 @@ def Main():
 def List(url):
     html = utils.getHtml(url, site.url)
 
-    match = re.compile(r'class="vidItem">.+?data-src="([^"]+).+?time">([^<]+).+?href="([^"]+).+?>([^<]+)', re.DOTALL | re.IGNORECASE).findall(html)
-    for img, duration, videopage, name in match:
+    # match = re.compile(r'class="vidItem">.+?data-src="([^"]+).+?time">([^<]+).+?href="([^"]+).+?>([^<]+)', re.DOTALL | re.IGNORECASE).findall(html)
+    match = re.compile(r'class="media-card video-card".+?href="([^"]+)".+?title="([^"]+).+?src="([^"]+)".+?duration-badge">([^>]+)<', re.DOTALL | re.IGNORECASE).findall(html)
+    for videopage, name, img, duration in match:
         name = utils.cleantext(name)
         if videopage.startswith('//'):
             videopage = 'https:' + videopage
@@ -45,23 +46,27 @@ def List(url):
             img = 'https:' + img.replace(' ', '%20')
         site.add_download_link(name, videopage, 'Playvid', img, name, duration=duration)
 
-    nextp = re.compile(r"class='next'><a\s*href='([^']+)'>Next", re.DOTALL | re.IGNORECASE).search(html)
-    if nextp:
-        np = urllib_parse.urljoin(url, nextp.group(1))
-        curr_pg = re.findall(r"class='current'>([^<]+)", html)[0]
-        last_pg = re.findall(r"class='pagination.+?href.+?>([^<]+)", html)[0]
-        site.add_dir('[COLOR hotpink]Next Page[/COLOR] (Currently in Page {0} of {1})'.format(curr_pg, last_pg), np, 'List', site.img_next)
+    re_npurl = r'prev-next-item"(?!.*aria-disabled="true").+?href="([^"]+)'
+    re_npnr  = r'prev-next-item"(?!.*aria-disabled="true").+?href=".+page=(\d+)"\srel'
+    re_lpnr  = r'prev-next-item"(?!.*aria-disabled="true").+?href=".+page=(\d+)"\stitle'
+
+    utils.next_page(
+        site, '{}.List'.format(site.name), html,
+        re_npurl, re_npnr, re_lpnr=re_lpnr,
+        contextm='{}.GotoPage'.format(site.name)
+    )
+
     utils.eod()
 
 
 @site.register()
 def Categories(url):
     cathtml = utils.getHtml(url, site.url)
-    match = re.compile(r'class="category-item\s.+?data-src="([^"]+).+?href="([^"]+).+?>([^<]+)', re.IGNORECASE | re.DOTALL).findall(cathtml)
+    match = re.compile(r'class="channel-card".+?href="([^"]+).+?src="([^"]+).+?badge">([^<]+).+?channel-name">([^>]+)<', re.IGNORECASE | re.DOTALL).findall(cathtml)
     match = list(set(match))
     match.sort(key=lambda x: x[2])
-    for img, caturl, name in match:
-        name = utils.cleantext(name)
+    for caturl, img, cnt, name in match:
+        name = utils.cleantext(name + ' [COLOR blue][{}][/COLOR]'.format(cnt))
         if caturl.startswith('//'):
             caturl = 'https:' + caturl
         if img.startswith('//'):
@@ -82,12 +87,14 @@ def Search(url, keyword=None):
 @site.register()
 def Playvid(url, name, download=None):
     vp = utils.VideoPlayer(name, download)
-    vp.progress.update(25, "[CR]Loading video page[CR]")
+    vp.progress.update(25, "{}[CR]Loading video page[CR]".format(name))
     video_page = utils.getHtml(url, site.url)
 
     source = re.compile(r'<source.+?src="([^"]+)', re.DOTALL | re.IGNORECASE).search(video_page)
     if source:
-        vp.play_from_direct_link(source.group(1) + '|verifypeer=false')
+        videourl = urllib_parse.quote(source.group(1))
+        videourl = (site.url).rstrip('/') + videourl if videourl.startswith('/') else videourl
+        vp.play_from_direct_link(videourl + '|verifypeer=false')
     else:
         vp.progress.close()
         utils.notify('Oh Oh', 'No Videos found')

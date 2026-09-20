@@ -307,3 +307,106 @@ def get_release_quality(release_name, release_link=None):
         return 'SD', []
 
 
+_SXXEXX = re.compile(r'(?:^|[^a-z0-9])s(\d{1,2})e(\d{1,3})(?:[^a-z0-9]|$)', re.I)
+_RELEASE_HEAD = re.compile(
+    r'^(?:s\d{1,2}(?:e\d{1,3})?|\d{1,2}x\d{1,3}|(?:19|20)\d{2}|'
+    r'1080p|720p|2160p|480p|4k|uhd|web|webdl|webrip|bluray|bdrip|hdtv|dvdrip|'
+    r'x264|x265|h264|h265|hevc|avc|hdr|hdr10|dv|remux|'
+    r'aac|dts|atmos|ac3|eac3|ddp|truehd|'
+    r'hindi|english|tamil|telugu|multi|dual|'
+    r'esub|sub|complete|season|pack|episode|'
+    r'hdhub|hdhub4u|mkv|mp4)$',
+    re.I,
+)
+_FILENAME_PARAM = re.compile(
+    r'(?:filename\*|filename)\s*=\s*(?:UTF-8\'\')?["\']?([^"\';&]+)',
+    re.I,
+)
+
+
+def _fully_unquote(text):
+    prev = six.ensure_str(text or '')
+    for _ in range(6):
+        nxt = urllib_parse.unquote(prev)
+        if nxt == prev:
+            break
+        prev = nxt
+    return prev
+
+
+def filename_from_url(url):
+    text = _fully_unquote(url or '')
+    names = []
+    for match in _FILENAME_PARAM.finditer(text):
+        name = _fully_unquote(match.group(1)).strip().strip('"').strip("'")
+        if name:
+            names.append(name)
+    return ' '.join(names)
+
+
+def release_hay(text):
+    text = _fully_unquote(text or '')
+    extra = filename_from_url(text)
+    if extra and extra not in text:
+        text = '%s %s' % (text, extra)
+    return text
+
+
+def _dotted_name(text):
+    return re.sub(r'[^A-Za-z0-9]+', '.', text or '').strip('.').lower()
+
+
+def _title_token_in_text(text, tvshowtitle):
+    want = _dotted_name(tvshowtitle)
+    dotted = _dotted_name(text)
+    if not want or not dotted:
+        return False
+    return bool(re.search(r'(?:^|\.)%s(?:\.|$)' % re.escape(want), dotted))
+
+
+def _no_extra_show_title(text, tvshowtitle, year=None):
+    """False when the text names a longer show (Batman.Caped.Crusader vs Batman)."""
+    want = _dotted_name(tvshowtitle)
+    dotted = _dotted_name(text)
+    if not want or not dotted:
+        return True
+    match = re.search(r'(?:^|\.)%s(?:\.|$)' % re.escape(want), dotted)
+    if not match:
+        return True
+    after = dotted[match.end():].strip('.')
+    if year:
+        after = re.sub(r'^(?:%s\.)+' % re.escape(str(year)), '', after)
+    after = re.sub(r'^(?:(?:19|20)\d{2}\.)+', '', after)
+    first = after.split('.')[0] if after else ''
+    if not first:
+        return True
+    return bool(_RELEASE_HEAD.match(first))
+
+
+def episode_release_matches(text, tvshowtitle, season, episode, year=None):
+    """Keep host streams for this episode/title.
+
+    Drops a different SxxExx, a longer title (Batman.Caped.Crusader vs Batman),
+    or a nameless PixelDrain-style URL with no show title and no season tag.
+    """
+    text = release_hay(text)
+    if not text:
+        return False
+    if not _no_extra_show_title(text, tvshowtitle, year):
+        return False
+    if season in (None, '') or episode in (None, ''):
+        return _title_token_in_text(text, tvshowtitle)
+    blob = ' %s ' % text
+    matches = list(_SXXEXX.finditer(blob))
+    if not matches:
+        return _title_token_in_text(text, tvshowtitle)
+    try:
+        want_s, want_e = int(season), int(episode)
+    except Exception:
+        return _title_token_in_text(text, tvshowtitle)
+    for match in matches:
+        if int(match.group(1)) == want_s and int(match.group(2)) == want_e:
+            return True
+    return False
+
+

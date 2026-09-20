@@ -452,29 +452,14 @@ class seasons:
                     art.update({'clearart': i['clearart']})
                 item.setArt(art)
                 item.addContextMenuItems(cm)
-                if kodi_version >= 20:
-                    info_tag = ListItemInfoTag(item, 'video')
+                info_tag = ListItemInfoTag(item, 'video')
                 castwiththumb = i.get('castwiththumb')
                 if castwiththumb and not castwiththumb == '0':
-                    if kodi_version >= 18:
-                        if kodi_version >= 20:
-                            info_tag.set_cast(castwiththumb)
-                        else:
-                            item.setCast(castwiththumb)
-                    else:
-                        cast = [(p['name'], p['role']) for p in castwiththumb]
-                        meta.update({'cast': cast})
+                    info_tag.set_cast(castwiththumb)
                 season_info = control.metadataClean(meta)
                 season_info.pop('tvshowtitle', None)
-                if kodi_version >= 20:
-                    info_tag.set_info(season_info)
-                else:
-                    item.setInfo(type='Video', infoLabels=season_info)
-                video_streaminfo = {'codec': 'h264'}
-                if kodi_version >= 20:
-                    info_tag.add_stream_info('video', video_streaminfo)
-                else:
-                    item.addStreamInfo('video', video_streaminfo)
+                info_tag.set_info(season_info)
+                info_tag.add_stream_info('video', {'codec': 'h264'})
                 url = '%s?action=episodes&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s&meta=%s&season=%s' % (sysaddon, systitle, year, imdb, tmdb, sysmeta, season)
                 control.addItem(handle=syshandle, url=url, listitem=item, isFolder=True)
             except:
@@ -535,8 +520,9 @@ class episodes:
         self.tmdb_search_link = self.tmdb_link + '/3/search/tv?api_key=%s&language=en-US&query=%s&page=1' % (self.tmdb_key, '%s')
 
         self.trakt_mycalendar_link = self.trakt_link + '/calendars/my/shows/date[30]/31/' #go back 30 and show all shows aired until tomorrow
-        self.trakt_progress_link = self.trakt_link + '/users/me/watched/shows'
-        self.trakt_hiddenprogress_link = self.trakt_link + '/users/hidden/progress_watched?limit=1000&type=show'
+        # Same paged progress feed as overlays / Red Light In Progress.
+        # /users/me/watched/shows?extended=full no longer includes seasons.
+        self.trakt_progress_link = self.trakt_link + '/sync/watched/shows?extended=progress'
         self.trakt_history_link = self.trakt_link + '/users/me/history/shows?limit=300' # '40'
         self.trakt_ondeck_link = self.trakt_link + '/sync/playback/episodes?limit=20'
         self.trakt_list_link = self.trakt_link + '/users/%s/lists/%s/items'
@@ -632,16 +618,12 @@ class episodes:
                     self.list = self.trakt_episodes_list(url, self.trakt_user, self.lang)
                 self.list = sorted(self.list, key=lambda k: int(k['paused_at']), reverse=True)
             elif self.trakt_link in url and url == self.trakt_progress_link:
+                # Live fetch: Dropped / hidden-from-progress changes must show
+                # on Refresh. The 12h cache kept titles after they were dropped.
+                self.cacheToDisc = False
                 self.blist = []
-                if self.addon_caching == 'true':
-                    self.blist = cache.get(self.trakt_progress_list, self.addon_caching_timeout, url, self.trakt_user, self.lang)
-                else:
-                    self.blist = self.trakt_progress_list(url, self.trakt_user, self.lang)
                 self.list = []
-                if self.addon_caching == 'true':
-                    self.list = cache.get(self.trakt_progress_list, self.addon_caching_timeout, url, self.trakt_user, self.lang)
-                else:
-                    self.list = self.trakt_progress_list(url, self.trakt_user, self.lang)
+                self.list = self.trakt_progress_list(url, self.trakt_user, self.lang)
             elif self.trakt_link in url and url == self.trakt_mycalendar_link:
                 self.blist = []
                 if self.addon_caching == 'true':
@@ -943,8 +925,11 @@ class episodes:
 ### Recode Stopped Here...
     def trakt_progress_list(self, url, user, lang):
         try:
-            url += '?extended=full'
-            result = trakt.getTraktAsJson(url)
+            if url and 'extended=' not in url:
+                url = url + ('&' if '?' in url else '?') + 'extended=progress'
+            result = trakt.getTraktAsJsonPaged(url or '/sync/watched/shows?extended=progress')
+            if not isinstance(result, list):
+                return
         except:
             #log_utils.log('trakt_progress_list', 1)
             return
@@ -952,15 +937,21 @@ class episodes:
         sortorder = control.setting('prgr.sortorder')
         for item in result:
             try:
-                num_1 = 0
-                for i in range(0, len(item['seasons'])):
-                    if item['seasons'][i]['number'] > 0:
-                        num_1 += len(item['seasons'][i]['episodes'])
-                num_2 = int(item['show']['aired_episodes'])
-                if num_1 >= num_2:
+                seasons = [s for s in (item.get('seasons') or []) if int(s.get('number') or 0) > 0]
+                if not seasons:
                     raise Exception()
-                season = str(item['seasons'][-1]['number'])
-                episode = [x for x in item['seasons'][-1]['episodes'] if 'number' in x]
+                num_1 = 0
+                for s in seasons:
+                    num_1 += len(s.get('episodes') or [])
+                try:
+                    num_2 = int((item.get('show') or {}).get('aired_episodes') or 0)
+                except Exception:
+                    num_2 = 0
+                if num_2 > 0 and num_1 >= num_2:
+                    raise Exception()
+                last_season = seasons[-1]
+                season = str(last_season.get('number'))
+                episode = [x for x in (last_season.get('episodes') or []) if 'number' in x]
                 episode = sorted(episode, key=lambda x: x['number'])
                 episode = str(episode[-1]['number'])
                 tvshowtitle = item.get('show', {}).get('title')
@@ -983,11 +974,11 @@ class episodes:
                     imdb = 'tt' + re.sub(r'[^0-9]', '', str(imdb))
                 tvdb = item['show'].get('ids', {}).get('tvdb') or '0'
                 if not tvdb or tvdb == '0':
-                    tvdb == '0'
+                    tvdb = '0'
                 else:
                     tvdb = re.sub(r'[^0-9]', '', str(tvdb))
                 tmdb = item['show'].get('ids', {}).get('tmdb') or '0'
-                if not tvdb or tvdb == '0':
+                if not tmdb or tmdb == '0':
                     tmdb = '0'
                 else:
                     tmdb = str(tmdb)
@@ -1027,10 +1018,10 @@ class episodes:
                 #log_utils.log('trakt_progress_list', 1)
                 pass
         try:
-            result = trakt.getTraktAsJson(self.trakt_hiddenprogress_link)
-            result = [str(i['show']['ids']['tmdb']) for i in result]
-            items = [i for i in items if not i['tmdb'] in result]
+            hidden = trakt.hidden_progress_keys()
+            items = [i for i in items if not trakt.progress_item_hidden(i, hidden)]
         except:
+            hidden = set()
             #log_utils.log('trakt_progress_list', 1)
             pass
         def items_list(i):
@@ -1048,6 +1039,8 @@ class episodes:
                 except:
                     #log_utils.log('trakt_progress_list', 1)
                     pass
+            if trakt.progress_item_hidden({'tmdb': tmdb, 'imdb': imdb, 'tvdb': tvdb}, hidden):
+                return
             try:
                 item = [x for x in self.blist if x['tmdb'] == tmdb and x['snum'] == i['snum'] and x['enum'] == i['enum']][0]
                 item['action'] = 'episodes'
@@ -2379,38 +2372,23 @@ class episodes:
                     percentPlayed = int(float(offset) / float(meta['duration']) * 100)
                     item.setProperty('resumetime', str(offset))
                     item.setProperty('percentplayed', str(percentPlayed))
-                if kodi_version >= 20:
-                    info_tag = ListItemInfoTag(item, 'video')
+                info_tag = ListItemInfoTag(item, 'video')
                 castwiththumb = i.get('castwiththumb')
                 if castwiththumb and not castwiththumb == '0':
-                    if kodi_version >= 18:
-                        if kodi_version >= 20:
-                            info_tag.set_cast(castwiththumb)
-                        else:
-                            item.setCast(castwiththumb)
-                    else:
-                        cast = [(p['name'], p['role']) for p in castwiththumb]
-                        meta.update({'cast': cast})
-                if kodi_version >= 20:
-                    info_tag.set_info(control.metadataClean(meta))
-                else:
-                    item.setInfo(type='Video', infoLabels=control.metadataClean(meta))
-                video_streaminfo = {'codec': 'h264'}
-                if kodi_version >= 20:
-                    info_tag.add_stream_info('video', video_streaminfo)
-                else:
-                    item.addStreamInfo('video', video_streaminfo)
+                    info_tag.set_cast(castwiththumb)
+                info_tag.set_info(control.metadataClean(meta))
+                info_tag.add_stream_info('video', {'codec': 'h264'})
                 control.addItem(handle=syshandle, url=url, listitem=item, isFolder=isFolder)
             except:
                 #log_utils.log('episodeDirectory', 1)
                 pass
         if self.episode_views == 'true':
             control.content(syshandle, 'seasons')
-            control.directory(syshandle, cacheToDisc=True)
+            control.directory(syshandle, cacheToDisc=getattr(self, 'cacheToDisc', True) is not False)
             views.setView('seasons')
         else:
             control.content(syshandle, 'episodes')
-            control.directory(syshandle, cacheToDisc=True)
+            control.directory(syshandle, cacheToDisc=getattr(self, 'cacheToDisc', True) is not False)
             views.setView('episodes')
 
 

@@ -75,6 +75,7 @@ class source:
 				if undesirables and source_utils.remove_undesirables(name_info, undesirables): continue
 
 				url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name)
+
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
 					size = float(file['size'])

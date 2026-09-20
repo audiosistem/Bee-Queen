@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<addon id="plugin.video.gratisred" version="1.3.3" name="[COLOR red]Gratis Red[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]">
+<addon id="plugin.video.gratisred" name="[COLOR red]Gratis Red[/COLOR]" version="1.3.5" provider-name="[COLOR red]The Red Wizard[/COLOR]">
     <requires>
         <import addon="script.gratisred.artwork" version="1.0.5"/>
         <import addon="script.module.kodi-six"/>
@@ -23,13 +23,20 @@
 		<language>en</language>
 		<platform>all</platform>
 		<license>GPL-3.0</license>
-		<forum>https://t.me/+XiuBf9KvPfw2MzVk</forum>
+		<forum>https://t.me/+X-lt1ZDii3I3YjA0</forum>
 		<website>https://redwizard.xyz/</website> 
-		<email>info@redwizard.xyz</email>
-		<source>https://github.com/The-Red-Wizard</source>
-        <news>2026-09-05
-- Summary of v1.3.3 (see Tools > Changelog for the detail):
- * Trakt paged fetches keep going after a full 250-item page</news>
+		<source>https://github.com/The-Red-Wizard/TheRedWizard</source>
+        <news>2026-09-18
+- Summary of v1.3.5 (see Tools > Changelog for the detail):
+ * Trakt Continue Watching uses the same progress feed as Red Light In Progress (Dropped excluded, live list)
+ * Trakt Watched (TV) is completed shows only, not partially watched
+ * Simkl Continue Watching is started shows only; Plan to Watch stays the Watchlist slot
+ * Authorise in Account Settings is picked up without a Kodi restart
+ * Dead Trakt / Simkl / MDBList / TMDb grants toast once: Revoke and Authorise again
+ * Revoke Authorisation asks first; Account Settings stay open
+ * Lists use InfoTag only (no ListItem.setInfo warnings)
+ * My Trakt progress/watched shelves always show when authorised
+ * HdHub drops Caped Crusader-style longer titles, wrong SxxExx, and nameless PixelDrain links</news>
         <assets>
             <icon>resources/images/icon.png</icon>
             <fanart>resources/images/fanart.jpg</fanart>

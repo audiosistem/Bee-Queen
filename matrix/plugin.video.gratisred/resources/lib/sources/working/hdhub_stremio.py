@@ -2,10 +2,11 @@
 
 import re
 
-from six.moves.urllib_parse import parse_qs, urlencode
+from six.moves.urllib_parse import parse_qs, unquote, urlencode
 
 from resources.lib.modules import client
 from resources.lib.modules import scrape_sources
+from resources.lib.modules import source_utils
 #from resources.lib.modules import log_utils
 
 _BASE = ('https://hdhub.thevolecitor.qzz.io/'
@@ -18,6 +19,10 @@ class source:
         self.base_link = _BASE
         self.domains = ['hdhub.thevolecitor.qzz.io']
         self.probe_link = _BASE + '/stream/movie/tt0111161.json'
+        self._title = ''
+        self._year = ''
+        self._season = None
+        self._episode = None
 
 
     def movie(self, imdb, tmdb, title, localtitle, aliases, year):
@@ -26,7 +31,7 @@ class source:
 
 
     def tvshow(self, imdb, tmdb, tvdb, tvshowtitle, localtvshowtitle, aliases, year):
-        url = {'imdb': imdb, 'media': 'series'}
+        url = {'imdb': imdb, 'media': 'series', 'title': tvshowtitle or localtvshowtitle or '', 'year': year or ''}
         return urlencode(url)
 
 
@@ -70,6 +75,15 @@ class source:
         desc = stream.get('description', '') or ''
         url = stream.get('url', '') or ''
         hints = stream.get('behaviorHints', {}) or {}
+        if not isinstance(hints, dict):
+            hints = {}
+        raw_name = hints.get('filename') or name
+        if not raw_name or raw_name.lower() in ('hdhub', 'hdhub4u'):
+            from_url = source_utils.filename_from_url(url)
+            if from_url:
+                raw_name = from_url
+        if not raw_name and desc:
+            raw_name = desc.split('\n')[0].strip()
 
         size_str = ''
         size_bytes = hints.get('videoSize', 0) or 0
@@ -80,7 +94,7 @@ class source:
             if m:
                 size_str = m.group(1).strip()
 
-        haystack = (name + ' ' + desc).upper()
+        haystack = (name + ' ' + desc + ' ' + (raw_name or '')).upper()
         quality = ''
         if '4K' in haystack or '2160P' in haystack or 'UHD' in haystack:
             quality = '4K'
@@ -154,7 +168,7 @@ class source:
             'rtype': rtype,
             'size_str': size_str,
             'server': server,
-            'raw_name': name,
+            'raw_name': raw_name or name,
         }
 
 
@@ -169,19 +183,47 @@ class source:
         return ''
 
 
+    def _stream_hay(self, stream):
+        hints = stream.get('behaviorHints') or {}
+        if not isinstance(hints, dict):
+            hints = {}
+        url = stream.get('url') or ''
+        parts = [
+            stream.get('name') or '',
+            stream.get('title') or '',
+            stream.get('description') or '',
+            url,
+            hints.get('filename') or '',
+            hints.get('bingeGroup') or '',
+        ]
+        try:
+            if url:
+                parts.append(unquote(url))
+        except Exception:
+            pass
+        return source_utils.release_hay(' '.join(str(p) for p in parts if p))
+
+
     def _build_info(self, parsed):
         parts = []
         for key in ('server', 'quality', 'codec', 'hdr', 'rtype', 'audio', 'size_str'):
             val = parsed.get(key)
             if val:
                 parts.append(val)
+        raw = parsed.get('raw_name') or ''
+        if raw and raw not in parts:
+            parts.append(raw)
         if parts:
             return ' | '.join(parts)
-        return parsed.get('raw_name') or 'HdHub'
+        return 'HdHub'
 
 
     def _append_stream(self, hostDict, stream):
         try:
+            hay = self._stream_hay(stream)
+            if self._season is not None and not source_utils.episode_release_matches(
+                    hay, self._title, self._season, self._episode, self._year):
+                return
             parsed = self._parse_stream(stream)
             url = parsed.get('url')
             if not url or url.startswith('magnet:') or url.endswith('.torrent'):
@@ -195,6 +237,11 @@ class source:
                 return
             if quality:
                 item['quality'] = quality
+            raw = parsed.get('raw_name') or source_utils.filename_from_url(url)
+            if raw:
+                info_now = item.get('info') or ''
+                if raw.lower() not in str(info_now).lower():
+                    item['info'] = ('%s | %s' % (info_now, raw)).strip(' |')
             if scrape_sources.check_host_limit(item['source'], self.results):
                 return
             self.results.append(item)
@@ -213,12 +260,17 @@ class source:
             if not imdb:
                 return self.results
             media = data.get('media', 'movie')
+            self._title = data.get('title') or ''
+            self._year = data.get('year') or ''
+            self._season = None
+            self._episode = None
             if media == 'series':
                 season = data.get('season')
                 episode = data.get('episode')
                 if not (season and episode):
                     return self.results
-                resource_id = '%s:%s:%s' % (imdb, int(season), int(episode))
+                self._season, self._episode = int(season), int(episode)
+                resource_id = '%s:%s:%s' % (imdb, self._season, self._episode)
                 streams = self._fetch_streams('series', resource_id)
             else:
                 streams = self._fetch_streams('movie', imdb)

@@ -3,8 +3,8 @@
 	Fenomscrapers Project
 """
 
-import xml.etree.ElementTree as ET
 import requests
+import xml.etree.ElementTree as ET
 from magneto.modules import source_utils
 
 

@@ -32,8 +32,18 @@ addonInfo = xbmcaddon.Addon().getAddonInfo
 lang = xbmcaddon.Addon().getLocalizedString
 lang2 = xbmc.getLocalizedString
 
-setting = xbmcaddon.Addon().getSetting
-setSetting = xbmcaddon.Addon().setSetting
+def setting(id):
+    # Fresh Addon() so the service sees Authorise/Revoke written from Settings.
+    try:
+        return xbmcaddon.Addon().getSetting(id)
+    except Exception:
+        return ''
+
+def setSetting(id, value):
+    try:
+        return xbmcaddon.Addon().setSetting(id, value)
+    except Exception:
+        return None
 
 addItem = xbmcplugin.addDirectoryItem
 addItems = xbmcplugin.addDirectoryItems
@@ -436,11 +446,26 @@ def queueItem():
     return execute('Action(Queue)')
 
 
-def yesnoDialog(message, heading=addonInfo('name'), nolabel='', yeslabel=''):
+def yesnoDialog(message, heading=addonInfo('name'), nolabel='', yeslabel='', default_no=False):
     if getKodiVersion() < 19:
         return dialog.yesno(heading, message, '', '', nolabel, yeslabel)
-    else:
-        return dialog.yesno(heading, message, nolabel, yeslabel)
+    if default_no:
+        try:
+            default = getattr(xbmcgui, 'DLG_YESNO_NO_BTN', None)
+            if default is not None:
+                return dialog.yesno(heading, message, nolabel, yeslabel, 0, default)
+        except TypeError:
+            pass
+    return dialog.yesno(heading, message, nolabel, yeslabel)
+
+
+def confirm_revoke(name, reopen_settings=False):
+    ok = yesnoDialog(
+        'Revoke authorisation of your [B]%s[/B] account?' % name,
+        heading=name, nolabel='Cancel', yeslabel='Revoke', default_no=True)
+    if not ok and reopen_settings:
+        reopen_account_settings()
+    return ok
 
 
 def okDialog(message, heading=addonInfo('name')):
@@ -786,13 +811,19 @@ def reopen_settings_category(category, setting=0):
 
 
 def finish_auth_ui(reopen_settings=False):
-    """Refresh addon menus after auth changes; optionally return to Account Settings."""
-    refresh_addon_container()
+    """Refresh addon menus after auth changes; optionally return to Account Settings.
+
+    Settings rows use option=close, so the window is already gone. Reopen it
+    without Container.Update(...,replace), which rebuilds the folder behind
+    (often the addon root) and looks like a jump to the main menu.
+    """
     if reopen_settings:
         try:
             reopen_account_settings()
         except Exception:
             pass
+        return
+    refresh_addon_container()
 
 
 def _addons_database_path():

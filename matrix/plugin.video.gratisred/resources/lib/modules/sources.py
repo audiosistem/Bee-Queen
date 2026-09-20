@@ -21,6 +21,7 @@ from resources.lib.modules import cleantitle
 from resources.lib.modules import client
 from resources.lib.modules import control
 from resources.lib.modules import scrape_sources
+from resources.lib.modules import source_utils
 from resources.lib.modules import trakt
 from resources.lib.modules import workers
 from resources.lib.modules import log_utils
@@ -33,8 +34,6 @@ try:
     import resolveurl
 except:
     pass
-
-kodi_version = control.getKodiVersion()
 
 
 class sources:
@@ -59,6 +58,10 @@ class sources:
         self.remove_captcha = control.setting('remove.captcha') or 'false'
         self.remove_hevc = control.setting('remove.hevc') or 'false'
         self.remove_dupes = control.setting('remove.dupes') or 'true'
+        self._filter_tvshowtitle = None
+        self._filter_season = None
+        self._filter_episode = None
+        self._filter_year = None
 
 
     def errorForSources(self):
@@ -526,6 +529,17 @@ class sources:
                 self.sources = list(self.uniqueSourcesGen(self.sources))
         except:
             pass
+        if _content == 'episode' and self._filter_tvshowtitle:
+            kept = []
+            for i in self.sources:
+                if (i.get('provider') or '') != 'hdhub_stremio':
+                    kept.append(i)
+                    continue
+                hay = ' '.join(str(i.get(k) or '') for k in ('info', 'url', 'label'))
+                if source_utils.episode_release_matches(
+                        hay, self._filter_tvshowtitle, self._filter_season, self._filter_episode, self._filter_year):
+                    kept.append(i)
+            self.sources = kept
         if self.remove_hevc == 'true':
             self.sources = [i for i in self.sources if not any(x in i['url'].lower() for x in ['hevc', 'h265', 'x265', 'h.265', 'x.265']) and not any(x in i.get('info', '').lower() for x in ['hevc', 'h265', 'x265', 'h.265', 'x.265'])]
         if self.remove_captcha == 'true':
@@ -546,6 +560,10 @@ class sources:
         sourceDict = self.sourceDict
         progressDialog.update(0, 'Preparing Sources...')
         content = 'movie' if tvshowtitle == None else 'episode'
+        self._filter_tvshowtitle = None
+        self._filter_season = None
+        self._filter_episode = None
+        self._filter_year = None
         if content == 'movie':
             sourceDict = [(i[0], i[1], getattr(i[1], 'movie', None)) for i in sourceDict]
             genres = trakt.getGenre('movie', 'imdb', imdb)
@@ -575,6 +593,10 @@ class sources:
                 threads.append(workers.Thread(self.getMovieSource, title, localtitle, aliases, year, imdb, tmdb, i[0], i[1]))
         else:
             tvshowtitle, imdb, year, season, episode = cleantitle.scene_tvtitle(tvshowtitle, imdb, year, season, episode)
+            self._filter_tvshowtitle = tvshowtitle
+            self._filter_season = season
+            self._filter_episode = episode
+            self._filter_year = year
             localtvshowtitle = self.getLocalTitle(tvshowtitle, imdb, content)
             aliases = self.getAliasTitles(imdb, localtvshowtitle, content)
             if not any(i.get('title', '').lower() == tvshowtitle.lower() for i in aliases):
@@ -767,21 +789,13 @@ class sources:
                 item.addContextMenuItems(cm)
                 if listMeta == 'true':
                     item.setArt({'thumb': thumb, 'icon': thumb, 'poster': poster, 'fanart': fanart, 'clearlogo': clearlogo, 'clearart': clearart, 'discart': discart})
-                    video_streaminfo = {'codec': 'h264'}
-                    if kodi_version >= 20:
-                        info_tag = ListItemInfoTag(item, 'video')
-                        info_tag.add_stream_info('video', video_streaminfo)
-                        info_tag.set_info(control.metadataClean(meta))
-                    else:
-                        item.addStreamInfo('video', video_streaminfo)
-                        item.setInfo(type='video', infoLabels=control.metadataClean(meta))
+                    info_tag = ListItemInfoTag(item, 'video')
+                    info_tag.add_stream_info('video', {'codec': 'h264'})
+                    info_tag.set_info(control.metadataClean(meta))
                 else:
                     item.setArt({'thumb': thumb})
-                    if kodi_version >= 20:
-                        info_tag = ListItemInfoTag(item, 'video')
-                        info_tag.set_info({})
-                    else:
-                        item.setInfo(type='video', infoLabels={})
+                    info_tag = ListItemInfoTag(item, 'video')
+                    info_tag.set_info({})
                 control.addItem(handle=syshandle, url=sysurl, listitem=item, isFolder=False)
             except:
                 pass

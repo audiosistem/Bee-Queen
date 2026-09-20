@@ -84,6 +84,19 @@ def getTMDbCredentialsInfo():
     return True
 
 
+def _tmdb_notify_if_dead(payload, http_status=None):
+    try:
+        code = int(http_status) if http_status is not None else 0
+    except (TypeError, ValueError):
+        code = 0
+    tmdb_status = payload.get('status_code') if isinstance(payload, dict) else None
+    if code != 401 and tmdb_status not in (3, 17):
+        return False
+    from resources.lib.modules.meta_auth_alerts import maybe_notify_refresh_failure
+    maybe_notify_refresh_failure('tmdb', 401 if code == 401 else (code or 401), payload)
+    return True
+
+
 def authTMDb(reopen_settings=False):
     from resources.lib.modules import auth_utils
     progress = None
@@ -141,6 +154,8 @@ def authTMDb(reopen_settings=False):
         control.setSetting('tmdb.session', session_id)
         control.setSetting('tmdb.id', str(account_info.get('id', '')))
         control.setSetting('tmdb.user', str(account_info.get('username', '')))
+        from resources.lib.modules.meta_auth_alerts import clear_alert
+        clear_alert('tmdb')
         control.infoDialog('TMDb Auth Successful.', sound=True)
         control.finish_auth_ui(reopen_settings=reopen_settings)
         return
@@ -156,6 +171,9 @@ def delete_session(reopen_settings=False):
     account = _tmdb_account_settings()
     if account['session_id'] == '':
         control.infoDialog('No TMDb account is authorised.', sound=True)
+        control.finish_auth_ui(reopen_settings=reopen_settings)
+        return
+    if not control.confirm_revoke('TMDb', reopen_settings):
         return
     try:
         url = API_URL + 'authentication/session?api_key=%s' % _tmdb_api_key()
@@ -168,6 +186,8 @@ def delete_session(reopen_settings=False):
     control.setSetting('tmdb.session', '')
     control.setSetting('tmdb.id', '')
     control.setSetting('tmdb.user', '')
+    from resources.lib.modules.meta_auth_alerts import clear_alert
+    clear_alert('tmdb')
     control.infoDialog('TMDb Account Revoked.', sound=True)
     control.finish_auth_ui(reopen_settings=reopen_settings)
 
@@ -175,7 +195,9 @@ def delete_session(reopen_settings=False):
 def get_account_details(session_id):
     try:
         url = API_URL + 'account?api_key=%s&session_id=%s' % (_tmdb_api_key(), session_id)
-        result = requests.get(url, headers=HEADERS).json()
+        resp = requests.get(url, headers=HEADERS)
+        result = resp.json()
+        _tmdb_notify_if_dead(result, resp.status_code)
         account_username = result['username']
         account_name = result['name']
         account_id = result['id']
@@ -265,7 +287,10 @@ def get_created_lists(url=None, list_type=None):
         while page <= total_pages:
             lists_url = API_URL + 'account/%s/lists?api_key=%s&language=en-US&session_id=%s&page=%s' % (
                 account['account_id'], _tmdb_api_key(), account['session_id'], page)
-            result = requests.get(lists_url, headers=HEADERS, timeout=30).json()
+            resp = requests.get(lists_url, headers=HEADERS, timeout=30)
+            result = resp.json()
+            if _tmdb_notify_if_dead(result, resp.status_code):
+                break
             lists = result.get('results') or []
             if not lists:
                 break
@@ -537,7 +562,9 @@ def get_movie_account_states(tmdb):
     try:
         url = API_URL + 'movie/%s/account_states?api_key=%s&session_id=%s' % (tmdb, _tmdb_api_key(), _tmdb_account_settings()['session_id'])
         result = requests.get(url, headers=HEADERS, timeout=20)
-        return result.json()
+        payload = result.json()
+        _tmdb_notify_if_dead(payload, result.status_code)
+        return payload
     except:
         #log_utils.log('get_movie_account_states', 1)
         return
@@ -547,7 +574,9 @@ def get_tvshow_account_states(tmdb):
     try:
         url = API_URL + 'tv/%s/account_states?api_key=%s&session_id=%s' % (tmdb, _tmdb_api_key(), _tmdb_account_settings()['session_id'])
         result = requests.get(url, headers=HEADERS, timeout=20)
-        return result.json()
+        payload = result.json()
+        _tmdb_notify_if_dead(payload, result.status_code)
+        return payload
     except:
         #log_utils.log('get_tvshow_account_states', 1)
         return

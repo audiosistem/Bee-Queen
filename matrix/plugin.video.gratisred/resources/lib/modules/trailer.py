@@ -20,8 +20,6 @@ try:
 except:
     pass
 
-kodi_version = control.getKodiVersion()
-
 
 class source:
     def __init__(self):
@@ -285,11 +283,8 @@ class source:
                 url = self.worker(url)
             item = control.item(label=title, path=url)
             item.setProperty('IsPlayable', 'true')
-            if kodi_version >= 20:
-                info_tag = ListItemInfoTag(item, 'video')
-                info_tag.set_info({'title': title})
-            else:
-                item.setInfo(type='video', infoLabels={'title': title})
+            info_tag = ListItemInfoTag(item, 'video')
+            info_tag.set_info({'title': title})
             control.resolve(handle=int(sys.argv[1]), succeeded=True, listitem=item)
             if windowedtrailer == 1:
                 control.sleep(1000)

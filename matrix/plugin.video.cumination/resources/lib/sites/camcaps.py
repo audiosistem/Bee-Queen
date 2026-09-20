@@ -26,7 +26,8 @@ import xbmcgui
 from six.moves import urllib_parse
 
 
-site = AdultSite('camcaps', '[COLOR hotpink]Camcaps[/COLOR]', 'https://camcaps.io/', 'https://camcaps.io/images/logo/logo.png', 'camcaps')
+site = AdultSite('camcaps', '[COLOR hotpink]Camcaps[/COLOR]', 'https://camcaps.tv/', 'camcaps', 'camcaps')
+
 
 @site.register(default_mode=True)
 def Main(url):
@@ -101,8 +102,11 @@ def Play(url, name, download=None):
         if '/vtplayer.net/' in refurl:
             refurl = refurl.replace('embed-', '')
         if vp.resolveurl.HostedMediaFile(refurl):
-            vp.play_from_link_to_resolve(refurl)
-            return
+            try:
+                vp.play_from_link_to_resolve(refurl)
+                return
+            except Exception as e:
+                utils.kodilog(f"Resolve failed: {e}")
         refpage = utils.getHtml(refurl)
         if '/playerz/' in refurl:
             videourl = re.compile(r'"src":"\.([^"]+)"', re.DOTALL | re.IGNORECASE).findall(refpage)[0]

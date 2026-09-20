@@ -44,6 +44,8 @@ _SIMKL_MOVIE_FULL_SYNC_KEYS = ('completed', 'removed_from_list')
 _SIMKL_SHOW_FULL_SYNC_KEYS = ('removed_from_list',)
 _SIMKL_TV_SYNC_QUERY = 'extended=full&episode_watched_at=yes&include_all_episodes=yes'
 _SIMKL_ANIME_SYNC_QUERY = 'extended=full_anime_seasons&episode_watched_at=yes&include_all_episodes=yes'
+# Bust Continue Watching seeds that defaulted to S01 when Simkl next_to_watch was ignored.
+_SIMKL_TV_INDICATOR_VER = 'next_v1'
 # Phase 2 multi-type: one /sync/all-items?date_from=… (shows + anime + movies).
 _SIMKL_PHASE2_ALL_QUERY = 'extended=full_anime_seasons&episode_watched_at=yes&include_all_episodes=yes'
 
@@ -321,6 +323,9 @@ def call_simkl(path, data=None, method=None):
         if resp.status_code == 204:
             return True
         log_utils.log('Simkl HTTP %s %s' % (resp.status_code, url), 1)
+        if resp.status_code == 401:
+            from resources.lib.modules.meta_auth_alerts import maybe_notify_refresh_failure
+            maybe_notify_refresh_failure('simkl', 401)
     except Exception as e:
         log_utils.log('Simkl Error: %s' % e, 1)
     return None
@@ -406,6 +411,8 @@ def authSimkl(reopen_settings=False):
             user = str(u.get('name') or u.get('login') or u.get('username') or user)
         control.setSetting('simkl.user', user)
         control.setSetting('simkl.authed', 'yes')
+        from resources.lib.modules.meta_auth_alerts import clear_alert
+        clear_alert('simkl')
         if control.yesnoDialog('Set Simkl as your Watched Indicators provider?', heading='Watched Status Provider'):
             set_watched_provider('2', notify=True)
         try:
@@ -425,11 +432,16 @@ def authSimkl(reopen_settings=False):
 def revokeSimkl(reopen_settings=False):
     if not getSimklCredentialsInfo():
         control.infoDialog('No Simkl account is authorised.', sound=True)
+        control.finish_auth_ui(reopen_settings=reopen_settings)
+        return
+    if not control.confirm_revoke('Simkl', reopen_settings):
         return
     try:
         control.setSetting('simkl.user', '')
         control.setSetting('simkl.token', '')
         control.setSetting('simkl.authed', '')
+        from resources.lib.modules.meta_auth_alerts import clear_alert
+        clear_alert('simkl')
         _store_cached_activities({})
         fallback_indicators_on_revoke('simkl')
         _bust_sync_cache()
@@ -793,11 +805,23 @@ def dropped_tmdb_ids():
     return ids
 
 
+def _further_se(a, b):
+    if not a:
+        return b
+    if not b:
+        return a
+    return a if a >= b else b
+
+
 def progress_seeds():
     """Continue Watching seeds: last watched ep per show (exclude Dropped).
 
     Shape matches the pre-enrichment items used by trakt_progress_list
     (snum/enum = last watched; enrichment resolves the *next* episode).
+    Prefer Simkl next_to_watch so multi-season shows open the current season
+    instead of defaulting to S01 when history timestamps are thin.
+    Requires at least one watched episode so Plan to Watch stays on its
+    Watchlist-style show list, matching Trakt / MDBList Continue Watching.
     """
     if not getSimklCredentialsInfo():
         return []
@@ -809,16 +833,36 @@ def progress_seeds():
             tmdb, aired, watched = str(row[0]), int(row[1]), row[2] or []
         except Exception:
             continue
+        extra = row[3] if len(row) > 3 and isinstance(row[3], dict) else {}
         if not tmdb or tmdb == '0' or tmdb in dropped:
             continue
         if not watched:
             continue
-        if len(watched) >= aired > 0:
+        last = None
+        pair = sorted(watched, key=lambda se: (int(se[0]), int(se[1])))[-1]
+        try:
+            last = (int(pair[0]), int(pair[1]))
+        except Exception:
+            last = None
+        nxt = extra.get('next')
+        if nxt and len(nxt) == 2:
+            try:
+                last = _further_se(last, (int(nxt[0]), int(nxt[1]) - 1))
+            except Exception:
+                pass
+        lw = extra.get('last')
+        if lw and len(lw) == 2:
+            try:
+                last = _further_se(last, (int(lw[0]), int(lw[1])))
+            except Exception:
+                pass
+        if not last:
             continue
-        last = sorted(watched, key=lambda se: (int(se[0]), int(se[1])))[-1]
+        if aired > 0 and len(watched) >= aired and not nxt:
+            continue
         by_tmdb[tmdb] = {
             'tmdb': tmdb, 'imdb': '0', 'tvdb': '0',
-            'tvshowtitle': '', 'year': '0', 'studio': [], 'duration': '0',
+            'tvshowtitle': extra.get('title') or '', 'year': '0', 'studio': [], 'duration': '0',
             'mpaa': '0', 'status': '0', 'genre': [],
             'snum': str(last[0]), 'enum': str(last[1]),
             '_last_watched': '0',
@@ -841,21 +885,6 @@ def progress_seeds():
         seed['year'] = str(meta.get('year') or seed['year'] or '0')
         seed['imdb'] = _normalize_imdb(ids.get('imdb'))
         seed['tvdb'] = str(ids.get('tvdb') or '0')
-    # Watching shows with no watched episodes yet → start from S01E00 tip.
-    for item in _fetch_tv_status('watching'):
-        ids = item.get('ids') or {}
-        tmdb = str(ids.get('tmdb') or '0')
-        if tmdb == '0' or tmdb in dropped or tmdb in by_tmdb:
-            continue
-        by_tmdb[tmdb] = {
-            'tmdb': tmdb,
-            'imdb': _normalize_imdb(ids.get('imdb')),
-            'tvdb': str(ids.get('tvdb') or '0'),
-            'tvshowtitle': item.get('title') or '',
-            'year': str(item.get('year') or '0'),
-            'studio': [], 'duration': '0', 'mpaa': '0', 'status': '0', 'genre': [],
-            'snum': '1', 'enum': '0', '_last_watched': '0',
-        }
     seeds = [s for s in by_tmdb.values() if s.get('tvshowtitle')]
     limit = str(control.setting('trakt.item.limit') or '100')
     try:
@@ -1046,8 +1075,11 @@ def timeoutsyncMovies():
         return 0
 
 
-def syncTVShows(user):
-    """Match Trakt cachesyncTVShows shape: [(tmdb, aired_eps, [(s,e),...]), ...]."""
+def syncTVShows(user, _indicator_ver=None):
+    """Match Trakt cachesyncTVShows shape: [(tmdb, aired_eps, [(s,e),...]), ...].
+
+    _indicator_ver is a cache-key only (passed through cache.get); do not use it.
+    """
     try:
         if not getSimklCredentialsInfo():
             return []
@@ -1058,12 +1090,12 @@ def syncTVShows(user):
 
 
 def cachesyncTVShows(timeout=0):
-    return cache.get(syncTVShows, timeout, control.setting('simkl.user').strip() or 'simkl')
+    return cache.get(syncTVShows, timeout, control.setting('simkl.user').strip() or 'simkl', _SIMKL_TV_INDICATOR_VER)
 
 
 def timeoutsyncTVShows():
     try:
-        return cache.timeout(syncTVShows, control.setting('simkl.user').strip() or 'simkl') or 0
+        return cache.timeout(syncTVShows, control.setting('simkl.user').strip() or 'simkl', _SIMKL_TV_INDICATOR_VER) or 0
     except Exception:
         return 0
 
@@ -1164,7 +1196,66 @@ def _movie_indicators_from_data(data, filter_status=False):
     return indicators
 
 
+def _simkl_se_pair(value):
+    if value in (None, '', 0, '0'):
+        return None
+    if isinstance(value, dict):
+        nested = value.get('episode')
+        if isinstance(nested, dict):
+            return _simkl_se_pair(nested)
+        season = value.get('season', value.get('season_number', value.get('s')))
+        episode = value.get('episode', value.get('episode_number', value.get('e')))
+        if episode is None:
+            episode = value.get('number')
+        try:
+            season, episode = int(season), int(episode)
+        except (TypeError, ValueError):
+            return None
+        if season < 1 or episode < 1:
+            return None
+        return (season, episode)
+    text = str(value).strip()
+    match = re.search(r'[Ss](\d+)\s*[Ee](\d+)', text)
+    if match:
+        return (int(match.group(1)), int(match.group(2)))
+    match = re.match(r'(\d+)\s*[-xX.]\s*(\d+)$', text)
+    if match:
+        season, episode = int(match.group(1)), int(match.group(2))
+        if season >= 1 and episode >= 1:
+            return (season, episode)
+    return None
+
+
+def _simkl_episode_watched(ep):
+    if ep.get('watched_at') or ep.get('last_watched_at'):
+        return True
+    return ep.get('watched') in (True, 1, '1', 'true', 'True', 'yes')
+
+
+def _upsert_tv_indicator(by_tmdb, tmdb, aired, watched, extra):
+    prev = by_tmdb.get(tmdb)
+    extra = dict(extra or {})
+    if prev is None:
+        by_tmdb[tmdb] = (tmdb, int(aired), list(watched or []), extra)
+        return
+    merged = list({tuple(pair) for pair in (prev[2] or []) + list(watched or [])})
+    prev_extra = prev[3] if len(prev) > 3 and isinstance(prev[3], dict) else {}
+    combined = dict(prev_extra)
+    combined.update(extra)
+    combined['next'] = _further_se(prev_extra.get('next'), extra.get('next'))
+    combined['last'] = _further_se(prev_extra.get('last'), extra.get('last'))
+    if not combined.get('title'):
+        combined['title'] = prev_extra.get('title') or extra.get('title') or ''
+    by_tmdb[tmdb] = (tmdb, max(int(prev[1] or 0), int(aired or 0), len(merged)), merged, combined)
+
+
 def _append_tv_indicator_rows(indicators, touched_ids, data, item_key):
+    by_tmdb = {}
+    for row in indicators:
+        try:
+            by_tmdb[str(row[0])] = row
+        except Exception:
+            pass
     items = data.get(item_key, data if isinstance(data, list) else [])
     for item in items:
         try:
@@ -1186,7 +1277,7 @@ def _append_tv_indicator_rows(indicators, touched_ids, data, item_key):
                 except Exception:
                     continue
                 for ep in season.get('episodes') or []:
-                    if not (ep.get('watched_at') or ep.get('last_watched_at')):
+                    if not _simkl_episode_watched(ep):
                         continue
                     tvdb_map = ep.get('tvdb') if isinstance(ep.get('tvdb'), dict) else None
                     try:
@@ -1201,9 +1292,18 @@ def _append_tv_indicator_rows(indicators, touched_ids, data, item_key):
                     watched.append((ep_snum, epnum))
             if not aired:
                 aired = len(watched)
-            indicators.append((tmdb, int(aired), watched))
+            extra = {'title': show.get('title') or ''}
+            nxt = _simkl_se_pair(item.get('next_to_watch'))
+            if nxt:
+                extra['next'] = nxt
+            last = _simkl_se_pair(item.get('last_watched'))
+            if last:
+                extra['last'] = last
+            _upsert_tv_indicator(by_tmdb, tmdb, aired, watched, extra)
         except Exception:
             pass
+    del indicators[:]
+    indicators.extend(by_tmdb.values())
 
 
 def _tv_indicators_from_data(data, date_from=None):
@@ -1262,8 +1362,9 @@ def _merge_tv_indicators(existing, delta, touched_ids):
     for tid in (touched_ids or set()):
         if tid not in delta_ids and tid in by_tmdb:
             old = by_tmdb[tid]
+            extra = old[3] if len(old) > 3 else {}
             try:
-                by_tmdb[tid] = (old[0], old[1], [])
+                by_tmdb[tid] = (old[0], old[1], [], extra)
             except Exception:
                 pass
     return list(by_tmdb.values())
@@ -1633,8 +1734,8 @@ def _sync_simkl_watched_body(force_update=False):
         movie_delta, tv_delta, touched = _fetch_phase2_indicators(movie_from)
         existing_m = _read_sync_cache(syncMovies, user) or []
         _write_sync_cache(syncMovies, _merge_movie_indicators(existing_m, movie_delta), user)
-        existing_t = _read_sync_cache(syncTVShows, user) or []
-        _write_sync_cache(syncTVShows, _merge_tv_indicators(existing_t, tv_delta, touched), user)
+        existing_t = _read_sync_cache(syncTVShows, user, _SIMKL_TV_INDICATOR_VER) or []
+        _write_sync_cache(syncTVShows, _merge_tv_indicators(existing_t, tv_delta, touched), user, _SIMKL_TV_INDICATOR_VER)
     else:
         if need_movies:
             delta = _fetch_movie_indicators(date_from=movie_from)
@@ -1646,10 +1747,10 @@ def _sync_simkl_watched_body(force_update=False):
         if need_tv:
             delta, touched = _fetch_tv_indicators(date_from=tv_from)
             if tv_from:
-                existing = _read_sync_cache(syncTVShows, user) or []
-                _write_sync_cache(syncTVShows, _merge_tv_indicators(existing, delta, touched), user)
+                existing = _read_sync_cache(syncTVShows, user, _SIMKL_TV_INDICATOR_VER) or []
+                _write_sync_cache(syncTVShows, _merge_tv_indicators(existing, delta, touched), user, _SIMKL_TV_INDICATOR_VER)
             else:
-                _write_sync_cache(syncTVShows, delta, user)
+                _write_sync_cache(syncTVShows, delta, user, _SIMKL_TV_INDICATOR_VER)
     _store_cached_activities(latest)
     return True
 
@@ -1661,7 +1762,7 @@ def _bust_sync_cache():
     except Exception:
         pass
     try:
-        cache.remove(syncTVShows, user)
+        cache.remove(syncTVShows, user, _SIMKL_TV_INDICATOR_VER)
     except Exception:
         pass
     clear_simkl_list_status_cache()

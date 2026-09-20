@@ -19,8 +19,6 @@ sysaddon = sys.argv[0]
 syshandle = int(sys.argv[1])
 #control.moderator()
 
-kodi_version = control.getKodiVersion()
-
 
 def _trakt_credentials():
     return trakt.getTraktCredentialsInfo()
@@ -471,16 +469,20 @@ class navigator:
             self.endDirectory()
             return
         sort = lambda shelf: ('Set Sort Order', 'trakt_list_sort&media=movies&status=%s' % shelf)
+        lib = lambda url: ('Add to Library', 'movies_to_library&url=%s' % url)
         self.addDirectoryItem('Library', 'movies&url=trakt_collection', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
-            sort('collection'), ('Add to Library', 'movies_to_library&url=trakt_collection')])
+            sort('collection'), lib('trakt_collection')])
         self.addDirectoryItem('Watchlist', 'movies&url=trakt_watchlist', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
-            sort('watchlist'), ('Add to Library', 'movies_to_library&url=trakt_watchlist')])
+            sort('watchlist'), lib('trakt_watchlist')])
         self.addDirectoryItem('Favorites', 'movies&url=trakt_favorites', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
-            sort('favorites'), ('Add to Library', 'movies_to_library&url=trakt_favorites')])
-        if _trakt_indicators():
-            self.addDirectoryItem('In Progress', 'movies&url=trakt_ondeck', 'people-watching.png', 'DefaultMovies.png', queue=True)
-            self.addDirectoryItem('History', 'movies&url=trakt_history', 'latest-movies.png', 'DefaultMovies.png', queue=True)
-            self.addDirectoryItem('Watched', 'movies&url=trakt_watchedlist', 'mymovies.png', 'DefaultMovies.png')
+            sort('favorites'), lib('trakt_favorites')])
+        self.addDirectoryItem('In Progress', 'movies&url=trakt_ondeck', 'people-watching.png', 'DefaultMovies.png', queue=True, context=[
+            lib('trakt_ondeck')])
+        self.addDirectoryItem('History', 'movies&url=trakt_history', 'latest-movies.png', 'DefaultMovies.png', queue=True)
+        self.addDirectoryItem('Watched', 'movies&url=trakt_watchedlist', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+            lib('trakt_watchedlist')])
+        self.addDirectoryItem('My Lists', 'movies_userlists_trakt', 'trakt.png', 'DefaultVideoPlaylists.png')
+        self.addDirectoryItem('Liked Lists', 'movies_userlists_trakt_liked', 'trakt.png', 'DefaultVideoPlaylists.png')
         self.endDirectory()
 
 
@@ -490,18 +492,21 @@ class navigator:
             self.endDirectory()
             return
         sort = lambda shelf: ('Set Sort Order', 'trakt_list_sort&media=tvshows&status=%s' % shelf)
+        lib = lambda url: ('Add to Library', 'tvshows_to_library&url=%s' % url)
         self.addDirectoryItem('Library', 'tvshows&url=trakt_collection', 'mytvshows.png', 'DefaultTVShows.png', context=[
-            sort('collection'), ('Add to Library', 'tvshows_to_library&url=trakt_collection')])
+            sort('collection'), lib('trakt_collection')])
         self.addDirectoryItem('Watchlist', 'tvshows&url=trakt_watchlist', 'mytvshows.png', 'DefaultTVShows.png', context=[
-            sort('watchlist'), ('Add to Library', 'tvshows_to_library&url=trakt_watchlist')])
+            sort('watchlist'), lib('trakt_watchlist')])
         self.addDirectoryItem('Favorites', 'tvshows&url=trakt_favorites', 'mytvshows.png', 'DefaultTVShows.png', context=[
-            sort('favorites'), ('Add to Library', 'tvshows_to_library&url=trakt_favorites')])
-        if _trakt_indicators():
-            self.addDirectoryItem('Upcoming Episodes', 'calendar&url=trakt_mycalendar', 'calendar.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
-            self.addDirectoryItem('Continue Watching', 'calendar&url=trakt_progress', 'people-watching.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
-            self.addDirectoryItem('In Progress Episodes', 'calendar&url=trakt_ondeck', 'latest-episodes.png', 'DefaultTVShows.png')
-            self.addDirectoryItem('History', 'calendar&url=trakt_history', 'latest-episodes.png', 'DefaultTVShows.png', queue=True)
-            self.addDirectoryItem('Watched', 'tvshows&url=trakt_watchedlist', 'mytvshows.png', 'DefaultTVShows.png')
+            sort('favorites'), lib('trakt_favorites')])
+        self.addDirectoryItem('Upcoming Episodes', 'calendar&url=trakt_mycalendar', 'calendar.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
+        self.addDirectoryItem('Continue Watching', 'calendar&url=trakt_progress', 'people-watching.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
+        self.addDirectoryItem('In Progress Episodes', 'calendar&url=trakt_ondeck', 'latest-episodes.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('History', 'calendar&url=trakt_history', 'latest-episodes.png', 'DefaultTVShows.png', queue=True)
+        self.addDirectoryItem('Watched', 'tvshows&url=trakt_watchedlist', 'mytvshows.png', 'DefaultTVShows.png', context=[
+            lib('trakt_watchedlist')])
+        self.addDirectoryItem('My Lists', 'tvshows_userlists_trakt', 'trakt.png', 'DefaultVideoPlaylists.png')
+        self.addDirectoryItem('Liked Lists', 'tvshows_userlists_trakt_liked', 'trakt.png', 'DefaultVideoPlaylists.png')
         self.endDirectory()
 
 
@@ -786,11 +791,8 @@ class navigator:
                 item = control.item(label=title)
             item.setArt({'icon': poster, 'thumb': poster, 'poster': poster, 'banner': banner})
             item.setProperty('Fanart_Image', fanart)
-            if kodi_version >= 20:
-                info_tag = ListItemInfoTag(item, 'video')
-                info_tag.set_info({'title': title})
-            else:
-                item.setInfo(type='Video', infoLabels={'title': title})
+            info_tag = ListItemInfoTag(item, 'video')
+            info_tag.set_info({'title': title})
             control.addItem(handle=syshandle, url=url, listitem=item, isFolder=False)
             control.content(syshandle, content)
             control.directory(syshandle, cacheToDisc=False)
@@ -832,11 +834,16 @@ class navigator:
 
     def clearCacheSearch(self, select):
         from resources.lib.modules import cache
-        yes = control.yesnoDialog('Clear All Search Cache?')
+        if select == 'all':
+            yes = control.yesnoDialog('Clear All Search Cache?')
+            done = 'All Search Cache Cleared.'
+        else:
+            yes = control.yesnoDialog('Clear Search Cache?')
+            done = 'Search Cache Cleared.'
         if not yes:
             return
         cache.cache_clear_search(select)
-        control.infoDialog('All Search Cache Cleared.', sound=True, icon='INFO')
+        control.infoDialog(done, sound=True, icon='INFO')
 
 
     def clearCacheAll(self):

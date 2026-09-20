@@ -209,8 +209,10 @@ class listings:
                      ) % (server_key, domain[0], server_key, chan_key[0],
                           referer_q, referer_q, ua_q)
 
+            from resources.lib.modules.listitem import ListItemInfoTag
             liz = xbmcgui.ListItem(title, path=final)
-            liz.setInfo('video', {'title': title, 'plot': title})
+            info_tag = ListItemInfoTag(liz, 'video')
+            info_tag.set_info({'title': title, 'plot': title})
             liz.setProperty('inputstream', 'inputstream.ffmpegdirect')
             liz.setMimeType('application/x-mpegURL')
             liz.setProperty('inputstream.ffmpegdirect.is_realtime_stream', 'true')
