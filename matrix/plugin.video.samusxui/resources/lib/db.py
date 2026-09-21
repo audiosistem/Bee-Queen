@@ -82,8 +82,26 @@ def _connect():
         provider     TEXT PRIMARY KEY,
         fail_count   INTEGER DEFAULT 0,
         last_fail    REAL DEFAULT 0,
-        last_success REAL DEFAULT 0
+        last_success REAL DEFAULT 0,
+        success_count INTEGER DEFAULT 0,
+        result_count INTEGER DEFAULT 0,
+        avg_latency REAL DEFAULT 0,
+        last_latency REAL DEFAULT 0
     )''')
+    # Migrare pentru bazele create înainte de beta7.
+    _health_columns = {row[1] for row in conn.execute('PRAGMA table_info(provider_health)')}
+    for _name, _decl in (
+        ('success_count', 'INTEGER DEFAULT 0'),
+        ('result_count', 'INTEGER DEFAULT 0'),
+        ('avg_latency', 'REAL DEFAULT 0'),
+        ('last_latency', 'REAL DEFAULT 0'),
+    ):
+        if _name not in _health_columns:
+            try:
+                conn.execute(f'ALTER TABLE provider_health ADD COLUMN {_name} {_decl}')
+            except sqlite3.OperationalError:
+                # Alt fir poate fi terminat aceeași migrare între PRAGMA și ALTER.
+                pass
     conn.commit()
     return conn
 
@@ -152,6 +170,31 @@ def get_favorite_ids():
     except Exception as e:
         xbmc.log(f'[SamusXUI/DB] get_favorite_ids: {e}', xbmc.LOGERROR)
         return set()
+
+
+def get_seed_titles(limit=25):
+    """Titluri pe care se bazează sugestiile: ce ai văzut recent + favoritele.
+    Returnează [(tmdb_id, media_type)], fără duplicate."""
+    seeds = []
+    try:
+        conn = _connect()
+        rows = conn.execute(
+            'SELECT DISTINCT tmdb_id, media_type FROM history '
+            'ORDER BY updated_at DESC LIMIT ?', (limit,)).fetchall()
+        seeds.extend((r[0], 'tv' if r[1] == 'tvshow' else r[1]) for r in rows)
+        rows = conn.execute(
+            'SELECT tmdb_id, media_type FROM favorites '
+            'ORDER BY added_at DESC LIMIT ?', (limit,)).fetchall()
+        seeds.extend((r[0], 'tv' if r[1] == 'tvshow' else r[1]) for r in rows)
+        conn.close()
+    except Exception as e:
+        xbmc.log(f'[SamusXUI/DB] get_seed_titles: {e}', xbmc.LOGERROR)
+    out, seen = [], set()
+    for s in seeds:
+        if s not in seen:
+            seen.add(s)
+            out.append(s)
+    return out[:limit]
 
 
 # ───────────────────────── History ─────────────────────────
@@ -311,17 +354,27 @@ def provider_health_fail(provider, window=1800):
         xbmc.log(f'[SamusXUI/DB] provider_health_fail: {e}', xbmc.LOGERROR)
 
 
-def provider_health_ok(provider):
+def provider_health_ok(provider, latency=None, had_results=False):
     try:
         conn = _connect()
         now = time.time()
+        latency = max(0.0, float(latency or 0.0))
         conn.execute('''
-            INSERT INTO provider_health (provider, fail_count, last_fail, last_success)
-            VALUES (?, 0, 0, ?)
+            INSERT INTO provider_health
+                (provider, fail_count, last_fail, last_success, success_count,
+                 result_count, avg_latency, last_latency)
+            VALUES (?, 0, 0, ?, 1, ?, ?, ?)
             ON CONFLICT(provider) DO UPDATE SET
                 fail_count   = 0,
-                last_success = ?
-        ''', (provider, now, now))
+                last_success = excluded.last_success,
+                success_count = success_count + 1,
+                result_count = result_count + excluded.result_count,
+                avg_latency = CASE
+                    WHEN success_count = 0 THEN excluded.last_latency
+                    WHEN excluded.last_latency > 0 THEN avg_latency * 0.75 + excluded.last_latency * 0.25
+                    ELSE avg_latency END,
+                last_latency = excluded.last_latency
+        ''', (provider, now, 1 if had_results else 0, latency, latency))
         conn.commit()
         conn.close()
     except Exception as e:
@@ -345,6 +398,34 @@ def provider_is_healthy(provider, max_fails=3, window=1800):
     except Exception as e:
         xbmc.log(f'[SamusXUI/DB] provider_is_healthy: {e}', xbmc.LOGERROR)
         return True
+
+
+def provider_health_score(provider):
+    """Scor mic = provider preferabil; combină latența, utilitatea și erorile."""
+    return provider_health_scores().get(provider, 5.0)
+
+
+def provider_health_scores():
+    """Citește toate scorurile într-o singură conexiune (folosit la sortare)."""
+    try:
+        conn = _connect()
+        rows = conn.execute('''
+            SELECT provider, fail_count, last_fail, success_count, result_count, avg_latency
+            FROM provider_health
+        ''').fetchall()
+        conn.close()
+        now = time.time()
+        scores = {}
+        for provider, fails, last_fail, successes, useful, avg_latency in rows:
+            recent_penalty = fails * 15.0 if now - last_fail < 1800 else 0.0
+            usefulness_penalty = ((1.0 - useful / successes) * 8.0
+                                  if successes else 0.0)
+            scores[provider] = (float(avg_latency or 5.0) + recent_penalty +
+                                usefulness_penalty)
+        return scores
+    except Exception as e:
+        xbmc.log(f'[SamusXUI/DB] provider_health_scores: {e}', xbmc.LOGERROR)
+        return {}
 
 
 def provider_success_set(tmdb_id, media_type, provider):

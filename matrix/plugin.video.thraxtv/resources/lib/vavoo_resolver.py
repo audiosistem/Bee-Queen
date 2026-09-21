@@ -24,7 +24,7 @@ CHANNEL_TIMEOUT  = 12
 VAVOO_PLAY_BASE  = "https://vavoo.to/vavoo-iptv/play"
 RESOLVE_ENDPOINT = "https://vavoo.to/mediahubmx-resolve.json"
 SIG_ENDPOINT     = "https://api.derzis.xyz/livetv/vavoo/sig"
-_THRAX_KEY       = "7d9f4987bcd1a2026e6a422931bd7dbff0060977d189f37fa5727d9288b4abbb"
+_THRAX_KEY       = "6d11ea4b6c6acc9bd2fc4f91b6be3fc06ca5e4358e344d248e8bbcb64cedd0df"
 
 
 def _log(msg: str) -> None:

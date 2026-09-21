@@ -34,7 +34,7 @@ def open_official_trakt_import_page(service_name, url, icon=None, close_hint='to
 		progress = kodi_utils.progress_dialog(heading, qr_code)
 		progress.update(content, 0)
 		while not progress.iscanceled():
-			kodi_utils.sleep(500)
+			if kodi_utils.sleep_while_authorising(progress, 0.5): break
 		progress.close()
 	except:
 		kodi_utils.ok_dialog(heading=heading, text=fallback)

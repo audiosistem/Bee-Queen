@@ -9,6 +9,8 @@ import xbmcaddon
 
 from . import tmdb
 from . import db
+from . import discover as _discover_mod
+from .task_group import TaskGroup
 
 _STATUS_RO = {
     'Post Production': 'Post-producție',
@@ -28,6 +30,7 @@ _SECTIONS = [
     ('Seriale',  'tv',        'sidebar_seriale2.png'),
     ('Favorite', 'favorites', 'sidebar_favorite2.png'),
     ('Continuă', 'continue',  'sidebar_continua2.png'),
+    ('Descoperă','discover',  'sidebar_favorite2.png'),
     ('Căutare',  'search',    'sidebar_cautare2.png'),
     ('Trakt',    'trakt',     'sidebar_trakt3.png'),
     ('Adult',    'adult',     'sidebar_filme2.png'),
@@ -212,6 +215,30 @@ ACTION_MOVE_UP    = 3
 ACTION_MOVE_DOWN  = 4
 
 
+class _HomeTrailerPlayer(xbmc.Player):
+    """Player păstrat viu până la final, ca hero-ul să fie restaurat imediat."""
+
+    def __init__(self, owner, generation):
+        super().__init__()
+        self._owner = owner
+        self._generation = generation
+
+    def _finished(self):
+        try:
+            self._owner._on_auto_trailer_finished(self._generation, self)
+        except Exception as exc:
+            xbmc.log(f'[SamusXUI] trailer finish callback: {exc}', xbmc.LOGWARNING)
+
+    def onPlayBackEnded(self):
+        self._finished()
+
+    def onPlayBackStopped(self):
+        self._finished()
+
+    def onPlayBackError(self):
+        self._finished()
+
+
 class HomeWindow(xbmcgui.WindowXML):
 
     def __init__(self, *args, **kwargs):
@@ -227,19 +254,25 @@ class HomeWindow(xbmcgui.WindowXML):
         self._fav_ids       = set()
         self._fav_filter    = None
         self._cont_filter   = None
+        self._disc_tag      = None   # id-ul etichetei TMDb selectate
+        self._disc_media    = 'movie'
         self._filter_type         = 'genres'
         self._trakt_filter        = 'trending_movie'
         self._selected_list       = None   # {'name', 'user', 'slug'} for list_items
         self._trakt_search_query  = ''
         self._load_gen            = 0
+        self._trailer_gen         = 0
+        self._trailer_focus_idx   = None
+        self._trailer_player      = None
         self._initialized         = False
-        self._stop_busy_suppress  = threading.Event()
+        self._tasks               = TaskGroup('HomeWindow')
 
     # ------------------------------------------------------------------ setup
 
     _EMPTY_MESSAGES = {
         'favorites': 'Nu ai filme sau seriale adăugate la favorite.',
         'continue':  'Nu există vizionări în curs.',
+        'discover':  'Vezi câteva filme sau adaugă favorite — de acolo îți deducem temele.',
         'trakt':     'Conectează-ți contul Trakt din Setări pentru a vedea conținut.',
         'settings':  'Setări addon — apasă OK pentru a deschide.',
         'search':    'Căutare — apasă OK pentru a introduce un termen.',
@@ -260,27 +293,36 @@ class HomeWindow(xbmcgui.WindowXML):
         except Exception:
             pass
         self.setFocusId(_ID_SIDEBAR)
-        threading.Thread(target=self._suppress_kodi_busy_dialogs, daemon=True).start()
-        threading.Thread(target=self._prestart_engine, daemon=True).start()
 
     def close(self):
-        self._stop_busy_suppress.set()
+        self._load_gen += 1  # anulează toate task-urile UI legate de generația curentă
+        self._cancel_auto_trailer()
+        self._tasks.close(timeout=8.0)
         super().close()
 
-    def _suppress_kodi_busy_dialogs(self):
-        while not self._stop_busy_suppress.wait(0.15):
-            try:
-                xbmc.executebuiltin('Dialog.Close(busydialognocancel, true)')
-                xbmc.executebuiltin('Dialog.Close(busydialog, true)')
-            except Exception:
-                pass
+    def _cancel_auto_trailer(self):
+        """Invalidează rezolvarea curentă și oprește imediat preview-ul activ."""
+        self._trailer_gen += 1
+        self._trailer_focus_idx = None
+        self.setProperty('trailer_starting', '')
+        trailer_playing = bool(self.getProperty('trailer_active'))
+        self.setProperty('trailer_active', '')
+        trailer_player = self._trailer_player
+        self._trailer_player = None
+        if trailer_playing and trailer_player is not None:
+            trailer_player.stop()
 
-    def _prestart_engine(self):
-        try:
-            from resources.lib.player import prestart_torrent_engine
-            prestart_torrent_engine()
-        except Exception as e:
-            xbmc.log(f'[SamusXUI] prestart engine eroare: {e}', xbmc.LOGWARNING)
+    def _on_auto_trailer_finished(self, trailer_gen, trailer_player):
+        """Ascunde videowindow-ul la final și reafişează fanartul hero curent."""
+        if trailer_gen != self._trailer_gen or trailer_player is not self._trailer_player:
+            return
+        self.setProperty('trailer_starting', '')
+        self.setProperty('trailer_active', '')
+        backdrop = self.getProperty('hero_fanart')
+        if backdrop:
+            # Reaplicarea texturii forțează redesenarea după ultimul frame video.
+            self.getControl(_ID_BACKDROP).setImage(backdrop)
+        xbmc.log('[SamusXUI] trailer terminat; fanart hero restaurat', xbmc.LOGDEBUG)
 
     def _restore_focus(self):
         ctrl = self.getControl(_ID_SIDEBAR)
@@ -357,7 +399,7 @@ class HomeWindow(xbmcgui.WindowXML):
             except Exception:
                 pass
             target = self._load_trakt_async if self._section == 'trakt' else self._load_asa_async
-            threading.Thread(target=target, args=(my_gen,), daemon=True).start()
+            self._tasks.start(target, args=(my_gen,), name='home-load-section')
             return
         try:
             data = self._fetch_page(1, genre_id)
@@ -423,6 +465,21 @@ class HomeWindow(xbmcgui.WindowXML):
     def _fetch_page(self, page, genre_id=None):
         if self._section == 'adult':
             return self._fetch_asa_page(page)
+        if self._section == 'discover':
+            if not self._disc_tag:
+                # Fără istoric n-avem din ce deduce teme — arătăm ce e în trend,
+                # ca secțiunea să nu fie moartă la prima instalare.
+                data = tmdb.trending(self._disc_media, 'week', page)
+                for r in data.get('results', []):
+                    r['media_type'] = self._disc_media
+                return data
+            data = _discover_mod.by_tag(self._disc_tag, self._disc_media, page)
+            xbmc.log(f'[SamusXUI/discover] tag={self._disc_tag} '
+                     f'media={self._disc_media} pag={page}: '
+                     f'{len(data.get("results") or [])} din '
+                     f'{data.get("total_results")}', xbmc.LOGINFO)
+            return data
+
         if self._section == 'favorites':
             if page > 1:
                 return {}
@@ -601,7 +658,7 @@ class HomeWindow(xbmcgui.WindowXML):
             except Exception:
                 pass
         # Genres stay visible whenever section supports them — hiding them loses keyboard focus
-        genres_visible = self._section in ('movie', 'tv', 'favorites', 'continue', 'trakt')
+        genres_visible = self._section in ('movie', 'tv', 'favorites', 'continue', 'trakt', 'discover')
         for cid in (_ID_GENRE_BG, _ID_GENRES):
             try:
                 self.getControl(cid).setVisible(genres_visible)
@@ -624,7 +681,8 @@ class HomeWindow(xbmcgui.WindowXML):
         if visible:
             self.clearProperty('empty_icon')
         if not visible:
-            for cid in (_ID_BACKDROP, _ID_LOGO):
+            self.clearProperty('hero_fanart')
+            for cid in (_ID_BACKDROP, _ID_LOGO, 103):
                 try:
                     self.getControl(cid).setImage('')
                 except Exception:
@@ -645,6 +703,11 @@ class HomeWindow(xbmcgui.WindowXML):
         return list(_GENRES_TV if self._section == 'tv' else _GENRES_MOVIE)
 
     def _update_filter_btn(self):
+        if self._section == 'discover':
+            # Aici butonul comută tipul de conținut: eticheta e aceeași, dar
+            # /discover se interoghează separat pentru filme și seriale.
+            self.setProperty('sort.label', '  SERIALE' if self._disc_media == 'tv' else '  FILME')
+            return
         label = _FILTER_LABELS[self._filter_type]
         show  = self._section in ('movie', 'tv')
         self.setProperty('sort.label', label if show else '')
@@ -662,6 +725,8 @@ class HomeWindow(xbmcgui.WindowXML):
             gid = self._fav_filter
         elif self._section == 'continue':
             gid = self._cont_filter
+        elif self._section == 'discover':
+            gid = self._disc_tag
         else:
             gid = self._active_genre
         idx = next((i for i, (_, g) in enumerate(self._genres) if g == gid), 0)
@@ -711,10 +776,14 @@ class HomeWindow(xbmcgui.WindowXML):
                 xbmc.sleep(600)
                 if not self._items and self._section == section_snap:
                     self.setProperty('empty_icon', icon_path)
-            threading.Thread(target=_show_empty_icon, daemon=True).start()
+            self._tasks.start(_show_empty_icon, name='home-empty-icon')
             self._set_content_visible(False)
             try:
-                self.setFocusId(_ID_SIDEBAR)
+                # Dacă utilizatorul parcurge bara de filtre, nu-i smulgem focusul:
+                # un filtru gol (ex. Watchlist Trakt fără titluri) l-ar arunca în
+                # bara laterală și n-ar mai putea trece la filtrul următor.
+                if self.getFocusId() != _ID_GENRES:
+                    self.setFocusId(_ID_SIDEBAR)
             except Exception:
                 pass
             return
@@ -732,8 +801,8 @@ class HomeWindow(xbmcgui.WindowXML):
         self._mark_active_genre(active_idx)
         if self._section == 'trakt':
             items_copy = list(enumerate(list(self._items)))
-            threading.Thread(target=self._fetch_trakt_posters,
-                             args=(items_copy, self._load_gen), daemon=True).start()
+            self._tasks.start(self._fetch_trakt_posters,
+                              args=(items_copy, self._load_gen), name='home-trakt-posters')
 
     def _append_to_list(self, items, ctrl=None):
         if ctrl is None:
@@ -742,7 +811,9 @@ class HomeWindow(xbmcgui.WindowXML):
         for m in items:
             title  = (m.get('title') or m.get('name')
                       or m.get('original_title') or m.get('original_name', ''))
-            poster_path = m.get('poster_path', '')
+            # TMDb trimite `null`, nu cheie lipsă, la titlurile fără imagine —
+            # `get(..., '')` ar întoarce None și ar rupe construirea listei întregi.
+            poster_path = m.get('poster_path') or ''
             poster = poster_path if poster_path.startswith('http') else tmdb.poster_url(poster_path)
             vote   = m.get('vote_average', 0)
             tmdb_id = m.get('id', '')
@@ -775,7 +846,7 @@ class HomeWindow(xbmcgui.WindowXML):
         if self._loading_more or self._page >= self._total_pages:
             return
         self._loading_more = True
-        threading.Thread(target=self._fetch_more, daemon=True).start()
+        self._tasks.start(self._fetch_more, name='home-fetch-more')
 
     def _fetch_more(self):
         try:
@@ -826,8 +897,8 @@ class HomeWindow(xbmcgui.WindowXML):
         vote       = m.get('vote_average', 0)
         cnt        = m.get('vote_count', 0)
         cnt_str    = f"{int(cnt / 1000)}K voturi" if cnt >= 1000 else (f"{cnt} voturi" if cnt else '')
-        plot       = m.get('overview', '')
-        backdrop_path = m.get('backdrop_path', '')
+        plot       = m.get('overview') or ''
+        backdrop_path = m.get('backdrop_path') or ''
         backdrop   = backdrop_path if backdrop_path.startswith('http') else tmdb.backdrop_url(backdrop_path)
         genre_ids  = m.get('genre_ids', [])
         media      = m.get('media_type') or (
@@ -862,6 +933,7 @@ class HomeWindow(xbmcgui.WindowXML):
         meta = '  •  '.join(parts)
 
         try:
+            self.setProperty('hero_fanart', backdrop or '')
             self.getControl(_ID_LOGO).setImage('')
             self.getControl(_ID_TITLE).setLabel(title)
             self.getControl(_ID_TITLE_SUB).setLabel('')
@@ -869,8 +941,10 @@ class HomeWindow(xbmcgui.WindowXML):
             self.getControl(_ID_PLOT).setLabel(plot)
             if backdrop:
                 self.getControl(_ID_BACKDROP).setImage(backdrop)
+                self.getControl(103).setImage(backdrop)
             elif self._section in ('favorites', 'continue', 'trakt'):
                 self.getControl(_ID_BACKDROP).setImage('')
+                self.getControl(103).setImage('')
         except Exception as e:
             xbmc.log(f'[SamusXUI] hero update: {e}', xbmc.LOGDEBUG)
 
@@ -915,14 +989,17 @@ class HomeWindow(xbmcgui.WindowXML):
                 pass
 
         if media != 'adult':
-            threading.Thread(target=self._fetch_logo,
-                             args=(tmdb_id, media, idx, title, self._load_gen), daemon=True).start()
+            self._tasks.start(self._fetch_logo,
+                              args=(tmdb_id, media, idx, title, self._load_gen),
+                              name='home-logo')
         if self._section in ('favorites', 'continue', 'trakt') and not m.get('backdrop_path'):
-            threading.Thread(target=self._fetch_fav_backdrop,
-                             args=(tmdb_id, media, idx, self._load_gen), daemon=True).start()
+            self._tasks.start(self._fetch_fav_backdrop,
+                              args=(tmdb_id, media, idx, self._load_gen),
+                              name='home-backdrop')
         if not plot or needs_en_title:
-            threading.Thread(target=self._fetch_en_plot,
-                             args=(tmdb_id, media, idx, needs_en_title, self._load_gen), daemon=True).start()
+            self._tasks.start(self._fetch_en_plot,
+                              args=(tmdb_id, media, idx, needs_en_title, self._load_gen),
+                              name='home-en-plot')
 
     def _fetch_fav_backdrop(self, tmdb_id, media, for_idx, gen=None):
         try:
@@ -946,7 +1023,10 @@ class HomeWindow(xbmcgui.WindowXML):
                     self._items[for_idx]['vote_count'] = vc
             if bp:
                 try:
-                    self.getControl(_ID_BACKDROP).setImage(tmdb.backdrop_url(bp))
+                    backdrop = tmdb.backdrop_url(bp)
+                    self.getControl(_ID_BACKDROP).setImage(backdrop)
+                    self.getControl(103).setImage(backdrop)
+                    self.setProperty('hero_fanart', backdrop)
                 except Exception:
                     pass
             if pp:
@@ -1155,27 +1235,62 @@ class HomeWindow(xbmcgui.WindowXML):
         if controlId == _ID_POSTERS:
             xbmc.sleep(50)
             self._sync_hero_from_poster()
+        else:
+            # Cardul a pierdut focusul (sidebar, butoane, filtre): preview-ul
+            # nu trebuie să continue în fundal.
+            self._cancel_auto_trailer()
 
     def _sync_hero_from_poster(self):
         try:
             pos = self.getControl(_ID_POSTERS).getSelectedPosition()
-            if 0 <= pos < len(self._items) and pos != self._hero_idx:
-                self.setProperty('trailer_active', '')
-                p = xbmc.Player()
-                if p.isPlaying():
-                    p.stop()
-                self._update_hero(pos)
-                threading.Thread(target=self._auto_trailer,
-                                 args=(pos, self._load_gen), daemon=True).start()
+            if 0 <= pos < len(self._items):
+                if pos != self._hero_idx:
+                    self._cancel_auto_trailer()
+                    self._update_hero(pos)
+                # Programează și primul card când caruselul primește focus,
+                # nu numai cardurile selectate ulterior cu stânga/dreapta.
+                if self._trailer_focus_idx == pos:
+                    return
+                self._cancel_auto_trailer()
+                self._trailer_focus_idx = pos
+                trailer_gen = self._trailer_gen
+                xbmc.log(f'[SamusXUI] trailer focus idx={pos} token={trailer_gen}',
+                         xbmc.LOGDEBUG)
+                self._tasks.start(self._auto_trailer,
+                                  args=(pos, trailer_gen), name='home-auto-trailer')
         except Exception:
             pass
 
-    def _auto_trailer(self, for_idx, gen):
-        for _ in range(40):  # 4 secunde în pași de 100ms
-            xbmc.sleep(100)
-            if gen != self._load_gen or self._hero_idx != for_idx:
+    @staticmethod
+    def _dialog_open():
+        """Un dialog deschis peste HomeWindow (surse, info, filtru) NU schimbă
+        focusul ferestrei de dedesubt, deci `getFocusId()` rămâne pe postere și
+        numărătoarea pentru trailer merge mai departe. Fără verificarea asta,
+        trailerul pornea peste lista de surse și lua playerul din mâna
+        utilizatorului exact când alegea o sursă."""
+        return xbmc.getCondVisibility('System.HasActiveModalDialog')
+
+    def _auto_trailer(self, for_idx, trailer_gen):
+        enabled = ADDON.getSetting('trailer_autoplay')
+        xbmc.log(f'[SamusXUI] auto trailer worker idx={for_idx} token={trailer_gen} enabled={enabled}',
+                 xbmc.LOGDEBUG)
+        if enabled == 'false':
+            return
+        monitor = xbmc.Monitor()
+        try:
+            delay = float(ADDON.getSetting('trailer_autoplay_delay') or 5)
+        except ValueError:
+            delay = 5
+        # Sub 2s ar porni în timpul navigării normale prin postere.
+        ticks = max(20, int(delay * 10))
+        for _ in range(ticks):  # pași de 100ms, ca să reacționăm imediat la mutarea focusului
+            if monitor.waitForAbort(0.1):
                 return
-        if gen != self._load_gen or self._hero_idx != for_idx:
+            if (trailer_gen != self._trailer_gen or self._hero_idx != for_idx
+                    or self._dialog_open()):
+                return
+        if (monitor.abortRequested() or trailer_gen != self._trailer_gen or
+                self._hero_idx != for_idx or self.getFocusId() != _ID_POSTERS or self._dialog_open()):
             return
         try:
             m = self._items[for_idx] if for_idx < len(self._items) else None
@@ -1187,27 +1302,59 @@ class HomeWindow(xbmcgui.WindowXML):
             if not tmdb_id or media not in ('movie', 'tv'):
                 return
             data = tmdb.videos(tmdb_id, media)
-            key  = next((v['key'] for v in data.get('results', [])
-                         if v.get('type') == 'Trailer' and v.get('site') == 'YouTube'), None)
+            # Multe titluri n-au niciun video de tip „Trailer", ci doar teasere
+            # sau clipuri — filtrul strict lăsa pornirea automată fără nimic de
+            # redat, deși butonul Trailer din Info (care e permisiv) mergea.
+            yt   = [v for v in data.get('results', []) if v.get('site') == 'YouTube' and v.get('key')]
+            key  = None
+            for wanted in ('Trailer', 'Teaser', None):
+                for v in yt:
+                    if wanted is None or v.get('type') == wanted:
+                        key = v['key']
+                        break
+                if key:
+                    break
             if not key:
                 return
-            if gen != self._load_gen or self._hero_idx != for_idx:
+            if (trailer_gen != self._trailer_gen or self._hero_idx != for_idx or
+                    self.getFocusId() != _ID_POSTERS or self._dialog_open()):
                 return
             from resources.lib import player as _player
-            started = _player.play_trailer(key)
-            if not started:
+            # Rezolvarea poate dura. Verificăm din nou tokenul înainte de a
+            # atinge playerul, astfel un card vechi nu pornește după mutare.
+            stream = _player.resolve_trailer_url(key)
+            if (not stream or trailer_gen != self._trailer_gen or
+                    self._hero_idx != for_idx or
+                    self.getFocusId() != _ID_POSTERS or self._dialog_open()):
                 return
-            # Închide fullscreen player și afișează video în fereastra hero
-            xbmc.sleep(200)
-            xbmc.executebuiltin('Dialog.Close(fullscreenvideo,true)')
+            # Proprietatea trebuie activată înainte de play(windowed=True),
+            # altfel Kodi mută focusul în FullscreenVideo și săgețile devin seek.
+            trailer_player = _HomeTrailerPlayer(self, trailer_gen)
+            self._trailer_player = trailer_player
             self.setProperty('trailer_active', '1')
-            # Monitorizează playback și curăță property la final
-            p = xbmc.Player()
-            while p.isPlaying():
-                xbmc.sleep(500)
-            self.setProperty('trailer_active', '')
+            self.setProperty('trailer_starting', '1')
+            started = _player.play_trailer(
+                key, stream_url=stream, windowed=True, player=trailer_player)
+            self.setProperty('trailer_starting', '')
+            if not started:
+                self.setProperty('trailer_active', '')
+                if self._trailer_player is trailer_player:
+                    self._trailer_player = None
+                return
+            if trailer_gen != self._trailer_gen or self._hero_idx != for_idx:
+                # NB: focusul mutat de play(windowed) și dialogul modal tranzitoriu
+                # ridicat de propria redare NU se verifică aici (ambele dau
+                # fals-pozitiv exact la pornire); navigarea reală e prinsă sigur
+                # de token (_trailer_gen) + _hero_idx. Checkpoint-urile DINAINTE
+                # de play verifică în continuare focus + dialog, unde e corect.
+                xbmc.Player().stop()
+                self.setProperty('trailer_active', '')
+                return
+            # Workerul se termină aici. Pierderea focusului este tratată în
+            # firul UI; finalul natural este curățat de serviciul persistent.
         except Exception as e:
             xbmc.log(f'[SamusXUI] auto_trailer: {e}', xbmc.LOGWARNING)
+            self.setProperty('trailer_starting', '')
             self.setProperty('trailer_active', '')
 
     # ------------------------------------------------------------------ handlers
@@ -1284,6 +1431,9 @@ class HomeWindow(xbmcgui.WindowXML):
         elif section == 'continue':
             self._genres      = list(_GENRES_CONT)
             self._cont_filter = None
+        elif section == 'discover':
+            self._genres   = _discover_mod.tag_bar(media=self._disc_media)
+            self._disc_tag = self._genres[0][1] if self._genres else None
         elif section == 'trakt':
             self._genres       = list(_GENRES_TRAKT)
             self._trakt_filter = 'trending_movie'
@@ -1320,6 +1470,17 @@ class HomeWindow(xbmcgui.WindowXML):
             if genre_id == self._fav_filter:
                 return
             self._fav_filter = genre_id
+            try:
+                self.getControl(_ID_SECTION_LBL).setLabel(label)
+            except Exception:
+                pass
+            self._load_and_show()
+            return
+
+        if self._section == 'discover':
+            if genre_id == self._disc_tag:
+                return
+            self._disc_tag = genre_id
             try:
                 self.getControl(_ID_SECTION_LBL).setLabel(label)
             except Exception:
@@ -1558,6 +1719,20 @@ class HomeWindow(xbmcgui.WindowXML):
             f'?action=show_info&tmdb_id={tmdb_id}&media_type={media})')
 
     def _cycle_filter(self):
+        if self._section == 'discover':
+            self._disc_media = 'tv' if self._disc_media == 'movie' else 'movie'
+            # Tag-urile deduse se filtrează după câte titluri au *în tipul curent*,
+            # deci bara trebuie recalculată; păstrăm eticheta selectată dacă e și
+            # în lista nouă, altfel cade pe prima.
+            self._genres = _discover_mod.tag_bar(media=self._disc_media)
+            ids = [g for _, g in self._genres]
+            if self._disc_tag not in ids:
+                self._disc_tag = ids[0] if ids else None
+            self._active_genre = self._disc_tag
+            self._setup_genres()
+            self._update_filter_btn()
+            self._load_and_show()
+            return
         idx = _FILTER_TYPES.index(self._filter_type)
         self._filter_type  = _FILTER_TYPES[(idx + 1) % len(_FILTER_TYPES)]
         self._genres       = self._get_genres_for_filter()
@@ -1574,8 +1749,8 @@ class HomeWindow(xbmcgui.WindowXML):
             self._section if self._section in ('movie', 'tv') else 'movie')
         title   = m.get('title') or m.get('name', '')
         year    = (m.get('release_date') or m.get('first_air_date') or '')[:4]
-        poster  = m.get('poster_path', '')
-        plot    = m.get('overview', '')
+        poster  = m.get('poster_path') or ''
+        plot    = m.get('overview') or ''
 
         if (tmdb_id, media) in self._fav_ids:
             db.remove_favorite(tmdb_id, media)
@@ -1610,11 +1785,11 @@ class HomeWindow(xbmcgui.WindowXML):
         tmdb_id = m.get('id')
         media   = m.get('media_type', 'movie')
         if self._trakt_filter in ('watchlist_movie', 'watchlist_tv'):
-            threading.Thread(target=self._do_watchlist_remove,
-                             args=(tmdb_id, media), daemon=True).start()
+            self._tasks.start(self._do_watchlist_remove,
+                              args=(tmdb_id, media), name='home-watchlist-remove')
         else:
-            threading.Thread(target=self._do_watchlist_add,
-                             args=(tmdb_id, media), daemon=True).start()
+            self._tasks.start(self._do_watchlist_add,
+                              args=(tmdb_id, media), name='home-watchlist-add')
 
     def _do_watchlist_add(self, tmdb_id, media):
         from . import trakt as _trakt

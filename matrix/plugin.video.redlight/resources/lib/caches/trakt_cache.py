@@ -159,10 +159,10 @@ def clear_trakt_hidden_data(list_type):
 def clear_trakt_collection_watchlist_data(list_type, media_type):
 	if media_type == 'movies': media_type = 'movie'
 	if media_type in ('tvshows', 'shows'): media_type = 'tvshow'
-	string = 'trakt_%s_%s' % (list_type, media_type)
 	try:
 		dbcon = connect_database('trakt_db')
-		dbcon.execute('DELETE FROM trakt_data WHERE id=?', (string,))
+		for suffix in ('', '_p250'):
+			dbcon.execute('DELETE FROM trakt_data WHERE id=?', ('trakt_%s_%s%s' % (list_type, media_type, suffix),))
 	except: pass
 
 def clear_trakt_calendar():

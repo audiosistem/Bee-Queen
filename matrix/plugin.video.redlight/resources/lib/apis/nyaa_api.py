@@ -89,7 +89,7 @@ def search(query, timeout=10, expiration=24):
 	if cached is not None:
 		return cached
 	try:
-		response = _http().get(url, timeout=max(5, int(timeout)))
+		response = _http().get(url, timeout=max(1, int(timeout)))
 		response.raise_for_status()
 		results = _parse_items(response.text)
 	except Exception as e:

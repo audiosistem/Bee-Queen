@@ -9,10 +9,22 @@ IMG_PROF  = 'https://image.tmdb.org/t/p/w185'
 IMG_FAN   = 'https://image.tmdb.org/t/p/original'
 
 CAST_PANEL  = 400
+TAB_CAST    = 390
+TAB_CREW    = 391
 PLOT_BOX    = 11
 BTN_PRIMARY = 500   # Redă / Sezoane
 BTN_SOURCES = 501
 BTN_TRAILER = 502
+BTN_SIMILAR = 504
+
+_CREW_JOBS = {
+    'Director': 'Regie', 'Writer': 'Scenariu', 'Screenplay': 'Scenariu',
+    'Teleplay': 'Scenariu', 'Story': 'Poveste', 'Characters': 'Personaje',
+    'Creator': 'Creator', 'Executive Producer': 'Producător executiv',
+    'Producer': 'Producător', 'Co-Producer': 'Coproducător',
+    'Original Music Composer': 'Muzică', 'Director of Photography': 'Imagine',
+    'Editor': 'Montaj', 'Casting': 'Casting', 'Production Design': 'Scenografie',
+}
 
 
 class VideoInfoDialog(xbmcgui.WindowXMLDialog):
@@ -31,8 +43,12 @@ class VideoInfoDialog(xbmcgui.WindowXMLDialog):
         self._item       = {}
         self._media_type = 'movie'
         self._cast       = []
+        self._people     = []
+        self._raw_cast   = []
+        self._raw_crew   = []
+        self._people_mode = 'cast'
         self.navigate_to   = None   # (person_id, person_name)
-        self.play_action   = None   # 'play' | 'seasons' | 'trailer' | 'collection'
+        self.play_action   = None   # 'play' | 'seasons' | 'trailer' | 'collection' | 'similar'
         self.collection_id = None
 
     def set_data(self, item_data, media_type='movie'):
@@ -95,7 +111,12 @@ class VideoInfoDialog(xbmcgui.WindowXMLDialog):
             self.collection_id = None
             self.clearProperty('info.has_collection')
 
-        self._populate_cast(item.get('credits', {}).get('cast', []))
+        credits = item.get('credits') or {}
+        if self._media_type in ('tv', 'tvshow') and item.get('aggregate_credits'):
+            credits = item.get('aggregate_credits') or credits
+        self._raw_cast = credits.get('cast') or []
+        self._raw_crew = credits.get('crew') or []
+        self._populate_people('cast')
         try:
             self.setFocus(self.getControl(BTN_PRIMARY))
         except Exception:
@@ -116,33 +137,87 @@ class VideoInfoDialog(xbmcgui.WindowXMLDialog):
             split = left if (mid - left) <= (right - mid) else right
         return name[:split] + '[CR]' + name[split + 1:]
 
-    def _populate_cast(self, raw_cast):
+    @staticmethod
+    def _unique_join(values, limit=3):
+        unique = []
+        for value in values:
+            value = (value or '').strip()
+            if value and value not in unique:
+                unique.append(value)
+        text = ' / '.join(unique[:limit])
+        return text + (f' +{len(unique) - limit}' if len(unique) > limit else '')
+
+    def _cast_subtitle(self, person):
+        roles = person.get('roles') or []
+        if roles:
+            characters = self._unique_join(r.get('character') for r in roles)
+            episodes = int(person.get('total_episode_count') or
+                           sum(int(r.get('episode_count') or 0) for r in roles))
+            return '  •  '.join(x for x in (f'{episodes} ep.' if episodes else '', characters) if x)
+        return person.get('character') or ''
+
+    def _crew_subtitles(self, person):
+        jobs = person.get('jobs') or []
+        raw_jobs = [j.get('job') for j in jobs] if jobs else [person.get('job')]
+        return [_CREW_JOBS[j] for j in raw_jobs if j in _CREW_JOBS]
+
+    def _populate_people(self, mode):
         try:
             panel = self.getControl(CAST_PANEL)
             panel.reset()
-            self._cast = []
-            for actor in raw_cast[:20]:
-                name = (actor.get('name') or '').strip()
+            self._people_mode = mode
+            raw_people = self._raw_cast if mode == 'cast' else self._raw_crew
+            merged, order = {}, []
+            for person in raw_people:
+                name = (person.get('name') or '').strip()
                 if not name:
                     continue
-                character = actor.get('character') or ''
-                profile   = actor.get('profile_path')
+                subtitles = ([self._cast_subtitle(person)] if mode == 'cast'
+                             else self._crew_subtitles(person))
+                subtitles = [s for s in subtitles if s]
+                if mode == 'crew' and not subtitles:
+                    continue
+                key = person.get('id') or name
+                if key not in merged:
+                    merged[key] = {'person': person, 'subtitles': []}
+                    order.append(key)
+                for subtitle in subtitles:
+                    if subtitle not in merged[key]['subtitles']:
+                        merged[key]['subtitles'].append(subtitle)
+            self._people = []
+            for key in order:
+                entry = merged[key]
+                person = entry['person']
+                name = (person.get('name') or '').strip()
+                subtitle = self._unique_join(entry['subtitles'])
+                profile = person.get('profile_path')
                 thumb     = (IMG_PROF + profile) if profile else ''
-                li = xbmcgui.ListItem(label=self._wrap_name(name), label2=character)
+                li = xbmcgui.ListItem(label=self._wrap_name(name), label2=subtitle)
                 li.setArt({'thumb': thumb, 'icon': thumb})
                 panel.addItem(li)
-                self._cast.append(actor)
+                self._people.append(person)
+            self._cast = self._people
+            self.getControl(TAB_CAST).setLabel(
+                '[B]Distribuție[/B]' if mode == 'cast' else 'Distribuție')
+            self.getControl(TAB_CREW).setLabel(
+                '[B]Echipă[/B]' if mode == 'crew' else 'Echipă')
         except Exception as exc:
-            xbmc.log(f'[Samus] InfoDialog cast error: {exc}', xbmc.LOGWARNING)
+            xbmc.log(f'[Samus] InfoDialog people error: {exc}', xbmc.LOGWARNING)
 
     # ─── interacțiune ────────────────────────────────────────────────────────
 
     def onClick(self, controlId):
-        if controlId == CAST_PANEL:
+        if controlId in (TAB_CAST, TAB_CREW):
+            self._populate_people('cast' if controlId == TAB_CAST else 'crew')
+            try:
+                self.setFocus(self.getControl(CAST_PANEL))
+            except Exception:
+                pass
+        elif controlId == CAST_PANEL:
             try:
                 pos = self.getControl(CAST_PANEL).getSelectedPosition()
-                if 0 <= pos < len(self._cast):
-                    actor = self._cast[pos]
+                if 0 <= pos < len(self._people):
+                    actor = self._people[pos]
                     pid   = actor.get('id')
                     name  = (actor.get('name') or '').strip()
                     if pid and name:
@@ -161,6 +236,9 @@ class VideoInfoDialog(xbmcgui.WindowXMLDialog):
             self.close()
         elif controlId == 503:
             self.play_action = 'collection'
+            self.close()
+        elif controlId == BTN_SIMILAR:
+            self.play_action = 'similar'
             self.close()
 
     def onAction(self, action):

@@ -263,6 +263,21 @@ def clear_cache(cache_type, silent=False):
 			results.append(animetosho_api.clear_animetosho_cache())
 		except Exception:
 			results.append(False)
+		try:
+			from apis import piratebay_api
+			results.append(piratebay_api.clear_piratebay_cache())
+		except Exception:
+			results.append(False)
+		try:
+			from apis import mediafusion_api
+			results.append(mediafusion_api.clear_mediafusion_cache())
+		except Exception:
+			results.append(False)
+		try:
+			from apis import zilean_api
+			results.append(zilean_api.clear_zilean_cache())
+		except Exception:
+			results.append(False)
 		for item in ('pm_cloud', 'rd_cloud', 'ad_cloud', 'oc_cloud', 'tb_cloud', 'folders'): results.append(clear_cache(item, silent=True))
 		success = False not in results
 	elif cache_type == 'easynews_scrape':
@@ -270,6 +285,7 @@ def clear_cache(cache_type, silent=False):
 		from apis import easynews_api
 		success = easynews_api.clear_media_results_database()
 	elif cache_type == 'external_scrapers':
+		if not _confirm(): return
 		from caches.external_cache import external_cache
 		from caches.debrid_cache import debrid_cache
 		results = []
@@ -372,8 +388,9 @@ def clear_all_cache():
 
 def refresh_cached_data(meta):
 	from caches.meta_cache import meta_cache
+	from modules.metadata import _meta_cache_type
 	media_type, tmdb_id, imdb_id = meta['mediatype'], meta['tmdb_id'], meta['imdb_id']
-	try: meta_cache.delete(media_type, 'tmdb_id', tmdb_id, meta)
+	try: meta_cache.delete(_meta_cache_type(media_type), 'tmdb_id', tmdb_id, meta)
 	except: return kodi_utils.notification('Error')
 	from apis.imdb_api import refresh_imdb_meta_data
 	refresh_imdb_meta_data(imdb_id)

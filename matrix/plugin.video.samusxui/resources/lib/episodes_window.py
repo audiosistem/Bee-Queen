@@ -10,6 +10,8 @@ ADDON_PATH = xbmcaddon.Addon('plugin.video.samusxui').getAddonInfo('path')
 _ID_HEADER   = 5
 _ID_BACKDROP = 100
 _ID_LOGO     = 115
+_ID_SHOW_FALLBACK = 116
+_ID_SEASON_LABEL = 117
 _ID_TITLE    = 110
 _ID_META     = 111
 _ID_PLOT     = 113
@@ -39,10 +41,20 @@ class EpisodesWindow(xbmcgui.WindowXML):
         try:
             self.getControl(_ID_HEADER).setLabel(
                 f'[COLOR FF7B5CF4]←[/COLOR]  {show_name}  •  {self._season_name}')
+            base = f'SEZONUL {self._season_number}'
+            season_name = (self._season_name or '').strip()
+            generic_names = {
+                base.lower(), f'season {self._season_number}'.lower(),
+            }
+            if season_name and season_name.lower() not in generic_names:
+                base += f'  •  {season_name.upper()}'
+            self.getControl(_ID_SEASON_LABEL).setLabel(base)
         except Exception:
             pass
+        logo = self._show.get('_logo_url') or tmdb.logo_from_details(self._show)
         try:
-            self.getControl(_ID_LOGO).setImage('')
+            self.getControl(_ID_LOGO).setImage(logo)
+            self.getControl(_ID_SHOW_FALLBACK).setLabel('' if logo else show_name)
         except Exception:
             pass
         self._populate()

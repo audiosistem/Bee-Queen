@@ -3,7 +3,7 @@ import time
 from apis.premiumize_api import Premiumize
 from modules import source_utils
 from modules.utils import clean_file_name, normalize
-from modules.settings import enabled_debrids_check, filter_by_name
+from modules.settings import enabled_debrids_check, filter_by_name, shared_title_require_year
 from caches.settings_cache import get_setting
 # from modules.kodi_utils import logger
 
@@ -26,6 +26,7 @@ class source:
 			except: self.year = 0
 			self.season, self.episode = info.get('season'), info.get('episode')
 			self.absolute_episode = info.get('absolute_episode')
+			self.require_year = shared_title_require_year(info, self.scrape_provider)
 			self.folder_query = source_utils.clean_title(normalize(title))
 			self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
 			self.title_queries = self._title_queries()
@@ -38,8 +39,8 @@ class source:
 						if self.media_type == 'episode':
 							file_only = normalize(item.get('name') or '')
 							if not source_utils.cloud_episode_matches(self.season, self.episode, file_only, self.absolute_episode): continue
-							if self.filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, 'pack', self.episode): continue
-						elif self.filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, self.season, self.episode): continue
+							if self.filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, 'pack', self.episode, self.require_year): continue
+						elif self.filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, self.season, self.episode, self.require_year): continue
 						display_name = clean_file_name(normalize(item.get('name') or file_name)).replace('html', ' ').replace('+', ' ').replace('-', ' ')
 						file_dl = item['id']
 						size = round(float(item.get('size') or 0)/1073741824, 2)

@@ -146,15 +146,22 @@ class Select(BaseDialog):
 		self.setProperty('narrow_window', self.narrow_window)
 
 def _handle_scroll_area_nav(dialog, action, ok_id=10, cancel_id=11):
-	if getattr(dialog, 'scroll_focus', 'false') != 'true': return False
+	# Import/export template: Left/Right from the text/scrollbar jump to the buttons.
+	# Up/Down on the scrollbar still page when there is something to scroll.
 	try:
-		if dialog.getFocusId() != 2070: return False
-	except: return False
+		focus_id = dialog.getFocusId()
+	except:
+		return False
+	if focus_id not in (2000, 2070):
+		return False
 	aid = action.getId()
 	if aid == dialog.left_action:
 		dialog.setFocusId(cancel_id)
 		return True
 	if aid == dialog.right_action:
+		dialog.setFocusId(ok_id)
+		return True
+	if aid == dialog.down_action and getattr(dialog, 'scroll_focus', 'false') != 'true':
 		dialog.setFocusId(ok_id)
 		return True
 	return False
@@ -184,8 +191,14 @@ class Confirm(BaseDialog):
 			return self._BTN_CANCEL
 
 	def onInit(self):
-		focus_id = 2070 if self.scroll_focus == 'true' else self._focus_control(self.default_control)
-		self.setFocusId(focus_id)
+		# Scrollbar id is always focusable; grouplist children often are not until the
+		# grouplist itself has focus. Import/export always starts on 2070.
+		if self.scroll_focus == 'true':
+			self.setFocusId(2070)
+		else:
+			self.setFocusId(3000)
+			try: self.setFocusId(self._focus_control(self.default_control))
+			except: pass
 
 	def run(self):
 		self.doModal()

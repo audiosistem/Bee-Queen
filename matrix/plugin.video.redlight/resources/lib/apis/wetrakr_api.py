@@ -9,7 +9,8 @@ import time
 import requests
 from caches.settings_cache import get_setting, set_setting
 from modules import kodi_utils, settings
-from modules.utils import copy2clip, make_qrcode, make_tinyurl
+from modules.utils import copy2clip, make_qrcode, make_tinyurl, \
+							device_auth_complete_url, device_auth_site_label, authorise_wait_text
 
 BASE_URL = 'https://api.wetrakr.com'
 APP_UA = 'RedLight-WeTrakr/%s' % kodi_utils.addon_version()
@@ -34,11 +35,8 @@ def _wetrakr_icon():
 	return kodi_utils.get_icon('wetrakr') or kodi_utils.addon_icon()
 
 def _token():
-	from caches.settings_cache import settings_cache
-	token = settings_cache.read_db_value('wetrakr.token')
-	if token in (None, '0', '', 'empty_setting'):
-		token = get_setting('redlight.wetrakr.token', '0')
-	return token
+	from caches.settings_cache import live_setting
+	return live_setting('wetrakr.token', '0')
 
 def wetrakr_user_active():
 	return settings.wetrakr_user_active()
@@ -169,30 +167,26 @@ def wetrakr_authenticate(dummy=''):
 	icon = _wetrakr_icon()
 	code_data = request_device_code()
 	if not code_data or not code_data.get('device_code'):
-		return kodi_utils.notification('WeTrakr Authorisation Failed', 3000, icon)
+		return kodi_utils.ok_dialog(heading='WeTrakr',
+			text='WeTrakr authorisation failed.[CR]Could not start device authorisation. Try again, or check your connection.')
 	user_code = str(code_data.get('user_code') or '')
 	device_code = code_data.get('device_code')
-	verification_url = (code_data.get('verification_url') or 'https://wetrakr.com/activate').rstrip('/')
 	expires_in = int(code_data.get('expires_in') or 600)
 	interval = max(int(code_data.get('interval') or 5), 1)
-	auth_url = verification_url if 'code=' in verification_url else (
-		'%s?code=%s' % (verification_url, user_code) if user_code else verification_url)
+	auth_url = device_auth_complete_url(code_data, user_code, fallback='https://wetrakr.com/activate', style='query')
 	qr_code = make_qrcode(auth_url) or icon
 	try: copy2clip(auth_url)
 	except: pass
 	short_url = make_tinyurl(auth_url)
-	p_dialog_insert = '[CR]OR visit [B]%s[/B]' % short_url if short_url else ''
-	content = (
-		'Enter [B]%s[/B] at [B]%s[/B][CR]OR scan the [B]QR Code[/B]%s[CR][CR]Waiting for authorisation...'
-		% (user_code, verification_url.replace('https://', '').replace('http://', ''), p_dialog_insert))
+	content = authorise_wait_text(user_code, device_auth_site_label(code_data, 'https://wetrakr.com/activate'), short_url)
 	progress = kodi_utils.progress_dialog('WeTrakr Authorise', qr_code)
 	progress.update(content, 0)
 	expires = time.time() + expires_in
-	token, username = None, None
+	token, username, canceled = None, None, False
 	while time.time() < expires:
 		if progress.iscanceled():
-			progress.close()
-			return kodi_utils.notification('WeTrakr Authorisation Canceled', 3000, icon)
+			canceled = True
+			break
 		data = _poll_device_token(device_code)
 		if data:
 			if data.get('access_token'):
@@ -204,11 +198,15 @@ def wetrakr_authenticate(dummy=''):
 			if error and error not in ('authorization_pending', 'slow_down'):
 				kodi_utils.logger('WeTrakr', 'poll: %s' % error)
 		progress.update(content, int(100 * (1 - (expires - time.time()) / float(expires_in))))
-		kodi_utils.sleep(interval * 1000)
+		if kodi_utils.sleep_while_authorising(progress, interval):
+			canceled = True
+			break
 	try: progress.close()
 	except: pass
+	if canceled:
+		return kodi_utils.notification('WeTrakr Authorisation Canceled', 3000, icon)
 	if not token:
-		return kodi_utils.notification('WeTrakr Authorisation Failed', 3000, icon)
+		return kodi_utils.notification('WeTrakr Error Authorising', 3000, icon)
 	set_setting('wetrakr.token', token)
 	set_setting('wetrakr.user', str(username))
 	from caches.settings_cache import settings_cache
@@ -219,6 +217,7 @@ def wetrakr_authenticate(dummy=''):
 	return True
 
 def wetrakr_revoke_authentication(dummy=''):
+	if not kodi_utils.confirm_revoke('WeTrakr'): return
 	set_setting('wetrakr.user', 'empty_setting')
 	set_setting('wetrakr.token', '0')
 	kodi_utils.notification('WeTrakr Authorisation Reset', 3000, _wetrakr_icon())

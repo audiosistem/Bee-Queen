@@ -201,10 +201,18 @@ def _extract_trackers(buf):
     idx = buf.find(b'13:announce-list')
     if idx != -1:
         chunk = buf[idx:idx + 2048]
-        for m in re.finditer(rb'(\d+):(https?://[^\x00-\x1f]{10,}|udp://[^\x00-\x1f]{10,})', chunk):
-            n   = int(m.group(1))
-            url = m.group(2)[:n].decode('utf-8', errors='ignore')
-            if url not in trackers:
+        # Mergem din lungime în lungime, nu cu un tipar lacom: `[^\x00-\x1f]{10,}`
+        # înghițea și intrarea următoare (URL-urile din announce-list sunt lipite
+        # unul de altul), iar `finditer` relua abia după ea — deci din două
+        # trackere se vedea doar primul, iar al doilea rămânea nepatchat.
+        consumed = 0
+        for m in re.finditer(rb'(\d+):', chunk):
+            if m.start() < consumed:
+                continue
+            n = int(m.group(1))
+            url = chunk[m.end():m.end() + n].decode('utf-8', errors='ignore')
+            consumed = m.end() + n
+            if (url.startswith('http') or url.startswith('udp')) and url not in trackers:
                 trackers.append(url)
     return trackers
 
@@ -225,24 +233,41 @@ def _replace_bencode_str(buf, old_bytes, new_bytes):
     return result
 
 
+_PASSKEY_IN_QUERY = re.compile(r'passkey=([a-fA-F0-9]{20,})')
+_PASSKEY_IN_PATH  = re.compile(r'/([a-fA-F0-9]{20,})/announce')
+
+
 def _patch_announce(buf):
-    """Înlocuiește URL-ul announce FileList cu proxy-ul Thrax.
-    Modifică doar câmpul announce (în afara info dict) → infoHash neschimbat.
+    """Înlocuiește TOATE URL-urile de tracker FileList cu proxy-ul Thrax.
+    Modifică doar câmpurile din afara info dict → infoHash neschimbat.
+
+    Două lucruri pe care versiunea veche le rata, ambele în tăcere (întorcea
+    torrentul nemodificat, deci announce-ul mergea direct la tracker):
+
+    1. FileList a trecut la passkey **în cale** —
+       `http://reactor.filelist.io/<passkey>/announce`. Vechiul tipar căuta
+       doar `passkey=` în query și nu se mai potrivea niciodată.
+    2. Se patcha doar câmpul `announce`, dar torrentele au și `announce-list`
+       (cu `reactor.filelist.io` ȘI `reactor.thefl.org`), pe care clienții o
+       preferă — deci chiar patchat, announce-ul principal era ocolit.
     """
-    m = re.search(rb'8:announce(\d+):', buf)
-    if not m:
+    urls = [u for u in _extract_trackers(buf)
+            if 'filelist' in u.lower() or 'thefl.org' in u.lower()]
+    if not urls:
         return buf
-    n = int(m.group(1))
-    url_start = m.end()
-    original_url = buf[url_start:url_start + n].decode('utf-8', errors='ignore')
-    if 'filelist' not in original_url.lower():
-        return buf
-    pk = re.search(r'passkey=([a-fA-F0-9]+)', original_url)
-    if not pk:
-        return buf
-    proxy_url = f'{_FL_TRACKER_PROXY}?passkey={pk.group(1)}'
-    patched = _replace_bencode_str(buf, buf[url_start:url_start + n], proxy_url.encode())
-    xbmc.log(f'[FileList] Announce patched → {proxy_url[:60]}', xbmc.LOGINFO)
+    patched = buf
+    done = 0
+    for url in dict.fromkeys(urls):
+        pk = _PASSKEY_IN_QUERY.search(url) or _PASSKEY_IN_PATH.search(url)
+        if not pk:
+            xbmc.log(f'[FileList] passkey negăsit în {url.split("?")[0][:50]} — las nepatchat',
+                     xbmc.LOGWARNING)
+            continue
+        proxy_url = f'{_FL_TRACKER_PROXY}?passkey={pk.group(1)}'
+        patched = _replace_bencode_str(patched, url.encode(), proxy_url.encode())
+        done += 1
+    xbmc.log(f'[FileList] Announce patched: {done}/{len(urls)} trackere → {_FL_TRACKER_PROXY}',
+             xbmc.LOGINFO)
     return patched
 
 

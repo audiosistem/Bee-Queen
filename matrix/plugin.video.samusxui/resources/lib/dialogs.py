@@ -115,6 +115,7 @@ def enrich_source(source):
 
 _PROVIDER_ORDER = {
     '[THX]': 0,   # Thrax — rapid, fiabil
+    '[VOYO]': 1,  # Voyo — sursă oficială, fără linkuri moarte (cere abonament)
     '[PSM]': 1,   # PrimeSrc.me — rapid, info calitate
     '[HDB]': 2,   # HDHub
     '[WSR]': 2,   # Webstreamr
@@ -146,13 +147,20 @@ _QUALITY_COLORS = {
 
 def sort_sources(sources):
     """Sort: calitate primară, provider secundar, torrente la final."""
+    try:
+        from resources.lib import db as _db
+        health_scores = _db.provider_health_scores()
+    except Exception:
+        health_scores = {}
+
     def key(s):
         if s.get('is_torrent'):
             return (10, 5, 0, -(s.get('seeds') or 0))
         q = _QUALITY_ORDER.get(s.get('quality') or '', 5)
         provider = s.get('provider') or ''
         prio = _PROVIDER_ORDER.get(provider, 4)
-        return (q, prio, 0, 0)
+        dynamic = health_scores.get(provider, 5.0)
+        return (q, prio, dynamic, 0)
 
     return sorted(sources, key=key)
 

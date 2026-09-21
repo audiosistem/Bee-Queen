@@ -1,13 +1,14 @@
-<addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]" version="2.4.2">
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<addon id="plugin.video.redlight" name="[COLOR red]Red Light[/COLOR]" version="2.6.5" provider-name="[COLOR red]The Red Wizard[/COLOR]">
     <requires>
-        <import addon="xbmc.python" version="3.0.1"/>
+        <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.pil" version="1.1.7"/>
         <import addon="script.module.requests" version="2.19.1"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="resources/lib/redlight.py">
         <provides>video</provides>
     </extension>
-    <!--<extension point="xbmc.service" library="resources/lib/service.py"/>-->
+    <extension point="xbmc.service" library="resources/lib/service.py"/>
     <extension point="xbmc.python.module" library="resources/lib/"/>
     <extension point="xbmc.addon.metadata">
         <reuselanguageinvoker>true</reuselanguageinvoker>
@@ -16,13 +17,17 @@
 * AIOStreams
 * EasyNews, NZB Indexers and Local Folders
 * MDBList, PunchPlay, Simkl, TMDb Lists, Trakt and WeTrakr</description>
-        <platform>all</platform>
         <disclaimer lang="en">The author of this add-on does not host any content and has no affiliation with the content providers</disclaimer>
+        <language>en</language>
+        <platform>all</platform>
         <license>GPL-3.0</license>
+        <forum>https://t.me/+X-lt1ZDii3I3YjA0</forum>
+        <website>https://redwizard.xyz/</website> 
+        <source>https://github.com/The-Red-Wizard/TheRedWizard</source>
+        <news>Check the Changelog in Tools &gt; Changelog &amp; Log Utils</news>
         <assets>
             <icon>resources/media/addon_icons/icon.png</icon>
             <fanart>resources/media/fanart.jpg</fanart>
         </assets>
-        <news>Check the Changelog in Tools &gt; Changelog &amp; Log Utils[/COLOR]</news>
     </extension>
 </addon>

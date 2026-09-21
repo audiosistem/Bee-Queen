@@ -80,7 +80,7 @@ def service_alert_enabled(service_id):
 
 
 def publish_settings_expiry_properties():
-	"""Home props for Settings > General > My Services authorised toggle visibility."""
+	"""Home props for Settings > Debrid Accounts expiry-alert toggle visibility."""
 	set_property = kodi_utils.set_property
 	for service_id, _display_name, _icon_name in SERVICE_META:
 		authorised = _service_authorized(service_id)

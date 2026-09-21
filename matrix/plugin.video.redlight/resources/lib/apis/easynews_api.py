@@ -4,15 +4,16 @@ import json
 import base64
 from urllib.parse import quote, urlencode
 from caches.base_cache import connect_database
-from caches.main_cache import cache_object
+from caches.main_cache import main_cache
 from caches.settings_cache import get_setting
 from modules.settings import easynews_refresh_credentials, easynews_exclude_adult
 from modules.dom_parser import parseDOM
 from modules.utils import chunks, remove_accents
-from modules.kodi_utils import make_session
-# from modules.kodi_utils import logger
+from modules.kodi_utils import make_session, logger
+from requests.exceptions import Timeout
 
 session = make_session()
+_EMPTY_IMAGE = {'total_results': 0, 'total_pages': 0, 'results': []}
 
 class EasyNewsAPI:
 	def __init__(self):
@@ -67,13 +68,33 @@ class EasyNewsAPI:
 			return '%sth.easynews.com/thumbnails-%s/%s-%s.jpg' % (prefix, folder, kind, name)
 		except: return url
 
+	def _session_get(self, url, retry=True, **kwargs):
+		kwargs.setdefault('headers', {'Authorization': self.auth})
+		try:
+			return session.get(url, **kwargs)
+		except Exception as e:
+			if not retry or isinstance(e, Timeout):
+				logger('easynews API', '%s (%s)' % (type(e).__name__, url))
+				raise
+			try:
+				session.close()
+			except Exception:
+				pass
+			return self._session_get(url, retry=False, **kwargs)
+
 	def search(self, query, expiration=48):
 		self._maybe_reload_credentials()
 		self.query = query
 		self.base_process = self._process_files
 		url, self.params = self._translate_search()
-		string = 'EASYNEWS_SEARCH_' + urlencode(self.params)
-		results = cache_object(self._process_search, string, url, json=False, expiration=expiration)
+		string = 'EASYNEWS_SEARCH_v2_' + urlencode(self.params)
+		cached = main_cache.get(string)
+		if cached is not None:
+			return cached if isinstance(cached, list) else []
+		results = self._process_search(url)
+		if results is None:
+			return []
+		main_cache.set(string, results, expiration=expiration)
 		return results if isinstance(results, list) else []
 
 	def search_images(self, query, page_no=1, expiration=48):
@@ -81,8 +102,16 @@ class EasyNewsAPI:
 		self.query = remove_accents(query)
 		self.base_process = self.process_image_files
 		url, self.params = self._translate_search(search_type='IMAGE')
-		string = 'EASYNEWS_IMAGE_SEARCH_v4_%s' % urlencode(self.params)
-		results = cache_object(self._process_search, string, url, json=False, expiration=expiration)
+		string = 'EASYNEWS_IMAGE_SEARCH_v5_%s' % urlencode(self.params)
+		cached = main_cache.get(string)
+		if cached is not None:
+			results = cached
+		else:
+			results = self._process_search(url)
+			if results is None:
+				results = dict(_EMPTY_IMAGE)
+			else:
+				main_cache.set(string, results, expiration=expiration)
 		try: results['results'] = results['results'][page_no -1]
 		except: pass
 		return results
@@ -138,7 +167,7 @@ class EasyNewsAPI:
 					from modules.kodi_utils import logger
 					logger('easynews API Exception', str(e))
 		if not isinstance(files, dict):
-			return {'total_results': 0, 'total_pages': 0, 'results': []}
+			return None
 		down_url = files.get('downURL')
 		download_url = 'https://%s:%s@members.easynews.com/dl' % (quote(self.username), quote(self.password))
 		dl_farm, dl_port = files.get('dlFarm'), files.get('dlPort')
@@ -178,9 +207,9 @@ class EasyNewsAPI:
 				except Exception as e:
 					from modules.kodi_utils import logger
 					logger('easynews API Exception', str(e))
-		# Empty/failed HTTP (_get → None) or non-JSON body must not raise on .get (scraper log noise).
+		# Failed HTTP / non-JSON must not look like a genuine empty search (that would be cached).
 		if not isinstance(files, dict):
-			return []
+			return None
 		down_url = files.get('downURL')
 		streaming_url = 'https://%s:%s@members.easynews.com/dl' % (quote(self.username), quote(self.password))
 		dl_farm, dl_port = files.get('dlFarm'), files.get('dlPort')
@@ -205,20 +234,25 @@ class EasyNewsAPI:
 	def _process_search(self, url):
 		results = self._get(url, self.params)
 		if results is None:
-			return [] if self.base_process is self._process_files else {'total_results': 0, 'total_pages': 0, 'results': []}
-		return self.base_process(results)
+			return None
+		processed = self.base_process(results)
+		return processed
 
 	def _get(self, url, params={}):
-		headers = {'Authorization': self.auth}
-		try: response = session.get(url, params=params, headers=headers, timeout=20).text
-		except: return None
-		try: return json.loads(response)
-		except: return response
+		try:
+			response = self._session_get(url, params=params, timeout=20)
+			text = response.text
+		except Exception:
+			return None
+		try: return json.loads(text)
+		except: return text
 
 	def resolve_easynews(self, url_dl, use_non_seekable=False):
 		self._maybe_reload_credentials()
-		headers = {'Authorization': self.auth}
-		response = session.get(url_dl, headers=headers, stream=True, timeout=20)
+		try:
+			response = self._session_get(url_dl, stream=True, timeout=20)
+		except Exception:
+			return None
 		if not response.ok: return None
 		if use_non_seekable: resolved_link = response.url + '|seekable=0'
 		else: resolved_link = response.url

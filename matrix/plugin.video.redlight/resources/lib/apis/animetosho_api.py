@@ -43,7 +43,7 @@ def search(query, timeout=10, expiration=24):
 		return cached
 	results = []
 	try:
-		response = json_http().get(url, timeout=max(5, int(timeout)))
+		response = json_http().get(url, timeout=max(1, int(timeout)))
 		response.raise_for_status()
 		payload = response.json()
 		if not isinstance(payload, list):

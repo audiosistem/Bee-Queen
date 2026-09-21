@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <window>
+    <defaultcontrol always="true">3000</defaultcontrol>
     <controls>
         <control type="image">
             <left>0</left>
@@ -32,7 +33,7 @@
                 <top>10</top>
                 <left>110</left>
                 <height>20</height>
-                <font>font_tiny</font> <!-- REDLIGHT_26 -->
+                <font>font12</font> <!-- REDLIGHT_26 -->
                 <textcolor>FFCCCCCC</textcolor>
                 <shadowcolor>FF000000</shadowcolor>
                 <align>center</align>
@@ -74,14 +75,15 @@
                 <height>70</height>
                 <orientation>horizontal</orientation>
                 <itemgap>12</itemgap>
+                <align>center</align>
                 <onup>2070</onup>
                 <control type="button" id="3010">
                     <description>True</description>
-                    <width>358</width>
-                    <width condition="String.IsEqual(Window.Property(show_third_button),true)">234</width>
+                    <width>234</width>
+                    <width condition="!String.IsEqual(Window.Property(show_third_button),true)">358</width>
                     <height>70</height>
                     <label>$INFO[Window.Property(ok_label)]</label>
-                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
+                    <font>font12</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <focusedcolor>FF1F2020</focusedcolor>
                     <texturefocus colordiffuse="CCCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -91,11 +93,11 @@
                 </control>
                 <control type="button" id="3011">
                     <description>False</description>
-                    <width>358</width>
-                    <width condition="String.IsEqual(Window.Property(show_third_button),true)">234</width>
+                    <width>234</width>
+                    <width condition="!String.IsEqual(Window.Property(show_third_button),true)">358</width>
                     <height>70</height>
                     <label>$INFO[Window.Property(cancel_label)]</label>
-                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
+                    <font>font12</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <focusedcolor>FF1F2020</focusedcolor>
                     <texturefocus colordiffuse="CCCCCCCC" border="30">redlight_common/circle.png</texturefocus>
@@ -109,7 +111,7 @@
                     <width>234</width>
                     <height>70</height>
                     <label>$INFO[Window.Property(third_label)]</label>
-                    <font>font_tiny</font> <!-- REDLIGHT_26 -->
+                    <font>font12</font> <!-- REDLIGHT_26 -->
                     <textcolor>FFCCCCCC</textcolor>
                     <focusedcolor>FF1F2020</focusedcolor>
                     <texturefocus colordiffuse="CCCCCCCC" border="30">redlight_common/circle.png</texturefocus>

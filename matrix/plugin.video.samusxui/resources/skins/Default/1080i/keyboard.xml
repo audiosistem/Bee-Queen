@@ -168,5 +168,14 @@
             <texturefocus   colordiffuse="00000000">white.png</texturefocus>
         </control>
 
+        <!-- Focus sink: împiedică Select să deschidă virtualkeyboard Kodi -->
+        <control type="button" id="1297">
+            <left>0</left><top>0</top><width>1</width><height>1</height>
+            <label></label><textcolor>00000000</textcolor>
+            <focusedcolor>00000000</focusedcolor>
+            <texturenofocus colordiffuse="00000000">white.png</texturenofocus>
+            <texturefocus colordiffuse="00000000">white.png</texturefocus>
+        </control>
+
     </controls>
 </window>

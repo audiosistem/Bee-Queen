@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from windows.base_window import BaseDialog
-from modules.kodi_utils import addon_icon
+from modules.kodi_utils import addon_icon, kodi_monitor
 # from modules.kodi_utils import logger
 
 class Progress(BaseDialog):
@@ -12,13 +12,26 @@ class Progress(BaseDialog):
 
 	def run(self):
 		self.doModal()
+		# Window is gone (Back, Android pause/close, or progress.close()). Stop any auth poll.
+		self.is_canceled = True
 		self.clearProperties()
+
+	def close(self):
+		self.is_canceled = True
+		try: BaseDialog.close(self)
+		except: pass
 
 	def onInit(self):
 		self.set_controls()
 
 	def iscanceled(self):
-		return self.is_canceled
+		if self.is_canceled: return True
+		try:
+			if kodi_monitor().abortRequested():
+				self.is_canceled = True
+				return True
+		except: pass
+		return False
 
 	def onAction(self, action):
 		if action in self.closing_actions:

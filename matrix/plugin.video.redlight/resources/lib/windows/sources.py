@@ -4,7 +4,7 @@ from threading import Thread
 from windows.base_window import BaseDialog
 from caches.settings_cache import get_setting, set_setting
 from modules.debrid import debrid_cache_check_available
-from modules.settings import debrid_cache_check, external_module_display_name
+from modules.settings import debrid_cache_check, debrid_cache_check_supported, external_module_display_name
 from modules.utils import TaskPool
 from modules.source_utils import source_filters
 from modules.settings import provider_sort_ranks, avoid_episode_spoilers, show_loading_plot, max_threads
@@ -59,6 +59,8 @@ class SourcesResults(BaseDialog):
 		return any_external_cache_check()
 
 	def _provider_cache_verified(self, provider):
+		if not debrid_cache_check_supported(provider):
+			return False
 		if self.cache_check_override is not None:
 			return self.cache_check_override
 		return debrid_cache_check(provider)

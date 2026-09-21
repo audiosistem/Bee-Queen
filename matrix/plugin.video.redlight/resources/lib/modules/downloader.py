@@ -94,7 +94,7 @@ def select_pack_item(pack_choices, icon):
 	return kodi_utils.select_dialog(pack_choices, **kwargs)
 
 def get_title(meta):
-	title = meta.get('custom_title', None) or meta.get('english_title') or meta.get('title')	
+	title = meta.get('custom_title', None) or meta.get('english_title') or meta.get('original_title') or meta.get('title')	
 	return title
 
 def get_year(meta):
@@ -563,7 +563,7 @@ def viewer(params):
 				listitem = kodi_utils.make_listitem()
 				listitem.setLabel(clean_file_name(normalize(path)))
 				listitem.setArt({'fanart': fanart})
-				info_tag = listitem.getVideoInfoTag(True)
+				info_tag = listitem.getVideoInfoTag()
 				info_tag.setPlot(' ')
 				yield (url, listitem, info[1])
 			except: pass

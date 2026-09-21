@@ -12,7 +12,8 @@ from caches.settings_cache import get_setting, set_setting
 from caches import punchplay_cache as pp_cache
 from modules import kodi_utils, settings
 from modules.http_defaults import META_API_TIMEOUT
-from modules.utils import copy2clip, make_qrcode, make_tinyurl, TaskPool
+from modules.utils import copy2clip, make_qrcode, make_tinyurl, TaskPool, \
+							device_auth_complete_url, device_auth_site_label, authorise_wait_text
 
 BASE_URL = 'https://punchplay.tv'
 API_PREFIX = '/api/platform/v1'
@@ -38,7 +39,8 @@ def _icon():
 	return kodi_utils.get_icon('punchplay') or kodi_utils.addon_icon()
 
 def punchplay_client_id():
-	return (get_setting('redlight.punchplay.client', '') or '').strip()
+	from modules.settings import punchplay_client
+	return punchplay_client()
 
 def _device_id():
 	from caches.settings_cache import settings_cache
@@ -49,18 +51,12 @@ def _device_id():
 	return str(device_id)
 
 def _token():
-	from caches.settings_cache import settings_cache
-	token = settings_cache.read_db_value('punchplay.token')
-	if token in (None, '0', '', 'empty_setting'):
-		token = get_setting('redlight.punchplay.token', '0')
-	return token
+	from caches.settings_cache import live_setting
+	return live_setting('punchplay.token', '0')
 
 def _refresh_token():
-	from caches.settings_cache import settings_cache
-	token = settings_cache.read_db_value('punchplay.refresh')
-	if token in (None, '0', '', 'empty_setting'):
-		token = get_setting('redlight.punchplay.refresh', '0')
-	return token
+	from caches.settings_cache import live_setting
+	return live_setting('punchplay.refresh', '0')
 
 def punchplay_user_active():
 	return settings.punchplay_user_active()
@@ -95,14 +91,12 @@ def _token_usable(token):
 	return token not in (None, '0', '', 'empty_setting')
 
 def _reload_token_cache():
-	from caches.settings_cache import settings_cache
-	settings_cache.clear_db_cache()
+	from caches.settings_cache import reload_auth_from_db
+	reload_auth_from_db('punchplay.token', 'punchplay.refresh', 'punchplay.expires')
 
 def _expires_at():
-	from caches.settings_cache import settings_cache
-	raw = settings_cache.read_db_value('punchplay.expires')
-	if raw in (None, '', 'empty_setting', '0'):
-		raw = get_setting('redlight.punchplay.expires', '0')
+	from caches.settings_cache import live_setting
+	raw = live_setting('punchplay.expires', '0')
 	try: return float(raw or 0)
 	except (TypeError, ValueError): return 0.0
 
@@ -162,17 +156,22 @@ def _refresh_access_token():
 			headers=_headers(with_auth=False), timeout=META_API_TIMEOUT)
 		if resp.status_code != 200:
 			detail, request_id = '', ''
+			body = {}
 			try:
 				body = resp.json() or {}
 				if isinstance(body, dict):
 					detail = body.get('message') or body.get('error') or ''
 					request_id = body.get('request_id') or ''
+				else:
+					body = {}
 			except Exception:
-				pass
+				body = {}
 			kodi_utils.logger('PunchPlay', 'refresh failed: HTTP %s%s%s' % (
 				resp.status_code,
 				(': %s' % detail) if detail else '',
 				(' request_id=%s' % request_id) if request_id else ''))
+			from modules.meta_auth_alerts import maybe_notify_refresh_failure
+			maybe_notify_refresh_failure('punchplay', resp.status_code, body or resp.text)
 			return False
 		payload = resp.json() or {}
 		if not payload.get('refresh_token'):
@@ -443,30 +442,27 @@ def punchplay_authenticate(dummy=''):
 		kodi_utils.logger('PunchPlay', 'device/code: %s' % e)
 		code_data = None
 	if not code_data or not code_data.get('device_code'):
-		return kodi_utils.notification('PunchPlay Authorisation Failed', 3000, icon)
+		_ok, message = punchplay_test_client_id()
+		return kodi_utils.ok_dialog(heading='PunchPlay', text=message)
 	user_code = str(code_data.get('user_code') or '')
 	device_code = code_data.get('device_code')
-	verification_url = (code_data.get('verification_uri') or 'https://punchplay.tv/link').rstrip('/')
-	auth_url = code_data.get('verification_uri_complete') or (
-		'%s?code=%s' % (verification_url, user_code) if user_code else verification_url)
+	auth_url = device_auth_complete_url(code_data, user_code, fallback='https://punchplay.tv/link', style='query')
 	expires_in = int(code_data.get('expires_in') or 600)
 	interval = 5
 	qr_code = make_qrcode(auth_url) or icon
 	try: copy2clip(auth_url)
 	except: pass
 	short_url = make_tinyurl(auth_url)
-	p_dialog_insert = '[CR]OR visit [B]%s[/B]' % short_url if short_url else ''
-	content = (
-		'Enter [B]%s[/B] at [B]%s[/B][CR]OR scan the [B]QR Code[/B]%s[CR][CR]Waiting for authorisation...'
-		% (user_code, verification_url.replace('https://', '').replace('http://', ''), p_dialog_insert))
+	content = authorise_wait_text(user_code, device_auth_site_label(code_data, 'https://punchplay.tv/link'), short_url)
 	progress = kodi_utils.progress_dialog('PunchPlay Authorise', qr_code)
 	progress.update(content, 0)
 	expires = time.time() + expires_in
 	token_payload = None
+	canceled = False
 	while time.time() < expires:
 		if progress.iscanceled():
-			progress.close()
-			return kodi_utils.notification('PunchPlay Authorisation Canceled', 3000, icon)
+			canceled = True
+			break
 		try:
 			poll = requests.post(
 				_url('/auth/device/token'),
@@ -486,16 +482,22 @@ def punchplay_authenticate(dummy=''):
 			error = body.get('error') or ''
 			if error in ('expired', 'access_denied', 'expired_token'): break
 			if poll.status_code == 429:
-				kodi_utils.sleep(30000)
+				if kodi_utils.sleep_while_authorising(progress, 30):
+					canceled = True
+					break
 				continue
 		except Exception as e:
 			kodi_utils.logger('PunchPlay', 'poll: %s' % e)
 		progress.update(content, int(100 * (1 - (expires - time.time()) / float(expires_in))))
-		kodi_utils.sleep(interval * 1000)
+		if kodi_utils.sleep_while_authorising(progress, interval):
+			canceled = True
+			break
 	try: progress.close()
 	except: pass
+	if canceled:
+		return kodi_utils.notification('PunchPlay Authorisation Canceled', 3000, icon)
 	if not token_payload or not _save_tokens(token_payload):
-		return kodi_utils.notification('PunchPlay Authorisation Failed', 3000, icon)
+		return kodi_utils.notification('PunchPlay Error Authorising', 3000, icon)
 	username = 'PunchPlay User'
 	try:
 		me = call_punchplay('/me', method='get') or {}
@@ -504,7 +506,9 @@ def punchplay_authenticate(dummy=''):
 	except: pass
 	set_setting('punchplay.user', str(username))
 	from caches.settings_cache import settings_cache
+	from modules.meta_auth_alerts import clear_alert
 	settings_cache.clear_db_cache()
+	clear_alert('punchplay')
 	kodi_utils.notification('PunchPlay Account Authorised', 3000, icon)
 	try: settings.offer_watched_provider(4, 'PunchPlay')
 	except: pass
@@ -520,6 +524,9 @@ def punchplay_authenticate(dummy=''):
 	return True
 
 def punchplay_revoke_authentication(dummy=''):
+	if not kodi_utils.confirm_revoke('PunchPlay'): return
+	from modules.meta_auth_alerts import clear_alert
+	clear_alert('punchplay')
 	settings.fallback_watched_provider_on_revoke(4)
 	set_setting('punchplay.user', 'empty_setting')
 	set_setting('punchplay.token', '0')

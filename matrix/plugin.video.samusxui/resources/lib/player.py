@@ -6,6 +6,8 @@ import os
 import sys
 import time
 import urllib.parse
+import urllib.request
+from xml.sax.saxutils import escape as _xml_escape
 import xbmc
 import xbmcgui
 import xbmcplugin
@@ -14,27 +16,27 @@ import xbmcvfs
 import resolveurl
 import threading
 from resources.lib import subtitles, db
+from resources.lib.stream_info import StreamInfo
 from resources.lib.tmdb_bridge import movies, tv, get_english_title
-from resources.lib.resolvers import primesrc
-from resources.lib.resolvers import torrentio, torrentdb, mediafusion, comet, perflix, thrax
+from resources.lib.resolvers import torrentio, torrentdb, perflix, thrax
 from resources.lib.resolvers import velaflow as velaflow_resolver
 from resources.lib.resolvers import filelist as filelist_resolver
 from resources.lib.resolvers import okru as okru_resolver
 from resources.lib.resolvers import flixer, vixsrc as vixsrc_resolver, hdhub, webtor as webtor_resolver
-from resources.lib.resolvers import penguplay as penguplay_resolver
+from resources.lib.resolvers import yts as yts_resolver
 from resources.lib.resolvers import voe as voe_resolver
 from resources.lib.resolvers import doodstream as doodstream_resolver
-from resources.lib.resolvers import webstreamr, vidrock
-from resources.lib.resolvers import hydrahd as hydrahd_resolver
+from resources.lib.resolvers import vidlove as vidlove_resolver
+from resources.lib.resolvers import vyla as vyla_resolver
+from resources.lib.resolvers import moviesapi as moviesapi_resolver
 from resources.lib.resolvers import primesrcme as primesrcme_resolver
 from resources.lib.resolvers import vidmoly as vidmoly_resolver
 from resources.lib.resolvers import telegram as telegram_resolver
 from resources.lib.resolvers import abysscdn as abysscdn_resolver
+from resources.lib.resolvers import byse as byse_resolver
 from resources.lib.resolvers import vsembed as vsembed_resolver
-from resources.lib.resolvers import multiembed as multiembed_resolver
+from resources.lib.resolvers import voyo as voyo_resolver
 from resources.lib.resolvers import pelispanda as pelispanda_resolver
-from resources.lib.resolvers import sooti as sooti_resolver
-from resources.lib.resolvers import cinesu as cinesu_resolver
 from resources.lib.resolvers import vidapi as vidapi_resolver
 from resources.lib.tmdb_bridge import get_external_ids
 from resources.lib import dialogs
@@ -62,8 +64,11 @@ _ts_local_server = None   # instanță LocalServer (TorrServer incorporat)
 
 # Timeout-uri individuale per resolver (secunde) — None = limitat doar de budget global
 _RT = {
+    'voyo':         7,
     'vsembed':      8,
-    'hydrahd':      8,
+    'vidlove':      6,
+    'moviesapi':    6,
+    'vyla':        12,   # agregă 40+ scrapere pe server → generos, curge progresiv
 }
 
 # Trackere publice fallback — adăugate în magnet dacă sursa nu include trackere
@@ -108,22 +113,24 @@ def prestart_torrent_engine():
 
 
 def resolve_with_timeout(url, timeout=30):
-    result = [None]
+    """Resolve synchronously so a timed-out helper thread can never be orphaned.
 
-    def resolver():
-        try:
-            resolved_url = resolveurl.resolve(url)
-            result[0] = resolved_url
-        except Exception as e:
-            xbmc.log(f"[Samus/resolveurl] Eroare: {e}", xbmc.LOGERROR)
-
-    t = threading.Thread(target=resolver)
-    t.start()
-    t.join(timeout)
-    if t.is_alive():
-        xbmc.log(f"[Samus/resolveurl] Timeout {timeout}s pentru URL: {url}", xbmc.LOGERROR)
+    ResolveURL's network layer applies its own per-request timeouts. Python has
+    no safe way to kill a running thread; the old join(timeout) returned while
+    that thread was still alive and could deadlock Kodi's Py_EndInterpreter.
+    ``timeout`` is retained as a slow-call warning threshold.
+    """
+    started = time.monotonic()
+    try:
+        resolved_url = resolveurl.resolve(url)
+    except Exception as e:
+        xbmc.log(f"[Samus/resolveurl] Eroare: {e}", xbmc.LOGERROR)
         return None
-    return result[0]
+    elapsed = time.monotonic() - started
+    if elapsed > timeout:
+        xbmc.log(f"[Samus/resolveurl] Apel lent {elapsed:.1f}s pentru URL: {url}",
+                 xbmc.LOGWARNING)
+    return resolved_url
 
 
 def _quote_http_url_for_kodi(url):
@@ -160,11 +167,76 @@ def _torrent_timeout(seeds):
     return 120  # puțini seederi — așteptăm mai mult
 
 
-def resolve_torrent(info_hash, file_idx=0, trackers=None, seeds=None, size=None, quality=None, status_cb=None, stats_cb=None, torrent_file=None, file_name=None, title=None, poster=None):
+def resolve_torrent(info_hash, file_idx=0, trackers=None, seeds=None, size=None, quality=None, status_cb=None, stats_cb=None, torrent_file=None, file_name=None, title=None, poster=None, imdb_id=None):
     engine_setting = addon.getSetting('torrent_engine') or 'TorrServer'
     if engine_setting == 'libtorrent':
         return resolve_torrent_libtorrent(info_hash, file_idx, trackers, seeds, status_cb=status_cb, stats_cb=stats_cb, torrent_file=torrent_file)
+    if engine_setting == 'Webtor':
+        return resolve_torrent_webtor(info_hash, file_idx, trackers, status_cb=status_cb, file_name=file_name, imdb_id=imdb_id)
     return resolve_torrent_torrserver(info_hash, file_idx, trackers, seeds, status_cb=status_cb, stats_cb=stats_cb, torrent_file=torrent_file, file_name=file_name, title=title, poster=poster)
+
+
+def resolve_torrent_webtor(info_hash, file_idx=0, trackers=None, status_cb=None, file_name=None, imdb_id=None):
+    """Redare prin api.webtor.io — descărcarea o face serverul lor, noi primim
+    un URL HTTP cu `Accept-Ranges`.
+
+    Spre deosebire de TorrServer și libtorrent, aici nu avem statistici de peers
+    (nu rulăm noi torrentul), deci `stats_cb` nu se aplică — bara de progres
+    rămâne pe mesajele de stare.
+    """
+    def _status(msg):
+        xbmc.log(f'[Samus/Webtor] {msg}', xbmc.LOGINFO)
+        if status_cb:
+            status_cb(msg)
+
+    api_key = (addon.getSetting('webtor_api_key') or '').strip()
+    if not api_key:
+        xbmcgui.Dialog().notification('Samus', 'Cheia API Webtor lipsește din setări',
+                                      xbmcgui.NOTIFICATION_ERROR, 5000)
+        return None
+
+    from resources.lib.resolvers import webtor_api
+
+    tr_list = [t[len('tracker:'):] for t in (trackers or []) if t.startswith('tracker:')]
+    if not tr_list:
+        tr_list = _FALLBACK_TRACKERS
+
+    try:
+        _status('Se trimite torrentul către Webtor...')
+        resource_id = webtor_api.store_resource(
+            api_key, webtor_api.build_magnet(info_hash, tr_list))
+
+        _status('Se citește conținutul torrentului...')
+        files = webtor_api.list_files(api_key, resource_id)
+        chosen = webtor_api.pick_video(files, file_idx=file_idx, file_name=file_name)
+        if not chosen:
+            xbmc.log('[Samus/Webtor] torrentul nu conține niciun fișier video', xbmc.LOGWARNING)
+            xbmcgui.Dialog().notification('Samus', 'Torrentul nu conține video',
+                                          xbmcgui.NOTIFICATION_WARNING, 5000)
+            return None
+
+        _status('Se pregătește stream-ul...')
+        url, subs = webtor_api.export_url(api_key, resource_id, chosen['id'], imdb_id=imdb_id)
+        xbmc.log(f'[Samus/Webtor] {chosen.get("name")} ({chosen.get("size")} B)', xbmc.LOGINFO)
+        if subs:
+            xbmc.log(f'[Samus/Webtor] subtitrări disponibile: {subs[:80]}', xbmc.LOGDEBUG)
+
+        # Kodi abandonează deschiderea după 20 s, iar Webtor începe să tragă
+        # piesele abia la prima cerere — așteptăm noi, cu mesaj pe ecran.
+        _status('Se încarcă bufferul (prima pornire e mai lentă)...')
+        if not webtor_api.warm_up(url, progress_cb=lambda n, t: _status(
+                f'Se încarcă bufferul... {n // 1024} KB în {t:.0f}s')):
+            xbmcgui.Dialog().notification('Samus', 'Webtor nu a livrat date (torrent fără seederi?)',
+                                          xbmcgui.NOTIFICATION_WARNING, 6000)
+            return None
+        return url
+    except webtor_api.WebtorError as e:
+        xbmc.log(f'[Samus/Webtor] {e}', xbmc.LOGERROR)
+        xbmcgui.Dialog().notification('Samus', f'Webtor: {e}', xbmcgui.NOTIFICATION_ERROR, 6000)
+        return None
+    except Exception as e:
+        xbmc.log(f'[Samus/Webtor] eroare neașteptată: {e}', xbmc.LOGERROR)
+        return None
 
 
 
@@ -280,6 +352,26 @@ def resolve_torrent_torrserver(info_hash, file_idx=0, trackers=None, seeds=None,
             xbmc.log('[Samus/TorrServer] Timeout fără date — niciun peer conectat', xbmc.LOGWARNING)
             xbmcgui.Dialog().notification('Samus', 'TorrServer: niciun peer disponibil', xbmcgui.NOTIFICATION_WARNING, 5000)
             return None
+        # Verificare de siguranță: fișierul selectat trebuie să aibă extensie video.
+        # Torrentele din surse externe pot fi otrăvite cu executabile/arhive deghizate
+        # în filme (ex. "1080p Telesync" care e de fapt un .exe) — nu redăm orbește
+        # doar pe baza fileIdx-ului primit de la sursă.
+        try:
+            for f in e.files():
+                if f.get('file_id') == ts_idx:
+                    fname = f.get('path') or ''
+                    fext = os.path.splitext(fname)[-1].lower()
+                    if fext and fext not in _VIDEO_EXT:
+                        xbmc.log(f'[Samus/TorrServer] Fișier neașteptat ({fext}): {fname!r} — refuz redarea', xbmc.LOGWARNING)
+                        xbmcgui.Dialog().notification('Samus', f'Torrent suspect: fișier {fext} în loc de video', xbmcgui.NOTIFICATION_WARNING, 6000)
+                        try:
+                            e.rem()
+                        except Exception:
+                            pass
+                        return None
+                    break
+        except Exception as ex:
+            xbmc.log(f'[Samus/TorrServer] Verificare fișier eșuată (ignorată): {ex}', xbmc.LOGDEBUG)
         _status('Se obține adresa de stream...')
         url = e.play_url(ts_idx)
         global _ts_cleanup_player
@@ -312,19 +404,6 @@ def _cleanup_torrent_cache(save_path):
                 xbmc.log(f'[Samus/libtorrent] Cache cleanup: {entry.name}', xbmc.LOGINFO)
     except Exception as e:
         xbmc.log(f'[Samus/libtorrent] Cache cleanup eroare: {e}', xbmc.LOGWARNING)
-
-
-def _pick_best_file(engine, tid):
-    """Returnează file_idx al celui mai mare fișier video din torrent."""
-    files = engine.get_files(tid)
-    best_idx, best_size = 0, -1
-    for f in files:
-        name = f.name.decode('utf-8', errors='replace') if isinstance(f.name, bytes) else f.name
-        ext = os.path.splitext(name)[-1].lower()
-        if ext in _VIDEO_EXT and f.size > best_size:
-            best_size = f.size
-            best_idx = f.index
-    return best_idx
 
 
 class _TorrServerCleanup(xbmc.Player):
@@ -467,6 +546,22 @@ def resolve_torrent_libtorrent(info_hash, file_idx=0, trackers=None, seeds=None,
         xbmc.log(f'[Samus/libtorrent] Fișier selectat: index {file_idx}', xbmc.LOGINFO)
         best_idx = file_idx
 
+        # Verificare de siguranță: fișierul selectat trebuie să aibă extensie video —
+        # vezi nota din resolve_torrent_torrserver.
+        try:
+            for f in engine.get_files(tid):
+                if f.index == best_idx:
+                    fname = f.name.decode('utf-8', errors='replace') if isinstance(f.name, bytes) else f.name
+                    fext = os.path.splitext(fname)[-1].lower()
+                    if fext and fext not in _VIDEO_EXT:
+                        xbmc.log(f'[Samus/libtorrent] Fișier neașteptat ({fext}): {fname!r} — refuz redarea', xbmc.LOGWARNING)
+                        xbmcgui.Dialog().notification('Samus', f'Torrent suspect: fișier {fext} în loc de video', xbmcgui.NOTIFICATION_WARNING, 6000)
+                        engine.remove_torrent(tid, delete_files=True)
+                        return None
+                    break
+        except Exception as ex:
+            xbmc.log(f'[Samus/libtorrent] Verificare fișier eșuată (ignorată): {ex}', xbmc.LOGDEBUG)
+
         _status('Se pornește stream-ul...')
         sid = engine.start_stream(tid, best_idx)
         if sid < 0:
@@ -541,32 +636,32 @@ def resolve_torrent_libtorrent(info_hash, file_idx=0, trackers=None, seeds=None,
             _lt_engine = None
         return None
 
-
+# Cheia e numele MODULULUI: threaded_resolver o ia din functie, prin
+# __module__.split('.')[-1], nu din aliasul de import. Intrarile scrise
+# candva ca 'vsembed_resolver' nu se potriveau niciodata, deci evidenta
+# sanatatii era inerta tocmai pentru providerii care dau timeout.
 _MODULE_TO_PROVIDER = {
-    'filelist':      '[FLI]',  'nebulastreams': '[NBS]',
-    'stremify':      '[STF]',  'flixnest':      '[FNS]',
-    'yastream':      '[YAS]',  'nhdapi':        '[NHD]',
-    'sooti':         '[SOT]',  'webstreamr':    '[WSR]',
-    'torrentio':     '[TIO]',  'torrentdb':     '[TDB]',
-    'mediafusion':   '[MF]',   'comet':         '[CMT]',
-    'perflix':       '[PFX]',  'uindex':        '[UDX]',
-    'thrax':         '[THX]',  'flixer':        '[FLX]',
-    'vixsrc':        '[VXS]',  'hdhub':         '[HDB]',
-    'vidrock':       '[VDR]',  'pulpwatch_resolver': '[PLW]',
-    'filmehd_resolver': '[FHD]', 'hydrahd_resolver': '[HHD]',
-    'videasy_resolver': '[VDY]', 'vsembed_resolver': '[VSE]',
-    'yflix_resolver':   '[YFX]', 'pelispanda':   '[PPD]',
-    'streamimdb':    '[SIMDB]', 'moviebox':      '[MBX]',
-    'popr':          '[PPR]',  'cinesu':        '[CSU]',
-    'velaflow':      '[VLF]',  'peachify':      '[PCH]',
-    'tulnex':        '[TLX]',  'vidapi':        '[VAP]',
-    'goatapi':       '[PDN]',   'webtor':        '[WBT]',
+    'cinesu':      '[CSU]',  'comet':       '[CMT]',
+    'filelist':    '[FLI]',  'flixer':      '[FLX]',
+    'hdhub':       '[HDB]',  'hydrahd':     '[HHD]',
+    'mediafusion': '[MF]',   'moviesapi':   '[MAP]',
+    'peachify':    '[PCH]',  'pelispanda':  '[PPD]',
+    'perflix':     '[PFX]',  'sooti':       '[SOT]',
+    'thrax':       '[THX]',  'torrentdb':   '[TDB]',
+    'torrentio':   '[TIO]',  'velaflow':    '[VLF]',
+    'vidapi':      '[VAP]',  'vidlove':     '[VDL]',
+    'vidrock':     '[VDR]',  'vixsrc':      '[VXS]',
+    'voyo':        '[VOYO]', 'vsembed':     '[VSE]',
+    'vyla':        '[VYL]',
+    'yts':         '[YTS]',
+    'webstreamr':  '[WSR]',  'webtor':      '[WBT]',
 }
 
 
 def threaded_resolver(target, args=(), result=None, index=0, timeout=None):
     mod = getattr(target, '__module__', '').split('.')[-1]
     provider = _MODULE_TO_PROVIDER.get(mod)
+    timed_out = threading.Event()
 
     def wrapper():
         if provider and not db.provider_is_healthy(provider):
@@ -578,7 +673,14 @@ def threaded_resolver(target, args=(), result=None, index=0, timeout=None):
             data = target(*args)
             result[index] = data
             n = len(data) if data else 0
-            xbmc.log(f"[Samus/timing] {mod}.{target.__name__}: {n} surse în {time.time()-t0:.2f}s", xbmc.LOGDEBUG)
+            elapsed = time.time() - t0
+            # Un provider care ÎNTOARCE surse e sănătos chiar dacă a fost lent
+            # (timed_out e setat de bugetul scurt de 1.5s din _wait_for_resolvers).
+            # Fără `data or ...`, providerii lenți-dar-buni (vyla ~9s, voyo, vsembed)
+            # adunau fail-uri și erau săriți după 3 fetch-uri în 30 min, deși mergeau.
+            if provider and (data or not timed_out.is_set()):
+                db.provider_health_ok(provider, latency=elapsed, had_results=bool(data))
+            xbmc.log(f"[Samus/timing] {mod}.{target.__name__}: {n} surse în {elapsed:.2f}s", xbmc.LOGDEBUG)
         except Exception as e:
             xbmc.log(f"[Samus] Eroare în {target.__name__}: {e}", xbmc.LOGERROR)
             result[index] = []
@@ -587,6 +689,7 @@ def threaded_resolver(target, args=(), result=None, index=0, timeout=None):
     t._resolver_timeout = timeout
     t._provider = provider
     t._result_index = index
+    t._timeout_event = timed_out
     t.start()
     return t
 
@@ -594,6 +697,7 @@ def threaded_resolver(target, args=(), result=None, index=0, timeout=None):
 _PROVIDER_NAMES = {
     '[V]':     'Vidify',       '[ES]':    'Stremio',      '[Z]':     'VidZee',
     '[2E]':    '2Embed',       '[TIO]':   'Torrentio',    '[TDB]':   'TorrentDB',
+    '[YTS]':   'YTS',
     '[MF]':    'MediaFusion',  '[CMT]':   'Comet',        '[PFX]':   'Peerflix',
     '[UDX]':   'UIndex',       '[THX]':   'Thrax',        '[PSC]':   'Vidsrcme.ru',
     '[FLX]':   'Flixer',       '[VXS]':   'VixSrc',       '[HDB]':   'HDHub',
@@ -602,6 +706,7 @@ _PROVIDER_NAMES = {
     '[FHD]':   'FilmeHD',      '[HHD]':   'HydraHD',      '[YAS]':   'Yastream',
     '[NHD]':   'NHDAPI',       '[PSM]':   'PrimeSrc.me',  '[VDL]':   'VidLink',
     '[VDY]':   'Videasy',      '[VSE]':   'VSEmbed',      '[YFX]':   'YFlix',
+    '[VOYO]':  'Voyo',
     '[MEB]':   'MultiEmbed',   '[VBT]':   'VidBinge',     '[MAPI]':  'MoviesAPI',
     '[PPD]':   'PelisPanda',   '[SIMDB]': 'StreamIMDb',   '[SOT]':   'Sooti',
     '[MBX]':   'MovieBox',     '[PPR]':   'Popr',        '[CSU]':   'CineSu',
@@ -609,6 +714,7 @@ _PROVIDER_NAMES = {
     '[PCH]':   'Peachify',
     '[TLX]':   'Tulnex',    '[VAP]':   'VidAPI',
     '[PDN]':   'Pixeldrain',   '[WBT]':   'Webtor',
+    '[VYL]':   'Vyla',
 }
 
 
@@ -634,6 +740,27 @@ def _build_sources(results, prefixes, tmdb_title=None, tmdb_year=None, tmdb_orig
                         })
         elif label_prefix == '[THX]':
             for src in group:
+                if src.get('is_torrent'):
+                    quality = src.get('quality', '')
+                    base_title = tmdb_original_title or tmdb_title or ''
+                    clean = ''.join(c if c.isalnum() or c in ' -.' else '' for c in base_title)
+                    dot_parts = [clean.replace(' ', '.').strip('.')]
+                    if tmdb_year:
+                        dot_parts.append(tmdb_year)
+                    if quality:
+                        dot_parts.append(quality)
+                    title_line = '.'.join(p for p in dot_parts if p)
+                    sources.append({
+                        'label':      f"{display_prefix} {src.get('label', '')}".strip(),
+                        'title_line': title_line or src.get('label', ''),
+                        'provider':   label_prefix,
+                        'infoHash':   src['infoHash'],
+                        'fileIdx':    src.get('fileIdx', 0),
+                        'trackers':   src.get('trackers', []),
+                        'quality':    quality,
+                        'is_torrent': True,
+                    })
+                    continue
                 url = src.get('url')
                 if not url:
                     continue
@@ -656,9 +783,10 @@ def _build_sources(results, prefixes, tmdb_title=None, tmdb_year=None, tmdb_orig
                     'url':        url,
                     'direct':     src.get('direct', True),
                     'quality':    quality,
+                    'thrax_resolved': src.get('thrax_resolved', True),
                 }
                 sources.append(entry)
-        elif label_prefix in ('[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[PPD]', '[VLF]', '[FLI]'):
+        elif label_prefix in ('[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[PPD]', '[VLF]', '[FLI]', '[YTS]'):
             for src in group:
                 quality = src.get('quality', '')
                 title_line = src.get('title_line', '')
@@ -790,7 +918,7 @@ def _build_sources(results, prefixes, tmdb_title=None, tmdb_year=None, tmdb_orig
                     'size':       size,
                     'direct':     True,
                 })
-        elif label_prefix in ('[FLX]', '[VXS]', '[V]', '[Z]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[PLW]', '[YAS]', '[NHD]', '[VSE]', '[YFX]', '[SIMDB]', '[SOT]', '[MBX]', '[PPR]', '[CSU]', '[PCH]', '[TLX]'):
+        elif label_prefix in ('[FLX]', '[VXS]', '[V]', '[Z]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[PLW]', '[YAS]', '[NHD]', '[VSE]', '[YFX]', '[VOYO]', '[SIMDB]', '[SOT]', '[MBX]', '[PPR]', '[CSU]', '[PCH]', '[TLX]'):
             for src in group:
                 url = src.get('url')
                 if not url:
@@ -1093,28 +1221,73 @@ def _sub_filename(title, lang, ext='vtt'):
     return f'{name}.{lang}.{ext}'
 
 
+def _piste_subtitrare(player):
+    """Pistele de subtitrare ca (index, nume, cod_limba).
+
+    `getAvailableSubtitleStreams()` întoarce doar denumiri, iar Kodi scoate
+    din denumire limba pe care o recunoaște („Romanian.vtt" devine
+    „(External)" cu language='rum'). Ne trebuie deci și câmpul `language`, pe
+    care doar JSON-RPC îl dă. Dacă acesta nu răspunde, ne întoarcem la nume.
+    """
+    try:
+        activi = json.loads(xbmc.executeJSONRPC(json.dumps({
+            'jsonrpc': '2.0', 'id': 1,
+            'method': 'Player.GetActivePlayers'}))).get('result') or []
+        pid = next((p['playerid'] for p in activi if p.get('type') == 'video'),
+                   activi[0]['playerid'] if activi else 1)
+        raspuns = json.loads(xbmc.executeJSONRPC(json.dumps({
+            'jsonrpc': '2.0', 'id': 1, 'method': 'Player.GetProperties',
+            'params': {'playerid': pid, 'properties': ['subtitles']}})))
+        piste = raspuns.get('result', {}).get('subtitles') or []
+        if piste:
+            return [(p.get('index', i), p.get('name') or '', p.get('language') or '')
+                    for i, p in enumerate(piste)]
+    except Exception as e:
+        xbmc.log(f'[Samus/subtitrari] JSON-RPC indisponibil: {e}', xbmc.LOGDEBUG)
+    return [(i, nume, '') for i, nume in enumerate(player.getAvailableSubtitleStreams() or [])]
+
+
 def _auto_enable_subtitles():
     """Wait for playback to start, then activate the subtitle track matching the preferred language."""
     player = xbmc.Player()
+    monitor = xbmc.Monitor()
     for _ in range(40):
+        if monitor.abortRequested():
+            return
         if player.isPlaying():
-            xbmc.sleep(1500)
-            streams = player.getAvailableSubtitleStreams()
+            if monitor.waitForAbort(1.5):
+                return
+            piste = _piste_subtitrare(player)
             chosen = 0
-            if streams:
+            if piste:
                 pref_langs = [l.strip() for l in (addon.getSetting('subs_languages') or 'ro').split(',') if l.strip()]
+                # Două treceri per limbă: întâi după codul de limbă, care
+                # marchează subtitrarea principală (cea pe care Kodi a
+                # recunoscut-o), apoi după nume, pentru variantele „Romanian2".
+                gasit = None
                 for lang in pref_langs:
-                    for i, name in enumerate(streams):
-                        if subtitles._lang_matches(name, lang):
-                            chosen = i
+                    for dupa_cod in (True, False):
+                        for idx, nume, cod in piste:
+                            if (subtitles._cod_limba_potrivit(cod, lang) if dupa_cod
+                                    else subtitles._lang_matches(nume, lang)):
+                                gasit = (idx, nume, cod, lang)
+                                break
+                        if gasit:
                             break
-                    else:
-                        continue
-                    break
+                    if gasit:
+                        break
+                if gasit:
+                    chosen = gasit[0]
+                    xbmc.log(f'[Samus/subtitrari] alesă „{gasit[1] or gasit[2]}" '
+                             f'(index {gasit[0]}, limba {gasit[3]})', xbmc.LOGINFO)
+                else:
+                    xbmc.log('[Samus/subtitrari] nicio pistă în limbile preferate, '
+                             'rămân pe prima', xbmc.LOGINFO)
             player.setSubtitleStream(chosen)
             player.showSubtitles(True)
             return
-        xbmc.sleep(500)
+        if monitor.waitForAbort(0.5):
+            return
 
 
 def _start_torr_proxy(torrserver_url):
@@ -1181,7 +1354,22 @@ def _start_torr_proxy(torrserver_url):
     return f'http://127.0.0.1:{port}{play_path}'
 
 
-def _set_video_info_movie(li, title, year, imdb_id):
+def _credit_names(details, department=None, jobs=()):
+    """Extract unique crew names from the credits already returned by TMDb."""
+    names = []
+    for person in ((details.get('credits') or {}).get('crew') or []):
+        if department and person.get('department') != department:
+            continue
+        if jobs and person.get('job') not in jobs:
+            continue
+        name = person.get('name') or ''
+        if name and name not in names:
+            names.append(name)
+    return names
+
+
+def _set_video_info_movie(li, title, year, imdb_id, details=None):
+    details = details or {}
     tag = li.getVideoInfoTag()
     tag.setTitle(title)
     if year:
@@ -1189,9 +1377,30 @@ def _set_video_info_movie(li, title, year, imdb_id):
     if imdb_id:
         tag.setIMDBNumber(imdb_id)
     tag.setMediaType('movie')
+    tag.setPlot(details.get('overview') or '')
+    tag.setTagLine(details.get('tagline') or '')
+    tag.setGenres([g.get('name') for g in details.get('genres', []) if g.get('name')])
+    tag.setStudios([s.get('name') for s in details.get('production_companies', []) if s.get('name')])
+    tag.setCountries([c.get('name') for c in details.get('production_countries', []) if c.get('name')])
+    tag.setDirectors(_credit_names(details, jobs=('Director',)))
+    writers = _credit_names(details, department='Writing')
+    if writers:
+        tag.setWriters(writers)
+    premiered = details.get('release_date') or ''
+    if premiered:
+        tag.setPremiered(premiered)
+    runtime = int(details.get('runtime') or 0)
+    if runtime:
+        tag.setDuration(runtime * 60)
+    rating = float(details.get('vote_average') or 0)
+    if rating:
+        tag.setRating(rating, votes=int(details.get('vote_count') or 0), isdefault=True)
 
 
-def _set_video_info_episode(li, episode_tag, show_title, season, episode, imdb_id):
+def _set_video_info_episode(li, episode_tag, show_title, season, episode, imdb_id,
+                            details=None, ep_data=None):
+    details = details or {}
+    ep_data = ep_data or {}
     tag = li.getVideoInfoTag()
     tag.setTitle(episode_tag)
     tag.setTvShowTitle(show_title)
@@ -1200,6 +1409,61 @@ def _set_video_info_episode(li, episode_tag, show_title, season, episode, imdb_i
     if imdb_id:
         tag.setIMDBNumber(imdb_id)
     tag.setMediaType('episode')
+    tag.setPlot(ep_data.get('overview') or details.get('overview') or '')
+    tag.setGenres([g.get('name') for g in details.get('genres', []) if g.get('name')])
+    studios = [s.get('name') for s in details.get('production_companies', []) if s.get('name')]
+    if not studios:
+        studios = [s.get('name') for s in details.get('networks', []) if s.get('name')]
+    tag.setStudios(studios)
+    directors = []
+    for person in ep_data.get('crew', []) or []:
+        if person.get('job') == 'Director' and person.get('name') not in directors:
+            directors.append(person.get('name'))
+    if directors:
+        tag.setDirectors(directors)
+    premiered = ep_data.get('air_date') or ''
+    if premiered:
+        tag.setPremiered(premiered)
+        tag.setFirstAired(premiered)
+    runtime = int(ep_data.get('runtime') or 0)
+    if not runtime:
+        runtimes = details.get('episode_run_time') or []
+        runtime = int(runtimes[0]) if runtimes else 0
+    if runtime:
+        tag.setDuration(runtime * 60)
+    rating = float(ep_data.get('vote_average') or details.get('vote_average') or 0)
+    votes = int(ep_data.get('vote_count') or details.get('vote_count') or 0)
+    if rating:
+        tag.setRating(rating, votes=votes, isdefault=True)
+
+
+def _set_playback_art(li, item_data, is_episode=False):
+    """Attach TMDb artwork to the playable item exposed through Player.Art()."""
+    poster = item_data.get('poster') or ''
+    fanart = item_data.get('fanart') or ''
+    logo = item_data.get('logo') or ''
+    still = item_data.get('still') or ''
+    art = {}
+    if poster:
+        art['poster'] = poster
+    art.update({'thumb': still or poster, 'icon': still or poster})
+    if still:
+        art['landscape'] = still
+    if fanart:
+        art['fanart'] = fanart
+    if logo:
+        art['clearlogo'] = logo
+        # Aeon Nox Thrax prioritizes the parent-show logo for episodes.
+        if is_episode:
+            art['tvshow.clearlogo'] = logo
+        li.setProperty('logo', logo)
+    if is_episode:
+        if poster:
+            art['tvshow.poster'] = poster
+        if fanart:
+            art['tvshow.fanart'] = fanart
+    if art:
+        li.setArt(art)
 
 
 def _wait_for_resolvers(threads, budget=None, results=None):
@@ -1225,9 +1489,12 @@ def _wait_for_resolvers(threads, budget=None, results=None):
             if not provider or idx is None:
                 continue
             if t.is_alive():
+                timeout_event = getattr(t, '_timeout_event', None)
+                if timeout_event:
+                    timeout_event.set()
                 db.provider_health_fail(provider)
-            elif results[idx]:
-                db.provider_health_ok(provider)
+            # Succesul și latența sunt înregistrate în wrapper; aici tratăm
+            # numai firele care au depășit bugetul comun.
 
 
 def _start_history_tracker(tmdb_id, media_type, title, poster, season=None, episode=None, plot=''):
@@ -1244,7 +1511,8 @@ def _start_history_tracker(tmdb_id, media_type, title, poster, season=None, epis
                 return
             if player.isPlayingVideo():
                 break
-            xbmc.sleep(500)
+            if monitor.waitForAbort(0.5):
+                return
         else:
             return  # never started
 
@@ -1275,10 +1543,13 @@ def _start_history_tracker(tmdb_id, media_type, title, poster, season=None, epis
                     )
             except Exception:
                 pass
-            xbmc.sleep(10000)
+            # waitForAbort trezește firul imediat la Quit; xbmc.sleep(10000)
+            # ținea subinterpretorul viu până la zece secunde după shutdown.
+            if monitor.waitForAbort(10):
+                return
 
         # Scrobble stop — Trakt marks as watched if progress > 80%
-        if last_duration > 0:
+        if last_duration > 0 and not monitor.abortRequested():
             progress = min(100.0, last_position / last_duration * 100)
             trakt_api.scrobble('stop', media_type, tmdb_id, progress, season=season, episode=episode)
 
@@ -1312,6 +1583,7 @@ def _resolve_url(selected, item_data=None, status_cb=None, stats_cb=None):
             file_name=selected.get('fileName'),
             title=item_data.get('title'),
             poster=item_data.get('poster'),
+            imdb_id=item_data.get('imdb_id') or selected.get('imdb_id'),
         )
         return (url, []) if url else (None, [])
 
@@ -1349,13 +1621,31 @@ def _resolve_url(selected, item_data=None, status_cb=None, stats_cb=None):
         is_direct = True
 
     if not is_direct and abysscdn_resolver.is_abysscdn_url(url):
-        _st('Se rezolvă AbyssCDN (Thrax)...')
-        stream_url = abysscdn_resolver.resolve_via_thrax(url)
-        if not stream_url:
-            xbmc.log(f'[ABYSS] Thrax nu a returnat URL pentru {url}', xbmc.LOGWARNING)
-            return None, []
-        url = stream_url
-        is_direct = True
+        if selected.get('thrax_resolved', True):
+            _st('Se rezolvă AbyssCDN (Thrax)...')
+            stream_url = abysscdn_resolver.resolve_via_thrax(url)
+            if not stream_url:
+                xbmc.log(f'[ABYSS] Thrax nu a returnat URL pentru {url}', xbmc.LOGWARNING)
+                return None, []
+            url = stream_url
+            is_direct = True
+        else:
+            # thrax_resolved=false — nu are nevoie de proxy server-side (nu e
+            # IP-bound), rezolvăm local (proxy HTTP local propriu, reface
+            # schema de chunking sora) ca să nu consumăm banda serverului Thrax
+            _st('Se rezolvă AbyssCDN (local)...')
+            xbmc.log(f'[ABYSS] thrax_resolved=false — rezolvare locală: {url}', xbmc.LOGINFO)
+            try:
+                from resources.lib.resolvers import abysscdn_local
+                stream_url = abysscdn_local.resolve(url)
+            except Exception as e:
+                xbmc.log(f'[ABYSS] rezolvare locală eșuată: {e}', xbmc.LOGERROR)
+                stream_url = None
+            if not stream_url:
+                xbmc.log(f'[ABYSS] rezolvare locală nu a returnat URL pentru {url}', xbmc.LOGWARNING)
+                return None, []
+            url = stream_url
+            is_direct = True
 
     if not is_direct and 'ok.ru/' in url:
         _st('Se rezolvă ok.ru...')
@@ -1410,7 +1700,7 @@ def _resolve_url(selected, item_data=None, status_cb=None, stats_cb=None):
         except Exception as _ex:
             xbmc.log(f'[DoodStream] eroare resolver: {_ex}', xbmc.LOGERROR)
             return None, []
-    if not is_direct and selected.get('provider') == 'vixsrc' and 'vixsrc.to/' in url:
+    if not is_direct and 'vixsrc.to/' in url:
         _st('Se rezolvă VixSrc...')
         try:
             from urllib.parse import urlparse as _urlparse
@@ -1482,23 +1772,39 @@ def _resolve_url(selected, item_data=None, status_cb=None, stats_cb=None):
                          'bysesayeveum.com', 'bysekoze.com', 'bysesukior.com',
                          'bysefujedu.com', 'bysebuho.com', 'bysewihe.com')
     if not is_direct and any(d in url for d in _FILEMOON_DOMAINS):
-        _st('Se rezolvă Filemoon...')
+        _BYSE_DOMAINS = ('bysejikuar.com', 'bysesayeveum.com', 'bysetayico.com',
+                         'bysevepoin.com', 'bysezejataos.com', 'bysekoze.com',
+                         'bysesukior.com', 'bysefujedu.com', 'bysedikamoum.com',
+                         'bysebuho.com', 'bysewihe.com', 'byselapuix.com')
+        _is_byse = any(d in url for d in _BYSE_DOMAINS)
+        _st('Se rezolvă Byse...' if _is_byse else 'Se rezolvă Filemoon...')
         try:
-            import requests as _req
-            from resources.lib.resolvers._common import THRAX_HEADERS
-            _r = _req.get(
-                'https://api.derzis.xyz/filemoon/resolve',
-                params={'url': url}, headers=THRAX_HEADERS, timeout=20
-            )
-            if _r.ok:
-                _d = _r.json()
-                url = '{}|Referer={}'.format(_d['url'], _d.get('referer', ''))
+            if _is_byse:
+                # Tokenul SprintCDN este IP-bound: trebuie emis local, nu pe
+                # Thrax, dacă serverul și Kodi au egress-uri diferite.
+                _byse_started = time.monotonic()
+                url = byse_resolver.resolve(url)
+                xbmc.log('[Byse] rezolvat în {:.3f}s'.format(
+                    time.monotonic() - _byse_started), xbmc.LOGINFO)
                 is_direct = True
             else:
-                xbmc.log(f'[Filemoon] Thrax error {_r.status_code}', xbmc.LOGWARNING)
-                return None, []
+                import requests as _req
+                from resources.lib.resolvers._common import THRAX_HEADERS
+                _r = _req.get(
+                    'https://api.derzis.xyz/filemoon/resolve',
+                    params={'url': url}, headers=THRAX_HEADERS, timeout=20
+                )
+                if _r.ok:
+                    _d = _r.json()
+                    url = '{}|Referer={}'.format(_d['url'], _d.get('referer', ''))
+                    is_direct = True
+                else:
+                    xbmc.log(f'[Filemoon] Thrax error {_r.status_code}: {_r.text[:200]}',
+                             xbmc.LOGWARNING)
+                    return None, []
         except Exception as _ex:
-            xbmc.log(f'[Filemoon] eroare: {_ex}', xbmc.LOGERROR)
+            xbmc.log(f'[{"Byse" if _is_byse else "Filemoon"}] eroare: {_ex}',
+                     xbmc.LOGERROR)
             return None, []
     _STREAMTAPE_DOMAINS = ('streamtape.com', 'strtape.cloud', 'streamtape.net',
                            'streamta.pe', 'streamtape.site', 'strcloud.link',
@@ -1705,28 +2011,41 @@ def _resolve_source(handle, selected, li, item_data, dlg, history_meta=None, res
 
     if selected.get('is_torrent'):
         li.setContentLookup(False)
-        try:
-            proxy_url = _start_torr_proxy(url)
-            li.setPath(proxy_url)
-        except Exception as _pe:
-            xbmc.log(f'[Samus/TorrProxy] Pornire eșuată ({_pe}), folosesc URL direct', xbmc.LOGWARNING)
+        # Proxy-ul local există pentru TorrServer (rădăcina lui servește și
+        # FileBrowser-ul pentru subtitrări). Webtor întoarce un HTTPS obișnuit,
+        # cu Accept-Ranges, deci un hop de redirect în plus n-ar aduce nimic.
+        if (addon.getSetting('torrent_engine') or '') == 'Webtor':
             li.setPath(url)
+        else:
+            try:
+                proxy_url = _start_torr_proxy(url)
+                li.setPath(proxy_url)
+            except Exception as _pe:
+                xbmc.log(f'[Samus/TorrProxy] Pornire eșuată ({_pe}), folosesc URL direct', xbmc.LOGWARNING)
+                li.setPath(url)
     else:
-        stream_url = url.split('|')[0] if '|' in url else url
-        if '.m3u8' in stream_url:
-            li.setMimeType("application/vnd.apple.mpegurl")
-            li.setContentLookup(False)
-            li.setProperty('inputstream', 'inputstream.adaptive')
-            li.setProperty('inputstream.adaptive.manifest_type', 'hls')
-            if '|' in url:
-                headers_str = url.split('|', 1)[1]
-                li.setProperty('inputstream.adaptive.stream_headers', headers_str)
-                li.setProperty('inputstream.adaptive.manifest_headers', headers_str)
-        li.setPath(stream_url if '.m3u8' in stream_url else url)
+        StreamInfo.parse(url).apply(li)
 
+    # Keep dialog visible until fullscreen video is active — covers Kodi's VideoPlayer loading spinner.
+    # Exit as soon as AV actually starts (onAVStarted) so we don't block subsequent plugin invocations
+    # (e.g. subtitle browse from OSD, which Kodi serializes per-addon).
+    av_started = [False]
+    playback_failed = [False]
+
+    class _Player(xbmc.Player):
+        def onAVStarted(self):
+            av_started[0] = True
+        def onPlayBackError(self):
+            playback_failed[0] = True
+
+    # Instanța trebuie să existe înainte de play(). Pentru invocările fără
+    # plugin handle, fluxurile rapide pot emite onAVStarted înainte ca play()
+    # să revină; creată după apel, instanța rata evenimentul și raporta fals
+    # sursa drept eșuată, deși Kodi o reda deja.
+    player = _Player()
     dlg.set_status('Se pornește redarea...')
     if handle == -1:
-        xbmc.Player().play(li.getPath(), li)
+        player.play(li.getPath(), li)
     else:
         xbmcplugin.setResolvedUrl(handle, True, li)
 
@@ -1741,25 +2060,27 @@ def _resolve_source(handle, selected, li, item_data, dlg, history_meta=None, res
             plot=history_meta.get('plot', ''),
         )
 
-    # Keep dialog visible until fullscreen video is active — covers Kodi's VideoPlayer loading spinner.
-    # Exit as soon as AV actually starts (onAVStarted) so we don't block subsequent plugin invocations
-    # (e.g. subtitle browse from OSD, which Kodi serializes per-addon).
-    av_started = [False]
-
-    class _Player(xbmc.Player):
-        def onAVStarted(self):
-            av_started[0] = True
-
-    player = _Player()
     monitor = xbmc.Monitor()
+    fullscreen_hit = False
     for _ in range(150):
-        if monitor.abortRequested():
-            break
-        if av_started[0]:
+        if monitor.abortRequested() or av_started[0] or playback_failed[0]:
             break
         if xbmc.getCondVisibility('Window.IsActive(fullscreenvideo)'):
+            fullscreen_hit = True
             break
         xbmc.sleep(200)
+
+    # Torrent/proxy streams (TorrServer local proxy) take noticeably longer between
+    # OpenFile and the first decoded frame than direct HTTP/CDN sources — the GUI
+    # reaches fullscreenvideo (with Kodi's own loading spinner) well before onAVStarted
+    # fires. Give those extra grace instead of declaring the source failed the instant
+    # our own dialog would have been dismissed (fullscreenvideo stays active across
+    # retries too, so we can't just trust it as a success signal on its own).
+    if selected.get('is_torrent') and fullscreen_hit and not av_started[0] and not playback_failed[0]:
+        for _ in range(100):
+            if monitor.abortRequested() or av_started[0] or playback_failed[0]:
+                break
+            xbmc.sleep(200)
 
     if av_started[0] and resume_position and resume_position > 0:
         xbmc.sleep(300)
@@ -1807,47 +2128,33 @@ def play_movie(handle, tmdb_id, force_dialog=False):
     if sources:
         xbmc.log(f'[Samus] Cache surse film: {len(sources)} pentru tmdb_id={tmdb_id}', xbmc.LOGINFO)
     else:
-        results = [None] * 48
+        results = [None] * 50
         threads = []
 
         if addon.getSettingBool('use_torrentio') and imdb_id:
             threads.append(threaded_resolver(torrentio.get_movie_sources, (imdb_id,), results, 4))
         if addon.getSettingBool('use_torrentdb') and imdb_id:
             threads.append(threaded_resolver(torrentdb.get_movie_sources, (imdb_id,), results, 5))
-        if addon.getSettingBool('use_mediafusion') and imdb_id:
-            threads.append(threaded_resolver(mediafusion.get_movie_sources, (imdb_id,), results, 6))
-        if addon.getSettingBool('use_comet') and imdb_id:
-            threads.append(threaded_resolver(comet.get_movie_sources, (imdb_id,), results, 7))
         if addon.getSettingBool('use_perflix') and imdb_id:
             threads.append(threaded_resolver(perflix.get_movie_sources, (imdb_id,), results, 8))
         if addon.getSettingBool('use_thrax'):
             threads.append(threaded_resolver(thrax.get_movie_sources, (tmdb_id,), results, 10))
-        if addon.getSettingBool('use_primesrc'):
-            threads.append(threaded_resolver(primesrc.get_primesrc_sources, (tmdb_id,), results, 11))
         if addon.getSettingBool('use_flixer'):
             threads.append(threaded_resolver(flixer.get_sources, (tmdb_id, 'movie'), results, 12))
-        if addon.getSettingBool('use_vixsrc'):
-            threads.append(threaded_resolver(vixsrc_resolver.get_sources, (tmdb_id, 'movie'), results, 13))
         if addon.getSettingBool('use_hdhub') and imdb_id:
             threads.append(threaded_resolver(hdhub.get_sources, (imdb_id, 'movie'), results, 14))
-        if addon.getSettingBool('use_webstreamr') and imdb_id:
-            threads.append(threaded_resolver(webstreamr.get_sources, (imdb_id, 'movie'), results, 15))
-        if addon.getSettingBool('use_vidrock'):
-            threads.append(threaded_resolver(vidrock.get_sources, (tmdb_id, 'movie'), results, 16))
-        if addon.getSettingBool('use_hydrahd'):
-            threads.append(threaded_resolver(hydrahd_resolver.get_sources, (tmdb_id, 'movie', None, None, imdb_id), results, 22, timeout=_RT['hydrahd']))
+        if addon.getSettingBool('use_vidlove'):
+            threads.append(threaded_resolver(vidlove_resolver.get_sources, (tmdb_id, 'movie'), results, 17, timeout=_RT['vidlove']))
+        if addon.getSettingBool('use_moviesapi'):
+            threads.append(threaded_resolver(moviesapi_resolver.get_sources, (tmdb_id, 'movie'), results, 18, timeout=_RT['moviesapi']))
         if addon.getSettingBool('use_primesrcme'):
             threads.append(threaded_resolver(primesrcme_resolver.get_sources, (tmdb_id, 'movie'), results, 25))
         if addon.getSettingBool('use_vsembed'):
             threads.append(threaded_resolver(vsembed_resolver.get_sources, (tmdb_id, 'movie'), results, 28, timeout=_RT['vsembed']))
-        if addon.getSetting('use_multiembed') != 'false':
-            threads.append(threaded_resolver(multiembed_resolver.get_sources, (tmdb_id, 'movie'), results, 30))
+        if addon.getSettingBool('use_voyo'):
+            threads.append(threaded_resolver(voyo_resolver.get_sources, (tmdb_id, 'movie', title, year, original_title), results, 29, timeout=_RT['voyo']))
         if addon.getSetting('use_pelispanda') != 'false':
             threads.append(threaded_resolver(pelispanda_resolver.get_sources, (tmdb_id, 'movie', title, year, None, None, original_title), results, 33))
-        if addon.getSettingBool('use_sooti') and imdb_id:
-            threads.append(threaded_resolver(sooti_resolver.get_sources, (imdb_id, 'movie'), results, 35))
-        if addon.getSettingBool('use_cinesu'):
-            threads.append(threaded_resolver(cinesu_resolver.get_sources, (tmdb_id, 'movie'), results, 38))
         if addon.getSettingBool('use_velaflow') and imdb_id:
             threads.append(threaded_resolver(velaflow_resolver.get_movie_sources, (imdb_id,), results, 39))
         if addon.getSettingBool('use_filelist') and imdb_id:
@@ -1859,12 +2166,17 @@ def play_movie(handle, tmdb_id, force_dialog=False):
         if addon.getSettingBool('use_adult') and addon.getSettingBool('use_pandamovies'):
             from resources.lib.resolvers import pandamovies as pandamovies_resolver
             threads.append(threaded_resolver(pandamovies_resolver.get_sources, (title, year), results, 46))
-        if addon.getSettingBool('use_penguplay') and imdb_id:
-            threads.append(threaded_resolver(penguplay_resolver.get_sources, (imdb_id, 'movie'), results, 47))
+        # Slot NOU (48), nu unul liber din cele vechi: pozițiile eliberate de
+        # provideri scoși păstrează prefixul lor în lista de mai jos, iar sursa
+        # ar apărea sub eticheta altcuiva — exact bug-ul de la Voyo.
+        if addon.getSettingBool('use_yts') and imdb_id:
+            threads.append(threaded_resolver(yts_resolver.get_sources, (imdb_id, 'movie'), results, 48))
+        if addon.getSettingBool('use_vyla'):
+            threads.append(threaded_resolver(vyla_resolver.get_sources, (tmdb_id, 'movie'), results, 49, timeout=_RT['vyla']))
         # Wait briefly so the fastest resolvers (THX, vidzee, primesrc) can finish first
         _wait_for_resolvers(threads, budget=1.5, results=results)
 
-        prefixes = ['[V]', '[ES]', '[Z]', '[2E]', '[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[THX]', '[PSC]', '[FLX]', '[VXS]', '[HDB]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[PLW]', '[FHD]', '[HHD]', '[YAS]', '[NHD]', '[PSM]', '[VDL]', '[VDY]', '[VSE]', '[YFX]', '[MEB]', '[VBT]', '[MAPI]', '[PPD]', '[SIMDB]', '[SOT]', '[MBX]', '[PPR]', '[CSU]', '[VLF]', '[FLI]', '[PCH]', '[TLX]', '[VAP]', '[PDN]', '[WBT]', '[PMV]', '[PGP]']
+        prefixes = ['[V]', '[ES]', '[Z]', '[2E]', '[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[THX]', '[PSC]', '[FLX]', '[VXS]', '[HDB]', '[WSR]', '[VDR]', '[VDL]', '[MAP]', '[FNS]', '[PLW]', '[FHD]', '[HHD]', '[YAS]', '[NHD]', '[PSM]', '[VDL]', '[VDY]', '[VSE]', '[VOYO]', '[MEB]', '[VBT]', '[MAPI]', '[PPD]', '[SIMDB]', '[SOT]', '[MBX]', '[PPR]', '[CSU]', '[VLF]', '[FLI]', '[PCH]', '[TLX]', '[VAP]', '[PDN]', '[WBT]', '[PMV]', '[PGP]', '[YTS]', '[VYL]']
         _processed = set()
 
         def _drain_new():
@@ -1953,20 +2265,19 @@ def play_movie(handle, tmdb_id, force_dialog=False):
 
     # Fetch subtitles once — skip pentru torrenturi (au track-uri embedded în MKV)
     _subs_to_set = []
+    # Subtitrările venite de la sursă (unele aduc 10+ limbi) treceau peste tot
+    # lanțul și opreau traducerea: primeai engleză și atât. Acum intră și ele
+    # în cascadă, deci orice sursă cu engleză produce română.
     vidzee_subs = selected.get('subtitles', [])
-    if vidzee_subs:
-        _subs_to_set = vidzee_subs
-    elif not selected.get('is_torrent') and addon.getSettingBool('subs_enabled'):
-        vdrk_urls = subtitles.search_vdrk(tmdb_id)
-        if vdrk_urls:
-            _subs_to_set = vdrk_urls
-        elif imdb_id:
-            subs = subtitles.search_subtitles(imdb_id)
-            for sub in subs:
-                sub_path = subtitles.download_subtitle(sub, subs_path)
-                if sub_path:
-                    _subs_to_set = [sub_path]
-                    break
+    if not selected.get('is_torrent') and addon.getSettingBool('subs_enabled'):
+        toate = list(vidzee_subs) + subtitles.search_vdrk(tmdb_id)
+        _subs_to_set = subtitles.asigura_romana(
+            toate, subs_path, eticheta=f'movie_{tmdb_id}',
+            nota=f'Film: {title} ({year})' if title else '',
+            ident={'tmdb_id': tmdb_id, 'type': 'movie', 'imdb_id': imdb_id})
+    elif vidzee_subs:
+        _subs_to_set = [s.get('url') if isinstance(s, dict) else s
+                        for s in vidzee_subs if s]
 
     # Single dialog for all retries — no flicker between sources.
     _auto_was_selected = _saved_provider is not None
@@ -1977,7 +2288,8 @@ def play_movie(handle, tmdb_id, force_dialog=False):
         while selected is not None:
             li = xbmcgui.ListItem(path=selected.get('url', ''))
             li.setProperty('IsPlayable', 'true')
-            _set_video_info_movie(li, title, year, imdb_id)
+            _set_video_info_movie(li, title, year, imdb_id, details=details)
+            _set_playback_art(li, item_data)
             if _subs_to_set:
                 li.setSubtitles(_subs_to_set)
 
@@ -2047,14 +2359,16 @@ def _get_next_episode(tv_id, season, episode):
                 continue
             if not _is_aired(ep):
                 return None
-            return (season, ep_num, ep.get('name', ''), ep.get('overview', ''))
+            return (season, ep_num, ep.get('name', ''), ep.get('overview', ''),
+                    ep.get('still_path', ''))
 
         next_season_data = tv.get_season(tv_id, season + 1)
         for ep in sorted(next_season_data.get('episodes', []), key=lambda e: e.get('episode_number', 0)):
             ep_num = ep.get('episode_number', 0)
             if not _is_aired(ep):
                 return None
-            return (season + 1, ep_num, ep.get('name', ''), ep.get('overview', ''))
+            return (season + 1, ep_num, ep.get('name', ''), ep.get('overview', ''),
+                    ep.get('still_path', ''))
     except Exception as e:
         xbmc.log(f'[Samus] _get_next_episode eroare: {e}', xbmc.LOGWARNING)
     return None
@@ -2074,25 +2388,53 @@ class _AutoplayOverlay(xbmcgui.WindowXMLDialog):
         self._ep_label   = kwargs.get('ep_label', '')
         self._total      = max(1, kwargs.get('countdown_secs', 60))
         self._poster_url = kwargs.get('poster_url', '')
+        self._still_url  = kwargs.get('still_url', '')
+        self._logo_url   = kwargs.get('logo_url', '')
         overview         = kwargs.get('overview', '')
         self._overview   = overview[:220] + '…' if len(overview) > 220 else overview
         self._closed     = False
+        self._stop_countdown = threading.Event()
+        self._countdown_thread = None
+        self._playback_player = None
         self.result      = self.PLAY  # default: play on countdown expiry
 
     def onInit(self):
+        owner = self
+
+        class _OverlayPlayer(xbmc.Player):
+            def onPlayBackStopped(self):
+                # Stop apăsat de utilizator în ultimele 30 s oprește lanțul.
+                owner.result = owner.CANCEL
+                owner._closed = True
+                owner._stop_countdown.set()
+                owner.close()
+
+            def onPlayBackEnded(self):
+                # Finalul natural nu trebuie să aștepte ultima secundă rămasă.
+                owner.result = owner.PLAY
+                owner._closed = True
+                owner._stop_countdown.set()
+                owner.close()
+
+        self._playback_player = _OverlayPlayer()
         win = xbmcgui.Window(10000)
         win.setProperty('samus.next_show', self._show_name)
         win.setProperty('samus.next_ep', self._ep_label)
         win.setProperty('samus.next_poster', self._poster_url)
+        win.setProperty('samus.next_still', self._still_url)
+        win.setProperty('samus.next_logo', self._logo_url)
         win.setProperty('samus.next_overview', self._overview)
         win.setProperty('samus.countdown_text', f'Se pornește în {self._total}s')
+        xbmc.log(f'[Samus] Countdown autoplay pornit la {self._total}s', xbmc.LOGINFO)
         try:
             self.getControl(5010).setWidth(1920)
             self.setFocus(self.getControl(5001))
         except Exception:
             pass
-        t = threading.Thread(target=self._countdown, daemon=True)
-        t.start()
+        self._countdown_thread = threading.Thread(
+            target=self._countdown, name='samus-autoplay-countdown'
+        )
+        self._countdown_thread.start()
 
     def _countdown(self):
         try:
@@ -2100,8 +2442,9 @@ class _AutoplayOverlay(xbmcgui.WindowXMLDialog):
         except Exception:
             bar = None
         win = xbmcgui.Window(10000)
+        monitor = xbmc.Monitor()
         for remaining in range(self._total, 0, -1):
-            if self._closed:
+            if self._closed or self._stop_countdown.is_set() or monitor.abortRequested():
                 return
             win.setProperty('samus.countdown_text', f'Se pornește în {remaining}s')
             if bar:
@@ -2109,7 +2452,8 @@ class _AutoplayOverlay(xbmcgui.WindowXMLDialog):
                     bar.setWidth(int(1920 * remaining / self._total))
                 except Exception:
                     pass
-            xbmc.sleep(1000)
+            if self._stop_countdown.wait(1) or monitor.abortRequested():
+                return
         if not self._closed:
             self._closed = True
             self.result = self.PLAY
@@ -2118,13 +2462,20 @@ class _AutoplayOverlay(xbmcgui.WindowXMLDialog):
     def onClick(self, control_id):
         self.result = self.PLAY if control_id == 5001 else self.CANCEL
         self._closed = True
+        self._stop_countdown.set()
         self.close()
 
     def onAction(self, action):
         if action.getId() in (9, 10, 92, 110):  # Back / Escape
             self.result = self.CANCEL
             self._closed = True
+            self._stop_countdown.set()
             self.close()
+
+    def join_countdown(self):
+        self._stop_countdown.set()
+        if self._countdown_thread and self._countdown_thread.is_alive():
+            self._countdown_thread.join()
 
 
 def _fetch_tv_sources(tv_id, imdb_id, season, episode, details):
@@ -2147,40 +2498,24 @@ def _fetch_tv_sources(tv_id, imdb_id, season, episode, details):
         threads.append(threaded_resolver(torrentio.get_tv_sources, (imdb_id, season, episode), results, 4))
     if addon.getSettingBool('use_torrentdb') and imdb_id:
         threads.append(threaded_resolver(torrentdb.get_tv_sources, (imdb_id, season, episode), results, 5))
-    if addon.getSettingBool('use_mediafusion') and imdb_id:
-        threads.append(threaded_resolver(mediafusion.get_tv_sources, (imdb_id, season, episode), results, 6))
-    if addon.getSettingBool('use_comet') and imdb_id:
-        threads.append(threaded_resolver(comet.get_tv_sources, (imdb_id, season, episode), results, 7))
     if addon.getSettingBool('use_perflix') and imdb_id:
         threads.append(threaded_resolver(perflix.get_tv_sources, (imdb_id, season, episode), results, 8))
     if addon.getSettingBool('use_thrax'):
         threads.append(threaded_resolver(thrax.get_tv_sources, (tv_id, season, episode), results, 10))
-    if addon.getSettingBool('use_primesrc'):
-        threads.append(threaded_resolver(primesrc.get_primesrc_tv_sources, (tv_id, season, episode), results, 11))
     if addon.getSettingBool('use_flixer'):
         threads.append(threaded_resolver(flixer.get_sources, (tv_id, 'tv', season, episode), results, 12))
-    if addon.getSettingBool('use_vixsrc'):
-        threads.append(threaded_resolver(vixsrc_resolver.get_sources, (tv_id, 'tv', season, episode), results, 13))
     if addon.getSettingBool('use_hdhub') and imdb_id:
         threads.append(threaded_resolver(hdhub.get_sources, (imdb_id, 'tv', season, episode), results, 14))
-    if addon.getSettingBool('use_webstreamr') and imdb_id:
-        threads.append(threaded_resolver(webstreamr.get_sources, (imdb_id, 'tv', season, episode), results, 15))
-    if addon.getSettingBool('use_vidrock'):
-        threads.append(threaded_resolver(vidrock.get_sources, (tv_id, 'tv', season, episode), results, 16))
-    if addon.getSettingBool('use_hydrahd'):
-        threads.append(threaded_resolver(hydrahd_resolver.get_sources, (tv_id, 'tv', season, episode, imdb_id), results, 22, timeout=_RT['hydrahd']))
+    if addon.getSettingBool('use_vidlove'):
+        threads.append(threaded_resolver(vidlove_resolver.get_sources, (tv_id, 'tv', season, episode), results, 17, timeout=_RT['vidlove']))
+    if addon.getSettingBool('use_moviesapi'):
+        threads.append(threaded_resolver(moviesapi_resolver.get_sources, (tv_id, 'tv', season, episode), results, 18, timeout=_RT['moviesapi']))
     if addon.getSettingBool('use_primesrcme'):
         threads.append(threaded_resolver(primesrcme_resolver.get_sources, (tv_id, 'tv', season, episode), results, 25))
     if addon.getSettingBool('use_vsembed'):
         threads.append(threaded_resolver(vsembed_resolver.get_sources, (tv_id, 'tv', season, episode), results, 28, timeout=_RT['vsembed']))
-    if addon.getSetting('use_multiembed') != 'false':
-        threads.append(threaded_resolver(multiembed_resolver.get_sources, (tv_id, 'tv', season, episode), results, 30))
     if addon.getSetting('use_pelispanda') != 'false':
         threads.append(threaded_resolver(pelispanda_resolver.get_sources, (tv_id, 'tv', details.get('name', ''), None, season, episode, original_name), results, 33))
-    if addon.getSettingBool('use_sooti') and imdb_id:
-        threads.append(threaded_resolver(sooti_resolver.get_sources, (imdb_id, 'tv', season, episode), results, 35))
-    if addon.getSettingBool('use_cinesu'):
-        threads.append(threaded_resolver(cinesu_resolver.get_sources, (tv_id, 'tv', season, episode), results, 38))
     if addon.getSettingBool('use_velaflow') and imdb_id:
         threads.append(threaded_resolver(velaflow_resolver.get_tv_sources, (imdb_id, season, episode), results, 39))
     if addon.getSettingBool('use_filelist') and imdb_id:
@@ -2189,10 +2524,10 @@ def _fetch_tv_sources(tv_id, imdb_id, season, episode, details):
         threads.append(threaded_resolver(vidapi_resolver.get_sources, (tv_id, 'tv', season, episode), results, 43))
     if addon.getSettingBool('use_webtor') and imdb_id:
         threads.append(threaded_resolver(webtor_resolver.get_sources, (imdb_id, 'tv', season, episode), results, 44))
-    if addon.getSettingBool('use_penguplay') and imdb_id:
-        threads.append(threaded_resolver(penguplay_resolver.get_sources, (imdb_id, 'tv', season, episode), results, 45))
+    if addon.getSettingBool('use_vyla'):
+        threads.append(threaded_resolver(vyla_resolver.get_sources, (tv_id, 'tv', season, episode), results, 46, timeout=_RT['vyla']))
     _wait_for_resolvers(threads, results=results)
-    prefixes = ['[V]', '[ES]', '[Z]', '[2E]', '[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[THX]', '[PSC]', '[FLX]', '[VXS]', '[HDB]', '[WSR]', '[VDR]', '[STF]', '[NBS]', '[FNS]', '[PLW]', '[FHD]', '[HHD]', '[YAS]', '[NHD]', '[PSM]', '[VDL]', '[VDY]', '[VSE]', '[YFX]', '[MEB]', '[VBT]', '[MAPI]', '[PPD]', '[SIMDB]', '[SOT]', '[MBX]', '[PPR]', '[CSU]', '[VLF]', '[FLI]', '[PCH]', '[TLX]', '[VAP]', '[WBT]', '[PGP]']
+    prefixes = ['[V]', '[ES]', '[Z]', '[2E]', '[TIO]', '[TDB]', '[MF]', '[CMT]', '[PFX]', '[UDX]', '[THX]', '[PSC]', '[FLX]', '[VXS]', '[HDB]', '[WSR]', '[VDR]', '[VDL]', '[MAP]', '[FNS]', '[PLW]', '[FHD]', '[HHD]', '[YAS]', '[NHD]', '[PSM]', '[VDL]', '[VDY]', '[VSE]', '[YFX]', '[MEB]', '[VBT]', '[MAPI]', '[PPD]', '[SIMDB]', '[SOT]', '[MBX]', '[PPR]', '[CSU]', '[VLF]', '[FLI]', '[PCH]', '[TLX]', '[VAP]', '[WBT]', '[PGP]', '[VYL]']
     show_label = f"{details.get('name', '')} S{season:02d}E{episode:02d}"
     english_show_label = f"{english_show_name} S{season:02d}E{episode:02d}"
     sources = _build_sources(results, prefixes, tmdb_title=show_label, tmdb_original_title=english_show_label)
@@ -2231,20 +2566,76 @@ def _autoselect_source(sources, preferred_provider=None, quality_pref=None, is_t
     return max(sources, key=_score)
 
 
+def _ordered_autoplay_candidates(sources, preferred_provider=None, quality_pref=None):
+    """Return non-torrent sources in the order worth pre-resolving.
+
+    Keep the provider used by the current episode first, then prefer matching
+    quality and direct links.  A list (rather than a single best source) lets
+    the silent pre-resolver move on immediately when a host is dead.
+    """
+    pref_q = _Q_ORDER.get(quality_pref, 3)
+
+    def _key(s):
+        return (
+            1 if preferred_provider and s.get('provider') == preferred_provider else 0,
+            -abs(_Q_ORDER.get(s.get('quality', ''), 2) - pref_q),
+            1 if s.get('direct') else 0,
+            min(int(s.get('seeds') or 0), 1000),
+        )
+
+    return sorted(
+        (s for s in sources if not s.get('is_torrent')),
+        key=_key,
+        reverse=True,
+    )
+
+
+def _probe_autoplay_url(url):
+    """Cheaply verify that a pre-resolved HTTP URL really answers.
+
+    Resolution alone is not enough for providers which happily return an
+    expired CDN URL.  Read at most one byte using Kodi's URL headers and close
+    the response immediately; no video is downloaded and no player is opened.
+    """
+    if not url or not url.startswith(('http://', 'https://')):
+        return bool(url)
+    try:
+        import requests
+        stream = StreamInfo.parse(url)
+        if stream.is_expired():
+            return False
+        headers = dict(stream.headers)
+        headers['Range'] = 'bytes=0-0'
+        response = requests.get(
+            stream.url, headers=headers, stream=True, allow_redirects=True,
+            timeout=(4, 8),
+        )
+        try:
+            if response.status_code not in (200, 206):
+                return False
+            next(response.iter_content(chunk_size=1), b'')
+            return True
+        finally:
+            response.close()
+    except Exception as ex:
+        xbmc.log(f'[Samus] Pre-resolve probe eșuat: {ex}', xbmc.LOGDEBUG)
+        return False
+
+
 def _save_autoplay_cache(tv_id, season, episode, sources, quality_pref=None,
-                         is_torrent_pref=None, preresolve=None):
+                         is_torrent_pref=None, preresolves=None):
     try:
         data = {
             'tv_id': tv_id, 'season': season, 'episode': episode,
             'sources': sources,
             'quality_pref': quality_pref,
             'is_torrent_pref': is_torrent_pref,
-            'preresolve': preresolve,  # {source, url, ts} sau None
+            'preresolves': preresolves or [],  # până la două {source, url, ts}
             'ts': time.time(),
         }
         with open(_AUTOPLAY_CACHE_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f)
-        pre_tag = ' + pre-resolve' if preresolve else ''
+        pre_tag = f' + {len(preresolves or [])} pre-resolve' if preresolves else ''
         xbmc.log(f'[Samus] Autoplay cache salvat: {len(sources)} surse{pre_tag} pentru S{season:02d}E{episode:02d}', xbmc.LOGINFO)
     except Exception as e:
         xbmc.log(f'[Samus] autoplay cache write eroare: {e}', xbmc.LOGWARNING)
@@ -2261,7 +2652,7 @@ def _load_autoplay_cache(tv_id, season, episode):
         if (data.get('tv_id') == tv_id and
                 data.get('season') == season and
                 data.get('episode') == episode and
-                time.time() - data.get('ts', 0) < 300):
+                time.time() - data.get('ts', 0) < 1200):
             return data
     except Exception as e:
         xbmc.log(f'[Samus] autoplay cache read eroare: {e}', xbmc.LOGWARNING)
@@ -2277,8 +2668,9 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None, for
     if dialogs._pending_resolver is not None:
         _fanart = 'https://image.tmdb.org/t/p/original' + (details.get('backdrop_path') or '')
         dialogs._pending_resolver.update_info(fanart=_fanart, title=details.get('name', ''))
-    show_title = details.get('name', 'Unknown').replace(' ', '.')
+    show_title = details.get('name', 'Unknown')
     original_name = (details.get('original_name') or None)
+    ep_data = {}
     try:
         season_data = tv.get_season(tv_id, season)
         ep_data = next((e for e in season_data.get('episodes', [])
@@ -2294,26 +2686,43 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None, for
         'poster': IMG_BASE    + (details.get('poster_path')  or ''),
         'fanart': FANART_BASE + (details.get('backdrop_path') or ''),
         'logo':   _pick_logo(details),
+        'still':  'https://image.tmdb.org/t/p/w780' + ep_data['still_path']
+                  if ep_data.get('still_path') else '',
     }
 
     cached = _load_autoplay_cache(tv_id, season, episode)
+    _autoplay_invocation = cached is not None
     if cached:
         sources = cached['sources']
         xbmc.log(f'[Samus] Autoplay cache: {len(sources)} surse pre-scraped pentru S{season:02d}E{episode:02d}', xbmc.LOGINFO)
 
-        # Inject pre-resolved source at the front if it's still fresh (3 min TTL).
-        pr = cached.get('preresolve') or {}
-        if (pr.get('url') and pr.get('source') and
-                time.time() - pr.get('ts', 0) < 180):
+        # Inject pre-resolved source at the front if it's still fresh. Prefetch
+        # starts well before the credits, so three minutes was too short for a
+        # normal 40-50 minute episode.
+        prepared = cached.get('preresolves') or []
+        # Compatibilitate cu fișierul scris de beta5/beta6.
+        if not prepared and cached.get('preresolve'):
+            prepared = [cached['preresolve']]
+        cached_preselected = None
+        injected = []
+        for pr in prepared[:2]:
+            if not (pr.get('url') and pr.get('source') and
+                    time.time() - pr.get('ts', 0) < 900 and
+                    _probe_autoplay_url(pr['url'])):
+                continue
             pre_source = dict(pr['source'])
             pre_source['url'] = pr['url']
             pre_source['direct'] = True
-            sources = [pre_source] + [s for s in sources if s.get('url') != pr['source'].get('url')]
-            xbmc.log(f'[Samus] Autoplay pre-resolve injectat: {pre_source.get("label", "")}', xbmc.LOGINFO)
+            injected.append(pre_source)
+        if injected:
+            original_urls = {pr.get('source', {}).get('url') for pr in prepared}
+            sources = injected + [s for s in sources if s.get('url') not in original_urls]
+            cached_preselected = injected[0]
+            xbmc.log(f'[Samus] Autoplay: {len(injected)} surse pre-rezolvate injectate',
+                     xbmc.LOGINFO)
 
-        selected = _autoselect_source(
-            sources,
-            preferred_provider,
+        selected = cached_preselected or _autoselect_source(
+            sources, preferred_provider,
             quality_pref=cached.get('quality_pref'),
             is_torrent_pref=cached.get('is_torrent_pref'),
         )
@@ -2365,7 +2774,10 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None, for
 
     resume_pos = None
     h = db.history_get(tv_id, 'tv', season=season, episode=episode)
-    if h and h['position'] > 60 and h['percent'] < 85:
+    # O tranziție autoplay nu trebuie blocată de dialogul „Continuă?”. Cache-ul
+    # efemer identifică fără ambiguitate invocarea lansată de episodul anterior.
+    if (not _autoplay_invocation and h and
+            h['position'] > 60 and h['percent'] < 85):
         if xbmcgui.Dialog().yesno(
             'Continuă..',
             f'Ai rămas la [B]{_fmt_time(h["position"])}[/B].',
@@ -2377,18 +2789,22 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None, for
     _subs_to_set = []
     vidzee_subs = selected.get('subtitles', [])
     if vidzee_subs:
-        _subs_to_set = vidzee_subs
+        _subs_to_set = [s.get('url') if isinstance(s, dict) else s
+                        for s in vidzee_subs if s]
     elif not selected.get('is_torrent') and addon.getSettingBool('subs_enabled'):
-        vdrk_urls = subtitles.search_vdrk(tv_id, season=season, episode=episode)
-        if vdrk_urls:
-            _subs_to_set = vdrk_urls
-        elif imdb_id:
-            subs = subtitles.search_subtitles(imdb_id, season=season, episode=episode)
-            for sub in subs:
-                sub_path = subtitles.download_subtitle(sub, subs_path)
-                if sub_path:
-                    _subs_to_set = [sub_path]
-                    break
+        # Ca la filme: subtitrările sursei intră şi ele în cascadă, altfel
+        # opreau traducerea şi rămâneai cu engleza.
+        toate = list(vidzee_subs) + subtitles.search_vdrk(tv_id, season=season, episode=episode)
+        _nota_ep = f'Serial, sezonul {season} episodul {episode}'
+        _subs_to_set = subtitles.asigura_romana(
+            toate, subs_path, eticheta=f'tv_{tv_id}_s{season}e{episode}',
+            nota=_nota_ep,
+            ident={'tmdb_id': tv_id, 'type': 'tv', 'imdb_id': imdb_id,
+                   'season': season, 'episode': episode})
+        # Dacă a fost nevoie de traducere aici, cel mai probabil va fi
+        # nevoie și la următorul: îl pregătim cât timp se uită la ăsta.
+        if not subtitles.are_romana(toate):
+            subtitles.pregateste_urmatorul(tv_id, season, episode, _nota_ep)
 
     # Single dialog for all retries — no flicker between sources.
     remaining = [s for s in sources if s is not selected]
@@ -2400,7 +2816,11 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None, for
         while selected is not None:
             li = xbmcgui.ListItem(path=selected.get('url', ''))
             li.setProperty('IsPlayable', 'true')
-            _set_video_info_episode(li, episode_tag, show_title, season, episode, imdb_id)
+            _set_video_info_episode(
+                li, episode_tag, show_title, season, episode, imdb_id,
+                details=details, ep_data=ep_data,
+            )
+            _set_playback_art(li, item_data, is_episode=True)
             if _subs_to_set:
                 li.setSubtitles(_subs_to_set)
 
@@ -2461,20 +2881,20 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None, for
             break
         xbmc.sleep(500)
 
-    try:
-        trigger_secs = int(addon.getSetting('autoplay_countdown') or '60')
-    except Exception:
-        trigger_secs = 60
+    # Sursele sunt rezolvate din timp; overlay-ul trebuie să ocupe numai
+    # ultimele 30 s, indiferent de o valoare veche salvată în setări.
+    trigger_secs = 30
 
     next_ep            = None
-    next_s = next_e = ep_title = None
+    next_s = next_e = ep_title = ep_still_path = None
     next_fetched       = False
     overlay_shown      = False
     preferred          = selected.get('provider')
     show_name          = details.get('name', '')
-    scrape_result      = {'sources': None, 'preresolve': None}
+    scrape_result      = {'sources': None, 'preresolves': []}
     scrape_thread      = None
     preresolve_thread  = None
+    prefetch_cancel    = threading.Event()
 
     def _start_prefetch(ns, ne):
         nonlocal scrape_thread, preresolve_thread
@@ -2483,6 +2903,8 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None, for
 
         def _bg_scrape(r=scrape_result, _ns=ns, _ne=ne):
             try:
+                if prefetch_cancel.is_set() or _mon.abortRequested():
+                    return
                 r['sources'] = _fetch_tv_sources(tv_id, imdb_id, _ns, _ne, details)
                 xbmc.log(f'[Samus] BG scrape: {len(r["sources"])} surse S{_ns:02d}E{_ne:02d}', xbmc.LOGINFO)
             except Exception as ex:
@@ -2492,28 +2914,43 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None, for
             for _ in range(40):
                 if r['sources'] is not None:
                     break
-                xbmc.sleep(500)
+                if prefetch_cancel.wait(0.5) or _mon.abortRequested():
+                    return
             srcs = r.get('sources') or []
-            candidates = [s for s in srcs if not s.get('is_torrent')]
-            best = _autoselect_source(
-                candidates,
-                preferred_provider=preferred,
+            candidates = _ordered_autoplay_candidates(
+                srcs, preferred_provider=preferred,
                 quality_pref=selected.get('quality'),
-                is_torrent_pref=False,
             )
-            if not best:
-                return
-            try:
-                pre_url, _ = _resolve_url(best)
-                if pre_url:
-                    r['preresolve'] = {'source': best, 'url': pre_url, 'ts': time.time()}
-                    xbmc.log(f'[Samus] Pre-resolve OK: {best.get("label", "")}', xbmc.LOGINFO)
-            except Exception as ex:
-                xbmc.log(f'[Samus] Pre-resolve eroare: {ex}', xbmc.LOGWARNING)
+            prepared_providers = set()
+            for candidate in candidates:
+                if prefetch_cancel.is_set() or _mon.abortRequested():
+                    return
+                provider_key = candidate.get('provider') or candidate.get('label') or ''
+                if provider_key in prepared_providers:
+                    continue
+                try:
+                    xbmc.log(f'[Samus] Pre-resolve încearcă: {candidate.get("label", "")}', xbmc.LOGINFO)
+                    pre_url, _ = _resolve_url(candidate)
+                    if pre_url and _probe_autoplay_url(pre_url):
+                        # A doua rezervă trebuie să fie independentă de prima.
+                        prepared_providers.add(provider_key)
+                        r['preresolves'].append({
+                            'source': candidate, 'url': pre_url, 'ts': time.time(),
+                        })
+                        xbmc.log(f'[Samus] Pre-resolve verificat OK: {candidate.get("label", "")}', xbmc.LOGINFO)
+                        if len(r['preresolves']) >= 2:
+                            return
+                        continue
+                    xbmc.log(f'[Samus] Pre-resolve link nereproductibil: {candidate.get("label", "")}', xbmc.LOGWARNING)
+                except Exception as ex:
+                    xbmc.log(f'[Samus] Pre-resolve eșuat, încerc următoarea sursă: {ex}', xbmc.LOGWARNING)
+            xbmc.log('[Samus] Pre-resolve: nicio sursă HTTP redabilă', xbmc.LOGWARNING)
 
-        scrape_thread = threading.Thread(target=_bg_scrape, daemon=True)
+        # Firele nu sunt daemon: sunt oprite și reunite explicit mai jos, ca
+        # subinterpretorul Kodi să nu ajungă la Py_EndInterpreter cu fire vii.
+        scrape_thread = threading.Thread(target=_bg_scrape, name='samus-next-scrape')
         scrape_thread.start()
-        preresolve_thread = threading.Thread(target=_bg_preresolve, daemon=True)
+        preresolve_thread = threading.Thread(target=_bg_preresolve, name='samus-next-resolve')
         preresolve_thread.start()
 
     while _pl.isPlayingVideo() and not _mon.abortRequested():
@@ -2522,14 +2959,17 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None, for
             current   = _pl.getTime()
             remaining = total - current
 
-            # ── Prefetch episod următor la 80% vizionat (minim 5 min) ──────────
-            if not next_fetched and total > 300 and total > 0 and current / total >= 0.80:
+            # Începe cu cel puțin ~10 minute înainte de final (sau la 65%).
+            # Astfel există timp pentru mai multe hosturi, dar URL-ul obținut nu
+            # stă inutil de la începutul unui episod lung.
+            if (not next_fetched and total > 300 and total > 0 and
+                    (current / total >= 0.65 or remaining <= 600)):
                 next_fetched = True
                 next_ep = _get_next_episode(tv_id, season, episode)
                 if next_ep:
-                    next_s, next_e, ep_title, ep_overview = next_ep
+                    next_s, next_e, ep_title, ep_overview, ep_still_path = next_ep
                     _start_prefetch(next_s, next_e)
-                    xbmc.log(f'[Samus] Prefetch pornit la 80%: S{next_s:02d}E{next_e:02d}', xbmc.LOGINFO)
+                    xbmc.log(f'[Samus] Prefetch pornit în fundal: S{next_s:02d}E{next_e:02d}', xbmc.LOGINFO)
 
             # ── Overlay autoplay în ultimele N secunde ───────────────────────
             if not overlay_shown and total > 120 and 0 < remaining <= trigger_secs:
@@ -2538,7 +2978,7 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None, for
                     next_fetched = True
                     next_ep = _get_next_episode(tv_id, season, episode)
                     if next_ep:
-                        next_s, next_e, ep_title, ep_overview = next_ep
+                        next_s, next_e, ep_title, ep_overview, ep_still_path = next_ep
 
                 if next_ep:
                     _start_prefetch(next_s, next_e)  # no-op dacă deja pornit
@@ -2553,12 +2993,16 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None, for
                         'Default', '1080i',
                         show_name=show_name,
                         ep_label=ep_label,
-                        countdown_secs=int(remaining),
+                        countdown_secs=30,
                         poster_url='https://image.tmdb.org/t/p/w342' + _poster if _poster else '',
+                        still_url=('https://image.tmdb.org/t/p/w780' + ep_still_path
+                                   if ep_still_path else ''),
+                        logo_url=item_data.get('logo', ''),
                         overview=ep_overview,
                     )
                     overlay.doModal()
                     result = overlay.result
+                    overlay.join_countdown()
                     del overlay
 
                     if result == _AutoplayOverlay.PLAY:
@@ -2567,117 +3011,241 @@ def play_tv_episode(handle, tv_id, season, episode, preferred_provider=None, for
                         if preresolve_thread:
                             preresolve_thread.join(timeout=5)
 
-                        pr  = scrape_result.get('preresolve') or {}
-                        pre_url = pr.get('url')
-                        pre_src = pr.get('source')
-
-                        if pre_url and pre_src and time.time() - pr.get('ts', 0) < 180:
-                            # Fast path — URL deja rezolvat, redare directă fără nou proces
-                            li = xbmcgui.ListItem()
-                            li.setProperty('IsPlayable', 'true')
-                            _set_video_info_episode(
-                                li,
-                                f"{show_title}.S{next_s:02d}E{next_e:02d}",
-                                show_title, next_s, next_e, imdb_id,
+                        prepared = scrape_result.get('preresolves') or []
+                        valid_prepared = [
+                            pr for pr in prepared[:2]
+                            if (pr.get('url') and pr.get('source') and
+                                time.time() - pr.get('ts', 0) < 900)
+                        ]
+                        # Pornim întotdeauna o invocare nouă play_episode. Ea
+                        # consumă instant URL-urile pregătite, apoi instalează
+                        # propriul monitor pentru episodul următor. Pornirea
+                        # directă prin Player.play rupea lanțul după o tranziție.
+                        bg_sources = scrape_result.get('sources') or []
+                        if bg_sources:
+                            _save_autoplay_cache(
+                                tv_id, next_s, next_e, bg_sources,
+                                quality_pref=selected.get('quality'),
+                                is_torrent_pref=selected.get('is_torrent', False),
+                                preresolves=valid_prepared,
                             )
-                            stream_url = pre_url.split('|')[0] if '|' in pre_url else pre_url
-                            if '.m3u8' in stream_url:
-                                li.setMimeType('application/vnd.apple.mpegurl')
-                                li.setContentLookup(False)
-                                li.setProperty('inputstream', 'inputstream.adaptive')
-                                li.setProperty('inputstream.adaptive.manifest_type', 'hls')
-                                if '|' in pre_url:
-                                    hs = pre_url.split('|', 1)[1]
-                                    li.setProperty('inputstream.adaptive.stream_headers', hs)
-                                    li.setProperty('inputstream.adaptive.manifest_headers', hs)
-                            li.setPath(stream_url if '.m3u8' in stream_url else pre_url)
-                            xbmc.Player().play(li.getPath(), li)
-                            _start_history_tracker(
-                                tmdb_id=tv_id, media_type='tv',
-                                title=show_name,
-                                poster=details.get('poster_path') or '',
-                                season=next_s, episode=next_e, plot='',
-                            )
-                            xbmc.log(f'[Samus] Autoplay fast-path: {pre_src.get("label", "")}', xbmc.LOGINFO)
-                        else:
-                            # Fallback — salvăm cache și pornim via RunPlugin
-                            bg_sources = scrape_result.get('sources') or []
-                            if bg_sources:
-                                _save_autoplay_cache(
-                                    tv_id, next_s, next_e, bg_sources,
-                                    quality_pref=selected.get('quality'),
-                                    is_torrent_pref=selected.get('is_torrent', False),
-                                    preresolve=pr or None,
-                                )
-                            kv = [
-                                ('action',  'play_episode'),
-                                ('tv_id',   str(tv_id)),
-                                ('season',  str(next_s)),
-                                ('episode', str(next_e)),
-                            ]
-                            if preferred:
-                                kv.append(('preferred_provider', preferred))
-                            qs = '&'.join(f'{k}={v}' for k, v in kv)
-                            xbmc.executebuiltin(f'RunPlugin(plugin://plugin.video.samusxui?{qs})')
+                        kv = [
+                            ('action',  'play_episode'),
+                            ('tv_id',   str(tv_id)),
+                            ('season',  str(next_s)),
+                            ('episode', str(next_e)),
+                        ]
+                        if preferred:
+                            kv.append(('preferred_provider', preferred))
+                        qs = '&'.join(f'{k}={v}' for k, v in kv)
+                        xbmc.log(f'[Samus] Autoplay lanț → S{next_s:02d}E{next_e:02d} '
+                                 f'({len(valid_prepared)} surse pregătite)', xbmc.LOGINFO)
+                        # PlayMedia creează o invocare redabilă, cu plugin
+                        # handle valid. Noua instanță instalează propriul
+                        # monitor și continuă lanțul pentru episodul următor.
+                        xbmc.executebuiltin(
+                            f'PlayMedia(plugin://plugin.video.samusxui?{qs})'
+                        )
                     break
         except Exception as e:
             xbmc.log(f'[Samus] autoplay overlay eroare: {e}', xbmc.LOGWARNING)
-        xbmc.sleep(1000)
+        if _mon.waitForAbort(1):
+            break
+
+    # Nu lăsăm worker-ele de prefetch vii la ieșirea scriptului. În mod normal
+    # ele au terminat cu multe minute înainte; la Stop/Quit semnalăm imediat și
+    # așteptăm terminarea lor înainte ca Kodi să distrugă subinterpretorul.
+    prefetch_cancel.set()
+    for _worker in (preresolve_thread, scrape_thread):
+        if _worker and _worker.is_alive():
+            _worker.join()
+
+
+_TRAILER_UA = ('Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 '
+               '(KHTML, like Gecko) Chrome/131.0 Mobile Safari/537.36')
+
+
+def _trailer_header_string(*formats):
+    headers = {}
+    for fmt in formats:
+        for name, value in (fmt.get('http_headers') or {}).items():
+            if value is not None and name.casefold() not in (
+                    'range', 'content-length', 'accept-encoding',
+                    # X-Forwarded-For (fake IP) breaks IP-bound googlevideo URLs (403).
+                    'x-forwarded-for'):
+                headers.setdefault(str(name), str(value))
+    headers.setdefault('User-Agent', _TRAILER_UA)
+    return urllib.parse.urlencode(headers)
+
+
+def _trailer_fetch_range(fmt, start, end):
+    headers = dict(fmt.get('http_headers') or {})
+    headers.setdefault('User-Agent', _TRAILER_UA)
+    headers['Range'] = f'bytes={start}-{end}'
+    request = urllib.request.Request(fmt['url'], headers=headers)
+    with urllib.request.urlopen(request, timeout=5) as response:
+        return response.read()
+
+
+def _trailer_mp4_ranges(fmt):
+    """Găsește init/index pentru SegmentBase, după implementarea Bendis."""
+    data = _trailer_fetch_range(fmt, 0, 1048575)
+    pos = 0
+    while pos + 8 <= len(data):
+        size = int.from_bytes(data[pos:pos + 4], 'big')
+        box_type = data[pos + 4:pos + 8]
+        header_size = 8
+        if size == 1 and pos + 16 <= len(data):
+            size = int.from_bytes(data[pos + 8:pos + 16], 'big')
+            header_size = 16
+        if size < header_size:
+            break
+        if box_type == b'sidx':
+            return (0, pos - 1), (pos, pos + size - 1)
+        pos += size
+    raise ValueError('indexul MP4 sidx lipsește')
+
+
+def _trailer_build_mpd(video, audio, duration):
+    vinit, vindex = _trailer_mp4_ranges(video)
+    ainit, aindex = _trailer_mp4_ranges(audio)
+    seconds = max(0, int(float(duration or 0)))
+    width = int(video.get('width') or 1920)
+    height = int(video.get('height') or 1080)
+    fps = int(video.get('fps') or 25)
+    vbw = int(float(video.get('tbr') or 4000) * 1000)
+    abw = int(float(audio.get('abr') or audio.get('tbr') or 128) * 1000)
+    asr = int(audio.get('asr') or 44100)
+    vcodec = _xml_escape(video.get('vcodec') or 'avc1.640028')
+    acodec = _xml_escape(audio.get('acodec') or 'mp4a.40.2')
+    vurl = _xml_escape(video.get('url') or '')
+    aurl = _xml_escape(audio.get('url') or '')
+    return f'''<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" type="static" mediaPresentationDuration="PT{seconds}S" minBufferTime="PT4S">
+  <Period>
+    <AdaptationSet id="1" contentType="video" sar="1:1" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
+      <Representation id="v1" bandwidth="{vbw}" width="{width}" height="{height}" frameRate="{fps}" mimeType="video/mp4" codecs="{vcodec}">
+        <BaseURL>{vurl}</BaseURL>
+        <SegmentBase indexRange="{vindex[0]}-{vindex[1]}"><Initialization range="{vinit[0]}-{vinit[1]}"/></SegmentBase>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet id="2" contentType="audio" mimeType="audio/mp4" codecs="{acodec}" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
+      <Representation id="a1" bandwidth="{abw}" audioSamplingRate="{asr}">
+        <BaseURL>{aurl}</BaseURL>
+        <SegmentBase indexRange="{aindex[0]}-{aindex[1]}"><Initialization range="{ainit[0]}-{ainit[1]}"/></SegmentBase>
+      </Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>'''
+
+
+def _trailer_progressive_recipe(info):
+    candidates = [fmt for fmt in (info.get('formats') or [])
+                  if fmt.get('url') and fmt.get('vcodec') not in (None, 'none')
+                  and fmt.get('acodec') not in (None, 'none')
+                  and int(fmt.get('height') or 0) <= 720]
+    candidates.sort(key=lambda fmt: (
+        int(fmt.get('height') or 0), float(fmt.get('tbr') or 0)), reverse=True)
+    selected = candidates[0] if candidates else info
+    url = selected.get('url') or ''
+    if not url:
+        return None
+    headers = _trailer_header_string(selected, info)
+    return {'kind': 'direct', 'path': url + ('|' + headers if headers else '')}
 
 
 def resolve_trailer_url(video_id):
-    """Extract direct stream URL for a YouTube video via yt-dlp. Returns URL or None."""
+    """Rezolvă trailerul numai cu script.module.yt-dlp, fără pluginuri externe."""
     try:
         import yt_dlp
         opts = {
             'quiet': True,
             'no_warnings': True,
-            'format': 'best[height<=720][ext=mp4]/best[ext=mp4]/best',
-            'geo_bypass': True,
-            'geo_bypass_country': 'US',
+            'skip_download': True,
+            'cachedir': False,
+            'format': ('bestvideo[height<=1080][ext=mp4][vcodec^=avc1]+'
+                       'bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best'),
+            'http_headers': {'User-Agent': _TRAILER_UA},
+            # NU geo_bypass: adaugă un X-Forwarded-For fals în http_headers-ul
+            # fiecărui format, iar URL-urile googlevideo sunt semnate pe IP-ul real
+            # → 403 (IP mismatch) la redare. Trailerele nu-s region-locked oricum.
+            'socket_timeout': 5,
+            'retries': 0,
+            'extractor_retries': 0,
+            'fragment_retries': 0,
+            'noplaylist': True,
         }
         with yt_dlp.YoutubeDL(opts) as ydl:
-            info = ydl.extract_info(f'https://www.youtube.com/watch?v={video_id}', download=False)
-            if info:
-                stream_url = info.get('url')
-                if not stream_url:
-                    return None
+            info = ydl.extract_info(
+                f'https://www.youtube.com/watch?v={video_id}', download=False)
+        if not info:
+            return None
+        requested = info.get('requested_formats') or []
+        video = next((fmt for fmt in requested
+                      if fmt.get('vcodec') not in (None, 'none')), None)
+        audio = next((fmt for fmt in requested
+                      if fmt.get('acodec') not in (None, 'none')), None)
+        if video and audio and video.get('ext') == 'mp4' and audio.get('ext') in ('m4a', 'mp4'):
+            try:
+                from resources.lib import trailer_manifest
+                mpd = _trailer_build_mpd(video, audio, info.get('duration'))
+                path = trailer_manifest.write_manifest(mpd, video_id)
+                if path:
+                    height = int(video.get('height') or 0)
+                    xbmc.log(f'[SamusXUI/trailer] yt-dlp DASH {height}p', xbmc.LOGINFO)
+                    return {
+                        'kind': 'mpd', 'path': path,
+                        'headers': _trailer_header_string(video, audio),
+                    }
+                xbmc.log('[SamusXUI/trailer] serviciul MPD nu rulează; fallback progresiv',
+                         xbmc.LOGWARNING)
+            except Exception as exc:
+                xbmc.log(f'[SamusXUI/trailer] MPD eșuat: {exc}', xbmc.LOGWARNING)
+        recipe = _trailer_progressive_recipe(info)
+        if recipe:
+            xbmc.log('[SamusXUI/trailer] yt-dlp progresiv', xbmc.LOGINFO)
+        return recipe
+    except Exception as exc:
+        xbmc.log(f'[SamusXUI/trailer] yt-dlp failed: {exc}', xbmc.LOGWARNING)
+        return None
 
-                # YouTube CDN URLs can be bound to the client headers used by
-                # yt-dlp during extraction. Kodi accepts them after a pipe.
-                headers = {
-                    str(key): str(value)
-                    for key, value in (info.get('http_headers') or {}).items()
-                    if value and str(key).lower() != 'accept-encoding'
-                }
-                if headers:
-                    xbmc.log(
-                        '[SamusXUI/trailer] forwarding headers: '
-                        + ', '.join(sorted(headers)),
-                        xbmc.LOGINFO,
-                    )
-                    stream_url += '|' + urllib.parse.urlencode(headers)
-                return stream_url
-    except Exception as e:
-        xbmc.log(f'[SamusXUI/trailer] yt-dlp failed: {e}', xbmc.LOGWARNING)
-    return None
+
+def trailer_listitem(recipe):
+    if not recipe:
+        return None
+    if isinstance(recipe, str):
+        recipe = {'kind': 'direct', 'path': recipe}
+    path = recipe.get('path') or ''
+    if not path:
+        return None
+    item = xbmcgui.ListItem(path=path)
+    item.setContentLookup(False)
+    if recipe.get('kind') == 'mpd':
+        item.setMimeType('application/dash+xml')
+        item.setProperty('inputstream', 'inputstream.adaptive')
+        item.setProperty('inputstream.adaptive.stream_headers', recipe.get('headers') or '')
+    return item
 
 
-def play_trailer(video_id, stream_url=None):
-    """Redă trailerul YouTube via URL direct. Returnează True dacă redarea a pornit."""
+def _wait_playing(player, seconds):
+    deadline = seconds
+    while deadline > 0 and not player.isPlaying():
+        xbmc.sleep(200)
+        deadline -= 0.2
+    return player.isPlaying()
+
+
+def play_trailer(video_id, stream_url=None, title=None, windowed=False, player=None):
+    """Redă prin yt-dlp + manifestul persistent al serviciului SamusXUI."""
+    p = player or xbmc.Player()
     if not stream_url:
         stream_url = resolve_trailer_url(video_id)
-        xbmc.log(f'[SamusXUI/trailer] yt-dlp url={bool(stream_url)}', xbmc.LOGINFO)
-
     if not stream_url:
         xbmc.log('[SamusXUI/trailer] unavailable', xbmc.LOGWARNING)
         return False
-
-    li = xbmcgui.ListItem(path=stream_url)
-    p = xbmc.Player()
-    p.play(stream_url, li)
-    deadline = 15
-    while deadline > 0 and not p.isPlaying():
-        xbmc.sleep(200)
-        deadline -= 0.2
-    return True
+    item = trailer_listitem(stream_url)
+    if item is None:
+        return False
+    path = stream_url.get('path') if isinstance(stream_url, dict) else stream_url
+    p.play(path, item, windowed=windowed)
+    return _wait_playing(p, 15)

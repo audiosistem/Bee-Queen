@@ -62,7 +62,7 @@ def meta_account_names(accounts):
 
 
 def settings_privacy_warning():
-	return '[COLOR yellow]This file can contain API keys and account logins. Keep it private.[/COLOR]'
+	return '[COLOR yellow]This file can contain API keys, Debrid Accounts tokens, and other account logins. Keep it private.[/COLOR]'
 
 
 def settings_import_reminders(accounts=None):

@@ -3,7 +3,7 @@ import sys
 from modules import kodi_utils, settings, watched_status as ws
 from modules.metadata import tvshow_meta, episodes_meta, all_episodes_meta
 from modules.utils import jsondate_to_datetime, adjust_premiered_date, calendar_service_local_date, make_day, get_datetime, get_current_timestamp, title_key, date_difference, TaskPool
-from datetime import timedelta
+from datetime import datetime, timedelta
 # logger = kodi_utils.logger
 
 def _calendar_episode_date(service_first_aired, tmdb_premiered, adjust_hours):
@@ -18,6 +18,30 @@ def _calendar_episode_date(service_first_aired, tmdb_premiered, adjust_hours):
 		if d is not None:
 			return d, day
 	return adjust_premiered_date(tmdb_premiered, adjust_hours)
+
+def _nextep_activity_datetime(item, resformat, current_date):
+	"""Newer of last watched and this next-up's air date. Unaired air dates are ignored.
+
+	Air dates are date-only (start of that local day), so a watch later the same day
+	outranks that day's premiere. All Watched Status Providers use the same row fields.
+	"""
+	played, aired = None, None
+	raw_played = item.get('last_played')
+	if raw_played:
+		try: played = jsondate_to_datetime(raw_played, resformat)
+		except: played = None
+	if not item.get('unaired'):
+		raw_air = item.get('first_aired') or ''
+		try:
+			aired_dt = jsondate_to_datetime(raw_air, '%Y-%m-%d')
+			if aired_dt:
+				aired_date = aired_dt.date() if hasattr(aired_dt, 'date') else aired_dt
+				if aired_date <= current_date:
+					aired = datetime(aired_date.year, aired_date.month, aired_date.day)
+		except: aired = None
+	candidates = [t for t in (played, aired) if t]
+	if not candidates: return datetime(2000, 1, 1)
+	return max(candidates)
 
 def _nextep_indicator_watchlist(indicators=None):
 	"""Never-started shows from a Watched Status Provider service watchlist (empty for Red Light)."""
@@ -67,7 +91,7 @@ def _paint_episode_list_packet(packet, item_list_append, make_listitem, kodi_act
 	try:
 		listitem = make_listitem()
 		set_properties = listitem.setProperties
-		info_tag = listitem.getVideoInfoTag(True)
+		info_tag = listitem.getVideoInfoTag()
 		info_tag.setMediaType('episode'), info_tag.setOriginalTitle(packet['orig_title']), info_tag.setTitle(packet['display_title'])
 		info_tag.setGenres(packet['genre'] or [])
 		if not packet.get('omit_tvshowtitle'): info_tag.setTvShowTitle(packet['tvshowtitle'])
@@ -173,7 +197,7 @@ def build_episode_list(params):
 					except: pass
 				cm = [i[1] for i in cm]
 				studios = list(studio) if isinstance(studio, tuple) else (studio or [])
-				info_tag = listitem.getVideoInfoTag(True)
+				info_tag = listitem.getVideoInfoTag()
 				info_tag.setMediaType('episode'), info_tag.setTitle(ep_name), info_tag.setOriginalTitle(orig_title), info_tag.setTvShowTitle(title), info_tag.setGenres(genre)
 				info_tag.setPlaycount(playcount), info_tag.setSeason(season), info_tag.setEpisode(episode), info_tag.setPlot(plot)
 				info_tag.setDuration(duration), info_tag.setIMDBNumber(imdb_id), info_tag.setUniqueIDs({'imdb': imdb_id, 'tmdb': str(tmdb_id), 'tvdb': str(tvdb_id)})
@@ -249,7 +273,7 @@ def build_episode_list(params):
 	kodi_utils.set_sort_method(handle, 'episodes', labelMask='%L')
 	kodi_utils.set_content(handle, 'episodes')
 	kodi_utils.set_category(handle, category_name)
-	kodi_utils.end_directory(handle, cacheToDisc=False if is_external else True)
+	kodi_utils.end_directory(handle, cacheToDisc=False)
 	kodi_utils.set_view_mode('view.episodes', 'episodes', is_external)
 
 def build_single_episode(list_type, params={}):
@@ -454,7 +478,7 @@ def build_single_episode(list_type, params={}):
 			# Legacy metacache used 1-tuples for studio; setStudios requires a list.
 			if isinstance(studio, tuple): studio = list(studio)
 			elif not studio: studio = []
-			info_tag = listitem.getVideoInfoTag(True)
+			info_tag = listitem.getVideoInfoTag()
 			info_tag.setMediaType('episode'), info_tag.setOriginalTitle(orig_title), info_tag.setTitle(display_title), info_tag.setGenres(genre)
 			# Optional: widgets that bind TVShowTitle as a second line under Label.
 			if not (is_external and omit_tvshowtitle_widgets):
@@ -903,16 +927,27 @@ def build_single_episode(list_type, params={}):
 			[i.join() for i in threads]
 		if return_results: return [(i['list_items'], i['sort_order']) for i in item_list]
 		if list_type_starts_with('next_'):
+			use_latest_activity = sort_key == 'last_played' and settings.nextep_sort_latest_activity()
 			def func(function):
 				if sort_key == 'name': return title_key(function, ignore_articles)
 				elif sort_key == 'last_played': return jsondate_to_datetime(function, resformat)
 				else: return function
-			if settings.nextep_airing_today():
-				airing_today = sorted([i for i in item_list if date_difference(current_date, jsondate_to_datetime(i.get('first_aired', '2100-12-31'), '%Y-%m-%d').date(), 0)],
-										key=lambda i: func(i[sort_key]), reverse=sort_direction)
+			if (not use_latest_activity) and settings.nextep_airing_today():
+				pin_days = settings.nextep_airing_today_days()
+				def _pin_recently_aired(item):
+					if item.get('unaired'): return False
+					try:
+						aired = jsondate_to_datetime(item.get('first_aired', '2100-12-31'), '%Y-%m-%d').date()
+						delta = (current_date - aired).days
+						return 0 <= delta <= pin_days
+					except: return False
+				airing_today = sorted([i for i in item_list if _pin_recently_aired(i)],
+										key=lambda i: i.get('first_aired', ''), reverse=True)
 				item_list = [i for i in item_list if not i in airing_today]
 			else: airing_today = []
-			if sort_key == 'last_played':
+			if use_latest_activity:
+				item_list = sorted(item_list, key=lambda i: _nextep_activity_datetime(i, resformat, current_date), reverse=sort_direction)
+			elif sort_key == 'last_played':
 				unwatched = sorted([i for i in item_list if i['unwatched']], key=lambda i: title_key(i['name'], ignore_articles))
 				item_list = sorted([i for i in item_list if not i['unwatched']], key=lambda i: func(i[sort_key]), reverse=sort_direction) + unwatched
 			else: item_list = sorted(item_list, key=lambda i: func(i[sort_key]), reverse=sort_direction)

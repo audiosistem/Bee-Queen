@@ -3,8 +3,8 @@ from threading import Thread
 from caches.main_cache import cache_object
 from caches.settings_cache import get_setting, set_setting
 from modules.source_utils import supported_video_extensions, seas_ep_filter, extras
-from modules.utils import copy2clip, make_qrcode
-from modules.kodi_utils import make_session, ok_dialog, notification, progress_dialog, sleep
+from modules.utils import copy2clip, make_qrcode, make_tinyurl, device_auth_complete_url, device_auth_site_label, authorise_wait_text
+from modules.kodi_utils import make_session, ok_dialog, notification, progress_dialog, sleep, sleep_while_authorising
 # from modules.kodi_utils import logger
 
 api_session = make_session('https://offcloud.com/api/')
@@ -87,13 +87,15 @@ class OffcloudAPI:
 			return ok_dialog(text='Unable to start Offcloud authorisation')
 		device_code = payload.get('device_code')
 		user_code = payload.get('user_code')
-		verify_url = payload.get('verification_uri_complete') or payload.get('verification_uri') or 'https://offcloud.com/activate'
+		auth_url = device_auth_complete_url(payload, user_code, fallback='https://offcloud.com/activate', style='query')
 		if not device_code or not user_code:
 			return ok_dialog(text='Invalid Offcloud authorisation response')
-		qr_code = make_qrcode(verify_url) or ''
-		copy2clip(verify_url)
-		p_dialog_insert = '[CR]OR visit [B]offcloud.com/activate[/B][CR]AND Enter this Code: [B]%s[/B]' % user_code
-		content = 'Scan the [B]QR Code[/B]%s' % p_dialog_insert
+		qr_code = make_qrcode(auth_url) or ''
+		copy2clip(auth_url)
+		short_url = make_tinyurl(auth_url)
+		filled = bool(payload.get('verification_uri_complete')) or (user_code and user_code in str(auth_url))
+		content = authorise_wait_text(user_code, device_auth_site_label(payload, 'https://offcloud.com/activate'),
+			short_url, filled=filled)
 		progress = progress_dialog('Offcloud Authorise', qr_code)
 		progress.update(content, 0)
 		expires_in = int(payload.get('expires_in') or 600)
@@ -108,7 +110,10 @@ class OffcloudAPI:
 				try: progress.close()
 				except Exception: pass
 				return ok_dialog(text='Offcloud: Authorisation timed out')
-			sleep(poll_interval * 1000)
+			if sleep_while_authorising(progress, poll_interval):
+				try: progress.close()
+				except Exception: pass
+				return
 			token_ttl -= poll_interval
 			progress.update(content, int(100 * (expires_in - token_ttl) / float(expires_in)))
 			try:
@@ -160,6 +165,8 @@ class OffcloudAPI:
 		return ''
 
 	def revoke(self):
+		from modules.kodi_utils import confirm_revoke
+		if not confirm_revoke('Offcloud'): return
 		set_setting('oc.token', 'empty_setting')
 		set_setting('oc.enabled', 'false')
 		set_setting('oc.account_id', 'empty_setting')

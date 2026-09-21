@@ -72,7 +72,7 @@ def build_season_list(params):
 					try: cm = sorted([i for i in cm if i[0] in cm_sort_order], key=lambda k: cm_sort_order[k[0]])
 					except: pass
 				cm = [i[1] for i in cm]
-				info_tag = listitem.getVideoInfoTag(True)
+				info_tag = listitem.getVideoInfoTag()
 				info_tag.setMediaType('season'), info_tag.setTitle(title), info_tag.setOriginalTitle(orig_title), info_tag.setTvShowTitle(show_title), info_tag.setIMDBNumber(imdb_id)
 				info_tag.setSeason(season_number), info_tag.setPlot(plot), info_tag.setDuration(episode_run_time), info_tag.setPlaycount(playcount), info_tag.setGenres(genre)
 				info_tag.setUniqueIDs({'imdb': imdb_id, 'tmdb': str_tmdb_id, 'tvdb': str_tvdb_id})
@@ -119,6 +119,8 @@ def build_season_list(params):
 	if watched_indicators == 2 and settings.simkl_user_active():
 		from apis.simkl_api import simkl_sync_activities
 		simkl_sync_activities()
+		from caches.simkl_cache import simkl_watched_cache
+		simkl_watched_cache.prune_mirrored_specials()
 		watched_info = watched_info_season(tmdb_id, get_database(watched_indicators))
 	if watched_indicators == 3 and settings.mdblist_user_active():
 		from apis.mdblist_api import mdblist_sync_activities
@@ -129,7 +131,7 @@ def build_season_list(params):
 	kodi_utils.add_items(handle, list_items)
 	kodi_utils.set_content(handle, 'seasons')
 	kodi_utils.set_category(handle, show_title)
-	kodi_utils.end_directory(handle, cacheToDisc=False if is_external else True)
+	kodi_utils.end_directory(handle, cacheToDisc=False)
 	kodi_utils.set_view_mode('view.seasons', 'seasons', is_external)
 
 def single_seasons(seasons_list):

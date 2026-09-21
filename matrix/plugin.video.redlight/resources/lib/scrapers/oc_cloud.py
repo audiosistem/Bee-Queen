@@ -4,7 +4,7 @@ from threading import Thread
 from apis.offcloud_api import Offcloud
 from modules import source_utils
 from modules.utils import clean_file_name, normalize
-from modules.settings import enabled_debrids_check, filter_by_name
+from modules.settings import enabled_debrids_check, filter_by_name, shared_title_require_year
 # from modules.kodi_utils import logger
 
 class source:
@@ -21,6 +21,7 @@ class source:
 			self.media_type, title = info.get('media_type'), info.get('title')
 			self.year, self.season, self.episode = int(info.get('year') or 0), info.get('season'), info.get('episode')
 			self.absolute_episode = info.get('absolute_episode')
+			self.require_year = shared_title_require_year(info, self.scrape_provider)
 			self.title = title
 			self.folder_query = source_utils.clean_title(normalize(title))
 			self.year_query_list = tuple(map(str, range(self.year - 1, self.year + 2)))
@@ -34,8 +35,8 @@ class source:
 						file_name = item['filename']
 						if self.media_type == 'episode':
 							if not source_utils.cloud_episode_matches(self.season, self.episode, file_name, self.absolute_episode): continue
-							if filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, 'pack', self.episode): continue
-						elif filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, self.season, self.episode): continue
+							if filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, 'pack', self.episode, self.require_year): continue
+						elif filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, self.season, self.episode, self.require_year): continue
 						display_name = clean_file_name(file_name).replace('html', ' ').replace('+', ' ').replace('-', ' ')
 						file_dl, size = Offcloud.requote_uri(item['url']), 0
 						video_quality, details = source_utils.get_file_info(name_info=source_utils.release_info_format(file_name))

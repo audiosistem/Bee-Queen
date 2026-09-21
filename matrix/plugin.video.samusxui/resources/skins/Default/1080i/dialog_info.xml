@@ -79,7 +79,7 @@
             <texturefocus   colordiffuse="FF7B5CF4">white.png</texturefocus>
             <label>Redă</label>
             <onright>501</onright>
-            <ondown>400</ondown>
+            <ondown>390</ondown>
         </control>
 
         <!-- Buton Surse — id=501 -->
@@ -93,7 +93,7 @@
             <label>Surse</label>
             <onleft>500</onleft>
             <onright>502</onright>
-            <ondown>400</ondown>
+            <ondown>390</ondown>
         </control>
 
         <!-- Buton Trailer — id=502 -->
@@ -106,22 +106,35 @@
             <texturefocus   colordiffuse="FF7B5CF4">white.png</texturefocus>
             <label>Trailer</label>
             <onleft>501</onleft>
-            <onright>503</onright>
-            <ondown>400</ondown>
+            <ondown>390</ondown>
+            <onright>504</onright>
         </control>
 
         <!-- Buton Colecție — id=503, vizibil doar când filmul aparține unei colecții -->
         <control type="button" id="503">
-            <left>1129</left><top>228</top><width>220</width><height>52</height>
+            <left>1357</left><top>228</top><width>220</width><height>52</height>
             <font>font20</font>
             <textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
             <align>center</align>
             <texturenofocus colordiffuse="28FFFFFF">white.png</texturenofocus>
             <texturefocus   colordiffuse="FF7B5CF4">white.png</texturefocus>
             <label>Colecție</label>
-            <onleft>502</onleft>
-            <ondown>400</ondown>
+            <ondown>390</ondown>
             <visible>!String.IsEmpty(Window.Property(info.has_collection))</visible>
+            <onleft>504</onleft>
+        </control>
+
+        <control type="button" id="504">
+            <left>1129</left><top>228</top><width>220</width><height>52</height>
+            <font>font20</font>
+            <textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+            <align>center</align>
+            <texturenofocus colordiffuse="28FFFFFF">white.png</texturenofocus>
+            <texturefocus   colordiffuse="FF7B5CF4">white.png</texturefocus>
+            <label>Similare</label>
+            <ondown>390</ondown>
+            <onleft>502</onleft>
+            <onright condition="!String.IsEmpty(Window.Property(info.has_collection))">503</onright>
         </control>
 
         <!-- Plot -->
@@ -139,11 +152,21 @@
 
         <!-- ═══ CAST ═══ -->
 
-        <!-- Etichetă "Distribuție" -->
-        <control type="label">
-            <left>50</left><top>635</top><width>400</width><height>36</height>
-            <font>font14</font><textcolor>white</textcolor>
-            <label>Distribuție</label>
+        <control type="button" id="390">
+            <left>50</left><top>635</top><width>220</width><height>36</height>
+            <font>font14</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus colordiffuse="FF168AC0">white.png</texturefocus>
+            <texturenofocus colordiffuse="20FFFFFF">white.png</texturenofocus>
+            <label>[B]Distribuție[/B]</label>
+            <onleft>391</onleft><onright>391</onright><onup>500</onup><ondown>400</ondown>
+        </control>
+        <control type="button" id="391">
+            <left>278</left><top>635</top><width>150</width><height>36</height>
+            <font>font14</font><textcolor>FFAAAAAA</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus colordiffuse="FF168AC0">white.png</texturefocus>
+            <texturenofocus colordiffuse="20FFFFFF">white.png</texturenofocus>
+            <label>Echipă</label>
+            <onleft>390</onleft><onright>390</onright><onup>500</onup><ondown>400</ondown>
         </control>
 
         <!-- Panel orizontal actori (id=400) -->
@@ -151,8 +174,8 @@
             <left>50</left><top>678</top>
             <width>1820</width><height>372</height>
             <onleft>400</onleft>
-            <onright>400</onright>
-            <onup>500</onup>
+            <onright>504</onright>
+            <onup>390</onup>
             <ondown>400</ondown>
             <scrolltime>200</scrolltime>
             <orientation>horizontal</orientation>
@@ -170,12 +193,13 @@
                     <texture fallback="DefaultActorSolid.png" background="true">$INFO[ListItem.Thumb]</texture>
                 </control>
                 <control type="label">
-                    <left>17</left><top>280</top><width>176</width><height>68</height>
+                    <left>17</left><top>275</top><width>176</width><height>48</height>
                     <font>font12</font><textcolor>FFCCCCCC</textcolor>
                     <align>center</align>
                     <wrapmultiline>true</wrapmultiline>
                     <label>$INFO[ListItem.Label]</label>
                 </control>
+                <control type="label"><left>17</left><top>326</top><width>176</width><height>25</height><font>font10</font><textcolor>FF55C8F5</textcolor><align>center</align><scroll>true</scroll><label>$INFO[ListItem.Label2]</label></control>
             </itemlayout>
 
             <!-- Layout focusat -->
@@ -204,7 +228,7 @@
                     <texture fallback="DefaultActorSolid.png" background="true">$INFO[ListItem.Thumb]</texture>
                 </control>
                 <control type="label">
-                    <left>17</left><top>280</top><width>176</width><height>68</height>
+                    <left>17</left><top>275</top><width>176</width><height>48</height>
                     <font>font12</font><textcolor>FFFFFFFF</textcolor>
                     <align>center</align>
                     <wrapmultiline>true</wrapmultiline>
@@ -212,13 +236,14 @@
                     <visible>Control.HasFocus(400)</visible>
                 </control>
                 <control type="label">
-                    <left>17</left><top>280</top><width>176</width><height>68</height>
+                    <left>17</left><top>275</top><width>176</width><height>48</height>
                     <font>font12</font><textcolor>FFCCCCCC</textcolor>
                     <align>center</align>
                     <wrapmultiline>true</wrapmultiline>
                     <label>$INFO[ListItem.Label]</label>
                     <visible>!Control.HasFocus(400)</visible>
                 </control>
+                <control type="label"><left>17</left><top>326</top><width>176</width><height>25</height><font>font10</font><textcolor>FF55C8F5</textcolor><align>center</align><scroll>true</scroll><label>$INFO[ListItem.Label2]</label></control>
             </focusedlayout>
         </control>
 

@@ -2,24 +2,26 @@
 from apis.nzb_api import search_all, nzb_link_hash
 from modules import source_utils
 from modules.utils import clean_file_name, normalize
-from modules.settings import filter_by_name, filter_by_episode_title, nzb_fallback_search, nzb_search_width, nzb_scrape_active
+from modules.settings import scrape_needs_title_filter, filter_by_episode_title, nzb_fallback_search, nzb_search_width, nzb_scrape_active, shared_title_require_year
 # from modules.kodi_utils import logger
 
 class source:
 	def __init__(self):
 		self.scrape_provider = 'nzb'
 		self.sources = []
+		self.require_year = False
 
 	def results(self, info):
 		try:
 			if not nzb_scrape_active(): return source_utils.internal_results(self.scrape_provider, self.sources)
-			filter_title = filter_by_name('nzb')
+			filter_title = scrape_needs_title_filter(info, 'nzb')
 			allow_episode_title = filter_by_episode_title('nzb')
-			self.media_type, title, self.year, self.season, self.episode = info.get('media_type'), info.get('title'), int(info.get('year')), info.get('season'), info.get('episode')
+			self.media_type, title, self.year, self.season, self.episode = info.get('media_type'), info.get('title'), int(info.get('year') or 0), info.get('season'), info.get('episode')
 			self.search_title = clean_file_name(title).replace('&', 'and')
 			self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
 			self.absolute_episode = info.get('absolute_episode')
 			self.ep_name = info.get('ep_name') or ''
+			self.require_year = shared_title_require_year(info, self.scrape_provider)
 			expiry = info.get('expiry_times')[0]
 			primary = self._search_name()
 			files = self._merge_searches(self._search_queries(), expiry)
@@ -33,7 +35,7 @@ class source:
 						file_name = normalize(item.get('name', ''))
 						if not file_name or any(x in file_name.lower() for x in extras): continue
 						if filter_title and not source_utils.check_title_or_absolute(
-								title, file_name, self.aliases, self.year, self.season, self.episode, self.absolute_episode, self.ep_name, allow_episode_title): continue
+								title, file_name, self.aliases, self.year, self.season, self.episode, self.absolute_episode, self.ep_name, allow_episode_title, self.require_year): continue
 						nzb_link = item.get('link', '')
 						if not nzb_link: continue
 						nzb_hash = nzb_link_hash(nzb_link)
@@ -90,9 +92,9 @@ class source:
 		width = nzb_search_width()
 		if width >= 1:
 			if self.media_type == 'movie': self._add_query(queries, seen, self.search_title)
-			else: self._add_query(queries, seen, '%s S%02d' % (self.search_title, self.season))
+			else: self._add_query(queries, seen, source_utils.tv_scrape_query(self.search_title, self.year, self.season, self.episode, self.require_year, season_only=True))
 		if width >= 2:
-			if self.media_type != 'movie': self._add_query(queries, seen, self.search_title)
+			if self.media_type != 'movie' and not self.require_year: self._add_query(queries, seen, self.search_title)
 			for alias in self.aliases:
 				name = clean_file_name(alias).replace('&', 'and')
 				if name == self.search_title: continue
@@ -100,8 +102,8 @@ class source:
 					self._add_query(queries, seen, '%s %d' % (name, self.year))
 					self._add_query(queries, seen, name)
 				else:
-					self._add_query(queries, seen, '%s S%02dE%02d' % (name, self.season, self.episode))
-					self._add_query(queries, seen, '%s S%02d' % (name, self.season))
+					self._add_query(queries, seen, source_utils.tv_scrape_query(name, self.year, self.season, self.episode, self.require_year))
+					self._add_query(queries, seen, source_utils.tv_scrape_query(name, self.year, self.season, self.episode, self.require_year, season_only=True))
 		return queries
 
 	def _fallback_search_queries(self, primary):
@@ -114,10 +116,10 @@ class source:
 			if self.media_type == 'movie':
 				self._add_query(queries, seen, '%s %d' % (name, self.year))
 			else:
-				self._add_query(queries, seen, '%s S%02dE%02d' % (name, self.season, self.episode))
-				self._add_query(queries, seen, '%s S%02d' % (name, self.season))
+				self._add_query(queries, seen, source_utils.tv_scrape_query(name, self.year, self.season, self.episode, self.require_year))
+				self._add_query(queries, seen, source_utils.tv_scrape_query(name, self.year, self.season, self.episode, self.require_year, season_only=True))
 		return queries
 
 	def _search_name(self):
 		if self.media_type == 'movie': return '%s %d' % (self.search_title, self.year)
-		return '%s S%02dE%02d' % (self.search_title, self.season, self.episode)
+		return source_utils.tv_scrape_query(self.search_title, self.year, self.season, self.episode, self.require_year)

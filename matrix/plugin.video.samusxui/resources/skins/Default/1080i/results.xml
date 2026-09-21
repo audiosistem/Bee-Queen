@@ -134,8 +134,31 @@
             <texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus>
             <texturenofocus colordiffuse="28FFFFFF">white.png</texturenofocus>
             <onleft>120</onleft>
-            <onright>122</onright>
+            <onright>123</onright>
             <ondown>131</ondown>
+        </control>
+
+        <!-- FAVORIT -->
+        <control type="button" id="123">
+            <left>363</left><top>545</top><width>190</width><height>52</height>
+            <label>FAVORIT</label>
+            <font>font20</font>
+            <align>center</align>
+            <textcolor>FFAAAAAA</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus colordiffuse="FF7B5CF4">white.png</texturefocus>
+            <texturenofocus colordiffuse="28FFFFFF">white.png</texturenofocus>
+            <onleft>122</onleft>
+            <onright>123</onright>
+            <ondown>131</ondown>
+        </control>
+
+        <!-- Steaua de favorit — aurie când e adăugat, controlată din Python -->
+        <control type="image" id="128">
+            <left>371</left><top>557</top><width>28</width><height>28</height>
+            <!-- fara colordiffuse: culoarea vine din Python (gri/auriu) -->
+            <texture>genre_populare.png</texture>
+            <aspectratio>keep</aspectratio>
         </control>
 
         <!-- ═══════════════ POSTER ROW ═══════════════ -->

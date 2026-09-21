@@ -149,7 +149,7 @@ def build_next_episode_manager():
 			url = build_url(url_params)
 			listitem.setLabel(display)
 			listitem.setArt({'poster': icon, 'fanart': addon_fanart, 'icon': icon})
-			info_tag = listitem.getVideoInfoTag(True)
+			info_tag = listitem.getVideoInfoTag()
 			info_tag.setPlot(' ')
 			append({'listitem': (url, listitem, False), 'sort_title': title})
 		except: pass

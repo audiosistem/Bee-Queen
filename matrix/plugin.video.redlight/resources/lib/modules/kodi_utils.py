@@ -75,7 +75,8 @@ def rescrape_items():
 	return [
 	{'name': 'Rescrape With No Cache Check', 'value': 'cache_ignored'},
 	{'name': 'Rescrape With IMDb Year Data', 'value': 'imdb_year'},
-	{'name': 'Rescrape With Disabled External Providers', 'value': 'with_all'},
+	{'name': 'Rescrape With Disabled External Scrapers', 'value': 'with_all'},
+	{'name': 'Rescrape With Disabled Internal Scrapers', 'value': 'with_all_internal'},
 	{'name': 'Rescrape With Episode Group', 'value': 'episode_group'},
 	{'name': 'Rescrape with Filters Ignored', 'value': 'ignore_filters'},
 	{'name': 'Offer Full Search After Early Results', 'value': 'full_scrape'}]
@@ -133,6 +134,12 @@ def kodi_dialog():
 
 def is_android():
 	return get_visibility('System.Platform.Android')
+
+def is_windows():
+	return get_visibility('System.Platform.Windows')
+
+def screensaver_or_dpms_active():
+	return get_visibility('System.ScreenSaverActive') or get_visibility('System.DPMSActive')
 
 def _folder_has_entries(path):
 	try:
@@ -246,8 +253,10 @@ def browse_file(mask='', defaultt='', heading='Choose file', force_defaultt=Fals
 		return None
 	return result
 
+OFFICIAL_ADDON_ID = 'plugin.video.redlight'
+
 def addon_info(info):
-	return xbmcaddon.Addon('plugin.video.redlight').getAddonInfo(info)
+	return xbmcaddon.Addon(OFFICIAL_ADDON_ID).getAddonInfo(info)
 
 def addon_version():
 	return get_property('redlight.addon_version') or addon_info('version')
@@ -275,7 +284,10 @@ def addon_fanart():
 	)
 
 MEDIA_REMOTE_BASE = 'https://repo.redwizard.xyz/images/redlight/media'
-# Old GitHub raw hosts — remap stored shortcut/menu URLs onto MEDIA_REMOTE_BASE.
+MEDIA_REMOTE_FALLBACK_BASE = 'https://zeus-768.com/redlight/media'
+_MEDIA_REMOTE_BASES = (MEDIA_REMOTE_BASE, MEDIA_REMOTE_FALLBACK_BASE)
+_MEDIA_BASE_PROPERTY = 'redlight.media_remote_base'
+# Old GitHub raw hosts — remap stored shortcut/menu URLs onto the live media host.
 _MEDIA_GITHUB_PREFIXES = (
 	'https://raw.githubusercontent.com/The-Red-Wizard/TheRedWizard.github.io/main/packages/media',
 	'https://raw.githubusercontent.com/TheRedWizard/TheRedWizard.github.io/main/packages/media',
@@ -285,16 +297,48 @@ MENU_FOLDER_CONTENT = ''
 # EasyNews search / debrid cloud: skins (FENtastic, Aeon Nox, Nimbus) show thumbs when content is files.
 PREMIUM_FILES_CONTENT = 'files'
 
+def media_remote_base():
+	"""Repo host when it answers; Zeus backup while it does not."""
+	cached = get_property(_MEDIA_BASE_PROPERTY)
+	if cached in _MEDIA_REMOTE_BASES:
+		return cached
+	try:
+		from caches.main_cache import main_cache
+		cached = main_cache.get('media_remote_base')
+		if cached in _MEDIA_REMOTE_BASES:
+			set_property(_MEDIA_BASE_PROPERTY, cached)
+			return cached
+	except:
+		pass
+	chosen, names = MEDIA_REMOTE_BASE, None
+	for base in _MEDIA_REMOTE_BASES:
+		names = _fetch_remote_icon_names(base)
+		if names:
+			chosen = base
+			break
+	set_property(_MEDIA_BASE_PROPERTY, chosen)
+	try:
+		from caches.main_cache import main_cache
+		main_cache.set('media_remote_base', chosen, expiration=1)
+		if names:
+			main_cache.set('all_icons_remote', names, expiration=168)
+	except:
+		pass
+	return chosen
+
 def get_icon(image_name, image_folder='icons', image_type='png'):
 	local_path = os.path.join(addon_info('path'), 'resources', 'media', image_folder, '%s.%s' % (image_name, image_type))
 	if os.path.exists(local_path):
 		return local_path
-	return '%s/%s/%s.%s' % (MEDIA_REMOTE_BASE, image_folder, image_name, image_type)
+	return '%s/%s/%s.%s' % (media_remote_base(), image_folder, image_name, image_type)
 
 def _remap_remote_media_url(url):
-	for prefix in _MEDIA_GITHUB_PREFIXES:
+	live = media_remote_base()
+	for prefix in _MEDIA_GITHUB_PREFIXES + _MEDIA_REMOTE_BASES:
 		if url.startswith(prefix):
-			return MEDIA_REMOTE_BASE + url[len(prefix):]
+			if prefix == live:
+				return url
+			return live + url[len(prefix):]
 	return url
 
 def resolve_list_icon(icon, default_name='folder'):
@@ -619,7 +663,7 @@ def sync_scrape_progress_ui(percent=0, results_sd=0, results_720p=0, results_108
 		set_property('redlight.scrape.progress_1080p_color', get_setting('redlight.scraper_1080p_highlight', 'FFE6B800'))
 		set_property('redlight.scrape.progress_720p_color', get_setting('redlight.scraper_720p_highlight', 'FF3C9900'))
 		set_property('redlight.scrape.progress_sd_color', get_setting('redlight.scraper_SD_highlight', 'FF0166FF'))
-		set_property('redlight.scrape.progress_total_color', get_setting('redlight.scraper_total_highlight', 'FFFFFFFF'))
+		set_property('redlight.scrape.progress_total_color', get_setting('redlight.scraper_total_highlight', 'FFFF33AE'))
 	else:
 		white = 'FFFFFFFF'
 		set_property('redlight.scrape.progress_4k_color', white)
@@ -645,6 +689,15 @@ def addon(addon_id='plugin.video.redlight'):
 
 def addon_installed(addon_id):
 	return get_visibility('System.HasAddon(%s)' % addon_id)
+
+def addon_present(addon_id):
+	# HasAddon can stay true after uninstall until Kodi restarts. Addon() fails immediately.
+	if not addon_id: return False
+	try:
+		addon(addon_id)
+		return True
+	except:
+		return False
 
 def addon_enabled(addon_id):
 	return get_visibility('System.AddonIsEnabled(%s)' % addon_id)
@@ -805,6 +858,15 @@ def reload_skin():
 def kodi_refresh():
 	execute_builtin('UpdateLibrary(video,special://skin/foo)')
 
+def clear_plugin_dir_cache():
+	"""Drop Kodi's cacheToDisc listings so title/language changes are not kept on Back."""
+	try:
+		folder = translate_path('special://temp/archive_cache/')
+		_dirs, files = list_dirs(folder)
+		for name in files:
+			delete_file('%s%s' % (folder, name))
+	except: pass
+
 SHUTTING_DOWN_PROP = 'redlight.shutting_down'
 PROP_AUTOSCRAPE_TOAST_SHOWN = 'redlight.autoscrape_nextep_toast_shown'
 PLAYBACK_WIDGET_REFRESH_PROP = 'redlight.playback_widget_refresh_at'
@@ -883,11 +945,7 @@ def playback_list_sync_skip_recent():
 		return False
 
 def schedule_playback_widget_refresh():
-	"""Refresh home widgets after playback without reloading the in-addon Videos list.
-
-	UpdateLibrary refreshes the active container too. After Stop from Next Episodes that
-	re-enters build_next_episode; Back during that GetDirectory fails and Kodi dumps to Files.
-	"""
+	"""Unused on Stop (Kodi already rebuilds Home). Kept for a Home-only fallback if #234 returns."""
 	if service_shutting_down(): return
 	mark_playback_widget_refresh()
 	schedule_widget_refresh(silent=True, defer_browsing=True)
@@ -912,8 +970,11 @@ def refresh_widgets(silent=False, reload_skin=False, defer_browsing=False):
 		if home(): container_refresh()
 	except: pass
 	if reload_skin:
-		try: execute_builtin('AlarmClock(redlight_widget_skin,ReloadSkin(),00:00:01,silent)')
-		except: pass
+		if screensaver_or_dpms_active():
+			logger('Red Light', 'skip ReloadSkin (screensaver or DPMS active)')
+		else:
+			try: execute_builtin('AlarmClock(redlight_widget_skin,ReloadSkin(),00:00:01,silent)')
+			except: pass
 	if not silent and get_setting('redlight.widget_refresh_notification', 'true') == 'true': notification('Widgets Refreshed', 2500)
 
 def run_plugin(params, block=False):
@@ -1181,7 +1242,11 @@ def open_settings(section=None, panel=None):
 		from apis.aiostreams_api import refresh_settings_properties
 		refresh_settings_properties()
 	except: pass
-	section_indexes = {'torrent': 5, 'direct': 6, '61': 5, '62': 6, 'torrent_sources': 5, 'direct_sources': 6}
+	section_indexes = {
+		'torrent': 6, 'torrent_scrapers': 6, 'torrent_sources': 6, '63': 6,
+		'torrent_accounts': 5, 'debrid_accounts': 5, 'debrid': 5, 'accounts': 5, '61': 5,
+		'direct': 7, 'direct_sources': 7, '62': 7,
+	}
 	focus_key = str(section or '').strip().lower()
 	if focus_key in section_indexes:
 		set_property('redlight.settings_manager.focus_index', str(section_indexes[focus_key]))
@@ -1268,6 +1333,23 @@ def close_progress_dialog(progress):
 		progress.close()
 	except: pass
 
+def sleep_while_authorising(progress, seconds):
+	"""Sleep up to `seconds`. True if the auth window was closed/cancelled or Kodi is aborting."""
+	try: total_ms = int(max(0, float(seconds)) * 1000)
+	except: total_ms = 0
+	mon = kodi_monitor()
+	elapsed, step = 0, 200
+	while elapsed < total_ms:
+		try:
+			if progress is not None and progress.iscanceled(): return True
+		except: return True
+		if mon and mon.abortRequested(): return True
+		chunk = min(step, total_ms - elapsed)
+		sleep(chunk)
+		elapsed += chunk
+	try: return bool(progress is not None and progress.iscanceled())
+	except: return True
+
 def select_dialog(function_list, **kwargs):
 	from windows.base_window import open_window
 	alt_function_list = kwargs.pop('alt_function_list', None)
@@ -1292,9 +1374,11 @@ def _dialog_needs_scroll(text):
 	wrapped = sum(max(1, (len(line) + _DIALOG_CONFIRM_CHARS_PER_LINE - 1) // _DIALOG_CONFIRM_CHARS_PER_LINE) for line in lines)
 	return wrapped > _DIALOG_CONFIRM_VISIBLE_LINES
 
-def confirm_dialog(heading='', text='Are you sure?', ok_label='OK', cancel_label='Cancel', default_control=11, scroll=False, third_label=None):
+def confirm_dialog(heading='', text='Are you sure?', ok_label='OK', cancel_label='Cancel', default_control=11, scroll=False, third_label=None, force_scroll=False):
 	from windows.base_window import open_window
-	needs_scroll = scroll and _dialog_needs_scroll(text)
+	# force_scroll: same path as import/export — scrollbar focused, Left/Right reach the buttons
+	# even when the body is short. Empty external-scraper picker uses this.
+	needs_scroll = bool(force_scroll) or (scroll and _dialog_needs_scroll(text))
 	kwargs = {'heading': heading, 'text': text, 'ok_label': ok_label, 'cancel_label': cancel_label, 'default_control': default_control,
 				'third_label': third_label or '', 'scroll': 'true' if needs_scroll else 'false',
 				'scroll_focus': 'true' if needs_scroll else 'false'}
@@ -1304,6 +1388,14 @@ def confirm_dialog(heading='', text='Are you sure?', ok_label='OK', cancel_label
 	if raw is True or raw is False:
 		return raw
 	return None
+
+def confirm_revoke(name):
+	return confirm_dialog(
+		heading=name,
+		text='Revoke authorisation of your [B]%s[/B] account?' % name,
+		ok_label='Revoke',
+		cancel_label='Cancel',
+		default_control=11)
 
 def ok_dialog(heading='', text='No Results', ok_label='OK', scroll=False):
 	from windows.base_window import open_window
@@ -1522,21 +1614,42 @@ def _icon_names_from_payload(data):
 			names.append(name)
 	return names or None
 
-def get_all_icons():
+def _fetch_remote_icon_names(base, timeout=4):
 	import requests
+	try:
+		response = requests.get('%s/icons.json' % base, timeout=timeout)
+		if response.status_code != 200:
+			return None
+		text = response.text.lstrip()
+		if not (text.startswith('[') or text.startswith('{')):
+			return None
+		return _icon_names_from_payload(response.json())
+	except:
+		return None
+
+def get_all_icons():
 	from caches.main_cache import main_cache
 	cached = main_cache.get('all_icons_remote')
 	if cached is not None:
 		return cached
-	try:
-		response = requests.get('%s/icons.json' % MEDIA_REMOTE_BASE, timeout=8)
-		if response.status_code == 200:
-			names = _icon_names_from_payload(response.json())
+	base = media_remote_base()
+	cached = main_cache.get('all_icons_remote')
+	if cached is not None:
+		return cached
+	names = _fetch_remote_icon_names(base, timeout=8)
+	if not names:
+		for candidate in _MEDIA_REMOTE_BASES:
+			if candidate == base:
+				continue
+			names = _fetch_remote_icon_names(candidate, timeout=8)
 			if names:
-				main_cache.set('all_icons_remote', names, expiration=168)
-				return names
-	except:
-		pass
+				set_property(_MEDIA_BASE_PROPERTY, candidate)
+				try: main_cache.set('media_remote_base', candidate, expiration=1)
+				except: pass
+				break
+	if names:
+		main_cache.set('all_icons_remote', names, expiration=168)
+		return names
 	return []
 
 def upload_logfile(params):

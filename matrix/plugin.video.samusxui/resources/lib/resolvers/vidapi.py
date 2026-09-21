@@ -6,8 +6,10 @@ import xbmc
 
 _API     = 'https://streamdata.vaplayer.ru/api.php'
 _UA      = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-_REFERER = 'https://brightpathsignals.com/'
-_ORIGIN  = 'https://brightpathsignals.com'
+# Front-end-ul s-a mutat: cu vechiul brightpathsignals.com API-ul
+# raspunde 404, cu nextgencloudfabric.com raspunde 200 (verificat 2026-07-31).
+_REFERER = 'https://nextgencloudfabric.com/'
+_ORIGIN  = 'https://nextgencloudfabric.com'
 _HEADERS = {
     'User-Agent': _UA,
     'Referer':    _REFERER,

@@ -8,7 +8,7 @@ Set a default backup folder under Settings > General > Import & Export. File bro
   - Export Red Light Settings / Import Red Light Settings
   - Backs up settings, menus, personal/discover lists, episode groups, and custom list images.
   - Does NOT include Red Light Favorites, watch history stored on this device, or Kodi Favorites — use the options below for those.
-  - The zip can contain API keys and account logins. Keep it private.
+  - The zip can contain API keys, Debrid Accounts tokens, and other account logins. Keep it private.
   - After import, check folder paths if you changed device or OS, and that your scraper package is still installed.
   - Meta Accounts that use authorisation (MDBList, PunchPlay, Simkl, TMDb Lists, Trakt, WeTrakr) may need re-authorising if sync or scrobble fails. API-key metas (Google, Groq, OMDb, RPDb, etc.) usually travel with the settings and just work.
 

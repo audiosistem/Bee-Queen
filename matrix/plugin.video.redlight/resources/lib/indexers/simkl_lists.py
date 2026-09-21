@@ -24,7 +24,7 @@ def search_simkl_lists(params):
 				listitem = make_listitem()
 				listitem.setLabel(display)
 				listitem.setArt({'icon': simkl_icon, 'poster': simkl_icon, 'thumb': simkl_icon, 'fanart': fanart, 'banner': fanart})
-				info_tag = listitem.getVideoInfoTag(True)
+				info_tag = listitem.getVideoInfoTag()
 				info_tag.setPlot('Simkl %s' % status_label)
 				yield (url, listitem, True)
 			except: pass

@@ -7,11 +7,20 @@ if 'service=true' in sys.argv[1:]:
     raise SystemExit
 
 import threading
+import atexit
 import urllib.parse
 import xbmc
 import xbmcaddon
 import xbmcgui
 import xbmcplugin
+
+
+def _log_threads_at_exit():
+    alive = [f'{t.name}(daemon={t.daemon})' for t in threading.enumerate()]
+    xbmc.log(f'[SamusXUI/script] fire la final: {alive}', xbmc.LOGINFO)
+
+
+atexit.register(_log_threads_at_exit)
 
 # ── parse imediat ─────────────────────────────────────────────────────────────
 
@@ -147,9 +156,10 @@ def _open_home_over_handle(handle):
     import time
     import xbmcvfs
 
-    # If called from within a modal dialog (e.g. skinshortcuts widget browser),
-    # return a real directory listing instead of trying to open HomeWindow.
-    if xbmc.getCondVisibility('System.HasActiveModalDialog(true)'):
+    # Skin Shortcuts marks its widget browser explicitly. A generic modal-dialog
+    # check also matches Kodi's own busy dialog during a normal add-on launch
+    # and incorrectly turns that launch into a directory listing.
+    if xbmcgui.Window(10000).getProperty('skinshortcuts-management-widget'):
         _browse_dir(handle)
         return
 
@@ -157,7 +167,29 @@ def _open_home_over_handle(handle):
     # WindowXML from a worker thread while MyVideoNav is still active makes
     # Kodi refuse the window with "active modal dialogs".
     xbmcplugin.endOfDirectory(handle, succeeded=True, cacheToDisc=False)
-    xbmc.executebuiltin('RunScript(plugin.video.samusxui)')
+
+    # Widgeturile skinului interoghează rădăcina pluginului ori de câte ori se
+    # revine la meniul principal — deci și imediat după ce interfața custom
+    # s-a închis, fiindcă launcherul face ActivateWindow(home) la ieșire. Fără
+    # cele două opriri de mai jos se închide o buclă: interogare → alarmă →
+    # launcher → ActivateWindow(home) → interogare. Observată pe Fire TV la
+    # 0.0.50: relansare la fiecare ~2,5 s, fără ieșire.
+    _win = xbmcgui.Window(10000)
+    if _win.getProperty('samusxui_custom_ui_open') == 'true':
+        return
+    try:
+        if time.time() - float(_win.getProperty('samusxui_custom_ui_closed') or 0) < 2:
+            return
+    except ValueError:
+        pass
+
+    # Use a distinct script invocation. Kodi can suppress a parameterless
+    # RunScript for this add-on while its plugin entry point is still exiting.
+    xbmc.executebuiltin(
+        'AlarmClock(SamusXUIPluginLaunch,'
+        'RunScript(plugin.video.samusxui,custom_home=true,from_plugin=true),'
+        '00:01,silent)'
+    )
     return
 
     # Two flags prevent the Aeon Nox widget auto-fetch loop:
@@ -329,26 +361,14 @@ elif action == 'show_info':
     xbmcplugin.endOfDirectory(HANDLE, succeeded=False,
                                updateListing=False, cacheToDisc=False)
 
-    # Pre-resolve trailer in background while user reads info dialog
-    _trailer_preresolve = {'url': None, 'key': None}
-    def _bg_trailer():
-        from resources.lib import player as _p
-        videos = data.get('videos', {}).get('results', [])
-        if not videos:
-            videos = tmdb.videos(tmdb_id, media_type).get('results', [])
-        yt_videos = [v for v in videos if v.get('site') == 'YouTube']
-        for yt in yt_videos:
-            key = yt['key']
-            url = _p.resolve_trailer_url(key)
-            if url:
-                _trailer_preresolve['key'] = key
-                _trailer_preresolve['url'] = url
-                return
-        # Niciun video nu a putut fi rezolvat — stochează primul key pt fallback YouTube addon
-        if yt_videos:
-            _trailer_preresolve['key'] = yt_videos[0]['key']
-    _trailer_thread = threading.Thread(target=_bg_trailer, daemon=True)
-    _trailer_thread.start()
+    # Alegerea cheii este locală și instantanee. yt-dlp pornește numai când
+    # utilizatorul apasă Trailer; un pre-resolver daemon putea rămâne viu după
+    # închiderea dialogului și bloca Py_EndInterpreter la Quit.
+    videos = data.get('videos', {}).get('results', [])
+    yt_videos = [v for v in videos if v.get('site') == 'YouTube' and v.get('key')]
+    yt_videos.sort(key=lambda v: (
+        v.get('type') != 'Trailer', v.get('type') != 'Teaser'))
+    _trailer_key = yt_videos[0]['key'] if yt_videos else None
 
     _show_info = True
     while _show_info:
@@ -395,20 +415,17 @@ elif action == 'show_info':
             )
             loading.set_status('Se încarcă trailerul...')
             loading.show()
-            # Așteaptă thread-ul background (key + yt-dlp URL) — timeout mai mare
-            # ca să evităm 2 instanțe yt-dlp concurente (YouTube rate-limitează una)
-            _trailer_thread.join(timeout=10)
-            yt_key = _trailer_preresolve.get('key')
+            yt_key = _trailer_key
             if not yt_key:
-                # Fallback sincronic dacă thread-ul nu a găsit key-ul
-                videos = data.get('videos', {}).get('results', [])
-                if not videos:
-                    videos = tmdb.videos(tmdb_id, media_type).get('results', [])
-                yt_videos = [v for v in videos if v.get('site') == 'YouTube']
+                videos = tmdb.videos(tmdb_id, media_type).get('results', [])
+                yt_videos = [v for v in videos
+                             if v.get('site') == 'YouTube' and v.get('key')]
+                yt_videos.sort(key=lambda v: (
+                    v.get('type') != 'Trailer', v.get('type') != 'Teaser'))
                 yt_key = yt_videos[0]['key'] if yt_videos else None
-            xbmc.log(f'[SamusXUI/trailer] key={yt_key} pre_url={bool(_trailer_preresolve.get("url"))}', xbmc.LOGINFO)
+            xbmc.log(f'[SamusXUI/trailer] key={yt_key} resolver=yt-dlp', xbmc.LOGINFO)
             if yt_key:
-                started = player.play_trailer(yt_key, stream_url=_trailer_preresolve.get('url'))
+                started = player.play_trailer(yt_key)
                 if not started:
                     loading.set_status('Trailerul nu este disponibil în această regiune.')
                     xbmc.sleep(3000)
@@ -436,14 +453,38 @@ elif action == 'show_info':
                             pass
                         _bg = _Bg('splash.xml', ADDON_PATH, 'Default', '1080i')
                         _bg.show()
-                        def _close_bg():
-                            xbmc.sleep(300)
-                            _bg.close()
-                        threading.Thread(target=_close_bg, daemon=True).start()
+                        xbmc.sleep(300)
+                        _bg.close()
                         _show_info = True
             else:
                 loading.close()
                 del loading
+
+        elif dlg.play_action == 'similar':
+            from resources.lib.search_results_window import SearchResultsWindow
+            # Atenție: `data` ține detaliile titlului curent și e refolosit de
+            # bucla `while _show_info` (fanart, titlu, trailer) — nu-l suprascrie.
+            rec   = tmdb.recommendations(tmdb_id, media_type) or {}
+            items = rec.get('results') or []
+            if not items:
+                # Titlurile obscure sau foarte noi n-au recomandări; /similar
+                # e calculat altfel și de multe ori returnează totuși ceva.
+                rec   = tmdb.similar(tmdb_id, media_type) or {}
+                items = rec.get('results') or []
+            if items:
+                base_title = data.get('title') or data.get('name', '')
+                win = SearchResultsWindow('results.xml', ADDON_PATH, 'Default', '1080i')
+                win._query       = f'Similare cu {base_title}' if base_title else 'Similare'
+                win._media       = media_type
+                win._items       = items
+                win._total_pages = rec.get('total_pages', 1)
+                win.doModal()
+                del win
+            else:
+                xbmcgui.Dialog().notification(
+                    'SamusXUI', 'Nu am găsit titluri similare',
+                    xbmcgui.NOTIFICATION_INFO, 2500)
+            _show_info = True
 
         elif dlg.play_action == 'collection' and dlg.collection_id:
             from resources.lib.search_results_window import SearchResultsWindow

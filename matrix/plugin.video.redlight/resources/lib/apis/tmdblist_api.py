@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from modules.kodi_utils import progress_dialog, notification, sleep, make_session
+from modules.kodi_utils import progress_dialog, notification, ok_dialog, sleep, sleep_while_authorising, make_session
 from caches.tmdb_lists import tmdb_lists_cache_object, tmdb_lists_cache
 from caches.settings_cache import get_setting, set_setting
 from modules.settings import max_threads, tmdb_lists_read_token
@@ -22,15 +22,22 @@ class TMDbListAPI:
 	def auth(self):
 		import requests
 		headers = self.read_access_headers()
-		data = requests.post('%s/auth/request_token' % self.base_url, headers=headers, timeout=20).json()
-		if not 'success' in data: return notification('Failed to Auth Account')
+		try:
+			data = requests.post('%s/auth/request_token' % self.base_url, headers=headers, timeout=20).json()
+		except Exception as e:
+			return ok_dialog(heading='TMDb Lists', text='Lists read access token failed.[CR]Could not reach TMDb: %s' % str(e))
+		if not data.get('success'):
+			return ok_dialog(heading='TMDb Lists', text='Lists read access token failed.[CR]%s' % (data.get('status_message') or 'Unknown error'))
 		request_token = data['request_token']
 		token_url = 'https://www.themoviedb.org/auth/access?request_token=%s' % request_token
 		qr_code = make_qrcode(token_url) or ''
 		short_url = make_tinyurl(token_url)
 		copy2clip(token_url)
-		if short_url: p_dialog_insert = '[CR]OR visit [B]%s[/B]' % short_url
-		else: p_dialog_insert = ''
+		link = ('[CR]OR visit [B]%s[/B]' % short_url) if short_url else ''
+		content = (
+			'Scan the [B]QR Code[/B] or open the link — access is already requested.%s[CR]'
+			'Confirm Access to your TMDb Account.'
+			% link)
 		progressDialog = progress_dialog(heading='TMDb Authorise', icon=qr_code)
 		count, success = 72, None
 		while not progressDialog.iscanceled() and count >= 0 and success == None:
@@ -38,21 +45,23 @@ class TMDbListAPI:
 				count -= 1
 				response = requests.post('%s/auth/access_token' % self.base_url, json={'request_token': request_token}, headers=headers, timeout=20).json()
 				if response.get('success') and response.get('access_token'): success = True
-				progressDialog.update('Scan the [B]QR Code[/B]%s[CR]Confirm Access to your TMDb Account' % p_dialog_insert, count)
-				sleep(2500)
+				progressDialog.update(content, count)
+				if sleep_while_authorising(progressDialog, 2.5): break
 			except: success = False
 		canceled = progressDialog.iscanceled()
 		progressDialog.close()
 		if canceled:
 			tmdb_lists_cache.clear_all()
-			return
+			return notification('TMDb Authorisation Canceled', 3000)
 		if success is True:
 			success = self.add_tmdb3_to_session(response['access_token'], response['account_id'])
 		tmdb_lists_cache.clear_all()
 		if success is True:
-			notification('Success')
+			from modules.meta_auth_alerts import clear_alert
+			clear_alert('tmdb')
+			notification('TMDb Account Authorised', 3000)
 		else:
-			notification('Failed')
+			notification('TMDb Error Authorising', 3000)
 
 	def add_tmdb3_to_session(self, access_token, account_id):
 		import requests
@@ -75,6 +84,10 @@ class TMDbListAPI:
 		return False
 
 	def revoke(self):
+		from modules.kodi_utils import confirm_revoke
+		if not confirm_revoke('TMDb'): return
+		from modules.meta_auth_alerts import clear_alert
+		clear_alert('tmdb')
 		import requests
 		headers = self.read_access_headers()
 		data = requests.delete('https://api.themoviedb.org/3/auth/access_token', json={'access_token': self.read_access_token()}, headers=headers, timeout=20).json()
@@ -127,7 +140,10 @@ class TMDbListAPI:
 		account_id = get_setting('redlight.tmdb.account_id')
 		string = 'get_watchfavrecs_list_details_%s_%s' % (list_id, media_type)
 		url = '%s/account/%s/%s/%s?page=%s'
-		if list_id == 'recommendations': url += '&language=en-US&region=US'
+		if list_id == 'recommendations':
+			from apis.tmdb_api import tmdb_list_lang, lang_cache_key
+			url += '&language=%s&region=US' % tmdb_list_lang()
+			string = lang_cache_key(string)
 		results = []
 		results_extend = results.extend
 		return tmdb_lists_cache_object(_process, string, 'dummy')
@@ -187,8 +203,16 @@ class TMDbListAPI:
 
 	def request_data(self, url, params=None, data=None, method='get'):
 		headers = {'accept': 'application/json', 'content-type': 'application/json', 'Authorization': 'Bearer %s' % get_setting('redlight.tmdb.token')}
-		try: result = session.request(method, url, params=params, json=data, headers=headers, timeout=90).json()
-		except: result = None
-		return result
+		try:
+			resp = session.request(method, url, params=params, json=data, headers=headers, timeout=90)
+		except:
+			return None
+		if resp.status_code == 401:
+			username = get_setting('redlight.tmdb.username')
+			if username not in (None, '', 'empty_setting'):
+				from modules.meta_auth_alerts import maybe_notify_refresh_failure
+				maybe_notify_refresh_failure('tmdb', 401, resp.text)
+		try: return resp.json()
+		except: return None
 
 tmdb_list_api = TMDbListAPI()

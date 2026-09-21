@@ -302,6 +302,11 @@ class WidgetRefresher:
 		if not self.external(): return True
 
 		if self.next_refresh == None or self.is_playing() or kodi_utils.get_property(pause_services_prop) == 'true': return True
+		# Same 120s post-Stop/mark window as Meta Accounts Refresh Widgets After Sync.
+		# Kodi already rebuilds Home; do not stack another UpdateLibrary immediately.
+		try:
+			if kodi_utils.playback_widget_refresh_recent(): return True
+		except: pass
 		if kodi_utils.get_property('redlight.window_loaded') == 'true': return True 
 		try:
 			window_stack = json.loads(kodi_utils.get_property('redlight.window_stack'))
@@ -316,6 +321,19 @@ class WidgetRefresher:
 
 	def external(self):
 		return 'plugin' not in kodi_utils.get_infolabel('Container.PluginName')
+
+class PlaybackRemoteMonitor:
+	def run(self, monitor):
+		kodi_utils.logger('Red Light', 'PlaybackRemoteMonitor Service Starting')
+		from modules.playback_remotes import process_pending_jobs
+		wait_for_abort = monitor.waitForAbort
+		while not monitor.abortRequested():
+			try: process_pending_jobs(monitor)
+			except Exception as e: kodi_utils.logger('PlaybackRemoteMonitor', str(e))
+			wait_for_abort(1)
+		try: process_pending_jobs(monitor, force=True)
+		except: pass
+		return kodi_utils.logger('Red Light', 'PlaybackRemoteMonitor Service Finished')
 
 class AutoStart:
 	def run(self, monitor):
@@ -367,6 +385,7 @@ class RedLightMonitor(Monitor):
 				_start_daemon(lambda: BootstrapSettings().run(self))
 		except Exception as e: kodi_utils.logger('BootstrapSettings', str(e))
 		start_custom_windows_prepare(self)
+		_start_daemon(lambda: PlaybackRemoteMonitor().run(self))
 		_start_daemon(lambda: TraktMonitor().run(self))
 		_start_daemon(lambda: SimklMonitor().run(self))
 		_start_daemon(lambda: MdblistMonitor().run(self))

@@ -29,7 +29,9 @@ def _settings_fingerprint(watched_indicators, mdblist_menu_next, is_anime_list, 
 		settings.nextep_include_unwatched(),
 		1 if settings.nextep_include_unaired() else 0,
 		1 if settings.nextep_include_airdate() else 0,
+		1 if settings.nextep_sort_latest_activity() else 0,
 		1 if settings.nextep_airing_today() else 0,
+		settings.nextep_airing_today_days() if settings.nextep_airing_today() else 0,
 		1 if settings.nextep_limit_history() else 0,
 		settings.nextep_limit() if settings.nextep_limit_history() else 0,
 		resolved_sort,
@@ -44,7 +46,7 @@ def _settings_fingerprint(watched_indicators, mdblist_menu_next, is_anime_list, 
 		settings.playback_key(),
 		settings.ignore_articles(),
 		calendar_day,
-		5,  # cache schema: episode still on landscape (LandscapeInfo widgets)
+		6,  # cache schema: latest-activity sort
 	)
 	return '_'.join(str(p) for p in parts)
 

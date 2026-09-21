@@ -39,6 +39,53 @@ def _media_id_candidates(id_type, media_id, keys=('tmdb', 'imdb', 'tvdb')):
 	if media_id in _ID_EMPTY: return []
 	return [(id_type, media_id)]
 
+def _meta_lang():
+	from modules.settings import meta_language
+	return meta_language() or 'en'
+
+def _meta_cache_type(media_type):
+	lang = _meta_lang()
+	if lang == 'en': return media_type
+	return '%s_%s' % (media_type, lang)
+
+def _season_cache_key(tmdb_id, season):
+	base = '%s_%s' % (tmdb_id, season)
+	lang = _meta_lang()
+	if lang == 'en': return base
+	return '%s_%s' % (base, lang)
+
+def _translation_map(translations, data_key):
+	mapped = {}
+	for item in translations or []:
+		iso = (item.get('iso_639_1') or '').split('-')[0]
+		value = (item.get('data') or {}).get(data_key) or ''
+		if iso and value and iso not in mapped: mapped[iso] = value
+	return mapped
+
+def _display_text(translations, data_key, tmdb_value, original_value=None):
+	"""Requested language, then English, then TMDb's value (often the original language)."""
+	mapped = _translation_map(translations, data_key)
+	lang = _meta_lang().split('-')[0]
+	if lang != 'en' and mapped.get(lang): return mapped[lang]
+	if mapped.get('en'): return mapped['en']
+	return tmdb_value or original_value or mapped.get(lang) or ''
+
+def _english_title(translations, data_key, display_title, original_title):
+	mapped = _translation_map(translations, data_key)
+	if mapped.get('en'): return mapped['en']
+	if _meta_lang().split('-')[0] == 'en': return display_title
+	return original_title or display_title
+
+def _tagged_image(items, size, tmdb_image_url):
+	if not items: return ''
+	iso_pref = _meta_lang().split('-')[0]
+	for iso in (iso_pref, 'en'):
+		try:
+			path = next((i['file_path'] for i in items if i.get('iso_639_1') == iso), None)
+			if path: return tmdb_image_url % (size, path)
+		except: pass
+	return ''
+
 def movie_meta(id_type, media_id, api_key, mpaa_region, current_date, current_time=None, dbcon=None, _alt_ids=None):
 	if id_type == 'trakt_dict':
 		candidates = _media_id_candidates('trakt_dict', media_id, keys=('tmdb', 'imdb'))
@@ -48,7 +95,9 @@ def movie_meta(id_type, media_id, api_key, mpaa_region, current_date, current_ti
 	elif _alt_ids is None:
 		_alt_ids = []
 	if media_id == None: return None
-	meta = meta_cache.get('movie', id_type, media_id, current_time, dbcon=dbcon)
+	meta = meta_cache.get(_meta_cache_type('movie'), id_type, media_id, current_time, dbcon=dbcon)
+	if meta and meta.get('meta_language') and meta.get('meta_language') != _meta_lang():
+		meta = None
 	if meta:
 		if meta.get('blank_entry') and _alt_ids:
 			nxt_type, nxt_id = _alt_ids[0]
@@ -64,7 +113,7 @@ def movie_meta(id_type, media_id, api_key, mpaa_region, current_date, current_ti
 		elif data.get('status_code') in (6, 34, 37):
 			if id_type == 'tmdb_id': meta = {'tmdb_id': media_id, 'imdb_id': 'tt0000000', 'tvdb_id': '0000000', 'blank_entry': True}
 			else: meta = {'tmdb_id': '0000000', 'imdb_id': media_id, 'tvdb_id': '0000000', 'blank_entry': True}
-			meta_cache.set('movie', id_type, meta, 24, current_time, dbcon=dbcon)
+			meta_cache.set(_meta_cache_type('movie'), id_type, meta, 24, current_time, dbcon=dbcon)
 			if _alt_ids:
 				nxt_type, nxt_id = _alt_ids[0]
 				return movie_meta(nxt_type, nxt_id, api_key, mpaa_region, current_date, current_time, dbcon, _alt_ids=_alt_ids[1:])
@@ -94,9 +143,9 @@ def movie_meta(id_type, media_id, api_key, mpaa_region, current_date, current_ti
 				if logo_path.endswith('png'): clearlogo = tmdb_image_url % ('original', logo_path)
 				else: clearlogo = tmdb_image_url % ('original', logo_path.replace(logo_path.split('.')[-1], 'png'))
 			except: clearlogo = ''
-			try: landscape = next((tmdb_image_url % ('w1280', i['file_path']) for i in images['backdrops'] if i['iso_639_1'] == 'en'), '')
+			try: landscape = _tagged_image(images.get('backdrops'), 'w1280', tmdb_image_url)
 			except: landscape = ''
-			if not poster: poster = next((tmdb_image_url % ('w780', i['file_path']) for i in images['posters'] if i['iso_639_1'] == 'en'), '')
+			if not poster: poster = _tagged_image(images.get('posters'), 'w780', tmdb_image_url)
 			if not fanart: fanart = next((tmdb_image_url % ('w1280', i['file_path']) for i in images['backdrops'] if i['iso_639_1'] in (None, 'xx')), '')
 		else: clearlogo, landscape = '', ''
 		poster, fanart, landscape, clearlogo = _apply_fanarttv('movie', tmdb_id, imdb_id, None, poster, fanart, landscape, clearlogo)
@@ -104,10 +153,12 @@ def movie_meta(id_type, media_id, api_key, mpaa_region, current_date, current_ti
 		# but no extra English-tagged backdrop — reuse fanart so the slot is not blank.
 		if not landscape: landscape = fanart
 		title, original_title = data_get('title'), data_get('original_title')
-		try:
-			translations = data_get('translations')['translations']
-			english_title = next((i['data']['title'] for i in translations if i['iso_639_1'] == 'en'), None)
-		except: english_title = None
+		try: translations = data_get('translations')['translations']
+		except: translations = []
+		title = _display_text(translations, 'title', title, original_title)
+		plot = _display_text(translations, 'overview', plot)
+		tagline = _display_text(translations, 'tagline', tagline)
+		english_title = _english_title(translations, 'title', title, original_title)
 		try: year = str(data_get('release_date').split('-')[0])
 		except: year = ''
 		try: duration = int(data_get('runtime', '90') * 60)
@@ -180,8 +231,9 @@ def movie_meta(id_type, media_id, api_key, mpaa_region, current_date, current_ti
 				'poster': poster, 'fanart': fanart, 'genre': genre, 'title': title, 'original_title': original_title, 'english_title': english_title, 'year': year, 'cast': cast,
 				'duration': duration, 'rootname': rootname, 'country': country, 'country_codes': country_codes, 'mpaa': mpaa,'writer': writer, 'all_trailers': all_trailers,
 				'director': director, 'alternative_titles': alternative_titles, 'plot': plot, 'studio': studio, 'extra_info': extra_info, 'mediatype': 'movie', 'tvdb_id': 'None',
-				'clearlogo': clearlogo, 'landscape': landscape, 'keywords': keywords, 'rpdb_poster': rpdb_poster, 'short_cast': short_cast, 'stinger_keys': stinger_keys}
-		meta_cache.set('movie', id_type, meta, movie_expiry(current_date, meta), current_time, dbcon=dbcon)
+				'clearlogo': clearlogo, 'landscape': landscape, 'keywords': keywords, 'rpdb_poster': rpdb_poster, 'short_cast': short_cast, 'stinger_keys': stinger_keys,
+				'meta_language': _meta_lang()}
+		meta_cache.set(_meta_cache_type('movie'), id_type, meta, movie_expiry(current_date, meta), current_time, dbcon=dbcon)
 	except: pass
 	return meta
 
@@ -196,7 +248,9 @@ def tvshow_meta(id_type, media_id, api_key, mpaa_region, current_date, current_t
 	elif _alt_ids is None:
 		_alt_ids = []
 	if media_id == None: return None
-	meta = meta_cache.get('tvshow', id_type, media_id, current_time, dbcon=dbcon)
+	meta = meta_cache.get(_meta_cache_type('tvshow'), id_type, media_id, current_time, dbcon=dbcon)
+	if meta and meta.get('meta_language') and meta.get('meta_language') != _meta_lang():
+		meta = None
 	if meta:
 		if meta.get('blank_entry') and _alt_ids:
 			nxt_type, nxt_id = _alt_ids[0]
@@ -212,7 +266,7 @@ def tvshow_meta(id_type, media_id, api_key, mpaa_region, current_date, current_t
 			if id_type == 'tmdb_id': meta = {'tmdb_id': media_id, 'imdb_id': 'tt0000000', 'tvdb_id': '0000000', 'blank_entry': True}
 			elif id_type == 'imdb_id': meta = {'tmdb_id': '0000000', 'imdb_id': media_id, 'tvdb_id': '0000000', 'blank_entry': True}
 			else: meta = {'tmdb_id': '0000000', 'imdb_id': 'tt0000000', 'tvdb_id': media_id, 'blank_entry': True}
-			meta_cache.set('tvshow', id_type, meta, 24, current_time, dbcon=dbcon)
+			meta_cache.set(_meta_cache_type('tvshow'), id_type, meta, 24, current_time, dbcon=dbcon)
 			if _alt_ids:
 				nxt_type, nxt_id = _alt_ids[0]
 				return tvshow_meta(nxt_type, nxt_id, api_key, mpaa_region, current_date, current_time, is_anime_list, dbcon, _alt_ids=_alt_ids[1:])
@@ -244,18 +298,20 @@ def tvshow_meta(id_type, media_id, api_key, mpaa_region, current_date, current_t
 				if logo_path.endswith('png'): clearlogo = tmdb_image_url % ('original', logo_path)
 				else: clearlogo = tmdb_image_url % ('original', logo_path.replace(logo_path.split('.')[-1], 'png'))
 			except: clearlogo = ''
-			try: landscape = next((tmdb_image_url % ('w1280', i['file_path']) for i in images['backdrops'] if i['iso_639_1'] == 'en'), '')
+			try: landscape = _tagged_image(images.get('backdrops'), 'w1280', tmdb_image_url)
 			except: landscape = ''
-			if not poster: poster = next((tmdb_image_url % ('w780', i['file_path']) for i in images['posters'] if i['iso_639_1'] == 'en'), '')
+			if not poster: poster = _tagged_image(images.get('posters'), 'w780', tmdb_image_url)
 			if not fanart: fanart = next((tmdb_image_url % ('w1280', i['file_path']) for i in images['backdrops'] if i['iso_639_1'] == 'xx'), '')
 		else: clearlogo, landscape = '', ''
 		poster, fanart, landscape, clearlogo = _apply_fanarttv('tvshow', tmdb_id, imdb_id, tvdb_id, poster, fanart, landscape, clearlogo)
 		if not landscape: landscape = fanart
 		title, original_title = data_get('name'), data_get('original_name')
-		try:
-			translations = data_get('translations')['translations']
-			english_title = [i['data']['name'] for i in translations if i['iso_639_1'] == 'en'][0]
-		except: english_title = None
+		try: translations = data_get('translations')['translations']
+		except: translations = []
+		title = _display_text(translations, 'name', title, original_title)
+		plot = _display_text(translations, 'overview', plot)
+		tagline = _display_text(translations, 'tagline', tagline)
+		english_title = _english_title(translations, 'name', title, original_title)
 		try: year = str(data_get('first_air_date').split('-')[0]) or ''
 		except: year = ''
 		try: duration = min(data_get('episode_run_time'))*60
@@ -339,22 +395,22 @@ def tvshow_meta(id_type, media_id, api_key, mpaa_region, current_date, current_t
 				'alternative_titles': alternative_titles, 'duration': duration, 'rootname': rootname, 'imdbnumber': imdb_id, 'country': country, 'mpaa': mpaa, 'trailer': trailer,
 				'country_codes': country_codes, 'writer': writer, 'director': director, 'all_trailers': all_trailers, 'cast': cast, 'studio': studio, 'extra_info': extra_info,
 				'total_aired_eps': total_aired_eps, 'mediatype': 'tvshow', 'total_seasons': total_seasons, 'tvshowtitle': title, 'status': status, 'clearlogo': clearlogo,
-				'landscape': landscape, 'keywords': keywords, 'rpdb_poster': rpdb_poster, 'short_cast': short_cast}
-		meta_cache.set('tvshow', id_type, meta, tvshow_expiry(current_date, meta), current_time, dbcon=dbcon)
+				'landscape': landscape, 'keywords': keywords, 'rpdb_poster': rpdb_poster, 'short_cast': short_cast, 'meta_language': _meta_lang()}
+		meta_cache.set(_meta_cache_type('tvshow'), id_type, meta, tvshow_expiry(current_date, meta), current_time, dbcon=dbcon)
 	except: pass
 	return meta_valid_check(meta, is_anime_list)
 
 def movieset_meta(media_id, api_key, current_time=None):
 	if media_id == None: return None
 	id_type = 'tmdb_id'
-	meta = meta_cache.get('movie_set', id_type, media_id, current_time)
+	meta = meta_cache.get(_meta_cache_type('movie_set'), id_type, media_id, current_time)
 	if meta: return meta
 	try:
 		data = movie_set_details(media_id, api_key)
 		if not data: return None
 		elif 'status_code' in data and data.get('status_code') in (6, 34, 37):
 			meta = {'tmdb_id': media_id, 'fanart_added': True, 'blank_entry': True}
-			meta_cache.set('movie_set', id_type, meta, 24, current_time)
+			meta_cache.set(_meta_cache_type('movie_set'), id_type, meta, 24, current_time)
 			return meta
 		data_get = data.get
 		tmdb_image_url = 'https://image.tmdb.org/t/p/%s%s'
@@ -366,8 +422,9 @@ def movieset_meta(media_id, api_key, current_time=None):
 		if backdrop_path: fanart = tmdb_image_url % ('w1280', backdrop_path)
 		else: fanart = ''
 		parts = data_get('parts')
-		meta = {'tmdb_id': tmdb_id, 'title': title, 'plot': plot, 'poster': poster, 'fanart': fanart, 'parts': parts, 'imdb_id': 'None', 'tvdb_id': 'None'}
-		meta_cache.set('movie_set', id_type, meta, 720, current_time)
+		meta = {'tmdb_id': tmdb_id, 'title': title, 'plot': plot, 'poster': poster, 'fanart': fanart, 'parts': parts, 'imdb_id': 'None', 'tvdb_id': 'None',
+				'meta_language': _meta_lang()}
+		meta_cache.set(_meta_cache_type('movie_set'), id_type, meta, 720, current_time)
 	except: pass
 	return meta
 
@@ -411,7 +468,7 @@ def episodes_meta(season, meta, force_refresh=False):
 			yield {'writer': writer, 'director': director, 'mediatype': 'episode', 'episode_type': episode_type, 'episode_id': episode_id, 'title': title, 'plot': plot,
 					'duration': duration, 'premiered': premiered, 'season': season, 'episode': episode, 'rating': rating, 'votes': votes, 'thumb': thumb, 'guest_stars': guest_stars}
 	media_id, data = meta['tmdb_id'], None
-	prop_string = '%s_%s' % (media_id, season)
+	prop_string = _season_cache_key(media_id, season)
 	if force_refresh:
 		try: meta_cache.delete_season(prop_string)
 		except: pass
@@ -439,9 +496,9 @@ def refresh_airing_show_meta(tmdb_id, season=None):
 	"""Drop cached show + season episode lists so newly aired eps can appear in Next/In Progress."""
 	try:
 		if not tmdb_id: return
-		meta_cache.delete('tvshow', 'tmdb_id', str(tmdb_id))
+		meta_cache.delete(_meta_cache_type('tvshow'), 'tmdb_id', str(tmdb_id))
 		if season not in (None, '', 'None'):
-			meta_cache.delete_season('%s_%s' % (tmdb_id, int(season)))
+			meta_cache.delete_season(_season_cache_key(tmdb_id, int(season)))
 		else:
 			meta_cache.delete_all_seasons(str(tmdb_id))
 	except: pass
@@ -536,7 +593,7 @@ def meta_valid_check(meta, is_anime_list):
 	return meta
 
 def is_anime_check(meta=None, tmdb_id=None):
-	if not meta: meta = meta_cache.get('tvshow', 'tmdb_id', tmdb_id)
+	if not meta: meta = meta_cache.get(_meta_cache_type('tvshow'), 'tmdb_id', tmdb_id)
 	try:
 		list(map(itemgetter('id'), meta.get('keywords').get('results', []))).index(210024)
 		return True

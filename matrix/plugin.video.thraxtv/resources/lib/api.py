@@ -23,7 +23,7 @@ STREAM_TEST_TIMEOUT = 6   # timeout test HTTP per sursă (fallback)
 MAX_PAGES         = 200
 TTL_RADIO         = 24 * 3600    # 24 ore
 
-_THRAX_KEY        = "7d9f4987bcd1a2026e6a422931bd7dbff0060977d189f37fa5727d9288b4abbb"
+_THRAX_KEY        = "6d11ea4b6c6acc9bd2fc4f91b6be3fc06ca5e4358e344d248e8bbcb64cedd0df"
 _API_HEADERS      = {"X-Thrax-Key": _THRAX_KEY}
 
 # TTL cache pe disc

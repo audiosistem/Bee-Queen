@@ -7,9 +7,9 @@ from threading import Thread
 from urllib.parse import urlencode, urlparse
 from caches.main_cache import cache_object
 from caches.settings_cache import get_setting, set_setting
-from modules.utils import copy2clip, make_qrcode, make_tinyurl
+from modules.utils import copy2clip, make_qrcode, make_tinyurl, device_auth_site_label, authorise_wait_text
 from modules.source_utils import supported_video_extensions, seas_ep_filter, extras
-from modules.kodi_utils import sleep, ok_dialog, progress_dialog, notification
+from modules.kodi_utils import sleep, sleep_while_authorising, ok_dialog, progress_dialog, notification
 # logger = kodi_utils.logger
 
 class PremiumizeAPI:
@@ -23,12 +23,12 @@ class PremiumizeAPI:
 		url = 'https://www.premiumize.me/token'
 		response = self._post(url, data)
 		user_code = response['user_code']
-		auth_url = response.get('verification_uri')
+		auth_url = response.get('verification_uri') or 'https://www.premiumize.me/device'
 		qr_code = make_qrcode(auth_url) or ''
-		copy2clip(auth_url)
+		copy2clip(user_code)
 		short_url = make_tinyurl(auth_url)
-		visit = short_url or auth_url
-		content = 'Scan the [B]QR Code[/B][CR]OR visit [B]%s[/B][CR]AND Enter this Code: [B]%s[/B]' % (visit, user_code)
+		content = authorise_wait_text(user_code, device_auth_site_label(response, 'https://www.premiumize.me/device'),
+			short_url, filled=False)
 		progressDialog = progress_dialog('Premiumize Authorise', qr_code)
 		progressDialog.update(content, 0)
 		device_code = response['device_code']
@@ -38,7 +38,7 @@ class PremiumizeAPI:
 		data = {'grant_type': 'device_code', 'client_id': '751712187', 'code': device_code}
 		start, time_passed = time.time(), 0
 		while not progressDialog.iscanceled() and time_passed < expires_in and not self.token:
-			sleep(1000 * sleep_interval)
+			if sleep_while_authorising(progressDialog, sleep_interval): break
 			response = self._post(poll_url, data)
 			if 'error' in response:
 				time_passed = time.time() - start
@@ -61,6 +61,8 @@ class PremiumizeAPI:
 			ok_dialog(heading='Premiumize', text='Account authorised.')
 
 	def revoke(self):
+		from modules.kodi_utils import confirm_revoke
+		if not confirm_revoke('Premiumize'): return
 		set_setting('pm.token', 'empty_setting')
 		set_setting('pm.account_id', 'empty_setting')
 		set_setting('pm.enabled', 'false')

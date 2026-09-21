@@ -7,7 +7,7 @@ from caches.external_cache import external_cache
 from caches.settings_cache import get_setting
 from modules import kodi_utils, source_utils
 from modules.debrid import RD_check, AD_check, OC_check, TB_check, PM_check, query_local_cache
-from modules.settings import debrid_cache_check, max_threads
+from modules.settings import debrid_cache_check, debrid_cache_check_supported, max_threads
 from modules.utils import clean_file_name
 # logger = kodi_utils.logger
 
@@ -22,18 +22,22 @@ _INTERNAL_PROGRESS_LABELS = {
 	'tb_cloud': 'TB Cloud',
 	'folders': 'Folders',
 	'comet': 'Comet',
+	'mediafusion': 'MediaFusion',
 	'torrentio': 'Torrentio',
 	'torz': 'StremThru Torz',
+	'zilean': 'Zilean',
 	'nyaa': 'Nyaa (Anime)',
 	'animetosho': 'AnimeTosho (Anime)',
+	'piratebay': 'PirateBay',
 }
 
 class source:
-	def __init__(self, meta, source_dict, active_debrid, cache_check_override, internal_scrapers, prescrape_sources, progress_dialog, disabled_ext_ignored=False, cloud_scrapers=None, external_orchestration=None):
+	def __init__(self, meta, source_dict, active_debrid, cache_check_override, internal_scrapers, prescrape_sources, progress_dialog, disabled_ext_ignored=False, cloud_scrapers=None, external_orchestration=None, defer_cache_check=False):
 		self.monitor = kodi_utils.kodi_monitor()
 		self.scrape_provider = 'external'
 		self.progress_dialog = progress_dialog
 		self.cache_check_override = cache_check_override
+		self.defer_cache_check = defer_cache_check
 		self.meta = meta
 		self.background = self.meta.get('background', False)
 		self.active_debrid = active_debrid
@@ -401,6 +405,8 @@ class source:
 		final_lock = Lock()
 		frozen_providers = set()
 		def _debrid_api_check_enabled(provider):
+			if not debrid_cache_check_supported(provider):
+				return False
 			if self.cache_check_override is not None:
 				return self.cache_check_override
 			return debrid_cache_check(provider)
@@ -515,9 +521,16 @@ class source:
 					bool(providers_needing_api), ','.join(providers_needing_api) or 'none', len(final_results), cached, uncached, unchecked))
 			except: pass
 		try:
+			results = list(_process_duplicates(results))
+			if self.defer_cache_check:
+				for i in results:
+					try:
+						if i.get('hash'):
+							i['hash'] = str(i['hash']).lower()
+					except: pass
+				return results
 			if not self.background and self.all_internal_sources: self.process_quality_count_final(self.all_internal_sources)
 			final_results = []
-			results = list(_process_duplicates(results))
 			hash_list = list(set([i['hash'].lower() for i in results if i.get('hash') and len(i['hash']) == 40]))
 			cached_hashes = query_local_cache(hash_list)
 			providers_needing_api = [p for p in self.active_debrid if _debrid_api_check_enabled(p)]

@@ -6,10 +6,9 @@ from threading import Thread
 from urllib.parse import quote
 from caches.main_cache import cache_object
 from caches.settings_cache import get_setting, set_setting
-from modules.utils import copy2clip, make_qrcode, make_tinyurl
+from modules.utils import copy2clip, make_qrcode, make_tinyurl, device_auth_complete_url, device_auth_site_label, authorise_wait_text
 from modules.source_utils import supported_video_extensions, seas_ep_filter, extras
-from modules.kodi_utils import progress_dialog, notification, hide_busy_dialog, show_busy_dialog, sleep, ok_dialog, progress_dialog, \
-								notification, hide_busy_dialog
+from modules.kodi_utils import progress_dialog, notification, hide_busy_dialog, show_busy_dialog, sleep, sleep_while_authorising, ok_dialog
 # from modules.kodi_utils import logger
 
 class AllDebridAPI:
@@ -27,20 +26,18 @@ class AllDebridAPI:
 		expires_in = int(response['expires_in'])
 		poll_url = response['check_url']
 		user_code = response['pin']
-		auth_url = 'https://alldebrid.com/pin?pin=%s' % user_code
+		auth_url = device_auth_complete_url(response, user_code, fallback='https://alldebrid.com/pin', style='pin')
 		qr_code = make_qrcode(auth_url) or ''
 		short_url = make_tinyurl(auth_url)
 		copy2clip(auth_url)
-		if short_url: p_dialog_insert = '[CR]OR visit [B]%s[/B][CR]OR Enter this Code: [B]%s[/B]' % (short_url, user_code)
-		else: p_dialog_insert = '[CR]OR Enter this Code: [B]%s[/B]' % user_code
 		sleep_interval = 5
-		content = 'Scan the [B]QR Code[/B]%s' % p_dialog_insert
+		content = authorise_wait_text(user_code, device_auth_site_label(response, 'https://alldebrid.com/pin'), short_url)
 		progressDialog = progress_dialog('All Debrid Authorise', qr_code)
 		progressDialog.update(content, 0)
 		start, time_passed = time.time(), 0
 		sleep(2000)
 		while not progressDialog.iscanceled() and time_passed < expires_in and not self.token:
-			sleep(1000 * sleep_interval)
+			if sleep_while_authorising(progressDialog, sleep_interval): break
 			response = requests.get(poll_url, timeout=20).json()
 			response = response['data']
 			activated = response['activated']
@@ -66,6 +63,8 @@ class AllDebridAPI:
 			ok_dialog(heading='All Debrid', text='Account authorised.')
 
 	def revoke(self):
+		from modules.kodi_utils import confirm_revoke
+		if not confirm_revoke('All Debrid'): return
 		set_setting('ad.token', 'empty_setting')
 		set_setting('ad.account_id', 'empty_setting')
 		set_setting('ad.enabled', 'false')

@@ -516,7 +516,7 @@ class RedLightPlayer(xbmc.Player):
 		listitem.setPath(self.url)
 		listitem.setContentLookup(False)
 		if self.is_generic:
-			info_tag = listitem.getVideoInfoTag(True)
+			info_tag = listitem.getVideoInfoTag()
 			info_tag.setMediaType('video')
 			play_name = ku.get_property('redlight.tb.play_filename') or self.url
 			info_tag.setFilenameAndPath(play_name)
@@ -555,7 +555,7 @@ class RedLightPlayer(xbmc.Player):
 			if self.media_type == 'movie':
 				plot = self.meta_get('plot') if st.show_loading_plot() else ''
 				listitem.setArt({'poster': poster, 'fanart': fanart, 'icon': poster, 'clearlogo': clearlogo})
-				info_tag = listitem.getVideoInfoTag(True)
+				info_tag = listitem.getVideoInfoTag()
 				info_tag.setMediaType('movie'), info_tag.setTitle(self.title), info_tag.setOriginalTitle(self.meta_get('original_title')), info_tag.setPlot(plot)
 				info_tag.setYear(int(self.year)), info_tag.setRating(rating), info_tag.setVotes(votes), info_tag.setMpaa(mpaa)
 				info_tag.setDuration(duration), info_tag.setCountries(country), info_tag.setTrailer(trailer), info_tag.setPremiered(premiered)
@@ -567,7 +567,7 @@ class RedLightPlayer(xbmc.Player):
 				elif st.avoid_episode_spoilers() and int(self.meta_get('playcount') or 0) == 0: plot = self.meta_get('tvshow_plot') or '* Hidden to Prevent Spoilers *'
 				else: plot = self.meta_get('plot') or self.meta_get('tvshow_plot')
 				listitem.setArt({'poster': poster, 'fanart': fanart, 'icon': poster, 'clearlogo': clearlogo, 'tvshow.poster': poster, 'tvshow.clearlogo': clearlogo})
-				info_tag = listitem.getVideoInfoTag(True)
+				info_tag = listitem.getVideoInfoTag()
 				info_tag.setMediaType('episode'), info_tag.setTitle(self.meta_get('ep_name')), info_tag.setOriginalTitle(self.meta_get('original_title'))
 				info_tag.setTvShowTitle(self.title), info_tag.setTvShowStatus(self.meta_get('status')), info_tag.setSeason(self.season), info_tag.setEpisode(self.episode)
 				info_tag.setPlot(plot), info_tag.setYear(int(self.year)), info_tag.setRating(rating), info_tag.setVotes(votes)
@@ -716,6 +716,31 @@ class RedLightPlayer(xbmc.Player):
 		elif percent >= 5:
 			self._wetrakr_send('paused', percent)
 
+	def _wetrakr_job_fields(self, percent, force_scrobble=False):
+		if getattr(self, '_wetrakr_scrobbled', False): return {}
+		from apis.wetrakr_api import wetrakr_scrobble_threshold
+		threshold = wetrakr_scrobble_threshold()
+		if force_scrobble or percent >= threshold:
+			self._wetrakr_scrobbled = True
+			return {'wetrakr_event': 'scrobble', 'wetrakr_kwargs': self._wetrakr_meta_kwargs(100 if force_scrobble else percent)}
+		if percent >= 5:
+			return {'wetrakr_event': 'paused', 'wetrakr_kwargs': self._wetrakr_meta_kwargs(percent)}
+		return {}
+
+	def _playback_remote_base(self, percent):
+		return {
+			'media_type': self.media_type,
+			'tmdb_id': self.tmdb_id,
+			'tvdb_id': getattr(self, 'tvdb_id', 0),
+			'title': self.title,
+			'year': getattr(self, 'year', None),
+			'season': self.season,
+			'episode': self.episode,
+			'percent': percent,
+			'scrobble_stop': True,
+			'punchplay_session_id': getattr(self, '_punchplay_session_id', None)
+		}
+
 	def media_watched_marker(self, force_watched=False):
 		self.media_marked = True
 		try:
@@ -728,32 +753,30 @@ class RedLightPlayer(xbmc.Player):
 				pass
 			tick_at = getattr(self, 'watched_tick_percent', None)
 			if tick_at is None: tick_at = st.playback_watched_percent()
+			from modules.playback_remotes import apply_local_watched, apply_local_progress, enqueue_playback_job
 			if current_point >= tick_at or force_watched:
-				self._trakt_scrobble_stop(100)
-				self._simkl_scrobble_stop(100)
-				self._punchplay_scrobble_stop(100)
-				self._wetrakr_on_stop(100, force_scrobble=True)
-				watched_function = ws.mark_movie if self.media_type == 'movie' else ws.mark_episode
-				watched_params = {'action': 'mark_as_watched', 'tmdb_id': self.tmdb_id, 'title': self.title, 'year': self.year, 'season': self.season, 'episode': self.episode,
-									'tvdb_id': self.tvdb_id, 'from_playback': 'true'}
-				Thread(target=self.run_media_progress, args=(watched_function, watched_params), daemon=True).start()
+				watched_params = {'action': 'mark_as_watched', 'media_type': self.media_type, 'tmdb_id': self.tmdb_id,
+					'title': self.title, 'year': self.year, 'season': self.season, 'episode': self.episode,
+					'tvdb_id': self.tvdb_id, 'from_playback': 'true'}
+				resume_id = apply_local_watched(watched_params)
+				job = self._playback_remote_base(100)
+				job.update({'op': 'watched', 'action': 'mark_as_watched', 'resume_id': resume_id})
+				job.update(self._wetrakr_job_fields(100, force_scrobble=True))
+				enqueue_playback_job(job)
 			else:
-				# Always stop Trakt live scrobble so Playing now clears. Below ~80% Trakt treats stop as pause + resume.
-				self._trakt_scrobble_stop(current_point)
-				self._simkl_scrobble_stop(current_point)
-				self._punchplay_scrobble_stop(current_point)
-				self._wetrakr_on_stop(current_point)
+				# Always queue a scrobble stop so Playing now clears (Trakt below ~80% is pause + resume).
 				ku.clear_property('redlight.random_episode_history')
+				job = self._playback_remote_base(current_point)
 				if current_point >= 5:
-					progress_params = {'media_type': self.media_type, 'tmdb_id': self.tmdb_id, 'curr_time': self.curr_time, 'total_time': self.total_time,
-									'title': self.title, 'season': self.season, 'episode': self.episode, 'from_playback': 'true'}
-					# Local DB sync so In Progress is correct even if the remote scrobble
-					# thread is still running when the invoker exits; remote stays async.
-					try:
-						ws.set_bookmark(progress_params, remote=False)
-					except Exception:
-						pass
-					Thread(target=self.run_media_progress, args=(ws.set_bookmark, progress_params), daemon=True).start()
+					progress_params = {'media_type': self.media_type, 'tmdb_id': self.tmdb_id, 'curr_time': self.curr_time,
+						'total_time': self.total_time, 'title': self.title, 'season': self.season, 'episode': self.episode,
+						'from_playback': 'true'}
+					apply_local_progress(progress_params)
+					job.update({'op': 'progress', 'curr_time': self.curr_time, 'total_time': self.total_time})
+				else:
+					job['op'] = 'stop'
+				job.update(self._wetrakr_job_fields(current_point))
+				enqueue_playback_job(job)
 		except: pass
 
 	def run_media_progress(self, function, params):
@@ -1266,7 +1289,7 @@ class RedLightPlayer(xbmc.Player):
 			listitem.setProperty('StartPercent', '0')
 		listitem.setProperty('StartOffset', '0')
 		try:
-			listitem.getVideoInfoTag(True).setResumePoint(0.0)
+			listitem.getVideoInfoTag().setResumePoint(0.0)
 		except:
 			pass
 
@@ -1344,20 +1367,61 @@ class RedLightPlayer(xbmc.Player):
 				self._outro_credits_start_cached = '__unset__'
 		Thread(target=_work, daemon=True).start()
 
-	def _maybe_start_subtitle_alert_fetch(self):
-		if getattr(self, '_subtitle_alert_fetch_started', False): return
-		if self.is_generic or not self.imdb_id: return
-		if not st.subs_alert_fetch_enabled(self.media_type): return
-		self._subtitle_alert_fetch_started = True
+	def _subtitle_search_ids(self):
+		'''IMDb + S/E for OpenSubtitles/SubMaker only. Playback meta is unchanged.
+
+		Titles that already have a tt id keep that id and TMDb S/E. TMDb-only
+		anthology episodes may use the same Cinemeta parent id Sites scrape with.
+		'''
+		cached = getattr(self, '_subtitle_search_ids_cached', None)
+		if cached is not None:
+			return cached
 		season = self.season if self.media_type == 'episode' else None
 		episode = self.episode if self.media_type == 'episode' else None
+		imdb = self.imdb_id or None
+		result = (imdb, season, episode)
+		if self.media_type == 'episode':
+			try:
+				from modules.native_torrents import cinemeta_ids_when_imdb_missing
+				meta = getattr(self, 'meta', None) or {}
+				try:
+					season_count = [int(x['episode_count']) for x in (meta.get('season_data') or [])
+						if int(x['season_number']) == int(season)][0]
+				except Exception:
+					season_count = int(meta.get('season_episode_count') or 1) or 1
+				mapped = cinemeta_ids_when_imdb_missing({
+					'imdb_id': imdb,
+					'media_type': 'episode',
+					'title': self.title or meta.get('title') or '',
+					'tmdb_id': self.tmdb_id or meta.get('tmdb_id'),
+					'season': season,
+					'episode': episode,
+					'premiered': meta.get('premiered') or '',
+					'season_episode_count': season_count,
+				})
+				if mapped:
+					ku.logger('Red Light', 'Subtitles: no IMDb id — using %s S%02dE%02d (Cinemeta)' % (
+						mapped['imdb_id'], mapped['season'], mapped['episode']))
+					result = (mapped['imdb_id'], mapped['season'], mapped['episode'])
+			except Exception:
+				pass
+		self._subtitle_search_ids_cached = result
+		return result
+
+	def _maybe_start_subtitle_alert_fetch(self):
+		if getattr(self, '_subtitle_alert_fetch_started', False): return
+		if self.is_generic: return
+		if not st.subs_alert_fetch_enabled(self.media_type): return
+		imdb_id, season, episode = self._subtitle_search_ids()
+		if not imdb_id: return
+		self._subtitle_alert_fetch_started = True
 		year = getattr(self, 'year', None)
 		playing_filename = getattr(self, 'playing_filename', None)
 		playing_item = getattr(self, 'playing_item', None)
 		def _work():
 			try:
 				from indexers.subtitles import fetch_subtitle_for_alert_timing
-				fetch_subtitle_for_alert_timing(self.imdb_id, season, episode, year, playing_filename, playing_item)
+				fetch_subtitle_for_alert_timing(imdb_id, season, episode, year, playing_filename, playing_item)
 			except: pass
 			finally:
 				self._subtitle_alert_fetch_done = True
@@ -1372,9 +1436,8 @@ class RedLightPlayer(xbmc.Player):
 			return cached_by_mode[cache_key]
 		try:
 			from indexers.subtitles import subtitle_seconds_remaining_before_end
-			season = self.season if self.media_type == 'episode' else None
-			episode = self.episode if self.media_type == 'episode' else None
-			remaining = subtitle_seconds_remaining_before_end(float(self.total_time), self.imdb_id, season, episode, fetch=fetch,
+			imdb_id, season, episode = self._subtitle_search_ids()
+			remaining = subtitle_seconds_remaining_before_end(float(self.total_time), imdb_id, season, episode, fetch=fetch,
 				player=self, playing_filename=getattr(self, 'playing_filename', None), playing_item=getattr(self, 'playing_item', None),
 				playback_started_at=getattr(self, '_playback_started_at', None),
 				year=getattr(self, 'year', None), for_alert=for_alert)
@@ -1809,21 +1872,19 @@ class RedLightPlayer(xbmc.Player):
 		self.subs_searched = True
 		self._clear_subtitle_end_cache()
 		if not st.auto_enable_subs(): return
-		if not self.imdb_id: return
 		try:
 			from indexers.subtitles import subtitle_notify_poster
 			poster = subtitle_notify_poster(self.meta, self.media_type)
-			season = self.season if self.media_type == 'episode' else None
-			episode = self.episode if self.media_type == 'episode' else None
+			imdb_id, season, episode = self._subtitle_search_ids()
 			year = getattr(self, 'year', None)
 			playing_filename = getattr(self, 'playing_filename', None)
 			playing_item = getattr(self, 'playing_item', None)
 			if st.submaker_enabled():
 				from indexers.subtitles import Subtitles
-				Thread(target=Subtitles().run, args=(self.imdb_id, season, episode, poster, playing_filename, playing_item, self, year)).start()
+				Thread(target=Subtitles().run, args=(imdb_id, season, episode, poster, playing_filename, playing_item, self, year)).start()
 			elif st.opensubs_enabled():
 				from indexers.subtitles import OpenSubtitlesSubs
-				Thread(target=OpenSubtitlesSubs().run, args=(self.imdb_id, season, episode, poster, year, playing_filename, playing_item, self)).start()
+				Thread(target=OpenSubtitlesSubs().run, args=(imdb_id, season, episode, poster, year, playing_filename, playing_item, self)).start()
 		except: pass
 
 	def set_playback_properties(self):

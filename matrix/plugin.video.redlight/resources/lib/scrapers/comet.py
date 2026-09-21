@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from apis import comet_api
 from modules import source_utils
-from modules.native_torrents import filter_and_build_sources, scrape_expiry, scrape_timeout
+from modules.native_torrents import filter_and_build_sources, prepare_site_scrape, scrape_expiry, scrape_timeout
 from modules.settings import comet_scrape_active
 from modules.kodi_utils import logger
 
@@ -15,14 +15,13 @@ class source:
 		try:
 			if not comet_scrape_active():
 				return source_utils.internal_results(self.scrape_provider, self.sources)
-			imdb_id = info.get('imdb_id')
-			if not imdb_id:
+			query = prepare_site_scrape(info, log_name='comet scraper')
+			if not query:
 				return source_utils.internal_results(self.scrape_provider, self.sources)
 			streams = comet_api.search_streams(
-				imdb_id, info.get('media_type'), info.get('season'), info.get('episode'),
-				timeout=scrape_timeout(info), expiration=scrape_expiry(info))
-			self.sources = filter_and_build_sources(self.scrape_provider, streams, info)
-			logger('comet scraper', '%s : %s kept / %s raw' % (info.get('title', ''), len(self.sources), len(streams or [])))
+				query.get('imdb_id'), query.get('media_type'), query.get('season'), query.get('episode'),
+				timeout=scrape_timeout(query), expiration=scrape_expiry(query))
+			self.sources = filter_and_build_sources(self.scrape_provider, streams, query)
 		except Exception as e:
 			logger('comet scraper Exception', str(e))
 		source_utils.internal_results(self.scrape_provider, self.sources)

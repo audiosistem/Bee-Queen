@@ -21,6 +21,9 @@ ACTION_PREV_MENU = 92
 ACTION_MOVE_UP   = 3
 ACTION_MOVE_DOWN = 4
 
+_DISCOVER_TAB_SLOTS = 50
+_DISCOVER_TAB_RE = re.compile(r'^discover_tab([1-9][0-9]*)$')
+
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -41,6 +44,7 @@ def _parse_settings():
                     'default': s.get('default', ''),
                     'values':  s.get('values', ''),
                     'visible': s.get('visible', ''),
+                    'level':   s.get('level', '1'),
                 })
             categories.append({
                 'label':    cat.get('label', ''),
@@ -70,11 +74,11 @@ def _set(sid, value):
 class CustomKeyboard(xbmcgui.WindowXMLDialog):
     """Tastatură on-screen — suportă input de pe telecomandă ȘI tastatură fizică.
 
-    Strategie tastatură fizică: un control Edit invizibil (id=1299) rămâne
-    mereu focusat, capturând caracterele înainte ca keymap-ul global Kodi să le
-    intercepteze. Un thread poller sincronizează textul Edit→display. Navigarea
-    pe tastatura virtuală se face prin highlight-ul de imagine (id=1298) mutat
-    din Python, fără a schimba focus-ul real.
+    Un control Edit invizibil (id=1299) păstrează bufferul textului, iar un
+    focus sink (id=1297) împiedică Kodi să lanseze tastatura virtuală nativă la
+    Select. Un thread poller sincronizează eventualul input al Edit→display.
+    Navigarea pe tastatura virtuală se face prin highlight-ul de imagine
+    (id=1298) mutat din Python.
     """
 
     _KEYMAP = {
@@ -105,6 +109,7 @@ class CustomKeyboard(xbmcgui.WindowXMLDialog):
     _ENTER_ACTIONS = (13, 66, 135)
 
     _ID_HIGHLIGHT = 1298
+    _ID_FOCUS_SINK = 1297
     _ID_EDIT      = 1299
 
     _ROWS = [
@@ -177,22 +182,12 @@ class CustomKeyboard(xbmcgui.WindowXMLDialog):
         self._move_highlight(self._vcur)
         try:
             self.getControl(self._ID_EDIT).setText(self._text)
-            self.setFocusId(self._ID_EDIT)
+            self.setFocusId(self._ID_FOCUS_SINK)
         except Exception:
             pass
         # Thread poller: sincronizează textul din Edit → display
         t = threading.Thread(target=self._poll_edit, daemon=True)
         t.start()
-        # Edit-ul invizibil poate declanșa tastatura nativă Kodi când primește
-        # ENTER/focus. O închidem cât timp tastatura custom este modală.
-        threading.Thread(target=self._suppress_native_keyboard, daemon=True).start()
-
-    def _suppress_native_keyboard(self):
-        while not self._done.wait(0.12):
-            try:
-                xbmc.executebuiltin('Dialog.Close(virtualkeyboard, true)')
-            except Exception:
-                pass
 
     def _move_highlight(self, btn_id):
         geom = self._BTN_GEOM.get(btn_id)
@@ -298,9 +293,10 @@ class CustomKeyboard(xbmcgui.WindowXMLDialog):
         if controlId == self._ID_EDIT:
             return  # Edit-ul invizibil primește focus/input fizic; nu îl tratăm ca OK
         self._press(controlId)
-        # Refocusăm Edit-ul după click
+        # Păstrăm focusul pe sink; focusarea Edit-ului lansează tastatura
+        # nativă Kodi la următorul Select.
         try:
-            self.setFocusId(self._ID_EDIT)
+            self.setFocusId(self._ID_FOCUS_SINK)
         except Exception:
             pass
 
@@ -325,17 +321,15 @@ class CustomKeyboard(xbmcgui.WindowXMLDialog):
             self.result = self._text
             self._done.set()
             self.close()
-            try:
-                self.setFocusId(self._ID_EDIT)
-            except Exception:
-                pass
             return
         if aid == 7:  # SELECT_ITEM (OK telecomandă) → apasă butonul virtual curent
-            self._press(self._vcur)
+            # Dacă Edit-ul rămâne focusat, Kodi deschide Virtual keyboard la
+            # Select înainte ca dialogul custom să poată procesa caracterul.
             try:
-                self.setFocusId(self._ID_EDIT)
+                self.setFocusId(self._ID_FOCUS_SINK)
             except Exception:
                 pass
+            self._press(self._vcur)
             return
         if aid in (1, 2, 3, 4):
             self._nav(aid)
@@ -364,7 +358,7 @@ class CustomKeyboard(xbmcgui.WindowXMLDialog):
         self._vcur = target
         self._move_highlight(target)
         try:
-            self.setFocusId(self._ID_EDIT)
+            self.setFocusId(self._ID_FOCUS_SINK)
         except Exception:
             pass
 
@@ -449,6 +443,42 @@ class SettingsWindow(xbmcgui.WindowXML):
     def _get_val(self, sid):
         return self._pending.get(sid, _get(sid))
 
+    @staticmethod
+    def _is_discover_tab(sid):
+        match = _DISCOVER_TAB_RE.match(sid or '')
+        return bool(match and int(match.group(1)) <= _DISCOVER_TAB_SLOTS)
+
+    def _visible_discover_tabs(self):
+        """Slot-urile completate plus primul slot liber pentru adăugare."""
+        visible = set()
+        first_empty = None
+        for i in range(1, _DISCOVER_TAB_SLOTS + 1):
+            sid = f'discover_tab{i}'
+            if self._get_val(sid).strip():
+                visible.add(sid)
+            elif first_empty is None:
+                first_empty = sid
+        if first_empty:
+            visible.add(first_empty)
+        return visible
+
+    def _compact_discover_tabs(self):
+        """Elimină golurile dintre tag-uri, fără a marca schimbări inutile."""
+        values = []
+        for i in range(1, _DISCOVER_TAB_SLOTS + 1):
+            value = self._get_val(f'discover_tab{i}').strip()
+            if value:
+                values.append(value)
+
+        for i in range(1, _DISCOVER_TAB_SLOTS + 1):
+            sid = f'discover_tab{i}'
+            desired = values[i - 1] if i <= len(values) else ''
+            saved = _get(sid)
+            if desired == saved:
+                self._pending.pop(sid, None)
+            else:
+                self._pending[sid] = desired
+
     def _is_visible(self, s, all_settings):
         """Evaluează condiția 'visible' a unei setări. Suportă eq(-N,value)."""
         vis = s.get('visible', '')
@@ -474,11 +504,42 @@ class SettingsWindow(xbmcgui.WindowXML):
 
     def _visible_settings(self, cat_idx):
         all_s = self._categories[cat_idx]['settings']
-        return [s for s in all_s if self._is_visible(s, all_s)]
+        # Condițiile eq(-N,…) se raportează la setările reale, nu la rândurile
+        # de grup — altfel inserarea unui grup ar decala toate referințele.
+        real  = [x for x in all_s if x['type'] != 'group']
+        visible_discover = self._visible_discover_tabs()
+        out   = []
+        stack = []   # [(nivel, desfăcut_efectiv)] — grupuri deschise în acest punct
+        for item in all_s:
+            if item['type'] == 'group':
+                try:
+                    lvl = int(item.get('level') or 1)
+                except ValueError:
+                    lvl = 1
+                while stack and stack[-1][0] >= lvl:
+                    stack.pop()
+                parents_open = all(e for _, e in stack)
+                if parents_open:
+                    item['_depth'] = len(stack)
+                    out.append(item)
+                # Dacă un părinte e pliat, subarborele rămâne ascuns indiferent
+                # de starea proprie a grupului.
+                stack.append((lvl, bool(self._expanded.get(item['id'])) and parents_open))
+                continue
+            if stack and not all(e for _, e in stack):
+                continue
+            if self._is_discover_tab(item['id']) and item['id'] not in visible_discover:
+                continue
+            if self._is_visible(item, real):
+                item['_depth'] = len(stack)
+                out.append(item)
+        return out
 
     def _display_value(self, s):
         val   = self._get_val(s['id'])
         stype = s['type']
+        if self._is_discover_tab(s['id']):
+            return val
         if stype == 'bool':
             return ('[COLOR FF55DD55]ON[/COLOR]'  if val == 'true'
                     else '[COLOR FF555566]OFF[/COLOR]')
@@ -498,6 +559,10 @@ class SettingsWindow(xbmcgui.WindowXML):
         self._pending.clear()
 
     def onInit(self):
+        # Grupurile („TMDb", „Trakt"…) pornesc pliate: categoria rămâne scurtă,
+        # desfaci doar serviciul pe care vrei să-l modifici.
+        if not hasattr(self, '_expanded'):
+            self._expanded = {}
         self._categories = _parse_settings()
         if not self._categories:
             xbmc.log('[SamusXUI/Settings] EROARE: categorii goale!', xbmc.LOGERROR)
@@ -525,8 +590,18 @@ class SettingsWindow(xbmcgui.WindowXML):
         ctrl = self.getControl(_ID_SETTINGS)
         ctrl.reset()
         for s in self._visible_settings(cat_idx):
-            li = xbmcgui.ListItem(s['label'])
-            li.setLabel2(self._display_value(s))
+            pad = '      ' * s.get('_depth', 0)
+            if s['type'] == 'group':
+                # ASCII, nu ▸/▾: fontul skin-ului nu are glifele acelea (ies pătrățele)
+                arrow = '[COLOR FF7B5CF4]-[/COLOR]' if self._expanded.get(s['id']) else '[COLOR FF888899]+[/COLOR]'
+                li = xbmcgui.ListItem(f"{pad}{arrow}  [B]{s['label']}[/B]")
+                li.setLabel2('')
+            else:
+                label = s['label']
+                if self._is_discover_tab(s['id']) and not self._get_val(s['id']).strip():
+                    label = 'Adaugă tag'
+                li = xbmcgui.ListItem(pad + '      ' + label)
+                li.setLabel2(self._display_value(s))
             li.setProperty('sid', s['id'])
             ctrl.addItem(li)
         if self._visible_settings(cat_idx):
@@ -561,15 +636,16 @@ class SettingsWindow(xbmcgui.WindowXML):
             return False
 
         if stype == 'text':
-            dlg = CustomKeyboard(title=s['label'], default=cur or s['default'])
+            initial = cur if self._is_discover_tab(s['id']) else (cur or s['default'])
+            dlg = CustomKeyboard(title=s['label'], default=initial)
             dlg.doModal()
             xbmc.executebuiltin('Dialog.Close(virtualkeyboard)')
             xbmc.sleep(50)
             xbmc.executebuiltin('Dialog.Close(virtualkeyboard)')
             result = dlg.result
             del dlg
-            if result is not None and result != '':
-                self._pending[s['id']] = result
+            if result is not None and (result != '' or self._is_discover_tab(s['id'])):
+                self._pending[s['id']] = result.strip() if self._is_discover_tab(s['id']) else result
                 return True
             return False
 
@@ -643,16 +719,26 @@ class SettingsWindow(xbmcgui.WindowXML):
                 pos = self.getControl(_ID_SETTINGS).getSelectedPosition()
                 vis = self._visible_settings(self._cat_idx)
                 s   = vis[pos]
+                if s['type'] == 'group':
+                    self._expanded[s['id']] = not self._expanded.get(s['id'])
+                    self._populate_settings(self._cat_idx, restore_focus=True)
+                    try:
+                        self.getControl(_ID_SETTINGS).selectItem(pos)
+                    except Exception:
+                        pass
+                    return
                 if self._edit(s):
+                    if self._is_discover_tab(s['id']):
+                        self._compact_discover_tabs()
                     new_vis = self._visible_settings(self._cat_idx)
-                    if new_vis != vis:
+                    if new_vis != vis or self._is_discover_tab(s['id']):
                         self._populate_settings(self._cat_idx, restore_focus=True)
                         # Restaurăm focus pe setarea editată (dacă e încă vizibilă)
                         try:
                             new_pos = next(i for i, x in enumerate(new_vis) if x['id'] == s['id'])
                             self.getControl(_ID_SETTINGS).selectItem(new_pos)
                         except StopIteration:
-                            pass
+                            self.getControl(_ID_SETTINGS).selectItem(min(pos, len(new_vis) - 1))
                     else:
                         self._refresh_item(pos)
             except Exception as e:

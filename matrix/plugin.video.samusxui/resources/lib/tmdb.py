@@ -93,6 +93,42 @@ def collection(collection_id):
     return _get(f'/collection/{collection_id}')
 
 
+def recommendations(tmdb_id, media='movie', page=1):
+    """Recomandări TMDb pentru un titlu — amestecă intern gen, distribuție și keywords."""
+    return _get(f'/{media}/{tmdb_id}/recommendations', page=page)
+
+
+def similar(tmdb_id, media='movie', page=1):
+    """Titluri similare — alt algoritm decât `recommendations`, util ca rezervă
+    când TMDb nu are recomandări (se întâmplă la titluri obscure sau noi)."""
+    return _get(f'/{media}/{tmdb_id}/similar', page=page)
+
+
+def keywords(tmdb_id, media='movie'):
+    """Etichetele TMDb ale unui titlu. La seriale cheia e 'results', la filme 'keywords'."""
+    d = _get(f'/{media}/{tmdb_id}/keywords')
+    return d.get('keywords') or d.get('results') or []
+
+
+def keyword_total(keyword_id, media='movie'):
+    """Câte titluri poartă eticheta — folosit ca măsură de raritate."""
+    return _discover(media, {'with_keywords': str(keyword_id)}).get('total_results', 0)
+
+
+def discover_keyword(media, keyword_ids, page=1, sort='vote_count.desc'):
+    """Titluri după etichetă. Mai multe etichete se dau cu SAU ('|'); intersecția
+    cu ȘI colapsează foarte repede (două teme uzuale = sub 10 titluri)."""
+    if isinstance(keyword_ids, (list, tuple, set)):
+        ids = '|'.join(str(k) for k in keyword_ids)
+    else:
+        ids = str(keyword_ids)
+    return _discover(media, {'with_keywords': ids, 'sort_by': sort}, page=page)
+
+
+def search_keyword(query):
+    return _get('/search/keyword', query=query).get('results', [])
+
+
 def now_playing(page=1):
     return _get('/movie/now_playing', page=page)
 
@@ -123,7 +159,7 @@ def movie_details(tmdb_id):
 
 def tv_details(tmdb_id):
     data = _get(f'/tv/{tmdb_id}',
-                append_to_response='credits,external_ids,images,videos',
+                append_to_response='credits,aggregate_credits,external_ids,images,videos',
                 include_image_language='en,{},null'.format(_get_lang()))
     if not data.get('name') or not data.get('overview'):
         en = _get(f'/tv/{tmdb_id}', language='en')
@@ -160,13 +196,25 @@ def backdrop_url(path, size='w1280'):
     return f'{_IMG}{size}{path}' if path else ''
 
 
-def logo_url(tmdb_id, media='movie'):
-    data = _get(f'/{media}/{tmdb_id}/images', include_image_language='en,{},null'.format(_get_lang()))
-    for logo in data.get('logos', []):
+def logo_from_details(data):
+    """Return a clearlogo already embedded by append_to_response=images."""
+    images = data.get('images') or data
+    logos = images.get('logos', []) or []
+    for lang in (_get_lang(), 'en', None, ''):
+        for logo in logos:
+            fp = logo.get('file_path', '')
+            if logo.get('iso_639_1') == lang and fp and fp.lower().endswith('.png'):
+                return f'{_IMG}w500{fp}'
+    for logo in logos:
         fp = logo.get('file_path', '')
         if fp and fp.lower().endswith('.png'):
             return f'{_IMG}w500{fp}'
     return ''
+
+
+def logo_url(tmdb_id, media='movie'):
+    data = _get(f'/{media}/{tmdb_id}/images', include_image_language='en,{},null'.format(_get_lang()))
+    return logo_from_details(data)
 
 
 def _age_cert_from_tmdb(data, media='movie'):
@@ -262,10 +310,16 @@ def still_url(path, size='w300'):
 
 
 def person_details(person_id):
-    return _get(f'/person/{person_id}', append_to_response='combined_credits')
+    return _get(f'/person/{person_id}',
+                append_to_response='combined_credits,external_ids,images,tagged_images',
+                include_image_language='en,{},null'.format(_get_lang()))
 
 
 def profile_url(path, size='w342'):
+    return f'{_IMG}{size}{path}' if path else ''
+
+
+def image_url(path, size='original'):
     return f'{_IMG}{size}{path}' if path else ''
 
 

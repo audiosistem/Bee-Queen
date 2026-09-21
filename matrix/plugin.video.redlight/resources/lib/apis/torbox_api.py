@@ -7,8 +7,8 @@ from urllib.parse import urlencode
 from caches.settings_cache import get_setting, set_setting
 from caches.main_cache import cache_object
 from modules.source_utils import supported_video_extensions, seas_ep_filter, extras
-from modules.utils import copy2clip, make_qrcode
-from modules.kodi_utils import make_session, ok_dialog, notification, confirm_dialog, progress_dialog, sleep
+from modules.utils import copy2clip, make_qrcode, make_tinyurl, device_auth_site_label, authorise_wait_text
+from modules.kodi_utils import make_session, ok_dialog, notification, confirm_dialog, progress_dialog, sleep, sleep_while_authorising
 # from modules.kodi_utils import logger
 
 base_url = 'https://api.torbox.app/v1/api/'
@@ -911,11 +911,15 @@ class TorBoxAPI:
 		user_code = data.get('code')
 		if not device_code or not user_code:
 			return ok_dialog(text='Invalid TorBox authorisation response')
-		auth_url = _device_auth_url(app_name, user_code)
+		complete = data.get('verification_uri_complete') or data.get('friendly_verification_url')
+		if complete and str(user_code) in str(complete):
+			auth_url = str(complete).strip()
+		else:
+			auth_url = _device_auth_url(app_name, user_code)
 		qr_code = make_qrcode(auth_url) or ''
 		copy2clip(auth_url)
-		p_dialog_insert = '[CR]OR visit [B]torbox.app/oauth/device[/B][CR]AND Enter this Code: [B]%s[/B]' % user_code
-		content = 'Scan the [B]QR Code[/B]%s' % p_dialog_insert
+		short_url = make_tinyurl(auth_url)
+		content = authorise_wait_text(user_code, device_auth_site_label(data, 'https://torbox.app/oauth/device'), short_url)
 		progressDialog = progress_dialog('TorBox Authorise', qr_code)
 		progressDialog.update(content, 0)
 		sleep_interval = int(data.get('interval') or 5)
@@ -932,7 +936,7 @@ class TorBoxAPI:
 		start, time_passed = time.time(), 0
 		sleep(2000)
 		while not progressDialog.iscanceled() and time_passed < expires_in and not self.token:
-			sleep(1000 * sleep_interval)
+			if sleep_while_authorising(progressDialog, sleep_interval): break
 			time_passed = time.time() - start
 			try:
 				poll = requests.post(poll_url, json=poll_body, timeout=20).json()
@@ -962,7 +966,8 @@ class TorBoxAPI:
 			ok_dialog(heading='TorBox', text='Authorisation failed.')
 
 	def revoke(self):
-		if not confirm_dialog(): return
+		from modules.kodi_utils import confirm_revoke
+		if not confirm_revoke('TorBox'): return
 		set_setting('tb.token', 'empty_setting')
 		set_setting('tb.enabled', 'false')
 		notification('TorBox Authorisation Reset', 3000)

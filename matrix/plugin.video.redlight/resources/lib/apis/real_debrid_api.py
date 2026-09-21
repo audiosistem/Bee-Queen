@@ -5,9 +5,9 @@ import requests
 from threading import Thread, Semaphore
 from caches.main_cache import cache_object
 from caches.settings_cache import get_setting, set_setting
-from modules.utils import copy2clip, make_tinyurl, make_qrcode
+from modules.utils import copy2clip, make_tinyurl, make_qrcode, device_auth_complete_url, device_auth_site_label, authorise_wait_text
 from modules.source_utils import supported_video_extensions, seas_ep_filter, extras
-from modules.kodi_utils import sleep, ok_dialog, progress_dialog, notification
+from modules.kodi_utils import sleep, sleep_while_authorising, ok_dialog, progress_dialog, notification
 # from modules.kodi_utils import logger
 
 _rd_magnet_semaphore = Semaphore(3)
@@ -32,15 +32,11 @@ class RealDebridAPI:
 		url = self.auth_url + 'device/code?%s' % 'client_id=%s&new_credentials=yes' % self.client_ID
 		response = requests.get(url, timeout=20).json()
 		user_code = response['user_code']
-		auth_url = response['direct_verification_url']
+		auth_url = device_auth_complete_url(response, user_code, fallback='https://real-debrid.com/device', style='path')
 		qr_code = make_qrcode(auth_url) or ''
 		short_url = make_tinyurl(auth_url)
 		copy2clip(auth_url)
-		if short_url:
-			p_dialog_insert = '[CR]OR visit [B]%s[/B][CR]OR Enter this Code: [B]%s[/B]' % (short_url, user_code)
-		else:
-			p_dialog_insert = '[CR]OR Enter this Code: [B]%s[/B]' % user_code
-		content = 'Scan the [B]QR Code[/B]%s' % p_dialog_insert
+		content = authorise_wait_text(user_code, device_auth_site_label(response, 'https://real-debrid.com/device'), short_url)
 		progressDialog = progress_dialog('Real Debrid Authorise', qr_code)
 		progressDialog.update(content, 0)
 		expires_in = int(response['expires_in'])
@@ -49,7 +45,7 @@ class RealDebridAPI:
 		poll_url = self.auth_url + 'device/credentials?%s' % 'client_id=%s&code=%s' % (self.client_ID, device_code)
 		start, time_passed = time.time(), 0
 		while not progressDialog.iscanceled() and time_passed < expires_in and not self.secret:
-			sleep(1000 * sleep_interval)
+			if sleep_while_authorising(progressDialog, sleep_interval): break
 			try: response = requests.get(poll_url, timeout=20).json()
 			except: continue
 			if 'error' in response:
@@ -94,6 +90,8 @@ class RealDebridAPI:
 		except: return False
 
 	def revoke(self):
+		from modules.kodi_utils import confirm_revoke
+		if not confirm_revoke('Real Debrid'): return
 		set_setting('rd.client_id', 'empty_setting')
 		set_setting('rd.secret', 'empty_setting')
 		set_setting('rd.refresh', 'empty_setting')

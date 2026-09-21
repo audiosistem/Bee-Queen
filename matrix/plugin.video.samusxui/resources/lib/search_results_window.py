@@ -5,6 +5,7 @@ import xbmcgui
 import xbmcaddon
 
 from . import tmdb
+from . import db
 
 ADDON_PATH = xbmcaddon.Addon('plugin.video.samusxui').getAddonInfo('path')
 
@@ -16,6 +17,8 @@ _ID_META     = 111
 _ID_PLOT     = 113
 _ID_PLAY     = 120
 _ID_DETAILS  = 122
+_ID_FAV      = 123
+_ID_FAV_ICON = 128
 _ID_POSTERS  = 131
 _ID_EMPTY    = 150
 
@@ -39,10 +42,12 @@ class SearchResultsWindow(xbmcgui.WindowXML):
         self._page         = 1
         self._total_pages  = 1
         self._loading_more = False
+        self._fav_ids      = set()
 
     # ------------------------------------------------------------------ init
 
     def onInit(self):
+        self._fav_ids = db.get_favorite_ids()
         section = _SECTION_LABEL.get(self._media, 'Rezultate')
         try:
             self.getControl(_ID_HEADER).setLabel(
@@ -62,7 +67,7 @@ class SearchResultsWindow(xbmcgui.WindowXML):
                 self.getControl(_ID_EMPTY).setVisible(True)
             except Exception:
                 pass
-            for cid in (_ID_PLAY, _ID_DETAILS, _ID_POSTERS):
+            for cid in (_ID_PLAY, _ID_DETAILS, _ID_FAV, _ID_POSTERS):
                 try:
                     self.getControl(cid).setVisible(False)
                 except Exception:
@@ -72,7 +77,7 @@ class SearchResultsWindow(xbmcgui.WindowXML):
             self.getControl(_ID_EMPTY).setVisible(False)
         except Exception:
             pass
-        for cid in (_ID_PLAY, _ID_DETAILS, _ID_POSTERS):
+        for cid in (_ID_PLAY, _ID_DETAILS, _ID_FAV, _ID_POSTERS):
             try:
                 self.getControl(cid).setVisible(True)
             except Exception:
@@ -137,9 +142,56 @@ class SearchResultsWindow(xbmcgui.WindowXML):
         except Exception as e:
             xbmc.log(f'[SamusXUI/Results] hero: {e}', xbmc.LOGDEBUG)
 
+        self._refresh_fav_icon(m)
+
         tmdb_id = m.get('id')
         threading.Thread(target=self._fetch_logo,
                          args=(tmdb_id, idx, title), daemon=True).start()
+
+    # ------------------------------------------------------------------ favorite
+
+    def _current_item(self):
+        if not self._items:
+            return None
+        try:
+            pos = self.getControl(_ID_POSTERS).getSelectedPosition()
+            return self._items[pos] if 0 <= pos < len(self._items) else None
+        except Exception:
+            return self._items[self._hero_idx] if self._items else None
+
+    def _media_type_of(self, m):
+        # Rezultatele de la tmdb.search nu poartă media_type; îl dă fereastra.
+        return m.get('media_type') or self._media
+
+    def _refresh_fav_icon(self, m):
+        is_fav = (m.get('id'), self._media_type_of(m)) in self._fav_ids
+        try:
+            icon = self.getControl(_ID_FAV_ICON)
+            icon.setVisible(True)
+            icon.setColorDiffuse('FFFFD700' if is_fav else 'FF888899')
+        except Exception:
+            pass
+
+    def _toggle_fav(self):
+        m = self._current_item()
+        if not m:
+            return
+        tmdb_id = m.get('id')
+        media   = self._media_type_of(m)
+        if not tmdb_id:
+            return
+        title   = m.get('title') or m.get('name', '')
+        year    = (m.get('release_date') or m.get('first_air_date') or '')[:4]
+        poster  = m.get('poster_path') or ''
+        plot    = m.get('overview') or ''
+
+        if (tmdb_id, media) in self._fav_ids:
+            db.remove_favorite(tmdb_id, media)
+            self._fav_ids.discard((tmdb_id, media))
+        else:
+            db.add_favorite(tmdb_id, media, title, year, poster, plot)
+            self._fav_ids.add((tmdb_id, media))
+        self._refresh_fav_icon(m)
 
     def _fetch_logo(self, tmdb_id, for_idx, title=''):
         logo = tmdb.logo_url(tmdb_id, self._media)
@@ -198,6 +250,8 @@ class SearchResultsWindow(xbmcgui.WindowXML):
             self._play_current()
         elif controlId == _ID_DETAILS:
             self._show_details()
+        elif controlId == _ID_FAV:
+            self._toggle_fav()
         elif controlId == _ID_POSTERS:
             self._play_current()
 

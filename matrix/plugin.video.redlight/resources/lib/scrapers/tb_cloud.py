@@ -4,7 +4,7 @@ import time
 from apis.torbox_api import TorBox, TorBoxAPI
 from modules import source_utils
 from modules.utils import clean_file_name, normalize
-from modules.settings import enabled_debrids_check, filter_by_name
+from modules.settings import enabled_debrids_check, filter_by_name, shared_title_require_year
 from caches.settings_cache import get_setting
 # from modules.kodi_utils import logger
 
@@ -27,6 +27,7 @@ class source:
 			self.year = int(info.get('year') or 0)
 			self.season, self.episode = info.get('season'), info.get('episode')
 			self.absolute_episode = info.get('absolute_episode')
+			self.require_year = shared_title_require_year(info, self.scrape_provider)
 			self.tmdb_id = info.get('tmdb_id')
 			self.title = title
 			self.folder_query = source_utils.clean_title(normalize(title))
@@ -51,9 +52,9 @@ class source:
 						if self.media_type == 'episode':
 							if not source_utils.cloud_episode_matches(self.season, self.episode, file_name_latin, self.absolute_episode):
 								continue
-							if filter_title and not source_utils.check_title(title, file_name_latin, self.aliases, self.year, 'pack', self.episode):
+							if filter_title and not source_utils.check_title(title, file_name_latin, self.aliases, self.year, 'pack', self.episode, self.require_year):
 								continue
-						elif filter_title and not source_utils.check_title(title, file_name_latin, self.aliases, self.year, self.season, self.episode):
+						elif filter_title and not source_utils.check_title(title, file_name_latin, self.aliases, self.year, self.season, self.episode, self.require_year):
 							continue
 						display_name = clean_file_name(file_name).replace('html', ' ').replace('+', ' ').replace('-', ' ')
 						file_id = TorBoxAPI._torrent_file_id(item)

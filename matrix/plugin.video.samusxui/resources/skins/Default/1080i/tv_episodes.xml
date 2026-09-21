@@ -18,26 +18,26 @@
 
         <!-- Dark overlay -->
         <control type="image">
-            <left>0</left><top>0</top><width>1920</width><height>650</height>
+            <left>0</left><top>0</top><width>1920</width><height>700</height>
             <texture colordiffuse="40000000">white.png</texture>
         </control>
 
         <!-- Clip solid under hero -->
         <control type="image">
-            <left>0</left><top>650</top><width>1920</width><height>540</height>
+            <left>0</left><top>700</top><width>1920</width><height>380</height>
             <texture colordiffuse="FF0E0E1A">white.png</texture>
         </control>
 
         <!-- Left gradient -->
         <control type="image" id="101">
-            <left>0</left><top>0</top><width>720</width><height>650</height>
+            <left>0</left><top>0</top><width>720</width><height>700</height>
             <texture>grad_l.png</texture>
             <aspectratio>stretch</aspectratio>
         </control>
 
-        <!-- Bottom gradient (aliniat ca top-ul opac să fie exact la y=650) -->
+        <!-- Bottom gradient (aliniat ca top-ul opac să fie exact la y=700) -->
         <control type="image" id="102">
-            <left>0</left><top>370</top><width>1920</width><height>280</height>
+            <left>0</left><top>420</top><width>1920</width><height>280</height>
             <texture>grad_b.png</texture>
             <aspectratio>stretch</aspectratio>
         </control>
@@ -74,23 +74,41 @@
 
         <!-- Logo show -->
         <control type="image" id="115">
-            <left>30</left><top>90</top><width>580</width><height>155</height>
+            <left>30</left><top>88</top><width>650</width><height>130</height>
             <texture>-</texture>
-            <aspectratio>keep</aspectratio>
+            <aspectratio align="left" aligny="top">keep</aspectratio>
         </control>
 
-        <!-- Titlu text (fallback) -->
-        <control type="label" id="110">
-            <left>30</left><top>94</top><width>900</width><height>120</height>
+        <!-- Numele serialului când TMDb nu are clearlogo -->
+        <control type="label" id="116">
+            <left>30</left><top>98</top><width>900</width><height>90</height>
             <label>...</label>
             <font>font48</font>
             <textcolor>FFFFFFFF</textcolor>
             <shadowcolor>CC000000</shadowcolor>
         </control>
 
+        <!-- Sezon explicit: important mai ales când primul este Season 0 / Speciale -->
+        <control type="label" id="117">
+            <left>30</left><top>214</top><width>950</width><height>25</height>
+            <label>SEZONUL</label>
+            <font>font10</font>
+            <textcolor>FF7B5CF4</textcolor>
+            <shadowcolor>CC000000</shadowcolor>
+        </control>
+
+        <!-- Titlul episodului selectat, întotdeauna sub logo -->
+        <control type="label" id="110">
+            <left>30</left><top>242</top><width>950</width><height>50</height>
+            <label>...</label>
+            <font>font33</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <shadowcolor>CC000000</shadowcolor>
+        </control>
+
         <!-- Meta -->
         <control type="label" id="111">
-            <left>30</left><top>260</top><width>950</width><height>36</height>
+            <left>30</left><top>296</top><width>950</width><height>36</height>
             <label>...</label>
             <font>font20</font>
             <textcolor>FFCCCCCC</textcolor>
@@ -98,7 +116,7 @@
 
         <!-- Plot -->
         <control type="label" id="113">
-            <left>30</left><top>306</top><width>700</width><height>160</height>
+            <left>30</left><top>340</top><width>760</width><height>180</height>
             <label>...</label>
             <font>font20</font>
             <textcolor>FF999999</textcolor>
@@ -109,7 +127,7 @@
 
         <!-- PLAY -->
         <control type="button" id="120">
-            <left>30</left><top>545</top><width>158</width><height>52</height>
+            <left>30</left><top>600</top><width>158</width><height>52</height>
             <label>[B]PLAY[/B]</label>
             <font>font20</font>
             <align>center</align>
@@ -123,7 +141,7 @@
 
         <!-- SURSE -->
         <control type="button" id="121">
-            <left>202</left><top>545</top><width>158</width><height>52</height>
+            <left>202</left><top>600</top><width>158</width><height>52</height>
             <label>[B]SURSE[/B]</label>
             <font>font20</font>
             <align>center</align>
@@ -138,7 +156,7 @@
         <!-- ═══════════════ EPISODE LIST ═══════════════ -->
 
         <control type="list" id="131">
-            <left>5</left><top>650</top><width>1910</width><height>310</height>
+            <left>5</left><top>700</top><width>1910</width><height>310</height>
             <orientation>horizontal</orientation>
             <onup>120</onup>
             <scrolltime>180</scrolltime>

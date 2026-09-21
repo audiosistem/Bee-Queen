@@ -61,7 +61,7 @@ def search_streams(imdb_id, media_type, season=None, episode=None, timeout=15, e
 		return cached
 	items = []
 	try:
-		response = json_http().get(url, timeout=max(5, int(timeout)))
+		response = json_http().get(url, timeout=max(1, int(timeout)))
 		response.raise_for_status()
 		payload = response.json() or {}
 		raw_items = ((payload.get('data') or {}).get('items')) or []

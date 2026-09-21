@@ -11,7 +11,7 @@ from datetime import datetime
 BASE_URL = "https://api.derzis.xyz/livetv/epg"
 TIMEOUT = 5
 
-_THRAX_KEY = "7d9f4987bcd1a2026e6a422931bd7dbff0060977d189f37fa5727d9288b4abbb"
+_THRAX_KEY = "6d11ea4b6c6acc9bd2fc4f91b6be3fc06ca5e4358e344d248e8bbcb64cedd0df"
 # urllib3 din Kodi 25 / Python 3.14 are bug la decompresia zstd via SocketIO
 # → forțăm gzip/deflate pentru a evita răspunsuri zstd
 _HEADERS = {"Accept-Encoding": "gzip, deflate", "X-Thrax-Key": _THRAX_KEY}

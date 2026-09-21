@@ -693,6 +693,81 @@ def _probe_final_url(url, headers=None, timeout=12):
 		logger('aiostreams playback probe', str(exc))
 		return None
 
+def _is_stremthru_url(url):
+	return 'stremthru' in (url or '').lower()
+
+def _url_host(url):
+	try:
+		from urllib.parse import urlparse
+		return (urlparse((url or '').split('|', 1)[0]).netloc or '').lower()
+	except Exception:
+		return ''
+
+def _follow_stremthru_redirect(url, headers=None, timeout=12, max_hops=5):
+	"""Return the first non-StremThru Location. Do not GET the CDN.
+
+	allow_redirects=True waits for the CDN's first byte. TorBox Auto/Hyperdrive
+	(store-*.tb-cdn.io) can sit past the probe timeout; wget/GET on the wrapper
+	already had the 302. Kodi opens the CDN URL itself.
+	"""
+	from urllib.parse import urljoin
+	current = (url or '').split('|', 1)[0].strip()
+	if not current:
+		return None
+	req_headers = headers or {}
+	for _ in range(max_hops):
+		try:
+			resp = requests.get(current, headers=req_headers, allow_redirects=False, timeout=timeout)
+		except Exception as exc:
+			logger('aiostreams playback probe', str(exc))
+			return None
+		try:
+			if resp.status_code >= 400:
+				return None
+			if resp.is_redirect:
+				location = (resp.headers.get('Location') or '').strip()
+				if not location:
+					return None
+				nxt = urljoin(current, location)
+				if _is_stremthru_url(nxt):
+					current = nxt
+					continue
+				return nxt
+			return (resp.url or current).strip()
+		finally:
+			resp.close()
+	return current
+
+
+def _resolve_stremthru_playback(url, headers=None):
+	"""Follow StremThru 302s to the debrid CDN before Kodi opens the wrapper.
+
+	GET/wget on stremthru.* redirects immediately (e.g. TorBox tb-cdn). Kodi
+	CCurlFile::Stat uses HEAD on the wrapper and times out, then Red Light
+	fails over to the next result. Do not wait for the CDN to start sending.
+	"""
+	final = _follow_stremthru_redirect(url, headers)
+	if not final:
+		return None
+	if _is_placeholder_stream_url(final):
+		logger('aiostreams playback', 'rejected uncached placeholder stream: %s' % final)
+		return None
+	same_host = _url_host(final) == _url_host(url)
+	out_headers = headers if same_host else None
+	if not same_host:
+		logger('aiostreams playback', 'stremthru redirect | %s -> %s' % (_url_host(url), _url_host(final)))
+	if 'easynews.com' in final.lower():
+		use_non_seek = False
+		try:
+			from modules.settings import easynews_playback_method
+			use_non_seek = easynews_playback_method('non_seek')
+		except Exception:
+			use_non_seek = False
+		if use_non_seek:
+			logger('aiostreams playback', 'EN No Seek applied | %s' % final[:120])
+			return _append_play_options(final, out_headers, seekable=0)
+	return _append_play_options(final, out_headers)
+
 def _append_play_options(url, headers=None, seekable=None):
 	"""Build a Kodi play URL with optional request headers and seekable=0."""
 	parts = []
@@ -736,6 +811,8 @@ def resolve_playback_url(item):
 	bare = url.split('|', 1)[0]
 	if is_direct_easynews_item(item):
 		return _resolve_easynews_playback(bare, headers)
+	if _is_stremthru_url(bare):
+		return _resolve_stremthru_playback(bare, headers)
 	# Uncached debrid playback with AIOStreams Failover often 302s to a short placeholder mp4
 	# (static/downloading.mp4). Kodi treats that as successful playback and nextep/autoscrape runs.
 	needs_probe = '/debrid/playback/' in bare.lower() or item.get('cached') is False
@@ -765,7 +842,7 @@ def resolve_playback_url(item):
 _DOWNLOAD_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 _RESOLVER_HOST_TOKENS = (
-	'strem.fun', 'stremio.ru', 'torrentsdb.com', 'comet.strem', 'elfhosted.com',
+	'strem.fun', 'stremio.ru', 'stremthru', 'torrentsdb.com', 'comet.strem', 'elfhosted.com',
 	'/resolve/', '/redirect/', '/debrid/',
 )
 

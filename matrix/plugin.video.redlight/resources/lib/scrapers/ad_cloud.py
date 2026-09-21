@@ -3,7 +3,7 @@ from threading import Thread
 from apis.alldebrid_api import AllDebridAPI
 from modules import source_utils
 from modules.utils import clean_file_name, normalize
-from modules.settings import enabled_debrids_check, filter_by_name
+from modules.settings import enabled_debrids_check, filter_by_name, shared_title_require_year
 # from modules.kodi_utils import logger
 
 class source:
@@ -12,6 +12,7 @@ class source:
 		self.sources = []
 		self.AllDebrid = AllDebridAPI()
 		self.extensions = source_utils.supported_video_extensions()
+		self.require_year = False
 
 	def results(self, info):
 		try:
@@ -19,8 +20,9 @@ class source:
 			self.folder_results, self.scrape_results = [], []
 			self.filter_title = filter_by_name(self.scrape_provider)
 			self.media_type, title = info.get('media_type'), info.get('title')
-			self.year, self.season, self.episode = int(info.get('year')), info.get('season'), info.get('episode')
+			self.year, self.season, self.episode = int(info.get('year') or 0), info.get('season'), info.get('episode')
 			self.absolute_episode = info.get('absolute_episode')
+			self.require_year = shared_title_require_year(info, self.scrape_provider)
 			self.tmdb_id = info.get('tmdb_id')
 			self.title = title
 			self.aliases = source_utils.get_aliases_titles(info.get('aliases', []))
@@ -34,7 +36,7 @@ class source:
 				for item in self.scrape_results:
 					try:
 						file_name = normalize(item['n'])
-						if self.filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, self.season, self.episode): continue
+						if self.filter_title and not source_utils.check_title(title, file_name, self.aliases, self.year, self.season, self.episode, self.require_year): continue
 						display_name = clean_file_name(file_name).replace('html', ' ').replace('+', ' ').replace('-', ' ')
 						direct_debrid_link = item.get('direct_debrid_link', False)
 						file_dl, size = item['l'], round(float(int(item['s']))/1073741824, 2)
@@ -77,7 +79,7 @@ class source:
 		elif self.media_type == 'episode' and not source_utils.cloud_episode_matches(self.season, self.episode, filename, self.absolute_episode):
 			return False
 		if not self.filter_title: return True
-		return source_utils.check_title(self.title, filename, self.aliases, self.year, self.season, self.episode)
+		return source_utils.check_title(self.title, filename, self.aliases, self.year, self.season, self.episode, self.require_year)
 
 	def _scrape_history(self):
 		try:
@@ -139,7 +141,7 @@ class source:
 			links = [i for i in links if i.get('n', '').lower().endswith(tuple(self.extensions)) and i.get('l')]
 			for item in links:
 				if self.media_type == 'episode' and not source_utils.cloud_episode_matches(self.season, self.episode, item['n'], self.absolute_episode): continue
-				if self.filter_title and not source_utils.check_title(self.title, item['n'], self.aliases, self.year, self.season, self.episode): continue
+				if self.filter_title and not source_utils.check_title(self.title, item['n'], self.aliases, self.year, self.season, self.episode, self.require_year): continue
 				self._append_scrape_result(item)
 		except: return
 

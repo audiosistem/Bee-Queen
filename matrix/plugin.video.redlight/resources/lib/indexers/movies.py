@@ -195,7 +195,7 @@ class Movies:
 				kodi_utils.logger('MDBList List Error', '%s: %s' % (self.action, e))
 		kodi_utils.set_content(handle, 'movies')
 		kodi_utils.set_category(handle, self.category_name)
-		kodi_utils.end_directory(handle, cacheToDisc=False if self.is_external or self.action in self.mdblist_personal else True)
+		kodi_utils.end_directory(handle, cacheToDisc=False)
 		if not self.is_external:
 			if self.params_get('refreshed') == 'true': kodi_utils.sleep(1000)
 			kodi_utils.set_view_mode('view.movies', 'movies', self.is_external)
@@ -317,7 +317,7 @@ class Movies:
 				cm.extend([['refresh', ('[B]Refresh Widgets[/B]', 'RunPlugin(%s)' % self.build_url({'mode': 'refresh_widgets'}))],
 						['reload', ('[B]Reload Widgets[/B]', 'RunPlugin(%s)' % self.build_url({'mode': 'kodi_refresh'}))]])
 			cm = self.context_menu(cm)
-			info_tag = listitem.getVideoInfoTag(True)
+			info_tag = listitem.getVideoInfoTag()
 			info_tag.setMediaType('movie'), info_tag.setTitle(title), info_tag.setOriginalTitle(meta_get('original_title')), info_tag.setGenres(meta_get('genre'))
 			info_tag.setDuration(duration), info_tag.setPlaycount(playcount), info_tag.setPlot(meta_get('plot'))
 			info_tag.setUniqueIDs({'imdb': imdb_id, 'tmdb': str_tmdb_id}), info_tag.setIMDBNumber(imdb_id), info_tag.setPremiered(premiered)

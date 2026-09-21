@@ -6,15 +6,16 @@ active so the skin switches to the positioned videowindow.
 """
 import re
 import threading
+import time
 import xbmc
 import xbmcgui
 
 _POLL_MS = 200
 _IDLE_POLL_SECS = 1.0
-_HOVER_SECS = 3
+_HOVER_SECS = 5
 _STABLE_TARGET = int(_HOVER_SECS * 1000 / _POLL_MS)
 _FOCUS_RETURN_GRACE_TICKS = int(8.0 * 1000 / _POLL_MS)
-_PRIME_HOVER_SECS = 3
+_PRIME_HOVER_SECS = 5
 _PRIME_STABLE_TARGET = int(_PRIME_HOVER_SECS * 1000 / _POLL_MS)
 _WIDGET_IDS = [wid for base in (801, 802, 803, 804) for wid in range(base * 100 + 14, base * 100 + 22)]
 _SERVICE_PROPERTY = 'samusxui_trailer_service_running'
@@ -97,8 +98,8 @@ def _play_trailer_bg(key, window, state, prop_name='widget_trailer_playing', vid
 
         # Resolve URL first (yt-dlp is slow; do it before touching the player)
         window.setProperty('widget_trailer_resolving', '1')
-        stream_url = _player.resolve_trailer_url(key)
-        if not stream_url:
+        stream = _player.resolve_trailer_url(key)
+        if not stream:
             xbmc.log(f'[SamusXUI/service] no URL for key={key}', xbmc.LOGWARNING)
             return
         if state['cancelled']:
@@ -113,10 +114,13 @@ def _play_trailer_bg(key, window, state, prop_name='widget_trailer_playing', vid
         if state['cancelled']:
             return
 
-        li = xbmcgui.ListItem(path=stream_url)
+        li = _player.trailer_listitem(stream)
+        if li is None:
+            return
+        stream_path = stream.get('path') if isinstance(stream, dict) else stream
         p = xbmc.Player()
         xbmc.log(f'[SamusXUI/service] opening trailer key={key}', xbmc.LOGINFO)
-        p.play(stream_url, li, windowed=True)
+        p.play(stream_path, li, windowed=True)
 
         deadline = 10.0
         while deadline > 0 and not p.isPlaying() and not state['cancelled']:
@@ -176,6 +180,8 @@ def _get_focused_widget_key():
 def run():
     monitor = xbmc.Monitor()
     window = xbmcgui.Window(10000)
+    custom_window = None
+    custom_trailer_seen_video = False
 
     # Home screen widget trailer state
     current_key = ''
@@ -193,10 +199,21 @@ def run():
     prime_state = None
     prime_started_for_item = False
     prime_no_focus_ticks = 0
+    auxiliary_threads = set()
+
+    def start_auxiliary(target, args, name):
+        # Cererile TMDb au timeout de 8 s. Firele rămân proprietatea serviciului
+        # și sunt reunite înainte ca Kodi să distrugă subinterpretorul.
+        thread = threading.Thread(target=target, args=args, name=name)
+        auxiliary_threads.add(thread)
+        thread.start()
+        return thread
 
     xbmc.log('[SamusXUI/service] run() started', xbmc.LOGINFO)
 
     while not monitor.abortRequested():
+        auxiliary_threads.difference_update(
+            thread for thread in auxiliary_threads if not thread.is_alive())
         prime_window_active = xbmc.getCondVisibility('Window.IsActive(MyVideoNav.xml)')
         prime_view_active = (prime_window_active and
                              xbmc.getCondVisibility('Control.IsVisible(514)'))
@@ -207,6 +224,28 @@ def run():
                      else _IDLE_POLL_SECS)
         if monitor.waitForAbort(poll_secs):
             break
+
+        # Workerul ferestrei custom se termină imediat după pornire. Serviciul
+        # curăță videowindow-ul numai după final natural, niciodată în startup.
+        if xbmc.getCondVisibility('Window.IsActive(13001)'):
+            if custom_window is None:
+                try:
+                    custom_window = xbmcgui.Window(13001)
+                except RuntimeError:
+                    custom_window = None
+            if (custom_window is not None and
+                    custom_window.getProperty('trailer_active')):
+                if xbmc.getCondVisibility('Player.HasVideo'):
+                    custom_trailer_seen_video = True
+                elif (custom_trailer_seen_video and
+                      not custom_window.getProperty('trailer_starting')):
+                    custom_window.clearProperty('trailer_active')
+                    custom_trailer_seen_video = False
+            else:
+                custom_trailer_seen_video = False
+        else:
+            custom_window = None
+            custom_trailer_seen_video = False
 
         prime_window_active = xbmc.getCondVisibility('Window.IsActive(MyVideoNav.xml)')
         prime_view_active = (prime_window_active and
@@ -229,8 +268,9 @@ def run():
             prime_stable_count = 0
             prime_started_for_item = False
             prime_no_focus_ticks = 0
-            prime_thread = None
-            prime_state = None
+            if not prime_thread_alive:
+                prime_thread = None
+                prime_state = None
         else:
             # Collect finished prime thread
             if prime_thread is not None and not prime_thread.is_alive():
@@ -258,11 +298,10 @@ def run():
                     player_busy = xbmc.getCondVisibility('Window.IsVisible(busydialog)')
                     if (prime_state and not prime_state.get('starting_player') and
                             not player_busy):
-                        prime_no_focus_ticks += 1
-                        if prime_no_focus_ticks >= 2:
-                            if prime_state:
-                                prime_state['cancelled'] = True
-                            xbmc.Player().stop()
+                        prime_no_focus_ticks = 0
+                        prime_state['cancelled'] = True
+                        window.clearProperty('myprime_trailer_playing')
+                        xbmc.Player().stop()
                     else:
                         prime_no_focus_ticks = 0
                 else:
@@ -290,16 +329,14 @@ def run():
                     focused_tmdb_id = xbmc.getInfoLabel('Container(514).ListItem.Property(tmdb_id)')
                     focused_media_type = xbmc.getInfoLabel('Container(514).ListItem.Property(media_type)') or 'movie'
                     if focused_tmdb_id:
-                        threading.Thread(
-                            target=_fetch_prime_logo,
-                            args=(focused_tmdb_id, focused_media_type, window),
-                            daemon=True,
-                        ).start()
-                        threading.Thread(
-                            target=_fetch_prime_trailer_bg,
-                            args=(focused_tmdb_id, focused_media_type),
-                            daemon=True,
-                        ).start()
+                        start_auxiliary(
+                            _fetch_prime_logo,
+                            (focused_tmdb_id, focused_media_type, window),
+                            'samus-prime-logo')
+                        start_auxiliary(
+                            _fetch_prime_trailer_bg,
+                            (focused_tmdb_id, focused_media_type),
+                            'samus-prime-trailer-key')
                 else:
                     prime_stable_count += 1
                     if (prime_stable_count >= _PRIME_STABLE_TARGET and
@@ -333,6 +370,11 @@ def run():
                 prime_started_for_item = False
 
         if not home_active:
+            if trailer_thread is not None and trailer_thread.is_alive():
+                if trailer_state:
+                    trailer_state['cancelled'] = True
+                window.clearProperty('widget_trailer_playing')
+                xbmc.Player().stop()
             current_key = ''
             current_wid = 0
             stable_count = 0
@@ -366,9 +408,8 @@ def run():
 
         # While trailer is running:
         # - Different item (both keys non-empty, changed): stop immediately
-        # - No widget focus (focused_wid==0): debounce 2 ticks (400ms) before stopping.
-        #   p.play(windowed=True) briefly steals focus for ~1 tick (200ms), so 2-tick debounce
-        #   ignores the momentary steal but still catches sustained Esc/Back → main menu.
+        # - No widget focus: stop at the first poll. During player startup the
+        #   transient focus steal is ignored explicitly through starting_player.
         # - Empty focused_key alone: don't stop (container refresh during playback).
         if thread_alive:
             if xbmc.getCondVisibility('Control.HasFocus(9000)'):
@@ -388,10 +429,10 @@ def run():
                         xbmc.getCondVisibility('Window.IsVisible(busydialog)')):
                     _no_widget_focus_ticks = 0
                 else:
-                    _no_widget_focus_ticks += 1
-                    if _no_widget_focus_ticks >= 2:
-                        trailer_state['cancelled'] = True
-                        xbmc.Player().stop()
+                    _no_widget_focus_ticks = 0
+                    trailer_state['cancelled'] = True
+                    window.clearProperty('widget_trailer_playing')
+                    xbmc.Player().stop()
             else:
                 _no_widget_focus_ticks = 0
             continue
@@ -446,6 +487,27 @@ def run():
                 )
                 trailer_thread.start()
 
+    # Python 3.14 nu poate distruge subinterpretorul cu fire vii. Oprim
+    # redarea de preview și reunim toate worker-ele deținute de serviciu.
+    for state in (trailer_state, prime_state):
+        if state:
+            state['cancelled'] = True
+    if (window.getProperty('widget_trailer_playing') or
+            window.getProperty('myprime_trailer_playing')):
+        xbmc.Player().stop()
+    owned_threads = [thread for thread in
+                     (trailer_thread, prime_thread, *auxiliary_threads)
+                     if thread is not None and thread.is_alive()]
+    deadline = time.monotonic() + 9.0
+    for thread in owned_threads:
+        remaining = deadline - time.monotonic()
+        if remaining > 0:
+            thread.join(remaining)
+    still_alive = [thread.name for thread in owned_threads if thread.is_alive()]
+    if still_alive:
+        xbmc.log(f'[SamusXUI/service] fire nereunite la abort: {still_alive}',
+                 xbmc.LOGERROR)
+
 
 def main():
     service_window = xbmcgui.Window(10000)
@@ -453,13 +515,44 @@ def main():
         return
     else:
         service_window.setProperty(_SERVICE_PROPERTY, '1')
+        abysscdn_local = None
+        trailer_manifest = None
         try:
+            # Proxy AbyssCDN local — trebuie să trăiască în serviciu, nu în
+            # procesul plugin-ului (acela moare imediat după setResolvedUrl,
+            # ceea ce ar tăia streamul în mijlocul redării).
+            try:
+                import sys, os
+                _lib = os.path.join(os.path.dirname(os.path.abspath(__file__)))
+                if _lib not in sys.path:
+                    sys.path.insert(0, _lib)
+                from resources.lib.resolvers import abysscdn_local
+                abysscdn_local.start_service_proxy()
+            except Exception as e:
+                xbmc.log(f'[SamusXUI/service] proxy Abyss nepornit: {e}', xbmc.LOGWARNING)
+            try:
+                from resources.lib import trailer_manifest
+                trailer_manifest.start_service_server()
+            except Exception as e:
+                xbmc.log(f'[SamusXUI/service] server MPD nepornit: {e}', xbmc.LOGWARNING)
             run()
         except Exception as e:
             xbmc.log(f'[SamusXUI/service] CRASH in run(): {e}', xbmc.LOGERROR)
             import traceback
             xbmc.log(traceback.format_exc(), xbmc.LOGERROR)
         finally:
+            if trailer_manifest is not None:
+                try:
+                    trailer_manifest.stop_service_server()
+                except Exception as e:
+                    xbmc.log(f'[SamusXUI/service] oprire MPD eșuată: {e}', xbmc.LOGWARNING)
+            if abysscdn_local is not None:
+                try:
+                    abysscdn_local.stop_service_proxy()
+                except Exception as e:
+                    xbmc.log(f'[SamusXUI/service] oprire proxy eșuată: {e}', xbmc.LOGWARNING)
+            alive = [f'{t.name}(daemon={t.daemon})' for t in threading.enumerate()]
+            xbmc.log(f'[SamusXUI/service] fire la final: {alive}', xbmc.LOGINFO)
             service_window.clearProperty(_SERVICE_PROPERTY)
 
 if __name__ == '__main__':

@@ -692,11 +692,15 @@ class Navigator:
 		'punchplay_public_lists': ('punchplay_public_list_queries', {'mode': 'search.get_key_id', 'search_type': 'punchplay_public_lists', 'isFolder': 'false'})}
 		setting_id, action_dict = search_mode_dict[self.list_name]
 		url_params = dict(action_dict)
-		data = main_cache.get(setting_id) or []
+		data = [unquote(i) for i in (main_cache.get(setting_id) or [])]
+		if s.search_history_sort() == 1:
+			from modules.utils import title_key
+			ignore = s.ignore_articles()
+			data.sort(key=lambda k: title_key(k, ignore))
 		self.add(action_dict, '[B]NEW SEARCH...[/B]', 'new')
 		for i in data:
 			try:
-				key_id = unquote(i)
+				key_id = i
 				url_params['key_id'] = key_id
 				url_params['setting_id'] = setting_id
 				cm_items = [('[B]Remove from history[/B]', 'RunPlugin(%s)' % self.build_url({'mode': 'search.remove', 'setting_id':setting_id, 'key_id': key_id})),

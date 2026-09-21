@@ -40,7 +40,7 @@ def person_direct_search(key_id):
 			listitem = make_listitem()
 			listitem.setLabel(actor_name)
 			listitem.setArt({'icon': actor_image, 'poster': actor_image, 'thumb': actor_image, 'fanart': fanart, 'banner': actor_image})
-			info_tag = listitem.getVideoInfoTag(True)
+			info_tag = listitem.getVideoInfoTag()
 			info_tag.setPlot(known_for)
 			yield (url, listitem, False)
 	icon, fanart = get_icon('empty_person'), get_addon_fanart()

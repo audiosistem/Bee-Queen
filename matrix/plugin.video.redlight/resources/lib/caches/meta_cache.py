@@ -74,7 +74,7 @@ class MetaCache:
 			context = nullcontext(dbcon) if dbcon else open_db('metacache_db')
 			with context as active_dbcon:
 				active_dbcon.execute('DELETE FROM metadata WHERE db_type = ? AND %s = ?' % id_type, (media_type, media_id))
-				if media_type == 'tvshow': self.delete_all_seasons(media_id, active_dbcon)
+				if str(media_type).startswith('tvshow'): self.delete_all_seasons(media_id, active_dbcon)
 		except: return
 
 	def delete_season(self, prop_string, dbcon=None):
@@ -104,8 +104,11 @@ class MetaCache:
 		except: return
 
 	def delete_all_seasons(self, media_id, dbcon=None):
-		for item in range(1, 51):
-			self.delete_season('%s_%s' % (media_id, str(item)), dbcon=dbcon)
+		try:
+			context = nullcontext(dbcon) if dbcon else open_db('metacache_db')
+			with context as active_dbcon:
+				active_dbcon.execute('DELETE FROM season_metadata WHERE tmdb_id LIKE ?', ('%s_%%' % media_id,))
+		except: return
 
 	def delete_all(self):
 		try:

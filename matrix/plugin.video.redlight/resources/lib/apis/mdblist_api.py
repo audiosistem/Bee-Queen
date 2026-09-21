@@ -8,7 +8,8 @@ from caches import mdblist_cache
 from caches.settings_cache import get_setting, set_setting
 from modules import kodi_utils, settings, list_sort
 from modules.http_defaults import META_API_TIMEOUT, meta_status_retry
-from modules.utils import paginate_list, get_datetime, TaskPool, make_thread_list, copy2clip, make_qrcode, make_tinyurl
+from modules.utils import paginate_list, get_datetime, TaskPool, make_thread_list, copy2clip, make_qrcode, make_tinyurl, \
+							device_auth_complete_url, device_auth_site_label, authorise_wait_text
 
 _EPISODE_SE_RE = re.compile(
 	r'(?:^|[\s·|\-–—/])S(\d{1,2})\s*[:.]?\s*E(\d{1,3})(?:\b|:)|(?:^|[\s·|\-–—/])(\d{1,2})x(\d{1,3})\b',
@@ -23,19 +24,66 @@ session = requests.Session()
 session.mount('https://api.mdblist.com', requests.adapters.HTTPAdapter(pool_maxsize=100, max_retries=meta_status_retry()))
 
 def _mdblist_token():
-	from caches.settings_cache import settings_cache
-	token = settings_cache.read_db_value('mdblist.token')
-	if token in (None, '0', '', 'empty_setting'):
-		token = get_setting('redlight.mdblist.token', '0')
-	return token
+	from caches.settings_cache import live_setting
+	return live_setting('mdblist.token', '0')
 
-def call_mdblist(path, params=None, json_data=None, method=None):
+def _mdblist_refresh():
+	from caches.settings_cache import live_setting
+	return live_setting('mdblist.refresh', '0')
+
+def mdblist_refresh_token():
+	refresh = _mdblist_refresh()
+	client_id = settings.mdblist_client()
+	if refresh in (None, '0', '', 'empty_setting') or not client_id:
+		return False
+	while kodi_utils.get_property('redlight.mdblist_refreshing_token') == 'true':
+		kodi_utils.sleep(250)
+	kodi_utils.set_property('redlight.mdblist_refreshing_token', 'true')
+	try:
+		from caches.settings_cache import reload_auth_from_db
+		reload_auth_from_db('mdblist.token', 'mdblist.refresh')
+		refresh = _mdblist_refresh()
+		if refresh in (None, '0', '', 'empty_setting') or not client_id:
+			return False
+		resp = requests.post(
+			_OAUTH_TOKEN_URL,
+			data={'grant_type': 'refresh_token', 'refresh_token': refresh, 'client_id': client_id},
+			timeout=META_API_TIMEOUT)
+		if resp.status_code == 200:
+			data = resp.json() or {}
+			access = data.get('access_token')
+			if access:
+				set_setting('mdblist.token', access)
+				if data.get('refresh_token'):
+					set_setting('mdblist.refresh', data['refresh_token'])
+				from caches.settings_cache import settings_cache
+				settings_cache.clear_db_cache()
+				return True
+		from modules.meta_auth_alerts import maybe_notify_refresh_failure
+		maybe_notify_refresh_failure('mdblist', resp.status_code, resp.text)
+		kodi_utils.logger('MDBList', 'token refresh failed: HTTP %s' % resp.status_code)
+		return False
+	except Exception as e:
+		kodi_utils.logger('MDBList', 'token refresh failed: %s' % e)
+		return False
+	finally:
+		kodi_utils.clear_property('redlight.mdblist_refreshing_token')
+
+def call_mdblist(path, params=None, json_data=None, method=None, _retried=False):
 	params = params or {}
 	token = _mdblist_token()
 	if not token or token in ('0', 'empty_setting'): return None
 	headers = {'Authorization': 'Bearer %s' % token}
 	try:
 		response = session.request(method or 'get', BASE_URL % path.lstrip('/'), params=params, json=json_data, headers=headers, timeout=META_API_TIMEOUT)
+		if response.status_code == 401 and not _retried:
+			from caches.settings_cache import reload_auth_from_db
+			reloaded = reload_auth_from_db('mdblist.token', 'mdblist.refresh')
+			fresh = reloaded.get('mdblist.token')
+			if fresh and fresh not in ('0', '', 'empty_setting') and fresh != token:
+				return call_mdblist(path, params=params, json_data=json_data, method=method, _retried=True)
+			if mdblist_refresh_token():
+				return call_mdblist(path, params=params, json_data=json_data, method=method, _retried=True)
 		if 'json' in response.headers.get('Content-Type', ''):
 			result = response.json()
 		else:
@@ -420,10 +468,8 @@ def _mdbl_personal_list(original_list, media_kind):
 	return normalized
 
 def _mdblist_device_auth_url(device_data):
-	verification_url = (device_data.get('verification_uri') or device_data.get('verification_url') or 'https://mdblist.com/oauth/device/').rstrip('/')
-	user_code = device_data.get('user_code', '')
-	if user_code: return '%s?code=%s' % (verification_url, user_code)
-	return verification_url
+	return device_auth_complete_url(device_data, device_data.get('user_code', ''),
+		fallback='https://mdblist.com/oauth/device', style='query')
 
 def mdblist_get_device_code():
 	client_id = settings.mdblist_client()
@@ -434,6 +480,30 @@ def mdblist_get_device_code():
 		return response.json()
 	except: return None
 
+def mdblist_test_client_id():
+	client_id = settings.mdblist_client()
+	if not client_id or client_id in ('empty_setting', ''):
+		return False, 'MDBList Client ID Key is not set.'
+	try:
+		response = session.post(_OAUTH_DEVICE_URL, data={'client_id': client_id, 'scope': 'write'}, timeout=META_API_TIMEOUT)
+		if response.ok:
+			body = {}
+			try: body = response.json() or {}
+			except: body = {}
+			if body.get('user_code'):
+				return True, 'MDBList Client ID Key is valid.'
+			return False, 'MDBList Client ID Key failed.[CR]MDBList returned an empty device code.'
+		detail = ''
+		try:
+			payload = response.json() or {}
+			if isinstance(payload, dict):
+				detail = payload.get('error_description') or payload.get('error') or payload.get('message') or ''
+		except: detail = ''
+		if not detail: detail = (response.text or '').strip() or 'No details returned.'
+		return False, 'MDBList Client ID Key failed.[CR]MDBList rejected the Client ID (HTTP %s).[CR]%s' % (response.status_code, detail)
+	except Exception as e:
+		return False, 'MDBList Client ID Key failed.[CR]Could not reach MDBList: %s' % str(e)
+
 def mdblist_poll_device(device_data):
 	device_code, user_code = device_data.get('device_code'), device_data.get('user_code')
 	if not device_code or not user_code: return None
@@ -443,18 +513,17 @@ def mdblist_poll_device(device_data):
 	qr_code = make_qrcode(auth_url) or ''
 	copy2clip(auth_url)
 	short_url = make_tinyurl(auth_url)
-	p_dialog_insert = '[CR]OR visit [B]%s[/B]' % short_url if short_url else ''
-	verify_display = (device_data.get('verification_uri') or device_data.get('verification_url') or 'mdblist.com/oauth/device').replace('https://', '').replace('http://', '')
-	content = ('Enter [B]%s[/B] at [B]%s[/B][CR]OR scan the [B]QR Code[/B]%s[CR][CR]'
-		'Waiting for authorisation...' % (user_code, verify_display, p_dialog_insert))
+	content = authorise_wait_text(user_code, device_auth_site_label(device_data, 'https://mdblist.com/oauth/device'), short_url)
 	progress = kodi_utils.progress_dialog('MDBList Authorise', qr_code)
 	progress.update(content, 0)
 	start = time.time()
 	while time.time() - start < expires_in:
 		if progress.iscanceled():
 			progress.close()
-			return None
-		kodi_utils.sleep(interval * 1000)
+			return 'canceled'
+		if kodi_utils.sleep_while_authorising(progress, interval):
+			progress.close()
+			return 'canceled'
 		try:
 			client_id = settings.mdblist_client()
 			response = session.post(_OAUTH_TOKEN_URL, data={
@@ -472,11 +541,15 @@ def mdblist_poll_device(device_data):
 
 def mdblist_authenticate(dummy=''):
 	device_data = mdblist_get_device_code()
-	if not device_data or not device_data.get('user_code'): return kodi_utils.notification('MDBList Authorisation Failed', 3000)
+	if not device_data or not device_data.get('user_code'):
+		_ok, message = mdblist_test_client_id()
+		return kodi_utils.ok_dialog(heading='MDBList', text=message)
 	token_result = mdblist_poll_device(device_data)
-	if not token_result: return kodi_utils.notification('MDBList Authorisation Canceled', 3000)
-	access_token = token_result.get('access_token')
-	if not access_token: return kodi_utils.notification('MDBList Authorisation Failed', 3000)
+	if token_result == 'canceled':
+		return kodi_utils.notification('MDBList Authorisation Canceled', 3000)
+	access_token = (token_result or {}).get('access_token')
+	if not access_token:
+		return kodi_utils.notification('MDBList Error Authorising', 3000)
 	set_setting('mdblist.token', access_token)
 	set_setting('mdblist.refresh', token_result.get('refresh_token') or '0')
 	from caches.settings_cache import settings_cache
@@ -487,16 +560,24 @@ def mdblist_authenticate(dummy=''):
 	mdblist_cache.clear_mdblist_collection_watchlist_data('watchlist')
 	try: _mdbl_watchlist_raw()
 	except: pass
-	switched = settings.offer_watched_provider(3, 'MDBList')
+	settings.offer_watched_provider(3, 'MDBList')
+	from modules.meta_auth_alerts import clear_alert
+	clear_alert('mdblist')
 	kodi_utils.notification('MDBList Account Authorised', 3000)
-	if switched:
-		try: mdblist_sync_activities(force_update=True)
-		except Exception as e: kodi_utils.logger('MDBList', 'Post-auth sync failed: %s' % e)
+	try:
+		status = mdblist_sync_activities(force_update=True)
+	except Exception as e:
+		kodi_utils.logger('MDBList', 'Post-auth sync failed: %s' % e)
+		status = 'failed'
+	settings.notify_post_auth_sync('MDBList', status)
 	try: kodi_utils.container_refresh()
 	except: pass
 	return True
 
 def mdblist_revoke_authentication(dummy=''):
+	if not kodi_utils.confirm_revoke('MDBList'): return
+	from modules.meta_auth_alerts import clear_alert
+	clear_alert('mdblist')
 	set_setting('mdblist.user', 'empty_setting')
 	set_setting('mdblist.token', '0')
 	set_setting('mdblist.refresh', '0')

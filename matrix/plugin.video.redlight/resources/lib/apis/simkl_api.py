@@ -10,13 +10,12 @@ from urllib.parse import urljoin, quote
 from caches import simkl_cache
 from caches.settings_cache import get_setting, set_setting
 from modules import kodi_utils, settings, list_sort
-from modules.http_defaults import META_API_TIMEOUT
-from modules.utils import copy2clip, make_qrcode, make_tinyurl
+from modules.http_defaults import META_API_TIMEOUT, shipped_simkl_alt, shipped_simkl_client, shipped_simkl_ids
+from modules.utils import copy2clip, make_qrcode, make_tinyurl, device_auth_complete_url, device_auth_site_label, authorise_wait_text
 
 BASE_URL = 'https://api.simkl.com'
 OAUTH_PIN_URL = 'https://api.simkl.com/oauth/pin'
 SIMKL_APP_NAME = 'plugin.video.redlight'
-SIMKL_CLIENT_ID = '6cacc8db22e67b2cd423ef73a9fd3a4f45146ba7fbf30fb2ae28f2fa9d0c2583'
 # Shared across plugin invokers + SimklMonitor (in-memory alone is not enough in Kodi).
 _SIMKL_MIN_REQUEST_GAP = 1.5
 _SIMKL_THROTTLE_PROP = 'redlight.simkl_last_request_at'
@@ -74,24 +73,60 @@ def _throttle():
 
 def _client_id():
 	"""Prefer Meta Accounts Simkl Client ID; fall back to the shipped default."""
-	try: return settings.simkl_client() or SIMKL_CLIENT_ID
-	except Exception: return SIMKL_CLIENT_ID
+	try: return settings.simkl_client() or shipped_simkl_client()
+	except Exception: return shipped_simkl_client()
+
+def _client_ids_to_try():
+	"""Authorised: whatever they signed in with. Otherwise the real default, never the 2.4.6 alt."""
+	primary = _client_id()
+	fallback = shipped_simkl_client()
+	if _has_simkl_token():
+		return [primary] if primary else ([fallback] if fallback else [])
+	if (not primary) or primary == shipped_simkl_alt():
+		return [fallback] if fallback else []
+	return [primary]
+
+def _client_id_rejected(resp):
+	if resp is None: return False
+	if resp.status_code == 412: return True
+	try: text = (resp.text or '').lower()
+	except Exception: text = ''
+	return resp.status_code in (400, 401, 403) and 'client_id' in text
+
+def _has_simkl_token():
+	token = _simkl_token()
+	return token not in ('0', '', None, 'empty_setting')
+
+def _adopt_shipped_client_id(cid):
+	"""Remember which shipped app Simkl accepted. Never overwrite a custom Client ID."""
+	shipped = shipped_simkl_ids()
+	if not cid or cid not in shipped: return
+	if cid == shipped_simkl_alt() and not _has_simkl_token(): return
+	current = _client_id()
+	if current == cid: return
+	if current and current not in shipped: return
+	try: set_setting('simkl.client', cid)
+	except Exception: pass
+
+def _clear_alt_client_id():
+	"""After Revoke, the 2.4.6 key must not remain as the stored default."""
+	if _client_id() != shipped_simkl_alt(): return
+	try: set_setting('simkl.client', shipped_simkl_client())
+	except Exception: pass
 
 def _simkl_token():
-	from caches.settings_cache import settings_cache
-	token = settings_cache.read_db_value('simkl.token')
-	if token in (None, '0', '', 'empty_setting'):
-		token = get_setting('redlight.simkl.token', '0')
-	return token
+	from caches.settings_cache import live_setting
+	return live_setting('simkl.token', '0')
 
-def _headers():
+def _headers(client_id=None):
 	token = _simkl_token()
-	h = {'Content-Type': 'application/json', 'simkl-api-key': _client_id(), 'User-Agent': '%s/%s' % (SIMKL_APP_NAME, kodi_utils.addon_version())}
+	cid = client_id or _client_id()
+	h = {'Content-Type': 'application/json', 'simkl-api-key': cid, 'User-Agent': '%s/%s' % (SIMKL_APP_NAME, kodi_utils.addon_version())}
 	if token not in ('0', '', None, 'empty_setting'): h['Authorization'] = 'Bearer %s' % token
 	return h
 
-def _url(path, auth=True):
-	cid = _client_id()
+def _url(path, auth=True, client_id=None):
+	cid = client_id or _client_id()
 	if not cid: return None
 	base = path if path.startswith('http') else urljoin(BASE_URL, path.lstrip('/'))
 	sep = '&' if '?' in base else '?'
@@ -100,61 +135,102 @@ def _url(path, auth=True):
 def _pin_headers():
 	return {'User-Agent': '%s/%s' % (SIMKL_APP_NAME, kodi_utils.addon_version())}
 
-def _pin_url(user_code=None):
+def _pin_url(user_code=None, client_id=None):
+	cid = client_id or _client_id()
 	url = '%s/%s' % (OAUTH_PIN_URL, user_code) if user_code else OAUTH_PIN_URL
 	sep = '&' if '?' in url else '?'
-	return '%s%sclient_id=%s&app-name=%s&app-version=%s' % (url, sep, _client_id(), SIMKL_APP_NAME, kodi_utils.addon_version())
+	return '%s%sclient_id=%s&app-name=%s&app-version=%s' % (url, sep, cid, SIMKL_APP_NAME, kodi_utils.addon_version())
 
 def _simkl_pin_auth_url(pin):
-	user_code = pin.get('user_code', '')
-	verify = (pin.get('verification_uri') or pin.get('verification_url') or 'https://simkl.com/pin').rstrip('/')
-	return '%s/%s' % (verify, user_code)
+	return device_auth_complete_url(pin, pin.get('user_code', ''), fallback='https://simkl.com/pin', style='path')
 
-def call_simkl(path, data=None, method=None, is_delete=False):
-	_throttle()
-	url = _url(path)
-	if not url: return None
-	headers = _headers()
-	try:
-		if is_delete:
-			resp = requests.delete(url, headers=headers, timeout=META_API_TIMEOUT)
-		elif method == 'get' or (data is None and not method):
-			resp = requests.get(url, headers=headers, timeout=META_API_TIMEOUT)
-		else:
-			payload = json.dumps(data) if isinstance(data, (dict, list)) else data
-			resp = requests.post(url, data=payload, headers=headers, timeout=META_API_TIMEOUT)
-		if resp.status_code in (200, 201): return resp.json() if resp.text else True
-		if resp.status_code == 204: return True
-		kodi_utils.logger('Simkl', 'HTTP %s %s' % (resp.status_code, url))
-	except Exception as e: kodi_utils.logger('Simkl Error', str(e))
+def call_simkl(path, data=None, method=None, is_delete=False, _retried=False):
+	last_error = None
+	last_status = None
+	last_client_reject = False
+	used_token = _simkl_token()
+	for cid in _client_ids_to_try():
+		_throttle()
+		url = _url(path, client_id=cid)
+		if not url: return None
+		headers = _headers(client_id=cid)
+		try:
+			if is_delete:
+				resp = requests.delete(url, headers=headers, timeout=META_API_TIMEOUT)
+			elif method == 'get' or (data is None and not method):
+				resp = requests.get(url, headers=headers, timeout=META_API_TIMEOUT)
+			else:
+				payload = json.dumps(data) if isinstance(data, (dict, list)) else data
+				resp = requests.post(url, data=payload, headers=headers, timeout=META_API_TIMEOUT)
+			if resp.status_code in (200, 201):
+				if cid != _client_id(): _adopt_shipped_client_id(cid)
+				return resp.json() if resp.text else True
+			if resp.status_code == 204:
+				if cid != _client_id(): _adopt_shipped_client_id(cid)
+				return True
+			last_status = resp.status_code
+			last_client_reject = _client_id_rejected(resp)
+			last_error = 'HTTP %s %s' % (resp.status_code, url)
+			if not last_client_reject:
+				break
+		except Exception as e:
+			kodi_utils.logger('Simkl Error', str(e))
+			return None
+	if last_error: kodi_utils.logger('Simkl', last_error)
+	if last_status == 401 and not last_client_reject:
+		if not _retried:
+			from caches.settings_cache import reload_auth_from_db
+			fresh = (reload_auth_from_db('simkl.token') or {}).get('simkl.token')
+			if fresh and fresh not in ('0', '', 'empty_setting') and fresh != used_token:
+				return call_simkl(path, data=data, method=method, is_delete=is_delete, _retried=True)
+		from modules.meta_auth_alerts import maybe_notify_refresh_failure
+		maybe_notify_refresh_failure('simkl', 401)
 	return None
 
 def simkl_get_pin():
-	try: return requests.get(_pin_url(), headers=_pin_headers(), timeout=META_API_TIMEOUT).json()
-	except: return None
+	try:
+		for cid in _client_ids_to_try():
+			_throttle()
+			resp = requests.get(_pin_url(client_id=cid), headers=_pin_headers(), timeout=META_API_TIMEOUT)
+			if resp.status_code == 200:
+				data = resp.json() or {}
+				if data.get('user_code'):
+					data['_client_id'] = cid
+					return data
+			if not _client_id_rejected(resp):
+				break
+	except: pass
+	return None
 
 def simkl_test_client_id():
 	"""Probe PIN endpoint — same acceptance check Trakt/PunchPlay use for client keys."""
-	cid = _client_id()
-	if not cid:
+	if not _client_id():
 		return False, 'Simkl Client ID Key is not set.'
+	last_detail = 'No details returned.'
+	last_status = 0
 	try:
-		resp = requests.get(_pin_url(), headers=_pin_headers(), timeout=META_API_TIMEOUT)
-		if resp.status_code == 200:
-			body = {}
-			try: body = resp.json() or {}
-			except: body = {}
-			if body.get('user_code'):
-				return True, 'Simkl Client ID Key is valid.'
-			return False, 'Simkl Client ID Key failed.[CR]Simkl returned an empty PIN code.'
-		detail = ''
-		try:
-			payload = resp.json() or {}
-			if isinstance(payload, dict):
-				detail = payload.get('error_description') or payload.get('message') or payload.get('error') or ''
-		except: detail = ''
-		if not detail: detail = (resp.text or '').strip() or 'No details returned.'
-		return False, 'Simkl Client ID Key failed.[CR]Simkl rejected the Client ID (HTTP %s).[CR]%s' % (resp.status_code, detail)
+		for cid in _client_ids_to_try():
+			_throttle()
+			resp = requests.get(_pin_url(client_id=cid), headers=_pin_headers(), timeout=META_API_TIMEOUT)
+			last_status = resp.status_code
+			if resp.status_code == 200:
+				body = {}
+				try: body = resp.json() or {}
+				except: body = {}
+				if body.get('user_code'):
+					return True, 'Simkl Client ID Key is valid.'
+				return False, 'Simkl Client ID Key failed.[CR]Simkl returned an empty PIN code.'
+			detail = ''
+			try:
+				payload = resp.json() or {}
+				if isinstance(payload, dict):
+					detail = payload.get('error_description') or payload.get('message') or payload.get('error') or ''
+			except: detail = ''
+			if not detail: detail = (resp.text or '').strip() or 'No details returned.'
+			last_detail = detail
+			if not _client_id_rejected(resp):
+				break
+		return False, 'Simkl Client ID Key failed.[CR]Simkl rejected the Client ID (HTTP %s).[CR]%s' % (last_status, last_detail)
 	except Exception as e:
 		return False, 'Simkl Client ID Key failed.[CR]Could not reach Simkl: %s' % str(e)
 
@@ -167,32 +243,43 @@ def simkl_poll_pin(pin):
 	qr_code = make_qrcode(auth_url) or ''
 	copy2clip(auth_url)
 	short_url = make_tinyurl(auth_url)
-	p_dialog_insert = '[CR]OR visit [B]%s[/B]' % short_url if short_url else ''
-	content = 'Enter [B]%s[/B] at [B]simkl.com/pin[/B][CR]OR scan the [B]QR Code[/B]%s[CR][CR]Waiting for authorisation...' % (user_code, p_dialog_insert)
+	content = authorise_wait_text(user_code, device_auth_site_label(pin, 'https://simkl.com/pin'), short_url)
 	progress = kodi_utils.progress_dialog('Simkl Authorise', qr_code)
 	progress.update(content, 0)
 	expires = time.time() + expires_in
 	while time.time() < expires:
 		if progress.iscanceled():
 			progress.close()
-			return None
+			return 'canceled'
 		_throttle()
 		try:
-			resp = requests.get(_pin_url(user_code), headers=_pin_headers(), timeout=META_API_TIMEOUT).json()
+			resp = requests.get(_pin_url(user_code, client_id=pin.get('_client_id')), headers=_pin_headers(), timeout=META_API_TIMEOUT).json()
 			if resp.get('access_token'):
 				progress.close()
 				return resp['access_token']
 		except: pass
 		progress.update(content, int(100 * (1 - (expires - time.time()) / float(expires_in))))
-		kodi_utils.sleep(interval * 1000)
+		if kodi_utils.sleep_while_authorising(progress, interval):
+			progress.close()
+			return 'canceled'
 	progress.close()
 	return None
 
 def simkl_authenticate(dummy=''):
 	pin = simkl_get_pin()
-	if not pin or not pin.get('user_code'): return kodi_utils.notification('Simkl Authorisation Failed', 3000)
+	if not pin or not pin.get('user_code'):
+		_ok, message = simkl_test_client_id()
+		return kodi_utils.ok_dialog(heading='Simkl', text=message)
 	token = simkl_poll_pin(pin)
-	if not token: return kodi_utils.notification('Simkl Authorisation Canceled', 3000)
+	if token == 'canceled':
+		return kodi_utils.notification('Simkl Authorisation Canceled', 3000)
+	if not token:
+		return kodi_utils.notification('Simkl Error Authorising', 3000)
+	pin_client = pin.get('_client_id')
+	if pin_client in shipped_simkl_ids():
+		current = _client_id()
+		if (not current) or current in shipped_simkl_ids():
+			set_setting('simkl.client', pin_client)
 	set_setting('simkl.token', token)
 	from caches.settings_cache import settings_cache
 	settings_cache.clear_db_cache()
@@ -203,8 +290,15 @@ def simkl_authenticate(dummy=''):
 		set_setting('simkl.user', str(u.get('name') or u.get('login') or u.get('username') or 'Simkl User'))
 	else: set_setting('simkl.user', 'Simkl User')
 	settings.offer_watched_provider(2, 'Simkl')
+	from modules.meta_auth_alerts import clear_alert
+	clear_alert('simkl')
 	kodi_utils.notification('Simkl Account Authorised', 3000)
-	simkl_sync_activities(force_update=True)
+	try:
+		status = simkl_sync_activities(force_update=True)
+	except Exception as e:
+		kodi_utils.logger('Simkl', 'Post-auth sync failed: %s' % e)
+		status = 'failed'
+	settings.notify_post_auth_sync('Simkl', status)
 	try: kodi_utils.container_refresh()
 	except: pass
 	return True
@@ -223,6 +317,10 @@ def simkl_import_trakt(params=None):
 
 
 def simkl_revoke_authentication(dummy=''):
+	if not kodi_utils.confirm_revoke('Simkl'): return
+	from modules.meta_auth_alerts import clear_alert
+	clear_alert('simkl')
+	_clear_alt_client_id()
 	set_setting('simkl.user', 'empty_setting')
 	set_setting('simkl.token', '0')
 	settings.fallback_watched_provider_on_revoke(2)
@@ -881,6 +979,15 @@ def simkl_reset_scrobble(params):
 		kodi_utils.notification('Success', 3000)
 	except: kodi_utils.notification('Error', 3000)
 
+def _simkl_hide_progress_locally(tmdb_id, action):
+	"""Hide/unhide In Progress when Simkl has no catalog row (e.g. TMDb-only miniseries)."""
+	try:
+		from modules.watched_status import hide_unhide_progress_items
+		hide_unhide_progress_items({'action': action, 'media_id': tmdb_id, 'refresh': 'false'})
+		return True
+	except Exception:
+		return False
+
 def simkl_add_to_list(listname, tmdb_id, media_type, imdb_id=None, tvdb_id=None, simkl_id=None, media_kind=None):
 	bucket = _simkl_list_bucket(media_type, media_kind)
 	ids = _simkl_list_ids(tmdb_id, imdb_id, tvdb_id, simkl_id)
@@ -890,8 +997,13 @@ def simkl_add_to_list(listname, tmdb_id, media_type, imdb_id=None, tvdb_id=None,
 	if success:
 		_simkl_refresh_after_list_change(listname, media_type, media_kind)
 		kodi_utils.notify_success()
-	else: kodi_utils.notify_error()
-	return success
+		return True
+	if media_type != 'movie' and listname == 'dropped' and _simkl_hide_progress_locally(tmdb_id, 'drop'):
+		_simkl_refresh_after_list_change(listname, media_type, media_kind)
+		kodi_utils.notification('Simkl does not have this title. Hidden from In Progress.', 4000)
+		return True
+	kodi_utils.notify_error()
+	return False
 
 def simkl_remove_from_list(listname, tmdb_id, media_type, imdb_id=None, tvdb_id=None, simkl_id=None, media_kind=None):
 	bucket = _simkl_list_bucket(media_type, media_kind)
@@ -906,8 +1018,13 @@ def simkl_remove_from_list(listname, tmdb_id, media_type, imdb_id=None, tvdb_id=
 	if success:
 		_simkl_refresh_after_list_change(listname, media_type, media_kind)
 		kodi_utils.notify_success()
-	else: kodi_utils.notify_not_in_list()
-	return success
+		return True
+	if media_type != 'movie' and listname == 'dropped' and _simkl_hide_progress_locally(tmdb_id, 'undrop'):
+		_simkl_refresh_after_list_change(listname, media_type, media_kind)
+		kodi_utils.notify_success()
+		return True
+	kodi_utils.notify_not_in_list()
+	return False
 
 _SIMKL_SHOW_WATCHED_ACTIVITY_KEYS = ('watching', 'plantowatch', 'completed', 'hold', 'dropped', 'removed_from_list', 'all')
 _SIMKL_MOVIE_WATCHED_ACTIVITY_KEYS = ('plantowatch', 'completed', 'dropped', 'removed_from_list', 'all')
@@ -958,9 +1075,29 @@ def simkl_indicators_movies(date_from=None):
 	data = call_simkl(path, method='get') or {}
 	_simkl_apply_movie_watched(data, date_from, filter_status=False)
 
+def _simkl_drop_specials_mirrors(rows):
+	"""Keep S01E01 over a same-timestamp S00E01 duplicate from include_all_episodes."""
+	regular = set()
+	for row in rows:
+		try:
+			if int(row[2]) != 0: regular.add((str(row[1]), int(row[3]), row[4]))
+		except Exception:
+			pass
+	kept = []
+	for row in rows:
+		try:
+			if int(row[2]) == 0 and (str(row[1]), int(row[3]), row[4]) in regular:
+				continue
+		except Exception:
+			pass
+		kept.append(row)
+	return kept
+
 def _simkl_append_tv_watched(insert_append, data, item_key, touched_ids=None):
 	"""Flatten shows[] or anime[] all-items into local episode watched rows."""
 	items = data.get(item_key, data if isinstance(data, list) else [])
+	pending = []
+	pending_append = pending.append
 	for item in items:
 		try:
 			if item_key == 'anime':
@@ -988,8 +1125,10 @@ def _simkl_append_tv_watched(insert_append, data, item_key, touched_ids=None):
 							epnum = int(ep.get('number', ep.get('episode')))
 					except Exception:
 						continue
-					insert_append(('episode', tmdb_id, ep_snum, epnum, watched_at, title))
+					pending_append(('episode', tmdb_id, ep_snum, epnum, watched_at, title))
 		except: pass
+	for row in _simkl_drop_specials_mirrors(pending):
+		insert_append(row)
 
 def _simkl_apply_tv_watched(data, date_from=None):
 	"""Apply shows[] + anime[] from an all-items payload into the local watched cache."""
@@ -1165,9 +1304,31 @@ _SIMKL_TRENDING_TRAKT_KEYS = {'movies': 'movie', 'tv': 'show', 'anime': 'show'}
 def _simkl_trending_url(media_kind):
 	return '%s/%s/today_100.json' % (SIMKL_TRENDING_BASE, media_kind)
 
-def _simkl_cdn_query_url(url):
+def _simkl_cdn_query_url(url, client_id=None):
+	cid = client_id or _client_id()
 	sep = '&' if '?' in url else '?'
-	return '%s%sclient_id=%s&app-name=%s&app-version=%s' % (url, sep, _client_id(), SIMKL_APP_NAME, kodi_utils.addon_version())
+	return '%s%sclient_id=%s&app-name=%s&app-version=%s' % (url, sep, cid, SIMKL_APP_NAME, kodi_utils.addon_version())
+
+def _simkl_public_get(base_url):
+	"""GET a Simkl CDN/public URL, retrying the other shipped Client ID on 412."""
+	last_resp, last_error = None, None
+	for cid in _client_ids_to_try():
+		_throttle()
+		url = _simkl_cdn_query_url(base_url, client_id=cid)
+		try:
+			resp = requests.get(url, headers=_pin_headers(), timeout=META_API_TIMEOUT)
+		except Exception as e:
+			kodi_utils.logger('Simkl', str(e))
+			return None
+		last_resp = resp
+		if resp.status_code == 200:
+			if not _has_simkl_token(): _adopt_shipped_client_id(cid)
+			return resp
+		last_error = 'HTTP %s %s' % (resp.status_code, url)
+		if not _client_id_rejected(resp):
+			break
+	if last_error: kodi_utils.logger('Simkl', last_error)
+	return last_resp
 
 def _simkl_trending_query_url(url):
 	return _simkl_cdn_query_url(url)
@@ -1194,13 +1355,12 @@ def _simkl_calendar_library_by_simkl():
 
 def _simkl_fetch_calendar_payload(feed):
 	"""Return (calendar_rows, metadata_by_simkl_id) from a public CDN v2 feed."""
-	url = _simkl_cdn_query_url('%s/%s.json' % (SIMKL_CALENDAR_CDN_BASE, feed))
-	_throttle()
-	try:
-		resp = requests.get(url, headers=_pin_headers(), timeout=META_API_TIMEOUT)
-		if resp.status_code != 200:
+	resp = _simkl_public_get('%s/%s.json' % (SIMKL_CALENDAR_CDN_BASE, feed))
+	if resp is None or resp.status_code != 200:
+		if resp is not None:
 			kodi_utils.logger('Simkl', 'Calendar CDN HTTP %s for %s' % (resp.status_code, feed))
-			return [], {}
+		return [], {}
+	try:
 		payload = resp.json()
 	except Exception as e:
 		kodi_utils.logger('Simkl', 'Calendar CDN error %s: %s' % (feed, e))
@@ -1413,11 +1573,11 @@ def _simkl_trending_to_trakt(item, media_kind):
 def _simkl_fetch_trending_today(media_kind):
 	from caches.lists_cache import lists_cache_object
 	def _fetch(dummy):
-		_throttle()
 		try:
-			resp = requests.get(_simkl_trending_query_url(_simkl_trending_url(media_kind)), headers=_pin_headers(), timeout=META_API_TIMEOUT)
-			if resp.status_code != 200:
-				kodi_utils.logger('Simkl Trending', 'HTTP %s for %s' % (resp.status_code, media_kind))
+			resp = _simkl_public_get(_simkl_trending_url(media_kind))
+			if resp is None or resp.status_code != 200:
+				if resp is not None:
+					kodi_utils.logger('Simkl Trending', 'HTTP %s for %s' % (resp.status_code, media_kind))
 				return None
 			data = resp.json()
 			if isinstance(data, list): items = data

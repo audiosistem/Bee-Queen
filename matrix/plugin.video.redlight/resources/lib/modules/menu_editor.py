@@ -106,7 +106,9 @@ class MenuEditor:
 		navigator_cache.set_list(self.active_list, 'default', contents)
 		kodi_utils.notification('Success', 1500)
 		kodi_utils.sleep(500)
-		kodi_utils.container_update(kodi_utils.build_folder_url({'mode': 'navigator.main', 'action': self.active_list}))
+		# Refresh in place. Container.Update stacked a second copy of this menu, so Back
+		# showed the previous (pre-restore) listing until you left and re-entered.
+		self._refresh_menu()
 
 	def reload(self):
 		default, edited = navigator_cache.get_main_lists(self.active_list)

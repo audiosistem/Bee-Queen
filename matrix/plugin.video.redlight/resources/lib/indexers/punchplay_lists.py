@@ -37,7 +37,7 @@ def search_punchplay_public_lists(params):
 				listitem = make_listitem()
 				listitem.setLabel(display)
 				listitem.setArt({'icon': icon, 'poster': icon, 'thumb': icon, 'fanart': fanart, 'banner': fanart})
-				info_tag = listitem.getVideoInfoTag(True)
+				info_tag = listitem.getVideoInfoTag()
 				info_tag.setPlot(list_folder_plot(item.get('description'), user, count, item.get('likeCount')))
 				listitem.addContextMenuItems(cm)
 				yield (url, listitem, True)
@@ -75,7 +75,7 @@ def search_punchplay_lists(params):
 				listitem = make_listitem()
 				listitem.setLabel(display)
 				listitem.setArt({'icon': icon, 'poster': icon, 'thumb': icon, 'fanart': fanart, 'banner': fanart})
-				info_tag = listitem.getVideoInfoTag(True)
+				info_tag = listitem.getVideoInfoTag()
 				info_tag.setPlot('PunchPlay %s' % status_label)
 				yield (url, listitem, True)
 			except: pass

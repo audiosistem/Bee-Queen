@@ -11,7 +11,7 @@ class TVShows:
 	'tmdb_anime_popular', 'tmdb_anime_popular_recent', 'tmdb_anime_premieres', 'tmdb_anime_upcoming', 'tmdb_anime_on_the_air')
 	special = ('tmdb_tv_languages', 'tmdb_tv_networks', 'tmdb_tv_providers', 'tmdb_tv_year', 'tmdb_tv_decade', 'tmdb_tv_recommendations', 'tmdb_tv_genres',
 	'tmdb_tv_search', 'tmdb_tv_keyword_results', 'tmdb_tv_keyword_results_direct', 'tmdb_anime_year', 'tmdb_anime_decade', 'tmdb_anime_genres',
-	'tmdb_anime_providers', 'ai_similar')
+	'tmdb_anime_providers', 'tmdb_anime_search', 'ai_similar')
 	personal = {'in_progress_tvshows': ('modules.watched_status', 'get_in_progress_tvshows'),
 	'watched_tvshows': ('modules.watched_status', 'get_watched_items'),
 	'recent_watched_tvshows': ('modules.watched_status', 'get_recently_watched'),
@@ -216,7 +216,7 @@ class TVShows:
 				kodi_utils.logger('MDBList List Error', '%s: %s' % (self.action, e))
 		kodi_utils.set_content(handle, 'tvshows')
 		kodi_utils.set_category(handle, self.category_name)
-		kodi_utils.end_directory(handle, cacheToDisc=False if self.is_external or self.action in self.mdblist_personal else True)
+		kodi_utils.end_directory(handle, cacheToDisc=False)
 		if not self.is_external:
 			if self.params_get('refreshed') == 'true': kodi_utils.sleep(1000)
 			kodi_utils.set_view_mode('view.tvshows', 'tvshows', self.is_external)
@@ -334,7 +334,7 @@ class TVShows:
 			listitem.addContextMenuItems(cm)
 			listitem.setArt({'poster': poster, 'fanart': fanart, 'icon': poster, 'clearlogo': clearlogo, 'landscape': landscape, 'thumb': thumb, 'icon': landscape,
 							'tvshow.poster': poster, 'tvshow.clearlogo': clearlogo})
-			info_tag = listitem.getVideoInfoTag(True)
+			info_tag = listitem.getVideoInfoTag()
 			info_tag.setMediaType('tvshow'), info_tag.setTitle(title), info_tag.setTvShowTitle(title), info_tag.setOriginalTitle(meta_get('original_title'))
 			info_tag.setUniqueIDs({'imdb': imdb_id, 'tmdb': str(tmdb_id), 'tvdb': str(tvdb_id)}), info_tag.setIMDBNumber(imdb_id)
 			info_tag.setPlot(meta_get('plot')), info_tag.setPlaycount(playcount), info_tag.setGenres(meta_get('genre')), info_tag.setYear(int(year))

@@ -112,10 +112,10 @@ def addon_icon_choice(params):
 def rescrape_actions_choice(params):
 	set_focus = params.get('set_focus', 0)
 	action_values = {0: 'Off', 1: 'Auto', 2: 'Prompt'}
-	order_values = {0: 'Highest', 1: 'High', 2: 'Middle', 3: 'Low', 4: 'Lower', 5: 'Lowest'}
+	order_values = {0: 'Highest', 1: 'High', 2: 'High Middle', 3: 'Middle', 4: 'Low Middle', 5: 'Low', 6: 'Lowest'}
 	rescrape_settings = settings.rescrape_all_settings()
 	choices = [dict(i, **{'line1': i['name'],
-				'line2': 'Action: [B]%s[/B] | Order: [B]%s[/B]' % (action_values[k[1]], order_values[k[2]]), 'value': i['value'],
+				'line2': 'Action: [B]%s[/B] | Order: [B]%s[/B]' % (action_values[k[1]], order_values.get(k[2], str(k[2]))), 'value': i['value'],
 				'action': k[1], 'order': k[2]}) for i in kodi_utils.rescrape_items() for k in rescrape_settings if k[0] == i['value']]
 	choices = [dict(i, **{'position': c}) for c, i in enumerate(sorted(choices, key=lambda k: k['order']))]
 	kwargs = {'items': json.dumps(choices), 'heading': 'Rescrape Actions', 'multi_line': 'true', 'narrow_window': 'true', 'set_focus': set_focus}
@@ -137,8 +137,9 @@ def rescrape_actions_choice(params):
 		setting_value = choice['value']
 		set_setting(setting, setting_value)
 	else:
-		choices = [{'line1': 'Highest', 'value': '0'}, {'line1': 'High', 'value': '1'}, {'line1': 'Middle', 'value': '2'},
-					{'line1': 'Low', 'value': '3'}, {'line1': 'Lower', 'value': '4'}, {'line1': 'Lowest', 'value': '5'}]
+		choices = [{'line1': 'Highest', 'value': '0'}, {'line1': 'High', 'value': '1'}, {'line1': 'High Middle', 'value': '2'},
+					{'line1': 'Middle', 'value': '3'}, {'line1': 'Low Middle', 'value': '4'}, {'line1': 'Low', 'value': '5'},
+					{'line1': 'Lowest', 'value': '6'}]
 		heading, setting = 'Choose Order', 'rescrape.%s.order'
 		kwargs = {'items': json.dumps(choices), 'heading': heading, 'narrow_window': 'true'}
 		choice = kodi_utils.select_dialog(choices, **kwargs)
@@ -545,7 +546,7 @@ def limit_number_total_choice(params):
 def _enabled_python_modules():
 	try:
 		results = kodi_utils.jsonrpc_get_addons('xbmc.python.module') or []
-		return [i for i in results if kodi_utils.addon_enabled(i['addonid'])]
+		return [i for i in results if kodi_utils.addon_present(i['addonid']) and kodi_utils.addon_enabled(i['addonid'])]
 	except:
 		return []
 
@@ -579,7 +580,7 @@ def _prompt_install_or_other(params, slot, current_module, used, all_modules):
 	if assigned:
 		text = 'No additional compatible external scraper is installed.[CR][CR]%s[CR][CR]Install another scraper or use Other. This slot is unchanged.' % assigned
 	else:
-		text = 'No known compatible external scraper is installed.[CR][CR]Install one from a repository (Magneto, Viper, CocoScrapers, etc.), then choose it here. Other slots are not changed.'
+		text = 'No known compatible external scraper is installed.[CR][CR]Install one from a repository (Magneto, Gears, Viper, etc.), then choose it here. Other slots are not changed.'
 	prompt = kodi_utils.confirm_dialog(
 		heading='External Scraper Slot %d' % slot,
 		text=text,
@@ -587,7 +588,8 @@ def _prompt_install_or_other(params, slot, current_module, used, all_modules):
 		cancel_label='Other',
 		third_label='Cancel',
 		default_control=10,
-		scroll=bool(assigned))
+		scroll=True,
+		force_scroll=True)
 	if prompt in (None, 12): return
 	if prompt == 10:
 		_offer_known_external_scraper_install()
@@ -659,7 +661,7 @@ def _assign_external_scraper_module(slot, module_id, module_name, retry_params):
 def _offer_known_external_scraper_install():
 	choices = []
 	for addon_id, name in settings.KNOWN_EXTERNAL_SCRAPERS:
-		if kodi_utils.addon_installed(addon_id): continue
+		if kodi_utils.addon_present(addon_id): continue
 		choices.append({'addonid': addon_id, 'name': name})
 	if not choices:
 		kodi_utils.ok_dialog(text='The known compatible scrapers are already installed.[CR]Use Other to pick any Python module, or enable the module in Kodi Add-ons.')
@@ -686,7 +688,7 @@ def _known_external_scraper_choices(all_modules, used, current_module):
 	by_id = {i['addonid']: i for i in all_modules}
 	for addon_id, name in settings.KNOWN_EXTERNAL_SCRAPERS:
 		if addon_id in by_id: continue
-		if not kodi_utils.addon_installed(addon_id) or not kodi_utils.addon_enabled(addon_id): continue
+		if not kodi_utils.addon_present(addon_id) or not kodi_utils.addon_enabled(addon_id): continue
 		by_id[addon_id] = {'addonid': addon_id, 'name': name, 'thumbnail': ''}
 	primary, seen = [], set()
 	if current_module and current_module not in used and current_module in by_id:
@@ -705,6 +707,11 @@ def external_scraper_choice(params):
 	try: slot = int(params.get('slot', '1'))
 	except: slot = 1
 	slot = max(1, min(slot, settings.EXTERNAL_SCRAPER_SLOT_COUNT))
+	if settings.prune_uninstalled_external_scraper_slots():
+		try:
+			from caches.settings_cache import refresh_settings_manager_properties
+			refresh_settings_manager_properties()
+		except: pass
 	all_modules = _enabled_python_modules()
 	used = _external_scraper_used_modules(slot)
 	current_module = settings.external_scraper_slot_data(slot)['module']
@@ -1171,6 +1178,7 @@ def playback_choice(params):
 		items.append({'line': 'Rescrape with External Cache Check [B]%s[/B]' % check_cache_status, 'function': 'rescrape_external_cache_check'})
 	items.extend([{'line': 'Clear Debrid Cache & Show Results', 'function': 'clear_debrid_cache_and_show'},
 				{'line': 'Scrape with ALL External Scrapers', 'function': 'scrape_with_disabled'},
+				{'line': 'Scrape with ALL Internal Scrapers', 'function': 'scrape_with_all_internal'},
 				{'line': 'Scrape With All Filters Ignored', 'function': 'scrape_with_filters_ignored'}])
 	if media_type == 'episode': items.append({'line': 'Scrape with Custom Episode Groups Value', 'function': 'scrape_with_episode_group'})
 	if aliases: items.append({'line': 'Scrape with an Alias', 'function': 'scrape_with_aliases'})
@@ -1220,6 +1228,11 @@ def playback_choice(params):
 												'disabled_ext_ignored': 'true', 'prescrape': 'false', 'autoplay': 'false'}
 		else: play_params = {'mode': play_mode, 'media_type': 'episode', 'tmdb_id': meta['tmdb_id'], 'season': season,
 							'episode': episode, 'disabled_ext_ignored': 'true', 'prescrape': 'false', 'autoplay': 'false'}
+	elif choice == 'scrape_with_all_internal':
+		if media_type == 'movie': play_params = {'mode': play_mode, 'media_type': 'movie', 'tmdb_id': meta['tmdb_id'],
+												'disabled_int_ignored': 'true', 'prescrape': 'false', 'autoplay': 'false'}
+		else: play_params = {'mode': play_mode, 'media_type': 'episode', 'tmdb_id': meta['tmdb_id'], 'season': season,
+							'episode': episode, 'disabled_int_ignored': 'true', 'prescrape': 'false', 'autoplay': 'false'}
 	elif choice == 'scrape_with_filters_ignored':
 		if media_type == 'movie': play_params = {'mode': play_mode, 'media_type': 'movie', 'tmdb_id': meta['tmdb_id'],
 												'ignore_scrape_filters': 'true', 'prescrape': 'false', 'autoplay': 'false'}
@@ -1276,6 +1289,9 @@ def playback_choice(params):
 		all_choice = kodi_utils.confirm_dialog(heading=meta.get('rootname', ''), text='Scrape with ALL External Scrapers?', ok_label='Yes', cancel_label='No')
 		if all_choice == None: return kodi_utils.notification('Cancelled', 2500)
 		if all_choice: _process_params('', 'true', 'disabled_ext_ignored')
+		internal_all_choice = kodi_utils.confirm_dialog(heading=meta.get('rootname', ''), text='Scrape with ALL Internal Scrapers?', ok_label='Yes', cancel_label='No')
+		if internal_all_choice == None: return kodi_utils.notification('Cancelled', 2500)
+		if internal_all_choice: _process_params('', 'true', 'disabled_int_ignored')
 		disable_filters_choice = kodi_utils.confirm_dialog(heading=meta.get('rootname', ''), text='Disable All Filters for Search?', ok_label='Yes', cancel_label='No')
 		if disable_filters_choice == None: return kodi_utils.notification('Cancelled', 2500)
 		if disable_filters_choice:
@@ -1395,16 +1411,21 @@ def set_language_filter_choice(params):
 
 def enable_scrapers_choice(params={}):
 	icon = params.get('icon', None) or kodi_utils.get_icon('redlight')
-	scrapers = ['external', 'animetosho', 'nyaa', 'comet', 'torz', 'torrentio', 'easynews', 'rd_cloud', 'pm_cloud', 'ad_cloud', 'tb_cloud', 'folders']
-	cloud_scrapers = {'rd_cloud': 'rd.enabled', 'pm_cloud': 'pm.enabled', 'ad_cloud': 'ad.enabled', 'tb_cloud': 'tb.enabled'}
-	scraper_names = ['EXTERNAL SCRAPERS', 'ANIMETOSHO (ANIME)', 'NYAA (ANIME)', 'COMET', 'STREMTHRU TORZ', 'TORRENTIO', 'EASYNEWS', 'RD CLOUD', 'PM CLOUD', 'AD CLOUD', 'TB CLOUD', 'FOLDERS 1-5']
+	scrapers = ['external', 'animetosho', 'nyaa', 'piratebay', 'comet', 'mediafusion', 'torz', 'torrentio', 'zilean',
+				'aiostreams', 'easynews', 'nzb',
+				'ad_cloud', 'oc_cloud', 'pm_cloud', 'rd_cloud', 'tb_cloud', 'folders']
+	cloud_scrapers = {'ad_cloud': 'ad.enabled', 'oc_cloud': 'oc.enabled', 'pm_cloud': 'pm.enabled',
+					'rd_cloud': 'rd.enabled', 'tb_cloud': 'tb.enabled'}
+	scraper_names = ['EXTERNAL SCRAPERS', 'ANIMETOSHO (ANIME)', 'NYAA (ANIME)', 'PIRATEBAY', 'COMET', 'MEDIAFUSION', 'STREMTHRU TORZ', 'TORRENTIO', 'ZILEAN',
+					'AIOSTREAMS', 'EASYNEWS', 'NZB INDEXERS',
+					'AD CLOUD', 'OC CLOUD', 'PM CLOUD', 'RD CLOUD', 'TB CLOUD', 'FOLDERS 1-5']
 	set_scrapers = settings.active_internal_scrapers()
-	preselect = [scrapers.index(i) for i in set_scrapers]
+	preselect = [scrapers.index(i) for i in set_scrapers if i in scrapers]
 	list_items = [{'line1': item, 'icon': icon} for item in scraper_names]
 	kwargs = {'items': json.dumps(list_items), 'multi_choice': 'true', 'preselect': preselect}
 	choice = kodi_utils.select_dialog(scrapers, **kwargs)
 	if choice is None: return
-	native_scrapers = ('animetosho', 'nyaa', 'comet', 'torz', 'torrentio')
+	native_scrapers = ('animetosho', 'nyaa', 'piratebay', 'comet', 'mediafusion', 'torz', 'torrentio', 'zilean')
 	for i in scrapers:
 		set_setting('provider.%s' % i, ('true' if i in choice else 'false'))
 		if i in cloud_scrapers and i in choice: set_setting(cloud_scrapers[i], 'true')
@@ -1513,6 +1534,24 @@ def mpaa_region_choice(params={}):
 	set_setting('mpaa_region', choice['id'])
 	set_setting('mpaa_region_display_name', choice['name'])
 	delete_meta_cache(silent=True)
+
+def meta_language_choice(params={}):
+	from modules.meta_lists import languages as lg
+	langs = lg()
+	langs.sort(key=lambda x: x['name'])
+	list_items = [{'line1': i['name']} for i in langs]
+	kwargs = {'items': json.dumps(list_items), 'heading': 'Set TMDb Metadata Language', 'narrow_window': 'true'}
+	choice = kodi_utils.select_dialog(langs, **kwargs)
+	if choice == None: return None
+	from caches.meta_cache import delete_meta_cache
+	from caches.lists_cache import lists_cache
+	set_setting('meta_language', choice['id'])
+	set_setting('meta_language_display_name', choice['name'])
+	delete_meta_cache(silent=True)
+	try: lists_cache.delete_all_lists()
+	except: pass
+	kodi_utils.clear_plugin_dir_cache()
+	kodi_utils.kodi_refresh()
 
 def lists_cache_duration_choice(params={}):
 	durations = [{'name': '6 hours', 'duration': '6'}, {'name': '12 hours', 'duration': '12'}, {'name': '18 hours', 'duration': '18'}, {'name': '1 Day', 'duration': '24'},

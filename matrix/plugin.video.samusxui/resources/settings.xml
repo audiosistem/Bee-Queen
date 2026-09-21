@@ -1,61 +1,133 @@
 <settings>
     <category label="Interfață" id="interface">
+
         <setting id="ui_mode" type="labelenum" label="Mod interfață" values="SamusXUI|Nativ (skin)" default="SamusXUI" />
     </category>
     <category label="Redare" id="playback">
+
         <setting id="resolver_timeout" type="number" label="Timeout rezolvare surse (secunde)" default="10" />
         <setting id="history_enabled" type="bool" label="Activează istoricul vizionărilor" default="true" />
-        <setting id="autoplay_next" type="bool" label="Auto-play episod următor (seriale)" default="true" />
-        <setting id="autoplay_countdown" type="number" label="Pornire automată cu N secunde înainte de final" default="60" visible="eq(-1,true)" />
+        <setting id="autoplay_next" type="bool" label="Auto-play episod următor" default="true" />
+        <setting id="autoplay_countdown" type="number" label="Numărătoare inversă (30 secunde)" default="30" visible="eq(-1,true)" enable="false" />
         <setting id="auto_select_provider" type="bool" label="Auto-selectează providerul memorat (sare dialogul de surse)" default="true" />
+        <setting id="trailer_autoplay" type="bool" label="Pornește trailerul automat pe titlul selectat" default="true" />
+        <setting id="trailer_autoplay_delay" type="number" label="Secunde de așteptare pe titlu înainte de trailer" default="5" visible="eq(-1,true)" />
     </category>
     <category label="Surse" id="sources">
-        <setting id="use_primesrc" type="bool" label="Vidsrcme.ru" default="true" />
+        <setting id="use_quality_filter" type="bool" label="Filtru calitate (dialog înainte de selecție)" default="false" />
+        <setting id="grp_http" type="group" label="HTTP" />
+
         <setting id="use_primesrcme" type="bool" label="PrimeSrc.me" default="true" />
-        <setting id="use_vsembed" type="bool" label="VSEmbed" default="true" />
+        <setting id="use_vsembed" type="bool" label="VSEmbed" default="false" />
         <setting id="use_thrax" type="bool" label="Thrax" default="true" />
         <setting id="use_flixer" type="bool" label="Flixer" default="true" />
-        <setting id="use_vixsrc" type="bool" label="VixSrc" default="true" />
         <setting id="use_hdhub" type="bool" label="HDHub" default="true" />
-        <setting id="use_webstreamr" type="bool" label="Webstreamr" default="true" />
-        <setting id="use_vidrock" type="bool" label="VidRock" default="true" />
-        <setting id="use_hydrahd" type="bool" label="HydraHD" default="false" />
-        <setting id="use_sooti" type="bool" label="Sooti (VixSrc/HDHub/UHDMovies aggregator)" default="false" />
-        <setting id="use_cinesu" type="bool" label="CineSu (HLS direct)" default="true" />
-        <setting id="use_vidapi" type="bool" label="VidAPI (vaplayer.ru)" default="true" />
-        <setting id="use_webtor" type="bool" label="Webtor.io (biblioteca personală de torrente)" default="false" />
-        <setting id="use_penguplay" type="bool" label="PenguPlay (HLS direct, fără torrent)" default="true" />
-        <setting id="use_multiembed" type="bool" label="MultiEmbed" default="true" />
-        <setting id="use_quality_filter" type="bool" label="Filtru calitate (dialog înainte de selecție)" default="false" />
-        <setting id="use_pandamovies" type="bool" label="PandaMovies (resolver adult)" default="false" visible="Addon.Setting(use_adult)" />
-    </category>
-    <category label="Torrents" id="torrents">
-        <setting id="torrent_engine" type="labelenum" label="Motor torrent" values="TorrServer|libtorrent" default="TorrServer" />
-        <setting id="torrserver_mode" type="labelenum" label="Mod TorrServer" values="Extern (manual)|Auto (incorporat)" default="Extern (manual)" visible="eq(-1,0)" />
+        <setting id="use_vidlove" type="bool" label="Vidlove" default="true" />
+        <setting id="use_moviesapi" type="bool" label="MoviesAPI" default="true" />
+        <setting id="use_vidapi" type="bool" label="VidAPI" default="true" />
+        <setting id="use_webtor" type="bool" label="Webtor.io" default="false" />
+        <setting id="use_vyla" type="bool" label="Vyla (agregat 40+)" default="true" />
+        <setting id="use_pandamovies" type="bool" label="PandaMovies" default="false" visible="Addon.Setting(use_adult)" />
+        <setting id="grp_torrents" type="group" label="Torrents" />
+
+        <!-- Webtor se adaugă la SFÂRȘITUL valorilor, ca TorrServer să rămână 0 și
+             libtorrent 1. Condițiile `visible` sunt POZIȚIONALE (eq(-N,valoare)
+             numără setările de deasupra), deci `webtor_api_key` stă DUPĂ cele
+             două setări de TorrServer — altfel le-ar decala referințele. -->
+        <setting id="torrent_engine" type="labelenum" label="Motor torrent" values="TorrServer|libtorrent|Webtor" default="TorrServer" />
+        <setting id="torrserver_mode" type="labelenum" label="Mod TorrServer" values="Extern (manual)|Auto (incorporat)" default="Auto (incorporat)" visible="eq(-1,0)" />
         <setting id="torrserver_start_mode" type="labelenum" label="Mod pornire redare TorrServer" values="Normal|Rapid (pct≥100%)|Imediat (status=2)" default="Normal" visible="eq(-2,0)" />
+        <setting id="webtor_api_key" type="text" label="Cheie API Webtor (din profilul tău)" default="" visible="eq(-3,2)" />
         <setting id="use_torrentio" type="bool" label="Torrentio" default="false" />
         <setting id="use_torrentdb" type="bool" label="TorrentDB" default="false" />
+        <setting id="use_yts" type="bool" label="YTS" default="false" />
         <setting id="use_velaflow" type="bool" label="VelaFlow" default="false" />
-        <setting id="use_mediafusion" type="bool" label="MediaFusion" default="false" />
-        <setting id="use_comet" type="bool" label="Comet" default="false" />
         <setting id="use_perflix" type="bool" label="Peerflix" default="false" />
-        <setting id="use_pelispanda" type="bool" label="PelisPanda (torrente ES/EN)" default="false" />
-        <setting id="use_filelist" type="bool" label="FileList.io (tracker privat RO)" default="false" />
+        <setting id="use_pelispanda" type="bool" label="PelisPanda" default="false" />
+        <setting id="use_filelist" type="bool" label="FileList.io" default="false" />
         <setting id="fl_username" type="text" label="FileList username" default="" visible="eq(-1,true)" />
         <setting id="fl_password" type="text" label="FileList parolă" default="" visible="eq(-2,true)" option="hidden" />
         <setting id="fl_passkey" type="text" label="FileList passkey (auto-completat)" default="" visible="eq(-3,true)" />
+
+        <!-- Provideri care cer un abonament plătit la serviciul respectiv.
+             Grup separat ca utilizatorul să știe din start că bifarea lor
+             fără cont activ nu produce nicio sursă. -->
+        <setting id="grp_premium" type="group" label="Premium" />
+
+        <setting id="use_voyo" type="bool" label="Voyo" default="false" />
     </category>
     <category label="Subtitrări">
+
         <setting id="subs_enabled" type="bool" label="Caută automat subtitrări (vdrk + Wyzie)" default="true" />
         <setting id="subs_languages" type="text" label="Limbi pentru subtitrări" default="ro,en" />
         <setting id="subs_format" type="enum" label="Format preferat" values="srt|vtt|ssa" default="srt" />
         <setting id="subs_encoding" type="labelenum" label="Encoding subtitrări" values="utf-8|latin-1|cp1252" default="utf-8" />
     </category>
     <category label="Conturi" id="accounts">
+        <setting id="grp_tmdb" type="group" label="TMDb" />
+        <setting id="grp_tmdb_cont" type="group" level="2" label="Cont" />
         <setting id="api_key" type="text" label="TMDb API Key" default="69ef972e0d191aff7ab5b8e396619cb2" />
         <setting id="language" type="labelenum" label="Limbă TMDb" values="ro|en|fr|de|it" default="ro" />
         <setting id="provider_region" type="enum" label="Țară pentru furnizori TMDb" values="RO|US|GB|DE|FR|All" default="RO" />
         <setting id="use_adult" type="bool" label="Conținut adult (TMDb)" default="false" />
+        <setting id="grp_tmdb_discover" type="group" level="2" label="Descoperă" />
+        <setting id="discover_tags_mode" type="labelenum" label="Sursa tag-urilor"
+                 values="Din gusturile mele|Doar ale mele|Amândouă" default="Amândouă" />
+        <setting id="discover_tab1" type="text" label="Tag 1" default="superhero" />
+        <setting id="discover_tab2" type="text" label="Tag 2" default="time travel" />
+        <setting id="discover_tab3" type="text" label="Tag 3" default="zombie" />
+        <setting id="discover_tab4" type="text" label="Tag 4" default="heist" />
+        <setting id="discover_tab5" type="text" label="Tag 5" default="post-apocalyptic future" />
+        <setting id="discover_tab6" type="text" label="Tag 6" default="serial killer" />
+        <setting id="discover_tab7" type="text" label="Tag 7" default="spy" />
+        <setting id="discover_tab8" type="text" label="Tag 8" default="survival" />
+        <setting id="discover_tab9" type="text" label="Tag 9" default="" />
+        <setting id="discover_tab10" type="text" label="Tag 10" default="" />
+        <setting id="discover_tab11" type="text" label="Tag 11" default="" />
+        <setting id="discover_tab12" type="text" label="Tag 12" default="" />
+        <setting id="discover_tab13" type="text" label="Tag 13" default="" />
+        <setting id="discover_tab14" type="text" label="Tag 14" default="" />
+        <setting id="discover_tab15" type="text" label="Tag 15" default="" />
+        <setting id="discover_tab16" type="text" label="Tag 16" default="" />
+        <setting id="discover_tab17" type="text" label="Tag 17" default="" />
+        <setting id="discover_tab18" type="text" label="Tag 18" default="" />
+        <setting id="discover_tab19" type="text" label="Tag 19" default="" />
+        <setting id="discover_tab20" type="text" label="Tag 20" default="" />
+        <setting id="discover_tab21" type="text" label="Tag 21" default="" />
+        <setting id="discover_tab22" type="text" label="Tag 22" default="" />
+        <setting id="discover_tab23" type="text" label="Tag 23" default="" />
+        <setting id="discover_tab24" type="text" label="Tag 24" default="" />
+        <setting id="discover_tab25" type="text" label="Tag 25" default="" />
+        <setting id="discover_tab26" type="text" label="Tag 26" default="" />
+        <setting id="discover_tab27" type="text" label="Tag 27" default="" />
+        <setting id="discover_tab28" type="text" label="Tag 28" default="" />
+        <setting id="discover_tab29" type="text" label="Tag 29" default="" />
+        <setting id="discover_tab30" type="text" label="Tag 30" default="" />
+        <setting id="discover_tab31" type="text" label="Tag 31" default="" />
+        <setting id="discover_tab32" type="text" label="Tag 32" default="" />
+        <setting id="discover_tab33" type="text" label="Tag 33" default="" />
+        <setting id="discover_tab34" type="text" label="Tag 34" default="" />
+        <setting id="discover_tab35" type="text" label="Tag 35" default="" />
+        <setting id="discover_tab36" type="text" label="Tag 36" default="" />
+        <setting id="discover_tab37" type="text" label="Tag 37" default="" />
+        <setting id="discover_tab38" type="text" label="Tag 38" default="" />
+        <setting id="discover_tab39" type="text" label="Tag 39" default="" />
+        <setting id="discover_tab40" type="text" label="Tag 40" default="" />
+        <setting id="discover_tab41" type="text" label="Tag 41" default="" />
+        <setting id="discover_tab42" type="text" label="Tag 42" default="" />
+        <setting id="discover_tab43" type="text" label="Tag 43" default="" />
+        <setting id="discover_tab44" type="text" label="Tag 44" default="" />
+        <setting id="discover_tab45" type="text" label="Tag 45" default="" />
+        <setting id="discover_tab46" type="text" label="Tag 46" default="" />
+        <setting id="discover_tab47" type="text" label="Tag 47" default="" />
+        <setting id="discover_tab48" type="text" label="Tag 48" default="" />
+        <setting id="discover_tab49" type="text" label="Tag 49" default="" />
+        <setting id="discover_tab50" type="text" label="Tag 50" default="" />
+        <setting id="discover_tags_count" type="number"
+                 label="Câte tag-uri deduse automat să apară" default="14" />
+        <setting id="discover_sort" type="labelenum" label="Ordonarea rezultatelor"
+                 values="Cele mai votate|Cele mai populare|Cele mai noi" default="Cele mai votate" />
+        <setting id="grp_trakt" type="group" label="Trakt" />
         <setting id="trakt_client_id" type="text" label="Trakt Client ID" default="2d29a7597164bb74e1d463bc4ebf8dc8b528f2beea715068de1744e88f80f764" />
         <setting id="trakt_client_secret" type="text" label="Trakt Client Secret" default="f71fa83d63e64a06a9cecf676a0f5e0485c4f2c1b5a48946d26c4630cef159fb" />
         <setting id="trakt_access_token" type="text" label="Trakt Access Token (completat automat)" default="" />

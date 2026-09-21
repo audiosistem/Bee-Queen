@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import threading
 import xbmc
 import xbmcgui
 import xbmcaddon
@@ -74,9 +73,7 @@ class SeasonsWindow(xbmcgui.WindowXML):
         ctrl.selectItem(0)
         self._update_hero(0)
         self.setFocusId(_ID_POSTERS)
-        if self._tv_id:
-            threading.Thread(
-                target=self._fetch_logo, args=(self._tv_id,), daemon=True).start()
+        self._apply_logo()
 
     # ------------------------------------------------------------------ hero
 
@@ -110,13 +107,15 @@ class SeasonsWindow(xbmcgui.WindowXML):
         except Exception as e:
             xbmc.log(f'[SamusXUI/Seasons] hero: {e}', xbmc.LOGDEBUG)
 
-    def _fetch_logo(self, tv_id):
-        logo = tmdb.logo_url(tv_id, 'tv')
+    def _apply_logo(self):
+        # tv_details() include deja images; nu pornim un fir și nu repetăm API-ul.
+        logo = tmdb.logo_from_details(self._show)
         try:
             if logo:
                 self.getControl(_ID_LOGO).setImage(logo)
                 self.getControl(_ID_TITLE).setLabel('')
                 self._logo_set = True
+                self._show['_logo_url'] = logo
             else:
                 self.getControl(_ID_TITLE).setLabel(self._show.get('name', ''))
         except Exception as e:

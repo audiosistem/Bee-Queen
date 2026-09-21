@@ -34,6 +34,7 @@ class SimklWatched:
 	def set_bulk_tvshow_watched(self, insert_list):
 		self._delete('DELETE FROM watched WHERE db_type = ?', ('episode',))
 		self._executemany('INSERT OR IGNORE INTO watched VALUES (?, ?, ?, ?, ?, ?)', insert_list)
+		self.prune_mirrored_specials()
 
 	def merge_bulk_movie_watched(self, insert_list):
 		"""Upsert movie watched rows from a date_from delta (does not wipe the table)."""
@@ -54,6 +55,24 @@ class SimklWatched:
 			dbcon.execute('DELETE FROM watched WHERE db_type = ? AND media_id = ?', ('episode', media_id))
 		if insert_list:
 			dbcon.executemany('INSERT OR IGNORE INTO watched VALUES (?, ?, ?, ?, ?, ?)', insert_list)
+		self.prune_mirrored_specials()
+
+	def prune_mirrored_specials(self):
+		"""Drop S00 rows that are the same episode/timestamp as a regular-season watch.
+
+		Simkl include_all_episodes can list a miniseries part as both S01E01 and S00E01.
+		"""
+		try:
+			dbcon = connect_database('simkl_db')
+			dbcon.execute(
+				'DELETE FROM watched WHERE rowid IN ('
+				'SELECT w0.rowid FROM watched w0 '
+				'INNER JOIN watched w1 ON w1.db_type = w0.db_type AND w1.media_id = w0.media_id '
+				'AND w1.episode = w0.episode AND w1.last_played = w0.last_played '
+				'AND CAST(w1.season AS INTEGER) > 0 '
+				'WHERE w0.db_type = ? AND CAST(w0.season AS INTEGER) = 0)',
+				('episode',))
+		except: pass
 
 	def set_bulk_movie_progress(self, insert_list):
 		self._delete('DELETE FROM progress WHERE db_type = ?', ('movie',))

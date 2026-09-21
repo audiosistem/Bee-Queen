@@ -1,4 +1,4 @@
-<addon id="plugin.video.thraxtv" name="ThraxTV" version="2.0.55" provider-name="derzis">
+<addon id="plugin.video.thraxtv" name="ThraxTV" version="2.0.56" provider-name="derzis">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests"/>

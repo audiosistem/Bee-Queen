@@ -1,8 +1,36 @@
 import requests as _req
 
-THRAX_KEY = "7d9f4987bcd1a2026e6a422931bd7dbff0060977d189f37fa5727d9288b4abbb"
+THRAX_KEY = "6d11ea4b6c6acc9bd2fc4f91b6be3fc06ca5e4358e344d248e8bbcb64cedd0df"
 THRAX_HEADERS = {"X-Thrax-Key": THRAX_KEY}
 THRAX_BASE = "https://api.derzis.xyz"
+
+
+_TOKEN_UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+             "(KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36")
+
+
+def _stamp_token(url, token_url, referer, cache):
+    """Unele CDN-uri (vsembed) leagă tokenul de IP-ul care îl cere, deci trebuie
+    luat aici, de pe IP-ul lui Kodi — un token luat de API pe server dă 403."""
+    if not token_url:
+        return url
+    if token_url not in cache:
+        cache[token_url] = ''
+        try:
+            h = {'User-Agent': _TOKEN_UA}
+            if referer:
+                h['Referer'] = referer
+            t = _req.get(token_url, headers=h, timeout=10)
+            if t.ok:
+                cache[token_url] = t.text.strip()
+        except Exception:
+            pass
+    token = cache[token_url]
+    if not token:
+        return url
+    if '__TOKEN__' in url:
+        return url.replace('__TOKEN__', token)
+    return url + ('&' if '?' in url else '?') + 'token=' + token
 
 
 def get_thrax_sources(endpoint, params, label):
@@ -14,11 +42,13 @@ def get_thrax_sources(endpoint, params, label):
     except Exception:
         return []
     results = []
+    token_cache = {}
     for s in data.get('sources', []):
         url = s.get('url')
         if not url:
             continue
         referer = s.get('referer', '')
+        url = _stamp_token(url, s.get('token_url'), referer, token_cache)
         is_direct = s.get('direct', True)
         if is_direct and referer and '|' not in url:
             url = f"{url}|Referer={referer}"

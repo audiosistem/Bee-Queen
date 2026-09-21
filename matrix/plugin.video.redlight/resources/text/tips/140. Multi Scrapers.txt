@@ -1,15 +1,27 @@
 
-External scrapers are optional torrent packs under Settings > Torrent Sources. Enable them there. Red Light does not provide support for third-party scraper modules.
+External scrapers are optional torrent packs under Settings > Torrent Scrapers. Enable them there. Red Light does not provide support for third-party scraper modules.
 
-[B]Internal Scrapers[/B] on the same page (AnimeTosho, Nyaa, Comet, StremThru Torz, Torrentio) are Red Light's own. They are not slots, do not use Search Mode, and work with or without a pack. They use the same debrid [B]Check Cached Status[/B] setting as packs.
+[B]Internal Scrapers[/B] are on the same page (Indexers: AnimeTosho, Nyaa, PirateBay; Sites: Comet, MediaFusion, StremThru Torz, Torrentio, Zilean). They are Red Light's own. They are not slots, do not use Search Mode, and work with or without a pack. They use the same debrid [B]Check Cached Status[/B] setting as packs. Debrid accounts are under Settings > Debrid Accounts.
 
-You can assign up to three packs (slots). Each slot is independently enabled. Results from all enabled slots are merged and duplicates removed.
+They search the episode or movie only — not a separate season/show pack scrape. PACK is shown when the filename looks like a pack (Season 02, complete, and similar). Sites often name the episode file inside a pack, so a results list can have no PACK rows and still be using pack torrents. External Scrapers still run their extra pack searches when the season is fully aired.
+
+When [B]Check Before Full Search[/B] is on for EasyNews, cloud, folders, AIOStreams or NZB, those run first. If early results open the list, [B]Run Scraper Search[/B] continues with Internal Scrapers (if enabled) and External Scrapers. Check Before hits stay and are not searched again.
+
+You can assign up to three packs (slots). Each slot is independently enabled. Results from all enabled slots are merged and duplicates removed. The same torrent from Internal Scrapers and a pack is shown once per debrid (cached row wins).
+
+[B]Play Options[/B]
+  [B]Scrape with ALL External Scrapers[/B] turns External on for that title and runs every scraper in every assigned slot (enabled or disabled) in parallel. Empty slots stay unused. Search Mode is not used for that scrape. [B]Scrape with ALL Internal Scrapers[/B] turns Internal Scrapers on and runs every Indexer and Site with its assigned instance. Needs a debrid account. Enable is not saved. Not AIOStreams, debrid cloud, EasyNews, folders, or NZB. [B]Scrape with Custom Values[/B] asks External, then Internal, then filters.
+
+[B]Rescrape Actions[/B] (Settings > Results) can retry the same way after no playable results: [B]Rescrape With Disabled External Scrapers[/B] and [B]Rescrape With Disabled Internal Scrapers[/B]. Each forces that family on even if it was off for the first scrape.
+
+[B]Prefer Internal Scrapers[/B]
+  Shown when Internal Scrapers and External Scrapers are both on. When both found the same torrent, keep the Internal Indexer/Site label instead of the pack. Does not change quality or size sort, scrape timeout, or Search Mode.
 
 [B]Choose Module[/B]
   Lists known compatible packs that are already installed: Classy, CocoScrapers, Diamond, Gears, Magneto, Taz19, Viper. [B]Other[/B] lists every Python module (Back returns to the known list). The same pack cannot be in two slots. Empty slots are not auto-filled. If no free compatible pack is installed, Install or Other is offered; after a pack installs, open Choose Module again to assign it.
 
 [B]Open Slot Module Settings[/B]
-  Opens that pack's own settings, then returns to Torrent Sources.
+  Opens that pack's own settings, then returns to Torrent Scrapers.
 
 [B]Clear Slot[/B] removes the pack from that slot. [B]Move Slot Up[/B] swaps search order (slot 2 with 1, or slot 3 with 2).
 
