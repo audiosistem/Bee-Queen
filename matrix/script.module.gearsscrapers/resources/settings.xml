@@ -20,6 +20,14 @@
     <setting id="provider.redetorrent" type="bool" label="Redetorrent" default="false" />
     <setting id="provider.knaben" type="bool" label="Knaben" default="false" />
 	<setting id="provider.ytsmx" type="bool" label="Yts" default="false" />
+	<setting id="provider.torrent9" type="bool" label="Torrent9 (French)" default="false" />
+	<setting id="provider.telegrambot" type="bool" label="Telegram (TorrentSearchRoBot) - requires linking your Telegram account below" default="false" />
+</category>
+
+<category label="Telegram Account">
+	<setting id="telegram_hint" type="lsep" label="Link your own Telegram account to enable the Telegram (TorrentSearchRoBot) provider above - each device/family member links their own account, so searches run under your own Telegram, not a shared one. Scan the QR code that appears with your phone's Telegram app (Settings, Devices, Link Desktop Device)." />
+	<setting id="telegram_pair" type="action" label="Link Telegram Account" action="RunPlugin(plugin://script.module.gearsscrapers/?action=telegram_pair)" />
+	<setting id="telegram_status" type="action" label="Check Telegram link status / Unlink" action="RunPlugin(plugin://script.module.gearsscrapers/?action=telegram_status)" />
 </category>
 
 <category label="Pack Providers">
@@ -32,6 +40,7 @@
 	<setting id="provider.mediafusion" type="bool" label="MediaFusion" default="false" />
 	<setting id="provider.torrentsdb" type="bool" label="torrentsdb" default="true" />
 	<setting id="provider.torrentdownload" type="bool" label="TorrentDownload" default="false" />
+	<setting id="provider.peerflix" type="bool" label="Peerflix" default="true" />
 </category>
 
 <category label="Dmm Setup">

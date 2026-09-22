@@ -4,9 +4,10 @@
 """
 
 import re, time, html as _html_mod
-from urllib.parse import quote_plus, unquote
+from urllib.parse import quote
 from gearsscrapers.modules import client
 from gearsscrapers.modules import source_utils
+from gearsscrapers.modules import workers
 
 _MIRRORS = [
 	'torrentgalaxy-official.is', 'torrentgalaxy.one', 'torrentgalaxy.info',
@@ -14,8 +15,17 @@ _MIRRORS = [
 ]
 _working = {}
 
-_RE_ROW = re.compile(r'<div[^>]+class="[^"]*tgxtable[^"]*"[^>]*>(.*?)</div>', re.IGNORECASE | re.DOTALL)
-_RE_MAGNET = re.compile(r'a\s+href="(magnet:[^"]+)"', re.IGNORECASE)
+# TorrentGalaxy moved search off the old /torrents.php?search= listing
+# (silently ignores the query now, just shows the recent-uploads feed) to
+# /get-posts/keywords:<query>, and no longer inlines a magnet: link on the
+# listing page at all -- only a per-result /post-detail/ page link, which
+# itself has the real magnet plus total size in static HTML. Ported from
+# Starfleet's torrent_sources.py search_torrentgalaxy() rewrite, confirmed
+# live 2026-09-11 (the previous "en.<mirror>/movies?keyword=" approach this
+# file used doesn't even resolve DNS any more).
+_RE_ROW = re.compile(r'href="(/post-detail/[a-f0-9]+/[^"]+)"><span\s+src="torrent"><b>([^<]+)</b>')
+_RE_MAGNET = re.compile(r'href="(magnet:[^"]+)"', re.IGNORECASE)
+_RE_SIZE_DETAIL = re.compile(r'Total Size:</b></div>\s*<div class="tpcell">([^<]+)</div>')
 _RE_SIZE = re.compile(r'(\d+(?:[,.]\d+)?)\s*(GiB|MiB|GB|MB)', re.IGNORECASE)
 _RE_SKIP_LANG = re.compile(r'\b(FRENCH|TRUEFRENCH|ITALIAN|Ita|SPANISH|DUBBED|LAT|Dublado)\b', re.IGNORECASE)
 
@@ -28,8 +38,16 @@ def _get_base():
 	for mirror in _MIRRORS:
 		try:
 			url = 'https://%s' % mirror
+			# torrentgalaxy-official.is (first in the list) is a dead decoy
+			# landing page whose own title/description literally say
+			# "torrent" repeatedly despite zero real listings -- a loose
+			# 'torrent' in html.lower() check locks onto it forever and
+			# never falls through to torrentgalaxy.one, which has real
+			# results. Requiring an actual magnet: link is a real
+			# functional check. Ported from Starfleet's torrent_sources.py
+			# fix, confirmed live 2026-09-11.
 			html = client.request(url + '/torrents.php', timeout=7)
-			if html and 'torrent' in html.lower():
+			if html and 'magnet:' in html:
 				_working['url'] = url
 				_working['ts'] = time.time()
 				return url
@@ -67,50 +85,65 @@ class source:
 			self.check_foreign_audio = source_utils.check_foreign_audio()
 
 			query = '%s %s' % (self.title, self.hdlr)
-			# TorrentGalaxy redesigned -- the old /torrents.php?search= path
-			# just serves the homepage now. Real search lives on the "en."
-			# subdomain at /movies?keyword=... (confirmed live via its own
-			# quick-search form markup).
-			search_base = self.base_link.replace('https://', 'https://en.', 1)
-			url = '%s/movies?keyword=%s' % (search_base, quote_plus(query))
+			url = '%s/get-posts/keywords:%s' % (self.base_link, quote(query))
 			html = client.request(url, timeout=10)
 			if not html: return self.sources
 
-			for row_m in _RE_ROW.finditer(html):
-				row_text = row_m.group(1)
-				mag_m = _RE_MAGNET.search(row_text)
-				if not mag_m: continue
-				magnet = _html_mod.unescape(mag_m.group(1))
-				if _RE_SKIP_LANG.search(magnet): continue
-				ih_m = re.search(r'btih:([a-fA-F0-9]{40})', magnet, re.IGNORECASE)
-				if not ih_m: continue
-				hash = ih_m.group(1).lower()
-				dn_m = re.search(r'[&?]dn=([^&]+)', magnet)
-				name = source_utils.clean_name(unquote(dn_m.group(1)).replace('+', ' ')) if dn_m else hash
-
+			candidates = []
+			for href, raw_name in _RE_ROW.findall(html):
+				if len(candidates) >= 8: break
+				name = source_utils.clean_name(_html_mod.unescape(raw_name).strip())
+				if not name or _RE_SKIP_LANG.search(name): continue
 				if not source_utils.check_title(self.title, self.aliases, name, self.hdlr, self.year): continue
-				name_info = source_utils.info_from_name(name, self.title, self.year, self.hdlr, self.episode_title)
-				if source_utils.remove_lang(name_info, self.check_foreign_audio): continue
-				if self.undesirables and source_utils.remove_undesirables(name_info, self.undesirables): continue
+				detail_url = href if href.startswith('http') else self.base_link + href
+				candidates.append((detail_url, name))
+			if not candidates: return self.sources
 
-				seeds_m = re.search(r'<span[^>]+>(\d+)</span>\s*seeders', row_text, re.IGNORECASE)
-				seeders = int(seeds_m.group(1)) if seeds_m else 0
-				if self.min_seeders > seeders: continue
+			threads = []
+			for detail_url, name in candidates:
+				threads.append(workers.Thread(self.get_sources, detail_url, name))
+			[i.start() for i in threads]
+			[i.join() for i in threads]
+			return self.sources
+		except:
+			source_utils.scraper_error('TORRENTGALAXY')
+			return self.sources
 
-				quality, info = source_utils.get_release_quality(name_info, magnet)
-				sz_m = _RE_SIZE.search(row_text)
-				dsize = 0
+	def get_sources(self, detail_url, name):
+		try:
+			detail = client.request(detail_url, timeout=10)
+			if not detail: return
+			mag_m = _RE_MAGNET.search(detail)
+			if not mag_m: return
+			magnet = _html_mod.unescape(mag_m.group(1))
+			ih_m = re.search(r'btih:([a-fA-F0-9]{40})', magnet, re.IGNORECASE)
+			if not ih_m: return
+			hash = ih_m.group(1).lower()
+
+			name_info = source_utils.info_from_name(name, self.title, self.year, self.hdlr, self.episode_title)
+			if source_utils.remove_lang(name_info, self.check_foreign_audio): return
+			if self.undesirables and source_utils.remove_undesirables(name_info, self.undesirables): return
+
+			quality, info = source_utils.get_release_quality(name_info, magnet)
+			dsize = 0
+			size_m = _RE_SIZE_DETAIL.search(detail)
+			if size_m:
+				sz_text = size_m.group(1).replace('\xa0', ' ').strip()
+				sz_m = _RE_SIZE.search(sz_text)
 				if sz_m:
 					try:
 						dsize, isize = source_utils._size(sz_m.group(0))
 						info.insert(0, isize)
 					except: pass
-				info = ' | '.join(info)
+			info = ' | '.join(info)
 
-				self.sources_append({'provider': 'torrentgalaxy', 'source': 'torrent', 'seeders': seeders, 'hash': hash, 'name': name,
-					'name_info': name_info, 'quality': quality, 'language': 'en', 'url': magnet, 'info': info,
-					'direct': False, 'debridonly': True, 'size': dsize})
-			return self.sources
+			# Seed/leech counts are fetched by the site's own page via a
+			# separate client-side AJAX call after load, not present in the
+			# static detail-page HTML -- not worth a third per-item request
+			# just for that, so seeders defaults to 0 same as Starfleet's
+			# own port of this same fix.
+			self.sources_append({'provider': 'torrentgalaxy', 'source': 'torrent', 'seeders': 0, 'hash': hash, 'name': name,
+				'name_info': name_info, 'quality': quality, 'language': 'en', 'url': magnet, 'info': info,
+				'direct': False, 'debridonly': True, 'size': dsize})
 		except:
 			source_utils.scraper_error('TORRENTGALAXY')
-			return self.sources

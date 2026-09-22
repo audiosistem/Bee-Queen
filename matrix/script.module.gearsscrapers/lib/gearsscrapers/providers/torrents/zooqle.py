@@ -3,14 +3,46 @@
 	gearsscrapers Project
 """
 
-import re
+import re, time
 from urllib.parse import quote as _quote
 from gearsscrapers.modules import client
 from gearsscrapers.modules import source_utils
 from gearsscrapers.modules import workers
 
-_RE_ZOOQLE_RESULT = re.compile(
-	r'href="(https://zooqle\.app/movies/[a-z0-9-]+)"[^>]*title="([^"]{2,120})"', re.IGNORECASE)
+# Mirror-rotation ported from Starfleet's torrent_sources.py, confirmed
+# live 2026-09-13: zooqle.pro and zooqle.movie both return a real-looking
+# 200 homepage but neither actually serves search results (different
+# template, 0 matches for a real query on either) -- deliberately left
+# out of rotation. zooqle.app/zooqle.io/zooqlemovies.com are confirmed
+# genuine live mirrors of the same catalog.
+_ZOOQLE_MIRRORS = ['zooqle.app', 'zooqle.io', 'zooqlemovies.com']
+_zooqle_working = {}
+
+
+def _get_zooqle_base():
+	cached = _zooqle_working.get('url')
+	ts = _zooqle_working.get('ts', 0)
+	if cached and (time.time() - ts) < 3600:
+		return cached
+	for mirror in _ZOOQLE_MIRRORS:
+		try:
+			url = 'https://%s' % mirror
+			html = client.request(url + '/?keyword=inception', timeout=6)
+			if html and '/movies/inception' in html.lower():
+				_zooqle_working['url'] = url
+				_zooqle_working['ts'] = time.time()
+				return url
+		except Exception:
+			continue
+	return 'https://' + _ZOOQLE_MIRRORS[0]
+
+
+def _zooqle_result_re(base):
+	domain = re.escape(base.split('://', 1)[-1])
+	return re.compile(
+		r'href="(https://%s/movies/[a-z0-9-]+)"[^>]*title="([^"]{2,120})"' % domain, re.IGNORECASE)
+
+
 _RE_ZOOQLE_DL = re.compile(
 	r'href="(https://[^"]+/torrent/download/([A-F0-9]{40}))"[\s\S]*?>([^<]{2,120})<', re.IGNORECASE)
 
@@ -22,7 +54,7 @@ class source:
 	hasEpisodes = False
 	def __init__(self):
 		self.language = ['en']
-		self.base_link = "https://zooqle.app"
+		self.base_link = _get_zooqle_base()
 		self.min_seeders = 0
 
 	def sources(self, data, hostDict):
@@ -44,7 +76,8 @@ class source:
 				return re.sub(r'\s+', ' ', re.sub(r'[^a-z0-9 ]', ' ', s.lower())).strip()
 			norm_query = _nc(query)
 			seen, candidates = set(), []
-			for page_url, name in _RE_ZOOQLE_RESULT.findall(html):
+			result_re = _zooqle_result_re(self.base_link)
+			for page_url, name in result_re.findall(html):
 				if page_url in seen: continue
 				seen.add(page_url)
 				core = _nc(name)

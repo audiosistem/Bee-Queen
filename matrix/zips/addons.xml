@@ -4140,7 +4140,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="script.module.gearsscrapers" version="1.5.9" name="Gears Scrapers" provider-name="gearsscrapers">
+</addon><addon id="script.module.gearsscrapers" version="1.6.1" name="Gears Scrapers" provider-name="gearsscrapers">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -4148,7 +4148,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
 	<extension point="xbmc.python.pluginsource" library="lib/default.py">
 		<provides>executable</provides>
 	</extension>
-	
+	<extension point="xbmc.service" library="lib/service.py" />
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>

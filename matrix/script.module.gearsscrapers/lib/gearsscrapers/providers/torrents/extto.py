@@ -1,8 +1,22 @@
 # ported from Starfleet's torrent_sources.py for gearsscrapers
-# extto.com ("EXT Torrents") -- magnets aren't in the search-result HTML, each
+# ext.to ("EXT Torrents") -- magnets aren't in the search-result HTML, each
 # torrent needs a per-item HMAC-signed AJAX call (client-side SHA256, the
 # "secret" pageToken is embedded in that torrent's own detail-page HTML --
 # cosmetic anti-scraping, not real access control, confirmed reproducible).
+#
+# The domain flipped back from extto.com (dead: sustained Cloudflare 403,
+# confirmed across 3 separate days, even via cloudscraper) to ext.to, which
+# is back online but now sits behind a Cloudflare Turnstile "verify you are
+# human" checkbox challenge. Its own cf_clearance cookie is confirmed live
+# good for ~1 year once solved, so a headed real-Chrome browser mints one
+# on a schedule and publishes it to GitHub Pages -- see Starfleet's
+# scraper_extto_cookie.py for the actual minting script and its docstring
+# for why headless can't pass this kind of Turnstile challenge, and why the
+# challenge must be solved AT the /browse/ path specifically (Cloudflare
+# clearance is path-scoped -- a cookie solved on the bare homepage does NOT
+# clear /browse/, confirmed live). _extto_auto_cookie() below mirrors
+# Starfleet's own resources/lib/torrent_sources.py::_extto_auto_cookie()
+# exactly.
 """
 	gearsscrapers Project
 """
@@ -12,6 +26,42 @@ from urllib.parse import quote
 from gearsscrapers.modules import client
 from gearsscrapers.modules import source_utils
 from gearsscrapers.modules import workers
+from gearsscrapers.modules import cache
+
+_EXTTO_AUTO_COOKIE_URL = 'https://hazmat77.github.io/repository.starfleet/data/extto_cookie.json'
+
+
+def _extto_fetch_cookie():
+	try:
+		import requests
+		r = requests.get(_EXTTO_AUTO_COOKIE_URL, timeout=8)
+		if r.status_code != 200: return ('', '')
+		data = r.json()
+		cf = data.get('cf_clearance', '')
+		ua = data.get('user_agent', '')
+		if not cf: return ('', '')
+		return (cf, ua)
+	except Exception:
+		return ('', '')
+
+
+def _extto_auto_cookie():
+	# Same 30-min cache window as Starfleet's own _extto_auto_cookie() --
+	# the published cookie itself is good for ~1 year, this just avoids
+	# hitting GitHub Pages on every single search.
+	return cache.get(_extto_fetch_cookie, 0.5)
+
+
+def _extto_get(url, timeout=10):
+	cf, ua = _extto_auto_cookie()
+	if not cf: return None
+	html = client.request(url, cookie='cf_clearance=%s' % cf,
+		headers={'User-Agent': ua} if ua else None, timeout=timeout)
+	if not html: return None
+	head = html[:2000]
+	if 'Just a moment' in head or 'challenges.cloudflare.com' in head: return None
+	return html
+
 
 _CAT = {'movie': 1, 'tv': 2}
 _RE_ROW_TITLE = re.compile(
@@ -29,7 +79,7 @@ class source:
 	hasEpisodes = True
 	def __init__(self):
 		self.language = ['en']
-		self.base_link = 'https://extto.com'
+		self.base_link = 'https://ext.to'
 		self.min_seeders = 0
 
 	def sources(self, data, hostDict):
@@ -54,7 +104,7 @@ class source:
 
 			query = '%s %s' % (self.title, self.hdlr)
 			url = '%s/browse/?q=%s&cat=%d&sort=seeds&order=desc' % (self.base_link, quote(query), cat)
-			html = client.request(url, timeout=10)
+			html = _extto_get(url, timeout=10)
 			if not html: return self.sources
 
 			candidates = []
@@ -81,14 +131,17 @@ class source:
 
 	def get_sources(self, c):
 		try:
-			# extto's AJAX magnet endpoint requires the PHPSESSID cookie set
-			# by the detail page's own GET -- client.request() makes each
-			# call statelessly with no shared cookie jar, so the POST below
+			# ext.to's AJAX magnet endpoint requires both the cf_clearance
+			# cookie (Cloudflare) and the PHPSESSID cookie set by the detail
+			# page's own GET (site's own session tracking) -- the POST below
 			# must reuse the SAME requests.Session as the GET or the site
 			# rejects it with {"success":false,"error":"Invalid session"}.
+			cf, ua = _extto_auto_cookie()
+			if not cf: return
 			import requests
 			sess = requests.Session()
-			sess.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+			sess.headers.update({'User-Agent': ua or 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+			sess.cookies.set('cf_clearance', cf, domain='ext.to')
 			detail_resp = sess.get(self.base_link + c['path'], timeout=8)
 			detail_html = detail_resp.text
 			if not detail_html: return

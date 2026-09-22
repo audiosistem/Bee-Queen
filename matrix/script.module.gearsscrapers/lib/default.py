@@ -105,3 +105,11 @@ elif action == 'tools_uploadLogFile':
 elif action == 'healthCheck':
 	from gearsscrapers.modules.health import gearsscrapers
 	gearsscrapers()
+
+elif action == 'telegram_pair':
+	from gearsscrapers.modules.telegram_auth import pair_with_telegram
+	pair_with_telegram()
+
+elif action == 'telegram_status':
+	from gearsscrapers.modules.telegram_auth import show_status
+	show_status()

@@ -9,15 +9,18 @@ from gearsscrapers.modules import client
 from gearsscrapers.modules import source_utils
 from gearsscrapers.modules import workers
 
-# redetorrent.com -- same Brazilian-Portuguese dubbed-catalog
-# template/content pool as apachetorrent.py's ApacheTorrent (confirmed
-# live: identical image-CDN paths and even identical info_hash values for
-# the same title on both sites), but with a richer search-result listing
-# that also carries a category badge (Filmes/Séries), used here to skip
-# fetching detail pages for the wrong media type outright. Search is a
-# plain GET to index.php?s=<query> (custom PHP, not WordPress) -- confirmed
-# live to genuinely filter (empty result set for a nonsense query). See
-# apachetorrent.py's header comment and Starfleet's own
+# redetorrent.com now permanently redirects to redestorrents.com -- a full
+# site rebuild confirmed live 2026-09-11 (old 'capa_lista' listing template
+# and ?s=<query> search param both gone). Search moved to a CSRF-token-
+# gated ?busca=<query>&token=<token> param -- a missing/bogus token
+# silently falls back to the generic unfiltered recent-uploads feed instead
+# of erroring, so the token fetch below is not optional. The token looks
+# single-use (changes on every homepage fetch, no session/cookie binding
+# needed) so it's simplest to just fetch a fresh one right before each
+# search. Still the same Brazilian-Portuguese dubbed-catalog content pool
+# as apachetorrent.py's ApacheTorrent (confirmed live: identical image-CDN
+# paths and even identical info_hash values for the same title on both
+# sites). See apachetorrent.py's header comment and Starfleet's own
 # resources/lib/torrent_sources.py search_redetorrent()/search_apachetorrent()
 # docstrings for the full investigation, including the several similar-
 # looking PT/ES sites that turned out to be dead ends instead.
@@ -27,16 +30,26 @@ from gearsscrapers.modules import workers
 # apachetorrent.py applies here too: source_utils.remove_lang() will reject
 # a large fraction of this catalog unconditionally, by design of this
 # English-focused module.
+#
+# The token is also bound to the PHPSESSID cookie the homepage response
+# sets -- a stateless second request (no shared cookie) gets silently
+# redirected back to the homepage even with a freshly-fetched, otherwise-
+# valid token, confirmed live. client.request(..., output='extended')
+# returns (html, code, headers, req_headers, cookie) in one call so the
+# homepage's cookie can be threaded into the search request's cookie= arg.
 
 _RE_ITEM = re.compile(
-	r"class='capa_lista'>\s*<a href='([^']+)'[^>]*>.*?"
-	r"<span class='capa_categoria'>([^<]*)</span>\s*"
-	r"<span class='capa_qualidade'>([^<]*)</span>.*?"
-	r"<h2 itemprop='headline'>([^<]+)</h2>",
-	re.IGNORECASE | re.DOTALL
+	r'<a href="([^"]+)"\s+class="text-decoration-none cover-link"[^>]*>\s*'
+	r'<article class="custom-card"\s+data-title="([^"]*)"\s+data-tipo="([^"]*)"'
+	r'\s+data-genero="[^"]*"\s+data-desc="([^"]*)"',
+	re.IGNORECASE
 )
+_RE_TOKEN = re.compile(r'name="token"\s+value="([^"]+)"', re.IGNORECASE)
 _RE_MAGNET = re.compile(r'(magnet:\?xt=urn:btih:[a-fA-F0-9]{40}[^"\'<>\s]*)', re.IGNORECASE)
 _RE_SIZE = re.compile(r"<strong>Tamanho</strong>:\s*([^<]+)<", re.IGNORECASE)
+# redestorrents.com's new detail-page template ("Tamanho do Arquivo"
+# instead of the old "Tamanho") -- tried as a fallback only.
+_RE_SIZE2 = re.compile(r'<small>Tamanho do Arquivo</small>\s*<strong>([^<]+)</strong>', re.IGNORECASE)
 
 
 class source:
@@ -46,7 +59,7 @@ class source:
 	hasEpisodes = True
 	def __init__(self):
 		self.language = ['en']
-		self.base_link = 'https://redetorrent.com'
+		self.base_link = 'https://redestorrents.com'
 		self.min_seeders = 0
 
 	def sources(self, data, hostDict):
@@ -68,17 +81,25 @@ class source:
 			self.undesirables = source_utils.get_undesirables()
 			self.check_foreign_audio = source_utils.check_foreign_audio()
 
-			html = client.request('%s/index.php?s=%s' % (self.base_link, quote(self.title)), timeout=10)
+			home_result = client.request('%s/' % self.base_link, output='extended', timeout=10)
+			if not home_result: return self.sources
+			home_html, _code, _resp_headers, _req_headers, home_cookie = home_result
+			tok_m = _RE_TOKEN.search(home_html or '')
+			if not tok_m: return self.sources
+			search_url = '%s/index.php?busca=%s&token=%s&hp_bot_check=' % (
+				self.base_link, quote(self.title), tok_m.group(1))
+			html = client.request(search_url, cookie=home_cookie, timeout=10)
 			if not html: return self.sources
 
 			candidates = []
-			for url, category, _quality_badge, headline in _RE_ITEM.findall(html):
+			for url, name, category, desc in _RE_ITEM.findall(html):
 				is_tv = 'rie' in (category or '').strip().lower()  # "Séries"/"Series"
 				if is_tv != is_tv_search: continue
-				yr_m = re.search(r'(19|20)\d{2}', headline)
+				yr_m = re.search(r'(19|20)\d{2}', desc or '')
 				if yr_m and self.year and yr_m.group(0) != self.year:
 					continue
-				name = re.sub(r'\s*\((19|20)\d{2}\)\s*$', '', headline).strip()
+				name = (name or '').strip()
+				if not name: continue
 				candidates.append((url, name))
 				if len(candidates) >= 10: break
 			if not candidates: return self.sources
@@ -116,7 +137,7 @@ class source:
 
 			url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name)
 			quality, info = source_utils.get_release_quality(name_info, url)
-			sz_m = _RE_SIZE.search(detail)
+			sz_m = _RE_SIZE.search(detail) or _RE_SIZE2.search(detail)
 			if sz_m:
 				info.insert(0, sz_m.group(1).strip())
 			info = ' | '.join(info)
