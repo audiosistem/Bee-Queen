@@ -697,14 +697,17 @@ class sources:
                     elif len(info) > 0:
                         line2 = 'Remaining Providers: %s' % (', '.join(info).upper().replace('_', '.'))
                     else:
-                        break
+                        line2 = ''
                     current_time = time.time()
                     current_progress = current_time - start_time
                     percent = int((current_progress / float(_timeout)) * 100)
+                    stats_line = line1 if not line2 else (line1 + '[CR]' + line2)
                     if not progressDialog == control.progressDialogBG:
-                        progressDialog.update(max(1, percent), line1 + '[CR]' + line2)
+                        progressDialog.update(max(1, percent), stats_line)
                     else:
-                        progressDialog.update(max(1, percent), 'Providers:', line1 + '[CR]' + line2)
+                        progressDialog.update(max(1, percent), 'Providers:', stats_line)
+                    if not info:
+                        break
                     if end_time < current_time:
                         break
                 except:

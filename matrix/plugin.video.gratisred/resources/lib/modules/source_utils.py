@@ -308,6 +308,7 @@ def get_release_quality(release_name, release_link=None):
 
 
 _SXXEXX = re.compile(r'(?:^|[^a-z0-9])s(\d{1,2})e(\d{1,3})(?:[^a-z0-9]|$)', re.I)
+_RELEASE_REGION_HEAD = re.compile(r'^(?:us|uk|u\.s|u\.k|au|ca|nz)(?:\.|$)', re.I)
 _RELEASE_HEAD = re.compile(
     r'^(?:s\d{1,2}(?:e\d{1,3})?|\d{1,2}x\d{1,3}|(?:19|20)\d{2}|'
     r'1080p|720p|2160p|480p|4k|uhd|web|webdl|webrip|bluray|bdrip|hdtv|dvdrip|'
@@ -377,6 +378,7 @@ def _no_extra_show_title(text, tvshowtitle, year=None):
     if year:
         after = re.sub(r'^(?:%s\.)+' % re.escape(str(year)), '', after)
     after = re.sub(r'^(?:(?:19|20)\d{2}\.)+', '', after)
+    after = _RELEASE_REGION_HEAD.sub('', after, count=1).strip('.')
     first = after.split('.')[0] if after else ''
     if not first:
         return True

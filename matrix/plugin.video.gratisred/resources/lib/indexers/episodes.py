@@ -61,7 +61,7 @@ class seasons:
         self.info_tvshows_source = control.setting('info.tvshows.source') or '0'
 
 
-    def trakt_info(self, tvshowtitle, year, imdb, tmdb, meta=None, lite=False):
+    def trakt_info(self, tvshowtitle, year, imdb, tmdb, meta=None, lite=False, cache_rev=None):
         try:
             tvdb = '0'
             if imdb == '0' and not tmdb == '0':
@@ -161,8 +161,16 @@ class seasons:
                     poster = season_poster if not season_poster == '0' else show_poster
                     fanart = season_fanart if not season_fanart == '0' else fanart
                     banner = season_banner if not season_banner == '0' else banner
+                    try:
+                        if 'aired_episodes' in item and item.get('aired_episodes') not in (None, ''):
+                            aired_count = int(item.get('aired_episodes') or 0)
+                        else:
+                            aired_count = int(item.get('episode_count') or 0)
+                    except Exception:
+                        aired_count = 0
                     self.list.append({'season': season, 'tvshowtitle': tvshowtitle, 'year': year, 'premiered': premiered, 'status': status, 'studio': studio, 'genre': genre, 'duration': duration, 'mpaa': mpaa, 'castwiththumb': castwiththumb,
-                        'plot': plot, 'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb, 'poster': poster, 'fanart': fanart, 'banner': banner,'clearlogo': clearlogo, 'clearart': clearart, 'landscape': landscape, 'unaired': unaired}
+                        'plot': plot, 'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb, 'poster': poster, 'fanart': fanart, 'banner': banner,'clearlogo': clearlogo, 'clearart': clearart, 'landscape': landscape, 'unaired': unaired,
+                        'episode_count': aired_count, 'aired_count': aired_count}
                     )
                 except:
                     #log_utils.log('trakt_info', 1)
@@ -173,7 +181,7 @@ class seasons:
         return self.list
 
 
-    def tmdb_list(self, tvshowtitle, year, imdb, tmdb, meta=None, lite=False):
+    def tmdb_list(self, tvshowtitle, year, imdb, tmdb, meta=None, lite=False, cache_rev=None):
         try:
             tvdb = '0'
             if tmdb == '0' and not imdb == '0':
@@ -272,6 +280,7 @@ class seasons:
                         fanart = self.tmdb_image_link % ('1280', fanart)
                 else:
                     fanart = '0'
+            last_episode = item.get('last_episode_to_air')
             seasons = item['seasons']
             if self.specials == 'false':
                 seasons = [s for s in seasons if not s['season_number'] == 0]
@@ -301,8 +310,13 @@ class seasons:
                             poster = self.tmdb_image_link % ('500', poster)
                     else:
                         poster = show_poster
+                    try:
+                        aired_count = playcount.season_aired_count(season, item.get('episode_count') or 0, last_episode)
+                    except Exception:
+                        aired_count = 0
                     self.list.append({'season': season, 'tvshowtitle': tvshowtitle, 'year': year, 'premiered': premiered, 'status': status, 'studio': studio, 'genre': genre, 'duration': duration, 'mpaa': mpaa, 'castwiththumb': castwiththumb,
-                        'plot': plot, 'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb, 'poster': poster, 'fanart': fanart, 'banner': banner,'clearlogo': clearlogo, 'clearart': clearart, 'landscape': landscape, 'unaired': unaired}
+                        'plot': plot, 'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb, 'poster': poster, 'fanart': fanart, 'banner': banner,'clearlogo': clearlogo, 'clearart': clearart, 'landscape': landscape, 'unaired': unaired,
+                        'episode_count': aired_count, 'aired_count': aired_count}
                     )
                 except:
                     #log_utils.log('tmdb_list', 1)
@@ -321,7 +335,7 @@ class seasons:
                 final_info = self.tmdb_list
             if idx == True:
                 if self.addon_caching == 'true':
-                    self.list = cache.get(final_info, self.addon_caching_timeout, tvshowtitle, year, imdb, tmdb, meta)
+                    self.list = cache.get(final_info, self.addon_caching_timeout, tvshowtitle, year, imdb, tmdb, meta, cache_rev='aired')
                 else:
                     self.list = final_info(tvshowtitle, year, imdb, tmdb, meta)
                 if create_directory == True:
@@ -352,12 +366,13 @@ class seasons:
         try:
             indicators = playcount.getSeasonIndicators(items[0]['imdb'], items[0].get('tmdb'))
         except:
-            pass
+            indicators = None
         from resources.lib.modules import simkl as simkl_mod
         from resources.lib.modules import mdblist as mdblist_mod
         simklCredentials = simkl_mod.getSimklCredentialsInfo()
         mdblistCredentials = mdblist_mod.getMdblistCredentialsInfo()
         _ind = simkl_mod.getIndicatorsProvider()
+        show_rows = playcount.getTVShowIndicators() if _ind in ('simkl', 'mdblist') else None
         if _ind == 'trakt':
             watchedMenu, unwatchedMenu = 'Watched in Trakt', 'Unwatched in Trakt'
         elif _ind == 'simkl':
@@ -415,10 +430,10 @@ class seasons:
                 cm.append(('Clean Tools Widget', 'RunPlugin(%s?action=cleantools_widget)' % sysaddon))
                 cm.append(('Clear Providers', 'RunPlugin(%s?action=clear_sources)' % sysaddon))
                 cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
-                if simklCredentials == True:
-                    cm.append(('Simkl Lists Manager', 'RunPlugin(%s?action=simkl_manager&name=%s&imdb=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, imdb, tmdb)))
                 if mdblistCredentials == True:
                     cm.append(('MDBList Lists Manager', 'RunPlugin(%s?action=mdblist_manager&name=%s&imdb=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, imdb, tmdb)))
+                if simklCredentials == True:
+                    cm.append(('Simkl Lists Manager', 'RunPlugin(%s?action=simkl_manager&name=%s&imdb=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, imdb, tmdb)))
                 if tmdbCredentials == True:
                     cm.append(('TMDb Lists Manager', 'RunPlugin(%s?action=tmdb_manager&name=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, tmdb)))
                 if traktCredentials == True:
@@ -428,6 +443,24 @@ class seasons:
                     cm.append(('Information', 'Action(Info)'))
                 try:
                     overlay = int(playcount.getSeasonOverlay(indicators, imdb, season))
+                    if _ind in ('simkl', 'mdblist', 'local'):
+                        # aired_count is episodes that have aired. The full season count includes upcoming episodes.
+                        raw_aired = i.get('aired_count')
+                        if raw_aired in (None, ''):
+                            ep_total = -1
+                        else:
+                            try:
+                                ep_total = int(raw_aired)
+                            except Exception:
+                                ep_total = -1
+                        if ep_total > 0:
+                            if _ind == 'local':
+                                watched_n = playcount.localSeasonWatchedCount(imdb, season)
+                            else:
+                                watched_n = playcount.seasonWatchedCount(show_rows, tmdb, season)
+                            overlay = 7 if watched_n >= ep_total else 6
+                        elif ep_total == 0:
+                            overlay = 6
                     if overlay == 7:
                         cm.append((unwatchedMenu, 'RunPlugin(%s?action=tvshows_playcount&name=%s&imdb=%s&tmdb=%s&season=%s&query=6)' % (sysaddon, systitle, imdb, tmdb, season)))
                         meta.update({'playcount': 1, 'overlay': 7})
@@ -575,6 +608,16 @@ class episodes:
 
     def calendar(self, url):
         try:
+            page = 1
+            alias = url
+            if isinstance(url, str) and '|' in url:
+                alias, raw = url.rsplit('|', 1)
+                try:
+                    page = max(1, int(raw))
+                except Exception:
+                    alias = url
+                    page = 1
+            url = alias
             if url and str(url).startswith('simkl_'):
                 if str(url) == 'simkl_progress':
                     self.list = self.simkl_progress_list()
@@ -683,6 +726,17 @@ class episodes:
                 # episodeDirectory() iterates without a guard.
                 if not isinstance(self.list, list):
                     self.list = []
+            if self.tvmaze_link in str(url or ''):
+                size = control.items_per_page()
+                start = (page - 1) * size
+                rows = self.list or []
+                more = start + size < len(rows)
+                self.list = rows[start:start + size]
+                if more and self.list:
+                    nxt = '%s|%s' % (alias, page + 1)
+                    for row in self.list:
+                        row['next'] = nxt
+                self._fanart_rows(self.list)
             self.episodeDirectory(self.list)
             return self.list
         except:
@@ -1828,19 +1882,39 @@ class episodes:
                     plot = '0'
                 plot = re.sub(r'<.+?>|</.+?>|\n', '', plot)
                 plot = client_utils.replaceHTMLCodes(plot)
-                poster2 = fanart = banner = landscape = clearlogo = clearart = '0'
-                if not tvdb == '0':
-                    poster2, fanart, banner, clearlogo, clearart, landscape = self.get_fanart_tv_artwork(tvdb)
-                poster = poster2 if not poster2 == '0' else poster1
                 itemlist.append({'title': title, 'season': season, 'episode': episode, 'tvshowtitle': tvshowtitle, 'year': year, 'premiered': premiered, 'status': 'Continuing',
                     'studio': studio, 'genre': genre, 'duration': duration, 'rating': rating, 'votes': votes, 'plot': plot, 'imdb': imdb, 'tvdb': tvdb, 'tmdb': '0',
-                    'thumb': thumb, 'poster': poster, 'banner': banner, 'fanart': fanart, 'clearlogo': clearlogo, 'clearart': clearart, 'landscape': landscape}
+                    'thumb': thumb, 'poster': poster1, 'banner': '0', 'fanart': '0', 'clearlogo': '0', 'clearart': '0', 'landscape': '0'}
                 )
             except:
                 #log_utils.log('tvmaze_list', 1)
                 pass
         itemlist = itemlist[::-1]
         return itemlist
+
+
+    def _fanart_rows(self, rows):
+        """Fanart.tv for the visible page only. The schedule payload itself is unchanged."""
+        for row in rows or []:
+            try:
+                tvdb = row.get('tvdb')
+                if not tvdb or tvdb == '0':
+                    continue
+                poster, fanart, banner, clearlogo, clearart, landscape = self.get_fanart_tv_artwork(tvdb)
+                if poster and poster != '0':
+                    row['poster'] = poster
+                if fanart and fanart != '0':
+                    row['fanart'] = fanart
+                if banner and banner != '0':
+                    row['banner'] = banner
+                if clearlogo and clearlogo != '0':
+                    row['clearlogo'] = clearlogo
+                if clearart and clearart != '0':
+                    row['clearart'] = clearart
+                if landscape and landscape != '0':
+                    row['landscape'] = landscape
+            except Exception:
+                continue
 
 
     def get_fanart_tv_artwork(self, id): #tvdb
@@ -2324,10 +2398,10 @@ class episodes:
                 if multi == True:
                     cm.append(('Browse Series', 'Container.Update(%s?action=seasons&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s&meta=%s,return)' % (sysaddon, systvshowtitle, year, imdb, tmdb, seas_meta)))
                 cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
-                if simklCredentials == True:
-                    cm.append(('Simkl Lists Manager', 'RunPlugin(%s?action=simkl_manager&name=%s&imdb=%s&tmdb=%s&content=tvshow)' % (sysaddon, systvshowtitle, imdb, tmdb)))
                 if mdblistCredentials == True:
                     cm.append(('MDBList Lists Manager', 'RunPlugin(%s?action=mdblist_manager&name=%s&imdb=%s&tmdb=%s&content=tvshow)' % (sysaddon, systvshowtitle, imdb, tmdb)))
+                if simklCredentials == True:
+                    cm.append(('Simkl Lists Manager', 'RunPlugin(%s?action=simkl_manager&name=%s&imdb=%s&tmdb=%s&content=tvshow)' % (sysaddon, systvshowtitle, imdb, tmdb)))
                 if tmdbCredentials == True:
                     cm.append(('TMDb Lists Manager', 'RunPlugin(%s?action=tmdb_manager&name=%s&tmdb=%s&content=tvshow)' % (sysaddon, systvshowtitle, tmdb)))
                 if traktCredentials == True:
@@ -2382,6 +2456,20 @@ class episodes:
             except:
                 #log_utils.log('episodeDirectory', 1)
                 pass
+        try:
+            nxt = (items[0].get('next') or '') if items else ''
+            if not nxt:
+                raise Exception()
+            icon = control.addonNext()
+            nxt = '%s?action=calendar&url=%s' % (sysaddon, urllib_parse.quote_plus(nxt))
+            try:
+                item = control.item(label='[I]Next Page[/I]', offscreen=True)
+            except Exception:
+                item = control.item(label='[I]Next Page[/I]')
+            item.setArt({'icon': icon, 'thumb': icon, 'poster': icon, 'fanart': addonFanart})
+            control.addItem(handle=syshandle, url=nxt, listitem=item, isFolder=True)
+        except Exception:
+            pass
         if self.episode_views == 'true':
             control.content(syshandle, 'seasons')
             control.directory(syshandle, cacheToDisc=getattr(self, 'cacheToDisc', True) is not False)

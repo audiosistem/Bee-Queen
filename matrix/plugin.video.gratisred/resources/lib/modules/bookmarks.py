@@ -21,6 +21,43 @@ def _indicators():
     dbcon.commit()
 
 
+def local_watched_count(imdb, season=None):
+    """Watched episode bookmarks. Season omitted counts regular seasons (season >= 1)."""
+    if not imdb or str(imdb) in ('0', '', 'None'):
+        return 0
+    try:
+        control.makeFile(control.dataPath)
+        dbcon = database.connect(control.bookmarksFile)
+        dbcur = dbcon.cursor()
+        dbcur.execute("CREATE TABLE IF NOT EXISTS bookmarks (timeInSeconds TEXT, type TEXT, imdb TEXT, season TEXT, episode TEXT, playcount INTEGER, overlay INTEGER, UNIQUE(imdb, season, episode))")
+        dbcur.execute("SELECT season, episode FROM bookmarks WHERE imdb = ? AND type = 'episode' AND overlay = 7", (str(imdb),))
+        rows = dbcur.fetchall()
+        dbcon.close()
+    except Exception:
+        return 0
+    season_n = None
+    if season not in (None, '', '0'):
+        try:
+            season_n = int(season)
+        except Exception:
+            return 0
+    count = 0
+    for row_season, row_episode in rows:
+        try:
+            s_num = int(row_season)
+            e_num = int(row_episode)
+        except Exception:
+            continue
+        if e_num < 1:
+            continue
+        if season_n is None:
+            if s_num >= 1:
+                count += 1
+        elif s_num == season_n:
+            count += 1
+    return count
+
+
 def _get_watched(media_type, imdb, season, episode):
     sql_select = "SELECT * FROM bookmarks WHERE imdb = '%s' AND overlay = 7" % imdb
     if media_type == 'episode':

@@ -1014,7 +1014,7 @@ def syncSeason(imdb, tmdb=None):
             by_season.setdefault(season_n, set()).add(episode_n)
         fully = []
         for season_n, episodes in by_season.items():
-            if not episodes:
+            if not episodes or len(episodes) < 2:
                 continue
             if min(episodes) == 1 and len(episodes) >= max(episodes):
                 fully.append('%01d' % season_n)
@@ -1083,7 +1083,29 @@ def refreshMdblistCache():
         control.infoDialog('MDBList Sync Failed.', sound=True, icon='ERROR')
 
 
-def _watched_unwatched(action, media, media_id, tvdb_id=0, season=None, episode=None, key='tmdb'):
+def _regular_season_numbers(tmdb):
+    """TMDb season numbers above 0. MDBList marks those seasons' episodes; a bare show id does not."""
+    if not tmdb or str(tmdb) in ('0', '', 'None'):
+        return []
+    try:
+        from resources.lib.modules import tmdb_utils
+        url = '%stv/%s?api_key=%s&language=en-US' % (tmdb_utils.API_URL, int(tmdb), tmdb_utils._tmdb_api_key())
+        data = requests.get(url, timeout=20).json() or {}
+    except Exception:
+        return []
+    nums, seen = [], set()
+    for item in data.get('seasons') or []:
+        try:
+            n = int(item.get('season_number'))
+        except Exception:
+            continue
+        if n > 0 and n not in seen:
+            seen.add(n)
+            nums.append(n)
+    return nums
+
+
+def _watched_unwatched(action, media, media_id, tvdb_id=0, season=None, episode=None, key='tmdb', season_numbers=None):
     if action == 'mark_as_watched':
         url, result_key = 'sync/watched', 'updated'
     else:
@@ -1098,19 +1120,65 @@ def _watched_unwatched(action, media, media_id, tvdb_id=0, season=None, episode=
         success_key = 'episodes'
         data = {'shows': [{'ids': {key: media_id}, 'seasons': [{'number': int(season), 'episodes': [{'number': int(episode)}]}]}]}
     elif media == 'shows':
-        success_key, data = 'episodes', {'shows': [{'ids': {key: media_id}}]}
+        if season_numbers is None and key == 'tmdb':
+            season_numbers = _regular_season_numbers(media_id)
+        show = {'ids': {key: media_id}}
+        if season_numbers:
+            show['seasons'] = [{'number': int(n)} for n in season_numbers]
+        success_key, data = 'episodes', {'shows': [show]}
     else:
         success_key = 'episodes'
         data = {'shows': [{'ids': {key: media_id}, 'seasons': [{'number': int(season)}]}]}
     result = call_mdblist(url, json_data=data, method='post')
     if not isinstance(result, dict):
         return False
-    success = result.get(result_key, {}).get(success_key, 0) > 0
-    if not success and media != 'movies' and tvdb_id:
-        return _watched_unwatched(action, media, tvdb_id, 0, season, episode, 'tvdb')
+    if action == 'mark_as_watched':
+        success = _mdbl_mark_counted(result, 'movies' if media == 'movies' else 'episodes', 'seasons')
+    else:
+        bucket = result.get(result_key) or {}
+        success = bucket.get(success_key, 0) > 0 if isinstance(bucket, dict) else False
+    if not success and media != 'movies' and tvdb_id and key != 'tvdb':
+        return _watched_unwatched(action, media, tvdb_id, 0, season, episode, 'tvdb', season_numbers)
+    # Already on MDBList: added and updated are both 0, and it is not in not_found.
+    # A bare show id is the exception — that reply updates nothing.
+    if not success and action == 'mark_as_watched' and not _mdbl_not_found(result):
+        if media != 'shows' or season_numbers:
+            return True
     if not success and action != 'mark_as_watched':
         return True
+    if not success:
+        log_utils.log('MDBList mark %s %s id=%s: %s' % (action, media, media_id, result), 1)
     return success
+
+
+def _mdbl_mark_counted(result, *keys):
+    """A first watch is under added. A repeat watch is under updated."""
+    total = 0
+    for name in ('added', 'updated'):
+        bucket = (result or {}).get(name) or {}
+        if not isinstance(bucket, dict):
+            continue
+        for key in keys:
+            try:
+                total += int(bucket.get(key) or 0)
+            except Exception:
+                pass
+    return total > 0
+
+
+def _mdbl_not_found(result):
+    nf = (result or {}).get('not_found') or {}
+    if not isinstance(nf, dict):
+        return bool(nf)
+    for val in nf.values():
+        if isinstance(val, list) and val:
+            return True
+        try:
+            if int(val or 0) > 0:
+                return True
+        except Exception:
+            pass
+    return False
 
 
 def _resolve_tmdb(tmdb, imdb=None, media='movie'):

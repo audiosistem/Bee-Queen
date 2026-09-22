@@ -27,17 +27,27 @@ except ImportError:
     from pysqlite2 import Binary
 
 BASE_URL = 'https://api.simkl.com'
-OAUTH_PIN_URL = 'https://api.simkl.com/oauth/pin'
+OAUTH2_DEVICE_URL = 'https://api.simkl.com/oauth2/device'
+OAUTH2_TOKEN_URL = 'https://api.simkl.com/oauth2/token'
+OAUTH2_REVOKE_URL = 'https://api.simkl.com/oauth2/revoke'
 SIMKL_APP_NAME = 'plugin.video.gratisred'
-# Gratis Red Simkl app (unique client ID — not shared with Red Light).
+SIMKL_V2_SCOPE = 'media:read media:write'
+# V1 PIN app — existing grants stay on this.
 SIMKL_CLIENT_ID = '7508fd47a5237d06eb9b27863e744763c278bc8b35c6c24c336ebbb5d66318bd'
+# AUTH V2 device app (Gratis Red; existing V1 PIN grants stay on SIMKL_CLIENT_ID).
+SIMKL_CLIENT_ID_V2 = '35dd10f2215509dd2574bf63e09bd397509719b965947cb79eecf2971213225a'
 
 # Shared across plugin invokers + service timer (in-memory alone is not enough in Kodi).
 _SIMKL_MIN_REQUEST_GAP = 1.5
 _SIMKL_THROTTLE_PROP = 'gratisred.simkl_last_request_at'
 _SIMKL_SYNC_BUSY_PROP = 'gratisred.simkl_sync_busy'
 _SIMKL_SYNC_BUSY_AT_PROP = 'gratisred.simkl_sync_busy_at'
+_SIMKL_ACTIVITIES_AT_PROP = 'gratisred.simkl_activities_at'
+_SIMKL_ACTIVITIES_MIN_GAP = 60
+_SIMKL_REFRESHING_PROP = 'gratisred.simkl_refreshing_token'
+_SIMKL_REWATCH_DENIED_PROP = 'gratisred.simkl_rewatch_denied'
 _SIMKL_ACTIVITIES_SETTING = 'simkl.activities_json'
+_SIMKL_ID_EMPTY = ('None', None, '', 'empty_setting', 0, '0')
 _SIMKL_SHOW_WATCHED_ACTIVITY_KEYS = ('watching', 'plantowatch', 'completed', 'hold', 'dropped', 'removed_from_list', 'all')
 _SIMKL_MOVIE_WATCHED_ACTIVITY_KEYS = ('plantowatch', 'completed', 'dropped', 'removed_from_list', 'all')
 _SIMKL_MOVIE_FULL_SYNC_KEYS = ('completed', 'removed_from_list')
@@ -45,7 +55,8 @@ _SIMKL_SHOW_FULL_SYNC_KEYS = ('removed_from_list',)
 _SIMKL_TV_SYNC_QUERY = 'extended=full&episode_watched_at=yes&include_all_episodes=yes'
 _SIMKL_ANIME_SYNC_QUERY = 'extended=full_anime_seasons&episode_watched_at=yes&include_all_episodes=yes'
 # Bust Continue Watching seeds that defaulted to S01 when Simkl next_to_watch was ignored.
-_SIMKL_TV_INDICATOR_VER = 'next_v1'
+# aired_v3: parent overlay uses aired-now (not 0-of-0, not total including unaired).
+_SIMKL_TV_INDICATOR_VER = 'aired_v3'
 # Phase 2 multi-type: one /sync/all-items?date_from=… (shows + anime + movies).
 _SIMKL_PHASE2_ALL_QUERY = 'extended=full_anime_seasons&episode_watched_at=yes&include_all_episodes=yes'
 
@@ -124,8 +135,39 @@ def _token():
     return (control.setting('simkl.token') or '').strip()
 
 
+def _has_simkl_token():
+    return bool(_token())
+
+
+def _auth_version():
+    version = str(control.setting('simkl.auth_version') or '').strip()
+    if version in ('1', '2'):
+        return version
+    refresh = (control.setting('simkl.refresh') or '').strip()
+    if refresh:
+        return '2'
+    token = _token()
+    if str(token or '').startswith('simkl_at_'):
+        return '2'
+    if token:
+        return '1'
+    return ''
+
+
+def _client_id():
+    """V1 grants stay on the PIN app. New Authorise and V2 grants use the device app."""
+    if _has_simkl_token() and _auth_version() == '1':
+        return SIMKL_CLIENT_ID
+    return SIMKL_CLIENT_ID_V2 or SIMKL_CLIENT_ID
+
+
 def getSimklCredentialsInfo():
     return bool(_token() and (control.setting('simkl.user') or '').strip())
+
+
+def getSimklAuthV2():
+    """True when the signed-in Simkl grant is AUTH V2 (custom lists / refresh)."""
+    return getSimklCredentialsInfo() and _auth_version() == '2'
 
 
 def _mdblist_ok():
@@ -187,24 +229,12 @@ def sync_indicators_label(value=None):
         pass
 
 
-def sync_bookmarks_label(value=None):
-    try:
-        if value is None:
-            value = control.setting('bookmarks.source') or '0'
-        control.setSetting('bookmarks.source.name', _INDICATOR_LABELS.get(str(value), 'Gratis Red'))
-    except Exception:
-        pass
-
-
-def set_bookmarks_source(value, notify=False):
+def set_bookmarks_source(value):
     """Set Resume Point Source only (0 Gratis Red, 1 Trakt, 2 Simkl, 3 MDBList)."""
     value = str(value)
     if value not in _INDICATOR_LABELS:
         value = '0'
     control.setSetting('bookmarks.source', value)
-    sync_bookmarks_label(value)
-    if notify:
-        control.infoDialog('Resume Point Source: %s' % _INDICATOR_LABELS.get(value, 'Gratis Red'), sound=True)
 
 
 def set_watched_provider(value, notify=False):
@@ -213,7 +243,7 @@ def set_watched_provider(value, notify=False):
     if value not in _INDICATOR_LABELS:
         value = '0'
     control.setSetting('indicators.alt', value)
-    set_bookmarks_source(value, notify=False)
+    set_bookmarks_source(value)
     sync_indicators_label(value)
     if notify:
         name = _INDICATOR_LABELS.get(value, 'Gratis Red')
@@ -225,8 +255,6 @@ def ensure_bookmarks_valid():
     val = control.setting('indicators.alt') or '0'
     if (control.setting('bookmarks.source') or '0') != val:
         set_bookmarks_source(val)
-    else:
-        sync_bookmarks_label(val)
 
 
 def ensure_indicators_valid():
@@ -281,34 +309,118 @@ def choose_indicators(reopen_settings=False):
     value = _provider_select('Watched Indicators', control.setting('indicators.alt') or '0')
     if value is None:
         if reopen_settings:
-            control.reopen_settings_category(0, 0)
+            control.reopen_account_settings()
         return
     set_watched_provider(value, notify=True)
     control.sleep(350)
     if reopen_settings:
-        control.reopen_settings_category(0, 0)
+        control.reopen_account_settings()
 
 
-def _headers():
+def _headers(client_id=None, access_token=None):
+    cid = client_id or _client_id()
     h = {
         'Content-Type': 'application/json',
-        'simkl-api-key': SIMKL_CLIENT_ID,
+        'simkl-api-key': cid,
         'User-Agent': '%s/%s' % (SIMKL_APP_NAME, control.addonInfo('version')),
     }
-    token = _token()
+    token = access_token if access_token is not None else _token()
     if token:
         h['Authorization'] = 'Bearer %s' % token
     return h
 
 
-def _url(path):
+def _url(path, client_id=None):
+    cid = client_id or _client_id()
     base = path if path.startswith('http') else urljoin(BASE_URL, path.lstrip('/'))
     sep = '&' if '?' in base else '?'
     return '%s%sclient_id=%s&app-name=%s&app-version=%s' % (
-        base, sep, SIMKL_CLIENT_ID, SIMKL_APP_NAME, control.addonInfo('version'))
+        base, sep, cid, SIMKL_APP_NAME, control.addonInfo('version'))
 
 
-def call_simkl(path, data=None, method=None):
+def _oauth2_url(base, client_id=None):
+    cid = client_id or _client_id()
+    if not cid:
+        return None
+    sep = '&' if '?' in base else '?'
+    return '%s%sclient_id=%s&app-name=%s&app-version=%s' % (
+        base, sep, cid, SIMKL_APP_NAME, control.addonInfo('version'))
+
+
+def _oauth_form_headers():
+    return {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': '%s/%s' % (SIMKL_APP_NAME, control.addonInfo('version')),
+    }
+
+
+def _store_v2_tokens(payload, client_id=None):
+    if not isinstance(payload, dict):
+        return False
+    token = payload.get('access_token')
+    if not token:
+        return False
+    expires_in = int(payload.get('expires_in') or 604800)
+    refresh = payload.get('refresh_token') or (control.setting('simkl.refresh') or '').strip()
+    control.setSetting('simkl.token', token)
+    if refresh:
+        control.setSetting('simkl.refresh', refresh)
+    control.setSetting('simkl.expires', str(time.time() + expires_in))
+    control.setSetting('simkl.auth_version', '2')
+    return True
+
+
+def simkl_refresh_token():
+    refresh = (control.setting('simkl.refresh') or '').strip()
+    if not refresh:
+        return False
+    if control.window.getProperty(_SIMKL_REFRESHING_PROP) == 'true':
+        while control.window.getProperty(_SIMKL_REFRESHING_PROP) == 'true':
+            control.sleep(250)
+        return _has_simkl_token()
+    control.window.setProperty(_SIMKL_REFRESHING_PROP, 'true')
+    try:
+        cid = _client_id()
+        if not cid:
+            return False
+        _throttle()
+        url = _oauth2_url(OAUTH2_TOKEN_URL, client_id=cid)
+        resp = requests.post(url, data={
+            'grant_type': 'refresh_token',
+            'client_id': cid,
+            'refresh_token': refresh,
+        }, headers=_oauth_form_headers(), timeout=20)
+        if resp.status_code == 200:
+            return _store_v2_tokens(resp.json() or {}, cid)
+        from resources.lib.modules.meta_auth_alerts import maybe_notify_refresh_failure
+        maybe_notify_refresh_failure('simkl', resp.status_code, getattr(resp, 'text', ''))
+        return False
+    except Exception as e:
+        log_utils.log('Simkl V2 refresh failed: %s' % e, 1)
+        return False
+    finally:
+        try:
+            control.window.clearProperty(_SIMKL_REFRESHING_PROP)
+        except Exception:
+            pass
+
+
+def _ensure_v2_access_token():
+    if _auth_version() != '2' or not (control.setting('simkl.refresh') or '').strip():
+        return
+    while control.window.getProperty(_SIMKL_REFRESHING_PROP) == 'true':
+        control.sleep(250)
+    try:
+        expires_at = float(control.setting('simkl.expires') or 0)
+    except Exception:
+        expires_at = 0.0
+    if time.time() + 86400 >= expires_at:
+        simkl_refresh_token()
+
+
+def call_simkl(path, data=None, method=None, _retried=False):
+    _ensure_v2_access_token()
+    used_token = _token()
     _throttle()
     url = _url(path)
     headers = _headers()
@@ -323,7 +435,12 @@ def call_simkl(path, data=None, method=None):
         if resp.status_code == 204:
             return True
         log_utils.log('Simkl HTTP %s %s' % (resp.status_code, url), 1)
-        if resp.status_code == 401:
+        if resp.status_code == 401 and not _retried:
+            if _auth_version() == '2' and simkl_refresh_token() and _token() != used_token:
+                return call_simkl(path, data=data, method=method, _retried=True)
+            from resources.lib.modules.meta_auth_alerts import maybe_notify_refresh_failure
+            maybe_notify_refresh_failure('simkl', 401)
+        elif resp.status_code == 401:
             from resources.lib.modules.meta_auth_alerts import maybe_notify_refresh_failure
             maybe_notify_refresh_failure('simkl', 401)
     except Exception as e:
@@ -331,12 +448,65 @@ def call_simkl(path, data=None, method=None):
     return None
 
 
+def _simkl_rewatch_denied(payload):
+    return isinstance(payload, dict) and payload.get('error') == 'pro_required'
+
+
+def _simkl_handle_rewatch_denied(payload):
+    if not _simkl_rewatch_denied(payload):
+        return False
+    if control.window.getProperty(_SIMKL_REWATCH_DENIED_PROP) != 'true':
+        control.window.setProperty(_SIMKL_REWATCH_DENIED_PROP, 'true')
+        msg = (payload.get('message') or '').strip() or 'Simkl rewatches need PRO or VIP. Track Rewatches was turned off.'
+        control.infoDialog(msg, sound=True)
+        log_utils.log('Simkl rewatch denied: pro_required', 1)
+        try:
+            control.setSetting('simkl.track_rewatches', 'false')
+        except Exception:
+            pass
+    return True
+
+
+def _simkl_want_rewatch():
+    if control.window.getProperty(_SIMKL_REWATCH_DENIED_PROP) == 'true':
+        return False
+    return control.setting('simkl.track_rewatches') == 'true'
+
+
+def _simkl_rewatch_path(path):
+    if not path or not _simkl_want_rewatch():
+        return path
+    if 'allow_rewatch=' in path:
+        return path
+    sep = '&' if '?' in path else '?'
+    return '%s%sallow_rewatch=yes' % (path, sep)
+
+
+def _simkl_path_without_rewatch(path):
+    if not path or 'allow_rewatch=' not in path:
+        return path
+    base, sep, qs = path.partition('?')
+    if not sep:
+        return path
+    parts = [p for p in qs.split('&') if p and not p.startswith('allow_rewatch=')]
+    return '%s?%s' % (base, '&'.join(parts)) if parts else base
+
+
+def call_simkl_rewatch(path, data=None, method=None):
+    result = call_simkl(path, data=data, method=method)
+    if not _simkl_handle_rewatch_denied(result):
+        return result
+    retry = _simkl_path_without_rewatch(path)
+    if retry == path:
+        return result
+    return call_simkl(retry, data=data, method=method)
+
+
 def _fetch_user_settings(access_token):
     """POST /users/settings — Simkl's documented profile call (GET is not the contract)."""
     _throttle()
     url = _url('/users/settings')
-    headers = _headers()
-    headers['Authorization'] = 'Bearer %s' % access_token
+    headers = _headers(access_token=access_token)
     try:
         resp = requests.post(url, data=json.dumps({}), headers=headers, timeout=20)
         if resp.status_code in (200, 201) and resp.text:
@@ -347,11 +517,59 @@ def _fetch_user_settings(access_token):
     return None
 
 
-def _pin_url(user_code=None):
-    url = '%s/%s' % (OAUTH_PIN_URL, user_code) if user_code else OAUTH_PIN_URL
-    sep = '&' if '?' in url else '?'
-    return '%s%sclient_id=%s&app-name=%s&app-version=%s' % (
-        url, sep, SIMKL_CLIENT_ID, SIMKL_APP_NAME, control.addonInfo('version'))
+def _save_simkl_profile(info=None):
+    if info is None:
+        info = call_simkl('/users/settings', data={})
+    user = 'Simkl User'
+    user_id = ''
+    if info and isinstance(info, dict) and info.get('user'):
+        u = info['user']
+        user = str(u.get('name') or u.get('login') or u.get('username') or user)
+        user_id = u.get('id') or u.get('user_id') or ''
+        if not user_id:
+            account = info.get('account') or {}
+            user_id = account.get('id') or ''
+    control.setSetting('simkl.user', user)
+    control.setSetting('simkl.user_id', str(user_id) if user_id not in _SIMKL_ID_EMPTY else '')
+    return user
+
+
+def _simkl_user_id():
+    user_id = (control.setting('simkl.user_id') or '').strip()
+    if user_id:
+        return user_id
+    _save_simkl_profile()
+    return (control.setting('simkl.user_id') or '').strip() or None
+
+
+def _simkl_pin_auth_url(pin):
+    complete = (pin or {}).get('verification_uri_complete')
+    if complete and str(complete).startswith('http'):
+        return str(complete).strip()
+    user_code = str((pin or {}).get('user_code') or '')
+    verify = ((pin or {}).get('verification_uri') or (pin or {}).get('verification_url') or 'https://simkl.com/pin').rstrip('/')
+    if user_code:
+        return '%s/%s' % (verify, user_code)
+    return verify
+
+
+def _simkl_get_device():
+    cid = SIMKL_CLIENT_ID_V2
+    if not cid:
+        return None
+    try:
+        _throttle()
+        url = _oauth2_url(OAUTH2_DEVICE_URL, client_id=cid)
+        resp = requests.post(url, data={'client_id': cid, 'scope': SIMKL_V2_SCOPE},
+                             headers=_oauth_form_headers(), timeout=20)
+        if resp.status_code == 200:
+            data = resp.json() or {}
+            if data.get('user_code') and data.get('device_code'):
+                data['_client_id'] = cid
+                return data
+    except Exception as e:
+        log_utils.log('Simkl V2 device start failed: %s' % e, 1)
+    return None
 
 
 def authSimkl(reopen_settings=False):
@@ -363,18 +581,16 @@ def authSimkl(reopen_settings=False):
             return
         progress = auth_utils.auth_progress_dialog('Simkl Authorise', '')
         progress.update('Connecting to Simkl...')
-        try:
-            pin = requests.get(_pin_url(), headers={'User-Agent': SIMKL_APP_NAME}, timeout=20).json()
-        except Exception:
-            pin = None
-        if not pin or not pin.get('user_code'):
+        pin = _simkl_get_device()
+        if not pin or not pin.get('user_code') or not pin.get('device_code'):
             control.infoDialog('Simkl Authorisation Failed.', sound=True)
             return
         user_code = str(pin.get('user_code', ''))
+        device_code = pin.get('device_code')
+        cid = pin.get('_client_id') or SIMKL_CLIENT_ID_V2
         expires_in = int(pin.get('expires_in') or 900)
         interval = max(int(pin.get('interval') or 5), 1)
-        verify = (pin.get('verification_uri') or pin.get('verification_url') or 'https://simkl.com/pin').rstrip('/')
-        auth_url = '%s/%s' % (verify, user_code)
+        auth_url = _simkl_pin_auth_url(pin)
         progress.update('Preparing QR code...')
         qr_code = auth_utils.make_qrcode(auth_url) or ''
         short_url = auth_utils.make_tinyurl(auth_url)
@@ -383,41 +599,53 @@ def authSimkl(reopen_settings=False):
         content = ('Enter [B]%s[/B] at [B]simkl.com/pin[/B][CR]OR scan the [B]QR Code[/B]%s[CR][CR]'
                    'Waiting for authorisation...' % (user_code, insert))
         progress.update(content, qr_path=qr_code)
-        token = None
+        token_payload = None
         start = time.time()
+        token_url = _oauth2_url(OAUTH2_TOKEN_URL, client_id=cid)
         while not progress.iscanceled() and (time.time() - start) < expires_in:
             if auth_utils.auth_progress_wait(progress, interval):
                 break
             try:
-                resp = requests.get(_pin_url(user_code), headers={'User-Agent': SIMKL_APP_NAME}, timeout=20).json()
-                if isinstance(resp, dict) and resp.get('access_token'):
-                    token = resp['access_token']
+                resp = requests.post(token_url, data={
+                    'grant_type': 'urn:ietf:params:oauth:grant-type:device_code',
+                    'client_id': cid,
+                    'device_code': device_code,
+                }, headers=_oauth_form_headers(), timeout=20)
+                body = {}
+                try:
+                    body = resp.json() or {}
+                except Exception:
+                    body = {}
+                if resp.status_code == 200 and body.get('access_token'):
+                    token_payload = body
+                    break
+                error = str(body.get('error') or '')
+                if error == 'slow_down':
+                    interval += 5
+                elif error in ('expired_token', 'invalid_client'):
                     break
             except Exception:
                 pass
         canceled = progress.iscanceled()
         auth_utils.close_auth_progress_dialog(progress)
         progress = None
-        if canceled or not token:
-            control.infoDialog('Simkl Authorisation Canceled.' if canceled else 'Simkl Authorisation Failed.', sound=True)
+        if canceled:
+            control.infoDialog('Simkl Authorisation Canceled.', sound=True)
             return
-        control.setSetting('simkl.token', token)
-        # Profile is POST /users/settings (docs). Pass the new token explicitly so we do not
-        # race Addon.setSetting before Bearer auth is readable for the follow-up call.
-        info = _fetch_user_settings(token)
-        user = 'Simkl User'
-        if info and isinstance(info, dict) and info.get('user'):
-            u = info['user']
-            user = str(u.get('name') or u.get('login') or u.get('username') or user)
-        control.setSetting('simkl.user', user)
+        if not token_payload or not _store_v2_tokens(token_payload, cid):
+            control.infoDialog('Simkl Authorisation Failed.', sound=True)
+            return
+        info = _fetch_user_settings(token_payload.get('access_token'))
+        _save_simkl_profile(info)
         control.setSetting('simkl.authed', 'yes')
         from resources.lib.modules.meta_auth_alerts import clear_alert
         clear_alert('simkl')
         if control.yesnoDialog('Set Simkl as your Watched Indicators provider?', heading='Watched Status Provider'):
             set_watched_provider('2', notify=True)
         try:
-            cachesyncMovies(timeout=0)
-            cachesyncTVShows(timeout=0)
+            # Same as Red Light: full pull + store /sync/activities so the next list
+            # open can date_from instead of pulling movies/shows/anime again.
+            syncSimklWatched(silent=True, force_update=True)
         except Exception:
             pass
         control.infoDialog('Simkl Account Authorised.', sound=True)
@@ -437,8 +665,23 @@ def revokeSimkl(reopen_settings=False):
     if not control.confirm_revoke('Simkl', reopen_settings):
         return
     try:
+        if _auth_version() == '2':
+            try:
+                cid = _client_id()
+                token = (control.setting('simkl.refresh') or '').strip() or _token()
+                if cid and token:
+                    _throttle()
+                    url = _oauth2_url(OAUTH2_REVOKE_URL, client_id=cid)
+                    requests.post(url, data={'client_id': cid, 'token': token},
+                                  headers=_oauth_form_headers(), timeout=20)
+            except Exception:
+                pass
         control.setSetting('simkl.user', '')
+        control.setSetting('simkl.user_id', '')
         control.setSetting('simkl.token', '')
+        control.setSetting('simkl.refresh', '')
+        control.setSetting('simkl.expires', '')
+        control.setSetting('simkl.auth_version', '')
         control.setSetting('simkl.authed', '')
         from resources.lib.modules.meta_auth_alerts import clear_alert
         clear_alert('simkl')
@@ -691,6 +934,292 @@ def directory_tvshows(status):
     return shelf_sort.sort_items(out, 'simkl', 'tvshows', status, sortable=shelf_sort.SIMKL_SORTABLE)
 
 
+def _simkl_premium_only(payload):
+    return isinstance(payload, dict) and payload.get('error') == 'premium_only'
+
+
+def _simkl_custom_cache_key(list_id=None, page=None, limit=None):
+    if list_id in (None, '', 0, '0'):
+        return 'simkl_custom_lists'
+    if page not in (None, '', 0, '0'):
+        return 'simkl_custom_list_%s_p%s_%s' % (list_id, page, limit or 0)
+    return 'simkl_custom_list_%s' % list_id
+
+
+def _simkl_custom_cache_get(list_id=None, page=None, limit=None):
+    try:
+        row = cache.cache_get(_simkl_custom_cache_key(list_id, page, limit))
+        if not row or not cache._is_cache_valid(row['date'], _SIMKL_LIST_CACHE_HOURS):
+            return None
+        data = pickle.loads(zlib.decompress(row['value']))
+        return data if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def _simkl_custom_cache_set(list_id, payload, page=None, limit=None):
+    try:
+        cache.cache_insert(_simkl_custom_cache_key(list_id, page, limit), Binary(zlib.compress(pickle.dumps(payload or {}))))
+    except Exception:
+        pass
+
+
+def clear_simkl_custom_list_cache():
+    try:
+        cur = cache._get_connection_cursor()
+        cur.execute('DELETE FROM %s WHERE key = ? OR key LIKE ?' % cache.cache_table,
+                    ['simkl_custom_lists', 'simkl_custom_list_%'])
+        cur.connection.commit()
+    except Exception:
+        pass
+
+
+def simkl_get_custom_lists():
+    """User's custom lists. AUTH V2 only. Returns {'lists': [...], 'premium_only': dict|None}."""
+    empty = {'lists': [], 'premium_only': None}
+    if not getSimklAuthV2():
+        return empty
+    cached = _simkl_custom_cache_get()
+    if cached is not None:
+        return cached
+    user_id = _simkl_user_id()
+    if not user_id:
+        return empty
+    lists, page, limit = [], 1, 50
+    while page <= 40:
+        path = '/lists/user/%s?limit=%s&page=%s&sort=name&direction=asc' % (user_id, limit, page)
+        payload = call_simkl(path, method='get')
+        if _simkl_premium_only(payload):
+            result = {'lists': [], 'premium_only': payload}
+            _simkl_custom_cache_set(None, result)
+            return result
+        if not isinstance(payload, dict):
+            break
+        chunk = payload.get('lists')
+        if not isinstance(chunk, list):
+            break
+        lists.extend(chunk)
+        pagination = payload.get('pagination') or {}
+        try:
+            total_pages = int(pagination.get('total_pages') or page)
+        except Exception:
+            total_pages = page
+        if page >= total_pages or len(chunk) < limit:
+            break
+        page += 1
+    result = {'lists': lists, 'premium_only': None}
+    _simkl_custom_cache_set(None, result)
+    return result
+
+
+def _simkl_custom_item_type(item):
+    kind = str((item or {}).get('type') or '').lower()
+    if kind in ('movie', 'movies'):
+        return 'movie'
+    if kind in ('tv', 'show', 'shows', 'anime'):
+        return 'show'
+    return ''
+
+
+def custom_list_media(item):
+    """movies / shows / anime / mixed / '' from a /lists/user row."""
+    row = item or {}
+    if isinstance(row.get('list'), dict):
+        row = row['list']
+    kind = str(row.get('media_type') or row.get('list_type') or row.get('kind') or '').lower()
+    if kind in ('movie', 'movies'):
+        return 'movies'
+    if kind in ('anime',):
+        return 'anime'
+    if kind in ('tv', 'show', 'shows'):
+        return 'shows'
+    counts = row.get('counts') or {}
+    try:
+        movies = int(counts.get('movies') or 0)
+    except Exception:
+        movies = 0
+    try:
+        shows = int(counts.get('shows') or counts.get('tv') or 0)
+    except Exception:
+        shows = 0
+    try:
+        anime = int(counts.get('anime') or 0)
+    except Exception:
+        anime = 0
+    present = []
+    if movies:
+        present.append('movies')
+    if shows:
+        present.append('shows')
+    if anime:
+        present.append('anime')
+    if len(present) == 1:
+        return present[0]
+    if len(present) > 1:
+        return 'mixed'
+    return ''
+
+
+def _simkl_custom_media_ids(item):
+    ids = (item or {}).get('ids') or {}
+    if not isinstance(ids, dict):
+        return {}
+    media_ids = {}
+    tmdb = ids.get('tmdb')
+    if tmdb not in _SIMKL_ID_EMPTY:
+        try:
+            media_ids['tmdb'] = int(tmdb)
+        except Exception:
+            pass
+    imdb = ids.get('imdb')
+    if imdb not in _SIMKL_ID_EMPTY:
+        media_ids['imdb'] = imdb
+    tvdb = ids.get('tvdb')
+    if tvdb not in _SIMKL_ID_EMPTY:
+        try:
+            media_ids['tvdb'] = int(tvdb)
+        except Exception:
+            media_ids['tvdb'] = tvdb
+    return media_ids
+
+
+def _custom_page_size():
+    try:
+        size = int(control.setting('items.per.page') or 20)
+    except Exception:
+        size = 20
+    if size < 1:
+        size = 20
+    return min(size, 40)
+
+
+def custom_list_page_ref(rest):
+    """'161423' or '161423|2' from a simkl_custom_ url."""
+    page = 1
+    text = str(rest or '')
+    if '|' in text:
+        text, raw = text.split('|', 1)
+        try:
+            page = int(raw)
+        except Exception:
+            page = 1
+    if page < 1:
+        page = 1
+    return text, page
+
+
+def simkl_get_custom_list_contents(list_id, page=1):
+    """One page of a custom list. AUTH V2 + PRO/VIP. Does not walk the whole list."""
+    empty = {'items': [], 'premium_only': None, 'page': 1, 'total_pages': 1}
+    if not getSimklAuthV2() or list_id in _SIMKL_ID_EMPTY:
+        return empty
+    try:
+        page = int(page or 1)
+    except Exception:
+        page = 1
+    if page < 1:
+        page = 1
+    limit = _custom_page_size()
+    cached = _simkl_custom_cache_get(list_id, page, limit)
+    if cached is not None:
+        return cached
+    path = '/lists/%s?limit=%s&page=%s' % (list_id, limit, page)
+    payload = call_simkl(path, method='get')
+    if _simkl_premium_only(payload):
+        result = {'items': [], 'premium_only': payload, 'page': page, 'total_pages': 1}
+        _simkl_custom_cache_set(list_id, result, page, limit)
+        return result
+    rows = []
+    total_pages = page
+    if isinstance(payload, dict):
+        chunk = payload.get('items')
+        if isinstance(chunk, list):
+            for index, item in enumerate(chunk):
+                item_type = _simkl_custom_item_type(item)
+                media_ids = _simkl_custom_media_ids(item)
+                if not item_type or not (media_ids.get('tmdb') or media_ids.get('imdb') or media_ids.get('tvdb')):
+                    continue
+                position = item.get('position')
+                try:
+                    order = int(position) - 1 if position not in (None, '') else index
+                except Exception:
+                    order = index
+                rows.append({
+                    'type': item_type,
+                    'media_ids': media_ids,
+                    'order': order,
+                    'title': (item.get('title') or '').strip(),
+                    'year': item.get('year') or 0,
+                })
+        pagination = payload.get('pagination') or {}
+        try:
+            total_pages = int(pagination.get('total_pages') or page)
+        except Exception:
+            total_pages = page
+    result = {'items': rows, 'premium_only': None, 'page': page, 'total_pages': total_pages}
+    _simkl_custom_cache_set(list_id, result, page, limit)
+    return result
+
+
+def _directory_from_custom_items(items, media, nxt=''):
+    out = []
+    for item in items or []:
+        ids = item.get('media_ids') or {}
+        title = item.get('title') or 'Unknown'
+        year = item.get('year') or '0'
+        try:
+            year = re.sub(r'[^0-9]', '', str(year)) or '0'
+        except Exception:
+            year = '0'
+        imdb = _normalize_imdb(ids.get('imdb'))
+        tmdb = str(ids.get('tmdb') or '0')
+        tvdb = str(ids.get('tvdb') or '0')
+        row = {
+            'title': title, 'originaltitle': title, 'year': year,
+            'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb, 'next': nxt or '',
+            'collected_at': '',
+        }
+        if media == 'movies':
+            row['paused_at'] = '0'
+        out.append(row)
+    return out
+
+
+def _custom_list_next(list_id, payload):
+    try:
+        page = int((payload or {}).get('page') or 1)
+        total = int((payload or {}).get('total_pages') or page)
+    except Exception:
+        return ''
+    if page >= total:
+        return ''
+    return 'simkl_custom_%s|%s' % (list_id, page + 1)
+
+
+def directory_custom_list_movies(list_id, page=1):
+    payload = simkl_get_custom_list_contents(list_id, page)
+    if payload.get('premium_only'):
+        control.infoDialog(
+            (payload['premium_only'].get('message') or 'Simkl PRO/VIP required for custom lists.'),
+            sound=True)
+        return []
+    movies = [i for i in (payload.get('items') or []) if i.get('type') == 'movie']
+    movies.sort(key=lambda k: k.get('order', 0))
+    return _directory_from_custom_items(movies, 'movies', _custom_list_next(list_id, payload))
+
+
+def directory_custom_list_tvshows(list_id, page=1):
+    payload = simkl_get_custom_list_contents(list_id, page)
+    if payload.get('premium_only'):
+        control.infoDialog(
+            (payload['premium_only'].get('message') or 'Simkl PRO/VIP required for custom lists.'),
+            sound=True)
+        return []
+    shows = [i for i in (payload.get('items') or []) if i.get('type') == 'show']
+    shows.sort(key=lambda k: k.get('order', 0))
+    return _directory_from_custom_items(shows, 'tvshows', _custom_list_next(list_id, payload))
+
+
 def _paused_key(paused_at):
     if not paused_at:
         return '0'
@@ -885,7 +1414,7 @@ def progress_seeds():
         seed['year'] = str(meta.get('year') or seed['year'] or '0')
         seed['imdb'] = _normalize_imdb(ids.get('imdb'))
         seed['tvdb'] = str(ids.get('tvdb') or '0')
-    seeds = [s for s in by_tmdb.values() if s.get('tvshowtitle')]
+    seeds = [s for s in by_tmdb.values() if s.get('tmdb') and str(s.get('tmdb')) != '0']
     limit = str(control.setting('trakt.item.limit') or '100')
     try:
         limit = int(limit)
@@ -1005,8 +1534,14 @@ def _trending_file(media_kind, period):
     return 'discover/trending/%s/%s_100.json' % (media_kind, period)
 
 
-def directory_trending(media_kind, period='today'):
+def directory_trending(media_kind, period='today', page=1):
     """Simkl Most Watched / Trending CDN list as Gratis Red movie or TV items."""
+    try:
+        page = int(page or 1)
+    except Exception:
+        page = 1
+    if page < 1:
+        page = 1
     kinds = (media_kind,)
     if media_kind in ('tv', 'shows', 'tvshows'):
         kinds = ('tv', 'anime')
@@ -1052,7 +1587,15 @@ def directory_trending(media_kind, period='today'):
                 out.append(row)
             except Exception:
                 pass
-    return out
+    size = _custom_page_size()
+    start = (page - 1) * size
+    page_rows = out[start:start + size]
+    nxt = ''
+    if start + size < len(out):
+        nxt = 'simkl_trending_%s|%s' % (period, page + 1)
+    for row in page_rows:
+        row['next'] = nxt
+    return page_rows
 
 
 def syncMovies(user):
@@ -1124,6 +1667,21 @@ def _activity_block_changed(latest_blk, cached_blk, keys):
     return False
 
 
+def _simkl_activities_recent():
+    try:
+        at = float(control.window.getProperty(_SIMKL_ACTIVITIES_AT_PROP) or 0)
+        return at > 0 and (time.time() - at) < _SIMKL_ACTIVITIES_MIN_GAP
+    except Exception:
+        return False
+
+
+def _simkl_note_activities_poll():
+    try:
+        control.window.setProperty(_SIMKL_ACTIVITIES_AT_PROP, '%.3f' % time.time())
+    except Exception:
+        pass
+
+
 def _simkl_date_from(cached_activities):
     ts = str((cached_activities or {}).get('all') or '').strip()
     if not ts:
@@ -1170,9 +1728,79 @@ def _write_sync_cache(function, result, *args):
         log_utils.log('Simkl cache write failed: %s' % e, 1)
 
 
+def _sync_user():
+    return control.setting('simkl.user').strip() or 'simkl'
+
+
+def apply_local_movie_watched(imdb, watched=True):
+    """Patch the movie indicator cache after mark watched/unwatched. No HTTP."""
+    imdb_n = _normalize_imdb(imdb)
+    if imdb_n in ('0', ''):
+        return False
+    try:
+        user = _sync_user()
+        existing = _read_sync_cache(syncMovies, user)
+        if existing is None:
+            return False
+        out = set(existing or [])
+        if watched:
+            out.add(imdb_n)
+        else:
+            out.discard(imdb_n)
+        _write_sync_cache(syncMovies, list(out), user)
+        return True
+    except Exception:
+        return False
+
+
+def apply_local_episode_watched(tmdb, season, episode, watched=True):
+    """Patch the TV indicator cache after mark watched/unwatched. No HTTP."""
+    tmdb_n = str(tmdb or '').strip()
+    if tmdb_n in ('', '0', 'None'):
+        return False
+    try:
+        season, episode = int(season), int(episode)
+        pair = (season, episode)
+    except Exception:
+        return False
+    try:
+        user = _sync_user()
+        existing = _read_sync_cache(syncTVShows, user, _SIMKL_TV_INDICATOR_VER)
+        if existing is None:
+            return False
+        by_tmdb = {}
+        for row in existing or []:
+            try:
+                by_tmdb[str(row[0])] = row
+            except Exception:
+                pass
+        row = by_tmdb.get(tmdb_n)
+        extra = {}
+        aired = 0
+        pairs = []
+        if row is not None:
+            try:
+                aired = int(row[1] or 0)
+            except Exception:
+                aired = 0
+            pairs = [tuple(p) for p in (row[2] or [])]
+            extra = row[3] if len(row) > 3 and isinstance(row[3], dict) else {}
+        if watched:
+            if pair not in pairs:
+                pairs.append(pair)
+            # Do not treat "1 of 1" as fully watched when Simkl never gave an aired count.
+        else:
+            pairs = [p for p in pairs if p != pair]
+        by_tmdb[tmdb_n] = (tmdb_n, aired, pairs, extra)
+        _write_sync_cache(syncTVShows, list(by_tmdb.values()), user, _SIMKL_TV_INDICATOR_VER)
+        return True
+    except Exception:
+        return False
+
+
 def _fetch_movie_indicators(date_from=None):
     path = '/sync/all-items/movies/completed?%s' % _simkl_with_date_from('extended=full', date_from)
-    data = call_simkl(path, method='get') or {}
+    data = call_simkl_rewatch(_simkl_rewatch_path(path), method='get') or {}
     return _movie_indicators_from_data(data, filter_status=False)
 
 
@@ -1232,6 +1860,47 @@ def _simkl_episode_watched(ep):
     return ep.get('watched') in (True, 1, '1', 'true', 'True', 'yes')
 
 
+def _simkl_int(value):
+    try:
+        return int(value or 0)
+    except Exception:
+        return 0
+
+
+def _simkl_first_int(maps, *keys):
+    for src in maps:
+        if not isinstance(src, dict):
+            continue
+        for key in keys:
+            n = _simkl_int(src.get(key))
+            if n:
+                return n
+    return 0
+
+
+def _simkl_aired_count(item, show, watched):
+    """Aired-now count for the parent overlay (Trakt uses aired_episodes the same way).
+
+    Counts sit on the all-items row, not only nested show. Prefer aired-now so an
+    up-to-date watching title ticks; do not use 0-of-0 or inflate a first episode
+    to 1-of-1.
+    """
+    maps = (item, show)
+    aired = _simkl_first_int(maps, 'aired_episodes')
+    total = _simkl_first_int(maps, 'total_episodes_count', 'total_episodes')
+    not_aired = _simkl_first_int(maps, 'not_aired_episodes_count', 'not_aired_count')
+    if not aired and total:
+        if not_aired and not_aired <= total:
+            aired = total - not_aired
+        else:
+            aired = total
+    status = str((item or {}).get('status') or '').lower()
+    watched_n = len(watched or [])
+    if not aired and watched_n and status == 'completed':
+        aired = watched_n
+    return aired
+
+
 def _upsert_tv_indicator(by_tmdb, tmdb, aired, watched, extra):
     prev = by_tmdb.get(tmdb)
     extra = dict(extra or {})
@@ -1246,7 +1915,8 @@ def _upsert_tv_indicator(by_tmdb, tmdb, aired, watched, extra):
     combined['last'] = _further_se(prev_extra.get('last'), extra.get('last'))
     if not combined.get('title'):
         combined['title'] = prev_extra.get('title') or extra.get('title') or ''
-    by_tmdb[tmdb] = (tmdb, max(int(prev[1] or 0), int(aired or 0), len(merged)), merged, combined)
+    # Do not raise aired to len(watched) — that marks a first episode as 1-of-1 complete.
+    by_tmdb[tmdb] = (tmdb, max(int(prev[1] or 0), int(aired or 0)), merged, combined)
 
 
 def _append_tv_indicator_rows(indicators, touched_ids, data, item_key):
@@ -1269,7 +1939,7 @@ def _append_tv_indicator_rows(indicators, touched_ids, data, item_key):
             tmdb = str(tmdb)
             if touched_ids is not None:
                 touched_ids.add(tmdb)
-            aired = int(show.get('total_episodes_count') or show.get('aired_episodes') or 0)
+            status = str(item.get('status') or '').lower()
             watched = []
             for season in item.get('seasons') or []:
                 try:
@@ -1290,9 +1960,8 @@ def _append_tv_indicator_rows(indicators, touched_ids, data, item_key):
                     except Exception:
                         continue
                     watched.append((ep_snum, epnum))
-            if not aired:
-                aired = len(watched)
-            extra = {'title': show.get('title') or ''}
+            aired = _simkl_aired_count(item, show, watched)
+            extra = {'title': show.get('title') or '', 'status': status}
             nxt = _simkl_se_pair(item.get('next_to_watch'))
             if nxt:
                 extra['next'] = nxt
@@ -1317,13 +1986,13 @@ def _tv_indicators_from_data(data, date_from=None):
 def _fetch_tv_indicators(date_from=None):
     if date_from:
         # Phase 2: one multi-type request (shows + anime; movies ignored here).
-        data = call_simkl('/sync/all-items?%s' % _simkl_with_date_from(_SIMKL_PHASE2_ALL_QUERY, date_from), method='get') or {}
+        data = call_simkl_rewatch(_simkl_rewatch_path('/sync/all-items?%s' % _simkl_with_date_from(_SIMKL_PHASE2_ALL_QUERY, date_from)), method='get') or {}
         return _tv_indicators_from_data(data, date_from)
     # Phase 1: sequential per-type full pulls (Simkl guidance for large libraries).
     indicators = []
-    shows = call_simkl('/sync/all-items/shows?%s' % _SIMKL_TV_SYNC_QUERY, method='get') or {}
+    shows = call_simkl_rewatch(_simkl_rewatch_path('/sync/all-items/shows?%s' % _SIMKL_TV_SYNC_QUERY), method='get') or {}
     _append_tv_indicator_rows(indicators, None, shows, 'shows')
-    anime = call_simkl('/sync/all-items/anime?%s' % _SIMKL_ANIME_SYNC_QUERY, method='get') or {}
+    anime = call_simkl_rewatch(_simkl_rewatch_path('/sync/all-items/anime?%s' % _SIMKL_ANIME_SYNC_QUERY), method='get') or {}
     _append_tv_indicator_rows(indicators, None, anime, 'anime')
     return indicators, None
 
@@ -1332,7 +2001,7 @@ def _fetch_phase2_indicators(date_from):
     """Phase 2 continuous sync: one /sync/all-items?date_from= for movies + shows + anime."""
     if not date_from:
         return [], [], None
-    data = call_simkl('/sync/all-items?%s' % _simkl_with_date_from(_SIMKL_PHASE2_ALL_QUERY, date_from), method='get') or {}
+    data = call_simkl_rewatch(_simkl_rewatch_path('/sync/all-items?%s' % _simkl_with_date_from(_SIMKL_PHASE2_ALL_QUERY, date_from)), method='get') or {}
     movies = _movie_indicators_from_data(data, filter_status=True)
     tv, touched = _tv_indicators_from_data(data, date_from)
     return movies, tv, touched
@@ -1412,7 +2081,9 @@ def syncSeason(imdb, tmdb=None):
             by_season.setdefault(season_n, set()).add(episode_n)
         fully = []
         for season_n, episodes in by_season.items():
-            if not episodes:
+            # A watched prefix is not a finished season. Episode 1 alone used to match
+            # (min 1, length 1, max 1). Season ticks use the season's episode count.
+            if not episodes or len(episodes) < 2:
                 continue
             if min(episodes) == 1 and len(episodes) >= max(episodes):
                 fully.append('%01d' % season_n)
@@ -1469,7 +2140,7 @@ def markMovieAsWatched(imdb, tmdb=None):
     ids = _list_ids(tmdb=tmdb, imdb=imdb)
     if not ids:
         return None
-    return call_simkl('/sync/history', data={'movies': [{'ids': ids}]})
+    return call_simkl_rewatch(_simkl_rewatch_path('/sync/history'), data={'movies': [{'ids': ids}]})
 
 
 def markMovieAsNotWatched(imdb, tmdb=None):
@@ -1484,7 +2155,7 @@ def markEpisodeAsWatched(imdb, season, episode, tmdb=None):
     if not ids:
         return None
     season, episode = int(season), int(episode)
-    return call_simkl('/sync/history', data={
+    return call_simkl_rewatch(_simkl_rewatch_path('/sync/history'), data={
         'shows': [{'ids': ids, 'seasons': [{'number': season, 'episodes': [{'number': episode}]}]}]
     })
 
@@ -1567,7 +2238,7 @@ def markTVShowAsWatched(imdb, tmdb=None):
     ids = _list_ids(tmdb=tmdb, imdb=imdb)
     if not ids:
         return False
-    result = call_simkl('/sync/history', data={'shows': [{'ids': ids, 'status': 'completed'}]})
+    result = call_simkl_rewatch(_simkl_rewatch_path('/sync/history'), data={'shows': [{'ids': ids, 'status': 'completed'}]})
     if result is None:
         log_utils.log('Simkl history mark_as_watched network failure for tvshow tmdb=%s' % tmdb, 1)
         return False
@@ -1577,7 +2248,7 @@ def markTVShowAsWatched(imdb, tmdb=None):
         nums = _regular_season_numbers(tmdb)
         if nums:
             log_utils.log('Simkl history mark_as_watched show added.episodes=0 tmdb=%s, expanding seasons' % tmdb, 1)
-            result = call_simkl('/sync/history', data={'shows': [{'ids': ids, 'seasons': [{'number': n} for n in nums]}]})
+            result = call_simkl_rewatch(_simkl_rewatch_path('/sync/history'), data={'shows': [{'ids': ids, 'seasons': [{'number': n} for n in nums]}]})
             if result is None:
                 log_utils.log('Simkl history season-expand network failure for tvshow tmdb=%s' % tmdb, 1)
                 return False
@@ -1653,13 +2324,29 @@ def simkl_scrobble(action, media_type, percent=0, tmdb=None, imdb=None, season=N
     payload = _scrobble_payload(media_type, percent, tmdb=tmdb, imdb=imdb, season=season, episode=episode)
     if not payload:
         return
-    call_simkl(path, data=payload)
+    # allow_rewatch is stop-only. Never send it on start (Simkl rejects it) or pause.
+    if action == 'stop':
+        result = call_simkl_rewatch(_simkl_rewatch_path(path), data=payload)
+        try:
+            log_utils.log('Simkl scrobble stop %s percent=%s' % (media_type, percent))
+        except Exception:
+            pass
+        return result
+    result = call_simkl(path, data=payload)
+    try:
+        log_utils.log('Simkl scrobble %s %s percent=%s' % (action, media_type, percent))
+    except Exception:
+        pass
+    return result
 
 
 def syncSimklWatched(silent=True, force_update=False):
     """Refresh Simkl watched indicator caches via /sync/activities + optional date_from deltas."""
     if not getSimklCredentialsInfo():
         return False
+    # Widget/list opens: one /sync/activities per minute (AUTH V2 free = 500/day).
+    if not force_update and _simkl_activities_recent() and _load_cached_activities():
+        return True
     if not force_update:
         try:
             if control.window.getProperty(_SIMKL_SYNC_BUSY_PROP) == 'true':
@@ -1708,6 +2395,7 @@ def _sync_simkl_watched_body(force_update=False):
         return False
     if not latest:
         return False
+    _simkl_note_activities_poll()
     cached = _load_cached_activities()
     if not force_update and _activity_ts(latest.get('all', '')) <= _activity_ts(cached.get('all', '')):
         return True
@@ -1725,6 +2413,10 @@ def _sync_simkl_watched_body(force_update=False):
         clear_simkl_list_status_cache('shows')
     if force_update or _activity_block_changed(anime, cached_anime, _SIMKL_LIST_ACTIVITY_KEYS):
         clear_simkl_list_status_cache('anime')
+    if force_update or _activity_block_changed(movies, cached_movies, _SIMKL_LIST_ACTIVITY_KEYS) \
+            or _activity_block_changed(shows, cached_shows, _SIMKL_LIST_ACTIVITY_KEYS) \
+            or _activity_block_changed(anime, cached_anime, _SIMKL_LIST_ACTIVITY_KEYS):
+        clear_simkl_custom_list_cache()
     movie_from = None if (not date_from or _activity_block_changed(movies, cached_movies, _SIMKL_MOVIE_FULL_SYNC_KEYS)) else date_from
     tv_from = None if (not date_from
         or _activity_block_changed(shows, cached_shows, _SIMKL_SHOW_FULL_SYNC_KEYS)
@@ -1766,6 +2458,7 @@ def _bust_sync_cache():
     except Exception:
         pass
     clear_simkl_list_status_cache()
+    clear_simkl_custom_list_cache()
 
 
 def refreshSimklCache(silent=False):

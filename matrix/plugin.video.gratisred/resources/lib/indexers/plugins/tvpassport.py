@@ -185,22 +185,41 @@ class listings:
             pass
 
 
+    def _resolve_page(self, url, page, today=False):
+        size = control.items_per_page()
+        start = (page - 1) * size
+        chunk = self.items[start:start + size]
+        threads = []
+        for item in chunk:
+            threads.append(workers.Thread(self.movies_items_list, item))
+        [i.start() for i in threads]
+        [i.join() for i in threads]
+        nxt = ''
+        if start + size < len(self.items):
+            if today:
+                nxt = 'passport|today|%s' % (page + 1)
+            else:
+                nxt = 'passport|%s|%s' % (url, page + 1)
+        for row in self.list:
+            try:
+                row['next'] = nxt
+            except Exception:
+                pass
+
+
     def stations_movies_list(self, url):
         try:
+            url, page = _paged(url)
             threadsA = []
             if '$$$' in url:
-                url = url.split('$$$')
-                for u in url:
+                parts = url.split('$$$')
+                for u in parts:
                     threadsA.append(workers.Thread(self.stations_items_list, u))
             else:
                 threadsA.append(workers.Thread(self.stations_items_list, url))
             [i.start() for i in threadsA]
             [i.join() for i in threadsA]
-            threadsB = []
-            for i in range(0, len(self.items)):
-                threadsB.append(workers.Thread(self.movies_items_list, self.items[i]))
-            [i.start() for i in threadsB]
-            [i.join() for i in threadsB]
+            self._resolve_page(url, page)
             movies.movies().movieDirectory(self.list)
             return self.list
         except Exception:
@@ -209,6 +228,7 @@ class listings:
 
     def movies_today_list(self, url):
         try:
+            url, page = _paged(url)
             html = client.scrapePage(self.movies_today_link, timeout='30').text
             results = client_utils.parseDOM(html, 'h2', attrs={'class': 'h4'})
             results = [(client_utils.parseDOM(i, 'a'), client_utils.parseDOM(i, 'small')) for i in results]
@@ -224,14 +244,23 @@ class listings:
                     self.items.append((title, year))
                 except:
                     pass
-            threads = []
-            for i in range(0, len(self.items)):
-                threads.append(workers.Thread(self.movies_items_list, self.items[i]))
-            [i.start() for i in threads]
-            [i.join() for i in threads]
+            self._resolve_page(url, page, today=True)
             movies.movies().movieDirectory(self.list)
             return self.list
         except Exception:
             return self.list
+
+
+def _paged(url):
+    page = 1
+    text = str(url or '')
+    if '|' in text:
+        text, raw = text.rsplit('|', 1)
+        try:
+            page = max(1, int(raw))
+        except Exception:
+            text = str(url or '')
+            page = 1
+    return text, page
 
 

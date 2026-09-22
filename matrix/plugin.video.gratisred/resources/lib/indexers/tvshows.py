@@ -445,7 +445,7 @@ class tvshows:
         self.list = userlists
         if not self.list:
             if tmdb_utils.getTMDbCredentialsInfo() == False:
-                control.infoDialog('Authorize TMDb in Settings > Account Settings to see your lists.', sound=True)
+                control.infoDialog('Authorise TMDb in Settings > Account Settings to see your lists.', sound=True)
             else:
                 control.infoDialog('No TMDb TV lists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k['image'], k['name'].lower()))
@@ -458,7 +458,7 @@ class tvshows:
         self.list = mdblist_mod.user_list_directory('user', 'tvshows')
         if not self.list:
             if not mdblist_mod.getMdblistCredentialsInfo():
-                control.infoDialog('Authorize MDBList in Settings > Account Settings to see your lists.', sound=True)
+                control.infoDialog('Authorise MDBList in Settings > Account Settings to see your lists.', sound=True)
             else:
                 control.infoDialog('No MDBList TV lists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k.get('name') or '').lower())
@@ -471,7 +471,7 @@ class tvshows:
         self.list = mdblist_mod.user_list_directory('liked', 'tvshows')
         if not self.list:
             if not mdblist_mod.getMdblistCredentialsInfo():
-                control.infoDialog('Authorize MDBList in Settings > Account Settings to see your lists.', sound=True)
+                control.infoDialog('Authorise MDBList in Settings > Account Settings to see your lists.', sound=True)
             else:
                 control.infoDialog('No liked MDBLists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k.get('name') or '').lower())
@@ -662,11 +662,20 @@ class tvshows:
             next_url = ''
 
             if '/updates/shows' in path:
-                # /updates/shows?since=X  -> dict {id: timestamp}.  Pull
-                # the top 60 most-recently-updated ids and resolve them.
-                upd = client.scrapePage(url, timeout='30').json() or {}
+                # /updates/shows?since=X  -> dict {id: timestamp}. One response;
+                # only the visible page is resolved to show records.
+                upd = client.scrapePage(url.split('&view=')[0].split('?view=')[0], timeout='30').json() or {}
                 ids = sorted(upd.items(), key=lambda kv: int(kv[1]), reverse=True)
-                ids = [i[0] for i in ids][:60]
+                ids = [i[0] for i in ids]
+                size = control.items_per_page()
+                try:
+                    view = int((qs.get('view') or ['0'])[0])
+                except Exception:
+                    view = 0
+                if view < 0:
+                    view = 0
+                start = view * size
+                page_ids = ids[start:start + size]
                 def _fetch(_id, _bucket):
                     try:
                         s = client.scrapePage(self.tvmaze_info_link % _id, timeout='30').json()
@@ -675,14 +684,31 @@ class tvshows:
                     except Exception:
                         pass
                 bucket = []
-                threads = [workers.Thread(_fetch, i, bucket) for i in ids]
+                threads = [workers.Thread(_fetch, i, bucket) for i in page_ids]
                 [t.start() for t in threads]
                 [t.join() for t in threads]
                 shows = bucket
+                if start + size < len(ids):
+                    base = url.split('&view=')[0].split('?view=')[0]
+                    join = '&' if '?' in base else '?'
+                    next_url = '%s%sview=%s' % (base, join, view + 1)
 
             elif '/search/shows' in path:
-                res = client.scrapePage(url, timeout='30').json() or []
+                res = client.scrapePage(url.split('&view=')[0], timeout='30').json() or []
                 shows = [r.get('show', {}) for r in res if r.get('show')]
+                size = control.items_per_page()
+                try:
+                    view = int((qs.get('view') or ['0'])[0])
+                except Exception:
+                    view = 0
+                if view < 0:
+                    view = 0
+                start = view * size
+                if start + size < len(shows):
+                    base = url.split('&view=')[0]
+                    join = '&' if '?' in base else '?'
+                    next_url = '%s%sview=%s' % (base, join, view + 1)
+                shows = shows[start:start + size]
 
             else:
                 # /shows?page=N  (with optional client-side filter)
@@ -734,41 +760,43 @@ class tvshows:
                     shows = sorted(shows,
                                    key=lambda s: int(s.get('weight') or 0),
                                    reverse=True)
-                    PAGE_SIZE = 80
+                    size = control.items_per_page()
                     total_matches = len(shows)
-                    start = page * PAGE_SIZE
-                    shows = shows[start:start + PAGE_SIZE]
-                    has_more = (start + PAGE_SIZE) < total_matches
+                    start = page * size
+                    shows = shows[start:start + size]
+                    has_more = (start + size) < total_matches
                 else:
-                    # Unfiltered "Most Popular" page-0 view.
+                    # Unfiltered "Most Popular". TVmaze /shows?page=N is 250
+                    # shows; that page size is the API's, not ours. view= walks
+                    # Items Per Page inside the page and is not sent upstream.
                     page_url = '%s/shows?page=%s' % (self.tvmaze_link, page)
                     shows = client.scrapePage(page_url, timeout='30').json() or []
-                    # No filter -> "Most Popular"-style ordering: TVmaze
-                    # sorts /shows by id (oldest first), so we re-sort by
-                    # its built-in ``weight`` field (popularity score).
                     shows = sorted(shows, key=lambda s: int(s.get('weight') or 0), reverse=True)
-                    # PERF FIX (v1.0.3): the old code pushed all 250
-                    # rows from a single TVmaze page through worker(),
-                    # which performs a TMDb info lookup *per show*
-                    # (often falling back to a Trakt search when imdb
-                    # is missing).  250 lookups in 40-thread batches
-                    # routinely took 60-120 s, which the user reported
-                    # as "Most Popular Shows takes an age to load".
-                    # Showing only the top 80 by weight cuts the wait
-                    # to under 15 s while leaving the existing
-                    # next-page link in place for users who want more.
-                    shows = shows[:80]
-                    has_more = True
+                    size = control.items_per_page()
+                    try:
+                        view = int((qs.get('view') or ['0'])[0])
+                    except Exception:
+                        view = 0
+                    if view < 0:
+                        view = 0
+                    start = view * size
+                    has_more_here = (start + size) < len(shows)
+                    shows = shows[start:start + size]
+                    has_more = has_more_here or page < 200
 
-                # Pagination: always offer a "next page" link when there
-                # is more to show.
                 if shows and has_more and page < 200:
                     parts = []
                     for k in ('network', 'webchannel', 'genre', 'country'):
                         v = qs.get(k)
                         if v:
                             parts.append('%s=%s' % (k, v[0]))
-                    parts.append('page=%s' % (page + 1))
+                    if network_id or webchannel_id or genre_filter or country:
+                        parts.append('page=%s' % (page + 1))
+                    elif has_more_here:
+                        parts.append('page=%s' % page)
+                        parts.append('view=%s' % (view + 1))
+                    else:
+                        parts.append('page=%s' % (page + 1))
                     next_url = '%s/shows?%s' % (self.tvmaze_link, '&'.join(parts))
 
             # ---- normalise into the addon's standard show-dict shape ----
@@ -1103,9 +1131,20 @@ class tvshows:
         return poster, fanart, banner, clearlogo, clearart, landscape
 
 
+    def _mdblist_episode_count_missing(self, i):
+        """Refetch show info once so MDBList and Local can tick from episodes that have aired."""
+        if 'aired_count' in (self.list[i] or {}):
+            return False
+        try:
+            from resources.lib.modules import simkl as simkl_mod
+            return simkl_mod.getIndicatorsProvider() in ('mdblist', 'local')
+        except Exception:
+            return False
+
+
     def trakt_info(self, i):
         try:
-            if self.list[i]['metacache'] == True:
+            if self.list[i]['metacache'] == True and not self._mdblist_episode_count_missing(i):
                 return
             imdb = self.list[i]['imdb'] if 'imdb' in self.list[i] else '0'
             tmdb = self.list[i]['tmdb'] if 'tmdb' in self.list[i] else '0'
@@ -1234,10 +1273,17 @@ class tvshows:
             else:
                 poster = poster if not poster == '0' else poster2
                 fanart = fanart if not fanart == '0' else fanart2
+            try:
+                aired_eps = int(item.get('aired_episodes') or 0)
+            except Exception:
+                aired_eps = 0
             item = {'title': title, 'originaltitle': originaltitle, 'year': year, 'premiered': premiered, 'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb, 'status': status, 'studio': studio, 'genre': genre,
                 'duration': duration, 'rating': rating, 'votes': votes, 'mpaa': mpaa, 'plot': plot, 'tagline': tagline, 'castwiththumb': castwiththumb, 'director': director, 'writer': writer,
                 'poster': poster, 'fanart': fanart, 'banner': banner, 'clearlogo': clearlogo, 'clearart': clearart, 'landscape': landscape
             }
+            if aired_eps > 0:
+                item['episode_count'] = aired_eps
+            item['aired_count'] = aired_eps
             item = dict((k,v) for k, v in six.iteritems(item) if not v == '0')
             self.list[i].update(item)
             meta = {'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb, 'lang': self.lang, 'item': item}
@@ -1249,7 +1295,7 @@ class tvshows:
 
     def tmdb_info(self, i):
         try:
-            if self.list[i]['metacache'] == True:
+            if self.list[i]['metacache'] == True and not self._mdblist_episode_count_missing(i):
                 return
             imdb = self.list[i]['imdb'] if 'imdb' in self.list[i] else '0'
             tmdb = self.list[i]['tmdb'] if 'tmdb' in self.list[i] else '0'
@@ -1331,6 +1377,20 @@ class tvshows:
             status = item.get('status', '0')
             if not status or status == '0':
                 status = '0'
+            episode_count = None
+            try:
+                total = 0
+                found = False
+                for season in item.get('seasons') or []:
+                    if int(season.get('season_number') or 0) < 1:
+                        continue
+                    found = True
+                    total += int(season.get('episode_count') or 0)
+                if found:
+                    episode_count = total
+            except Exception:
+                episode_count = None
+            aired_count = playcount.aired_episode_total(item.get('seasons') or [], item.get('last_episode_to_air'), item.get('number_of_episodes'))
             rating = item.get('vote_average', '0')
             if not rating or rating == '0' or rating == '0.0':
                 rating = '0'
@@ -1399,6 +1459,10 @@ class tvshows:
                 'genre': genre, 'duration': duration, 'rating': rating, 'votes': votes, 'mpaa': mpaa, 'plot': plot, 'tagline': tagline, 'castwiththumb': castwiththumb,
                 'poster': poster, 'fanart': fanart, 'banner': banner, 'clearlogo': clearlogo, 'clearart': clearart, 'landscape': landscape
             }
+            if episode_count is not None:
+                item['episode_count'] = episode_count
+            if aired_count is not None:
+                item['aired_count'] = int(aired_count)
             item = dict((k,v) for k, v in six.iteritems(item) if not v == '0')
             self.list[i].update(item)
             meta = {'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb, 'lang': self.lang, 'item': item}
@@ -1441,11 +1505,17 @@ class tvshows:
                 from resources.lib.modules import simkl as simkl_mod
                 key = str(url)
                 if key.startswith('simkl_trending_'):
-                    period = key.replace('simkl_trending_', '') or 'today'
-                    self.list = simkl_mod.directory_trending('tv', period)
+                    period, page = simkl_mod.custom_list_page_ref(key.replace('simkl_trending_', '') or 'today')
+                    self.list = simkl_mod.directory_trending('tv', period, page)
+                elif key.startswith('simkl_custom_'):
+                    list_id, page = simkl_mod.custom_list_page_ref(key[13:])
+                    self.list = simkl_mod.directory_custom_list_tvshows(list_id, page)
                 else:
-                    status = key[6:]
+                    status, page = control.list_page(key[6:])
+                    self._list_key = 'simkl_%s' % status
                     self.list = simkl_mod.directory_tvshows(status)
+                    if idx == True:
+                        self.list = control.page_items(self.list, page, self._list_key)
                 if idx == True:
                     self.worker()
                 if idx == True and create_directory == True:
@@ -1453,7 +1523,11 @@ class tvshows:
                 return self.list
             if url and str(url).startswith('mdblist_'):
                 from resources.lib.modules import mdblist as mdblist_mod
-                self.list = mdblist_mod.directory_from_url(url, 'tvshows') or []
+                base, page = control.list_page(str(url))
+                self._list_key = base
+                self.list = mdblist_mod.directory_from_url(base, 'tvshows') or []
+                if idx == True:
+                    self.list = control.page_items(self.list, page, base)
                 if idx == True:
                     self.worker()
                 if idx == True and create_directory == True:
@@ -1574,13 +1648,13 @@ class tvshows:
         mdblistCredentials = mdblist_mod.getMdblistCredentialsInfo()
         _ind = simkl_mod.getIndicatorsProvider()
         if _ind == 'trakt':
-            watchedMenu, unwatchedMenu = '[I]Watched in Trakt[/I]', '[I]Unwatched in Trakt[/I]'
+            watchedMenu, unwatchedMenu = 'Watched in Trakt', 'Unwatched in Trakt'
         elif _ind == 'simkl':
-            watchedMenu, unwatchedMenu = '[I]Watched in Simkl[/I]', '[I]Unwatched in Simkl[/I]'
+            watchedMenu, unwatchedMenu = 'Watched in Simkl', 'Unwatched in Simkl'
         elif _ind == 'mdblist':
-            watchedMenu, unwatchedMenu = '[I]Watched in MDBList[/I]', '[I]Unwatched in MDBList[/I]'
+            watchedMenu, unwatchedMenu = 'Watched in MDBList', 'Unwatched in MDBList'
         else:
-            watchedMenu, unwatchedMenu = '[I]Watched in Gratis Red[/I]', '[I]Unwatched in Gratis Red[/I]'
+            watchedMenu, unwatchedMenu = 'Watched in Gratis Red', 'Unwatched in Gratis Red'
         nextMenu = '[I]Next Page[/I]'
         try:
             favitems = favorites.getFavorites('tvshow')
@@ -1632,10 +1706,10 @@ class tvshows:
                 cm.append(('Clear Providers', 'RunPlugin(%s?action=clear_sources)' % sysaddon))
                 cm.append(('Find Similar', 'Container.Update(%s?action=tvshows&url=%s)' % (sysaddon, self.trakt_related_link % imdb)))
                 cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
-                if simklCredentials == True:
-                    cm.append(('Simkl Lists Manager', 'RunPlugin(%s?action=simkl_manager&name=%s&imdb=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, imdb, tmdb)))
                 if mdblistCredentials == True:
                     cm.append(('MDBList Lists Manager', 'RunPlugin(%s?action=mdblist_manager&name=%s&imdb=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, imdb, tmdb)))
+                if simklCredentials == True:
+                    cm.append(('Simkl Lists Manager', 'RunPlugin(%s?action=simkl_manager&name=%s&imdb=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, imdb, tmdb)))
                 if tmdbCredentials == True:
                     cm.append(('TMDb Lists Manager', 'RunPlugin(%s?action=tmdb_manager&name=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, tmdb)))
                 if traktCredentials == True:
@@ -1651,7 +1725,11 @@ class tvshows:
                 if kodi_version < 17:
                     cm.append(('Information', 'Action(Info)'))
                 try:
-                    overlay = int(playcount.getTVShowOverlay(indicators, imdb, tmdb))
+                    aired = i.get('aired_count')
+                    if aired in (None, '', '0', 0):
+                        if str(i.get('status') or '').lower() in ('ended', 'canceled', 'cancelled'):
+                            aired = i.get('episode_count')
+                    overlay = int(playcount.getTVShowOverlay(indicators, imdb, tmdb, i.get('status'), aired))
                     if overlay == 7:
                         cm.append((unwatchedMenu, 'RunPlugin(%s?action=tvshows_playcount&name=%s&imdb=%s&tmdb=%s&query=6)' % (sysaddon, systitle, imdb, tmdb)))
                         meta.update({'playcount': 1, 'overlay': 7})

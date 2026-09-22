@@ -161,6 +161,16 @@ def router(_argv):
         navigator.navigator().mysimkltvshows()
 
 
+    elif action == 'my_simkl_lists_menu':
+        from resources.lib.indexers import navigator
+        navigator.navigator().mysimkllists()
+
+
+    elif action == 'my_simkl_list_menu':
+        from resources.lib.indexers import navigator
+        navigator.navigator().mysimkllist(params.get('list_id'), params.get('list_name'), params.get('list_media'))
+
+
     elif action == 'my_mdblist_menu':
         from resources.lib.indexers import navigator
         navigator.navigator().mymdblist()

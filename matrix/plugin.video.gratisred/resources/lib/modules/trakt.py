@@ -63,6 +63,14 @@ BASE_URL = 'https://api.trakt.tv'
 REDIRECT_URI = 'urn:ietf:wg:oauth:2.0:oob'
 V2_API_KEY = '33ea6bfa2b06c9cfa3e408fc6b4cc30484f31b90733df3508fd09ce512f47982'
 CLIENT_SECRET = '4a294afdab95894be977dc79c9715224dc87a4a88d74944507945ca58bf719b2'
+
+
+def _trakt_app_keys():
+    custom_id = (control.setting('trakt.client_id') or '').strip()
+    custom_secret = (control.setting('trakt.client_secret') or '').strip()
+    if custom_id and custom_secret:
+        return custom_id, custom_secret
+    return V2_API_KEY, CLIENT_SECRET
 # Trakt API max per-page limit (reduced to 250; see trakt-api discussions #681 / #775)
 TRAKT_PAGE_LIMIT = 250
 # extended=progress on watched/shows is capped at 100 per page
@@ -88,8 +96,9 @@ def _refreshTraktToken():
     try:
         control.window.setProperty(TRAKT_REFRESH_PROPERTY, 'true')
         oauth = urljoin(BASE_URL, '/oauth/token')
-        headers = {'Content-Type': 'application/json', 'trakt-api-key': V2_API_KEY, 'trakt-api-version': '2'}
-        opost = {'client_id': V2_API_KEY, 'client_secret': CLIENT_SECRET, 'redirect_uri': REDIRECT_URI,
+        client_id, client_secret = _trakt_app_keys()
+        headers = {'Content-Type': 'application/json', 'trakt-api-key': client_id, 'trakt-api-version': '2'}
+        opost = {'client_id': client_id, 'client_secret': client_secret, 'redirect_uri': REDIRECT_URI,
                  'grant_type': 'refresh_token', 'refresh_token': control.setting('trakt.refresh')}
         resp = requests.post(oauth, data=json.dumps(opost), headers=headers, timeout=30)
         try:
@@ -142,7 +151,8 @@ def __getTraktALT(url, post=None):
     try:
         url = urljoin(BASE_URL, url) if not url.startswith(BASE_URL) else url
         post = json.dumps(post) if post else None
-        headers = {'Content-Type': 'application/json', 'trakt-api-key': V2_API_KEY, 'trakt-api-version': '2'}
+        client_id, _client_secret = _trakt_app_keys()
+        headers = {'Content-Type': 'application/json', 'trakt-api-key': client_id, 'trakt-api-version': '2'}
         if getTraktCredentialsInfo():
             headers.update({'Authorization': 'Bearer %s' % control.setting('trakt.token')})
         result = client.request(url, post=post, headers=headers, output='extended', error=True)
@@ -194,7 +204,8 @@ def __getTrakt(url, post=None, timeout=30):
     try:
         url = urljoin(BASE_URL, url) if not url.startswith(BASE_URL) else url
         post = json.dumps(post) if post else None
-        headers = {'Content-Type': 'application/json', 'trakt-api-key': V2_API_KEY, 'trakt-api-version': '2'}
+        client_id, _client_secret = _trakt_app_keys()
+        headers = {'Content-Type': 'application/json', 'trakt-api-key': client_id, 'trakt-api-version': '2'}
         if getTraktCredentialsInfo():
             _ensureTraktTokenFresh()
             headers.update({'Authorization': 'Bearer %s' % control.setting('trakt.token')})
@@ -793,12 +804,13 @@ def revokeTrakt(reopen_settings=False):
         revoke_token = token or refresh
         if revoke_token:
             try:
+                client_id, client_secret = _trakt_app_keys()
                 client.request(
                     urljoin(BASE_URL, '/oauth/revoke'),
                     post=json.dumps({
                         'token': revoke_token,
-                        'client_id': V2_API_KEY,
-                        'client_secret': CLIENT_SECRET,
+                        'client_id': client_id,
+                        'client_secret': client_secret,
                     }),
                     headers={'Content-Type': 'application/json'},
                     timeout='15',
@@ -832,7 +844,8 @@ def authTrakt(reopen_settings=False):
             return
         progress = auth_utils.auth_progress_dialog('Trakt Authorise', '')
         progress.update('Connecting to Trakt...')
-        result = getTraktAsJson('/oauth/device/code', {'client_id': V2_API_KEY})
+        client_id, client_secret = _trakt_app_keys()
+        result = getTraktAsJson('/oauth/device/code', {'client_id': client_id})
         if not result or not result.get('device_code'):
             control.infoDialog('Trakt Authorisation Failed.', sound=True)
             return
@@ -857,8 +870,8 @@ def authTrakt(reopen_settings=False):
                 break
             try:
                 r = getTraktAsJson('/oauth/device/token', {
-                    'client_id': V2_API_KEY,
-                    'client_secret': CLIENT_SECRET,
+                    'client_id': client_id,
+                    'client_secret': client_secret,
                     'code': device_code,
                 })
                 if isinstance(r, dict) and r.get('access_token'):
@@ -873,7 +886,7 @@ def authTrakt(reopen_settings=False):
             control.infoDialog('Trakt Authorisation Canceled.' if canceled else 'Trakt Authorisation Failed.', sound=True)
             return
         token, refresh = token_result['access_token'], token_result['refresh_token']
-        headers = {'Content-Type': 'application/json', 'trakt-api-key': V2_API_KEY, 'trakt-api-version': '2', 'Authorization': 'Bearer %s' % token}
+        headers = {'Content-Type': 'application/json', 'trakt-api-key': client_id, 'trakt-api-version': '2', 'Authorization': 'Bearer %s' % token}
         result = client.request(urljoin(BASE_URL, '/users/me'), headers=headers)
         result = client_utils.json_loads_as_str(result)
         user = result.get('username', '')

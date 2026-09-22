@@ -154,16 +154,151 @@ def getMovieOverlay(indicators_, imdb):
         return '6'
 
 
-def getTVShowOverlay(indicators_, imdb, tmdb):
+def aired_episode_total(seasons, last_episode, number_of_episodes=None):
+    """Regular-season episodes that have aired. Later seasons still on the schedule are left out."""
+    seasons = seasons or []
+    last = last_episode if isinstance(last_episode, dict) else None
+    try:
+        last_s = int(last.get('season_number') or 0) if last else 0
+        last_e = int(last.get('episode_number') or 0) if last else 0
+    except Exception:
+        last_s = last_e = 0
+    if last_s > 0 and last_e > 0:
+        prior = 0
+        cur_count = 0
+        for season in seasons:
+            try:
+                num = int(season.get('season_number') if season.get('season_number') is not None else season.get('number') or 0)
+                count = int(season.get('episode_count') or 0)
+            except Exception:
+                continue
+            if num < 1:
+                continue
+            if num < last_s:
+                prior += count
+            elif num == last_s:
+                cur_count = count
+        if cur_count and last_e > cur_count:
+            return prior + cur_count
+        return prior + last_e
+    try:
+        if number_of_episodes:
+            return int(number_of_episodes)
+    except Exception:
+        pass
+    total = 0
+    found = False
+    for season in seasons:
+        try:
+            num = int(season.get('season_number') if season.get('season_number') is not None else season.get('number') or 0)
+            if num < 1:
+                continue
+            total += int(season.get('episode_count') or 0)
+            found = True
+        except Exception:
+            continue
+    return total if found else None
+
+
+def season_aired_count(season_number, episode_count, last_episode):
+    """How many episodes in this season have aired. A later season still on the schedule is 0."""
+    try:
+        season_number = int(season_number)
+        episode_count = int(episode_count or 0)
+    except Exception:
+        return 0
+    last = last_episode if isinstance(last_episode, dict) else None
+    if not last:
+        return episode_count
+    try:
+        last_s = int(last.get('season_number') or 0)
+        last_e = int(last.get('episode_number') or 0)
+    except Exception:
+        return episode_count
+    if last_s < 1 or last_e < 1:
+        return episode_count
+    if season_number < last_s:
+        return episode_count
+    if season_number == last_s:
+        if episode_count and last_e > episode_count:
+            return episode_count
+        return last_e
+    return 0
+
+
+def getTVShowOverlay(indicators_, imdb, tmdb, show_status=None, episode_count=None):
     try:
         if _provider() == 'local':
-            playcount = bookmarks._get_watched('tvshow', imdb, '', '')
-            return str(playcount)
-        playcount = [i[0] for i in indicators_ if i[0] == tmdb and len(i[2]) >= int(i[1])]
-        playcount = 7 if len(playcount) > 0 else 6
-        return str(playcount)
+            try:
+                total = int(episode_count or 0)
+            except Exception:
+                total = 0
+            if total > 0 and bookmarks.local_watched_count(imdb) >= total:
+                return '7'
+            return '6'
+        tmdb_s = str(tmdb)
+        watched_n = 0
+        for i in indicators_ or []:
+            try:
+                if str(i[0]) != tmdb_s:
+                    continue
+            except Exception:
+                continue
+            watched = i[2] or []
+            if not watched:
+                continue
+            watched_n = len(watched)
+            aired = int(i[1] or 0)
+            extra = i[3] if len(i) > 3 and isinstance(i[3], dict) else {}
+            if aired > 0:
+                if len(watched) >= aired:
+                    return '7'
+                break
+            status = str(extra.get('status') or '').lower()
+            if status == 'completed':
+                return '7'
+            break
+        # MDBList sync has no aired total (stored as watched+1 so a partial show stays unticked).
+        # episode_count here is episodes that have aired, so a returning show still ticks when caught up.
+        if _provider() == 'mdblist' and watched_n:
+            try:
+                total = int(episode_count or 0)
+            except Exception:
+                total = 0
+            if total > 0 and watched_n >= total:
+                return '7'
+        return '6'
     except:
         return '6'
+
+
+def localSeasonWatchedCount(imdb, season):
+    """How many episodes in this season are marked watched in local bookmarks."""
+    return bookmarks.local_watched_count(imdb, season)
+
+
+def seasonWatchedCount(indicators_, tmdb, season):
+    """How many episodes in this season are in the TV indicator cache."""
+    try:
+        tmdb_s = str(tmdb)
+        season_n = int(season)
+    except Exception:
+        return 0
+    for row in indicators_ or []:
+        try:
+            if str(row[0]) != tmdb_s:
+                continue
+        except Exception:
+            continue
+        count = 0
+        for pair in row[2] or []:
+            try:
+                if int(pair[0]) == season_n:
+                    count += 1
+            except Exception:
+                continue
+        return count
+    return 0
 
 
 def getSeasonOverlay(indicators_, imdb, season):
@@ -243,7 +378,8 @@ def markMovieDuringPlayback(imdb, watched, tmdb=None):
                 simkl.markMovieAsWatched(imdb, tmdb=tmdb)
             else:
                 simkl.markMovieAsNotWatched(imdb, tmdb=tmdb)
-            simkl.cachesyncMovies(timeout=0)
+            if not simkl.apply_local_movie_watched(imdb, watched=int(watched) == 7):
+                simkl.cachesyncMovies(timeout=0)
             _arm_provider_list_sync_skip('simkl', 'movie')
             _flag_playback_marked()
             if simkl.getSimklAddonMovieInfo() == True:
@@ -285,7 +421,8 @@ def markEpisodeDuringPlayback(imdb, tmdb, season, episode, watched, tvdb=None):
                 simkl.markEpisodeAsWatched(imdb, season, episode, tmdb=tmdb)
             else:
                 simkl.markEpisodeAsNotWatched(imdb, season, episode, tmdb=tmdb)
-            simkl.cachesyncTVShows(timeout=0)
+            if not simkl.apply_local_episode_watched(tmdb, season, episode, watched=int(watched) == 7):
+                simkl.cachesyncTVShows(timeout=0)
             _arm_provider_list_sync_skip('simkl', 'tv')
             _flag_playback_marked()
             if simkl.getSimklAddonEpisodeInfo() == True:
@@ -324,7 +461,8 @@ def movies(imdb, watched, tmdb=None):
                 simkl.markMovieAsWatched(imdb, tmdb=tmdb)
             else:
                 simkl.markMovieAsNotWatched(imdb, tmdb=tmdb)
-            simkl.cachesyncMovies(timeout=0)
+            if not simkl.apply_local_movie_watched(imdb, watched=int(watched) == 7):
+                simkl.cachesyncMovies(timeout=0)
         elif provider == 'mdblist':
             if int(watched) == 7:
                 mdblist.markMovieAsWatched(imdb, tmdb=tmdb)
@@ -360,7 +498,8 @@ def episodes(imdb, tmdb, season, episode, watched):
                 simkl.markEpisodeAsWatched(imdb, season, episode, tmdb=tmdb)
             else:
                 simkl.markEpisodeAsNotWatched(imdb, season, episode, tmdb=tmdb)
-            simkl.cachesyncTVShows(timeout=0)
+            if not simkl.apply_local_episode_watched(tmdb, season, episode, watched=int(watched) == 7):
+                simkl.cachesyncTVShows(timeout=0)
         elif provider == 'mdblist':
             if int(watched) == 7:
                 mdblist.markEpisodeAsWatched(imdb, season, episode, tmdb=tmdb)
@@ -446,6 +585,7 @@ def tvshows(tvshowtitle, imdb, tmdb, season, watched):
                     trakt.markTVShowAsNotWatched(imdb, tmdb=tmdb)
             trakt.cachesyncTVShows()
         elif provider == 'simkl':
+            local_ok = True
             if season:
                 from resources.lib.indexers import episodes
                 items = episodes.episodes().get(tvshowtitle, '0', imdb, tmdb, meta=None, season=season, idx=False)
@@ -456,6 +596,8 @@ def tvshows(tvshowtitle, imdb, tmdb, season, watched):
                         simkl.markEpisodeAsWatched(imdb, season, i, tmdb=tmdb)
                     else:
                         simkl.markEpisodeAsNotWatched(imdb, season, i, tmdb=tmdb)
+                    if not simkl.apply_local_episode_watched(tmdb, season, i, watched=int(watched) == 7):
+                        local_ok = False
             else:
                 if int(watched) == 7:
                     if not simkl.markTVShowAsWatched(imdb, tmdb=tmdb):
@@ -467,7 +609,9 @@ def tvshows(tvshowtitle, imdb, tmdb, season, watched):
                         return
                 else:
                     simkl.markTVShowAsNotWatched(imdb, tmdb=tmdb)
-            simkl.cachesyncTVShows(timeout=0)
+                local_ok = False
+            if not local_ok:
+                simkl.cachesyncTVShows(timeout=0)
         elif provider == 'mdblist':
             if season:
                 from resources.lib.indexers import episodes
@@ -481,7 +625,13 @@ def tvshows(tvshowtitle, imdb, tmdb, season, watched):
                         mdblist.markEpisodeAsNotWatched(imdb, season, i, tmdb=tmdb)
             else:
                 if int(watched) == 7:
-                    mdblist.markTVShowAsWatched(imdb, tmdb=tmdb)
+                    if not mdblist.markTVShowAsWatched(imdb, tmdb=tmdb):
+                        try:
+                            control.idle()
+                        except Exception:
+                            pass
+                        control.infoDialog('Error', sound=True)
+                        return
                 else:
                     mdblist.markTVShowAsNotWatched(imdb, tmdb=tmdb)
             mdblist.cachesyncTVShows(timeout=0)

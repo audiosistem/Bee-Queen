@@ -77,14 +77,31 @@ class player(xbmc.Player):
             self.ids = {'imdb': self.imdb, 'tmdb': self.tmdb, 'tvdb': self.tvdb}
             self.ids = dict((k,v) for k, v in six.iteritems(self.ids) if not v == '0')
             self.offset, self.resume_percent = bookmarks.get_resume(self.content, imdb, season, episode, tmdb=self.tmdb)
+            self._meta_duration = 0
+            try:
+                if isinstance(meta, dict):
+                    self._meta_duration = float(meta.get('duration') or 0)
+            except Exception:
+                self._meta_duration = 0
             self._simkl_scrobble_started = False
             self._mdblist_scrobble_started = False
             self._trakt_scrobble_started = False
             self._trakt_scrobble_finalized = False
+            self._simkl_scrobble_finalized = False
+            self._mdblist_scrobble_finalized = False
             self._trakt_pending_stop_percent = None
+            self._simkl_pending_action = None
+            self._simkl_pending_percent = None
+            self._mdblist_pending_action = None
+            self._mdblist_pending_percent = None
             # Do not seed from bookmark — failed/zero-time stops must not scrobble at stale resume %.
             self._last_percent = 0.0
             poster, thumb, fanart, clearlogo, clearart, discart, meta = self.getMeta(meta)
+            if not self._meta_duration:
+                try:
+                    self._meta_duration = float((meta or {}).get('duration') or 0)
+                except Exception:
+                    pass
             item = control.item(path=url)
             if self.content == 'movie':
                 item.setArt({'icon': thumb, 'thumb': thumb, 'poster': poster, 'fanart': fanart, 'clearlogo': clearlogo, 'clearart': clearart, 'discart': discart})
@@ -108,10 +125,27 @@ class player(xbmc.Player):
                 self.play(url, item)
             control.window.setProperty('script.trakt.ids', json.dumps(self.ids))
             self.keepPlaybackAlive()
+            # CloseFile can beat onPlayBackStopped by ~2s; wait for pending or fall back.
+            for _ in range(40):
+                if (getattr(self, '_simkl_pending_action', None)
+                        or getattr(self, '_mdblist_pending_action', None)
+                        or getattr(self, '_trakt_pending_stop_percent', None) is not None):
+                    break
+                xbmc.sleep(50)
             # Stop after CloseFile — never sync-HTTP inside onPlayBackStopped (freezes Kodi).
+            self._simkl_scrobble_finalize()
+            self._mdblist_scrobble_finalize()
             self._trakt_scrobble_finalize()
             control.window.clearProperty('script.trakt.ids')
         except:
+            try:
+                self._simkl_scrobble_finalize()
+            except Exception:
+                pass
+            try:
+                self._mdblist_scrobble_finalize()
+            except Exception:
+                pass
             try:
                 self._trakt_scrobble_finalize()
             except Exception:
@@ -208,19 +242,16 @@ class player(xbmc.Player):
         if overlay == '7':
             while self.isPlayingVideo():
                 try:
-                    self.totalTime = self.getTotalTime()
-                    self.currentTime = self.getTime()
-                    self._update_last_percent()
+                    self._sample_playback_times()
                 except:
                     pass
                 xbmc.sleep(2000)
         elif self.content == 'movie':
             while self.isPlayingVideo():
                 try:
-                    self.totalTime = self.getTotalTime()
-                    self.currentTime = self.getTime()
-                    self._update_last_percent()
-                    watcher = (self.currentTime / self.totalTime >= .92)
+                    self._sample_playback_times()
+                    total = self._total_seconds()
+                    watcher = total > 0 and (self.currentTime / total >= .92)
                     property = control.window.getProperty(pname)
                     if watcher == True and not property == '7':
                         control.window.setProperty(pname, '7')
@@ -231,10 +262,9 @@ class player(xbmc.Player):
         elif self.content == 'episode':
             while self.isPlayingVideo():
                 try:
-                    self.totalTime = self.getTotalTime()
-                    self.currentTime = self.getTime()
-                    self._update_last_percent()
-                    watcher = (self.currentTime / self.totalTime >= .92)
+                    self._sample_playback_times()
+                    total = self._total_seconds()
+                    watcher = total > 0 and (self.currentTime / total >= .92)
                     property = control.window.getProperty(pname)
                     if watcher == True and not property == '7':
                         control.window.setProperty(pname, '7')
@@ -245,9 +275,42 @@ class player(xbmc.Player):
         control.window.clearProperty(pname)
 
 
-    def _update_last_percent(self):
+    def _sample_playback_times(self):
+        try:
+            t = self.getTotalTime()
+            if t:
+                self.totalTime = t
+        except Exception:
+            pass
+        if not self.totalTime:
+            self.totalTime = float(getattr(self, '_meta_duration', 0) or 0)
+        try:
+            c = self.getTime()
+            if c:
+                self.currentTime = c
+        except Exception:
+            pass
+        self._update_last_percent()
+
+
+    def _total_seconds(self):
         try:
             total = float(self.totalTime or 0)
+        except Exception:
+            total = 0
+        if total <= 0:
+            try:
+                total = float(self.getTotalTime() or 0)
+            except Exception:
+                total = 0
+        if total <= 0:
+            total = float(getattr(self, '_meta_duration', 0) or 0)
+        return total
+
+
+    def _update_last_percent(self):
+        try:
+            total = self._total_seconds()
             current = float(self.currentTime or 0)
             if total > 0:
                 self._last_percent = max(0, min(100, (current / total) * 100.0))
@@ -328,10 +391,7 @@ class player(xbmc.Player):
         percent = float(getattr(self, 'resume_percent', 0) or 0)
         if not (1 < percent < 92):
             return 0
-        try:
-            total = float(self.getTotalTime() or self.totalTime or 0)
-        except Exception:
-            total = float(getattr(self, 'totalTime', 0) or 0)
+        total = self._total_seconds()
         if total <= 120:
             return 0
         return (percent / 100.0) * total
@@ -348,8 +408,13 @@ class player(xbmc.Player):
 
     def _playback_percent(self):
         try:
-            total = float(self.totalTime or self.getTotalTime() or 0)
-            current = float(self.currentTime or self.getTime() or 0)
+            total = self._total_seconds()
+            current = float(self.currentTime or 0)
+            if current <= 0:
+                try:
+                    current = float(self.getTime() or 0)
+                except Exception:
+                    current = 0
             if total <= 0:
                 return 0
             return max(0, min(100, (current / total) * 100.0))
@@ -357,7 +422,7 @@ class player(xbmc.Player):
             return 0
 
 
-    def _simkl_scrobble(self, action, percent=None):
+    def _simkl_scrobble(self, action, percent=None, sync=False):
         if simkl.getIndicatorsProvider() != 'simkl':
             return
         if percent is None:
@@ -371,12 +436,15 @@ class player(xbmc.Player):
             'episode': self.episode,
         }
         try:
-            threading.Thread(target=simkl.simkl_scrobble, args=args, kwargs=kwargs).start()
+            if sync:
+                simkl.simkl_scrobble(*args, **kwargs)
+            else:
+                threading.Thread(target=simkl.simkl_scrobble, args=args, kwargs=kwargs).start()
         except Exception:
             pass
 
 
-    def _mdblist_scrobble(self, action, percent=None):
+    def _mdblist_scrobble(self, action, percent=None, sync=False):
         if simkl.getIndicatorsProvider() != 'mdblist':
             return
         if percent is None:
@@ -390,7 +458,10 @@ class player(xbmc.Player):
             'episode': self.episode,
         }
         try:
-            threading.Thread(target=mdblist.mdblist_scrobble, args=args, kwargs=kwargs).start()
+            if sync:
+                mdblist.mdblist_scrobble(*args, **kwargs)
+            else:
+                threading.Thread(target=mdblist.mdblist_scrobble, args=args, kwargs=kwargs).start()
         except Exception:
             pass
 
@@ -452,6 +523,56 @@ class player(xbmc.Player):
         self._trakt_scrobble('stop', percent=pct, sync=True)
 
 
+    def _pending_stop_action(self, action, pct):
+        if not action:
+            try:
+                pct = float(getattr(self, '_last_percent', 0) or 0)
+            except Exception:
+                pct = 0
+            if pct >= 92:
+                return 'stop', 100
+            if pct >= 1:
+                return 'pause', pct
+            return None, 0
+        try:
+            pct = float(pct or 0)
+        except Exception:
+            pct = 0
+        if action == 'pause' and pct < 1:
+            return None, 0
+        if action == 'stop' and pct < 1:
+            pct = 100
+        return action, pct
+
+
+    def _simkl_scrobble_finalize(self):
+        if getattr(self, '_simkl_scrobble_finalized', False):
+            return
+        self._simkl_scrobble_finalized = True
+        if simkl.getIndicatorsProvider() != 'simkl':
+            return
+        action, pct = self._pending_stop_action(
+            getattr(self, '_simkl_pending_action', None),
+            getattr(self, '_simkl_pending_percent', None))
+        if not action:
+            return
+        self._simkl_scrobble(action, percent=pct, sync=True)
+
+
+    def _mdblist_scrobble_finalize(self):
+        if getattr(self, '_mdblist_scrobble_finalized', False):
+            return
+        self._mdblist_scrobble_finalized = True
+        if simkl.getIndicatorsProvider() != 'mdblist':
+            return
+        action, pct = self._pending_stop_action(
+            getattr(self, '_mdblist_pending_action', None),
+            getattr(self, '_mdblist_pending_percent', None))
+        if not action:
+            return
+        self._mdblist_scrobble(action, percent=pct, sync=True)
+
+
     def _offer_resume(self, offset):
         if control.setting('bookmarks') != 'true' or offset <= 120 or not self.isPlayingVideo():
             return
@@ -497,9 +618,7 @@ class player(xbmc.Player):
 
     def onPlayBackPaused(self):
         try:
-            self.totalTime = self.getTotalTime()
-            self.currentTime = self.getTime()
-            self._update_last_percent()
+            self._sample_playback_times()
         except Exception:
             pass
         percent = self._playback_percent() or getattr(self, '_last_percent', 0) or 0
@@ -512,27 +631,30 @@ class player(xbmc.Player):
     def onPlayBackStopped(self):
         try:
             try:
-                self.totalTime = self.getTotalTime() or self.totalTime
-                self.currentTime = self.getTime() or self.currentTime
-                self._update_last_percent()
+                self._sample_playback_times()
             except Exception:
                 pass
-            if self.totalTime == 0 or self.currentTime == 0:
+            percent = self._playback_percent() or getattr(self, '_last_percent', 0) or 0
+            total = self._total_seconds()
+            if (not total or not self.currentTime) and percent < 1:
                 if getattr(self, '_trakt_scrobble_started', False) or trakt.getTraktIndicatorsInfo():
                     # Failed open / zero progress — clear Playing now at 1%, never bookmark resume %.
                     self._trakt_pending_stop_percent = 1
                 control.sleep(2000)
                 return
-            percent = self._playback_percent() or getattr(self, '_last_percent', 0) or 0
             self._trakt_pending_stop_percent = 100 if percent >= 92 else percent
             if percent >= 92:
-                self._simkl_scrobble('stop', percent=100)
-                self._mdblist_scrobble('stop', percent=100)
+                self._simkl_pending_action = 'stop'
+                self._simkl_pending_percent = 100
+                self._mdblist_pending_action = 'stop'
+                self._mdblist_pending_percent = 100
             elif percent >= 1:
-                self._simkl_scrobble('pause', percent=percent)
-                self._mdblist_scrobble('pause', percent=percent)
-            bookmarks.reset(self.currentTime, self.totalTime, self.content, self.imdb, self.season, self.episode)
-            if float(self.currentTime / self.totalTime) >= 0.92:
+                self._simkl_pending_action = 'pause'
+                self._simkl_pending_percent = percent
+                self._mdblist_pending_action = 'pause'
+                self._mdblist_pending_percent = percent
+            bookmarks.reset(self.currentTime, total or self.totalTime, self.content, self.imdb, self.season, self.episode)
+            if total and float(self.currentTime / total) >= 0.92:
                 self.libForPlayback()
         finally:
             # Same Container.Refresh as manual Watched — after playback, all platforms (#157).
@@ -542,7 +664,7 @@ class player(xbmc.Player):
     def onPlayBackEnded(self):
         try:
             if not self.totalTime:
-                self.totalTime = self.getTotalTime()
+                self.totalTime = self.getTotalTime() or getattr(self, '_meta_duration', 0)
             self.currentTime = self.totalTime
         except Exception:
             pass

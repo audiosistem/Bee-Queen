@@ -756,18 +756,44 @@ def _wait_addon_settings_closed():
         sleep(200)
 
 
+def _refresh_tools_if_theme_changed(theme_before):
+    """Rebuild Tools (and the current addon folder) so a Theme change is visible."""
+    sleep(200)
+    try:
+        if appearance() == (theme_before or ''):
+            return
+    except Exception:
+        pass
+    try:
+        folder = infoLabel('Container.FolderPath') or ''
+        if addonInfo('id') in folder:
+            execute('Container.Refresh')
+            return
+    except Exception:
+        pass
+    execute('Container.Refresh')
+
+
 def openSettings(query=None, id=None, reopen_special=False):
     try:
         id = addonInfo('id') if id == None else id
+        own = (id == addonInfo('id'))
+        theme_before = appearance() if own else None
         idle()
         execute('Addon.OpenSettings(%s)' % id)
         if query == None:
             if reopen_special and id not in (None, addonInfo('id')):
                 _wait_addon_settings_closed()
                 reopen_settings_category(3, 0)
+            elif own:
+                _wait_addon_settings_closed()
+                _refresh_tools_if_theme_changed(theme_before)
             return
         category, setting = query.split('.')
         _focus_addon_settings_category(int(category), int(setting))
+        if own:
+            _wait_addon_settings_closed()
+            _refresh_tools_if_theme_changed(theme_before)
     except:
         return
 
@@ -815,9 +841,17 @@ def finish_auth_ui(reopen_settings=False):
 
     Settings rows use option=close, so the window is already gone. Reopen it
     without Container.Update(...,replace), which rebuilds the folder behind
-    (often the addon root) and looks like a jump to the main menu.
+    (often the addon root) and looks like a jump to the main menu. Still
+    Container.Refresh the current folder (Tools) so Authorise rows update.
     """
     if reopen_settings:
+        try:
+            folder = infoLabel('Container.FolderPath') or ''
+            if addonInfo('id') in folder:
+                execute('Container.Refresh')
+                sleep(250)
+        except Exception:
+            pass
         try:
             reopen_account_settings()
         except Exception:
@@ -983,6 +1017,56 @@ def filter_watchlist_unaired(items, url_key, today_date, media='movie'):
     return [i for i in items if not item_is_unaired(i, today_date, media=media)]
 
 
+def items_per_page():
+    """General Settings slider (10–40, default 20). Display page size, not an API page size."""
+    try:
+        size = int(setting('items.per.page') or 20)
+    except Exception:
+        size = 20
+    if size < 1:
+        size = 20
+    return min(size, 40)
+
+
+def list_page(url):
+    """'simkl_plantowatch' or 'simkl_plantowatch|2' -> (base, page)."""
+    page = 1
+    text = str(url or '')
+    if '|' in text:
+        base, raw = text.rsplit('|', 1)
+        try:
+            page = int(raw)
+        except Exception:
+            return text, 1
+        if page < 1:
+            page = 1
+        return base, page
+    return text, page
+
+
+def page_items(items, page, next_url):
+    """One Items Per Page window of a full shelf. Next Page continues next_url."""
+    size = items_per_page()
+    try:
+        page = int(page or 1)
+    except Exception:
+        page = 1
+    if page < 1:
+        page = 1
+    rows = list(items or [])
+    start = (page - 1) * size
+    chunk = rows[start:start + size]
+    nxt = ''
+    if start + size < len(rows):
+        nxt = '%s|%s' % (next_url, page + 1)
+    for row in chunk:
+        try:
+            row['next'] = nxt
+        except Exception:
+            pass
+    return chunk
+
+
 def playback_progress_stale(item):
     """True when a playback row is leftover ≤1% (Red Light 2.2.4)."""
     if not item:
@@ -990,7 +1074,7 @@ def playback_progress_stale(item):
     if 'progress' not in item or item.get('progress') in (None, ''):
         return False
     try:
-        return float(item.get('progress')) <= 1
+        return float(item.get('progress')) < 1
     except Exception:
         return False
 
