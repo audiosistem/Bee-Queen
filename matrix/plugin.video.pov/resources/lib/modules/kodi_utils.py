@@ -270,8 +270,7 @@ def notify_success(time=1500):
 	return notification(32576, time=time)
 
 def choose_view(view_type, content):
-	from sys import argv
-	handle = int(argv[1])
+	handle = int(argv1())
 	label = local_string(32516)
 	fanart = get_addoninfo('fanart')
 	icon = media_path('settings.png')

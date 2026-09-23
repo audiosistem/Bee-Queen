@@ -3,7 +3,7 @@ import concurrent.futures
 from datetime import datetime, timedelta
 from windows import BaseDialog, location, open_window, videoplayer
 from caches import watched_cache as ws
-from indexers import metadata, tmdb_api, imdb_api, mdblist_api
+from indexers import metadata, tmdb_api, imdb_api, trakt_api
 from menus import images, people, trakt, mdblist, tmdb
 from modules import settings, dialogs, downloader
 from modules.meta_lists import networks as meta_networks
@@ -263,7 +263,7 @@ class Extras(BaseDialog):
 		except: pass
 
 	def make_ratings(self):
-		data = mdblist_api.mdbl_ratings_info(self.mediatype, self.imdb_id)
+		data = trakt_api.trakt_ratings_info(self.mediatype, self.imdb_id)
 		if not data: return
 		for i in data: self.setProperty('tikiskins.extras.rating.%s' % i['source'], i['value'])
 

@@ -21,7 +21,7 @@ class source:
 	def __init__(self):
 		self.language = ['en']
 		self.base_link = "https://apibay.org"
-		self.search_link = '/q.php?q=%s&cat=0'
+		self.search_link = '/q.php?cat=0&q=%s'
 		self.min_seeders = 0
 
 	def get_sources(self, url):

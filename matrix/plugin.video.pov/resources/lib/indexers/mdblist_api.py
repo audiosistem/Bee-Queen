@@ -4,7 +4,6 @@ from concurrent.futures import ThreadPoolExecutor
 from caches import mdbl_cache
 from caches.main_cache import cache_object
 from indexers.tmdb_api import movie_external_id, tvshow_external_id
-from magneto.modules import client
 from modules import kodi_utils, settings
 from modules.cache import check_databases
 from modules.utils import sort_for_article, jsondate_to_datetime, paginate_list, get_datetime
@@ -88,12 +87,14 @@ def mdbl_calendar_days(recently_aired, current_date):
 	return start, finish
 
 def mdbl_ratings_info(mediatype, imdb_id):
+	return [] # 26/09/20, the site that scrapes other sites added cloudflare to block scraping.
 	mediatype = 'movie' if mediatype == 'movie' else 'show'
 	string = 'mdbl_ratings_%s_%s' % (mediatype, imdb_id)
 	url = '%s/%s/%s' % ('https://mdblist.com', mediatype, imdb_id)
 	return cache_object(mdbl_ratings_info_handler, string, url, expiration=EXPIRES_2_DAYS)
 
 def mdbl_ratings_info_handler(url):
+	from magneto.modules import client
 	html = client.request(url, timeout=6.05)
 	labels = client.parseDOM(html, 'span', attrs={'class': ['mdblist-label', 'movie-rating-name']})
 	scores = client.parseDOM(html, 'span', attrs={'class': ['mdblist-rating', 'movie-rating-score']})

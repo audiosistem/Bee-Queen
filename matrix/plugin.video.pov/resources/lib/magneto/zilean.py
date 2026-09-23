@@ -20,8 +20,8 @@ class source:
 			"https://zilean.stremio.ru",
 			"https://zileanfortheweebs.midnightignite.me"
 		)[int(getSetting('zilean.url', '0'))]
-		self.movieSearch_link = '/dmm/filtered?ImdbId=%s'
-		self.tvSearch_link = '/dmm/filtered?ImdbId=%s&Season=%s&Episode=%s'
+		self.movieSearch_link = '/dmm/filtered'
+		self.tvSearch_link = '/dmm/filtered'
 		self.min_seeders = 0
 
 	def sources(self, data, hostDict):
@@ -40,13 +40,15 @@ class source:
 				season = data['season']
 				episode = data['episode']
 				hdlr = 'S%02dE%02d' % (int(season), int(episode))
-				url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, episode))
+				url = '%s%s' % (self.base_link, self.tvSearch_link)
+				params = {'ImdbId': imdb, 'Season': season, 'Episode': episode}
 			else:
 				hdlr = year
-				url = '%s%s' % (self.base_link, self.movieSearch_link % imdb)
+				url = '%s%s' % (self.base_link, self.movieSearch_link)
+				params = {'ImdbId': imdb}
 			# log_utils.log('url = %s' % url)
 			if 'timeout' in data: self.timeout = int(data['timeout'])
-			results = requests.get(url, timeout=self.timeout)
+			results = requests.get(url, params=params, timeout=self.timeout)
 			files = results.json()
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()

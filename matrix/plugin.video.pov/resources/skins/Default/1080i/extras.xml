@@ -148,7 +148,7 @@
 				<width>60</width>
 				<aspectratio>keep</aspectratio>
 				<texture>metacritic.png</texture>
-				<visible>!String.IsEmpty(Window.Property(tikiskins.extras.rating.metacritic))</visible>
+				<visible>!String.IsEmpty(Window.Property(tikiskins.extras.rating.metascore))</visible>
 			</control>
 			<control type="label">
 				<height>50</height>
@@ -157,15 +157,15 @@
 				<textcolor>FFCCCCCC</textcolor>
 				<align>left</align>
 				<aligny>center</aligny>
-				<label>$INFO[Window.Property(tikiskins.extras.rating.metacritic),[B],[/B]]</label>
-				<visible>!String.IsEmpty(Window.Property(tikiskins.extras.rating.metacritic))</visible>
+				<label>$INFO[Window.Property(tikiskins.extras.rating.metascore),[B],[/B]]</label>
+				<visible>!String.IsEmpty(Window.Property(tikiskins.extras.rating.metascore))</visible>
 			</control>
 			<control type="image">
 				<height>40</height>
 				<width>60</width>
 				<aspectratio>keep</aspectratio>
 				<texture>tomatoes.png</texture>
-				<visible>!String.IsEmpty(Window.Property(tikiskins.extras.rating.tomatoes))</visible>
+				<visible>!String.IsEmpty(Window.Property(tikiskins.extras.rating.rotten_tomatoes))</visible>
 			</control>
 			<control type="label">
 				<height>50</height>
@@ -174,15 +174,15 @@
 				<textcolor>FFCCCCCC</textcolor>
 				<align>left</align>
 				<aligny>center</aligny>
-				<label>$INFO[Window.Property(tikiskins.extras.rating.tomatoes),[B],[/B]]</label>
-				<visible>!String.IsEmpty(Window.Property(tikiskins.extras.rating.tomatoes))</visible>
+				<label>$INFO[Window.Property(tikiskins.extras.rating.rotten_tomatoes),[B],[/B]]</label>
+				<visible>!String.IsEmpty(Window.Property(tikiskins.extras.rating.rotten_tomatoes))</visible>
 			</control>
 			<control type="image">
 				<height>40</height>
 				<width>60</width>
 				<aspectratio>keep</aspectratio>
-				<texture>mdblist.png</texture>
-				<visible>!String.IsEmpty(Window.Property(tikiskins.extras.rating.mdblist))</visible>
+				<texture>letterboxd.png</texture>
+				<visible>!String.IsEmpty(Window.Property(tikiskins.extras.rating.letterboxd))</visible>
 			</control>
 			<control type="label">
 				<height>50</height>
@@ -191,8 +191,8 @@
 				<textcolor>FFCCCCCC</textcolor>
 				<align>left</align>
 				<aligny>center</aligny>
-				<label>$INFO[Window.Property(tikiskins.extras.rating.mdblist),[B],[/B]]</label>
-				<visible>!String.IsEmpty(Window.Property(tikiskins.extras.rating.mdblist))</visible>
+				<label>$INFO[Window.Property(tikiskins.extras.rating.letterboxd),[B],[/B]]</label>
+				<visible>!String.IsEmpty(Window.Property(tikiskins.extras.rating.letterboxd))</visible>
 			</control>
 			<control type="image">
 				<height>40</height>

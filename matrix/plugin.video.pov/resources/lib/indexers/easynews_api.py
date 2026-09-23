@@ -58,22 +58,21 @@ class EasyNewsAPI:
 		return account_info, usage_info
 
 	def unrestrict_link(self, url_dl):
-		response = session.get(url_dl, auth=(self.username, self.password), stream=True, timeout=timeout*3)
-		if not response.ok: return None
-		chunk = next(response.iter_content(chunk_size=1048576), b'')
+		with session.get(url_dl, auth=(self.username, self.password), stream=True, timeout=timeout*3) as response:
+			if response.ok: chunk = next(response.iter_content(chunk_size=1048576), b'')
+			else: chunk = b''
 		if len(chunk): resolved_link = response.url # direct/unrestricted link
 		else: resolved_link = None
 		return resolved_link
 
 	def search(self, query, expiration=48):
-		self.params = {'gps': query, 'safeO': self.moderation}
-		string = 'pov_easynews_search_%s' % urlencode(self.params)
-		url = self.base_url + self.search_link
-		return cache_object(self._process_search, string, url, expiration)
+		params = {'gps': query, 'safeO': self.moderation}
+		string = 'pov_easynews_search_%s' % urlencode(params)
+		return cache_object(self._process_search, string, params, expiration)
 
-	def _process_search(self, url):
-		self.params.update(search_params())
-		results = self._get(url, self.params)
+	def _process_search(self, params):
+		params.update(search_params())
+		results = self._get(self.base_url + self.search_link, params)
 		if not isinstance(results.get('data'), list): return []
 		args = [results.get(i) for i in ('data', 'downURL', 'dlFarm', 'dlPort')]
 		return self._process_files(*args)

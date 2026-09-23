@@ -103,6 +103,23 @@ def trakt_calendar_days(recently_aired, current_date):
 	finish = str(previous_days + future_days)
 	return start, finish
 
+def trakt_ratings_info(mediatype, imdb_id):
+	def _process(dummy):
+		result = call_trakt(url, params={'extended': 'all'}, with_auth=False)
+		data = []
+		for i in ('imdb', 'metascore', 'rotten_tomatoes', 'letterboxd', 'trakt', 'tmdb'):
+			try:
+				if not result.get(i) or not result[i]['rating']: continue
+				if i in ('trakt', 'tmdb'): rating = '%.2f' % result[i]['rating']
+				else: rating = str(result[i]['rating'])
+				data.append({'source': i, 'value': rating})
+			except: pass
+		return data
+	mediatype = 'movies' if mediatype in ('movie', 'movies') else 'shows'
+	string = 'trakt_ratings_%s_%s' % (mediatype, imdb_id)
+	url = '%s/%s/ratings' % (mediatype, imdb_id)
+	return cache_object(_process, string, url, expiration=EXPIRES_2_DAYS)
+
 def trakt_movies_trending(page_no):
 	params = {'limit': 20, 'page': page_no}
 	string = 'trakt_movies_trending_%s' % page_no
@@ -181,7 +198,7 @@ def trakt_recommendations(mediatype):
 	return trakt_cache.cache_trakt_object(call_trakt, string, url)
 
 def trakt_droplist(mediatype, page_no):
-	def _process(url):
+	def _process(dummy):
 		hidden_data = _get_trakt_paginated_list(url)
 		if not hidden_data: return []
 		results = []
@@ -302,7 +319,8 @@ def trakt_fetch_collection_watchlist(list_type, mediatype):
 
 def get_trakt_list_contents(list_type, list_id, user, slug):
 	string = 'trakt_list_contents_%s_%s_%s' % (list_type, user, slug)
-	url = 'users/%s/lists/%s/items' % (user, list_id)
+	if 'my_lists' in list_type: url = 'users/%s/lists/%s/items' % ('me', list_id)
+	else: url = 'users/%s/lists/%s/items' % (user, list_id)
 	return trakt_cache.cache_trakt_object(_get_trakt_paginated_list, string, url)
 
 def trakt_get_lists(list_type):
