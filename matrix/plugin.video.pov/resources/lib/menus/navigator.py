@@ -260,7 +260,7 @@ class Navigator:
 		self._add_item({'mode': 'choose_view', 'view_type': 'view.episodes', 'content': 'episodes', 'exclude_external': 'true',       'name': episode_str      }, 'settings.png', n_ins)
 		self._add_item({'mode': 'choose_view', 'view_type': 'view.episodes_lists', 'content': 'episodes', 'exclude_external': 'true', 'name': ep_lists_str     }, 'settings.png', n_ins)
 		self._add_item({'mode': 'choose_view', 'view_type': 'view.premium', 'content': 'files', 'exclude_external': 'true',           'name': premium_files_str}, 'settings.png', n_ins)
-		self._add_item({'mode': 'clear_view', 'view_type': 'all',                                                                     'name': reset_str        }, 'settings.png', n_ins, False)
+		self._add_item({'mode': 'clear_view_modes',                                                                                   'name': reset_str        }, 'settings.png', n_ins, False)
 		self._end_directory()
 
 	def downloads(self):

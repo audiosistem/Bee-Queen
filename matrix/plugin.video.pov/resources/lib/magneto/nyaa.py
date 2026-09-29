@@ -9,12 +9,14 @@ import xml.etree.ElementTree as ET
 from magneto.modules import client
 from magneto.modules import source_utils
 
+
 fields, namespaces = {
 	'name': 'title',
 	'info_hash': 'nyaa:infoHash',
 	'size': 'nyaa:size',
 	'seeders': 'nyaa:seeders',
 }, {'nyaa': 'https://nyaa.si/xmlns/nyaa'}
+
 
 class source:
 	timeout = 7

@@ -15,8 +15,8 @@
 		<setting id="debug.location" label="Logging Location" type="enum" default="0" values="Kodi Log|Addon Log" enable="eq(-1,true)" visible="eq(-1,true)" />
 		<setting label="Test All Source Providers (Magneto)" type="action" action="RunPlugin(plugin://plugin.video.pov/?mode=speedTest)" />
 		<setting label="External Sources" type="lsep" />
-		<setting id="provider.bitsearch" label="bitsearch" type="bool" default="false" />
 		<setting id="provider.dmm" label="dmm" type="bool" default="false" />
+		<setting id="provider.knaben" label="knaben" type="bool" default="false" />
 		<setting id="provider.nyaa" label="nyaa" type="bool" default="false" />
 		<setting id="provider.piratebay" label="piratebay" type="bool" default="true" />
 		<setting id="provider.torrentdownload" label="torrentdownload" type="bool" default="false" />
@@ -32,7 +32,7 @@
 			<setting id="zilean.url" label="zilean instance" type="enum" default="0" values="Kuu-lection|Midnightignite" subsetting="true" visible="eq(-1,true)" />
 		<setting label="AIOStreams" type="lsep" />
 		<setting id="provider.aiostreams" label="Enable" type="bool" default="false" />
-		<setting id="aio.instance" type="enum" label="Provider" default="0" values="Kuu|Custom|Viren|Yeb|Midnight" enable="true" />
+		<setting id="aio.instance" type="enum" label="Provider" default="0" values="Kuu|Custom|Viren|Yeb|Midnight" />
 		<setting id="aio.ku_url" type="text" label="Url" default="https://aiostreams.stremio.ru" enable="false" visible="eq(-1,0)" />
 		<setting id="aio.custom_url" type="text" label="Url" default="" visible="eq(-2,1)" />
 		<setting id="aio.viren_url" type="text" label="Url" default="https://aiostreams.viren070.me" enable="false" visible="eq(-3,2)" />

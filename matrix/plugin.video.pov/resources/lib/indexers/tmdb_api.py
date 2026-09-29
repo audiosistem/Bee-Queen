@@ -9,10 +9,7 @@ from modules.utils import paginate_list, sort_for_article, jsondate_to_datetime,
 get_setting, set_setting, logger = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.logger
 EXPIRES_4_HOURS, EXPIRES_2_DAYS, EXPIRES_1_WEEK, EXPIRES_1_MONTH = 4, 48, 168, 672
 READ_TOKEN = kodi_utils.addon().getSetting('tmdb_read_token')
-movies_append = 'external_ids,videos,credits,release_dates,alternative_titles,translations,images'
-tvshows_append = 'external_ids,videos,credits,content_ratings,alternative_titles,translations,images'
-people_append = 'external_ids,combined_credits,images,tagged_images'
-tmdb_image_base, tmdblist_heading = 'https://image.tmdb.org/t/p/%s%s', 'TMDb Lists'
+tmdb_image_base = 'https://image.tmdb.org/t/p/%s%s'
 base_url = 'https://api.themoviedb.org'
 timeout = 3.05
 session = requests.Session()
@@ -273,6 +270,7 @@ def tmdb_popular_people(page_no):
 
 def tmdb_people_full_info(actor_id, language=None):
 	if not language: language = settings.get_language()
+	people_append = 'external_ids,combined_credits,images,tagged_images'
 	string = 'tmdb_people_full_info_%s_%s' % (actor_id, language)
 	url = '%s/3/person/%s?language=%s&append_to_response=%s' % (base_url, actor_id, language, people_append)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
@@ -293,6 +291,7 @@ def tmdb_image_params(language):
 	return ','.join(dict.fromkeys([language, language.split('-')[0], 'en,en-US,null']))
 
 def movie_details(tmdb_id, language):
+	movies_append = 'external_ids,videos,credits,release_dates,alternative_titles,translations,images'
 	try:
 		url = '%s/3/movie/%s?language=%s&append_to_response=%s' % (base_url, tmdb_id, language, movies_append)
 		if language not in 'en,en-US': url += '&include_image_language=%s' % tmdb_image_params(language)
@@ -300,6 +299,7 @@ def movie_details(tmdb_id, language):
 	except: return None
 
 def tvshow_details(tmdb_id, language):
+	tvshows_append = 'external_ids,videos,credits,content_ratings,alternative_titles,translations,images'
 	try:
 		url = '%s/3/tv/%s?language=%s&append_to_response=%s' % (base_url, tmdb_id, language, tvshows_append)
 		if language not in 'en,en-US': url += '&include_image_language=%s' % tmdb_image_params(language)

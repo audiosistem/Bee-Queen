@@ -36,6 +36,7 @@ def trakt_account_info():
 		db_status = integrity_check()
 		account_info = trakt_api.call_trakt('users/settings')
 		stats = trakt_api.call_trakt('users/%s/stats' % account_info['user']['ids']['slug'])
+		if not stats: stats = dummy_stats()
 		username = account_info['user']['username']
 		timezone = account_info['account']['timezone']
 		joined = jsondate_to_datetime(account_info['user']['joined_at']).astimezone()
@@ -73,6 +74,14 @@ def trakt_account_info():
 		kodi_utils.hide_busy_dialog()
 		return kodi_utils.show_text('Trakt'.upper(), '[CR]'.join(body), font_size='large')
 	except: kodi_utils.hide_busy_dialog()
+
+def dummy_stats():
+	return {
+		'movies'  : {'watched': 0, 'minutes': 0, 'collected': 0, 'ratings': 0},
+		'shows'   : {'watched': 0, 'collected': 0, 'ratings': 0},
+		'episodes': {'watched': 0, 'minutes': 0, 'collected': 0, 'ratings': 0},
+		'ratings' : {'total': 0}
+	}
 
 class BaseTraktList(list_helper.BaseList):
 	def process_results(self):

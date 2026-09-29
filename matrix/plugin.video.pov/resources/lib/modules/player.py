@@ -67,7 +67,7 @@ class POVPlayer(MediaPlayer):
 			listitem.setProperty('StartPercent', str(bookmark))
 
 			self.playback_event = False
-			self.play(url, listitem)
+			self.play(listitem.getPath(), listitem)
 			while self.playback_event is False: kodi_utils.sleep(100)
 			if callable(progress_media): progress_media()
 			kodi_utils.close_all_dialog()
@@ -84,7 +84,7 @@ class POVPlayer(MediaPlayer):
 			if self.volume_check: kodi_utils.volume_checker()
 			while self.isPlayingVideo(): self.check_playback_events()
 			if not self.media_marked: self.media_watched_marker()
-			ws.clear_local_bookmarks()
+			kodi_utils.clear_local_bookmarks()
 			kodi_utils.clear_property('script.trakt.ids')
 		except: pass
 
@@ -258,7 +258,7 @@ class POVPlayer(MediaPlayer):
 				self.subs_searched = True
 				poster = self.meta.get('poster') or poster_empty
 				from indexers.subtitles import SubtitleScraper
-				Thread(target=SubtitleScraper(self, poster).run).start()
+				Thread(target=SubtitleScraper(self, poster)).start()
 			elif task_name == 'stingers':
 				self.stingers_checked = True
 				poster = self.meta.get('poster') or poster_empty

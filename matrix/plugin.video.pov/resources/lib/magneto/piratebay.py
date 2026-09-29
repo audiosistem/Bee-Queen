@@ -9,8 +9,6 @@ from urllib.parse import quote_plus
 from magneto.modules import client
 from magneto.modules import source_utils
 
-SERVER_ERROR = ('521 Origin Down', 'No results returned', 'Connection Time-out', 'Database maintenance')
-
 
 class source:
 	timeout = 5
@@ -27,7 +25,7 @@ class source:
 	def get_sources(self, url):
 		try:
 			rjson = client.request(url, timeout=self.timeout)
-			if not rjson or any(value in rjson for value in SERVER_ERROR): return
+			if not rjson: return
 			files = jsloads(rjson)
 			self.results.extend(files)
 		except:

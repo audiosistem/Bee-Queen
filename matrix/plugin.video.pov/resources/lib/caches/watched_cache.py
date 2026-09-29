@@ -20,17 +20,6 @@ DELETE_MOVIE_SHOW = 'DELETE FROM watched_status WHERE db_type = ? AND media_id =
 DELETE_BM = 'DELETE FROM progress WHERE db_type = ? AND media_id = ? AND season = ? AND episode = ?'
 plswait_str = kodi_utils.local_string(32577)
 
-def clear_local_bookmarks():
-	try:
-		GET_LBM = 'SELECT idFile FROM files WHERE strFilename LIKE ?'
-		DELETE_LBM = 'DELETE FROM %s WHERE idFile = ?'
-		like_id = '%s%%' % kodi_utils.get_addoninfo('id')
-		dbcon = kodi_utils.database_connect(kodi_utils.get_video_database_path(), isolation_level=None)
-		dbcur = set_PRAGMAS(dbcon)
-		file_ids = dbcur.execute(GET_LBM, (like_id,)).fetchall()
-		for i in ('bookmark', 'streamdetails', 'files'): dbcur.executemany(DELETE_LBM % i, file_ids)
-	except: pass
-
 def _database_connect(watched_indicators):
 	database_file = kodi_utils.get_database(watched_indicators)
 	return kodi_utils.database_connect(database_file, isolation_level=None)

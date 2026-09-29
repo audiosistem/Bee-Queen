@@ -160,15 +160,6 @@ def current_skin():
 def current_window_id():
 	return xbmcgui.Window(xbmcgui.getCurrentWindowId())
 
-def get_video_database_path():
-	return Addon().getSetting('myvideos_db')
-
-def get_texture_database_path():
-	return Addon().getSetting('textures_db')
-
-def get_viewmode_database_path():
-	return Addon().getSetting('viewmodes_db')
-
 def show_busy_dialog():
 	return execute_builtin('ActivateWindow(busydialognocancel)')
 
@@ -269,6 +260,57 @@ def notify_failed(time=1500):
 def notify_success(time=1500):
 	return notification(32576, time=time)
 
+def get_video_database_path():
+	db_file = Addon().getSetting('myvideos_db')
+	return db_file if path_exists(db_file) else None
+
+def clear_local_bookmarks():
+	try:
+		with database.connect(translate_path(get_video_database_path())) as dbcon:
+			dbcur = dbcon.cursor()
+			dbcur.execute("""SELECT idFile FROM files WHERE strFilename LIKE ?""", ('plugin://plugin.video.pov/%',))
+			file_ids = dbcur.fetchall()
+			if not file_ids: return
+			for i in ('bookmark', 'streamdetails', 'files'):
+				dbcur.executemany("""DELETE FROM %s WHERE idFile = ?""" % i, file_ids)
+			dbcon.commit()
+	except: pass
+
+def get_texture_database_path():
+	db_file = Addon().getSetting('textures_db')
+	return db_file if path_exists(db_file) else None
+
+def fetch_kodi_imagecache(image):
+	result = None
+	try:
+		with database.connect(translate_path(get_texture_database_path())) as dbcon:
+			dbcur = dbcon.cursor()
+			dbcur.execute("""SELECT cachedurl FROM texture WHERE url = ?""", (image,))
+			result = dbcur.fetchone()[0]
+	except: return image
+	return result
+
+def get_viewmode_database_path():
+	db_file = Addon().getSetting('viewmodes_db')
+	return db_file if path_exists(db_file) else None
+
+def clear_view_modes():
+	if not confirm_dialog(): return
+	try:
+		with database.connect(translate_path(views_db)) as dbcon:
+			dbcur = dbcon.cursor()
+			dbcur.execute("""SELECT view_type FROM views""")
+			for item in dbcur.fetchall(): clear_property('pov_%s' % item[0])
+			dbcur.execute("""DELETE FROM views""")
+			dbcon.commit()
+			dbcur.execute("""VACUUM""")
+		with database.connect(translate_path(get_viewmode_database_path())) as dbcon:
+			dbcur = dbcon.cursor()
+			dbcur.execute("""DELETE FROM view WHERE path LIKE ?""", ('plugin://plugin.video.pov/%',))
+			dbcon.commit()
+		notify_success()
+	except: notify_error()
+
 def choose_view(view_type, content):
 	handle = int(argv1())
 	label = local_string(32516)
@@ -314,25 +356,6 @@ def set_view_mode(view_type, content='files', is_widget=None):
 			return execute_builtin('Container.SetViewMode(%s)' % view_id)
 	except: pass
 
-def clear_view(view_type):
-	if not confirm_dialog(): return
-	try:
-		dbcon = database_connect(views_db, isolation_level=None)
-		dbcur = dbcon.cursor()
-		dbcur.execute("""PRAGMA synchronous = OFF""")
-		dbcur.execute("""PRAGMA journal_mode = OFF""")
-		dbcur.execute("""SELECT view_type FROM views""")
-		for item in dbcur.fetchall(): clear_property('pov_%s' % item[0])
-		dbcur.execute("""DELETE FROM views""")
-		dbcur.execute("""VACUUM""")
-		dbcon = database_connect(get_viewmode_database_path())
-		dbcur = dbcon.cursor()
-		dbcur.execute("""DELETE FROM view WHERE path LIKE 'plugin://plugin.video.pov/%'""")
-		dbcon.commit()
-		dbcon.close()
-		notify_success()
-	except: notify_error()
-
 def build_url(url_params):
 	return f"{'/vop.oediv.nigulp//:nigulp'[::-1]}?{urlencode(url_params)}"
 
@@ -371,16 +394,6 @@ def focus_index(index, sleep_time=100):
 def clean_settings_window_properties():
 	clear_property('pov_settings')
 	notify_success()
-
-def fetch_kodi_imagecache(image):
-	result = None
-	try:
-		dbcon = database_connect(get_texture_database_path())
-		dbcur = dbcon.cursor()
-		dbcur.execute("""SELECT cachedurl FROM texture WHERE url = ?""", (image,))
-		result = dbcur.fetchone()[0]
-	except: pass
-	return result
 
 class SettingsManager:
 	def __init__(self):
@@ -424,7 +437,7 @@ def make_settings_dict():
 
 def clean_settings(silent=False):
 	import xml.etree.ElementTree as ET
-	addon_ids = 'plugin.video.pov'
+	addon_ids = get_addoninfo('id')
 	default_xml = 'special://home/addons/%s/resources/settings.xml' % addon_ids
 	profile_xml = 'special://profile/addon_data/%s/settings.xml' % addon_ids
 	try:
@@ -443,8 +456,9 @@ def clean_settings(silent=False):
 	except:
 		if not silent: notify_error()
 
-def open_settings(query, addon='plugin.video.pov'):
+def open_settings(query, addon=None):
 	hide_busy_dialog()
+	if not addon: addon = get_addoninfo('id')
 	execute_builtin('Addon.OpenSettings(%s)' % addon)
 	if not query: return
 	try:

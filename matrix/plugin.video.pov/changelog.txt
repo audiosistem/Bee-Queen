@@ -1,4 +1,8 @@
 
+  [COLOR dodgerblue][B]Version 6.09[/B][/COLOR]
+* Trakt/MDBList changes.
+* Added knaben, removed bitsearch.
+
   [COLOR dodgerblue][B]Version 6.08[/B][/COLOR]
 - Removed "Contrast" results displays.
 + Added MDBList stats to Account Info.
@@ -297,7 +301,6 @@
 - Added animetosho
 
   [COLOR dodgerblue][B]Version 4.10[/B][/COLOR]
-- Enabled piratebay as default, disabled bitsearch.
 - Changed custom season/episode scraping.
 - Changed scrape and resolve to respect Playback/Loading Progress settings.
 - Changed setting "Loading Progress" default to "Full-Screen".
@@ -351,11 +354,6 @@
   Leave those as default or enable the setting and customize, but be sure to then
   disable "Auto Play / Autoplay Next Episode" as those settings will take precedence.
 - Added "Clear Cloud Storage" for Offcloud.
-- Changed bitsearch scraper to request one page with limit=50 rather than two requests
-  with default page limit=~20.
-- Added bitsearch sort preference for "random/largest" available.
-  Ostensibly, one could have only bitsearch enabled and return a greater variety of
-  4k,1080,720,SD results rather than mostly 4k results.
 - bitlord, eztv, glodls, torrentdownload, likely to be removed in next version.
 - Added meta_language iso:ar-SA, name:Arabic Saudi Arabia.
 - Added two torrentio alternatives.
@@ -393,7 +391,6 @@
 - Trending/Popular/Search lists without Trakt authentication have been supported since 2.18.0.
   Mixed lists have only been tested with the Trending/Popular/Search lists.
   I do not use Trakt, but I do use these lists.
-- Changed default sources to bitsearch, torrentio, and eztv.
 - Some cosmetic changes to custom windows.
 
   [COLOR dodgerblue][B]Version 3.05[/B][/COLOR]

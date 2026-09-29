@@ -86,28 +86,6 @@ def mdbl_calendar_days(recently_aired, current_date):
 	finish = (current_date + timedelta(days=future_days)).strftime('%Y-%m-%d')
 	return start, finish
 
-def mdbl_ratings_info(mediatype, imdb_id):
-	return [] # 26/09/20, the site that scrapes other sites added cloudflare to block scraping.
-	mediatype = 'movie' if mediatype == 'movie' else 'show'
-	string = 'mdbl_ratings_%s_%s' % (mediatype, imdb_id)
-	url = '%s/%s/%s' % ('https://mdblist.com', mediatype, imdb_id)
-	return cache_object(mdbl_ratings_info_handler, string, url, expiration=EXPIRES_2_DAYS)
-
-def mdbl_ratings_info_handler(url):
-	from magneto.modules import client
-	html = client.request(url, timeout=6.05)
-	labels = client.parseDOM(html, 'span', attrs={'class': ['mdblist-label', 'movie-rating-name']})
-	scores = client.parseDOM(html, 'span', attrs={'class': ['mdblist-rating', 'movie-rating-score']})
-	sources = ('imdb', 'metacritic', 'mdblist', 'tomatoes', 'trakt', 'tmdb')
-	data = []
-	for k, v in zip(labels, scores):
-		try:
-			k, v = k.split()[0].strip().lower(), v.strip()
-			if k not in sources: continue
-			data.append({'source': k, 'value': v})
-		except: pass
-	return data
-
 def mdbl_top_lists():
 	string = 'mdbl_top_lists'
 	url = 'lists/top'
@@ -163,23 +141,7 @@ def mdbl_get_my_calendar(recently_aired, current_date):
 	return mdbl_cache.cache_mdbl_object(lambda u: mdbl_calendar_data(u), string, url)
 
 def mdblist_collection(mediatype, page_no):
-	def _year(item):
-		if isinstance(item.get('year'), int): return str(item['year'])
-		return item.get('year')
-	string = 'mdbl_collection'
-	url = 'sync/collection'
-	original_list = mdbl_collection_watchlist_items(string, url)
-	original_list = original_list['movies' if mediatype in ('movie', 'movies') else 'shows']
-	key = 'movie' if mediatype in ('movie', 'movies') else 'show'
-	original_list = [
-		{'collected_at': i['collected_at'],
-		 'year': _year(i[key]),
-		 'title': i[key]['title'],
-		 'id': i[key]['ids']['tmdb'],
-		 'imdb_id': i[key]['ids']['imdb']}
-		for i in original_list
-	] # only endpoint with nested media. no response to feature req to flatten.
-	if page_no == 'all': return original_list
+	original_list = mdbl_collection_watchlist_items('collection', mediatype)
 	sort_key = settings.lists_sort_order('collection')
 	if   sort_key == 2: original_list.sort(key=lambda k: k.get('year') or '', reverse=True)
 	elif sort_key == 1: original_list.sort(key=lambda k: k['collected_at'], reverse=True)
@@ -191,11 +153,7 @@ def mdblist_watchlist(mediatype, page_no):
 	def first_aired(item):
 		if not item.get('release_date'): return False
 		return jsondate_to_datetime(item['release_date']).astimezone().date() <= current_date
-	string = 'mdbl_watchlist'
-	url = 'watchlist/items'
-	original_list = mdbl_collection_watchlist_items(string, url)
-	original_list = original_list['movies' if mediatype in ('movie', 'movies') else 'shows']
-	if page_no == 'all': return original_list
+	original_list = mdbl_collection_watchlist_items('watchlist', mediatype)
 	if not settings.show_unaired_watchlist():
 		current_date = get_datetime()
 		original_list = [i for i in original_list if first_aired(i)]
@@ -206,8 +164,25 @@ def mdblist_watchlist(mediatype, page_no):
 	if settings.paginate(): return paginate_list(original_list, page_no, settings.page_limit())
 	return original_list, 1
 
-def mdbl_collection_watchlist_items(string, url):
-	return mdbl_cache.cache_mdbl_object(_get_mdbl_paginated_list, string, url)
+def mdbl_collection_watchlist_items(list_type, mediatype):
+	if list_type == 'collection': string, url = 'mdbl_collection', 'sync/collection'
+	else: string, url = 'mdbl_watchlist', 'watchlist/items'
+	results = mdbl_cache.cache_mdbl_object(_get_mdbl_paginated_list, string, url)
+	results = results['movies' if mediatype in ('movie', 'movies') else 'shows']
+	if list_type == 'collection':
+		def _year(item):
+			if isinstance(item.get('year'), int): return str(item['year'])
+			return item.get('year')
+		key = 'movie' if mediatype in ('movie', 'movies') else 'show'
+		results = [
+			{'collected_at': i['collected_at'],
+			 'year': _year(i[key]),
+			 'title': i[key]['title'],
+			 'id': i[key]['ids']['tmdb'],
+			 'imdb_id': i[key]['ids']['imdb']}
+			for i in results
+		] # only endpoint with nested media. no response to feature req to flatten.
+	return results
 
 def get_mdbl_list_contents(list_type, list_id):
 	string = 'mdbl_list_contents_%s_%s' % (list_type, list_id)

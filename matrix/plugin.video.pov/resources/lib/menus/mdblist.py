@@ -35,6 +35,7 @@ def mdbl_account_info():
 		db_status = integrity_check()
 		account_info = mdblist_api.call_mdblist('user')
 		stats = mdblist_api.call_mdblist('user/stats')['stats']
+		if not stats: stats = dummy_stats()
 		joined = jsondate_to_datetime(account_info['date_joined']).astimezone()
 		api_requests = account_info['api_requests']
 		remaining = api_requests - account_info['api_requests_count']
@@ -66,6 +67,13 @@ def mdbl_account_info():
 		kodi_utils.hide_busy_dialog()
 		return kodi_utils.show_text('MDBList'.upper(), '[CR]'.join(body), font_size='large')
 	except: kodi_utils.hide_busy_dialog()
+
+def dummy_stats():
+	return {
+		'movies'  : {'all_time': 0, 'runtime_hours': 0, 'rated': 0},
+		'shows'   : {'watched': 0, 'rated': 0},
+		'episodes': {'all_time': 0, 'runtime_hours': 0, 'rated': 0},
+	}
 
 class BaseMdblList(list_helper.BaseList):
 	def process_results(self):
@@ -206,8 +214,8 @@ class MdbListManager(list_helper.BaseListManager):
 		return False
 
 	def check_item_exists(self, choice_id):
-		if 'collection' in choice_id: list_items = self.api.mdblist_collection(self.mediatype, 'all')
-		elif 'watchlist' in choice_id: list_items = self.api.mdblist_watchlist(self.mediatype, 'all')
+		if any(x in choice_id for x in ('watchlist', 'collection')):
+			list_items = self.api.mdbl_collection_watchlist_items(choice_id, self.mediatype)
 		else: list_items = self.api.get_mdbl_list_contents('my_lists', choice_id)
 		return self.tmdb_id in {i['id'] for i in list_items}
 

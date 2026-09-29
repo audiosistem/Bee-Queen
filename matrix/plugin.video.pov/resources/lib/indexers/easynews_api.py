@@ -104,11 +104,11 @@ class EasyNewsAPI:
 			dbcur = dbcon.cursor()
 			dbcur.execute("""PRAGMA synchronous = OFF""")
 			dbcur.execute("""PRAGMA journal_mode = OFF""")
-			dbcur.execute("""SELECT id FROM maincache WHERE id LIKE 'pov_easynews_search_%'""")
+			dbcur.execute("""SELECT id FROM maincache WHERE id LIKE ?""", ('pov_easynews_search_%',))
 			easynews_results = [str(i[0]) for i in dbcur.fetchall()]
 			if not easynews_results: return True
 			for i in easynews_results: clear_property(i)
-			dbcur.execute("""DELETE FROM maincache WHERE id LIKE 'pov_easynews_search_%'""")
+			dbcur.execute("""DELETE FROM maincache WHERE id LIKE ?""", ('pov_easynews_search_%',))
 			return True
 		except: return False
 

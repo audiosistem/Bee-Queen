@@ -31,6 +31,22 @@ class SubtitleScraper:
 		self.player = player_object
 		self.poster = poster
 
+	def __call__(self):
+		if get_setting('subtitles.subs_action', '0') not in ('1',): return
+		language_choices = {k: v['long'] for k, v in meta_languages.items() if v['long']}
+		self.language1 = language_choices[get_setting('subtitles.language')]
+		self.auto_enable = get_setting('subtitles.auto_enable') == 'true'
+		self.manifest = get_setting('subtitles.manifest').strip()
+		self.subtitle_path = 'special://temp/'
+		sub_filename = 'POVSubs_%s' % self.player.imdb_id
+		if self.player.mediatype == 'episode':
+			self.path = 'subtitles/series/%s:%s:%s' % (self.player.imdb_id, self.player.season, self.player.episode)
+			sub_filename = '%s_%s_%s' % (sub_filename, self.player.season, self.player.episode)
+		else: self.path = 'subtitles/movie/%s' % self.player.imdb_id
+		self.search_filename = '%s_%s.srt' % (sub_filename, self.language1)
+		kodi_utils.sleep(2000)
+		return self._video_file_subs() or self._downloaded_subs() or self._searched_subs()
+
 	def _video_file_subs(self):
 		try: available_sub_language = self.player.getSubtitles()
 		except: available_sub_language = ''
@@ -67,20 +83,4 @@ class SubtitleScraper:
 		kodi_utils.sleep(1000)
 		self.player.setSubtitles(final_path)
 		return True
-
-	def run(self):
-		if get_setting('subtitles.subs_action', '0') not in ('1',): return
-		language_choices = {k: v['long'] for k, v in meta_languages.items() if v['long']}
-		self.language1 = language_choices[get_setting('subtitles.language')]
-		self.auto_enable = get_setting('subtitles.auto_enable') == 'true'
-		self.manifest = get_setting('subtitles.manifest').strip()
-		self.subtitle_path = 'special://temp/'
-		sub_filename = 'POVSubs_%s' % self.player.imdb_id
-		if self.player.mediatype == 'episode':
-			self.path = 'subtitles/series/%s:%s:%s' % (self.player.imdb_id, self.player.season, self.player.episode)
-			sub_filename = '%s_%s_%s' % (sub_filename, self.player.season, self.player.episode)
-		else: self.path = 'subtitles/movie/%s' % self.player.imdb_id
-		self.search_filename = '%s_%s.srt' % (sub_filename, self.language1)
-		kodi_utils.sleep(2000)
-		return self._video_file_subs() or self._downloaded_subs() or self._searched_subs()
 

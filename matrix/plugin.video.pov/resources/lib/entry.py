@@ -70,7 +70,7 @@ POV_ROUTES = {
 
 	'choose_view': lambda p: _import('modules.kodi_utils', 'choose_view')(p['view_type'], p.get('content', '')),
 	'set_view': lambda p: _import('modules.kodi_utils', 'set_view')(p['view_type']),
-	'clear_view': lambda p: _import('modules.kodi_utils', 'clear_view')(p['view_type']),
+	'clear_view_modes': lambda p: _import('modules.kodi_utils', 'clear_view_modes')(),
 	'show_text': lambda p: _import('modules.kodi_utils', 'show_text')(
 		p.get('heading'), p.get('text'), p.get('file'), p.get('font_size', 'small'), p.get('kodi_log', 'false') == 'true'
 	),
