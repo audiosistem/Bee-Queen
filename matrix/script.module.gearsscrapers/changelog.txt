@@ -1,3 +1,11 @@
+[COLORcyan] VERSION 1.6.2[/COLOR]
+
+ Fixed
+
+• Every web request now identifies as a current desktop browser. The old random user-agent mixed Chrome 95-102, "Win64; IA64", Windows 7/8 and IE11 tokens, which Cloudflare-fronted sites answer with 403 (EZTV, Torlock and others looked empty because of it).
+• 1337x: the hard-coded 1377x.to mirror stopped resolving, so the whole provider returned nothing. It now probes its mirror list (1337xx.to first) and uses the first one that answers.
+• Torlock: the 15 parallel detail-page requests triggered HTTP 429 and every one failed. Rows that can't match are dropped before fetching, and the best 8 are fetched 3 at a time.
+
 [COLORcyan] VERSION 1.6.1[/COLOR]
 
 • A new Telegram Account option has been added to the Gears Addon Settings.

@@ -65,11 +65,17 @@ class source:
 				if len(candidates) >= 15: break
 			if not candidates: return self.sources
 
-			threads = []
-			for path, name in candidates:
-				threads.append(workers.Thread(self.get_sources, path, name))
-			[i.start() for i in threads]
-			[i.join() for i in threads]
+			# The site answers 429 when a burst of detail pages is fetched at once (all 15 candidates
+			# used to fire together, so every one failed). Drop rows whose name can't match before
+			# spending a request on them, keep the best 8, and fetch them 3 at a time.
+			def _plausible(n):
+				try: return source_utils.check_title(self.title, self.aliases, source_utils.clean_name(n), self.hdlr, self.year)
+				except: return True
+			candidates = [c for c in candidates if _plausible(c[1])][:8]
+			for k in range(0, len(candidates), 3):
+				threads = [workers.Thread(self.get_sources, path, name) for path, name in candidates[k:k + 3]]
+				[i.start() for i in threads]
+				[i.join() for i in threads]
 			return self.sources
 		except:
 			source_utils.scraper_error('TORLOCK')

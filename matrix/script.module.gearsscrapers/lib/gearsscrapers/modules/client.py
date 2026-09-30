@@ -333,21 +333,14 @@ def cleanHTML(txt):
 	return _replaceHTMLCodes(_replaceHTMLCodes(txt))
 
 def randomagent():
-	BR_VERS = [
-		['%s.0' % i for i in range(95, 100)],
-		['97.0.4692.71', '97.0.4692.99', '98.0.4758.82', '98.0.4758.102', '99.0.4844.151', '100.0.4896.75', '100.0.4896.88 ', '101.0.4951.41', '101.0.4951.64', '102.0.5005.63'],
-		['11.0']]
-	WIN_VERS = ['Windows NT 11.0', 'Windows NT 10.0', 'Windows NT 8.1', 'Windows NT 8.0', 'Windows NT 7.0']
-	FEATURES = ['; WOW64', '; Win64; IA64', '; Win64; x64', '']
+	# Modern, self-consistent desktop UAs only. The old generator mixed Chrome 95-102,
+	# "Win64; IA64", Windows NT 7/8 and IE11 tokens; Cloudflare-fronted sites (torlock,
+	# eztv, 1337x mirrors ...) answer that with 403, and every provider then looked empty.
 	RAND_UAS = [
-				'Mozilla/5.0 ({win_ver}{feature}; rv:{br_ver}) Gecko/20100101 Firefox/{br_ver}',
-				'Mozilla/5.0 ({win_ver}{feature}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{br_ver} Safari/537.36',
-				'Mozilla/5.0 ({win_ver}{feature}; Trident/7.0; rv:{br_ver}) like Gecko'] # (compatible, MSIE) removed, dead browser may no longer be compatible and it fails for glodls with "HTTP Error 403: Forbidden"
-	index = randrange(len(RAND_UAS))
-	return RAND_UAS[index].format(
-		win_ver=choice(WIN_VERS),
-		feature=choice(FEATURES),
-		br_ver=choice(BR_VERS[index]))
+		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{v}.0.0.0 Safari/537.36',
+		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{v}.0.0.0 Safari/537.36 Edg/{v}.0.0.0',
+		'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:{f}.0) Gecko/20100101 Firefox/{f}.0']
+	return choice(RAND_UAS).format(v=choice(['124', '125', '126', '127', '128', '129', '130']), f=choice(['126', '127', '128', '129', '130']))
 
 def agent():
 	return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.123 Safari/537.36' # works on glodls

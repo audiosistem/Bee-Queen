@@ -5,6 +5,7 @@
 
 import re
 from urllib.parse import quote, unquote_plus
+from gearsscrapers.modules import cache
 from gearsscrapers.modules import client
 from gearsscrapers.modules import source_utils
 from gearsscrapers.modules import workers
@@ -17,8 +18,8 @@ class source:
 	hasEpisodes = True
 	def __init__(self):
 		self.language = ['en', 'de', 'fr', 'ko', 'pl', 'pt', 'ru']
-		self.domains = ['1377x.to', '1337xx.to', '1337x.to', '1337x.st', '1337x.ws', '1337x.eu', '1337x.se', '1337x.is'] # all are behind cloudflare except .to
-		self.base_link = "https://www.1377x.to"
+		self.domains = ['1337xx.to', '1377x.to', '1337x.to', '1337x.st', '1337x.ws', '1337x.eu', '1337x.se', '1337x.is'] # mirrors, probed in order; most are behind cloudflare
+		self._base_link = None
 		# NOTE: 1337x/1377x has a known site-side relevance bug -- combining a
 		# real query with an additional qualifier (year, category filter, or a
 		# leading "The") against certain common multi-word titles silently
@@ -28,6 +29,26 @@ class source:
 		self.tvsearch = '/sort-category-search/%s/TV/size/desc/1/'
 		self.moviesearch = '/sort-category-search/%s/Movies/size/desc/1/'
 		self.min_seeders = 1
+
+	@property
+	def base_link(self):
+		# 1377x.to stopped resolving (2026-09); hard-coding one mirror made the whole provider
+		# return nothing, so pick the first mirror that actually serves the 1337x site.
+		if not self._base_link:
+			self._base_link = cache.get(self.__get_base_url, 120, 'https://www.%s' % self.domains[0])
+		return self._base_link
+
+	def __get_base_url(self, fallback):
+		for domain in self.domains:
+			try:
+				url = 'https://www.%s' % domain
+				result = client.request(url, limit=1, timeout=5)
+				try: result = re.search(r'<title>(.+?)</title>', result, re.I).group(1)
+				except: result = None
+				if result and '1337x' in result: return url
+			except:
+				source_utils.scraper_error('1337X')
+		return fallback
 
 	def sources(self, data, hostDict):
 		self.sources = []
