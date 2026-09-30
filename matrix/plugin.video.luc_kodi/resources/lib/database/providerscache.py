@@ -9,6 +9,7 @@ from re import sub as re_sub
 from time import time
 from sqlite3 import dbapi2 as db
 from resources.lib.modules.control import existsPath, dataPath, makeFile, providercacheFile
+from resources.lib.database.blobcodec import pack, unpack
 
 
 def get(function, duration, *args):
@@ -22,24 +23,18 @@ def get(function, duration, *args):
 		key = _hash_function(function, rev_args)
 		cache_result = cache_get(key)
 		if cache_result:
-			result = literal_eval(cache_result['value'])
+			result = unpack(cache_result['value'], literal_eval)
 			if _is_cache_valid(cache_result['date'], duration):
 				return result
 
-		fresh_result = repr(function(*args)) # may need a try-except block for server timeouts
-		invalid = False
-		try:  # Sometimes None is returned as a string instead of None type for "fresh_result"
-			if not fresh_result: invalid = True
-			elif fresh_result == 'None' or fresh_result == '' or fresh_result == '[]' or fresh_result == '{}': invalid = True
-			elif len(fresh_result) == 0: invalid = True
-		except: pass
-
-		if invalid: # If the cache is old, but we didn't get "fresh_result", return the old cache
+		# v1.0.91: JSON + zlib (blobcodec). Antes repr() y literal_eval.
+		fresh = function(*args) # may need a try-except block for server timeouts
+		invalid = fresh is None or fresh in ('', 'None') or (isinstance(fresh, (list, dict, tuple)) and len(fresh) == 0)
+		if invalid: # If the cache is old, but we didn't get "fresh", return the old cache
 			if cache_result: return result
 			else: return None # do not cache_insert() None type, sometimes servers just down momentarily
-		else:
-			cache_insert(key, fresh_result)
-			return literal_eval(fresh_result)
+		cache_insert(key, pack(fresh))
+		return fresh
 	except:
 		from resources.lib.modules import log_utils
 		log_utils.error()

@@ -87,6 +87,24 @@
     </control>
     
 		
+    <!-- ── Network logo — mismo control que en 2160p, coordenadas a la mitad.
+         Estaba solo en el juego de 4K, asi que una pantalla 1080p perdia el
+         logo de la cadena sin motivo: el dato existe igual y el hueco tambien.
+         El resto de este fichero es un 2x exacto del otro juego, de modo que
+         dividir entre dos cae justo donde debe. ─────────────────────────── -->
+    <control type="image">
+      <description>network logo</description>
+      <left>348</left>
+      <top>150</top>
+      <width max="160">auto</width>
+      <height>50</height>
+      <aspectratio align="left" aligny="center">keep</aspectratio>
+      <texture background="true" colordiffuse="CCFFFFFF">$INFO[Window().Property(luc_kodi.network_logo)]</texture>
+      <visible>!String.IsEmpty(Window().Property(luc_kodi.network_logo)) + String.IsEmpty(Window().Property(luc_kodi.clearlogo))</visible>
+      <animation effect="fade" start="0" end="100" time="400" delay="500" tween="sine">WindowOpen</animation>
+    </control>
+    
+		
     <control type="label">
       <description>quality breakdown</description>
       <left>1405</left>
@@ -212,7 +230,7 @@
       <top>150</top>
       <width>502</width>
       <height>745</height>
-      <texture colordiffuse="FF00BCD4">luc_diffuse/poster_border.png</texture>
+      <texture colordiffuse="FF217783">luc_diffuse/poster_border.png</texture>
       <visible>String.IsEqual(Container(2000).ListItem.Property(luc_kodi.quality),4K) + !String.IsEqual(Window().Property(luc_kodi.wide_list),true)</visible>
     </control>
     <control type="image">
@@ -221,7 +239,7 @@
       <top>150</top>
       <width>502</width>
       <height>745</height>
-      <texture colordiffuse="FF4CAF50">luc_diffuse/poster_border.png</texture>
+      <texture colordiffuse="FF357937">luc_diffuse/poster_border.png</texture>
       <visible>String.IsEqual(Container(2000).ListItem.Property(luc_kodi.quality),1080P) + !String.IsEqual(Window().Property(luc_kodi.wide_list),true)</visible>
     </control>
     <control type="image">
@@ -230,7 +248,7 @@
       <top>150</top>
       <width>502</width>
       <height>745</height>
-      <texture colordiffuse="FFFFA726">luc_diffuse/poster_border.png</texture>
+      <texture colordiffuse="FF8F6324">luc_diffuse/poster_border.png</texture>
       <visible>String.IsEqual(Container(2000).ListItem.Property(luc_kodi.quality),720P) + !String.IsEqual(Window().Property(luc_kodi.wide_list),true)</visible>
     </control>
     <control type="image">
@@ -239,7 +257,7 @@
       <top>150</top>
       <width>502</width>
       <height>745</height>
-      <texture colordiffuse="FF607D8B">luc_diffuse/poster_border.png</texture>
+      <texture colordiffuse="FF527180">luc_diffuse/poster_border.png</texture>
       <visible>String.IsEqual(Container(2000).ListItem.Property(luc_kodi.quality),SD) + !String.IsEqual(Window().Property(luc_kodi.wide_list),true)</visible>
     </control>
     <control type="image">
@@ -248,7 +266,7 @@
       <top>150</top>
       <width>502</width>
       <height>745</height>
-      <texture colordiffuse="FFB71C1C">luc_diffuse/poster_border.png</texture>
+      <texture colordiffuse="FFC83232">luc_diffuse/poster_border.png</texture>
       <visible>String.IsEqual(Container(2000).ListItem.Property(luc_kodi.quality),SCR) + !String.IsEqual(Window().Property(luc_kodi.wide_list),true)</visible>
     </control>
     <control type="image">
@@ -257,7 +275,7 @@
       <top>150</top>
       <width>502</width>
       <height>745</height>
-      <texture colordiffuse="FFB0C4DE">luc_diffuse/poster_border.png</texture>
+      <texture colordiffuse="FF446DA2">luc_diffuse/poster_border.png</texture>
       <visible>String.IsEqual(Container(2000).ListItem.Property(luc_kodi.quality),CAM) + !String.IsEqual(Window().Property(luc_kodi.wide_list),true)</visible>
     </control>
 
@@ -597,7 +615,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR] UNCACHED TORRENTS</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR] UNCACHED TORRENTS</label>
               
 							
               <visible>String.IsEqual(ListItem.Property(luc_kodi.source),LOAD UNCACHED TORRENTS)</visible>
@@ -624,7 +642,7 @@
               <aligny>top</aligny>
               
 							
-             <label>[COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FFffb74d] | [/COLOR]SCORE: [COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+             <label>[COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>String.IsEqual(ListItem.Property(luc_kodi.source),CLOUD)</visible>
@@ -651,7 +669,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FFffb74d] | [/COLOR]$INFO[ListItem.Property(luc_kodi.extra_info)][COLOR FFffb74d] | [/COLOR]SCORE: [COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR]$INFO[ListItem.Property(luc_kodi.extra_info)][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>!String.Contains(ListItem.Property(luc_kodi.source),DIRECT) + !String.Contains(ListItem.Property(luc_kodi.source),LOCAL) + !String.Contains(ListItem.Property(luc_kodi.source),UNCACHED) + !String.Contains(ListItem.Property(luc_kodi.source),CLOUD)</visible>
@@ -678,7 +696,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FFffb74d] | [/COLOR]SEEDERS: [COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.seeders)][/COLOR][COLOR FFffb74d] | [/COLOR]SCORE: [COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]SEEDERS: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.seeders)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>!String.IsEqual(ListItem.Property(luc_kodi.source),LOAD UNCACHED TORRENTS) + String.Contains(ListItem.Property(luc_kodi.source),UNCACHED)</visible>
@@ -705,7 +723,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FFffb74d] | [/COLOR]SCORE: [COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>String.Contains(ListItem.Property(luc_kodi.source),DIRECT) | String.Contains(ListItem.Property(luc_kodi.source),LOCAL)</visible>
@@ -732,7 +750,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FFffb74d] | [/COLOR]HOSTER[COLOR FFffb74d] | [/COLOR]SCORE: [COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]HOSTER[/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>!String.Contains(ListItem.Property(luc_kodi.source),UNCHECKED) + !String.Contains(ListItem.Property(luc_kodi.source),DIRECT) + !String.Contains(ListItem.Property(luc_kodi.source),LOCAL) + !String.Contains(ListItem.Property(luc_kodi.source),TORRENT) + !String.Contains(ListItem.Property(luc_kodi.source),USENET) + !String.IsEqual(ListItem.Property(luc_kodi.source),CLOUD)</visible>
@@ -897,7 +915,7 @@
             <height>127</height>
             
 						
-            <texture background="true" colordiffuse="FF696969">common/card_focus.png</texture>
+            <texture background="true" colordiffuse="$INFO[ListItem.Property(focus_card_tint)]">common/card_focus.png</texture>
           <control type="image">
             <description>Card Tint</description>
             <left>0</left>
@@ -905,7 +923,7 @@
             <width>1350</width>
             <height>127</height>
             <aspectratio>stretch</aspectratio>
-            <texture flipx="true" colordiffuse="40$INFO[ListItem.Property(highlight):3]">common/gradient-diffuse-horizontal.png</texture>
+            <texture flipx="true" colordiffuse="$INFO[ListItem.Property(highlight_tint)]">common/gradient-diffuse-horizontal.png</texture>
           </control>
           <control type="image">
             <description>Quality Bar</description>
@@ -1008,7 +1026,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[B][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR] UNCACHED TORRENTS[/B]</label>
+              <label>[B][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR] UNCACHED TORRENTS[/B]</label>
               
 							
               <visible>String.IsEqual(ListItem.Property(luc_kodi.source),LOAD UNCACHED TORRENTS)</visible>
@@ -1038,7 +1056,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FF01579b] | [/COLOR]SCORE: [COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink_focused)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>String.IsEqual(ListItem.Property(luc_kodi.source),CLOUD)</visible>
@@ -1068,7 +1086,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FF01579b] | [/COLOR]$INFO[ListItem.Property(luc_kodi.extra_info_focused)][COLOR FF01579b] | [/COLOR]SCORE: [COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink_focused)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR]$INFO[ListItem.Property(luc_kodi.extra_info_focused)][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>!String.Contains(ListItem.Property(luc_kodi.source),DIRECT) + !String.Contains(ListItem.Property(luc_kodi.source),LOCAL) + !String.Contains(ListItem.Property(luc_kodi.source),UNCACHED) + !String.Contains(ListItem.Property(luc_kodi.source),CLOUD)</visible>
@@ -1098,7 +1116,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FF01579b] | [/COLOR]SEEDERS: [COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.seeders)][/COLOR][COLOR FF01579b] | [/COLOR]SCORE: [COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink_focused)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]SEEDERS: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.seeders)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>!String.IsEqual(ListItem.Property(luc_kodi.source),LOAD UNCACHED TORRENTS) + String.Contains(ListItem.Property(luc_kodi.source),UNCACHED)</visible>
@@ -1128,7 +1146,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FF01579b] | [/COLOR]SCORE: [COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>String.Contains(ListItem.Property(luc_kodi.source),DIRECT) | String.Contains(ListItem.Property(luc_kodi.source),LOCAL)</visible>
@@ -1158,7 +1176,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FF01579b] | [/COLOR]HOSTER[COLOR FF01579b] | [/COLOR]SCORE: [COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink_focused)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]HOSTER[/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>!String.Contains(ListItem.Property(luc_kodi.source),UNCHECKED) + !String.Contains(ListItem.Property(luc_kodi.source),DIRECT) + !String.Contains(ListItem.Property(luc_kodi.source),LOCAL) + !String.Contains(ListItem.Property(luc_kodi.source),TORRENT) + !String.Contains(ListItem.Property(luc_kodi.source),USENET) + !String.IsEqual(ListItem.Property(luc_kodi.source),CLOUD)</visible>
@@ -1369,7 +1387,7 @@
           <texture>source/dv.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),DOLBY-VISION)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),DOLBY-VISION)</visible>
           
 				
         </control>
@@ -1390,7 +1408,7 @@
           <texture>source/hdr.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),HDR) + !String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),HDRIP)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),HDR) + !String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),HDRIP)</visible>
           
 				
         </control>
@@ -1411,7 +1429,7 @@
           <texture>source/hdr10plus.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),HDR10)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),HDR10)</visible>
           
 				
         </control>
@@ -1432,7 +1450,7 @@
           <texture>source/sdr.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),SDR)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),SDR)</visible>
           
 				
         </control>
@@ -1453,7 +1471,7 @@
           <texture>source/hevc.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),HEVC) | [String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),DOLBY-VISION) | String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),HDR)] + !String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),HDRIP) + !String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),AVC)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),HEVC) | [String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),DOLBY-VISION) | String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),HDR)] + !String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),HDRIP) + !String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),AVC)</visible>
           
 				
         </control>
@@ -1474,7 +1492,7 @@
           <texture>source/h264.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),AVC)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),AVC)</visible>
           
 				
         </control>
@@ -1495,7 +1513,7 @@
           <texture>source/mpeg_video.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),MPEG)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),MPEG)</visible>
           
 				
         </control>
@@ -1516,7 +1534,7 @@
           <texture>source/REMUX.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),REMUX)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),REMUX)</visible>
           
 				
         </control>
@@ -1537,7 +1555,7 @@
           <texture>source/AV1.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),AV1)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),AV1)</visible>
           
 				
         </control>
@@ -1558,7 +1576,7 @@
           <texture>source/mkv2.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),MKV)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),MKV)</visible>
           
 				
         </control>
@@ -1579,7 +1597,7 @@
           <texture>source/avc.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),AVI)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),AVI)</visible>
           
 				
         </control>
@@ -1600,7 +1618,7 @@
           <texture>source/xvid.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),XVID)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),XVID)</visible>
           
 				
         </control>
@@ -1621,7 +1639,7 @@
           <texture>source/bluray.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),BLURAY)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),BLURAY)</visible>
           
 				
         </control>
@@ -1642,7 +1660,7 @@
           <texture>source/m2ts.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),M2TS)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),M2TS)</visible>
           
 				
         </control>
@@ -1663,7 +1681,7 @@
           <texture>source/hdtv.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),HDTV)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),HDTV)</visible>
           
 				
         </control>
@@ -1684,7 +1702,7 @@
           <texture>source/web-dl.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),WEB)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),WEB)</visible>
           
 				
         </control>
@@ -1705,7 +1723,7 @@
           <texture>source/dvd.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),DVDRIP)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),DVDRIP)</visible>
           
 				
         </control>
@@ -1726,7 +1744,7 @@
           <texture>audio/atmos.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),ATMOS)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),ATMOS)</visible>
           
 				
         </control>
@@ -1747,7 +1765,7 @@
           <texture>audio/dolbytruehd.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),DOLBY-TRUEHD)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),DOLBY-TRUEHD)</visible>
           
 				
         </control>
@@ -1768,7 +1786,7 @@
           <texture>audio/dolbydigital.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),DOLBYDIGITAL)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),DOLBYDIGITAL)</visible>
           
 				
         </control>
@@ -1789,7 +1807,7 @@
           <texture>audio/eac3.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),DD) + !String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),DD-EX)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),DD) + !String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),DD-EX)</visible>
           
 				
         </control>
@@ -1810,7 +1828,7 @@
           <texture>audio/dolbydigital.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),DD-EX)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),DD-EX)</visible>
           
 				
         </control>
@@ -1831,7 +1849,7 @@
           <texture>audio/dtshd_ma.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),DTS-HD MA)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),DTS-HD MA)</visible>
           
 				
         </control>
@@ -1852,7 +1870,7 @@
           <texture>audio/dts_x.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),DTS-X)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),DTS-X)</visible>
           
 				
         </control>
@@ -1873,7 +1891,7 @@
           <texture>audio/dts2.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),DTS) + !String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),DTS-X) + !String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),DTS-HD MA)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),DTS) + !String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),DTS-X) + !String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),DTS-HD MA)</visible>
           
 				
         </control>
@@ -1894,7 +1912,7 @@
           <texture>audio/aac.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),AAC)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),AAC)</visible>
           
 				
         </control>
@@ -1915,7 +1933,7 @@
           <texture>audio/mp3.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),MP3)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),MP3)</visible>
           
 				
         </control>
@@ -1936,7 +1954,7 @@
           <texture>audio/flac.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),FLAC)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),FLAC)</visible>
           
 				
         </control>
@@ -1957,7 +1975,7 @@
           <texture>audio/multi_lingual.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),MULTI-LANG)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),MULTI-LANG)</visible>
           
 				
         </control>
@@ -1978,7 +1996,7 @@
           <texture>channels/2.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),2CH)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),2CH)</visible>
           
 				
         </control>
@@ -1999,7 +2017,7 @@
           <texture>channels/6.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),6CH)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),6CH)</visible>
           
 				
         </control>
@@ -2020,7 +2038,7 @@
           <texture>channels/7.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),7CH)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),7CH)</visible>
           
 				
         </control>
@@ -2041,7 +2059,7 @@
           <texture>channels/8.png</texture>
           
 					
-          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.extra_info),8CH)</visible>
+          <visible>String.Contains(Container(2000).ListItem.Property(luc_kodi.flags_raw),8CH)</visible>
           
 				
         </control>
@@ -2266,7 +2284,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR] UNCACHED TORRENTS</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR] UNCACHED TORRENTS</label>
               
 							
               <visible>String.IsEqual(ListItem.Property(luc_kodi.source),LOAD UNCACHED TORRENTS)</visible>
@@ -2293,7 +2311,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FFffb74d] | [/COLOR]SCORE: [COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>String.IsEqual(ListItem.Property(luc_kodi.source),CLOUD)</visible>
@@ -2320,7 +2338,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FFffb74d] | [/COLOR]$INFO[ListItem.Property(luc_kodi.extra_info)][COLOR FFffb74d] | [/COLOR]SCORE: [COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR]$INFO[ListItem.Property(luc_kodi.extra_info)][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>!String.Contains(ListItem.Property(luc_kodi.source),DIRECT) + !String.Contains(ListItem.Property(luc_kodi.source),LOCAL) + !String.Contains(ListItem.Property(luc_kodi.source),UNCACHED) + !String.Contains(ListItem.Property(luc_kodi.source),CLOUD)</visible>
@@ -2347,7 +2365,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FFffb74d] | [/COLOR]SEEDERS: [COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.seeders)][/COLOR][COLOR FFffb74d] | [/COLOR]SCORE: [COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]SEEDERS: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.seeders)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>!String.IsEqual(ListItem.Property(luc_kodi.source),LOAD UNCACHED TORRENTS) + String.Contains(ListItem.Property(luc_kodi.source),UNCACHED)</visible>
@@ -2374,7 +2392,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FFffb74d] | [/COLOR]SCORE: [COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>String.Contains(ListItem.Property(luc_kodi.source),DIRECT) | String.Contains(ListItem.Property(luc_kodi.source),LOCAL)</visible>
@@ -2401,7 +2419,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FFffb74d] | [/COLOR][COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FFffb74d] | [/COLOR]HOSTER[COLOR FFffb74d] | [/COLOR]SCORE: [COLOR FF6D727D]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]HOSTER[/COLOR][COLOR $INFO[ListItem.Property(separator_ink)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>!String.Contains(ListItem.Property(luc_kodi.source),UNCHECKED) + !String.Contains(ListItem.Property(luc_kodi.source),DIRECT) + !String.Contains(ListItem.Property(luc_kodi.source),LOCAL) + !String.Contains(ListItem.Property(luc_kodi.source),TORRENT) + !String.Contains(ListItem.Property(luc_kodi.source),USENET) + !String.IsEqual(ListItem.Property(luc_kodi.source),CLOUD)</visible>
@@ -2566,7 +2584,7 @@
             <height>127</height>
             
 						
-            <texture background="true" colordiffuse="FF696969">common/card_focus.png</texture>
+            <texture background="true" colordiffuse="$INFO[ListItem.Property(focus_card_tint)]">common/card_focus.png</texture>
           <control type="image">
             <description>Card Tint</description>
             <left>0</left>
@@ -2574,7 +2592,7 @@
             <width>1350</width>
             <height>127</height>
             <aspectratio>stretch</aspectratio>
-            <texture flipx="true" colordiffuse="40$INFO[ListItem.Property(highlight):3]">common/gradient-diffuse-horizontal.png</texture>
+            <texture flipx="true" colordiffuse="$INFO[ListItem.Property(highlight_tint)]">common/gradient-diffuse-horizontal.png</texture>
           </control>
           <control type="image">
             <description>Quality Bar</description>
@@ -2677,7 +2695,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[B][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR] UNCACHED TORRENTS[/B]</label>
+              <label>[B][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR] UNCACHED TORRENTS[/B]</label>
               
 							
               <visible>String.IsEqual(ListItem.Property(luc_kodi.source),LOAD UNCACHED TORRENTS)</visible>
@@ -2707,7 +2725,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FF01579b] | [/COLOR]SCORE: [COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink_focused)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>String.IsEqual(ListItem.Property(luc_kodi.source),CLOUD)</visible>
@@ -2737,7 +2755,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FF01579b] | [/COLOR]$INFO[ListItem.Property(luc_kodi.extra_info_focused)][COLOR FF01579b] | [/COLOR]SCORE: [COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink_focused)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR]$INFO[ListItem.Property(luc_kodi.extra_info_focused)][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>!String.Contains(ListItem.Property(luc_kodi.source),DIRECT) + !String.Contains(ListItem.Property(luc_kodi.source),LOCAL) + !String.Contains(ListItem.Property(luc_kodi.source),UNCACHED) + !String.Contains(ListItem.Property(luc_kodi.source),CLOUD)</visible>
@@ -2767,7 +2785,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FF01579b] | [/COLOR]SEEDERS: [COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.seeders)][/COLOR][COLOR FF01579b] | [/COLOR]SCORE: [COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink_focused)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]SEEDERS: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.seeders)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>!String.IsEqual(ListItem.Property(luc_kodi.source),LOAD UNCACHED TORRENTS) + String.Contains(ListItem.Property(luc_kodi.source),UNCACHED)</visible>
@@ -2797,7 +2815,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FF01579b] | [/COLOR]SCORE: [COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>String.Contains(ListItem.Property(luc_kodi.source),DIRECT) | String.Contains(ListItem.Property(luc_kodi.source),LOCAL)</visible>
@@ -2827,7 +2845,7 @@
               <aligny>top</aligny>
               
 							
-              <label>[COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR $INFO[ListItem.Property(highlight)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR FF01579b] | [/COLOR][COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR FF01579b] | [/COLOR]HOSTER[COLOR FF01579b] | [/COLOR]SCORE: [COLOR FF1A1A1A]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
+              <label>[COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.size_label)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(highlight_ink_focused)]]$INFO[ListItem.Property(luc_kodi.debrid)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.provider)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.source)][/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]HOSTER[/COLOR][COLOR $INFO[ListItem.Property(separator_ink_focused)]] | [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]SCORE: [/COLOR][COLOR $INFO[ListItem.Property(routine_ink_focused)]]$INFO[ListItem.Property(luc_kodi.score)][/COLOR]</label>
               
 							
               <visible>!String.Contains(ListItem.Property(luc_kodi.source),UNCHECKED) + !String.Contains(ListItem.Property(luc_kodi.source),DIRECT) + !String.Contains(ListItem.Property(luc_kodi.source),LOCAL) + !String.Contains(ListItem.Property(luc_kodi.source),TORRENT) + !String.Contains(ListItem.Property(luc_kodi.source),USENET) + !String.IsEqual(ListItem.Property(luc_kodi.source),CLOUD)</visible>
@@ -3038,7 +3056,7 @@
           <texture>source/dv.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DOLBY-VISION)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),DOLBY-VISION)</visible>
           
 				
         </control>
@@ -3059,7 +3077,7 @@
           <texture>source/hdr.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),HDR) + !String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),HDRIP)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),HDR) + !String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),HDRIP)</visible>
           
 				
         </control>
@@ -3080,7 +3098,7 @@
           <texture>source/hdr10plus.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),HDR10)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),HDR10)</visible>
           
 				
         </control>
@@ -3101,7 +3119,7 @@
           <texture>source/sdr.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),SDR)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),SDR)</visible>
           
 				
         </control>
@@ -3122,7 +3140,7 @@
           <texture>source/hevc.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),HEVC) | [String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DOLBY-VISION) | String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),HDR)] + !String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),HDRIP) + !String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),AVC)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),HEVC) | [String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),DOLBY-VISION) | String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),HDR)] + !String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),HDRIP) + !String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),AVC)</visible>
           
 				
         </control>
@@ -3143,7 +3161,7 @@
           <texture>source/h264.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),AVC)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),AVC)</visible>
           
 				
         </control>
@@ -3164,7 +3182,7 @@
           <texture>source/mpeg_video.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),MPEG)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),MPEG)</visible>
           
 				
         </control>
@@ -3185,7 +3203,7 @@
           <texture>source/REMUX.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),REMUX)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),REMUX)</visible>
           
 				
         </control>
@@ -3206,7 +3224,7 @@
           <texture>source/AV1.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),AV1)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),AV1)</visible>
           
 				
         </control>
@@ -3227,7 +3245,7 @@
           <texture>source/mkv2.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),MKV)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),MKV)</visible>
           
 				
         </control>
@@ -3248,7 +3266,7 @@
           <texture>source/avc.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),AVI)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),AVI)</visible>
           
 				
         </control>
@@ -3269,7 +3287,7 @@
           <texture>source/xvid.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),XVID)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),XVID)</visible>
           
 				
         </control>
@@ -3290,7 +3308,7 @@
           <texture>source/bluray.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),BLURAY)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),BLURAY)</visible>
           
 				
         </control>
@@ -3311,7 +3329,7 @@
           <texture>source/m2ts.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),M2TS)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),M2TS)</visible>
           
 				
         </control>
@@ -3332,7 +3350,7 @@
           <texture>source/hdtv.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),HDTV)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),HDTV)</visible>
           
 				
         </control>
@@ -3353,7 +3371,7 @@
           <texture>source/web-dl.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),WEB)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),WEB)</visible>
           
 				
         </control>
@@ -3374,7 +3392,7 @@
           <texture>source/dvd.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DVDRIP)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),DVDRIP)</visible>
           
 				
         </control>
@@ -3395,7 +3413,7 @@
           <texture>audio/atmos.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),ATMOS)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),ATMOS)</visible>
           
 				
         </control>
@@ -3416,7 +3434,7 @@
           <texture>audio/dolbytruehd.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DOLBY-TRUEHD)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),DOLBY-TRUEHD)</visible>
           
 				
         </control>
@@ -3437,7 +3455,7 @@
           <texture>audio/dolbydigital.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DOLBYDIGITAL)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),DOLBYDIGITAL)</visible>
           
 				
         </control>
@@ -3458,7 +3476,7 @@
           <texture>audio/eac3.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DD) + !String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DD-EX)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),DD) + !String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),DD-EX)</visible>
           
 				
         </control>
@@ -3479,7 +3497,7 @@
           <texture>audio/dolbydigital.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DD-EX)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),DD-EX)</visible>
           
 				
         </control>
@@ -3500,7 +3518,7 @@
           <texture>audio/dtshd_ma.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DTS-HD MA)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),DTS-HD MA)</visible>
           
 				
         </control>
@@ -3521,7 +3539,7 @@
           <texture>audio/dts_x.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DTS-X)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),DTS-X)</visible>
           
 				
         </control>
@@ -3542,7 +3560,7 @@
           <texture>audio/dts2.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DTS) + !String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DTS-X) + !String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),DTS-HD MA)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),DTS) + !String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),DTS-X) + !String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),DTS-HD MA)</visible>
           
 				
         </control>
@@ -3563,7 +3581,7 @@
           <texture>audio/aac.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),AAC)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),AAC)</visible>
           
 				
         </control>
@@ -3584,7 +3602,7 @@
           <texture>audio/mp3.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),MP3)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),MP3)</visible>
           
 				
         </control>
@@ -3605,7 +3623,7 @@
           <texture>audio/flac.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),FLAC)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),FLAC)</visible>
           
 				
         </control>
@@ -3626,7 +3644,7 @@
           <texture>audio/multi_lingual.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),MULTI-LANG)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),MULTI-LANG)</visible>
           
 				
         </control>
@@ -3647,7 +3665,7 @@
           <texture>channels/2.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),2CH)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),2CH)</visible>
           
 				
         </control>
@@ -3668,7 +3686,7 @@
           <texture>channels/6.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),6CH)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),6CH)</visible>
           
 				
         </control>
@@ -3689,7 +3707,7 @@
           <texture>channels/7.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),7CH)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),7CH)</visible>
           
 				
         </control>
@@ -3710,7 +3728,7 @@
           <texture>channels/8.png</texture>
           
 					
-          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.extra_info),8CH)</visible>
+          <visible>String.Contains(Container(2001).ListItem.Property(luc_kodi.flags_raw),8CH)</visible>
           
 				
         </control>

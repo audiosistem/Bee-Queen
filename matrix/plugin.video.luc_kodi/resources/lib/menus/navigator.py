@@ -32,6 +32,15 @@ class Navigator:
 		self.tmdbSessionID = getSetting('tmdb.session_id') != ''
 		self.highlight_color = control.getHighlightColor()
 		self.mdblistCredentials = getMDBListCredentialsInfo()
+		# v1.0.87: se pregunta al modulo en vez de leer el ajuste a pelo. El token
+		# vive primero en una window property y solo despues en settings.xml, asi
+		# que un getSetting() directo no ve la sesion recien autorizada hasta que
+		# Kodi vuelca el fichero, y la carpeta de PunchPlay no aparecia.
+		try:
+			from resources.lib.modules.punchplay import getPunchPlayCredentialsInfo
+			self.punchplayCredentials = getPunchPlayCredentialsInfo()
+		except Exception:
+			self.punchplayCredentials = False
 
 	def root(self):
 		self.addDirectoryItem(33046, 'movieNavigator', 'movies.png', 'DefaultMovies.png')
@@ -116,6 +125,13 @@ class Navigator:
 				self.addDirectoryItem(40232, 'mdblist_movieTopListsPublic', 'mdblist.png', 'DefaultVideoPlaylists.png')
 			if getMenuEnabled('navi.movie.mdblist.searchList'):
 				self.addDirectoryItem(40233, 'mdblist_movieSearchListsPublic', 'mdblist.png', 'DefaultAddonsSearch.png', isFolder=False)
+		if getMenuEnabled('navi.movie.punchplay.trending'):
+			self.addDirectoryItem(46000, 'movies&url=punchplaytrending', 'punchplay.png', 'DefaultMovies.png')
+		if getMenuEnabled('navi.movie.punchplay.popular'):
+			self.addDirectoryItem(46001, 'movies&url=punchplaypopular', 'punchplay.png', 'DefaultMovies.png')
+		if self.punchplayCredentials:
+			if getMenuEnabledDefaultOn('navi.movie.punchplay.folder'):
+				self.addDirectoryItem(46010, 'punchplay_movieNavigator', 'punchplay.png', 'DefaultVideoPlaylists.png')
 		if not lite:
 			if getMenuEnabled('mylists.widget'): self.addDirectoryItem(32003, 'mymovieliteNavigator', 'mymovies.png', 'DefaultMovies.png')
 			self.addDirectoryItem(33042, 'movieSearch', 'trakt.png' if self.iconLogos else 'search.png', 'DefaultAddonsSearch.png')
@@ -169,6 +185,8 @@ class Navigator:
 			self.addDirectoryItem(32486 if self.indexLabels else 32455, 'tvGenres&url=tmdb_genre', 'tmdb.png' if self.iconLogos else 'genres.png', 'DefaultGenre.png')
 		if getMenuEnabled('navi.tv.tvmaze.networks'):
 			self.addDirectoryItem(32468 if self.indexLabels else 32469, 'tvNetworks', 'tmdb.png' if self.iconLogos else 'networks.png', 'DefaultNetwork.png')
+		if getMenuEnabled('navi.tv.tmdb.providers'):
+			self.addDirectoryItem(40701 if self.indexLabels else 40700, 'tvProviders', 'tmdb.png' if self.iconLogos else 'networks.png', 'DefaultNetwork.png')
 		# if getMenuEnabled('navi.tv.tmdb.certificates'):
 		if getMenuEnabled('navi.tv.tmdb.years'):
 			self.addDirectoryItem(32485 if self.indexLabels else 32457, 'tvYears&url=tmdb_year', 'tmdb.png' if self.iconLogos else 'years.png', 'DefaultYear.png')
@@ -197,6 +215,13 @@ class Navigator:
 				self.addDirectoryItem(40235, 'mdblist_showTopListsPublic', 'mdblist.png', 'DefaultVideoPlaylists.png')
 			if getMenuEnabled('navi.tv.mdblist.searchList'):
 				self.addDirectoryItem(40236, 'mdblist_showSearchListsPublic', 'mdblist.png', 'DefaultAddonsSearch.png', isFolder=False)
+		if getMenuEnabled('navi.tv.punchplay.trending'):
+			self.addDirectoryItem(46002, 'tvshows&url=punchplaytrending', 'punchplay.png', 'DefaultTVShows.png')
+		if getMenuEnabled('navi.tv.punchplay.popular'):
+			self.addDirectoryItem(46003, 'tvshows&url=punchplaypopular', 'punchplay.png', 'DefaultTVShows.png')
+		if self.punchplayCredentials:
+			if getMenuEnabledDefaultOn('navi.tv.punchplay.folder'):
+				self.addDirectoryItem(46011, 'punchplay_tvNavigator', 'punchplay.png', 'DefaultVideoPlaylists.png')
 		if not lite:
 			if getMenuEnabled('mylists.widget'): self.addDirectoryItem(32004, 'mytvliteNavigator', 'mytvshows.png', 'DefaultTVShows.png')
 			self.addDirectoryItem(33043, 'tvSearch', 'trakt.png' if self.iconLogos else 'search.png', 'DefaultAddonsSearch.png')
@@ -235,6 +260,8 @@ class Navigator:
 		self.addDirectoryItem(40250, 'mdblist_calendarMovies', 'mdblist.png', 'DefaultYear.png', queue=True)
 		self.addDirectoryItem(40212, 'mdblist_movieWatchlist', 'mdblist.png', 'DefaultVideoPlaylists.png', queue=True)
 		self.addDirectoryItem(40213, 'mdblist_movieUserLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
+		self.addDirectoryItem(40261, 'mdblist_movieExternalLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
+		self.addDirectoryItem(40262, 'mdblist_movieLikedLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
 		self.addDirectoryItem(40214, 'mdblist_movieTopLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
 		self.addDirectoryItem(40215, 'mdblist_movieSearchLists', 'mdblist.png', 'DefaultAddonsSearch.png', isFolder=False)
 		self.addDirectoryItem(40241, 'mdblist_browseUser', 'mdblist.png', 'DefaultVideoPlaylists.png', isFolder=False)
@@ -246,10 +273,37 @@ class Navigator:
 		self.addDirectoryItem(40252, 'mdblist_calendarRecent', 'mdblist.png', 'DefaultYear.png', queue=True)
 		self.addDirectoryItem(40216, 'mdblist_showWatchlist', 'mdblist.png', 'DefaultVideoPlaylists.png', queue=True)
 		self.addDirectoryItem(40217, 'mdblist_showUserLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
+		self.addDirectoryItem(40261, 'mdblist_showExternalLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
+		self.addDirectoryItem(40262, 'mdblist_showLikedLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
 		self.addDirectoryItem(40218, 'mdblist_showTopLists', 'mdblist.png', 'DefaultVideoPlaylists.png')
 		self.addDirectoryItem(40219, 'mdblist_showSearchLists', 'mdblist.png', 'DefaultAddonsSearch.png', isFolder=False)
 		self.addDirectoryItem(40241, 'mdblist_browseUser', 'mdblist.png', 'DefaultVideoPlaylists.png', isFolder=False)
 		self.addDirectoryItem(40243, 'mdblist_importByUrl&media_type=show', 'mdblist.png', 'DefaultVideoPlaylists.png', isFolder=False)
+		self.endDirectory()
+
+	def punchplay_movies(self):
+		self.addDirectoryItem(46020, 'punchplay_movieWatchlist', 'punchplay.png', 'DefaultVideoPlaylists.png', queue=True)
+		self.addDirectoryItem(46021, 'punchplay_movieUserLists', 'punchplay.png', 'DefaultVideoPlaylists.png')
+		self.addDirectoryItem(46012, 'punchplay_continueMovies', 'punchplay.png', 'DefaultInProgressShows.png', queue=True)
+		self.addDirectoryItem(46015, 'punchplay_movieCollection', 'punchplay.png', 'DefaultVideoPlaylists.png', queue=True)
+		self.addDirectoryItem(46016, 'punchplay_movieFavourites', 'punchplay.png', 'DefaultVideoPlaylists.png', queue=True)
+		self.addDirectoryItem(46017, 'punchplay_movieRatings', 'punchplay.png', 'DefaultVideoPlaylists.png', queue=True)
+		self.addDirectoryItem(46026, 'punchplay_movieCommunityLists', 'punchplay.png', 'DefaultVideoPlaylists.png')
+		self.addDirectoryItem(46027, 'punchplay_movieOpenByUrl', 'punchplay.png', 'DefaultVideoPlaylists.png', isFolder=False)
+		self.addDirectoryItem(46022, 'punchplay_movieHistory', 'punchplay.png', 'DefaultVideoPlaylists.png', queue=True)
+		self.endDirectory()
+
+	def punchplay_tv(self):
+		self.addDirectoryItem(46023, 'punchplay_showWatchlist', 'punchplay.png', 'DefaultVideoPlaylists.png', queue=True)
+		self.addDirectoryItem(46024, 'punchplay_showUserLists', 'punchplay.png', 'DefaultVideoPlaylists.png')
+		self.addDirectoryItem(46013, 'punchplay_continueEpisodes', 'punchplay.png', 'DefaultInProgressShows.png', queue=True)
+		self.addDirectoryItem(46014, 'punchplay_showProgress', 'punchplay.png', 'DefaultTVShows.png', queue=True)
+		self.addDirectoryItem(46015, 'punchplay_showCollection', 'punchplay.png', 'DefaultVideoPlaylists.png', queue=True)
+		self.addDirectoryItem(46016, 'punchplay_showFavourites', 'punchplay.png', 'DefaultVideoPlaylists.png', queue=True)
+		self.addDirectoryItem(46017, 'punchplay_showRatings', 'punchplay.png', 'DefaultVideoPlaylists.png', queue=True)
+		self.addDirectoryItem(46025, 'punchplay_calendarEpisodes', 'punchplay.png', 'DefaultYear.png', queue=True)
+		self.addDirectoryItem(46026, 'punchplay_showCommunityLists', 'punchplay.png', 'DefaultVideoPlaylists.png')
+		self.addDirectoryItem(46027, 'punchplay_showOpenByUrl', 'punchplay.png', 'DefaultVideoPlaylists.png', isFolder=False)
 		self.endDirectory()
 
 	def anime(self, lite=False):
@@ -272,6 +326,7 @@ class Navigator:
 		if self.traktCredentials: self.addDirectoryItem(35057, 'tools_traktToolsNavigator', 'tools.png', 'DefaultAddonService.png', isFolder=True)
 		self.addDirectoryItem(32510, 'cache_Navigator', 'tools.png', 'DefaultAddonService.png', isFolder=True)
 		self.addDirectoryItem(400700, 'tools_updateCatalog', 'tools.png', 'DefaultAddonService.png', isFolder=False)
+		self.addDirectoryItem(400875, 'tools_networkAudit', 'tools.png', 'DefaultAddonService.png', isFolder=False)
 		self.addDirectoryItem(32523, 'tools_loggingNavigator', 'tools.png', 'DefaultAddonService.png')
 		self.addDirectoryItem(32083, 'tools_cleanSettings', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
 		#self.addDirectoryItem(32506, 'tools_contextluc_kodiSettings', 'icon.png', 'DefaultAddonProgram.png', isFolder=False)
@@ -317,6 +372,14 @@ class Navigator:
 		self.endDirectory()
 
 	def cf(self):
+		# v1.0.73 — el contador va EL PRIMERO de Cache Functions, antes de
+		# cualquier borrado. Este es el menu al que el usuario llega de verdad
+		# (Tools > Cache Functions); la entrada equivalente de settings.xml
+		# esta en una pestaña que hay que ir a buscar. Y el orden importa:
+		# mirar cuanto ocupa cada grupo antes de decidir que se suelta es la
+		# secuencia util, no al reves.
+		self.addDirectoryItem(400760, 'tools_cacheFootprint', 'tools.png', 'DefaultAddonService.png', isFolder=False)
+		self.addDirectoryItem(400860, 'tools_maintenanceCleanNow', 'tools.png', 'DefaultAddonService.png', isFolder=False)
 		self.addDirectoryItem(32610, 'cache_clearAll', 'tools.png', 'DefaultAddonService.png', isFolder=False)
 		self.addDirectoryItem(32611, 'cache_clearSources', 'tools.png', 'DefaultAddonService.png', isFolder=False)
 		self.addDirectoryItem(32612, 'cache_clearMeta', 'tools.png', 'DefaultAddonService.png', isFolder=False)
@@ -454,7 +517,9 @@ class Navigator:
 			control.content(syshandle, kodi_content)
 			control.directory(syshandle, cacheToDisc=True)
 			from resources.lib.modules import views
-			views.setView(content, {})
+			# force=False: esta pantalla existe para que el usuario ELIJA vista, asi
+			# que no se le impone la rejilla encima (v1.0.81).
+			views.setView(content, {}, force=False)
 		except:
 			from resources.lib.modules import log_utils
 			log_utils.error()

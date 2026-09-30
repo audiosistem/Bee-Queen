@@ -3,10 +3,12 @@
 	luc_kodi Add-on
 """
 
+from resources.lib.modules import app_keys
 from datetime import datetime, timedelta
 from json import dumps as jsdumps
 import re
 from threading import Thread
+from time import time as _now
 from urllib.parse import quote_plus, urlencode, parse_qsl, urlparse, urlsplit
 from resources.lib.database import cache, metacache, fanarttv_cache, traktsync
 from resources.lib.indexers.tmdb import Movies as tmdb_indexer
@@ -32,6 +34,12 @@ class Movies:
 		self.page_limit = getSetting('page.item.limit')
 		self.search_page_limit = getSetting('search.page.limit')
 		self.notifications = notifications
+		# v1.0.81 — ganchos del precache de catalogo. Los menus NUNCA los ponen:
+		# solo el servicio de catalogo, para que el enriquecido de estas listas
+		# comparta el semaforo global de peticiones y respete el presupuesto de
+		# tiempo de la pasada en segundo plano.
+		self.precache_sem = None
+		self.precache_deadline = None
 		self.date_time = datetime.now()
 		self.today_date = (self.date_time).strftime('%Y-%m-%d')
 		self.hidecinema = getSetting('hidecinema') == 'true'
@@ -40,7 +48,7 @@ class Movies:
 		self.lang = control.apiLanguage()['trakt']
 		self.imdb_user = getSetting('imdb.user').replace('ur', '')
 		self.tmdb_key = getSetting('tmdb.api.key')
-		if not self.tmdb_key: self.tmdb_key = 'f2e500501d9fa3bd1637bfd00f11583a'
+		if not self.tmdb_key: self.tmdb_key = app_keys.get('tmdb')
 		self.tmdb_session_id = getSetting('tmdb.session_id')
 		# self.user = str(self.imdb_user) + str(self.tmdb_key)
 		self.user = str(self.tmdb_key)
@@ -134,9 +142,15 @@ class Movies:
 		# extended=tmdb gives us the tmdb id + title + year upfront so the
 		# worker pipeline can resolve metadata without an extra round trip.
 		self.simkl_link = 'https://api.simkl.com'
-		self.simkltrendingtoday_link = 'https://api.simkl.com/movies/trending/today?extended=tmdb'
-		self.simkltrendingweek_link  = 'https://api.simkl.com/movies/trending/week?extended=tmdb'
-		self.simkltrendingmonth_link = 'https://api.simkl.com/movies/trending/month?extended=tmdb'
+		self.simkldata_link = 'https://data.simkl.in'
+		self.simkltrendingtoday_link = 'https://data.simkl.in/discover/trending/movies/today_100.json'
+		self.simkltrendingweek_link  = 'https://data.simkl.in/discover/trending/movies/week_100.json'
+		self.simkltrendingmonth_link = 'https://data.simkl.in/discover/trending/movies/month_100.json'
+		# PunchPlay: catalogo PUBLICO, sin auth ni token (/api/public/v1).
+		# `type` es 'movie' o 'show', los unicos kinds enrutables de PunchPlay.
+		self.punchplay_link = 'https://punchplay.tv'
+		self.punchplaytrending_link = 'https://punchplay.tv/api/public/v1/catalog/trending?type=movie'
+		self.punchplaypopular_link = 'https://punchplay.tv/api/public/v1/catalog/discover?category=popular&type=movie'
 
 	def get(self, url, idx=True, create_directory=True):
 		self.list = []
@@ -166,14 +180,21 @@ class Movies:
 			elif u in self.trakt_link:
 				self.list = cache.get(self.trakt_list, 24, url, self.trakt_user)
 				if idx: self.worker()
-			elif u in self.simkl_link:
+			elif u in self.simkl_link or u in self.simkldata_link:
 				# SIMKL trending: cache TTL matches the period — today=6h, week=24h, month=96h
-				if '/trending/today' in url:   _ttl = 6
-				elif '/trending/week' in url:  _ttl = 24
-				elif '/trending/month' in url: _ttl = 96
+				# '/today' casa con la URL vieja (/trending/today) y con el fichero (/movies/today_100.json)
+				if '/today' in url:   _ttl = 6
+				elif '/week' in url:  _ttl = 24
+				elif '/month' in url: _ttl = 96
 				else: _ttl = 24
 				from resources.lib.modules import simkl as simkl_mod
 				self.list = cache.get(simkl_mod.simkl_list, _ttl, url)
+				if idx: self.worker()
+			elif u in self.punchplay_link:
+				# Trending se mueve a diario; discover/popular aguanta mas.
+				_ttl = 6 if '/trending' in url else 24
+				from resources.lib.modules import punchplay as punchplay_mod
+				self.list = cache.get(punchplay_mod.punchplay_list, _ttl, url)
 				if idx: self.worker()
 			elif u in self.imdb_link and ('/user/' in url or '/list/' in url):
 				isRatinglink = True if self.imdbratings_link in url else False
@@ -727,7 +748,11 @@ class Movies:
 	def trakt_list(self, url, user):
 		self.list = []
 		if ',return' in url: url = url.split(',return')[0]
-		items = trakt.getTraktAsJson(url)
+		# v1.0.95: sin limit= (importar watchlist/coleccion/listas a la
+		# biblioteca, boxoffice) se recorren todas las paginas; en los
+		# endpoints sin paginar el helper hace una sola peticion.
+		if 'limit=' not in url: items = trakt.getTraktAsJsonPaginated(url, page_size=250, apply_sort=True)
+		else: items = trakt.getTraktAsJson(url)
 		if not items: return
 		try:
 			q = dict(parse_qsl(urlsplit(url).query))
@@ -764,14 +789,17 @@ class Movies:
 		self.list = []
 		q = dict(parse_qsl(urlsplit(url).query))
 		index = int(q['page']) - 1
-		def userList_totalItems(url):
-			items = trakt.getTraktAsJson(url)
+		def userList_allItems(url):
+			# v1.0.95 (issue #1): la URL llegaba sin limit/page y getTraktAsJson
+			# no pagina: Trakt devolvia solo la primera pagina de la lista.
+			items = trakt.getTraktAsJsonPaginated(url, page_size=250, apply_sort=True)
 			if not items: return
 			for item in items:
 				try:
 					values = {}
 					values['added'] = item.get('listed_at', '')
-					movie = item['movie']
+					movie = item.get('movie')
+					if not movie: continue
 					values['title'] = movie.get('title')
 					values['originaltitle'] = values['title']
 					try: values['premiered'] = movie.get('released', '')[:10]
@@ -790,7 +818,7 @@ class Movies:
 					from resources.lib.modules import log_utils
 					log_utils.error()
 			return self.list
-		self.list = cache.get(userList_totalItems, 48, url.split('limit')[0] + 'extended=full')
+		self.list = cache.get(userList_allItems, 48, url.split('?')[0] + '?extended=full')
 		if not self.list: return
 		self.sort() # sort before local pagination
 		total_pages = 1
@@ -1008,6 +1036,15 @@ class Movies:
 			log_utils.error()
 
 	def super_info(self, i):
+		# Envoltura del precache (v1.0.81). Sin semaforo ni deadline se comporta
+		# exactamente igual que antes.
+		if self.precache_deadline and _now() > self.precache_deadline: return
+		if self.precache_sem is None: return self._super_info(i)
+		self.precache_sem.acquire()
+		try: return self._super_info(i)
+		finally: self.precache_sem.release()
+
+	def _super_info(self, i):
 		try:
 			if self.list[i]['metacache']: return
 			imdb, tmdb = self.list[i].get('imdb', ''), self.list[i].get('tmdb', '')
@@ -1131,7 +1168,7 @@ class Movies:
 				art = {}
 				art.update({'icon': icon, 'thumb': thumb, 'banner': banner, 'poster': poster, 'fanart': fanart, 'landscape': landscape, 'clearlogo': clearlogo,
 								'clearart': meta.get('clearart', ''), 'discart': meta.get('discart', ''), 'keyart': meta.get('keyart', '')})
-				for k in ('metacache', 'poster2', 'poster3', 'posters_all', 'fanart2', 'fanart3', 'banner2', 'banner3', 'trailer'): meta.pop(k, None)
+				for k in ('metacache', 'meta_light', 'poster2', 'poster3', 'posters_all', 'fanart2', 'fanart3', 'banner2', 'banner3', 'trailer'): meta.pop(k, None)
 				meta.update({'poster': poster, 'fanart': fanart, 'banner': banner})
 				sysmeta, sysart = quote_plus(jsdumps(meta)), quote_plus(jsdumps(art))
 				url = '%s?action=play_Item&title=%s&year=%s&imdb=%s&tmdb=%s&meta=%s' % (sysaddon, systitle, year, imdb, tmdb, sysmeta)
@@ -1145,6 +1182,11 @@ class Movies:
 					from resources.lib.modules.mdblist import getMDBListCredentialsInfo as _mdb_ok
 					if _mdb_ok() and imdb:
 						cm.append((getLS(40220), 'RunPlugin(%s?action=mdblist_Manager&name=%s&imdb=%s&media_type=movie)' % (sysaddon, sysname, imdb)))
+					try: # v1.0.91: SIMKL (valoraciones y listas)
+						from resources.lib.modules.simkl import getSimklCredentialsInfo as _simkl_ok
+						if _simkl_ok() and imdb:
+							cm.append((getLS(400843), 'RunPlugin(%s?action=simklManager&name=%s&imdb=%s&media_type=movie)' % (sysaddon, sysname, imdb)))
+					except Exception: pass
 					if watched:
 						cm.append((unwatchedMenu, 'RunPlugin(%s?action=playcount_Movie&name=%s&imdb=%s&query=4)' % (sysaddon, sysname, imdb)))
 						meta.update({'playcount': 1, 'overlay': 5})

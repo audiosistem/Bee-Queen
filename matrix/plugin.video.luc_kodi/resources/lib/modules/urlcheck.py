@@ -15,6 +15,7 @@ from urllib.parse import parse_qsl
 from resources.lib.database import cache
 from resources.lib.modules.client import randomagent
 from resources.lib.modules import log_utils
+from resources.lib.jacksparrow import client as _fs_client
 
 
 def _default_headers():
@@ -60,7 +61,7 @@ def check_url_validity(url, headers=None, timeout=6):
                 code = 200
 
             if int(code) >= 400:
-                log_utils.log('[URLCHECK] HTTP %s: %s' % (code, clean_url), level=log_utils.LOGWARNING)
+                log_utils.log('[URLCHECK] HTTP %s: %s' % (code, _fs_client.scrub_url(clean_url)), level=log_utils.LOGWARNING)
                 return False
 
             try:
@@ -88,12 +89,14 @@ def check_url_validity(url, headers=None, timeout=6):
 
             # C) HTML/Text error pages -> reject
             if ('text' in ctype) or ('html' in ctype) or ('<html' in content_str.lower()):
-                log_utils.log('[URLCHECK] HTML/Text detected (fake video): %s' % clean_url, level=log_utils.LOGWARNING)
+                log_utils.log('[URLCHECK] HTML/Text detected (fake video): %s' % _fs_client.scrub_url(clean_url), level=log_utils.LOGWARNING)
                 return False
 
             # D) Otherwise allow (rare cases)
             return True
 
     except Exception as e:
-        log_utils.log('[URLCHECK] Connection error: %s' % e, level=log_utils.LOGWARNING)
+        # str(e) de urllib puede arrastrar la URL completa (y con ella el config
+        # blob del debrid), asi que se sanea igual que las otras dos lineas.
+        log_utils.log('[URLCHECK] Connection error: %s' % _fs_client.scrub_url(str(e)), level=log_utils.LOGWARNING)
         return False

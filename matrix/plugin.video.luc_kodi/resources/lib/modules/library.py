@@ -421,7 +421,7 @@ class libtvshows:
 		self.library_folder = control.joinPath(control.transPath(control.setting('library.tv')),'')
 		self.library_update = control.setting('library.update') or 'true'
 		self.dupe_chk = control.setting('library.check') or 'true'
-		self.include_special = control.setting('library.include_special') or 'true'
+		self.include_special = control.setting('library.include_specials') or 'false'
 		self.include_unknown = control.setting('library.include_unknown') or 'true'
 		self.date_time = datetime.now(timezone.utc).replace(tzinfo=None)
 		if control.setting('library.importdelay') != 'true': self.date = self.date_time.strftime('%Y%m%d')
@@ -433,10 +433,11 @@ class libtvshows:
 			control.makeFile(self.library_folder)
 			# icon = control.joinPath(control.artPath(), 'libtv.png')
 			source_name = 'luc_kodi TV Shows'
-			# TVDb scraper
-			source_content = "('%s','tvshows','metadata.tvdb.com','',0,0,'<settings version=\"2\"><setting id=\"absolutenumber\" default=\"true\">false</setting><setting id=\"alsoimdb\">true</setting><setting id=\"dvdorder\" default=\"true\">false</setting><setting id=\"fallback\">true</setting><setting id=\"fallbacklanguage\">es</setting><setting id=\"fanart\">true</setting><setting id=\"language\" default=\"true\">en</setting><setting id=\"RatingS\" default=\"true\">TheTVDB</setting><setting id=\"usefallbacklanguage1\">true</setting></settings>',0,0,NULL,NULL)" % self.library_folder
-			# TMDb scraper
-			# source_content = "('%s','tvshows','metadata.tvshows.themoviedb.org','',0,0,'<settings version=\"2\"><setting id=\"alsoimdb\" default=\"true\">false</setting><setting id=\"certprefix\" default=\"true\"></setting><setting id=\"fallback\">true</setting><setting id=\"fanarttvart\">true</setting><setting id=\"keeporiginaltitle\" default=\"true\">false</setting><setting id=\"language\" default=\"true\">en</setting><setting id=\"RatingS\" default=\"true\">Themoviedb</setting><setting id=\"tmdbart\">true</setting><setting id=\"tmdbcertcountry\" default=\"true\">us</setting></settings>',0,0,NULL,NULL)" % self.library_folder
+			# TV scraper: TheTVDB v4 when it is installed, otherwise Kodi's bundled TMDb TV scraper.
+			# The old metadata.tvdb.com stopped working when TheTVDB shut down API v1-v3 (end of 2022).
+			# Empty settings: each scraper starts from its own defaults.
+			tv_scraper = 'metadata.tvshows.thetvdb.com.v4.python' if control.condVisibility('System.HasAddon(metadata.tvshows.thetvdb.com.v4.python)') else 'metadata.tvshows.themoviedb.org.python'
+			source_content = "('%s','tvshows','%s','',0,0,'',0,0,NULL,NULL)" % (self.library_folder, tv_scraper)
 			# control.add_source(source_name, self.library_folder, source_content, icon)
 			library_sources.add_source(source_name, self.library_folder, source_content, 'DefaultTVShows.png')
 		except: log_utils.error()
@@ -664,7 +665,7 @@ class libepisodes:
 	def __init__(self):
 		self.library_folder = control.joinPath(control.transPath(control.setting('library.tv')),'')
 		self.library_update = control.setting('library.update') or 'true'
-		self.include_special = control.setting('library.include_special') or 'true'
+		self.include_special = control.setting('library.include_specials') or 'false'
 		self.include_unknown = control.setting('library.include_unknown') or 'true'
 		self.date_time = datetime.now(timezone.utc).replace(tzinfo=None)
 		if control.setting('library.importdelay') != 'true': self.date = self.date_time.strftime('%Y%m%d')

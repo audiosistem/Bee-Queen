@@ -728,7 +728,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
       <screenshot>resources/images/screenshot-3.jpg</screenshot>
     </assets>
   </extension>
-</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.199">
+</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.201">
     <requires>
         <import addon="script.module.six" />
         <import addon="script.module.kodi-six" />
@@ -1213,12 +1213,12 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="plugin.video.luc_kodi" name="[B][COLOR ff00fa9a]luc_[/COLOR]kodi[/B]" provider-name="[COLOR fffdb515]apoyotech[/COLOR]" version="1.0.56">
+</addon><addon id="plugin.video.luc_kodi" name="[B][COLOR ff00fa9a]luc_[/COLOR]kodi[/B]" provider-name="[COLOR fffdb515]apoyotech[/COLOR]" version="1.0.96">
 	<requires>
 		<import addon="xbmc.python" version="3.0.1" />
 		<import addon="script.module.requests" />
 		<import addon="script.module.beautifulsoup4" />
-		<import addon="plugin.video.youtube" optional="true" />
+		<import addon="plugin.video.youtube" />
 	</requires>
 	<extension point="xbmc.python.pluginsource" library="luc_kodi.py">
 		<provides>video</provides>
@@ -1228,7 +1228,7 @@ In addition to what livestreams allowed you to do, you can now,
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
 		<summary lang="en">Front-end for third-party torrent indexers and debrid services that you configure with your own accounts. Hosts no content and provides no links.</summary>
-		<description lang="en">[COLOR ffa9d3c5]luc_kodi is a front-end (user interface) for third-party services that you configure with your own accounts: debrid services such as Real-Debrid, AllDebrid, Premiumize or TorBox, and torrent indexers. The add-on does not host, store, upload or distribute any media, and it does not embed or include any links to content. Every source is located and resolved at run time by the third-party services you have configured with your own credentials. The author takes no responsibility for the content those services return, or for how the add-on is used.[/COLOR]</description>
+		<description lang="en">[COLOR ffa9d3c5]luc_kodi is a front-end (user interface) for third-party services that you configure with your own accounts: debrid services such as Real-Debrid, AllDebrid, Premiumize or TorBox, and torrent indexers. The add-on does not host, store, upload or distribute any media, and it does not embed or include any links to content. Every source is located and resolved at run time by the third-party services you have configured with your own credentials. The author takes no responsibility for the content those services return, or for how the add-on is used. Metadata provided by TMDb, TheTVDB, TVmaze and Fanart.tv.[/COLOR]</description>
 		<platform>all</platform>
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
 		<disclaimer lang="en">[COLOR ffc75453]This add-on hosts no content and includes no links of its own. It only queries third-party services that you set up with your own accounts. You are solely responsible for the sources you choose to enable and for complying with the copyright laws of your country. Use at your own risk.[/COLOR]</disclaimer>
@@ -3246,21 +3246,21 @@ Kodi is a registered trademark of the XBMC Foundation. We are not connected to o
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="repository.luc_repo" name="[B][COLOR ff00fa9a]luc_[/COLOR][/B]repo" version="1.0.10" provider-name="[COLOR ffffae00]apoyotech[/COLOR]">
+</addon><addon id="repository.luc_repo" name="[B][COLOR ff00fa9a]luc_[/COLOR]repo[/B]" version="1.0.12" provider-name="[COLOR fffdb515]apoyotech[/COLOR]">
    <extension point="xbmc.addon.repository" name="luc_repo">
 		<dir>
-			<info compressed="false">https://raw.githubusercontent.com/apoyotech/luc_repo/main/addons.xml</info>
-			<checksum>https://raw.githubusercontent.com/apoyotech/luc_repo/main/addons.xml.md5</checksum>
-			<datadir zip="true">https://raw.githubusercontent.com/apoyotech/luc_repo/main/zips/</datadir>
+		  <info compressed="false">https://raw.githubusercontent.com/apoyotech/luc_repo/main/addons.xml</info>
+		  <checksum>https://raw.githubusercontent.com/apoyotech/luc_repo/main/addons.xml.md5</checksum>
+	      <datadir zip="true">https://raw.githubusercontent.com/apoyotech/luc_repo/main/zips/</datadir>
 		</dir>
-	</extension>
-	<extension point="xbmc.addon.metadata">
+   </extension>
+   <extension point="xbmc.addon.metadata">
     <summary lang="en_GB"> Welcome to the luc_repo</summary>
     <description lang="en_GB">[COLOR fffa9900]luc_repo for  Kodi[/COLOR]</description>
     <platform>all</platform>
-  <license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>  
-  <disclaimer lang="en">The author of this repository do not host any of the content which is found and have no affiliation with any of the content providers. Use at your own risk!</disclaimer>  
-  <assets>	
+    <license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>  
+    <disclaimer lang="en">The author of this repository do not host any of the content which is found and have no affiliation with any of the content providers. Use at your own risk!</disclaimer>  
+    <assets>	
 	 <icon>icon.png</icon>
      <fanart>fanart.jpg</fanart>	
 	</assets>  

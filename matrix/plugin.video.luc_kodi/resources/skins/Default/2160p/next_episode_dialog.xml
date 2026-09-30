@@ -18,11 +18,17 @@
             <animation effect="fade" start="0" end="100" time="700" tween="sine">WindowOpen</animation>
         </control>
 
-        <!-- Gradiente oscuro inferior para legibilidad de la card -->
+        <!-- Velo suave sobre TODA la pantalla, no un bloque en la mitad
+             inferior. La variante de media pantalla al 80% de negro partia el
+             fanart con una linea dura justo a media altura, y en un panel
+             16:10 el corte cae aun peor porque la imagen se ajusta. Un 25%
+             uniforme da a la tarjeta el contraste que necesita sin comerse la
+             escena. Si se vuelve a tocar: el 1080i sale de dividir ESTE
+             fichero, asi que el cambio se hace aqui. -->
         <control type="image">
-            <left>0</left><top>1080</top><width>3840</width><height>1080</height>
+            <left>0</left><top>0</top><width>3840</width><height>2160</height>
             <texture>common/gradient-diffuse-1.png</texture>
-            <colordiffuse>CC000000</colordiffuse>
+            <colordiffuse>40000000</colordiffuse>
         </control>
 
         <!-- ─── Clearlogo — prominente en la mitad superior ────────────────── -->

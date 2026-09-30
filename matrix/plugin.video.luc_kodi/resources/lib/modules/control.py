@@ -138,7 +138,17 @@ def settings_fallback(id):
 
 
 def setSetting(id, value):
+	# v1.0.74: invalidar el dict cacheado. setting() lee de la window property
+	# 'luc_kodi_settings' y NO de xbmcaddon, asi que escribir sin limpiarla
+	# dejaba al propio addon leyendo el valor viejo el resto de la sesion. Se
+	# veia en dos sitios: el janitor semanal escribia su marca de ultima pasada
+	# y seguia leyendo la sembrada vacia, con lo que se creia vencido cada hora;
+	# y el aviso de pantalla por debajo del minimo podia salir dos veces. La
+	# regla ya existia en el proyecto —simkl.py y badges_config.py limpian a
+	# mano tras cada escritura— y aqui simplemente deja de haber que acordarse.
 	xbmcaddon.Addon().setSetting(id, value)
+	try: homeWindow.clearProperty('luc_kodi_settings')
+	except: pass
 
 # Marcadores internos (no visibles, sin valor por defecto útil) que distintos
 # servicios consultan en bucle. Sembrarlos vacíos en el dict evita el coste de
@@ -147,6 +157,8 @@ _INTERNAL_EMPTY_KEYS = (
 	'poster.rotation.lastclean',
 	'db.maintenance.lastrun',
 	'migration.torboxnews_2026',
+	'maint.pending',
+	'maint.migrated',
 )
 
 def make_settings_dict(): # service runs upon a setting change
@@ -343,6 +355,11 @@ def yesnocustomDialog(line1, line2, line3, heading=addonInfo('name'), customlabe
 def selectDialog(list, heading=addonInfo('name')):
 	return dialog.select(heading, list)
 
+def multiselectDialog(list, heading=addonInfo('name'), preselect=None):
+	# Devuelve una lista de índices marcados, o None si se cancela.
+	try: return dialog.multiselect(heading, list, preselect=preselect or [])
+	except TypeError: return dialog.multiselect(heading, list)
+
 def okDialog(title=None, message=None):
 	if title == 'default' or title is None: title = addonName()
 	if isinstance(title, int): heading = lang(title)
@@ -466,16 +483,14 @@ def getSourceHighlightColor():
 
 def getDebridHighlightColor(debrid_abv):
 	"""Return a HEX color for a Debrid service abbreviation (RD/PM/AD/TB/etc).
-	Falls back to the global source highlight color when unknown."""
-	colors = {
-		'RD': 'FFA43A4B',  # Real-Debrid
-		'PM': 'FF7799B4',  # Premiumize
-		'AD': 'FFE9B321',  # AllDebrid
-		'OC': 'FFFF8800',  # Offcloud
-		'ED': 'FFFF4444',  # EasyDebrid
-		'TB': 'FF47A54A',  # TorBox
-	}
-	return colors.get(debrid_abv) or getSourceHighlightColor()
+	Falls back to the global source highlight color when unknown.
+
+	v1.0.84: the six hand-written hex values are gone. The hue still belongs
+	to each service, but the SURFACE role (this is the card tint, not text)
+	decides luminosity and saturation, so the tint can never end up competing
+	with the ink painted on top of it. See modules/color_norm.py."""
+	from resources.lib.modules import color_norm
+	return color_norm.surface(debrid_abv) or getSourceHighlightColor()
 def getMenuEnabled(menu_title):
 	is_enabled = setting(menu_title).strip()
 	if (is_enabled == '' or is_enabled == 'false'): return False
@@ -520,7 +535,16 @@ def infoTagger(item, meta=None):
 	if KODI_VERSION < 20:
 		item.setUniqueIDs(unique_ids)
 		item.setCast(meta_get('castandart', []))
-		item.setInfo(type='video', infoLabels=metadataClean(meta))
+		legacy = metadataClean(meta)
+		# TMDb sends the collection as belongs_to_collection; metadataClean
+		# only lets 'set' through, so the name never reached Kodi and skins
+		# showed nothing where they display the saga.
+		if (collection := meta_get('belongs_to_collection')) and isinstance(collection, dict):
+			if collection.get('name'): legacy['set'] = collection['name']
+		# Genres arrive slash separated ('Animation / Adventure / Comedy').
+		if isinstance(legacy.get('genre'), str) and ' / ' in legacy['genre']:
+			legacy['genre'] = [g.strip() for g in legacy['genre'].split('/') if g.strip()]
+		item.setInfo(type='video', infoLabels=legacy)
 	else:
 		infotag_dict = {'country_codes': 'setCountries',
 						'duration': 'setDuration',
@@ -552,7 +576,12 @@ def infoTagger(item, meta=None):
 		for key in infotag_dict:
 			if not key in meta or not (arg := meta[key]): continue
 			if   key in {'director', 'genre', 'studio', 'writer'}:
-				arg = list(arg) if isinstance(arg, (list, tuple)) else arg.split(', ') # algunas fuentes ya dan lista
+				# Some sources give a list already; the rest use ', ' OR ' / '.
+				# Genres in particular arrive as 'Animation / Adventure / Comedy',
+				# which a ', ' split turns into one genre with slashes inside it.
+				if isinstance(arg, (list, tuple)): arg = list(arg)
+				elif ' / ' in arg: arg = [a.strip() for a in arg.split('/') if a.strip()]
+				else: arg = arg.split(', ')
 			elif key in {'episode', 'season', 'year'}: arg = int(arg)
 			elif key == 'rating':
 				try: arg = float(arg)
@@ -560,3 +589,27 @@ def infoTagger(item, meta=None):
 			elif key == 'votes': arg = votes
 			func = getattr(infotag, infotag_dict[key])
 			func(arg)
+
+		# control.py imports log_utils lazily everywhere to avoid a circular
+		# import; the same applies here.
+		from resources.lib.modules import log_utils
+
+		# Collection: skins that show which saga a film belongs to had nothing
+		# to read, because the name sits inside belongs_to_collection.
+		try:
+			if (collection := meta_get('belongs_to_collection')) and isinstance(collection, dict):
+				if collection.get('name'): infotag.setSet(collection['name'])
+		except Exception: log_utils.error()
+
+		# Rating with its source attached, so a skin asking for
+		# VideoPlayer.Rating(tmdb) finds it. setRating() alone leaves it
+		# anonymous and those skins come up empty.
+		try:
+			if (rating := meta_get('rating')) not in (None, '', 'None', 'N/A'):
+				infotag.setRatings({'tmdb': (float(rating), int(votes))}, defaultrating='tmdb')
+		except (TypeError, ValueError): pass
+		except Exception: log_utils.error()
+
+		try:
+			if (outline := meta_get('plotoutline') or meta_get('tagline')): infotag.setPlotOutline(outline)
+		except Exception: log_utils.error()

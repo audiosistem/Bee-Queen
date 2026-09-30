@@ -140,6 +140,7 @@ def _parse_stream(file):
         'seeders'     : seeders,
         'lang'        : lang,
         'langs'       : langs,
+        'lang_hint'   : ' '.join(_FLAG_RE.findall(all_text)) + (' multi' if is_multi else ''),
         'is_multi'    : is_multi,
         'size_str'    : size_str,
     }
@@ -211,7 +212,7 @@ class source:
             try:
                 res = client.request(url, headers=self._headers(), timeout=self.timeout)
                 if not res:
-                    log_utils.log('PEERFLIX: respuesta vacía/None de %s' % url, level=log_utils.LOGDEBUG)
+                    log_utils.log('PEERFLIX: respuesta vacía/None de %s' % client.scrub_url(url), level=log_utils.LOGDEBUG)
                     continue
                 try:
                     payload = jsloads(res)
@@ -221,7 +222,7 @@ class source:
                     continue
                 if isinstance(payload, dict) and 'streams' in payload:
                     n = len(payload.get('streams') or [])
-                    log_utils.log('PEERFLIX: %d streams de %s' % (n, url), level=log_utils.LOGDEBUG)
+                    log_utils.log('PEERFLIX: %d streams de %s' % (n, client.scrub_url(url)), level=log_utils.LOGDEBUG)
                     return payload, base
                 else:
                     log_utils.log('PEERFLIX: JSON sin clave "streams" de %s (keys=%s)'
@@ -400,6 +401,7 @@ class source:
                 item = {
                     'source'    : 'torrent',
                     'language'  : parsed['lang'],
+                    'lang_hint' : parsed.get('lang_hint', ''),
                     'direct'    : False,
                     'debridonly': True,
                     'provider'  : parsed['provider'],

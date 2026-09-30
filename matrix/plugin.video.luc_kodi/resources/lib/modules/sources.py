@@ -1,6 +1,7 @@
 """
 	luc_kodi Add-on
 """
+from resources.lib.modules import app_keys
 from ast import literal_eval as _ast_literal_eval
 import threading as _threading
 
@@ -23,6 +24,7 @@ def literal_eval(value):
 # ───────────────────────────────────────────────────────────────────────
 
 from collections import deque
+from resources.lib.database.blobcodec import pack as _blob_pack, unpack as _blob_unpack # v1.0.91
 from datetime import datetime, timedelta
 from json import dumps as jsdumps, loads as jsloads
 import re
@@ -41,6 +43,7 @@ from resources.lib.modules import string_tools
 from resources.lib.modules.source_utils import supported_video_extensions, getFileType, aliases_check
 from resources.lib.cloud_scrapers import cloudSources
 from resources.lib.jacksparrow import sources as fs_sources
+from resources.lib.jacksparrow import client as fs_client   # v1.0.65: para scrub_url() en los logs
 
 homeWindow = control.homeWindow
 playerWindow = control.playerWindow
@@ -75,9 +78,39 @@ NEWZNAB_DEBRID = 'Premiumize.me'
 
 sourceFile = control.providercacheFile
 single_expiry = timedelta(hours=6)
+SCRAPE_LOCK = 'luc_kodi.scrape_busy'  # v1.0.90
+ROLLOVER_PROP = 'luc_kodi.rollover'  # v1.0.91
 season_expiry = timedelta(hours=48)
 show_expiry = timedelta(hours=48)
 video_extensions = supported_video_extensions()
+
+def imdb_from_ids(mediatype, tmdb, tvdb):
+	"""Id de IMDb a partir de TMDb (ids externos) y, en series, de TheTVDB."""
+	found = ''
+	if tmdb and str(tmdb) not in ('0', 'None'):
+		try:
+			if mediatype == 'episode':
+				from resources.lib.indexers.tmdb import TVshows
+				result = TVshows().get_external_ids(tmdb)
+			else:
+				from resources.lib.indexers.tmdb import Movies
+				result = Movies().get_external_ids(tmdb, None)
+			if isinstance(result, dict): found = result.get('imdb_id') or ''
+		except Exception: log_utils.error()
+	if not str(found).startswith('tt') and mediatype == 'episode':
+		try:
+			from resources.lib.modules import tvdb as tvdb_api
+			found = tvdb_api.imdb_id(tvdb)
+		except Exception: log_utils.error()
+	# None (no '') cuando no aparece: cache.get no guarda None, asi que un
+	# fallo de red no deja el titulo sin IMDb durante 30 dias.
+	return found if str(found).startswith('tt') else None
+
+
+def cache_imdb_lookup(mediatype, tmdb, tvdb):
+	from resources.lib.database import cache
+	return cache.get(imdb_from_ids, 720, mediatype, str(tmdb or ''), str(tvdb or '')) or ''
+
 
 class Sources:
 	def __init__(self, all_providers=False, custom_query=False, filterless_scrape=False):
@@ -110,9 +143,13 @@ class Sources:
 			# Sootio:     config token already encodes Debrid credentials.
 			# Torz:       config token (StremThru) already encodes Debrid creds.
 			# Comet:      config token (Comet web UI) already encodes Debrid creds.
+			# v1.0.91: con instancia propia basta la URL del manifest, que ya
+			# lleva la configuracion; UUID y Password pueden quedar vacios.
 			_aio_active = (getSetting('provider.aiostreams') == 'true'
-			               and getSetting('aiostreams.uuid')
-			               and getSetting('aiostreams.password'))
+			               and ((getSetting('aiostreams.uuid')
+			                     and getSetting('aiostreams.password'))
+			                    or (getSetting('aiostreams.url') == '6'
+			                        and getSetting('aiostreams.custom_url'))))
 			_mf_active  = (getSetting('provider.mediafusion') == 'true'
 			               and getSetting('mediafusion.secret'))
 			_sootio_active = (getSetting('provider.sootio') == 'true'
@@ -222,9 +259,8 @@ class Sources:
 ## - compare meta received to database and use largest(eventually switch to a request to fetch missing db meta for item)
 			self.imdb_user = getSetting('imdb.user').replace('ur', '')
 			self.tmdb_key = getSetting('tmdb.api.key')
-			if not self.tmdb_key: self.tmdb_key = 'f2e500501d9fa3bd1637bfd00f11583a'
-			self.tvdb_key = getSetting('tvdb.api.key')
-			if self.mediatype == 'episode': self.user = str(self.imdb_user) + str(self.tvdb_key)
+			if not self.tmdb_key: self.tmdb_key = app_keys.get('tmdb')
+			if self.mediatype == 'episode': self.user = str(self.imdb_user)
 			else: self.user = str(self.tmdb_key)
 			self.lang = control.apiLanguage()['tvdb']
 			ids = {'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb}
@@ -311,6 +347,7 @@ class Sources:
 				allowed = ['mediatype', 'imdb', 'tmdb', 'tvdb', 'poster', 'tvshow.poster', 'season_poster', 'season_poster', 'fanart', 'clearart', 'clearlogo', 'discart', 'thumb', 'title', 'tvshowtitle', 'year', 'premiered', 'rating', 'plot', 'duration', 'mpaa', 'season', 'episode', 'castandrole']
 				return {k: v for k, v in iter(metadata.items()) if k in allowed}
 			self.meta = sourcesDirMeta(self.meta)
+			imdb = self._ensure_imdb(imdb, tmdb, tvdb)
 			if self.mediatype == 'movie':
 				if getSetting('imdb.Moviemeta.check') == 'true': # check IMDB. TMDB and Trakt differ on a ratio of 1 in 20 and year is off by 1, some meta titles mismatch
 					title, year = self.imdb_meta_chk(imdb, title, year)
@@ -320,13 +357,34 @@ class Sources:
 					tvshowtitle, year = self.imdb_meta_chk(imdb, tvshowtitle, year)
 				if tvshowtitle == 'The End of the F***ing World': tvshowtitle = 'The End of the Fucking World'
 				self.total_seasons, self.season_isAiring = self.get_season_info(imdb, tmdb, tvdb, meta, season)
+			self._rescrape = bool(rescrape)
 			if rescrape: self.clr_item_providers(title, year, imdb, tmdb, tvdb, season, episode, tvshowtitle, premiered)
 			cache_id = self._build_ramcache_id(imdb, tmdb, tvdb, season, episode, year)
 			items = None
 			if not rescrape and not self.custom_query and getSetting('sources.ramcache') == 'true':
 				items = self._ramcache_get(cache_id)
 			if not items:
-				items = providerscache.get(self.getSources, 48, title, year, imdb, tmdb, tvdb, season, episode, tvshowtitle, premiered)
+				# v1.0.90: candado anti doble scrape. Una segunda pulsacion sobre el
+				# MISMO titulo mientras la primera busqueda sigue en marcha lanzaba
+				# otra busqueda completa en paralelo. Titulos distintos no se
+				# bloquean, y el candado caduca solo a los 120 s por si algo muere.
+				_lock_val = homeWindow.getProperty(SCRAPE_LOCK)
+				try:
+					_lock_id, _lock_ts = _lock_val.rsplit('|', 1)
+					_lock_busy = (_lock_id == cache_id and (time() - float(_lock_ts)) < 120)
+				except Exception:
+					_lock_busy = False
+				if _lock_busy:
+					control.hide()
+					log_utils.log('[ luc_kodi ] scrape lock: search already running for %s' % cache_id, level=log_utils.LOGINFO)
+					control.notification(message=400840)
+					self.url = None
+					return control.cancelPlayback()
+				homeWindow.setProperty(SCRAPE_LOCK, '%s|%s' % (cache_id, time()))
+				try:
+					items = providerscache.get(self.getSources, 48, title, year, imdb, tmdb, tvdb, season, episode, tvshowtitle, premiered)
+				finally:
+					homeWindow.clearProperty(SCRAPE_LOCK)
 				if items and not rescrape and not self.custom_query and getSetting('sources.ramcache') == 'true':
 					self._ramcache_set(cache_id, items)
 			if not items:
@@ -494,7 +552,7 @@ class Sources:
 						if self.progressDialog == control.progressDialogBG and self.progressDialog.iscanceled(): break
 						self.progressDialog.update(int((100 / float(len(resolve_items))) * i), label)
 					except: self.progressDialog.update(int((100 / float(len(resolve_items))) * i), '[B][COLOR %s]Resolving...[/COLOR]%s[/B]' % (self.highlight_color, resolve_items[i]['name']))
-					w = Thread(target=self.sourcesResolve, args=(resolve_items[i],))
+					w = Thread(target=self.sourcesResolve, args=(resolve_items[i],), daemon=True)
 					w.start()
 					# Usenet (NZB) resolves take minutes (server-side download);
 					# wait for it to finish instead of moving on after ~15s and
@@ -520,7 +578,7 @@ class Sources:
 						if getSetting('validate.source.urls') == 'true':
 							from resources.lib.modules import urlcheck
 							if not urlcheck.check_url_validity(self.url):
-								log_utils.log('Rejected invalid URL (playItem): %s' % self.url, level=log_utils.LOGWARNING)
+								log_utils.log('Rejected invalid URL (playItem): %s' % fs_client.scrub_url(self.url), level=log_utils.LOGWARNING)
 								self.url = None
 								continue
 					except Exception:
@@ -529,9 +587,81 @@ class Sources:
 					item = resolve_items[i]
 					is_aiostreams_direct = item.get('aiostreams_direct') or (item.get('provider') == 'aiostreams' and item.get('direct') is True)
 					if (not any(x in self.url.lower() for x in video_extensions) and '/dld/' not in self.url) and not is_aiostreams_direct:
-						log_utils.log('Playback not supported for (playItem()): %s' % self.url, level=log_utils.LOGWARNING)
+						log_utils.log('Playback not supported for (playItem()): %s' % fs_client.scrub_url(self.url), level=log_utils.LOGWARNING)
 						continue
-					log_utils.log('Playing url from playItem(): %s' % self.url, level=log_utils.LOGDEBUG)
+
+					# ── Pre-flight del enlace resuelto (v1.0.65) ──────────────
+					# En selección MANUAL la política es distinta a la del
+					# autoplay: un enlace muerto se descarta igual, pero uno
+					# lento se avisa y se reproduce. El usuario ha elegido esa
+					# fuente a propósito y no nos corresponde vetarla.
+					_pf_head = None
+					try:
+						from resources.lib.modules import preflight
+						if preflight.enabled():
+							_pf = preflight.evaluate(self.url, item, self.meta)
+							_pf_head = _pf.pop('head', None)
+							preflight.log(_pf)
+							if _pf.get('verdict') == 'dead':
+								try:
+									from resources.lib.database import source_ranker
+									source_ranker.record_failure(item, resolved_url=self.url,
+										reason=_pf.get('reason') or 'dead')
+								except Exception:
+									pass
+								self.url = None
+								continue
+							if _pf.get('verdict') == 'slow':
+								_need = int(_pf.get('required_mbps') or 0)
+								_got  = int(_pf.get('measured_mbps') or 0)
+								# v1.0.71: en seleccion MANUAL se pregunta antes de
+								# arrancar cuando el deficit es serio. El usuario
+								# sigue mandando —nunca se veta su eleccion— pero
+								# ahora se entera A TIEMPO, no con el video ya
+								# congelado. Un deficit leve se queda en aviso.
+								if preflight.should_ask(_pf):
+									_play_anyway = control.yesnoDialog(
+										control.lang(400754) % (_need, _got),
+										control.lang(400755), '',
+										nolabel=control.lang(400756),
+										yeslabel=control.lang(400757))
+									if not _play_anyway:
+										try:
+											from resources.lib.database import source_ranker
+											source_ranker.record_failure(item, resolved_url=self.url,
+												reason='slow_declined')
+										except Exception:
+											pass
+										self.url = None
+										continue
+								elif preflight.manual_action() == 0:
+									try:
+										control.notification(
+											message=control.lang(400747) % (_need, _got),
+											icon='WARNING', time=5000)
+									except Exception:
+										pass
+							try:
+								from resources.lib.database import source_ranker
+								source_ranker.record_host(self.url, ok=True)
+							except Exception:
+								pass
+					except Exception:
+						pass
+
+					# ── Sonda de audio (v1.0.89) ──────────────────────────
+					# Lee las pistas reales de la cabecera del fichero. Con
+					# el pre-flight encendido reutiliza su descarga y no
+					# hace ninguna peticion; nunca descarta la fuente.
+					try:
+						from resources.lib.modules import audio_probe
+						if audio_probe.enabled():
+							audio_probe.announce(audio_probe.after_resolve(self.url, item, self.meta, head=_pf_head))
+					except Exception:
+						pass
+					_pf_head = None
+
+					log_utils.log('Playing url from playItem(): %s' % fs_client.scrub_url(self.url), level=log_utils.LOGDEBUG)
 					if homeWindow.getProperty('luc_kodi.source_progress_is_alive') != 'true':
 						try: self.progressDialog.close()
 						except: pass
@@ -545,6 +675,12 @@ class Sources:
 					# uses control.player.play vs control.resolve based on the
 					# luc_kodi.next_ep_direct window property).
 					# This is exactly what Umbrella does in its playItem (line 511).
+					try:
+						from resources.lib.modules import binge
+						binge.remember(item, getattr(self, 'imdb', ''), getattr(self, 'tmdb', ''),
+									   getattr(self, 'season', None), getattr(self, 'episode', None))
+					except Exception:
+						pass
 					from resources.lib.modules import player as _player_mod
 					_player_mod.Player().play_source(
 						getattr(self, 'title', title) or title,
@@ -565,6 +701,25 @@ class Sources:
 			self.errorForSources()
 		except: log_utils.error('Error playItem: ')
 
+	def _ensure_imdb(self, imdb, tmdb, tvdb):
+		"""v1.0.94 — sin id de IMDb, los proveedores tipo Stremio (AIOStreams,
+		Torrentio, Comet, Torz, MediaFusion, Peerflix...) no pueden buscar:
+		preguntaban por 'None:1:1'. Visto en kodi.log del 25-sep con
+		"¿A que estas esperando?" (Atresplayer): TMDb la tiene sin IMDb. Se
+		busca en los ids externos de TMDb y, para series, en los de TheTVDB."""
+		if imdb and str(imdb).startswith('tt'): return imdb
+		found = ''
+		try: found = cache_imdb_lookup(self.mediatype, tmdb, tvdb)
+		except Exception: log_utils.error()
+		log_utils.log('[ luc_kodi ] IMDb id missing (tmdb=%s, tvdb=%s): %s' % (tmdb, tvdb,
+		              'found %s' % found if found else 'not found, providers that search by IMDb id will skip it'),
+		              level=log_utils.LOGINFO)
+		if not found: return imdb
+		try:
+			if isinstance(self.meta, dict): self.meta['imdb'] = found
+		except Exception: pass
+		return found
+
 	def getSources(self, title, year, imdb, tmdb, tvdb, season, episode, tvshowtitle, premiered, meta=None, preScrape=False):
 		if preScrape:
 			self.isPrescrape = True
@@ -575,6 +730,15 @@ class Sources:
 			return self.getSources_silent(title, year, imdb, tvdb, season, episode, tvshowtitle, premiered)
 		else:
 			return self.getSources_dialog(title, year, imdb, tvdb, season, episode, tvshowtitle, premiered)
+
+	def _tvdb_numbering(self, tvdb, season, episode, premiered=None):
+		try:
+			from resources.lib.modules import tvdb as tvdb_api
+			meta = getattr(self, 'meta', None) or {}
+			return tvdb_api.episode_numbering(tvdb, season, episode, meta.get('counts'), premiered)
+		except:
+			log_utils.error()
+			return {}
 
 	def getSources_silent(self, title, year, imdb, tvdb, season, episode, tvshowtitle, premiered, timeout=90):
 		try:
@@ -606,11 +770,12 @@ class Sources:
 					alias = {'title': tvshowtitle + ' ' + i, 'country': i.lower()}
 					if not alias in aliases: aliases.append(alias)
 			data = {'title': title, 'year': year, 'imdb': imdb, 'tvdb': tvdb, 'season': season, 'episode': episode, 'tvshowtitle': tvshowtitle, 'aliases': aliases, 'premiered': premiered, 'total_seasons': self.total_seasons}
+			data.update(self._tvdb_numbering(tvdb, season, episode, premiered)) # TheTVDB SxxEyy when it differs from TMDb; absolute number for anime
 			for i in scraperDict:
 				name, pack = i[0].upper(), i[2]
 				if pack == 'season': name = '%s (season pack)' % name
 				elif pack == 'show': name = '%s (show pack)' % name
-				threads.append(Thread(target=self.getEpisodeSource, args=(imdb, season, episode, data, i[0], i[1], pack), name=name))
+				threads.append(Thread(target=self.getEpisodeSource, args=(imdb, season, episode, data, i[0], i[1], pack), name=name, daemon=True))
 			[i.start() for i in threads]
 			end_time = time() + timeout
 		except: return log_utils.error()
@@ -692,7 +857,7 @@ class Sources:
 				except: pass
 				data = {'title': title, 'aliases': aliases, 'year': year, 'imdb': imdb}
 				for i in sourceDict:
-					i = Thread(target=self.getMovieSource, args=(imdb, data, i[0], i[1]), name=i[0].upper())
+					i = Thread(target=self.getMovieSource, args=(imdb, data, i[0], i[1]), name=i[0].upper(), daemon=True)
 					threads_append(i)
 					i.start()
 			else:
@@ -712,11 +877,12 @@ class Sources:
 						if not alias in aliases: aliases.append(alias)
 				aliases = aliases_check(tvshowtitle, aliases)
 				data = {'title': title, 'year': year, 'imdb': imdb, 'tvdb': tvdb, 'season': season, 'episode': episode, 'tvshowtitle': tvshowtitle, 'aliases': aliases, 'premiered': premiered, 'total_seasons': self.total_seasons}
+				data.update(self._tvdb_numbering(tvdb, season, episode, premiered)) # TheTVDB SxxEyy when it differs from TMDb; absolute number for anime
 				for i in scraperDict:
 					name, pack = i[0].upper(), i[2]
 					if pack == 'season': name = '%s (season pack)' % name
 					elif pack == 'show': name = '%s (show pack)' % name
-					i = Thread(target=self.getEpisodeSource, args=(imdb, season, episode, data, i[0], i[1], pack), name=name)
+					i = Thread(target=self.getEpisodeSource, args=(imdb, season, episode, data, i[0], i[1], pack), name=name, daemon=True)
 					threads_append(i)
 					i.start()
 #			[i.start() for i in threads]
@@ -850,14 +1016,14 @@ class Sources:
 						log_utils.log('preResolve failed for : next_sources[i]=%s' % str(next_sources[i]), level=log_utils.LOGWARNING)
 						continue
 					if not any(x in url.lower() for x in video_extensions) and not '/dld/' in url:
-						log_utils.log('preResolve Playback not supported for (sourcesAutoPlay()): %s' % url, level=log_utils.LOGWARNING)
+						log_utils.log('preResolve Playback not supported for (sourcesAutoPlay()): %s' % fs_client.scrub_url(url), level=log_utils.LOGWARNING)
 						continue
 					if url:
 						control.sleep(500)
 						player_hasVideo = control.condVisibility('Player.HasVideo')
 						if player_hasVideo: # do not setPropery if user stops playback quickly because "onPlayBackStopped" is already called and won't be able to clear it.
 							playerWindow.setProperty('luc_kodi.preResolved_nextUrl', url)
-							log_utils.log('preResolved_nextUrl : %s' % url, level=log_utils.LOGDEBUG)
+							log_utils.log('preResolved_nextUrl : %s' % fs_client.scrub_url(url), level=log_utils.LOGDEBUG)
 						else:
 							log_utils.log('player_hasVideo = %s : skipping setting preResolved_nextUrl' % player_hasVideo, level=log_utils.LOGWARNING)
 						break
@@ -902,9 +1068,9 @@ class Sources:
 			db_movie = dbcur.execute('''SELECT * FROM rel_src WHERE (source=? AND imdb_id=? AND season='' AND episode='')''', (source, imdb)).fetchone()
 			if db_movie:
 				timestamp = cleandate.datetime_from_string(str(db_movie[5]), '%Y-%m-%d %H:%M:%S.%f', False)
-				db_movie_valid = abs(self.time - timestamp) < single_expiry
+				db_movie_valid = abs(self.time - timestamp) < self._rel_expiry(db_movie[4], single_expiry)
 				if db_movie_valid:
-					sources = literal_eval(db_movie[4])
+					sources = _blob_unpack(db_movie[4], literal_eval)
 					return self.scraper_sources.extend(sources)
 		except: log_utils.error()
 		try:
@@ -913,7 +1079,14 @@ class Sources:
 			if sources:
 				self.scraper_sources.extend(sources)
 				dbcur.execute('''INSERT OR REPLACE INTO rel_aliases Values (?, ?)''', (data.get('title', ''), repr(data.get('aliases', ''))))
-				dbcur.execute('''INSERT OR REPLACE INTO rel_src Values (?, ?, ?, ?, ?, ?)''', (source, imdb, '', '', repr(sources), datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")))
+				dbcur.execute('''INSERT OR REPLACE INTO rel_src Values (?, ?, ?, ?, ?, ?)''', (source, imdb, '', '', _blob_pack(sources), datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")))
+				dbcur.connection.commit()
+			elif imdb and self._empty_ttl_minutes():
+				# v1.0.90: el scraper respondio y no encontro nada -> se recuerda un
+				# rato (sources.empty.ttl) para no volver a esperar su timeout en
+				# cada apertura. Si LANZO una excepcion no llega aqui: los errores
+				# no se guardan y se reintentan siempre.
+				dbcur.execute('''INSERT OR REPLACE INTO rel_src Values (?, ?, ?, ?, ?, ?)''', (source, imdb, '', '', '[]', datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")))
 				dbcur.connection.commit()
 		except: log_utils.error()
 
@@ -938,9 +1111,9 @@ class Sources:
 				db_singleEpisodes = dbcur.execute('''SELECT * FROM rel_src WHERE (source=? AND imdb_id=? AND season=? AND episode=?)''', (source, imdb, season, episode)).fetchone()
 				if db_singleEpisodes:
 					timestamp = cleandate.datetime_from_string(str(db_singleEpisodes[5]), '%Y-%m-%d %H:%M:%S.%f', False)
-					db_singleEpisodes_valid = abs(self.time - timestamp) < single_expiry
+					db_singleEpisodes_valid = abs(self.time - timestamp) < self._rel_expiry(db_singleEpisodes[4], single_expiry)
 					if db_singleEpisodes_valid:
-						sources = literal_eval(db_singleEpisodes[4])
+						sources = _blob_unpack(db_singleEpisodes[4], literal_eval)
 						return self.scraper_sources.extend(sources)
 			except: log_utils.error()
 		elif pack == 'season': # seasonPacks db check
@@ -950,7 +1123,7 @@ class Sources:
 					timestamp = cleandate.datetime_from_string(str(db_seasonPacks[5]), '%Y-%m-%d %H:%M:%S.%f', False)
 					db_seasonPacks_valid = abs(self.time - timestamp) < season_expiry
 					if db_seasonPacks_valid:
-						sources = literal_eval(db_seasonPacks[4])
+						sources = _blob_unpack(db_seasonPacks[4], literal_eval)
 						sources = [i for i in sources if not 'episode_start' in i or i['episode_start'] <= int(episode) <= i['episode_end']] # filter out range items that do not apply to current episode for return
 						return self.scraper_sources.extend(sources)
 			except: log_utils.error()
@@ -961,7 +1134,7 @@ class Sources:
 					timestamp = cleandate.datetime_from_string(str(db_showPacks[5]), '%Y-%m-%d %H:%M:%S.%f', False)
 					db_showPacks_valid = abs(self.time - timestamp) < show_expiry
 					if db_showPacks_valid:
-						sources = literal_eval(db_showPacks[4])
+						sources = _blob_unpack(db_showPacks[4], literal_eval)
 						# v1.0.60: `or 0` blinda contra scrapers que marcan package='show' sin
 						# fijar last_season -> daba TypeError (NoneType >= int) y se perdian TODOS
 						# sus packs, ademas de quedar el fallo cacheado en rel_src.
@@ -979,9 +1152,12 @@ class Sources:
 				sources = []
 				sources = call().sources(data, self.hostprDict)
 				if sources:
-					dbcur.execute('''INSERT OR REPLACE INTO rel_src Values (?, ?, ?, ?, ?, ?)''', (source, imdb, season, episode, repr(sources), datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")))
+					dbcur.execute('''INSERT OR REPLACE INTO rel_src Values (?, ?, ?, ?, ?, ?)''', (source, imdb, season, episode, _blob_pack(sources), datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")))
 					dbcur.connection.commit()
 					return self.scraper_sources.extend(sources)
+				if imdb and self._empty_ttl_minutes(): # v1.0.90: ver getMovieSource
+					dbcur.execute('''INSERT OR REPLACE INTO rel_src Values (?, ?, ?, ?, ?, ?)''', (source, imdb, season, episode, '[]', datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")))
+					dbcur.connection.commit()
 				return
 			except: return log_utils.error()
 		elif pack == 'season': # seasonPacks scraper call
@@ -994,7 +1170,7 @@ class Sources:
 				if not hasattr(_scraper, 'sources_packs'): return
 				sources = _scraper.sources_packs(data, self.hostprDict, bypass_filter=self.dev_disable_season_filter)
 				if sources:
-					dbcur.execute('''INSERT OR REPLACE INTO rel_src Values (?, ?, ?, ?, ?, ?)''', (source, imdb, season,'', repr(sources), datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")))
+					dbcur.execute('''INSERT OR REPLACE INTO rel_src Values (?, ?, ?, ?, ?, ?)''', (source, imdb, season,'', _blob_pack(sources), datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")))
 					dbcur.connection.commit()
 					sources = [i for i in sources if not 'episode_start' in i or i['episode_start'] <= int(episode) <= i['episode_end']] # filter out range items that do not apply to current episode for return
 					return self.scraper_sources.extend(sources)
@@ -1007,7 +1183,7 @@ class Sources:
 				if not hasattr(_scraper, 'sources_packs'): return
 				sources = _scraper.sources_packs(data, self.hostprDict, search_series=True, total_seasons=self.total_seasons, bypass_filter=self.dev_disable_show_filter)
 				if sources:
-					dbcur.execute('''INSERT OR REPLACE INTO rel_src Values (?, ?, ?, ?, ?, ?)''', (source, imdb, '', '', repr(sources), datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")))
+					dbcur.execute('''INSERT OR REPLACE INTO rel_src Values (?, ?, ?, ?, ?, ?)''', (source, imdb, '', '', _blob_pack(sources), datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")))
 					dbcur.connection.commit()
 					# v1.0.60: `or 0` blinda contra scrapers que marcan package='show' sin
 					# fijar last_season -> daba TypeError (NoneType >= int) y se perdian TODOS
@@ -1016,8 +1192,83 @@ class Sources:
 					return self.scraper_sources.extend(sources)
 			except: log_utils.error()
 
+	def _arm_rollover(self, rest):
+		"""v1.0.91: deja en la ventana Home las siguientes fuentes del autoplay.
+		Si Kodi no consigue arrancar la elegida (onPlayBackError antes de
+		onAVStarted), el SubtitlePlayer de service.py lanza play_rollover y se
+		prueba la siguiente. Maximo dos saltos por reproduccion."""
+		try:
+			left = getattr(self, '_rollover_left', 2)
+			if getSetting('playback.rollover') == 'false' or left <= 0 or not rest:
+				homeWindow.clearProperty(ROLLOVER_PROP)
+				return
+			pkg = {'items': rest[:4], 'left': left, 'ts': time(),
+				   'title': getattr(self, 'title', ''), 'year': getattr(self, 'year', ''),
+				   'imdb': getattr(self, 'imdb', ''), 'tmdb': getattr(self, 'tmdb', ''), 'tvdb': getattr(self, 'tvdb', ''),
+				   'season': getattr(self, 'season', None), 'episode': getattr(self, 'episode', None),
+				   'meta': self.meta if isinstance(getattr(self, 'meta', None), dict) else {}}
+			homeWindow.setProperty(ROLLOVER_PROP, jsdumps(pkg, default=str))
+		except Exception:
+			homeWindow.clearProperty(ROLLOVER_PROP)
+
+	def rollover(self):
+		"""v1.0.91: segunda oportunidad tras un fallo del reproductor."""
+		try:
+			raw = homeWindow.getProperty(ROLLOVER_PROP)
+			homeWindow.clearProperty(ROLLOVER_PROP)
+			if not raw: return
+			pkg = jsloads(raw)
+			items = pkg.get('items') or []
+			if not items or (time() - float(pkg.get('ts', 0))) > 600: return
+			self.title, self.year = pkg.get('title'), pkg.get('year')
+			self.imdb, self.tmdb, self.tvdb = pkg.get('imdb'), pkg.get('tmdb'), pkg.get('tvdb')
+			self.season, self.episode = pkg.get('season'), pkg.get('episode')
+			self.meta = pkg.get('meta') or {}
+			self._rollover_left = int(pkg.get('left', 1)) - 1
+			log_utils.log('[ luc_kodi ] rollover: playback failed, trying the next source (%d left)' % len(items), level=log_utils.LOGINFO)
+			control.notification(message=400842)
+			homeWindow.setProperty('luc_kodi.next_ep_direct', 'true')  # reproducir con player.play: no hay handle
+			url = self.sourcesAutoPlay(items)
+			if not url:
+				homeWindow.clearProperty('luc_kodi.next_ep_direct')
+				return self.errorForSources()
+			from resources.lib.modules import player
+			player.Player().play_source(self.title, self.year, self.season, self.episode, self.imdb, self.tmdb, self.tvdb, url, self.meta)
+		except Exception:
+			log_utils.error()
+
+	def _empty_ttl_minutes(self):
+		"""v1.0.90: minutos que se recuerda un 'no encontre nada' de un
+		scraper (0 = nunca). En una busqueda forzada (rescrape) no se usa."""
+		cached = getattr(self, '_empty_ttl_cache', None)
+		if cached is None:
+			try: cached = max(0, min(120, int(getSetting('sources.empty.ttl') or '30')))
+			except Exception: cached = 30
+			self._empty_ttl_cache = cached
+		return cached
+
+	def _rel_expiry(self, value, normal):
+		"""Caducidad de una fila de rel_src: la normal si trae fuentes, y la
+		corta de sources.empty.ttl si es un vacio recordado."""
+		if value != '[]': return normal
+		if getattr(self, '_rescrape', False): return timedelta(0)
+		return timedelta(minutes=self._empty_ttl_minutes())
+
 	def sourcesFilter(self):
 		if not self.isPrescrape: control.busy()
+		# v1.0.89 — idiomas declarados. Se reune lo que dice cada indexador de
+		# un mismo hash ANTES de quitar duplicados: filter_dupes() se queda con
+		# una copia y tira las demas, y la que tiraba podia ser justo la de
+		# Torrentio con la linea de banderas.
+		_lang_names, _lang_hints = {}, {}
+		try:
+			for i in self.sources:
+				_h = (i.get('hash') or '').lower()
+				if not _h: continue
+				if i.get('name_info'): _lang_names.setdefault(_h, []).append(i['name_info'])
+				if i.get('lang_name'): _lang_names.setdefault(_h, []).append(i['lang_name'])
+				if i.get('lang_hint'): _lang_hints.setdefault(_h, []).append(i['lang_hint'])
+		except Exception: log_utils.error()
 		if getSetting('remove.duplicates') == 'true': self.sources = self.filter_dupes()
 		if self.mediatype == 'movie':
 			if getSetting('source.enable.msizelimit') == 'true':
@@ -1048,6 +1299,12 @@ class Sources:
 				else: info_string = getFileType(url=i.get('url'))
 				i.update({'info': (i.get('info') + ' /' + info_string).lstrip(' ').lstrip('/').rstrip('/')})
 			except: log_utils.error()
+		try:
+			from resources.lib.modules import audio_langs
+			for i in self.sources:
+				_h = (i.get('hash') or '').lower()
+				i['langs'] = audio_langs.for_item(i, _lang_names.get(_h, ()), _lang_hints.get(_h, ()))
+		except Exception: log_utils.error()
 		if getSetting('remove.hevc') == 'true':
 			self.sources = [i for i in self.sources if 'HEVC' not in i.get('info', '')]
 		if getSetting('remove.hdr') == 'true':
@@ -1100,42 +1357,28 @@ class Sources:
 			if d.name == 'Real-Debrid' and getSetting('realdebrid.enable') == 'true':
 				try:
 					valid_hoster = [i for i in valid_hosters if d.valid_url(i)]
-					i = Thread(name=d.name.upper(), target=checkStatus, args=(self.rd_cache_chk_list, d.name, valid_hoster))
+					i = Thread(name=d.name.upper(), target=checkStatus, args=(self.rd_cache_chk_list, d.name, valid_hoster), daemon=True)
 					threads.append(i)
 					i.start()
 				except: log_utils.error()
 			if d.name == 'Premiumize.me' and getSetting('premiumize.enable') == 'true':
 				try:
 					valid_hoster = [i for i in valid_hosters if d.valid_url(i)]
-					i = Thread(name=d.name.upper(), target=checkStatus, args=(self.pm_cache_chk_list, d.name, valid_hoster))
+					i = Thread(name=d.name.upper(), target=checkStatus, args=(self.pm_cache_chk_list, d.name, valid_hoster), daemon=True)
 					threads.append(i)
 					i.start()
 				except: log_utils.error()
 			if d.name == 'AllDebrid' and getSetting('alldebrid.enable') == 'true':
 				try:
 					valid_hoster = [i for i in valid_hosters if d.valid_url(i)]
-					i = Thread(name=d.name.upper(), target=checkStatus, args=(self.ad_cache_chk_list, d.name, valid_hoster))
-					threads.append(i)
-					i.start()
-				except: log_utils.error()
-			if d.name == 'Offcloud' and getSetting('offcloud.enable') == 'true':
-				try:
-					valid_hoster = []
-					i = Thread(name=d.name.upper(), target=checkStatus, args=(self.oc_cache_chk_list, d.name, valid_hoster))
-					threads.append(i)
-					i.start()
-				except: log_utils.error()
-			if d.name == 'EasyDebrid' and getSetting('easydebrid.enable') == 'true':
-				try:
-					valid_hoster = []
-					i = Thread(name=d.name.upper(), target=checkStatus, args=(self.ed_cache_chk_list, d.name, valid_hoster))
+					i = Thread(name=d.name.upper(), target=checkStatus, args=(self.ad_cache_chk_list, d.name, valid_hoster), daemon=True)
 					threads.append(i)
 					i.start()
 				except: log_utils.error()
 			if d.name == 'TorBox' and getSetting('torbox.enable') == 'true':
 				try:
 					valid_hoster = []
-					i = Thread(name=d.name.upper(), target=checkStatus, args=(self.tb_cache_chk_list, d.name, valid_hoster))
+					i = Thread(name=d.name.upper(), target=checkStatus, args=(self.tb_cache_chk_list, d.name, valid_hoster), daemon=True)
 					threads.append(i)
 					i.start()
 				except: log_utils.error()
@@ -1266,7 +1509,19 @@ class Sources:
 				self.prem_providers.sort(key=lambda k: k[1])
 				self.prem_providers = [i[0] for i in self.prem_providers]
 				log_utils.log('self.prem_providers sort order=%s' % self.prem_providers, level=log_utils.LOGDEBUG)
-				self.filter.sort(key=lambda k: self.prem_providers.index(k['debrid'] if k.get('debrid', '') else k['provider']))
+				# v1.0.62: antes esto era prem_providers.index(...) directo. Cualquier
+				# etiqueta que no fuese el name exacto de un resolver ('Custom' de los
+				# proveedores del grupo Custom, 'Easynews', una abreviatura...) lanzaba
+				# ValueError, el except de abajo se lo tragaba y se perdia EN SILENCIO
+				# TODO el orden por prioridad, no solo el item culpable. Ahora lo
+				# desconocido va al final y el resto conserva su prioridad.
+				_unknown_rank = len(self.prem_providers)
+				def _prem_rank(k):
+					try:
+						return self.prem_providers.index(k['debrid'] if k.get('debrid', '') else k['provider'])
+					except ValueError:
+						return _unknown_rank
+				self.filter.sort(key=_prem_rank)
 		except: log_utils.error()
 
 		self.filter += local # library and video scraper sources
@@ -1397,6 +1652,13 @@ class Sources:
 			items = self._smart_autoplay_sort(items)
 		except:
 			pass
+		# v1.0.90: continuidad de fuente al encadenar episodios (binge.py).
+		# Solo actua si el lanzamiento viene del dialogo de siguiente episodio.
+		try:
+			from resources.lib.modules import binge
+			items = binge.reorder(items, imdb=getattr(self, 'imdb', ''), tmdb=getattr(self, 'tmdb', ''))
+		except Exception:
+			pass
 		if getSetting('autoplay.sd') == 'true': items = [i for i in items if not i['quality'] in ('4K', '1080p', '720p')]
 		header = homeWindow.getProperty(self.labelProperty) + ': Resolving...'
 		try:
@@ -1407,6 +1669,21 @@ class Sources:
 			homeWindow.clearProperty('luc_kodi.source_progress_is_alive')
 			self.progressDialog = control.progressDialogBG
 			self.progressDialog.create(header, '')
+		# v1.0.65: `url` se inicializa aqui. El `return url` del final leia una
+		# variable que solo existia si algun resolve() habia llegado a asignarla,
+		# y el pre-flight anade caminos nuevos de descarte.
+		url = None
+		# v1.0.65: `played_url` solo se asigna cuando una fuente supera TODAS las
+		# comprobaciones. Antes se devolvia `url`, que al agotarse la lista seguia
+		# conteniendo el ultimo enlace RECHAZADO — el llamador (play(), que trata
+		# None como "sin fuentes") recibia asi un enlace que el propio bucle acababa
+		# de descartar por no reproducible. Con el pre-flight hay mas caminos de
+		# descarte, asi que el fallo pasaba de raro a probable.
+		played_url = None
+		# Tope de fuentes descartadas por lentas. Sin el, una linea que va mal
+		# esa tarde tumbaria la lista entera y no se reproduciria nada: a partir
+		# del cuarto descarte se acepta la siguiente aunque no de la holgura.
+		_slow_skips, _MAX_SLOW_SKIPS = 0, 3
 		for i in range(len(items)):
 			try:
 				src_provider = items[i]['debrid'] if items[i].get('debrid') else ('%s - %s' % (items[i]['source'], items[i]['provider']))
@@ -1430,7 +1707,7 @@ class Sources:
 						if url and getSetting('validate.source.urls') == 'true':
 							from resources.lib.modules import urlcheck
 							if not urlcheck.check_url_validity(url):
-								log_utils.log('Rejected invalid URL (sourcesAutoPlay): %s' % url, level=log_utils.LOGWARNING)
+								log_utils.log('Rejected invalid URL (sourcesAutoPlay): %s' % fs_client.scrub_url(url), level=log_utils.LOGWARNING)
 								continue
 					except Exception:
 						pass
@@ -1438,15 +1715,73 @@ class Sources:
 					item = items[i]
 					is_aiostreams_direct = item.get('aiostreams_direct') or (item.get('provider') == 'aiostreams' and item.get('direct') is True)
 					if (not any(x in url.lower() for x in video_extensions) and '/dld/' not in url) and not is_aiostreams_direct:
-						log_utils.log('Playback not supported for (sourcesAutoPlay()): %s' % url, level=log_utils.LOGWARNING)
+						log_utils.log('Playback not supported for (sourcesAutoPlay()): %s' % fs_client.scrub_url(url), level=log_utils.LOGWARNING)
 						continue
+
+					# ── Pre-flight del enlace resuelto (v1.0.65) ──────────────
+					# Mide el enlace ANTES de entregarlo al reproductor: si esta
+					# muerto se descarta, y si el CDN no sirve el ancho de banda
+					# que exige el bitrate del fichero se pasa a la siguiente en
+					# vez de dejar al usuario bufereando a los veinte segundos.
+					# El resultado alimenta al ranker con el host que de verdad
+					# funciona en esta conexion.
+					_pf, _pf_drop, _pf_head = None, '', None
+					try:
+						from resources.lib.modules import preflight
+						if preflight.enabled():
+							_pf = preflight.evaluate(url, item, self.meta)
+							_pf_head = _pf.pop('head', None)
+							preflight.log(_pf)
+							_verdict = _pf.get('verdict')
+							if _verdict == 'dead':
+								_pf_drop = _pf.get('reason') or 'dead'
+							elif (_verdict == 'slow' and preflight.skip_mode()
+									and _slow_skips < _MAX_SLOW_SKIPS
+									and i < (len(items) - 1)):
+								_pf_drop = 'slow'
+								_slow_skips += 1
+					except Exception:
+						_pf, _pf_drop = None, ''
+					if _pf_drop:
+						try:
+							from resources.lib.database import source_ranker
+							source_ranker.record_failure(item, resolved_url=url, reason=_pf_drop)
+						except Exception:
+							pass
+						continue
+
+					# ── Sonda de audio (v1.0.89) ──────────────────────────
+					# En autoplay las pistas se cuelgan de la ventana que ya
+					# anuncia la fuente, en vez de sacar una notificacion
+					# mas encima. Solo el aviso de idioma que falta va aparte.
+					_ap_label = ''
+					try:
+						from resources.lib.modules import audio_probe
+						if url and audio_probe.enabled():
+							_ap_label = audio_probe.announce(
+								audio_probe.after_resolve(url, item, self.meta, head=_pf_head),
+								autoplay_label=True)
+					except Exception:
+						_ap_label = ''
+					_pf_head = None
+
 					if url:
-						log_utils.log('Playing url from (sourcesAutoPlay()): %s' % url, level=log_utils.LOGDEBUG)
+						log_utils.log('Playing url from (sourcesAutoPlay()): %s' % fs_client.scrub_url(url), level=log_utils.LOGDEBUG)
 						try:
 							_q    = items[i].get('quality') or 'SD'
 							_deb  = items[i].get('debrid') or ''
 							_prov = items[i].get('provider') or items[i].get('source') or ''
 							_src_label = ('%s  ·  %s' % (_deb.upper(), _prov.upper())) if _deb else _prov.upper()
+							# v1.0.65: si el pre-flight midio el enlace, se muestra
+							# el throughput real. Es la prueba visible de que la
+							# comprobacion ha ocurrido.
+							try:
+								if _pf and _pf.get('measured_mbps'):
+									_src_label += '  ·  [COLOR FF00FA9A]%d Mbps[/COLOR]' % int(_pf['measured_mbps'])
+							except Exception:
+								pass
+							if _ap_label:
+								_src_label += '  ·  %s' % _ap_label
 							from resources.lib.windows.display_welcome import DisplayWelcomeXML
 							from resources.lib.modules.control import addonPath, addonId, addonIcon
 							import threading
@@ -1472,9 +1807,17 @@ class Sources:
 						# debajo de la elegida en el orden de scoring.
 						try:
 							from resources.lib.database import source_ranker
-							source_ranker.record_choice(items[i], all_items=items[:i+1])
+							source_ranker.record_choice(items[i], all_items=items[:i+1], resolved_url=url)
 						except Exception:
 							pass
+						try:
+							from resources.lib.modules import binge
+							binge.remember(items[i], getattr(self, 'imdb', ''), getattr(self, 'tmdb', ''),
+										   getattr(self, 'season', None), getattr(self, 'episode', None))
+						except Exception:
+							pass
+						self._arm_rollover(items[i + 1:])
+						played_url = url
 						break
 				except: pass
 			except: log_utils.error()
@@ -1482,12 +1825,37 @@ class Sources:
 			try: self.progressDialog.close()
 			except: pass
 			del self.progressDialog
-		return url
+		return played_url
 
 	
+
+	# v1.0.78 — cache de los ajustes que gobiernan la puntuacion.
+	#
+	# control.setting() NO es una lectura de diccionario: hace un
+	# getProperty() a la ventana de inicio y un json.loads del blob ENTERO de
+	# ajustes, 441 claves y unos 13,5 KB. Medido: 53 us por llamada en x86,
+	# sin contar el viaje a C, y en un aparato ARM bastante mas.
+	#
+	# _smart_score se ejecuta una vez POR FUENTE. Con 150 fuentes eran 450
+	# lecturas —dos aqui y una dentro de score_adjustment— o sea 450 parseos
+	# del mismo JSON para leer tres constantes que no pueden cambiar mientras
+	# se construye una lista. Se resuelven una vez por pasada.
+	def _score_settings(self):
+		cached = getattr(self, '_score_cfg', None)
+		if cached is None:
+			try:
+				weight = int(getSetting('personal.ranker.weight') or '0')
+			except Exception:
+				weight = 0
+			cached = {'hevc': getSetting('source.prioritize.hevc') == 'true',
+			          'weight': weight}
+			self._score_cfg = cached
+		return cached
+
 	def _smart_score(self, it):
 		"""Compute smart score for a source item (used by autoplay and source select)."""
 		try:
+			cfg = self._score_settings()
 			from resources.lib.modules.control import getSetting
 		except:
 			def getSetting(_k):
@@ -1532,7 +1900,7 @@ class Sources:
 			s += 5
 
 		# Prefer HEVC if setting enabled
-		if getSetting('source.prioritize.hevc') == 'true':
+		if cfg['hevc']:
 			if 'HEVC' in info or 'H265' in info or 'H.265' in info or 'X265' in name:
 				s += 20
 
@@ -1557,7 +1925,7 @@ class Sources:
 		# Devuelve 0 si está desactivado, hay <10 plays, o hay error.
 		# El peso del setting controla cuánto puede mover el ranking.
 		try:
-			weight = int(getSetting('personal.ranker.weight') or '0')
+			weight = cfg['weight']
 			if weight > 0:
 				from resources.lib.database import source_ranker
 				adj = source_ranker.score_adjustment(it)
@@ -1588,6 +1956,13 @@ class Sources:
 			self.url = None
 			debrid_provider = item['debrid'] if item.get('debrid') else ''
 		except: log_utils.error()
+		# Keep what the release claims about itself: play_source() only gets
+		# the resolved URL, and a debrid link carries none of it.
+		try:
+			from resources.lib.modules import release_info
+			release_info.remember(item)
+		except Exception:
+			log_utils.error()
 		# ── TorBox 2026: usenet (NZB) resolution ──────────────────────────────
 		# Usenet items carry source 'cached usenet'/'uncached usenet' and an
 		# http(s) .nzb link in item['url'] (NOT a magnet). They must be resolved
@@ -1659,10 +2034,6 @@ class Sources:
 						from resources.lib.debrid.premiumize import Premiumize as debrid_function
 					elif debrid_provider == 'AllDebrid':
 						from resources.lib.debrid.alldebrid import AllDebrid as debrid_function
-					elif debrid_provider == 'Offcloud':
-						from resources.lib.debrid.offcloud import Offcloud as debrid_function
-					elif debrid_provider == 'EasyDebrid':
-						from resources.lib.debrid.easydebrid import EasyDebrid as debrid_function
 					elif debrid_provider == 'TorBox':
 						from resources.lib.debrid.torbox import TorBox as debrid_function
 					else: return
@@ -1720,6 +2091,44 @@ class Sources:
 						# URL ya directa: reproducir tal cual.
 						self.url = url
 						return url
+					if item.get('provider') == 'meteor':
+						# v1.0.65: Meteor devuelve /<config>/play/<hash>/<idx>,
+						# un redirect 302 al CDN del debrid. Sin esta rama la URL
+						# llegaba cruda a playItem() y se descartaba con
+						# "Playback not supported".
+						try:
+							from resources.lib.jacksparrow.sourcesdir.torrents import meteor as meteor_mod
+							resolved = meteor_mod.source().resolve(url)
+							if resolved:
+								self.url = resolved
+								return resolved
+						except: log_utils.error()
+						_mt_lazy = ('/play/', '/playback/', '/resolve/', '/strem/', '/link/', '/download/')
+						if any(_mk in url for _mk in _mt_lazy):
+							return
+						self.url = url
+						return url
+					if item.get('provider') == 'mediafusion':
+						# MediaFusion devuelve /playback/<Provider>/<hash>/...
+						# que es un redirect 302 al CDN del debrid, con la
+						# misma forma que el /playback/ de Comet. resolve()
+						# sigue el redirect; si la URL ya es un archivo
+						# directo, la devuelve tal cual.
+						try:
+							from resources.lib.jacksparrow.sourcesdir.torrents import mediafusion as mediafusion_mod
+							resolved = mediafusion_mod.source().resolve(url)
+							if resolved:
+								self.url = resolved
+								return resolved
+						except: log_utils.error()
+						# Si no se pudo resolver una URL lazy de MediaFusion, no la
+						# devolvemos cruda: None para que el autoplay pase al siguiente.
+						_mf_lazy = ('/playback/', '/resolve/', '/strem/', '/link/', '/download/')
+						if any(_mk in url for _mk in _mf_lazy):
+							return
+						# URL ya directa: reproducir tal cual.
+						self.url = url
+						return url
 					if item.get('provider') == 'sootio' or '/resolve/' in url:
 						try:
 							from resources.lib.jacksparrow.sourcesdir.torrents import sootio as sootio_mod
@@ -1733,6 +2142,24 @@ class Sources:
 						# siguiente source del autoplay tome el relevo.
 						if '/resolve/' in url:
 							return
+					if item.get('provider') == 'aiostreams':
+						# v1.0.63: AIOStreams entregaba la URL cruda al reproductor
+						# (is_aiostreams_direct), y en el log del 21-ago-2026 esa URL
+						# era el proxy de una instancia comunitaria de StremThru: la
+						# pelicula entera por un servidor compartido en vez del CDN.
+						# Su resolve() sigue el 302 hasta el CDN.
+						try:
+							from resources.lib.jacksparrow.sourcesdir.torrents import aiostreams as aiostreams_mod
+							resolved = aiostreams_mod.source().resolve(url)
+							if resolved:
+								self.url = resolved
+								return resolved
+						except: log_utils.error()
+						# A DIFERENCIA del resto: la URL cruda de AIOStreams SI es
+						# reproducible, asi que no se devuelve None. Perder la fuente
+						# seria peor regresion que el lag que estamos quitando.
+						self.url = url
+						return url
 					direct_sources = ('ad_cloud', 'oc_cloud', 'pm_cloud', 'rd_cloud', 'tb_cloud')
 					if item['provider'] in direct_sources:
 						try:
@@ -1766,10 +2193,6 @@ class Sources:
 				from resources.lib.debrid.premiumize import Premiumize as debrid_function
 			elif provider in ('AllDebrid', 'AD'):
 				from resources.lib.debrid.alldebrid import AllDebrid as debrid_function
-			elif provider in ('Offcloud', 'OC'):
-				from resources.lib.debrid.offcloud import Offcloud as debrid_function
-			elif provider in ('EasyDebrid', 'ED'):
-				from resources.lib.debrid.easydebrid import EasyDebrid as debrid_function
 			elif provider in ('TorBox', 'TB'):
 				from resources.lib.debrid.torbox import TorBox as debrid_function
 			else: return
@@ -1794,10 +2217,6 @@ class Sources:
 			elif provider in ('Premiumize.me', 'PM'):
 				self.url = debrid_function().add_headers_to_url(chosen_result['link'])
 			elif provider in ('AllDebrid', 'AD'):
-				self.url = debrid_function().unrestrict_link(chosen_result['link'])
-			elif provider in ('Offcloud', 'OC'):
-				self.url = chosen_result['link']
-			elif provider in ('EasyDebrid', 'ED'):
 				self.url = debrid_function().unrestrict_link(chosen_result['link'])
 			elif provider in ('TorBox', 'TB'):
 				self.url = debrid_function().unrestrict_link(chosen_result['link'])
@@ -2002,8 +2421,7 @@ class Sources:
 		if not seasoncount or not counts: # check metacache, 2nd fallback
 			try:
 				imdb_user = getSetting('imdb.user').replace('ur', '')
-				tvdb_key = getSetting('tvdb.api.key')
-				user = str(imdb_user) + str(tvdb_key)
+				user = str(imdb_user)
 				meta_lang = control.apiLanguage()['tvdb']
 				if self.meta: imdb, tmdb, tvdb = self.meta.get('imdb', ''), self.meta.get('tmdb', ''), self.meta.get('tvdb', '')
 				else: imdb, tmdb, tvdb = homeWindow.getProperty(self.imdbProperty), homeWindow.getProperty(self.tmdbProperty), homeWindow.getProperty(self.tvdbProperty)
@@ -2081,15 +2499,25 @@ class Sources:
 			from resources.lib.debrid.premiumize import Premiumize
 			cached = Premiumize().check_cache_list(hashList)
 			if not cached: return None
-			count = 0
-			for i in torrent_List:
+			# v1.0.70: la respuesta de Premiumize puede traer MENOS entradas que
+			# la lista de torrents (visto en el log del 26-ago: IndexError en
+			# esta línea). El except de abajo se lo tragaba y la función salía
+			# devolviendo None, así que se perdía la etiqueta cached/uncached de
+			# TODAS las fuentes de esa pasada, no solo de las que faltaban.
+			# Ahora se etiqueta lo que sí llegó y se deja constancia del desajuste.
+			if len(cached) < len(torrent_List):
+				log_utils.log('pm_cache_chk_list: Premiumize devolvio %d estados para %d torrents; '
+					'las %d restantes se quedan sin etiqueta de cache'
+					% (len(cached), len(torrent_List), len(torrent_List) - len(cached)),
+					level=log_utils.LOGWARNING)
+			for count, i in enumerate(torrent_List):
+				if count >= len(cached): break
 				if cached[count] is False:
 					if 'package' in i: i.update({'source': 'uncached (pack) torrent'})
 					else: i.update({'source': 'uncached torrent'})
 				else:
 					if 'package' in i: i.update({'source': 'cached (pack) torrent'})
 					else: i.update({'source': 'cached torrent'})
-				count += 1
 			return torrent_List
 		except: log_utils.error()
 
@@ -2119,7 +2547,7 @@ class Sources:
 					chunk_size, dmm = 100, DMMCache()
 					chunks = (hashList[i:i + chunk_size] for i in range(0, len(hashList), chunk_size))
 					for chunk in chunks:
-						thread = Thread(target=_process, args=(chunk, self.meta['imdb']))
+						thread = Thread(target=_process, args=(chunk, self.meta['imdb']), daemon=True)
 						threads.append(thread)
 						thread.start()
 					[i.join() for i in threads]
@@ -2155,40 +2583,6 @@ class Sources:
 			except Exception:
 				log_utils.error()
 			# ── end RD 2026 filter ────────────────────────────────────────────
-			return torrent_List
-		except: log_utils.error()
-
-	def oc_cache_chk_list(self, torrent_List, hashList):
-		if len(torrent_List) == 0: return
-		try:
-			from resources.lib.debrid.offcloud import Offcloud
-			cached = Offcloud().check_cache(hashList)
-			if not cached: return None
-			cached = cached['cachedItems']
-			for i in torrent_List:
-				if i['hash'].lower() in cached:
-					if 'package' in i: i.update({'source': 'cached (pack) torrent'})
-					else: i.update({'source': 'cached torrent'})
-				else:
-					if 'package' in i: i.update({'source': 'uncached (pack) torrent'})
-					else: i.update({'source': 'uncached torrent'})
-			return torrent_List
-		except: log_utils.error()
-
-	def ed_cache_chk_list(self, torrent_List, hashList):
-		if len(torrent_List) == 0: return
-		try:
-			from resources.lib.debrid.easydebrid import EasyDebrid
-			cached = EasyDebrid().check_cache(hashList)
-			if not cached: return None
-			cached = cached['cached']
-			for i, is_cached in zip(torrent_List, cached):
-				if i['hash'].lower() and is_cached:
-					if 'package' in i: i.update({'source': 'cached (pack) torrent'})
-					else: i.update({'source': 'cached torrent'})
-				else:
-					if 'package' in i: i.update({'source': 'uncached (pack) torrent'})
-					else: i.update({'source': 'uncached torrent'})
 			return torrent_List
 		except: log_utils.error()
 
@@ -2263,8 +2657,7 @@ class Sources:
 		if not total_seasons or season_isAiring is None: # check metacache, 2nd fallback
 			try:
 				imdb_user = getSetting('imdb.user').replace('ur', '')
-				tvdb_key = getSetting('tvdb.api.key')
-				user = str(imdb_user) + str(tvdb_key)
+				user = str(imdb_user)
 				meta_lang = control.apiLanguage()['tvdb']
 				ids = [{'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb}]
 				meta2 = metacache.fetch(ids, meta_lang, user)[0]
@@ -2382,6 +2775,13 @@ class Sources:
 	# antigua. 12 entradas ≈ el historial de navegación reciente típico.
 	_RAMCACHE_MAX_ENTRIES = 12
 
+	def _low_memory(self):
+		try:
+			from resources.lib.modules import device_profile
+			return device_profile.is_low()
+		except Exception:
+			return False
+
 	def _ramcache_index_get(self):
 		try:
 			raw = homeWindow.getProperty('luc_kodi.ramcache_index')
@@ -2404,7 +2804,7 @@ class Sources:
 				keys.remove(cache_id)
 			keys.append(cache_id)  # most-recent al final
 			# Expulsar los más antiguos que excedan el tope.
-			while len(keys) > self._RAMCACHE_MAX_ENTRIES:
+			while len(keys) > (6 if self._low_memory() else self._RAMCACHE_MAX_ENTRIES):
 				evict = keys.pop(0)
 				self._ramcache_clear(evict)
 			self._ramcache_index_set(keys)
@@ -2419,7 +2819,10 @@ class Sources:
 			_resolved = [i for i in items if i.get('debrid') or i.get('direct') or i.get('source') == 'cloud']
 			if not _resolved: return  # nothing debrid-resolved yet — don't cache
 			# Cap at top-200 to avoid bloating Kodi window properties with 4000 dicts.
-			_to_cache = items[:200]
+			# v1.0.90: en aparatos de poca memoria (device_profile) se guardan
+			# menos fuentes y menos titulos.
+			_low = self._low_memory()
+			_to_cache = items[:100 if _low else 200]
 			homeWindow.setProperty('luc_kodi.ramcache.' + cache_id, jsdumps(_to_cache))
 			homeWindow.setProperty('luc_kodi.ramcache_ts.' + cache_id, str(time()))
 			# Registrar en el índice LRU y expulsar entradas viejas si toca.

@@ -947,7 +947,7 @@ msgid "Rescrape Item [COLOR %s][B]Filterless(FS)[/B][/COLOR] with [COLOR %s][B]A
 msgstr ""
 
 msgctxt "#32233"
-msgid "TMDb image resolutions"
+msgid "Artwork quality"
 msgstr ""
 
 msgctxt "#32234"
@@ -963,7 +963,7 @@ msgid "High"
 msgstr ""
 
 msgctxt "#32237"
-msgid "Original"
+msgid "Original (4K artwork, larger files)"
 msgstr ""
 
 msgctxt "#32238"
@@ -2234,7 +2234,7 @@ msgid "kodi.log"
 msgstr ""
 
 msgctxt "#32619"
-msgid "luc_kodi.log"
+msgid "jacksparrowscrapers.log"
 msgstr ""
 
 msgctxt "#32620"
@@ -2330,7 +2330,7 @@ msgid "Trakt Bookmarks"
 msgstr ""
 
 msgctxt "#32645"
-msgid "Auto Trakt Collections Syncing"
+msgid "[B]Auto Trakt Collections Syncing[/B]"
 msgstr ""
 
 msgctxt "#32646"
@@ -2721,10 +2721,6 @@ msgid "%s has been hidden from your %s"
 msgstr ""
 
 msgctxt "#33054"
-msgid ""
-msgstr ""
-
-msgctxt "#33055"
 msgid ""
 msgstr ""
 
@@ -3905,10 +3901,6 @@ msgctxt "#35589"
 msgid ""
 msgstr ""
 
-msgctxt "#35589"
-msgid ""
-msgstr ""
-
 msgctxt "#35590"
 msgid ""
 msgstr ""
@@ -4365,6 +4357,402 @@ msgctxt "#400709"
 msgid "Check interval (hours)"
 msgstr ""
 
+msgctxt "#400716"
+msgid "Auto (best this screen can show)"
+msgstr ""
+
+msgctxt "#400717"
+msgid "Low (smallest files)"
+msgstr ""
+
+msgctxt "#400718"
+msgid "Medium"
+msgstr ""
+
+msgctxt "#400719"
+msgid "High"
+msgstr ""
+
+msgctxt "#400769"
+msgid "Fanart size"
+msgstr ""
+
+msgctxt "#400770"
+msgid "Still size (episode thumbnails)"
+msgstr ""
+
+msgctxt "#400780"
+msgid "Audio languages"
+msgstr ""
+
+msgctxt "#400781"
+msgid "Show audio languages in the source list"
+msgstr ""
+
+msgctxt "#400782"
+msgid "Preferred audio language"
+msgstr ""
+
+msgctxt "#400783"
+msgid "Read the real audio tracks before playback"
+msgstr ""
+
+msgctxt "#400784"
+msgid "When playback starts"
+msgstr ""
+
+msgctxt "#400785"
+msgid "Show the audio tracks"
+msgstr ""
+
+msgctxt "#400786"
+msgid "Only warn if the preferred language is missing"
+msgstr ""
+
+msgctxt "#400787"
+msgid "Say nothing"
+msgstr ""
+
+msgctxt "#400790"
+msgid "None"
+msgstr ""
+
+msgctxt "#400791"
+msgid "Spanish (any)"
+msgstr ""
+
+msgctxt "#400792"
+msgid "Spanish (Spain)"
+msgstr ""
+
+msgctxt "#400793"
+msgid "Spanish (Latin America)"
+msgstr ""
+
+msgctxt "#400794"
+msgid "English"
+msgstr ""
+
+msgctxt "#400795"
+msgid "French"
+msgstr ""
+
+msgctxt "#400796"
+msgid "German"
+msgstr ""
+
+msgctxt "#400797"
+msgid "Italian"
+msgstr ""
+
+msgctxt "#400798"
+msgid "Portuguese"
+msgstr ""
+
+msgctxt "#400799"
+msgid "Portuguese (Brazil)"
+msgstr ""
+
+msgctxt "#400800"
+msgid "Russian"
+msgstr ""
+
+msgctxt "#400801"
+msgid "Japanese"
+msgstr ""
+
+msgctxt "#400802"
+msgid "Korean"
+msgstr ""
+
+msgctxt "#400803"
+msgid "Chinese"
+msgstr ""
+
+msgctxt "#400804"
+msgid "Hindi"
+msgstr ""
+
+msgctxt "#400805"
+msgid "Polish"
+msgstr ""
+
+msgctxt "#400806"
+msgid "Dutch"
+msgstr ""
+
+msgctxt "#400807"
+msgid "Turkish"
+msgstr ""
+
+msgctxt "#400808"
+msgid "Arabic"
+msgstr ""
+
+msgctxt "#400809"
+msgid "Audio tracks"
+msgstr ""
+
+msgctxt "#400810"
+msgid "%s not found in this file"
+msgstr ""
+
+msgctxt "#400820"
+msgid "Sign in to Trakt first"
+msgstr ""
+
+msgctxt "#400821"
+msgid "[COLOR %s][B]%d[/B][/COLOR] / 10"
+msgstr ""
+
+msgctxt "#400822"
+msgid "Rate on Trakt"
+msgstr ""
+
+msgctxt "#400823"
+msgid "Rated %d/10 on Trakt"
+msgstr ""
+
+msgctxt "#400824"
+msgid "Rating removed from Trakt"
+msgstr ""
+
+msgctxt "#400825"
+msgid "Trakt did not accept the change"
+msgstr ""
+
+msgctxt "#400826"
+msgid "Added to your Trakt favourites"
+msgstr ""
+
+msgctxt "#400827"
+msgid "Removed from your Trakt favourites"
+msgstr ""
+
+msgctxt "#400828"
+msgid "Show dropped on Trakt"
+msgstr ""
+
+msgctxt "#400829"
+msgid "Show restored on Trakt"
+msgstr ""
+
+msgctxt "#400830"
+msgid "Add item to your [COLOR %s][B]Favourites[/B][/COLOR]"
+msgstr ""
+
+msgctxt "#400831"
+msgid "Remove item from your [COLOR %s][B]Favourites[/B][/COLOR]"
+msgstr ""
+
+msgctxt "#400832"
+msgid "[COLOR %s][B]Drop[/B][/COLOR] show (stop following its progress)"
+msgstr ""
+
+msgctxt "#400833"
+msgid "[COLOR %s][B]Restore[/B][/COLOR] dropped show"
+msgstr ""
+
+msgctxt "#400834"
+msgid "Next episode: keep the same kind of source (quality, HDR, audio language, release)"
+msgstr ""
+
+msgctxt "#400835"
+msgid "Remember scrapers that found nothing for (minutes, 0 = off)"
+msgstr ""
+
+msgctxt "#400836"
+msgid "Trailer language"
+msgstr ""
+
+msgctxt "#400837"
+msgid "Interface language"
+msgstr ""
+
+msgctxt "#400838"
+msgid "Original language of the title"
+msgstr ""
+
+msgctxt "#400839"
+msgid "English"
+msgstr ""
+
+msgctxt "#400840"
+msgid "A search for this title is already running"
+msgstr ""
+
+msgctxt "#400841"
+msgid "That trailer is not available, trying another one"
+msgstr ""
+
+msgctxt "#400842"
+msgid "That source did not start, trying the next one"
+msgstr ""
+
+msgctxt "#400843"
+msgid "[COLOR ff00fa9a]SIMKL[/COLOR] Manager"
+msgstr ""
+
+msgctxt "#400844"
+msgid "Rate on SIMKL"
+msgstr ""
+
+msgctxt "#400845"
+msgid "Rated %d/10 on SIMKL"
+msgstr ""
+
+msgctxt "#400846"
+msgid "Rating removed from SIMKL"
+msgstr ""
+
+msgctxt "#400847"
+msgid "Add to SIMKL Plan to Watch"
+msgstr ""
+
+msgctxt "#400848"
+msgid "Added to SIMKL Plan to Watch"
+msgstr ""
+
+msgctxt "#400849"
+msgid "Remove from your SIMKL lists"
+msgstr ""
+
+msgctxt "#400850"
+msgid "This also removes its watch history on SIMKL. Continue?"
+msgstr ""
+
+msgctxt "#400851"
+msgid "Removed from SIMKL"
+msgstr ""
+
+msgctxt "#400852"
+msgid "SIMKL did not accept the change"
+msgstr ""
+
+msgctxt "#400853"
+msgid "Sign in to SIMKL first"
+msgstr ""
+
+msgctxt "#400854"
+msgid "Remove rating on SIMKL"
+msgstr ""
+
+msgctxt "#400855"
+msgid "Next episode: load its sources in the background while watching"
+msgstr ""
+
+msgctxt "#400856"
+msgid "AUDIO: UNTAGGED"
+msgstr ""
+
+msgctxt "#400858"
+msgid "If a source fails to start, try the next one automatically"
+msgstr ""
+
+msgctxt "#400860"
+msgid "Clean up now..."
+msgstr ""
+
+msgctxt "#400861"
+msgid "[COLOR ff00fa9a]Maintenance[/COLOR]"
+msgstr ""
+
+msgctxt "#400862"
+msgid "Automatic cleanup"
+msgstr ""
+
+msgctxt "#400863"
+msgid "Clean up what the add-on leaves behind"
+msgstr ""
+
+msgctxt "#400864"
+msgid "Off (only when I ask)"
+msgstr ""
+
+msgctxt "#400865"
+msgid "Ask me when there is something worth freeing"
+msgstr ""
+
+msgctxt "#400866"
+msgid "Automatically, in the background"
+msgstr ""
+
+msgctxt "#400867"
+msgid "Artwork storage limit"
+msgstr ""
+
+msgctxt "#400868"
+msgid "Auto (based on this device's storage)"
+msgstr ""
+
+msgctxt "#400869"
+msgid "300 MB"
+msgstr ""
+
+msgctxt "#400870"
+msgid "600 MB"
+msgstr ""
+
+msgctxt "#400871"
+msgid "1 GB"
+msgstr ""
+
+msgctxt "#400872"
+msgid "2 GB"
+msgstr ""
+
+msgctxt "#400873"
+msgid "No limit"
+msgstr ""
+
+msgctxt "#400874"
+msgid "Clear by hand"
+msgstr ""
+
+msgctxt "#400875"
+msgid "Test networks and streaming platforms  (which ones are worth keeping)"
+msgstr ""
+
+msgctxt "#400880"
+msgid "Trakt did not accept this code. Please start the authorization again."
+msgstr ""
+
+msgctxt "#400881"
+msgid "This Trakt code has already been used. Please start the authorization again."
+msgstr ""
+
+msgctxt "#400882"
+msgid "The Trakt code expired before it was approved. Please start the authorization again."
+msgstr ""
+
+msgctxt "#400883"
+msgid "The authorization was declined on Trakt."
+msgstr ""
+
+msgctxt "#400884"
+msgid "Trakt did not authorize luc_kodi (HTTP %s). A free Trakt account can have only one community app connected at a time: disconnect the other app in your Trakt settings (Connected Apps) or upgrade to VIP, then try again."
+msgstr ""
+
+msgctxt "#400765"
+msgid "Standard (sized for typical screens)"
+msgstr ""
+
+msgctxt "#400766"
+msgid "Maximum (original files, much larger)"
+msgstr ""
+
+msgctxt "#400767"
+msgid "Poster size"
+msgstr ""
+
+msgctxt "#400768"
+msgid "Delete artwork unused for (days)"
+msgstr ""
+
+msgctxt "#400763"
+msgid "Always show content in the skin's poster wall view"
+msgstr ""
+
 msgctxt "#400715"
 msgid "Full metadata refresh at most every (hours)"
 msgstr ""
@@ -4413,6 +4801,86 @@ msgstr ""
 
 msgctxt "#40096"
 msgid "[COLOR ff00fa9a]sootio[/COLOR]"
+msgstr ""
+
+msgctxt "#40097"
+msgid "Deep search (2nd page, slower)"
+msgstr ""
+
+msgctxt "#40901"
+msgid "Downloading update"
+msgstr ""
+
+msgctxt "#40902"
+msgid "The update could not be downloaded or verified. Your current version has not been touched."
+msgstr ""
+
+msgctxt "#40903"
+msgid "Verifying and installing"
+msgstr ""
+
+msgctxt "#40904"
+msgid "The update could not be installed. Your current version has been kept."
+msgstr ""
+
+msgctxt "#40905"
+msgid "Updated to version %s. Restart Kodi if anything looks out of place."
+msgstr ""
+
+msgctxt "#40906"
+msgid "Version"
+msgstr ""
+
+msgctxt "#40907"
+msgid "Only official builds are published here."
+msgstr ""
+
+msgctxt "#40908"
+msgid "Changelog"
+msgstr ""
+
+msgctxt "#40909"
+msgid "Not now"
+msgstr ""
+
+msgctxt "#40910"
+msgid "Update"
+msgstr ""
+
+msgctxt "#40911"
+msgid "No changelog available for this release."
+msgstr ""
+
+msgctxt "#40912"
+msgid "Could not check for updates right now. Try again later."
+msgstr ""
+
+msgctxt "#40913"
+msgid "You are on the latest official version"
+msgstr ""
+
+msgctxt "#40920"
+msgid "Updates"
+msgstr ""
+
+msgctxt "#40921"
+msgid "Check for add-on updates"
+msgstr ""
+
+msgctxt "#40922"
+msgid "Check when Kodi starts"
+msgstr ""
+
+msgctxt "#40923"
+msgid "Check every (hours)"
+msgstr ""
+
+msgctxt "#40924"
+msgid "Check for updates now"
+msgstr ""
+
+msgctxt "#40925"
+msgid "Official builds only. Test builds are never published to this channel."
 msgstr ""
 
 
@@ -4552,6 +5020,14 @@ msgstr ""
 
 msgctxt "#40243"
 msgid "Open List by URL..."
+msgstr ""
+
+msgctxt "#40261"
+msgid "External Lists (Trakt / IMDb / Letterboxd)"
+msgstr ""
+
+msgctxt "#40262"
+msgid "Liked Lists"
 msgstr ""
 
 msgctxt "#40244"
@@ -4794,9 +5270,30 @@ msgctxt "#40616"
 msgid "AI Search · TV Shows"
 msgstr ""
 
+msgctxt "#40617"
+msgid "Gemini daily quota used up. Try again tomorrow or add a Gemini API Key from a different project."
+msgstr ""
+
+msgctxt "#40618"
+msgid "Gemini is overloaded. Try again in a minute or two."
+msgstr ""
+
+msgctxt "#40619"
+msgid "Gemini API Key is invalid or has been revoked."
+msgstr ""
+
+msgctxt "#40620"
+msgid "Gemini rejected the request."
+msgstr ""
+
+msgctxt "#40621"
+msgid "Gemini did not answer in time. Try again in a moment."
+msgstr ""
+
 msgctxt "#400720"
 msgid "Personalized ranker (For You)"
 msgstr ""
+
 
 msgctxt "#400721"
 msgid "Enable personal ranker"
@@ -4814,6 +5311,78 @@ msgctxt "#400724"
 msgid "Reset personal ranker model"
 msgstr ""
 
+msgctxt "#400740"
+msgid "Playback pre-flight"
+msgstr ""
+
+msgctxt "#400741"
+msgid "Check the link before playback starts"
+msgstr ""
+
+msgctxt "#400742"
+msgid "When a source is too slow for its bitrate"
+msgstr ""
+
+msgctxt "#400743"
+msgid "Required bandwidth headroom (%)"
+msgstr ""
+
+msgctxt "#400744"
+msgid "Flag heavy sources in the results list"
+msgstr ""
+
+msgctxt "#400745"
+msgid "Warn only"
+msgstr ""
+
+msgctxt "#400746"
+msgid "Skip to the next source"
+msgstr ""
+
+msgctxt "#400747"
+msgid "This source needs %s Mbps, link measured %s Mbps"
+msgstr ""
+
+msgctxt "#400748"
+msgid "Always show bitrate for files above (GB)"
+msgstr ""
+
+msgctxt "#400749"
+msgid "When you pick a source that is too slow"
+msgstr ""
+
+msgctxt "#400750"
+msgid "Only ask below this share of the required speed (%)"
+msgstr ""
+
+msgctxt "#400751"
+msgid "Show a notification"
+msgstr ""
+
+msgctxt "#400752"
+msgid "Ask before playing"
+msgstr ""
+
+msgctxt "#400753"
+msgid "Do nothing"
+msgstr ""
+
+msgctxt "#400754"
+msgid "This file needs %s Mbps and the link is giving about %s Mbps."
+msgstr ""
+
+msgctxt "#400755"
+msgid "It will most likely stall part way through."
+msgstr ""
+
+msgctxt "#400756"
+msgid "Pick another"
+msgstr ""
+
+msgctxt "#400757"
+msgid "Play anyway"
+msgstr ""
+
 msgctxt "#40700"
 msgid "Streaming"
 msgstr ""
@@ -4828,6 +5397,10 @@ msgstr ""
 
 msgctxt "#40703"
 msgid "Streaming providers: use JustWatch (experimental)"
+msgstr ""
+
+msgctxt "#40704"
+msgid "TV Streaming Services"
 msgstr ""
 
 msgctxt "#40800"
@@ -4872,6 +5445,26 @@ msgstr ""
 
 msgctxt "#40810"
 msgid "Use SIMKL as watched indicators source (when Trakt is not)"
+msgstr ""
+
+msgctxt "#40811"
+msgid "Reconnect SIMKL (new sign-in method)"
+msgstr ""
+
+msgctxt "#40812"
+msgid "SIMKL sign-in expired - please sign in again in Settings"
+msgstr ""
+
+msgctxt "#40813"
+msgid "SIMKL granted read-only access, so scrobbling and marking as watched will not work. Deauthorize and sign in again, and approve write access on the SIMKL page."
+msgstr ""
+
+msgctxt "#40814"
+msgid "OAuth 2.0 (current)"
+msgstr ""
+
+msgctxt "#40815"
+msgid "Legacy sign-in - reconnect before SIMKL retires it (around April 2027)"
 msgstr ""
 
 msgctxt "#40820"
@@ -4955,7 +5548,7 @@ msgid "24 hours"
 msgstr ""
 
 msgctxt "#45020"
-msgid "Weekly cleanup of unused TMDb posters (texture cache)"
+msgid "Automatic cleanup of unused artwork (texture cache)"
 msgstr ""
 
 msgctxt "#45021"
@@ -4964,4 +5557,197 @@ msgstr ""
 
 msgctxt "#45022"
 msgid "Monthly cache database maintenance (auto-cleanup)"
+msgstr ""
+
+msgctxt "#400761"
+msgid "Display test  (what your screen gets, and what to change)"
+msgstr ""
+
+msgctxt "#400760"
+msgid "See what it takes up on this device  (and free space)"
+msgstr ""
+
+
+msgctxt "#400762"
+msgid "[COLOR ff00fa9a]Updates[/COLOR]"
+msgstr ""
+
+msgctxt "#46000"
+msgid "PunchPlay Trending Movies"
+msgstr ""
+
+msgctxt "#46001"
+msgid "PunchPlay Popular Movies"
+msgstr ""
+
+msgctxt "#46002"
+msgid "PunchPlay Trending TV Shows"
+msgstr ""
+
+msgctxt "#46003"
+msgid "PunchPlay Popular TV Shows"
+msgstr ""
+
+msgctxt "#46010"
+msgid "PunchPlay"
+msgstr ""
+
+msgctxt "#46011"
+msgid "PunchPlay"
+msgstr ""
+
+msgctxt "#46012"
+msgid "PunchPlay Continue Watching (Movies)"
+msgstr ""
+
+msgctxt "#46013"
+msgid "PunchPlay Continue Watching (Episodes)"
+msgstr ""
+
+msgctxt "#46014"
+msgid "PunchPlay Next Episodes"
+msgstr ""
+
+msgctxt "#46015"
+msgid "Collection"
+msgstr ""
+
+msgctxt "#46016"
+msgid "Favourites"
+msgstr ""
+
+msgctxt "#46017"
+msgid "My Ratings"
+msgstr ""
+
+msgctxt "#46020"
+msgid "Watchlist"
+msgstr ""
+
+msgctxt "#46021"
+msgid "My Lists"
+msgstr ""
+
+msgctxt "#46022"
+msgid "Watch History"
+msgstr ""
+
+msgctxt "#46023"
+msgid "Watchlist"
+msgstr ""
+
+msgctxt "#46024"
+msgid "My Lists"
+msgstr ""
+
+msgctxt "#46030"
+msgid "[COLOR ff00fa9a]PunchPlay[/COLOR]"
+msgstr ""
+
+msgctxt "#46031"
+msgid "Client ID  (leave empty to use the plugin default)"
+msgstr ""
+
+msgctxt "#46033"
+msgid "Mark as watched at (%)"
+msgstr ""
+
+msgctxt "#46034"
+msgid "Progress update interval (in seconds)"
+msgstr ""
+
+msgctxt "#46032"
+msgid "PunchPlay Username"
+msgstr ""
+
+msgctxt "#46035"
+msgid "Force PunchPlay Sync"
+msgstr ""
+
+msgctxt "#46036"
+msgid "Enable scrobble (start/pause/resume/stop on PunchPlay)"
+msgstr ""
+
+msgctxt "#46037"
+msgid "Use PunchPlay as watched indicators source"
+msgstr ""
+
+msgctxt "#46025"
+msgid "My Calendar - Upcoming Episodes"
+msgstr ""
+
+msgctxt "#46026"
+msgid "Community Lists"
+msgstr ""
+
+msgctxt "#46027"
+msgid "Open List by ID or URL"
+msgstr ""
+
+msgctxt "#46028"
+msgid "Not a PunchPlay list ID or URL"
+msgstr ""
+
+msgctxt "#46040"
+msgid "[COLOR ff00fa9a]Tracking Accounts[/COLOR]"
+msgstr ""
+
+msgctxt "#46041"
+msgid "SIMKL Username"
+msgstr ""
+
+msgctxt "#46042"
+msgid "MDBList Username"
+msgstr ""
+
+msgctxt "#46043"
+msgid "Enable scrobble (to your MDBList account)"
+msgstr ""
+
+msgctxt "#46044"
+msgid "MDBList Client ID"
+msgstr ""
+
+msgctxt "#46045"
+msgid "Authorize  (PIN + QR)"
+msgstr ""
+
+msgctxt "#46046"
+msgid "MDBList API Key"
+msgstr ""
+
+msgctxt "#46047"
+msgid "Trakt service sync interval (in minutes)"
+msgstr ""
+
+msgctxt "#46050"
+msgid "[COLOR ff00fa9a]Premiumize.me[/COLOR]"
+msgstr ""
+
+msgctxt "#46051"
+msgid "[COLOR ff00fa9a]Real-Debrid[/COLOR]"
+msgstr ""
+
+msgctxt "#46052"
+msgid "[COLOR ff00fa9a]All Debrid[/COLOR]"
+msgstr ""
+
+msgctxt "#46053"
+msgid "[COLOR ff00fa9a]TorBox[/COLOR]"
+msgstr ""
+
+msgctxt "#46054"
+msgid "[COLOR ff00fa9a]Easynews[/COLOR]"
+msgstr ""
+
+msgctxt "#46055"
+msgid "[COLOR ff00fa9a]MDBList[/COLOR]"
+msgstr ""
+
+msgctxt "#46056"
+msgid "[COLOR ff00fa9a]Play Trailers[/COLOR]"
+msgstr ""
+
+msgctxt "#46057"
+msgid "Trailers play through the YouTube add-on"
 msgstr ""

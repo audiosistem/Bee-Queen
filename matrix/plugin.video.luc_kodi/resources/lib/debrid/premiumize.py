@@ -685,7 +685,7 @@ class Premiumize:
 				self.delete_transfer(transfer_id)
 				if self.server_notifications:
 					control.notification(message='Premiumize did not advance this Usenet download. The release may be incomplete or unavailable on its backend.', icon=pm_icon)
-				return log_utils.log('Premiumize.me: NZB transfer stalled at %d%% for >%ds (Usenet backend not delivering); aborted and cleaned up (transfer %s)' % (max(_last_pct, 0), _stall_limit, transfer_id), __name__, log_utils.LOGWARNING)
+				return log_utils.log('Premiumize.me: NZB transfer stalled at %d%% for >%ds (Usenet backend not delivering); aborted and cleaned up (transfer %s)' % (max(int(_last_prog * 100), 0), _stall_limit, transfer_id), __name__, log_utils.LOGWARNING)
 			if status == 'error':
 				self.delete_transfer(transfer_id)
 				return log_utils.log('Premiumize.me: NZB transfer error: %s' % transfer_info.get('message', ''), __name__, log_utils.LOGWARNING)

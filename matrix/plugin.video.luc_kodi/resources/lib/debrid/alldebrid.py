@@ -129,8 +129,10 @@ class AllDebrid:
 				self.token = str(response['apikey'])
 				# Persist using correct setting id
 				control.setSetting('alldebrid.token', self.token)
-				# Keep legacy key in sync for users upgrading mid-session
-				control.setSetting('alldebridtoken', self.token)
+				# v1.0.78: aqui se reescribia 'alldebridtoken', que NO esta declarado
+				# en settings.xml. Kodi descarta las escrituras a ids no declarados,
+				# asi que la llamada no guardaba nada y de paso invalidaba la cache
+				# de ajustes. La lectura de migracion de __init__ se conserva.
 			except:
 				self.token = 'failed'
 				control.notification(message=40021, icon=ad_icon)
@@ -203,8 +205,6 @@ class AllDebrid:
 		account_info = self._get('user')
 		username = str(account_info['user']['username'])
 		control.setSetting('alldebrid.username', username)
-		# Legacy sync
-		control.setSetting('alldebridusername', username)
 		if fromSettings == 1:
 			control.openSettings('9.0', 'plugin.video.luc_kodi')
 		control.notification(message=40010, icon=ad_icon)
@@ -212,11 +212,9 @@ class AllDebrid:
 
 	def revoke_auth(self, fromSettings=0):
 		try:
-			# Clear both new and legacy keys
+			# Clear the stored credentials
 			control.setSetting('alldebrid.token', '')
 			control.setSetting('alldebrid.username', '')
-			control.setSetting('alldebridtoken', '')
-			control.setSetting('alldebridusername', '')
 			try:
 				from resources.lib.modules.debrid_state import sync_state
 				sync_state()

@@ -41,6 +41,25 @@
             <visible>String.IsEmpty(Window.Property(luc_kodi.clearlogo))</visible>
         </control>
 
+        <!-- ─── Thumb del episodio actual — contexto visual ────────────────
+             v1.0.78: existia solo en el juego 2160p. En una pantalla 1080p el
+             dialogo perdia la miniatura sin motivo — el dato ya lo publica
+             next_episode.py en la misma propiedad y el hueco de la derecha
+             estaba libre igual. No es el 2160p dividido entre dos: este
+             fichero es un diseno propio (card 796x274 frente a 1800x580), asi
+             que las medidas se ajustan a SU escala, no a la mitad de la otra.
+             La etiqueta de titulo llega hasta x=830 y la card empieza en
+             y=511, de modo que 320x180 en la esquina no pisa ninguna. ──── -->
+        <control type="image">
+            <right>60</right><top>40</top>
+            <width>320</width><height>180</height>
+            <aspectratio>scale</aspectratio>
+            <texture background="true">$INFO[Window.Property(luc_kodi.thumb)]</texture>
+            <colordiffuse>CCFFFFFF</colordiffuse>
+            <animation effect="fade" start="0" end="100" time="500" delay="300" tween="sine">WindowOpen</animation>
+            <visible>!String.IsEmpty(Window.Property(luc_kodi.thumb))</visible>
+        </control>
+
         <!-- ─── Card -15 %: 796×274 px, mismo centro vertical (648 px) ──── -->
         <control type="group">
             <centerleft>50%</centerleft><top>511</top>

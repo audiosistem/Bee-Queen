@@ -3,15 +3,19 @@
 	luc_kodi Add-on - SIMKL integration
 	========================================
 	Espejo de trakt.py pero más simple:
-	  - PIN flow (sin client_secret, sin redirect_uri)
-	  - Tokens de ~5 años, SIN refresh_token (en 401 → reauth manual)
+	  - AUTH V2 (desde 1.0.88): device flow RFC 8628, access token de 7 dias
+	    + refresh token de 180 dias, scopes media:read/media:write
+	  - AUTH V1 (legado, retirada ~abril 2027): PIN flow, tokens de ~5 años
+	    sin refresh; los usuarios ya conectados siguen funcionando igual
 	  - Endpoints: /scrobble/{start,pause,stop,checkin}, /sync/{activities,history,
 	    all-items,watched,playback}, /users/settings
 
 	Docs: https://api.simkl.org/  (revamp 2026-05-22)
 """
 
+from resources.lib.modules import app_keys
 from datetime import datetime, timezone
+import re
 from json import dumps as jsdumps
 from threading import Lock
 from time import time
@@ -47,9 +51,26 @@ PIN_VERIFICATION_URL = 'https://simkl.com/pin'
 # If a future change to OAuth code-flow is added (e.g. for a web companion),
 # the secret would need to be stored server-side, never embedded here.
 #
-# The `simkl.client_id` setting acts as a per-user override (advanced) — if
-# set, it takes precedence over this hardcoded value.
-SIMKL_CLIENT_ID = getSetting('simkl.client_id') or 'b10535f8971b056595e796e42353d15c341e7b2176183670161335869fb4d336'
+# The `simkl.client_id` setting acts as a per-user override — if set, it takes
+# precedence over this hardcoded value. v1.0.69: that setting is hidden from
+# the Settings UI (visible="false"). It is still declared, still read on every
+# call, and still honoured if written; it is simply no longer offered to the
+# user, because the bridge credential above is what every install is meant to
+# use. Do NOT remove the setting: Kodi discards undeclared ids.
+_SIMKL_CLIENT_ID_DEFAULT = app_keys.get('simkl')
+
+def _client_id():
+	"""client_id efectivo, leido EN CADA LLAMADA.
+
+	Antes se resolvia una sola vez al importar el modulo. Con
+	reuselanguageinvoker=true el modulo sobrevive entre invocaciones del plugin,
+	asi que un client_id propio puesto por el usuario en Ajustes no surtia
+	efecto hasta reiniciar Kodi. Lo mismo valia para _server_notify() y para el
+	intervalo del servicio."""
+	return (getSetting('simkl.client_id') or '').strip() or _SIMKL_CLIENT_ID_DEFAULT
+
+# Compatibilidad: algun codigo externo podria leer la constante.
+SIMKL_CLIENT_ID = _client_id()
 
 # Required URL params on EVERY request (breaking change 2026-04-22).
 APP_NAME = 'luc_kodi'
@@ -84,106 +105,388 @@ retries = Retry(total=3, backoff_factor=1.0,
 session.mount('https://api.simkl.com', HTTPAdapter(max_retries=retries, pool_maxsize=100))
 
 highlight_color = control.getHighlightColor()
-server_notification = getSetting('simkl.server.notifications') == 'true'
-service_syncInterval = int(getSetting('simkl.service.syncInterval')) if getSetting('simkl.service.syncInterval') else 15
+
+
+def _server_notify():
+	"""Aviso de errores de servidor. Leido en cada uso (ver _client_id())."""
+	return getSetting('simkl.server.notifications') == 'true'
+
+def _sync_interval_minutes():
+	"""Intervalo del bucle del servicio, en minutos. Leido en cada vuelta para
+	que un cambio en Ajustes se aplique sin reiniciar Kodi. Acotado a 5-120 para
+	que un valor corrupto no convierta el bucle en una rafaga de peticiones."""
+	try:
+		val = int(getSetting('simkl.service.syncInterval') or 15)
+	except Exception:
+		val = 15
+	return min(max(val, 5), 120)
+
+
+# ---------------------------------------------------------------------------
+# AUTH V2 (OAuth 2.0) — SIMKL, 18-sep-2026
+# ---------------------------------------------------------------------------
+# SIMKL publico AUTH V2 el 18-sep-2026 y retira AUTH V1 hacia abril de 2027
+# (sin fecha cerrada). Un client_id V1 NO se puede convertir: V2 es otro
+# registro con otro client_id, y los tokens V1 no se canjean por V2. Guia:
+# https://api.simkl.org/guides/migrating-v1-to-v2
+#
+# Estrategia elegida — "Run both client IDs side by side" de esa guia:
+#   * los usuarios que ya tienen token V1 siguen funcionando igual hasta la
+#     retirada, sin tocar nada;
+#   * TODA autorizacion nueva va por V2 (device flow RFC 8628) en cuanto el
+#     plugin lleve un client_id V2; nunca se vuelve a emitir un token V1;
+#   * cada client_id viaja SIEMPRE con sus propios endpoints (V1 -> /oauth/*,
+#     V2 -> /oauth2/*). Cruzarlos da 400 unauthorized_client o 401
+#     invalid_client, y desde el 19-sep SIMKL revoca los tokens mezclados.
+#
+# Que version tiene un usuario se decide LOCALMENTE por el token: un access
+# token V2 empieza por 'simkl_at_' (43 caracteres); uno V1 son 64 hex sin
+# prefijo. Sin llamada a la API.
+#
+# Diferencias que obligan a codigo nuevo:
+#   * access token de 7 dias + refresh token de 180 dias deslizantes y NO
+#     rotatorio (el refresh devuelve el mismo refresh_token);
+#   * refrescar INVALIDA al instante el access token anterior de ese grant.
+#     El servicio y el plugin corren en procesos distintos y comparten el
+#     grant a traves de los ajustes: si ambos refrescan se cortan el uno al
+#     otro. De ahi: (1) ante un 401 se relee el token guardado y, si ya no es
+#     el que se envio, se reintenta con el guardado SIN refrescar; (2) lock
+#     de hilo + marca en Window(10000) para que un solo proceso refresque;
+#   * scope: omitirlo o escribirlo mal da un token de SOLO LECTURA sin error;
+#     se pide 'media:read media:write' y se comprueba lo que devuelve;
+#   * cuota DIARIA por usuario (Free 500, PRO 1000, VIP 10000). Agotarla da
+#     429 'user_limit_exceeded' con Retry-After hasta medianoche US Eastern:
+#     esperar ese Retry-After dentro del hilo bloquearia horas.
+# App #8267381 en simkl.com/settings/developer: AUTH V2, PIN sign-in, sin
+# client_secret. SIMKL la marca como publica y apta para GitHub: con V2 un
+# client_id suelto no lee ni escribe nada de ningun usuario.
+_SIMKL_V2_CLIENT_ID_DEFAULT = app_keys.get('simkl_v2')
+
+V2_TOKEN_PREFIX = 'simkl_at_'
+V2_SCOPE = 'media:read media:write'
+V2_ACCESS_TTL = 604800           # 7 dias, por si la respuesta no trae expires_in
+V2_REFRESH_MARGIN = 86400        # refresco proactivo a 1 dia de caducar (lo que aconseja SIMKL)
+DATA_URL = 'https://data.simkl.in'
+
+_refresh_lock = Lock()
+_PROP_REFRESHING    = 'luc_kodi.simkl.refreshing'     # ts: un proceso esta refrescando
+_PROP_REFRESH_DEAD  = 'luc_kodi.simkl.refresh_dead'   # ts: el grant murio (invalid_grant)
+_PROP_REAUTH_NOTIFY = 'luc_kodi.simkl.reauth_notify'  # ts: ultimo aviso de volver a entrar
+_PROP_QUOTA_UNTIL   = 'luc_kodi.simkl.quota_until'    # ts: cuota diaria agotada hasta...
+_REFRESH_DEAD_COOLDOWN = 1800    # tras un grant muerto, 30 min sin llamar con ese token
+_REAUTH_NOTIFY_EVERY   = 3600    # aviso de "vuelve a entrar" como mucho 1/hora
+
+def _v2_client_id():
+	"""client_id V2 efectivo, leido en cada llamada (mismo motivo que _client_id())."""
+	return (getSetting('simkl.v2.client_id') or '').strip() or _SIMKL_V2_CLIENT_ID_DEFAULT
+
+def v2_available():
+	return bool(_v2_client_id())
+
+def _is_v2_token(tok):
+	return bool(tok) and str(tok).startswith(V2_TOKEN_PREFIX)
+
+def _stored_token():
+	return (getSetting('simkl.token') or '').strip()
+
+def _fresh_setting(k):
+	"""Lee un ajuste directamente de Kodi, saltandose el dict cacheado. Solo
+	para los caminos raros (401/refresco) en los que otro proceso puede haber
+	escrito un token nuevo hace un instante."""
+	try: return (control.addon('plugin.video.luc_kodi').getSetting(k) or '').strip()
+	except Exception: return (getSetting(k) or '').strip()
+
+def is_legacy_connection():
+	"""True si el usuario esta conectado con un token V1 y el plugin ya puede
+	ofrecerle la conexion V2."""
+	tok = _stored_token()
+	return bool(tok) and not _is_v2_token(tok) and v2_available()
+
+def update_legacy_flag():
+	"""Mantiene el marcador oculto simkl.legacy que hace visible en Ajustes la
+	accion 'Reconnect SIMKL'. Solo escribe si cambia (cada setSetting invalida
+	la cache de ajustes de todo el addon)."""
+	try:
+		want = 'true' if is_legacy_connection() else ''
+		if (getSetting('simkl.legacy') or '') != want:
+			setSetting('simkl.legacy', want)
+	except Exception:
+		log_utils.error()
+
+def scrobble_keepalive_seconds():
+	"""Cada cuanto manda player.py el /scrobble/pause periodico. Con V2 la cuota
+	es diaria POR USUARIO y en el plan Free son 500 peticiones: a 90 s una
+	pelicula de 2 h gasta 80 solo en keep-alive. 300 s deja la cuenta en 24 y el
+	punto de reanudacion sigue guardandose con 5 min de resolucion (el stop y la
+	pausa real del usuario lo fijan exacto). V1 conserva los 90 s."""
+	return 300 if _is_v2_token(_stored_token()) else 90
+
+def _prop_ts(name):
+	try: return float(control.homeWindow.getProperty(name) or 0)
+	except Exception: return 0.0
+
+def _set_prop_ts(name, ts=None):
+	try: control.homeWindow.setProperty(name, str(ts if ts is not None else time()))
+	except Exception: pass
+
+def _clear_prop(name):
+	try: control.homeWindow.clearProperty(name)
+	except Exception: pass
+
+def _refresh_dead_active():
+	ts = _prop_ts(_PROP_REFRESH_DEAD)
+	return bool(ts) and (time() - ts) < _REFRESH_DEAD_COOLDOWN
+
+def _quota_blocked():
+	until = _prop_ts(_PROP_QUOTA_UNTIL)
+	return bool(until) and time() < until
+
+def _notify_reauth():
+	"""Aviso de sesion caducada, como mucho una vez por hora y nunca encima del video."""
+	if (time() - _prop_ts(_PROP_REAUTH_NOTIFY)) < _REAUTH_NOTIFY_EVERY: return
+	_set_prop_ts(_PROP_REAUTH_NOTIFY)
+	try:
+		if not control.condVisibility('Player.HasVideo'):
+			control.notification(title='SIMKL', message=getLS(40812))
+	except Exception:
+		pass
+
+def _mark_refresh_dead():
+	_set_prop_ts(_PROP_REFRESH_DEAD)
+	log_utils.log('SIMKL V2 grant rejected (invalid_grant) - sign-in required.', __name__, log_utils.LOGWARNING)
+	_notify_reauth()
+
+def _clear_auth_props():
+	for p in (_PROP_REFRESH_DEAD, _PROP_REAUTH_NOTIFY, _PROP_REFRESHING, _PROP_QUOTA_UNTIL):
+		_clear_prop(p)
+
+def _oauth2_post(path, data):
+	"""POST form-urlencoded a /oauth2/*. Estos endpoints usan el sobre de error
+	de RFC 6749 ({error, error_description}, sin 'code'), NO llevan Bearer y
+	el client_id va en el cuerpo. app-name/app-version viajan en la URL como en
+	el resto de la API. Devuelve (status:int, json:dict) o (0, {}) si falla la red."""
+	try:
+		r = requests.post(urljoin(BASE_URL, path),
+						params={'app-name': APP_NAME, 'app-version': APP_VERSION},
+						data=data,
+						headers={'Content-Type': 'application/x-www-form-urlencoded',
+								 'User-Agent': '%s/%s' % (APP_NAME, APP_VERSION)},
+						timeout=20)
+		try: js = r.json() if r.content else {}
+		except Exception: js = {}
+		return r.status_code, (js if isinstance(js, dict) else {})
+	except Exception:
+		log_utils.error()
+		return 0, {}
+
+def _store_v2_tokens(js):
+	"""Guarda la respuesta de /oauth2/token. El refresh token es no rotatorio:
+	si la respuesta lo trae se guarda (sera el mismo), si no se conserva el
+	que habia. Devuelve el access token nuevo."""
+	token = str(js.get('access_token') or '')
+	try: ttl = int(js.get('expires_in') or V2_ACCESS_TTL)
+	except Exception: ttl = V2_ACCESS_TTL
+	setSetting('simkl.token', token)
+	setSetting('simkl.expires', str(time() + ttl))
+	if js.get('refresh_token'): setSetting('simkl.refresh', str(js['refresh_token']))
+	if js.get('scope') is not None: setSetting('simkl.scope', str(js.get('scope') or ''))
+	return token
+
+def _refresh_v2(stale_token):
+	"""Refresco single-flight del grant V2. Devuelve el access token vigente o
+	None. SIEMPRE compara antes con lo guardado: si otro hilo u otro proceso ya
+	refresco, se usa su token y NO se vuelve a refrescar (eso invalidaria el
+	suyo). Devuelve None sin tocar nada si el grant ya se dio por muerto."""
+	if _refresh_dead_active(): return None
+	with _refresh_lock:
+		cur = _fresh_setting('simkl.token')
+		if cur and cur != stale_token:
+			return cur
+		# Otro PROCESO refrescando ahora mismo: esperarle hasta 15 s.
+		busy = _prop_ts(_PROP_REFRESHING)
+		if busy and (time() - busy) < 20:
+			for _ in range(15):
+				if control.monitor.waitForAbort(1): return None
+				cur = _fresh_setting('simkl.token')
+				if cur and cur != stale_token: return cur
+				if not _prop_ts(_PROP_REFRESHING): break
+		refresh = _fresh_setting('simkl.refresh')
+		cid = _v2_client_id()
+		if not refresh or not cid:
+			_mark_refresh_dead()
+			return None
+		_set_prop_ts(_PROP_REFRESHING)
+		try:
+			status, js = _oauth2_post('/oauth2/token', {'grant_type': 'refresh_token',
+														 'client_id': cid,
+														 'refresh_token': refresh})
+			if status == 200 and js.get('access_token'):
+				token = _store_v2_tokens(js)
+				_clear_prop(_PROP_REFRESH_DEAD)
+				log_utils.log('SIMKL V2 access token refreshed.', __name__, log_utils.LOGDEBUG)
+				return token
+			err = js.get('error', '')
+			if err in ('invalid_grant', 'invalid_client') or status in (400, 401):
+				# Grant revocado (Connected Apps), caducado tras 180 dias sin uso,
+				# o client_id V2 dado de baja. Reintentar no lo arregla.
+				log_utils.log('SIMKL V2 refresh failed: %s %s' % (status, err), __name__, log_utils.LOGWARNING)
+				_mark_refresh_dead()
+				return None
+			# Red o 5xx: transitorio, el grant sigue vivo.
+			log_utils.log('SIMKL V2 refresh transient failure: %s %s' % (status, err), __name__, log_utils.LOGDEBUG)
+			return None
+		finally:
+			_clear_prop(_PROP_REFRESHING)
+
+def _ensure_fresh_v2(tok):
+	"""Refresco proactivo: si al access token le queda menos de un dia."""
+	try:
+		exp = float(getSetting('simkl.expires') or 0)
+	except Exception:
+		exp = 0
+	if exp and (exp - time()) < V2_REFRESH_MARGIN:
+		return _refresh_v2(tok) or tok
+	return tok
 
 
 # ---------------------------------------------------------------------------
 # Core request helper
 # ---------------------------------------------------------------------------
-def _required_params():
-	"""URL params required on EVERY simkl.com request since 2026-04-22."""
+def _required_params(tok=None):
+	"""URL params required on EVERY simkl.com request since 2026-04-22.
+	El client_id acompana al token: token V2 -> client_id V2, token V1 ->
+	client_id V1. Sin token (ficheros publicos) se prefiere el V2 si existe."""
+	if tok is None: tok = _stored_token()
+	if _is_v2_token(tok) or (not tok and v2_available()):
+		cid = _v2_client_id()
+	else:
+		cid = _client_id()
 	return {
-		'client_id':   SIMKL_CLIENT_ID,
+		'client_id':   cid,
 		'app-name':    APP_NAME,
 		'app-version': APP_VERSION,
 	}
 
-def _headers(authed=True):
+def _headers(authed=True, tok=None):
 	h = {
 		'Content-Type': 'application/json',
 		'User-Agent':   '%s/%s' % (APP_NAME, APP_VERSION),
 	}
 	if authed:
-		tok = getSetting('simkl.token')
+		if tok is None: tok = _stored_token()
 		if tok: h['Authorization'] = 'Bearer %s' % tok
 	return h
 
-def getSimkl(url, post=None, params=None, method=None, silent=False):
+def _send(m, url, qp, body, headers):
+	if m == 'GET':
+		return session.get(url, params=qp, headers=headers, timeout=20)
+	if m == 'DELETE':
+		return session.delete(url, params=qp, headers=headers, timeout=20)
+	return session.post(url, params=qp, data=body, headers=headers, timeout=20)
+
+def _error_code(response):
+	try:
+		js = response.json()
+		return str(js.get('error') or '') if isinstance(js, dict) else ''
+	except Exception:
+		return ''
+
+def getSimkl(url, post=None, params=None, method=None, silent=False, accept=()):
 	"""
 	Generic SIMKL HTTP call. Mirrors trakt.getTrakt() shape:
-	  - returns the raw Response object on 2xx, None otherwise
+	  - returns the raw Response object on 2xx (and on any status listed in
+	    `accept`, e.g. '409' for /scrobble/stop), None otherwise
 	  - merges _required_params() into the query string automatically
-	  - handles 401 (clear creds, notify user — NO refresh dance like Trakt)
-	  - handles 429 with Retry-After + bounded reintentos (max 3)
+	  - V2 tokens: proactive refresh + one refresh-and-retry on 401
+	  - V1 tokens: 401 only warns (no refresh exists in V1)
+	  - 429: per-second limit retried once after a short wait; the DAILY quota
+	    (user_limit_exceeded / app_limit_exceeded) is never waited out inline
 	"""
 	try:
 		if not url.startswith(BASE_URL):
 			url = urljoin(BASE_URL, url)
 		body = jsdumps(post) if post is not None else None
+		m = method.upper() if method else ('POST' if post is not None else 'GET')
 
-		# Merge URL params: caller-provided takes precedence over required ones.
-		qp = _required_params()
-		if params: qp.update(params)
+		if _quota_blocked():
+			log_utils.log('SIMKL daily quota exhausted - request skipped: %s' % url.split('?')[0], __name__, log_utils.LOGDEBUG)
+			return None
 
-		headers = _headers(authed=True)
+		tok = _stored_token()
+		v2 = _is_v2_token(tok)
+		if v2:
+			if _refresh_dead_active():
+				return None  # grant muerto: no martillear con un token que no vuelve
+			tok = _ensure_fresh_v2(tok)
 
-		if method:
-			m = method.upper()
-		else:
-			m = 'POST' if post is not None else 'GET'
+		def _qp(t):
+			q = _required_params(t)
+			if params: q.update(params)
+			return q
 
-		if m == 'GET':
-			response = session.get(url, params=qp, headers=headers, timeout=20)
-		elif m == 'DELETE':
-			response = session.delete(url, params=qp, headers=headers, timeout=20)
-		else:
-			response = session.post(url, params=qp, data=body, headers=headers, timeout=20)
-
+		response = _send(m, url, _qp(tok), body, _headers(True, tok))
 		status_code = str(response.status_code)
+
+		if status_code == '401' and v2 and _error_code(response) != 'user_token_required':
+			new_tok = _refresh_v2(tok)
+			if new_tok and new_tok != tok:
+				tok = new_tok
+				response = _send(m, url, _qp(tok), body, _headers(True, tok))
+				status_code = str(response.status_code)
+
 		_error_handler(url, response, status_code, silent=silent)
 
-		if response is not None and status_code in ('200', '201', '204'):
+		if response is not None and (status_code in ('200', '201', '204') or status_code in accept):
 			return response
 		elif status_code == '401':
-			# Token revoked/expired. SIMKL has NO refresh — but a SINGLE 401
+			if v2:
+				if _error_code(response) == 'user_token_required':
+					log_utils.log('SIMKL 401 user_token_required on %s - request sent without a token.' % url.split('?')[0],
+									__name__, log_utils.LOGWARNING)
+				return None
+			# V1: token revoked/expired. SIMKL V1 has NO refresh — but a SINGLE 401
 			# could also be a transient server hiccup. We DO NOT auto-clear
-			# credentials anymore (would log out a user on every transient
-			# blip). Just warn and let the user manually deauth via settings
-			# when the situation is persistent.
+			# credentials (would log out a user on every transient blip).
 			if getSetting('simkl.isauthed') == 'true':
 				log_utils.log('SIMKL 401 — token may be revoked or this is transient. '
 								'Not clearing creds automatically. User can manually deauth if persistent.',
 								__name__, log_utils.LOGWARNING)
-				if not silent and server_notification and not control.condVisibility('Player.HasVideo'):
+				if not silent and _server_notify() and not control.condVisibility('Player.HasVideo'):
 					control.notification(title='SIMKL', message='Token rejected — re-auth manually if it persists.')
 			return None
+		elif status_code == '403':
+			err = _error_code(response)
+			if err == 'insufficient_scope':
+				log_utils.log('SIMKL 403 insufficient_scope - this sign-in is read-only; reconnect to allow scrobbling.',
+								__name__, log_utils.LOGWARNING)
+				_notify_reauth()
+			return None
 		elif status_code == '412':
-			# client_id failed — quota / suspension. NEVER silently retry.
+			# client_id failed / throttling block. NEVER silently retry.
 			if not silent:
-				log_utils.log('SIMKL 412 client_id_failed — quota or suspension active.', __name__, log_utils.LOGWARNING)
+				log_utils.log('SIMKL 412 client_id_failed — wrong client_id or throttling block active.', __name__, log_utils.LOGWARNING)
 			return None
 		elif status_code == '429':
-			# Per SIMKL docs: respect Retry-After and retry ONCE. If still 429,
-			# give up — the next sync tick will retry (15 min default). Avoids
-			# (a) hammering a server that explicitly said back off, and
-			# (b) blocking the player/service thread for >1 minute on a stuck rate limit.
-			ra = int(response.headers.get('Retry-After', 30))
-			if not silent and server_notification and not control.condVisibility('Player.HasVideo'):
-				control.notification(title='SIMKL', message='Throttling — sleeping %s s' % ra)
-			control.sleep((ra + 1) * 1000)
+			err = _error_code(response)
+			try: ra = int(float(response.headers.get('Retry-After', 0) or 0))
+			except Exception: ra = 0
+			if err in ('user_limit_exceeded', 'app_limit_exceeded') or ra > 10:
+				# Cuota DIARIA: se repone a medianoche US Eastern. Esperar aqui el
+				# Retry-After colgaria el hilo del reproductor o del servicio horas.
+				# Se bloquean las llamadas hasta entonces (tope 24 h) y listo.
+				ra = min(max(ra, 600), 86400)
+				_set_prop_ts(_PROP_QUOTA_UNTIL, time() + ra)
+				log_utils.log('SIMKL 429 %s - daily quota exhausted, pausing SIMKL calls for %s s.' % (err or 'limit', ra),
+								__name__, log_utils.LOGWARNING)
+				return None
+			# Limite por segundo ('rate_limit'): se despeja en ~1 s. Un reintento.
+			control.sleep((max(ra, 1) + 1) * 1000)
 			try:
-				if m == 'GET':
-					response = session.get(url, params=qp, headers=headers, timeout=20)
-				elif m == 'DELETE':
-					response = session.delete(url, params=qp, headers=headers, timeout=20)
-				else:
-					response = session.post(url, params=qp, data=body, headers=headers, timeout=20)
+				response = _send(m, url, _qp(tok), body, _headers(True, tok))
 			except Exception:
 				return None
 			status_code = str(response.status_code)
-			if status_code in ('200', '201', '204'): return response
-			# Still failing — bail out; next sync tick will retry.
+			if status_code in ('200', '201', '204') or status_code in accept: return response
 			return None
 		else:
 			return None
@@ -193,7 +496,7 @@ def getSimkl(url, post=None, params=None, method=None, silent=False):
 
 def _error_handler(url, response, status_code, silent=False):
 	if status_code in ('200', '201', '204', '429', '401', '412'): return
-	if not silent and server_notification and not control.condVisibility('Player.HasVideo'):
+	if not silent and _server_notify() and not control.condVisibility('Player.HasVideo'):
 		# Mirror trakt.error_handler verbosity: only notify on real failures.
 		msg = 'SIMKL %s: %s' % (status_code, str(url).split('?')[0])
 		log_utils.log(msg, __name__, log_utils.LOGDEBUG)
@@ -203,6 +506,24 @@ def getSimklAsJson(url, post=None, params=None, method=None, silent=False):
 	r = getSimkl(url, post=post, params=params, method=method, silent=silent)
 	if r is None: return None
 	try:
+		return r.json()
+	except Exception:
+		log_utils.error()
+		return None
+
+def _get_public_json(url):
+	"""Ficheros publicos de data.simkl.in (Trending/Calendar). Sin token: con
+	V2 el acceso anonimo queda limitado al catalogo publico y a estos ficheros,
+	que ademas no gastan cuota y estan en la cache de Cloudflare. Llevan los
+	mismos parametros obligatorios y el User-Agent."""
+	try:
+		r = requests.get(url, params=_required_params(''),
+						 headers={'User-Agent': '%s/%s' % (APP_NAME, APP_VERSION),
+								  'Accept': 'application/json'},
+						 timeout=20)
+		if r.status_code != 200:
+			log_utils.log('SIMKL data file %s -> HTTP %s' % (url, r.status_code), __name__, log_utils.LOGDEBUG)
+			return None
 		return r.json()
 	except Exception:
 		log_utils.error()
@@ -223,7 +544,8 @@ def getSimklIndicatorsInfo():
 	return bool(getSetting('simkl.indicators') == 'true' and getSimklCredentialsInfo())
 
 def _clear_creds():
-	for k in ('simkl.username', 'simkl.token', 'simkl.user_id', 'simkl.expires', 'simkl.isauthed'):
+	for k in ('simkl.username', 'simkl.token', 'simkl.user_id', 'simkl.expires', 'simkl.isauthed',
+			  'simkl.refresh', 'simkl.scope', 'simkl.legacy'):
 		try: setSetting(k, '' if k != 'simkl.isauthed' else 'false')
 		except Exception: pass
 	# Invalidate luc_kodi_settings window cache so the next getSetting() picks up
@@ -256,7 +578,174 @@ def _poll_pin(user_code):
 	except Exception: return None
 
 def auth():
-	"""Interactive PIN flow with a progress dialog. Mirror of trakt.auth()."""
+	"""Punto de entrada de la autorizacion (Ajustes > Authorize / Reconnect).
+	Con client_id V2 disponible, SIEMPRE V2: la guia de SIMKL pide no volver
+	a emitir tokens V1 una vez hay registro V2. Sin el, el flujo PIN V1 de
+	siempre, intacto."""
+	if v2_available():
+		return _auth_v2()
+	return _auth_v1()
+
+
+def _auth_v2():
+	"""Device flow de AUTH V2 (RFC 8628): codigo de 8 caracteres XXXX-YYYY,
+	enlace con el codigo ya relleno para el QR, sondeo de /oauth2/token.
+
+	Tres cosas del RFC que en SIMKL NO pasan y condicionan el bucle:
+	  * no hay senal de rechazo: si el usuario pulsa "no", se sigue recibiendo
+	    authorization_pending — el bucle lo cierra la cuenta atras o el Cancelar;
+	  * slow_down obliga a sumar 5 s al intervalo Y esperar (el temporizador se
+	    rearma con cada intento, incluido el rechazado);
+	  * invalid_client (401) es de configuracion: sondear no lo arregla."""
+	cid = _v2_client_id()
+	prev_user_id = (getSetting('simkl.user_id') or '').strip()
+
+	status, dev = _oauth2_post('/oauth2/device', {'client_id': cid, 'scope': V2_SCOPE})
+	if status != 200 or not dev.get('device_code') or not dev.get('user_code'):
+		log_utils.log('SIMKL V2 /oauth2/device failed: %s %s' % (status, dev.get('error', '')), __name__, log_utils.LOGWARNING)
+		control.notification(title='SIMKL', message='Failed to obtain a sign-in code, try again later.')
+		return False
+
+	device_code = str(dev['device_code'])  # credencial de sondeo: nunca se muestra ni se registra
+	user_code = str(dev['user_code'])
+	verification_uri = dev.get('verification_uri') or PIN_VERIFICATION_URL
+	verification_complete = dev.get('verification_uri_complete') or ('%s?user_code=%s' % (verification_uri, quote_plus(user_code)))
+	try: expires_in = int(dev.get('expires_in') or 900)
+	except Exception: expires_in = 900
+	try: interval = max(int(dev.get('interval') or 5), 5)
+	except Exception: interval = 5
+
+	# QR con el enlace COMPLETO: la camara del movil rellena el codigo y el
+	# usuario no teclea nada. El codigo va debajo como alternativa.
+	try:
+		qr_url  = 'https://api.qrserver.com/v1/create-qr-code/?size=256x256&qzone=1&color=f00&data='
+		qr_icon = qr_url + quote_plus(verification_complete)
+		control.notification(title='SIMKL', message='%s  |  %s' % (verification_uri, user_code),
+							 icon=qr_icon, time=15000)
+	except Exception:
+		pass
+
+	progressDialog = control.progressDialog
+	progressDialog.create('SIMKL authorization')
+	line = '[COLOR %s]Visit:[/COLOR] %s\n[COLOR %s]Enter code:[/COLOR] %s' % (
+		highlight_color, verification_uri, highlight_color, user_code)
+	progressDialog.update(100, line)
+
+	started = time()
+	next_poll = started + interval
+	token_js = None
+	fail_msg = None
+	while True:
+		if progressDialog.iscanceled():
+			try: progressDialog.close()
+			except Exception: pass
+			return False
+		left = expires_in - (time() - started)
+		if left <= 0:
+			fail_msg = 'Sign-in code expired, please try again.'
+			break
+		try: progressDialog.update(int(left / expires_in * 100))
+		except Exception: pass
+		if control.monitor.waitForAbort(1):
+			try: progressDialog.close()
+			except Exception: pass
+			return False
+		if time() < next_poll:
+			continue
+
+		status, js = _oauth2_post('/oauth2/token', {
+			'grant_type': 'urn:ietf:params:oauth:grant-type:device_code',
+			'client_id': cid,
+			'device_code': device_code})
+		next_poll = time() + interval
+		if status == 200 and js.get('access_token'):
+			token_js = js
+			break
+		err = js.get('error', '')
+		if err == 'authorization_pending':
+			continue
+		if err == 'slow_down':
+			interval += 5
+			next_poll = time() + interval
+			continue
+		if err == 'expired_token':
+			fail_msg = 'Sign-in code expired, please try again.'
+			break
+		if status == 401 or err == 'invalid_client':
+			log_utils.log('SIMKL V2 device flow: invalid_client - the V2 client_id is not accepted.', __name__, log_utils.LOGWARNING)
+			fail_msg = 'SIMKL rejected this app registration.'
+			break
+		# Red caida / 5xx: se sigue sondeando al mismo ritmo hasta la cuenta atras.
+
+	try: progressDialog.close()
+	except Exception: pass
+
+	if not token_js:
+		control.notification(title='SIMKL', message=fail_msg or 'Authorization failed.')
+		return False
+
+	scope = str(token_js.get('scope') or '')
+	_store_v2_tokens(token_js)
+	setSetting('simkl.isauthed', 'true')
+	_clear_auth_props()
+	# SIMKL degrada EN SILENCIO a solo lectura si el scope no llega bien: no
+	# da error aqui, sino un 403 en el primer scrobble. Se avisa ahora.
+	if 'media:write' not in scope:
+		log_utils.log('SIMKL V2 token granted without media:write (scope=%r) - scrobbling will fail.' % scope,
+						__name__, log_utils.LOGWARNING)
+		control.okDialog('SIMKL', getLS(40813))
+
+	control.sleep(500)
+	settings = getSimklAsJson('/users/settings', method='POST', silent=True)
+	if not settings:
+		setSetting('simkl.username', 'SIMKL user')
+		update_legacy_flag()
+		control.notification(title='SIMKL', message='Authorized — user lookup will retry on next sync.')
+		return True
+	try:
+		username = settings.get('user', {}).get('name') or 'SIMKL user'
+		user_id  = str(settings.get('user', {}).get('id') or '')
+	except Exception:
+		username, user_id = 'SIMKL user', ''
+
+	# Reconectar con OTRA cuenta de SIMKL: las tablas locales son de la
+	# anterior y no se deben mezclar (lo pide la guia de migracion).
+	if prev_user_id and user_id and prev_user_id != user_id:
+		log_utils.log('SIMKL: signed in with a different account - clearing local sync tables.', __name__, log_utils.LOGINFO)
+		try:
+			simklsync.delete_tables({'bookmarks': True, 'watched_movies': True, 'watched_shows': True,
+									 'movies_watchlist': True, 'shows_watchlist': True,
+									 'anime_watchlist': True, 'service': True})
+		except Exception:
+			log_utils.error()
+
+	setSetting('simkl.username', str(username))
+	setSetting('simkl.user_id',  user_id)
+	update_legacy_flag()
+	control.notification(title='SIMKL', message='Authorization successful.')
+
+	while control.condVisibility('Window.IsVisible(addonsettings)'): control.sleep(100)
+	control.sleep(100)
+	try:
+		force_simklSync(silent_confirm=True)
+	except Exception:
+		log_utils.error()
+	return True
+
+
+def _revoke_v2():
+	"""POST /oauth2/revoke con el refresh token: revoca el grant entero (las
+	dos mitades). Siempre responde 200, exista o no el token, asi que no hay
+	nada que comprobar: se revoca, se descarta la copia y listo."""
+	refresh = (getSetting('simkl.refresh') or '').strip()
+	cid = _v2_client_id()
+	if not refresh or not cid: return
+	_oauth2_post('/oauth2/revoke', {'client_id': cid, 'token': refresh})
+
+
+def _auth_v1():
+	"""AUTH V1 — interactive PIN flow with a progress dialog. Mirror of trakt.auth().
+	Solo se usa si el plugin no lleva client_id V2 (build sin registro V2)."""
 	pin = _request_pin()
 	if not pin or 'user_code' not in pin:
 		control.notification(title='SIMKL', message='Failed to obtain PIN code, try again later.')
@@ -389,7 +878,12 @@ def deauth():
 								'You will need to re-authorize to use SIMKL features.', '', heading='SIMKL'):
 		return False
 	try:
+		# V2: revocar el grant en SIMKL (V1 no tiene endpoint de revocacion).
+		if _is_v2_token(_stored_token()):
+			try: _revoke_v2()
+			except Exception: log_utils.error()
 		_clear_creds()
+		_clear_auth_props()
 		# Wipe sync tables — same idea as trakt deauth.
 		try:
 			simklsync.delete_tables({'bookmarks': True, 'watched_movies': True, 'watched_shows': True,
@@ -437,6 +931,12 @@ def account_info_to_dialog():
 			'[COLOR %s]Timezone:[/COLOR] %s' % (highlight_color, tz),
 			'[COLOR %s]Joined:[/COLOR] %s' % (highlight_color, joined_str),
 		]
+		# Tipo de conexion: solo se muestra si hay algo que decir (V2 vigente, o
+		# V1 con la conexion nueva ya disponible en este build).
+		if _is_v2_token(_stored_token()):
+			lines.append('[COLOR %s]Connection:[/COLOR] %s' % (highlight_color, getLS(40814)))
+		elif is_legacy_connection():
+			lines.append('[COLOR %s]Connection:[/COLOR] %s' % (highlight_color, getLS(40815)))
 		if bio:
 			lines += ['', '[COLOR %s]Bio:[/COLOR] %s' % (highlight_color, bio)]
 
@@ -681,13 +1181,20 @@ def _scrobble_call(action, imdb, tmdb, tvdb, season, episode, progress):
 
 	try:
 		body = _build_scrobble_body(imdb, tmdb, tvdb, season, episode, progress)
-		r = getSimkl('/scrobble/%s' % action, post=body, silent=True)
+		# 409 en /stop = ya estaba marcado visto en la ultima hora: exito blando.
+		r = getSimkl('/scrobble/%s' % action, post=body, silent=True,
+					accept=('409',) if action == 'stop' else ())
 		if r is None:
 			log_utils.log('SIMKL scrobble/%s failed (imdb=%s tvdb=%s S%sE%s prog=%s)' %
 							(action, imdb, tvdb, season, episode, progress),
 							__name__, log_utils.LOGDEBUG)
 			return False
-		if getSetting('simkl.scrobble.notify') == 'true':
+		# Solo al EMPEZAR, igual que MDBList desde la 1.0.65. Avisar en cada
+		# scrobble suponia un popup encima del video cada 90 s (el intervalo de
+		# pausa periodica de SIMKL) durante toda la reproduccion. Un aviso al
+		# arrancar ya confirma que el tracking esta vivo, que es para lo que
+		# sirve el ajuste.
+		if action == 'start' and getSetting('simkl.scrobble.notify') == 'true':
 			control.notification(title='SIMKL', message='Scrobble %s OK' % action)
 		log_utils.log('SIMKL scrobble/%s OK (imdb=%s tvdb=%s S%sE%s prog=%s)' %
 						(action, imdb, tvdb, season, episode, progress),
@@ -818,6 +1325,7 @@ def simkl_service_sync():
 	_bust_section_caches_on_version_change()
 	while not control.monitor.abortRequested():
 		control.sleep(5000)  # device wake guard
+		update_legacy_flag()
 		if control.condVisibility('System.InternetState') and getSimklCredentialsInfo():
 			try:
 				activities = getSimklAsJson('/sync/activities', method='POST', silent=True)
@@ -826,7 +1334,7 @@ def simkl_service_sync():
 				sync_watchlists(activities)
 			except Exception:
 				log_utils.error()
-		if control.monitor.waitForAbort(60 * service_syncInterval): break
+		if control.monitor.waitForAbort(60 * _sync_interval_minutes()): break
 
 
 def force_simklSync(silent_confirm=False):
@@ -905,6 +1413,17 @@ def sync_watchlists(activities=None, forced=False):
 # ---------------------------------------------------------------------------
 # Public list helpers — feed movies.py / tvshows.py menus
 # ---------------------------------------------------------------------------
+def _item_year(item):
+	"""Los ficheros de data.simkl.in no traen 'year' sino release_date en
+	formato MM/DD/YYYY; la API antigua traia 'year'. Vale para los dos."""
+	y = item.get('year')
+	if y: return str(y)
+	try:
+		m = re.search(r'(\d{4})', str(item.get('release_date') or ''))
+		return m.group(1) if m else ''
+	except Exception:
+		return ''
+
 def simkl_list(url):
 	"""
 	Fetch a SIMKL public list (trending today/week/month) and normalize it to
@@ -919,9 +1438,15 @@ def simkl_list(url):
 	"""
 	if not url: return []
 	try:
-		# getSimklAsJson auto-merges client_id / app-name / app-version into
-		# the query string via _required_params(), so we just hand it the URL.
-		items = getSimklAsJson(url, silent=True)
+		# v1.0.88: las listas salen de los ficheros publicos de data.simkl.in
+		# (mismo ranking que las paginas Most Watched de SIMKL). Con AUTH V2 el
+		# acceso anonimo a la API queda limitado al catalogo y a estos ficheros,
+		# que no gastan cuota. Las URLs antiguas de api.simkl.com siguen
+		# aceptandose por si alguna quedo guardada en un widget.
+		if url.startswith(DATA_URL):
+			items = _get_public_json(url)
+		else:
+			items = getSimklAsJson(url, silent=True)
 		if not items or not isinstance(items, list):
 			return []
 	except Exception:
@@ -942,7 +1467,7 @@ def simkl_list(url):
 				'tvdb':       str(ids.get('tvdb', '') or ''),
 				'title':      item.get('title', '') or '',
 				'originaltitle': item.get('title', '') or '',
-				'year':       str(item.get('year', '') or ''),
+				'year':       _item_year(item),
 				'metacache':  False,
 			}
 			out.append(values)
@@ -1168,3 +1693,94 @@ def getWatchingShows():
 					% (len(shows), len(anime), len(out), len([i for i in out if i.get('simkl_watched')])),
 					__name__, log_utils.LOGDEBUG)
 	return out
+
+
+# ── v1.0.91 (M9): valoraciones y listas desde el menu contextual ──────────
+# Payloads tomados de una integracion que ya funciona en produccion (TMDb
+# Movies) y de la API de SIMKL:
+#   - valoraciones SOLO para peliculas y series: SIMKL no tiene nota por
+#     temporada ni por episodio (enviarla la aplicaria a la serie entera);
+#   - anadir a una lista: POST /sync/add-to-list con 'to' = plantowatch;
+#   - quitar: /sync/remove-from-list no hace nada en SIMKL (responde 200
+#     null). Lo que hace el boton de la web es /sync/history/remove, que
+#     QUITA TAMBIEN EL HISTORIAL. Por eso se pide confirmacion.
+
+def _simkl_item(imdb, media_type):
+	if not imdb: return None
+	if not str(imdb).startswith('tt'): imdb = 'tt' + str(imdb)
+	key = 'movies' if media_type == 'movie' else 'shows'
+	return key, {'ids': {'imdb': imdb}}
+
+
+def rateItem(imdb, media_type='movie', remove=False):
+	try:
+		if not getSimklCredentialsInfo():
+			return control.notification(title='SIMKL', message=400853)
+		pair = _simkl_item(imdb, media_type)
+		if not pair: return
+		key, entry = pair
+		if remove:
+			r = getSimkl('/sync/ratings/remove', post={key: [entry]})
+			return control.notification(title='SIMKL', message=400846 if r is not None else 400852)
+		labels = ['[B]%d[/B] / 10' % i for i in range(10, 0, -1)]
+		sel = control.selectDialog(labels, heading=getLS(400844))
+		if sel < 0: return
+		rating = 10 - sel
+		entry['rating'] = rating
+		entry['rated_at'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+		r = getSimkl('/sync/ratings', post={key: [entry]})
+		control.notification(title='SIMKL', message=(getLS(400845) % rating) if r is not None else 400852)
+	except Exception:
+		log_utils.error()
+
+
+def watchlistAdd(imdb, media_type='movie'):
+	try:
+		if not getSimklCredentialsInfo():
+			return control.notification(title='SIMKL', message=400853)
+		pair = _simkl_item(imdb, media_type)
+		if not pair: return
+		key, entry = pair
+		entry['to'] = 'plantowatch'
+		r = getSimkl('/sync/add-to-list', post={key: [entry]})
+		control.notification(title='SIMKL', message=400848 if r is not None else 400852)
+		if r is not None:
+			try: invalidateSectionCaches()
+			except Exception: pass
+	except Exception:
+		log_utils.error()
+
+
+def listRemove(imdb, media_type='movie'):
+	try:
+		if not getSimklCredentialsInfo():
+			return control.notification(title='SIMKL', message=400853)
+		pair = _simkl_item(imdb, media_type)
+		if not pair: return
+		if not control.yesnoDialog(getLS(400850), '', ''): return
+		key, entry = pair
+		r = getSimkl('/sync/history/remove', post={key: [entry]})
+		control.notification(title='SIMKL', message=400851 if r is not None else 400852)
+		if r is not None:
+			try: invalidateSectionCaches()
+			except Exception: pass
+	except Exception:
+		log_utils.error()
+
+
+def manager(name, imdb, media_type='movie'):
+	"""Menu SIMKL del contexto (peliculas y series)."""
+	try:
+		if not getSimklCredentialsInfo():
+			return control.notification(title='SIMKL', message=400853)
+		items = [(getLS(400844), 'rate'), (getLS(400854), 'unrate'),
+				 (getLS(400847), 'add'), (getLS(400849), 'remove')]
+		sel = control.selectDialog([i[0] for i in items], heading='SIMKL - %s' % (name or ''))
+		if sel < 0: return
+		act = items[sel][1]
+		if act == 'rate': rateItem(imdb, media_type)
+		elif act == 'unrate': rateItem(imdb, media_type, remove=True)
+		elif act == 'add': watchlistAdd(imdb, media_type)
+		elif act == 'remove': listRemove(imdb, media_type)
+	except Exception:
+		log_utils.error()

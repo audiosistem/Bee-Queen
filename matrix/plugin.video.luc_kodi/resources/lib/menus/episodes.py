@@ -357,7 +357,11 @@ class Episodes:
 				values['counts'] = showSeasons.get('counts')
 				values['studio'] = showSeasons.get('studio')
 				values['genre'] = showSeasons.get('genre')
-				try: values['duration'] = int(showSeasons.get('duration')) # showSeasons already converted to seconds
+				# v1.0.68: la duración propia del episodio manda sobre la media de
+				# la serie. Antes esta línea pisaba SIEMPRE el valor del episodio
+				# con el de la serie, que en muchas series viene vacío porque
+				# TMDb ya no rellena episode_run_time.
+				try: values['duration'] = int(item.get('duration') or showSeasons.get('duration')) # ya en segundos
 				except: values['duration'] = ''
 				values['mpaa'] = showSeasons.get('mpaa')
 				values['status'] = showSeasons.get('status')
@@ -1140,7 +1144,7 @@ class Episodes:
 				art = {}
 				art.update({'poster': season_poster, 'tvshow.poster': poster, 'season.poster': season_poster, 'fanart': fanart, 'icon': icon, 'thumb': thumb, 'banner': banner,
 						'clearlogo': meta.get('clearlogo', ''), 'tvshow.clearlogo': meta.get('clearlogo', ''), 'clearart': meta.get('clearart', ''), 'tvshow.clearart': meta.get('clearart', ''), 'landscape': thumb})
-				for k in ('metacache', 'poster2', 'poster3', 'posters_all', 'fanart2', 'fanart3', 'banner2', 'banner3', 'trailer'): meta.pop(k, None)
+				for k in ('metacache', 'meta_light', 'poster2', 'poster3', 'posters_all', 'fanart2', 'fanart3', 'banner2', 'banner3', 'trailer'): meta.pop(k, None)
 				meta.update({'poster': poster, 'fanart': fanart, 'banner': banner, 'thumb': thumb, 'icon': icon})
 				sysmeta, sysart, syslabelProgress = quote_plus(jsdumps(meta)), quote_plus(jsdumps(art)), quote_plus(labelProgress)
 				url = '%s?action=play_Item&title=%s&year=%s&imdb=%s&tmdb=%s&tvdb=%s&season=%s&episode=%s&tvshowtitle=%s&premiered=%s&meta=%s' % (

@@ -55,10 +55,11 @@
 
 from json import loads as jsloads
 import base64
-import queue
 import re
+import time
 from resources.lib.jacksparrow import client
 from resources.lib.jacksparrow import source_utils
+from resources.lib.jacksparrow import pack_handoff
 from resources.lib.jacksparrow import log_utils
 from resources.lib.jacksparrow.control import setting as getSetting
 from resources.lib.jacksparrow.control import setSetting
@@ -295,7 +296,6 @@ class source:
 	hasEpisodes = True
 
 	def __init__(self):
-		self._queue = queue.SimpleQueue()
 		self.language = ['en']
 
 		try:
@@ -337,7 +337,12 @@ class source:
 			self.movieSearch_link = '/v0/torrents?sid=%s'
 			self.tvSearch_link    = '/v0/torrents?sid=%s:%s:%s'
 
-		self.min_seeders = 0
+		# Min seeders (v1.0.61: antes estaba fijo a 0 y las ramas de
+		# filtrado eran inalcanzables)
+		try:
+			self.min_seeders = int(getSetting('torz.min.seeders') or '0')
+		except Exception:
+			self.min_seeders = 0
 
 	# ── URL builders ────────────────────────────────────────────────────
 
@@ -641,20 +646,21 @@ class source:
 				episode = data['episode']
 				hdlr = 'S%02dE%02d' % (int(season), int(episode))
 				url = self._tv_url(imdb, season, episode)
+				_is_tv = True
 			else:
 				hdlr = year
 				url = self._movie_url(imdb)
+				_is_tv = False
 		except Exception:
 			source_utils.scraper_error('TORZ')
 			return sources
 
+		# v1.0.63: el traspaso a sources_packs() ya no usa self._queue (era una
+		# cola POR INSTANCIA y sources.py crea una instancia nueva por pasada,
+		# asi que no llegaba nunca). Ver resources/lib/jacksparrow/pack_handoff.py
+		_h = pack_handoff.begin('torz', data.get('imdb'), data.get('season'), data.get('episode')) if _is_tv else None
 		files = self._fetch(url)
-		# Encolar para sources_packs (dos veces: seasons + shows)
-		try:
-			self._queue.put_nowait(files)
-			self._queue.put_nowait(files)
-		except Exception:
-			pass
+		pack_handoff.publish(_h, files)
 
 		convert = self._stream_to_item if self.custom_mode else self._rest_to_item
 		for file in files:
@@ -677,7 +683,12 @@ class source:
 			imdb = data['imdb']
 			year = data['year']
 			season = data['season']
-			files = self._queue.get(timeout=self.timeout + 1)
+			# v1.0.63: espera al resultado que publica sources(); si nadie lo
+			# publico (o expiro), se hace la peticion aqui en vez de quedarse
+			# colgado timeout+1 segundos contra una cola que no se llenaba.
+			files = pack_handoff.wait('torz', imdb, season, data.get('episode'), timeout=self.timeout)
+			if files is None:
+				files = self._fetch(self._tv_url(imdb, season, data.get('episode')))
 		except Exception:
 			source_utils.scraper_error('TORZ')
 			return sources
@@ -722,6 +733,23 @@ class source:
 
 			# GET siguiendo redirects -> URL final del archivo.
 			final = client.request(url, output='geturl', redirect=True, timeout=self.timeout)
+			# v1.0.67: algunas instancias responden 200 y redirigen a un MP4 de
+			# error ("Debrid service is down", "Too many requests"). Devolverlo
+			# haria que se reprodujese el video de error en vez de saltar.
+			if client.is_error_slate(final):
+				# v1.0.68: es transitorio a menudo — el mismo enlace suele resolver
+				# unos minutos despues. Se reintenta UNA vez, salvo que el
+				# cortafuegos indique que el servicio esta caido de verdad.
+				if client.slate_retry_allowed():
+					log_utils.log('TORZ: video de error, reintentando una vez',
+					              level=log_utils.LOGINFO)
+					time.sleep(client.SLATE_RETRY_DELAY)
+					final = client.request(url, output='geturl', redirect=True, timeout=self.timeout)
+				if client.is_error_slate(final):
+					client.note_error_slate()
+					log_utils.log('TORZ: el proveedor sigue devolviendo un video de error, se descarta la fuente',
+					              level=log_utils.LOGINFO)
+					return None
 			if (final and final != url
 					and not any(mk in final for mk in lazy_markers)):
 				log_utils.log('TORZ: resolve() -> %s' % self._mask(final[:90]), level=log_utils.LOGINFO)

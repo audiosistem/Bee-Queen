@@ -69,9 +69,10 @@ msgctxt "#400720"
 msgid "Personalized ranker (For You)"
 msgstr "Ranker personalizado (Para ti)"
 
+
 msgctxt "#400721"
 msgid "Enable personal ranker"
-msgstr "Activar ranker personal"
+msgstr "Activar el ranker personal"
 
 msgctxt "#400722"
 msgid "Personal ranker weight"
@@ -188,3 +189,39 @@ msgstr "Preferir títulos en inglés (cuando existan)"
 msgctxt "#45022"
 msgid "Monthly cache database maintenance (auto-cleanup)"
 msgstr "Mantenimiento mensual de bases de caché (limpieza automática)"
+
+msgctxt "#40617"
+msgid "Gemini daily quota used up. Try again tomorrow or add a Gemini API Key from a different project."
+msgstr "Cuota diaria de Gemini agotada. Reinténtalo mañana o añade una API Key de Gemini de otro proyecto."
+
+msgctxt "#40618"
+msgid "Gemini is overloaded. Try again in a minute or two."
+msgstr "Gemini está sobrecargado. Reinténtalo en uno o dos minutos."
+
+msgctxt "#40619"
+msgid "Gemini API Key is invalid or has been revoked."
+msgstr "La API Key de Gemini no es válida o ha sido revocada."
+
+msgctxt "#40620"
+msgid "Gemini rejected the request."
+msgstr "Gemini ha rechazado la petición."
+
+msgctxt "#40621"
+msgid "Gemini did not answer in time. Try again in a moment."
+msgstr "Gemini no ha respondido a tiempo. Reinténtalo en un momento."
+
+msgctxt "#400717"
+msgid "Low (smallest files)"
+msgstr "Baja (ficheros más pequeños)"
+
+msgctxt "#400718"
+msgid "Medium"
+msgstr "Media"
+
+msgctxt "#400719"
+msgid "High"
+msgstr "Alta"
+
+msgctxt "#400760"
+msgid "See what it takes up on this device  (and free space)"
+msgstr "Ver cuánto ocupa en el aparato (y liberar espacio)"

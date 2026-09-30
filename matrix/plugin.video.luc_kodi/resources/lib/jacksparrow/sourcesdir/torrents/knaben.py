@@ -51,9 +51,9 @@ class source:
 		return fallback
 
 	def sources(self, data, hostDict):
-		self.sources = []
-		if not data: return self.sources
-		self.sources_append = self.sources.append
+		self._results = []
+		if not data: return self._results
+		self._results_append = self._results.append
 		try:
 			self.aliases = data['aliases']
 			self.year = data['year']
@@ -62,15 +62,18 @@ class source:
 				self.episode_title = data['title']
 				self.hdlr = 'S%02dE%02d' % (int(data['season']), int(data['episode']))
 				search_link = self.tvsearch
+				variants = source_utils.episode_variants(data) # TheTVDB SxxEyy when it differs from TMDb; absolute number for anime
 			else:
 				self.title = data['title'].replace('&', 'and').replace('/', ' ').replace('$', 's')
 				self.episode_title = None
 				self.hdlr = self.year
 				search_link = self.moviesearch
-			query = '%s %s' % (re.sub(r'[^A-Za-z0-9\s\.-]+', '', self.title), self.hdlr)
+				variants = [(self.hdlr, self.hdlr, None)]
+			self._seen = set()
 			urls = []
-			url = '%s%s' % (self.base_link, search_link.format(quote_plus(query)))
-			urls.append(url)
+			for suffix, hdlr, absolute in variants:
+				query = '%s %s' % (re.sub(r'[^A-Za-z0-9\s\.-]+', '', self.title), suffix)
+				urls.append(('%s%s' % (self.base_link, search_link.format(quote_plus(query))), hdlr, absolute))
 			# if url.endswith('field=size&sorder=desc'): urls.append(url.rsplit("/", 1)[0] + '/2/')
 			# else: urls.append(url + '/2/')
 			# log_utils.log('urls = %s' % urls)
@@ -78,17 +81,18 @@ class source:
 			self.check_foreign_audio = source_utils.check_foreign_audio()
 			threads = []
 			append = threads.append
-			for url in urls:
-				append(workers.Thread(self.get_sources, url))
+			for url, hdlr, absolute in urls:
+				append(workers.Thread(self.get_sources, url, hdlr, absolute))
 			[i.start() for i in threads]
 			[i.join() for i in threads]
-			return self.sources
+			return self._results
 		except:
 			source_utils.scraper_error('KNABEN')
-			return self.sources
+			return self._results
 
-	def get_sources(self, url):
+	def get_sources(self, url, hdlr=None, absolute=None):
 		# log_utils.log('url = %s' % url)
+		if hdlr is None and not absolute: hdlr = self.hdlr
 		try:
 			results = client.request(url, timeout=7)
 			if not results: return
@@ -120,8 +124,10 @@ class source:
 					name = source_utils.clean_name(re.sub(r'<[^>]+>', '', columns[0]).strip())
 					if not name: continue
 
-				if not source_utils.check_title(self.title, self.aliases, name, self.hdlr, self.year): continue
-				name_info = source_utils.info_from_name(name, self.title, self.year, self.hdlr, self.episode_title)
+				if hash.lower() in self._seen: continue
+				if not source_utils.check_episode(self.title, self.aliases, name, hdlr, self.year, absolute): continue
+				self._seen.add(hash.lower())
+				name_info = source_utils.info_from_name(name, self.title, self.year, hdlr, self.episode_title)
 				if source_utils.remove_lang(name_info, self.check_foreign_audio): continue
 				if self.undesirables and source_utils.remove_undesirables(name_info, self.undesirables): continue
 
@@ -142,15 +148,15 @@ class source:
 					info.insert(0, isize)
 				except: dsize = 0
 				info = ' | '.join(info)
-				self.sources_append({'provider': 'knaben', 'source': 'torrent', 'seeders': seeders, 'hash': hash, 'name': name, 'name_info': name_info,
+				self._results_append({'provider': 'knaben', 'source': 'torrent', 'seeders': seeders, 'hash': hash, 'name': name, 'name_info': name_info,
 												'quality': quality, 'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize})
 			except:
 				source_utils.scraper_error('KNABEN')
 
 	def sources_packs(self, data, hostDict, search_series=False, total_seasons=None, bypass_filter=False):
-		self.sources = []
-		if not data: return self.sources
-		self.sources_append = self.sources.append
+		self._results = []
+		if not data: return self._results
+		self._results_append = self._results.append
 		try:
 			self.search_series = search_series
 			self.total_seasons = total_seasons
@@ -181,10 +187,10 @@ class source:
 				append(workers.Thread(self.get_sources_packs, link))
 			[i.start() for i in threads]
 			[i.join() for i in threads]
-			return self.sources
+			return self._results
 		except:
 			source_utils.scraper_error('KNABEN')
-			return self.sources
+			return self._results
 
 	def get_sources_packs(self, link):
 		try:
@@ -252,6 +258,6 @@ class source:
 							'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize, 'package': package}
 				if self.search_series: item.update({'last_season': last_season})
 				elif episode_start: item.update({'episode_start': episode_start, 'episode_end': episode_end}) # for partial season packs
-				self.sources_append(item)
+				self._results_append(item)
 			except:
 				source_utils.scraper_error('knaben')

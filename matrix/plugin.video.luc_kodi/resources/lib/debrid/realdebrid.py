@@ -133,7 +133,7 @@ class RealDebrid:
 						__name__, log_utils.LOGWARNING)
 					return None
 				if self.server_notifications: control.notification(message=message, icon=rd_icon)
-				log_utils.log('Real-Debrid Error:  %s' % message, log_utils.LOGWARNING)
+				log_utils.log('Real-Debrid Error:  %s' % message, __name__, log_utils.LOGWARNING)
 				return None
 			return response
 		except: log_utils.error()

@@ -26,13 +26,17 @@ _AIO_USER_DATA = (
 	'gines":true,"onlyShowUserSearchResults":%s}}],"services":[{"id":"torbox"'
 	',"enabled":true,"credentials":{"apiKey":"%s"}}]}'
 )
+_PLAN_OK = None  # cache de sesion para _usenet_plan()
 _AIO_URL = 'https://aiostreamsfortheweebsstable.midnightignite.me'
 
 
 class source:
+	# v1.0.75 -- lo expone para que _reachable() del provider_test pueda sondear
+	# el proxy del que depende TODO el scraper. Sin esto la columna Host salia '--'.
+	base_link = _AIO_URL
 	timeout = 10
 	priority = 3
-	pack_capable = True
+	pack_capable = False # no sources_packs(): Usenet indexa releases sueltos, no packs
 	hasMovies = True
 	hasEpisodes = True
 	def __init__(self):
@@ -41,6 +45,27 @@ class source:
 		self.user_engines_only = getSetting('tb.user_engines_only') == 'true'
 		self.language = ['en']
 		self.min_seeders = -2
+
+	def _usenet_plan(self):
+		"""v1.0.75 -- el buscador de Usenet de TorBox es exclusivo del plan Pro
+		(plan 2). En Free/Essential/Standard la API responde 200 con la lista
+		vacia y sin error, asi que el scraper devolvia cero en silencio en cada
+		busqueda, gastando un viaje de red y mandando la apiKey al proxy de
+		terceros para nada. Se comprueba una vez por sesion."""
+		global _PLAN_OK
+		if _PLAN_OK is None:
+			try:
+				from resources.lib.debrid.torbox import TorBox
+				info = TorBox().account_info() or {}
+				plan = (info.get('data') or {}).get('plan')
+				_PLAN_OK = (plan == 2)
+				if not _PLAN_OK:
+					from resources.lib.jacksparrow import log_utils
+					log_utils.log('TORBOXNEWS: el plan de TorBox (%s) no incluye Usenet; '
+					              'busqueda omitida (requiere Pro)' % plan, level=log_utils.LOGINFO)
+			except Exception:
+				_PLAN_OK = True  # ante la duda, no bloquear al usuario
+		return _PLAN_OK
 
 	def sources(self, data, hostDict):
 		sources = []
@@ -52,7 +77,9 @@ class source:
 			title = title.replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
 			aliases = data['aliases']
 			episode_title = data['title'] if 'tvshowtitle' in data else None
-			total_seasons = data['total_seasons'] if 'tvshowtitle' in data else None
+			# v1.0.75 -- .get(): el data que arma provider_test para series no trae
+			# esta clave y el KeyError mataba el scraper antes de la primera peticion.
+			total_seasons = data.get('total_seasons') if 'tvshowtitle' in data else None
 			year = data['year']
 			imdb = data['imdb']
 			if 'tvshowtitle' in data:
@@ -67,6 +94,7 @@ class source:
 			if not self.token:
 				log_utils.log('TORBOXNEWS: no torbox.token set; usenet search skipped', level=log_utils.LOGWARNING)
 				return sources
+			if not self._usenet_plan(): return sources
 
 			# ── Búsqueda vía proxy AIOStreams (método POV) ─────────────────────
 			user_engines = 'true' if self.user_engines_only else 'false'

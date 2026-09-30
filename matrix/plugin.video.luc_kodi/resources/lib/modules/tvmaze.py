@@ -6,7 +6,6 @@
 from json import loads as jsloads
 from urllib.parse import urlencode
 from resources.lib.database import cache
-from resources.lib.modules.control import setting as getSetting
 from resources.lib.modules import client
 from resources.lib.modules import log_utils
 
@@ -14,7 +13,6 @@ from resources.lib.modules import log_utils
 class tvMaze:
 	def __init__(self, show_id=None):
 		self.api_url = 'https://api.tvmaze.com/%s%s'
-		self.tvdb_apiKey = getSetting('tvdb.api.key')
 		self.show_id = show_id
 
 	def showID(self, show_id=None):
@@ -73,21 +71,3 @@ class tvMaze:
 		except:
 			log_utils.error()
 			return []
-
-	def episodeAbsoluteNumber(self, thetvdb, season, episode):
-		try:
-			url = 'https://thetvdb.com/api/%s/series/%s/default/%01d/%01d' % (self.tvdb_apiKey, thetvdb, int(season), int(episode))
-			r = client.request(url, error=True)
-			episode = client.parseDOM(r, 'absolute_number')[0]
-			return int(episode)
-		except:
-			log_utils.error()
-			return episode
-
-	def getTVShowTranslation(self, thetvdb, lang):
-		try:
-			url = 'https://thetvdb.com/api/%s/series/%s/%s.xml' % (self.tvdb_apiKey, thetvdb, lang)
-			r = client.request(url, error=True)
-			title = client.replaceHTMLCodes(client.parseDOM(r, 'SeriesName')[0])
-			return title
-		except: log_utils.error()

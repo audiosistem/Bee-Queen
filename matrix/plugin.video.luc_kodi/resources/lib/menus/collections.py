@@ -3,6 +3,7 @@
 	luc_kodi Add-on
 """
 
+from resources.lib.modules import app_keys
 from datetime import datetime, timedelta
 from json import dumps as jsdumps
 import re
@@ -41,7 +42,7 @@ class Collections:
 		self.traktCredentials = trakt.getTraktCredentialsInfo()
 		self.imdb_user = getSetting('imdb.user').replace('ur', '')
 		self.tmdb_key = getSetting('tmdb.api.key')
-		if self.tmdb_key == '' or self.tmdb_key is None: self.tmdb_key = 'f2e500501d9fa3bd1637bfd00f11583a'
+		if self.tmdb_key == '' or self.tmdb_key is None: self.tmdb_key = app_keys.get('tmdb')
 		# self.user = str(self.imdb_user) + str(self.tmdb_key)
 		self.user = str(self.tmdb_key)
 		self.tmdb_link = 'https://api.themoviedb.org/4/list/%s?api_key=%s&sort_by=%s&page=1' % ('%s', self.tmdb_key, self.tmdb_sort())
@@ -673,7 +674,7 @@ class Collections:
 				art = {}
 				art.update({'icon': icon, 'thumb': thumb, 'banner': banner, 'poster': poster, 'fanart': fanart, 'landscape': landscape, 'clearlogo': meta.get('clearlogo', ''),
 								'clearart': meta.get('clearart', ''), 'discart': meta.get('discart', ''), 'keyart': meta.get('keyart', '')})
-				for k in ('metacache', 'poster2', 'poster3', 'posters_all', 'fanart2', 'fanart3', 'banner2', 'banner3', 'trailer'): meta.pop(k, None)
+				for k in ('metacache', 'meta_light', 'poster2', 'poster3', 'posters_all', 'fanart2', 'fanart3', 'banner2', 'banner3', 'trailer'): meta.pop(k, None)
 				meta.update({'poster': poster, 'fanart': fanart, 'banner': banner})
 				sysmeta, sysart = quote_plus(jsdumps(meta)), quote_plus(jsdumps(art))
 				url = '%s?action=play_Item&title=%s&year=%s&imdb=%s&tmdb=%s&meta=%s' % (sysaddon, systitle, year, imdb, tmdb, sysmeta)

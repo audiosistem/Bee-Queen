@@ -40,6 +40,62 @@ class TorBoxUsenetMigration:
 		except Exception:
 			log_utils.error()
 
+class SettingsJanitor:
+	"""v1.0.65: retira los ajustes huerfanos al cambiar de version del addon.
+
+	Kodi avisa al arrancar de cada ajuste que sigue en el addon_data del usuario
+	pero ya no esta declarado. Medido comparando la 1.0.70 de pruebas con la
+	1.0.61 oficial: quedaron SEIS, todos del resolver interno de trailers que se
+	retiro — trailer.codec.av1, trailer.codec.vp92, trailer.invidious.instances,
+	trailer.max.resolution, trailer.min.resolution y trailer.player.
+
+	clean_settings() ya sabia hacer esto, pero habia que lanzarlo a mano, y un
+	mantenimiento que hay que lanzar a mano no se lanza.
+
+	ORDEN IMPORTANTE: el marcador se escribe ANTES de reescribir el fichero. Un
+	setSetting posterior pasaria por la copia en memoria de Kodi y volveria a
+	volcar el fichero, devolviendo los huerfanos que acabamos de quitar.
+	"""
+	MARKER = 'settings.cleaned.version'
+
+	def run(self):
+		try:
+			version = control.addon('plugin.video.luc_kodi').getAddonInfo('version')
+			if control.setting(self.MARKER) == version:
+				return
+			control.setSetting(self.MARKER, version)
+			control.sleep(200)
+			from resources.lib.modules import clean_settings
+			removed = clean_settings.clean_settings(silent=True)
+			if removed:
+				control.log('[ luc_kodi ] SettingsJanitor: %s ajustes obsoletos retirados en %s'
+				            % (len(removed), version), LOGINFO)
+		except Exception:
+			log_utils.error()
+
+
+class YouTubePrefsSetup:
+	"""One-shot opt-in (v1.0.62): deja plugin.video.youtube listo para tráilers.
+
+	Con "Use MPEG-DASH for videos" apagado —que es lo que exigimos— el addon de
+	YouTube cae en kodion.video.stream.select, cuyo default de fábrica es 2
+	('list'), y eso le pasa a inputstream.adaptive stream_selection_type =
+	'manual-osd': el usuario tiene que elegir la variante en el OSD en CADA
+	reproducción. Poniéndolo a 1 ('auto') el problema desaparece.
+
+	NO se ejecuta salvo que el usuario lo pida (trailer.yt.autoconfig). Tocar
+	los ajustes de otro addon sin permiso explícito no se hace: quien tenga su
+	YouTube afinado para otras cosas no debe encontrárselo cambiado. El botón
+	de la pestaña Trailers es la vía normal; esto es solo para el que prefiera
+	que se aplique solo tras instalar."""
+	def run(self):
+		try:
+			from resources.lib.modules import yt_prefs
+			yt_prefs.ensure_once()
+		except Exception:
+			log_utils.error()
+
+
 class DmmReenableMigration:
 	"""One-shot migration (v1.0.56): el scraper DMM vuelve a estar ACTIVO.
 	La v1.0.54 lo apago leyendo el 429 como un cierre a terceros, pero el
@@ -210,7 +266,11 @@ class VersionIsUpdateCheck:
 				_trakt_keys = ('trakt.token', 'trakt.refresh', 'trakt.username', 'trakt.isauthed', 'trakt.expires')
 				_saved_trakt = {k: _addon_pre.getSetting(k) for k in _trakt_keys}
 				# v1.0.18 SIMKL: same backup pattern — settings.xml rewrites would otherwise wipe the token.
-				_simkl_keys = ('simkl.token', 'simkl.username', 'simkl.user_id', 'simkl.isauthed', 'simkl.expires')
+				# v1.0.88: + refresh y scope de AUTH V2. Sin el refresh token en esta
+				# lista, una actualizacion que reescribiera settings.xml dejaria al
+				# usuario V2 con un access token de 7 dias y nada con que renovarlo.
+				_simkl_keys = ('simkl.token', 'simkl.username', 'simkl.user_id', 'simkl.isauthed', 'simkl.expires',
+							   'simkl.refresh', 'simkl.scope')
 				_saved_simkl = {k: _addon_pre.getSetting(k) for k in _simkl_keys}
 				_sub_keys = ('subtitles', 'subtitles.notification', 'opensubsusername', 'opensubspassword', 'subtitles.lang.1', 'subtitles.lang.2')
 				_saved_subs = {k: _addon_pre.getSetting(k) for k in _sub_keys}
@@ -236,29 +296,127 @@ class VersionIsUpdateCheck:
 						_addon_post.setSetting(_k, _v)
 				control.log('[ plugin.video.luc_kodi ]  VersionIsUpdateCheck: Subtitle settings restored after settings write', LOGINFO)
 
-				# v1.0.41 FIX: una versión anterior llevaba la API key del autor
-				# como fallback (DEFAULT_APIKEY). Cualquier usuario sin OAuth propio
-				# quedaba con el username del autor guardado en mdblist.username (y
-				# posiblemente su key en mdblist.apikey). Si NO hay token OAuth
-				# propio, limpiamos esos restos para que no se muestre una cuenta
-				# ajena. A quien autorizó su cuenta (tiene mdblist.token) no se le
-				# toca nada.
+				# El username de MDBList sólo es válido si hay credencial propia.
+				# Sin token OAuth Y sin API key propia no debe persistir ninguno,
+				# o los ajustes muestran una cuenta que ya no está asociada.
+				#
+				# v1.0.69: aquí vivía además la limpieza de la API key personal del
+				# autor, que la 1.0.40 y anteriores llevaban como DEFAULT_APIKEY.
+				# Retirada: la comparación obligaba a publicar esa credencial (o su
+				# hash) en cada release, y entre la 1.0.41 y hoy han pasado casi
+				# treinta versiones, así que ya no queda a quién limpiársela.
+				# La condición del username se estrecha a la que el comentario
+				# original describía: antes se borraba a todo el que no tuviera
+				# OAuth, incluidos los que sí tienen su propia API key.
 				try:
-					_LEAKED_MDB_APIKEY = 'xma2hxonarl718z4w7adchsef'
 					_mdb_token = (_addon_post.getSetting('mdblist.token') or '').strip()
-					if not _mdb_token or _mdb_token in ('0', 'empty_setting'):
-						_mdb_apikey = (_addon_post.getSetting('mdblist.apikey') or '').strip()
-						if _mdb_apikey == _LEAKED_MDB_APIKEY:
-							_addon_post.setSetting('mdblist.apikey', '')
-						# El username sólo es válido si hay credencial propia; sin
-						# OAuth ni key propia no debe persistir ningún username.
-						if (_addon_post.getSetting('mdblist.username') or '').strip():
-							_addon_post.setSetting('mdblist.username', '')
-						control.log('[ plugin.video.luc_kodi ]  VersionIsUpdateCheck: cleared leaked MDBList credentials/username (no own OAuth)', LOGINFO)
+					_mdb_apikey = (_addon_post.getSetting('mdblist.apikey') or '').strip()
+					_mdb_has_cred = bool(_mdb_apikey) or (_mdb_token and _mdb_token not in ('0', 'empty_setting'))
+					if not _mdb_has_cred and (_addon_post.getSetting('mdblist.username') or '').strip():
+						_addon_post.setSetting('mdblist.username', '')
+						control.log('[ plugin.video.luc_kodi ]  VersionIsUpdateCheck: cleared stale MDBList username (no credential)', LOGINFO)
 				except Exception:
 					log_utils.error()
 
 				control.log('[ plugin.video.luc_kodi ]  Forced new User Data settings.xml saved', LOGINFO)
+
+				# v1.0.59 MIGRACION: el desplegable de Gemini AI cambia de valores
+				# cada vez que Google retira un modelo. La 1.0.58 saco
+				# gemini-2.5-pro de `values=`, y antes salieron gemini-2.0-flash,
+				# gemini-2.0-flash-lite y los tres *-preview. Un usuario que
+				# tuviera uno de esos SELECCIONADO se queda con un valor guardado
+				# en su settings.xml que ya no existe en la definicion del ajuste:
+				# Kodi lo detecta al cargar los ajustes tras la actualizacion y lo
+				# reporta como ajuste obsoleto. gemini_api._legacy_model_map ya lo
+				# remapeaba AL LEER, asi que la busqueda funcionaba, pero el valor
+				# invalido seguia escrito en disco y el aviso volvia cada vez.
+				# Aqui lo normalizamos en el propio settings.xml, una sola vez.
+				try:
+					_gm = (_addon_post.getSetting('gemini.model') or '').strip()
+					if _gm:
+						from resources.lib.modules.gemini_api import (
+							_legacy_model_map as _gmap, fallback_models as _gchain,
+							default_model as _gdef)
+						# Valores validos = los que ofrece hoy el desplegable. Se
+						# leen de la propia definicion para no duplicar la lista.
+						_valid = set(_gchain) | {_gdef}
+						try:
+							import re as _re
+							_sx = _addon_post.getAddonInfo('path')
+							_sx = control.joinPath(_sx, 'resources', 'settings.xml')
+							with open(_sx, 'r', encoding='utf-8') as _fh:
+								_m = _re.search(r'id="gemini\.model"[^>]*values="([^"]+)"', _fh.read())
+							if _m:
+								_valid = set(_m.group(1).split('|'))
+						except Exception:
+							pass
+						if _gm not in _valid:
+							_new = _gmap.get(_gm, _gdef)
+							if _new not in _valid:
+								_new = _gdef
+							_addon_post.setSetting('gemini.model', _new)
+							try:
+								control.homeWindow.clearProperty('luc_kodi_settings')
+							except Exception:
+								pass
+							control.log('[ plugin.video.luc_kodi ]  VersionIsUpdateCheck: '
+										'stale gemini.model "%s" migrated to "%s"' % (_gm, _new), LOGINFO)
+				except Exception:
+					log_utils.error()
+
+				# v1.0.74 MIGRACIÓN de la calidad de imagen. Mismo patrón que la de
+				# gemini.model de arriba, y por el mismo motivo: un enum al que se le
+				# recortan valores deja escrito en el settings.xml del usuario un
+				# índice que ya no existe, y Kodi lo reporta como ajuste obsoleto en
+				# cada arranque.
+				#
+				# Hay DOS orígenes que traducir:
+				#   · `tmdb.imageResolutions`, el ajuste viejo de cinco niveles. La
+				#     traducción vivía dentro de tmdb._read_image_level() y NUNCA
+				#     llegaba a ejecutarse: solo miraba el ajuste viejo cuando el
+				#     nuevo estaba vacío, y un enum declarado con default="0" jamás
+				#     devuelve vacío — Kodi entrega el default. Así que todo el que
+				#     venía de una versión anterior aparecía en Auto en silencio.
+				#   · `tmdb.imageQuality` con valor 2, 3 o 4, que es lo que escribió
+				#     la 1.0.73 mientras el ajuste tuvo cinco opciones.
+				#
+				# Aquí sí funciona porque este bloque corre DESPUÉS de la escritura
+				# forzada de settings.xml, lee por xbmcaddon (no por el dict
+				# cacheado) y puede invalidar ese dict al terminar.
+				try:
+					from resources.lib.indexers import tmdb as _tmdb_mig
+					_iq = (_addon_post.getSetting(_tmdb_mig.IMAGE_SETTING) or '').strip()
+					_valid_iq = (str(_tmdb_mig._CHOICE_AUTO), str(_tmdb_mig._CHOICE_ORIGINAL))
+					if _iq not in _valid_iq:
+						_choice = _tmdb_mig._CHOICE_AUTO
+						_from = _iq or 'unset'
+						try:
+							# Un 2/3/4 en el ajuste NUEVO es Low/Medium/High de la
+							# 1.0.73: los tres van a Auto, que es lo que ahora
+							# significa "que decida el aparato".
+							if _iq != '':
+								_choice = _tmdb_mig._CHOICE_AUTO
+							else:
+								_legacy = (_addon_post.getSetting(
+									_tmdb_mig.LEGACY_IMAGE_SETTING) or '').strip()
+								_from = 'legacy %s' % (_legacy or 'unset')
+								if _legacy != '':
+									_choice = _tmdb_mig.LEGACY_TO_CHOICE.get(
+										int(_legacy), _tmdb_mig._CHOICE_AUTO)
+						except (TypeError, ValueError):
+							_choice = _tmdb_mig._CHOICE_AUTO
+						_addon_post.setSetting(_tmdb_mig.IMAGE_SETTING, str(_choice))
+						try:
+							control.homeWindow.clearProperty('luc_kodi_settings')
+							control.homeWindow.clearProperty(_tmdb_mig._CEILING_PROP)
+						except Exception:
+							pass
+						control.log('[ plugin.video.luc_kodi ]  VersionIsUpdateCheck: '
+									'image quality migrated (%s -> %s)'
+									% (_from, 'Original' if _choice == _tmdb_mig._CHOICE_ORIGINAL
+									   else 'Auto'), LOGINFO)
+				except Exception:
+					log_utils.error()
 
 				# v1.0.45 MIGRACIÓN (una sola vez, acotada): los cambios de la API de
 				# Trakt del 30-jun-2026 hicieron que versiones <=1.0.44 guardaran en
@@ -392,7 +550,60 @@ class SubtitlePlayer(control.player2):
 		import threading
 		self._sub_lock = threading.Lock()
 
+	def onPlayBackError(self):
+		"""v1.0.90 (F6): failover de trailers. trailer.py deja en la ventana
+		Home los ids de repuesto; si el que se entrego a plugin.video.youtube
+		falla (geobloqueo, video retirado), se lanza el siguiente. Maximo
+		tres, y solo mientras la marca de trailer siga puesta."""
+		try:
+			import json as _json
+			raw = control.homeWindow.getProperty('luc_kodi.trailer.failover')
+			if not raw or not control.homeWindow.getProperty('luc_kodi.trailer.playing'):
+				# v1.0.91: rollover de fuentes. sources.py deja las siguientes
+				# del autoplay; si la elegida no llega a arrancar se prueba otra.
+				if control.homeWindow.getProperty('luc_kodi.rollover'):
+					control.log('[ luc_kodi ] rollover: onPlayBackError before start, launching play_rollover', LOGINFO)
+					control.execute('RunPlugin(plugin://plugin.video.luc_kodi/?action=play_rollover)')
+				return
+			data = _json.loads(raw)
+			ids = data.get('ids') or []
+			if not ids:
+				control.homeWindow.clearProperty('luc_kodi.trailer.failover')
+				return
+			nxt, rest = ids[0], ids[1:]
+			if rest:
+				data['ids'] = rest
+				control.homeWindow.setProperty('luc_kodi.trailer.failover', _json.dumps(data))
+			else:
+				control.homeWindow.clearProperty('luc_kodi.trailer.failover')
+			control.log('[ luc_kodi ] trailer failover: playback error, trying %s (%d left)' % (nxt, len(rest)), LOGINFO)
+			control.homeWindow.setProperty('luc_kodi.trailer.playing', nxt)
+			control.notification(message=400841)
+			item = control.item(label=data.get('title') or 'Trailer', offscreen=True)
+			try: item.setArt({'icon': data.get('icon') or '', 'thumb': data.get('icon') or ''})
+			except Exception: pass
+			control.sleep(500)
+			self.play('plugin://plugin.video.youtube/play/?video_id=%s' % nxt, item)
+		except Exception:
+			log_utils.error()
+
 	def onAVStarted(self):
+		# v1.0.63: volcado de pistas de audio ANTES del guard de luc_kodi — los
+		# trailers se reproducen via plugin.video.youtube, asi que si esto fuese
+		# despues del guard no se ejecutaria nunca justo en el caso que interesa.
+		# No hace nada salvo que trailer.audio.probe este activo.
+		try:
+			from resources.lib.modules import trailer_audio
+			trailer_audio.probe()
+			trailer_audio.apply_preferred_profile()
+		except Exception:
+			pass
+		# v1.0.90: si algo arranco, los candidatos de repuesto del trailer ya
+		# no hacen falta.
+		try:
+			control.homeWindow.clearProperty('luc_kodi.trailer.failover')
+			control.homeWindow.clearProperty('luc_kodi.rollover') # v1.0.91: arranco, no hace falta
+		except Exception: pass
 		# Guard: only act on content launched by plugin.video.luc_kodi.
 		# Player.FilenameAndPath returns the original plugin:// path of the playlist
 		# item, even after setResolvedUrl has replaced getPlayingFile() with the
@@ -463,33 +674,57 @@ class SubtitlePlayer(control.player2):
 
 class PosterJanitorService:
 	def run(self):
-		control.log('[ plugin.video.luc_kodi ]  Poster Texture Janitor Service Starting...', LOGINFO)
+		# v1.0.94: ya solo fija el offset de arranque de la rotacion; la
+		# limpieza de texturas la lleva MaintenanceService.
 		from resources.lib.modules import poster_rotator
-		poster_rotator.janitor_service() # contiene bucle "control.monitor.waitForAbort()"; no-op si la rotación está desactivada
+		poster_rotator.janitor_service()
 
 
-class CacheMaintenanceService:
+class UpdaterService:
 	def run(self):
-		control.log('[ plugin.video.luc_kodi ]  Cache DB Maintenance Service Starting...', LOGINFO)
-		from resources.lib.modules import cache_janitor
-		cache_janitor.janitor_service() # contiene bucle "control.monitor.waitForAbort()"; no-op si está desactivado
+		control.monitor.waitForAbort(5)
+		from resources.lib.modules import updater
+		updater.UpdaterService().run() # contiene bucle "waitForAbort"; no-op si updater.enabled esta a false
+
+class MaintenanceService:
+	def run(self):
+		# v1.0.94: la sonda de limpieza. Un solo bucle para todo lo que deja el
+		# addon (arte, bases de cache, listas en RAM, temporales, log): vigila
+		# la salida del addon, hace la pasada diferida del arranque y, al
+		# cerrar Kodi, solo deja marcada la pendiente. Sustituye al bucle
+		# mensual de cache_janitor y al de texturas de poster_rotator.
+		control.log('[ plugin.video.luc_kodi ]  Maintenance Service Starting...', LOGINFO)
+		from resources.lib.modules import maintenance
+		maintenance.service_loop() # contiene bucle "waitForAbort"
 
 
 def main():
+	# v1.0.78: estos cinco nombres se ligaban DENTRO del while. Si
+	# abortRequested() ya es cierto en la primera vuelta —lo que pasa cuando
+	# el servicio arranca durante un apagado de Kodi o durante el
+	# SetAddonEnabled que hace el updater al recargar el addon— el cuerpo no
+	# corre nunca y el bloque de cierre de abajo petaba con
+	# UnboundLocalError en 'del catalogService'. Ligados aquí, el cierre
+	# siempre encuentra algo, corra el cuerpo o no.
+	schedTrakt = None
+	libraryService = None
+	catalogService = None
+	syncTraktService = None
+	syncSimklService = None
 	while not control.monitor.abortRequested():
 		control.log('[ plugin.video.luc_kodi ]  Service Started', LOGINFO)
-		schedTrakt = None
-		libraryService = None
 		CheckSettingsFile().run()
 		TorBoxUsenetMigration().run()
 		DmmReenableMigration().run()
+		SettingsJanitor().run()
+		YouTubePrefsSetup().run()
 		CheckUndesirablesDatabase().run()
 		GUIResolutionService().run()  # non-blocking — lanza hilo daemon
-		# v1.0.49: micro-servidor localhost que sirve el MPD de tráilers a
-		# inputstream.adaptive (su pila CURL no lee special:// ni archivos).
+		# v1.0.90: perfil de memoria del aparato (device_profile.py).
 		try:
-			from resources.lib.modules import trailer_httpd
-			trailer_httpd.start()  # non-blocking — hilo daemon
+			from resources.lib.modules import device_profile
+			_prof, _free, _total = device_profile.detect()
+			control.log('[ plugin.video.luc_kodi ]  Device profile: %s (free %s MB, total %s MB)' % (_prof, _free, _total), LOGINFO)
 		except Exception:
 			log_utils.error()
 		ReuseLanguageInvokerCheck().run()
@@ -511,13 +746,16 @@ def main():
 		catalogService = Thread(target=CatalogService().run)
 		catalogService.start()
 
-		# v1.0.31: limpieza semanal de texturas de pósters rotados (no-op si está desactivada)
+		# v1.0.31: offset de arranque de la rotacion de posters (la limpieza pasa a MaintenanceService en la 1.0.94)
 		posterJanitorService = Thread(target=PosterJanitorService().run)
 		posterJanitorService.start()
 
-		# v1.0.35: mantenimiento mensual de las bases de caché regenerables (no-op si está desactivado)
-		cacheMaintenanceService = Thread(target=CacheMaintenanceService().run)
-		cacheMaintenanceService.start()
+		# v1.0.77: canal de autoactualización propio (no-op si updater.enabled está a false)
+		updaterService = Thread(target=UpdaterService().run)
+		updaterService.start()
+
+		maintenanceService = Thread(target=MaintenanceService().run)
+		maintenanceService.start()
 
 		_subtitle_player = SubtitlePlayer()  # persistent Player in service process
 		control.log('[ luc_kodi ] SubtitlePlayer registered', LOGINFO)
@@ -536,15 +774,15 @@ def main():
 		break
 	SettingsMonitor().waitForAbort()
 	control.log('[ plugin.video.luc_kodi ]  Settings Monitor Service Stopping...', LOGINFO)
-	del catalogService # prob does not kill a running thread
-	control.log('[ plugin.video.luc_kodi ]  Catalog Service Stopping...', LOGINFO)
-	del syncTraktService # prob does not kill a running thread
-	control.log('[ plugin.video.luc_kodi ]  Trakt Sync Service Stopping...', LOGINFO)
-	try:
+	if catalogService:
+		del catalogService # prob does not kill a running thread
+		control.log('[ plugin.video.luc_kodi ]  Catalog Service Stopping...', LOGINFO)
+	if syncTraktService:
+		del syncTraktService # prob does not kill a running thread
+		control.log('[ plugin.video.luc_kodi ]  Trakt Sync Service Stopping...', LOGINFO)
+	if syncSimklService:
 		del syncSimklService
 		control.log('[ plugin.video.luc_kodi ]  SIMKL Sync Service Stopping...', LOGINFO)
-	except Exception:
-		pass
 	if libraryService:
 		del libraryService # prob does not kill a running thread
 		control.log('[ plugin.video.luc_kodi ]  Library Update Service Stopping...', LOGINFO)

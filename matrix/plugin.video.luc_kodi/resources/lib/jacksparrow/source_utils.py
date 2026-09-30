@@ -91,6 +91,16 @@ def get_undesirables():
 	except: undesirables = UNDESIRABLES
 	return undesirables
 
+def lang_hint(text):
+	"""v1.0.89: lo que un stream de tipo Stremio dice de sus idiomas
+	(banderas, 'Multi Audio', la linea del globo), reducido a lo minimo. Lo
+	lee modules/audio_langs.py al montar la lista de fuentes."""
+	try:
+		from resources.lib.modules.audio_langs import compact_hint
+		return compact_hint(text)
+	except Exception:
+		return ''
+
 def check_foreign_audio():
 	return False if home_getProperty('fs_filterless_search') == 'true' else getSetting('filter.foreign.single.audio') == 'true'
 
@@ -116,8 +126,12 @@ def get_extra_tags(name):
 	if not name:
 		return tags
 	n = name.lower()
-	# HDR10+ — '+' is stripped by info_from_name so must check raw name
-	if 'hdr10+' in n or 'hdr10plus' in n:
+	# HDR10+ — '+' is stripped by info_from_name so must check raw name.
+	# 'hdr10p' (v1.0.83) es la tercera forma de escribirlo: hay quien evita el
+	# '+' en el nombre del fichero porque da guerra en algunos sistemas, y lo
+	# deja en HDR10P. Se veia en una fila real de TORRENTGALAXY que acababa
+	# etiquetada como HDR a secas.
+	if 'hdr10+' in n or 'hdr10plus' in n or 'hdr10p' in n:
 		tags.append('HDR10+')
 	# AV1 — codec name sometimes contains '+' variants or is stripped
 	if '.av1.' in n or 'av1.' in n or '.av1' in n:
@@ -131,14 +145,43 @@ def get_extra_tags(name):
 		tags.append('H264')
 	# HDR (generic, only if HDR10+ not already added)
 	if 'HDR10+' not in tags:
-		if '.hdr.' in n or ('hdr10' in n and 'hdr10+' not in n and 'hdr10plus' not in n):
+		if '.hdr.' in n or ('hdr10' in n and 'hdr10p' not in n and 'hdr10+' not in n):
 			tags.append('HDR')
 	# Dolby Vision
-	if '.dv.' in n or 'dolby.vision' in n or '.dovi.' in n or 'dolbyvision' in n:
+	_is_dv = ('.dv.' in n or 'dolby.vision' in n or '.dovi.' in n or 'dolbyvision' in n
+				or 'dvhe.07' in n or 'dvhe.08' in n or 'dvhe.05' in n)
+	if _is_dv:
 		tags.append('DV')
+	# Perfil y capa de Dolby Vision. v1.0.83.
+	#
+	# Por que va detras de la puerta _is_dv: 'p5', 'p7' y 'p8' son dos
+	# caracteres y aparecen sueltos en nombres de grupo, en numeraciones y
+	# en resoluciones partidas. Sin un marcador DV delante, buscarlos es
+	# regalar falsos positivos. FEL y MEL solo existen dentro de DV, asi que
+	# la misma puerta les vale.
+	#
+	# Lo que NO puede hacer esto, y conviene tenerlo escrito: FEL vive en el
+	# RPU del fichero, no en el nombre. Un nombre que no lo diga no se puede
+	# desmentir ni confirmar desde aqui. Esto lee lo que el nombre declara y
+	# nada mas; si el que empaqueto mintio, aqui se repite la mentira.
+	if _is_dv:
+		if 'dvhe.07' in n: tags.append('DV-P7')
+		elif 'dvhe.08' in n: tags.append('DV-P8')
+		elif 'dvhe.05' in n: tags.append('DV-P5')
+		elif '.p7.' in n or '.dvp7.' in n or '.profile.7.' in n: tags.append('DV-P7')
+		elif '.p8.' in n or '.dvp8.' in n or '.profile.8.' in n: tags.append('DV-P8')
+		elif '.p5.' in n or '.dvp5.' in n or '.profile.5.' in n: tags.append('DV-P5')
+		if '.fel.' in n or 'bl.el.rpu' in n or 'blelrpu' in n: tags.append('DV-FEL')
+		elif '.mel.' in n: tags.append('DV-MEL')
+		elif '.hybrid.' in n and 'DV-FEL' not in tags: tags.append('DV-HYBRID')
 	# 10BIT
 	if '.10bit.' in n or '.10.bit.' in n:
 		tags.append('10BIT')
+	# Alta cadencia. v1.0.83. Se exige 'fps' pegado al numero: '2160p' lleva
+	# un '60' dentro y sin esa exigencia toda pelicula 4K saldria a 60fps.
+	if '.60fps.' in n or '.60.fps.' in n: tags.append('60FPS')
+	elif '.50fps.' in n or '.50.fps.' in n: tags.append('50FPS')
+	elif '.hfr.' in n: tags.append('HFR')
 	# Dolby Atmos
 	if '.atmos.' in n:
 		tags.append('ATMOS')
@@ -217,6 +260,52 @@ def check_title(title, aliases, release_title, hdlr, year, years=None): # non pa
 		from resources.lib.jacksparrow import log_utils
 		log_utils.error()
 		return False
+
+def episode_variants(data):
+	"""Single-episode search variants as (query_suffix, hdlr, absolute).
+	The TMDb SxxEyy always comes first; TheTVDB adds its own SxxEyy when it
+	differs (alt_hdlr, any series) and, for anime, the absolute number
+	(absolute_episode)."""
+	hdlr = 'S%02dE%02d' % (int(data['season']), int(data['episode']))
+	variants = [(hdlr, hdlr, None)]
+	alt = data.get('alt_hdlr')
+	if alt and alt.upper() != hdlr: variants.append((alt, alt, None))
+	try: absolute = int(data.get('absolute_episode') or 0)
+	except: absolute = 0
+	if absolute > 0: variants.append(('%02d' % absolute, None, absolute))
+	return variants
+
+def absolute_hdlr(absolute):
+	# "Show - 48", "Show 048", "Show E48", "Show - 48v2"; not 480p, 1080p, 10bit,
+	# 5.1 audio, x264, S01E48 or ranges such as "01-12".
+	return r'(?<![0-9a-z])(?:ep?|episode)?[ ._-]*0*%d(?:v\d)?(?![0-9])(?!p\b|k\b|bit|\.\d)(?!\s*[-~]\s*\d)' % int(absolute)
+
+def check_title_absolute(title, aliases, release_title, absolute, year):
+	try:
+		year = str(year or '')
+		title_list = [title.replace('&', 'and')]
+		for alias in aliases_to_array(aliases) or []:
+			try:
+				alias = alias.replace('&', 'and')
+				if year: alias = alias.replace(year, '')
+				if alias not in title_list: title_list.append(alias)
+			except: pass
+		wanted = set(cleantitle.get(i) for i in title_list if i)
+		for match in re.finditer(absolute_hdlr(absolute), release_title, re.I):
+			t = release_title[:match.start()]
+			t = re.sub(r'^(?:\s*(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\}))+\s*', '', t) # leading [Group] tags
+			if year: t = t.replace(year, '')
+			t = t.replace('&', 'and')
+			if cleantitle.get(t) in wanted: return True
+		return False
+	except:
+		from resources.lib.jacksparrow import log_utils
+		log_utils.error()
+		return False
+
+def check_episode(title, aliases, release_title, hdlr, year, absolute=None):
+	if absolute: return check_title_absolute(title, aliases, release_title, absolute, year)
+	return check_title(title, aliases, release_title, hdlr, year)
 
 def remove_lang(release_info, check_foreign_audio):
 	if not release_info: return False

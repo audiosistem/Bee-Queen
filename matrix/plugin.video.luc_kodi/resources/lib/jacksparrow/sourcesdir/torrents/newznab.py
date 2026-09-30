@@ -46,6 +46,7 @@
 """
 
 import hashlib
+import re
 import xml.etree.ElementTree as ET
 try:
 	from urllib.parse import urlencode, quote_plus
@@ -300,7 +301,7 @@ class source:
 
 	def _make_item(self, entry, title, aliases, hdlr, year, imdb,
 			episode_title, total_seasons, season, pack_mode,
-			undesirables, check_foreign_audio):
+			undesirables, check_foreign_audio, absolute=None):
 		"""Convierte un dict Newznab en un item de luc_kodi (o None si se
 		descarta). Mismo contrato que torboxnews.py: source='usenet'."""
 		nzb_url = entry.get('nzb') or ''
@@ -331,6 +332,11 @@ class source:
 				if not valid:
 					return None
 				package = 'season'
+		elif absolute:
+			# Anime by absolute number: only a release named for that exact
+			# episode counts; packs come from their own search.
+			if not source_utils.check_title_absolute(title, aliases, name, absolute, year):
+				return None
 		else:
 			if not source_utils.check_title(title, aliases, name, hdlr, year):
 				# El titulo no casa con este episodio concreto. Podria ser un
@@ -448,6 +454,17 @@ class source:
 						't': 'search', 'cat': _CAT_TV,
 						'q': '%s %s' % (title, hdlr),
 					})
+				tagged = [(e, hdlr, None) for e in (entries or [])]
+				# TheTVDB season layout when it differs from TMDb (the numbering
+				# most indexers use), and for anime the absolute number.
+				for suffix, v_hdlr, absolute in source_utils.episode_variants(data)[1:]:
+					if absolute:
+						extra = self._fetch({'t': 'search', 'cat': _CAT_TV, 'q': '%s %s' % (title, suffix)})
+					else:
+						m = re.match(r'S(\d+)E(\d+)', v_hdlr, re.I)
+						extra = self._fetch({'t': 'tvsearch', 'cat': _CAT_TV, 'q': title,
+											'season': str(int(m.group(1))), 'ep': str(int(m.group(2)))}) if m else []
+					tagged.extend((e, v_hdlr, absolute) for e in (extra or []))
 			else:
 				season = None
 				hdlr = year
@@ -463,6 +480,7 @@ class source:
 						't': 'search', 'cat': _CAT_MOVIE,
 						'q': '%s %s' % (title, year),
 					})
+				tagged = [(e, hdlr, None) for e in (entries or [])]
 
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
@@ -471,16 +489,17 @@ class source:
 			return sources
 
 		seen = set()
-		for entry in entries:
+		for entry, e_hdlr, absolute in tagged:
 			try:
 				h = entry.get('nzb') or ''
 				if h in seen:
 					continue
-				seen.add(h)
 				item = self._make_item(
-					entry, title, aliases, hdlr, year, imdb, episode_title,
-					total_seasons, season, False, undesirables, check_foreign_audio)
+					entry, title, aliases, e_hdlr, year, imdb, episode_title,
+					total_seasons, season, False, undesirables, check_foreign_audio,
+					absolute=absolute)
 				if item:
+					seen.add(h)
 					sources.append(item)
 			except Exception:
 				source_utils.scraper_error('NEWZNAB')

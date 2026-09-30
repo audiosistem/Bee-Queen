@@ -3,12 +3,13 @@
 	luc_kodi Add-on
 """
 
+from resources.lib.modules import app_keys
 from resources.lib.modules.control import setting as getSetting, refresh as containerRefresh, addonInfo, progressDialogBG, monitor, condVisibility, execute
 from resources.lib.modules import trakt
 from resources.lib.modules import simkl
-tmdb_api_key = getSetting('tmdb.api.key') or 'f2e500501d9fa3bd1637bfd00f11583a'
-omdb_api_key = 'd4daa2b'
-tvdb_api_key = '06cff30690f9b9622957044f2159ffae'
+tmdb_api_key = getSetting('tmdb.api.key') or app_keys.get('tmdb')
+omdb_api_key = app_keys.get('omdb')
+tvdb_api_key = '' # TheTVDB v1-v3 were shut down at the end of 2022; metahandler only reached those
 traktIndicators = trakt.getTraktIndicatorsInfo()
 # v1.0.18: SIMKL as alternative indicator source. Active when Trakt is NOT
 # the chosen source AND the user explicitly opted in via simkl.indicators.
@@ -182,9 +183,32 @@ def getSeasonCount(imdb, tvdb, season=None):
 		log_utils.error()
 		return None
 
+def _trakt_scrobble_owns_history():
+	"""True cuando el scrobble de Trakt esta activo y, por tanto, es EL de
+	/scrobble/stop quien escribe el historial de esta reproduccion.
+
+	v1.0.79. Habia dos caminos independientes marcando visto la misma sesion:
+	este (POST /sync/history al llegar al 85 % DURANTE la reproduccion) y el
+	/scrobble/stop de player.set_scrobble() al parar. Consecuencia: una entrada
+	duplicada en el historial de Trakt para un solo visionado, y un 409 en el
+	scrobble posterior que hacia creer al addon que habia fallado -- se saltaba
+	el espejo local y sacaba un aviso de error falso. La documentacion de Trakt
+	lo dice sin rodeos: si quieres un umbral distinto del 80 %, manda tu la
+	pausa para no crear scrobbles duplicados. Aqui se cede el historial al
+	scrobble y este camino deja de escribir en Trakt. El indicador de visto
+	aparece al parar en vez de al 85 %, que es cuando el usuario puede verlo
+	de todas formas.
+
+	No se lee al importar el modulo: con reuselanguageinvoker el modulo
+	sobrevive entre invocaciones y el ajuste se quedaria congelado.
+	"""
+	return getSetting('trakt.scrobble') == 'true' and trakt.getTraktCredentialsInfo()
+
+
 def markMovieDuringPlayback(imdb, watched):
 	try:
 		if traktIndicators:
+			if int(watched) == 5 and _trakt_scrobble_owns_history(): return
 			if int(watched) == 5: trakt.markMovieAsWatched(imdb)
 			else: trakt.markMovieAsNotWatched(imdb)
 			trakt.cachesyncMovies()
@@ -202,6 +226,7 @@ def markMovieDuringPlayback(imdb, watched):
 def markEpisodeDuringPlayback(imdb, tvdb, season, episode, watched):
 	try:
 		if traktIndicators:
+			if int(watched) == 5 and _trakt_scrobble_owns_history(): return
 			if int(watched) == 5: trakt.markEpisodeAsWatched(imdb, tvdb, season, episode)
 			else: trakt.markEpisodeAsNotWatched(imdb, tvdb, season, episode)
 			trakt.cachesyncTV(imdb, tvdb) # updates all watched shows, as well as season indicators and counts for given ID of show

@@ -103,6 +103,16 @@ def _save_token(raw_token, detected_label):
 	try:
 		setSetting('sootio.config', raw_token)
 		setSetting('sootio.debrid.detected', detected_label or 'not configured')
+		# v1.0.70: rellenar tambien la lista de scrapers que trae el token,
+		# para que se vea nada mas terminar el asistente y no haya que esperar
+		# a la primera busqueda.
+		try:
+			from resources.lib.jacksparrow.sourcesdir.torrents.sootio import (
+				_normalize_sootio_token, _detect_scrapers_from_token)
+			_srcs = _detect_scrapers_from_token(_normalize_sootio_token(raw_token))
+			setSetting('sootio.sources.detected', _srcs or 'not detected')
+		except Exception:
+			pass
 		setSetting('provider.sootio', 'true')
 		return True
 	except Exception:
@@ -432,3 +442,45 @@ def run():
 		_method_local_server()
 	else:
 		_method_manual_paste()
+
+
+def detect():
+	"""v1.0.63: re-calcula el debrid detectado desde el sootio.config ya
+	guardado, sin re-ejecutar el wizard. Mismo hueco que Meteor: el campo
+	sootio.debrid.detected solo se rellenaba pasando por el asistente."""
+	raw = getSetting('sootio.config') or ''
+	if not raw:
+		control.dialog.ok(
+			'Sootio — re-detect',
+			'No config token saved yet.\n\n'
+			'Run the Sootio Setup Wizard first, or paste a Manifest URL '
+			'in the Config Token field.',
+		)
+		return
+	norm, detected = _detect_from_token(raw)
+	if not norm:
+		control.dialog.ok(
+			'Sootio — re-detect',
+			'The saved token could not be parsed.\n\n'
+			'Re-run the wizard and paste the full Manifest URL '
+			'(ending in /manifest.json).',
+		)
+		return
+	setSetting('sootio.debrid.detected', detected or 'not configured')
+	# Sootio tiene ademas el campo de fuentes; se refresca en la misma pasada.
+	try:
+		from resources.lib.jacksparrow.sourcesdir.torrents.sootio import (
+			_normalize_sootio_token, _detect_scrapers_from_token)
+		_srcs = _detect_scrapers_from_token(_normalize_sootio_token(raw))
+		if _srcs:
+			setSetting('sootio.sources.detected', _srcs)
+	except Exception:
+		pass
+	if getSetting('provider.sootio') != 'true':
+		setSetting('provider.sootio', 'true')
+	control.dialog.ok(
+		'Sootio — re-detect',
+		'[COLOR ff00fa9a]Done.[/COLOR]\n\n'
+		'Debrid detected: [COLOR fffdb515]%s[/COLOR]\n\n'
+		'Sootio custom mode is active.' % (detected or 'not configured'),
+	)

@@ -96,73 +96,19 @@ def rotate(meta, poster):
 	except: return poster
 
 
-# ──────────────────────── limpieza semanal de texturas ────────────────────────
-# Cada póster rotado es una URL distinta y Kodi lo cachea como una textura nueva
-# (Textures13.db + carpeta Thumbnails). Para que el almacenamiento no crezca sin
-# límite, una vez por semana se purgan las texturas de image.tmdb.org que lleven
-# más de CLEAN_AFTER_DAYS sin usarse. Las texturas en uso (la "generación" actual
-# de la rotación, y cualquier póster que el usuario siga viendo) refrescan su
-# 'lastused' continuamente, así que NUNCA se borran: solo cae la generación vieja.
-# Al volver a mostrarse un título purgado, Kodi simplemente re-descarga el póster.
-# Todo vía JSON-RPC (Textures.GetTextures / Textures.RemoveTexture): sin tocar la
-# base de datos a mano, compatible con Android/Shield y cualquier plataforma.
-
-CLEAN_AFTER_DAYS = 7
-_LASTCLEAN_SETTING = 'poster.rotation.lastclean'
-
-
-def cleanup_enabled():
-	try: return getSetting('poster.rotation.cleanup') != 'false' # activada por defecto
-	except: return True
-
-
-def clean_texture_cache(days=CLEAN_AFTER_DAYS):
-	"""Borra las texturas de image.tmdb.org sin usar desde hace `days` días.
-	Devuelve el número de texturas eliminadas."""
-	from json import dumps as jsdumps, loads as jsloads
-	from datetime import datetime, timedelta
-	removed = 0
-	try:
-		query = {'jsonrpc': '2.0', 'id': 1, 'method': 'Textures.GetTextures',
-				'params': {'properties': ['url', 'lastused'],
-							'filter': {'field': 'url', 'operator': 'contains', 'value': 'image.tmdb.org/t/p/'}}}
-		response = jsloads(control.jsonrpc(jsdumps(query)))
-		textures = response.get('result', {}).get('textures', []) or []
-		if not textures: return 0
-		cutoff = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d %H:%M:%S')
-		monitor = control.monitor
-		for texture in textures:
-			if monitor.abortRequested(): break # no retrasar el apagado de Kodi
-			try:
-				lastused = texture.get('lastused') or ''
-				if not lastused or lastused >= cutoff: continue # en uso o fecha desconocida: no tocar
-				control.jsonrpc(jsdumps({'jsonrpc': '2.0', 'id': 1, 'method': 'Textures.RemoveTexture',
-										'params': {'textureid': texture['textureid']}}))
-				removed += 1
-			except: pass
-	except:
-		from resources.lib.modules import log_utils
-		log_utils.error()
-	return removed
+# ──────────────────────── limpieza de texturas ────────────────────────────────
+# v1.0.94 — la limpieza de texturas ya NO vive aqui: la hace la sonda de
+# maintenance.py, junto con el resto de lo que deja el addon. La de este
+# modulo no borro nunca nada: pedia a Textures.GetTextures la propiedad
+# 'lastused', que Kodi no tiene en ese nivel (esta dentro de 'sizes'), asi que
+# rechazaba la llamada entera; llegaba una lista vacia, se devolvia un 0 suelto
+# donde el servicio desempaquetaba tres valores, y el TypeError se tragaba en
+# silencio cada minuto sin escribir la marca de ultima pasada. Los ajustes de
+# dias ('poster.rotation.cleanup.days') y la marca ('poster.rotation.lastclean')
+# se conservan con el mismo id y los lee maintenance.py.
 
 
 def janitor_service():
-	"""Bucle de servicio: comprueba cada hora si toca la limpieza semanal.
-	No hace nada si la rotación o la limpieza están desactivadas. Nunca corre
-	durante la reproducción de vídeo (mismo criterio que catalog_updater)."""
-	import time as _time
-	import xbmc
-	from resources.lib.modules import log_utils
-	monitor = control.monitor
-	set_boot_offset() # al iniciar Kodi: avanzar la rotación para que se vean pósters nuevos
-	while not monitor.abortRequested():
-		try:
-			if enabled() and cleanup_enabled():
-				try: last = float(getSetting(_LASTCLEAN_SETTING) or 0)
-				except: last = 0
-				if (_time.time() - last) >= CLEAN_AFTER_DAYS * 86400 and not xbmc.Player().isPlayingVideo():
-					removed = clean_texture_cache()
-					control.setSetting(_LASTCLEAN_SETTING, str(int(_time.time())))
-					log_utils.log('[ plugin.video.luc_kodi ]  Poster janitor: %s texturas TMDb antiguas eliminadas' % removed, log_utils.LOGINFO)
-		except: log_utils.error()
-		if monitor.waitForAbort(3600): break # re-evaluar cada hora
+	"""Al iniciar Kodi: avanzar la rotacion para que se vean posters nuevos.
+	Lo que antes era un bucle de limpieza lo lleva ahora maintenance.py."""
+	set_boot_offset()

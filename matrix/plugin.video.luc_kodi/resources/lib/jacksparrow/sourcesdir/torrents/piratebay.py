@@ -31,33 +31,40 @@ class source:
 			aliases = data['aliases']
 			episode_title = data['title'] if 'tvshowtitle' in data else None
 			year = data['year']
-			hdlr = 'S%02dE%02d' % (int(data['season']), int(data['episode'])) if 'tvshowtitle' in data else year
+			if 'tvshowtitle' in data: variants = source_utils.episode_variants(data) # TheTVDB SxxEyy when it differs from TMDb; absolute number for anime
+			else: variants = [(year, year, None)]
 
-			query = '%s %s' % (title, hdlr)
-			query = re.sub(r'[^A-Za-z0-9\s\.-]+', '', query)
-			url = self.search_link % quote(query)
-			url = '%s%s' % (self.base_link, url)
-			# log_utils.log('url = %s' % url)
-
-			rjson = client.request(url, timeout=5)
-			if not rjson or any(value in rjson for value in SERVER_ERROR): return sources
-			files = jsloads(rjson)
+			tagged = []
+			for suffix, hdlr, absolute in variants:
+				query = '%s %s' % (title, suffix)
+				query = re.sub(r'[^A-Za-z0-9\s\.-]+', '', query)
+				url = self.search_link % quote(query)
+				url = '%s%s' % (self.base_link, url)
+				# log_utils.log('url = %s' % url)
+				rjson = client.request(url, timeout=5)
+				if not rjson or any(value in rjson for value in SERVER_ERROR):
+					if absolute or hdlr != variants[0][1]: continue # an extra anime query failing must not drop the main results
+					return sources
+				tagged.extend((file, hdlr, absolute) for file in jsloads(rjson))
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
 		except:
 			source_utils.scraper_error('PIRATEBAY')
 			return sources
 
-		for file in files:
+		seen = set()
+		for file, hdlr, absolute in tagged:
 			try:
 				hash = file['info_hash']
+				if hash.lower() in seen: continue
 				# apibay.org devuelve `&quot;` HTML-encoded en lugar de `\"`
 				# JSON-escape dentro de algunos `name` (issue qBittorrent #22074).
 				# El JSON sigue valido pero el name queda con entidades literales;
 				# html.unescape() resuelve todas las entidades comunes.
 				name = source_utils.clean_name(_html_unescape(file['name']))
 
-				if not source_utils.check_title(title, aliases, name, hdlr, year): continue
+				if not source_utils.check_episode(title, aliases, name, hdlr, year, absolute): continue
+				seen.add(hash.lower())
 				name_info = source_utils.info_from_name(name, title, year, hdlr, episode_title)
 				if source_utils.remove_lang(name_info, check_foreign_audio): continue
 				if undesirables and source_utils.remove_undesirables(name_info, undesirables): continue
@@ -89,9 +96,9 @@ class source:
 		return sources
 
 	def sources_packs(self, data, hostDict, search_series=False, total_seasons=None, bypass_filter=False):
-		self.sources = []
-		if not data: return self.sources
-		self.sources_append = self.sources.append
+		self._results = []
+		if not data: return self._results
+		self._results_append = self._results.append
 		try:
 			self.search_series = search_series
 			self.total_seasons = total_seasons
@@ -122,10 +129,10 @@ class source:
 				append(source_utils.Thread(self.get_sources_packs, link))
 			[i.start() for i in threads]
 			[i.join() for i in threads]
-			return self.sources
+			return self._results
 		except:
 			source_utils.scraper_error('PIRATEBAY')
-			return self.sources
+			return self._results
 
 	def get_sources_packs(self, link):
 		try:
@@ -178,7 +185,7 @@ class source:
 							'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize, 'package': package}
 				if self.search_series: item.update({'last_season': last_season})
 				elif episode_start: item.update({'episode_start': episode_start, 'episode_end': episode_end}) # for partial season packs
-				self.sources_append(item)
+				self._results_append(item)
 			except:
 				source_utils.scraper_error('PIRATEBAY')
 

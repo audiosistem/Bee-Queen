@@ -68,7 +68,10 @@ def build_movie_cm(i):
 		rescrape_useDefault = getSetting('rescrape.default') == 'true'
 
 		cm = []
-		cm.append(('Play Trailer', 'RunPlugin(%s?action=play_Trailer&type=movie&name=%s&year=%s&imdb=%s)' % (sysaddon, sysname, year, imdb)))
+		# v1.0.57: PlayMedia, no RunPlugin — RunPlugin invoca el plugin con handle
+		# -1, así que setResolvedUrl es un no-op y el trailer no arrancaba nunca
+		# desde el grid de Bingie. Se pasa tambien tmdb para ahorrar el /find.
+		cm.append(('Play Trailer', 'PlayMedia(%s?action=play_Trailer&type=movie&name=%s&year=%s&imdb=%s&tmdb=%s)' % (sysaddon, sysname, year, imdb, tmdb)))
 		cm.append((watchedMenu, 'RunPlugin(%s?action=playcount_Movie&name=%s&imdb=%s&query=5)' % (sysaddon, sysname, imdb)))
 		cm.append((playlistManagerMenu, 'RunPlugin(%s?action=playlist_Manager&name=%s&url=%s&meta=%s&art=%s)' % (sysaddon, sysname, sysurl, sysmeta, sysart)))
 		cm.append((queueMenu, 'RunPlugin(%s?action=playlist_QueueItem&name=%s)' % (sysaddon, sysname)))

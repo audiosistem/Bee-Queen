@@ -8,7 +8,8 @@ import gzip
 from random import choice, randrange
 import re
 from sys import version_info
-from time import sleep
+from time import sleep, time as _now
+import threading
 from resources.lib.jacksparrow import cache
 from resources.lib.jacksparrow import dom_parser
 from http import cookiejar
@@ -18,6 +19,182 @@ import urllib.request as urllib2
 from urllib.parse import quote_plus, urlencode, parse_qs, urlparse, urljoin
 from urllib.response import addinfourl
 from urllib.error import HTTPError
+
+
+
+
+# Marcadores de "vídeo de error": algunas instancias, en vez de fallar con un
+# codigo HTTP, responden 200 y redirigen a un MP4 corto que dice en pantalla
+# "Debrid service is down" o "Too many requests". Para resolve() eso parece un
+# enlace perfectamente valido, asi que se reproducia el video de error en lugar
+# de pasar a la siguiente fuente.  (v1.0.67)
+_ERROR_SLATE_MARKERS = (
+	'slate.elfhosted.com',        # Comet, Torz y demas instancias de ElfHosted
+	'/static/exceptions/',        # MediaFusion
+	'debrid_service_down',
+	'too_many_requests',
+	'invalid_token',
+	'/error_video',
+	# Torrentio y los muchos addons que copian su esquema sirven los avisos
+	# como MP4 bajo /videos/. Sootio los reenvia tal cual. (v1.0.69)
+	'strem.fun/videos/',
+	'failed_unexpected',
+	'failed_access',
+	'failed_download',
+	'failed_infringement',
+	'failed_opening',
+	'failed_too_big',
+	'failed_rar',
+	'download_limit',
+	'expired_v2',
+)
+
+
+
+# --- Cortafuegos de reintentos ante videos de error -------------------------
+#
+# v1.0.68. Observado en un log real: el mismo enlace que devuelve un video de
+# error a las 09:32 se resuelve bien a las 09:36, con la MISMA carga de
+# busqueda. O sea que el fallo es transitorio del servicio debrid, no una
+# saturacion causada por nosotros (se comprobo: las dos resoluciones con mas
+# busquedas previas fueron las dos que funcionaron).
+#
+# Conclusion: merece la pena reintentar UNA vez. Pero si el servicio esta
+# realmente caido, insistir solo lo empeora, asi que tras varios videos de
+# error seguidos se deja de reintentar durante un rato y se salta directamente
+# a la siguiente fuente.
+SLATE_RETRY_DELAY   = 2.0    # segundos de espera antes del reintento
+SLATE_WINDOW        = 90     # ventana de observacion, en segundos
+SLATE_MAX_IN_WINDOW = 3      # a partir de aqui se asume caida y no se reintenta
+
+_slate_hits = []
+_slate_lock = threading.Lock()
+
+
+def note_error_slate():
+	"""Registra un video de error para alimentar el cortafuegos."""
+	try:
+		with _slate_lock:
+			now = _now()
+			_slate_hits.append(now)
+			del _slate_hits[:max(0, len(_slate_hits) - 32)]
+			_slate_hits[:] = [t for t in _slate_hits if now - t <= SLATE_WINDOW]
+	except Exception:
+		pass
+
+
+def slate_retry_allowed():
+	"""
+	False cuando ya se han visto varios videos de error en la ventana: el
+	servicio parece caido y reintentar solo aniade carga.
+	"""
+	try:
+		with _slate_lock:
+			now = _now()
+			_slate_hits[:] = [t for t in _slate_hits if now - t <= SLATE_WINDOW]
+			return len(_slate_hits) < SLATE_MAX_IN_WINDOW
+	except Exception:
+		return False
+
+
+def slate_reset():
+	"""Solo para pruebas."""
+	with _slate_lock:
+		_slate_hits[:] = []
+
+
+def is_error_slate(url):
+	"""
+	True si la URL apunta a un video de error del proveedor en vez de a
+	contenido real. Quien resuelve debe devolver None para que el autoplay
+	salte a la siguiente fuente.
+	"""
+	try:
+		if not url:
+			return False
+		u = str(url).lower()
+		return any(mk in u for mk in _ERROR_SLATE_MARKERS)
+	except Exception:
+		return False
+
+
+_CFSCRAPE = []  # cache de un solo elemento: [modulo] o [None]
+
+
+def cfscrape_available():
+	"""
+	v1.0.75: `resources.lib.jacksparrow.cfscrape` no existe en el addon y no hay
+	dependencia de cloudscraper en addon.xml, asi que la rama de Cloudflare de
+	request() lanzaba ImportError en CADA peticion que recibia un 403/503 con
+	cabecera de Cloudflare. El except lo tragaba, pero antes escribia una
+	traza de error en el log y, sobre todo, se comia el fallback nativo
+	('cf-browser-verification' / cfcookie) que viene justo despues en el elif.
+
+	Se resuelve comprobando la disponibilidad UNA vez y dejando que la peticion
+	caiga al fallback cuando el modulo no esta. Si algun dia se empaqueta
+	cfscrape, esto lo detecta solo y la rama vuelve a activarse sin tocar nada.
+	"""
+	if not _CFSCRAPE:
+		try:
+			from resources.lib.jacksparrow import cfscrape as _mod
+			_CFSCRAPE.append(_mod)
+		except Exception:
+			_CFSCRAPE.append(None)
+			from resources.lib.jacksparrow import log_utils
+			log_utils.log('client: cfscrape no disponible; se usara el fallback nativo de Cloudflare',
+			              level=log_utils.LOGDEBUG)
+	return _CFSCRAPE[0]
+
+
+def scrub_url(url):
+	"""
+	Quita credenciales de una URL antes de escribirla en el log.
+
+	v1.0.64: el log de errores de request() escribia la URL COMPLETA, y en los
+	scrapers de tipo Stremio esa URL lleva el config blob en el path. El blob es
+	base64 de un JSON que contiene la apiKey del debrid, asi que un kodi.log
+	pegado en un foro regalaba la cuenta. El enmascarado que hacen los scrapers
+	en sus propios logs no cubria esta ruta, que es comun a todos.
+
+	Cubre tres formas:
+	  - blob base64 de config JSON en el path ('eyJ...')
+	  - apiKey / token / password como parametro de query
+	  - credenciales incrustadas en el path tras el nombre del servicio
+	    (p.ej. /resolve/premiumize/<APIKEY>/...)
+	"""
+	try:
+		if not url:
+			return url
+		u = str(url)
+		# sin '/' en la clase: si no, se traga tambien /stream/movie/ttXXXX y el
+		# log pierde justo lo que sirve para diagnosticar
+		u = re.sub(r'eyJ[A-Za-z0-9_\-+=]{24,}', '<CONFIG>', u)
+		u = re.sub(r'(?i)([?&](?:api_?key|token|password|passkey|secret)=)[^&]+',
+		           r'\1<REDACTED>', u)
+		u = re.sub(r'(?i)(/(?:premiumize|realdebrid|real-debrid|alldebrid|torbox|debridlink|offcloud|pikpak|easydebrid)/)[A-Za-z0-9_\-]{8,}',
+		           r'\1<REDACTED>', u)
+		# v1.0.63: AIOStreams lleva el UUID de cuenta como segmento del path
+		# (/stremio/<uuid>/<encPwd>/...). El <CONFIG> tapaba el encryptedPassword
+		# pero NO el UUID, que es el identificador de cuenta y salia en claro en
+		# cada linea 'AIOSTREAMS: GET'. Un UUID en un path es un identificador,
+		# nunca algo que haga falta para diagnosticar.
+		u = re.sub(r'(?i)/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=/|$|\?)',
+		           '/<UUID>', u)
+		# v1.0.91: AIOStreams tambien publica la config con alias corto
+		# (/stremio/u/<alias>/...), que redirige a uuid + encryptedPassword.
+		# Quien tenga el alias tiene la configuracion entera.
+		u = re.sub(r'(?i)(/stremio/u/)[^/?#]+', r'\1<ALIAS>', u)
+		# v1.0.78: Easynews no manda la autenticacion como cabecera, la pega al
+		# final de la URL ('...|Authorization=Basic <b64 de usuario:clave>'), y
+		# esa URL pasa por aqui al loguear la reproduccion. log_export.py ya lo
+		# tapaba al exportar, pero el kodi.log en vivo lo escribia entero.
+		u = re.sub(r'(?i)(\|?authorization\s*[:=]\s*(?:basic|bearer)(?:\s|%20)+)[^\s&|<>"\']+',
+		           r'\1<REDACTED>', u)
+		# Credenciales en el userinfo de la URL (https://usuario:clave@host/...)
+		u = re.sub(r'(?i)(https?://)[^/\s:@]+:[^/\s@]+@', r'\1<REDACTED>@', u)
+		return u
+	except Exception:
+		return '<URL>'
 
 
 def request(url, close=True, redirect=True, error=False, proxy=None, post=None, headers=None, mobile=False, XHR=False, limit=None,
@@ -120,11 +297,11 @@ def request(url, close=True, redirect=True, error=False, proxy=None, post=None, 
 					except: encoding = None
 					if encoding == 'gzip': cf_result = gzip.GzipFile(fileobj=BytesIO(cf_result)).read()
 
-					if flare and 'cloudflare' in str(response.info()).lower():
+					if flare and 'cloudflare' in str(response.info()).lower() and cfscrape_available():
 						from resources.lib.jacksparrow import log_utils
-						log_utils.log('client module calling cfscrape: url=%s' % url, level=log_utils.LOGDEBUG)
+						log_utils.log('client module calling cfscrape: url=%s' % scrub_url(url), level=log_utils.LOGDEBUG)
 						try:
-							from resources.lib.jacksparrow import cfscrape
+							cfscrape = cfscrape_available()
 							if isinstance(post, dict): data = post
 							else:
 								try: data = parse_qs(post)
@@ -153,12 +330,12 @@ def request(url, close=True, redirect=True, error=False, proxy=None, post=None, 
 					else:
 						if error is False:
 							from resources.lib.jacksparrow import log_utils
-							log_utils.error('Request-Error url=(%s)' % url)
+							log_utils.error('Request-Error url=(%s)' % scrub_url(url))
 							return None
 				else:
 					if error is False:
 						from resources.lib.jacksparrow import log_utils
-						log_utils.error('Request-Error url=(%s)' % url)
+						log_utils.error('Request-Error url=(%s)' % scrub_url(url))
 						return None
 					elif error is True and response.code in (401, 404, 405): # no point in continuing after this exception runs with these response.code's
 						try: response_headers = dict([(item[0].title(), item[1]) for item in list(response.info().items())]) # behaves differently 18 to 19. 18 I had 3 "Set-Cookie:" it combined all 3 values into 1 key. In 19 only the last keys value was present.
@@ -248,7 +425,7 @@ def request(url, close=True, redirect=True, error=False, proxy=None, post=None, 
 			return result
 	except:
 		from resources.lib.jacksparrow import log_utils
-		log_utils.error('Request-Error url=(%s)' % url)
+		log_utils.error('Request-Error url=(%s)' % scrub_url(url))
 		return None
 
 def _basic_request(url, headers=None, post=None, method='GET', timeout='30', limit=None, ret_code=None):

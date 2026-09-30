@@ -125,7 +125,7 @@ class WindowProgress(BaseDialog):
 				return meta
 		except:
 			from resources.lib.modules import log_utils
-			log_utils.log('Checking Local Meta Exception', log_utils.LOGDEBUG)
+			log_utils.log('Checking Local Meta Exception', __name__, log_utils.LOGDEBUG)
 			return None
 
 # Alias used by sources.py

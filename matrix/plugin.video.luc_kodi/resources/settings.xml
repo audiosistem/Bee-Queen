@@ -4,6 +4,7 @@
     <setting id="appearance.1" type="select" label="32311" values="luc_kodi" default="luc_kodi" visible="true" />
     <setting id="icon.logos" type="select" label="40033" values="Traditional|Meta Provider Logos" default="Traditional" visible="true" />
     <setting id="index.labels" type="bool" label="40034" default="true" />
+    <setting id="ui.force.wall" type="bool" label="400763" default="true" />
     <setting id="ui.viewstyle" type="text" default="default" visible="false" />
     <setting id="trakt.isauthed" type="text" default="" visible="false" />
     <setting id="simkl.isauthed" type="text" default="" visible="false" />
@@ -17,6 +18,17 @@
     <setting id="catalog.auto_update.notify" type="bool" label="400708" default="true" subsetting="true" visible="eq(-2,true)" />
     <setting id="catalog.auto_update.interval_hours" type="enum" label="400709" values="1|3|6|12|24" default="2" subsetting="true" visible="eq(-3,true)" />
     <setting id="catalog.auto_update.meta_hours" type="enum" label="400715" values="6|12|24|48" default="1" subsetting="true" visible="eq(-4,true)" />
+    <setting id="catalog.precache.streaming" type="bool" label="Precache Movies &gt; Streaming platforms" default="false" subsetting="true" visible="eq(-5,true)" />
+    <setting type="action" label="Select streaming platforms..." action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_selectPrecacheStreaming)" subsetting="true" visible="eq(-1,true)" />
+    <setting id="catalog.precache.networks" type="bool" label="Precache TV shows &gt; Networks" default="false" subsetting="true" visible="eq(-7,true)" />
+    <setting type="action" label="Select TV networks..." action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_selectPrecacheNetworks)" subsetting="true" visible="eq(-1,true)" />
+    <setting id="catalog.precache.rotate" type="bool" label="Also refresh the remaining platforms during the session" default="true" subsetting="true" visible="eq(-9,true)" />
+    <setting id="catalog.precache.rotate.days" type="enum" label="Renew each one every (days)" values="3|7|14|30" default="1" subsetting="true" visible="eq(-1,true)" />
+    <setting id="catalog.precache.budget" type="enum" label="Background time budget per pass (seconds)" values="15|30|60|120" default="1" subsetting="true" visible="eq(-11,true)" />
+    <setting id="catalog.precache.rotate.index" type="text" default="" visible="false" />
+    <setting id="catalog.precache.streaming.ids" type="text" default="" visible="false" />
+    <setting id="catalog.precache.networks.ids" type="text" default="" visible="false" />
+    <setting id="meta.light_lists" type="bool" label="Fast lists (load artwork detail in the background)" default="true" />
     <setting id="catalog.auto_update.last_run" type="text" default="" visible="false" />
     <setting id="catalog.auto_update.last_meta" type="text" default="" visible="false" />
     <setting id="poster.rotation.lastclean" type="text" default="" visible="false" />
@@ -34,12 +46,15 @@
     <setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=enableFanartTV)" visible="eq(-1,true)" />
     <setting type="action" label="32620" subsetting="true" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearMetaAndCache)" visible="eq(-2,true)" />
     <setting id="prefer.tmdbArt" type="bool" label="32079" subsetting="true" default="true" visible="eq(-3,true)" />
-    <setting id="tmdb.imageResolutions" type="enum" label="32233" lvalues="32234|32235|32236|32237" default="1" />
+    <setting id="tmdb.imageQuality" type="enum" label="32233" lvalues="400765|400766" default="0" />
+    <setting id="tmdb.posterSize" type="enum" label="400767" values="w500|w780" default="0" subsetting="true" visible="eq(-1,0)" />
+    <setting id="tmdb.fanartSize" type="enum" label="400769" values="w1280|original" default="0" subsetting="true" visible="eq(-2,0)" />
+    <setting id="tmdb.stillSize" type="enum" label="400770" values="w300|original" default="0" subsetting="true" visible="eq(-3,0)" />
+    <setting id="tmdb.imageResolutions" type="enum" lvalues="400717|400718|400719|32237|400716" default="4" visible="false" />
+    <setting id="display.belowMinimum.warned" type="bool" default="false" visible="false" />
     <setting id="poster.rotation" type="bool" label="45023" default="false" />
     <setting id="poster.rotation.interval" type="enum" label="45024" lvalues="45016|45017|45018|45019" default="3" subsetting="true" visible="eq(-1,true)" />
-    <setting id="poster.rotation.cleanup" type="bool" label="45020" default="true" subsetting="true" visible="eq(-2,true)" />
     <setting id="title.lang.en" type="bool" label="45021" default="true" />
-    <setting id="db.maintenance" type="bool" label="45022" default="true" />
     <setting id="hidecinema" type="bool" label="32571" default="false" />
     <setting id="hidecinema.rollback" type="slider" label="40063" subsetting="true" default="6" range="1,12" option="int" visible="eq(-1,true)" />
     <setting id="movie.unaired.identify" type="select" label="35526" lvalues="32593|32669|32589|32666|32596|32592|32590|32595|32591|32597|32668|32667|32594|32671|32670|32598" default="0" />
@@ -56,21 +71,21 @@
     <setting id="sort.movies.watchlist.type" type="select" label="35574" lvalues="33564|33039|35187|35188|35391|35392|35393" default="5" />
     <setting id="sort.movies.watchlist.order" type="enum" label="33679" lvalues="33649|33650" default="1" subsetting="true" enable="!eq(-1,0)" />
     <setting type="lsep" label="400710" />
+    <setting id="provider.test.rotation" type="text" default="0" visible="false" />
     <setting id="gui.resolution.enabled" type="bool" label="400711" default="false" />
     <setting id="gui.resolution.target" type="enum" label="400712" lvalues="400713|400714" default="0" subsetting="true" visible="eq(-1,true)" />
-    <!-- v1.0.51: Trailers movido aquí desde TV Shows — aplica a todo el addon.
-         v1.0.52: Skip Intro devuelto a TV Shows (es una función de episodios). -->
-    <setting type="lsep" label="Trailers (no API key needed)" />
-    <setting id="trailer.player" type="enum" label="Trailer playback method" values="Auto (best available)|Built-in keyless resolver only|SlyGuy Trailers add-on|YouTube add-on" default="0" />
-      <setting id="trailer.official.only" type="bool" label="Official trailers only (no teasers, clips or shorts)" default="true" subsetting="true" />
-      <setting id="trailer.min.resolution" type="enum" label="Minimum trailer resolution" values="No minimum|480p|720p|1080p" default="2" subsetting="true" />
-      <!-- Filtro de códecs del MPD keyless: AV1 y VP9 Profile 2 (10-bit/HDR) no
-           tienen decodificación hardware en dispositivos muy extendidos (NVIDIA
-           Shield TV). Desactivados por defecto = máxima compatibilidad; quien
-           tenga hardware reciente (Google TV Streamer, Fire TV 2023+) los activa. -->
-      <setting id="trailer.codec.av1" type="bool" label="Allow AV1 video (requires hardware AV1 decoding — e.g. Google TV Streamer; NVIDIA Shield TV does NOT support it)" default="false" subsetting="true" />
-      <setting id="trailer.codec.vp92" type="bool" label="Allow VP9 Profile 2 video (10-bit/HDR — not supported on NVIDIA Shield TV)" default="false" subsetting="true" />
-    <setting id="trailer.invidious.instances" type="text" label="Invidious instances (comma separated)" default="inv.nadeko.net,invidious.nerdvpn.de,inv.thepixora.com" visible="false" />
+    <setting type="action" label="400761" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_displayTest)" option="close" />
+    <setting type="lsep" label="46056" />
+    <setting type="lsep" label="46057" />
+    <setting id="trailer.official.only" type="bool" label="Official trailers only (skip teasers, clips and featurettes)" default="true" />
+    <setting id="trailer.language" type="enum" label="400836" lvalues="400837|400838|400839" default="0" />
+    <setting type="action" label="Set up the YouTube add-on for trailers (recommended)" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ytPrefs)" option="close" />
+    <setting id="trailer.yt.autoconfig" type="bool" label="Apply that setup automatically on the next start" default="false" subsetting="true" />
+    <setting id="trailer.yt.configured" type="bool" label="" default="false" visible="false" />
+    <setting id="settings.cleaned.version" type="text" label="" default="" visible="false" />
+    <setting id="trailer.audio.prefer.heaac" type="bool" label="Use the HE-AAC audio track for trailers (fixes silent trailers on NVIDIA Shield)" default="false" />
+    <setting id="trailer.audio.probe" type="bool" label="Log the audio tracks of whatever is playing (diagnostics)" default="false" subsetting="true" />
+    <setting type="action" label="Open the YouTube add-on settings" action="Addon.OpenSettings(plugin.video.youtube)" option="close" />
   </category>
   <category label="32621">
     <setting type="lsep" label="32005" />
@@ -112,6 +127,10 @@
     <setting id="navi.movie.mdblist.continue"    type="bool" label="40231" default="true" />
     <setting id="navi.movie.mdblist.topLists"    type="bool" label="40232" default="true" />
     <setting id="navi.movie.mdblist.searchList"  type="bool" label="40233" default="true" />
+    <setting type="lsep" label="PunchPlay" />
+    <setting id="navi.movie.punchplay.trending" type="bool" label="46000" default="true" />
+    <setting id="navi.movie.punchplay.popular"  type="bool" label="46001" default="false" />
+    <setting id="navi.movie.punchplay.folder"   type="bool" label="46010" default="true" />
     <setting type="lsep" label="32002" />
     <setting id="navi.tv.trakt.trending" type="bool" label="32443" default="true" />
     <setting id="navi.originals" type="bool" label="40069" default="true" />
@@ -120,6 +139,7 @@
     <setting id="navi.tv.tmdb.toprated" type="bool" label="32441" default="true" />
     <setting id="navi.tv.trakt.recommended" type="bool" label="32445" default="true" />
     <setting id="navi.tv.tvmaze.networks" type="bool" label="32470" default="true" />
+    <setting id="navi.tv.tmdb.providers" type="bool" label="40704" default="true" />
     <setting id="navi.tv.tmdb.airingtoday" type="bool" label="32467" default="true" />
     <setting id="navi.tv.tmdb.ontv" type="bool" label="32472" default="true" />
     <setting id="navi.tv.tvmaze.calendar" type="bool" label="32450" default="true" />
@@ -138,6 +158,10 @@
     <setting id="navi.tv.mdblist.continue"    type="bool" label="40234" default="true" />
     <setting id="navi.tv.mdblist.topLists"    type="bool" label="40235" default="true" />
     <setting id="navi.tv.mdblist.searchList"  type="bool" label="40236" default="true" />
+    <setting type="lsep" label="PunchPlay" />
+    <setting id="navi.tv.punchplay.trending" type="bool" label="46002" default="true" />
+    <setting id="navi.tv.punchplay.popular"  type="bool" label="46003" default="false" />
+    <setting id="navi.tv.punchplay.folder"   type="bool" label="46011" default="true" />
   </category>
   <category label="32002">
     <setting id="flatten.tvshows" type="enum" label="32317" values="Never|Always|One Season" default="2" visible="true" />
@@ -175,6 +199,12 @@
     <setting id="tvshows.air.bold" type="bool" label="35021" default="true" subsetting="true" visible="eq(-6,true)" />
   </category>
   <category label="32330">
+    <setting type="lsep" label="Release information during playback" />
+    <setting id="player.info.release" type="bool" label="Add the release's technical line to the synopsis" default="false" />
+      <setting id="player.info.release.detail" type="enum" label="- How much to show" values="Only what Kodi cannot report|Everything the release states" default="1" subsetting="true" visible="eq(-1,true)" />
+      <setting id="player.info.release.ratings" type="bool" label="- Add the scores (IMDb, TMDb, Trakt, Rotten Tomatoes, Metacritic)" default="false" subsetting="true" visible="eq(-2,true)" />
+      <setting id="player.info.release.scraper" type="bool" label="- Name the scraper the source came from" default="false" subsetting="true" visible="eq(-3,true)" />
+      <setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=release_info)" subsetting="true" visible="eq(-4,true)" />
     <setting type="lsep" label="32343" />
     <setting id="bookmarks" type="bool" label="32344" default="true" />
     <setting id="bookmarks.auto" type="bool" label="32657" default="false" enable="eq(-1,true)" />
@@ -184,6 +214,8 @@
   <category label="32345">
     <setting type="lsep" label="40067" />
     <setting type="action" label="32611" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearSources)" />
+    <setting type="action" label="[COLOR ff00fa9a]Test all providers  (configured / reachable / results)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_providerTest)" option="close" />
+    <setting type="action" label="[COLOR fffdb515]Write a sanitized copy of kodi.log  (safe to share)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_logExport)" option="close" />
     <setting label="External Scrapers" type="lsep" />
     <setting id="provider.external" label="Enable" type="bool" default="true" />
     <setting id="filter.foreign.single.audio" label="Remove identified Foreign single audio sources" type="bool" default="true" />
@@ -210,7 +242,7 @@
       <setting id="peerflix.min.seeders" label="Min Seeders" type="slider" default="0" range="0,100" option="int" subsetting="true" visible="eq(-3,true)" />
     <!--setting id="provider.torrentdownload" label="40086" type="bool" default="true" -->
     <setting id="provider.dmm" label="40088" type="bool" default="true" />
-      <setting id="dmm.deep_search" label="Deep search (2nd page, slower)" type="bool" default="false" subsetting="true" visible="eq(-1,true)" />
+      <setting id="dmm.deep_search" label="40097" type="bool" default="false" subsetting="true" visible="eq(-1,true)" />
     <setting id="provider.zilean" label="40081" type="bool" default="true" />
     <setting id="provider.knaben" type="bool" label="40090" default="true" />
     <setting id="provider.orion" type="bool" label="40095" default="false" />
@@ -227,29 +259,42 @@
       <setting id="torz.debrid.detected" label="     Debrid detected" type="text" default="not configured" enable="false" subsetting="true" visible="eq(-3,true)" />
       <setting id="torz.wizard" type="action" label="[COLOR ff00fa9a]Torz Setup Wizard  (easy setup, no keyboard needed)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_torzWizard)" subsetting="true" visible="eq(-4,true)" />
       <setting id="torz.detect" type="action" label="     [COLOR fffdb515]Re-detect Debrid from token[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_torzDetect)" subsetting="true" visible="eq(-5,true)" />
+      <setting id="torz.min.seeders" label="Min Seeders" type="slider" default="0" range="0,100" option="int" subsetting="true" visible="eq(-6,true)" />
     <setting id="provider.comet" label="40083" type="bool" default="false" />
       <setting id="comet.url" label="Instance" type="enum" default="2" values="stremio.ru  │  [COLOR fffdb515]https://comet.stremio.ru[/COLOR]|midnightignite  │  [COLOR fffdb515]https://cometfortheweebs.midnightignite.me[/COLOR]|elfhosted  │  [COLOR fffdb515]https://comet.elfhosted.com[/COLOR]" subsetting="true" visible="eq(-1,true)" />
       <setting id="comet.config" label="Config Token  ([COLOR ff00fa9a]custom: own Debrid[/COLOR], from [COLOR fffdb515]/configure[/COLOR])" type="text" default="" subsetting="true" visible="eq(-2,true)" />
       <setting id="comet.debrid.detected" label="     Debrid detected" type="text" default="not configured" enable="false" subsetting="true" visible="eq(-3,true)" />
       <setting id="comet.wizard" type="action" label="[COLOR ff00fa9a]Comet Setup Wizard  (easy setup, no keyboard needed)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_cometWizard)" subsetting="true" visible="eq(-4,true)" />
       <setting id="comet.detect" type="action" label="     [COLOR fffdb515]Re-detect Debrid from token[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_cometDetect)" subsetting="true" visible="eq(-5,true)" />
+      <setting id="comet.min.seeders" label="Min Seeders" type="slider" default="0" range="0,100" option="int" subsetting="true" visible="eq(-6,true)" />
     <setting id="provider.mediafusion" label="40080" type="bool" default="false" />
       <setting id="mediafusion.url" label="Instance" type="enum" default="0" values="midnightignite  │  [COLOR fffdb515]https://mediafusionfortheweebs.midnightignite.me[/COLOR]|elfhosted  │  [COLOR fffdb515]https://mediafusion.elfhosted.com[/COLOR]" subsetting="true" visible="eq(-1,true)" />
       <setting id="mediafusion.secret" label="Secret Token  (from /configure URL)" type="text" default="" subsetting="true" visible="eq(-2,true)" />
+      <setting id="mediafusion.min.seeders" label="Min Seeders" type="slider" default="0" range="0,100" option="int" subsetting="true" visible="eq(-3,true)" />
     <setting id="provider.sootio" label="40096" type="bool" default="false" />
       <setting id="sootio.url" label="Instance" type="enum" default="0" values="official  │  [COLOR fffdb515]https://sooti.info[/COLOR]" subsetting="true" visible="eq(-1,true)" />
       <setting id="sootio.config" label="Config Token  (from [COLOR fffdb515]sooti.info/configure[/COLOR])" type="text" default="" subsetting="true" visible="eq(-2,true)" />
       <setting id="sootio.debrid.detected" label="     Debrid detected" type="text" default="not configured" enable="false" subsetting="true" visible="eq(-3,true)" />
-      <setting id="sootio.wizard" type="action" label="[COLOR ff00fa9a]Sootio Setup Wizard  (easy setup, no keyboard needed)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_sootioWizard)" subsetting="true" visible="eq(-4,true)" />
+      <setting id="sootio.sources.detected" label="     Sources detected" type="text" default="not detected" enable="false" subsetting="true" visible="eq(-4,true)" />
+      <setting id="sootio.wizard" type="action" label="[COLOR ff00fa9a]Sootio Setup Wizard  (easy setup, no keyboard needed)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_sootioWizard)" subsetting="true" visible="eq(-5,true)" />
+      <setting id="sootio.detect" type="action" label="     [COLOR fffdb515]Re-detect Debrid from token[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_sootioDetect)" subsetting="true" visible="eq(-6,true)" />
+      <setting id="sootio.min.seeders" label="Min Seeders" type="slider" default="0" range="0,100" option="int" subsetting="true" visible="eq(-7,true)" />
     <setting id="provider.meteor" type="bool" label="40092" default="false" />
       <setting id="meteor.config_token" label="Config Token  (from [COLOR fffdb515]meteorfortheweebs.midnightignite.me/stremio/configure[/COLOR])" type="text" default="" subsetting="true" visible="eq(-1,true)" />
       <setting id="meteor.debrid.detected" label="     Debrid detected" type="text" default="not configured" enable="false" subsetting="true" visible="eq(-2,true)" />
       <setting id="meteor.wizard" type="action" label="[COLOR ff00fa9a]Meteor Setup Wizard  (easy setup, no keyboard needed)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_meteorWizard)" subsetting="true" visible="eq(-3,true)" />
+      <setting id="meteor.detect" type="action" label="     [COLOR fffdb515]Re-detect Debrid from token[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_meteorDetect)" subsetting="true" visible="eq(-4,true)" />
+      <setting id="meteor.min.seeders" label="Min Seeders" type="slider" default="0" range="0,100" option="int" subsetting="true" visible="eq(-5,true)" />
       <setting id="meteor.manifest_url" label="manifest_url (legacy)" type="text" default="" visible="false" />
     <setting id="provider.aiostreams" label="40085" type="bool" default="false" />
-      <setting id="aiostreams.url" label="Instance" type="enum" default="0" values="midnightignite  │  [COLOR fffdb515]https://aiostreamsfortheweebsstable.midnightignite.me[/COLOR]|stremio.ru  │  [COLOR fffdb515]https://aiostreams.stremio.ru[/COLOR]|viren070  │  [COLOR fffdb515]https://aiostreams.viren070.me[/COLOR]|cloud  │  [COLOR fffdb515]https://aiostreamsfortheweak.cloud[/COLOR]|omni's  │  [COLOR fffdb515]https://aiostreams.12312023.xyz[/COLOR]|elfhosted  │  [COLOR fffdb515]https://aiostreams.elfhosted.com[/COLOR]" subsetting="true" visible="eq(-1,true)" />
-      <setting id="aiostreams.uuid" label="UUID  (from /configure)" type="text" default="" subsetting="true" visible="eq(-2,true)" />
-      <setting id="aiostreams.password" label="Password  (from /configure)" type="text" default="" subsetting="true" visible="eq(-3,true)" />
+      <setting id="aiostreams.url" label="Instance" type="enum" default="0" values="midnightignite  │  [COLOR fffdb515]https://aiostreamsfortheweebsstable.midnightignite.me[/COLOR]|stremio.ru  │  [COLOR fffdb515]https://aiostreams.stremio.ru[/COLOR]|viren070  │  [COLOR fffdb515]https://aiostreams.viren070.me[/COLOR]|cloud  │  [COLOR fffdb515]https://aiostreamsfortheweak.cloud[/COLOR]|omni's  │  [COLOR fffdb515]https://aiostreams.12312023.xyz[/COLOR]|elfhosted  │  [COLOR fffdb515]https://aiostreams.elfhosted.com[/COLOR]|Custom URL  │  [COLOR fffdb515]your own instance (paid ElfHosted, self-hosted)[/COLOR]" subsetting="true" visible="eq(-1,true)" />
+      <setting id="aiostreams.custom_url" label="     Instance or manifest URL  (e.g. [COLOR fffdb515]https://your-username-aiostreams.elfhosted.com[/COLOR])" type="text" default="" subsetting="true" visible="eq(-2,true) + eq(-1,6)" />
+      <setting id="aiostreams.uuid" label="UUID  (from /configure)" type="text" default="" subsetting="true" visible="eq(-3,true)" />
+      <setting id="aiostreams.password" label="Password  (from /configure)" type="text" default="" subsetting="true" visible="eq(-4,true)" option="hidden" />
+      <setting id="aiostreams.debrid.detected" label="     Debrid detected" type="text" default="not configured" enable="false" subsetting="true" visible="eq(-5,true)" />
+      <setting id="aiostreams.wizard" type="action" label="[COLOR ff00fa9a]AIOStreams Setup Wizard  (easy setup, no keyboard needed)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_aiostreamsWizard)" subsetting="true" visible="eq(-6,true)" />
+      <setting id="aiostreams.detect" type="action" label="     [COLOR fffdb515]Re-detect Debrid from account[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_aiostreamsDetect)" subsetting="true" visible="eq(-7,true)" />
+      <setting id="aiostreams.min.seeders" label="Min Seeders" type="slider" default="0" range="0,100" option="int" subsetting="true" visible="eq(-8,true)" />
     <setting label="Custom Usenet (NZB)" type="lsep" />
     <setting id="provider.newznab" label="Newznab  ([COLOR ff00fa9a]your own Usenet indexer[/COLOR] — resolved by Premiumize)" type="bool" default="false" />
       <setting id="newznab.url" label="Indexer URL  (e.g. [COLOR fffdb515]https://your-indexer.tld/api[/COLOR])" type="text" default="" subsetting="true" visible="eq(-1,true)" />
@@ -300,6 +345,19 @@
     <setting id="personal.ranker.weight" type="slider" label="400722" subsetting="true" option="int" range="0,5,200" default="30" visible="eq(-1,true)" />
     <setting type="action" label="400723" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_personalRankerStats)" visible="eq(-2,true)" />
     <setting type="action" label="400724" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_personalRankerReset)" visible="eq(-3,true)" />
+    <setting type="lsep" label="400740" />
+    <setting id="preflight.enabled" type="bool" label="400741" default="true" />
+    <setting id="preflight.mode" type="select" label="400742" lvalues="400745|400746" default="1" subsetting="true" visible="eq(-1,true)" />
+    <setting id="preflight.margin" type="slider" label="400743" option="int" range="100,5,200" default="130" subsetting="true" visible="eq(-2,true)" />
+    <setting id="preflight.list.warn" type="bool" label="400744" default="true" subsetting="true" visible="eq(-3,true)" />
+    <setting id="preflight.list.minsize" type="slider" label="400748" option="int" range="0,5,200" default="30" subsetting="true" visible="eq(-4,true)" />
+    <setting id="preflight.manual" type="select" label="400749" lvalues="400751|400752|400753" default="1" subsetting="true" visible="eq(-5,true)" />
+    <setting id="preflight.ask.ratio" type="slider" label="400750" option="int" range="10,5,95" default="80" subsetting="true" visible="eq(-6,true)" />
+    <setting type="lsep" label="400780" />
+    <setting id="audio.langs.list" type="bool" label="400781" default="true" />
+    <setting id="audio.langs.preferred" type="select" label="400782" lvalues="400790|400791|400792|400793|400794|400795|400796|400797|400798|400799|400800|400801|400802|400803|400804|400805|400806|400807|400808" default="0" />
+    <setting id="audio.probe.enabled" type="bool" label="400783" default="true" />
+    <setting id="audio.probe.notify" type="select" label="400784" lvalues="400785|400786|400787" default="0" subsetting="true" visible="eq(-1,true)" />
     <setting id="source.enable.msizelimit" type="bool" label="32165" default="false" />
     <setting id="source.min.moviesize" type="slider" label="32155" subsetting="true" option="float" range="0.0,0.1,10.0" default="0" visible="eq(-1,true)" />
     <setting id="source.max.moviesize" type="slider" label="32156" subsetting="true" option="float" range="0.5,0.3,200" default="10" visible="eq(-2,true)" />
@@ -332,65 +390,116 @@
     <setting id="validate.source.urls" type="bool" label="Validate source URL before playback (skip dead/HTML links)" default="true" />
     <setting id="sources.ramcache" type="bool" label="Cache source list in RAM for faster Back/return (Window properties)" default="true" />
     <setting id="sources.ramcache.ttl" type="slider" label="RAM cache TTL (minutes)" default="20" range="1,5,120" option="int" subsetting="true" visible="eq(-1,true)" />
+    <setting id="binge.continuity" type="bool" label="400834" default="true" />
+    <setting id="sources.empty.ttl" type="slider" label="400835" default="30" range="0,15,120" option="int" />
+    <setting id="playnext.prescrape" type="bool" label="400855" default="true" />
+    <setting id="playback.rollover" type="bool" label="400858" default="true" />
     <setting type="lsep" label="Custom Badges  (Dolby Atmos, HDR, Dolby Vision icons, etc.)" />
     <setting id="badges.custom.wizard" type="action" label="[COLOR ff00fa9a]Custom Badges Setup Wizard  (easy install, no keyboard needed)[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_badgesWizard)" />
     <setting id="badges.custom.enabled" type="bool" label="Use custom badge pack" default="false" />
       <setting id="badges.custom.name" label="     Installed pack" type="text" default="not installed" enable="false" subsetting="true" visible="eq(-1,true)" />
       <setting id="badges.custom.reset" type="action" label="     [COLOR fffdb515]Restore default icons[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_badgesReset)" subsetting="true" visible="eq(-2,true)" />
   </category>
-  <category label="32315">
+  <category label="46040">
     <setting type="lsep" label="32315" />
     <setting id="trakt.username" type="text" label="40062" default="" enable="false" visible="true" />
-	<setting type="action" label="Authorize" option="close" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=trakt_Authorize)" visible="eq(1,)" />
-	<setting type="action" label="Deauthorize" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=trakt_Deauthorize)" visible="!eq(2,)" />
-	<setting type="action" label="32153" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=trakt_AccountInfo)" visible="!eq(-3,)" />
-	<setting id="trakt.token" type="text" label="" visible="false" default="" />
-	<setting id="trakt.refresh" type="text" label="" visible="false" default="" />
-	<setting id="trakt.expires" type="text" label="" visible="false" default="" />
-	<setting id="trakt.service.syncInterval" type="slider" label="Trakt service sync interval (in minutes)" default="15" range="5,60" option="int" visible="!eq(-7,)" />
-	<setting id="trakt.server.notifications" type="bool" label="33051" default="true" visible="!eq(-8,)" />
-	<setting id="trakt.general.notifications" type="bool" label="33052" default="true" visible="!eq(-9,)" />
-	<setting id="trakt.directProgress.scrape" type="bool" label="35492" default="false" visible="!eq(-10,)" />
-	<setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=directProgress)" visible="!eq(-11,)" />
-	<setting id="trakt.progressFlatten" type="bool" label="32017" default="true" visible="!eq(-12,)" />
-	<setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=progressFlatten)" visible="!eq(-13,)" />
-	<setting id="trakt.rating" type="enum" label="35187" lvalues="33564|35547" default="0" visible="!eq(-14,)" />
-	<setting id="trakt.scrobble" type="bool" label="32097" default="false" visible="!eq(-15,)" />
-	<setting id="trakt.scrobble.notify" type="bool" label="32099" subsetting="true" default="false" visible="!eq(-16,) + eq(-1,true)" />
-	<setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=Trakt_Scrobble)" visible="!eq(-17,)" />
-	<setting id="resume.source.alt" type="enum" label="32095" lvalues="32314" default="0" visible="!eq(-18,) + !eq(-3,true)" />
-	<setting id="resume.source" type="enum" label="32095" lvalues="32314|32096" default="0" visible="!eq(-19,) + eq(-4,true)" />
-	<setting id="trakt.progress.showunaired" type="bool" label="32572" default="false" visible="!eq(-20,)" />
-	<setting id="trakt.UpcomingProgress.prependDate" type="bool" label="32573" default="true" visible="!eq(-21,)" />
-	<setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=UpcomingProgressPrependDate)" visible="!eq(-22,)" />
-	<setting id="trakt.paginate.lists" type="bool" label="32188" default="true" visible="!eq(-23,)" />
-	<setting type="lsep" label="35057" />
-	<setting id="trakt.HiddenManager.hideWatched" type="bool" label="32183" default="false" enable="!eq(-25,)" />
-	<setting type="lsep" label="32645" />
-	<setting id="autoTraktOnStart" type="bool" label="32646" default="false" enable="!eq(-27,)" />
-	<setting id="schedTraktTime" type="slider" label="32647" default="0" range="0,24" option="int" enable="eq(-1,true)" />
-	<setting id="trakt.message2" type="text" label="32648" default="" enable="false" /> 
-  </category>
-  <category label="40800">
+    <setting type="action" label="40801" option="close" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=trakt_Authorize)" visible="eq(-1,)" />
+    <setting type="action" label="40802" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=trakt_Deauthorize)" visible="!eq(-2,)" />
+    <setting type="action" label="32153" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=trakt_AccountInfo)" visible="!eq(-3,)" />
+    <setting id="trakt.token" type="text" label="" visible="false" default="" />
+    <setting id="trakt.refresh" type="text" label="" visible="false" default="" />
+    <setting id="trakt.expires" type="text" label="" visible="false" default="" />
+    <setting id="trakt.service.syncInterval" type="slider" label="46047" default="15" range="5,60" option="int" visible="!eq(-7,)" />
+    <setting id="trakt.server.notifications" type="bool" label="33051" default="true" visible="!eq(-8,)" />
+    <setting id="trakt.general.notifications" type="bool" label="33052" default="true" visible="!eq(-9,)" />
+    <setting id="trakt.directProgress.scrape" type="bool" label="35492" default="false" visible="!eq(-10,)" />
+    <setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=directProgress)" visible="!eq(-11,)" />
+    <setting id="trakt.progressFlatten" type="bool" label="32017" default="true" visible="!eq(-12,)" />
+    <setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=progressFlatten)" visible="!eq(-13,)" />
+    <setting id="trakt.rating" type="enum" label="35187" lvalues="33564|35547" default="0" visible="false" />
+    <setting id="trakt.scrobble" type="bool" label="32097" default="false" visible="!eq(-15,)" />
+    <setting id="trakt.scrobble.notify" type="bool" label="32099" subsetting="true" default="false" visible="!eq(-16,) + eq(-1,true)" />
+    <setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=Trakt_Scrobble)" visible="!eq(-17,)" />
+    <setting id="resume.source.alt" type="enum" label="32095" lvalues="32314" default="0" visible="!eq(-18,) + !eq(-3,true)" />
+    <setting id="resume.source" type="enum" label="32095" lvalues="32314|32096" default="0" visible="!eq(-19,) + eq(-4,true)" />
+    <setting id="trakt.progress.showunaired" type="bool" label="32572" default="false" visible="!eq(-20,)" />
+    <setting id="trakt.UpcomingProgress.prependDate" type="bool" label="32573" default="true" visible="!eq(-21,)" />
+    <setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=UpcomingProgressPrependDate)" visible="!eq(-22,)" />
+    <setting id="trakt.paginate.lists" type="bool" label="32188" default="true" visible="!eq(-23,)" />
+    <setting type="lsep" label="35057" />
+    <setting id="trakt.HiddenManager.hideWatched" type="bool" label="32183" default="false" enable="!eq(-25,)" />
+    <setting type="lsep" label="32645" />
+    <setting id="autoTraktOnStart" type="bool" label="32646" default="false" enable="!eq(-27,)" />
+    <setting id="schedTraktTime" type="slider" label="32647" default="0" range="0,24" option="int" enable="eq(-1,true)" />
+    <setting id="trakt.message2" type="text" label="32648" default="" enable="false" />
     <setting type="lsep" label="40800" />
-    <setting id="simkl.username" type="text" label="40062" default="" enable="false" visible="true" />
-    <setting type="action" label="40801" option="close" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=simkl_Authorize)" visible="eq(1,)" />
-    <setting type="action" label="40802" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=simkl_Deauthorize)" visible="!eq(2,)" />
+    <setting id="simkl.username" type="text" label="46041" default="" enable="false" visible="true" />
+    <setting type="action" label="40801" option="close" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=simkl_Authorize)" visible="eq(-1,)" />
+    <setting type="action" label="40802" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=simkl_Deauthorize)" visible="!eq(-2,)" />
     <setting type="action" label="40803" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=simkl_AccountInfo)" visible="!eq(-3,)" />
     <setting type="action" label="40804" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=simkl_ForceSync)" visible="!eq(-4,)" />
     <setting id="simkl.token" type="text" label="" visible="false" default="" />
     <setting id="simkl.user_id" type="text" label="" visible="false" default="" />
     <setting id="simkl.expires" type="text" label="" visible="false" default="" />
-    <setting id="simkl.client_id" type="text" label="40820" default="" visible="true" />
+    <setting id="simkl.client_id" type="text" label="40820" default="" option="hidden" visible="false" />
     <setting id="simkl.service.syncInterval" type="slider" label="40805" default="15" range="5,60" option="int" visible="!eq(-9,)" />
     <setting id="simkl.server.notifications" type="bool" label="40806" default="true" visible="!eq(-10,)" />
     <setting id="simkl.scrobble" type="bool" label="40807" default="false" visible="!eq(-11,)" />
     <setting id="simkl.scrobble.notify" type="bool" label="40808" subsetting="true" default="false" visible="!eq(-12,) + eq(-1,true)" />
     <setting id="simkl.scrobble.checkin" type="bool" label="40809" subsetting="true" default="false" visible="!eq(-13,) + eq(-2,true)" />
     <setting id="simkl.indicators" type="bool" label="40810" default="false" visible="!eq(-14,)" />
+    <setting id="simkl.refresh" type="text" label="" visible="false" default="" />
+    <setting id="simkl.scope" type="text" label="" visible="false" default="" />
+    <setting id="simkl.v2.client_id" type="text" label="40820" default="" option="hidden" visible="false" />
+    <setting id="simkl.legacy" type="text" label="" visible="false" default="" />
+    <setting type="action" label="40811" option="close" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=simkl_Authorize)" visible="eq(-1,true)" />
+    <setting type="lsep" label="46030" />
+    <setting id="punchplay.username" type="text" label="46032" default="" enable="false" visible="true" />
+    <setting type="action" label="40801" option="close" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=punchplay_Authorize)" visible="eq(-1,)" />
+    <setting type="action" label="40802" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=punchplay_Deauthorize)" visible="!eq(-2,)" />
+    <setting type="action" label="40803" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=punchplay_AccountInfo)" visible="!eq(-3,)" />
+    <setting type="action" label="46035" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=punchplay_ForceSync)" visible="!eq(-4,)" />
+    <setting id="punchplay.token" type="text" label="" default="" visible="false" />
+    <setting id="punchplay.refresh" type="text" label="" default="" visible="false" />
+    <setting id="punchplay.expires" type="text" label="" default="" visible="false" />
+    <setting id="punchplay.user_id" type="text" label="" default="" visible="false" />
+    <setting id="punchplay.scopes" type="text" label="" default="" visible="false" />
+    <setting id="punchplay.device_id" type="text" label="" default="" visible="false" />
+    <setting id="punchplay.isauthed" type="text" label="" default="" visible="false" />
+    <setting id="punchplay.client_id" type="text" label="46031" default="" option="hidden" visible="false" />
+    <setting id="punchplay.scrobble" type="bool" label="46036" default="false" visible="!eq(-13,)" />
+    <setting id="punchplay.scrobble.notify" type="bool" label="32099" subsetting="true" default="false" visible="!eq(-14,) + eq(-1,true)" />
+    <setting id="punchplay.watched.threshold" type="slider" label="46033" default="90" range="50,5,100" option="int" visible="!eq(-15,) + eq(-2,true)" />
+    <setting id="punchplay.interval.seconds" type="slider" label="46034" default="60" range="30,10,300" option="int" visible="!eq(-16,) + eq(-3,true)" />
+    <setting id="punchplay.indicators" type="bool" label="46037" default="false" visible="false" />
+    <setting id="punchplay._cache_bust_version" type="text" label="" default="" visible="false" />
+    <setting type="lsep" label="46055" />
+    <setting type="action" label="46045" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=mdblist_Authorize)" />
+    <setting type="action" label="40803" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=mdblist_AccountInfo)" />
+    <setting type="action" label="40802" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=mdblist_Deauthorize)" />
+    <setting id="mdblist.username" type="text" label="46042" default="" enable="false" />
+    <setting id="mdblist.scrobble" type="bool" label="46043" default="false" />
+    <setting id="mdblist.notify" type="bool" label="32099" subsetting="true" default="false" visible="eq(-1,true)" />
+    <setting id="mdblist.client_id" type="text" label="46044" default="" visible="false" />
+    <setting id="mdblist.token" type="text" label="" default="" visible="false" />
+    <setting id="mdblist.refresh" type="text" label="" default="" visible="false" />
+    <setting id="mdblist.enable" type="bool" label="" default="true" visible="false" />
+    <setting id="mdblist.url" type="text" label="" default="https://api.mdblist.com" visible="false" />
+    <setting id="mdblist.apikey" type="text" label="46046" default="" option="hidden" visible="false" />
+    <setting id="mdblist.interval.enabled" type="bool" label="MDBList interval updates" default="true" visible="false" />
+    <setting id="mdblist.interval.seconds" type="slider" label="MDBList interval (seconds)" option="int" range="10,10,300" default="60" visible="false" />
+    <setting id="mdblist.event.start" type="bool" label="MDBList event: start" default="true" visible="false" />
+    <setting id="mdblist.event.pause" type="bool" label="MDBList event: pause" default="true" visible="false" />
+    <setting id="mdblist.event.resume" type="bool" label="MDBList event: resume" default="true" visible="false" />
+    <setting id="mdblist.event.stop" type="bool" label="MDBList event: stop" default="true" visible="false" />
+    <setting id="mdblist.event.end" type="bool" label="MDBList event: end" default="true" visible="false" />
+    <setting id="mdblist.event.seek" type="bool" label="MDBList event: seek" default="true" visible="false" />
+    <setting id="mdblist.event.interval" type="bool" label="MDBList event: interval" default="true" visible="false" />
+    <setting id="mdblist.mediatype.movie" type="bool" label="MDBList mediatype: movies" default="true" visible="false" />
+    <setting id="mdblist.mediatype.episode" type="bool" label="MDBList mediatype: episodes" default="true" visible="false" />
   </category>
   <category label="32346">
-    <setting type="lsep" label="40057" />
+    <setting type="lsep" label="46050" />
     <setting type="action" label="Authorize" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=pm_Authorize)" visible="eq(3,)" />
     <setting type="action" label="Deauthorize" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=pm_Deauthorize)" visible="!eq(2,)"/>
     <setting id="premiumize.enable" type="bool" label="32081" default="true" visible="!eq(1,)" />
@@ -403,7 +512,7 @@
     <setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=ignoreM2ts)" visible="!eq(-6,) + eq(-7,true) + eq(-2,true)" />
     <setting id="premiumize.server.notifications" type="bool" label="33051" default="true" visible="!eq(-7,) + eq(-8,true)" />
     <setting type="action" label="32153" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=pm_AccountInfo)" visible="!eq(-8,) + eq(-9,true)" />
-    <setting type="lsep" label="40058" />
+    <setting type="lsep" label="46051" />
     <setting type="action" label="Authorize" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=rd_Authorize)" visible="eq(5,)" />
     <setting type="action" label="Deauthorize" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=rd_Deauthorize)" visible="!eq(4,)"/>
     <setting id="realdebrid.check_cache" type="bool" label="Check RD cached torrents" default="true"/>
@@ -421,7 +530,7 @@
     <setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=ignoreM2ts)" visible="!eq(-9,) + eq(-10,true) + eq(-2,true)" />
     <setting id="realdebrid.server.notifications" type="bool" label="33051" default="true" visible="!eq(-10,) + eq(-11,true)" />
     <setting type="action" label="32153" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=rd_AccountInfo)" visible="!eq(-11,) + eq(-12,true)" />
-    <setting type="lsep" label="40059"/>
+    <setting type="lsep" label="46052" />
     <setting type="action" label="Authorize" option="close" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=ad_Authorize)" visible="eq(3,)"/>
     <setting type="action" label="Deauthorize" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=ad_Deauthorize)" visible="!eq(2,)"/>
     <setting id="alldebrid.enable" type="bool" label="32081" default="true" visible="!eq(1,)"/>
@@ -435,7 +544,7 @@
     <setting id="alldebrid.server.notifications" type="bool" label="33051" default="true" visible="!eq(-7,) + eq(-8,true)"/>
     <setting id="alldebrid.expires" type="slider" label="Premium Expires Notification (days)" option="int" range="0,1,7" default="0" visible="!eq(-8,) + eq(-9,true)"/>
     <setting type="action" label="32153" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=ad_AccountInfo)" visible="!eq(-9,) + eq(-10,true)"/>
-    <setting type="lsep" label="TorBox" />
+    <setting type="lsep" label="46053" />
 	<setting type="action" label="Authorize" option="close" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tb_Authorize)" visible="eq(3,)" />
 	<setting type="action" label="Deauthorize" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tb_Deauthorize)" visible="!eq(2,)" />
 	<setting id="torbox.enable" type="bool" label="32081" default="true" visible="!eq(1,)" />
@@ -447,11 +556,9 @@
 	<setting id="tb_news.enabled" type="bool" label="Enable TorBox Usenet Search" default="false" visible="false" />
 	<setting id="provider.torboxnews" label="Use Usenet Services (NZB)" type="bool" default="true" visible="!eq(-5,)" />
     <setting id="tb.user_engines_only" label="Filter User Search Services Only" type="bool" default="false" visible="eq(-1,true)" />
-    <setting id="torbox.expires" type="slider" label="Premium Expires Notification (days)" option="int" range="0,1,7" default="0" visible="!eq(-6,) + eq(-7,true)" />
-	<setting type="action" label="32153" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tb_AccountInfo)" visible="!eq(-7,) + eq(-8,true)" />
+	<setting type="action" label="32153" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tb_AccountInfo)" visible="!eq(-8,) + eq(-9,true)" />
 	<setting id="torbox.add_only_if_cached" type="bool" label="TorBox: only add downloads that are already cached" default="true"/>
-	<setting id="torbox.use_cache_lookup" type="bool" label="TorBox: use cache_lookup for torrent info (faster re-lookups)" default="false"/>
-	<setting type="lsep" label="Easynews" />
+    <setting type="lsep" label="46054" />
 	<setting id="easynews.username" type="text" label="40006" default="" />
 	<setting id="easynews.password" type="text" option="hidden" label="Password" default="" />
 	<setting id="provider.easynews" type="bool" label="Enable Easynews Search" default="false" visible="!eq(-2,)" />
@@ -466,47 +573,29 @@
     <setting id="fanart_tv.api_key" type="text" label="Personal Fanart API (leave empty to use the plugin's default)" option="hidden" default="" enable="true" />
     <setting type="lsep" label="TMDb" />
     <setting id="tmdb.api.key" type="text" label="Personal TMDb API (leave empty to use the plugin's default)" option="hidden" default="" enable="true" />
-    <setting type="action" label="[COLOR ff00fa9a]Reset TMDb and Fanart keys to plugin defaults[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_resetMetadataKeys)" />
+    <setting type="action" label="[COLOR ff00fa9a]Reset TMDb, TheTVDB and Fanart keys to plugin defaults[/COLOR]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_resetMetadataKeys)" />
     <setting id="tmdb.username" type="text" label="TMDb username" default="" enable="true" />
-    <setting id="tmdb.password" type="text" label="TMDb password" default="" enable="true" />
+    <setting id="tmdb.password" type="text" label="TMDb password" option="hidden" default="" enable="true" />
     <setting type="action" label="Authorize" enable="false" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tmdb_Auth)" />
     <setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=tmdbUser)" />
     <setting id="tmdb.session_id" type="text" default="" label="session_id" enable="false" />
+    <setting type="lsep" label="TheTVDB" />
+    <setting id="tvdb.numbering" type="bool" label="Also search with TheTVDB episode numbering when it differs from TMDb (absolute numbers for anime)" default="true" />
+    <setting id="tvdb.fill_gaps" type="bool" label="Fill missing episode details and series artwork from TheTVDB" default="true" />
+    <setting id="tvdb.personal_key" type="text" label="Personal TheTVDB API key (leave empty to use the plugin's default)" option="hidden" default="" enable="true" />
+    <setting id="tvdb.pin" type="text" label="TheTVDB subscriber PIN (only if your personal key requires one)" option="hidden" default="" visible="!eq(-1,)" subsetting="true" />
+    <setting type="lsep" label="[COLOR ff808080]Metadata provided by TheTVDB. Please consider adding missing information or subscribing at thetvdb.com[/COLOR]" />
     <setting type="lsep" label="Trakt" />
-    <setting id="trakt.client_id" type="text" label="Trakt Client ID" default="b4234a570e2af88a042c873c629fcec5e77e4e8b5d91757e880a51f6688fd14d" visible="false" />
-	<setting id="trakt.client_secret" type="text" label="Trakt Client Secret" default="51e40ebb7aeec24cb5d87308e303729264ef192b36e1886282beddf8a0b3f6c1" visible="false" />
-	<setting type="lsep" label="MDBList" />
-	<setting type="action" label="[B]MDBList: Authorize (PIN + QR)[/B]" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=mdblist_Authorize)" />
-	<setting type="action" label="MDBList: Account information" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=mdblist_AccountInfo)" />
-	<setting type="action" label="MDBList: Deauthorize" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=mdblist_Deauthorize)" />
-	<setting id="mdblist.username" type="text" label="MDBList: Username" default="" enable="false" />
-	<setting id="mdblist.scrobble" type="bool" label="MDBList: Enable scrobbling (to YOUR account)" default="false" />
-	<setting id="mdblist.client_id" type="text" label="MDBList Client ID" default="QaD4kr5BnGQuIGbWxPoN2E0vPokG1227YWvc2wCo" visible="false" />
-	<setting id="mdblist.token" type="text" label="MDBList token" default="" visible="false" />
-	<setting id="mdblist.refresh" type="text" label="MDBList refresh" default="" visible="false" />
-	<setting id="mdblist.enable" type="bool" label="MDBList enable" default="true" visible="false" />
-	<setting id="mdblist.url" type="text" label="MDBList API URL" default="https://api.mdblist.com" visible="false" />
-	<setting id="mdblist.apikey" type="text" label="MDBList API Key" default="" option="hidden" visible="false" />
-	<setting id="mdblist.notify" type="bool" label="MDBList notifications" default="true" visible="false" />
-	<setting id="mdblist.interval.enabled" type="bool" label="MDBList interval updates" default="true" visible="false" />
-	<setting id="mdblist.interval.seconds" type="slider" label="MDBList interval (seconds)" option="int" range="10,10,300" default="60" visible="false" />
-	<setting id="mdblist.event.start" type="bool" label="MDBList event: start" default="true" visible="false" />
-	<setting id="mdblist.event.pause" type="bool" label="MDBList event: pause" default="true" visible="false" />
-	<setting id="mdblist.event.resume" type="bool" label="MDBList event: resume" default="true" visible="false" />
+    <setting id="trakt.client_id" type="text" label="Trakt Client ID" default="" visible="false" />
+	<setting id="trakt.client_secret" type="text" label="Trakt Client Secret" default="" visible="false" />
 	<setting type="lsep" label="Ratings" />
 	<setting id="omdb.apikey" type="text" label="OMDb API" default="" option="hidden" />
-	<setting id="mdblist.event.stop" type="bool" label="MDBList event: stop" default="true" visible="false" />
-	<setting id="mdblist.event.end" type="bool" label="MDBList event: end" default="true" visible="false" />
-	<setting id="mdblist.event.seek" type="bool" label="MDBList event: seek" default="true" visible="false" />
-	<setting id="mdblist.event.interval" type="bool" label="MDBList event: interval" default="true" visible="false" />
-	<setting id="mdblist.mediatype.movie" type="bool" label="MDBList mediatype: movies" default="true" visible="false" />
-	<setting id="mdblist.mediatype.episode" type="bool" label="MDBList mediatype: episodes" default="true" visible="false" />
 	<setting type="lsep" label="Gemini AI" />
 	<setting type="action" label="40600" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=GeminiAPI)" />
 	<setting id="gemini.api.key" type="text" label="40601" option="hidden" default="" />
 	<setting id="gemini.api.key2" type="text" label="40602" option="hidden" default="" />
 	<setting id="gemini.api.key3" type="text" label="40603" option="hidden" default="" />
-	<setting id="gemini.model" type="select" label="40604" values="gemini-3.1-flash-lite|gemini-3.5-flash|gemini-2.5-flash-lite|gemini-2.5-flash|gemini-2.5-pro" default="gemini-3.1-flash-lite" />
+	<setting id="gemini.model" type="select" label="40604" values="gemini-3.5-flash-lite|gemini-3.1-flash-lite|gemini-2.5-flash-lite|gemini-3.6-flash|gemini-3.7-flash|gemini-3.5-flash|gemini-2.5-flash" default="gemini-3.5-flash-lite" />
   </category>
   <category label="32541">
     <setting id="library.movie" type="folder" label="32543" default="special://userdata/addon_data/plugin.video.luc_kodi/Movies" />
@@ -557,12 +646,6 @@
   </category>
   <category label="32228">
     <setting type="action" label="35066" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_forceTraktSync)" />
-    <setting type="action" label="32610" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearAll)" />
-    <setting type="action" label="32611" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearSources)" />
-    <setting type="action" label="32612" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearMeta)" />
-    <setting type="action" label="32613" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearCache)" />
-    <setting type="action" label="32614" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearSearch)" />
-    <setting type="action" label="32615" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearBookmarks)" />
     <setting type="action" label="32101" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowChangelog&amp;name=luc_kodi)" />
   </category>
   <category label="32353">
@@ -578,5 +661,34 @@
     <setting id="subtitles.lang.1" type="select" label="32356" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" default="Spanish" visible="eq(-9,true)" />
     <setting id="subtitles.lang.2" type="select" label="32357" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" default="English" visible="eq(-10,true)" />
     <setting type="action" label="40513" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_subsList)" visible="eq(-11,true)" />
+  </category>
+  <category label="400762">
+    <setting type="lsep" label="40925" />
+    <setting id="updater.enabled" type="bool" label="40921" default="true" />
+    <setting id="updater.on_start" type="bool" label="40922" default="true" subsetting="true" visible="eq(-1,true)" />
+    <setting id="updater.interval_hours" type="enum" label="40923" values="6|12|24|48" default="2" subsetting="true" visible="eq(-2,true)" />
+    <setting id="updater.last_run" type="text" default="" visible="false" />
+    <setting id="updater.skipped_version" type="text" default="" visible="false" />
+    <setting type="action" label="40924" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_checkUpdate)" option="close" />
+  </category>
+  <category label="400861">
+    <setting type="action" label="400760" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_cacheFootprint)" option="close" />
+    <setting type="action" label="400860" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_maintenanceCleanNow)" option="close" />
+    <setting type="lsep" label="400862" />
+    <setting id="maint.mode" type="enum" label="400863" lvalues="400864|400865|400866" default="1" />
+    <setting id="poster.rotation.cleanup.days" type="enum" label="400768" values="1|3|7" default="2" subsetting="true" visible="!eq(-1,0)" />
+    <setting id="maint.art.budget" type="enum" label="400867" lvalues="400868|400869|400870|400871|400872|400873" default="0" subsetting="true" visible="!eq(-2,0)" />
+    <setting id="db.maintenance" type="bool" label="45022" default="true" subsetting="true" visible="!eq(-3,0)" />
+    <setting type="action" label="32137" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=tools_ShowHelp&amp;name=maintenance)" />
+    <setting type="lsep" label="400874" />
+    <setting type="action" label="32610" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearAll)" />
+    <setting type="action" label="32611" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearSources)" />
+    <setting type="action" label="32612" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearMeta)" />
+    <setting type="action" label="32613" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearCache)" />
+    <setting type="action" label="32614" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearSearch)" />
+    <setting type="action" label="32615" action="RunPlugin(plugin://plugin.video.luc_kodi/?action=cache_clearBookmarks)" />
+    <setting id="poster.rotation.cleanup" type="bool" default="true" visible="false" />
+    <setting id="maint.pending" type="text" default="" visible="false" />
+    <setting id="maint.migrated" type="text" default="" visible="false" />
   </category>
 </settings>

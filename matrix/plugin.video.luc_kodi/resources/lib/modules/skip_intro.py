@@ -69,6 +69,11 @@ _active_path = [None]
 _rate_limited_until = [0.0]
 
 
+# v1.0.75 -- umbrales de cordura del salto.
+MIN_SEGMENT_MS = 15000   # segmentos mas cortos se ignoran (dato malo)
+MIN_SKIP_SECONDS = 5.0   # ganancia minima para que el salto valga la pena
+
+
 def enabled():
 	return getSetting('skipintro.enabled') == 'true'
 
@@ -157,6 +162,10 @@ def _pick_best(segments):
 		end = seg.get('end_ms')
 		if start is None: start = 0
 		if end is None or end <= start: continue
+		# v1.0.75 -- un 'intro' de 11 s en un episodio de 45 min es dato malo de
+		# TheIntroDB, no una cabecera. Saltarlo no se nota y parece que el boton
+		# ha colgado la reproduccion.
+		if (end - start) < MIN_SEGMENT_MS: continue
 		conf = seg.get('confidence')
 		if conf is None: conf = 0.5
 		score = float(conf) + seg.get('submission_count', 1) * 0.001
@@ -333,6 +342,15 @@ class _SkipMonitor(threading.Thread):
 			total = self.player.getTotalTime()
 			if total and target >= total - 10:
 				target = max(total - 10, 0)
+			# v1.0.75 -- no saltar hacia atras ni por una ganancia imperceptible.
+			# Un segmento mal etiquetado mandaba el playhead atras, que es justo lo
+			# que se ve como un cuelgue.
+			try: current = self.player.getTime()
+			except Exception: current = None
+			if current is not None and (target - current) < MIN_SKIP_SECONDS:
+				control.log('[ luc_kodi ] skip_intro: %s omitido, ganancia %.1fs (< %.1fs)'
+				            % (seg_type, target - current, MIN_SKIP_SECONDS), LOGINFO)
+				return True
 			control.log('[ luc_kodi ] skip_intro: skipping %s → %.1fs' % (seg_type, target), LOGINFO)
 			self.player.seekTime(target)
 			if notify:

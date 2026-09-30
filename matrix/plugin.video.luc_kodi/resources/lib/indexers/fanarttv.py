@@ -3,6 +3,7 @@
 	luc_kodi Add-on
 """
 
+from resources.lib.modules import app_keys
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -16,9 +17,9 @@ session.mount('https://webservice.fanart.tv', HTTPAdapter(max_retries=retries, p
 
 class FanartTv:
 	def __init__(self):
-		self.headers = {'api-key': 'e5fd54cf4c8f3362235b991c4735781b'}
+		self.headers = {'api-key': app_keys.get('fanart')}
 		client_key = getSetting('fanart_tv.api_key')
-		if not client_key: client_key = 'e5fd54cf4c8f3362235b991c4735781b'
+		if not client_key: client_key = app_keys.get('fanart')
 		self.headers.update({'client-key': client_key})
 		self.lang = apiLanguage()['trakt']
 		if getSetting('title.lang.en') == 'true': self.lang = 'en' # orientación inglesa unificada (títulos/pósters/logos); fallbacks en/00 intactos

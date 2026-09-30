@@ -421,3 +421,50 @@ def run():
 		_method_local_server()
 	else:
 		_method_manual_paste()
+
+
+def detect():
+	"""v1.0.63: re-calcula el debrid detectado desde el meteor.config_token ya
+	guardado, sin re-ejecutar el wizard.
+
+	Hasta ahora meteor.debrid.detected SOLO se rellenaba al pasar por el
+	asistente (_save()). Quien pegaba el token a mano en el campo, o cambiaba de
+	debrid en la web de Meteor y regeneraba el token, se quedaba con
+	'not configured' para siempre: el scraper funcionaba pero el ajuste mentia.
+	Torz y Comet ya tenian esto; Meteor y Sootio no."""
+	raw = getSetting('meteor.config_token') or ''
+	if not raw:
+		control.dialog.ok(
+			'Meteor — re-detect',
+			'No config token saved yet.\n\n'
+			'Run the Meteor Setup Wizard first, or paste a Manifest URL '
+			'in the Config Token field.',
+		)
+		return
+	blob, detected = _parse_token(raw)
+	if blob and not detected:
+		# v1.0.67: si el token se parsea pero no sale el debrid, se registra la
+		# ESTRUCTURA de la config (claves y tipos, jamas valores) para poder
+		# arreglar la deteccion sin tener que pedirle el token a nadie.
+		try:
+			from resources.lib.jacksparrow.sourcesdir.torrents.meteor import describe_config_shape
+			describe_config_shape(raw)
+		except Exception:
+			pass
+	if not blob:
+		control.dialog.ok(
+			'Meteor — re-detect',
+			'The saved token could not be parsed.\n\n'
+			'Re-run the wizard and paste the full Manifest URL '
+			'(ending in /manifest.json).',
+		)
+		return
+	setSetting('meteor.debrid.detected', detected or 'not configured')
+	if getSetting('provider.meteor') != 'true':
+		setSetting('provider.meteor', 'true')
+	control.dialog.ok(
+		'Meteor — re-detect',
+		'[COLOR ff00fa9a]Done.[/COLOR]\n\n'
+		'Debrid detected: [COLOR fffdb515]%s[/COLOR]\n\n'
+		'Meteor custom mode is active.' % (detected or 'not configured'),
+	)

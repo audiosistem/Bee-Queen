@@ -3,6 +3,7 @@
 	luc_kodi Add-on
 """
 
+from resources.lib.modules import app_keys
 from hashlib import md5
 from json import dumps as jsdumps, loads as jsloads
 from sys import argv, exit as sysexit
@@ -19,6 +20,7 @@ from resources.lib.modules import playcount
 from resources.lib.modules import trakt
 from resources.lib.modules import simkl
 from resources.lib.modules import mdblist
+from resources.lib.modules import punchplay
 from resources.lib.modules import opensubs
 from difflib import SequenceMatcher
 from resources.lib.modules.source_utils import seas_ep_filter
@@ -85,6 +87,8 @@ class Player(xbmc.Player):
 		self.simklCredentials = simkl.getSimklCredentialsInfo()
 		# v1.0.37: MDBList scrobbling now lives in-plugin too (no external service).
 		self.mdblistCredentials = mdblist.getMDBListScrobbleInfo()
+		# v1.0.86: cuarto servicio de tracking, autonomo como los otros tres.
+		self.punchplayCredentials = punchplay.getPunchPlayScrobbleInfo()
 		self.subtitletime = None
 
 	def play_source(self, title, year, season, episode, imdb, tmdb, tvdb, url, meta, debridPackCall=False):
@@ -103,9 +107,8 @@ class Player(xbmc.Player):
 ## - compare meta received to database and use largest(eventually switch to a request to fetch missing db meta for item)
 			self.imdb_user = getSetting('imdb.user').replace('ur', '')
 			self.tmdb_key = getSetting('tmdb.api.key')
-			if not self.tmdb_key: self.tmdb_key = 'f2e500501d9fa3bd1637bfd00f11583a'
-			self.tvdb_key = getSetting('tvdb.api.key')
-			if self.media_type == 'episode': self.user = str(self.imdb_user) + str(self.tvdb_key)
+			if not self.tmdb_key: self.tmdb_key = app_keys.get('tmdb')
+			if self.media_type == 'episode': self.user = str(self.imdb_user)
 			else: self.user = str(self.tmdb_key)
 			self.lang = control.apiLanguage()['tvdb']
 			meta1 = dict((k, v) for k, v in iter(meta.items()) if v is not None and v != '') if meta else None
@@ -150,6 +153,16 @@ class Player(xbmc.Player):
 			else:
 				item.setArt({'clearart': clearart, 'clearlogo': clearlogo, 'discart': discart, 'thumb': thumb, 'poster': poster, 'fanart': fanart})
 			control.infoTagger(item, self.meta)
+			# Optional: put the scores and what the release claims at the head
+			# of the synopsis, the one field every skin draws during playback.
+			# Off by default.
+			try:
+				from resources.lib.modules import release_info
+				release_info.announce()
+				release_info.attach_to_plot(item, self.meta)
+				release_info.forget()
+			except Exception:
+				log_utils.error()
 			item.setProperty('IsPlayable', 'true')
 			item.setContentLookup(False)                  # no re-probe on seek
 			item.setMimeType(_detect_mime(url))           # Kodi knows format instantly
@@ -347,8 +360,23 @@ class Player(xbmc.Player):
 		# Enviamos /scrobble/pause cada _simkl_pause_interval segundos mientras se
 		# reproduce, así el punto queda guardado pase lo que pase. Autónomo: solo SIMKL.
 		_simkl_scrobble_on = (self.simklCredentials and getSetting('simkl.scrobble') == 'true')
-		_simkl_pause_interval = 90  # segundos
+		# v1.0.88: 90 s con AUTH V1, 300 s con AUTH V2 (cuota diaria por usuario,
+		# 500 peticiones en el plan Free). Ver simkl.scrobble_keepalive_seconds().
+		try: _simkl_pause_interval = simkl.scrobble_keepalive_seconds()
+		except Exception: _simkl_pause_interval = 90
 		_simkl_last_pause = time()
+
+		# v1.0.79 Trakt: NO lleva pausa periodica, a proposito. En SIMKL y
+		# MDBList mandar /scrobble/pause cada N segundos es gratis, pero en
+		# Trakt "pause" es un estado PUBLICO: la web pasaria de "viendo ahora"
+		# a "en pausa" al primer tick y se quedaria asi el resto de la
+		# pelicula, tirando por tierra el directo que da /scrobble/start (que,
+		# segun la API, no necesita reenvio: caduca solo al agotarse el tiempo
+		# restante). La red de seguridad va donde de verdad se perdia la
+		# sesion: al salir del bucle sin un onPlayBackStopped -- salto al
+		# siguiente de la lista o apagado de Kodi -- y en la pausa real del
+		# usuario (onPlayBackPaused).
+		_trakt_scrobble_on = (self.traktCredentials and getSetting('trakt.scrobble') == 'true')
 
 		# v1.0.37: igual que SIMKL, MDBList guarda el resume periódicamente
 		# (/scrobble/pause) para no perderlo si Kodi salta de episodio o se
@@ -361,6 +389,22 @@ class Player(xbmc.Player):
 		if _mdblist_pause_interval < 30:
 			_mdblist_pause_interval = 30
 		_mdblist_last_pause = time()
+
+		# v1.0.86 PunchPlay: el latido periodico manda `progress`, NO `pause`.
+		# PunchPlay tiene cinco acciones de playback y `pause` es un evento
+		# REAL del usuario, no un keep-alive: mandarlo cada minuto dejaria la
+		# cuenta marcada en pausa toda la pelicula (el mismo problema por el
+		# que Trakt no lleva pausa periodica) y, segun su documentacion, un
+		# pause sin sesion activa responde 409. `progress` actualiza la
+		# posicion sin tocar el estado, que es justo lo que hace falta aqui.
+		_punchplay_scrobble_on = self.punchplayCredentials
+		try:
+			_punchplay_interval = int(getSetting('punchplay.interval.seconds') or 60)
+		except Exception:
+			_punchplay_interval = 60
+		if _punchplay_interval < 30:
+			_punchplay_interval = 30
+		_punchplay_last_beat = time()
 
 		while self.isPlayingVideo() and not control.monitor.abortRequested():
 			try:
@@ -376,31 +420,56 @@ class Player(xbmc.Player):
 				property = homeWindow.getProperty(pname)
 
 				# ── Guardado periódico de progreso en SIMKL (resume) ──────────
-				# Solo cuando el progreso está en rango de "a medias" (15%-80%):
-				# por debajo no merece la pena, por encima ya cuenta como visto.
+				# Rango de "a medias": desde el 5% (no el 15%) hasta el 80%.
+				# El suelo del 15% no cuadraba con la propia sección "Mi
+				# Progreso", que lista desde PROGRESS_MIN_PCT = 5: dejar un
+				# episodio de 50 min al minuto 5 (10%) no guardaba resume
+				# periódico y solo se salvaba si onPlayBackStopped llegaba a
+				# dispararse. El guard de >180 s ya filtra el toque accidental.
 				if _simkl_scrobble_on:
 					try:
 						_now = time()
 						if (_now - _simkl_last_pause) >= _simkl_pause_interval and self.media_length:
 							_pct = (self.current_time / self.media_length) * 100
-							if 15 <= _pct < 80 and int(self.current_time) > 180:
+							if 5 <= _pct < 80 and int(self.current_time) > 180:
 								simkl.scrobblePause(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
 													season=self.season, episode=self.episode, watched_percent=_pct)
 							_simkl_last_pause = _now
 					except: pass
 
 				# ── Guardado periódico de progreso en MDBList (resume) ────────
-				# v1.0.37: mismo criterio que SIMKL. Solo en rango 15%-80%.
+				# v1.0.37: mismo criterio que SIMKL. Rango 5%-80% desde 1.0.59
+				# (MDBList lista sus sesiones pausadas desde progress > 0).
 				# IMPORTANTE: bloque INDEPENDIENTE de SIMKL (MDBList autónomo).
 				if _mdblist_scrobble_on:
 					try:
 						_now = time()
 						if (_now - _mdblist_last_pause) >= _mdblist_pause_interval and self.media_length:
 							_pct = (self.current_time / self.media_length) * 100
-							if 15 <= _pct < 80 and int(self.current_time) > 180:
+							if 5 <= _pct < 80 and int(self.current_time) > 180:
 								mdblist.scrobblePause(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
 														season=self.season, episode=self.episode, watched_percent=_pct)
 							_mdblist_last_pause = _now
+					except: pass
+
+				# ── Latido periodico de PunchPlay (progress) ──────────────────
+				# Mismo suelo de 5% y guard de >180 s que SIMKL y MDBList, por
+				# coherencia entre los cuatro servicios. Sin techo del 80%: en
+				# PunchPlay el progreso alto no marca visto por si solo (eso lo
+				# decide el `stop` con su watched_threshold), asi que seguir
+				# latiendo hasta el final mantiene la barra de la web al dia.
+				if _punchplay_scrobble_on:
+					try:
+						_now = time()
+						if (_now - _punchplay_last_beat) >= _punchplay_interval and self.media_length:
+							_pct = (self.current_time / self.media_length) * 100
+							if _pct >= 5 and int(self.current_time) > 180:
+								punchplay.scrobbleProgress(
+									imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
+									season=self.season, episode=self.episode,
+									watched_percent=_pct, title=self.title, year=self.year,
+									duration=self.media_length, position=self.current_time)
+							_punchplay_last_beat = _now
 					except: pass
 
 				if self.media_type == 'movie':
@@ -417,6 +486,13 @@ class Player(xbmc.Player):
 							homeWindow.setProperty(pname, '5')
 							playcount.markEpisodeDuringPlayback(self.imdb, self.tvdb, self.season, self.episode, '5')
 						# Pre-scrape / PlayNext popup removed — replaced by post-stop on-demand dialog
+						# v1.0.91 (M2): pre-carga silenciosa de las fuentes del siguiente
+						# episodio al pasar del 70%, para que Auto-Play del dialogo sea
+						# inmediato. Una sola vez por episodio y en hilo daemon.
+						if (not self.preScrape_triggered and self.enable_playnext and self.media_length
+								and self.getWatchedPercent() >= 70):
+							self.preScrape_triggered = True
+							threading.Thread(target=self._prescrape_next_silent, daemon=True).start()
 					except: log_utils.error()
 					xbmc.sleep(1000)
 
@@ -424,6 +500,41 @@ class Player(xbmc.Player):
 				log_utils.error()
 				xbmc.sleep(1000)
 		homeWindow.clearProperty(pname)
+
+		# v1.0.79 Trakt: el bucle puede terminar sin que llegue nunca un
+		# onPlayBackStopped. Pasa en dos caminos reales: el usuario salta al
+		# siguiente de la lista (playlist_skip rompe el while) y Kodi se esta
+		# apagando (abortRequested). En ambos Trakt no recibia absolutamente
+		# nada y el punto de reproduccion se perdia. Aqui se manda la pausa con
+		# el ultimo progreso conocido, que es lo que alimenta Continue Watching
+		# en trakt.tv.
+		if _trakt_scrobble_on and (playlist_skip or control.monitor.abortRequested()):
+			try:
+				if self.media_length:
+					_pct = (self.current_time / self.media_length) * 100
+					if 1 <= _pct < 85 and int(self.current_time) > 60:
+						trakt.scrobblePause(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
+											season=self.season, episode=self.episode, watched_percent=_pct)
+			except: log_utils.error()
+
+		# v1.0.86 PunchPlay: misma red de seguridad, pero se manda `stop`, no
+		# `pause`. En PunchPlay un stop incompleto NO marca visto: crea
+		# progreso reanudable, que es exactamente el estado correcto cuando el
+		# usuario salta al siguiente episodio o Kodi se esta apagando. Ademas
+		# cierra la sesion, y sin cerrarla el siguiente arranque reutilizaria
+		# un playback_session_id que el backend ya considera viejo.
+		if _punchplay_scrobble_on and (playlist_skip or control.monitor.abortRequested()):
+			try:
+				if self.media_length:
+					_pct = (self.current_time / self.media_length) * 100
+					if _pct >= 1 and int(self.current_time) > 60:
+						punchplay.scrobbleStop(
+							imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
+							season=self.season, episode=self.episode, watched_percent=_pct,
+							title=self.title, year=self.year,
+							duration=self.media_length, position=self.current_time)
+			except: log_utils.error()
+
 		if playlist_skip: pass
 		else:
 			# # self.onPlayBackEnded() # check, kodi may at times not issue "onPlayBackEnded" callback
@@ -452,6 +563,39 @@ class Player(xbmc.Player):
 					log_utils.error()
 			# ─────────────────────────────────────────────────────────────────────────
 
+	def _prescrape_next_silent(self):
+		"""v1.0.91 (M2): scrape del siguiente episodio en segundo plano.
+		Los argumentos se construyen EXACTAMENTE como llegan desde el dialogo
+		de siguiente episodio (URL plugin:// -> parse_qsl, que convierte los
+		vacios en None), porque la clave de providerscache se calcula con
+		str() de esos nueve argumentos: si no coinciden, la pre-carga no sirve.
+		No corre en aparatos de poca memoria ni si el siguiente no se ha
+		emitido."""
+		try:
+			if getSetting('playnext.prescrape') == 'false': return
+			from resources.lib.modules import device_profile, next_episode
+			if device_profile.is_low(): return
+			state, n_season, n_ep = next_episode.resolve(self.tmdb, self.season, self.episode)
+			if state != next_episode.AIRED: return
+			def _q(v):
+				v = '' if v is None else str(v)
+				return v if v else None
+			show = _q(self.title or '')
+			args = (show, _q(self.year or ''), _q(self.imdb or ''), _q(self.tmdb or ''), _q(self.tvdb or ''),
+					str(n_season), str(n_ep), show, None)
+			next_meta = dict(self.meta) if self.meta else {}
+			for _k in ('thumb', 'plot', 'premiered', 'landscape'):
+				next_meta.pop(_k, None)
+			next_meta.update({'season': str(n_season), 'episode': str(n_ep), 'mediatype': 'episode', 'title': self.title or ''})
+			from resources.lib.modules import sources as _sources
+			from resources.lib.database import providerscache as _pc
+			_t0 = time()
+			items = _pc.get(_sources.Sources().getSources, 48, *(args + (next_meta, True)))
+			log_utils.log('[ luc_kodi ] prescrape: S%02dE%02d ready, %d sources in %.1fs'
+						  % (int(n_season), int(n_ep), len(items or []), time() - _t0), level=log_utils.LOGINFO)
+		except:
+			log_utils.error()
+
 	def _show_next_episode_dialog(self):
 		"""
 		Post-stop on-demand next-episode dialog.
@@ -460,8 +604,13 @@ class Player(xbmc.Player):
 		requiere setResolvedUrl, incompatible con reproducción directa).
 		"""
 		try:
-			next_ep     = int(self.episode) + 1
-			next_season = int(self.season)
+			# v1.0.90: el siguiente se decide con los datos de temporada de TMDb
+			# (fin de temporada -> T+1 E01; sin emitir o fin de serie -> nada).
+			from resources.lib.modules import next_episode as _nextep
+			_ne_state, next_season, next_ep = _nextep.resolve(self.tmdb, self.season, self.episode)
+			if _ne_state in (_nextep.UNAIRED, _nextep.ENDED):
+				log_utils.log('[ luc_kodi ] next episode: none to offer after S%02dE%02d (%s)' % (int(self.season), int(self.episode), _ne_state), level=log_utils.LOGINFO)
+				return
 			show_title  = self.title or ''
 
 			# Build meta for the next episode (strip per-episode fields)
@@ -546,8 +695,13 @@ class Player(xbmc.Player):
 				return
 			from json import dumps as jsdumps
 			from urllib.parse import quote_plus
-			next_ep     = int(self.episode) + 1
-			next_season = int(self.season)
+			# v1.0.90: el siguiente se decide con los datos de temporada de TMDb
+			# (fin de temporada -> T+1 E01; sin emitir o fin de serie -> nada).
+			from resources.lib.modules import next_episode as _nextep
+			_ne_state, next_season, next_ep = _nextep.resolve(self.tmdb, self.season, self.episode)
+			if _ne_state in (_nextep.UNAIRED, _nextep.ENDED):
+				log_utils.log('[ luc_kodi ] next episode: none to offer after S%02dE%02d (%s)' % (int(self.season), int(self.episode), _ne_state), level=log_utils.LOGINFO)
+				return
 			# Build minimal meta for the next episode (show-level info + updated S/E).
 			# The accurate episode title / premiered come from the prescrape path;
 			# here we only need enough for the PlayNext popup to identify the episode.
@@ -651,8 +805,24 @@ class Player(xbmc.Player):
 				self.seekTime(_seek)
 			self.playback_resumed = True
 		
+		# v1.0.79 TRAKT: aqui se llamaba a scrobbleReset(), que hace un
+		# DELETE /sync/playback/{id} -- borraba el punto de resume en Trakt
+		# nada mas arrancar y no escribia NADA a cambio, asi que parar antes
+		# del suelo de set_scrobble dejaba la sesion perdida por completo.
+		# /scrobble/start hace ese mismo borrado por si solo Y ademas pone el
+		# estado "viendo ahora" en trakt.tv, que es lo que faltaba: hasta ahora
+		# el addon solo hablaba con Trakt AL PARAR. Se manda el progreso real
+		# de arranque (resume incluido) para que la barra de la web salga bien.
 		if self.traktCredentials and getSetting('trakt.scrobble') == 'true':
-			try: trakt.scrobbleReset(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb, season=self.season, episode=self.episode, refresh=False) # refresh issues container.refresh()
+			try:
+				_start_pct = 0
+				try:
+					_total = self.getTotalTime()
+					if _total: _start_pct = (float(self.offset) / _total) * 100
+				except Exception: _start_pct = 0
+				control.log('[ luc_kodi ] onAVStarted — calling trakt.scrobbleStart()', LOGINFO)
+				trakt.scrobbleStart(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
+									season=self.season, episode=self.episode, watched_percent=_start_pct)
 			except Exception: log_utils.error()
 		# v1.0.21 SIMKL: fire /scrobble/start so the user's "Watching now" shows up,
 		# and an optional /scrobble/checkin if the user enabled the fire-and-forget fallback.
@@ -679,6 +849,24 @@ class Player(xbmc.Player):
 									  season=self.season, episode=self.episode, watched_percent=0)
 			except Exception:
 				log_utils.error()
+		# v1.0.86 PunchPlay: /playback/start abre la sesion y pone el estado
+		# "viendo ahora". Se manda el progreso REAL de arranque (el resume
+		# incluido) para que la barra de la web salga bien desde el primer
+		# evento, igual que se hace con Trakt desde la v1.0.79.
+		if self.punchplayCredentials:
+			try:
+				_pp_pct = 0
+				try:
+					_pp_total = self.getTotalTime()
+					if _pp_total: _pp_pct = (float(self.offset) / _pp_total) * 100
+				except Exception: _pp_pct = 0
+				control.log('[ luc_kodi ] onAVStarted — calling punchplay.scrobbleStart()', LOGINFO)
+				punchplay.scrobbleStart(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
+										season=self.season, episode=self.episode,
+										watched_percent=_pp_pct, title=self.title, year=self.year,
+										duration=self.getTotalTime(), position=self.offset)
+			except Exception:
+				log_utils.error()
 		# Double-check via xbmcaddon direct API in case settings cache isn't updated yet
 		try:
 			import xbmcaddon as _xa
@@ -696,6 +884,80 @@ class Player(xbmc.Player):
 				log_utils.error()
 		xbmc.log('[ plugin.video.luc_kodi ] onAVStarted callback', LOGINFO)
 		control.log('[ plugin.video.luc_kodi ] onAVStarted callback', LOGINFO)
+
+
+	def _live_percent(self):
+		"""Progreso actual en %, leido del reproductor y no del ultimo tick del
+		bucle (que puede llevar hasta 2 s de retraso)."""
+		try:
+			total = self.getTotalTime() or self.media_length
+			cur = self.getTime()
+			if not total: return None, 0
+			return (cur / total) * 100, cur
+		except Exception:
+			if not self.media_length: return None, 0
+			return (self.current_time / self.media_length) * 100, self.current_time
+
+
+	def onPlayBackPaused(self):
+		# v1.0.86 PunchPlay: va PRIMERO y en su propio try porque el bloque de
+		# Trakt de abajo empieza con un `return` cuando Trakt esta apagado.
+		# Colocarlo despues lo dejaria colgando de que el usuario use Trakt, y
+		# los cuatro servicios de tracking son independientes entre si.
+		# Aqui `pause` es un evento REAL del usuario, que es exactamente para
+		# lo que PunchPlay tiene la accion.
+		try:
+			if self.punchplayCredentials:
+				_pct, _cur = self._live_percent()
+				if _pct is not None and 1 <= _pct < 100 and int(_cur) > 60:
+					punchplay.scrobblePause(
+						imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
+						season=self.season, episode=self.episode, watched_percent=_pct,
+						title=self.title, year=self.year,
+						duration=self.media_length, position=_cur)
+		except: log_utils.error()
+		# v1.0.79: el addon no reaccionaba a una pausa real en NINGUN servicio.
+		# Es el momento exacto que describe la API de Trakt y donde mas
+		# sesiones se abandonan, asi que aqui se guarda el punto en
+		# /sync/playback sin depender de que llegue luego un onPlayBackStopped.
+		try:
+			if not (self.traktCredentials and getSetting('trakt.scrobble') == 'true'): return
+			_pct, _cur = self._live_percent()
+			if _pct is None: return
+			if 1 <= _pct < 85 and int(_cur) > 60:
+				trakt.scrobblePause(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
+									season=self.season, episode=self.episode, watched_percent=_pct)
+		except: log_utils.error()
+		control.log('[ plugin.video.luc_kodi ] onPlayBackPaused callback', LOGINFO)
+
+
+	def onPlayBackResumed(self):
+		# v1.0.86 PunchPlay: mismo motivo de orden que en onPlayBackPaused.
+		# PunchPlay tiene accion `resume` propia, asi que no hay que reutilizar
+		# `start` para des-pausar como se hace con Trakt: un `start` nuevo
+		# abriria sesion nueva y el backend trataria lo anterior como una
+		# sesion cerrada.
+		try:
+			if self.punchplayCredentials:
+				_pct, _cur = self._live_percent()
+				if _pct is not None:
+					punchplay.scrobbleResume(
+						imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
+						season=self.season, episode=self.episode, watched_percent=_pct,
+						title=self.title, year=self.year,
+						duration=self.media_length, position=_cur)
+		except: log_utils.error()
+		# Al reanudar, /scrobble/start devuelve el estado "viendo ahora" con el
+		# progreso correcto. Es el uso documentado: start sirve tanto para
+		# arrancar como para des-pausar.
+		try:
+			if not (self.traktCredentials and getSetting('trakt.scrobble') == 'true'): return
+			_pct, _cur = self._live_percent()
+			if _pct is None: return
+			trakt.scrobbleStart(imdb=self.imdb, tmdb=self.tmdb, tvdb=self.tvdb,
+								season=self.season, episode=self.episode, watched_percent=_pct)
+		except: log_utils.error()
+		control.log('[ plugin.video.luc_kodi ] onPlayBackResumed callback', LOGINFO)
 
 
 	def onPlayBackSeek(self, time, seekOffset):
@@ -732,7 +994,8 @@ class Player(xbmc.Player):
 				# v1.0.18: call set_scrobble if EITHER Trakt or SIMKL is enabled with creds.
 				if ((self.traktCredentials and getSetting('trakt.scrobble') == 'true') or
 					(self.simklCredentials and getSetting('simkl.scrobble') == 'true') or
-					(self.mdblistCredentials and getSetting('mdblist.scrobble') == 'true')):
+					(self.mdblistCredentials and getSetting('mdblist.scrobble') == 'true') or
+					self.punchplayCredentials):
 					Bookmarks().set_scrobble(self.current_time, self.media_length, self.media_type, self.imdb, self.tmdb, self.tvdb, self.season, self.episode)
 				watcher = self.getWatchedPercent()
 				seekable = (int(self.current_time) > 180 and (watcher < 85))
@@ -758,7 +1021,8 @@ class Player(xbmc.Player):
 		# explicitly. set_scrobble at >=85% (Trakt) or >=80% (SIMKL) calls /scrobble/stop -> watched indicator syncs.
 		if ((self.traktCredentials and getSetting('trakt.scrobble') == 'true') or
 			(self.simklCredentials and getSetting('simkl.scrobble') == 'true') or
-			(self.mdblistCredentials and getSetting('mdblist.scrobble') == 'true')):
+			(self.mdblistCredentials and getSetting('mdblist.scrobble') == 'true') or
+			self.punchplayCredentials):
 			try:
 				Bookmarks().set_scrobble(self.current_time, self.media_length, self.media_type, self.imdb, self.tmdb, self.tvdb, self.season, self.episode)
 			except: log_utils.error()
@@ -1473,6 +1737,25 @@ class Bookmarks:
 						elif int(current_time) > 180:
 							_mdblist.scrobblePause(imdb=imdb, tmdb=tmdb, tvdb=tvdb,
 												   season=season, episode=episode, watched_percent=percent)
+				except Exception:
+					log_utils.error()
+
+			# v1.0.86 PunchPlay: UNA sola llamada, siempre /playback/stop.
+			# A diferencia de SIMKL y MDBList aqui NO hacen falta dos ramas
+			# excluyentes: el propio servidor decide si el stop crea un visto
+			# o solo guarda progreso, comparando con el watched_threshold que
+			# se manda en el cuerpo. Partirlo en stop/pause por nuestra cuenta
+			# duplicaria esa logica y la dejaria desincronizada del ajuste.
+			# Sin suelo de tiempo: un stop temprano se guarda como progreso
+			# incompleto, que es justo lo que alimenta Continue Watching.
+			if getSetting('punchplay.scrobble') == 'true':
+				try:
+					from resources.lib.modules import punchplay as _punchplay
+					if _punchplay.getPunchPlayScrobbleInfo():
+						_punchplay.scrobbleStop(imdb=imdb, tmdb=tmdb, tvdb=tvdb,
+												season=season, episode=episode,
+												watched_percent=percent,
+												duration=media_length, position=current_time)
 				except Exception:
 					log_utils.error()
 		except:

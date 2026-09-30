@@ -174,24 +174,27 @@ class source:
 			episode_title = data['title'] if 'tvshowtitle' in data else None
 			year = data['year']
 			if 'tvshowtitle' in data:
-				hdlr = 'S%02dE%02d' % (int(data['season']), int(data['episode']))
-				query = '%s %s' % (title, hdlr)
+				variants = source_utils.episode_variants(data) # TheTVDB SxxEyy when it differs from TMDb; absolute number for anime
 			else:
-				hdlr = year
-				query = '%s %s' % (title, year)
-			query = re.sub(r'[^A-Za-z0-9\s\.\-]+', ' ', query)
+				variants = [(year, year, None)]
 			if 'timeout' in data:
 				self.timeout = int(data['timeout'])
 
-			results = self._get(query)
-			if not results:
-				return sources
-			files = results.get('data') or []
-			down_url = results.get('downURL') or ('%s/dl' % BASE_LINK)
-			dl_farm = results.get('dlFarm') or 'auto'
-			dl_port = results.get('dlPort') or 'auto'
-			if not files:
-				log_utils.log('EASYNEWS: 0 resultados para "%s"' % query, level=log_utils.LOGDEBUG)
+			tagged = []
+			down_url, dl_farm, dl_port = None, None, None
+			for suffix, hdlr, absolute in variants:
+				query = re.sub(r'[^A-Za-z0-9\s\.\-]+', ' ', '%s %s' % (title, suffix))
+				results = self._get(query)
+				files = (results or {}).get('data') or []
+				if not files:
+					log_utils.log('EASYNEWS: 0 resultados para "%s"' % query, level=log_utils.LOGDEBUG)
+					continue
+				if down_url is None: # download host details come with every search; the first answer is kept
+					down_url = results.get('downURL') or ('%s/dl' % BASE_LINK)
+					dl_farm = results.get('dlFarm') or 'auto'
+					dl_port = results.get('dlPort') or 'auto'
+				tagged.extend((item, hdlr, absolute) for item in files)
+			if not tagged:
 				return sources
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
@@ -199,7 +202,8 @@ class source:
 			source_utils.scraper_error('EASYNEWS')
 			return sources
 
-		for item in files:
+		seen = set()
+		for item, hdlr, absolute in tagged:
 			try:
 				if not isinstance(item, dict):
 					continue
@@ -220,8 +224,11 @@ class source:
 				if not fn:
 					continue
 				name = source_utils.clean_name(fn)
-				if not source_utils.check_title(title, aliases, name, hdlr, year):
+				if fn in seen:
 					continue
+				if not source_utils.check_episode(title, aliases, name, hdlr, year, absolute):
+					continue
+				seen.add(fn)
 				name_info = source_utils.info_from_name(name, title, year, hdlr, episode_title)
 				if source_utils.remove_lang(name_info, check_foreign_audio):
 					continue

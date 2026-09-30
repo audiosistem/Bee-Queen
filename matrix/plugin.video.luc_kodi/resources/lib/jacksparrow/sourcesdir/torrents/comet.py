@@ -60,10 +60,11 @@
 
 from json import loads as jsloads
 import base64
-import queue
 import re
+import time
 from resources.lib.jacksparrow import client
 from resources.lib.jacksparrow import source_utils
+from resources.lib.jacksparrow import pack_handoff
 from resources.lib.jacksparrow import log_utils
 from resources.lib.jacksparrow.control import setting as getSetting
 from resources.lib.jacksparrow.control import setSetting
@@ -331,14 +332,17 @@ def _normalize_comet_token(raw):
 
 
 class source:
-	timeout = 10
+	# v1.0.64: subido de 10 a 25 s. Con cachedOnly la instancia tiene que
+	# comprobar la cache del debrid para cada hash antes de responder, y con
+	# varios proveedores activos a la vez 10 s se quedaban cortos: en un log
+	# real fallaron las 15 peticiones, todas por timeout a los 10,1 s.
+	timeout = 25
 	priority = 1
 	pack_capable = True
 	hasMovies = True
 	hasEpisodes = True
 
 	def __init__(self):
-		self._queue = queue.SimpleQueue()
 		self.language = ['en']
 
 		try:
@@ -377,7 +381,12 @@ class source:
 		# Endpoints (mismo path en ambos modos; cambia solo el config blob).
 		self.movieSearch_link = '/%s/stream/movie/%s.json'
 		self.tvSearch_link    = '/%s/stream/series/%s:%s:%s.json'
-		self.min_seeders = 0
+		# Min seeders (v1.0.61: antes estaba fijo a 0 y las ramas de
+		# filtrado eran inalcanzables)
+		try:
+			self.min_seeders = int(getSetting('comet.min.seeders') or '0')
+		except Exception:
+			self.min_seeders = 0
 
 	# ── URL builders ────────────────────────────────────────────────────
 
@@ -576,6 +585,7 @@ class source:
 			'info':       info_str,
 			'size':       dsize,
 			'seeders':    seeders,
+			'lang_hint':  source_utils.lang_hint('\n'.join(desc_lines[1:])),
 		}
 		# Etiqueta 'Custom' solo en streams ya resueltos por Comet (playback).
 		if is_direct:
@@ -608,20 +618,21 @@ class source:
 				episode = data['episode']
 				hdlr = 'S%02dE%02d' % (int(season), int(episode))
 				url = self._tv_url(imdb, season, episode)
+				_is_tv = True
 			else:
 				hdlr = year
 				url = self._movie_url(imdb)
+				_is_tv = False
 		except Exception:
 			source_utils.scraper_error('COMET')
 			return sources
 
+		# v1.0.63: el traspaso a sources_packs() ya no usa self._queue (era una
+		# cola POR INSTANCIA y sources.py crea una instancia nueva por pasada,
+		# asi que no llegaba nunca). Ver resources/lib/jacksparrow/pack_handoff.py
+		_h = pack_handoff.begin('comet', data.get('imdb'), data.get('season'), data.get('episode')) if _is_tv else None
 		files = self._fetch(url)
-		# Encolar para sources_packs (dos veces: seasons + shows)
-		try:
-			self._queue.put_nowait(files)
-			self._queue.put_nowait(files)
-		except Exception:
-			pass
+		pack_handoff.publish(_h, files)
 
 		for file in files:
 			try:
@@ -643,7 +654,12 @@ class source:
 			imdb = data['imdb']
 			year = data['year']
 			season = data['season']
-			files = self._queue.get(timeout=self.timeout + 1)
+			# v1.0.63: espera al resultado que publica sources(); si nadie lo
+			# publico (o expiro), se hace la peticion aqui en vez de quedarse
+			# colgado timeout+1 segundos contra una cola que no se llenaba.
+			files = pack_handoff.wait('comet', imdb, season, data.get('episode'), timeout=self.timeout)
+			if files is None:
+				files = self._fetch(self._tv_url(imdb, season, data.get('episode')))
 		except Exception:
 			source_utils.scraper_error('COMET')
 			return sources
@@ -686,6 +702,23 @@ class source:
 
 			# GET siguiendo redirects -> URL final del archivo (CDN debrid).
 			final = client.request(url, output='geturl', redirect=True, timeout=self.timeout)
+			# v1.0.67: algunas instancias responden 200 y redirigen a un MP4 de
+			# error ("Debrid service is down", "Too many requests"). Devolverlo
+			# haria que se reprodujese el video de error en vez de saltar.
+			if client.is_error_slate(final):
+				# v1.0.68: es transitorio a menudo — el mismo enlace suele resolver
+				# unos minutos despues. Se reintenta UNA vez, salvo que el
+				# cortafuegos indique que el servicio esta caido de verdad.
+				if client.slate_retry_allowed():
+					log_utils.log('COMET: video de error, reintentando una vez',
+					              level=log_utils.LOGINFO)
+					time.sleep(client.SLATE_RETRY_DELAY)
+					final = client.request(url, output='geturl', redirect=True, timeout=self.timeout)
+				if client.is_error_slate(final):
+					client.note_error_slate()
+					log_utils.log('COMET: el proveedor sigue devolviendo un video de error, se descarta la fuente',
+					              level=log_utils.LOGINFO)
+					return None
 			if (final and final != url
 					and not any(mk in final for mk in lazy_markers)):
 				log_utils.log('COMET: resolve() -> %s' % self._mask(final[:90]), level=log_utils.LOGINFO)

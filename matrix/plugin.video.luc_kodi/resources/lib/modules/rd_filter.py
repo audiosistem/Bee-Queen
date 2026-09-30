@@ -3,8 +3,8 @@ luc_kodi Add-on -- Real-Debrid 2026 keyword-filter compliance module
 ====================================================================
 Around 2026-05-10 Real-Debrid started rejecting playback of cached
 torrents whose filename contains certain release-naming keywords
-(WEB-DL, WEBRip, AMZN, DSNP, NF, YTS, Erai-raws, CR, [rartv]/[rarbg]/
-[eztv], RARBG, ...). The block surfaces as HTTP 451 + error_code: 35
+(see the pattern table below; since v1.0.90 it follows the two exact
+rules mapped by DMM). The block surfaces as HTTP 451 + error_code: 35
 from POST /unrestrict/link. The /torrents listing still reports the
 item as 'downloaded' so we cannot detect it from the cache check.
 
@@ -25,42 +25,36 @@ import re
 
 # Version tag for the regex table. Bump whenever the pattern list
 # changes so debugging and changelogs can correlate user reports.
-RD_FILTER_VERSION = '2026.05.15'
+RD_FILTER_VERSION = '2026.09.22'
 
 # ---------------------------------------------------------------------
-# Pattern table
+# Pattern table (v1.0.90, 2026.09.22)
 # ---------------------------------------------------------------------
-# Sources for the keyword list (cross-referenced 2026-05-15):
-#   * ElfHosted blog / LitterBox "fast pass" regex
-#       https://store.elfhosted.com/blog/2026/05/12/real-debrid-filtering-may-2026/
-#       https://litterbox.elfhosted.com/
-#   * TorrentFreak coverage (RD's own DSM Art.17 / FNEF statement)
-#   * Reddit r/debridmediamanager megathread
+# La tabla de mayo (primera lista de ElfHosted) se quedo corta y larga a
+# la vez. El mapa completo que publico el desarrollador de DMM el
+# 16-may-2026, y que ElfHosted adopto despues en LitterBox, reduce el
+# filtro de RD a DOS reglas exactas:
 #
-# All patterns are anchored at non-word boundaries to avoid false
-# positives inside legitimate title words (e.g. 'CR' inside 'Scream',
-# 'NF' inside 'Confidant', 'YTS' inside arbitrary text, etc.).
+#   1) subcadena en cualquier parte del nombre:
+#        web-dl | webrip | bdrip | hdrip | dvdrip
+#   2) fuente y codec pegados por PUNTO:
+#        BluRay.x264 | HDTV.x264 | HDTV.XviD | WEB.x264 | WEB.h264
 #
-# Case-insensitive; the regex flag (?i) is set at compile time.
+# Todo lo demas PASA en RD, y por eso se retiran de la tabla:
+#   - etiquetas de servicio (NF, AMZN, DSNP, ATVP, HMAX, CR, BILI): nunca
+#     provocan bloqueo, en ninguna combinacion;
+#   - YTS, RARBG, Erai-raws, [rartv]/[eztv]: no estan en el mapa;
+#   - WEBDL / WEB.DL (sin guion): pasan; solo bloquea el literal web-dl.
+# Asimetrias documentadas que la regla 2 respeta al ser literal:
+#   HDTV.h264 pasa (HDTV.x264 no); Blu-Ray.x264 pasa (BluRay.x264 no).
+#
+# La captura del HTTP 451 + error_code 35 en realdebrid.py sigue siendo
+# la segunda linea de defensa: si RD amplia el filtro, el log lo dira.
 # ---------------------------------------------------------------------
 
 _RD_FILTER_PATTERN = (
-	# Bracketed release-group tags (literal brackets in the filename)
-	r'\[(?:rartv|rarbg|eztv)\]'
-	# Source markers -- the bulk of the May-2026 hits
-	r'|\bWEB[\.\-_]?DL\b'
-	r'|\bWEB[\.\-_]?Rip\b'
-	r'|\bAMZN\b'
-	r'|\bDSNP\b'
-	r'|\bNF\b'
-	# Scene release names / group tags
-	r'|\bYTS(?:\.(?:MX|AM|LT|AG))?\b'
-	r'|\bErai[\.\-_]?raws\b'
-	r'|\bRARBG\b'
-	# 'CR' is risky (short token) -- require it to appear preceded by
-	# a separator AND followed by a separator/end, and exclude any
-	# adjacent letters to keep it well-bounded.
-	r'|(?<![A-Za-z])CR(?![A-Za-z0-9])'
+	r'web-dl|webrip|bdrip|hdrip|dvdrip'
+	r'|bluray\.x264|hdtv\.x264|hdtv\.xvid|web\.x264|web\.h264'
 )
 
 _RD_FILTER_RE = re.compile(_RD_FILTER_PATTERN, re.IGNORECASE)

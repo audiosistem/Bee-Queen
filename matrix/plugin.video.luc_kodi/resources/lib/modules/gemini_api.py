@@ -12,55 +12,117 @@
 	  of luc_kodi's debug.enabled setting. Search log for "[luc_kodi-gemini]".
 	- Exposes last_error_message() so ai_search can display the real failure
 	  reason to the user.
+
+	v3 changes (2026-08, verified against ai.google.dev on 2026-08-16):
+	- Model chain rebuilt around the models that are actually GA today.
+	  gemini-3.1-flash-lite (the previous default) is DEPRECATED with an
+	  announced shutdown of 2027-05-07 and gemini-3.5-flash-lite named as its
+	  replacement.
+	- temperature/top_p/top_k were deprecated API-wide on 2026-07-21. They are
+	  accepted-and-ignored on the current 3.x models and Google states future
+	  model generations return HTTP 400 for them. We now send temperature ONLY
+	  to the 2.5 models that still honour it, and use a system instruction to
+	  carry the determinism that temperature used to provide (Google's own
+	  recommended replacement).
+	- Request-shape degradation ladder: a HTTP 400 no longer kills the feature.
+	  The same request is retried with progressively simpler payloads. This is
+	  what makes the addon survive the NEXT parameter deprecation without
+	  needing a release.
+	- Whole-chain wall-clock budget so a bad day at Google cannot leave a Kodi
+	  DialogBusy spinning for minutes.
 """
 
 import json
 import hashlib
+import time
 import xbmc
 from resources.lib.database import cache
 from resources.lib.modules.control import setting as getSetting
 
 base_url = 'https://generativelanguage.googleapis.com/v1beta'
-# Default lead: gemini-3.1-flash-lite (GA since 2026-05-07). For our use case —
-# short prompt-to-intent translation, structured output, no agentic/tool use —
-# 3.1 Flash-Lite outperforms 2.5 Flash on speed (2.5x faster TTFT, +45% output
-# speed) at similar free-tier quota, while 3.5 Flash (also GA from I/O 2026-05-19)
-# is optimized for long-horizon agentic tasks and is overkill here.
-default_model = 'gemini-3.1-flash-lite'
+# Default lead: gemini-3.5-flash-lite (GA 2026-07-21). For our use case — short
+# prompt-to-intent translation, structured output, no agentic/tool use — the
+# Lite line is the right tier: Google positions 3.5 Flash-Lite for low-latency,
+# high-throughput execution and simple data extraction, its default thinking
+# level is "minimal" (so no reasoning tokens are burned on a one-line query),
+# and it is the named replacement for the deprecated 3.1 Flash-Lite.
+default_model = 'gemini-3.5-flash-lite'
 # Fallback chain used when the primary model fails on all keys with a
-# model-generic error (429 quota, 404 model-not-found, 503 unavailable).
-# Different models have independent daily quotas and independent rollouts,
-# so cycling through them effectively multiplies available free requests
-# AND survives regional rollout gaps (e.g. a brand-new GA model not yet
-# enabled for one of the user's Cloud projects).
-# All models below are AI Studio FREE-TIER compatible (no paid plan required);
-# tier 1+ users get higher RPM/RPD on each but the chain still works as-is.
-# Order: best quality/cost for our task → premium fallback → legacy stable fallbacks.
-# REMOVED 2026-05-21:
-#   - gemini-2.0-flash         (shutdown 2026-06-01)
-#   - gemini-3-flash-preview   (superseded by gemini-3.5-flash GA)
-#   - "-preview" suffix on 3.1 Flash-Lite (GA stable since 2026-05-07)
+# model-generic error (429 quota, 404 model-not-found, 503 unavailable, or a
+# 400 that survived the degradation ladder below).
+# Rate limits are applied PER PROJECT, not per key, and each model has its own
+# quota bucket — so cycling models multiplies available free requests just as
+# cycling keys across separate Cloud projects does.
+# Order: Lite tier first (best fit + cheapest + least thinking overhead for a
+# classification task), then the heavier Flash tier as a quality backstop.
+# REMOVED 2026-08-16:
+#   - gemini-2.5-pro  (strictest free quota of the whole line, slowest, and the
+#                      worst fit for a task that is pure intent extraction —
+#                      it was a "last resort" that cost a full timeout to reach
+#                      and then failed on quota anyway)
+# NOT REMOVED: gemini-3.1-flash-lite is deprecated but stays as a fallback —
+#   its shutdown is 2027-05-07 and existing installs still have it selected.
 fallback_models = (
-	'gemini-3.1-flash-lite',       # GA 2026-05-07 — best speed/quality at lowest cost for this task
-	'gemini-3.5-flash',            # GA 2026-05-19 — premium fallback (free tier with quotas; agentic-grade)
-	'gemini-2.5-flash-lite',       # stable workhorse — highest free RPD on Tier 1+ (1500 RPD)
-	'gemini-2.5-flash',            # stable fallback
-	'gemini-2.5-pro',              # last resort — strictest free quota (5 RPM / 50 RPD) but max quality
+	'gemini-3.5-flash-lite',       # GA 2026-07-21 — default; thinking "minimal", built for extraction
+	'gemini-3.1-flash-lite',       # GA 2026-05-07 — DEPRECATED, shutdown 2027-05-07; kept for installs still on it
+	'gemini-2.5-flash-lite',       # legacy workhorse — thinking OFF by default, generous free quota
+	'gemini-3.6-flash',            # GA 2026-07-21 — heavier tier, better token efficiency than 3.5 Flash
+	'gemini-3.7-flash',            # GA 2026-08-13 — newest and most capable Flash
+	'gemini-3.5-flash',            # GA 2026-05-19 — legacy Flash, still stable
 )
 timeout = 25
+# Wall-clock ceiling for one interpret_prompt() call across every model and key.
+# Without this, a full chain of timeouts is 6 models x 3 keys x 25s = 7.5 minutes
+# of DialogBusy on a TV.
+total_budget = 45
 empty_setting_check = (None, '', 'empty_setting')
 cache_prefix = 'gemini_intent::'
 cache_ttl_hours = 168  # 1 week per unique prompt
-# Bump this whenever prompt_template changes materially so old cache entries
-# (generated by the previous prompt) are treated as stale.
+# Bump this whenever prompt_template or the request shape changes materially so
+# old cache entries (generated by the previous prompt) are treated as stale.
 #   v2 — few-shot examples
-#   v3 — 2026-05-21: model chain migration (3.1 Flash-Lite leads, drop 2.0 Flash);
-#        invalidate to avoid mixing responses from heterogeneous model versions.
-cache_version = 'v3'
+#   v3 — 2026-05-21: model chain migration (3.1 Flash-Lite leads, drop 2.0 Flash)
+#   v4 — 2026-08-16: model chain migration (3.5 Flash-Lite leads), temperature
+#        replaced by a system instruction — same prompt, different determinism
+#        mechanism, so old and new responses are not directly comparable.
+cache_version = 'v4'
 log_tag = '[luc_kodi-gemini]'
 
 # Last diagnostic message (for UI). Cleared on success.
 _last_error = ''
+
+# ──────────────────────────────────────────────────────────────────────
+# Request profiles
+# ──────────────────────────────────────────────────────────────────────
+# Tried in order whenever Google rejects the SHAPE of the request (HTTP 400).
+# Each step drops one thing the API may have stopped accepting. Google has now
+# deprecated sampling parameters once (2026-07-21) and moved its documented
+# structured-output surface to the Interactions API, so treating any single
+# generationConfig field as permanent is exactly what breaks addons in the field.
+#   0 FULL   — system instruction + JSON mime + JSON schema
+#   1 SCHEMA — JSON mime + JSON schema
+#   2 JSON   — JSON mime only (the prompt already says "Return ONLY JSON")
+#   3 BARE   — no generationConfig at all; _parse_response strips ``` fences
+PROFILE_FULL, PROFILE_SCHEMA, PROFILE_JSON, PROFILE_BARE = 0, 1, 2, 3
+_MAX_PROFILE = PROFILE_BARE
+# Lowest profile known to work in this Kodi session. Once a 400 has proved that
+# a field is rejected, every later search in the same session starts below it
+# instead of paying the failed round trip again.
+_profile_floor = PROFILE_FULL
+
+# Models that still honour the sampling parameters. temperature/top_p/top_k were
+# deprecated 2026-07-21; on the 3.x line they are accepted and silently ignored,
+# and Google states future generations will return HTTP 400. Sending them buys
+# nothing on 3.x and is a live risk, so they go only where they still do work.
+_sampling_models = ('gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro')
+
+# Replaces what temperature=0.2 used to do. Google's guidance after the
+# deprecation is to steer determinism through instructions instead.
+system_instruction = (
+	'You are a deterministic parser, not a conversational assistant. '
+	'For the same request you always return exactly the same JSON. '
+	'You never explain, never apologise and never emit anything but the JSON object.'
+)
 
 response_schema = {
 	'type': 'object',
@@ -179,11 +241,16 @@ def has_gemini_keys():
 # equivalents. Triggered when an updating user has an older value selected that
 # is no longer in the settings dropdown — without this they'd keep hitting a
 # dead endpoint until they re-open settings and re-pick.
+# Only SHUT DOWN models are remapped. gemini-3.1-flash-lite is deprecated but
+# still served until 2027-05-07, so a user who picked it keeps it: silently
+# changing a working choice is worse than leaving it until it actually breaks.
 _legacy_model_map = {
-	'gemini-2.0-flash':                'gemini-3.1-flash-lite',  # shutdown 2026-06-01
-	'gemini-2.0-flash-lite':           'gemini-3.1-flash-lite',  # shutdown 2026-06-01
-	'gemini-3-flash-preview':          'gemini-3.5-flash',       # superseded by 3.5 Flash GA
-	'gemini-3.1-flash-lite-preview':   'gemini-3.1-flash-lite',  # GA stable since 2026-05-07
+	'gemini-2.0-flash':                'gemini-3.5-flash-lite',  # shut down 2026-06-01
+	'gemini-2.0-flash-lite':           'gemini-3.5-flash-lite',  # shut down 2026-06-01
+	'gemini-3-flash-preview':          'gemini-3.6-flash',       # Google's named replacement
+	'gemini-3.1-flash-lite-preview':   'gemini-3.1-flash-lite',  # shut down 2026-05-25
+	'gemini-3-pro-preview':            'gemini-3.6-flash',       # shut down 2026-03-09
+	'gemini-2.5-pro':                  'gemini-3.5-flash-lite',  # dropped from the chain (see above)
 }
 
 
@@ -198,9 +265,9 @@ def gemini_model():
 
 def interpret_prompt(prompt):
 	"""Public entry point. Returns normalized intent dict or None.
-	Uses manual cache keyed on prompt+model (168h).
-	Automatically falls back through fallback_models chain when all keys
-	hit 429 on the primary model (independent daily quotas per model)."""
+	Uses manual cache keyed on prompt (168h).
+	Automatically falls back through the fallback_models chain when all keys
+	hit a model-generic failure (independent quota buckets per model)."""
 	global _last_error
 	_last_error = ''
 
@@ -229,10 +296,19 @@ def interpret_prompt(prompt):
 	primary = gemini_model()
 	model_chain = [primary] + [m for m in fallback_models if m != primary]
 
+	deadline = time.time() + total_budget
 	last_err = 'Unknown error'
 	for model in model_chain:
+		if time.time() >= deadline:
+			_log('Time budget (%ss) exhausted, stopping model chain' % total_budget, level=xbmc.LOGWARNING)
+			# Keep whatever the API actually said. Running out of budget is how we
+			# STOPPED, not why we failed — a chain of 503s that hits the ceiling
+			# should still tell the user Gemini is overloaded, not "timeout".
+			if last_err == 'Unknown error':
+				last_err = 'BUDGET_EXHAUSTED'
+			break
 		_log('Calling Gemini for prompt: %s (model=%s)' % (prompt[:60], model))
-		raw = _call_gemini(prompt, model)
+		raw = _call_gemini(prompt, model, deadline)
 		if raw:
 			normalized = _normalize(raw)
 			if normalized and normalized.get('media_type') in ('movie', 'tvshow'):
@@ -249,6 +325,11 @@ def interpret_prompt(prompt):
 			continue
 		# _last_error was set by _call_gemini — capture and decide
 		last_err = _last_error or last_err
+		# An invalid key is not fixed by any other model, and walking the whole
+		# chain would cost the user a minute before telling them what is wrong.
+		if _is_bad_key(last_err):
+			_log('API key rejected — aborting model chain', level=xbmc.LOGERROR)
+			break
 		# Try the next model when the failure is generic-to-this-model and another
 		# model in the chain may succeed:
 		#   - 429 / RESOURCE_EXHAUSTED → quota exhausted on every key for this model
@@ -257,12 +338,15 @@ def interpret_prompt(prompt):
 		#     (likely a rollout still in progress — fall back to a stable model)
 		#   - 503 / UNAVAILABLE        → this model overloaded across all keys
 		#     (sibling models may still be serving)
-		# Anything else (auth, schema, network, malformed prompt) won't be fixed
-		# by switching model — abort the chain and surface the friendly error.
+		#   - 400 / INVALID_ARGUMENT   → only reaches here after the whole request
+		#     profile ladder failed, i.e. this model rejects something the others
+		#     may well accept. Before v3 this aborted the chain outright, which is
+		#     how a single deprecated field could take the feature down.
 		retriable = (
 			'HTTP 429' in last_err or 'RESOURCE_EXHAUSTED' in last_err or
 			'HTTP 404' in last_err or 'NOT_FOUND'          in last_err or
-			'HTTP 503' in last_err or 'UNAVAILABLE'        in last_err
+			'HTTP 503' in last_err or 'UNAVAILABLE'        in last_err or
+			'HTTP 400' in last_err or 'INVALID_ARGUMENT'   in last_err
 		)
 		if not retriable:
 			_log('Non-retriable error — aborting model chain: %s' % last_err, level=xbmc.LOGERROR)
@@ -274,17 +358,27 @@ def interpret_prompt(prompt):
 	return None
 
 
+def _is_bad_key(raw):
+	raw = (raw or '').upper()
+	return 'API_KEY_INVALID' in raw or 'API KEY NOT VALID' in raw or 'PERMISSION_DENIED' in raw
+
+
 def _friendly_error(raw):
-	"""Humanize known technical errors."""
-	if not raw: return 'Unknown error'
+	"""Humanize known technical errors. Strings come from strings.po so the
+	message follows the user's Kodi language — these used to be hardcoded
+	Spanish, which every non-Spanish user got regardless of their settings."""
+	from resources.lib.modules import control
+	if not raw: return control.lang(40620)
 	if 'HTTP 429' in raw or 'RESOURCE_EXHAUSTED' in raw:
-		return 'Cuota diaria Gemini agotada. Reintenta manana o anade una Gemini API key de un proyecto distinto.'
+		return control.lang(40617)
 	if 'HTTP 503' in raw or 'UNAVAILABLE' in raw:
-		return 'Gemini sobrecargado. Reintenta en 1-2 minutos.'
-	if 'HTTP 403' in raw or 'PERMISSION_DENIED' in raw:
-		return 'Gemini API key invalida o revocada.'
+		return control.lang(40618)
+	if 'BUDGET_EXHAUSTED' in raw or raw.startswith('Timeout'):
+		return control.lang(40621)
+	if _is_bad_key(raw):
+		return control.lang(40619)
 	if 'HTTP 400' in raw:
-		return 'Peticion a Gemini rechazada: ' + raw[:80]
+		return '%s %s' % (control.lang(40620), raw[:80])
 	return raw[:120]
 
 
@@ -292,8 +386,42 @@ def _friendly_error(raw):
 # HTTP call (no session, no retry adapter — one request per key, in-loop)
 # ──────────────────────────────────────────────────────────────────────
 
-def _call_gemini(prompt, model):
-	global _last_error
+def _build_payload(prompt, model, profile):
+	"""Assemble the generateContent body for a model at a given request profile.
+	Returns None when the prompt cannot be formatted."""
+	try:
+		payload_text = prompt_template % prompt
+	except Exception as e:
+		_log('Prompt formatting failed: %s' % e, level=xbmc.LOGERROR)
+		return None
+
+	payload = {'contents': [{'role': 'user', 'parts': [{'text': payload_text}]}]}
+	if profile == PROFILE_BARE:
+		return payload
+
+	generation_config = {'responseMimeType': 'application/json'}
+	if profile <= PROFILE_SCHEMA:
+		generation_config['responseJsonSchema'] = response_schema
+	# Sampling parameters only where they still do something (see _sampling_models).
+	if model in _sampling_models:
+		generation_config['temperature'] = 0.2
+	payload['generationConfig'] = generation_config
+
+	if profile == PROFILE_FULL:
+		payload['systemInstruction'] = {'parts': [{'text': system_instruction}]}
+	return payload
+
+
+def _is_shape_rejection(err):
+	"""True when a 400 looks like 'the API did not like this request body'
+	rather than 'your key is wrong'. Only these are worth degrading for."""
+	if err.get('status_code') != 400: return False
+	if _is_bad_key('%s %s' % (err.get('status'), err.get('message'))): return False
+	return True
+
+
+def _call_gemini(prompt, model, deadline=None):
+	global _last_error, _profile_floor
 	try:
 		import requests
 	except Exception as e:
@@ -304,74 +432,76 @@ def _call_gemini(prompt, model):
 	api_keys = gemini_api_keys()
 	url = '%s/models/%s:generateContent' % (base_url, model)
 
-	try:
-		payload_text = prompt_template % prompt
-	except Exception as e:
-		_last_error = 'Prompt formatting failed: %s' % e
-		_log(_last_error, level=xbmc.LOGERROR)
-		return None
-
-	payload = {
-		'contents': [{'parts': [{'text': payload_text}]}],
-		'generationConfig': {
-			'temperature': 0.2,
-			'responseMimeType': 'application/json',
-			'responseJsonSchema': response_schema
-		}
-	}
-
-	try:
-		body = json.dumps(payload)
-	except Exception as e:
-		_last_error = 'JSON serialization failed: %s' % e
-		_log(_last_error, level=xbmc.LOGERROR)
-		return None
-
 	last_err = 'Unknown error'
 	for idx, api_key in enumerate(api_keys, start=1):
 		headers = {'x-goog-api-key': api_key, 'Content-Type': 'application/json'}
-		try:
-			_log('POST attempt %d to %s' % (idx, url))
-			response = requests.post(url, headers=headers, data=body, timeout=timeout)
-		except requests.exceptions.SSLError as e:
-			last_err = 'SSL error: %s' % e
-			_log(last_err, level=xbmc.LOGERROR)
-			continue
-		except requests.exceptions.ConnectionError as e:
-			last_err = 'Connection error: %s' % e
-			_log(last_err, level=xbmc.LOGERROR)
-			continue
-		except requests.exceptions.Timeout as e:
-			last_err = 'Timeout: %s' % e
-			_log(last_err, level=xbmc.LOGERROR)
-			continue
-		except Exception as e:
-			last_err = '%s: %s' % (type(e).__name__, e)
-			_log('Unexpected request failure: %s' % last_err, level=xbmc.LOGERROR)
-			continue
-
-		if response.status_code == 200:
+		profile = _profile_floor
+		while profile <= _MAX_PROFILE:
+			if deadline is not None and time.time() >= deadline:
+				_last_error = last_err
+				return None
+			payload = _build_payload(prompt, model, profile)
+			if payload is None:
+				_last_error = 'Prompt formatting failed'
+				return None
 			try:
-				data = response.json()
+				body = json.dumps(payload)
 			except Exception as e:
-				last_err = 'JSON decode failed: %s' % e
+				_last_error = 'JSON serialization failed: %s' % e
+				_log(_last_error, level=xbmc.LOGERROR)
+				return None
+			try:
+				_log('POST attempt %d to %s (profile=%d)' % (idx, url, profile))
+				response = requests.post(url, headers=headers, data=body, timeout=timeout)
+			except requests.exceptions.SSLError as e:
+				last_err = 'SSL error: %s' % e
 				_log(last_err, level=xbmc.LOGERROR)
-				continue
-			parsed = _parse_response(data)
-			if parsed:
-				return parsed
-			last_err = 'Unparseable Gemini 200 response'
-			try: body_snip = response.text[:300]
-			except Exception: body_snip = ''
-			_log('%s. Raw snippet: %s' % (last_err, body_snip), level=xbmc.LOGWARNING)
-			continue
+				break
+			except requests.exceptions.ConnectionError as e:
+				last_err = 'Connection error: %s' % e
+				_log(last_err, level=xbmc.LOGERROR)
+				break
+			except requests.exceptions.Timeout as e:
+				last_err = 'Timeout: %s' % e
+				_log(last_err, level=xbmc.LOGERROR)
+				break
+			except Exception as e:
+				last_err = '%s: %s' % (type(e).__name__, e)
+				_log('Unexpected request failure: %s' % last_err, level=xbmc.LOGERROR)
+				break
 
-		# Non-200 — decide if we rotate to next key or stop
-		err = _error_details(response)
-		last_err = 'HTTP %d (%s): %s' % (err['status_code'], err['status'], err['message'])
-		_log('Gemini error (key #%d): %s' % (idx, last_err), level=xbmc.LOGWARNING)
-		if not _should_try_next_key(err):
-			break  # Not a quota error — other keys won't help
+			if response.status_code == 200:
+				try:
+					data = response.json()
+				except Exception as e:
+					last_err = 'JSON decode failed: %s' % e
+					_log(last_err, level=xbmc.LOGERROR)
+					break
+				parsed = _parse_response(data)
+				if parsed:
+					return parsed
+				last_err = 'Unparseable Gemini 200 response'
+				try: body_snip = response.text[:300]
+				except Exception: body_snip = ''
+				_log('%s. Raw snippet: %s' % (last_err, body_snip), level=xbmc.LOGWARNING)
+				break
+
+			# Non-200 — degrade the request, rotate the key, or stop
+			err = _error_details(response)
+			last_err = 'HTTP %d (%s): %s' % (err['status_code'], err['status'], err['message'])
+			_log('Gemini error (key #%d, profile %d): %s' % (idx, profile, last_err), level=xbmc.LOGWARNING)
+			if _is_shape_rejection(err) and profile < _MAX_PROFILE:
+				# The body carried something this model will not accept. Drop the
+				# most advanced piece and try the SAME key again. The floor is
+				# remembered so the rest of the session skips the failed shape.
+				profile += 1
+				_profile_floor = max(_profile_floor, profile)
+				_log('Request shape rejected — retrying at profile %d' % profile, level=xbmc.LOGWARNING)
+				continue
+			if not _should_try_next_key(err):
+				_last_error = last_err
+				return None  # Not a quota error — other keys won't help
+			break  # Rotate to the next key at the current profile
 
 	_last_error = last_err
 	return None
@@ -428,6 +558,9 @@ def _extract_text(response):
 		for candidate in candidates:
 			content = candidate.get('content') or {}
 			for part in content.get('parts', []):
+				# Thinking models can return a reasoning part alongside the answer.
+				# It is flagged with thought=True and is NOT the JSON we asked for.
+				if part.get('thought'): continue
 				text = part.get('text')
 				if text: return text
 	except Exception:

@@ -1,31 +1,47 @@
 # -*- coding: utf-8 -*-
 """
-	luc_kodi Add-on — trailer.py (reescrito v1.0.44)
+	luc_kodi Add-on — trailer.py (v1.0.61)
 
-	Reproducción de tráilers SIN necesidad de que el usuario configure nada:
-	ni API key de Google, ni client secret, ni login. Cadena de resolución:
+	Reproducción de tráilers vía plugin.video.youtube. Una sola vía, y con
+	motivo: es la única que funciona.
 
-		1. slyguy.trailers (si está instalado)  — handoff a su yt-dlp
-		   mantenido activamente; cero mantenimiento para nosotros.
-		2. script.module.yt-dlp (si está instalado) — carga blanda del
-		   módulo de lekma sin declararlo como dependencia.
-		3. Resolver keyless propio (yt_resolver.py, InnerTube) — SIEMPRE
-		   disponible, sin add-ons externos.
-		4. plugin.video.youtube (si está instalado) — comportamiento antiguo,
-		   último recurso.
+	POR QUÉ SE RETIRÓ EL RESOLVER PROPIO (20-ago-2026). El diagnóstico en
+	vivo lo dejó cerrado. Los cuatro clientes de InnerTube
+	que usábamos responden lo mismo:
+
+		android_vr       hls=no dash=no sabr=YES  sin_url=0
+		android_sdkless  hls=no dash=no sabr=YES  sin_url=26
+		android          hls=no dash=no sabr=YES  sin_url=29
+		ios              hls=no dash=no sabr=YES  sin_url=0  progressive=0
+
+	YouTube ya no publica manifest de ningún tipo a clientes no oficiales:
+	solo `serverAbrStreamingUrl`, o sea SABR, que exige un PO token que
+	únicamente pueden generar BotGuard (web) o DroidGuard (Android) y que
+	es imposible producir desde Python. Las URLs directas que aún llegan
+	(android_vr, ios) sirven ~60-65 s de cada fichero y luego responden 403
+	para siempre — el famoso corte al minuto. Y `android`/`android_sdkless`
+	ya ni siquiera traen URL en sus formatos.
+
+	Se probó de todo antes de rendirse: proxy de segmentos con ritmo AIMD,
+	refresco de firmas en caliente, copiar el cliente ios literal del addon
+	de YouTube, y alinear el payload entero (cpn, thirdParty, user, gl,
+	cabeceras Accept). Nada cambió una sola línea del diagnóstico.
+
+	Lo que SÍ funciona, medido: plugin.video.youtube con "Use MPEG-DASH for
+	videos" DESACTIVADO en sus ajustes. Entrega el HLS variant manifest de
+	googlevideo, que no pasa por peticiones de rango a URLs firmadas, así
+	que el muro no aplica. Cinco tráilers de cinco, enteros, a 1080p, en
+	tres sesiones distintas. NO hace falta cuenta ni login: el cliente que
+	entrega el manifest va sin autenticar.
 
 	El id del tráiler sale de meta['trailer'] (TMDb ya lo trae en los menús);
 	si no viene, se consulta TMDb /videos en el momento (clave TMDb ya
 	incluida en el addon) y, como última bala, Trakt.
-
-	v1.0.44: eliminadas las API keys de Google hardcodeadas que traía el
-	código heredado (misma clase de problema que la key personal de MDBList
-	retirada en v1.0.40) y eliminado el crash al instanciar Trailer() sin
-	plugin.video.youtube presente.
 """
 
+from resources.lib.modules import app_keys
 import re
-from json import loads as jsloads
+from json import loads as jsloads, dumps as jsdumps
 from sys import argv
 from urllib.parse import parse_qs, urlparse
 from resources.lib.modules import client
@@ -36,20 +52,33 @@ getSetting = control.setting
 LOGINFO = log_utils.LOGINFO
 
 YT_PLUGIN = 'plugin.video.youtube'
-SLYGUY_PLUGIN = 'slyguy.trailers'
-YTDLP_MODULE = 'script.module.yt-dlp'
 
 # Clave TMDb incluida en el addon (misma fallback que player.py)
-TMDB_FALLBACK_KEY = 'f2e500501d9fa3bd1637bfd00f11583a'
+TMDB_FALLBACK_KEY = app_keys.get('tmdb')
 TMDB_VIDEOS = 'https://api.themoviedb.org/3/%s/%s/videos?api_key=%s'
 TMDB_FIND = 'https://api.themoviedb.org/3/find/%s?api_key=%s&external_source=imdb_id'
+TMDB_DETAIL = 'https://api.themoviedb.org/3/%s/%s?api_key=%s'
+TMDB_SEASON_VIDEOS = 'https://api.themoviedb.org/3/tv/%s/season/%s/videos?api_key=%s&include_video_language=%s'
+
+# v1.0.90: candidatos pendientes para el failover (los lanza service.py).
+FAILOVER_PROP = 'luc_kodi.trailer.failover'
 
 _YT_ID_RE = re.compile(r'^[\w-]{11}$')
 
 
 def _has_addon(addon_id):
-	try: return control.condVisibility('System.HasAddon(%s)' % addon_id) == 1
-	except: return False
+	"""Instalado Y HABILITADO. `System.HasAddon()` devuelve verdadero también
+	con el addon desactivado, así que un plugin.video.youtube instalado pero
+	apagado se quedaría con el tráiler y no caeríamos al resolver interno.
+	Se usa JSON-RPC `Addons.GetAddonDetails` con la propiedad `enabled`."""
+	try:
+		import json as _json
+		resp = _json.loads(control.jsonrpc(_json.dumps({
+			'jsonrpc': '2.0', 'id': 1, 'method': 'Addons.GetAddonDetails',
+			'params': {'addonid': addon_id, 'properties': ['enabled']}})))
+		return bool(((resp.get('result') or {}).get('addon') or {}).get('enabled'))
+	except Exception:
+		return False
 
 
 class Trailer:
@@ -61,17 +90,22 @@ class Trailer:
 	# ──────────────────────────────────────────────────────────────
 	def play(self, type='', name='', year='', url='', imdb='', windowedtrailer=0, tmdb=''):
 		try:
-			# v1.0.50: worker devuelve VARIOS candidatos — si el primero está
-			# geo-bloqueado ("not available in your country", visto en el log
-			# del 04-07), se prueba el siguiente tráiler oficial de TMDb.
-			candidates = self.worker(type, name, year, url, imdb, tmdb)
+			# v1.0.90: la temporada del item enfocado permite pedir el trailer
+			# de esa temporada antes que el de la serie.
+			season = ''
+			if type != 'movie':
+				season = control.infoLabel('ListItem.Season') or ''
+				if not season.isdigit() or int(season) < 1: season = ''
+			candidates = self.worker(type, name, year, url, imdb, tmdb, season=season)
 			if not candidates:
 				control.notification(message='Trailer not found')
 				return
 			resolved = None
-			for video_id in candidates:
+			for idx, video_id in enumerate(candidates):
 				resolved = self.resolve(video_id)
-				if resolved: break
+				if resolved:
+					candidates = candidates[idx + 1:]
+					break
 				control.log('[ luc_kodi ] trailer: candidate %s failed, trying next' % video_id, LOGINFO)
 			if not resolved:
 				control.notification(message='Trailer not found')
@@ -80,28 +114,13 @@ class Trailer:
 			if not title: title = control.infoLabel('ListItem.Label')
 			if not title: title = '%s Trailer' % name if name else 'Trailer'
 			icon = control.infoLabel('ListItem.Icon')
-			item = control.item(label=title, offscreen=True)
-			item.setProperty('IsPlayable', 'true')
-			item.setArt({'icon': icon, 'thumb': icon})
-			if resolved.get('is_dash'):
-				# MPD local generado por yt_resolver → inputstream.adaptive.
-				# manifest_type solo en Kodi 19/20 (deprecado en 21+, autodetecta).
-				item.setProperty('inputstream', 'inputstream.adaptive')
-				try:
-					if int(control.getKodiVersion()) < 21:
-						item.setProperty('inputstream.adaptive.manifest_type', 'mpd')
-				except: pass
-				if resolved.get('user_agent'):
-					from urllib.parse import quote
-					item.setProperty('inputstream.adaptive.stream_headers',
-									 'User-Agent=' + quote(resolved['user_agent']))
-				item.setMimeType('application/dash+xml')
-				item.setContentLookup(False)
-			elif resolved.get('is_hls'):
-				item.setMimeType('application/x-mpegURL')
-				item.setContentLookup(False)
-			try: item.setInfo(type='video', infoLabels={'title': title})
-			except: pass
+			item = self._build_item(title, icon)
+			# v1.0.90 (F6): resolve() devuelve la URL del addon de YouTube para
+			# CUALQUIER id, asi que el bucle de arriba siempre se quedaba con el
+			# primero y la lista de candidatos no servia de nada ante un
+			# geobloqueo. Los que quedan se dejan en la ventana Home y el
+			# SubtitlePlayer del servicio los lanza si llega onPlayBackError.
+			self._arm_failover(candidates[:3], title, icon)
 			control.addItem(handle=int(argv[1]), url=resolved['url'], listitem=item, isFolder=False)
 			control.refresh()
 			control.resolve(handle=int(argv[1]), succeeded=True, listitem=item)
@@ -109,24 +128,46 @@ class Trailer:
 				control.sleep(1000)
 				while control.player.isPlayingVideo():
 					control.sleep(1000)
-				control.execute("Dialog.Close(%s, true)" % control.getCurrentDialogId)
+				import xbmcgui
+				control.execute("Dialog.Close(%s, true)" % xbmcgui.getCurrentWindowDialogId())
 		except:
 			log_utils.error()
 
-	# ──────────────────────────────────────────────────────────────
-	# Obtener el video id de YouTube
-	# ──────────────────────────────────────────────────────────────
-	def worker(self, type, name, year, url, imdb, tmdb=''):
+	def _build_item(self, title, icon):
+		"""v1.0.90: ademas de titulo e icono, la sinopsis y el tagline del item
+		enfocado, para que el OSD del skin tenga algo que ensenar."""
+		item = control.item(label=title, offscreen=True)
+		item.setProperty('IsPlayable', 'true')
+		item.setArt({'icon': icon, 'thumb': icon})
+		labels = {'title': title}
+		try:
+			plot = control.infoLabel('ListItem.Plot')
+			tagline = control.infoLabel('ListItem.Tagline')
+			if plot: labels['plot'] = plot
+			if tagline: labels['tagline'] = tagline
+		except: pass
+		try: item.setInfo(type='video', infoLabels=labels)
+		except: pass
+		return item
+
+	def _arm_failover(self, rest, title, icon):
+		try:
+			if rest:
+				control.homeWindow.setProperty(FAILOVER_PROP, jsdumps({'ids': rest, 'title': title, 'icon': icon}))
+			else:
+				control.homeWindow.clearProperty(FAILOVER_PROP)
+		except Exception:
+			pass
+
+	def worker(self, type, name, year, url, imdb, tmdb='', season=''):
 		"""Devuelve una LISTA de video ids candidatos, mejor primero."""
 		official_only = getSetting('trailer.official.only') != 'false'
 		if official_only and (tmdb or imdb):
-			# v1.0.46: la búsqueda estricta en TMDb manda sobre el id de meta,
-			# que puede ser un Teaser horneado en metacache por versiones previas
-			return self.tmdb_trailer(type, tmdb, imdb, official_only=True)
+			return self.tmdb_trailer(type, tmdb, imdb, official_only=True, season=season)
 		candidates = []
 		vid = self._extract_id(url)
 		if vid: candidates.append(vid)
-		for key in self.tmdb_trailer(type, tmdb, imdb, official_only=official_only):
+		for key in self.tmdb_trailer(type, tmdb, imdb, official_only=official_only, season=season):
 			if key not in candidates: candidates.append(key)
 		tk = self.trakt_trailer(type, name, year, imdb)
 		if tk and tk not in candidates: candidates.append(tk)
@@ -150,13 +191,14 @@ class Trailer:
 		except: pass
 		return None
 
-	def tmdb_trailer(self, type, tmdb, imdb, official_only=True):
+	def tmdb_trailer(self, type, tmdb, imdb, official_only=True, season=''):
 		"""Devuelve una LISTA de video ids (hasta 4, mejor primero) desde
-		TMDb /videos (caché manual 7 días). Con official_only, SOLO type
-		'Trailer' (nada de Teasers/Clips/Featurettes); se prioriza
-		official=true y mayor size (TMDb reporta 480/720/1080/2160).
-		v1.0.50: lista en vez de un único id — si el mejor candidato está
-		geo-bloqueado en el país del usuario, play() prueba el siguiente."""
+		TMDb /videos (cache manual 7 dias). Con official_only, SOLO type
+		'Trailer'; se prioriza el idioma elegido, official=true y mayor size.
+		v1.0.50: lista en vez de un unico id.
+		v1.0.90: se pide en el idioma elegido en «Trailer language» (antes solo
+		llegaba el ingles de la API: ningun trailer en castellano), y en series
+		con temporada se prueba primero el trailer de esa temporada."""
 		try:
 			key = getSetting('tmdb.api.key') or TMDB_FALLBACK_KEY
 			media = 'movie' if type == 'movie' else 'tv'
@@ -166,36 +208,87 @@ class Trailer:
 					found = jsloads(result).get('%s_results' % ('movie' if media == 'movie' else 'tv'), [])
 					if found: tmdb = found[0].get('id')
 			if not tmdb: return []
-			videos = self._tmdb_videos_cached(media, tmdb, key)
-			if not videos: return []
-			if official_only:
-				videos = [i for i in videos if i.get('type') == 'Trailer']
-			else:
-				videos = [i for i in videos if i.get('type') in ('Trailer', 'Teaser')]
-			if not videos: return []
-			videos.sort(key=lambda i: (i.get('type') != 'Trailer', not i.get('official'), -(i.get('size') or 0)))
+			langs = self._video_langs(media, tmdb, key)
 			keys = []
-			for i in videos:
-				k = i.get('key')
-				if k and k not in keys: keys.append(k)
-				if len(keys) >= 4: break
-			return keys
+			if media == 'tv' and season:
+				keys = self._pick(self._tmdb_videos_cached(media, tmdb, key, langs, season=season), official_only, langs)
+			for k in self._pick(self._tmdb_videos_cached(media, tmdb, key, langs), official_only, langs):
+				if k not in keys: keys.append(k)
+			return keys[:4]
 		except:
 			log_utils.error()
 			return []
 
-	def _tmdb_videos_cached(self, media, tmdb, key):
+	def _pick(self, videos, official_only, langs):
+		if not videos: return []
+		if official_only:
+			videos = [i for i in videos if i.get('type') == 'Trailer']
+		else:
+			videos = [i for i in videos if i.get('type') in ('Trailer', 'Teaser')]
+		order = {l: n for n, l in enumerate(langs)}
+		videos.sort(key=lambda i: (order.get(i.get('iso_639_1') or 'null', len(order)), i.get('type') != 'Trailer',
+								   not i.get('official'), -(i.get('size') or 0)))
+		keys = []
+		for i in videos:
+			k = i.get('key')
+			if k and k not in keys: keys.append(k)
+			if len(keys) >= 4: break
+		return keys
+
+	def _video_langs(self, media, tmdb, key):
+		"""Orden de idiomas para include_video_language. Ajuste
+		trailer.language: 0 = idioma de la interfaz de Kodi, 1 = idioma
+		original del titulo, 2 = ingles. Siempre se anade en y null detras."""
+		first = 'en'
+		try:
+			mode = getSetting('trailer.language') or '0'
+			if mode == '0':
+				import xbmc
+				first = (xbmc.getLanguage(xbmc.ISO_639_1) or 'en').lower()[:2]
+			elif mode == '1':
+				first = self._original_language(media, tmdb, key) or 'en'
+		except Exception:
+			first = 'en'
+		out = []
+		for l in (first, 'en', 'null'):
+			if l and l not in out: out.append(l)
+		return out
+
+	def _original_language(self, media, tmdb, key):
+		from time import time
+		from resources.lib.database import cache
+		ck = 'tmdb_origlang_%s_%s' % (media, tmdb)
+		try:
+			c = cache.cache_get(ck)
+			if c and c.get('value') and (int(time()) - int(c['date'])) < 30 * 24 * 3600:
+				return c['value']
+		except Exception: pass
+		try:
+			result = client.request(TMDB_DETAIL % (media, tmdb, key), error=True)
+			lang = (jsloads(result).get('original_language') or '') if result else ''
+			if lang:
+				cache.cache_insert(ck, lang)
+			return lang
+		except Exception:
+			return ''
+
+	def _tmdb_videos_cached(self, media, tmdb, key, langs=('en', 'null'), season=''):
 		from ast import literal_eval
 		from time import time
 		from resources.lib.database import cache
-		cache_key = 'tmdb_videos_%s_%s' % (media, tmdb)
+		lang_param = ','.join(langs)
+		cache_key = 'tmdb_videos_%s_%s_%s_%s' % (media, tmdb, season or 'all', lang_param)
 		try:
 			cached = cache.cache_get(cache_key)
 			if cached and (int(time()) - int(cached['date'])) < 7 * 24 * 3600:
 				value = literal_eval(cached['value'])
 				if isinstance(value, list): return value
 		except Exception: log_utils.error()
-		result = client.request(TMDB_VIDEOS % (media, tmdb, key), error=True)
+		if season:
+			url = TMDB_SEASON_VIDEOS % (tmdb, season, key, lang_param)
+		else:
+			url = TMDB_VIDEOS % (media, tmdb, key) + '&include_video_language=' + lang_param
+		result = client.request(url, error=True)
 		if not result: return None
 		videos = [i for i in jsloads(result).get('results', []) if i.get('site') == 'YouTube']
 		try: cache.cache_insert(cache_key, repr(videos))
@@ -216,131 +309,26 @@ class Trailer:
 	# ──────────────────────────────────────────────────────────────
 	# Cadena de resolución (sin API key)
 	# ──────────────────────────────────────────────────────────────
-	def _min_height(self):
-		try: return (0, 480, 720, 1080)[int(getSetting('trailer.min.resolution') or 2)]
-		except (ValueError, TypeError, IndexError): return 720
-
 	def resolve(self, video_id):
-		"""Devuelve {'url': ..., 'is_hls': bool} o None."""
-		mode = getSetting('trailer.player') or '0'
-		min_height = self._min_height()
-
-		if mode == '2':  # SlyGuy Trailers forzado
-			return self._via_slyguy(video_id) or None
-		if mode == '3':  # YouTube add-on forzado
-			return self._via_youtube_plugin(video_id) or None
-		if mode == '1':  # Solo keyless (resolver interno + Invidious)
-			return self._via_builtin(video_id, min_height) or self._via_invidious(video_id, min_height) or None
-
-		# '0' Auto: slyguy → yt-dlp módulo → interno → Invidious → youtube addon
-		# v1.0.50: sin notificación de "tip" — si nada resuelve, play()
-		# muestra un simple 'Trailer not found' y ya.
-		return (self._via_slyguy(video_id)
-				or self._via_ytdlp_module(video_id, min_height)
-				or self._via_builtin(video_id, min_height)
-				or self._via_invidious(video_id, min_height)
-				or self._via_youtube_plugin(video_id))
-
-	def _via_slyguy(self, video_id):
-		if not _has_addon(SLYGUY_PLUGIN): return None
-		control.log('[ luc_kodi ] trailer: handing off to slyguy.trailers', LOGINFO)
-		return {'url': 'plugin://%s/play/?video_id=%s' % (SLYGUY_PLUGIN, video_id), 'is_hls': False}
-
-	def _via_ytdlp_module(self, video_id, min_height=0):
-		"""Carga blanda de script.module.yt-dlp (lekma) sin declararlo como
-		dependencia: se añade su lib/ a sys.path solo si está instalado."""
-		if not _has_addon(YTDLP_MODULE): return None
-		try:
-			import os, sys, xbmcaddon
-			lib = os.path.join(xbmcaddon.Addon(YTDLP_MODULE).getAddonInfo('path'), 'lib')
-			if lib not in sys.path: sys.path.insert(0, lib)
-			from yt_dlp import YoutubeDL
-			fmt = 'best[vcodec!=none][acodec!=none]/best'
-			if min_height:
-				fmt = ('best[height>=%d][vcodec!=none][acodec!=none]/' % min_height) + fmt
-			opts = {'format': fmt,
-					'quiet': True, 'no_warnings': True, 'cachedir': False,
-					'noplaylist': True}
-			info = YoutubeDL(opts).extract_info(self.youtube_watch % video_id, download=False)
-			url = info.get('url')
-			if not url and info.get('formats'):
-				progressive = [f for f in info['formats']
-							   if f.get('url') and f.get('vcodec') != 'none' and f.get('acodec') != 'none']
-				if progressive: url = progressive[-1]['url']
-			if url:
-				control.log('[ luc_kodi ] trailer: resolved via script.module.yt-dlp', LOGINFO)
-				return {'url': url, 'is_hls': '.m3u8' in url}
-		except:
-			log_utils.error()
-		return None
-
-	def _via_builtin(self, video_id, min_height=0):
-		try:
-			from resources.lib.modules import yt_resolver
-			resolved = yt_resolver.resolve(video_id, min_height=min_height)
-			if resolved:
-				return {'url': resolved['url'], 'is_hls': resolved['is_hls'],
-						'is_dash': resolved.get('is_dash', False),
-						'user_agent': resolved.get('user_agent', '')}
-		except:
-			log_utils.error()
-		return None
-
-	def _via_invidious(self, video_id, min_height=0):
-		"""Extracción del lado servidor vía instancias públicas de Invidious.
-		Inmune al bot-check de InnerTube contra la IP del usuario porque es
-		la instancia quien habla con YouTube. Se valida cada instancia con
-		una petición JSON barata y se reproduce vía /latest_version con
-		local=true (la instancia proxya el vídeo — las URLs de googlevideo
-		van ligadas a la IP de la instancia, sin proxy darían 403 aquí).
-		Lista de instancias en setting oculto: actualizable sin release."""
-		instances = (getSetting('trailer.invidious.instances')
-					 or 'inv.nadeko.net,invidious.nerdvpn.de,inv.thepixora.com')
-		for inst in [i.strip().rstrip('/') for i in instances.split(',') if i.strip()]:
-			try:
-				check = 'https://%s/api/v1/videos/%s?fields=videoId,formatStreams&local=true' % (inst, video_id)
-				# UA de navegador: varias instancias públicas filtran UAs no-browser
-				result = client.request(check, timeout='6', headers={
-					'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36',
-					'Accept': 'application/json'})
-				if not result:
-					control.log('[ luc_kodi ] trailer: Invidious %s: no response (down/blocked/challenge)' % inst, LOGINFO)
-					continue
-				try: data = jsloads(result)
-				except Exception:
-					control.log('[ luc_kodi ] trailer: Invidious %s: non-JSON response (challenge page?)' % inst, LOGINFO)
-					continue
-				if data.get('videoId') != video_id:
-					control.log('[ luc_kodi ] trailer: Invidious %s: unexpected payload %s' % (inst, str(data)[:120]), LOGINFO)
-					continue
-				best_url, best_h = None, -1
-				if not data.get('formatStreams'):
-					control.log('[ luc_kodi ] trailer: Invidious %s returned no formatStreams' % inst, LOGINFO)
-				for fmt in data.get('formatStreams') or []:
-					try: h = int(str(fmt.get('resolution', '0')).rstrip('p') or 0)
-					except ValueError: h = 0
-					if h > best_h and fmt.get('url'):
-						best_h, best_url = h, fmt['url']
-				if best_url and min_height and best_h < min_height:
-					# el vídeo existe pero ningún formato muxed llega al mínimo;
-					# la resolución no mejora en otra instancia (misma fuente)
-					control.log('[ luc_kodi ] trailer: Invidious best is %sp < min %sp, skipping layer' % (best_h, min_height), LOGINFO)
-					return None
-				if best_url:
-					if best_url.startswith('/'): best_url = 'https://%s%s' % (inst, best_url)
-					control.log('[ luc_kodi ] trailer: resolved via Invidious (%s, %sp)' % (inst, best_h), LOGINFO)
-					return {'url': best_url, 'is_hls': False}
-				# sin formatStreams: latest_version como mejor esfuerzo (solo sin mínimo)
-				if not min_height:
-					url = 'https://%s/latest_version?id=%s&local=true' % (inst, video_id)
-					control.log('[ luc_kodi ] trailer: resolved via Invidious latest_version (%s)' % inst, LOGINFO)
-					return {'url': url, 'is_hls': False}
-			except:
-				continue
-		control.log('[ luc_kodi ] trailer: no Invidious instance available', LOGINFO)
-		return None
+		"""Devuelve {'url': 'plugin://plugin.video.youtube/play/...'} o None."""
+		return self._via_youtube_plugin(video_id)
 
 	def _via_youtube_plugin(self, video_id):
-		if not _has_addon(YT_PLUGIN): return None
-		control.log('[ luc_kodi ] trailer: falling back to plugin.video.youtube', LOGINFO)
-		return {'url': 'plugin://%s/play/?video_id=%s' % (YT_PLUGIN, video_id), 'is_hls': False}
+		if not _has_addon(YT_PLUGIN):
+			# Sin el addon no hay tráilers. Merece un aviso claro en vez de
+			# un 'Trailer not found' que haría pensar en un fallo de TMDb.
+			control.log('[ luc_kodi ] trailer: plugin.video.youtube missing or disabled', LOGINFO)
+			control.notification(message='Trailers need the YouTube add-on installed and enabled')
+			return None
+		control.log('[ luc_kodi ] trailer: handing off to plugin.video.youtube', LOGINFO)
+		# v1.0.64: marca el traspaso. El reproductor recibe una URL de
+		# plugin.video.youtube, asi que en onAVStarted no hay forma de saber que
+		# el trailer lo lanzamos nosotros: getVideoInfoTag() ya no apunta a
+		# luc_kodi. Sin esta marca el selector de HE-AAC actuaria sobre CUALQUIER
+		# reproduccion del addon de YouTube, incluida la que el usuario lance por
+		# su cuenta, y eso no es cosa nuestra.
+		try:
+			control.homeWindow.setProperty('luc_kodi.trailer.playing', video_id)
+		except Exception:
+			pass
+		return {'url': 'plugin://%s/play/?video_id=%s' % (YT_PLUGIN, video_id)}

@@ -1,0 +1,23 @@
+
+[B]Why this exists[/B]
+luc_kodi is built to look its best: large posters, full-screen backgrounds, logos. Every title you browse leaves that artwork on your device, and Kodi never clears it by itself. Over weeks it can fill the storage of a TV box without you noticing. Maintenance keeps the quality and tidies up behind it.
+
+[B]What is cleaned, and when[/B]
+When you leave luc_kodi, the source lists it kept in memory, expired source results and temporary files are released straight away. Nothing of this is needed when you come back.
+
+Then the add-on checks what it has left on the device. Artwork not shown for the number of days you choose, and the oldest artwork above your storage limit, can be removed. Once a month the cache databases are tidied up and the empty space inside them is given back.
+
+[B]Clean up what the add-on leaves behind[/B]
+[B]Ask me[/B] (default): you are asked when you leave luc_kodi and there is at least 50 MB worth freeing, or the monthly tidy-up is due. [B]Later[/B] waits 12 hours.
+[B]Automatically[/B]: the same work is done quietly in the background, never during playback.
+[B]Off[/B]: nothing happens unless you use Clean up now.
+
+If Kodi is closed while a cleanup is pending, it is done after the next start, once you are not inside the add-on.
+
+[B]Artwork storage limit[/B]
+Auto uses 4% of the device storage, between 400 MB and 2 GB, and halves it when the device is running short of space. Only the images that have gone longest without being shown are removed first. Anything shown in the last two hours is never touched.
+
+[B]What is never touched[/B]
+Your watch history, progress, Trakt, SIMKL and MDBList data, lists, likes, the source ranking it has learned, and your settings.
+
+Anything removed is fetched again automatically the next time it is shown. Picture quality is never lowered.

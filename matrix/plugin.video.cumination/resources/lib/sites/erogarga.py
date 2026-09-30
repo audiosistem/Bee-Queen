@@ -73,7 +73,7 @@ def List(url):
     cm.append(('[COLOR deeppink]Lookup info[/COLOR]', 'RunPlugin(' + cm_lookupinfo + ')'))
     cm_related = (utils.addon_sys + "?mode=erogarga.Related&url=")
     cm.append(('[COLOR deeppink]Related videos[/COLOR]', 'RunPlugin(' + cm_related + ')'))
-    utils.videos_list(site, 'erogarga.Play', html, delimiter, re_videopage, re_name, re_img, re_duration=re_duration, re_quality=re_quality, contextm=cm, skip=skip)
+    utils.videos_list(site, 'erogarga.Play', html, delimiter, re_videopage, re_name, re_img, re_duration=re_duration, re_quality=re_quality, contextm=cm, skip=skip, img_options='|User-Agent=' + utils.USER_AGENT)
 
     re_npurl = 'href="([^"]+)"[^>]*>Next' if '>Next' in html else 'class="current".+?href="([^"]+)"'
     re_npnr = r'/page/(\d+)[^>]*>Next' if '>Next' in html else r'class="current".+?rel="follow">(\d+)<'
@@ -143,18 +143,6 @@ def Play(url, name, download=None):
         vurl = utils._bdecode(vurl)
         vurl = urllib_parse.unquote_plus(vurl)
         videolink = vurl.split('source src="')[-1].split('"')[0] + '|referer=' + siteurl
-    elif 'klcams.com' in playerurl:
-        videohtml = utils.getHtml(playerurl, url)
-
-        match = re.compile(r'<iframe src="([^"]+)"', re.DOTALL | re.IGNORECASE).findall(videohtml)
-        videolink = match[0]
-        hdr = utils.base_hdrs.copy()
-        hdr['Sec-Fetch-Dest'] = 'iframe'
-        klhtml = utils.getHtml(videolink, 'https://klcams.com/', headers=hdr, error=True)
-        packed = utils.get_packed_data(klhtml)
-
-        vp.play_from_html(packed, videolink)
-        return
     elif 'phixxx.cc/player/play.php?vid=' in playerurl:
         vid = playerurl.split('?vid=')[-1]
         posturl = 'https://phixxx.cc/player/ajax_sources.php'

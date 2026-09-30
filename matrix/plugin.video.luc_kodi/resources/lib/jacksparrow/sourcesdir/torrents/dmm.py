@@ -3,7 +3,7 @@
 	jacksparrowscrapers Project
 """
 
-import ctypes, random, threading, time
+import threading, time
 import requests
 from resources.lib.jacksparrow import client, source_utils
 from resources.lib.jacksparrow.control import setting as getSetting
@@ -23,6 +23,15 @@ from resources.lib.jacksparrow.control import setting as getSetting
 # el hueco antes de salir (y soltar el candado acto seguido) espacia igual de
 # bien y evita que un hilo hermano se quede bloqueado hasta 7 s enteros
 # esperando a que termine una peticion ajena.
+#
+# v1.0.76 — el token ya no se calcula aqui. DMM movio la firma al servidor el
+# 31-ago-2026 y cerro el mismo dia el periodo de gracia que aun aceptaba los
+# tokens acuñados en el cliente, asi que el algoritmo que vivia al final de este
+# fichero devolvia 403 en todas las busquedas. Se pide con GET /api/challenge y
+# se cachea; toda esa logica esta en resources/lib/debrid/dmm.py, que es la que
+# tambien usa la comprobacion de cache de Real-Debrid — asi una busqueda acuña
+# un token y no dos. Ese endpoint tiene su PROPIO contador de limite desde el
+# 2-sep-2026, de modo que pedir el token no gasta el hueco de /api/torrents.
 _RATE_LOCK = threading.Lock()
 _NEXT_ALLOWED = [0.0]  # epoch a partir del cual se puede volver a llamar
 _MIN_GAP = 2.2         # ventana de 2 s + margen
@@ -47,9 +56,9 @@ class source:
 		self.deep_search = getSetting('dmm.deep_search') == 'true'
 
 	def sources(self, data, hostDict):
-		self.sources = []
-		if not data: return self.sources
-		self.sources_append = self.sources.append
+		self._results = []
+		if not data: return self._results
+		self._results_append = self._results.append
 		try:
 			self.title = data['tvshowtitle'] if 'tvshowtitle' in data else data['title']
 			self.title = self.title.replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ')
@@ -84,35 +93,41 @@ class source:
 			rows = self.get_sources('%s&page=0' % base)
 			if self.deep_search and rows >= _PAGE_ROWS:
 				self.get_sources('%s&page=1' % base)
-			return self.sources
+			return self._results
 		except:
 			source_utils.scraper_error('DMM')
-			return self.sources
+			return self._results
 
 	def api_get(self, url):
 		"""Peticion serializada a /api/torrents con un unico reintento ante 429.
 		Devuelve la lista de resultados, o None si no hay nada que parsear."""
 		from resources.lib.modules import log_utils
+		from resources.lib.debrid.dmm import get_secret, invalidate_secret
 		headers = {'User-Agent': client.randomagent(), 'Accept-Encoding': 'gzip, deflate, br', 'Accept': '*/*'}
 		attempts = 2
 		while attempts:
 			attempts -= 1
-			# El token lleva su propia marca de tiempo (validez +-5 min en el
-			# servidor), asi que se genera DESPUES de esperar el hueco.
+			# v1.0.76: el token se pide FUERA del candado. Antes se generaba
+			# dentro porque era una cuenta local de microsegundos; ahora puede
+			# costar una peticion de red y bloquearia a los hilos hermanos.
+			# Viene cacheado ~2 min, asi que lo normal es que no salga a la red.
+			dmmProblemKey, solution = get_secret()
+			if not dmmProblemKey:
+				log_utils.log('DMM: sin token, se omite la busqueda', __name__, log_utils.LOGDEBUG)
+				return None
 			# v1.0.57: el hueco siguiente se reserva AQUI, antes de soltar el
 			# candado, y la peticion sale ya fuera de la seccion critica.
 			with _RATE_LOCK:
 				gap = _NEXT_ALLOWED[0] - time.time()
 				if gap > 0: time.sleep(min(gap, _MAX_WAIT))
 				_NEXT_ALLOWED[0] = time.time() + _MIN_GAP
-				dmmProblemKey, solution = get_secret()
 			params = {'dmmProblemKey': dmmProblemKey, 'solution': solution}
 			# v1.0.57: un corte de red o un timeout ya no sube como excepcion
 			# hasta el except desnudo de get_sources() — eso volcaba un
 			# traceback entero por cada hipo de la conexion.
 			try: results = requests.get(url, params=params, headers=headers, timeout=self.timeout)
 			except requests.exceptions.RequestException as e:
-				log_utils.log('DMM: fallo de red (%s: %s)' % (type(e).__name__, e), log_utils.LOGDEBUG)
+				log_utils.log('DMM: fallo de red (%s: %s)' % (type(e).__name__, e), __name__, log_utils.LOGDEBUG)
 				return None
 			status = results.status_code
 			if status == 200:
@@ -122,12 +137,18 @@ class source:
 				if files is None:
 					body = (results.text or '')[:300].replace('\n', ' ').replace('\r', ' ')
 					log_utils.log('DMM: 200 sin clave "results" | Content-Type=%s | body[:300]=%r'
-							% (results.headers.get('Content-Type', ''), body), log_utils.LOGWARNING)
+							% (results.headers.get('Content-Type', ''), body), __name__, log_utils.LOGWARNING)
 				return files
 			if status == 204:
 				# Titulo aun no indexado: DMM lo acaba de encolar para scrapear.
 				# En la siguiente busqueda del mismo titulo ya suele haber datos.
-				log_utils.log('DMM: 204, titulo no indexado todavia (encolado) | %s' % url, log_utils.LOGDEBUG)
+				# v1.0.76: el 204 es hoy mucho mas raro. Ante una primera pagina
+				# vacia el servidor rellena la tabla al vuelo desde Debridio
+				# antes de rendirse, asi que un titulo nuevo suele devolver ya
+				# resultados en la MISMA peticion. La cabecera 'status' dice si
+				# quedo encolado ('requested') o si ya lo estaba ('processing').
+				log_utils.log('DMM: 204, titulo no indexado todavia (%s) | %s'
+						% (results.headers.get('status', 'requested'), client.scrub_url(url)), __name__, log_utils.LOGDEBUG)
 				return None
 			if status == 429:
 				retry_after = 0.0
@@ -137,16 +158,23 @@ class source:
 					with _RATE_LOCK:
 						_NEXT_ALLOWED[0] = max(_NEXT_ALLOWED[0], time.time() + min(max(retry_after, _MIN_GAP), _MAX_WAIT))
 					continue
-				log_utils.log('DMM: 429 tras el reintento (limite 1 peticion/2 s por IP)', log_utils.LOGDEBUG)
+				log_utils.log('DMM: 429 tras el reintento (limite 1 peticion/2 s por IP)', __name__, log_utils.LOGDEBUG)
 				return None
 			if status == 403:
-				# El token no valida: reloj del dispositivo desviado mas de 5
-				# minutos, o DMM ha rotado el salt de su cliente web.
-				log_utils.log('DMM: 403 Authentication error — comprobar la hora del dispositivo o un cambio de salt en debridmediamanager.com', log_utils.LOGWARNING)
+				# v1.0.76: el reloj del dispositivo ya no interviene — la marca
+				# de tiempo la pone el servidor al acuñar. Un 403 aqui significa
+				# token caducado en el filo del TTL de 5 min o secreto rotado
+				# bajo nuestros pies, y las dos cosas se arreglan reacuñando.
+				if attempts:
+					invalidate_secret(dmmProblemKey)
+					continue
+				try: reason = (results.json() or {}).get('errorMessage') or ''
+				except Exception: reason = ''
+				log_utils.log('DMM: 403 tras reacuñar el token (%s)' % (reason or 'sin detalle'), __name__, log_utils.LOGWARNING)
 				return None
 			body = (results.text or '')[:300].replace('\n', ' ').replace('\r', ' ')
 			log_utils.log('DMM: HTTP %s | Content-Type=%s | body[:300]=%r'
-					% (status, results.headers.get('Content-Type', ''), body), log_utils.LOGWARNING)
+					% (status, results.headers.get('Content-Type', ''), body), __name__, log_utils.LOGWARNING)
 			return None
 		return None
 
@@ -181,6 +209,13 @@ class source:
 				url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name)
 
 				quality, info = source_utils.get_release_quality(name_info, url)
+				# v1.0.83. Faltaba, y era el unico de los 18 scrapers sin ella.
+				# Importa por un motivo concreto: info_from_name() hace
+				# re.sub(r'[^a-z0-9]+', '.') sobre el nombre, asi que el '+' de
+				# HDR10+ desaparece antes de llegar a getFileType(). Sin esta
+				# llamada, que recibe el nombre SIN limpiar, DMM no podia
+				# distinguir HDR10+ de HDR10 jamas. Lo mismo con 10BIT.
+				info += [t for t in source_utils.get_extra_tags(name) if t not in info]
 				try:
 					size = f"{float(file['fileSize']) / 1024:.2f} GB"
 					dsize, isize = source_utils._size(size)
@@ -196,48 +231,7 @@ class source:
 				if package: item['package'] = package
 				if package == 'show': item.update({'last_season': last_season})
 				if episode_start: item.update({'episode_start': episode_start, 'episode_end': episode_end}) # for partial season packs
-				self.sources_append(item)
+				self._results_append(item)
 			except:
 				source_utils.scraper_error('DMM')
 		return len(files)
-
-
-def get_secret():
-	def calc_value_alg(t, n, const):
-		temp = t ^ n
-		t = ctypes.c_long((temp * const)).value
-		t4 = ctypes.c_long(t << 5).value
-		t5 = ctypes.c_long((t & 0xFFFFFFFF) >> 27).value
-		return t4 | t5
-
-	def slice_hash(s, n):
-		half = int(len(s) // 2)
-		left_s, right_s = s[:half], s[half:]
-		left_n, right_n = n[:half], n[half:]
-		l = ''.join(ls + ln for ls, ln in zip(left_s, left_n))
-		return l + right_n[::-1] + right_s[::-1]
-
-	def generate_hash(e):
-		t = ctypes.c_long(0xDEADBEEF ^ len(e)).value
-		a = 1103547991 ^ len(e)
-		for ch in e:
-			n = ord(ch)
-			t = calc_value_alg(t, n, 2654435761)
-			a = calc_value_alg(a, n, 1597334677)
-		t = ctypes.c_long(t + ctypes.c_long(a * 1566083941).value).value
-		a = ctypes.c_long(a + ctypes.c_long(t * 2024237689).value).value
-		return (ctypes.c_long(t ^ a).value & 0xFFFFFFFF)
-
-	ran = random.randrange(10 ** 80)
-	hex_str = f"{ran:064x}"[:8]
-	timestamp = int(time.time())
-	dmmProblemKey = f"{hex_str}-{timestamp}"
-
-	s = generate_hash(dmmProblemKey)
-	s = f"{s:x}"
-
-	n = generate_hash("debridmediamanager.com%%fe7#td00rA3vHz%VmI-" + hex_str)
-	n = f"{n:x}"
-
-	solution = slice_hash(s, n)
-	return dmmProblemKey, solution

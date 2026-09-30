@@ -11,6 +11,7 @@
 	  4. From then on the stored JWT is reused (refreshed only when expired)
 """
 
+from resources.lib.modules import app_keys
 import re
 import requests
 from resources.lib.modules import control
@@ -19,7 +20,7 @@ import xbmc
 
 
 base_url = 'https://api.opensubtitles.com/api/v1'
-api_key  = 'bpjXX6cIqRZzqQ4gcxHvEcuXrsepl71O'
+api_key  = app_keys.get('opensubs')
 version  = control.getluc_kodiVersion()
 
 
@@ -41,7 +42,12 @@ class Opensubs():
 		Returns True if auth is valid or successfully refreshed, False otherwise.
 		"""
 		url = base_url + '/login'
-		xbmc.log('[ luc_kodi ] opensubs.auth() — user="%s" has_token=%s' % (self.username, bool(self.jwt_token)), xbmc.LOGINFO)
+		# v1.0.63: el nombre de usuario iba entero al log en cada intento, sin
+		# condicion de debug. No es la contrasena, pero es un identificador
+		# personal que acaba en kodi.log y que el exportador saneado no puede
+		# tachar (no es un secreto, es un dato). Se registra solo si hay usuario.
+		xbmc.log('[ luc_kodi ] opensubs.auth() — has_user=%s has_token=%s'
+		         % (bool(self.username), bool(self.jwt_token)), xbmc.LOGINFO)
 		if not self.username or not self.password:
 			xbmc.log('[ luc_kodi ] opensubs.auth() — ABORT: username or password empty', xbmc.LOGINFO)
 			return False

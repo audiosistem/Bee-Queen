@@ -143,7 +143,7 @@
 						<label>$INFO[ListItem.Property(luc_kodi.year)]   [COLOR $INFO[Window().Property(luc_kodi.highlight.color)]]|[/COLOR]   $INFO[ListItem.Property(luc_kodi.genre)]   [COLOR $INFO[Window().Property(luc_kodi.highlight.color)]]|[/COLOR]   $INFO[ListItem.Property(luc_kodi.mpaa)]</label>
 					</control>
 				</itemlayout>
-				<focusedlayout height="100" width="1325">
+				<focusedlayout height="200" width="2650">
 					<control type="image">
 						<left>0</left>
 						<top>0</top>

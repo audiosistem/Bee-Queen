@@ -76,21 +76,7 @@ def prune_databases():
 	return total
 
 
-def janitor_service():
-	"""Bucle de servicio: comprueba cada 6 horas si toca el mantenimiento mensual.
-	Nunca corre durante la reproducción de vídeo (mismo criterio que el resto de
-	servicios de mantenimiento del addon)."""
-	import xbmc
-	from resources.lib.modules import log_utils
-	monitor = control.monitor
-	while not monitor.abortRequested():
-		try:
-			if enabled():
-				try: last = float(getSetting(_LASTRUN_SETTING) or 0)
-				except: last = 0
-				if (time.time() - last) >= RUN_EVERY_DAYS * 86400 and not xbmc.Player().isPlayingVideo():
-					pruned = prune_databases()
-					control.setSetting(_LASTRUN_SETTING, str(int(time.time())))
-					log_utils.log('[ plugin.video.luc_kodi ]  DB maintenance: %s filas antiguas purgadas y bases compactadas' % pruned, log_utils.LOGINFO)
-		except: log_utils.error()
-		if monitor.waitForAbort(6 * 3600): break # re-evaluar cada 6 horas
+# v1.0.94 — el bucle de servicio que llamaba a prune_databases() cada 6 horas
+# se retira: ahora lo decide la sonda de maintenance.py, que lo lanza cuando
+# vence el mes y el usuario no esta dentro del addon (un VACUUM bloquea la
+# base unos segundos). Los ajustes y la marca siguen siendo los mismos.

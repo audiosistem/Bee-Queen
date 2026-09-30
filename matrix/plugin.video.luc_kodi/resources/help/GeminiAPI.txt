@@ -1,50 +1,63 @@
 [B][COLOR ff00fa9a]AI Search (Gemini) Setup[/COLOR][/B]
 
-Para usar la funcion [B]AI Search[/B] (Busqueda IA) necesitas al menos una clave de API de Google Gemini.
+To use [B]AI Search[/B] you need at least one Google Gemini API key. It is free and no credit card is required.
 
-[B][COLOR ff00fa9a]Como obtener tu Gemini API Key:[/COLOR][/B]
 
-1. Abre en tu navegador:
+[B][COLOR ff00fa9a]Getting your Gemini API Key:[/COLOR][/B]
+
+1. Open in your browser:
    [B][COLOR fffdb515]https://aistudio.google.com/apikey[/COLOR][/B]
 
-2. Inicia sesion con tu cuenta Google (es gratuito, sin tarjeta de credito).
+2. Sign in with your Google account.
 
-3. Pulsa [B]"Crear clave de API"[/B] (arriba a la derecha).
+3. Press [B]"Create API key"[/B] (top right).
 
-4. Copia la clave generada (empieza por [COLOR fffdb515]AIzaSy...[/COLOR]) y pegala en el campo [B]Gemini API Key 1[/B] en estos ajustes.
-
-
-[B][COLOR ff00fa9a]Cuota gratuita:[/COLOR][/B]
-
-- [B]gemini-2.5-flash-lite[/B] (recomendado): 1000 peticiones/dia
-- [B]gemini-2.5-flash[/B]: 250 peticiones/dia
-- Modelos 3.x preview: cuota menor pero generacion mas nueva
+4. Copy the key (it starts with [COLOR fffdb515]AIzaSy...[/COLOR]) and paste it into [B]Gemini API Key 1[/B] in these settings.
 
 
-[B][COLOR ff00fa9a]Tres claves para mas cuota (opcional):[/COLOR][/B]
+[B][COLOR ff00fa9a]Three keys for more quota (optional):[/COLOR][/B]
 
-Puedes configurar hasta 3 API Keys. Cuando una agota su cuota diaria (error HTTP 429), el addon rota automaticamente a la siguiente.
+You can set up to 3 API keys. When one runs out of daily quota (HTTP 429) the add-on rotates to the next automatically.
 
-[B]IMPORTANTE:[/B] Google aplica el rate limit [B]por proyecto, no por clave[/B]. Para que las 3 claves sumen cuota real, cada una debe estar en un [B]proyecto Google distinto[/B]:
+[B]IMPORTANT:[/B] Google applies rate limits [B]per project, not per key[/B]. For three keys to add up to real extra quota, each one must live in a [B]different Google project[/B]:
 
-1. En AI Studio abre [B]Proyectos[/B] (barra lateral izquierda).
-2. Pulsa [B]"Crear un proyecto nuevo"[/B]. Repite para tener 3 proyectos.
-3. En [B]"Claves de API"[/B] crea una clave en cada proyecto distinto.
-
-
-[B][COLOR ff00fa9a]Seguridad:[/COLOR][/B]
-
-Nunca compartas tu API Key publicamente ni la subas a repositorios publicos de GitHub. Google escanea GitHub automaticamente y revoca las claves expuestas en minutos.
+1. In AI Studio open [B]Projects[/B] (left sidebar).
+2. Press [B]"Create new project"[/B]. Repeat until you have 3.
+3. Under [B]"API keys"[/B], create one key in each separate project.
 
 
-[B][COLOR ff00fa9a]Fallback automatico entre modelos:[/COLOR][/B]
+[B][COLOR ff00fa9a]Free quota:[/COLOR][/B]
 
-luc_kodi prueba automaticamente los siguientes modelos cuando el principal agota cuota:
+Google no longer publishes a fixed per-model table, and the allowance changes over time and by region. Your own live limits are shown at:
+   [B][COLOR fffdb515]https://aistudio.google.com/rate-limit[/COLOR][/B]
 
-1. gemini-2.5-flash-lite (1000/dia)
-2. gemini-2.5-flash (250/dia)
-3. gemini-3.1-flash-lite-preview
-4. gemini-3-flash-preview
-5. gemini-2.0-flash (se deprecara en junio 2026)
+As a rule of thumb the [B]Flash-Lite[/B] models carry the most generous daily allowance and the heavier [B]Flash[/B] models the smallest. The daily counter resets at midnight Pacific time, not on a rolling 24 hours.
 
-Cada modelo tiene cuota independiente, asi que en uso normal es muy dificil agotar el total diario.
+One AI Search costs exactly one request, and every answer is cached for a week, so repeating a search you have already run is free.
+
+
+[B][COLOR ff00fa9a]Which model to pick:[/COLOR][/B]
+
+- [B]gemini-3.5-flash-lite[/B] (default, recommended): the current low-latency model, built for exactly this kind of short extraction task. Fastest answer and the biggest free allowance.
+- [B]gemini-3.1-flash-lite[/B]: the previous default. Still works, but Google has deprecated it with a shutdown announced for May 2027. There is no reason to choose it on a new install.
+- [B]gemini-2.5-flash-lite[/B]: older generation, still stable, no reasoning overhead.
+- [B]gemini-3.6-flash[/B] / [B]gemini-3.7-flash[/B] / [B]gemini-3.5-flash[/B]: heavier and smarter than needed here, and they spend part of their answer on internal reasoning, which makes them slower. Worth trying only if you find the Lite models misreading unusual requests.
+
+
+[B][COLOR ff00fa9a]Automatic model fallback:[/COLOR][/B]
+
+Whichever model you pick is tried first. If it is out of quota, unavailable, or not yet rolled out to your project, luc_kodi silently works down this list:
+
+1. gemini-3.5-flash-lite
+2. gemini-3.1-flash-lite
+3. gemini-2.5-flash-lite
+4. gemini-3.6-flash
+5. gemini-3.7-flash
+6. gemini-3.5-flash
+
+Each model has its own separate quota bucket, so in normal use running out of everything in one day is very hard. The whole attempt is capped at 45 seconds so a bad day at Google cannot leave the screen waiting.
+
+
+[B][COLOR ff00fa9a]Security:[/COLOR][/B]
+
+Never share your API key publicly or upload it to a public GitHub repository. Google scans GitHub automatically and revokes exposed keys within minutes.

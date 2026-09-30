@@ -3,10 +3,12 @@
 	luc_kodi Add-on
 """
 
+from resources.lib.modules import app_keys
 from datetime import datetime, timedelta
 from json import dumps as jsdumps
 import re
 from threading import Thread
+from time import time as _now
 from urllib.parse import quote_plus, urlencode, parse_qsl, urlparse, urlsplit
 from resources.lib.database import cache, metacache, fanarttv_cache, traktsync
 from resources.lib.indexers.tmdb import TVshows as tmdb_indexer
@@ -30,6 +32,12 @@ class TVshows:
 		self.search_page_limit = getSetting('search.page.limit')
 		self.lang = control.apiLanguage()['tmdb']
 		self.notifications = notifications
+		# v1.0.81 — ganchos del precache de catalogo. Los menus NUNCA los ponen:
+		# solo el servicio de catalogo, para que el enriquecido de estas listas
+		# comparta el semaforo global de peticiones y respete el presupuesto de
+		# tiempo de la pasada en segundo plano.
+		self.precache_sem = None
+		self.precache_deadline = None
 		# Auto-activar FanartTV en pantallas 4K (clearlogo, clearart, poster/fanart alternativos)
 		# is_4k_display() espera al flag con timeout corto — evita race en boot.
 		from resources.lib.modules.gui_resolution import is_4k_display as _is_4k_display
@@ -42,8 +50,7 @@ class TVshows:
 		self.date_time = datetime.now()
 		self.today_date = (self.date_time).strftime('%Y-%m-%d')
 		self.imdb_user = getSetting('imdb.user').replace('ur', '')
-		self.tvdb_key = getSetting('tvdb.api.key')
-		self.user = str(self.imdb_user) + str(self.tvdb_key)
+		self.user = str(self.imdb_user)
 
 		self.imdb_link = 'https://www.imdb.com'
 		self.persons_link = 'https://www.imdb.com/search/name/?count=100&name='
@@ -87,14 +94,20 @@ class TVshows:
 		# extended=tmdb gives us the tmdb id + title + year upfront so the
 		# worker pipeline can resolve metadata without an extra round trip.
 		self.simkl_link = 'https://api.simkl.com'
-		self.simkltrendingtoday_link = 'https://api.simkl.com/tv/trending/today?extended=tmdb'
-		self.simkltrendingweek_link  = 'https://api.simkl.com/tv/trending/week?extended=tmdb'
-		self.simkltrendingmonth_link = 'https://api.simkl.com/tv/trending/month?extended=tmdb'
+		self.simkldata_link = 'https://data.simkl.in'
+		self.simkltrendingtoday_link = 'https://data.simkl.in/discover/trending/tv/today_100.json'
+		self.simkltrendingweek_link  = 'https://data.simkl.in/discover/trending/tv/week_100.json'
+		self.simkltrendingmonth_link = 'https://data.simkl.in/discover/trending/tv/month_100.json'
+		# PunchPlay: catalogo PUBLICO, sin auth ni token (/api/public/v1).
+		# `type` es 'movie' o 'show', los unicos kinds enrutables de PunchPlay.
+		self.punchplay_link = 'https://punchplay.tv'
+		self.punchplaytrending_link = 'https://punchplay.tv/api/public/v1/catalog/trending?type=show'
+		self.punchplaypopular_link = 'https://punchplay.tv/api/public/v1/catalog/discover?category=popular&type=show'
 
 		self.tvmaze_link = 'https://www.tvmaze.com'
 		self.tmdb_key = getSetting('tmdb.api.key')
 		if self.tmdb_key == '' or self.tmdb_key is None:
-			self.tmdb_key = 'f2e500501d9fa3bd1637bfd00f11583a'
+			self.tmdb_key = app_keys.get('tmdb')
 		self.tmdb_session_id = getSetting('tmdb.session_id')
 		self.tmdb_link = 'https://api.themoviedb.org'
 		self.tmdb_userlists_link = 'https://api.themoviedb.org/3/account/{account_id}/lists?api_key=%s&language=en-US&session_id=%s&page=1' % ('%s', self.tmdb_session_id) # used by library import only
@@ -103,6 +116,12 @@ class TVshows:
 		self.tmdb_ontheair_link = 'https://api.themoviedb.org/3/tv/on_the_air?api_key=%s&language=en-US&region=US&page=1'
 		self.tmdb_airingtoday_link = 'https://api.themoviedb.org/3/tv/airing_today?api_key=%s&language=en-US&region=US&page=1'
 		self.tmdb_networks_link = 'https://api.themoviedb.org/3/discover/tv?api_key=%s&with_networks=%s&sort_by=%s&page=1' % ('%s', '%s', self.tmdb_DiscoverSort())
+		# v1.0.96 — TV Shows > Streaming: series AVAILABLE on a platform (TMDb watch
+		# providers, data from JustWatch), not only the ones it produced, which is what
+		# Networks shows. Same 50-vote floor as Tools > Test networks and streaming: below it a
+		# series rarely has cached sources. Sorting by rating already brings its own.
+		_tv_sort = self.tmdb_DiscoverSort()
+		self.tmdb_watchproviders_link = 'https://api.themoviedb.org/3/discover/tv?api_key=%s&language=en-US&watch_region=US&with_watch_providers=%s&include_null_first_air_dates=false&sort_by=%s%s&page=1' % ('%s', '%s', _tv_sort, '' if 'vote_count.gte' in _tv_sort else '&vote_count.gte=50')
 		self.tmdb_genre_link = 'https://api.themoviedb.org/3/discover/tv?api_key=%s&with_genres=%s&include_null_first_air_dates=false&sort_by=%s&page=1' % ('%s', '%s', self.tmdb_DiscoverSort())
 		self.tmdb_year_link = 'https://api.themoviedb.org/3/discover/tv?api_key=%s&language=en-US&include_null_first_air_dates=false&first_air_date_year=%s&sort_by=%s&page=1' % ('%s', '%s', self.tmdb_DiscoverSort())
 		# --- Premiere calendar (global, NOT watchlist-based) -----------------
@@ -138,14 +157,21 @@ class TVshows:
 			elif u in self.trakt_link:
 				self.list = cache.get(self.trakt_list, 24, url, self.trakt_user)
 				if idx: self.worker()
-			elif u in self.simkl_link:
+			elif u in self.simkl_link or u in self.simkldata_link:
 				# SIMKL trending: cache TTL matches the period — today=6h, week=24h, month=96h
-				if '/trending/today' in url:   _ttl = 6
-				elif '/trending/week' in url:  _ttl = 24
-				elif '/trending/month' in url: _ttl = 96
+				# '/today' casa con la URL vieja (/trending/today) y con el fichero (/movies/today_100.json)
+				if '/today' in url:   _ttl = 6
+				elif '/week' in url:  _ttl = 24
+				elif '/month' in url: _ttl = 96
 				else: _ttl = 24
 				from resources.lib.modules import simkl as simkl_mod
 				self.list = cache.get(simkl_mod.simkl_list, _ttl, url)
+				if idx: self.worker()
+			elif u in self.punchplay_link:
+				# Trending se mueve a diario; discover/popular aguanta mas.
+				_ttl = 6 if '/trending' in url else 24
+				from resources.lib.modules import punchplay as punchplay_mod
+				self.list = cache.get(punchplay_mod.punchplay_list, _ttl, url)
 				if idx: self.worker()
 			elif u in self.imdb_link and ('/user/' in url or '/list/' in url):
 				isRatinglink=True if self.imdbratings_link in url else False
@@ -459,6 +485,18 @@ class TVshows:
 		self.addDirectory(self.list)
 		return self.list
 
+	def watchproviders(self):
+		# Same curated platforms as Movies > Streaming, minus the film-only ones.
+		from resources.lib.indexers.tmdb import Movies as tmdb_movies, WATCHPROVIDERS_FILM_ONLY
+		for i in tmdb_movies().get_watchproviders():
+			if i[0] in WATCHPROVIDERS_FILM_ONLY: continue
+			url = self.tmdb_watchproviders_link % ('%s', i[1])
+			region = i[3] if len(i) > 3 and i[3] else 'US'
+			if region != 'US': url = url.replace('watch_region=US', 'watch_region=%s' % region)
+			self.list.append({'content': 'studios', 'name': i[0], 'url': url, 'image': i[2], 'icon': i[2], 'action': 'tmdbTvshows'})
+		self.addDirectory(self.list)
+		return self.list
+
 	def originals(self):
 		originals = tmdb_indexer().get_originals()
 		for i in originals:
@@ -660,8 +698,10 @@ class TVshows:
 		if ',return' in url: url = url.split(',return')[0]
 		# 2026-06-30 Trakt API: /watched endpoints are paginated (100-item cap without
 		# params). If the caller did not build local pagination into the url, fetch all pages.
-		if '/watched/' in url and 'limit=' not in url:
-			items = trakt.getTraktAsJsonPaginated(url, page_size=250)
+		# v1.0.95: cualquier URL sin limit= (importar a la biblioteca la
+		# watchlist, la coleccion o una lista) necesita recorrer todas las paginas
+		if 'limit=' not in url:
+			items = trakt.getTraktAsJsonPaginated(url, page_size=250, apply_sort=True)
 		else:
 			items = trakt.getTraktAsJson(url)
 		if not items: return
@@ -701,14 +741,19 @@ class TVshows:
 		self.list = []
 		q = dict(parse_qsl(urlsplit(url).query))
 		index = int(q['page']) - 1
-		def userList_totalItems(url):
-			items = trakt.getTraktAsJson(url)
+		def userList_allItems(url):
+			# v1.0.95 (issue #1): la URL llegaba sin limit/page y getTraktAsJson
+			# no pagina. Desde el 15-abr-2026 Trakt devuelve entonces solo la
+			# primera pagina de la lista (100) y el resto no aparecia nunca.
+			# Renombrada ademas para no reutilizar 48 h la cache truncada.
+			items = trakt.getTraktAsJsonPaginated(url, page_size=250, apply_sort=True)
 			if not items: return
 			for item in items:
 				try:
 					values = {}
 					values['added'] = item.get('listed_at', '')
-					show = item['show']
+					show = item.get('show')
+					if not show: continue
 					values['title'] = show.get('title')
 					values['originaltitle'] = values['title']
 					values['tvshowtitle'] = values['title']
@@ -724,16 +769,18 @@ class TVshows:
 					values['tvdb'] = str(ids.get('tvdb')) if ids.get('tvdb', '') else ''
 					values['rating'] = show.get('rating')
 					values['votes'] = show.get('votes')
-					airs = show.get('airs', {})
-					values['airday'] = airs['day']
-					values['airtime'] = airs['time']
-					values['airzone'] = airs['timezone']
+					# v1.0.95: airs puede faltar o venir null (series de streaming o
+					# terminadas); airs['day'] lanzaba y la serie se descartaba entera
+					airs = show.get('airs') or {}
+					values['airday'] = airs.get('day') or ''
+					values['airtime'] = airs.get('time') or ''
+					values['airzone'] = airs.get('timezone') or ''
 					self.list.append(values)
 				except:
 					from resources.lib.modules import log_utils
 					log_utils.error()
 			return self.list
-		self.list = cache.get(userList_totalItems, 48, url.split('limit')[0] + 'extended=full')
+		self.list = cache.get(userList_allItems, 48, url.split('?')[0] + '?extended=full')
 		if not self.list: return
 		self.sort() # sort before local pagination
 		total_pages = 1
@@ -939,6 +986,15 @@ class TVshows:
 			log_utils.error()
 
 	def super_info(self, i):
+		# Envoltura del precache (v1.0.81). Sin semaforo ni deadline se comporta
+		# exactamente igual que antes.
+		if self.precache_deadline and _now() > self.precache_deadline: return
+		if self.precache_sem is None: return self._super_info(i)
+		self.precache_sem.acquire()
+		try: return self._super_info(i)
+		finally: self.precache_sem.release()
+
+	def _super_info(self, i):
 		try:
 			if self.list[i]['metacache']: return
 			imdb, tmdb, tvdb = self.list[i].get('imdb', ''), self.list[i].get('tmdb', ''), self.list[i].get('tvdb', '')
@@ -1056,7 +1112,7 @@ class TVshows:
 				art = {}
 				art.update({'poster': poster, 'tvshow.poster': poster, 'fanart': fanart, 'icon': icon, 'thumb': thumb, 'banner': banner, 'clearlogo': clearlogo,
 						'tvshow.clearlogo': clearlogo, 'clearart': meta.get('clearart', ''), 'tvshow.clearart': meta.get('clearart', ''), 'landscape': landscape})
-				for k in ('metacache', 'poster2', 'poster3', 'posters_all', 'fanart2', 'fanart3', 'banner2', 'banner3', 'trailer'): meta.pop(k, None)
+				for k in ('metacache', 'meta_light', 'poster2', 'poster3', 'posters_all', 'fanart2', 'fanart3', 'banner2', 'banner3', 'trailer'): meta.pop(k, None)
 				meta.update({'poster': poster, 'fanart': fanart, 'banner': banner, 'thumb': thumb, 'icon': icon})
 				sysmeta, sysart = quote_plus(jsdumps(meta)), quote_plus(jsdumps(art))
 				if flatten:
@@ -1075,6 +1131,11 @@ class TVshows:
 					from resources.lib.modules.mdblist import getMDBListCredentialsInfo as _mdb_ok
 					if _mdb_ok() and imdb:
 						cm.append((getLS(40220), 'RunPlugin(%s?action=mdblist_Manager&name=%s&imdb=%s&media_type=show)' % (sysaddon, systitle, imdb)))
+					try: # v1.0.91: SIMKL (valoraciones y listas)
+						from resources.lib.modules.simkl import getSimklCredentialsInfo as _simkl_ok
+						if _simkl_ok() and imdb:
+							cm.append((getLS(400843), 'RunPlugin(%s?action=simklManager&name=%s&imdb=%s&media_type=show)' % (sysaddon, systitle, imdb)))
+					except Exception: pass
 					if watched:
 						meta.update({'playcount': 1, 'overlay': 5})
 						cm.append((unwatchedMenu, 'RunPlugin(%s?action=playcount_TVShow&name=%s&imdb=%s&tvdb=%s&query=4)' % (sysaddon, systitle, imdb, tvdb)))

@@ -52,7 +52,7 @@
 
 from json import loads as jsloads
 import re
-import queue
+import time
 import os
 try:
 	from urllib.parse import quote as _url_quote
@@ -60,6 +60,7 @@ except ImportError:  # Python 2 fallback, by si acaso
 	from urllib import quote as _url_quote
 from resources.lib.jacksparrow import client
 from resources.lib.jacksparrow import source_utils
+from resources.lib.jacksparrow import pack_handoff
 from resources.lib.jacksparrow import log_utils
 from resources.lib.jacksparrow.control import setting as getSetting
 from resources.lib.jacksparrow.control import setSetting
@@ -178,6 +179,29 @@ def _decode_token_to_json(token):
 
 
 # Nombres largos -> etiqueta corta para UI
+_SOOTIO_SCRAPER_FRIENDLY = {
+	'jackett':       'Jackett',
+	'zilean':        'Zilean',
+	'torrentio':     'Torrentio',
+	'comet':         'Comet',
+	'stremthru':     'StremThru',
+	'bitmagnet':     'Bitmagnet',
+	'snowfl':        'Snowfl',
+	'1337x':         '1337x',
+	'btdigg':        'BTDigg',
+	'magnetdl':      'MagnetDL',
+	'torrentgalaxy': 'TorrentGalaxy',
+	'torrent9':      'Torrent9',
+	'wolfmax4k':     'Wolfmax4K',
+	'bludv':         'BluDV',
+	'newznab':       'Newznab (Usenet)',
+	'sabnzbd':       'SABnzbd (Usenet)',
+	'4khdhub':       '4KHDHub (HTTP)',
+	'uhdmovies':     'UHDMovies (HTTP)',
+	'plex':          'Plex',
+	'jellyfin':      'Jellyfin',
+}
+
 _SOOTIO_PROVIDER_FRIENDLY = {
 	'realdebrid':  ('Real-Debrid',  'RD'),
 	'rd':          ('Real-Debrid',  'RD'),
@@ -238,6 +262,60 @@ def _detect_debrid_from_token(token):
 		else:
 			labels.append(p)
 	return ' + '.join(labels)
+
+
+def _detect_scrapers_from_token(token):
+	"""
+	Saca del token la lista de scrapers que el usuario dejo activos al generarlo.
+	Devuelve algo legible ('Jackett, Zilean, 1337x, ...') o '' si no se puede.
+
+	v1.0.70. Esto SOLO es posible en Sootio: su token JSON lleva un array
+	`Scrapers[...]` que ya se decodifica aqui para detectar el debrid. En Comet
+	y Torz el conjunto de scrapers es configuracion de entorno de la INSTANCIA,
+	no un campo del token, asi que no hay nada que leer y no se generaliza.
+
+	Utilidad practica: deja a la vista los tokens antiguos (anteriores a la 1.8)
+	que se generaron antes de que existieran las fuentes Usenet y HTTP.
+	"""
+	cfg = _decode_token_to_json(token)
+	if not cfg:
+		return ''
+
+	names = []
+	for key in ('Scrapers', 'scrapers', 'EnabledScrapers'):
+		val = cfg.get(key)
+		if not val:
+			continue
+		if isinstance(val, dict):
+			# {'jackett': True, 'zilean': False, ...}
+			names = [k for k, v in val.items() if v]
+		elif isinstance(val, list):
+			for entry in val:
+				if isinstance(entry, str):
+					names.append(entry)
+				elif isinstance(entry, dict):
+					n = entry.get('name') or entry.get('id') or entry.get('scraper') or ''
+					enabled = entry.get('enabled', True)
+					if n and enabled:
+						names.append(n)
+		if names:
+			break
+
+	if not names:
+		return ''
+
+	# Nombres bonitos donde los haya; el resto tal cual, sin inventar
+	pretty, seen = [], set()
+	for n in names:
+		n = str(n).strip()
+		if not n:
+			continue
+		key = n.lower().replace('-', '').replace('_', '').replace(' ', '')
+		label = _SOOTIO_SCRAPER_FRIENDLY.get(key, n)
+		if label.lower() not in seen:
+			seen.add(label.lower())
+			pretty.append(label)
+	return ', '.join(pretty)
 
 
 # Quality keywords en nombre / descripcion de Sootio
@@ -361,7 +439,6 @@ class source:
 	hasEpisodes = True
 
 	def __init__(self):
-		self._queue  = queue.SimpleQueue()
 		self.language = ['en']
 		try:
 			instance_idx = int(getSetting('sootio.url') or '0')
@@ -395,9 +472,25 @@ class source:
 		except Exception:
 			self.debrid_detected = ''
 
+		# v1.0.70: misma idea, pero con los scrapers que el token deja activos.
+		# Solo Sootio lo permite (ver _detect_scrapers_from_token). Sirve para
+		# ver de un vistazo si el token es antiguo y le faltan fuentes.
+		try:
+			_srcs = _detect_scrapers_from_token(self.config_b64) or 'not detected'
+			if getSetting('sootio.sources.detected') != _srcs:
+				setSetting('sootio.sources.detected', _srcs)
+			self.sources_detected = _srcs
+		except Exception:
+			self.sources_detected = ''
+
 		self.movieSearch_link = '/stream/movie/%s.json'
 		self.tvSearch_link    = '/stream/series/%s:%s:%s.json'
-		self.min_seeders = 0
+		# Min seeders (v1.0.61: antes estaba fijo a 0 y las ramas de
+		# filtrado eran inalcanzables)
+		try:
+			self.min_seeders = int(getSetting('sootio.min.seeders') or '0')
+		except Exception:
+			self.min_seeders = 0
 
 	# --- URL helpers ----------------------------------------------------------
 
@@ -464,7 +557,7 @@ class source:
 					log_utils.log(
 						'SOOTIO: first stream keys=%s url_head=%s name=%s infoHash=%s bh_keys=%s'
 						% (list(s.keys()),
-						   url_field[:80],
+						   client.scrub_url(url_field)[:80],   # v1.0.64: llevaba la apiKey del debrid en el path
 						   (name_fld[:60].replace('\n', ' | ')),
 						   s.get('infoHash', '')[:16],
 						   list(bh.keys())),
@@ -694,11 +787,11 @@ class source:
 			source_utils.scraper_error('SOOTIO')
 			return sources
 
+		# v1.0.63: ver resources/lib/jacksparrow/pack_handoff.py — la cola por
+		# instancia no cruzaba a sources_packs(), que corre en otra instancia.
+		_h = pack_handoff.begin('sootio', imdb, season, data.get('episode')) if is_episode else None
 		files = self._fetch(url)
-		try:
-			self._queue.put_nowait(files)
-		except Exception:
-			pass
+		pack_handoff.publish(_h, files)
 		result = self._parse_files(
 			files, season=season if is_episode else None,
 			title=title, aliases=aliases, year=year, imdb=imdb)
@@ -721,7 +814,9 @@ class source:
 			source_utils.scraper_error('SOOTIO')
 			return sources
 		try:
-			files = self._queue.get(timeout=self.timeout + 1)
+			files = pack_handoff.wait('sootio', imdb, season, data.get('episode'), timeout=self.timeout)
+			if files is None:
+				files = self._fetch(self._build_url(self.tvSearch_link, imdb, season, data.get('episode')))
 		except Exception:
 			source_utils.scraper_error('SOOTIO')
 			return sources
@@ -755,8 +850,25 @@ class source:
 			# GET siguiendo redirects -> URL final del archivo. output='geturl'
 			# devuelve response.geturl() tras seguir la cadena de 30x.
 			final = client.request(url, output='geturl', redirect=True, timeout=self.timeout)
+			# v1.0.67: algunas instancias responden 200 y redirigen a un MP4 de
+			# error ("Debrid service is down", "Too many requests"). Devolverlo
+			# haria que se reprodujese el video de error en vez de saltar.
+			if client.is_error_slate(final):
+				# v1.0.68: es transitorio a menudo — el mismo enlace suele resolver
+				# unos minutos despues. Se reintenta UNA vez, salvo que el
+				# cortafuegos indique que el servicio esta caido de verdad.
+				if client.slate_retry_allowed():
+					log_utils.log('SOOTIO: video de error, reintentando una vez',
+					              level=log_utils.LOGINFO)
+					time.sleep(client.SLATE_RETRY_DELAY)
+					final = client.request(url, output='geturl', redirect=True, timeout=self.timeout)
+				if client.is_error_slate(final):
+					client.note_error_slate()
+					log_utils.log('SOOTIO: el proveedor sigue devolviendo un video de error, se descarta la fuente',
+					              level=log_utils.LOGINFO)
+					return None
 			if final and final != url and not final.endswith('/resolve/') and '/resolve/' not in final:
-				log_utils.log('SOOTIO: resolve() -> %s' % final[:80], level=log_utils.LOGINFO)
+				log_utils.log('SOOTIO: resolve() -> %s' % client.scrub_url(final)[:80], level=log_utils.LOGINFO)
 				return final
 			# Algunos despliegues devuelven el enlace en el cuerpo (texto plano
 			# o JSON {"url": "..."}) en lugar de un redirect. Probamos eso.
@@ -772,7 +884,7 @@ class source:
 						return cand
 				except Exception:
 					pass
-			log_utils.log('SOOTIO: resolve() could not resolve %s' % url[:80], level=log_utils.LOGINFO)
+			log_utils.log('SOOTIO: resolve() could not resolve %s' % client.scrub_url(url)[:80], level=log_utils.LOGINFO)
 			return None
 		except Exception:
 			source_utils.scraper_error('SOOTIO')

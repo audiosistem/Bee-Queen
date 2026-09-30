@@ -26,6 +26,7 @@ _TYPE_LABELS = {
 	'debrid':   'Debrid',
 	'size':     'Size',
 	'seeders':  'Seeders',
+	'host':     'Delivery host',
 }
 
 
@@ -47,6 +48,19 @@ def _format_stats(stats):
 		return '[CR]'.join(lines)
 
 	add('[COLOR ffaaaaaa]Plays recorded:[/COLOR] [B]%d[/B]' % total)
+	# v1.0.65 — velocidad de linea medida por el pre-flight. Es el numero que
+	# decide que fuentes se marcan como pesadas en la lista de resultados.
+	try:
+		from resources.lib.modules import preflight
+		_line, _samples = preflight.line_mbps(), preflight.line_samples()
+		if _samples:
+			add('[COLOR ffaaaaaa]Measured line speed:[/COLOR] [B]%.0f Mbps[/B] '
+				'[COLOR ffaaaaaa](%d measurement%s)[/COLOR]'
+				% (_line, _samples, '' if _samples == 1 else 's'))
+		else:
+			add('[COLOR ffaaaaaa]Measured line speed:[/COLOR] not measured yet')
+	except Exception:
+		pass
 	if total < 10:
 		add('[COLOR ffd25c1d]At least 10 plays are needed before the model '
 			'affects ranking. %d to go.[/COLOR]' % (10 - total))
@@ -58,7 +72,7 @@ def _format_stats(stats):
 		by_type.setdefault(f['type'], []).append(f)
 
 	# Fixed type order for consistent readability
-	type_order = ['quality', 'codec', 'hdr', 'audio', 'provider', 'debrid', 'size', 'seeders']
+	type_order = ['quality', 'codec', 'hdr', 'audio', 'provider', 'debrid', 'size', 'seeders', 'host']
 
 	for ftype in type_order:
 		group = by_type.get(ftype) or []
@@ -67,6 +81,10 @@ def _format_stats(stats):
 		label = _TYPE_LABELS.get(ftype, ftype)
 		add('[B][COLOR fffdb515]%s[/COLOR][/B]' % label)
 		# Each feature: name, hits/exposures, win-rate, log-odds with color
+		# Los hosts se cuentan por decenas cuando el debrid reparte por CDN;
+		# solo se listan los diez con mas historial para no llenar la ventana.
+		if ftype == 'host':
+			group = sorted(group, key=lambda x: -x['exp'])[:10]
 		for f in group:
 			lo = f['log_odds']
 			# Green for positive preferences, red for negative, gray for neutral
@@ -74,15 +92,19 @@ def _format_stats(stats):
 			elif lo < -0.30: color = 'ffd25c1d'
 			else:            color = 'ffaaaaaa'
 			sign = '+' if lo >= 0 else ''
-			add('  %-12s  picked %3d / shown %3d   '
+			_neg = f.get('neg', 0)
+			_fail = ('  [COLOR ffd25c1d]failed %d[/COLOR]' % _neg) if _neg else ''
+			add('  %-22s  picked %3d / shown %3d%s   '
 				'[COLOR %s]%s%.2f[/COLOR]' %
-				(f['value'], f['pos'], f['exp'], color, sign, lo))
+				(f['value'][:22], f['pos'], f['exp'], _fail, color, sign, lo))
 		add('')
 
 	add('[COLOR ffaaaaaa]How to read this:[/COLOR]')
 	add('· [B]picked[/B] = times you chose a source with that feature')
 	add('· [B]shown[/B] = times it appeared in the candidate list')
+	add('· [B]failed[/B] = times the link was dead or too slow for your line')
 	add('· [B]log-odds[/B] = weight applied to ranking. Green = boosts up, red = pushes down.')
+	add('· [B]Delivery host[/B] = the CDN that actually served the file, learned after playback.')
 	return '[CR]'.join(lines)
 
 
@@ -116,7 +138,7 @@ def reset_with_confirm():
 	try:
 		ok = control.yesnoDialog(
 			line1='Reset the personal ranker model?',
-			line2='All learned preferences will be lost.',
+			line2='Learned preferences and the measured line speed will be lost.',
 			line3='This action cannot be undone.',
 			heading='luc_kodi · Personal ranker',
 			nolabel='Cancel',

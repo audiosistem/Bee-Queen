@@ -27,9 +27,9 @@
 """
 
 from json import loads as jsloads
-import queue
 from resources.lib.jacksparrow import client
 from resources.lib.jacksparrow import source_utils
+from resources.lib.jacksparrow import pack_handoff
 from resources.lib.jacksparrow.control import setting as getSetting
 
 
@@ -39,7 +39,6 @@ class source:
 	pack_capable = True
 	hasMovies = True
 	hasEpisodes = True
-	_queue = queue.SimpleQueue()
 
 	# Lista ordenada de hosts compatibles con el endpoint /dmm/filtered.
 	# El scraper intenta en orden y se queda con el primero que devuelva
@@ -99,8 +98,10 @@ class source:
 				episode = data['episode']
 				hdlr = 'S%02dE%02d' % (int(season), int(episode))
 				path = self.tvSearch_link % (imdb, season, episode)
+				_h = pack_handoff.begin('zilean', imdb, season, episode)
 			else:
 				hdlr = year
+				_h = None
 				path = self.movieSearch_link % imdb
 			# log_utils.log('path = %s' % path)
 			try:
@@ -109,8 +110,9 @@ class source:
 				files = []
 				raise
 			finally:
-				self._queue.put_nowait(files) # if seasons
-				self._queue.put_nowait(files) # if shows
+				# v1.0.63: ver resources/lib/jacksparrow/pack_handoff.py — la cola
+				# por instancia no cruzaba a sources_packs(), que corre en otra.
+				pack_handoff.publish(_h, files)
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
 		except:
@@ -156,7 +158,9 @@ class source:
 			year = data['year']
 			season = data['season']
 			url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, data['episode']))
-			files = self._queue.get(timeout=self.timeout + 1)
+			files = pack_handoff.wait('zilean', imdb, season, data.get('episode'), timeout=self.timeout)
+			if files is None:
+				files = self._fetch_with_failover(self.tvSearch_link % (imdb, season, data.get('episode')))
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
 		except:

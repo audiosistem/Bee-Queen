@@ -1,0 +1,55 @@
+[B]Release information during playback[/B]
+
+With this on, a short block is added at the head of the synopsis while something is playing, describing what you are actually watching:
+
+    SCORES:   IMDb 8.4 · TMDb 7.9 · Trakt 8.1 · Rotten Tomatoes 91% · Metacritic 74
+    RELEASE:  4K · REMUX · BLURAY · DTS-HD MA · ATMOS · 7.1 · 61.20 GB · ZILEAN
+
+Every skin shows the synopsis during playback, so this appears everywhere without the skin needing to know luc_kodi exists, and without any key or button being taken over.
+
+[B]Why it sits at the top[/B]
+It used to go at the end. Skins clip the synopsis during playback, so on a film with a long plot the line was pushed out of the box and never seen. At the head it is always visible, and with no blank line between the block and the plot the whole thing reads as one piece rather than as something stuck on afterwards.
+
+[B]The short summary[/B]
+While the block is on, the film's short summary is left out during playback. Where a film has no summary of its own the tagline stands in for it, and that put a line in bold directly above the block on some titles and not others. It is only cleared on what is playing; everywhere else the short summary stays exactly as it was.
+
+[B]Two lines, not one[/B]
+They are kept apart on purpose. SCORES are metadata about the film, and anyone can check them. RELEASE is what whoever packaged the file says about it, which is a claim rather than a measurement. Putting them in the same row would suggest they are equally reliable, and they are not.
+
+[B]Why it works this way[/B]
+Kodi has no field for ATMOS, DTS-X, DTS-HD MA, TrueHD, REMUX, BluRay or WEB. No skin can display them, however good it is, because there is nothing to read. Two cleaner routes were tried and neither reached every setup: attaching the details to the file is invisible during playback, and drawing our own panel cannot be opened on skins that build their information into the player controls rather than as a separate window, nor on a touch screen with no Info key.
+
+The synopsis works because it is not clever. It is the one field that is always there.
+
+[B]What it costs[/B]
+It writes into the film's description. That is a real intrusion, which is why it is off unless you turn it on, why the line is marked RELEASE so it is clearly not part of the plot, and why it goes at the end where your eye can skip it.
+
+[B]How much it shows[/B]
+There is a second setting under this one, because there is no answer that is right for everybody.
+
+Everything the release states (the default) puts the picture and sound detail on the line too: Dolby Vision, HDR, the video codec and the channel count. Choose this if your skin shows none of that during playback, which is the common case.
+
+Only what Kodi cannot report keeps the line short, listing just the things with no Kodi field at all. Choose this if your skin already draws the codec and HDR flags itself, so the line would only repeat what is on screen.
+
+Either way the container is never shown. Knowing a file is an MKV tells you nothing about how it will look or sound.
+
+Channels are given as the speaker layout you would recognise, 7.1 or 5.1 or 2.0, rather than as a raw channel count.
+
+Everything on that line comes from the name of the file you picked, which is a claim by whoever packaged it, not a measurement. A mislabelled release will say the wrong thing here. When the line says ATMOS and your skin says EAC3, both can be true at once, because Kodi does not always surface an Atmos substream.
+
+If the release name says nothing useful, no line is added at all. Nothing is guessed.
+
+[B]Scores[/B]
+Off unless you turn it on. The scores come from the same place the source list gets them: MDBList if you have a key, then TMDb from the metadata already loaded, Trakt through the add-on's own key, and OMDB for IMDb with Metacritic and Rotten Tomatoes as stand-ins. Rotten Tomatoes and Metacritic as scores of their own need MDBList or an OMDB key; without either, those slots stay empty rather than showing a number from somewhere else under the wrong name.
+
+Both critic scores are shown because they do not measure the same thing. Rotten Tomatoes is the share of critics who liked the film at all, so a film everybody found watchable and nobody loved scores very high. Metacritic is the weighted average of the marks those same critics gave. Ninety-five per cent next to a seventy-one is not a contradiction, it is the difference between how many approved and how much they approved.
+
+Names are written out in full. Two letters are not a name: next to IMDb, TMDb and Trakt, an RT leaves you guessing whose number that is, and the line has room to spare.
+
+Nothing is requested while you are waiting for playback to start. Only what is already cached is used, so the line never delays a film for the sake of a decoration. In practice the source list asked for these same scores half a minute earlier, so they are already there. The very first time you play a title they may be missing; the next time they will not be.
+
+[B]The scraper[/B]
+Off unless you turn it on. It names which provider the source came from, at the end of the RELEASE line. It is the one item on that line that is ours rather than the packager's, and it is always right.
+
+[B]No icons[/B]
+The synopsis is a text field. Kodi renders colour and bold in it, but there is no way to place an image, and a symbol drawn from a font is only there if the skin's font happens to include it, which is how a round bullet turned into an empty box on some skins. Names in plain text also say whose score it is, which a star does not.

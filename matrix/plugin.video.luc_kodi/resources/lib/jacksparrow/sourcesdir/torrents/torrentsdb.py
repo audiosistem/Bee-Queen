@@ -7,6 +7,7 @@ from json import loads as jsloads
 import re, queue
 from resources.lib.jacksparrow import client
 from resources.lib.jacksparrow import source_utils
+from resources.lib.jacksparrow import pack_handoff
 
 
 class source:
@@ -15,7 +16,6 @@ class source:
 	pack_capable = True
 	hasMovies = True
 	hasEpisodes = True
-	_queue = queue.SimpleQueue()
 	def __init__(self):
 		self.language = ['en']
 		self.base_link = "https://torrentsdb.com"
@@ -40,8 +40,10 @@ class source:
 				episode = data['episode']
 				hdlr = 'S%02dE%02d' % (int(season), int(episode))
 				url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, episode))
+				_h = pack_handoff.begin('torrentsdb', imdb, season, episode)
 			else:
 				hdlr = year
+				_h = None
 				url = '%s%s' % (self.base_link, self.movieSearch_link % imdb)
 			# log_utils.log('url = %s' % url)
 			try:
@@ -51,8 +53,9 @@ class source:
 				files = []
 				raise
 			finally:
-				self._queue.put_nowait(files) # if seasons
-				self._queue.put_nowait(files) # if shows
+				# v1.0.63: ver resources/lib/jacksparrow/pack_handoff.py — la cola
+				# por instancia no cruzaba a sources_packs(), que corre en otra.
+				pack_handoff.publish(_h, files)
 			_INFO = re.compile(r'💾.*')
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
@@ -109,7 +112,13 @@ class source:
 			year = data['year']
 			season = data['season']
 			url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, data['episode']))
-			files = self._queue.get(timeout=self.timeout + 1)
+			files = pack_handoff.wait('torrentsdb', imdb, season, data.get('episode'), timeout=self.timeout)
+			if files is None:
+				# v1.0.66: client.request() devuelve None si la peticion falla y
+				# jsloads(None) revienta con TypeError. Sin resultados no es un
+				# error: se devuelve lista vacia.
+				_raw = client.request(url, timeout=self.timeout)
+				files = (jsloads(_raw).get('streams') or []) if _raw else []
 			_INFO = re.compile(r'💾.*')
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
@@ -119,8 +128,14 @@ class source:
 
 		for file in files:
 			try:
-				hash = file['infoHash']
-				file_title = file['title'].split('\n')
+				# v1.0.66: claves opcionales, no obligatorias. Este bloque no se habia
+				# ejecutado nunca en la practica hasta que se arreglo el traspaso.
+				hash = file.get('infoHash') or ''
+				if not hash:
+					continue
+				file_title = (file.get('title') or file.get('description') or '').split('\n')
+				if not file_title or not file_title[0]:
+					continue
 				file_info = [x for x in file_title if _INFO.search(x)][0]
 
 				name = source_utils.clean_name(file_title[0])

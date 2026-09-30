@@ -1,3 +1,554 @@
+[B][COLOR ff00fa9a]Version 1.0.96[/COLOR][/B]
+[COLOR fffdb515]Streaming[/COLOR]
+-New TV Shows > Streaming, with the same platforms as Movies > Streaming. Each one lists the series you can watch on it today, not only its own productions, with JustWatch data through TMDb. Only series with 50 votes or more on TMDb are listed, and MUBI and TCM stay in Movies only. It can be turned off in Settings with TV Streaming Services.
+-New platform: OnDemandKorea, with Korean dramas, shows and movies in Movies and TV Shows > Streaming.
+[COLOR fffdb515]Tools[/COLOR]
+-Test TV networks is now Test networks and streaming platforms. It also measures every platform of Movies and TV Shows > Streaming, and flags the ones with an empty or short list or a wrong ID.
+[COLOR fffdb515]Logos[/COLOR]
+-Every logo in Networks, Streaming and Originals now ships with the add-on: sharp, the same size and shown at once, with nothing to download. The external logo pack on GitHub is no longer used.
+-New logos for Apple TV+, Paramount Network, HBO, ABC, CBS, NBC, FOX, FX, Showtime, History, Cartoon Network, Adult Swim, BBC One, BBC Two, ITV, Channel 4, Sky Atlantic, AT-X and OnDemandKorea, and a new add-on icon. Paramount+ and Paramount Network, and HBO and HBO Max, are now easy to tell apart.
+-The same brand shows the same logo in every menu: Peacock and AMC in Networks, and Amazon, Hulu and Netflix in Originals.
+[B][COLOR ff00fa9a]Version 1.0.95[/COLOR][/B]
+[COLOR fffdb515]Trakt lists[/COLOR]
+-Your Trakt lists now show every item.
+-Series with no air day or time on Trakt (many streaming and ended series) are no longer dropped from TV Show Lists.
+-Lists keep the order their owner chose on trakt.tv.
+-Adding the Trakt watchlist, collection or a list to the Kodi library now imports all of it, not only the first page.
+[COLOR fffdb515]Trakt account[/COLOR]
+-The connection to Trakt is renewed in the background before it expires. Trakt sign-ins now last 24 hours, and luc_kodi was still counting on three months.
+-Authorizing Trakt now tells you straight away when Trakt refuses, for example when a free account already has another community app connected, instead of waiting until the code runs out.
+-Deauthorizing Trakt now also disconnects luc_kodi on trakt.tv, so the free community app slot is released for another app.
+-luc_kodi now identifies itself to Trakt by name and version, as Trakt requires.
+[COLOR fffdb515]Progress[/COLOR]
+-Series you drop on Trakt disappear from Progress and Up Next, as they do on trakt.tv. Restoring a series from the Hidden Items manager also brings back dropped series.
+-A network cut during a sync no longer empties your hidden series and makes them come back in Progress.
+-After each watched episode only the series that changed are re-read from Trakt, instead of every series you have watched. Large profiles no longer run into Trakt's request limit.
+-When Trakt is not responding the background sync waits for the next round instead of repeating every request.
+[COLOR fffdb515]Fixes[/COLOR]
+-Series and movies without an IMDb ID are now marked as watched on Trakt when they finish. They stayed as "watching now".
+-Removing the resume point of an episode from the Playback Progress manager removes that episode's point, not another episode of the same series.
+-Liking and unliking lists and removing resume points work again when the Trakt sign-in has just expired.
+-Adding a season or an episode to a personal list adds the series, since Trakt lists no longer show single seasons or episodes. The confirmation now shows the list name.
+[B][COLOR ff00fa9a]Version 1.0.94[/COLOR][/B]
+[COLOR fffdb515]Maintenance[/COLOR]
+-New Maintenance section at the end of Settings, with everything that keeps the add-on light in one place: see what it takes up on the device, Clean up now, automatic cleanup and the Clear options.
+-luc_kodi now tidies up after itself. When you leave the add-on it releases the source lists kept in memory, expired source results and temporary files, and checks what it has left on the device.
+-Artwork not shown for 1, 3 or 7 days, and the oldest artwork above a storage limit, is removed. The limit is set from the device storage (4%, between 400 MB and 2 GB, halved when the device runs short of space) or chosen by hand. Anything shown in the last two hours is never touched, and picture quality is never lowered.
+-Choose how it works: Ask me when there is something worth freeing (default), Automatically in the background, or Off. If Kodi is closed with a cleanup pending, it is finished after the next start.
+-The monthly cache tidy-up now also gives back the empty space inside the databases, and the add-on log is emptied when it grows beyond 10 MB. Your history, progress, lists, likes, learned source ranking and settings are never touched.
+[COLOR fffdb515]TV Networks[/COLOR]
+-TV Shows > Networks goes from 105 entries to 29, chosen by measuring every network: only networks with series airing now that people actually watch and that have sources to play. Streaming first, then the main US networks and cable channels, the UK channels and AT-X for seasonal anime.
+-New: Paramount+ and MGM+. Renamed services keep their older series: HBO Max also covers Max, Paramount+ covers CBS All Access, MGM+ covers Epix and AMC covers AMC+.
+-Networks picked for precaching that are no longer in the list are dropped, and old picks move to the network that now includes them. The full catalog refresh has 76 fewer lists to load.
+-New Tools > Test TV networks: checks every network against TMDb (series, series airing in the last two years, well-known ones) and flags closed networks or wrong IDs. The report is shown on screen, saved as network_audit.txt and written to kodi.log.
+[COLOR fffdb515]PunchPlay[/COLOR]
+-New sections in the PunchPlay folders of Movies and TV Shows: Collection, Favourites and My Ratings, the same as on your punchplay.tv profile.
+-Collection shows each title once, even when you own it in several formats or seasons, and My Ratings lists the movies and shows you have rated.
+[COLOR fffdb515]Sources[/COLOR]
+-Titles without an IMDb ID can now be searched by the providers that need one (AIOStreams, Torrentio, Comet, Torz, MediaFusion, Peerflix and others): the ID is looked up in TMDb and, for series, in TheTVDB before the search starts.
+-The log now shows why AIOStreams discarded each source (title, language, undesirables, seeders), with example names and the title it was looking for.
+[COLOR fffdb515]Fixes[/COLOR]
+-The automatic cleanup of unused artwork never removed anything, because Kodi rejected the request it made. Maintenance now does this job.
+-TheTVDB and TVmaze artwork is now counted in "See what it takes up on this device" and cleaned like the rest.
+-AIOStreams no longer sends a search with an empty ID when no IMDb ID can be found.
+[B][COLOR ff00fa9a]Version 1.0.93[/COLOR][/B]
+[COLOR fffdb515]TheTVDB[/COLOR]
+-TheTVDB now works alongside TMDb, TVmaze, Fanart.tv and your tracking services, for every series, with nothing to set up.
+-More sources for series numbered differently: when TMDb groups seasons differently from TheTVDB (split or merged seasons, parts), Knaben, The Pirate Bay, Easynews and Newznab also search the TheTVDB episode number, matched by air date. Anime is also searched by absolute number ("Show - 48").
+-Missing episode details: when TMDb has no title, plot, air date or picture for an episode, TheTVDB fills the gap, in your language when available. Nothing TMDb already has is replaced.
+-Series artwork: when TMDb has no poster or background, TheTVDB's is used.
+-New TheTVDB section in Settings > Accounts, with switches for both features and optional fields for your own TheTVDB key and PIN.
+[COLOR fffdb515]Faster menus[/COLOR]
+-Channel and studio logos in TV Shows > Networks and Originals now load from the Studio Icons - Coloured pack by Team Kodi instead of slow free image hosts. The Networks menu now opens in about 0.15 seconds.
+-Networks also uses the platform logos built into the add-on. SkyShowtime, whose old logo link was dead, shows its logo again, and Showcase (Australia) gets its own instead of Canada's.
+[COLOR fffdb515]Fixes[/COLOR]
+-Library: the TV source set up by the add-on now uses TheTVDB v4 when installed, or Kodi's built-in TMDb TV scraper, instead of the old TheTVDB scraper that stopped working in 2022.
+-Trakt: looking up a title by its ID no longer fails when Trakt lists a result of another type first.
+-Updating the add-on no longer logs an error when the catalog service was busy at that moment.
+[B][COLOR ff00fa9a]Version 1.0.92[/COLOR][/B]
+[COLOR fffdb515]AIOStreams[/COLOR]
+-Paid ElfHosted AIOStreams subscriptions can now be linked. These private instances put their own login in front of the account API, so UUID and password never reach AIOStreams there; the manifest URL is what works, and the wizard now links with it even when a UUID and password are also saved.
+-Re-detect no longer stops at "HTTP 401" on those instances. Debrid detected explains instead that the instance does not let apps read the account; your sources are not affected.
+[COLOR fffdb515]Fixes[/COLOR]
+-When only the instance address with UUID and password is given to such an instance, the wizard now says clearly to paste the manifest URL from the Save & Install page, rather than a bare "HTTP 401", and the password is no longer retried inside the address.
+-If the instance also blocks the manifest, the wizard says so plainly instead of a generic error.
+-The wizard no longer stops on unusual error replies from an instance, and the scraper log points custom-instance users to the manifest URL when it cannot sign in.
+[B][COLOR ff00fa9a]Version 1.0.91[/COLOR][/B]
+[COLOR fffdb515]AIOStreams[/COLOR]
+-Your own AIOStreams instance can now be used, such as a paid ElfHosted : choose Custom URL under Instance and enter its address, for example https://your-username-aiostreams.elfhosted.com, with your UUID and password.
+-Instead of UUID and password you can paste the manifest URL your instance gives you after saving the configuration, since it already carries your account. Configure page links and stremio:// links work too.
+-New AIOStreams Setup Wizard: link your account from a browser on another device, with no need for the Kodi keyboard. Whatever address or manifest URL you paste picks the instance by itself.
+-The account is checked against the instance before anything is saved: a wrong password, or an account that lives on another instance, is reported right away and names the instance that was asked, instead of silently returning no sources.
+-The wizard warns when your AIOStreams configuration offers no streams yet (no addons added, or all of them failing), which otherwise just shows up as zero sources.
+-New Debrid detected field with a Re-detect button: it shows which debrid services your AIOStreams account uses, read with your UUID and password. With only a manifest URL it cannot be read, and the field says so.
+[COLOR fffdb515]Fixes[/COLOR]
+-AIOStreams: after switching instance, the login of the previous one is no longer reused for the rest of the session, and the wizard refreshes it whenever you link an account.
+-AIOStreams configuration links shortened with an alias are now masked in the log like the rest.
+[B][COLOR ff00fa9a]Version 1.0.90[/COLOR][/B]
+[COLOR fffdb515]Fixes[/COLOR]
+-Real-Debrid filter brought up to date: it now follows the two rules Real-Debrid actually applies. Releases tagged AMZN, NF, DSNP, CR or WEBDL were hidden although Real-Debrid plays them, and they are back; BDRip, HDRip and DVDRip releases, which Real-Debrid refuses, no longer reach the list.
+-Next episode: after a season finale the add-on offers episode 1 of the next season instead of an episode that does not exist, and offers nothing when the next one has not aired or the series is over.
+-Rating on Trakt no longer needs the separate Trakt add-on: Rate and Unrate talk to Trakt directly, for movies, shows, seasons and episodes.
+-The source list showed subtitle languages as if they were audio. Flags from indexers are only taken as audio when the release name backs them up; when the file itself has been read and its tracks carry no language, the list says so instead.
+-Browsing is lighter on the metadata database: a title that is not cached yet no longer makes the add-on read the whole table.
+-If a trailer cannot be played, for example because it is blocked in your country, the next one is tried automatically.
+[COLOR fffdb515]Binge watching[/COLOR]
+-The next episode now plays with a source like the one you were watching: same quality, same HDR or Dolby Vision, same audio language, same release group, same scraper and debrid service. SDR stays SDR. If nothing matches, the usual order applies.
+-Its sources are loaded quietly in the background while you watch, so Auto-Play starts at once.
+[COLOR fffdb515]Trailers[/COLOR]
+-New Trailer language setting: the language of the Kodi interface (default)
+-On a series, the trailer of the season you are on comes first, and trailers now carry the plot and tagline for the skin to show.
+[COLOR fffdb515]Trakt and SIMKL[/COLOR]
+-Trakt: add to and remove from your favourites
+-New SIMKL Manager in the context menu: rate from 1 to 10, remove a rating, add to Plan to Watch and remove from your SIMKL lists.
+[COLOR fffdb515]Faster and lighter[/COLOR]
+-Source lists are stored compressed: about eight times smaller on disk, read much faster, and scrapers no longer queue behind each other to read them.
+-Devices with little memory keep a smaller source cache, and searches still running when Kodi closes no longer hold the shutdown.
+[B][COLOR ff00fa9a]Version 1.0.89[/COLOR][/B]
+[COLOR fffdb515]Audio languages in the source list[/COLOR]
+-Each source now starts its line with the audio languages it carries: CAST, LAT, EN, FR and so on. Spanish from Spain and Latin American Spanish are told apart whenever the release says which one; when it only says Spanish, it shows ES rather than guessing.
+-The languages come from the release name and from what the scrapers already send: the flags from Torrentio, Comet, MediaFusion and Peerflix, and the audio languages Easynews reports. Those were being received and thrown away. When the same torrent arrives from several scrapers, what any of them says counts for all of them.
+-A language marked as subtitles, such as ITA.SUB, is not shown as audio.
+-Choose a preferred audio language in Settings > Source Options > Audio languages. It is listed first on every source and highlighted, so a Spanish or French version stands out without reading the whole line.
+[COLOR fffdb515]The real audio tracks, read before playback[/COLOR]
+-Before a source plays, the add-on reads the track list inside the file itself: language, codec, channels, and which track is a commentary or an audio description. This is what the file really contains, not what its name claims.
+-It reads the start of the file that the playback pre-flight has already downloaded, so it costs no extra request. With the pre-flight switched off, it downloads 1 MB. Files whose track list sits further in need one short extra request.
+-Works with MKV and MP4.
+-The tracks appear when playback starts. If your preferred language is not in the file, you are told at once. A Spanish track that does not say which Spanish is not reported as missing Castilian, because it may well be.
+-A source that has already been read shows its real tracks in bold in the list the next time it appears, in place of what its name declared.
+-Reading the tracks never blocks or skips a source, and anything it cannot read is simply left out.
+[B][COLOR ff00fa9a]Version 1.0.88[/COLOR][/B]
+[COLOR fffdb515]SIMKL: new sign-in[/COLOR]
+-SIMKL has a new sign-in system and will retire the old one around April 2027. New sign-ins now use it: an eight-character code, plus a QR that already carries the code.
+-Already signed in? Nothing changes. A Reconnect SIMKL button in Tracking Accounts moves you over with one code, keeping your history.
+-The new sign-in renews itself in the background, so you are not asked again unless the device goes unused for six months or you remove it from SIMKL's Connected Apps.
+-Deauthorizing now also withdraws access on SIMKL's side, and you are told at once if SIMKL grants read-only access.
+[COLOR fffdb515]SIMKL: fixes[/COLOR]
+-SIMKL now limits daily requests per user. The playback keep-alive runs every five minutes instead of ninety seconds, and when the daily allowance runs out the add-on waits for the reset instead of stalling playback.
+-Trending Today, This Week and This Month load from SIMKL's public lists: no account needed and no allowance used.
+-Stopping something SIMKL already marked as watched is no longer reported as a failure.
+-Exported logs hide the new SIMKL tokens.
+[B][COLOR ff00fa9a]Version 1.0.87[/COLOR][/B]
+[COLOR fffdb515]All four tracking services in one place[/COLOR]
+-Trakt, SIMKL, PunchPlay and MDBList now share a single Settings section called Tracking Accounts, the way the debrid services share Accounts. Each keeps its own block and its own settings; what changes is that they are no longer spread across three separate sections with MDBList tucked away among the metadata keys.
+-Every setting kept its value. Nothing needs signing in again.
+-SIMKL's account field was labelled "Trakt Username". It now says SIMKL, and the MDBList rows have proper labels instead of text typed straight into the settings file.
+[COLOR fffdb515]The trailers settings say what they are for[/COLOR]
+-That section was headed simply "Trailers", in the same grey as the text below it, so it was easy to miss what the settings underneath actually did. It is now headed Play Trailers, in the same colour as the other section headings.
+-The line beneath it was long enough that Kodi cut it off with an ellipsis, right where the useful part was. It is now short enough to read in full; the setting it described is handled by the automatic setup button two rows below.
+[COLOR fffdb515]Section headings look the same everywhere[/COLOR]
+-The service names heading each block were in three different styles: some coloured, some plain, and some typed straight into the settings file. Trakt, SIMKL and PunchPlay were green while MDBList, Premiumize.me, Real-Debrid, All Debrid, TorBox and Easynews were not.
+-All nine now share one colour and one weight, in Tracking Accounts and in Accounts alike.
+-The sub-sections inside the Trakt block stay uncoloured, since they name parts of Trakt rather than services of their own, but they now match each other.
+[B][COLOR ff00fa9a]Version 1.0.86[/COLOR][/B]
+[COLOR fffdb515]PunchPlay.tv is now the fourth tracking service[/COLOR]
+-PunchPlay joins Trakt, SIMKL and MDBList, and like them it stands on its own: nothing it does depends on having any of the other three switched on.
+-Sign in from Settings > PunchPlay with a code and a QR, the same way the other services work. The QR comes from PunchPlay itself rather than an outside generator, so the sign-in code never leaves the device on its way to somebody else's server.
+-The add-on is registered with PunchPlay as a public client. It carries an application ID and no secret, because a secret inside a downloadable add-on is not a secret.
+[COLOR fffdb515]Live scrobbling, through every stage of playback[/COLOR]
+-PunchPlay accepts five playback events where the other services accept three, and all five are reported: the start, a heartbeat while the film runs, a real pause, a real resume, and the stop.
+-Pausing on the sofa shows as paused on the site, and picking it up again shows as watching. The heartbeat reports progress rather than a pause, so the account does not sit there reading as paused for the whole film.
+-Whether something counts as watched is decided by PunchPlay itself, against a threshold you set in the add-on, so there is one rule in one place.
+-If PunchPlay is unreachable, progress is kept on the device and sent when the service comes back, with the time each report originally happened. A network outage no longer costs you your place in a film.
+[COLOR fffdb515]Your lists, your history, where you left off[/COLOR]
+-A PunchPlay folder appears under Movies and under TV Shows: Watchlist, My Lists, Continue Watching, Community Lists and Open List by ID or URL. Films also get Watch History; shows get Next Episodes and My Calendar.
+-Continue Watching reads exact positions and hands them to Kodi as resume points, so a title picked from that menu starts where it stopped.
+-Next Episodes answers a different question and comes from a different place: not where you are inside a file, but which episode of a series is up next.
+-My Calendar lists upcoming airings for the shows you follow, read straight from PunchPlay rather than rebuilt from elsewhere.
+-Community Lists shows what PunchPlay is featuring, no account needed. Each list appears in the menu where most of its titles belong, so a list of shows does not turn up among the films. Open List by ID or URL reaches any other public list.
+-Trending and Popular sit directly in the Movies and TV Shows menus, and need no account either.
+[COLOR fffdb515]Source list[/COLOR]
+-The grey marking the row you are on is lighter, so it stays visible against the paler rows such as CAM. It is worked out by the same colour rule as the rest of the card, not typed into the skin, so both skin sizes stay in step.
+[B][COLOR ff00fa9a]Version 1.0.85[/COLOR][/B]
+[COLOR fffdb515]Dynamic range now reads as one thing in the source list[/COLOR]
+-A file that carries a Dolby Vision layer over an HDR10 base was writing HDR and DOLBY-VISION as two separate pieces with a bar between them. That is the same fault the audio block fixed: they are not two things. They are one - the dynamic range of that file, which happens to have two layers - and they are now written as one.
+-The order runs from least to most capable, so the row ends on the best that file can do, and the fallback is named first: on a device without Dolby Vision, HDR10 is the part that matters. Dolby Vision on its own stays alone, because a profile 5 file has no HDR10 fallback and saying otherwise would be a lie.
+-HDR10+ no longer names its own base. There is no HDR10+ that is not also HDR10, so writing both said the same thing twice. Two spellings of the same format in one name also collapse into one label instead of appearing twice.
+-A name that declares SDR and HDR at once contradicts itself. The impossible half is dropped rather than printed as a pair that means nothing.
+-The profile and the layer stay outside the block. DV-P5, DV-P8 and FEL/MEL are the only highlighted items in that row, and for a reason: they decide whether the device can play the file at all. Inside the block they would lose both the accent and the leading position. Bit depth stays outside too - next to HDR it is redundant, but on an SDR file it is real information, and a 10-bit SDR encode is a common thing to meet.
+[COLOR fffdb515]Inside a block, a dot instead of a bar[/COLOR]
+-The vertical bar separates different things in the row. Inside a block there are no different things, so marking it with the same stroke said two different things with one sign. Inside it is now a dot: HDR10+ DOLBY-VISION, DTS-MASTER AUDIO TRUE HD (5.1).
+-The dot is the Latin-1 middle point, which every interface font carries. The add-on ships no fonts of its own, so the glyphs available are whichever the user's skin provides, and the more decorative candidates are exactly the ones that come out as empty boxes on a stripped font. It is set in bold, which is the only control a Kodi label has over how heavy a character lands, and puts it about a quarter thicker than plain.
+[COLOR fffdb515]Fixed: on a 4K interface the rule was measuring against the wrong background[/COLOR]
+-The window backdrop is the fanart over black, faded to 25%. In the 2160p skin set that fade had been doubled to 50%, because the generator treats every number as a screen measurement - but the end of a fade is opacity, and opacity does not scale with resolution. The real backdrop was (61,61,61) there instead of (31,31,31).
+-Everything the colour rule computes for that window is measured against that backdrop, so on a 4K interface all fourteen checks - the quality bar, the quality icon and the poster frame, plus the breakdown header - were sitting below their floor. The header fell from 4.6 to 3.0 against a floor of 4.5. Nothing reported it, because the rule was reading the value from the 1080 set.
+-The same fault was one control away: the clearlogo zoom ended at 180% instead of 90%, so on a 4K interface the logo was drawn at double size, ran off the top of the screen and covered the first row and a half of the list. Zoom values are percentages too.
+-Both are back to the master's values. Sweeping all twenty skin windows for fade, zoom and rotate animations, these were the only two that differed between the sets; everything else flagged was a slide, where doubling is correct.
+[COLOR fffdb515]The focused card is darker, and the rule decided how much[/COLOR]
+-The focused card was a mid grey typed by hand into four places across the two skin sets. On that paper the rule had to push the routine ink up to a near white, repeated the whole length of the line, just to reach the contrast floor. That is the glare that stings in a dark room.
+-It is now darkened by the smallest amount that makes it a different paper rather than the same one slightly dirty: the same measurable distance the rule already demanded between two colours of the same family. That works out at 34%.
+-Because the floor is reached sooner on darker paper, and the rule always takes the dimmest tone that passes, the text does not get brighter - it gets softer. The routine grey drops by a full step and still clears 4.0 against every card and every service tint, checked across all 56 combinations.
+-The grey the skin paints and the background the ink is calculated against are now literally the same number: the colordiffuse comes from the rule instead of being written into the XML.
+[B][COLOR ff00fa9a]Version 1.0.84[/COLOR][/B]
+[COLOR fffdb515]Colour in the source list is now decided by a rule, not written by hand[/COLOR]
+-Every colour in this window used to be a hex value typed somewhere: six for quality in the window code, the same six again in the poster frame, thirteen PNG files with the colour baked in, six for the debrid services, plus a fixed salmon for rare tags and a fixed aqua for the pre-flight figure. Over twenty places for what are really two families - and they had already drifted apart, with the 720p bar a different orange from its own card and the SCR bar a different red from its own.
+-What is stored now is one hue per concept. The role that hue plays - ink, surface or signal - and the background it actually lands on decide everything else, each time a row is drawn. The poster frame, the quality bar, the quality icon and the row text all come from that single table, so they can no longer disagree with each other.
+[COLOR fffdb515]The three conditions the rule has to meet[/COLOR]
+-Legibility: any text colour must reach 4.0 contrast against the real composited background - window backdrop, quality card at 23.5%, debrid tint along its gradient - and not against a theoretical black.
+-Comfort: of every tone that passes, the rule takes the dimmest rather than the brightest, and saturation is capped. The 4K cyan and the 720p amber sat at full saturation, which is what stings in a dark room.
+-Identification: two colours in the same family must stay a measurable distance apart. Where two collide the rule reports it instead of quietly rotating a hue, because rotating the 4K cyan without saying so would be changing a design behind its author's back. The one collision found this way - 4K against SD, both in the same blue sector - is resolved by a declared exception that takes chroma off SD rather than moving either hue.
+[COLOR fffdb515]Fixed: text was being painted in the colour of its own background[/COLOR]
+-The card is tinted with the colour of the service that resolved the source, and the service name was then written in that same colour on top of it. On a Real-Debrid row that measures 1.74 contrast, which is not readable at all. Surface and ink are now two separate values, the second computed against the first.
+-The focused row had the same fault from the other side: its card is mid grey and its text near black, which caps at 2.69 contrast however dark the text goes. No shade of dark ink can fix that, so the rule resolves the focused row to light ink.
+-The focused row's tint was built from a substring expression that left seven characters of an eight-character colour, so it had never been a valid value. It has its own property now.
+[COLOR fffdb515]The second row is down to two inks[/COLOR]
+-Rare tags and the pre-flight bitrate no longer carry fixed colours of their own. Both take the accent of the row they sit on, which comes from the service that resolved that source - because that is what a row is. A row now holds an accent, a routine grey and a separator.
+-The separator was full-saturation amber repeated six times per row, and was the loudest thing on the line. It is neutral now, and sits below the routine grey on purpose: it is punctuation, not information.
+-Labels such as SCORE and SEEDERS were inheriting a brighter default colour than the values they label. They now match.
+[COLOR fffdb515]Several audio tracks in one name are now one block, not two[/COLOR]
+-A release carrying both DTS-HD MA and TrueHD was written as DTS-MASTER AUDIO (5.1) | TRUE HD - the channel count on the first track and the second one left stranded behind a bar, as though the two had nothing to do with each other. They describe one file's audio, so they are written as one thing: DTS-MASTER AUDIO/ATMOS-TRUE HD (5.1).
+-Putting the channel count at the end of the whole block is also the more truthful place for it. A release name declares one channel count, not one per track. Attached to the first codec it claimed that track is 5.1 and said nothing about the rest; at the end of the block it says what the name actually says, which is that the audio is 5.1. What this still will not do is invent a count per track that the name never gave.
+[COLOR fffdb515]Fixed: Atmos was being credited to the wrong codec[/COLOR]
+-Atmos is a Dolby extension. It rides on TrueHD or on Dolby Digital Plus, and never on DTS. The row was attaching it to whichever codec came first in the list, so a name declaring DTS-HD MA, TrueHD and Atmos together produced ATMOS-DTS-MASTER AUDIO - crediting DTS with something that is not its own.
+-It now attaches to the Dolby track that carries it, preferring TrueHD over Dolby Digital Plus when a name declares both. A name that claims Atmos with no Dolby codec under it gets Atmos as its own entry in the block rather than bolted onto whatever happened to be nearby.
+[COLOR fffdb515]Scope[/COLOR]
+-This covers the source results card and the poster frame beside it, and nothing else. The add-on's green identity colour is deliberately outside the rule.
+[B][COLOR ff00fa9a]Version 1.0.83[/COLOR][/B]
+[COLOR fffdb515]The source list now reads the rare things a release name declares[/COLOR]
+-A release name is the only thing known about a file before it plays, and the add-on was reading everything in it except the parts that matter most to anyone who cares about them.
+-Now read: AV1; the Dolby Vision profile and layer when the name states it (P5, P7, P8, FEL, MEL, hybrid); 10-bit; and 50 or 60 frames per second. AV1 had a badge, a skin rule and a ranker feature already, but nothing was writing the tag for them to find.
+-These are the ones drawn in the accent colour, and that is the point of them. Not every device plays profile 5, and plenty cannot handle AV1 at all - the name says so, but it says so in the middle of forty other characters and it gets missed. Now it is the first thing on the row.
+-What this cannot do, said plainly: FEL lives in the file's RPU, not in its name. A name that stays quiet cannot be confirmed or contradicted from here. This reads what the name claims, and nothing more.
+[COLOR fffdb515]Audio is written as one thing, because it is one thing[/COLOR]
+-Atmos over TrueHD in 7.1 used to occupy three separate slots divided by bars, as though unrelated. It now reads ATMOS-TRUE HD (7.1), with DD+ as DOLBY DIGITAL PLUS, DTS-HD MA as DTS-MASTER AUDIO, and the channel count in the form people actually say - 7.1, 5.1, 2.0 - rather than 8CH or 6CH.
+-Audio stays in ordinary grey. It belongs on the row as information, not as something demanding attention.
+[COLOR fffdb515]Three ways of writing things that were being missed[/COLOR]
+-HDR10P, with no plus sign, was being read as plain HDR and the distinction was lost. DDPA - Dolby Digital Plus with Atmos, written without a break - was recognised as neither, leaving the channel count stranded with no codec to belong to.
+-And HDR10+ could never be detected by the DMM provider at all: the name clean-up pass replaces every non-alphanumeric character with a full stop, so the plus sign was gone before anything looked at it. DMM was the only one of eighteen scrapers not calling the reader that works on the untouched name.
+[COLOR fffdb515]Unusual tags come first on the row[/COLOR]
+-The source list only scrolls the row you have highlighted; every other row has its text cut off at the edge. Anything sitting at the end of a long line did not exist until you landed on it, which is exactly where the rarest tags were ending up. They are moved to the front now.
+-Nothing is filtered, hidden or reordered by any of this. The list holds what it always held, in the same order.
+[COLOR fffdb515]The icon strip no longer depends on how the row is worded[/COLOR]
+-Flag images were drawn by matching text against the same string the row displays, so wording and icons were silently tied together and renaming a tag for readability would have switched icons off with no error. The raw tags now live in their own property and the skin matches against that.
+[B][COLOR ff00fa9a]Version 1.0.82[/COLOR][/B]
+[COLOR fffdb515]Artwork quality is two clear choices now[/COLOR]
+-Auto is gone from the settings. It worked out the right size from Kodi's storage limit, a number buried in a file most people have never opened, so two devices with the same screen could end up asking for different things with no way to tell why. Worse, when that limit fell between two of TMDb's sizes, Auto had no choice but to jump to the full-size original: a one megabyte file downloaded and decoded to keep three hundred kilobytes.
+-In its place: Standard, where you pick each of the three yourself - posters at w500 or w780, fanart at w1280 or original, episode thumbnails at w300 or original. Or Maximum, which is everything at original size. There is no middle step to offer in fanart or thumbnails because TMDb publishes nothing between w1280 and original, or between w300 and original, but the two ends are a real choice and they are yours to make.
+-Neither profile looks at your screen, and that is deliberate. The 1080 and 4K screens the add-on carries are its own dialogs and they switch at 2160 pixels tall, so they say nothing about what a panel can actually draw - a tablet running at 2800x1752 uses the 1080 set and still draws a 1752 pixel poster. Tying quality to that would promise a match that does not exist. If you want Standard on a 4K TV that is your call, and if you want Maximum on a small screen that is your call too.
+-The display test is where you find out whether your choice suits you. It now says plainly when Standard is too small for a 4K panel, when you are downloading more than Kodi will keep, and when your storage limit has room you are not using. It tells you; it does not decide for you.
+-Anyone on Auto today lands on Standard, which is the intended replacement. Anyone on Original stays where they are.
+[COLOR fffdb515]Alternate poster rotation actually works now[/COLOR]
+-Two functions were being called that had never been written. The poster rotation one sat inside a silent catch, so rotating between TMDb's alternate posters has never worked in any release - it failed on every title without leaving a trace in the log. The English title one was not protected at all and would break a title's details outright when Prefer English titles was on with the interface in another language. Both are now implemented, working off data the add-on already receives, so there is not one extra request.
+-English titles are worked out the reliable way first: when a film or show is originally in English, its original title is the English one. Only when it is not does it fall back to alternative titles, and there it accepts only US and UK entries and ignores working titles and DVD titles, which are not what a film is known by.
+[COLOR fffdb515]Artwork cleanup on a schedule that stays out of the way[/COLOR]
+-The cleanup used to check the moment the service started and then hourly, on a fixed seven day rule. If the seventh day happened to land on a start-up, it began deleting right on top of the catalogue refresh.
+-Now the first pass waits half an hour after start-up, by which time the catalogue has been done for a very long time, and then repeats once a day for as long as Kodi stays open. It covers posters, fanart and stills, and it runs without a word.
+-How long artwork has to go unused before it goes is now yours to set: one, three or seven days. Seven stays the default so nobody's behaviour changes without being asked.
+-It still stops the instant you start watching something. It now also skips the rows Kodi keeps for artwork it never actually downloaded - on a home screen full of widgets there are thousands of those, and asking about each one was most of the cost of a pass. There is a cap per pass so a large backlog is spread out rather than run as a marathon, and the log records how many went, how many megabytes came back and how long it took.
+-Worth knowing: artwork is deleted by when it was last used, not by when it arrived. Posters on your home screen and in the lists you open daily refresh that date every time, so they are never touched. What goes is the tail of things looked at once and never opened again.
+[B][COLOR ff00fa9a]Version 1.0.81[/COLOR][/B]
+[COLOR fffdb515]The add-on decides how your content is laid out, not the skin[/COLOR]
+-Films, shows, seasons and episodes were only pushed into a poster wall on Estuary and Confluence, because those were the only two view numbers written into the code. Every other skin was left to its own default, usually a plain list, which is why the add-on looked like a different add-on depending on the skin.
+-The wall is now read out of the skin itself instead of being guessed, so it works on any skin. Checked against Estuary, Estuary MOD V2, Confluence and Aeon Nox: SiLVO, each of which uses a different number for the same layout. The answer is remembered, and if a skin tries to put its own view back a moment later it is set again.
+-You stay in charge. Set Add-on View under Tools still wins over everything, and that screen now opens in the view you already have rather than the one the add-on would impose. There is a switch in settings to turn the whole thing off.
+[COLOR fffdb515]Trending and Popular are ready before you open them[/COLOR]
+-Trending and Popular are the first two entries in Movies and TV shows and neither was ever precached, because they come from Trakt and the start-up refresh only spoke to TMDb. Both are warmed up now. Meanwhile the refresh was spending its time on two film lists the menu does not even show, so every list is now precached only if its menu entry is switched on.
+-Start-up work comes in three parts. First, on its own: Trending, Popular, In Theaters and the platforms and channels you picked by hand. Then in the background, capped at thirty seconds: Top Rated, Upcoming, Box Office, Airing Today and On The Air. Last, the weekly rota over everything you did not pick, which now runs at every start-up.
+-The first part no longer shares its time allowance with the other two, so a slow night for TMDb can trim the background work but never what you see first. Widgets refresh as soon as that first part is done. Measured on an Android tablet: twenty-five lists ready in under five seconds.
+[COLOR fffdb515]The background artwork queue no longer falls behind[/COLOR]
+-Lists appear quickly because the finishing touches - channel logos, alternative posters - are filled in afterwards, a few titles at a time. On a home screen built out of add-on widgets that queue grew about as fast as it was emptied and could sit in the hundreds indefinitely. It now works on four titles at once in larger batches and comes back every ten seconds while there is a queue. A backlog of seven hundred titles that previously never cleared is now gone in under four minutes.
+-It still stops the moment you start watching something, and it still steps back to its normal pace when nothing is being completed, so an outage cannot turn it into a loop.
+-The rota over the remaining platforms and channels was only allowed to run once that queue was completely empty, which on a busy home screen meant never. It keeps its own schedule now.
+[B][COLOR ff00fa9a]Version 1.0.80[/COLOR][/B]
+[COLOR fffdb515]Streaming and Networks no longer crawl[/COLOR]
+-Movies > Streaming and TV shows > Networks were the only lists in the add-on left out of the catalogue precache. Every time a widget built from one of them came up cold it asked TMDb for the list and then for a full record of all twenty titles, one after the other. Both sections can now be precached like Popular or Top Rated: pick up to ten platforms and ten channels in settings and they are ready before you open them.
+-Everything you did not pick can be kept fresh on a rota. Each platform and channel is renewed once a week - or every three, fourteen or thirty days, as you prefer - so what you find in them has moved on since the last time, without any of it being fetched while you wait. A pass only looks at what is actually due: anything still fresh is skipped without touching the network.
+-Background work now runs against a clock. Thirty seconds by default, and when the time is up the pass stops where it is and the next one carries on from there, so a slow night for TMDb can no longer turn a start-up refresh into a long one. The Update Catalogue button in Tools ignores the clock and always finishes the job.
+-Opening any list used to start one download per title with nothing holding them back, so twenty heavy requests left at once and fought each other for the connection. The same work is now spread over ten at a time. Nothing is dropped, it simply stops arriving all in one burst.
+[B][COLOR ff00fa9a]Version 1.0.79[/COLOR][/B]
+[COLOR fffdb515]Trakt now shows what you are watching, while you watch it[/COLOR]
+-The add-on only ever spoke to Trakt when playback stopped, so trakt.tv never showed the film or episode you had running. It now sends the start of playback as soon as the video is up, and your profile shows it as watching, with the progress bar moving on its own.
+-Resuming after a pause tells Trakt you are watching again, so the site follows a paused-and-resumed session correctly.
+-Pausing now saves your position to Trakt straight away, instead of waiting for you to stop. That position is what feeds Continue Watching on the site and on your other devices.
+-Leaving a video by skipping to the next item in a playlist, or by closing Kodi mid-playback, used to tell Trakt nothing at all and lost the whole session. Both now save your position on the way out.
+[COLOR fffdb515]Fixes to how Trakt is told about a playback[/COLOR]
+-Starting a video used to delete your saved Trakt position before anything was written back, so stopping early left you with nothing. Trakt clears that position itself when playback starts, so the separate delete - and the busy spinner it flashed over the start of the video - is gone.
+-An episode was identified to Trakt by its TVDb number alone. A show without one failed silently. All the identifiers the add-on holds are now sent together, as they already were for SIMKL.
+-A film or episode could be recorded twice in your Trakt history for a single viewing, because two independent parts of the add-on were both marking it watched. Only the scrobble does it now.
+-Trakt answers with a conflict code when the same item was just recorded. That was being read as a failure, which skipped the local tidy-up and put a false error on screen. It is now understood for what it is.
+-The scrobble failure notice ignored the notification toggle and appeared even with notifications turned off.
+[COLOR fffdb515]Quiet scrobbling for MDBList[/COLOR]
+-MDBList had a switch for its scrobble notification, but it was never shown in settings, so turning the notification off meant turning scrobbling off with it. The switch now sits under MDBList scrobbling, the same way Trakt and SIMKL have had it: your viewing still reaches your account, without the pop-up over the video.
+[COLOR fffdb515]Also[/COLOR]
+-Every Trakt scrobble now leaves a line in the Kodi log with the server's reply code, whether or not debug logging is on. Until now this part of the add-on was completely silent, and a scrobble that never left the device looked exactly like one that worked.
+[B][COLOR ff00fa9a]Version 1.0.78[/COLOR][/B]
+[COLOR fffdb515]The service no longer crashes on the way out[/COLOR]
+-If Kodi asked the add-on to stop before its service had finished starting - which is what happens when Kodi is shutting down, and also during the add-on reload the new update channel performs - the shutdown routine referred to threads that had never been created, and the service ended with an error in the log instead of quietly.
+-The handles are now in place before anything starts, so the shutdown path is the same whether the service ran for hours or for no time at all.
+[COLOR fffdb515]Credentials stay out of sight[/COLOR]
+-The TMDb authorisation dialog printed your password on the screen next to your username. It now confirms the account by username only.
+-The TMDb and AIOStreams password fields are masked in settings, like every other password field.
+-Easynews attaches its sign-in to the end of the playback address rather than sending it as a header, and that address was written to the log in full when debug logging was on. It is now masked before it is written, as are any credentials carried in the address itself.
+[COLOR fffdb515]Also[/COLOR]
+-AllDebrid stopped writing its access details to two settings names the add-on no longer declares. Kodi discarded those writes anyway, and each one threw away the settings cache on the way past. Reading them, so an old install can still be migrated, is unchanged.
+[B][COLOR ff00fa9a]Version 1.0.77[/COLOR][/B]
+[COLOR fffdb515]Add-on updates, from inside the add-on[/COLOR]
+-New Updates section in settings. luc_kodi can now see a new official build in the repository and offer it to you directly, instead of waiting for Kodi to refresh its repository metadata on its own schedule.
+-Only official builds are published to this channel. Test builds are never announced, so an update offered here is one that has been through a full round of testing.
+-Choose when to look: on Kodi start, every 6, 12, 24 or 48 hours, or only when you press the button. Turning the whole thing off is one toggle.
+-"Not now" is remembered for that release, so the same version is not offered again at every start. A later version asks again, and checking by hand always asks.
+[COLOR fffdb515]How the update is installed[/COLOR]
+-Nothing installed is touched until the replacement is downloaded, checked against a published sha256, unpacked and verified on disk. If any step fails - a cut connection, a wrong checksum, an incomplete package - the update is abandoned and your working version carries on untouched.
+-The old copy is set aside rather than deleted, and is only removed once the new one is in place. If the swap itself fails, the previous version goes straight back.
+-A package that does not contain this add-on, or that does not carry the version the repository claims, is refused. So are archives with paths that point outside the destination.
+[B][COLOR ff00fa9a]Version 1.0.76[/COLOR][/B]
+[COLOR fffdb515]DMM: search works again[/COLOR]
+-Debrid Media Manager rebuilt its authentication on 31 August 2026 and closed the grace period for the old scheme the same day. The add-on was still signing its requests the previous way, in code, so from that date every DMM search was answered with "Authentication error". It now asks the site for a token, which is how the site's own pages have done it since the change.
+-The token is fetched once and reused for two minutes against a five minute life, so it costs no request in practice, and the DMM search and the Real-Debrid cache check share one rather than each obtaining their own.
+-A refused token is renewed once and the request retried. That covers both a token running out mid-search and the site rotating its signing key underneath a running search.
+-Your device clock no longer comes into it. The old scheme stamped the token locally, so a clock more than five minutes out was enough to be turned away.
+[COLOR fffdb515]Real-Debrid: cached results are back[/COLOR]
+-This is where the damage was. Real-Debrid retired its own availability endpoint in November 2024 and the add-on has checked what is cached through DMM ever since. With DMM refusing every request, that check came back empty and every torrent result was dropped before it reached the list - so with cache checking on, which is the default, a Real-Debrid setup was seeing no torrent sources at all, no matter which scraper found them.
+-Availability problems were being logged at the wrong volume. The level was passed into the argument that names the caller, so entries meant to stay quiet went into the log at full level instead.
+-A malformed IMDb id no longer spends a request the server would refuse anyway.
+[COLOR fffdb515]Also[/COLOR]
+-Titles DMM has never seen usually answer on the spot now. Rather than only queueing an unknown title, the site fills an empty first page from a fast source first, so "not indexed yet" is much rarer than it was.
+-Deep search takes its label from the language file, like the rest of the settings.
+-The old signing routine is gone from the package rather than left in place unused.
+
+[B][COLOR ff00fa9a]Version 1.0.75[/COLOR][/B]
+-TorBox: your account key can no longer end up in the log.
+[COLOR fffdb515]TorBox: account info[/COLOR]
+-The TorBox account info entry never appeared in settings.
+[COLOR fffdb515]TorBox Usenet search[/COLOR]
+-TorBox reserves Usenet search for its Pro plan.
+-The plan is now checked once and the search is skipped when it is not included, with a plain line in the log saying so.
+[COLOR fffdb515]Provider test[/COLOR]
+-The TorBox Usenet provider now declares the server it depends on, so the host column reports whether that server answered instead of showing a dash.
+-It is also listed as a provider that uses credentials, which is what makes the config column say something rather than nothing.
+[COLOR fffdb515]Skip intro[/COLOR]
+-No more skipping backwards. A mistagged segment could move playback to an earlier point, which looks exactly like the player having frozen.
+-No more skipping when there is nothing to gain. Below a few seconds the jump is invisible but the picture still stutters, so it is not worth making.
+-Segments shorter than fifteen seconds are discarded. An eleven-second intro on a forty-five minute episode is bad catalogue data, not an intro.
+[COLOR fffdb515]Fixes[/COLOR]
+-Sources are no longer lost to a helper module that is not shipped. When a server answered with Cloudflare protection, the add-on tried to load a module that does not exist in the package. The attempt failed every time, left an error trace in the log, and - the part that mattered - swallowed the fallback method the add-on already has for exactly that case. Availability is checked once now, and the request falls through to the fallback instead of being dropped.
+[B][COLOR ff00fa9a]Version 1.0.74[/COLOR][/B]
+[COLOR fffdb515]Artwork quality: two options, and they mean something[/COLOR]
+-The setting is Auto and Original, and stays that way. Low, Medium and High are gone for good: they were three fixed sizes that ignored both your screen and Kodi's storage limit, so raising the limit did nothing for them and the display test ended up offering those users an improvement it could not deliver.
+-Auto starts at 1080 and follows your panel. A 1080p set gets 1080, a 1752-pixel tablet gets 1752, and a 4K panel gets 2160 even when the interface is capped to 1080p by software - the artwork is then already cached at the size the panel can show.
+-Original is 2160, the maximum worth keeping: it fills a 4K screen and it is the real ceiling of TMDb fanart. The old 3000 was margin no screen can draw, at twice the video memory per texture.
+-Your previous choice is now actually carried over. The migration lived in a branch that could never run, because an enum declared with a default never reads back empty, so everyone upgrading landed on Auto in silence. It now runs once at update time, like the Gemini model migration, and it clears the settings cache afterwards.
+[COLOR fffdb515]Display test[/COLOR]
+-On a 1080p screen with Auto, the report now says plainly that everything fits and that Original is there if you want artwork beyond what this panel shows.
+-The Original recommendation names both limits it is about to write, and says what they cost, instead of explaining one and writing two.
+-"Stored under a smaller ceiling" is measured against the limit you actually have, not a fixed number, and per shape: a 1920x1080 fanart on a 1080p panel is no longer reported as cut down. Posters and fanart are quoted separately, as the report rows already did.
+-The limits are written to, and read from, Kodi's master profile, which is where Kodi loads advancedsettings.xml from.
+-An advancedsettings.xml whose root tag is self-closed used to be reported as written when nothing had been written. It is expanded first, and the result is verified before saving.
+[COLOR fffdb515]Disk footprint and cleanup[/COLOR]
+-The weekly artwork cleanup no longer depends on poster rotation, which ships switched off - turning rotation off silently stopped the only automatic texture cleanup the add-on has. It is its own setting now, and it also covers fanart.tv artwork, which was counted but never cleaned.
+-The disk footprint report was looking for three databases that do not exist, including the largest one the add-on has. The list is now built from the add-on's own paths, so it cannot drift again.
+[COLOR fffdb515]Fixes[/COLOR]
+-A setting written by the add-on is visible immediately to the add-on. The cached settings dictionary was not being invalidated on write, which could make the weekly cleanup believe it was due every hour.
+[B][COLOR ff00fa9a]Version 1.0.73[/COLOR][/B]
+[COLOR fffdb515]Artwork quality[/COLOR]
+-Auto and Original.
+-Original means the maximum . The display test proposes the true ceiling for Original (3000 for posters, 2160 for fanart) instead of the panel height, so the option does what its name says.Auto is unchanged and still follows the screen
+[COLOR fffdb515]Disk footprint[/COLOR]
+-New:Tools,Cache Functions "See what it takes up on this device". Reports what the add-on has left behind - artwork by group with image counts and real file sizes, plus the add-on's own databases - and lets you release any group. Kodi never clears its texture cache by itself, and with quality on Original each title leaves roughly three times what it used to.
+-Deletion goes through Kodi's Textures.RemoveTexture API, never by writing to Textures13.db, so the database and the files stay in step while Kodi is running. Only artwork from this add-on's own providers is counted or removed; Kodi library art, other add-ons and skin textures are never touched.
+[COLOR fffdb515]Source list performance[/COLOR]
+-The list opens immediately. Ratings were fetched on the critical path - up to three HTTP requests in a row, after the busy dialog closed and before the window appeared - so a cold title left the screen blank for as long as the network took. They now fill in from a background thread: 900 ms down to 0.3 ms on the bench.
+-Settings are no longer re-parsed once per source. control.setting() parses the whole 13.5 KB settings blob on every call; scoring and the pre-flight advisory did that hundreds of times to read a handful of constants.Scoring 150 sources went from 450 reads to 2, building the list from 373 to 75.
+-Row properties are sent in one call instead of 35: 150 crossings of the Python/C bridge instead of 5,250, and unused badge slots are no longer written as empty strings.
+[COLOR fffdb515]Fixes[/COLOR]
+-Next-episode dialog: the episode thumbnail now appears on 1080p too.
+[B][COLOR ff00fa9a]Version 1.0.72[/COLOR][/B]
+[COLOR fffdb515]Storage limits[/COLOR]
+-The limit the display test writes is now worked out from your screen instead of two fixed numbers. The poster panel is always 0.675 of your screen height and the background fills it entirely, so the right limit can be calculated rather than guessed.
+-Every device now gets the real height of its own panel, with a floor of 1080 and no invented ceiling. A 1080p set gets 1080 and never less; a 1752-pixel tablet gets 1752 instead of being rounded down; a device with a 4K interface gets 2160 and is never offered anything below it.
+-On a 1080p screen the test no longer proposes a 2160 background limit. That was asking Kodi to store a 3840x2160 image, around 32 MB of video memory instead of 8, to draw it on a screen that can only show 1080.
+-On a device whose interface is capped to 1080p while the panel outputs 4K, the panel decides. You will not see the difference while the cap is on, but the artwork is already cached at the right size for the day you lift it.
+-The 3000-pixel limit Original used to ask for is gone. A poster cannot be drawn taller than your panel even filling the whole screen, so on a 4K set anything above 2160 was margin with nowhere to fit, at twice the video memory per image.
+-Nothing is proposed when your current limits already cover your screen, and a limit you raised yourself is never proposed to be lowered.
+[COLOR fffdb515]Display test[/COLOR]
+-When everything already lines up, the test confirms it with your actual numbers instead of a generic line: the resolution Kodi draws at, the one your display outputs, how many pixels of height the poster panel needs and how many Kodi keeps. A check that says nothing cannot be told apart from a check that did not look.
+-On a 4K interface the test no longer offers to switch from Auto to Original. With the limit set to the height of your panel, Auto already requests full-size artwork exactly as Original does, and both store the same file. It says so plainly instead.
+-Artwork groups could report that nothing could be measured while holding hundreds of good files. Right after emptying the Thumbnails folder the first entries are all leftovers, because the texture database keeps its rows even though the files are gone. The check now keeps looking until it has real measurements, and names those leftovers as such.
+-File sizes are no longer printed when Kodi reports them as unavailable. On Android that value comes back as -1 for some files, and the report was dividing it and showing "-1 KB".
+[COLOR fffdb515]Fixes[/COLOR]
+-When the DMM provider hit an authentication error, the line meant to explain it crashed instead, hiding the diagnosis behind a second unrelated error. It referenced two names that do not exist in that file. The message now prints normally, telling you to check the device clock or a salt change on the provider's side.
+[B][COLOR ff00fa9a]Version 1.0.71[/COLOR][/B]
+[COLOR fffdb515]Artwork quality[/COLOR]
+-Image sizes are now chosen by what your device actually keeps, not by how large your screen is. Kodi shrinks every image as it stores it, and asking for more than that limit meant downloading and decoding a full-size poster only to keep a fraction of it, with the cost landing while a grid was drawing.
+-Auto now picks, for each kind of artwork, the smallest size that fills that limit. Nothing is lost visually because the pixels being saved were the ones Kodi was discarding. Cast photos are a deliberate exception: following the same rule would have fetched full-size portraits to draw them the size of a stamp.
+-The display test can now raise Kodi's own storage limits for you. On a device that honours them this roughly doubles the detail in the large poster panel and lets background art fill a 4K screen properly. Anything already in your advancedsettings.xml is kept.
+[COLOR fffdb515]Display test[/COLOR]
+-The test now measures the artwork on your disk instead of only reporting what was asked for. It reads the cached files themselves and shows, for each size requested, how many are stored and what they actually measure.
+-The report names your screen shape, and screens that are not 16:9 get a short note explaining why the add-on's own windows may sit slightly differently.
+[COLOR fffdb515]Layout[/COLOR]
+-The sources screen was missing the network logo at 1080p. It had been built into the 4K layout only, even though the information was there and the space was free.
+[COLOR fffdb515]Fixes[/COLOR]
+-Episode thumbnails were requested smaller than they should be at the fixed quality levels.
+[COLOR fffdb515]Settings[/COLOR]
+-Image quality now offers two choices instead of five: Auto and Original. Low, Medium and High no longer represented a useful decision, since Auto already picks the largest size your device keeps whole and the lower ones served posters a fifth of the size of the panel they are drawn in. Existing installs are migrated: anyone who had chosen Original stays on Original, everyone else moves to Auto.
+[COLOR fffdb515]Displays below 1080p[/COLOR]
+-The add-on now says so once, on a screen smaller than 1920x1080. Its own screens, artwork and information panels are drawn for 1080p and above. Nothing is disabled and everything still works; the message appears a single time and does not come back at every startup.
+[COLOR fffdb515]Note[/COLOR]
+-Artwork already cached keeps the size it was fetched at. Clearing the metadata cache under Settings > Cache rebuilds it at the new size.
+[B][COLOR ff00fa9a]Version 1.0.70[/COLOR][/B]
+[COLOR fffdb515]Scores during playback[/COLOR]
+-Rotten Tomatoes is now named in full on the scores line. It read as RT, which is not a name: sitting next to IMDb, TMDb and Trakt, two letters left you working out whose number that was. The line was never short of room.
+-Metacritic joins the line as a score of its own. It used to appear only as a stand-in when IMDb had nothing, so on most titles it was never shown at all. The two critic scores are worth having together because they measure different things: Rotten Tomatoes is the share of critics who liked the film, Metacritic the average of the marks they gave it. Ninety-five per cent beside a seventy-one is information, not a contradiction.
+-Metacritic comes from MDBList where you have a key, and from OMDB where you have one instead. It is still skipped when it is already filling the IMDb slot, so it never appears twice.
+[B][COLOR ff00fa9a]Version 1.0.69[/COLOR][/B]
+[COLOR fffdb515]MDBList: Liked Lists[/COLOR]
+-Liked Lists are now browsable under both Movies and TV Shows. These are other people's lists that you have marked with a like on mdblist.com, and each entry shows who owns it and how many titles it holds.
+[COLOR fffdb515]Fixes[/COLOR]
+-List contents are now read across every page. MDBList sends its paging information in the response headers, so any list longer than one page was being read only as far as the first one, quietly and with no error. Your own lists are rarely long enough for this to show; other people's lists routinely are.
+-The bitrate figure on the source list and the release information panel change colour, from salmon to aqua, which reads better against the rest of the line. The CUSTOM label keeps its own colour.
+[B][COLOR ff00fa9a]Version 1.0.68[/COLOR][/B]
+[COLOR fffdb515]Fixes[/COLOR]
+-The "Include specials" switch under Settings > Library did nothing. The add-on was reading a setting name that does not exist, so the answer was always the same whichever way the switch was set, and season 0 episodes were exported to the library every time. It now does what it says, and it starts switched off as the setting has always claimed.
+-When Premiumize stops making progress on a Usenet download, the add-on gives up and cleans the transfer off your account. That part worked. The line explaining why never reached the log: it referred to a value that had been renamed, so what you got instead was a generic error pointing somewhere else entirely. The report now says which provider stalled and at what percentage.
+-Three providers, DMM, Knaben and PirateBay, could only be asked for sources once per instance. A second request on the same instance failed outright. Nothing in the add-on did that today, but the provider test is exactly the shape of code that would, and it is the piece most likely to grow another pass.
+-Ten log lines were being written at the wrong level, with the level landing in the field meant for the module name. Six of them belong to DMM, and they were reaching the log at full volume even with verbose logging turned off, printing a number where the module name should be.
+-TorBox Usenet announced itself as able to serve season packs while having no way to do so. The add-on already worked around it; the claim is now simply removed, matching the other Usenet and single-file providers.
+-A Google API key was sitting in the YouTube menu code. Nothing in the add-on ever used it: the menus are built by reading the menu file, which needs no key at all. It has been removed.
+[COLOR fffdb515]MDBList[/COLOR]
+-External Lists are now browsable under both Movies and TV Shows. These are the lists you have imported into MDBList from Trakt, IMDb or Letterboxd, and each entry shows which service it came from. Until now the add-on could only see your own lists, so imported ones were invisible.
+-Added the API calls the add-on was missing: your ratings (read, set and clear), your collection, dropped shows, and the ability to unmark something as watched, which previously could only be marked and never undone.
+-Added a last-activities check. MDBList reports one timestamp per section, so the add-on can now tell at a glance whether anything changed before asking for the data. On a free account limited to 1000 requests a day, this is the difference between spending them and not.
+-Added title search, the genre list, and incremental list changes, so a large list can be refreshed without downloading it again.
+[COLOR fffdb515]4K skins[/COLOR]
+-The ratings row in the Bingie grid had the gap between its badges left at the 1080p value on 4K displays, so the badges sat at half the intended spacing while everything around them was drawn at full size.
+[B][COLOR ff00fa9a]Version 1.0.67[/COLOR][/B]
+[COLOR fffdb515]Provider test: the same report on every skin[/COLOR]
+-The test now draws its own window instead of borrowing the skin's. The results read the same in Estuary, Nimbus, Arctic Fuse and AeonNox, and in any other skin, because the layout travels inside the add-on.
+-Until now the report was handed to the skin's selection dialog, and each skin decides for itself how many lines the detail area has, where it sits and which font it uses. In Arctic Fuse 3 the detail was painted over the provider names; the same test looked right in Estuary and Nimbus. It was never a fault of one skin or the other: the format was not the add-on's to decide.
+-The status mark in front of each provider was a round bullet, and whether that character exists at all depends on the skin's font. Where it did not, Kodi drew an empty box, which is what turned up in AeonNox. It is now a word: OK, EMPTY, FAIL or OFF. It cannot fail to render, and it still reads if the colour does not come through.
+-The text wraps and scrolls, so nothing is cut off any more. The two-line ceiling of the old dialog is what forced the labels to be abbreviated in 1.0.64, and it is gone: every figure the test measures now reaches the screen, whatever the provider is called and however long its numbers run.
+-A short guide to reading the report is included at the end of it.
+[COLOR fffdb515]Display test: the same report on every skin[/COLOR]
+-The display test gets the same treatment as the provider test, for the same reason: it borrowed the skin's dialog, so it overlapped on Arctic Fuse 3 and its bullet came out as an empty box on AeonNox. It now draws the add-on's own window, reads the same everywhere, and the long explanations under each recommendation are no longer cut off by width.
+-Each recommendation is marked FIX or INFO. FIX can be applied from here; INFO depends on Kodi or on the device, and the text carries the exact path to follow. Before, the difference was the colour of a dot, which is exactly what a skin can render its own way.
+-Applying the recommended settings is now a question after you close the report, instead of the first row of the list. It was a row that changed settings when you pressed it, sitting among rows that only showed data, so it could be triggered by accident while scrolling. Saying no is now simply doing nothing.
+[COLOR fffdb515]Release information during playback[/COLOR]
+-The block now sits at the head of the synopsis instead of after it, with no blank line between them, so it reads as part of what you are looking at rather than as something added on at the end.
+-It was also being missed entirely. Skins cut the synopsis short during playback, so on a film with a long plot the line was pushed out of the box and never appeared. At the top it is always on screen.
+-Scores. Off unless you want them: IMDb, TMDb, Trakt and Rotten Tomatoes on a line of their own above the release line. They come from the same place the source list gets them, so the two never disagree.
+-Nothing is fetched while you wait for playback to begin. Only scores already held are used, and the source list asked for them half a minute earlier, so they are there. A title played for the very first time may show none; the second time it will.
+-Rotten Tomatoes now has a slot of its own rather than only standing in for a missing IMDb score. It needs an MDBList or OMDB key; without one the slot stays empty instead of showing another site's number under the wrong name.
+-The scraper. Off unless you want it: the provider the source actually came from, at the end of the release line. It is the one thing on that line that is ours rather than a claim by whoever packaged the file.
+-The two lines are kept apart deliberately. Scores are metadata anyone can check; the release line is what the file name claims about itself. They are not equally reliable and they do not share a row.
+-The film's short summary is left out during playback while this is on. Where a film has no summary of its own the tagline stood in for it, which put a line in bold directly above the block, and it appeared on some titles and not others depending on whether the film had a tagline at all. Browsing is untouched.
+-The two labels read SCORES: and RELEASE:.
+[COLOR fffdb515]Under the hood[/COLOR]
+-The scores pipeline lives in one place now instead of inside the source list window, so the player and the list can never show different numbers for the same film, and MDBList is no longer asked again every time you open the same title.
+[B][COLOR ff00fa9a]Version 1.0.66[/COLOR][/B]
+[COLOR fffdb515]More about what you are watching, on whatever skin you use[/COLOR]
+-Four pieces of information the add-on already held were never reaching Kodi, so no skin could show them however good it was. The collection a film belongs to was dropped on the way, which is why the saga name came up empty. Genres arrive separated by slashes and were handed over as one long genre with slashes inside it, so skins that list them one by one had nothing to list. The rating was sent without saying where it came from, so a skin asking for the TMDb score in particular found nothing. And the tagline now serves as the short summary where a skin wants one. All four work everywhere now, with nothing to switch on.
+[COLOR fffdb515]The release line[/COLOR]
+-New, and off unless you want it. During playback a single line at the end of the synopsis names what the release you chose actually is:
+-RELEASE  4K · REMUX · BLURAY · ATMOS · DOLBY-TRUEHD · DTS-HD MA · HDR · HEVC · 7.1 · 58.80 GB
+-Kodi has no field for ATMOS, DTS-X, DTS-HD MA, TrueHD, REMUX, BluRay or WEB. Nothing can display them, because there is nothing there to read, and until now that knowledge was thrown away the moment playback began even though the release stated it plainly.
+-You choose how much it says. Everything the release states is the default and includes the picture and sound detail, which is the right choice when your skin shows none of it during playback. Only what Kodi cannot report keeps the line short for skins that already draw the codec and HDR flags themselves.
+-Channels are named the way you would say them out loud, 7.1 or 5.1 or 2.0, rather than as a raw channel count. The container is never listed: knowing a file is an MKV tells you nothing about how it will look or sound.
+-It writes into the film's description, which is a real intrusion, so it stays off until you ask for it and the line is marked so it never reads as part of the plot. What it says comes from the file name, which is a claim by whoever packaged it rather than a measurement, and a mislabelled release will say the wrong thing. If the name states nothing useful, no line is added at all.
+-Settings > Playback.
+[B][COLOR ff00fa9a]Version 1.0.65[/COLOR][/B]
+[COLOR fffdb515]Playback pre-flight[/COLOR]
+-Before a source starts playing, the add-on now checks the link it has just resolved: whether the server really answers with video, and how fast it delivers. A dead link, or one that returns an error page instead of a file, is dropped and the next source is tried.
+-It also works out how much bandwidth the file needs, from its size and the running time of what you are watching, and compares that against what the link is actually delivering. A large remux needs a high sustained speed; if the connection is not giving that, the file will stall part way through no matter how good it looks in the list.
+-During auto-play, a source that cannot keep up is skipped before playback rather than after twenty seconds of buffering. Skipping stops after three sources, so a bad evening on your line can never leave you with nothing playing at all.
+-When you pick a source yourself, the add-on asks before starting instead of telling you afterwards. The choice stays yours: play anyway, or go back and pick something else. It never refuses a source on your behalf, and only a serious shortfall raises the question.
+-A source that cannot be measured is never discarded. Live playlists, missing running times and links without a known size all count as unknown, and unknown always plays.
+-The speed shown when auto-play starts is the speed measured on that link, not an estimate.
+[COLOR fffdb515]Connection speed[/COLOR]
+-The add-on learns what your connection actually delivers by measuring it during normal playback. Nothing is assumed and nothing is configured: your figure is yours, measured on your network and stored only on your device.
+-Measurement ignores the opening moments of a download, when a connection is still building up to full speed, and it ignores bursts that arrive faster than any network could carry them. Both produce numbers that look convincing and mean nothing.
+-When a link cannot be measured honestly, the add-on says so rather than inventing a figure.
+-Your measured speed is shown in the personal ranker screen, along with how many measurements it rests on.
+[COLOR fffdb515]Sources list[/COLOR]
+-Large files show the bandwidth they need, so you can judge against your own connection before committing to one. The threshold is yours to set and starts at 30 GB.
+-The figure appears from the moment you install, without waiting for the add-on to measure anything first.
+[COLOR fffdb515]Personal ranker[/COLOR]
+-The model now learns which delivery host actually works for you. Two sources can look identical in the list and arrive from completely different servers; the one that reaches your connection at full speed is the one worth showing first.
+-It also tells apart a source you did not pick from one that did not work. A failure now counts three times heavier than something you simply scrolled past.
+-The ranker screen shows the hosts it has learned and how often each option has failed.
+[COLOR fffdb515]Episode running times[/COLOR]
+-Episodes now carry their own running time instead of an average taken from the series. TMDb has stopped filling in the series-level figure for many shows, and without it an episode had no running time at all, so nothing about it could be worked out.
+-Episode running times also show correctly in the information dialog now.
+[COLOR fffdb515]Fixes[/COLOR]
+-When every source in a list was rejected, auto-play handed the last rejected link to the player instead of reporting that nothing was playable.
+-When Premiumize reported on fewer torrents than were in the list, every source in that pass lost its cached or uncached label rather than just the ones that were missing.
+-The URL validity check wrote full addresses to the log, including the configuration blob that carries your Debrid key. They are now masked like everywhere else.
+[B][COLOR ff00fa9a]Version 1.0.64[/COLOR][/B]
+[COLOR fffdb515]Provider test[/COLOR]
+-Small bug resolved
+[B][COLOR ff00fa9a]Version 1.0.63[/COLOR][/B]
+[COLOR fffdb515]New: Display test[/COLOR]
+-A new Display test under Settings > General > GUI Resolution tells you what your screen is actually getting from the add-on, and offers to fix what can be fixed. It runs instantly and needs no internet connection.
+-It shows the resolution Kodi is drawing its interface at next to the resolution your screen is really outputting. These are not always the same, and when they differ everything still works, it just runs at half the resolution with nothing on screen to tell you.
+-It shows which of the add-on's two sets of screens is in use. The add-on carries one built for 1080p and one built for 4K, and Kodi picks by the interface resolution.
+-It shows the artwork sizes you are receiving right now, whether FanartTV is active, and how long your device took to report its screen size when Kodi started.
+-Anything worth changing is listed with an explanation. Settings that belong to this add-on can be applied straight from the dialog; anything that belongs to Kodi or to your device is explained with the exact route to follow.
+[COLOR fffdb515]Provider test[/COLOR]
+-Every provider now reports how many of the files it found are 4K, how many 1080p and how many 720p. A provider returning two hundred files of which three are 4K and one returning forty with twenty in 4K used to look identical in the results column.
+-Every provider also reports how many of its torrents no other provider in the run offered, named so the line reads on its own: "only from ZILEAN: 60". Several providers reach the same trackers, so a high result count does not always mean a provider is adding anything of its own.
+-A TOTAL row shows the combined counts and the number of distinct torrents. The difference between those two figures is how much your providers overlap.
+-You now choose what the providers are asked for instead of always the same film: something recent, the best quality available, or something older, as a film or as a series. Each choice rotates through several titles, so two runs in a row do not measure the same thing.
+-The dialog is easier to read: fields are separated by dividers, each provider carries a coloured dot showing how it did, and results below 720p are still counted but no longer take up a column.
+[COLOR fffdb515]Artwork[/COLOR]
+-Image quality gains an "Auto" setting, and it is now the default. On a 4K screen a clean install was quietly staying on medium-sized posters: the automatic upgrade only applied from "High" upwards, while the setting shipped on "Medium". Auto follows the screen. Picking a level by hand still means exactly that level.
+-Auto also covers screens between 1080p and 4K. A 2800x1752 tablet does not reach the 4K mark, and was being served background art sized for a 1080p screen and then stretched to fill it.
+[COLOR fffdb515]Privacy[/COLOR]
+-The sanitized log export now redacts credentials it was missing. Your Gemini API key, your Easynews username and password, your OpenSubtitles password and session, and your own MDBList, TMDb, Fanart, OMDb, Orion, Newznab and TheIntroDB keys were all being written to the exported log in full. Five of them were listed under names that did not match the settings they were meant to protect, so they were never removed at all.
+-Two credential formats that used to slip through are now caught: keys passed as "key=" inside a web address, which is how the Gemini API receives yours, and Basic authorisation attached to a download link, which is how Easynews receives yours.
+-Redaction order was corrected. When one value contained two secrets joined together, as Easynews authorisation does, only the first half was being removed and the second half stayed in the file.
+-The subtitle service no longer writes your OpenSubtitles username into the Kodi log on every sign-in.
+-If a setting listed for redaction ever stops existing, the export now says so in the log instead of quietly reporting a clean file.
+[B][COLOR ff00fa9a]Version 1.0.62[/COLOR][/B]
+[COLOR fffdb515]Trailers[/COLOR]
+-Trailers no longer ask you to choose a stream every time one starts. The YouTube add-on ships a default that leaves the choice to you on every playback; a new button under Settings > Trailers sets it up correctly in one go, and can also apply itself automatically after installing if you tick the option below it.
+-Trailers that played silently on some devices, the NVIDIA Shield in particular, now play with sound. YouTube offers several audio tracks for the same language and the one Kodi picks first is sometimes one your device cannot decode. Turn on "Use the HE-AAC audio track for trailers" and the add-on picks a working one. It only touches trailers started from this add-on, and it never changes the language you were listening to.
+[COLOR fffdb515]Sources[/COLOR]
+-Season packs and complete-series packs from AIOStreams now appear. Packs with an ordinary name were being discarded, so pack searches came back empty or nearly so. This fault was present in 1.0.61 and earlier.
+-AIOStreams TV searches are faster and more reliable. It was downloading the whole result list three separate times for every search, all at once, which also made the server return inconsistent results and sometimes nothing at all. It now downloads once and reuses it.
+-AIOStreams links are resolved before playback instead of being handed to the player as they arrive, so playback goes to the debrid CDN rather than through a shared community server. It is also covered now by the error-video detection and retry that the other providers already had.
+-Meteor and Sootio detect your Debrid service from tokens where it sits deeper inside the configuration, and both gained a "Re-detect Debrid from token" button for when you paste a token by hand or change service.
+[COLOR fffdb515]Tools[/COLOR]
+-New "Test all providers" button on the Custom providers screen. For every provider it reports separately whether it has credentials, whether its host answers, and how many results it returns for a test movie, with timings. Providers you have switched off are included so you can see the whole picture.
+-New "Write a sanitized copy of kodi.log" button. Debug logs contain your debrid API key, written by Kodi itself in a form the add-on cannot prevent. This writes copies of both logs with keys, tokens and account IDs blanked out, so you have something safe to share when asking for help. Check them before sending: they remove what they recognise, not everything.
+-Settings left over from a previous version are cleared automatically the first time you start after updating. Only entries the add-on no longer has are touched; nothing you configured is changed.
+-The Debugging setting now shows the real name of the scraper log file, jacksparrowscrapers.log, instead of a name that did not exist on disk.
+-Account IDs no longer appear in the log on every AIOStreams search.
+[B][COLOR ff00fa9a]Version 1.0.61[/COLOR][/B]
+-REQUIRED: install plugin.video.youtube and, in its settings, turn OFF "Use MPEG-DASH for videos". No account, no login and no API keys are needed. Kodi will pull the add-on in automatically, as it is now a declared dependency.
+-The built-in keyless resolver has been removed, and with it the local segment proxy, the pacing engine, the signed-URL refresh, and the codec and resolution settings that only existed to serve it. YouTube no longer hands a playable manifest to unofficial clients: every client we used now answers with a SABR streaming URL and nothing else, and SABR needs a proof-of-origin token that only Google's own attestation code can produce.
+-If the YouTube add-on is missing or disabled, trailers now say so plainly instead of reporting that no trailer was found.
+-The add-on is lighter: three modules removed, and the service no longer starts a local HTTP server.
+[B][COLOR ff00fa9a]Version 1.0.60[/COLOR][/B]
+-All customs scrapers updated:
+-NEW: Sootio settings now show a read-only "Sources detected" line listing the scrapers your config token actually enables - Jackett, Zilean, 1337x, Newznab, and so on. Useful for spotting an old token generated before the Usenet and HTTP sources existed.
+-FIX: one more family of provider error clips is now recognised. Torrentio serves its warnings as short videos, and Sootio passes them straight through, so an orange "An unexpected error occured" screen could still play instead of the addon moving to the next source.
+-FIX: when a debrid service is down or rate-limiting you, some providers answer with a short error video instead of an error code - a clip that says "Debrid service is down" or "Too many requests" on screen. To the addon that looked like a perfectly valid link, so it played the error clip instead of moving on. Torz, Comet, MediaFusion, Sootio and Meteor now recognise these and skip to the next source.
+-FIX: Meteor returned no season or show packs at all. Its pack code required an infoHash on every result, but Meteor with Premiumize or AllDebrid hands back an already-resolved link with no hash, so every result was discarded. TorrentsDB had the same pattern and was fixed alongside.
+-Meteor's timeout raised from 10 to 25 seconds, matching Comet. Large series were exhausting the old limit and dragging the pack search down with them.
+-SECURITY: finished the log cleanup started. Eight more places recorded the full playback URL, which for Stremio-style providers carries your debrid credentials in its path. All of them are scrubbed now.
+-SECURITY: your debrid API key could end up in kodi.log. When a request failed, the shared HTTP client logged the full URL, and for Stremio-style providers that URL carries the configuration blob in its path - a base64 payload containing the debrid service and its API key.
+-FIX: every Comet request was timing out. Comet had the tightest limit in the addon at 10 seconds, and with cached-only configurations the instance has to check the debrid cache for each hash before answering. Raised to 25 seconds.
+-FIX: season packs and show packs were never returned by Torz, Comet, MediaFusion, Sootio or Meteor.
+-Series searches are therefore noticeably faster, and packs from these providers now reach the results list for the first time.
+-The handoff was rebuilt as a shared module keyed by provider and episode, so two titles searched close together can no longer read each other's results. If nothing has been published, a pack search now fetches on its own instead of waiting.
+-The Debrid column now speaks one language across the whole Custom group. MediaFusion was printing short codes (RD, AD, TB, PM) and AIOStreams was printing the service name plus a cache mark, while Torz, Comet, Sootio and Meteor all printed "Custom". All six now print "Custom".
+-MediaFusion results are now scored on the same rulebook as every other provider. It was the only scraper detecting quality and codec tags with its own private tables, so the synonym normalisation and the badge layer (HDR10+, AV1, ATMOS, DTS-HD MA) did not apply to it consistently, and the source ranker judged its rows on different features.
+-NEW: Min Seeders is now available for all six Custom providers (Torz, Comet, MediaFusion, Sootio, Meteor, AIOStreams).
+[B][COLOR ff00fa9a]Version 1.0.59[/COLOR][/B]
+-The SIMKL scrobble notification now appears only when playback starts.
+-The MDBList scrobble notification now appears only when playback starts.
+-FIX: the MDBList calendars for Movies and TV Shows
+[B][COLOR ff00fa9a]Version 1.0.58[/COLOR][/B]
+-AI Search (Gemini) brought up to date with the models Google actually serves today:
+-CHANGE: the default model moves from gemini-3.1-flash-lite to gemini-3.5-flash-lite. Google deprecated the old default and has announced its shutdown for May 2027, naming 3.5 Flash-Lite as the replacement. The new one is built for exactly this job - turning one short sentence into a structured query - and does it without spending part of its answer on internal reasoning, so it replies faster. Existing installs keep whatever model they had selected; nothing is switched behind your back while it still works.
+-NEW: gemini-3.6-flash and gemini-3.7-flash added to the model list, and the fallback chain rebuilt around them. Six models are now tried in turn, lightest first. Each one has its own separate daily allowance, so a search only fails once every model has refused it.
+-FIX: an invalid or revoked API key is reported straight away instead of after every model in the list has been tried in turn.
+-NEW: the whole search is capped at 45 seconds. A run of timeouts used to be able to leave the busy dialog spinning for several minutes with no way to tell what was happening.
+[B][COLOR ff00fa9a]Version 1.0.57[/COLOR][/B]
+-Further optimizations to the "Play trailer" function:
+-NEW: when YouTube stops serving a trailer partway through, playback now ends cleanly with a short message rather than sitting frozen. YouTube limits how much it will hand out and lifts the limit again after a rest; there is nothing an add-on can do about that, but there is no reason to leave the picture stuck while it happens. The player used to stall silently and had to be stopped by hand. It now stops itself after three consecutive refusals and says why. A single hiccup will not trigger it - one successful piece resets the count.
+-NEW: a fourth resolver is tried before the two that were failing, for trailers that the usual method reports as unavailable and the next one returns in a protected format. It drops one field from the request that is what makes YouTube demand a token.
+-NEW: Maximum trailer resolution, next to the existing minimum, in Settings > General > Trailers. Auto leaves the choice to the screen, as before. Capping it is useful on sets with a 4K panel whose decoder does not really sustain 2160p; capping at 1080p also brings playback back to H.264, the most widely supported path.
+-FIX: Play Trailer did nothing when launched from the Bingie grid. The menu entry ran the add-on in a mode that has no playback handle, so the resolved trailer was discarded. It now uses the same call as the standard movie and show menus, and passes the TMDb id so one lookup is saved.
 [B][COLOR ff00fa9a]Version 1.0.56[/COLOR][/B]
 -Scraper DMM it's available again:
 -FIX: a TV search could lose every DMM result before a single link was read. The scraper asked for the show's season count as a required field, and when the caller did not supply it the whole search was abandoned - not just the season-pack detection that actually needed it. The field is now optional: packs are skipped when it is missing, single episodes and movies are unaffected, and the rest of the results come through as normal.

@@ -13,7 +13,12 @@ from xbmcplugin import addDirectoryItem
 class youtube_menu(object):
 	def __init__(self):
 		self.agent = 'luc_kodiAddonAgent'
-		self.key_id = 'AIzaSyA56rHBAyK0Cl0P4uDM_12sNOwUmAaas8E'
+		# v1.0.68: se retira un `self.key_id` con una clave de API de Google real
+		# heredada del framework. No la usaba NADA en todo el arbol (la unica
+		# aparicion era esta linea), y viajaba dentro de un repositorio publico,
+		# donde el escaner de credenciales de Google la encuentra y la revoca.
+		# Los menus de YouTube funcionan por scraping del fichero de menu, sin
+		# tocar la Data API, asi que no hace falta ninguna clave aqui.
 
 	def openMenuFile(self, menuFile):
 		try:

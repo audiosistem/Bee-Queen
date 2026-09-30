@@ -141,7 +141,7 @@
 						<label>Trakt id :  $INFO[ListItem.Property(luc_kodi.trakt_id)]   [COLOR $INFO[Window().Property(luc_kodi.highlight.color)]]|[/COLOR]   Item Count :  $INFO[ListItem.Property(luc_kodi.item_count)]   [COLOR $INFO[Window().Property(luc_kodi.highlight.color)]]|[/COLOR]   Total Likes :  $INFO[ListItem.Property(luc_kodi.likes)]</label>
 					</control>
 				</itemlayout>
-				<focusedlayout height="100" width="1325">
+				<focusedlayout height="200" width="2650">
 					<control type="image">
 						<left>0</left>
 						<top>0</top>

@@ -15,37 +15,18 @@
 
 from json import loads as jsloads
 import re
-import queue
+import time
 import os
 from resources.lib.jacksparrow import client
 from resources.lib.jacksparrow import source_utils
+from resources.lib.jacksparrow import pack_handoff
 from resources.lib.jacksparrow.control import setting as getSetting
+from resources.lib.jacksparrow import log_utils
 
 
-# Quality keywords in MediaFusion name / description
-_QUAL_MAP = [
-	('2160', '4K'), ('4k', '4K'), ('uhd', '4K'),
-	('1080', '1080p'), ('fhd', '1080p'),
-	('720', '720p'), ('hd', '720p'),
-	('480', 'SD'), ('sd', 'SD'),
-]
-_CODEC_MAP = {
-	'av1':          'AV1',
-	'hevc':         'HEVC',
-	'x265':         'HEVC',
-	'h265':         'HEVC',
-	'x264':         'H264',
-	'h264':         'H264',
-	'avc':          'H264',
-	'hdr10+':       'HDR10+',
-	'hdr10':        'HDR',
-	'hdr':          'HDR',
-	'dolby vision': 'DV',
-	'dovi':         'DV',
-	'10bit':        '10BIT',
-	'10 bit':       '10BIT',
-	'atmos':        'ATMOS',
-}
+# Etiquetas de origen. La calidad y los tags de codec/HDR ya NO se
+# calculan aqui: se delegan en source_utils, igual que en el resto de
+# scrapers (v1.0.61).
 _SRC_MAP = {
 	'bluray remux':  'REMUX',
 	'blu-ray remux': 'REMUX',
@@ -60,54 +41,6 @@ _SRC_MAP = {
 	'scr':           'SCR',
 }
 
-# Mapeo de proveedor Debrid en path de MediaFusion -> etiqueta visual
-_MF_PROVIDER_LABELS = {
-	'realdebrid':  'RD',
-	'alldebrid':   'AD',
-	'torbox':      'TB',
-	'premiumize':  'PM',
-	'debridlink':  'DL',
-	'offcloud':    'OC',
-	'pikpak':      'PP',
-}
-
-
-def _parse_quality(name_str, desc_str):
-	"""Extract quality string from MediaFusion name + description."""
-	combined = (name_str + ' ' + desc_str).lower()
-	for kw, q in _QUAL_MAP:
-		if kw in combined:
-			return q
-	return 'SD'
-
-
-def _parse_info_tags(desc_str):
-	"""Extract codec/source/HDR tags from MediaFusion description."""
-	tags = []
-	d = desc_str.lower()
-	for kw, tag in _CODEC_MAP.items():
-		if kw in d and tag not in tags:
-			tags.append(tag)
-	for kw, tag in _SRC_MAP.items():
-		if kw in d and tag not in tags:
-			tags.append(tag)
-	return tags
-
-
-def _provider_label_from_url(url_str):
-	"""
-	Try to extract the Debrid provider from a MediaFusion playback URL.
-	URLs look like: /playback/RealDebrid/<hash>/... or /playback/TorBox/<hash>/...
-	Returns a short label like 'RD', 'TB', or '' if not recognized.
-	"""
-	m = re.search(r'/playback/([^/]+)/', url_str, re.IGNORECASE)
-	if not m:
-		return ''
-	provider_raw = m.group(1).lower().replace('-', '').replace('_', '')
-	# Solo devolver label si reconocemos el proveedor; '' activa fallback 'Custom'
-	return _MF_PROVIDER_LABELS.get(provider_raw, '')
-
-
 class source:
 	timeout = 20
 	priority = 2
@@ -116,7 +49,6 @@ class source:
 	hasEpisodes = True
 
 	def __init__(self):
-		self._queue  = queue.SimpleQueue()
 		self.language = ['en']
 		try:
 			instance_idx = int(getSetting('mediafusion.url') or '0')
@@ -130,7 +62,12 @@ class source:
 		self.secret_str = getSetting('mediafusion.secret') or ''
 		self.movieSearch_link = '/stream/movie/%s.json'
 		self.tvSearch_link    = '/stream/series/%s:%s:%s.json'
-		self.min_seeders = 0
+		# Min seeders (v1.0.61: antes estaba fijo a 0 y las ramas de
+		# filtrado eran inalcanzables)
+		try:
+			self.min_seeders = int(getSetting('mediafusion.min.seeders') or '0')
+		except Exception:
+			self.min_seeders = 0
 
 	# --- URL helpers ----------------------------------------------------------
 
@@ -144,6 +81,9 @@ class source:
 
 	def _fetch(self, url):
 		"""Fetch streams from MediaFusion, paginating to collect all results."""
+		# v1.0.66: MediaFusion solo escribia al log dentro de resolve(), asi que
+		# en un kodi.log no se distinguia "no encontro nada" de "no llego a correr".
+		log_utils.log('MEDIAFUSION: GET %s' % self._mask(url), level=log_utils.LOGINFO)
 		all_streams = []
 		seen_keys   = set()
 		page        = 1
@@ -185,6 +125,7 @@ class source:
 				source_utils.scraper_error('MEDIAFUSION')
 				break
 
+		log_utils.log('MEDIAFUSION: parsed %d streams (%d paginas)' % (len(all_streams), page), level=log_utils.LOGINFO)
 		return all_streams
 
 	# --- Parse ----------------------------------------------------------------
@@ -253,10 +194,61 @@ class source:
 					pass
 
 				# -- 3. Calidad ------------------------------------------------
-				quality = _parse_quality(name_field, desc_field)
+				#
+				# v1.0.61: se abandona el reglamento propio (_QUAL_MAP) y se
+				# pasa por source_utils, igual que los otros veinte proveedores.
+				# Motivo: la tabla de sinonimos y la deteccion de badges del
+				# addon solo se aplican a lo que sale de get_release_quality()
+				# / get_extra_tags(); con mapas propios las filas de MediaFusion
+				# se puntuaban en el ranker con otras caracteristicas.
+				#
+				# MediaFusion suele poner la resolucion y el codec en la
+				# DESCRIPCION, no en el nombre de fichero, asi que el termino de
+				# busqueda concatena ambos ya normalizados a puntos (que es lo
+				# que esperan get_qual y get_extra_tags).
+				raw_name = bh_filename
+				if not raw_name:
+					_dl = [l.strip() for l in desc_field.split('\n') if l.strip()]
+					raw_name = _dl[0] if _dl else name_field
+				raw_name = re.sub(r'\.(mkv|mp4|avi|ts|m2ts)$', '', raw_name or '', flags=re.IGNORECASE)
+				name = source_utils.clean_name(raw_name) or ''
+
+				try:
+					_dclean = source_utils.clean_name(desc_field.replace('\n', ' ')) or ''
+				except Exception:
+					_dclean = ''
+
+				try:
+					if title:
+						if pack_mode:
+							_ni = source_utils.info_from_name(
+								name, title, str(year or ''), season=season,
+								pack=('show' if search_series else 'season'))
+						else:
+							_ni = source_utils.info_from_name(name, title, str(year or ''))
+					else:
+						_ni = '.%s.' % name
+				except Exception:
+					_ni = '.%s.' % name
+				term = ('%s%s.' % (_ni, _dclean)).lower()
+
+				quality, info = source_utils.get_release_quality(term, play_url)
+				info = list(info) if info else []
 
 				# -- 4. Info tags (codec, source, HDR) -------------------------
-				info = _parse_info_tags(desc_field)
+				try:
+					for _t in source_utils.get_extra_tags(term):
+						if _t not in info:
+							info.append(_t)
+				except Exception:
+					pass
+				# Etiquetas de origen (REMUX/BLURAY/WEBDL/HDTV/CAM/SCR): no las
+				# cubre get_extra_tags y el nombre de display las usa.
+				_low = term
+				for _kw, _tag in _SRC_MAP.items():
+					if _kw.replace(' ', '.') in _low or _kw in _low:
+						if _tag not in info:
+							info.append(_tag)
 
 				# -- 5. Tamano -------------------------------------------------
 				dsize = 0
@@ -283,13 +275,13 @@ class source:
 
 				# -- 7. Etiqueta de proveedor Debrid (solo URLs directas) ------
 				# 'debrid' se muestra en luc_kodi.debrid del card (slot SIZE | DEBRID | ...).
-				debrid_key = ''
-				if is_direct:
-					prov_label = _provider_label_from_url(url_field)
-					if prov_label:
-						debrid_key = prov_label
-					else:
-						debrid_key = 'Custom'
+				#
+				# v1.0.62: se unifica a 'Custom', igual que torz, comet, sootio
+				# y meteor. Antes se emitian las abreviaturas RD/AD/TB/PM/... de
+				# _MF_PROVIDER_LABELS, que creaban un tercer vocabulario en la
+				# misma columna y no coincidian con el nombre canonico que usan
+				# los scrapers normales ('Premiumize.me', 'Real-Debrid', ...).
+				debrid_key = 'Custom' if is_direct else ''
 
 				info_str = ' | '.join(info)
 
@@ -335,6 +327,10 @@ class source:
 					'info':      info_str,
 					'size':      dsize,
 					'seeders':   seeders,
+					# v1.0.89: name_info aqui es solo la calidad, asi que el nombre
+					# real (sin titulo) viaja aparte para leer los idiomas.
+					'lang_name': _ni,
+					'lang_hint': source_utils.lang_hint('\n'.join(desc_field.split('\n')[1:])),
 				}
 				if debrid_key:
 					item['debrid'] = debrid_key
@@ -375,11 +371,11 @@ class source:
 			source_utils.scraper_error('MEDIAFUSION')
 			return sources
 
+		# v1.0.63: ver resources/lib/jacksparrow/pack_handoff.py — la cola por
+		# instancia no cruzaba a sources_packs(), que corre en otra instancia.
+		_h = pack_handoff.begin('mediafusion', imdb, season, data.get('episode')) if is_episode else None
 		files = self._fetch(url)
-		try:
-			self._queue.put_nowait(files)
-		except Exception:
-			pass
+		pack_handoff.publish(_h, files)
 		return self._parse_files(
 			files, season=season if is_episode else None,
 			title=title, aliases=aliases, year=year, imdb=imdb)
@@ -398,7 +394,9 @@ class source:
 			source_utils.scraper_error('MEDIAFUSION')
 			return sources
 		try:
-			files = self._queue.get(timeout=self.timeout + 1)
+			files = pack_handoff.wait('mediafusion', imdb, season, data.get('episode'), timeout=self.timeout)
+			if files is None:
+				files = self._fetch(self._build_url(self.tvSearch_link, imdb, season, data.get('episode')))
 		except Exception:
 			source_utils.scraper_error('MEDIAFUSION')
 			return sources
@@ -407,3 +405,75 @@ class source:
 			search_series=search_series, total_seasons=total_seasons,
 			bypass_filter=bypass_filter, title=title,
 			aliases=aliases, year=year, imdb=imdb)
+
+	# ── Resolucion ──────────────────────────────────────────────────────
+
+	def _mask(self, url):
+		"""Enmascara el secret_str en logs para no filtrar credenciales."""
+		try:
+			if self.secret_str:
+				return url.replace(self.secret_str, '<SECRET>')
+			return url
+		except Exception:
+			return '<URL>'
+
+	def resolve(self, url):
+		"""
+		Resuelve una URL de stream de MediaFusion a un enlace directo.
+
+		El endpoint /playback/<Provider>/<hash>/... responde con un redirect
+		302 al CDN del debrid. El secret lleva embebidas las credenciales,
+		asi que basta con seguir el redirect: luc_kodi no consulta RD/AD/PM
+		directamente.
+
+		Si la URL ya es un archivo directo, se devuelve tal cual.
+		"""
+		try:
+			if not url:
+				return None
+			lazy_markers = ('/playback/', '/resolve/', '/strem/', '/link/', '/download/')
+			if not any(mk in url for mk in lazy_markers):
+				return url
+
+			final = client.request(url, output='geturl', redirect=True, timeout=self.timeout)
+			# v1.0.67: algunas instancias responden 200 y redirigen a un MP4 de
+			# error ("Debrid service is down", "Too many requests"). Devolverlo
+			# haria que se reprodujese el video de error en vez de saltar.
+			if client.is_error_slate(final):
+				# v1.0.68: es transitorio a menudo — el mismo enlace suele resolver
+				# unos minutos despues. Se reintenta UNA vez, salvo que el
+				# cortafuegos indique que el servicio esta caido de verdad.
+				if client.slate_retry_allowed():
+					log_utils.log('MEDIAFUSION: video de error, reintentando una vez',
+					              level=log_utils.LOGINFO)
+					time.sleep(client.SLATE_RETRY_DELAY)
+					final = client.request(url, output='geturl', redirect=True, timeout=self.timeout)
+				if client.is_error_slate(final):
+					client.note_error_slate()
+					log_utils.log('MEDIAFUSION: el proveedor sigue devolviendo un video de error, se descarta la fuente',
+					              level=log_utils.LOGINFO)
+					return None
+			if (final and final != url
+					and not any(mk in final for mk in lazy_markers)):
+				log_utils.log('MEDIAFUSION: resolve() -> %s' % self._mask(final[:90]), level=log_utils.LOGINFO)
+				return final
+
+			# Algunos despliegues devuelven el enlace en el cuerpo.
+			body = client.request(url, timeout=self.timeout)
+			if body:
+				body = body.strip()
+				if body.startswith('http'):
+					return body.split('\n')[0].strip()
+				try:
+					j = jsloads(body)
+					cand = j.get('url') or j.get('link') or j.get('location')
+					if cand and cand.startswith('http'):
+						return cand
+				except Exception:
+					pass
+
+			log_utils.log('MEDIAFUSION: resolve() could not resolve %s' % self._mask(url[:90]), level=log_utils.LOGINFO)
+			return None
+		except Exception:
+			source_utils.scraper_error('MEDIAFUSION')
+			return None

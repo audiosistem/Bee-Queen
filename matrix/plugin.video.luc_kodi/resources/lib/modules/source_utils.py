@@ -14,6 +14,11 @@ HDR = ('2160p.uhd.bluray', '2160p.uhd.blu.ray', '2160p.bluray.hevc.truehd', '216
 			'uhd.bluray.2160p', 'uhd.blu.ray.2160p')
 HDR_true = ('.hdr.', 'hdr10', 'hdr.10')
 
+# v1.0.83. AV1 no estaba aqui, aunque el badge source/AV1.png existe, el skin
+# lo busca en luc_kodi.extra_info y source_ranker.py tiene una feature
+# 'codec:AV1'. O sea que todo el arbol sabia leer un token que nadie emitia:
+# solo llegaba cuando el scraper lo habia inyectado por get_extra_tags().
+CODEC_AV1 = ('.av1.', '.av01', 'av1.')
 CODEC_H264 = ('avc', 'h264', 'h.264', 'x264', 'x.264')
 CODEC_H265 = ('h265', 'h.265', 'hevc', 'x265', 'x.265')
 CODEC_XVID = ('xvid', '.x.vid')
@@ -29,8 +34,24 @@ HDRIP = ('.hdrip', '.hd.rip')
 SCR = ('scr.', 'screener')
 HC = ('.hc', 'korsub', 'kor.sub')
 
+# Perfil y capa de Dolby Vision. Solo se consultan con DOLBY-VISION ya
+# detectado: 'p5'/'p7'/'p8' son dos caracteres y salen sueltos en nombres de
+# grupo y en numeraciones. FEL y MEL solo existen dentro de DV.
+DV_P7 = ('.p7.', '.dvp7.', '.profile.7.', 'dvhe.07')
+DV_P8 = ('.p8.', '.dvp8.', '.profile.8.', 'dvhe.08')
+DV_P5 = ('.p5.', '.dvp5.', '.profile.5.', 'dvhe.05')
+DV_FEL = ('.fel.', 'bl.el.rpu', 'blelrpu')
+DV_MEL = ('.mel.',)
+BITDEPTH_10 = ('.10bit.', '.10.bit.')
+# Se exige 'fps' pegado al numero: '2160p' lleva un '60' dentro.
+FPS_60 = ('.60fps.', '.60.fps.')
+FPS_50 = ('.50fps.', '.50.fps.')
+
 DOLBY_TRUEHD = ('true.hd', 'truehd')
-DOLBY_DIGITALPLUS = ('dolby.digital.plus', 'dolbydigital.plus', 'dolbydigitalplus', 'dd.plus.', 'ddplus', '.ddp.', 'ddp2', 'ddp5', 'ddp7', 'eac3', '.e.ac3')
+# v1.0.83: 'ddpa' anadido. Es DD+ con Atmos escrito de corrido, y salia en
+# una fila real de TORRENTGALAXY ('DDPA.5.1') donde el codec no se reconocia
+# y el recuento de canales se quedaba huerfano en la linea.
+DOLBY_DIGITALPLUS = ('dolby.digital.plus', 'dolbydigital.plus', 'dolbydigitalplus', 'dd.plus.', 'ddplus', '.ddp.', 'ddp2', 'ddp5', 'ddp7', 'ddpa', 'eac3', '.e.ac3')
 DOLBY_DIGITALEX = ('.dd.ex.', 'ddex', 'dolby.ex.', 'dolby.digital.ex.', 'dolbydigital.ex.')
 DOLBYDIGITAL = ('dd2.', 'dd5', 'dd7', 'dolbyd.', 'dolby.digital', 'dolbydigital', '.ac3', '.ac.3.', '.dd.')
 
@@ -137,8 +158,18 @@ def getFileType(name_info=None, url=None):
 		elif all(i in fmt for i in ('2160p', 'remux')): file_type += ' HDR /'
 		if ' DOLBY-VISION ' in file_type:
 			if any(value in fmt for value in HDR_true): file_type += ' HDR /' # for hybrid DV and HDR sources
+			# v1.0.83. El perfil y la capa, cuando el nombre los declara. Esto
+			# lee lo declarado y nada mas: FEL vive en el RPU del fichero y no
+			# hay forma de confirmarlo ni desmentirlo antes de reproducir.
+			if any(value in fmt for value in DV_P7): file_type += ' DV-P7 /'
+			elif any(value in fmt for value in DV_P8): file_type += ' DV-P8 /'
+			elif any(value in fmt for value in DV_P5): file_type += ' DV-P5 /'
+			if any(value in fmt for value in DV_FEL): file_type += ' DV-FEL /'
+			elif any(value in fmt for value in DV_MEL): file_type += ' DV-MEL /'
+			elif '.hybrid.' in fmt: file_type += ' DV-HYBRID /'
 
-		if any(value in fmt for value in CODEC_H264): file_type += ' AVC /'
+		if any(value in fmt for value in CODEC_AV1): file_type += ' AV1 /'
+		elif any(value in fmt for value in CODEC_H264): file_type += ' AVC /'
 		elif any(value in fmt for value in CODEC_H265): file_type += ' HEVC /'
 		elif any(i in file_type for i in (' HDR ', ' DOLBY-VISION ')): file_type += ' HEVC /'
 		elif any(value in fmt for value in CODEC_XVID): file_type += ' XVID /'
@@ -148,6 +179,12 @@ def getFileType(name_info=None, url=None):
 		elif any(value in fmt for value in CODEC_MPEG): file_type += ' MPEG /'
 		elif '.avi' in fmt: file_type += ' AVI /'
 		elif any(value in fmt for value in CODEC_MKV): file_type += ' MKV /'
+
+		if any(value in fmt for value in BITDEPTH_10): file_type += ' 10BIT /'
+
+		if any(value in fmt for value in FPS_60): file_type += ' 60FPS /'
+		elif any(value in fmt for value in FPS_50): file_type += ' 50FPS /'
+		elif '.hfr.' in fmt: file_type += ' HFR /'
 
 		if any(value in fmt for value in REMUX): file_type += ' REMUX /'
 
@@ -159,7 +196,9 @@ def getFileType(name_info=None, url=None):
 		elif any(value in fmt for value in SCR): file_type += ' SCR /'
 		elif any(value in fmt for value in HDRIP): file_type += ' HDRIP /'
 
-		if 'atmos' in fmt: file_type += ' ATMOS /'
+		# 'ddpa' lleva la A de Atmos dentro, asi que la declara igual que si
+		# el nombre pusiera 'atmos' con todas sus letras.
+		if 'atmos' in fmt or 'ddpa' in fmt: file_type += ' ATMOS /'
 		if any(value in fmt for value in DOLBY_TRUEHD): file_type += ' DOLBY-TRUEHD /'
 		if any(value in fmt for value in DOLBY_DIGITALPLUS): file_type += ' DD+ /'
 		elif any(value in fmt for value in DOLBYDIGITAL): file_type += ' DOLBYDIGITAL /'
@@ -264,3 +303,48 @@ def copy2clip(txt):
 		except:
 			from resources.lib.modules import log_utils
 			log_utils.error('Linux: Failure to copy to clipboard')
+
+
+# ---------------------------------------------------------------------
+# v1.0.90 — Release group (inspirado en _extract_release_group de TMDb Movies)
+# ---------------------------------------------------------------------
+# Lo usa binge.py para que el siguiente episodio salga, si se puede, del
+# mismo grupo que el anterior (mismo encode, misma mezcla de audio, mismo
+# doblaje). Casos que cubre, por orden:
+#   ...-GRUPO.mkv       sufijo con guion (el caso normal)
+#   ...[GRUPO].mkv      grupo entre corchetes al final
+#   ...x265.GRUPO       grupo tras el ultimo punto
+# Se descarta basura que aparece en esas posiciones (codecs, resoluciones,
+# idiomas, "dual", "remux"...). Si no hay certeza, devuelve ''.
+_RG_JUNK = frozenset((
+	'x264', 'x265', 'h264', 'h265', 'hevc', 'avc', 'av1', 'xvid', 'divx', 'mkv', 'mp4', 'avi',
+	'1080p', '720p', '2160p', '480p', '4k', 'uhd', 'hdr', 'hdr10', 'dv', 'sdr', 'web', 'webdl',
+	'webrip', 'bluray', 'remux', 'bdrip', 'hdtv', 'dual', 'multi', 'audio', 'subs', 'sub', 'eng',
+	'spa', 'esp', 'lat', 'cast', 'castellano', 'latino', 'spanish', 'english', 'ita', 'fre', 'ger',
+	'aac', 'ac3', 'eac3', 'dts', 'ddp', 'ddp5', 'truehd', 'atmos', 'flac', 'opus', 'proper',
+	'repack', 'internal', 'extended', 'unrated', 'complete', 'season', 'rip', 'dl', 'ts', 'nf',
+	'amzn', 'dsnp', 'hmax', 'atvp', 'www', 'com', 'org', 'net', 'rarbg', 'eztv', 'yts', 'none'))
+
+
+def release_group(name):
+	try:
+		if not name: return ''
+		n = unquote(str(name)).strip()
+		n = re.sub(r'(?i)\.(mkv|mp4|avi|ts|m2ts|webm|m4v)$', '', n)
+		n = re.sub(r'\s+', ' ', n).strip(' .-_')
+		m = re.search(r'-\s?([A-Za-z0-9@_]{2,15})\s*(?:\[[^\]]*\])?$', n)
+		if not m:
+			m = re.search(r'\[([A-Za-z0-9_]{2,15})\]$', n)
+		if not m:
+			m = re.search(r'\.([A-Za-z][A-Za-z0-9_]{1,14})$', n)
+			# tras un punto solo cuenta si el nombre tiene pinta de release
+			if m and not re.search(r'(?i)(19|20)\d{2}|\d{3,4}p|s\d{1,2}e\d{1,3}', n):
+				m = None
+		if not m: return ''
+		grp = m.group(1)
+		if grp.lower() in _RG_JUNK or not re.search(r'[A-Za-z]', grp): return ''
+		if re.match(r'(?i)^(s\d{1,2}e\d{1,3}|\d{3,4}p|v\d+)$', grp): return ''
+		if re.match(r'^[0-9A-Fa-f]{8}$', grp) and re.search(r'\d', grp): return '' # CRC32 de anime, no es grupo
+		return grp.upper()
+	except Exception:
+		return ''

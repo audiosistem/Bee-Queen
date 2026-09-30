@@ -46,7 +46,14 @@ class TorBox:
 		try:
 			response = session.request(method, full_path, params=params, json=json, data=data, timeout=self.timeout)
 		except Exception as e:
-			log_utils.log('TorBox network error: %s' % e, level=log_utils.LOGWARNING)
+			# v1.0.75 -- segunda linea de defensa. Aunque ya no mandemos el token
+			# como parametro, requests incrusta la URL en el texto de sus
+			# excepciones; scrub_url() la limpia antes de que llegue al log.
+			try:
+				from resources.lib.jacksparrow.client import scrub_url
+				msg = scrub_url(str(e))
+			except Exception: msg = '%s (%s %s)' % (type(e).__name__, method.upper(), path)
+			log_utils.log('TorBox network error: %s' % msg, level=log_utils.LOGWARNING)
 			return {}
 		# Parse body first so we can read 'success'/'error'/'detail' regardless of status code
 		try: result = response.json()
@@ -71,8 +78,22 @@ class TorBox:
 		try: response.raise_for_status()
 		except Exception as e:
 			if not (isinstance(result, dict) and 'success' in result):
-				log_utils.log('TorBox HTTP error: %s\n%s' % (e, response.text[:500] if hasattr(response, 'text') else ''), level=log_utils.LOGDEBUG)
+				# v1.0.75 -- este mensaje lleva la URL completa, y la URL de
+				# requestdl lleva el token. Se sanea igual que el error de red.
+				try:
+					from resources.lib.jacksparrow.client import scrub_url
+					_e = scrub_url(str(e))
+				except Exception: _e = '%s (%s %s)' % (type(e).__name__, method.upper(), path)
+				log_utils.log('TorBox HTTP error: %s\n%s' % (_e, response.text[:500] if hasattr(response, 'text') else ''), level=log_utils.LOGDEBUG)
 		return result
+
+	@staticmethod
+	def _ok(result):
+		"""v1.0.75 -- _request() devuelve {} ante un error de red y None si no hay
+		api_key, asi que result['success'] lanzaba KeyError/TypeError en las tres
+		llamadas que lo leian a pelo. Un fallo de red no es una excepcion: es un
+		no."""
+		return isinstance(result, dict) and result.get('success') is True
 
 	def _GET(self, url, params=None):
 		return self._request('get', url, params=params)
@@ -112,6 +133,12 @@ class TorBox:
 		data = {'usenet_id': request_id, 'operation': 'delete'}
 		return self._POST(self.remove_usenet, json=data)
 
+	# v1.0.75 -- OJO: el 'token' de estas dos llamadas NO es redundante.
+	# /torrents/requestdl y /usenet/requestdl lo EXIGEN como parametro de query
+	# y NO aceptan la cabecera Authorization: sin el devuelven 422 Unprocessable
+	# Entity y no se reproduce nada. Se comprobo en aparato el 7-sep-2026.
+	# La fuga al log que motivo el cambio se ataja donde toca: en _request(),
+	# saneando el texto de la excepcion antes de escribirlo (red Y HTTP).
 	def unrestrict_link(self, file_id):
 		torrent_id, file_id = file_id.split(',')
 		params = {'token': self.api_key, 'torrent_id': torrent_id, 'file_id': file_id}
@@ -264,8 +291,9 @@ class TorBox:
 
 	def create_transfer(self, magnet_url):
 		result = self.add_magnet(magnet_url)
-		if not result['success']: return ''
-		return result['data'].get('torrent_id', '')
+		if not self._ok(result): return ''
+		try: return result['data'].get('torrent_id', '')
+		except Exception: return ''
 
 	def resolve_magnet(self, magnet_url, info_hash, season, episode, title):
 		from resources.lib.modules.source_utils import seas_ep_filter, extras_filter
@@ -347,10 +375,14 @@ class TorBox:
 			return None
 
 	def display_magnet_pack(self, magnet_url, info_hash):
+		# v1.0.75 -- mismo fallo que se corrigio en resolve_magnet en la v1.0.17:
+		# torrent_id se leia en el except antes de existir, y el UnboundLocalError
+		# resultante tapaba la causa real.
+		torrent_id = None
 		try:
 			extensions = supported_video_extensions()
 			torrent = self.add_magnet(magnet_url)
-			if not torrent['success']: return None
+			if not self._ok(torrent): return None
 			torrent_id = torrent['data']['torrent_id']
 			torrent_files = self.torrent_info(torrent_id)
 			torrent_files = [
@@ -394,7 +426,13 @@ class TorBox:
 				log_utils.log('TorBox auth: device/start did not return success', level=log_utils.LOGWARNING)
 				return self._auth_manual_fallback()
 		except Exception as e:
-			log_utils.log('TorBox auth: device/start error: %s' % e, level=log_utils.LOGWARNING)
+			# v1.0.75 -- misma politica que el resto de _request: ninguna excepcion
+			# se escribe cruda, aunque esta ruta todavia no lleve credencial.
+			try:
+				from resources.lib.jacksparrow.client import scrub_url
+				_e = scrub_url(str(e))
+			except Exception: _e = type(e).__name__
+			log_utils.log('TorBox auth: device/start error: %s' % _e, level=log_utils.LOGWARNING)
 			return self._auth_manual_fallback()
 
 		data = result['data']
@@ -525,6 +563,14 @@ class TorBox:
 			items += ['[B]Customer[/B]: %s' % data.get('customer', '-')]
 			items += ['[B]Plan[/B]: %s' % plan_label]
 			items += ['[B]Expires[/B]: %s' % data.get('premium_expires_at', '-')]
+			# v1.0.75 -- los demas debrid muestran los dias restantes; TorBox tenia
+			# la propiedad days_remaining escrita y sin usar. Se reaprovecha el dato
+			# ya descargado en vez de repetir la peticion a /user/me.
+			try:
+				import datetime as _dt
+				_exp = _dt.datetime.strptime(str(data.get('premium_expires_at'))[:10], '%Y-%m-%d')
+				items += [getLS(40042) % (_exp - _dt.datetime.today()).days]
+			except Exception: pass
 			td = data.get('total_downloaded')
 			if td is not None:
 				items += ['[B]Downloaded[/B]: %s' % _human_bytes(td)]
@@ -605,6 +651,6 @@ class TorBox:
 	def delete_user_torrent(self, request_id, mediatype, name):
 		if not control.yesnoDialog(getLS(40050) % '?\n' + name, '', ''): return
 		result = self.delete_usenet(request_id) if mediatype == 'usenet' else self.delete_torrent(request_id)
-		if result['success']:
+		if self._ok(result):
 			control.notification(message='TorBox: %s was removed' % name, icon=tb_icon)
 			control.refresh()

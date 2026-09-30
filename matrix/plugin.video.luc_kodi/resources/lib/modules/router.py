@@ -166,6 +166,51 @@ def router(params):
 	elif action == 'mdblist_movieListItems':
 		from resources.lib.menus.mdblist_menus import MDBListMovies
 		MDBListMovies().listItems(params.get('list_id'))
+	elif action == 'mdblist_movieExternalLists':
+		from resources.lib.menus.mdblist_menus import MDBListMovies
+		MDBListMovies().externalLists()
+	elif action == 'mdblist_movieExternalListItems':
+		from resources.lib.menus.mdblist_menus import MDBListMovies
+		MDBListMovies().externalListItems(params.get('list_id'))
+	elif action == 'mdblist_movieLikedLists':
+		from resources.lib.menus.mdblist_menus import MDBListMovies
+		MDBListMovies().likedLists()
+	####################################################
+	#---PUNCHPLAY MOVIES
+	####################################################
+	elif action == 'punchplay_movieNavigator':
+		from resources.lib.menus import navigator
+		navigator.Navigator().punchplay_movies()
+	elif action == 'punchplay_movieWatchlist':
+		from resources.lib.menus.punchplay_menus import PunchPlayMovies
+		PunchPlayMovies().watchlist()
+	elif action == 'punchplay_movieUserLists':
+		from resources.lib.menus.punchplay_menus import PunchPlayMovies
+		PunchPlayMovies().userLists()
+	elif action == 'punchplay_movieListItems':
+		from resources.lib.menus.punchplay_menus import PunchPlayMovies
+		PunchPlayMovies().listItems(params.get('list_id'))
+	elif action == 'punchplay_movieCommunityLists':
+		from resources.lib.menus.punchplay_menus import PunchPlayMovies
+		PunchPlayMovies().communityLists()
+	elif action == 'punchplay_movieOpenByUrl':
+		from resources.lib.menus.punchplay_menus import PunchPlayMovies
+		PunchPlayMovies().openByUrl()
+	elif action == 'punchplay_movieHistory':
+		from resources.lib.menus.punchplay_menus import PunchPlayMovies
+		PunchPlayMovies().history()
+	elif action == 'punchplay_movieCollection':
+		from resources.lib.menus.punchplay_menus import PunchPlayMovies
+		PunchPlayMovies().collection()
+	elif action == 'punchplay_movieFavourites':
+		from resources.lib.menus.punchplay_menus import PunchPlayMovies
+		PunchPlayMovies().favourites()
+	elif action == 'punchplay_movieRatings':
+		from resources.lib.menus.punchplay_menus import PunchPlayMovies
+		PunchPlayMovies().ratings()
+	elif action == 'punchplay_continueMovies':
+		from resources.lib.menus.punchplay_menus import PunchPlayContinueMovies
+		PunchPlayContinueMovies().get()
 	####################################################
 	#---MDBLIST CONTINUE WATCHING + TOP LISTS (MOVIES)
 	####################################################
@@ -343,6 +388,9 @@ def router(params):
 	elif action == 'tvNetworks':
 		from resources.lib.menus import tvshows
 		tvshows.TVshows().networks()
+	elif action == 'tvProviders':
+		from resources.lib.menus import tvshows
+		tvshows.TVshows().watchproviders()
 	elif action == 'tvLanguages':
 		from resources.lib.menus import tvshows
 		tvshows.TVshows().languages()
@@ -391,6 +439,54 @@ def router(params):
 	elif action == 'mdblist_showListItems':
 		from resources.lib.menus.mdblist_menus import MDBListShows
 		MDBListShows().listItems(params.get('list_id'))
+	elif action == 'mdblist_showExternalLists':
+		from resources.lib.menus.mdblist_menus import MDBListShows
+		MDBListShows().externalLists()
+	elif action == 'mdblist_showExternalListItems':
+		from resources.lib.menus.mdblist_menus import MDBListShows
+		MDBListShows().externalListItems(params.get('list_id'))
+	elif action == 'mdblist_showLikedLists':
+		from resources.lib.menus.mdblist_menus import MDBListShows
+		MDBListShows().likedLists()
+	####################################################
+	#---PUNCHPLAY TV SHOWS
+	####################################################
+	elif action == 'punchplay_tvNavigator':
+		from resources.lib.menus import navigator
+		navigator.Navigator().punchplay_tv()
+	elif action == 'punchplay_showWatchlist':
+		from resources.lib.menus.punchplay_menus import PunchPlayShows
+		PunchPlayShows().watchlist()
+	elif action == 'punchplay_showUserLists':
+		from resources.lib.menus.punchplay_menus import PunchPlayShows
+		PunchPlayShows().userLists()
+	elif action == 'punchplay_showListItems':
+		from resources.lib.menus.punchplay_menus import PunchPlayShows
+		PunchPlayShows().listItems(params.get('list_id'))
+	elif action == 'punchplay_continueEpisodes':
+		from resources.lib.menus.punchplay_menus import PunchPlayContinueEpisodes
+		PunchPlayContinueEpisodes().get()
+	elif action == 'punchplay_showCommunityLists':
+		from resources.lib.menus.punchplay_menus import PunchPlayShows
+		PunchPlayShows().communityLists()
+	elif action == 'punchplay_showOpenByUrl':
+		from resources.lib.menus.punchplay_menus import PunchPlayShows
+		PunchPlayShows().openByUrl()
+	elif action == 'punchplay_calendarEpisodes':
+		from resources.lib.menus.punchplay_menus import PunchPlayCalendar
+		PunchPlayCalendar().episodes()
+	elif action == 'punchplay_showCollection':
+		from resources.lib.menus.punchplay_menus import PunchPlayShows
+		PunchPlayShows().collection()
+	elif action == 'punchplay_showFavourites':
+		from resources.lib.menus.punchplay_menus import PunchPlayShows
+		PunchPlayShows().favourites()
+	elif action == 'punchplay_showRatings':
+		from resources.lib.menus.punchplay_menus import PunchPlayShows
+		PunchPlayShows().ratings()
+	elif action == 'punchplay_showProgress':
+		from resources.lib.menus.punchplay_menus import PunchPlayProgress
+		PunchPlayProgress().episodes()
 	####################################################
 	#---MDBLIST CONTINUE WATCHING + TOP LISTS (TV SHOWS)
 	####################################################
@@ -409,6 +505,9 @@ def router(params):
 	####################################################
 	#---MDBLIST CONTEXT MENU
 	####################################################
+	elif action == 'simklManager': # v1.0.91
+		from resources.lib.modules import simkl as simkl_mod
+		simkl_mod.manager(name, imdb, params.get('media_type', 'movie'))
 	elif action == 'mdblist_Manager':
 		from resources.lib.modules import mdblist as mdblist_mod
 		mdblist_mod.manager(name, imdb, params.get('media_type', 'movie'))
@@ -529,43 +628,15 @@ def router(params):
 			from resources.lib.debrid import easynews
 			easynews.EasyNews().account_info_to_dialog()
 
-	elif action and action.startswith('ed_'):
-		if action == 'ed_AccountInfo':
-			from resources.lib.debrid import easydebrid
-			easydebrid.EasyDebrid().account_info_to_dialog()
-		elif action == 'ed_Authorize':
-			from resources.lib.debrid import easydebrid
-			easydebrid.EasyDebrid().auth()
-		elif action == 'ed_Deauthorize':
-			from resources.lib.debrid import easydebrid
-			easydebrid.EasyDebrid().remove_auth()
-
-	elif action and action.startswith('oc_'):
-		if action == 'oc_ServiceNavigator':
-			from resources.lib.menus import navigator
-			navigator.Navigator().offcloud_service()
-		elif action == 'oc_AccountInfo':
-			from resources.lib.debrid import offcloud
-			offcloud.Offcloud().account_info_to_dialog()
-		elif action == 'oc_Authorize':
-			from resources.lib.debrid import offcloud
-			offcloud.Offcloud().auth()
-		elif action == 'oc_Deauthorize':
-			from resources.lib.debrid import offcloud
-			offcloud.Offcloud().remove_auth()
-		elif action == 'oc_CloudStorage':
-			from resources.lib.debrid import offcloud
-			offcloud.Offcloud().user_cloud_to_listItem()
-		elif action == 'oc_BrowseUserTorrents':
-			from resources.lib.debrid import offcloud
-			offcloud.Offcloud().browse_user_torrents(params.get('id'))
-		elif action == 'oc_DeleteUserTorrent':
-			from resources.lib.debrid import offcloud
-			offcloud.Offcloud().delete_user_torrent(params.get('id'), name)
-		elif action == 'oc_UserCloudClear':
-			from resources.lib.debrid import offcloud
-			offcloud.Offcloud().user_cloud_clear()
-
+	# v1.0.78 retiro los bloques de acciones 'ed_' (EasyDebrid) y 'oc_'
+	# (Offcloud); la v1.0.87 termina el trabajo y quita lo que quedaba en
+	# debrid.py, sources.py y este mismo fichero. Importaban
+	# resources/lib/debrid/easydebrid.py y offcloud.py, dos ficheros que NO
+	# existen, y sus guardas colgaban de 'easydebrid.enable' y
+	# 'offcloud.enable', ajustes que nunca estuvieron declarados en
+	# settings.xml: Kodi devuelve cadena vacia para un ajuste no declarado,
+	# asi que la condicion jamas podia ser cierta. Eran ImportError
+	# esperando a que alguien declarase esos ajustes.
 	elif action and action.startswith('pm_'):
 		if action == 'pm_ServiceNavigator':
 			from resources.lib.menus import navigator
@@ -673,6 +744,18 @@ def router(params):
 		elif action == 'simkl_ForceSync':
 			from resources.lib.modules import simkl
 			simkl.force_simklSync()
+	elif action and action.startswith('punchplay_') and action in (
+			'punchplay_Authorize', 'punchplay_Deauthorize',
+			'punchplay_AccountInfo', 'punchplay_ForceSync'):
+		from resources.lib.modules import punchplay
+		if action == 'punchplay_Authorize':
+			punchplay.auth()
+		elif action == 'punchplay_Deauthorize':
+			punchplay.deauth()
+		elif action == 'punchplay_AccountInfo':
+			punchplay.account_info_to_dialog()
+		elif action == 'punchplay_ForceSync':
+			punchplay.force_punchplaySync()
 	elif action == 'mdblist_Authorize':
 		from resources.lib.modules import mdblist
 		mdblist.auth()
@@ -748,15 +831,6 @@ def router(params):
 				except:
 					import traceback
 					traceback.print_exc()
-			if caller == 'easydebrid':
-				control.busy()
-				try:
-					from resources.lib.modules import downloader
-					from resources.lib.debrid import easydebrid
-					downloader.download(name, image, easydebrid.EasyDebrid().unrestrict_link(url.replace(' ', '%20')))
-				except:
-					import traceback
-					traceback.print_exc()
 			if caller == 'easynews':
 				control.busy()
 				try:
@@ -766,14 +840,6 @@ def router(params):
 					from resources.lib.jacksparrow.sourcesdir.torrents import easynews as _en_mod
 					_dl = _en_mod.source().resolve(url) or url
 					downloader.download(name, image, _dl)
-				except:
-					import traceback
-					traceback.print_exc()
-			if caller == 'offcloud':
-				control.busy()
-				try:
-					from resources.lib.modules import downloader
-					downloader.download(name, image, url.replace(' ', '%20'))
 				except:
 					import traceback
 					traceback.print_exc()
@@ -856,17 +922,56 @@ def router(params):
 			# (fresh_meta re-pide el detalle de página 1 y renueva el sello
 			# meta_hours; force_refresh re-lee las listas). El arranque diario
 			# ya no hace esto: usa el ciclo ligero.
-			catalog_updater.precache_tmdb_catalog(pages=5, silent=False, force_refresh=True, fresh_meta=True)
+			catalog_updater.precache_tmdb_catalog(pages=5, silent=False, force_refresh=True, fresh_meta=True, budget=False)
 			control.trigger_widget_refresh()
+		elif action == 'tools_selectPrecacheStreaming':
+			from resources.lib.modules import precache_select
+			precache_select.streaming()
+		elif action == 'tools_selectPrecacheNetworks':
+			from resources.lib.modules import precache_select
+			precache_select.networks()
 		elif action == 'tools_personalRankerStats':
 			from resources.lib.modules import personal_ranker_ui
 			personal_ranker_ui.show_stats()
 		elif action == 'tools_personalRankerReset':
 			from resources.lib.modules import personal_ranker_ui
 			personal_ranker_ui.reset_with_confirm()
+		elif action == 'tools_cacheFootprint':
+			from resources.lib.modules import cache_footprint_ui
+			cache_footprint_ui.show()
+		elif action == 'tools_maintenanceCleanNow':
+			from resources.lib.modules import maintenance
+			maintenance.clean_now()
+		elif action == 'tools_networkAudit':
+			from resources.lib.modules import network_audit
+			network_audit.show()
 		elif action == 'tools_cleanSettings':
 			from resources.lib.modules import clean_settings
 			clean_settings.clean_settings()
+		elif action == 'tools_logExport':
+			from resources.lib.modules import log_export
+			log_export.run()
+		elif action == 'tools_providerTest':
+			from resources.lib.modules import provider_test
+			provider_test.run()
+		elif action == 'tools_checkUpdate':
+			from resources.lib.modules import updater
+			updater.run_manual()
+		elif action == 'tools_displayTest':
+			from resources.lib.modules import display_test
+			display_test.run()
+		elif action == 'tools_meteorDetect':
+			from resources.lib.modules import meteor_wizard
+			meteor_wizard.detect()
+		elif action == 'tools_sootioDetect':
+			from resources.lib.modules import sootio_wizard
+			sootio_wizard.detect()
+		elif action == 'tools_ytPrefs':
+			from resources.lib.modules import yt_prefs
+			yt_prefs.apply_profile()
+		elif action == 'tools_ytSnapshot':
+			from resources.lib.modules import yt_prefs
+			yt_prefs.snapshot()
 		elif action == 'tools_sootioWizard':
 			from resources.lib.modules import sootio_wizard
 			sootio_wizard.run()
@@ -879,6 +984,12 @@ def router(params):
 		elif action == 'tools_torzDetect':
 			from resources.lib.modules import torz_wizard
 			torz_wizard.detect()
+		elif action == 'tools_aiostreamsWizard':
+			from resources.lib.modules import aiostreams_wizard
+			aiostreams_wizard.run()
+		elif action == 'tools_aiostreamsDetect':
+			from resources.lib.modules import aiostreams_wizard
+			aiostreams_wizard.detect()
 		elif action == 'tools_newznabWizard':
 			from resources.lib.modules import newznab_wizard
 			newznab_wizard.run()
@@ -966,6 +1077,9 @@ def router(params):
 				from resources.lib.modules.control import homeWindow as _hw
 				_hw.setProperty('luc_kodi.bingie_direct', 'true')
 			sources.Sources(params.get('all_providers')).play(title, year, imdb, tmdb, tvdb, season, episode, tvshowtitle, params.get('premiered'), params.get('meta'), params.get('select'), params.get('rescrape'))
+		elif action == 'play_rollover': # v1.0.91
+			from resources.lib.modules import sources
+			sources.Sources().rollover()
 		elif action == "play_preScrapeNext":
 			from resources.lib.modules.player import PlayNext
 			PlayNext().prescrapeNext()
@@ -1017,6 +1131,7 @@ def router(params):
 				item = control.item(label=title, offscreen=True)
 				control.playlist.add(url=url, listitem=item)
 			control.player2().play(control.playlist)
+
 
 		elif action == 'play_Trailer':
 			from resources.lib.modules import trailer
@@ -1142,10 +1257,6 @@ def router(params):
 			from resources.lib.debrid.premiumize import Premiumize as debrid_function
 		elif caller == 'AD':
 			from resources.lib.debrid.alldebrid import AllDebrid as debrid_function
-		elif caller == 'OC':
-			from resources.lib.debrid.offcloud import Offcloud as debrid_function
-		elif caller == 'ED':
-			from resources.lib.debrid.easydebrid import EasyDebrid as debrid_function
 		elif caller == 'TB':
 			from resources.lib.debrid.torbox import TorBox as debrid_function
 		success = debrid_function().add_uncached_torrent(url, pack=pack)
@@ -1271,5 +1382,7 @@ def router(params):
 		elif action == 'tools_resetMetadataKeys':
 			control.setSetting('tmdb.api.key', '')
 			control.setSetting('fanart_tv.api_key', '')
+			control.setSetting('tvdb.personal_key', '')
+			control.setSetting('tvdb.pin', '')
 			control.homeWindow.clearProperty('luc_kodi_settings')
-			control.notification(message='TMDb and Fanart keys reset to plugin defaults')
+			control.notification(message='TMDb, TheTVDB and Fanart keys reset to plugin defaults')

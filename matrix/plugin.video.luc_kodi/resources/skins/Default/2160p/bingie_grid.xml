@@ -84,7 +84,7 @@
 			<control type="grouplist" id="9020">
 				<left>4</left><top>470</top><width>1540</width><height>60</height>
 				<orientation>horizontal</orientation>
-				<itemgap>34</itemgap>
+				<itemgap>68</itemgap>
 				<align>left</align>
 				<usecontrolcoords>true</usecontrolcoords>
 

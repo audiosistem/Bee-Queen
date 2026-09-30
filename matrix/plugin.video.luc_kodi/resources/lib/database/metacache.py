@@ -129,6 +129,44 @@ def insert(meta):
 			dbcon.close()
 		except Exception:
 			pass
+def fetch_light(limit=20):
+	"""v1.0.80 — Devuelve metas guardadas en modo LIGERO (sin el bloque images de
+	TMDb, así que sin clearlogo ni pósters alternativos) para que el servicio las
+	complete en segundo plano.
+
+	Devuelve (filas, pendientes) donde cada fila es
+	(tmdb, mediatype, lang, user). `lang`/`user` se devuelven para que el INSERT
+	OR REPLACE del refresco caiga sobre ESA fila y no cree una nueva si el idioma
+	del addon ha cambiado desde que se guardó.
+
+	La marca es la clave 'meta_light' dentro del repr() del dict, así que el
+	filtro barato es un LIKE; el literal_eval solo se paga en las `limit` filas
+	que se van a refrescar."""
+	rows = [] ; pending = 0
+	try:
+		dbcon = get_connection()
+		dbcur = get_connection_cursor(dbcon)
+		ck_table = dbcur.execute('''SELECT * FROM sqlite_master WHERE type='table' AND name='meta';''').fetchone()
+		if not ck_table: return rows, 0
+		pending = dbcur.execute('''SELECT COUNT(*) FROM meta WHERE item LIKE '%meta_light%' ''').fetchone()[0]
+		if not pending: return rows, 0
+		# Las más antiguas primero: son las que más lejos quedan de su TTL.
+		found = dbcur.execute('''SELECT tmdb, item, lang, user FROM meta WHERE item LIKE '%meta_light%' ORDER BY time ASC LIMIT ?''', (int(limit),)).fetchall()
+		for tmdb, item, lang, user in found:
+			if not tmdb: continue
+			try: mediatype = literal_eval(item).get('mediatype', 'movie')
+			except: mediatype = 'movie'
+			rows.append((str(tmdb), mediatype, lang, user))
+	except:
+		from resources.lib.modules import log_utils
+		log_utils.error()
+	finally:
+		try: dbcur.close()
+		except Exception: pass
+		try: dbcon.close()
+		except Exception: pass
+	return rows, pending
+
 def remove_by_ids(tmdb_ids):
 	"""Borrado SELECTIVO de metas por tmdb id (no toca el resto de la caché).
 	Lo usa el precache de arranque para forzar frescura real SOLO de los títulos
@@ -168,6 +206,8 @@ def cache_clear_meta():
 		dbcon = get_connection()
 		dbcur = get_connection_cursor(dbcon)
 		dbcur.execute('''DROP TABLE IF EXISTS meta''')
+		global _INDEXES_DONE
+		_INDEXES_DONE = False # los indices caen con la tabla
 		dbcur.execute('''VACUUM''')
 		dbcur.connection.commit()
 		cleared = True
@@ -194,7 +234,31 @@ def get_connection():
 	dbcon.execute('''PRAGMA temp_store = memory''')
 	dbcon.execute('''PRAGMA mmap_size = 268435456''')
 	# dbcon.row_factory = _dict_factory # not needed for metacache
+	_ensure_indexes(dbcon)
 	return dbcon
+
+# v1.0.90 -- INDICES PARA EL "ULTIMO RECURSO" DE fetch().
+# La tercera consulta de fetch() es un OR entre imdb, tmdb y tvdb. El unico
+# indice era el implicito de UNIQUE(imdb, tmdb, tvdb, lang, user), que solo
+# sirve cuando se busca por imdb, asi que SQLite recorria la tabla ENTERA
+# (EXPLAIN QUERY PLAN: "SCAN meta"). Y esa consulta corre siempre que un
+# titulo no esta en cache: en cada titulo nuevo de cada pagina. Con estos dos
+# indices el plan pasa a "MULTI-INDEX OR" (medido: 2,45 ms -> 0,005 ms por
+# fallo con 20.000 filas en memoria; en disco y en Android, mas).
+# Se crean una sola vez por proceso; si la tabla aun no existe se reintenta
+# en la siguiente conexion.
+_INDEXES_DONE = False
+
+def _ensure_indexes(dbcon):
+	global _INDEXES_DONE
+	if _INDEXES_DONE: return
+	try:
+		dbcon.execute('''CREATE INDEX IF NOT EXISTS meta_tmdb ON meta (tmdb, lang, user)''')
+		dbcon.execute('''CREATE INDEX IF NOT EXISTS meta_tvdb ON meta (tvdb, lang, user)''')
+		dbcon.commit()
+		_INDEXES_DONE = True
+	except Exception:
+		pass
 
 def get_connection_cursor(dbcon):
 	dbcur = dbcon.cursor()
