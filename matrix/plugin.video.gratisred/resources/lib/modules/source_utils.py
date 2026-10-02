@@ -200,14 +200,24 @@ def get_audio(txt):
     return _audio
 
 
+_SIZE_RE = re.compile(r'(?<![0-9])(\d+(?:[.,]\d+)?)\s*(gb|gib|mb|mib)\b', re.I)
+
+
 def get_size(txt):
+    """A size written in the link text, such as 1.4 GB. Empty when the text has none."""
     try:
-        _size = re.findall(r'(\d+(?:\.|/,|)?\d+(?:\s+|)(?:gb|GiB|mb|MiB|GB|MB))', txt)
-        _size = _size[0].encode('utf-8')
-        _size = _size + " | "
-    except:
-        _size = '0'
-    return _size
+        match = _SIZE_RE.search(txt or '')
+        if not match:
+            return ''
+        number = match.group(1).replace(',', '.')
+        unit = match.group(2).upper()
+        if unit == 'GIB':
+            unit = 'GB'
+        elif unit == 'MIB':
+            unit = 'MB'
+        return '%s %s | ' % (number, unit)
+    except Exception:
+        return ''
 
 
 def get_3D(txt):
@@ -216,6 +226,54 @@ def get_3D(txt):
     else:
         _3D = '0'
     return _3D
+
+
+def _has_token(txt, *tokens):
+    hay = ' %s ' % (txt or '')
+    for token in tokens:
+        if (' %s ' % token) in hay:
+            return True
+    return False
+
+
+def get_picture(txt):
+    dv = _has_token(txt, 'dolby vision', 'dolbyvision', 'dovi', 'dv')
+    hdr = _has_token(txt, 'hdr', 'hdr10', 'hdr10plus')
+    if dv and hdr:
+        return 'DV | HDR | '
+    if dv:
+        return 'DV | '
+    if hdr:
+        return 'HDR | '
+    return ''
+
+
+def get_audio_codec(txt):
+    if _has_token(txt, 'atmos'):
+        return 'Atmos | '
+    if _has_token(txt, 'truehd', 'true hd'):
+        return 'TrueHD | '
+    if _has_token(txt, 'dts x', 'dtsx'):
+        return 'DTS-X | '
+    if _has_token(txt, 'dts hd', 'dtshd'):
+        return 'DTS-HD | '
+    if _has_token(txt, 'dts'):
+        return 'DTS | '
+    if _has_token(txt, 'ddp', 'eac3', 'dd plus'):
+        return 'DD+ | '
+    if _has_token(txt, 'ac3', 'dd'):
+        return 'DD | '
+    if _has_token(txt, 'aac'):
+        return 'AAC | '
+    return ''
+
+
+def get_origin(txt):
+    if _has_token(txt, 'bluray', 'blu ray', 'bdrip', 'bd rip'):
+        return 'BluRay | '
+    if _has_token(txt, 'webdl', 'webrip', 'web dl', 'web rip'):
+        return 'WEB | '
+    return ''
 
 
 def get_quality(txt1, txt2=None):
@@ -241,7 +299,7 @@ def get_quality(txt1, txt2=None):
     return _quality
 
 
-def get_info(txt1, txt2=None):
+def get_info(txt1, txt2=None, size=''):
     if not txt2:
         txt = txt1
     else:
@@ -250,16 +308,16 @@ def get_info(txt1, txt2=None):
     _codec = get_codec(txt)
     if not _codec or _codec == '0':
         _codec = ''
+    _picture = get_picture(txt)
+    _audio_codec = get_audio_codec(txt)
     _audio = get_audio(txt)
     if not _audio or _audio == '0':
         _audio = ''
-    _size = get_size(txt)
-    if not _size or _size == '0':
-        _size = ''
+    _origin = get_origin(txt)
     _3D = get_3D(txt)
     if not _3D or _3D == '0':
         _3D = ''
-    _info = _codec + _audio + _size + _3D
+    _info = _codec + _picture + _audio_codec + _audio + (size or '') + _origin + _3D
     return _info
 
 
@@ -290,6 +348,7 @@ def get_release_quality(release_name, release_link=None):
     try:
         if not release_name:
             return 'SD', []
+        size = get_size(release_name) or get_size(release_link or '')
         try:
             release_name = cleanup(release_name)
             if release_link:
@@ -301,7 +360,7 @@ def get_release_quality(release_name, release_link=None):
         if release_link and release_link == release_name:
             release_link = None
         quality = get_quality(release_name, release_link)
-        info = get_info(release_name, release_link)
+        info = get_info(release_name, release_link, size)
         return quality, info
     except:
         return 'SD', []
@@ -333,6 +392,40 @@ def _fully_unquote(text):
             break
         prev = nxt
     return prev
+
+
+_JUNK_FILE = re.compile(
+    r'^(?:player|embed|flix|index|video|stream|play|watch|iframe)\.php$',
+    re.I,
+)
+_BARE_HASH = re.compile(r'^[a-f0-9-]{16,}$', re.I)
+_VIDEO_EXT = re.compile(r'\.(mkv|mp4|avi|m4v|webm|ts|m3u8)$', re.I)
+
+
+def display_filename(text):
+    """A release-style name from a link. Empty for player pages, embed ids, and bare hashes."""
+    text = _fully_unquote(text or '')
+    text = text.split('|')[0].strip()
+    if not text:
+        return ''
+    name = filename_from_url(text)
+    if not name:
+        if '://' in text or text.startswith('//'):
+            path = urllib_parse.urlparse(text).path or ''
+            name = path.rsplit('/', 1)[-1]
+        else:
+            name = text
+    name = (name or '').strip()
+    if not name or _JUNK_FILE.match(name):
+        return ''
+    stem = _VIDEO_EXT.sub('', name)
+    if _BARE_HASH.match(stem):
+        return ''
+    if len(re.sub(r'[^A-Za-z]', '', name)) < 3:
+        return ''
+    if '.' not in name and not _VIDEO_EXT.search(name):
+        return ''
+    return name
 
 
 def filename_from_url(url):

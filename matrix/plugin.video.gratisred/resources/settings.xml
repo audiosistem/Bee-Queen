@@ -19,7 +19,7 @@
         <setting id="studio.artwork" type="bool" label="Show Studio Info/Artwork" default="false" />
         <setting id="original.artwork" type="bool" label="Use TMDb Original Artwork Sizes (Bulky at times.)" default="false" />
         <setting id="show.fanart" type="bool" label="Enable Fanart" default="true" />
-        <setting id="fanart.artwork" type="bool" label="Enable Fanart.tv Artwork" default="false" />
+        <setting id="fanart.artwork" type="bool" label="Enable Fanart.tv Artwork" default="true" />
         <setting id="fanart.artwork_size" type="bool" label="Enable Fanart.tv Preview Size" default="false" subsetting="true" enable="!eq(-1,false)" visible="eq(-1,true)" />
         <setting id="tmdb.collections.linesplit" type="enum" label="TMDb Collections List Appearance" values="Single line|Double line" default="1" />
         <setting id="trakt.authed" type="text" label="Trakt User:" default="" enable="false" visible="false" />
@@ -57,9 +57,7 @@
         <setting type="lsep" label="Source Settings" />
         <setting id="hosts.mode" type="enum" label="Default Action" values="Dialog|Directory|Auto Play" default="1" />
         <setting id="progress.dialog" type="enum" label="Progress Dialog" values="Foreground|Background" default="0" />
-        <setting id="sourcelist.linesplit" type="enum" label="Source List Appearance" values="Single line|Double line|Simple" default="1" />
-        <setting id="sourcelist.meta" type="bool" label="Enable Source List Metadata" default="false" />
-        <setting id="quality.artwork" type="bool" label="Enable Source List Artwork (Quality)" default="false" />
+        <setting id="sourcelist.linesplit" type="enum" label="Source List Appearance" values="Single line|Three line|Simple" default="1" />
         <setting id="sourcefilter.and" type="bool" label="Source Search With [and symbol] (on=symbol / off=word)" default="false" />
         <setting id="providers.timeout" type="slider" label="Providers Timeout" default="60" range="10,60" option="int" />
         <setting id="preemptive.termination" type="bool" label="Enable Pre-Emptive Termination" default="false" />
@@ -106,8 +104,8 @@
         <setting id="simkl.authorize" type="action" label="Authorise Simkl (QR Code)" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=auth_simkl&amp;source=settings)" visible="eq(-3,)" />
         <setting id="simkl.revoke" type="action" label="Revoke Simkl Account" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=revoke_simkl&amp;source=settings)" visible="!eq(-4,)" />
         <setting id="simkl.user" type="text" label="Simkl Account:" default="" enable="false" visible="!eq(-5,)" />
-        <setting id="simkl.track_rewatches" type="bool" label="Track Rewatches" default="false" visible="!eq(-6,)" />
-        <setting id="simkl.track_rewatches.note" type="text" label="Needs Simkl PRO or VIP. Off by default." enable="false" subsetting="true" visible="!eq(-7,)" />
+        <setting id="simkl.account_type" type="text" label="" default="" enable="false" visible="false" />
+        <setting id="simkl.track_rewatches" type="bool" label="Track Rewatches" default="false" visible="eq(-1,pro)|eq(-1,vip)" />
         <setting id="simkl.sync" type="bool" label="Simkl Watched Sync on Kodi Startup" default="false" visible="!eq(-8,)" />
         <setting id="simkl.synctime" type="slider" label="Delay Simkl Watched Sync _ Hour/s" default="0" range="0,24" option="int" subsetting="true" enable="!eq(-1,false)" visible="eq(-1,true)+!eq(-9,)" />
         <setting id="simkl.synctext" type="text" label="0 Value Disables Delay" subsetting="true" enable="!eq(-2,false)" visible="eq(-2,true)+!eq(-10,)" />
@@ -117,6 +115,8 @@
         <setting id="simkl.user_id" type="text" label="" default="" enable="false" visible="false" />
         <setting type="lsep" label="TMDb" />
         <setting id="tmdb.session" type="text" label="" default="" enable="false" visible="false" />
+        <setting id="tmdb.token" type="text" label="" default="" enable="false" visible="false" />
+        <setting id="tmdb.v4id" type="text" label="" default="" enable="false" visible="false" />
         <setting id="tmdb.lists_read_token" type="text" label="" default="eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhMGJmMjA3YzVmZjZjMGNhYWJhYzAzMjdlMzliMWNkMiIsIm5iZiI6MTUwMzk0ODAxMC43NTQsInN1YiI6IjU5YTQ2Y2U4YzNhMzY4MGIxMjAwMjgxYiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.2pYaMVzWy-TNg2SBlkP_CrYWpaxcU7LZIZLPdgJp9jw" enable="false" visible="false" />
         <setting id="tmdb.auth" type="action" label="Authorise TMDb (QR Code)" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=auth_tmdb&amp;source=settings)" visible="eq(-2,)" />
         <setting id="tmdb.revoke" type="action" label="Revoke TMDb Account" option="close" action="RunPlugin(plugin://plugin.video.gratisred/?action=revoke_tmdb&amp;source=settings)" visible="!eq(-3,)" />
@@ -195,21 +195,30 @@
         <setting id="provider.bluray7_com" type="bool" label="provider.bluray7_com" default="true" />
         <setting id="provider.bnwmovies_com" type="bool" label="provider.bnwmovies_com" default="true" />
         <setting id="provider.bstsrs_one" type="bool" label="provider.bstsrs_one (FlareSolverr)" default="true" />
+        <setting id="provider.cinetaro" type="bool" label="provider.cinetaro" default="true" />
+        <setting id="provider.databasegdriveplayer" type="bool" label="provider.databasegdriveplayer" default="true" />
         <setting id="provider.fmovie_core_sites" type="bool" label="provider.fmovie_core_sites (MoviesFree / Ghostplayer)" default="true" />
-        <setting id="provider.fzmovies_live" type="bool" label="provider.fzmovies_live" default="true" />
+        <setting id="provider.fzmovies_live" type="bool" label="provider.fzmovies_live" default="false" />
+        <setting id="provider.goojara" type="bool" label="provider.goojara (Movies)" default="true" />
         <setting id="provider.hdhub_stremio" type="bool" label="provider.hdhub_stremio (HdHub direct links)" default="true" />
         <setting id="provider.hollymoviehd_cc" type="bool" label="provider.hollymoviehd_cc (False Positives)" default="false" />
         <setting id="provider.levidia_ch" type="bool" label="provider.levidia_ch" default="true" />
+        <setting id="provider.movieseq" type="bool" label="provider.movieseq" default="true" />
         <setting id="provider.myvideolinks_net" type="bool" label="provider.myvideolinks_net" default="true" />
         <setting id="provider.naijavault_com" type="bool" label="provider.naijavault_com" default="true" />
         <setting id="provider.projectfreetv_cyou" type="bool" label="provider.projectfreetv_cyou (FlareSolverr)" default="true" />
-        <setting id="provider.projectfreetv_lol" type="bool" label="provider.projectfreetv_lol (FlareSolverr)" default="true" />
         <setting id="provider.seriesloaded_ng" type="bool" label="provider.seriesloaded_ng" default="true" />
         <setting id="provider.srstop_link" type="bool" label="provider.srstop_link" default="true" />
         <setting id="provider.stagatv_com" type="bool" label="provider.stagatv_com" default="true" />
-        <setting id="provider.tvmovieflix_com" type="bool" label="provider.tvmovieflix_com" default="true" />
+        <setting id="provider.tvmovieflix_com" type="bool" label="provider.tvmovieflix_com" default="false" />
         <setting id="provider.tvseries_in" type="bool" label="provider.tvseries_in" default="true" />
-        <setting id="provider.tvseries_video" type="bool" label="provider.tvseries_video" default="true" />
+        <setting id="provider.tvseries_video" type="bool" label="provider.tvseries_video" default="false" />
+        <setting id="provider.vidking" type="bool" label="provider.vidking" default="true" />
+        <setting id="provider.vidlove" type="bool" label="provider.vidlove" default="false" />
+        <setting id="provider.vidnest" type="bool" label="provider.vidnest" default="true" />
+        <setting id="provider.vidrock" type="bool" label="provider.vidrock" default="true" />
+        <setting id="provider.vidsrc" type="bool" label="provider.vidsrc" default="true" />
+        <setting id="provider.watchepisodes" type="bool" label="provider.watchepisodes (TV Only)" default="true" />
         <setting id="provider.watchseries_cyou" type="bool" label="provider.watchseries_cyou (FlareSolverr)" default="true" />
     </category>
 

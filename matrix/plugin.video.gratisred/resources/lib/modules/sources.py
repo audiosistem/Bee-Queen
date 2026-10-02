@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import copy
 import os
 import re
 import sys
+import threading
 import time
 import datetime
 import random
@@ -36,6 +38,373 @@ except:
     pass
 
 
+_skin_draws_percent = {}
+_PLAY_ACTIVE = 'gratisred.play_active'
+
+
+def _claim_play():
+    """One play at a time. A second Enter must not start another scrape while the first is still starting."""
+    token = '%s-%s' % (time.time(), threading.current_thread().ident or id(threading.current_thread()))
+    try:
+        if str(control.window.getProperty(_PLAY_ACTIVE) or ''):
+            return None
+        control.window.setProperty(_PLAY_ACTIVE, token)
+        # Threads woken together can all pass the empty check. The last writer keeps the play.
+        control.sleep(100)
+        if str(control.window.getProperty(_PLAY_ACTIVE) or '') != token:
+            return None
+    except Exception:
+        return token
+    return token
+
+
+def _release_play(token):
+    try:
+        if token and str(control.window.getProperty(_PLAY_ACTIVE) or '') == token:
+            control.window.clearProperty(_PLAY_ACTIVE)
+    except Exception:
+        pass
+
+
+# Kodi's progress dialog shows only a few lines of text, and skins size it for
+# ordinary labels. A long release name with no spaces wraps onto three or four
+# lines and pushes the rest of the label off the bottom of the box. The dialog
+# copy of the label is fitted instead: the file name keeps its start and its end
+# (quality tags, group and extension) with "..." in the middle, and any other
+# line is capped. The results list itself keeps the full name.
+_RESOLVE_NAME_CHARS = 94   # the release name line: about two lines of dialog text
+_RESOLVE_LINE_CHARS = 48   # any other line under the first: about one line
+_RESOLVE_TAGS = re.compile(r'^((?:\[/?[A-Z]+\])*)(.*?)((?:\[/?[A-Z]+\])*)$', re.S)
+
+
+def _fit_middle(text, limit):
+    if len(text) <= limit:
+        return text
+    keep = limit - 3
+    head = int(keep * 0.6)
+    tail = keep - head
+    return text[:head] + '...' + text[-tail:]
+
+
+def _fit_resolve_label(label):
+    """The resolving dialog's copy of a results label, short enough to show whole."""
+    try:
+        lines = label.split('[CR]')
+        fitted = [lines[0]]
+        for index, line in enumerate(lines[1:], 1):
+            match = _RESOLVE_TAGS.match(line)
+            opening, text, closing = match.groups() if match else ('', line, '')
+            limit = _RESOLVE_NAME_CHARS if index == 1 else _RESOLVE_LINE_CHARS
+            fitted.append(opening + _fit_middle(text, limit) + closing)
+        return '[CR]'.join(fitted)
+    except Exception:
+        return label
+
+
+def _pause_resolving(seconds=0.5):
+    """Close Kodi's Playback failed dialog as soon as a dead link opens it.
+
+    That dialog uses the same skin as the resolving bar and eats the Enter meant for Cancel.
+    Focus stays where it is. The busy-dialog flash is unchanged.
+    """
+    slices = int(max(1, round(float(seconds) / 0.1)))
+    for _ in range(slices):
+        control.dismiss_playback_failed()
+        time.sleep(0.1)
+
+
+def _xml_local(tag):
+    if not tag:
+        return ''
+    return tag.rsplit('}', 1)[-1].lower()
+
+
+def _skin_label_texts(root):
+    texts = []
+    for el in root.iter():
+        if _xml_local(el.tag) == 'label' and el.text:
+            texts.append(el.text)
+    return texts
+
+
+def _apply_include_params(node, params):
+    if not params:
+        return
+    if node.text:
+        for name, value in params.items():
+            node.text = node.text.replace('$PARAM[%s]' % name, value)
+    if node.tail:
+        for name, value in params.items():
+            node.tail = node.tail.replace('$PARAM[%s]' % name, value)
+    for key, attr in list(node.attrib.items()):
+        updated = attr
+        for name, value in params.items():
+            updated = updated.replace('$PARAM[%s]' % name, value)
+        node.attrib[key] = updated
+    for child in list(node):
+        _apply_include_params(child, params)
+
+
+def _expand_skin_includes(node, includes, depth=0, stack=None):
+    if depth > 12 or node is None:
+        return
+    if stack is None:
+        stack = set()
+    while True:
+        target = None
+        for child in list(node):
+            if child.get('_gr_done') or child.get('_gr_skip'):
+                continue
+            if _xml_local(child.tag) != 'include' or child.get('file'):
+                child.set('_gr_done', '1')
+                _expand_skin_includes(child, includes, depth + 1, stack)
+                continue
+            name = (child.get('content') or child.get('name') or (child.text or '')).strip()
+            if not name or name not in includes or name in stack:
+                child.set('_gr_skip', '1')
+                continue
+            target = (child, name)
+            break
+        if target is None:
+            return
+        child, name = target
+        params = {}
+        for param in list(child):
+            if _xml_local(param.tag) == 'param' and param.get('name'):
+                params[param.get('name')] = param.get('value') or ''
+        definition = includes[name]
+        body = None
+        for sub in list(definition):
+            if _xml_local(sub.tag) == 'definition':
+                body = sub
+                break
+        source = list(body) if body is not None else list(definition)
+        idx = list(node).index(child)
+        clones = []
+        for sub in source:
+            if _xml_local(sub.tag) == 'param':
+                continue
+            clone = copy.deepcopy(sub)
+            _apply_include_params(clone, params)
+            clones.append(clone)
+        node.remove(child)
+        for offset, clone in enumerate(clones):
+            node.insert(idx + offset, clone)
+        stack.add(name)
+        for clone in clones:
+            _expand_skin_includes(clone, includes, depth + 1, stack)
+        stack.discard(name)
+
+
+def _load_named_includes(folder):
+    import xml.etree.ElementTree as ET
+    includes = {}
+    if not folder or not os.path.isdir(folder):
+        return includes
+    pending = [name for name in os.listdir(folder) if name.lower().startswith('includes') and name.lower().endswith('.xml')]
+    seen = set()
+    while pending:
+        name = pending.pop()
+        if name in seen:
+            continue
+        seen.add(name)
+        path = name if os.path.isabs(name) else os.path.join(folder, name)
+        if not os.path.exists(path):
+            path = os.path.join(folder, os.path.basename(name))
+        if not os.path.exists(path):
+            continue
+        try:
+            root = ET.parse(path).getroot()
+        except Exception:
+            continue
+        for inc in root.iter():
+            if _xml_local(inc.tag) != 'include':
+                continue
+            inc_name = inc.get('name')
+            if inc_name:
+                includes[inc_name] = inc
+            inc_file = inc.get('file')
+            if inc_file and inc_file not in seen:
+                pending.append(inc_file)
+    return includes
+
+
+def _load_skin_variables(folder):
+    variables = {}
+    if not folder or not os.path.isdir(folder):
+        return variables
+    names = [name for name in os.listdir(folder) if name.lower() in ('variables.xml',) or (name.lower().startswith('includes') and name.lower().endswith('.xml'))]
+    pattern = re.compile(r'<variable\s+name="([^"]+)"[^>]*>(.*?)</variable>', re.I | re.S)
+    for name in names:
+        path = os.path.join(folder, name)
+        try:
+            with open(path, 'rb') as handle:
+                raw = handle.read()
+        except Exception:
+            continue
+        if not isinstance(raw, str):
+            raw = raw.decode('utf-8', 'replace')
+        for match in pattern.finditer(raw):
+            variables[match.group(1)] = match.group(2)
+    return variables
+
+
+def _resolve_skin_vars(text, variables):
+    if not text or '$VAR[' not in text:
+        return text or ''
+
+    def _replace(match):
+        return variables.get(match.group(1), '')
+
+    current = text
+    for _ in range(5):
+        updated = re.sub(r'\$VAR\[([^\]]+)\]', _replace, current)
+        if updated == current:
+            break
+        current = updated
+    return current
+
+
+def _xml_draws_progress_percent(xml_text, folder, background):
+    """True when a dialog label already prints the progress percentage."""
+    import xml.etree.ElementTree as ET
+    try:
+        root = ET.fromstring(xml_text)
+    except Exception:
+        root = None
+    if root is not None:
+        try:
+            _expand_skin_includes(root, _load_named_includes(folder))
+        except Exception:
+            pass
+        labels = _skin_label_texts(root)
+    else:
+        labels = re.findall(r'<label(?:\s[^>]*)?>(.*?)</label>', xml_text or '', re.I | re.S)
+    variables = _load_skin_variables(folder)
+    blob = '\n'.join(_resolve_skin_vars(label, variables) for label in labels).lower()
+    if 'system.progressbar' in blob:
+        return True
+    if background and 'control.getlabel(32)' in blob:
+        return True
+    return False
+
+
+def _ordered_skin_folders(skin_root):
+    import xml.etree.ElementTree as ET
+    sw = sh = 0
+    try:
+        from kodi_six import xbmc
+        sw = int(xbmc.getInfoLabel('System.ScreenWidth') or 0)
+        sh = int(xbmc.getInfoLabel('System.ScreenHeight') or 0)
+    except Exception:
+        pass
+    found = []
+    try:
+        root = ET.parse(os.path.join(skin_root, 'addon.xml')).getroot()
+        for res in root.iter():
+            if _xml_local(res.tag) != 'res':
+                continue
+            folder = res.get('folder') or ''
+            try:
+                width = int(res.get('width') or 0)
+                height = int(res.get('height') or 0)
+            except ValueError:
+                width = height = 0
+            default = (res.get('default') or '').lower() == 'true'
+            found.append((folder, width, height, default))
+    except Exception:
+        found = []
+    if not found:
+        found = [(name, 0, 0, False) for name in ('xml', '16x9', '1080i', '21x9', '720p')]
+
+    def _rank(item):
+        folder, width, height, default = item
+        if sw and sh and width and height:
+            aspect = abs((float(width) / float(height)) - (float(sw) / float(sh)))
+            size = abs(width - sw) + abs(height - sh)
+            return (aspect, size, 0 if default else 1)
+        return (0, 0, 0 if default else 1)
+
+    found.sort(key=_rank)
+    folders = []
+    for folder, width, height, default in found:
+        if folder not in folders:
+            folders.append(folder)
+    return folders
+
+
+def _skin_dialog_xml(filename):
+    skin_root = control.skinPath
+    for folder in _ordered_skin_folders(skin_root):
+        path = os.path.join(skin_root, folder, filename)
+        if os.path.exists(path):
+            return path
+    estuary = control.transPath('special://xbmc/addons/skin.estuary/xml/%s' % filename)
+    if estuary and os.path.exists(estuary):
+        return estuary
+    return None
+
+
+def _skin_draws_progress_percent(background):
+    key = 'bg' if background else 'fg'
+    if key in _skin_draws_percent:
+        return _skin_draws_percent[key]
+    # Foreground progress is DialogConfirm.xml. Background is DialogExtendedProgressBar.xml.
+    # Aeon Nox appends the bar percentage to the heading. Estuary's foreground bar does not.
+    filename = 'DialogExtendedProgressBar.xml' if background else 'DialogConfirm.xml'
+    shown = bool(background)
+    try:
+        path = _skin_dialog_xml(filename)
+        if path:
+            with open(path, 'rb') as handle:
+                raw = handle.read()
+            if not isinstance(raw, str):
+                raw = raw.decode('utf-8', 'replace')
+            shown = _xml_draws_progress_percent(raw, os.path.dirname(path), background)
+    except Exception:
+        log_utils.log('progress dialog skin check', 1)
+    _skin_draws_percent[key] = shown
+    return shown
+
+
+def _resolving_bar(progressDialog, header, label, started, limit_seconds):
+    """Move the resolving bar from the left while this link is tried."""
+    try:
+        elapsed = time.time() - started
+        if limit_seconds <= 0:
+            percent = 0
+        else:
+            percent = min(95, int((elapsed / float(limit_seconds)) * 100))
+    except Exception:
+        percent = 0
+    try:
+        progressDialog.update(percent, label)
+    except Exception:
+        try:
+            progressDialog.update(percent, '%s[CR]%s' % (header, label))
+        except Exception:
+            pass
+
+
+def _remember_resolving_clock(header, label, started, limit_seconds, background=False):
+    """Player keeps this bar moving after the link is handed off."""
+    try:
+        control.window.setProperty('gratisred.resolving_header', header or '')
+        control.window.setProperty('gratisred.resolving_label', label or '')
+        control.window.setProperty('gratisred.resolving_started', str(started))
+        control.window.setProperty('gratisred.resolving_limit', str(limit_seconds))
+        control.window.setProperty('gratisred.resolving_bg', '1' if background else '0')
+    except Exception:
+        pass
+
+
+def _providers_heading(percent, background):
+    if _skin_draws_progress_percent(background):
+        return 'Providers:'
+    shown = min(100, max(0, int(percent)))
+    return 'Providers: %d%%' % shown
+
+
 class sources:
     def __init__(self):
         #control.moderator()
@@ -43,8 +412,6 @@ class sources:
         self.sources = []
         self.filtered_sources = []
         self.debug_resolve = control.setting('addon.debug_resolve')
-        self.quality_artwork = control.setting('quality.artwork') or 'false'
-        self.quality_images = os.path.join(control.addonPath, 'resources/images/quality', '')
         self.max_quality = control.setting('quality.max') or '0'
         self.max_quality = int(self.max_quality)
         self.min_quality = control.setting('quality.min') or '3'
@@ -66,7 +433,7 @@ class sources:
 
     def errorForSources(self):
         control.abort_plugin_resolve()
-        control.infoDialog('Error : No Stream Available.', sound=False, icon='INFO')
+        control.infoDialog('No Playable Sources', sound=False, icon='INFO')
 
 
     def getConstants(self):
@@ -95,13 +462,18 @@ class sources:
 
     def sourcesResolve(self, item, info=False):
         try:
+            token = getattr(self, '_resolve_token', 0)
             self.url = None
             u = url = item['url']
             direct = item['direct']
             local = item.get('local', False)
             provider = item['provider']
             call = [i[1] for i in self.sourceDict if i[0] == provider][0]
+            if getattr(self, '_resolve_token', 0) != token:
+                return
             u = url = call.resolve(url)
+            if getattr(self, '_resolve_token', 0) != token:
+                return
             u = url = scrape_sources.prepare_link(url)
             if url == None or (not '://' in url and not local):
                 raise Exception("url error")
@@ -116,11 +488,15 @@ class sources:
                         else:
                             hmf = resolveurl.HostedMediaFile(url=u, include_disabled=True, include_universal=False)
                         if hmf.valid_url() == True:
+                            if getattr(self, '_resolve_token', 0) != token:
+                                return
                             part = hmf.resolve()
                     urls.append(part)
                 url = 'stack://' + ' , '.join(urls) if len(urls) > 1 else urls[0]
             if url == False or url == None:
                 raise Exception("url error")
+            if getattr(self, '_resolve_token', 0) != token:
+                return
             ext = url.split('?')[0].split('&')[0].split('|')[0].rsplit('.')[-1].replace('/', '').lower()
             if ext == 'rar':
                 raise Exception("url error")
@@ -140,6 +516,8 @@ class sources:
                     result = client.request(url.split('|')[0], headers=headers, output='chunk', timeout='10')
                 except:
                     pass
+            if getattr(self, '_resolve_token', 0) != token:
+                return
             self.url = url
             return url
         except Exception as e:
@@ -160,10 +538,9 @@ class sources:
             next = [y for x,y in enumerate(items) if x >= select]
             prev = [y for x,y in enumerate(items) if x < select][::-1]
             items = [items[select]]
-            items = [i for i in items + next + prev][:40]
+            items = [i for i in items + next + prev]
             header = control.addonInfo('name') + ': Resolving...'
-            progressDialog = control.progressDialog if control.setting('progress.dialog') == '0' else control.progressDialogBG
-            progressDialog.create(header, '')
+            progressDialog = control.open_progress(header, background=control.setting('progress.dialog') != '0')
             #progressDialog.update(0)
             block = None
             for i in range(len(items)):
@@ -171,22 +548,23 @@ class sources:
                     if items[i]['source'] == block:
                         raise Exception()
                     w = workers.Thread(self.sourcesResolve, items[i])
+                    w.daemon = True
                     w.start()
-                    label = re.sub(r' {2,}', ' ', str(items[i]['label']))
-                    try:
-                        if progressDialog.iscanceled():
-                            break
-                        progressDialog.update(int((100 / float(len(items))) * i), label)
-                    except:
-                        progressDialog.update(int((100 / float(len(items))) * i), str(header) + '[CR]' + label)
+                    label = _fit_resolve_label(re.sub(r' {2,}', ' ', str(items[i]['label'])))
                     offset = 60 * 2 if items[i].get('source').lower() in self.hostcapDict else 0
+                    limit_seconds = 0.5 * (31 + offset)
+                    started = time.time()
                     m = ''
                     for x in range(3600):
                         try:
                             if control.monitor.abortRequested():
                                 return sys.exit()
                             if progressDialog.iscanceled():
-                                return progressDialog.close()
+                                try:
+                                    progressDialog.close()
+                                except Exception:
+                                    pass
+                                return 'close://'
                         except:
                             pass
                         k = control.condVisibility('Window.IsActive(virtualkeyboard)')
@@ -199,19 +577,25 @@ class sources:
                             m += '1'; m = m[-1]
                         if (w.is_alive() == False or x > 30 + offset) and not k:
                             break
+                        _resolving_bar(progressDialog, header, label, started, limit_seconds)
                         time.sleep(0.5)
                     for x in range(30):
                         try:
                             if control.monitor.abortRequested():
                                 return sys.exit()
                             if progressDialog.iscanceled():
-                                return progressDialog.close()
+                                try:
+                                    progressDialog.close()
+                                except Exception:
+                                    pass
+                                return 'close://'
                         except:
                             pass
                         if m == '':
                             break
                         if w.is_alive() == False:
                             break
+                        _resolving_bar(progressDialog, header, label, started, limit_seconds)
                         time.sleep(0.5)
                     if w.is_alive() == True:
                         block = items[i]['source']
@@ -248,6 +632,7 @@ class sources:
         if control.setting('autoplay.sd') == 'true':
             items = [i for i in items if not i['quality'].lower() in ['4k', '1080p', '720p', 'hd']]
         u = None
+        canceled = False
         header = control.addonInfo('name') + ': Resolving...'
         try:
             control.sleep(1000)
@@ -257,9 +642,10 @@ class sources:
         except:
             pass
         for i in range(len(items)):
-            label = re.sub(r' {2,}', ' ', str(items[i]['label']))
+            label = _fit_resolve_label(re.sub(r' {2,}', ' ', str(items[i]['label'])))
             try:
                 if progressDialog.iscanceled():
+                    canceled = True
                     break
                 progressDialog.update(int((100 / float(len(items))) * i), label)
             except:
@@ -279,6 +665,8 @@ class sources:
         except:
             pass
         del progressDialog
+        if canceled:
+            return 'close://'
         return u
 
 
@@ -465,15 +853,25 @@ class sources:
             q = self.sources[i]['quality']
             s = self.sources[i]['source']
             try:
-                f = ' / '.join(['%s' % info.strip() for info in self.sources[i].get('info', '').split('|')])
+                # A tag is one token. A line break is a description pasted onto the tags, not another row line.
+                bits = []
+                for info in self.sources[i].get('info', '').split('|'):
+                    info = info.strip()
+                    if not info or info == '0' or '\n' in info or '\r' in info:
+                        continue
+                    bits.append(info)
+                f = ' / '.join(bits)
             except:
                 f = ''
+            name = ' '.join((self.sources[i].get('name') or '').split())
+            if not name:
+                name = source_utils.display_filename(u)
+            name = ' '.join(name.split())
             if double_line:
-                label = '%03d' % (int(i+1))
-                if f:
-                    label += ' | [B]%s[/B] | %s | [B]%s[/B][CR] [I]%s[/I]' % (q, p, s, f)
-                else:
-                    label += ' | [B]%s[/B] | %s | [B]%s[/B][CR]' % (q, p, s)
+                label = '%03d | [B]%s[/B] | %s | [B]%s[/B][CR]%s[CR]%s' % (
+                    int(i + 1), q, p, s,
+                    ('[I]%s[/I]' % name) if name else '',
+                    ('[I]%s[/I]' % f) if f else '')
             elif simple:
                 label = '%03d' % (int(i+1))
                 label += ' | [B]%s[/B] | %s | [B]%s[/B]' % (q, p, s)
@@ -484,14 +882,6 @@ class sources:
                 else:
                     label += ' | [B]%s[/B] | %s | [B]%s[/B] |' % (q, p, s)
             label = label.replace('[I]%s /[/I]' % f, '[I]%s[/I]' % f).replace('[I] /[/I]', '').replace('| 0 |', '|').replace(' |  |', ' |').replace('/ 0 /', '/').replace(' /  /', ' /')
-            if double_line:
-                label_up = label.split('[CR]')[0]
-                label_up_clean = label_up.replace('[B]', '').replace('[/B]', '')
-                label_down = label.split('[CR]')[1]
-                label_down_clean = label_down.replace('[I]', '').replace('[/I]', '')
-                if len(label_down_clean) > len(label_up_clean):
-                    label_up += (len(label_down_clean) - len(label_up_clean)) * '  '
-                    label = label_up + '[CR]' + label_down
             self.sources[i]['label'] = '[UPPERCASE]' + label + '[/UPPERCASE]'
         self.sources = [i for i in self.sources if 'label' in i]
         return self.sources
@@ -507,20 +897,12 @@ class sources:
                 i.update({'quality': 'sd'})
             if i_quality == '4k':
                 i.update({'q_filter': 0})
-                if self.quality_artwork == 'true':
-                    i.update({'thumb': self.quality_images + "4k.png"})
             elif i_quality == '1080p':
                 i.update({'q_filter': 1})
-                if self.quality_artwork == 'true':
-                    i.update({'thumb': self.quality_images + "1080p.png"})
             elif i_quality == '720p':
                 i.update({'q_filter': 2})
-                if self.quality_artwork == 'true':
-                    i.update({'thumb': self.quality_images + "720p.png"})
             else:
                 i.update({'q_filter': 3})
-                if self.quality_artwork == 'true':
-                    i.update({'thumb': self.quality_images + "sd.png"})
         self.sources = [i for i in self.sources if self.max_quality <= i.get('q_filter', 3) <= self.min_quality]
         if self.remove_cam == 'true':
             self.sources = [i for i in self.sources if not i_quality in ['scr', 'cam']]
@@ -552,10 +934,11 @@ class sources:
 
 
     def getSources(self, title, year, imdb, tmdb, tvdb, season, episode, tvshowtitle, premiered, quality='720p', timeout=30):
-        progressDialog = control.progressDialog if control.setting('progress.dialog') == '0' else control.progressDialogBG
-        if progressDialog == control.progressDialogBG:
+        self._scrape_cancelled = False
+        background = control.setting('progress.dialog') != '0'
+        if background:
             control.idle()
-        progressDialog.create('Providers:')
+        progressDialog = control.open_progress(_providers_heading(0, background), background=background)
         self.prepareSources()
         sourceDict = self.sourceDict
         progressDialog.update(0, 'Preparing Sources...')
@@ -701,11 +1084,17 @@ class sources:
                     current_time = time.time()
                     current_progress = current_time - start_time
                     percent = int((current_progress / float(_timeout)) * 100)
+                    shown = min(100, max(1, percent))
+                    heading = _providers_heading(shown, background)
                     stats_line = line1 if not line2 else (line1 + '[CR]' + line2)
-                    if not progressDialog == control.progressDialogBG:
-                        progressDialog.update(max(1, percent), stats_line)
+                    if not background:
+                        progressDialog.update(shown, stats_line)
+                        # update() cannot change the heading. create() on a dialog
+                        # that is already open only refreshes it.
+                        if heading != 'Providers:':
+                            progressDialog.create(heading, stats_line)
                     else:
-                        progressDialog.update(max(1, percent), 'Providers:', stats_line)
+                        progressDialog.update(shown, heading, stats_line)
                     if not info:
                         break
                     if end_time < current_time:
@@ -726,6 +1115,7 @@ class sources:
                 self.sourcesFilter(content, sort=True)
             progressDialog.close()
         if scrape_cancelled:
+            self._scrape_cancelled = True
             control.idle()
             return []
         if self.pre_emp == 'true':
@@ -754,7 +1144,6 @@ class sources:
         sysaddon = sys.argv[0]
         syshandle = int(sys.argv[1])
         downloads = True if control.setting('downloads') == 'true' and not (control.setting('movie.download.path') == '' or control.setting('tv.download.path') == '') else False
-        listMeta = control.setting('sourcelist.meta')
         try:
             systitle = sysname = urllib_parse.quote_plus(title)
         except:
@@ -764,14 +1153,7 @@ class sources:
         elif 'year' in meta:
             sysname += urllib_parse.quote_plus(' (%s)' % meta['year'])
         poster = meta.get('poster') or control.addonPoster()
-        if control.setting('show.fanart') == 'true':
-            fanart = meta.get('fanart') or control.addonFanart()
-        else:
-            fanart = control.addonFanart()
-        thumb = meta.get('thumb') or poster or fanart
-        clearlogo = meta.get('clearlogo', '') or ''
-        clearart = meta.get('clearart', '') or ''
-        discart = meta.get('discart', '') or ''
+        thumb = meta.get('thumb') or poster
         sysimage = urllib_parse.quote_plus(six.ensure_str(poster))
         for i in range(len(items)):
             try:
@@ -789,16 +1171,10 @@ class sources:
                     item = control.item(label=label, offscreen=True)
                 except:
                     item = control.item(label=label)
-                item.addContextMenuItems(cm)
-                if listMeta == 'true':
-                    item.setArt({'thumb': thumb, 'icon': thumb, 'poster': poster, 'fanart': fanart, 'clearlogo': clearlogo, 'clearart': clearart, 'discart': discart})
-                    info_tag = ListItemInfoTag(item, 'video')
-                    info_tag.add_stream_info('video', {'codec': 'h264'})
-                    info_tag.set_info(control.metadataClean(meta))
-                else:
-                    item.setArt({'thumb': thumb})
-                    info_tag = ListItemInfoTag(item, 'video')
-                    info_tag.set_info({})
+                item.addContextMenuItems(control.context_menu_items(cm))
+                item.setArt({'thumb': thumb})
+                info_tag = ListItemInfoTag(item, 'video')
+                info_tag.set_info({})
                 control.addItem(handle=syshandle, url=sysurl, listitem=item, isFolder=False)
             except:
                 pass
@@ -807,6 +1183,16 @@ class sources:
 
 
     def play(self, title, year, imdb, tmdb, tvdb, season, episode, tvshowtitle, premiered, meta, select):
+        token = _claim_play()
+        if not token:
+            return
+        try:
+            self._play(title, year, imdb, tmdb, tvdb, season, episode, tvshowtitle, premiered, meta, select)
+        finally:
+            _release_play(token)
+
+
+    def _play(self, title, year, imdb, tmdb, tvdb, season, episode, tvshowtitle, premiered, meta, select):
         try:
             control.clear_resolve_state()
             url = None
@@ -814,21 +1200,26 @@ class sources:
             select = control.setting('hosts.mode') if select == None else select
             title = tvshowtitle if not tvshowtitle == None else title
             title = cleantitle.normalize(title)
+            if getattr(self, '_scrape_cancelled', False):
+                control.abort_plugin_resolve()
+                return
             if len(items) > 0:
-                if select == '1' and 'plugin' in control.infoLabel('Container.PluginName'):
+                if select == '1':
                     control.window.clearProperty(self.itemProperty)
                     control.window.setProperty(self.itemProperty, json.dumps(items))
                     control.window.clearProperty(self.metaProperty)
                     control.window.setProperty(self.metaProperty, meta)
-                    control.sleep(200)
-                    # Release the PlayMedia resolve handle before switching to a folder list.
-                    control.abort_plugin_resolve()
-                    return control.execute('Container.Update(%s?action=add_item&title=%s)' % (sys.argv[0], urllib_parse.quote_plus(title)))
-                elif select == '0' or select == '1':
+                    control.idle()
+                    return self.sourceResults(title)
+                elif select == '0':
                     url = self.sourcesDialog(items)
                 else:
                     url = self.sourcesDirect(items)
-            if url == 'close://' or url == None:
+            if url == 'close://':
+                self.url = url
+                control.abort_plugin_resolve()
+                return
+            if url == None:
                 self.url = url
                 return self.errorForSources()
             try:
@@ -844,16 +1235,20 @@ class sources:
 
 
     def playItem(self, title, source):
+        token = _claim_play()
+        if not token:
+            return
+        try:
+            self._play_item(title, source)
+        finally:
+            _release_play(token)
+
+
+    def _play_item(self, title, source):
         try:
             control.clear_resolve_state()
             meta = control.window.getProperty(self.metaProperty)
             meta = json.loads(meta)
-            year = meta['year'] if 'year' in meta else None
-            season = meta['season'] if 'season' in meta else None
-            episode = meta['episode'] if 'episode' in meta else None
-            imdb = meta['imdb'] if 'imdb' in meta else None
-            tvdb = meta['tvdb'] if 'tvdb' in meta else None
-            tmdb = meta['tmdb'] if 'tmdb' in meta else None
             next = []
             prev = []
             total = []
@@ -880,39 +1275,119 @@ class sources:
                 except:
                     break
             items = json.loads(source)
-            items = [i for i in items+next+prev][:40]
+            items = [i for i in items+next+prev]
+            self._resolve_and_play(title, items, meta)
+        except:
+            control.abort_plugin_resolve()
+            pass
+
+
+    def sourceResults(self, title):
+        try:
+            items = json.loads(control.window.getProperty(self.itemProperty) or '[]')
+            meta = json.loads(control.window.getProperty(self.metaProperty) or '{}')
+            if not items:
+                return
+            from resources.lib.modules.source_results import choose_source
+            preselect = 0
+            pending = []
+
+            def _attempt(index, on_started, should_abort, on_stopped):
+                ordered = [i for i in items[index:] + items[:index]]
+                self._resolve_and_play(title, ordered, meta, on_started=on_started, should_abort=should_abort, on_stopped=on_stopped)
+
+            try:
+                while True:
+                    control.idle()
+                    chosen, early_stop, worker = choose_source(items, meta, title, preselect=preselect, on_select=_attempt)
+                    if worker is not None:
+                        pending.append(worker)
+                    if chosen is None:
+                        control.abort_plugin_resolve()
+                        return
+                    if early_stop:
+                        preselect = chosen
+                        continue
+                    return
+            finally:
+                for pending_worker in pending:
+                    pending_worker.join()
+        except:
+            log_utils.log('sourceResults', 1)
+            control.abort_plugin_resolve()
+
+
+    def _invalidate_resolve(self):
+        self._resolve_token = getattr(self, '_resolve_token', 0) + 1
+        self.url = None
+
+
+    def _resolve_and_play(self, title, items, meta, on_started=None, should_abort=None, on_stopped=None):
+        try:
+            self._invalidate_resolve()
+            year = meta['year'] if 'year' in meta else None
+            season = meta['season'] if 'season' in meta else None
+            episode = meta['episode'] if 'episode' in meta else None
+            imdb = meta['imdb'] if 'imdb' in meta else None
+            tvdb = meta['tvdb'] if 'tvdb' in meta else None
+            tmdb = meta['tmdb'] if 'tmdb' in meta else None
             header = control.addonInfo('name') + ' : Resolving...'
-            progressDialog = control.progressDialog if control.setting('progress.dialog') == '0' else control.progressDialogBG
-            progressDialog.create(header, '')
-            #progressDialog.update(0)
+            background = control.setting('progress.dialog') != '0'
+            progressDialog = control.open_progress(header, background=background)
             block = None
+
+            def _cancelled():
+                # Drop the link. A slow host can keep working in the background, and
+                # the token stops it from playing. The bar closes now and the list is usable.
+                self._invalidate_resolve()
+                try:
+                    progressDialog.close()
+                except Exception:
+                    pass
+                control.dismiss_playback_failed()
+                return False
+
             for i in range(len(items)):
                 try:
-                    label = re.sub(r' {2,}', ' ', str(items[i]['label']))
                     try:
-                        if progressDialog.iscanceled():
-                            break
-                        progressDialog.update(int((100 / float(len(items))) * i), label)
-                    except:
-                        progressDialog.update(int((100 / float(len(items))) * i), str(header) + '[CR]' + label)
+                        if control.condVisibility('Window.IsActive(okdialog)'):
+                            control.execute('Dialog.Close(okdialog)')
+                    except Exception:
+                        pass
+                    try:
+                        progress_open = control.condVisibility('Window.IsActive(progressdialog)') or control.condVisibility('Window.IsActive(progressdialogbg)')
+                    except Exception:
+                        progress_open = True
+                    if not progress_open:
+                        progressDialog.create(header, '')
+                        if not background:
+                            control.focus_progress_cancel()
+                    label = _fit_resolve_label(re.sub(r' {2,}', ' ', str(items[i]['label'])))
                     if items[i]['source'] == block:
                         raise Exception()
                     w = workers.Thread(self.sourcesResolve, items[i])
+                    # Cancel returns without this host. A non-daemon thread keeps
+                    # the play script alive until the host finishes (a captcha
+                    # can sit there for a while) and the next folder stays busy.
+                    w.daemon = True
                     w.start()
                     offset = 60 * 2 if items[i].get('source').lower() in self.hostcapDict else 0
+                    limit_seconds = 0.5 * (31 + offset)
+                    started = time.time()
+                    _remember_resolving_clock(header, label, started, limit_seconds, progressDialog == control.progressDialogBG)
                     m = ''
                     for x in range(3600):
+                        if not background:
+                            control.focus_progress_cancel()
+                        stop = False
                         try:
                             if control.monitor.abortRequested():
                                 return sys.exit()
-                            if progressDialog.iscanceled():
-                                try:
-                                    progressDialog.close()
-                                except:
-                                    pass
-                                return self.errorForSources()
+                            stop = progressDialog.iscanceled() or (should_abort and should_abort())
                         except:
                             pass
+                        if stop:
+                            return _cancelled()
                         k = control.condVisibility('Window.IsActive(virtualkeyboard)')
                         if k:
                             m += '1'; m = m[-1]
@@ -923,46 +1398,67 @@ class sources:
                             m += '1'; m = m[-1]
                         if (w.is_alive() == False or x > 30 + offset) and not k:
                             break
-                        time.sleep(0.5)
+                        _resolving_bar(progressDialog, header, label, started, limit_seconds)
+                        _pause_resolving()
                     for x in range(30):
+                        stop = False
                         try:
                             if control.monitor.abortRequested():
                                 return sys.exit()
-                            if progressDialog.iscanceled():
-                                try:
-                                    progressDialog.close()
-                                except:
-                                    pass
-                                return self.errorForSources()
+                            stop = progressDialog.iscanceled() or (should_abort and should_abort())
                         except:
                             pass
+                        if stop:
+                            return _cancelled()
                         if m == '':
                             break
                         if w.is_alive() == False:
                             break
-                        time.sleep(0.5)
+                        _resolving_bar(progressDialog, header, label, started, limit_seconds)
+                        _pause_resolving()
                     if w.is_alive() == True:
                         block = items[i]['source']
                     if self.url == None:
                         raise Exception()
-                    try:
-                        progressDialog.close()
-                    except:
-                        pass
-                    control.sleep(200)
                     control.execute('Dialog.Close(virtualkeyboard)')
                     control.execute('Dialog.Close(yesnoDialog)')
                     from resources.lib.modules.player import player
-                    player().run(title, year, season, episode, imdb, tmdb, tvdb, self.url, meta)
-                    return self.url
+                    # No picture (resolve URL that Kodi cannot play) tries the next source.
+                    # A picture that starts stays on that source.
+                    if player().run(title, year, season, episode, imdb, tmdb, tvdb, self.url, meta, on_started=on_started, should_abort=should_abort, on_stopped=on_stopped):
+                        self.url = None
+                        raise Exception()
+                    try:
+                        progressDialog.close()
+                    except Exception:
+                        pass
+                    return False
                 except:
                     pass
+            canceled = False
+            try:
+                canceled = progressDialog.iscanceled()
+            except:
+                pass
+            if canceled or (should_abort and should_abort()):
+                return _cancelled()
             try:
                 progressDialog.close()
             except:
                 pass
             del progressDialog
-            self.errorForSources()
+            # Kodi's Playback failed notice opens just after the last dead link.
+            # Close that, then show this, so the end of the run is the notice that stays.
+            # Do not ask IsActive here. That lookup can sit until the results window closes.
+            for _ in range(12):
+                try:
+                    control.execute('Dialog.Close(okdialog,true)')
+                    control.execute('Dialog.Close(notification,true)')
+                except Exception:
+                    pass
+                control.sleep(100)
+            control.infoDialog('No Playable Sources', sound=False, icon='INFO')
+            return False
         except:
             control.abort_plugin_resolve()
             pass
@@ -1022,7 +1518,7 @@ class sources:
         try:
             list = []
             text = ''
-            sourceDict = self.sourceDict
+            sourceDict = sorted(self.sourceDict, key=lambda i: i[0].lower())
             log_provider_domains = control.setting('addon.log_providerdomains') or 'false'
             for i in sourceDict:
                 try:

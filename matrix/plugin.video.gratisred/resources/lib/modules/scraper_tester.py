@@ -42,7 +42,6 @@ _UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
 FLARESOLVERR_SCRAPERS = frozenset({
     'bstsrs_one',
     'projectfreetv_cyou',
-    'projectfreetv_lol',
     'watchseries_cyou',
 })
 
@@ -66,6 +65,26 @@ def _list_working_scrapers():
     return names
 
 
+def _body_text(body):
+    if not body:
+        return ''
+    if not isinstance(body, str):
+        try:
+            body = body.decode('utf-8', 'replace')
+        except Exception:
+            return ''
+    return body[:6000]
+
+
+def _retired_page(body):
+    """A homepage can return HTTP 200 and still be a shutdown notice."""
+    low = _body_text(body).lower()
+    if not low:
+        return False
+    return ('is deprecated' in low or 'is retired' in low or 'has been sunset' in low
+            or 'addon is archived' in low)
+
+
 def _probe(url, timeout=8, use_flaresolverr=False):
     """HEAD/GET the url. Return (ok, status_code_or_err, elapsed_ms)."""
     started = time.time()
@@ -78,6 +97,8 @@ def _probe(url, timeout=8, use_flaresolverr=False):
                 return False, 'NO-RESP', elapsed
             code = str(getattr(page, 'status_code', '') or '')
             ok = code.startswith('2') or code.startswith('3')
+            if ok and _retired_page(getattr(page, 'text', '') or ''):
+                return False, 'RETIRED', elapsed
             return ok, code or 'NO-CODE', elapsed
         except Exception as e:
             return False, type(e).__name__, int((time.time() - started) * 1000)
@@ -90,6 +111,9 @@ def _probe(url, timeout=8, use_flaresolverr=False):
             if resp and isinstance(resp, tuple) and len(resp) >= 1:
                 code = str(resp[0])
                 ok = code.startswith('2') or code.startswith('3')
+                body = resp[1] if len(resp) > 1 else ''
+                if ok and _retired_page(body):
+                    return False, 'RETIRED', elapsed
                 return ok, code, elapsed
         except Exception as e:
             log_utils.log('scraper_tester: client.request failed %s: %s' % (url, e))
@@ -100,6 +124,8 @@ def _probe(url, timeout=8, use_flaresolverr=False):
             r = _requests.get(url, headers={'User-Agent': _UA}, timeout=timeout,
                               allow_redirects=True)
             elapsed = int((time.time() - started) * 1000)
+            if r.status_code < 400 and _retired_page(r.text or ''):
+                return False, 'RETIRED', elapsed
             return (r.status_code < 400), str(r.status_code), elapsed
         except Exception as e:
             return False, type(e).__name__, int((time.time() - started) * 1000)
@@ -180,8 +206,23 @@ def _format_line(r):
     return '[B]%s[/B]  %s  [I]%s[/I]  (%s, %dms)%s' % (r['name'], icon, r['status'], r['used'], r['ms'], fs_note)
 
 
+def _back_to_provider_settings(row):
+    """Settings actions use option=close. Reopen Provider Settings on that row."""
+    try:
+        control.openSettings('4.%d' % row)
+    except Exception:
+        pass
+
+
 def test_all():
     """Test every scraper in sources/working/ with a progress dialog."""
+    try:
+        _test_all()
+    finally:
+        _back_to_provider_settings(4)
+
+
+def _test_all():
     names = _list_working_scrapers()
     if not names:
         control.okDialog('No scrapers found in sources/working/.', 'Scraper Tester')
@@ -221,6 +262,9 @@ def test_all():
     elif cf:
         lines.append('[COLOR yellow]CF[/COLOR] = FlareSolverr provider — probe failed but may still work during playback.')
         lines.append('')
+    if any(r.get('status') == 'RETIRED' for r in results):
+        lines.append('[COLOR red]RETIRED[/COLOR] = the address answered with a shutdown page, so it will not return streams.')
+        lines.append('')
     lines.extend(_format_line(r) for r in results)
     body = '\n'.join(lines)
 
@@ -243,6 +287,13 @@ def test_all():
 
 def test_one():
     """Show a picker of scrapers, test the chosen one, show a dialog."""
+    try:
+        _test_one_picker()
+    finally:
+        _back_to_provider_settings(5)
+
+
+def _test_one_picker():
     names = _list_working_scrapers()
     if not names:
         control.okDialog('No scrapers found in sources/working/.', 'Scraper Tester')

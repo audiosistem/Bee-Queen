@@ -427,9 +427,7 @@ class seasons:
                 except:
                     pass
                 cm = []
-                cm.append(('Clean Tools Widget', 'RunPlugin(%s?action=cleantools_widget)' % sysaddon))
                 cm.append(('Clear Providers', 'RunPlugin(%s?action=clear_sources)' % sysaddon))
-                cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
                 if mdblistCredentials == True:
                     cm.append(('MDBList Lists Manager', 'RunPlugin(%s?action=mdblist_manager&name=%s&imdb=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, imdb, tmdb)))
                 if simklCredentials == True:
@@ -484,7 +482,7 @@ class seasons:
                 if 'clearart' in i and not i['clearart'] == '0':
                     art.update({'clearart': i['clearart']})
                 item.setArt(art)
-                item.addContextMenuItems(cm)
+                item.addContextMenuItems(control.context_menu_items(cm))
                 info_tag = ListItemInfoTag(item, 'video')
                 castwiththumb = i.get('castwiththumb')
                 if castwiththumb and not castwiththumb == '0':
@@ -539,7 +537,7 @@ class episodes:
         self.trakt_link = 'https://api.trakt.tv'
         self.tvmaze_link = 'https://api.tvmaze.com'
         self.tmdb_link = 'https://api.themoviedb.org'
-        self.fanart_tv_art_link = 'http://webservice.fanart.tv/tv/%s'
+        self.fanart_tv_art_link = 'https://webservice.fanart.tv/v3/tv/%s'
         self.original_artwork = control.setting('original.artwork') or 'false'
         if self.original_artwork == 'true':
             self.tmdb_image_link = 'https://image.tmdb.org/t/p/original'
@@ -825,21 +823,24 @@ class episodes:
             if not self.list[i].get('action'):
                 self.list[i].update({'action': 'calendar'})
             self.list[i].update({'image': 'userlists.png'})
-        self.addDirectory(self.list, queue=True)
+        self.addDirectory(self.list)
         return self.list
 
 
-    def trakt_list(self, url, user):
+    def trakt_list(self, url, user, payload=None):
         itemlist = []
         try:
-            if 'date[' in url:
-                for i in re.findall(r'date\[(\d+)\]', url):
-                    url = url.replace('date[%s]' % i, (self.datetime - datetime.timedelta(days=int(i))).strftime('%Y-%m-%d'))
-            q = dict(urllib_parse.parse_qsl(urllib_parse.urlsplit(url).query))
-            q.update({'extended': 'full'})
-            q = (urllib_parse.urlencode(q)).replace('%2C', ',')
-            u = url.replace('?' + urllib_parse.urlparse(url).query, '') + '?' + q
-            items = trakt.getTraktAsJson(u)
+            if payload is not None:
+                items = list(payload)
+            else:
+                if 'date[' in url:
+                    for i in re.findall(r'date\[(\d+)\]', url):
+                        url = url.replace('date[%s]' % i, (self.datetime - datetime.timedelta(days=int(i))).strftime('%Y-%m-%d'))
+                q = dict(urllib_parse.parse_qsl(urllib_parse.urlsplit(url).query))
+                q.update({'extended': 'full'})
+                q = (urllib_parse.urlencode(q)).replace('%2C', ',')
+                u = url.replace('?' + urllib_parse.urlparse(url).query, '') + '?' + q
+                items = trakt.getTraktAsJson(u)
             for item in items:
                 try:
                     if '/sync/playback' in url and control.playback_progress_stale(item):
@@ -952,9 +953,15 @@ class episodes:
                         #tvshowtitle = trakt.getTVShowTranslation(imdb, lang=self.lang) or tvshowtitle
                     except:
                         pass
-                    itemlist.append({'title': title, 'season': season, 'episode': episode, 'tvshowtitle': tvshowtitle, 'year': year, 'premiered': premiered, 'status': 'Continuing', 'studio': studio, 'genre': genre,
+                    entry = {'title': title, 'season': season, 'episode': episode, 'tvshowtitle': tvshowtitle, 'year': year, 'premiered': premiered, 'status': 'Continuing', 'studio': studio, 'genre': genre,
                         'duration': duration, 'rating': rating, 'votes': votes, 'mpaa': mpaa, 'plot': plot, 'imdb': imdb, 'tvdb': tvdb, 'tmdb': tmdb, 'poster': '0', 'thumb': '0', 'paused_at': paused_at, 'watched_at': watched_at}
-                    )
+                    if item.get('progress') not in (None, ''):
+                        entry['progress'] = item.get('progress')
+                    if '_mix' in item:
+                        entry['_mix'] = item['_mix']
+                        entry['_kind'] = 'episode'
+                        entry['collected_at'] = item.get('listed_at') or item.get('collected_at') or ''
+                    itemlist.append(entry)
                 except:
                     #log_utils.log('trakt_list', 1)
                     pass
@@ -1536,6 +1543,7 @@ class episodes:
                     'clearlogo': clearlogo, 'clearart': clearart, 'landscape': landscape,
                     'imdb': imdb, 'tvdb': tvdb, 'tmdb': tmdb,
                     'paused_at': i.get('paused_at') or '0', 'watched_at': '0',
+                    'progress': i.get('progress'),
                 })
             except Exception:
                 pass
@@ -1654,7 +1662,7 @@ class episodes:
                 self.list.append({'title': title, 'season': season, 'episode': episode, 'tvshowtitle': tvshowtitle, 'year': year, 'premiered': premiered, 'status': status, 'studio': studio, 'genre': genre,
                     'duration': duration, 'rating': rating, 'votes': votes, 'mpaa': mpaa, 'director': director, 'writer': writer, 'castwiththumb': castwiththumb, 'plot': plot,
                     'imdb': imdb, 'tvdb': tvdb, 'tmdb': tmdb, 'poster': poster, 'banner': banner, 'fanart': fanart, 'thumb': thumb, 'clearlogo': clearlogo, 'clearart': clearart, 'landscape': landscape,
-                    'paused_at': paused_at, 'watched_at': watched_at}
+                    'paused_at': paused_at, 'watched_at': watched_at, 'progress': i.get('progress')}
                 )
             except:
                 #log_utils.log('trakt_episodes_list', 1)
@@ -2279,7 +2287,7 @@ class episodes:
         return self.list
 
 
-    def episodeDirectory(self, items):
+    def episodeDirectory(self, items, bucket=None):
         # FIX (v1.0.3): always finalise the directory even if items is
         # None or empty - the old code called control.idle() then fell
         # through to ``for i in items:`` which raised TypeError on None
@@ -2289,6 +2297,8 @@ class episodes:
         # (Premiering Today on a slow news day, Streaming Today, etc.).
         if items is None:
             items = []
+        if bucket is not None and len(items) == 0:
+            return
         if len(items) == 0:
             sysaddon = sys.argv[0]
             syshandle = int(sys.argv[1])
@@ -2393,11 +2403,11 @@ class episodes:
                 if isFolder == True:
                     url = '%s?action=episodes&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s&meta=%s&season=%s&episode=%s' % (sysaddon, systvshowtitle, year, imdb, tmdb, seas_meta, season, episode)
                 cm = []
-                cm.append(('Clean Tools Widget', 'RunPlugin(%s?action=cleantools_widget)' % sysaddon))
                 cm.append(('Clear Providers', 'RunPlugin(%s?action=clear_sources)' % sysaddon))
                 if multi == True:
                     cm.append(('Browse Series', 'Container.Update(%s?action=seasons&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s&meta=%s,return)' % (sysaddon, systvshowtitle, year, imdb, tmdb, seas_meta)))
-                cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
+                if isFolder == False:
+                    cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
                 if mdblistCredentials == True:
                     cm.append(('MDBList Lists Manager', 'RunPlugin(%s?action=mdblist_manager&name=%s&imdb=%s&tmdb=%s&content=tvshow)' % (sysaddon, systvshowtitle, imdb, tmdb)))
                 if simklCredentials == True:
@@ -2438,10 +2448,14 @@ class episodes:
                 elif not addonFanart == None:
                     art.update({'fanart': addonFanart})
                 item.setArt(art)
-                item.addContextMenuItems(cm)
+                item.addContextMenuItems(control.context_menu_items(cm))
                 if isPlayable:
                     item.setProperty('IsPlayable', 'true')
-                offset = bookmarks.get('episode', imdb, season, episode, True)
+                shelf = bookmarks.shelf_progress(i.get('progress'))
+                if shelf and float(meta.get('duration') or 0) > 120:
+                    offset = shelf / 100.0 * float(meta['duration'])
+                else:
+                    offset = bookmarks.get('episode', imdb, season, episode, True)
                 if float(offset) > 120:
                     percentPlayed = int(float(offset) / float(meta['duration']) * 100)
                     item.setProperty('resumetime', str(offset))
@@ -2452,10 +2466,15 @@ class episodes:
                     info_tag.set_cast(castwiththumb)
                 info_tag.set_info(control.metadataClean(meta))
                 info_tag.add_stream_info('video', {'codec': 'h264'})
-                control.addItem(handle=syshandle, url=url, listitem=item, isFolder=isFolder)
+                if bucket is not None:
+                    bucket.append((i.get('_page', 0), url, item, isFolder))
+                else:
+                    control.addItem(handle=syshandle, url=url, listitem=item, isFolder=isFolder)
             except:
                 #log_utils.log('episodeDirectory', 1)
                 pass
+        if bucket is not None:
+            return
         try:
             nxt = (items[0].get('next') or '') if items else ''
             if not nxt:
@@ -2497,15 +2516,12 @@ class episodes:
                 except:
                     pass
                 cm = []
-                cm.append(('Clean Tools Widget', 'RunPlugin(%s?action=cleantools_widget)' % sysaddon))
-                if queue == True:
-                    cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
                 try:
                     item = control.item(label=name, offscreen=True)
                 except:
                     item = control.item(label=name)
                 control.set_menu_item_art(item, image, fanart=addonFanart)
-                item.addContextMenuItems(cm)
+                item.addContextMenuItems(control.context_menu_items(cm))
                 control.addItem(handle=syshandle, url=url, listitem=item, isFolder=True)
             except:
                 #log_utils.log('addDirectory', 1)

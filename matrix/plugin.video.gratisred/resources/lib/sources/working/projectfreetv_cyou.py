@@ -2,7 +2,7 @@
 
 # freeprojecttv.cyou scraper.
 #
-# Sister/dupe of watchseries.cyou and projectfreetv.lol - identical page
+# Sister/dupe of watchseries.cyou - identical page
 # template, same /tv-series/<slug>-season-<n>-episode-<m>/ URL pattern,
 # same `<tr class="ext_link_HOST">` / `/open/link/<id>/` markup.
 # Cloudflare-protected; requires FlareSolverr URL in addon settings.
@@ -30,7 +30,7 @@ class source:
         self.base_link = 'https://freeprojecttv.cyou'
         self.movie_link = '/movies/%s-%s/'
         self.tvshow_link = '/tv-series/%s-season-%s-episode-%s/'
-        self.notes = 'sister site of watchseries_cyou and projectfreetv_lol.'
+        self.notes = 'sister site of watchseries_cyou.'
         self.headers = {
             'User-Agent': client.UserAgent,
             'Referer': self.base_link,

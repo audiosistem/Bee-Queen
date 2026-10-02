@@ -46,6 +46,8 @@ _SIMKL_ACTIVITIES_AT_PROP = 'gratisred.simkl_activities_at'
 _SIMKL_ACTIVITIES_MIN_GAP = 60
 _SIMKL_REFRESHING_PROP = 'gratisred.simkl_refreshing_token'
 _SIMKL_REWATCH_DENIED_PROP = 'gratisred.simkl_rewatch_denied'
+_SIMKL_PLAN_AT_PROP = 'gratisred.simkl_plan_at'
+_SIMKL_PLAN_REFRESH_SECONDS = 600
 _SIMKL_ACTIVITIES_SETTING = 'simkl.activities_json'
 _SIMKL_ID_EMPTY = ('None', None, '', 'empty_setting', 0, '0')
 _SIMKL_SHOW_WATCHED_ACTIVITY_KEYS = ('watching', 'plantowatch', 'completed', 'hold', 'dropped', 'removed_from_list', 'all')
@@ -170,6 +172,20 @@ def getSimklAuthV2():
     return getSimklCredentialsInfo() and _auth_version() == '2'
 
 
+def _simkl_plan():
+    return (control.setting('simkl.account_type') or '').strip().lower()
+
+
+def simkl_plan_known_free():
+    """True only when the saved plan is free. A missing plan is not free."""
+    return _simkl_plan() == 'free'
+
+
+def simkl_custom_lists_allowed():
+    """Signed in, AUTH V2, and not a known free plan."""
+    return getSimklAuthV2() and not simkl_plan_known_free()
+
+
 def _mdblist_ok():
     try:
         from resources.lib.modules import mdblist
@@ -258,30 +274,31 @@ def ensure_bookmarks_valid():
 
 
 def ensure_indicators_valid():
-    """If stored Indicators points at an unauthorised service, fall back and refresh label."""
+    """If stored Indicators points at an unauthorised service, use Gratis Red."""
     from resources.lib.modules import trakt
     val = control.setting('indicators.alt') or '0'
-    if val == '1' and not trakt.getTraktCredentialsInfo():
-        set_watched_provider('2' if getSimklCredentialsInfo() else ('3' if _mdblist_ok() else '0'))
-    elif val == '2' and not getSimklCredentialsInfo():
-        set_watched_provider('3' if _mdblist_ok() else ('1' if trakt.getTraktCredentialsInfo() else '0'))
-    elif val == '3' and not _mdblist_ok():
-        set_watched_provider('2' if getSimklCredentialsInfo() else ('1' if trakt.getTraktCredentialsInfo() else '0'))
+    unauthorised = (
+        (val == '1' and not trakt.getTraktCredentialsInfo())
+        or (val == '2' and not getSimklCredentialsInfo())
+        or (val == '3' and not _mdblist_ok())
+    )
+    if unauthorised:
+        set_watched_provider('0', notify=True)
     else:
         sync_indicators_label(val)
         ensure_bookmarks_valid()
 
 
 def fallback_indicators_on_revoke(revoked):
-    """revoked: 'trakt', 'simkl', or 'mdblist'. Adjust Indicators if that provider was selected."""
-    from resources.lib.modules import trakt
+    """revoked: 'trakt', 'simkl', or 'mdblist'. If that provider is the indicator, use Gratis Red."""
     val = control.setting('indicators.alt') or '0'
-    if revoked == 'trakt' and val == '1':
-        set_watched_provider('2' if getSimklCredentialsInfo() else ('3' if _mdblist_ok() else '0'))
-    elif revoked == 'simkl' and val == '2':
-        set_watched_provider('3' if _mdblist_ok() else ('1' if trakt.getTraktCredentialsInfo() else '0'))
-    elif revoked == 'mdblist' and val == '3':
-        set_watched_provider('2' if getSimklCredentialsInfo() else ('1' if trakt.getTraktCredentialsInfo() else '0'))
+    matched = (
+        (revoked == 'trakt' and val == '1')
+        or (revoked == 'simkl' and val == '2')
+        or (revoked == 'mdblist' and val == '3')
+    )
+    if matched:
+        set_watched_provider('0', notify=True)
     else:
         sync_indicators_label()
         ensure_bookmarks_valid()
@@ -379,6 +396,7 @@ def simkl_refresh_token():
             control.sleep(250)
         return _has_simkl_token()
     control.window.setProperty(_SIMKL_REFRESHING_PROP, 'true')
+    stored = False
     try:
         cid = _client_id()
         if not cid:
@@ -391,18 +409,27 @@ def simkl_refresh_token():
             'refresh_token': refresh,
         }, headers=_oauth_form_headers(), timeout=20)
         if resp.status_code == 200:
-            return _store_v2_tokens(resp.json() or {}, cid)
+            stored = bool(_store_v2_tokens(resp.json() or {}, cid))
+            return stored
         from resources.lib.modules.meta_auth_alerts import maybe_notify_refresh_failure
         maybe_notify_refresh_failure('simkl', resp.status_code, getattr(resp, 'text', ''))
         return False
     except Exception as e:
         log_utils.log('Simkl V2 refresh failed: %s' % e, 1)
+        stored = False
         return False
     finally:
         try:
             control.window.clearProperty(_SIMKL_REFRESHING_PROP)
         except Exception:
             pass
+        if stored:
+            try:
+                info = call_simkl('/users/settings', data={})
+                if isinstance(info, dict) and (info.get('user') or info.get('account')):
+                    _save_simkl_profile(info)
+            except Exception:
+                pass
 
 
 def _ensure_v2_access_token():
@@ -467,8 +494,20 @@ def _simkl_handle_rewatch_denied(payload):
     return True
 
 
+def _turn_off_free_rewatches():
+    if control.setting('simkl.track_rewatches') != 'true':
+        return
+    control.setSetting('simkl.track_rewatches', 'false')
+    control.infoDialog('Simkl rewatches need PRO or VIP. Track Rewatches was turned off.', sound=True)
+
+
 def _simkl_want_rewatch():
     if control.window.getProperty(_SIMKL_REWATCH_DENIED_PROP) == 'true':
+        return False
+    if not getSimklCredentialsInfo():
+        return False
+    refresh_simkl_account_plan()
+    if _simkl_plan() not in ('pro', 'vip'):
         return False
     return control.setting('simkl.track_rewatches') == 'true'
 
@@ -520,18 +559,70 @@ def _fetch_user_settings(access_token):
 def _save_simkl_profile(info=None):
     if info is None:
         info = call_simkl('/users/settings', data={})
-    user = 'Simkl User'
+    if not isinstance(info, dict) or not (info.get('user') or info.get('account')):
+        return (control.setting('simkl.user') or '').strip()
+    user = (control.setting('simkl.user') or '').strip()
     user_id = ''
-    if info and isinstance(info, dict) and info.get('user'):
+    if info.get('user'):
         u = info['user']
-        user = str(u.get('name') or u.get('login') or u.get('username') or user)
+        user = str(u.get('name') or u.get('login') or u.get('username') or user or 'Simkl User')
         user_id = u.get('id') or u.get('user_id') or ''
         if not user_id:
             account = info.get('account') or {}
             user_id = account.get('id') or ''
-    control.setSetting('simkl.user', user)
-    control.setSetting('simkl.user_id', str(user_id) if user_id not in _SIMKL_ID_EMPTY else '')
+        control.setSetting('simkl.user', user)
+        control.setSetting('simkl.user_id', str(user_id) if user_id not in _SIMKL_ID_EMPTY else '')
+    elif not user:
+        user = 'Simkl User'
+        control.setSetting('simkl.user', user)
+    _store_simkl_plan(info)
     return user
+
+
+def _store_simkl_plan(info):
+    """Save account.type. A response with no type leaves the saved plan alone."""
+    if not isinstance(info, dict):
+        return
+    account = info.get('account') or {}
+    if not isinstance(account, dict):
+        return
+    plan = str(account.get('type') or '').strip().lower()
+    if not plan:
+        return
+    previous = _simkl_plan()
+    control.setSetting('simkl.account_type', plan)
+    if plan == 'free':
+        _turn_off_free_rewatches()
+    if previous != plan:
+        clear_simkl_custom_list_cache()
+    try:
+        control.window.setProperty(_SIMKL_PLAN_AT_PROP, '%.3f' % time.time())
+    except Exception:
+        pass
+
+
+def refresh_simkl_account_plan():
+    """Re-read the plan for any signed-in account. A failed call does not mark it free."""
+    if not getSimklCredentialsInfo():
+        return
+    try:
+        last = float(control.window.getProperty(_SIMKL_PLAN_AT_PROP) or 0)
+    except Exception:
+        last = 0.0
+    if last and (time.time() - last) < _SIMKL_PLAN_REFRESH_SECONDS:
+        return
+    info = call_simkl('/users/settings', data={})
+    if not isinstance(info, dict):
+        return
+    if not info.get('user') and not info.get('account'):
+        return
+    _save_simkl_profile(info)
+
+
+def _simkl_lists_plan_block():
+    if not simkl_plan_known_free():
+        return None
+    return {'error': 'premium_only', 'message': 'Simkl PRO/VIP required for custom lists.'}
 
 
 def _simkl_user_id():
@@ -640,7 +731,7 @@ def authSimkl(reopen_settings=False):
         control.setSetting('simkl.authed', 'yes')
         from resources.lib.modules.meta_auth_alerts import clear_alert
         clear_alert('simkl')
-        if control.yesnoDialog('Set Simkl as your Watched Indicators provider?', heading='Watched Status Provider'):
+        if control.yesnoDialog('Set Simkl as your Watched Indicators provider?', heading='Watched Status Provider', default_yes=True):
             set_watched_provider('2', notify=True)
         try:
             # Same as Red Light: full pull + store /sync/activities so the next list
@@ -682,6 +773,7 @@ def revokeSimkl(reopen_settings=False):
         control.setSetting('simkl.refresh', '')
         control.setSetting('simkl.expires', '')
         control.setSetting('simkl.auth_version', '')
+        control.setSetting('simkl.account_type', '')
         control.setSetting('simkl.authed', '')
         from resources.lib.modules.meta_auth_alerts import clear_alert
         clear_alert('simkl')
@@ -882,9 +974,9 @@ def _normalize_imdb(imdb):
 # Per-shelf sort for My Simkl status lists — see shelf_sort.py.
 
 
-def choose_list_sort(media, status):
+def choose_list_sort(media, status, label=None):
     from resources.lib.modules import shelf_sort
-    shelf_sort.choose_list_sort('simkl', media, status, sortable=shelf_sort.SIMKL_SORTABLE)
+    shelf_sort.choose_list_sort('simkl', media, status, sortable=shelf_sort.SIMKL_SORTABLE, heading_label=label)
 
 
 def directory_movies(status):
@@ -942,8 +1034,8 @@ def _simkl_custom_cache_key(list_id=None, page=None, limit=None):
     if list_id in (None, '', 0, '0'):
         return 'simkl_custom_lists'
     if page not in (None, '', 0, '0'):
-        return 'simkl_custom_list_%s_p%s_%s' % (list_id, page, limit or 0)
-    return 'simkl_custom_list_%s' % list_id
+        return 'simkl_custom_list_v4_%s_p%s_%s' % (list_id, page, limit or 0)
+    return 'simkl_custom_list_v4_%s' % list_id
 
 
 def _simkl_custom_cache_get(list_id=None, page=None, limit=None):
@@ -979,6 +1071,10 @@ def simkl_get_custom_lists():
     empty = {'lists': [], 'premium_only': None}
     if not getSimklAuthV2():
         return empty
+    refresh_simkl_account_plan()
+    blocked = _simkl_lists_plan_block()
+    if blocked:
+        return {'lists': [], 'premium_only': blocked}
     cached = _simkl_custom_cache_get()
     if cached is not None:
         return cached
@@ -1022,11 +1118,11 @@ def _simkl_custom_item_type(item):
 
 
 def custom_list_media(item):
-    """movies / shows / anime / mixed / '' from a /lists/user row."""
+    """movies / shows / anime. A Simkl list is one of those, never a mix."""
     row = item or {}
     if isinstance(row.get('list'), dict):
         row = row['list']
-    kind = str(row.get('media_type') or row.get('list_type') or row.get('kind') or '').lower()
+    kind = str(row.get('media_type') or row.get('list_type') or row.get('type') or row.get('kind') or '').lower()
     if kind in ('movie', 'movies'):
         return 'movies'
     if kind in ('anime',):
@@ -1046,17 +1142,12 @@ def custom_list_media(item):
         anime = int(counts.get('anime') or 0)
     except Exception:
         anime = 0
-    present = []
-    if movies:
-        present.append('movies')
-    if shows:
-        present.append('shows')
-    if anime:
-        present.append('anime')
+    buckets = (('movies', movies), ('shows', shows), ('anime', anime))
+    present = [name for name, count in buckets if count]
     if len(present) == 1:
         return present[0]
-    if len(present) > 1:
-        return 'mixed'
+    if present:
+        return max(buckets, key=lambda pair: pair[1])[0]
     return ''
 
 
@@ -1081,6 +1172,9 @@ def _simkl_custom_media_ids(item):
         except Exception:
             media_ids['tvdb'] = tvdb
     return media_ids
+
+
+_SIMKL_CUSTOM_FETCH_LIMIT = 500
 
 
 def _custom_page_size():
@@ -1108,10 +1202,133 @@ def custom_list_page_ref(rest):
     return text, page
 
 
-def simkl_get_custom_list_contents(list_id, page=1):
+def _simkl_id_list(items, limit=5):
+    out = []
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        ids = item.get('ids') or {}
+        sid = ids.get('simkl_id')
+        if sid in (None, ''):
+            sid = ids.get('simkl')
+        if sid in (None, ''):
+            sid = item.get('id')
+        if sid in (None, ''):
+            continue
+        try:
+            sid = int(sid)
+        except Exception:
+            pass
+        out.append(sid)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def _simkl_head_matches(items, preview_ids):
+    """True when this page head is the order simkl.com previews for the list."""
+    if not preview_ids:
+        return True
+    want = []
+    for sid in preview_ids:
+        try:
+            want.append(int(sid))
+        except Exception:
+            want.append(sid)
+    head = _simkl_id_list(items, len(want))
+    n = min(len(head), len(want))
+    return n > 0 and head[:n] == want[:n]
+
+
+def _simkl_top_ids(top_items):
+    ids = []
+    for item in top_items or []:
+        if not isinstance(item, dict):
+            continue
+        sid = item.get('id')
+        if sid in (None, ''):
+            continue
+        ids.append(sid)
+    return ids
+
+
+def _simkl_preview_ids(list_id, payload):
+    """Website order. The item feed can disagree with that preview."""
+    ids = _simkl_top_ids((payload or {}).get('top_items'))
+    if ids:
+        return ids
+    try:
+        known = simkl_get_custom_lists()
+        for item in known.get('lists') or []:
+            if str(item.get('id')) != str(list_id):
+                continue
+            ids = _simkl_top_ids(item.get('top_items'))
+            if ids:
+                return ids
+    except Exception:
+        pass
+    user_id = ((payload or {}).get('user') or {}).get('id')
+    if not user_id:
+        return []
+    try:
+        listed = call_simkl('/lists/user/%s?limit=50&page=1' % user_id, method='get')
+        for item in (listed or {}).get('lists') or []:
+            if str(item.get('id')) != str(list_id):
+                continue
+            return _simkl_top_ids(item.get('top_items'))
+    except Exception:
+        pass
+    return []
+
+
+def _simkl_display_query(list_id):
+    """Sort query whose pages match simkl.com. Empty keeps the API default. Cached per list."""
+    cached = _simkl_custom_cache_get(list_id, page='order', limit='v2')
+    if isinstance(cached, dict) and 'query' in cached:
+        return cached.get('query') or ''
+    query = ''
+    probe = call_simkl('/lists/%s?limit=5&page=1' % list_id, method='get')
+    if isinstance(probe, dict) and not _simkl_premium_only(probe):
+        preview = _simkl_preview_ids(list_id, probe)
+        chunk = probe.get('items') if isinstance(probe.get('items'), list) else []
+        if preview and not _simkl_head_matches(chunk, preview):
+            # Hyphenated keys are the ones Simkl applies. Unknown keys are echoed and ignored.
+            for key, direction in (('dvd-date', 'desc'), ('dvd-date', 'asc'), ('air-date', 'desc'), ('air-date', 'asc')):
+                trial = call_simkl(
+                    '/lists/%s?limit=5&page=1&sort=%s&direction=%s' % (list_id, key, direction),
+                    method='get')
+                items = trial.get('items') if isinstance(trial, dict) else None
+                if _simkl_head_matches(items, preview):
+                    query = '&sort=%s&direction=%s' % (key, direction)
+                    break
+    _simkl_custom_cache_set(list_id, {'query': query}, page='order', limit='v2')
+    return query
+
+
+def _simkl_custom_release(item):
+    """First-release day. The DVD day is a different Simkl sort, so it is not used here."""
+    item = item or {}
+    val = item.get('release_date')
+    if val not in (None, '', 'None'):
+        return str(val)[:10]
+    year = item.get('year')
+    if year not in (None, '', 'None', 0, '0'):
+        try:
+            return '%04d-01-01' % int(year)
+        except (TypeError, ValueError):
+            pass
+    return ''
+
+
+def simkl_get_custom_list_contents(list_id, page=1, limit=None, query=None):
     """One page of a custom list. AUTH V2 + PRO/VIP. Does not walk the whole list."""
     empty = {'items': [], 'premium_only': None, 'page': 1, 'total_pages': 1}
     if not getSimklAuthV2() or list_id in _SIMKL_ID_EMPTY:
+        return empty
+    refresh_simkl_account_plan()
+    blocked = _simkl_lists_plan_block()
+    if blocked:
+        empty['premium_only'] = blocked
         return empty
     try:
         page = int(page or 1)
@@ -1119,15 +1336,28 @@ def simkl_get_custom_list_contents(list_id, page=1):
         page = 1
     if page < 1:
         page = 1
-    limit = _custom_page_size()
-    cached = _simkl_custom_cache_get(list_id, page, limit)
+    if limit is None:
+        limit = _custom_page_size()
+    else:
+        try:
+            limit = int(limit)
+        except Exception:
+            limit = _SIMKL_CUSTOM_FETCH_LIMIT
+        if limit < 1:
+            limit = _custom_page_size()
+        if limit > _SIMKL_CUSTOM_FETCH_LIMIT:
+            limit = _SIMKL_CUSTOM_FETCH_LIMIT
+    if query is None:
+        query = _simkl_display_query(list_id)
+    cache_limit = '%s%s' % (limit, query or '_pos')
+    cached = _simkl_custom_cache_get(list_id, page, cache_limit)
     if cached is not None:
         return cached
-    path = '/lists/%s?limit=%s&page=%s' % (list_id, limit, page)
+    path = '/lists/%s?limit=%s&page=%s%s' % (list_id, limit, page, query)
     payload = call_simkl(path, method='get')
     if _simkl_premium_only(payload):
         result = {'items': [], 'premium_only': payload, 'page': page, 'total_pages': 1}
-        _simkl_custom_cache_set(list_id, result, page, limit)
+        _simkl_custom_cache_set(list_id, result, page, cache_limit)
         return result
     rows = []
     total_pages = page
@@ -1150,6 +1380,7 @@ def simkl_get_custom_list_contents(list_id, page=1):
                     'order': order,
                     'title': (item.get('title') or '').strip(),
                     'year': item.get('year') or 0,
+                    'release_date': _simkl_custom_release(item),
                 })
         pagination = payload.get('pagination') or {}
         try:
@@ -1157,7 +1388,7 @@ def simkl_get_custom_list_contents(list_id, page=1):
         except Exception:
             total_pages = page
     result = {'items': rows, 'premium_only': None, 'page': page, 'total_pages': total_pages}
-    _simkl_custom_cache_set(list_id, result, page, limit)
+    _simkl_custom_cache_set(list_id, result, page, cache_limit)
     return result
 
 
@@ -1177,7 +1408,7 @@ def _directory_from_custom_items(items, media, nxt=''):
         row = {
             'title': title, 'originaltitle': title, 'year': year,
             'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb, 'next': nxt or '',
-            'collected_at': '',
+            'collected_at': '', 'release_date': item.get('release_date') or '',
         }
         if media == 'movies':
             row['paused_at'] = '0'
@@ -1196,6 +1427,133 @@ def _custom_list_next(list_id, payload):
     return 'simkl_custom_%s|%s' % (list_id, page + 1)
 
 
+def _custom_list_rows_all(list_id, discover=True):
+    """Every item, in large pages, cached as one list. Items Per Page is applied later."""
+    if discover:
+        query = _simkl_display_query(list_id)
+    else:
+        query = ''
+    cache_limit = 'all%s' % (query or '_pos')
+    cached = _simkl_custom_cache_get(list_id, page='built', limit=cache_limit)
+    if isinstance(cached, dict) and 'rows' in cached:
+        if cached.get('premium_only') and not cached.get('rows'):
+            message = cached.get('premium_only')
+            if isinstance(message, dict):
+                message = message.get('message')
+            control.infoDialog(message or 'Simkl PRO/VIP required for custom lists.', sound=True)
+        return cached.get('rows') or []
+    rows = []
+    seen = set()
+    page = 1
+    premium = None
+    while page <= 40:
+        payload = simkl_get_custom_list_contents(list_id, page, _SIMKL_CUSTOM_FETCH_LIMIT, query=query)
+        if payload.get('premium_only'):
+            premium = payload.get('premium_only')
+            if not rows:
+                control.infoDialog(
+                    (premium.get('message') if isinstance(premium, dict) else None)
+                    or 'Simkl PRO/VIP required for custom lists.',
+                    sound=True)
+            break
+        chunk = list(payload.get('items') or [])
+        chunk.sort(key=lambda k: k.get('order', 0))
+        for item in chunk:
+            ids = item.get('media_ids') or {}
+            key = (
+                item.get('type'),
+                str(ids.get('tmdb') or ''),
+                str(ids.get('imdb') or ''),
+                str(ids.get('tvdb') or ''),
+                item.get('title') or '',
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            rows.append(item)
+        try:
+            total = int(payload.get('total_pages') or page)
+        except Exception:
+            total = page
+        if page >= total:
+            break
+        page += 1
+    stored = {'rows': rows}
+    if premium and not rows:
+        stored['premium_only'] = premium
+    _simkl_custom_cache_set(list_id, stored, page='built', limit=cache_limit)
+    return rows
+
+
+def _custom_list_rows_until(list_id, want, page):
+    """Provider Default. Only the 500-item pages needed to fill this folder page."""
+    try:
+        need = int(page or 1) * int(control.items_per_page() or 20)
+    except Exception:
+        need = 20
+    if need < 1:
+        need = 20
+    rows = []
+    seen = set()
+    api_page = 1
+    while api_page <= 40:
+        payload = simkl_get_custom_list_contents(list_id, api_page, _SIMKL_CUSTOM_FETCH_LIMIT)
+        if payload.get('premium_only'):
+            if not rows:
+                message = payload.get('premium_only')
+                if isinstance(message, dict):
+                    message = message.get('message')
+                control.infoDialog(message or 'Simkl PRO/VIP required for custom lists.', sound=True)
+            break
+        for item in payload.get('items') or []:
+            if item.get('type') != want:
+                continue
+            ids = item.get('media_ids') or {}
+            key = (
+                str(ids.get('tmdb') or ''),
+                str(ids.get('imdb') or ''),
+                str(ids.get('tvdb') or ''),
+                item.get('title') or '',
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            rows.append(item)
+        try:
+            total = int(payload.get('total_pages') or api_page)
+        except Exception:
+            total = api_page
+        if len(rows) >= need or api_page >= total:
+            if len(rows) >= need and api_page < total:
+                rows.append({'type': want, 'media_ids': {}, 'title': '', 'year': 0, 'release_date': '', 'order': 0})
+            break
+        api_page += 1
+    return rows
+
+
+def _directory_custom_list_all(list_id, media, page=1, full=False):
+    """Browse one page. A custom sort, or a library import, reads the whole list."""
+    from resources.lib.modules import shelf_sort
+    kind = 'movies' if media == 'movies' else 'tvshows'
+    shelf = shelf_sort.personal_shelf_key(list_id)
+    local_sort = shelf_sort.get_list_sort('simkl', kind, shelf) != shelf_sort.SORT_DEFAULT
+    want = 'movie' if media == 'movies' else 'show'
+    if local_sort or full:
+        rows = [i for i in _custom_list_rows_all(list_id, discover=not local_sort) if i.get('type') == want]
+    else:
+        rows = _custom_list_rows_until(list_id, want, page)
+    built = _directory_from_custom_items(rows, 'movies' if media == 'movies' else 'tvshows', '')
+    return shelf_sort.sort_items(built, 'simkl', kind, shelf)
+
+
+def directory_custom_list_movies_all(list_id, page=1, full=False):
+    return _directory_custom_list_all(list_id, 'movies', page, full)
+
+
+def directory_custom_list_tvshows_all(list_id, page=1, full=False):
+    return _directory_custom_list_all(list_id, 'tvshows', page, full)
+
+
 def directory_custom_list_movies(list_id, page=1):
     payload = simkl_get_custom_list_contents(list_id, page)
     if payload.get('premium_only'):
@@ -1205,7 +1563,9 @@ def directory_custom_list_movies(list_id, page=1):
         return []
     movies = [i for i in (payload.get('items') or []) if i.get('type') == 'movie']
     movies.sort(key=lambda k: k.get('order', 0))
-    return _directory_from_custom_items(movies, 'movies', _custom_list_next(list_id, payload))
+    rows = _directory_from_custom_items(movies, 'movies', _custom_list_next(list_id, payload))
+    from resources.lib.modules import shelf_sort
+    return shelf_sort.sort_items(rows, 'simkl', 'movies', shelf_sort.personal_shelf_key(list_id))
 
 
 def directory_custom_list_tvshows(list_id, page=1):
@@ -1217,7 +1577,9 @@ def directory_custom_list_tvshows(list_id, page=1):
         return []
     shows = [i for i in (payload.get('items') or []) if i.get('type') == 'show']
     shows.sort(key=lambda k: k.get('order', 0))
-    return _directory_from_custom_items(shows, 'tvshows', _custom_list_next(list_id, payload))
+    rows = _directory_from_custom_items(shows, 'tvshows', _custom_list_next(list_id, payload))
+    from resources.lib.modules import shelf_sort
+    return shelf_sort.sort_items(rows, 'simkl', 'tvshows', shelf_sort.personal_shelf_key(list_id))
 
 
 def _paused_key(paused_at):
@@ -1269,6 +1631,7 @@ def directory_playback_movies():
                 'title': title, 'originaltitle': title, 'year': year,
                 'imdb': imdb, 'tmdb': tmdb, 'tvdb': '0', 'next': '',
                 'paused_at': _paused_key(item.get('paused_at')),
+                'progress': item.get('progress'),
             })
         except Exception:
             pass
@@ -1319,6 +1682,7 @@ def playback_episode_items():
                 'thumb': '0',
                 'paused_at': _paused_key(item.get('paused_at')),
                 'watched_at': '0',
+                'progress': item.get('progress'),
             })
         except Exception:
             pass

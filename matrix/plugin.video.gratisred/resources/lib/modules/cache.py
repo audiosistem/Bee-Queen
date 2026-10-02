@@ -378,7 +378,14 @@ def cache_clear_search(select):
     try:
         cursor = _get_connection_cursor_search()
         if select == 'all':
-            table = ['movies', 'tvshow', 'people', 'keywords', 'companies', 'collections']
+            table = [
+                'movies', 'tvshow',
+                'people', 'keywords', 'companies', 'collections',
+                'people_movies', 'people_tvshow',
+                'keywords_movies', 'keywords_tvshow',
+                'companies_movies', 'companies_tvshow',
+                'collections_movies', 'collections_tvshow',
+            ]
         elif not isinstance(select, list):
             table = [select]
         for t in table:

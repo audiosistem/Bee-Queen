@@ -317,7 +317,7 @@ class navigator:
         self.addDirectoryItem('Most Popular Shows',          'tvshows&url=tvmaze_popular',           'most-popular.png',     'DefaultTVShows.png')
         self.addDirectoryItem('Premiering Today (US TV)',    'calendar&url=tvmaze_premieres_today',  'new-tvshows.png',      'DefaultRecentlyAddedEpisodes.png')
         self.addDirectoryItem('Streaming Today',             'calendar&url=tvmaze_streaming_today',  'latest-episodes.png',  'DefaultRecentlyAddedEpisodes.png')
-        self.addDirectoryItem('New Episodes (US TV)',        'calendar&url=tvmaze_added',            'latest-episodes.png',  'DefaultRecentlyAddedEpisodes.png', queue=True)
+        self.addDirectoryItem('New Episodes (US TV)',        'calendar&url=tvmaze_added',            'latest-episodes.png',  'DefaultRecentlyAddedEpisodes.png')
         self.addDirectoryItem('TV Calendar (last 30 days)',  'calendars',                            'calendar.png',         'DefaultRecentlyAddedEpisodes.png')
         self.addDirectoryItem('Recently Updated Shows',      'tvshows_tvmaze_updates_menu',          'latest-movies.png',    'DefaultTVShows.png')
         self.addDirectoryItem('Networks',                    'tvshows_tvmaze_networks',              'networks.png',         'DefaultTVShows.png')
@@ -335,16 +335,14 @@ class navigator:
 
 
     def mylists(self):
-        if _simkl_credentials():
-            self.addDirectoryItem('My Simkl', 'my_simkl_menu', 'simkl.png', 'DefaultSets.png')
         if _mdblist_credentials():
             self.addDirectoryItem('My MDBList', 'my_mdblist_menu', 'mdblist.png', 'DefaultSets.png')
+        if _simkl_credentials():
+            self.addDirectoryItem('My Simkl', 'my_simkl_menu', 'simkl.png', 'DefaultSets.png')
         if _tmdb_credentials():
             self.addDirectoryItem('My TMDb', 'my_tmdb_menu', 'tmdb.png', 'DefaultSets.png')
         if _trakt_credentials():
             self.addDirectoryItem('My Trakt', 'my_trakt_menu', 'trakt.png', 'DefaultSets.png')
-        if _trakt_credentials() or _tmdb_credentials() or _mdblist_credentials():
-            self.addDirectoryItem('My UserLists', 'my_userlists_menu', 'userlists.png', 'DefaultSets.png')
         self.addDirectoryItem('My Favorites', 'favoritesNavigator', 'most-popular.png', 'DefaultFolder.png')
         self.addDirectoryItem('My Library', 'library_menu', 'mymovies.png', 'DefaultAddonProgram.png')
         self.addDirectoryItem('My Downloads', 'download_menu', 'downloads.png', 'DefaultFolder.png')
@@ -358,6 +356,9 @@ class navigator:
             return
         self.addDirectoryItem('My MDBList Movies', 'my_mdblist_movies_menu', 'mymovies.png', 'DefaultMovies.png')
         self.addDirectoryItem('My MDBList TV Shows', 'my_mdblist_tvshows_menu', 'mytvshows.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('My Lists', 'my_mdblist_lists&kind=user', 'mdblist.png', 'DefaultVideoPlaylists.png')
+        self.addDirectoryItem('Liked Lists', 'my_mdblist_lists&kind=liked', 'mdblist.png', 'DefaultVideoPlaylists.png')
+        self.addDirectoryItem('Popular MDBLists', 'my_mdblist_lists&kind=top', 'mdblist.png', 'DefaultVideoPlaylists.png')
         self.addDirectoryItem('Refresh MDBList Cache', 'refresh_mdblist_cache', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         self.endDirectory()
 
@@ -368,17 +369,14 @@ class navigator:
         else:
             sort = lambda shelf: ('Set Sort Order', 'mdblist_list_sort&media=movies&status=%s' % shelf)
             lib = lambda url: ('Add to Library', 'movies_to_library&url=%s' % url)
-            self.addDirectoryItem('Watchlist', 'movies&url=mdblist_watchlist', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+            self.addDirectoryItem('Watchlist', 'movies&url=mdblist_watchlist', 'mymovies.png', 'DefaultMovies.png', context=[
                 sort('watchlist'), lib('mdblist_watchlist')])
-            self.addDirectoryItem('Library', 'movies&url=mdblist_collection', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+            self.addDirectoryItem('Library', 'movies&url=mdblist_collection', 'mymovies.png', 'DefaultMovies.png', context=[
                 sort('collection'), lib('mdblist_collection')])
-            self.addDirectoryItem('In Progress', 'movies&url=mdblist_ondeck', 'people-watching.png', 'DefaultMovies.png', queue=True, context=[
+            self.addDirectoryItem('In Progress', 'movies&url=mdblist_ondeck', 'people-watching.png', 'DefaultMovies.png', context=[
                 lib('mdblist_ondeck')])
-            self.addDirectoryItem('Watched', 'movies&url=mdblist_watched', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+            self.addDirectoryItem('Watched', 'movies&url=mdblist_watched', 'mymovies.png', 'DefaultMovies.png', context=[
                 sort('watched'), lib('mdblist_watched')])
-            self.addDirectoryItem('My Lists', 'movies_userlists_mdblist', 'mdblist.png', 'DefaultVideoPlaylists.png')
-            self.addDirectoryItem('Liked Lists', 'movies_userlists_mdblist_liked', 'mdblist.png', 'DefaultVideoPlaylists.png')
-            self.addDirectoryItem('Popular MDBLists', 'movies_userlists_mdblist_top', 'mdblist.png', 'DefaultVideoPlaylists.png')
         self.endDirectory()
 
 
@@ -388,20 +386,17 @@ class navigator:
         else:
             sort = lambda shelf: ('Set Sort Order', 'mdblist_list_sort&media=tvshows&status=%s' % shelf)
             lib = lambda url: ('Add to Library', 'tvshows_to_library&url=%s' % url)
-            self.addDirectoryItem('Watchlist', 'tvshows&url=mdblist_watchlist', 'mytvshows.png', 'DefaultTVShows.png', queue=True, context=[
+            self.addDirectoryItem('Watchlist', 'tvshows&url=mdblist_watchlist', 'mytvshows.png', 'DefaultTVShows.png', context=[
                 sort('watchlist'), lib('mdblist_watchlist')])
-            self.addDirectoryItem('Library', 'tvshows&url=mdblist_collection', 'mytvshows.png', 'DefaultTVShows.png', queue=True, context=[
+            self.addDirectoryItem('Library', 'tvshows&url=mdblist_collection', 'mytvshows.png', 'DefaultTVShows.png', context=[
                 sort('collection'), lib('mdblist_collection')])
-            self.addDirectoryItem('Upcoming Episodes', 'calendar&url=mdblist_mycalendar', 'calendar.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
-            self.addDirectoryItem('Continue Watching', 'calendar&url=mdblist_progress', 'people-watching.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
+            self.addDirectoryItem('Upcoming Episodes', 'calendar&url=mdblist_mycalendar', 'calendar.png', 'DefaultRecentlyAddedEpisodes.png')
+            self.addDirectoryItem('Continue Watching', 'calendar&url=mdblist_progress', 'people-watching.png', 'DefaultRecentlyAddedEpisodes.png')
             self.addDirectoryItem('In Progress Episodes', 'calendar&url=mdblist_ondeck', 'latest-episodes.png', 'DefaultTVShows.png')
-            self.addDirectoryItem('Watched', 'tvshows&url=mdblist_watched', 'mytvshows.png', 'DefaultTVShows.png', queue=True, context=[
+            self.addDirectoryItem('Watched', 'tvshows&url=mdblist_watched', 'mytvshows.png', 'DefaultTVShows.png', context=[
                 sort('watched'), lib('mdblist_watched')])
-            self.addDirectoryItem('Dropped', 'tvshows&url=mdblist_dropped', 'mytvshows.png', 'DefaultTVShows.png', queue=True, context=[
+            self.addDirectoryItem('Dropped', 'tvshows&url=mdblist_dropped', 'mytvshows.png', 'DefaultTVShows.png', context=[
                 sort('dropped'), lib('mdblist_dropped')])
-            self.addDirectoryItem('My Lists', 'tvshows_userlists_mdblist', 'mdblist.png', 'DefaultVideoPlaylists.png')
-            self.addDirectoryItem('Liked Lists', 'tvshows_userlists_mdblist_liked', 'mdblist.png', 'DefaultVideoPlaylists.png')
-            self.addDirectoryItem('Popular MDBLists', 'tvshows_userlists_mdblist_top', 'mdblist.png', 'DefaultVideoPlaylists.png')
         self.endDirectory()
 
 
@@ -412,6 +407,8 @@ class navigator:
             return
         self.addDirectoryItem('My Trakt Movies', 'my_trakt_movies_menu', 'mymovies.png', 'DefaultMovies.png')
         self.addDirectoryItem('My Trakt TV Shows', 'my_trakt_tvshows_menu', 'mytvshows.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('My Lists', 'my_trakt_lists&kind=user', 'trakt.png', 'DefaultVideoPlaylists.png')
+        self.addDirectoryItem('Liked Lists', 'my_trakt_lists&kind=liked', 'trakt.png', 'DefaultVideoPlaylists.png')
         # "Refresh Trakt Cache" - manual override for the short-TTL cache
         # (see modules/trakt_cache.py). ``isFolder=False`` — action, not navigation.
         self.addDirectoryItem('Refresh Trakt Cache', 'refresh_trakt_cache', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
@@ -426,6 +423,8 @@ class navigator:
         self.addDirectoryItem('My Simkl Movies', 'my_simkl_movies_menu', 'mymovies.png', 'DefaultMovies.png')
         self.addDirectoryItem('My Simkl TV Shows', 'my_simkl_tvshows_menu', 'mytvshows.png', 'DefaultTVShows.png')
         if _simkl_auth_v2():
+            simkl.refresh_simkl_account_plan()
+        if simkl.simkl_custom_lists_allowed():
             self.addDirectoryItem('Lists', 'my_simkl_lists_menu', 'userlists.png', 'DefaultVideoPlaylists.png')
         self.addDirectoryItem('Refresh Simkl Cache', 'refresh_simkl_cache', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         self.endDirectory()
@@ -463,13 +462,18 @@ class navigator:
                 display = '%s [I](x%s)[/I]' % (name, item_count)
                 media = simkl.custom_list_media(item)
                 url = 'simkl_custom_%s' % list_id
+                from resources.lib.modules import shelf_sort
+                shelf = shelf_sort.personal_shelf_key(list_id)
+                sort_label = quote_plus(str(name))
+                sort_movies = ('Set Sort Order', 'simkl_list_sort&media=movies&status=%s&label=%s' % (shelf, sort_label))
+                sort_shows = ('Set Sort Order', 'simkl_list_sort&media=tvshows&status=%s&label=%s' % (shelf, sort_label))
+                quoted = quote_plus(url)
+                movie_lib = ('Add to Library', 'movies_to_library&url=%s' % quoted)
+                show_lib = ('Add to Library', 'tvshows_to_library&url=%s' % quoted)
                 if media == 'movies':
-                    self.addDirectoryItem(display, 'movies&url=%s' % url, 'mymovies.png', 'DefaultMovies.png', queue=True)
+                    self.addDirectoryItem(display, 'movies&url=%s' % url, 'mymovies.png', 'DefaultMovies.png', context=[sort_movies, movie_lib])
                 elif media in ('shows', 'anime'):
-                    self.addDirectoryItem(display, 'tvshows&url=%s' % url, 'mytvshows.png', 'DefaultTVShows.png', queue=True)
-                else:
-                    query = 'my_simkl_list_menu&list_id=%s&list_name=%s' % (list_id, quote_plus(str(name)))
-                    self.addDirectoryItem(display, query, 'userlists.png', 'DefaultVideoPlaylists.png')
+                    self.addDirectoryItem(display, 'tvshows&url=%s' % url, 'mytvshows.png', 'DefaultTVShows.png', context=[sort_shows, show_lib])
             except Exception:
                 pass
         self.endDirectory()
@@ -482,17 +486,23 @@ class navigator:
             return
         url = 'simkl_custom_%s' % list_id
         media = str(list_media or '').lower()
+        from resources.lib.modules import shelf_sort
+        shelf = shelf_sort.personal_shelf_key(list_id)
+        sort_label = quote_plus(str(list_name or 'List'))
+        sort_movies = ('Set Sort Order', 'simkl_list_sort&media=movies&status=%s&label=%s' % (shelf, sort_label))
+        sort_shows = ('Set Sort Order', 'simkl_list_sort&media=tvshows&status=%s&label=%s' % (shelf, sort_label))
+        quoted = quote_plus(url)
+        movie_lib = ('Add to Library', 'movies_to_library&url=%s' % quoted)
+        show_lib = ('Add to Library', 'tvshows_to_library&url=%s' % quoted)
         if media in ('movie', 'movies'):
-            self.addDirectoryItem('Movies', 'movies&url=%s' % url, 'mymovies.png', 'DefaultMovies.png', queue=True)
+            self.addDirectoryItem('Movies', 'movies&url=%s' % url, 'mymovies.png', 'DefaultMovies.png', context=[sort_movies, movie_lib])
             self.endDirectory()
             return
         if media in ('show', 'shows', 'tv', 'anime'):
             label = 'Anime' if media == 'anime' else 'TV Shows'
-            self.addDirectoryItem(label, 'tvshows&url=%s' % url, 'mytvshows.png', 'DefaultTVShows.png', queue=True)
+            self.addDirectoryItem(label, 'tvshows&url=%s' % url, 'mytvshows.png', 'DefaultTVShows.png', context=[sort_shows, show_lib])
             self.endDirectory()
             return
-        self.addDirectoryItem('Movies', 'movies&url=%s' % url, 'mymovies.png', 'DefaultMovies.png', queue=True)
-        self.addDirectoryItem('TV Shows', 'tvshows&url=%s' % url, 'mytvshows.png', 'DefaultTVShows.png', queue=True)
         self.endDirectory()
 
 
@@ -502,13 +512,13 @@ class navigator:
         else:
             sort = lambda status: ('Set Sort Order', 'simkl_list_sort&media=movies&status=%s' % status)
             lib = lambda url: ('Add to Library', 'movies_to_library&url=%s' % url)
-            self.addDirectoryItem('Plan to Watch', 'movies&url=simkl_plantowatch', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+            self.addDirectoryItem('Plan to Watch', 'movies&url=simkl_plantowatch', 'mymovies.png', 'DefaultMovies.png', context=[
                 sort('plantowatch'), lib('simkl_plantowatch')])
-            self.addDirectoryItem('In Progress', 'movies&url=simkl_ondeck', 'people-watching.png', 'DefaultMovies.png', queue=True, context=[
+            self.addDirectoryItem('In Progress', 'movies&url=simkl_ondeck', 'people-watching.png', 'DefaultMovies.png', context=[
                 lib('simkl_ondeck')])
-            self.addDirectoryItem('Completed', 'movies&url=simkl_completed', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+            self.addDirectoryItem('Completed', 'movies&url=simkl_completed', 'mymovies.png', 'DefaultMovies.png', context=[
                 sort('completed'), lib('simkl_completed')])
-            self.addDirectoryItem('Dropped', 'movies&url=simkl_dropped', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+            self.addDirectoryItem('Dropped', 'movies&url=simkl_dropped', 'mymovies.png', 'DefaultMovies.png', context=[
                 sort('dropped'), lib('simkl_dropped')])
         self.endDirectory()
 
@@ -519,18 +529,18 @@ class navigator:
         else:
             sort = lambda status: ('Set Sort Order', 'simkl_list_sort&media=tvshows&status=%s' % status)
             lib = lambda url: ('Add to Library', 'tvshows_to_library&url=%s' % url)
-            self.addDirectoryItem('Plan to Watch', 'tvshows&url=simkl_plantowatch', 'mytvshows.png', 'DefaultTVShows.png', queue=True, context=[
+            self.addDirectoryItem('Plan to Watch', 'tvshows&url=simkl_plantowatch', 'mytvshows.png', 'DefaultTVShows.png', context=[
                 sort('plantowatch'), lib('simkl_plantowatch')])
-            self.addDirectoryItem('Watching', 'tvshows&url=simkl_watching', 'people-watching.png', 'DefaultTVShows.png', queue=True, context=[
+            self.addDirectoryItem('Watching', 'tvshows&url=simkl_watching', 'people-watching.png', 'DefaultTVShows.png', context=[
                 sort('watching'), lib('simkl_watching')])
-            self.addDirectoryItem('Upcoming Episodes', 'calendar&url=simkl_mycalendar', 'calendar.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
-            self.addDirectoryItem('Continue Watching', 'calendar&url=simkl_progress', 'people-watching.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
+            self.addDirectoryItem('Upcoming Episodes', 'calendar&url=simkl_mycalendar', 'calendar.png', 'DefaultRecentlyAddedEpisodes.png')
+            self.addDirectoryItem('Continue Watching', 'calendar&url=simkl_progress', 'people-watching.png', 'DefaultRecentlyAddedEpisodes.png')
             self.addDirectoryItem('In Progress Episodes', 'calendar&url=simkl_ondeck', 'latest-episodes.png', 'DefaultTVShows.png')
-            self.addDirectoryItem('Completed', 'tvshows&url=simkl_completed', 'mytvshows.png', 'DefaultTVShows.png', queue=True, context=[
+            self.addDirectoryItem('Completed', 'tvshows&url=simkl_completed', 'mytvshows.png', 'DefaultTVShows.png', context=[
                 sort('completed'), lib('simkl_completed')])
-            self.addDirectoryItem('On Hold', 'tvshows&url=simkl_hold', 'mytvshows.png', 'DefaultTVShows.png', queue=True, context=[
+            self.addDirectoryItem('On Hold', 'tvshows&url=simkl_hold', 'mytvshows.png', 'DefaultTVShows.png', context=[
                 sort('hold'), lib('simkl_hold')])
-            self.addDirectoryItem('Dropped', 'tvshows&url=simkl_dropped', 'mytvshows.png', 'DefaultTVShows.png', queue=True, context=[
+            self.addDirectoryItem('Dropped', 'tvshows&url=simkl_dropped', 'mytvshows.png', 'DefaultTVShows.png', context=[
                 sort('dropped'), lib('simkl_dropped')])
         self.endDirectory()
 
@@ -542,19 +552,17 @@ class navigator:
             return
         sort = lambda shelf: ('Set Sort Order', 'trakt_list_sort&media=movies&status=%s' % shelf)
         lib = lambda url: ('Add to Library', 'movies_to_library&url=%s' % url)
-        self.addDirectoryItem('Library', 'movies&url=trakt_collection', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+        self.addDirectoryItem('Library', 'movies&url=trakt_collection', 'mymovies.png', 'DefaultMovies.png', context=[
             sort('collection'), lib('trakt_collection')])
-        self.addDirectoryItem('Watchlist', 'movies&url=trakt_watchlist', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+        self.addDirectoryItem('Watchlist', 'movies&url=trakt_watchlist', 'mymovies.png', 'DefaultMovies.png', context=[
             sort('watchlist'), lib('trakt_watchlist')])
-        self.addDirectoryItem('Favorites', 'movies&url=trakt_favorites', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+        self.addDirectoryItem('Favorites', 'movies&url=trakt_favorites', 'mymovies.png', 'DefaultMovies.png', context=[
             sort('favorites'), lib('trakt_favorites')])
-        self.addDirectoryItem('In Progress', 'movies&url=trakt_ondeck', 'people-watching.png', 'DefaultMovies.png', queue=True, context=[
+        self.addDirectoryItem('In Progress', 'movies&url=trakt_ondeck', 'people-watching.png', 'DefaultMovies.png', context=[
             lib('trakt_ondeck')])
-        self.addDirectoryItem('History', 'movies&url=trakt_history', 'latest-movies.png', 'DefaultMovies.png', queue=True)
-        self.addDirectoryItem('Watched', 'movies&url=trakt_watchedlist', 'mymovies.png', 'DefaultMovies.png', queue=True, context=[
+        self.addDirectoryItem('History', 'movies&url=trakt_history', 'latest-movies.png', 'DefaultMovies.png')
+        self.addDirectoryItem('Watched', 'movies&url=trakt_watchedlist', 'mymovies.png', 'DefaultMovies.png', context=[
             lib('trakt_watchedlist')])
-        self.addDirectoryItem('My Lists', 'movies_userlists_trakt', 'trakt.png', 'DefaultVideoPlaylists.png')
-        self.addDirectoryItem('Liked Lists', 'movies_userlists_trakt_liked', 'trakt.png', 'DefaultVideoPlaylists.png')
         self.endDirectory()
 
 
@@ -571,14 +579,12 @@ class navigator:
             sort('watchlist'), lib('trakt_watchlist')])
         self.addDirectoryItem('Favorites', 'tvshows&url=trakt_favorites', 'mytvshows.png', 'DefaultTVShows.png', context=[
             sort('favorites'), lib('trakt_favorites')])
-        self.addDirectoryItem('Upcoming Episodes', 'calendar&url=trakt_mycalendar', 'calendar.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
-        self.addDirectoryItem('Continue Watching', 'calendar&url=trakt_progress', 'people-watching.png', 'DefaultRecentlyAddedEpisodes.png', queue=True)
+        self.addDirectoryItem('Upcoming Episodes', 'calendar&url=trakt_mycalendar', 'calendar.png', 'DefaultRecentlyAddedEpisodes.png')
+        self.addDirectoryItem('Continue Watching', 'calendar&url=trakt_progress', 'people-watching.png', 'DefaultRecentlyAddedEpisodes.png')
         self.addDirectoryItem('In Progress Episodes', 'calendar&url=trakt_ondeck', 'latest-episodes.png', 'DefaultTVShows.png')
-        self.addDirectoryItem('History', 'calendar&url=trakt_history', 'latest-episodes.png', 'DefaultTVShows.png', queue=True)
+        self.addDirectoryItem('History', 'calendar&url=trakt_history', 'latest-episodes.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Watched', 'tvshows&url=trakt_watchedlist', 'mytvshows.png', 'DefaultTVShows.png', context=[
             lib('trakt_watchedlist')])
-        self.addDirectoryItem('My Lists', 'tvshows_userlists_trakt', 'trakt.png', 'DefaultVideoPlaylists.png')
-        self.addDirectoryItem('Liked Lists', 'tvshows_userlists_trakt_liked', 'trakt.png', 'DefaultVideoPlaylists.png')
         self.endDirectory()
 
 
@@ -589,6 +595,7 @@ class navigator:
             return
         self.addDirectoryItem('My TMDb Movies', 'my_tmdb_movies_menu', 'mymovies.png', 'DefaultMovies.png')
         self.addDirectoryItem('My TMDb TV Shows', 'my_tmdb_tvshows_menu', 'mytvshows.png', 'DefaultTVShows.png')
+        self.addDirectoryItem('Lists', 'my_tmdb_lists', 'tmdb.png', 'DefaultVideoPlaylists.png')
         self.endDirectory()
 
 
@@ -597,8 +604,8 @@ class navigator:
             self.addDirectoryItem('Authorise TMDb (QR Code)', 'auth_tmdb', 'tmdb.png', 'DefaultAddonProgram.png', isFolder=False)
         else:
             sort = lambda shelf: ('Set Sort Order', 'tmdb_list_sort&media=movies&status=%s' % shelf)
-            self.addDirectoryItem('Favorites', 'movies&url=tmdb_favorites', 'mymovies.png', 'DefaultMovies.png', queue=True, context=sort('favorites'))
-            self.addDirectoryItem('Watchlist', 'movies&url=tmdb_watchlist', 'mymovies.png', 'DefaultMovies.png', queue=True, context=sort('watchlist'))
+            self.addDirectoryItem('Favorites', 'movies&url=tmdb_favorites', 'mymovies.png', 'DefaultMovies.png', context=sort('favorites'))
+            self.addDirectoryItem('Watchlist', 'movies&url=tmdb_watchlist', 'mymovies.png', 'DefaultMovies.png', context=sort('watchlist'))
         self.endDirectory()
 
 
@@ -612,51 +619,198 @@ class navigator:
         self.endDirectory()
 
 
-    def myuserlists(self):
-        if _trakt_credentials() or _tmdb_credentials() or _mdblist_credentials():
-            self.addDirectoryItem('Movie UserLists', 'my_userlists_movies_menu', 'mymovies.png', 'DefaultMovies.png')
-            self.addDirectoryItem('TV Show UserLists', 'my_userlists_tvshows_menu', 'mytvshows.png', 'DefaultTVShows.png')
-        if _trakt_credentials():
-            self.addDirectoryItem('Episode UserLists', 'episodes_userlists', 'mytvshows.png', 'DefaultTVShows.png')
-        if not (_trakt_credentials() or _tmdb_credentials() or _mdblist_credentials()):
+    def mytmdblists(self):
+        if not _tmdb_credentials():
             self.addDirectoryItem('Authorise TMDb (QR Code)', 'auth_tmdb', 'tmdb.png', 'DefaultAddonProgram.png', isFolder=False)
-            self.addDirectoryItem('Authorise MDBList (QR Code)', 'auth_mdblist', 'mdblist.png', 'DefaultAddonProgram.png', isFolder=False)
-            self.addDirectoryItem('Authorise Trakt (QR Code)', 'auth_trakt', 'trakt.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.endDirectory()
+            return
+        entries = tmdb_utils.account_list_entries()
+        if not entries:
+            control.infoDialog('No TMDb lists found.', sound=True)
+        else:
+            entries = sorted(entries, key=lambda row: (row.get('name') or '').lower())
+            for entry in entries:
+                self._add_account_list(entry, 'tmdb.png', 'DefaultVideoPlaylists.png')
         self.endDirectory()
 
 
-    def myuserlistsmovies(self):
-        if _tmdb_credentials():
-            self.addDirectoryItem('TMDb UserLists', 'movies_userlists_tmdb', 'tmdb.png', 'DefaultMovies.png')
-        if _mdblist_credentials():
-            self.addDirectoryItem('MDBList UserLists', 'movies_userlists_mdblist', 'mdblist.png', 'DefaultMovies.png')
-            self.addDirectoryItem('MDBList Liked Lists', 'movies_userlists_mdblist_liked', 'mdblist.png', 'DefaultMovies.png')
-            self.addDirectoryItem('Popular MDBLists', 'movies_userlists_mdblist_top', 'mdblist.png', 'DefaultMovies.png')
-        if _trakt_credentials():
-            self.addDirectoryItem('Trakt UserLists', 'movies_userlists_trakt', 'trakt.png', 'DefaultMovies.png')
-            self.addDirectoryItem('Trakt Liked UserLists', 'movies_userlists_trakt_liked', 'trakt.png', 'DefaultMovies.png')
-        if not (_trakt_credentials() or _tmdb_credentials() or _mdblist_credentials()):
-            self.addDirectoryItem('Authorise TMDb (QR Code)', 'auth_tmdb', 'tmdb.png', 'DefaultAddonProgram.png', isFolder=False)
-            self.addDirectoryItem('Authorise MDBList (QR Code)', 'auth_mdblist', 'mdblist.png', 'DefaultAddonProgram.png', isFolder=False)
+    def mytraktlists(self, kind='user'):
+        if not _trakt_credentials():
             self.addDirectoryItem('Authorise Trakt (QR Code)', 'auth_trakt', 'trakt.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.endDirectory()
+            return
+        base = 'https://api.trakt.tv'
+        if kind == 'liked':
+            lists_url = base + '/users/likes/lists?limit=1000&page=1'
+            empty = 'No Trakt liked lists found.'
+        else:
+            lists_url = base + '/users/me/lists'
+            empty = 'No Trakt lists found.'
+        entries = trakt.user_list_directory_any(lists_url, base + '/users/%s/lists/%s/items')
+        if not entries:
+            control.infoDialog(empty, sound=True)
+        else:
+            entries = sorted(entries, key=lambda row: (row.get('name') or '').lower())
+            for entry in entries:
+                self._add_account_list(entry, 'trakt.png', 'DefaultVideoPlaylists.png')
         self.endDirectory()
 
 
-    def myuserliststvshows(self):
-        if _tmdb_credentials():
-            self.addDirectoryItem('TMDb UserLists', 'tvshows_userlists_tmdb', 'tmdb.png', 'DefaultTVShows.png')
-        if _mdblist_credentials():
-            self.addDirectoryItem('MDBList UserLists', 'tvshows_userlists_mdblist', 'mdblist.png', 'DefaultTVShows.png')
-            self.addDirectoryItem('MDBList Liked Lists', 'tvshows_userlists_mdblist_liked', 'mdblist.png', 'DefaultTVShows.png')
-            self.addDirectoryItem('Popular MDBLists', 'tvshows_userlists_mdblist_top', 'mdblist.png', 'DefaultTVShows.png')
-        if _trakt_credentials():
-            self.addDirectoryItem('Trakt UserLists', 'tvshows_userlists_trakt', 'trakt.png', 'DefaultTVShows.png')
-            self.addDirectoryItem('Trakt Liked UserLists', 'tvshows_userlists_trakt_liked', 'trakt.png', 'DefaultTVShows.png')
-        if not (_trakt_credentials() or _tmdb_credentials() or _mdblist_credentials()):
-            self.addDirectoryItem('Authorise TMDb (QR Code)', 'auth_tmdb', 'tmdb.png', 'DefaultAddonProgram.png', isFolder=False)
+    def _mdblist_row_sides(self, item, list_id, list_type, mdblist_mod):
+        """movie / tv / episode. Personal lists often leave mediatype empty, so those are read from the contents."""
+        mediatype = str((item or {}).get('mediatype') or (item or {}).get('media_type') or '').lower()
+        if mediatype in ('movie', 'movies'):
+            return {'movie'}
+        if mediatype in ('show', 'shows', 'tv', 'tvshow', 'series'):
+            return {'tv'}
+        if mediatype in ('episode', 'episodes'):
+            return {'episode'}
+        return mdblist_mod.list_content_sides(list_id, list_type) or set()
+
+
+    def _mdblist_list_context(self, sides, sort_key, name, list_url):
+        """One sort for the list. A mixed list sorts movies, shows, and episodes together."""
+        specs = (
+            ('movie', 'movies', 'movies_to_library', 'Add Movies to Library'),
+            ('tv', 'tvshows', 'tvshows_to_library', 'Add TV Shows to Library'),
+            ('episode', 'episodes', None, None),
+        )
+        present = [spec for spec in specs if spec[0] in (sides or ())]
+        quoted_key = quote_plus(sort_key)
+        quoted_name = quote_plus(name)
+        context = []
+        if len(present) > 1:
+            context.append((
+                'Set Sort Order',
+                'mdblist_list_sort&media=mixed&status=%s&label=%s' % (quoted_key, quoted_name),
+            ))
+            libs = [spec for spec in present if spec[2]]
+            for _side, _media, lib_action, lib_label in libs:
+                label = 'Add to Library' if len(libs) == 1 else lib_label
+                context.append((label, '%s&url=%s' % (lib_action, list_url)))
+            return context
+        for _side, media, lib_action, _lib_label in present:
+            context.append((
+                'Set Sort Order',
+                'mdblist_list_sort&media=%s&status=%s&label=%s' % (media, quoted_key, quoted_name),
+            ))
+            if lib_action:
+                context.append(('Add to Library', '%s&url=%s' % (lib_action, list_url)))
+        return context
+
+
+    def mymdblistlists(self, kind='user'):
+        from resources.lib.modules import mdblist as mdblist_mod
+        if not _mdblist_credentials():
             self.addDirectoryItem('Authorise MDBList (QR Code)', 'auth_mdblist', 'mdblist.png', 'DefaultAddonProgram.png', isFolder=False)
-            self.addDirectoryItem('Authorise Trakt (QR Code)', 'auth_trakt', 'trakt.png', 'DefaultAddonProgram.png', isFolder=False)
+            self.endDirectory()
+            return
+        if kind == 'liked':
+            lists = mdblist_mod.liked_lists()
+            empty = 'No liked MDBLists found.'
+        elif kind == 'top':
+            lists = mdblist_mod.top_lists()
+            empty = 'No popular MDBLists found.'
+        else:
+            lists = mdblist_mod.my_lists()
+            empty = 'No MDBList lists found.'
+        rows = []
+        for item in lists or []:
+            try:
+                list_id = item.get('id')
+                name = item.get('name') or item.get('title') or 'MDBList'
+                if list_id in (None, '', 0, '0') or not name:
+                    continue
+                # external/lists is only an imported private list. Liked and Popular are public lists.
+                row_type = 'external' if item.get('source') else 'user'
+                rows.append((name, list_id, self._mdblist_row_sides(item, list_id, row_type, mdblist_mod), row_type))
+            except Exception:
+                continue
+        if not rows:
+            control.infoDialog(empty, sound=True)
+            self.endDirectory()
+            return
+        rows.sort(key=lambda row: row[0].lower())
+        for name, list_id, sides, row_type in rows:
+            sort_key = 'ulist_%s' % list_id
+            query = 'mdblist_list_open&list_type=%s&list_id=%s&name=%s' % (row_type, list_id, quote_plus(name))
+            list_url = quote_plus('mdblist_list_%s_%s' % (row_type, list_id))
+            context = self._mdblist_list_context(sides, sort_key, name, list_url)
+            self.addDirectoryItem(name, query, 'mdblist.png', 'DefaultVideoPlaylists.png', context=context or None)
         self.endDirectory()
+
+
+    def list_sides(self, url, sides, name=None, sort_key=None, sort_provider=None, library=False):
+        wanted = set(part for part in str(sides or '').split(',') if part)
+        quoted = quote_plus(url or '')
+        label = quote_plus(name or 'List')
+        sort_status = quote_plus(sort_key or '')
+        folders = (
+            ('movie', 'Movies', 'movies', 'mymovies.png', 'movies'),
+            ('tv', 'TV Shows', 'tvshows', 'mytvshows.png', 'tvshows'),
+            ('episode', 'Episodes', 'calendar', 'mytvshows.png', ''),
+        )
+        for side, title, action, icon, media in folders:
+            if side not in wanted:
+                continue
+            context = []
+            sort_media = 'episodes' if side == 'episode' and sort_provider == 'mdblist' else media
+            if sort_media and sort_provider and sort_key:
+                context.append(('Set Sort Order', '%s_list_sort&media=%s&status=%s&label=%s' % (
+                    sort_provider, sort_media, sort_status, label)))
+            if library and media:
+                lib_action = 'movies_to_library' if media == 'movies' else 'tvshows_to_library'
+                context.append(('Add to Library', '%s&url=%s' % (lib_action, quoted)))
+            if side == 'episode' and str(url or '').startswith('mdblist_list_'):
+                rest = str(url)[len('mdblist_list_'):]
+                list_type, _sep, list_id = rest.partition('_')
+                query = 'mdblist_list_open&list_type=%s&list_id=%s&side=episode&name=%s' % (list_type, list_id, label)
+            else:
+                query = '%s&url=%s' % (action, quoted)
+            self.addDirectoryItem(title, query, icon, 'DefaultVideoPlaylists.png', context=context or None)
+        self.endDirectory()
+
+
+    def _add_account_list(self, entry, image, icon):
+        name = entry.get('name') or 'List'
+        action = entry.get('action') or 'movies'
+        raw_url = entry.get('url') or ''
+        quoted_url = quote_plus(raw_url)
+        provider = entry.get('sort_provider') or ''
+        sort_key = entry.get('sort_key') or ''
+        library = bool(entry.get('library'))
+        context = []
+        if action in ('trakt_mixed', 'tmdb_mixed'):
+            query = '%s&url=%s' % (action, quoted_url)
+            sides = set(part for part in str(entry.get('sides') or '').split(',') if part)
+            if provider and sort_key:
+                context.append(('Set Sort Order', '%s_list_sort&media=mixed&status=%s&label=%s' % (
+                    provider, quote_plus(sort_key), quote_plus(name))))
+            libs = [side for side in ('movie', 'tv') if side in sides]
+            for side in libs:
+                lib_action = 'movies_to_library' if side == 'movie' else 'tvshows_to_library'
+                label = 'Add to Library' if len(libs) == 1 else (
+                    'Add Movies to Library' if side == 'movie' else 'Add TV Shows to Library')
+                context.append((label, '%s&url=%s' % (lib_action, quoted_url)))
+        elif action == 'list_sides':
+            query = 'list_sides&url=%s&sides=%s&name=%s&sort_provider=%s&sort_key=%s&library=%s' % (
+                quoted_url,
+                entry.get('sides') or '',
+                quote_plus(name),
+                quote_plus(provider),
+                quote_plus(sort_key),
+                '1' if library else '0',
+            )
+        else:
+            query = '%s&url=%s' % (action, quoted_url)
+            media = 'movies' if action == 'movies' else ('tvshows' if action == 'tvshows' else '')
+            if media and provider and sort_key:
+                context.append(('Set Sort Order', '%s_list_sort&media=%s&status=%s&label=%s' % (
+                    provider, media, quote_plus(sort_key), quote_plus(name))))
+            if library and media:
+                lib_action = 'movies_to_library' if media == 'movies' else 'tvshows_to_library'
+                context.append(('Add to Library', '%s&url=%s' % (lib_action, quoted_url)))
+        self.addDirectoryItem(name, query, image, icon, context=context or None)
 
 
     def search_setting_widget(self, the_setting):
@@ -683,7 +837,6 @@ class navigator:
         self.addDirectoryItem('People (TMDb)', 'tvshows_search&select=people', 'people-search.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Keywords (TMDb)', 'tvshows_search&select=keywords', 'search.png', 'DefaultTVShows.png')
         self.addDirectoryItem('Companies (TMDb)', 'tvshows_search&select=companies', 'search.png', 'DefaultTVShows.png')
-        self.addDirectoryItem('Collections (TMDb)', 'tvshows_search&select=collections', 'search.png', 'DefaultTVShows.png')
         self.endDirectory()
 
 
@@ -741,10 +894,10 @@ class navigator:
         #self.addDirectoryItem('Provider Settings', 'open_settings&query=4.0', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         self.addDirectoryItem('ResolveURL Settings', 'open_resolveurl_settings', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         self.addDirectoryItem('Setup ViewTypes', 'views_menu', 'tools.png', 'DefaultAddonProgram.png')
-        if not _simkl_credentials():
-            self.addDirectoryItem('Authorise Simkl (QR Code)', 'auth_simkl', 'simkl.png', 'DefaultAddonProgram.png', isFolder=False)
         if not _mdblist_credentials():
             self.addDirectoryItem('Authorise MDBList (QR Code)', 'auth_mdblist', 'mdblist.png', 'DefaultAddonProgram.png', isFolder=False)
+        if not _simkl_credentials():
+            self.addDirectoryItem('Authorise Simkl (QR Code)', 'auth_simkl', 'simkl.png', 'DefaultAddonProgram.png', isFolder=False)
         if not _tmdb_credentials():
             self.addDirectoryItem('Authorise TMDb (QR Code)', 'auth_tmdb', 'tmdb.png', 'DefaultAddonProgram.png', isFolder=False)
         if not _trakt_credentials():
@@ -779,27 +932,6 @@ class navigator:
         self.addDirectoryItem('Clean Old Settings', 'clean_settings', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         self.addDirectoryItem('Clear ViewTypes', 'clear_viewtypes', 'tools.png', 'DefaultAddonProgram.png', isFolder=False)
         self.endDirectory()
-
-
-    def cleantools_widget(self):
-        try:
-            items = [('[B]Clear All Cache[/B]', 'clear_all_cache')]
-            items += [('[B]Clear Providers[/B]', 'clear_sources')]
-            items += [('[B]Clear Meta Cache[/B]', 'clear_meta_cache')]
-            items += [('[B]Clear Cache[/B]', 'clear_cache')]
-            items += [('[B]Clear ResolveURL Cache[/B]', 'clear_resolveurl_cache')]
-            items += [('[B]Clear All Search Cache[/B]', 'clear_search_cache&select=all')]
-            items += [('[B]Clean Old Settings[/B]', 'clean_settings')]
-            items += [('[B]Clear ViewTypes[/B]', 'clear_viewtypes')]
-            if not control.setting('addon.debug') == 'false':
-                items += [('[B]Clear Debug Log[/B]', 'clear_debuglog')]
-                items += [('[B]View Debug Log[/B]', 'view_debuglog')]
-            select = control.selectDialog([i[0] for i in items], 'Cleaning Tools')
-            if select == -1:
-                return
-            control.execute('RunPlugin(%s?action=%s)' % (sysaddon, items[select][1]))
-        except:
-            return
 
 
     def installsmenu(self):
@@ -972,9 +1104,6 @@ class navigator:
         fanart = control.addonFanart()
         thumb_img = control.menu_image(thumb, icon)
         cm = []
-        cm.append(('[B]Clean Tools Widget[/B]', 'RunPlugin(%s?action=cleantools_widget)' % sysaddon))
-        if queue == True:
-            cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
         if not context == None:
             contexts = context if isinstance(context, list) else [context]
             for ctx in contexts:
@@ -986,7 +1115,7 @@ class navigator:
             item = control.item(label=name, offscreen=True)
         except:
             item = control.item(label=name)
-        item.addContextMenuItems(cm)
+        item.addContextMenuItems(control.context_menu_items(cm))
         control.set_menu_item_art(item, thumb_img, fanart=fanart)
         control.addItem(handle=syshandle, url=url, listitem=item, isFolder=isFolder)
 

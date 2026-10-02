@@ -2,7 +2,7 @@
 
 import re
 
-from six.moves.urllib_parse import parse_qs, urlencode, urlparse
+from six.moves.urllib_parse import parse_qs, quote_plus, urlencode, urlparse
 
 from resources.lib.modules import cleantitle
 from resources.lib.modules import client
@@ -15,10 +15,9 @@ DOM = client_utils.parseDOM
 class source:
     def __init__(self):
         self.results = []
-        self.domains = ['seriezloaded.com.ng']
-        self.base_link = 'https://www.seriezloaded.com.ng'
-        self.search_link = '?action=live_search_posts&term=%s'
-        self.ajax_link = '/wp-admin/admin-ajax.php'
+        self.domains = ['seriezloaded.tv', 'seriezloaded.com.ng']
+        self.base_link = 'https://seriezloaded.tv'
+        self.search_link = '/?s=%s'
         self.headers = client.dnt_headers
         self.notes = 'tough site, lots of custom links and weird grouping.'
         
@@ -76,134 +75,49 @@ class source:
                 return self.results
             data = parse_qs(url)
             data = dict([(i, data[i][0]) if data[i] else (i, '') for i in data])
-            aliases = eval(data['aliases'])
             title = data['tvshowtitle'] if 'tvshowtitle' in data else data['title']
-            title_imdb = data['imdb']
-            season, episode = (data['season'], data['episode']) if 'tvshowtitle' in data else ('0', '0')
-            year = data['premiered'].split('-')[0] if 'tvshowtitle' in data else data['year']
-            search_url = self.base_link + self.ajax_link + self.search_link % cleantitle.get_utf8(title_imdb)   # MOVIES
-            if 'tvshowtitle' in data:
-                title_clean = f'%22{title_imdb}%22 %22season {season}%22 %22episode {episode}%22'
-                title_clean = cleantitle.get_utf8(title_clean)
-                search_url = self.base_link + self.ajax_link + self.search_link % title_clean
-
-            r = client.request(search_url, headers=self.headers, output='json')
-
-            if not r:
-                title_clean = f'%22{title_imdb}%22 %22season {season}%22'
-                title_clean = cleantitle.get_utf8(title_clean)
-                search_url = self.base_link + self.ajax_link + self.search_link % title_clean
-                r = client.request(search_url, headers=self.headers, output='json')
-            if not r:
-                return
-
-            r_list = []
-            for item in r:  # push the (YYYY) into a new field
-                title = item['title']
-                link = item['link']
-
-                match = re.search(r'\((\d{4})\)', title)  # (YYYY)
-                year = match.group(1) if match else ''
-
-                match2 = re.search(r'\bepisode\s+\d+\s*[-–]\s*\d+\b', title, re.I)  # episode 1 [emdash] 8
-                brange = True if match2 else False
-
-                clean_title = re.sub(r'\s*\(\d{4}\)', '', title)
-
-                r_list.append({
-                    "title": clean_title,
-                    "year": year,
-                    "link": link,
-                    "brange": brange,
-                })
-
-            result_urls = [(i['link'], i['brange']) for i in r_list]
-
-            if not result_urls:
-                return
-
-            result_url = result_urls[0][0] if result_urls else None
-            brange = result_urls[0][1] if result_url else None
-
-            r = client.request(result_url, headers=self.headers)
-
-            if 'imdb:' in r.lower() and data['imdb'] not in r:  # IMDB is listed so let's confirm
-                return
-
-            final_links = []
-            if 'tvshowtitle' in data:  # TV series only have 1 link per episode
-                article = client_utils.parseDOM(r, 'article', attrs={'id': r'post.+?'})
-                search_items = [
-                    ('a', {'id': 'download-button'}),
-                    ('a', {'id': 'sl-download-button'}),
-                    ('a', {'class': 'btn-ghost'})
-                ]
-
-                for tag, attrs in search_items:
-                    hrefs = DOM(article, tag, ret='href', attrs=attrs)
-                    if hrefs:
-                        elements = DOM(article, tag, attrs=attrs)
-                        links = list(zip(hrefs, elements))
-                        break
-                else:  # often misunderstood; when break NOT hit then do this.
-                    paragraphs = DOM(article, 'p')
-                    r = [i for i in paragraphs if 'episode' in i.lower()]  # pull out the episode links
-                    r = [i.partition("||")[0].strip() for i in r]          # remove the text after ||
-                    links = list(zip(DOM(r, 'a', ret='href'),
-                                     DOM(r, 'em')))
-
-                episode_links = [(href, text) for href, text in links if href and text]  # FLATTEN
-
-                if brange:  # Range of episodes found. ie episodes 1 - 10
-                    check_episode = rf'\bepisode\s+{episode}\b'
-                    episode_link = [t for t in episode_links if re.search(check_episode, t[1], re.IGNORECASE)]
-                    episode_link = episode_link[0][0] if episode_link else None
-
-                    if not episode_link:
-                        return
-
-                    link = self.getlinks(data, aliases, title, season, episode, year, page_link=episode_link)
-
-                    if not link:
-                        link = episode_link
-
-                    final_links += [(link, title)]
-
-                else:
-                    for episode_link, info in episode_links:
-                        my_link = None
-                        my_link = self.getlinks(data, aliases, title, season, episode, year, page_link=episode_link)
-                        if my_link:
-                            final_links += [(my_link, info)]
-
-            else:  # movies have multiple links
-                links2 = list(zip(DOM(r,'a', ret='href', attrs={'class': 'btn-ghost'}),
-                                 DOM(r, 'a', attrs={'class': 'btn-ghost'})))
-                links = [(i[0], i[1]) for i in links2 if 'download' in i[1].lower()]
-                if not links:
-                    return
-
-                for link, info in links:
-                    my_link = self.getlinks(data, aliases, title, season, episode, year, page_link=link)
-                    if my_link:
-                        final_links += [(my_link, info)]
-
-            for link, info in final_links:
-                if 'download subtitle' == info.lower():
+            season = data.get('season') or ''
+            episode = data.get('episode') or ''
+            year = data['premiered'].split('-')[0] if 'tvshowtitle' in data and data.get('premiered') else data.get('year') or ''
+            slug = cleantitle.geturl(title)
+            if not slug:
+                return self.results
+            html = client.request(self.base_link + self.search_link % quote_plus(title), headers=self.headers, timeout='15')
+            if not html:
+                return self.results
+            page = ''
+            seen = set()
+            for path in re.findall(r'https://seriezloaded\.tv/([a-z0-9-]+)/', html):
+                if path in seen:
                     continue
-                parts = urlparse(link)
-                search = set(hostDict)  # include domain in hostDict, so we can use make_item
-                if parts.hostname not in search:
-                    hostDict.append(parts.hostname)
-                    search.add(parts.hostname)
-
-                if link:
+                seen.add(path)
+                if 'tvshowtitle' in data:
+                    if slug in path and ('season-%s-episode-%s' % (season, episode)) in path and 'complete' not in path:
+                        page = '%s/%s/' % (self.base_link, path)
+                        break
+                elif path.startswith(slug) and (not year or year in path):
+                    page = '%s/%s/' % (self.base_link, path)
+                    break
+            if not page:
+                return self.results
+            page_html = client.request(page, headers=self.headers, timeout='15')
+            if not page_html:
+                return self.results
+            buttons = re.findall(r'href="(https://seriezloaded\.tv/sl-download\?link=[^"]+)"', page_html)
+            referer = dict(self.headers)
+            referer['Referer'] = page
+            for button in buttons[:8]:
+                hop = client.request(button, headers=referer, timeout='15')
+                if not hop:
+                    continue
+                for link in re.findall(r'href="(https?://[^"]+)"', hop):
+                    if 'seriezloaded' in link:
+                        continue
                     for source in scrape_sources.process(hostDict, link):
-                        self.results.append(source)
-
+                        if source.get('url') and source['url'] not in [i.get('url') for i in self.results]:
+                            self.results.append(source)
             return self.results
-            
-        except:
+        except Exception:
             return self.results
 
 

@@ -85,7 +85,7 @@ class tvshows:
         self.tvmaze_updates_day_link   = self.tvmaze_link + '/updates/shows?since=day'
         self.tvmaze_updates_week_link  = self.tvmaze_link + '/updates/shows?since=week'
         self.tvmaze_updates_month_link = self.tvmaze_link + '/updates/shows?since=month'
-        self.fanart_tv_art_link = 'http://webservice.fanart.tv/tv/%s'
+        self.fanart_tv_art_link = 'https://webservice.fanart.tv/v3/tv/%s'
         self.search_tvshows_source = control.setting('search.tvshows.source') or '0'
         # My Trakt shelves must not use Kodi disc cache or add/remove looks stuck.
         self.cacheToDisc = True
@@ -96,7 +96,7 @@ class tvshows:
             self.tmdb_image_link = 'https://image.tmdb.org/t/p/original'
         else:
             self.tmdb_image_link = 'https://image.tmdb.org/t/p/w%s%s'
-        self.tmdb_info_link = self.tmdb_link + '/3/tv/%s?api_key=%s&language=en-US&append_to_response=credits,content_ratings,external_ids' % ('%s', self.tmdb_key)
+        self.tmdb_info_link = self.tmdb_link + '/3/tv/%s?api_key=%s&language=en-US&append_to_response=credits,content_ratings,external_ids,images&include_image_language=en,null' % ('%s', self.tmdb_key)
 
         self.tmdb_search_link = self.tmdb_link + '/3/search/tv?api_key=%s&query=%s&language=en-US&page=1' % (self.tmdb_key, '%s')
         self.tmdb_popular_link = self.tmdb_link + '/3/tv/popular?api_key=%s&language=en-US&page=1' % self.tmdb_key
@@ -205,22 +205,29 @@ class tvshows:
             return
 
 
+    def _history_table(self, select):
+        if select == 'tvshow':
+            return 'tvshow'
+        return '%s_tvshow' % select
+
+
     def search_term_menu(self, select):
-        navigator.navigator().addDirectoryItem('New Search...', 'tvshows_searchterm&select=%s' % select, 'search.png', 'DefaultTVShows.png')
+        table = self._history_table(select)
+        navigator.navigator().addDirectoryItem('New Search...', 'tvshows_searchterm&select=%s' % select, 'search.png', 'DefaultTVShows.png', isFolder=False)
         dbcon = database.connect(control.searchFile)
         dbcur = dbcon.cursor()
         try:
-            dbcur.executescript("CREATE TABLE IF NOT EXISTS %s (ID Integer PRIMARY KEY AUTOINCREMENT, term);" % select)
+            dbcur.executescript("CREATE TABLE IF NOT EXISTS %s (ID Integer PRIMARY KEY AUTOINCREMENT, term);" % table)
         except:
             pass
-        dbcur.execute("SELECT * FROM %s ORDER BY ID DESC" % select)
+        dbcur.execute("SELECT * FROM %s ORDER BY ID DESC" % table)
         delete_option = False
         for (id, term) in dbcur.fetchall():
             delete_option = True
-            navigator.navigator().addDirectoryItem(term.title(), 'tvshows_searchterm&select=%s&name=%s' % (select, term), 'search.png', 'DefaultTVShows.png')
+            navigator.navigator().addDirectoryItem(term.title(), 'tvshows_searchterm&select=%s&name=%s' % (select, urllib_parse.quote_plus(term)), 'search.png', 'DefaultTVShows.png')
         dbcur.close()
         if delete_option:
-            navigator.navigator().addDirectoryItem('Clear Search History', 'clear_search_cache&select=%s' % select, 'tools.png', 'DefaultAddonProgram.png')
+            navigator.navigator().addDirectoryItem('Clear Search History', 'clear_search_cache&select=%s' % table, 'tools.png', 'DefaultAddonProgram.png')
         navigator.navigator().endDirectory(cached=False)
 
 
@@ -229,13 +236,16 @@ class tvshows:
         if (q == None or q == ''):
             k = control.keyboard('', 'Search') ; k.doModal()
             q = k.getText() if k.isConfirmed() else None
-        if (q == None or q == ''):
+            if (q == None or q == ''):
+                return
+            control.execute('Container.Update(%s?action=tvshows_searchterm&select=%s&name=%s)' % (sys.argv[0], select, urllib_parse.quote_plus(q)))
             return
         q = q.lower()
         dbcon = database.connect(control.searchFile)
         dbcur = dbcon.cursor()
-        dbcur.execute("DELETE FROM %s WHERE term = ?" % select, (q,))
-        dbcur.execute("INSERT INTO %s VALUES (?, ?)" % select, (None, q))
+        table = self._history_table(select)
+        dbcur.execute("DELETE FROM %s WHERE term = ?" % table, (q,))
+        dbcur.execute("INSERT INTO %s VALUES (?, ?)" % table, (None, q))
         dbcon.commit()
         dbcur.close()
         if select == 'tvshow':
@@ -447,7 +457,10 @@ class tvshows:
             if tmdb_utils.getTMDbCredentialsInfo() == False:
                 control.infoDialog('Authorise TMDb in Settings > Account Settings to see your lists.', sound=True)
             else:
-                control.infoDialog('No TMDb TV lists found.', sound=True)
+                if tmdb_utils.lists_need_reauth():
+                    control.infoDialog('Revoke TMDb, then Authorise again, to load lists from themoviedb.org.', sound=True)
+                else:
+                    control.infoDialog('No TMDb TV lists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k['image'], k['name'].lower()))
         self.addDirectory(self.list)
         return self.list
@@ -497,13 +510,20 @@ class tvshows:
         return self.list
 
 
-    def trakt_list(self, url, user):
+    def trakt_list(self, url, user, fetch_all=False, payload=None):
         try:
-            q = dict(urllib_parse.parse_qsl(urllib_parse.urlsplit(url).query))
-            q.update({'extended': 'full'})
-            q = (urllib_parse.urlencode(q)).replace('%2C', ',')
-            u = url.replace('?' + urllib_parse.urlparse(url).query, '') + '?' + q
-            result = trakt.getTraktAsJson(u)
+            if payload is not None:
+                result = list(payload)
+                fetch_all = True
+            else:
+                q = dict(urllib_parse.parse_qsl(urllib_parse.urlsplit(url).query))
+                q.update({'extended': 'full'})
+                q = (urllib_parse.urlencode(q)).replace('%2C', ',')
+                u = url.replace('?' + urllib_parse.urlparse(url).query, '') + '?' + q
+                if fetch_all:
+                    result = trakt.getTraktAsJsonPaged(u) or []
+                else:
+                    result = trakt.getTraktAsJson(u)
             if result is None:
                 try:
                     from kodi_six import xbmc as _xbmc
@@ -516,26 +536,32 @@ class tvshows:
                 try:
                     if not isinstance(i, dict):
                         continue
+                    if str(i.get('type') or '').lower() == 'episode':
+                        continue
                     if 'show' in i and isinstance(i.get('show'), dict):
                         row = dict(i['show'])
                         row['collected_at'] = i.get('listed_at') or i.get('last_collected_at') or i.get('collected_at') or ''
                         if i.get('paused_at'):
                             row['paused_at'] = i.get('paused_at')
+                        if '_mix' in i:
+                            row['_mix'] = i['_mix']
                         items.append(row)
                     else:
                         items.append(i)
                 except:
                     pass
-            try:
-                q = dict(urllib_parse.parse_qsl(urllib_parse.urlsplit(url).query))
-                if not int(q['limit']) == len(items):
-                    raise Exception()
-                q.update({'page': str(int(q['page']) + 1)})
-                q = (urllib_parse.urlencode(q)).replace('%2C', ',')
-                next = url.replace('?' + urllib_parse.urlparse(url).query, '') + '?' + q
-                next = six.ensure_str(next)
-            except:
-                next = ''
+            next = ''
+            if not fetch_all:
+                try:
+                    q = dict(urllib_parse.parse_qsl(urllib_parse.urlsplit(url).query))
+                    if not int(q['limit']) == len(items):
+                        raise Exception()
+                    q.update({'page': str(int(q['page']) + 1)})
+                    q = (urllib_parse.urlencode(q)).replace('%2C', ',')
+                    next = url.replace('?' + urllib_parse.urlparse(url).query, '') + '?' + q
+                    next = six.ensure_str(next)
+                except:
+                    next = ''
             before = len(items)
             start = len(self.list)
             for item in items:
@@ -572,7 +598,11 @@ class tvshows:
                     else:
                         paused_at = re.sub(r'[^0-9]+', '', str(paused_at))
                     collected_at = item.get('collected_at') or ''
-                    self.list.append({'title': title, 'originaltitle': title, 'year': year, 'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb, 'next': next, 'paused_at': paused_at, 'collected_at': collected_at})
+                    entry = {'title': title, 'originaltitle': title, 'year': year, 'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb, 'next': next, 'paused_at': paused_at, 'collected_at': collected_at, 'release_date': item.get('first_aired') or ''}
+                    if '_mix' in item:
+                        entry['_mix'] = item['_mix']
+                        entry['_kind'] = 'tvshow'
+                    self.list.append(entry)
                 except:
                     #log_utils.log('trakt_list', 1)
                     pass
@@ -969,30 +999,36 @@ class tvshows:
         return self.list
 
 
-    def tmdb_list(self, url):
+    def tmdb_list(self, url, _release_stamp=None, payload=None):
         try:
-            if 'date[' in url:
-                for i in re.findall(r'date\[(\d+)\]', url):
-                    url = url.replace('date[%s]' % i, (self.datetime - datetime.timedelta(days=int(i))).strftime('%Y-%m-%d'))
-            result = client.scrapePage(url, timeout='30').json()
-            try:
-                page = int(result['page'])
-                total = int(result['total_pages'])
-                if page >= total:
-                    raise Exception()
-                if not 'page=' in url:
-                    raise Exception()
-                next = '%s&page=%s' % (url.split('&page=', 1)[0], str(page+1))
-            except:
+            if payload is not None:
+                items = list(payload)
                 next = ''
-            if 'results' in result:
-                items = result['results']
-            elif 'items' in result:
-                items = result['items']
-            elif 'parts' in result:
-                items = result['parts']
-            elif 'cast' in result:
-                items = result['cast']
+            else:
+                if 'date[' in url:
+                    for i in re.findall(r'date\[(\d+)\]', url):
+                        url = url.replace('date[%s]' % i, (self.datetime - datetime.timedelta(days=int(i))).strftime('%Y-%m-%d'))
+                result = client.scrapePage(url, headers=tmdb_utils.list_fetch_headers(url), timeout='30').json()
+                try:
+                    page = int(result['page'])
+                    total = int(result['total_pages'])
+                    if page >= total:
+                        raise Exception()
+                    if not 'page=' in url:
+                        raise Exception()
+                    next = '%s&page=%s' % (url.split('&page=', 1)[0], str(page+1))
+                except:
+                    next = ''
+                if 'results' in result:
+                    items = result['results']
+                elif 'items' in result:
+                    items = result['items']
+                elif 'parts' in result:
+                    items = result['parts']
+                elif 'cast' in result:
+                    items = result['cast']
+                else:
+                    items = []
             for raw in items:
                 try:
                     media_type, item = tmdb_utils.unwrap_tmdb_list_item(raw)
@@ -1023,7 +1059,14 @@ class tvshows:
                         tmdb = '0'
                     else:
                         tmdb = re.sub(r'[^0-9]', '', str(tmdb))
-                    self.list.append({'title': title, 'originaltitle': originaltitle, 'premiered': premiered, 'year': year, 'imdb': '0', 'tmdb': tmdb, 'tvdb': '0', 'next': next})
+                    entry = {'title': title, 'originaltitle': originaltitle, 'premiered': premiered, 'year': year, 'imdb': '0', 'tmdb': tmdb, 'tvdb': '0', 'next': next, 'release_date': '' if premiered in ('', '0', None) else premiered}
+                    mix = item.get('_mix') if isinstance(item, dict) and '_mix' in item else None
+                    if mix is None and isinstance(raw, dict) and '_mix' in raw:
+                        mix = raw.get('_mix')
+                    if mix is not None:
+                        entry['_mix'] = mix
+                        entry['_kind'] = 'tvshow'
+                    self.list.append(entry)
                 except:
                     #log_utils.log('tmdb_list', 1)
                     pass
@@ -1031,6 +1074,35 @@ class tvshows:
             #log_utils.log('tmdb_list', 1)
             pass
         return self.list
+
+
+    def _tmdb_user_list_all(self, url):
+        """Every page of a TMDb list, then the caller sorts and pages the result."""
+        collected = []
+        seen = set()
+        page_url = str(url or '')
+        if '&page=' in page_url:
+            page_url = page_url.split('&page=', 1)[0] + '&page=1'
+        for _guard in range(40):
+            self.list = []
+            self.tmdb_list(page_url)
+            batch = list(self.list or [])
+            if not batch:
+                break
+            nxt = ''
+            for row in batch:
+                nxt = row.get('next') or nxt
+                key = str(row.get('tmdb') or '')
+                if not key or key == '0' or key in seen:
+                    continue
+                seen.add(key)
+                row['next'] = ''
+                collected.append(row)
+            if not nxt or nxt == page_url:
+                break
+            page_url = nxt
+        self.list = collected
+        return collected
 
 
     def get_fanart_tv_artwork(self, id): #tvdb
@@ -1441,11 +1513,26 @@ class tvshows:
                     fanart = self.tmdb_image_link % ('1280', fanart)
             else:
                 fanart = '0'
-            if self.hq_artwork == 'true':
-                poster2, fanart2, banner, clearlogo, clearart, landscape = self.get_fanart_tv_artwork(tvdb)
-            else:
-                poster2, fanart2, banner = tmdb_utils.get_tmdb_artwork(tmdb, 'tv')
-                clearlogo = clearart = landscape = '0'
+            img_poster, img_fanart, banner, clearlogo, landscape = tmdb_utils.artwork_from_images(
+                item.get('images'), self.original_artwork == 'true')
+            if poster == '0':
+                poster = img_poster
+            if fanart == '0':
+                fanart = img_fanart
+            if landscape == '0':
+                landscape = fanart
+            clearart = '0'
+            poster2 = fanart2 = '0'
+            prefer_fanart = self.info_art_source in ('1', '2')
+            art_missing = poster in ('0', '', None) or fanart in ('0', '', None) or clearlogo in ('0', '', None)
+            if self.hq_artwork == 'true' and (prefer_fanart or art_missing):
+                poster2, fanart2, banner2, clearlogo2, clearart, landscape2 = self.get_fanart_tv_artwork(tvdb)
+                if clearlogo in ('0', '', None):
+                    clearlogo = clearlogo2
+                if banner in ('0', '', None):
+                    banner = banner2
+                if landscape in ('0', '', None):
+                    landscape = landscape2
             if self.info_art_source == '1':
                 poster = poster2 if not poster2 == '0' else poster
                 fanart = fanart2 if not fanart2 == '0' else fanart
@@ -1509,7 +1596,10 @@ class tvshows:
                     self.list = simkl_mod.directory_trending('tv', period, page)
                 elif key.startswith('simkl_custom_'):
                     list_id, page = simkl_mod.custom_list_page_ref(key[13:])
-                    self.list = simkl_mod.directory_custom_list_tvshows(list_id, page)
+                    self._list_key = 'simkl_custom_%s' % list_id
+                    self.list = simkl_mod.directory_custom_list_tvshows_all(list_id, page, full=(idx != True))
+                    if idx == True:
+                        self.list = control.page_items(self.list, page, self._list_key)
                 else:
                     status, page = control.list_page(key[6:])
                     self._list_key = 'simkl_%s' % status
@@ -1547,30 +1637,59 @@ class tvshows:
                 if idx == True:
                     self.worker()
             elif u in self.tmdb_link and ('/list/' in url or '/collection/' in url):
-                if self.addon_caching == 'true':
-                    self.list = cache.get(self.tmdb_list, self.addon_caching_timeout, url)
-                else:
-                    self.list = self.tmdb_list(url)
                 if '/list/' in url:
-                    self.list = tmdb_utils.apply_my_shelf_sort(self.list, url, 'tvshows')
+                    base, page = control.list_page(url)
+                    self._list_key = base
+                    self.list = self._tmdb_user_list_all(base)
+                    self.list = tmdb_utils.apply_my_shelf_sort(self.list, base, 'tvshows')
+                    if idx == True:
+                        self.list = control.page_items(self.list, page, base)
+                        self.worker()
                 else:
-                    self.list = sorted(self.list, key=lambda k: k['year'])
-                if idx == True:
-                    self.worker()
-            elif u in self.tmdb_link and self.tmdb_search_link in url:
+                    if self.addon_caching == 'true':
+                        self.list = cache.get(self.tmdb_list, self.addon_caching_timeout, url)
+                    else:
+                        self.list = self.tmdb_list(url)
+                    self.list = self.list or []
+                    if self.list:
+                        self.list = sorted(self.list, key=lambda k: k['year'])
+                    if idx == True:
+                        self.worker()
+            elif u in self.tmdb_link and '/search/tv' in url:
                 if self.addon_caching == 'true':
                     self.list = cache.get(self.tmdb_list, self.addon_caching_timeout, url)
                 else:
                     self.list = self.tmdb_list(url)
+                self.list = self.list or []
                 if idx == True:
                     self.worker()
             elif u in self.tmdb_link:
-                if self.addon_caching == 'true':
+                person_credits = '/person/' in (url or '') and '_credits' in (url or '')
+                person_page = 1
+                if person_credits:
+                    url, person_page = control.list_page(url)
+                    self._list_key = url
+                if self.addon_caching == 'true' and tmdb_utils.tmdb_shelf_from_url(url):
+                    self.list = cache.get(self.tmdb_list, self.addon_caching_timeout, url, 'release')
+                elif self.addon_caching == 'true':
                     self.list = cache.get(self.tmdb_list, self.addon_caching_timeout, url)
                 else:
                     self.list = self.tmdb_list(url)
+                self.list = self.list or []
                 self.list = tmdb_utils.apply_my_shelf_sort(self.list, url, 'tvshows')
+                if person_credits and idx == True:
+                    self.list = control.page_items(self.list, person_page, url)
                 if idx == True:
+                    self.worker()
+            elif u in self.trakt_link and '/users/' in url and '/lists/' in url and '/items' in url:
+                base, page = control.list_page(url)
+                self._list_key = base
+                self.cacheToDisc = False
+                self.list = self.trakt_list(base, self.trakt_user, fetch_all=True)
+                self.list = trakt.apply_my_shelf_sort(self.list, base, 'tvshows')
+                self.list = trakt.filter_shelf_exclusions(self.list, base)
+                if idx == True:
+                    self.list = control.page_items(self.list, page, base)
                     self.worker()
             elif u in self.trakt_link and '/users/' in url:
                 try:
@@ -1628,11 +1747,13 @@ class tvshows:
             pass
 
 
-    def tvshowDirectory(self, items):
+    def tvshowDirectory(self, items, bucket=None):
         sysaddon = sys.argv[0]
         syshandle = int(sys.argv[1])
         items = control.filter_watchlist_unaired(items, getattr(self, '_list_key', ''), self.today_date, media='tvshow')
         if items == None or len(items) == 0:
+            if bucket is not None:
+                return
             control.idle()
             control.content(syshandle, 'tvshows')
             control.directory(syshandle, cacheToDisc=self.cacheToDisc)
@@ -1702,10 +1823,8 @@ class tvshows:
                     pass
                 sysmeta = urllib_parse.quote_plus(json.dumps(meta))
                 cm = []
-                cm.append(('Clean Tools Widget', 'RunPlugin(%s?action=cleantools_widget)' % sysaddon))
                 cm.append(('Clear Providers', 'RunPlugin(%s?action=clear_sources)' % sysaddon))
                 cm.append(('Find Similar', 'Container.Update(%s?action=tvshows&url=%s)' % (sysaddon, self.trakt_related_link % imdb)))
-                cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
                 if mdblistCredentials == True:
                     cm.append(('MDBList Lists Manager', 'RunPlugin(%s?action=mdblist_manager&name=%s&imdb=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, imdb, tmdb)))
                 if simklCredentials == True:
@@ -1753,7 +1872,7 @@ class tvshows:
                 if 'clearart' in i and not i['clearart'] == '0':
                     art.update({'clearart': i['clearart']})
                 item.setArt(art)
-                item.addContextMenuItems(cm)
+                item.addContextMenuItems(control.context_menu_items(cm))
                 info_tag = ListItemInfoTag(item, 'video')
                 castwiththumb = i.get('castwiththumb')
                 if castwiththumb and not castwiththumb == '0':
@@ -1761,10 +1880,15 @@ class tvshows:
                 info_tag.set_info(control.metadataClean(meta))
                 info_tag.add_stream_info('video', {'codec': 'h264'})
                 url = '%s?action=seasons&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s&meta=%s' % (sysaddon, systitle, year, imdb, tmdb, seas_meta)
-                control.addItem(handle=syshandle, url=url, listitem=item, isFolder=True)
+                if bucket is not None:
+                    bucket.append((i.get('_page', 0), url, item, True))
+                else:
+                    control.addItem(handle=syshandle, url=url, listitem=item, isFolder=True)
             except:
                 #log_utils.log('tvshowDirectory', 1)
                 pass
+        if bucket is not None:
+            return
         try:
             url = items[0]['next']
             if url == '':
@@ -1801,9 +1925,6 @@ class tvshows:
                 except:
                     pass
                 cm = []
-                cm.append(('Clean Tools Widget', 'RunPlugin(%s?action=cleantools_widget)' % sysaddon))
-                if queue == True:
-                    cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
                 try:
                     sort_provider = i.get('sort_provider')
                     sort_key = i.get('sort_key')
@@ -1824,7 +1945,7 @@ class tvshows:
                     item = control.item(label=name)
                 fanart = i['fanart'] if 'fanart' in i and not (i['fanart'] == '0' or i['fanart'] == None) else addonFanart
                 control.set_menu_item_art(item, image, fanart=fanart)
-                item.addContextMenuItems(cm)
+                item.addContextMenuItems(control.context_menu_items(cm))
                 control.addItem(handle=syshandle, url=url, listitem=item, isFolder=True)
             except:
                 #log_utils.log('addDirectory', 1)

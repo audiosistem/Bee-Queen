@@ -263,6 +263,17 @@ def get(media_type, imdb, season, episode, local=False, tmdb=None):
     return offset
 
 
+def shelf_progress(value):
+    """Pause percent from an In Progress row. Same window as a bookmark seek."""
+    try:
+        progress = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    if 1 < progress < 92:
+        return progress
+    return 0.0
+
+
 def reset(current_time, total_time, media_type, imdb, season='', episode=''):
     try:
         _playcount = 0

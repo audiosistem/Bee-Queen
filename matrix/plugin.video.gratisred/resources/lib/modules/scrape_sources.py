@@ -178,12 +178,18 @@ def make_direct_item(hostDict, link, host=None, info=None, referer=None, prep=Fa
         if not link:
             return item
         host = link if host == None else host
+        passed_info = info
         info = link if info == None else info
         valid, host = source_utils.is_host_valid(host, hostDict)
         quality, info = source_utils.get_release_quality(link, info)
         if referer:
             link += source_utils.append_headers({'Referer': referer})
         item = {'source': host, 'quality': quality, 'info': info, 'url': link, 'direct': True}
+        name = source_utils.display_filename(link)
+        if not name and passed_info and passed_info != link:
+            name = source_utils.display_filename(passed_info)
+        if name:
+            item['name'] = name
         #log_utils.log('scrape_sources - make_direct_item item: ' + str(item))
         return item
     except:
@@ -199,11 +205,17 @@ def make_item(hostDict, link, host=None, info=None, prep=False):
         if not link:
             return item
         host = link if host == None else host
+        passed_info = info
         info = link if info == None else info
         valid, host = source_utils.is_host_valid(host, hostDict)
         if valid:
             quality, info = source_utils.get_release_quality(link, info)
             item = {'source': host, 'quality': quality, 'info': info, 'url': link, 'direct': False}
+            name = source_utils.display_filename(link)
+            if not name and passed_info and passed_info != link:
+                name = source_utils.display_filename(passed_info)
+            if name:
+                item['name'] = name
         #else: log_utils.log('scrape_sources - make_item - non-valid link: ' + str(link))
         #log_utils.log('scrape_sources - make_item item: ' + str(item))
         return item

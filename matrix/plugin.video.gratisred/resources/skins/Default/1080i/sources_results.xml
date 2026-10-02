@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <controls>
+        <control type="group">
+            <visible>!Player.HasVideo | String.IsEmpty(Window.Property(gratisred.playback_fullscreen))</visible>
+        <control type="image" id="202">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>1080</height>
+            <aspectratio>scale</aspectratio>
+            <texture background="true" colordiffuse="55FFFFFF">$INFO[Window.Property(fanart)]</texture>
+            <visible>!String.IsEmpty(Window.Property(fanart))</visible>
+        </control>
+        <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>1080</height>
+            <texture colordiffuse="F2000000">white.png</texture>
+        </control>
+        <control type="label">
+            <left>40</left>
+            <top>28</top>
+            <width>520</width>
+            <height>40</height>
+            <font>font12</font>
+            <align>left</align>
+            <aligny>center</aligny>
+            <textcolor>FFFFFFFF</textcolor>
+            <label>[B]$INFO[Window.Property(total_results)][/B] [UPPERCASE]Results[/UPPERCASE]</label>
+        </control>
+        <control type="image" id="210">
+            <left>580</left>
+            <top>8</top>
+            <width>700</width>
+            <height>140</height>
+            <aspectratio align="center" aligny="center">keep</aspectratio>
+            <texture background="true">$INFO[Window.Property(clearlogo)]</texture>
+            <visible>!String.IsEmpty(Window.Property(clearlogo))</visible>
+        </control>
+        <control type="label">
+            <left>400</left>
+            <top>20</top>
+            <width>1120</width>
+            <height>56</height>
+            <font>font13</font>
+            <align>center</align>
+            <aligny>center</aligny>
+            <textcolor>FFCCCCCC</textcolor>
+            <label>[B]$INFO[Window.Property(heading)][/B]</label>
+            <visible>String.IsEmpty(Window.Property(clearlogo))</visible>
+        </control>
+        <control type="label">
+            <left>1288</left>
+            <top>28</top>
+            <width>592</width>
+            <height>40</height>
+            <font>font12</font>
+            <align>right</align>
+            <aligny>center</aligny>
+            <textcolor>FFFFFFFF</textcolor>
+            <scroll>true</scroll>
+            <label>[B]$INFO[Window.Property(episode_label)][/B]</label>
+            <visible>!String.IsEmpty(Window.Property(episode_label))</visible>
+        </control>
+        <control type="image" id="201">
+            <left>1288</left>
+            <top>156</top>
+            <width>584</width>
+            <height>888</height>
+            <aspectratio>stretch</aspectratio>
+            <texture diffuse="poster.png" colordiffuse="FF3A3A3A">white.png</texture>
+        </control>
+        <control type="image" id="200">
+            <left>1288</left>
+            <top>156</top>
+            <width>584</width>
+            <height>888</height>
+            <aspectratio>stretch</aspectratio>
+            <texture background="true" diffuse="poster.png">$INFO[Window.Property(poster)]</texture>
+        </control>
+        <control type="list" id="2000">
+            <left>40</left>
+            <top>156</top>
+            <width>1220</width>
+            <height>888</height>
+            <pagecontrol>2060</pagecontrol>
+            <scrolltime tween="quadratic" easing="out">300</scrolltime>
+            <orientation>vertical</orientation>
+            <onup>2000</onup>
+            <ondown>2000</ondown>
+            <itemlayout height="148" width="1200">
+                <control type="image">
+                    <left>0</left>
+                    <top>6</top>
+                    <width>1188</width>
+                    <height>136</height>
+                    <texture colordiffuse="FF5A5A5A" border="30">circle.png</texture>
+                </control>
+                <control type="image">
+                    <left>2</left>
+                    <top>8</top>
+                    <width>1184</width>
+                    <height>132</height>
+                    <texture colordiffuse="FF161616" border="28">circle.png</texture>
+                </control>
+                <control type="label">
+                    <left>22</left>
+                    <top>12</top>
+                    <width>1148</width>
+                    <height>36</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <textcolor>FFCCCCCC</textcolor>
+                    <label>[UPPERCASE]$INFO[ListItem.Label][/UPPERCASE]</label>
+                </control>
+                <control type="label">
+                    <left>22</left>
+                    <top>50</top>
+                    <width>1148</width>
+                    <height>36</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <textcolor>FF9A9A9A</textcolor>
+                    <scroll>false</scroll>
+                    <label>[UPPERCASE]$INFO[ListItem.Property(line2)][/UPPERCASE]</label>
+                    <visible>!String.IsEmpty(ListItem.Property(line2))</visible>
+                </control>
+                <control type="label">
+                    <left>22</left>
+                    <top>88</top>
+                    <width>1148</width>
+                    <height>36</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <textcolor>FF9A9A9A</textcolor>
+                    <scroll>false</scroll>
+                    <label>[UPPERCASE]$INFO[ListItem.Property(line3)][/UPPERCASE]</label>
+                    <visible>!String.IsEmpty(ListItem.Property(line3))</visible>
+                </control>
+            </itemlayout>
+            <focusedlayout height="148" width="1200">
+                <control type="image">
+                    <left>0</left>
+                    <top>6</top>
+                    <width>1188</width>
+                    <height>136</height>
+                    <texture colordiffuse="FFCC1A1A" border="30">circle.png</texture>
+                </control>
+                <control type="image">
+                    <left>2</left>
+                    <top>8</top>
+                    <width>1184</width>
+                    <height>132</height>
+                    <texture colordiffuse="FF2A1515" border="28">circle.png</texture>
+                </control>
+                <control type="label">
+                    <left>22</left>
+                    <top>12</top>
+                    <width>1148</width>
+                    <height>36</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>[UPPERCASE]$INFO[ListItem.Label][/UPPERCASE]</label>
+                </control>
+                <control type="label">
+                    <left>22</left>
+                    <top>50</top>
+                    <width>1148</width>
+                    <height>36</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <textcolor>FFDDDDDD</textcolor>
+                    <scroll>true</scroll>
+                    <label>[UPPERCASE]$INFO[ListItem.Property(line2)][/UPPERCASE]</label>
+                    <visible>!String.IsEmpty(ListItem.Property(line2))</visible>
+                </control>
+                <control type="label">
+                    <left>22</left>
+                    <top>88</top>
+                    <width>1148</width>
+                    <height>36</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <textcolor>FFDDDDDD</textcolor>
+                    <scroll>true</scroll>
+                    <label>[UPPERCASE]$INFO[ListItem.Property(line3)][/UPPERCASE]</label>
+                    <visible>!String.IsEmpty(ListItem.Property(line3))</visible>
+                </control>
+            </focusedlayout>
+        </control>
+        <control type="scrollbar" id="2060">
+            <left>1232</left>
+            <top>162</top>
+            <width>16</width>
+            <height>876</height>
+            <orientation>vertical</orientation>
+        </control>
+        </control>
+    </controls>
+</window>

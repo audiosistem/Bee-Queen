@@ -47,6 +47,11 @@ def router(_argv):
         sources.sources().addItem(title)
 
 
+    elif action == 'source_results':
+        from resources.lib.modules import sources
+        sources.sources().sourceResults(title)
+
+
     elif action == 'add_view':
         from resources.lib.modules import views
         views.addView(views.normalize_view_content(content))
@@ -127,7 +132,7 @@ def router(_argv):
 
     elif action == 'simkl_list_sort':
         from resources.lib.modules import simkl
-        simkl.choose_list_sort(params.get('media'), params.get('status'))
+        simkl.choose_list_sort(params.get('media'), params.get('status'), label=params.get('label'))
 
 
     elif action == 'trakt_list_sort':
@@ -230,11 +235,6 @@ def router(_argv):
     elif action == 'cleantools_menu':
         from resources.lib.indexers import navigator
         navigator.navigator().cleantools()
-
-
-    elif action == 'cleantools_widget':
-        from resources.lib.indexers import navigator
-        navigator.navigator().cleantools_widget()
 
 
     elif action == 'clear_all_cache':
@@ -540,6 +540,11 @@ def router(_argv):
         navigator.navigator().mytmdbtvshows()
 
 
+    elif action == 'my_tmdb_lists':
+        from resources.lib.indexers import navigator
+        navigator.navigator().mytmdblists()
+
+
     elif action == 'my_trakt_menu':
         from resources.lib.indexers import navigator
         navigator.navigator().mytrakt()
@@ -555,19 +560,38 @@ def router(_argv):
         navigator.navigator().mytrakttvshows()
 
 
-    elif action == 'my_userlists_menu':
+    elif action == 'my_trakt_lists':
         from resources.lib.indexers import navigator
-        navigator.navigator().myuserlists()
+        navigator.navigator().mytraktlists(params.get('kind') or 'user')
 
 
-    elif action == 'my_userlists_movies_menu':
+    elif action == 'my_mdblist_lists':
         from resources.lib.indexers import navigator
-        navigator.navigator().myuserlistsmovies()
+        navigator.navigator().mymdblistlists(params.get('kind') or 'user')
 
 
-    elif action == 'my_userlists_tvshows_menu':
+    elif action == 'mdblist_list_open':
+        from resources.lib.modules import mdblist as mdblist_mod
+        mdblist_mod.open_list(
+            params.get('list_type'), params.get('list_id'), params.get('name'),
+            params.get('side'), params.get('url'))
+
+
+    elif action == 'trakt_mixed':
+        from resources.lib.modules import mixed_lists
+        mixed_lists.open_trakt_mixed(url)
+
+
+    elif action == 'tmdb_mixed':
+        from resources.lib.modules import mixed_lists
+        mixed_lists.open_tmdb_mixed(url)
+
+
+    elif action == 'list_sides':
         from resources.lib.indexers import navigator
-        navigator.navigator().myuserliststvshows()
+        navigator.navigator().list_sides(
+            url, params.get('sides'), params.get('name'), params.get('sort_key'),
+            params.get('sort_provider'), params.get('library') in ('1', 'true', 'True'))
 
 
     elif action == 'mylists_menu':

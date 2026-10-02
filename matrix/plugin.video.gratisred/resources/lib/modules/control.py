@@ -63,6 +63,49 @@ jsonrpc = xbmc.executeJSONRPC
 dialog = xbmcgui.Dialog()
 progressDialog = xbmcgui.DialogProgress()
 progressDialogBG = xbmcgui.DialogProgressBG()
+
+
+def open_progress(heading='', line='', background=False):
+    """A new progress dialog. A cancelled one stays cancelled and the next resolve never starts."""
+    global progressDialog, progressDialogBG
+    if background:
+        try:
+            progressDialogBG.close()
+        except Exception:
+            pass
+        progressDialogBG = xbmcgui.DialogProgressBG()
+        progressDialogBG.create(heading, line)
+        return progressDialogBG
+    try:
+        progressDialog.close()
+    except Exception:
+        pass
+    progressDialog = xbmcgui.DialogProgress()
+    progressDialog.create(heading, line)
+    focus_progress_cancel()
+    return progressDialog
+
+
+def dismiss_playback_failed():
+    """A dead link makes Kodi pop "Playback failed". Resolve is still trying the next source, or the user cancelled."""
+    for name in ('notification', 'okdialog'):
+        try:
+            if condVisibility('Window.IsActive(%s)' % name):
+                execute('Dialog.Close(%s,true)' % name)
+        except Exception:
+            pass
+
+
+def focus_progress_cancel():
+    """Estuary focuses the first button. Cancel is the next one, so the first click only highlights it."""
+    try:
+        if condVisibility('Window.IsActive(okdialog)'):
+            dismiss_playback_failed()
+            return
+        if condVisibility('Window.IsActive(progressdialog)'):
+            execute('SetFocus(10)')
+    except Exception:
+        pass
 window = xbmcgui.Window(10000)
 windowDialog = xbmcgui.WindowDialog()
 
@@ -207,6 +250,22 @@ def set_menu_item_art(item, image, fanart=None):
         item.setIconImage(icon_img)
     except:
         pass
+
+
+def context_menu_items(items):
+    """Bold addon context labels so they stand apart from Kodi's own items."""
+    bolded = []
+    for entry in items or []:
+        try:
+            label, action = entry[0], entry[1]
+        except Exception:
+            bolded.append(entry)
+            continue
+        text = str(label or '')
+        if '[B]' not in text:
+            text = '[B]%s[/B]' % text
+        bolded.append((text, action))
+    return bolded
 
 
 def addonId():
@@ -446,14 +505,17 @@ def queueItem():
     return execute('Action(Queue)')
 
 
-def yesnoDialog(message, heading=addonInfo('name'), nolabel='', yeslabel='', default_no=False):
+def yesnoDialog(message, heading=addonInfo('name'), nolabel='', yeslabel='', default_no=False, default_yes=False):
     if getKodiVersion() < 19:
         return dialog.yesno(heading, message, '', '', nolabel, yeslabel)
-    if default_no:
+    default = None
+    if default_yes and not default_no:
+        default = getattr(xbmcgui, 'DLG_YESNO_YES_BTN', None)
+    elif default_no:
+        default = getattr(xbmcgui, 'DLG_YESNO_NO_BTN', None)
+    if default is not None:
         try:
-            default = getattr(xbmcgui, 'DLG_YESNO_NO_BTN', None)
-            if default is not None:
-                return dialog.yesno(heading, message, nolabel, yeslabel, 0, default)
+            return dialog.yesno(heading, message, nolabel, yeslabel, 0, default)
         except TypeError:
             pass
     return dialog.yesno(heading, message, nolabel, yeslabel)

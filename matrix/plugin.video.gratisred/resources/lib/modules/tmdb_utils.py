@@ -34,6 +34,36 @@ def _tmdb_api_key():
     return key
 
 
+def _tmdb_v4():
+    token = (control.setting('tmdb.token') or '').strip()
+    account_id = (control.setting('tmdb.v4id') or '').strip()
+    if not token or not account_id:
+        return None
+    return token, account_id
+
+
+def _tmdb_v4_headers(token):
+    return {
+        'Authorization': 'Bearer %s' % token,
+        'accept': 'application/json',
+        'content-type': 'application/json',
+    }
+
+
+def lists_need_reauth():
+    """Session is enough for Favorites and Watchlist. Website lists need the v4 token."""
+    session_id = (control.setting('tmdb.session') or '').strip()
+    token = (control.setting('tmdb.token') or '').strip()
+    return bool(session_id) and not token
+
+
+def list_fetch_headers(url):
+    token = (control.setting('tmdb.token') or '').strip()
+    if token and '/4/' in (url or ''):
+        return {'Authorization': 'Bearer %s' % token, 'accept': 'application/json'}
+    return None
+
+
 def unwrap_tmdb_list_item(item):
     """Normalise flat or nested TMDb list item payloads to (media_type, dict)."""
     if not isinstance(item, dict):
@@ -152,6 +182,8 @@ def authTMDb(reopen_settings=False):
         account_info = requests.get('https://api.themoviedb.org/3/account',
             params={'session_id': session_id}, headers=headers, timeout=20).json()
         control.setSetting('tmdb.session', session_id)
+        control.setSetting('tmdb.token', access_token)
+        control.setSetting('tmdb.v4id', str(success.get('account_id') or ''))
         control.setSetting('tmdb.id', str(account_info.get('id', '')))
         control.setSetting('tmdb.user', str(account_info.get('username', '')))
         from resources.lib.modules.meta_auth_alerts import clear_alert
@@ -184,6 +216,8 @@ def delete_session(reopen_settings=False):
     except Exception as e:
         log_utils.log('TMDb delete_session API error: %s' % e, 1)
     control.setSetting('tmdb.session', '')
+    control.setSetting('tmdb.token', '')
+    control.setSetting('tmdb.v4id', '')
     control.setSetting('tmdb.id', '')
     control.setSetting('tmdb.user', '')
     from resources.lib.modules.meta_auth_alerts import clear_alert
@@ -221,30 +255,37 @@ def _tmdb_guess_list_type_from_name(name):
     return None
 
 
-def _tmdb_probe_list_type(list_id):
+def _tmdb_probe_list_sides(list_id):
+    sides = set()
     try:
-        list_url = API_URL + 'list/%s?api_key=%s&language=en-US&page=1' % (list_id, _tmdb_api_key())
-        result = requests.get(list_url, headers=HEADERS, timeout=30).json()
+        v4 = _tmdb_v4()
+        if v4:
+            token, _account = v4
+            list_url = 'https://api.themoviedb.org/4/list/%s?page=1' % list_id
+            result = requests.get(list_url, headers=_tmdb_v4_headers(token), timeout=30).json()
+        else:
+            list_url = API_URL + 'list/%s?api_key=%s&language=en-US&page=1' % (list_id, _tmdb_api_key())
+            result = requests.get(list_url, headers=HEADERS, timeout=30).json()
         items = result.get('items') or result.get('results') or []
-        has_movie = has_tv = False
         for raw in items[:12]:
             media_type, item = unwrap_tmdb_list_item(raw)
-            if not item:
-                continue
-            if media_type == 'movie':
-                has_movie = True
-            elif media_type == 'tv':
-                has_tv = True
-        if has_tv and not has_movie:
-            return 'tv'
-        if has_movie and not has_tv:
-            return 'movie'
-        if has_tv:
-            return 'tv'
-        if has_movie:
-            return 'movie'
-    except:
-        pass
+            if media_type in ('movie', 'tv') and item:
+                sides.add(media_type)
+    except Exception:
+        return set()
+    return sides
+
+
+def _tmdb_probe_list_type(list_id):
+    sides = _tmdb_probe_list_sides(list_id)
+    if sides == {'tv'}:
+        return 'tv'
+    if sides == {'movie'}:
+        return 'movie'
+    if 'tv' in sides:
+        return 'tv'
+    if 'movie' in sides:
+        return 'movie'
     return None
 
 
@@ -274,11 +315,40 @@ def _tmdb_list_matches_menu(list_type, list_meta_type, list_id=None, list_name=N
     return resolved == 'tv'
 
 
-def get_created_lists(url=None, list_type=None):
+def _account_list_row(list_name, list_id, list_url, sides):
+    from resources.lib.modules import shelf_sort
+    sides = {side for side in (sides or set()) if side in ('movie', 'tv')}
+    if not sides:
+        sides = {'movie', 'tv'}
+    if sides == {'movie'}:
+        action = 'movies'
+    elif sides == {'tv'}:
+        action = 'tvshows'
+    else:
+        action = 'tmdb_mixed'
+    ordered = [side for side in ('movie', 'tv') if side in sides]
+    return {
+        'name': list_name,
+        'url': list_url,
+        'context': list_url,
+        'list_id': list_id,
+        'image': 'tmdb.png',
+        'action': action,
+        'sides': ','.join(ordered),
+        'sort_provider': 'tmdb',
+        'sort_key': shelf_sort.personal_shelf_key(list_id),
+        'library': True,
+    }
+
+
+def get_created_lists(url=None, list_type=None, unified=False):
     items = []
     try:
         if not getTMDbCredentialsInfo():
             return items
+        v4 = _tmdb_v4()
+        if v4:
+            return _get_created_lists_v4(v4, list_type)
         account = _tmdb_account_settings()
         if not url:
             url = API_URL + 'list/%s?api_key=%s&language=en-US&page=1' % ('%s', _tmdb_api_key())
@@ -301,6 +371,13 @@ def get_created_lists(url=None, list_type=None):
             for lst in lists:
                 list_name = lst['name']
                 list_id = lst['id']
+                if unified:
+                    sides = _tmdb_probe_list_sides(list_id)
+                    if not sides:
+                        guess = _tmdb_guess_list_type_from_name(list_name)
+                        sides = {guess} if guess else set()
+                    items.append(_account_list_row(list_name, list_id, url % list_id, sides))
+                    continue
                 resolved = _tmdb_resolve_list_type(lst.get('list_type'), list_id, list_name)
                 if list_type and resolved != list_type:
                     continue
@@ -326,8 +403,82 @@ def get_created_lists(url=None, list_type=None):
         return items
 
 
+def account_list_entries():
+    """Each TMDb list once. A mixed list opens as one folder."""
+    try:
+        if not getTMDbCredentialsInfo():
+            return []
+        v4 = _tmdb_v4()
+        if v4:
+            return _get_created_lists_v4(v4, None, unified=True)
+        url = API_URL + 'list/%s?api_key=%s&language=en-US&page=1' % ('%s', _tmdb_api_key())
+        return get_created_lists(url, unified=True)
+    except Exception:
+        return []
+
+
+def _get_created_lists_v4(v4, list_type, unified=False):
+    token, account_id = v4
+    items = []
+    page = 1
+    total_pages = 1
+    while page <= total_pages:
+        lists_url = 'https://api.themoviedb.org/4/account/%s/lists?page=%s' % (account_id, page)
+        resp = requests.get(lists_url, headers=_tmdb_v4_headers(token), timeout=30)
+        result = resp.json()
+        if _tmdb_notify_if_dead(result, resp.status_code):
+            break
+        lists = result.get('results') or []
+        if not lists:
+            break
+        try:
+            total_pages = max(int(result.get('total_pages') or 1), page)
+        except Exception:
+            total_pages = page
+        for lst in lists:
+            list_name = lst.get('name') or ''
+            list_id = lst.get('id')
+            if not list_id or not list_name:
+                continue
+            sides = _tmdb_probe_list_sides(list_id)
+            if not sides:
+                guess = _tmdb_guess_list_type_from_name(list_name)
+                sides = {guess} if guess else {'movie', 'tv'}
+            list_url = 'https://api.themoviedb.org/4/list/%s?page=1' % list_id
+            if unified:
+                items.append(_account_list_row(list_name, list_id, list_url, sides))
+                continue
+            if list_type and list_type not in sides:
+                continue
+            side = list_type if list_type in sides else ('movie' if 'movie' in sides else 'tv')
+            action = 'movies' if side == 'movie' else 'tvshows'
+            from resources.lib.modules import shelf_sort
+            items.append({
+                'name': list_name,
+                'url': list_url,
+                'context': list_url,
+                'list_id': list_id,
+                'image': 'tmdb.png',
+                'action': action,
+                'sort_provider': 'tmdb',
+                'sort_key': shelf_sort.personal_shelf_key(list_id),
+            })
+        page += 1
+    return items
+
+
 def create_list(name):
     try:
+        v4 = _tmdb_v4()
+        if v4:
+            token, _account = v4
+            result = requests.post(
+                'https://api.themoviedb.org/4/list',
+                json={'name': str(name), 'iso_639_1': 'en', 'iso_3166_1': 'US', 'public': True},
+                headers=_tmdb_v4_headers(token), timeout=30).json()
+            if not result.get('success'):
+                raise Exception()
+            return result.get('id')
         url = API_URL + 'list?api_key=%s&session_id=%s' % (_tmdb_api_key(), _tmdb_account_settings()['session_id'])
         post = {"name": "%s" % str(name), "description": "created_userlist", "language": "en"}
         result = requests.post(url, data=json.dumps(post), headers=HEADERS).json()
@@ -340,8 +491,19 @@ def create_list(name):
         return
 
 
-def add_to_list(tmdb, list_id):
+def add_to_list(tmdb, list_id, media_type='movie'):
     try:
+        v4 = _tmdb_v4()
+        if v4:
+            token, _account = v4
+            kind = 'tv' if media_type == 'tv' else 'movie'
+            result = requests.post(
+                'https://api.themoviedb.org/4/list/%s/items' % list_id,
+                json={'items': [{'media_type': kind, 'media_id': int(tmdb)}]},
+                headers=_tmdb_v4_headers(token), timeout=30).json()
+            if not result.get('success'):
+                raise Exception()
+            return True
         url = API_URL + 'list/%s/add_item?api_key=%s&session_id=%s' % (list_id, _tmdb_api_key(), _tmdb_account_settings()['session_id'])
         post = {"media_id": "%s" % str(tmdb)}
         result = requests.post(url, data=json.dumps(post), headers=HEADERS).json()
@@ -353,8 +515,19 @@ def add_to_list(tmdb, list_id):
         return False
 
 
-def remove_from_list(tmdb, list_id):
+def remove_from_list(tmdb, list_id, media_type='movie'):
     try:
+        v4 = _tmdb_v4()
+        if v4:
+            token, _account = v4
+            kind = 'tv' if media_type == 'tv' else 'movie'
+            result = requests.delete(
+                'https://api.themoviedb.org/4/list/%s/items' % list_id,
+                json={'items': [{'media_type': kind, 'media_id': int(tmdb)}]},
+                headers=_tmdb_v4_headers(token), timeout=30).json()
+            if not result.get('success'):
+                raise Exception()
+            return True
         url = API_URL + 'list/%s/remove_item?api_key=%s&session_id=%s' % (list_id, _tmdb_api_key(), _tmdb_account_settings()['session_id'])
         post = {"media_id": "%s" % str(tmdb)}
         result = requests.post(url, data=json.dumps(post), headers=HEADERS).json()
@@ -460,6 +633,11 @@ def choose_list_sort(media, shelf, label=None):
         'tmdb', media, shelf, sortable=shelf_sort.TMDB_SORTABLE, heading_label=label)
 
 
+def tmdb_shelf_from_url(url):
+    from resources.lib.modules import shelf_sort
+    return shelf_sort.tmdb_shelf_from_url(url)
+
+
 def apply_my_shelf_sort(items, url, media):
     from resources.lib.modules import shelf_sort
     shelf = shelf_sort.tmdb_shelf_from_url(url)
@@ -468,8 +646,15 @@ def apply_my_shelf_sort(items, url, media):
     return shelf_sort.sort_items(items, 'tmdb', media, shelf, sortable=shelf_sort.TMDB_SORTABLE)
 
 
-def _item_in_created_list(tmdb, list_id):
+def _item_in_created_list(tmdb, list_id, media_type='movie'):
     try:
+        v4 = _tmdb_v4()
+        if v4:
+            token, _account = v4
+            kind = 'tv' if media_type == 'tv' else 'movie'
+            url = 'https://api.themoviedb.org/4/list/%s/item_status?media_type=%s&media_id=%s' % (list_id, kind, tmdb)
+            result = requests.get(url, headers=_tmdb_v4_headers(token), timeout=20).json()
+            return bool(result.get('item_present'))
         url = API_URL + 'list/%s/item_status?api_key=%s&session_id=%s&media_id=%s' % (
             list_id, _tmdb_api_key(), _tmdb_account_settings()['session_id'], tmdb)
         result = requests.get(url, headers=HEADERS, timeout=20).json()
@@ -511,7 +696,7 @@ def manager(name, imdb, tmdb, content):
             list_name = entry.get('name') or ''
             if not list_id or not list_name:
                 continue
-            if _item_in_created_list(tmdb, list_id):
+            if _item_in_created_list(tmdb, list_id, media_type):
                 choices.append(('Remove from [B]%s[/B]' % list_name, 'list_remove', list_id, list_name))
             else:
                 choices.append(('Add to [B]%s[/B]' % list_name, 'list_add', list_id, list_name))
@@ -537,13 +722,13 @@ def manager(name, imdb, tmdb, content):
             created_id = create_list(new)
             if not created_id:
                 return control.infoDialog('Could not create list.', heading=str(name), sound=True, icon='ERROR')
-            ok = add_to_list(tmdb, created_id)
+            ok = add_to_list(tmdb, created_id, media_type)
             label = new
             action = 'list_add'
         elif action == 'list_add':
-            ok = add_to_list(tmdb, list_id)
+            ok = add_to_list(tmdb, list_id, media_type)
         elif action == 'list_remove':
-            ok = remove_from_list(tmdb, list_id)
+            ok = remove_from_list(tmdb, list_id, media_type)
         if not ok:
             verb = 'add to' if 'add' in action or action == 'list_new' else 'remove from'
             return control.infoDialog('Could not %s %s.' % (verb, label), heading=str(name), sound=True, icon='ERROR')
@@ -718,6 +903,31 @@ def get_episode_trailers(tmdb, season, episode):
 
 ###################################################
 ###################################################
+
+
+def _sized_image(path, size, original):
+    if not path:
+        return '0'
+    if original:
+        return 'https://image.tmdb.org/t/p/original' + path
+    return 'https://image.tmdb.org/t/p/w%s%s' % (size, path)
+
+
+def artwork_from_images(images, original=False):
+    """Poster, fanart, banner, clear logo, and landscape from a details images append."""
+    def first(key, size):
+        rows = list((images or {}).get(key) or [])
+        english = [x for x in rows if x.get('iso_639_1') == 'en' and x.get('file_path')]
+        other = [x for x in rows if x.get('iso_639_1') != 'en' and x.get('file_path')]
+        chosen = english or other
+        if not chosen:
+            return '0'
+        return _sized_image(chosen[0].get('file_path'), size, original)
+
+    logo = first('logos', '500')
+    landscape = first('backdrops', '1280')
+    poster = first('posters', '500')
+    return poster, landscape, logo, logo, landscape
 
 
 def get_tmdb_artwork(tmdb, content, season=None, episode=None):

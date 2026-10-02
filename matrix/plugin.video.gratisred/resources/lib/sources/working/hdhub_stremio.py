@@ -210,7 +210,7 @@ class source:
             val = parsed.get(key)
             if val:
                 parts.append(val)
-        raw = parsed.get('raw_name') or ''
+        raw = ' '.join((parsed.get('raw_name') or '').split())
         if raw and raw not in parts:
             parts.append(raw)
         if parts:
@@ -237,11 +237,11 @@ class source:
                 return
             if quality:
                 item['quality'] = quality
-            raw = parsed.get('raw_name') or source_utils.filename_from_url(url)
-            if raw:
-                info_now = item.get('info') or ''
-                if raw.lower() not in str(info_now).lower():
-                    item['info'] = ('%s | %s' % (info_now, raw)).strip(' |')
+            raw = ' '.join((parsed.get('raw_name') or '').split())
+            if raw and not item.get('name'):
+                shown = source_utils.display_filename(raw)
+                if shown:
+                    item['name'] = shown
             if scrape_sources.check_host_limit(item['source'], self.results):
                 return
             self.results.append(item)

@@ -43,8 +43,46 @@ def syncSimklWatched():
 try:
     from resources.lib.modules import simkl
     simkl.ensure_indicators_valid()
+    if simkl.getSimklCredentialsInfo():
+        threading.Thread(target=simkl.refresh_simkl_account_plan, daemon=True).start()
 except Exception:
     pass
+
+
+# New providers in 1.3.9. Set once so an update turns them on. A later
+# untick is left alone. VidLove stays at its default, off.
+_NEW_PROVIDERS = (
+    'cinetaro', 'databasegdriveplayer', 'vidking',
+    'vidnest', 'vidrock', 'vidsrc', 'watchepisodes',
+)
+# Set once so an update turns them off. A later tick is left alone.
+_OFF_PROVIDERS = (
+    'fzmovies_live', 'tvseries_video', 'tvmovieflix_com',
+)
+try:
+    if control.setting('providers.forced.139') != 'true':
+        for _name in _NEW_PROVIDERS:
+            control.setSetting('provider.' + _name, 'true')
+        control.setSetting('providers.forced.139', 'true')
+except Exception:
+    log_utils.log('Force new providers failed.', 1)
+
+try:
+    if control.setting('providers.forced.off.139') != 'true':
+        for _name in _OFF_PROVIDERS:
+            control.setSetting('provider.' + _name, 'false')
+        control.setSetting('providers.forced.off.139', 'true')
+except Exception:
+    log_utils.log('Force providers off failed.', 1)
+
+
+# Enable Fanart.tv Artwork. Set once so an update turns it on. A later untick is left alone.
+try:
+    if control.setting('fanart.artwork.forced.200') != 'true':
+        control.setSetting('fanart.artwork', 'true')
+        control.setSetting('fanart.artwork.forced.200', 'true')
+except Exception:
+    log_utils.log('Force Fanart.tv artwork failed.', 1)
 
 
 try:

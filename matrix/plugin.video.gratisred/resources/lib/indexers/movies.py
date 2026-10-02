@@ -77,7 +77,7 @@ class movies:
         self.studio_artwork = control.setting('studio.artwork') or 'false'
         self.trakt_link = 'https://api.trakt.tv'
         self.tmdb_link = 'https://api.themoviedb.org'
-        self.fanart_tv_art_link = 'http://webservice.fanart.tv/movies/%s'
+        self.fanart_tv_art_link = 'https://webservice.fanart.tv/v3/movies/%s'
         self.fanart_tv_level_link = 'http://webservice.fanart.tv/level'
         self.search_movies_source = control.setting('search.movies.source') or '0'
         self.info_movies_source = control.setting('info.movies.source') or '0'
@@ -87,7 +87,7 @@ class movies:
             self.tmdb_image_link = 'https://image.tmdb.org/t/p/original'
         else:
             self.tmdb_image_link = 'https://image.tmdb.org/t/p/w%s%s'
-        self.tmdb_info_link = self.tmdb_link + '/3/movie/%s?api_key=%s&language=en-US&append_to_response=credits,releases' % ('%s', self.tmdb_key)
+        self.tmdb_info_link = self.tmdb_link + '/3/movie/%s?api_key=%s&language=en-US&append_to_response=credits,release_dates,images&include_image_language=en,null' % ('%s', self.tmdb_key)
 
         self.tmdb_search_link = self.tmdb_link + '/3/search/movie?api_key=%s&query=%s&language=en-US&include_adult=false&page=1' % (self.tmdb_key, '%s')
         self.tmdb_popular_link = self.tmdb_link + '/3/movie/popular?api_key=%s&language=en-US&page=1' % self.tmdb_key
@@ -210,22 +210,29 @@ class movies:
             return
 
 
+    def _history_table(self, select):
+        if select == 'movies':
+            return 'movies'
+        return '%s_movies' % select
+
+
     def search_term_menu(self, select):
-        navigator.navigator().addDirectoryItem('New Search...', 'movies_searchterm&select=%s' % select, 'search.png', 'DefaultMovies.png')
+        table = self._history_table(select)
+        navigator.navigator().addDirectoryItem('New Search...', 'movies_searchterm&select=%s' % select, 'search.png', 'DefaultMovies.png', isFolder=False)
         dbcon = database.connect(control.searchFile)
         dbcur = dbcon.cursor()
         try:
-            dbcur.executescript("CREATE TABLE IF NOT EXISTS %s (ID Integer PRIMARY KEY AUTOINCREMENT, term);" % select)
+            dbcur.executescript("CREATE TABLE IF NOT EXISTS %s (ID Integer PRIMARY KEY AUTOINCREMENT, term);" % table)
         except:
             pass
-        dbcur.execute("SELECT * FROM %s ORDER BY ID DESC" % select)
+        dbcur.execute("SELECT * FROM %s ORDER BY ID DESC" % table)
         delete_option = False
         for (id, term) in dbcur.fetchall():
             delete_option = True
-            navigator.navigator().addDirectoryItem(term.title(), 'movies_searchterm&select=%s&name=%s' % (select, term), 'search.png', 'DefaultMovies.png')
+            navigator.navigator().addDirectoryItem(term.title(), 'movies_searchterm&select=%s&name=%s' % (select, urllib_parse.quote_plus(term)), 'search.png', 'DefaultMovies.png')
         dbcur.close()
         if delete_option:
-            navigator.navigator().addDirectoryItem('Clear Search History', 'clear_search_cache&select=%s' % select, 'tools.png', 'DefaultAddonProgram.png')
+            navigator.navigator().addDirectoryItem('Clear Search History', 'clear_search_cache&select=%s' % table, 'tools.png', 'DefaultAddonProgram.png')
         navigator.navigator().endDirectory(cached=False)
 
 
@@ -234,13 +241,16 @@ class movies:
         if (q == None or q == ''):
             k = control.keyboard('', 'Search') ; k.doModal()
             q = k.getText() if k.isConfirmed() else None
-        if (q == None or q == ''):
+            if (q == None or q == ''):
+                return
+            control.execute('Container.Update(%s?action=movies_searchterm&select=%s&name=%s)' % (sys.argv[0], select, urllib_parse.quote_plus(q)))
             return
         q = q.lower()
         dbcon = database.connect(control.searchFile)
         dbcur = dbcon.cursor()
-        dbcur.execute("DELETE FROM %s WHERE term = ?" % select, (q,))
-        dbcur.execute("INSERT INTO %s VALUES (?, ?)" % select, (None, q))
+        table = self._history_table(select)
+        dbcur.execute("DELETE FROM %s WHERE term = ?" % table, (q,))
+        dbcur.execute("INSERT INTO %s VALUES (?, ?)" % table, (None, q))
         dbcon.commit()
         dbcur.close()
         if select == 'movies':
@@ -491,7 +501,7 @@ class movies:
             else:
                 control.infoDialog('No Trakt movie lists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k['image'], k['name'].lower()))
-        self.addDirectory(self.list, queue=True)
+        self.addDirectory(self.list)
         return self.list
 
 
@@ -518,7 +528,7 @@ class movies:
             else:
                 control.infoDialog('No Trakt movie lists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k['image'], k['name'].lower()))
-        self.addDirectory(self.list, queue=True)
+        self.addDirectory(self.list)
         return self.list
 
 
@@ -535,9 +545,12 @@ class movies:
             if tmdb_utils.getTMDbCredentialsInfo() == False:
                 control.infoDialog('Authorise TMDb in Settings > Account Settings to see your lists.', sound=True)
             else:
-                control.infoDialog('No TMDb movie lists found.', sound=True)
+                if tmdb_utils.lists_need_reauth():
+                    control.infoDialog('Revoke TMDb, then Authorise again, to load lists from themoviedb.org.', sound=True)
+                else:
+                    control.infoDialog('No TMDb movie lists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k['image'], k['name'].lower()))
-        self.addDirectory(self.list, queue=True)
+        self.addDirectory(self.list)
         return self.list
 
 
@@ -550,7 +563,7 @@ class movies:
             else:
                 control.infoDialog('No MDBList movie lists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k.get('name') or '').lower())
-        self.addDirectory(self.list, queue=True)
+        self.addDirectory(self.list)
         return self.list
 
 
@@ -563,7 +576,7 @@ class movies:
             else:
                 control.infoDialog('No liked MDBLists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k.get('name') or '').lower())
-        self.addDirectory(self.list, queue=True)
+        self.addDirectory(self.list)
         return self.list
 
 
@@ -573,7 +586,7 @@ class movies:
         if not self.list:
             control.infoDialog('No popular MDBLists found.', sound=True)
         self.list = sorted(self.list, key=lambda k: (k.get('name') or '').lower())
-        self.addDirectory(self.list, queue=True)
+        self.addDirectory(self.list)
         return self.list
 
 
@@ -585,13 +598,20 @@ class movies:
         return self.list
 
 
-    def trakt_list(self, url, user):
+    def trakt_list(self, url, user, fetch_all=False, payload=None):
         try:
-            q = dict(urllib_parse.parse_qsl(urllib_parse.urlsplit(url).query))
-            q.update({'extended': 'full'})
-            q = (urllib_parse.urlencode(q)).replace('%2C', ',')
-            u = url.replace('?' + urllib_parse.urlparse(url).query, '') + '?' + q
-            result = trakt.getTraktAsJson(u) or []
+            if payload is not None:
+                result = list(payload)
+                fetch_all = True
+            else:
+                q = dict(urllib_parse.parse_qsl(urllib_parse.urlsplit(url).query))
+                q.update({'extended': 'full'})
+                q = (urllib_parse.urlencode(q)).replace('%2C', ',')
+                u = url.replace('?' + urllib_parse.urlparse(url).query, '') + '?' + q
+                if fetch_all:
+                    result = trakt.getTraktAsJsonPaged(u) or []
+                else:
+                    result = trakt.getTraktAsJson(u) or []
             items = []
             for i in result:
                 try:
@@ -602,6 +622,10 @@ class movies:
                         row['collected_at'] = i.get('listed_at') or i.get('collected_at') or i.get('last_collected_at') or ''
                         if i.get('paused_at'):
                             row['paused_at'] = i.get('paused_at')
+                        if i.get('progress') not in (None, ''):
+                            row['progress'] = i.get('progress')
+                        if '_mix' in i:
+                            row['_mix'] = i['_mix']
                         items.append(row)
                     else:
                         items.append(i)
@@ -629,16 +653,18 @@ class movies:
                     seen.add(key)
                     deduped.append(it)
                 items = deduped
-            try:
-                q = dict(urllib_parse.parse_qsl(urllib_parse.urlsplit(url).query))
-                if not int(q['limit']) == len(items):
-                    raise Exception()
-                q.update({'page': str(int(q['page']) + 1)})
-                q = (urllib_parse.urlencode(q)).replace('%2C', ',')
-                next = url.replace('?' + urllib_parse.urlparse(url).query, '') + '?' + q
-                next = six.ensure_str(next)
-            except:
-                next = ''
+            next = ''
+            if not fetch_all:
+                try:
+                    q = dict(urllib_parse.parse_qsl(urllib_parse.urlsplit(url).query))
+                    if not int(q['limit']) == len(items):
+                        raise Exception()
+                    q.update({'page': str(int(q['page']) + 1)})
+                    q = (urllib_parse.urlencode(q)).replace('%2C', ',')
+                    next = url.replace('?' + urllib_parse.urlparse(url).query, '') + '?' + q
+                    next = six.ensure_str(next)
+                except:
+                    next = ''
             for item in items:
                 try:
                     title = item['title']
@@ -669,7 +695,11 @@ class movies:
                     else:
                         paused_at = re.sub(r'[^0-9]+', '', str(paused_at))
                     collected_at = item.get('collected_at') or ''
-                    self.list.append({'title': title, 'originaltitle': title, 'year': year, 'imdb': imdb, 'tmdb': tmdb, 'tvdb': '0', 'next': next, 'paused_at': paused_at, 'collected_at': collected_at})
+                    entry = {'title': title, 'originaltitle': title, 'year': year, 'imdb': imdb, 'tmdb': tmdb, 'tvdb': '0', 'next': next, 'paused_at': paused_at, 'collected_at': collected_at, 'release_date': item.get('released') or ''}
+                    if '_mix' in item:
+                        entry['_mix'] = item['_mix']
+                        entry['_kind'] = 'movie'
+                    self.list.append(entry)
                 except:
                     #log_utils.log('trakt_list', 1)
                     pass
@@ -713,30 +743,36 @@ class movies:
         return self.list
 
 
-    def tmdb_list(self, url):
+    def tmdb_list(self, url, _release_stamp=None, payload=None):
         try:
-            if 'date[' in url:
-                for i in re.findall(r'date\[(\d+)\]', url):
-                    url = url.replace('date[%s]' % i, (self.datetime - datetime.timedelta(days=int(i))).strftime('%Y-%m-%d'))
-            result = client.scrapePage(url, timeout='30').json()
-            try:
-                page = int(result['page'])
-                total = int(result['total_pages'])
-                if page >= total:
-                    raise Exception()
-                if not 'page=' in url:
-                    raise Exception()
-                next = '%s&page=%s' % (url.split('&page=', 1)[0], str(page+1))
-            except:
+            if payload is not None:
+                items = list(payload)
                 next = ''
-            if 'results' in result:
-                items = result['results']
-            elif 'items' in result:
-                items = result['items']
-            elif 'parts' in result:
-                items = result['parts']
-            elif 'cast' in result:
-                items = result['cast']
+            else:
+                if 'date[' in url:
+                    for i in re.findall(r'date\[(\d+)\]', url):
+                        url = url.replace('date[%s]' % i, (self.datetime - datetime.timedelta(days=int(i))).strftime('%Y-%m-%d'))
+                result = client.scrapePage(url, headers=tmdb_utils.list_fetch_headers(url), timeout='30').json()
+                try:
+                    page = int(result['page'])
+                    total = int(result['total_pages'])
+                    if page >= total:
+                        raise Exception()
+                    if not 'page=' in url:
+                        raise Exception()
+                    next = '%s&page=%s' % (url.split('&page=', 1)[0], str(page+1))
+                except:
+                    next = ''
+                if 'results' in result:
+                    items = result['results']
+                elif 'items' in result:
+                    items = result['items']
+                elif 'parts' in result:
+                    items = result['parts']
+                elif 'cast' in result:
+                    items = result['cast']
+                else:
+                    items = []
             for raw in items:
                 try:
                     media_type, item = tmdb_utils.unwrap_tmdb_list_item(raw)
@@ -750,7 +786,8 @@ class movies:
                     originaltitle = client_utils.replaceHTMLCodes(originaltitle)
                     if not originaltitle:
                         originaltitle = title
-                    year = item.get('release_date')
+                    released = item.get('release_date') or ''
+                    year = released
                     if not year:
                         year = '0'
                     else:
@@ -763,7 +800,14 @@ class movies:
                         tmdb = '0'
                     else:
                         tmdb = re.sub(r'[^0-9]', '', str(tmdb))
-                    self.list.append({'title': title, 'originaltitle': originaltitle, 'year': year, 'imdb': '0', 'tmdb': tmdb, 'tvdb': '0', 'next': next})
+                    entry = {'title': title, 'originaltitle': originaltitle, 'year': year, 'imdb': '0', 'tmdb': tmdb, 'tvdb': '0', 'next': next, 'release_date': released}
+                    mix = item.get('_mix') if isinstance(item, dict) and '_mix' in item else None
+                    if mix is None and isinstance(raw, dict) and '_mix' in raw:
+                        mix = raw.get('_mix')
+                    if mix is not None:
+                        entry['_mix'] = mix
+                        entry['_kind'] = 'movie'
+                    self.list.append(entry)
                 except:
                     #log_utils.log('tmdb_list', 1)
                     pass
@@ -771,6 +815,35 @@ class movies:
             #log_utils.log('tmdb_list', 1)
             pass
         return self.list
+
+
+    def _tmdb_user_list_all(self, url):
+        """Every page of a TMDb list, then the caller sorts and pages the result."""
+        collected = []
+        seen = set()
+        page_url = str(url or '')
+        if '&page=' in page_url:
+            page_url = page_url.split('&page=', 1)[0] + '&page=1'
+        for _guard in range(40):
+            self.list = []
+            self.tmdb_list(page_url)
+            batch = list(self.list or [])
+            if not batch:
+                break
+            nxt = ''
+            for row in batch:
+                nxt = row.get('next') or nxt
+                key = str(row.get('tmdb') or '')
+                if not key or key == '0' or key in seen:
+                    continue
+                seen.add(key)
+                row['next'] = ''
+                collected.append(row)
+            if not nxt or nxt == page_url:
+                break
+            page_url = nxt
+        self.list = collected
+        return collected
 
 
     def get_fanart_tv_artwork(self, id): #tmdb
@@ -1105,9 +1178,8 @@ class movies:
             if not votes or votes == '0':
                 votes = '0'
             try:
-                mpaa = item['releases']['countries']
-                mpaa = [x for x in mpaa if not x['certification'] == '']
-                mpaa = [x for x in mpaa if str(x['iso_3166_1']) == 'US'][0]['certification']
+                mpaa = item['release_dates']['results']
+                mpaa = next(x['certification'] for country in mpaa for x in country['release_dates'] if str(country['iso_3166_1']) == 'US' and x.get('certification'))
             except:
                 mpaa = '0'
             plot = item.get('overview', '0')
@@ -1159,11 +1231,26 @@ class movies:
                     fanart = self.tmdb_image_link % ('1280', fanart)
             else:
                 fanart = '0'
-            if self.hq_artwork == 'true':
-                poster2, fanart2, banner, clearlogo, clearart, landscape, discart = self.get_fanart_tv_artwork(tmdb)
-            else:
-                poster2, fanart2, banner = tmdb_utils.get_tmdb_artwork(tmdb, 'movie')
-                clearlogo = clearart = landscape = discart = '0'
+            img_poster, img_fanart, banner, clearlogo, landscape = tmdb_utils.artwork_from_images(
+                item.get('images'), self.original_artwork == 'true')
+            if poster == '0':
+                poster = img_poster
+            if fanart == '0':
+                fanart = img_fanart
+            if landscape == '0':
+                landscape = fanart
+            clearart = discart = '0'
+            poster2 = fanart2 = '0'
+            prefer_fanart = self.info_art_source in ('1', '2')
+            art_missing = poster in ('0', '', None) or fanart in ('0', '', None) or clearlogo in ('0', '', None)
+            if self.hq_artwork == 'true' and (prefer_fanart or art_missing):
+                poster2, fanart2, banner2, clearlogo2, clearart, landscape2, discart = self.get_fanart_tv_artwork(tmdb)
+                if clearlogo in ('0', '', None):
+                    clearlogo = clearlogo2
+                if banner in ('0', '', None):
+                    banner = banner2
+                if landscape in ('0', '', None):
+                    landscape = landscape2
             if self.info_art_source == '1':
                 poster = poster2 if not poster2 == '0' else poster
                 fanart = fanart2 if not fanart2 == '0' else fanart
@@ -1238,7 +1325,10 @@ class movies:
                     self.list = simkl_mod.directory_trending('movies', period, page)
                 elif key.startswith('simkl_custom_'):
                     list_id, page = simkl_mod.custom_list_page_ref(key[13:])
-                    self.list = simkl_mod.directory_custom_list_movies(list_id, page)
+                    self._list_key = 'simkl_custom_%s' % list_id
+                    self.list = simkl_mod.directory_custom_list_movies_all(list_id, page, full=(idx != True))
+                    if idx == True:
+                        self.list = control.page_items(self.list, page, self._list_key)
                 else:
                     status, page = control.list_page(key[6:])
                     self._list_key = 'simkl_%s' % status
@@ -1276,30 +1366,59 @@ class movies:
             except:
                 pass
             if u in self.tmdb_link and ('/list/' in url or '/collection/' in url):
-                if self.addon_caching == 'true':
-                    self.list = cache.get(self.tmdb_list, self.addon_caching_timeout, url)
-                else:
-                    self.list = self.tmdb_list(url)
                 if '/list/' in url:
-                    self.list = tmdb_utils.apply_my_shelf_sort(self.list, url, 'movies')
+                    base, page = control.list_page(url)
+                    self._list_key = base
+                    self.list = self._tmdb_user_list_all(base)
+                    self.list = tmdb_utils.apply_my_shelf_sort(self.list, base, 'movies')
+                    if idx == True:
+                        self.list = control.page_items(self.list, page, base)
+                        self.worker()
                 else:
-                    self.list = sorted(self.list, key=lambda k: k['year'])
-                if idx == True:
-                    self.worker()
-            elif u in self.tmdb_link and self.tmdb_search_link in url:
+                    if self.addon_caching == 'true':
+                        self.list = cache.get(self.tmdb_list, self.addon_caching_timeout, url)
+                    else:
+                        self.list = self.tmdb_list(url)
+                    self.list = self.list or []
+                    if self.list:
+                        self.list = sorted(self.list, key=lambda k: k['year'])
+                    if idx == True:
+                        self.worker()
+            elif u in self.tmdb_link and '/search/movie' in url:
                 if self.addon_caching == 'true':
                     self.list = cache.get(self.tmdb_list, self.addon_caching_timeout, url)
                 else:
                     self.list = self.tmdb_list(url)
+                self.list = self.list or []
                 if idx == True:
                     self.worker()
             elif u in self.tmdb_link:
-                if self.addon_caching == 'true':
+                person_credits = '/person/' in (url or '') and '_credits' in (url or '')
+                person_page = 1
+                if person_credits:
+                    url, person_page = control.list_page(url)
+                    self._list_key = url
+                if self.addon_caching == 'true' and tmdb_utils.tmdb_shelf_from_url(url):
+                    self.list = cache.get(self.tmdb_list, self.addon_caching_timeout, url, 'release')
+                elif self.addon_caching == 'true':
                     self.list = cache.get(self.tmdb_list, self.addon_caching_timeout, url)
                 else:
                     self.list = self.tmdb_list(url)
+                self.list = self.list or []
                 self.list = tmdb_utils.apply_my_shelf_sort(self.list, url, 'movies')
+                if person_credits and idx == True:
+                    self.list = control.page_items(self.list, person_page, url)
                 if idx == True:
+                    self.worker()
+            elif u in self.trakt_link and '/users/' in url and '/lists/' in url and '/items' in url:
+                base, page = control.list_page(url)
+                self._list_key = base
+                self.cacheToDisc = False
+                self.list = self.trakt_list(base, self.trakt_user, fetch_all=True)
+                self.list = trakt.apply_my_shelf_sort(self.list, base, 'movies')
+                self.list = trakt.filter_shelf_exclusions(self.list, base)
+                if idx == True:
+                    self.list = control.page_items(self.list, page, base)
                     self.worker()
             elif u in self.trakt_link and '/users/' in url:
                 try:
@@ -1357,11 +1476,13 @@ class movies:
             pass
 
 
-    def movieDirectory(self, items):
+    def movieDirectory(self, items, bucket=None):
         sysaddon = sys.argv[0]
         syshandle = int(sys.argv[1])
         items = control.filter_watchlist_unaired(items, getattr(self, '_list_key', ''), self.today_date, media='movie')
         if items == None or len(items) == 0:
+            if bucket is not None:
+                return
             control.idle()
             control.content(syshandle, 'movies')
             control.directory(syshandle, cacheToDisc=self.cacheToDisc)
@@ -1427,7 +1548,6 @@ class movies:
                 sysurl = urllib_parse.quote_plus(url)
                 path = '%s?action=play&title=%s&year=%s&imdb=%s&tmdb=%s' % (sysaddon, systitle, year, imdb, tmdb)
                 cm = []
-                cm.append(('Clean Tools Widget', 'RunPlugin(%s?action=cleantools_widget)' % sysaddon))
                 cm.append(('Clear Providers', 'RunPlugin(%s?action=clear_sources)' % sysaddon))
                 cm.append(('Find Similar', 'Container.Update(%s?action=movies&url=%s)' % (sysaddon, self.trakt_related_link % imdb)))
                 cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
@@ -1486,10 +1606,14 @@ class movies:
                 if 'discart' in i and not i['discart'] == '0':
                     art.update({'discart': i['discart']})
                 item.setArt(art)
-                item.addContextMenuItems(cm)
+                item.addContextMenuItems(control.context_menu_items(cm))
                 if isPlayable:
                     item.setProperty('IsPlayable', 'true')
-                offset = bookmarks.get('movie', imdb, '', '', True)
+                shelf = bookmarks.shelf_progress(i.get('progress'))
+                if shelf and float(meta.get('duration') or 0) > 120:
+                    offset = shelf / 100.0 * float(meta['duration'])
+                else:
+                    offset = bookmarks.get('movie', imdb, '', '', True)
                 if float(offset) > 120:
                     percentPlayed = int(float(offset) / float(meta['duration']) * 100)
                     item.setProperty('resumetime', str(offset))
@@ -1500,10 +1624,15 @@ class movies:
                     info_tag.set_cast(castwiththumb)
                 info_tag.set_info(control.metadataClean(meta))
                 info_tag.add_stream_info('video', {'codec': 'h264'})
-                control.addItem(handle=syshandle, url=url, listitem=item, isFolder=False)
+                if bucket is not None:
+                    bucket.append((i.get('_page', 0), url, item, False))
+                else:
+                    control.addItem(handle=syshandle, url=url, listitem=item, isFolder=False)
             except:
                 #log_utils.log('movieDirectory', 1)
                 pass
+        if bucket is not None:
+            return
         try:
             url = items[0]['next']
             if url == '':
@@ -1540,9 +1669,6 @@ class movies:
                 except:
                     pass
                 cm = []
-                cm.append(('Clean Tools Widget', 'RunPlugin(%s?action=cleantools_widget)' % sysaddon))
-                if queue == True:
-                    cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
                 try:
                     sort_provider = i.get('sort_provider')
                     sort_key = i.get('sort_key')
@@ -1563,7 +1689,7 @@ class movies:
                     item = control.item(label=name)
                 fanart = i['fanart'] if 'fanart' in i and not (i['fanart'] == '0' or i['fanart'] == None) else addonFanart
                 control.set_menu_item_art(item, image, fanart=fanart)
-                item.addContextMenuItems(cm)
+                item.addContextMenuItems(control.context_menu_items(cm))
                 control.addItem(handle=syshandle, url=url, listitem=item, isFolder=True)
             except:
                 #log_utils.log('addDirectory', 1)

@@ -898,7 +898,7 @@ def authTrakt(reopen_settings=False):
         _set_trakt_expires(token_result.get('expires_in', 7200))
         from resources.lib.modules.meta_auth_alerts import clear_alert
         clear_alert('trakt')
-        if control.yesnoDialog('Set Trakt as your Watched Indicators provider?', heading='Watched Status Provider'):
+        if control.yesnoDialog('Set Trakt as your Watched Indicators provider?', heading='Watched Status Provider', default_yes=True):
             try:
                 from resources.lib.modules import simkl
                 simkl.set_watched_provider('1', notify=True)
@@ -1068,7 +1068,29 @@ def _trakt_probe_list_types(username, list_slug, limit=8):
     return types
 
 
+def _trakt_content_groups(item_types, item_count=0):
+    """movie / tv / episode sides actually present in a Trakt list."""
+    groups = []
+    types = set(item_types or ())
+    if 'movie' in types:
+        groups.append('movie')
+    if types & {'show', 'season'}:
+        groups.append('tv')
+    if 'episode' in types:
+        groups.append('episode')
+    if groups:
+        return groups
+    if item_count:
+        return ['movie', 'tv', 'episode']
+    return ['movie']
+
+
 def _trakt_userlist_action(menu_type, item_types, item_count=0):
+    if menu_type == 'any':
+        groups = _trakt_content_groups(item_types, item_count)
+        if len(groups) > 1:
+            return 'trakt_mixed'
+        return {'movie': 'movies', 'tv': 'tvshows', 'episode': 'calendar'}.get(groups[0], 'movies')
     if not menu_type:
         return 'movies'
     if item_count == 0:
@@ -1107,12 +1129,14 @@ def build_user_list_directory(url, trakt_list_link, menu_type=None, image='trakt
                 item_count = int(item.get('item_count') or 0)
             name = client_utils.replaceHTMLCodes(name)
             list_url = trakt_list_link % (username, list_slug)
-            item_types = _trakt_probe_list_types(username, list_slug) if menu_type and item_count else set()
+            probe_limit = 100 if menu_type == 'any' else 8
+            item_types = _trakt_probe_list_types(username, list_slug, limit=probe_limit) if menu_type and item_count else set()
             action = _trakt_userlist_action(menu_type, item_types, item_count)
             if menu_type and action is None:
                 continue
             from resources.lib.modules import shelf_sort
-            entries.append({
+            groups = _trakt_content_groups(item_types, item_count) if menu_type == 'any' else []
+            row = {
                 'name': name,
                 'url': list_url,
                 'context': list_url,
@@ -1120,7 +1144,11 @@ def build_user_list_directory(url, trakt_list_link, menu_type=None, image='trakt
                 'action': action or 'movies',
                 'sort_provider': 'trakt',
                 'sort_key': shelf_sort.personal_shelf_key(username, list_slug),
-            })
+            }
+            if menu_type == 'any':
+                row['sides'] = ','.join(groups)
+                row['library'] = not (len(groups) == 1 and groups[0] == 'episode')
+            entries.append(row)
         except:
             pass
     return entries
@@ -1136,6 +1164,11 @@ def user_list_directory_tvshow(url, trakt_list_link, user=None):
 
 def user_list_directory_episode(url, trakt_list_link, user=None):
     return build_user_list_directory(url, trakt_list_link, menu_type='episode')
+
+
+def user_list_directory_any(url, trakt_list_link, user=None):
+    """Each Trakt list once. A mixed list opens as one folder."""
+    return build_user_list_directory(url, trakt_list_link, menu_type='any')
 
 
 def _manager_ids(imdb=None, tmdb=None):

@@ -2,6 +2,7 @@
 
 import sys
 import threading
+import time
 
 from kodi_six import xbmc
 import simplejson as json
@@ -58,8 +59,21 @@ class player(xbmc.Player):
         xbmc.Player.__init__(self)
 
 
-    def run(self, title, year, season, episode, imdb, tmdb, tvdb, url, meta):
+    def run(self, title, year, season, episode, imdb, tmdb, tvdb, url, meta, on_started=None, should_abort=None, on_stopped=None):
         try:
+            self._reopen_results = False
+            self._playback_failed_fast = False
+            self._resolve_cancelled = False
+            self._av_started = False
+            self._playback_ended = False
+            self._stop_callback_done = False
+            self._player_closing = False
+            self._stop_lock = threading.Lock()
+            self._playback_released = False
+            self._notified_stopped = False
+            self._on_started = on_started
+            self._on_stopped = on_stopped
+            self._should_abort = should_abort
             control.sleep(200)
             self.totalTime = 0
             self.currentTime = 0
@@ -76,13 +90,22 @@ class player(xbmc.Player):
             self.tvdb = tvdb if not tvdb == None else '0'
             self.ids = {'imdb': self.imdb, 'tmdb': self.tmdb, 'tvdb': self.tvdb}
             self.ids = dict((k,v) for k, v in six.iteritems(self.ids) if not v == '0')
-            self.offset, self.resume_percent = bookmarks.get_resume(self.content, imdb, season, episode, tmdb=self.tmdb)
             self._meta_duration = 0
+            shelf = 0
             try:
                 if isinstance(meta, dict):
                     self._meta_duration = float(meta.get('duration') or 0)
+                    shelf = bookmarks.shelf_progress(meta.get('progress'))
             except Exception:
                 self._meta_duration = 0
+                shelf = 0
+            # In Progress carries the pause on the row. That wins over a bookmark
+            # from a different account. Other lists still use the bookmark.
+            self._resume_from_shelf = bool(shelf)
+            if shelf:
+                self.offset, self.resume_percent = 0, shelf
+            else:
+                self.offset, self.resume_percent = bookmarks.get_resume(self.content, imdb, season, episode, tmdb=self.tmdb)
             self._simkl_scrobble_started = False
             self._mdblist_scrobble_started = False
             self._trakt_scrobble_started = False
@@ -115,7 +138,9 @@ class player(xbmc.Player):
             played_via_resolve = False
             try:
                 handle = control.plugin_handle()
-                if handle > 0:
+                # One play click accepts one setResolvedUrl. A retry from the results window plays directly.
+                already = control.window.getProperty(control.PROP_RESOLVE_DONE) == 'true'
+                if handle > 0 and not already:
                     control.resolve(handle, True, item)
                     control.mark_resolve_sent()
                     played_via_resolve = True
@@ -125,18 +150,17 @@ class player(xbmc.Player):
                 self.play(url, item)
             control.window.setProperty('script.trakt.ids', json.dumps(self.ids))
             self.keepPlaybackAlive()
-            # CloseFile can beat onPlayBackStopped by ~2s; wait for pending or fall back.
-            for _ in range(40):
-                if (getattr(self, '_simkl_pending_action', None)
-                        or getattr(self, '_mdblist_pending_action', None)
-                        or getattr(self, '_trakt_pending_stop_percent', None) is not None):
-                    break
-                xbmc.sleep(50)
-            # Stop after CloseFile — never sync-HTTP inside onPlayBackStopped (freezes Kodi).
-            self._simkl_scrobble_finalize()
-            self._mdblist_scrobble_finalize()
-            self._trakt_scrobble_finalize()
-            control.window.clearProperty('script.trakt.ids')
+            # onPlayBackStopped only sets flags. Wait until that returns before any
+            # addon/settings/window call — those deadlock CloseFile.
+            if self._wait_for_stop_callback():
+                self._finish_stopped_playback()
+            try:
+                control.window.clearProperty('script.trakt.ids')
+            except Exception:
+                pass
+            if self._resolve_cancelled:
+                return False
+            return bool(self._reopen_results)
         except:
             try:
                 self._simkl_scrobble_finalize()
@@ -150,6 +174,7 @@ class player(xbmc.Player):
                 self._trakt_scrobble_finalize()
             except Exception:
                 pass
+            self._close_resolving_dialog()
             control.abort_plugin_resolve()
             return
 
@@ -226,28 +251,66 @@ class player(xbmc.Player):
     def keepPlaybackAlive(self):
         pname = '%s.player.overlay' % control.addonInfo('id')
         control.window.clearProperty(pname)
+        self._tick_resolving_while_opening()
         if self.content == 'movie':
             overlay = playcount.getMovieOverlay(playcount.getMovieIndicators(), self.imdb)
         elif self.content == 'episode':
             overlay = playcount.getEpisodeOverlay(playcount.getTVShowIndicators(), self.imdb, self.tmdb, self.season, self.episode)
         else:
             overlay = '6'
-        for i in range(0, 240):
-            if self.isPlayingVideo():
+        for i in range(0, 75):
+            if self._playback_wait_done():
                 break
-            xbmc.sleep(1000)
+            self._tick_resolving_while_opening()
+            xbmc.sleep(200)
+        if not self._resolve_cancelled and not self._playback_failed_fast and not (self.isPlayingVideo() and self._av_started):
+            for i in range(0, 225):
+                if self._playback_wait_done():
+                    break
+                self._tick_resolving_while_opening()
+                xbmc.sleep(1000)
+        # No picture: leave the resolving bar up so the next source can continue.
+        # Cancel, or a picture that did start, closes it.
+        unplayable = (not self._resolve_cancelled) and (self._playback_failed_fast or not self._av_started)
+        if unplayable:
+            self._reopen_results = True
+            try:
+                if control.condVisibility('Window.IsActive(busydialog)'):
+                    control.execute('Dialog.Close(busydialog)')
+                if control.condVisibility('Window.IsActive(busydialognocancel)'):
+                    control.execute('Dialog.Close(busydialognocancel)')
+                control.dismiss_playback_failed()
+            except Exception:
+                pass
+            self._stop_opened_file()
+            return
+        self._close_resolving_dialog()
+        if self._resolve_cancelled or not (self.isPlayingVideo() and self._av_started):
+            if self._resolve_cancelled:
+                self._dismiss_cancelled_playback_dialog()
+            else:
+                control.dismiss_playback_failed()
+            self._stop_opened_file()
+            return
+        started = getattr(self, '_on_started', None)
+        if started:
+            try:
+                started()
+            except Exception:
+                pass
         # Backup if onAVStarted never ran on this Player instance.
         if self.isPlayingVideo():
             self._ensure_live_scrobble_start()
         if overlay == '7':
-            while self.isPlayingVideo():
+            while self._playback_still_open():
                 try:
                     self._sample_playback_times()
                 except:
                     pass
-                xbmc.sleep(2000)
+                if not self._sleep_while_playing(2):
+                    break
         elif self.content == 'movie':
-            while self.isPlayingVideo():
+            while self._playback_still_open():
                 try:
                     self._sample_playback_times()
                     total = self._total_seconds()
@@ -258,9 +321,10 @@ class player(xbmc.Player):
                         playcount.markMovieDuringPlayback(self.imdb, '7', self.tmdb)
                 except:
                     pass
-                xbmc.sleep(2000)
+                if not self._sleep_while_playing(2):
+                    break
         elif self.content == 'episode':
-            while self.isPlayingVideo():
+            while self._playback_still_open():
                 try:
                     self._sample_playback_times()
                     total = self._total_seconds()
@@ -271,11 +335,13 @@ class player(xbmc.Player):
                         playcount.markEpisodeDuringPlayback(self.imdb, self.tmdb, self.season, self.episode, '7', self.tvdb)
                 except:
                     pass
-                xbmc.sleep(2000)
-        control.window.clearProperty(pname)
+                if not self._sleep_while_playing(2):
+                    break
 
 
     def _sample_playback_times(self):
+        if not self.isPlayingVideo():
+            return
         try:
             t = self.getTotalTime()
             if t:
@@ -284,6 +350,8 @@ class player(xbmc.Player):
             pass
         if not self.totalTime:
             self.totalTime = float(getattr(self, '_meta_duration', 0) or 0)
+        if not self.isPlayingVideo():
+            return
         try:
             c = self.getTime()
             if c:
@@ -298,7 +366,7 @@ class player(xbmc.Player):
             total = float(self.totalTime or 0)
         except Exception:
             total = 0
-        if total <= 0:
+        if total <= 0 and self.isPlayingVideo():
             try:
                 total = float(self.getTotalTime() or 0)
             except Exception:
@@ -352,6 +420,8 @@ class player(xbmc.Player):
             if control.window.getProperty(playcount.PLAYBACK_MARKED_PROPERTY) != 'true':
                 return
             control.window.clearProperty(playcount.PLAYBACK_MARKED_PROPERTY)
+            if control.window.getProperty('gratisred.results_hold') == 'true':
+                return
             if self._playback_folder_is_sources():
                 return
             control.refresh()
@@ -368,9 +438,19 @@ class player(xbmc.Player):
             elif self.content == 'episode':
                 rpc = '{"jsonrpc": "2.0", "method": "VideoLibrary.SetEpisodeDetails", "params": {"episodeid" : %s, "playcount" : 1 }, "id": 1 }' % str(self.DBID)
             control.jsonrpc(rpc)
+            if control.window.getProperty('gratisred.results_hold') == 'true':
+                return
             if not self._playback_folder_is_sources():
                 control.refresh()
         except:
+            pass
+
+
+    def _enter_fullscreen(self):
+        try:
+            if self.isPlayingVideo() and not control.condVisibility('Window.IsActive(fullscreenvideo)'):
+                control.execute('ActivateWindow(fullscreenvideo)')
+        except Exception:
             pass
 
 
@@ -379,7 +459,7 @@ class player(xbmc.Player):
             if control.condVisibility('Window.IsActive(busydialog)') == 1 or control.condVisibility('Window.IsActive(busydialognocancel)') == 1:
                 control.idle()
             else:
-                control.execute('Dialog.Close(all,true)')
+                control.idle()
                 break
             control.sleep(100)
 
@@ -398,6 +478,8 @@ class player(xbmc.Player):
 
 
     def _resume_source_label(self):
+        if getattr(self, '_resume_from_shelf', False):
+            return ''
         source = control.setting('bookmarks.source')
         if source == '1' and trakt.getTraktCredentialsInfo() == True:
             return '[CR]  (Trakt)'
@@ -410,7 +492,7 @@ class player(xbmc.Player):
         try:
             total = self._total_seconds()
             current = float(self.currentTime or 0)
-            if current <= 0:
+            if current <= 0 and self.isPlayingVideo():
                 try:
                     current = float(self.getTime() or 0)
                 except Exception:
@@ -595,16 +677,255 @@ class player(xbmc.Player):
 
 
     def onAVStarted(self):
-        control.execute('Dialog.Close(all,true)')
+        if getattr(self, '_playback_released', False):
+            return
+        should_abort = getattr(self, '_should_abort', None)
+        if getattr(self, '_resolve_cancelled', False) or (should_abort and should_abort()):
+            self._resolve_cancelled = True
+            self._stop_opened_file()
+            return
+        self._av_started = True
+        # Fullscreen while the results window is still up, then let that
+        # window hide. It stays open so stop does not land on the movie list.
+        self._enter_fullscreen()
+        xbmc.sleep(200)
+        try:
+            control.window.setProperty('gratisred.playback_fullscreen', 'true')
+        except Exception:
+            pass
+        started = getattr(self, '_on_started', None)
+        if started:
+            try:
+                started()
+            except Exception:
+                pass
+        self._close_resolving_dialog()
         offset = self._resume_offset()
         self._offer_resume(offset)
         self._ensure_live_scrobble_start()
         subtitle_service.subtitles().get(self.imdb, self.season, self.episode, year=self.year, title=self.title)
         self.idleForPlayback()
+        self._enter_fullscreen()
+
+
+    def _resolving_cancelled(self):
+        dialog = control.progressDialogBG if control.window.getProperty('gratisred.resolving_bg') == '1' else control.progressDialog
+        try:
+            return bool(dialog.iscanceled())
+        except Exception:
+            return False
+
+
+    def _playback_wait_done(self):
+        should_abort = getattr(self, '_should_abort', None)
+        if should_abort and should_abort():
+            self._resolve_cancelled = True
+            self._stop_opened_file()
+            return True
+        if self._resolving_cancelled():
+            self._resolve_cancelled = True
+            self._stop_opened_file()
+            return True
+        if self._playback_failed_fast:
+            return True
+        return bool(self.isPlayingVideo() and self._av_started)
+
+
+    def _tick_resolving_while_opening(self):
+        """Keep the resolving bar moving while Kodi opens the file.
+
+        OnPlayBackStarted puts DialogBusy over that bar until the picture starts.
+        Once the picture is up, or the player is already closing, leave the dialog alone.
+        """
+        if self._av_started or self._player_closing:
+            return
+        try:
+            busy = control.condVisibility('Window.IsActive(busydialog)') or control.condVisibility('Window.IsActive(busydialognocancel)')
+            if control.condVisibility('Window.IsActive(busydialog)'):
+                control.execute('Dialog.Close(busydialog)')
+            if control.condVisibility('Window.IsActive(busydialognocancel)'):
+                control.execute('Dialog.Close(busydialognocancel)')
+            if busy:
+                xbmc.sleep(50)
+        except Exception:
+            pass
+        control.focus_progress_cancel()
+        control.dismiss_playback_failed()
+        try:
+            started = float(control.window.getProperty('gratisred.resolving_started') or 0)
+            limit = float(control.window.getProperty('gratisred.resolving_limit') or 0)
+        except Exception:
+            return
+        if started <= 0 or limit <= 0:
+            return
+        percent = min(95, int(((time.time() - started) / limit) * 100))
+        header = control.window.getProperty('gratisred.resolving_header') or ''
+        label = control.window.getProperty('gratisred.resolving_label') or header
+        dialog = control.progressDialogBG if control.window.getProperty('gratisred.resolving_bg') == '1' else control.progressDialog
+        try:
+            dialog.update(percent, label)
+        except Exception:
+            try:
+                dialog.update(percent, '%s[CR]%s' % (header, label))
+            except Exception:
+                pass
+
+
+    def _close_resolving_dialog(self):
+        for prop in ('gratisred.resolving_header', 'gratisred.resolving_label', 'gratisred.resolving_started', 'gratisred.resolving_limit', 'gratisred.resolving_bg'):
+            try:
+                control.window.clearProperty(prop)
+            except Exception:
+                pass
+        # Do not ask IsActive(progressdialog) here. After Stop that lookup sits
+        # until the results window closes, and the next choice does nothing.
+        for dialog in (control.progressDialog, control.progressDialogBG):
+            try:
+                dialog.close()
+            except Exception:
+                pass
+        try:
+            control.execute('Dialog.Close(busydialog)')
+            control.execute('Dialog.Close(busydialognocancel)')
+        except Exception:
+            pass
+
+
+    def _wait_for_stop_callback(self):
+        """CloseFile owns the GUI thread for a moment. Stay out of Kodi until
+        that has finished, then pump so onPlayBackStopped is delivered.
+
+        A plain sleep never pumps that callback, so fullscreen sat on the last
+        frame until the wait gave up (about five seconds).
+        """
+        if self._resolve_cancelled:
+            return True
+        time.sleep(0.25)
+        for _ in range(40):
+            if self._stop_callback_done:
+                return True
+            if self._playback_failed_fast and not self._av_started:
+                return True
+            xbmc.sleep(50)
+        return self._stop_callback_done
+
+
+    def _dismiss_cancelled_playback_dialog(self):
+        """Close Kodi's Playback failed dialog after Cancel.
+
+        It opens a moment after the file is stopped. Unlock the results first.
+        Stay on this thread: a second thread querying windows left Stop unable
+        to resolve again.
+        """
+        callback = getattr(self, '_on_stopped', None)
+        if callback and not self._notified_stopped:
+            self._notified_stopped = True
+            try:
+                callback(True)
+            except Exception:
+                pass
+        for _ in range(15):
+            try:
+                control.execute('Dialog.Close(okdialog,true)')
+            except Exception:
+                pass
+            xbmc.sleep(100)
+
+
+    def _stop_opened_file(self):
+        """Stop once. A second CloseFile while the first is still closing crashes Kodi."""
+        lock = getattr(self, '_stop_lock', None)
+        if lock is None:
+            lock = threading.Lock()
+            self._stop_lock = lock
+        with lock:
+            if self._player_closing or getattr(self, '_playback_released', False):
+                return
+            try:
+                playing = self.isPlayingVideo()
+            except Exception:
+                playing = False
+            if not playing:
+                return
+            self._player_closing = True
+        try:
+            self.stop()
+        except Exception:
+            pass
+
+
+    def _playback_still_open(self):
+        return (not getattr(self, '_playback_released', False)) and self.isPlayingVideo()
+
+
+    def _sleep_while_playing(self, seconds):
+        remaining = int(seconds * 1000)
+        while remaining > 0:
+            if not self._playback_still_open():
+                return False
+            should_abort = getattr(self, '_should_abort', None)
+            if should_abort and should_abort():
+                self._resolve_cancelled = True
+                self._stop_opened_file()
+                return False
+            step = 200 if remaining > 200 else remaining
+            xbmc.sleep(step)
+            remaining -= step
+        return self._playback_still_open()
+
+
+    def _finish_stopped_playback(self):
+        """Bookmarks, scrobble, and the results window. Never from onPlayBackStopped.
+
+        Unlock the results list before scrobble. The next choice can resolve
+        while those calls run, and this player ignores that later file.
+        """
+        self._notify_stopped()
+        try:
+            control.window.clearProperty('%s.player.overlay' % control.addonInfo('id'))
+        except Exception:
+            pass
+        try:
+            if self._av_started and not self._playback_failed_fast and not self._resolve_cancelled:
+                percent = float(getattr(self, '_last_percent', 0) or 0)
+                total = float(self.totalTime or 0) or float(getattr(self, '_meta_duration', 0) or 0)
+                try:
+                    bookmarks.reset(self.currentTime, total, self.content, self.imdb, self.season, self.episode)
+                except Exception:
+                    pass
+                if percent >= 92 or self._playback_ended:
+                    self.libForPlayback()
+                if not getattr(self, '_on_stopped', None):
+                    self._refresh_after_playback_mark()
+                    if control.setting('crefresh') == 'true' and control.window.getProperty('gratisred.results_hold') != 'true' and not self._playback_folder_is_sources():
+                        control.refresh()
+        except Exception:
+            pass
+        self._simkl_scrobble_finalize()
+        self._mdblist_scrobble_finalize()
+        self._trakt_scrobble_finalize()
+
+
+    def _notify_stopped(self):
+        if self._notified_stopped:
+            return
+        self._notified_stopped = True
+        stopped = getattr(self, '_on_stopped', None)
+        if not stopped or not self._av_started or self._playback_failed_fast:
+            return
+        percent = float(getattr(self, '_last_percent', 0) or 0)
+        ended = bool(self._playback_ended)
+        try:
+            stopped((not ended) and percent < 92)
+        except Exception:
+            pass
 
 
     def onPlayBackStarted(self):
+        if getattr(self, '_playback_released', False):
+            return
         if kodi_version < 18:
+            self._av_started = True
             control.execute('Dialog.Close(all,true)')
             offset = self._resume_offset()
             self._offer_resume(offset)
@@ -617,6 +938,8 @@ class player(xbmc.Player):
 
 
     def onPlayBackPaused(self):
+        if getattr(self, '_playback_released', False):
+            return
         try:
             self._sample_playback_times()
         except Exception:
@@ -629,48 +952,49 @@ class player(xbmc.Player):
 
 
     def onPlayBackStopped(self):
+        # Flags only. Settings, bookmarks, scrobble, and the results window run
+        # from _finish_stopped_playback after this returns. Anything else here
+        # runs inside CloseFile and freezes or crashes Kodi.
+        # A later file must not reach this player. Kodi delivers those events
+        # to every Player that is still alive.
+        if getattr(self, '_playback_released', False):
+            return
+        self._playback_released = True
+        self._player_closing = True
         try:
-            try:
-                self._sample_playback_times()
-            except Exception:
-                pass
-            percent = self._playback_percent() or getattr(self, '_last_percent', 0) or 0
-            total = self._total_seconds()
-            if (not total or not self.currentTime) and percent < 1:
-                if getattr(self, '_trakt_scrobble_started', False) or trakt.getTraktIndicatorsInfo():
-                    # Failed open / zero progress — clear Playing now at 1%, never bookmark resume %.
-                    self._trakt_pending_stop_percent = 1
-                control.sleep(2000)
+            if not getattr(self, '_av_started', False):
+                self._playback_failed_fast = True
                 return
-            self._trakt_pending_stop_percent = 100 if percent >= 92 else percent
+            percent = float(getattr(self, '_last_percent', 0) or 0)
             if percent >= 92:
+                self._trakt_pending_stop_percent = 100
                 self._simkl_pending_action = 'stop'
                 self._simkl_pending_percent = 100
                 self._mdblist_pending_action = 'stop'
                 self._mdblist_pending_percent = 100
             elif percent >= 1:
+                self._trakt_pending_stop_percent = percent
                 self._simkl_pending_action = 'pause'
                 self._simkl_pending_percent = percent
                 self._mdblist_pending_action = 'pause'
                 self._mdblist_pending_percent = percent
-            bookmarks.reset(self.currentTime, total or self.totalTime, self.content, self.imdb, self.season, self.episode)
-            if total and float(self.currentTime / total) >= 0.92:
-                self.libForPlayback()
+            else:
+                # Failed open / zero progress — clear Playing now at 1%, never bookmark resume %.
+                self._trakt_pending_stop_percent = 1
         finally:
-            # Same Container.Refresh as manual Watched — after playback, all platforms (#157).
-            self._refresh_after_playback_mark()
+            self._stop_callback_done = True
 
 
     def onPlayBackEnded(self):
+        if getattr(self, '_playback_released', False):
+            return
+        self._playback_ended = True
         try:
             if not self.totalTime:
-                self.totalTime = self.getTotalTime() or getattr(self, '_meta_duration', 0)
+                self.totalTime = float(getattr(self, '_meta_duration', 0) or 0)
             self.currentTime = self.totalTime
+            self._last_percent = 100.0
         except Exception:
             pass
-        self.libForPlayback()
         self.onPlayBackStopped()
-        # Optional setting — never on sources (doubles with mark-refresh / blanks UI).
-        if control.setting('crefresh') == 'true' and not self._playback_folder_is_sources():
-            control.refresh()
 

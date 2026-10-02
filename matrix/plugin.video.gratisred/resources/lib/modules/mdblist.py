@@ -212,6 +212,20 @@ def _item_media_kind(item):
     return 'movie'
 
 
+def _row_release(item, block, year):
+    """Full day when the payload has one. Year is the fallback."""
+    for src in (block, item):
+        if not isinstance(src, dict):
+            continue
+        for key in ('release_date', 'released', 'first_aired', 'air_date'):
+            val = src.get(key)
+            if val not in (None, '', 'None', '0', 0):
+                return str(val)
+    if year not in (None, '', 'None', '0', 0):
+        return str(year)
+    return ''
+
+
 def _directory_row(item, media_kind):
     ids, block, tmdb = _ids_from_item(item, media_kind)
     if not tmdb:
@@ -229,6 +243,7 @@ def _directory_row(item, media_kind):
         'title': title, 'originaltitle': title, 'year': year,
         'imdb': imdb, 'tmdb': tmdb, 'tvdb': tvdb, 'next': '',
         'paused_at': '0', 'collected_at': collected,
+        'release_date': _row_release(item, block, year),
     }
 
 
@@ -372,7 +387,7 @@ def authMdblist(reopen_settings=False):
         control.setSetting('mdblist.user', user)
         from resources.lib.modules.meta_auth_alerts import clear_alert
         clear_alert('mdblist')
-        if control.yesnoDialog('Set MDBList as your Watched Indicators provider?', heading='Watched Status Provider'):
+        if control.yesnoDialog('Set MDBList as your Watched Indicators provider?', heading='Watched Status Provider', default_yes=True):
             from resources.lib.modules import simkl
             simkl.set_watched_provider('3', notify=True)
         try:
@@ -457,7 +472,7 @@ def _clear_playback_cache():
         pass
 
 
-def _personal_items(url, media_kind):
+def _personal_items(url, media_kind, _row_version=None):
     result = _get_mdbl_paginated_list(url)
     if not isinstance(result, dict):
         return []
@@ -501,7 +516,7 @@ def directory_from_url(url, media):
 
 def directory_watchlist(media):
     from resources.lib.modules import shelf_sort
-    items = cache.get(_personal_items, _LIST_CACHE_HOURS, 'watchlist/items', media) or []
+    items = cache.get(_personal_items, _LIST_CACHE_HOURS, 'watchlist/items', media, 2) or []
     return shelf_sort.sort_items(items, 'mdblist', media, 'watchlist', sortable=shelf_sort.MDBLIST_SORTABLE)
 
 
@@ -844,6 +859,162 @@ def _list_payload(list_type, list_id):
     return result if isinstance(result, dict) else {}
 
 
+def _item_side(item):
+    """movie, tv, or episode. Unknown rows are left unset."""
+    if not isinstance(item, dict):
+        return None
+    mediatype = str(item.get('mediatype') or item.get('media_type') or item.get('type') or '').lower()
+    if mediatype in ('episode', 'episodes'):
+        return 'episode'
+    if mediatype in ('season', 'seasons', 'show', 'shows', 'tvshow', 'tv', 'series'):
+        return 'tv'
+    if mediatype in ('movie', 'movies'):
+        return 'movie'
+    if isinstance(item.get('episode'), dict) or item.get('episode_number') not in (None, '', 'None'):
+        return 'episode'
+    if item.get('show') or item.get('season_number') not in (None, '', 'None'):
+        return 'tv'
+    return None
+
+
+def _episode_directory_row(item):
+    if not isinstance(item, dict):
+        return None
+    ep = item.get('episode') if isinstance(item.get('episode'), dict) else item
+    show = ep.get('show') if isinstance(ep, dict) and isinstance(ep.get('show'), dict) else {}
+    if not show and isinstance(item.get('show'), dict):
+        show = item.get('show')
+    season = ep.get('season', ep.get('season_number', item.get('season', item.get('season_number'))))
+    number = ep.get('number', ep.get('episode', ep.get('episode_number', item.get('episode_number'))))
+    if isinstance(number, dict):
+        number = number.get('number') or number.get('episode')
+    try:
+        season_n = int(season)
+        episode_n = int(number)
+    except Exception:
+        return None
+    if season_n < 0 or episode_n < 1:
+        return None
+    ids = show.get('ids') if isinstance(show.get('ids'), dict) else {}
+    tmdb = ids.get('tmdb') or show.get('tmdb') or item.get('show_tmdb') or item.get('parent_tmdb') or '0'
+    try:
+        tmdb = str(int(tmdb))
+    except Exception:
+        tmdb = '0'
+    imdb = _normalize_imdb(ids.get('imdb') or show.get('imdb_id') or item.get('show_imdb'))
+    tvdb = str(ids.get('tvdb') or show.get('tvdb_id') or item.get('show_tvdb') or '0')
+    title = ep.get('title') or item.get('title') or 'Episode'
+    if title in ('0', '', 'None'):
+        title = 'Episode'
+    tvshowtitle = (
+        show.get('title')
+        or item.get('show_title')
+        or item.get('parent_title')
+        or item.get('show_name')
+        or 'Unknown'
+    )
+    year = show.get('year') or item.get('year') or '0'
+    try:
+        year = re.sub(r'[^0-9]', '', str(year)) or '0'
+    except Exception:
+        year = '0'
+    collected = item.get('watchlist_at') or item.get('collected_at') or item.get('added') or ''
+    return {
+        'title': title,
+        'label': title,
+        'tvshowtitle': tvshowtitle,
+        'year': year,
+        'collected_at': collected,
+        'imdb': imdb or '0',
+        'tmdb': tmdb,
+        'tvdb': tvdb,
+        'season': str(season_n),
+        'episode': str(episode_n),
+        'premiered': '0',
+        'plot': '0',
+    }
+
+
+def list_content_sides(list_id, list_type='user'):
+    payload = cache.get(_list_payload, _LIST_CACHE_HOURS, list_type, list_id) or {}
+    if not isinstance(payload, dict):
+        return set()
+    sides = set()
+    if payload.get('movies'):
+        sides.add('movie')
+    if payload.get('shows') or payload.get('seasons'):
+        sides.add('tv')
+    if payload.get('episodes'):
+        sides.add('episode')
+    for item in payload.get('items') or []:
+        side = _item_side(item)
+        if side:
+            sides.add(side)
+    if not sides and payload.get('items'):
+        sides.add('movie')
+    return sides
+
+
+def directory_list_episodes(list_id, list_type='user'):
+    payload = cache.get(_list_payload, _LIST_CACHE_HOURS, list_type, list_id) or {}
+    if not isinstance(payload, dict):
+        return []
+    sources = list(payload.get('episodes') or [])
+    for item in payload.get('items') or []:
+        if _item_side(item) == 'episode':
+            sources.append(item)
+    out = []
+    seen = set()
+    for item in sources:
+        row = _episode_directory_row(item)
+        if not row:
+            continue
+        key = (row['tmdb'], row['imdb'], row['season'], row['episode'], row['tvshowtitle'])
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(row)
+    from resources.lib.modules import shelf_sort
+    shelf = shelf_sort.personal_shelf_key(list_id)
+    return shelf_sort.sort_items(out, 'mdblist', 'episodes', shelf)
+
+
+def open_list(list_type, list_id, name=None, side=None, url=None):
+    """Open one MDBList. One media type goes straight in. A mixed list is one folder."""
+    from resources.lib.indexers import episodes
+    from resources.lib.indexers import movies
+    from resources.lib.indexers import navigator
+    from resources.lib.indexers import tvshows
+    list_type = list_type if list_type in ('user', 'external') else 'user'
+    key = 'mdblist_list_%s_%s' % (list_type, list_id)
+    side = str(side or '').lower()
+    if side in ('movie', 'movies'):
+        movies.movies().get(key)
+        return
+    if side in ('tv', 'show', 'shows', 'tvshow', 'tvshows'):
+        tvshows.tvshows().get(key)
+        return
+    if side in ('episode', 'episodes'):
+        episodes.episodes().episodeDirectory(directory_list_episodes(list_id, list_type))
+        return
+    sides = list_content_sides(list_id, list_type)
+    if sides == {'movie'}:
+        movies.movies().get(key)
+        return
+    if sides == {'tv'}:
+        tvshows.tvshows().get(key)
+        return
+    if sides == {'episode'}:
+        episodes.episodes().episodeDirectory(directory_list_episodes(list_id, list_type))
+        return
+    if not sides:
+        control.infoDialog('That list is empty.', sound=True)
+        navigator.navigator().endDirectory()
+        return
+    from resources.lib.modules import mixed_lists
+    mixed_lists.open_mdblist_mixed(list_type, list_id, name or 'List', url or key)
+
+
 def directory_list(list_id, media, list_type='user'):
     from resources.lib.modules import shelf_sort
     payload = cache.get(_list_payload, _LIST_CACHE_HOURS, list_type, list_id) or {}
@@ -853,6 +1024,20 @@ def directory_list(list_id, media, list_type='user'):
     for item in payload.get('items') or []:
         if _item_media_kind(item) == want:
             rows.append(item)
+    if key == 'shows':
+        seen_shows = set()
+        for row in rows:
+            _ids, _block, tmdb = _ids_from_item(row, 'shows')
+            if tmdb:
+                seen_shows.add(str(tmdb))
+        for item in payload.get('seasons') or []:
+            show = item.get('show') if isinstance(item.get('show'), dict) else item
+            _ids, _block, tmdb = _ids_from_item(show, 'shows')
+            if tmdb and str(tmdb) in seen_shows:
+                continue
+            if tmdb:
+                seen_shows.add(str(tmdb))
+            rows.append(show)
     out = []
     for item in rows:
         row = _directory_row(item, media)
@@ -1343,7 +1528,7 @@ def _tmdb_in_rows(rows, tmdb_id):
 
 def _item_in_watchlist(is_movie, tmdb_id):
     media = 'movies' if is_movie else 'shows'
-    items = cache.get(_personal_items, _LIST_CACHE_HOURS, 'watchlist/items', media) or []
+    items = cache.get(_personal_items, _LIST_CACHE_HOURS, 'watchlist/items', media, 2) or []
     try:
         tmdb_s = str(int(tmdb_id))
     except Exception:
