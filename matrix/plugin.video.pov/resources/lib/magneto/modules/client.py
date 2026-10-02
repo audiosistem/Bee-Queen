@@ -10,6 +10,8 @@ from time import sleep
 from http import cookiejar
 from html import unescape
 from io import BytesIO
+import requests
+from requests.adapters import HTTPAdapter, Retry
 import urllib.request as urllib2
 from urllib.parse import quote_plus, urlencode, parse_qs, urlparse, urljoin
 from urllib.response import addinfourl
@@ -17,6 +19,18 @@ from urllib.error import HTTPError
 from magneto.modules import cache
 from magneto.modules.dom_parser import parseDOM
 
+
+class TimeoutSession(requests.Session):
+	CUSTOM_ERRORS = requests.exceptions.ConnectionError, requests.exceptions.Timeout
+	def __init__(self, timeout=None):
+		requests.Session.__init__(self)
+		self.timeout = timeout or (3.05, 6.05)
+
+	def request(self, *args, **kwargs):
+		kwargs.setdefault('timeout', self.timeout)
+		return requests.Session.request(self, *args, **kwargs)
+
+session = TimeoutSession()
 
 def request(url, close=True, redirect=True, error=False, proxy=None, post=None, headers=None, mobile=False, XHR=False, limit=None,
 					referer=None, cookie=None, compression=True, output='', timeout='30', verifySsl=True, flare=True, ignoreErrors=None, as_bytes=False):

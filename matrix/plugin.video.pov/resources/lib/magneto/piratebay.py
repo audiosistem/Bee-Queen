@@ -24,7 +24,8 @@ class source:
 
 	def get_sources(self, url):
 		try:
-			rjson = client.request(url, timeout=self.timeout)
+			headers = {'User-Agent': client.randomagent()}
+			rjson = client.session.request('get', url, headers=headers, timeout=self.timeout).text
 			if not rjson: return
 			files = jsloads(rjson)
 			self.results.extend(files)

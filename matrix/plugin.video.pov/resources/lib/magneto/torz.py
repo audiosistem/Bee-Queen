@@ -3,7 +3,8 @@
 	Fenomscrapers Project
 """
 
-import queue, requests
+import queue
+from magneto.modules import client
 from magneto.modules import source_utils
 from magneto.modules.control import setting as getSetting
 
@@ -50,7 +51,7 @@ class source:
 			# log_utils.log('url = %s' % url)
 			if 'timeout' in data: self.timeout = int(data['timeout'])
 			try:
-				results = requests.get(url, params=params, timeout=self.timeout)
+				results = client.session.request('get', url, params=params, timeout=self.timeout)
 				files = results.json()['data']['items']
 			except:
 				files = []

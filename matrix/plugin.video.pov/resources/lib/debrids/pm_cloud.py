@@ -48,7 +48,7 @@ class Menu(Debrid):
 			append = body.append
 #			append(ls(32754) % username)
 			append(ls(32757) % status)
-			append(ls(32750) % expires.date() if hasattr(expires, 'date') else expires)
+			append(ls(32750) % (expires.date() if hasattr(expires, 'date') else expires))
 			append(ls(32751) % days_remaining)
 			append('[B]Fair Use (Percentage Used):[/B] %s%%' % percentage_used)
 			kodi_utils.hide_busy_dialog()

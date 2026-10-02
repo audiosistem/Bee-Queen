@@ -214,16 +214,16 @@ class Menu(Episodes):
 		}.items() if key in mode), None)
 		if callable(func): func(params_get)
 		if self.list: kodi_utils.add_items(__handle__, self.worker())
-		if self.list_type == 'trakt_calendar' and self.calendar_focus_today:
-			current_date = str(self.current_date)
-			labels = enumerate((i[1].getProperty('pov_first_aired') for i in self.items), 1)
-			index = next((i for i, x in labels if x in current_date), None)
-		else: index = False
 		kodi_utils.set_category(__handle__, category)
 		kodi_utils.set_sort_method(__handle__, sort_type)
 		kodi_utils.set_content(__handle__, content_type)
 		kodi_utils.end_directory(__handle__, False)
 		kodi_utils.set_view_mode(view_type, content_type, self.is_widget)
+		if self.list_type == 'trakt_calendar' and self.calendar_focus_today:
+			current_date = str(self.current_date)
+			labels = enumerate((i[1].getProperty('pov_first_aired') for i in self.items), 1)
+			index = next((i for i, x in labels if x in current_date), None)
+		else: index = False
 		if index: kodi_utils.focus_index(index)
 
 	def _setup_in_progress(self, params_get):

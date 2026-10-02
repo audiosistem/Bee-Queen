@@ -1,15 +1,15 @@
 import re
-import json
-import requests
 from urllib.parse import urlencode, quote
 from caches.main_cache import cache_object
-from modules.kodi_utils import get_setting
+from modules import kodi_utils
 from modules.source_utils import supported_video_extensions
+from session import session, HTTPAdapter, Retry
 # from modules.kodi_utils import logger
 
-timeout = 10.0
-session = requests.Session()
-session.mount('https://', requests.adapters.HTTPAdapter(max_retries=1))
+base_url = 'https://members.easynews.com'
+timeout = 10
+retry = Retry(total=None, status=1, status_forcelist=(429,), backoff_factor=1)
+session.mount(base_url, HTTPAdapter(max_retries=retry))
 
 def video_extensions():
 	return (
@@ -28,29 +28,31 @@ def search_params():
 
 class EasyNewsAPI:
 	def __init__(self):
-		self.base_url = 'https://members.easynews.com'
 		self.search_link = '/2.0/search/solr-search/advanced'
 		self.account_link = 'https://account.easynews.com/editinfo.php'
 		self.usage_link = 'https://account.easynews.com/usageview.php'
-		self.username = get_setting('easynews_user')
-		self.password = get_setting('easynews_password')
-		self.moderation = 1 if get_setting('easynews_moderation') == 'true' else 0
+		self.timeout = int(kodi_utils.get_setting('scrapers_timeout') or 10)
+		self.username = kodi_utils.get_setting('easynews_user')
+		self.password = kodi_utils.get_setting('easynews_password')
+		self.moderation = 1 if kodi_utils.get_setting('easynews_moderation') == 'true' else 0
 
-	def _get(self, url, params=None):
-		response = session.get(url, auth=(self.username, self.password), params=params, timeout=timeout)
-		try: return json.loads(response.text)
+	def api(self, method, url, **kwargs):
+		try: response = session.request('get', url, **kwargs, auth=(self.username, self.password), timeout=self.timeout)
+		except session.CUSTOM_ERRORS: return kodi_utils.notification('timeout: %s' % __name__)
+		if not response.ok: kodi_utils.logger('', f"{__name__}, {response.reason}\n{response.url}")
+		try: return response.json()
 		except: return response.text
 
 	def account_info(self):
 		from modules.dom_parser import parseDOM
 		account_info, usage_info = None, None
 		try:
-			account_html = self._get(self.account_link)
+			account_html = self.api('get', self.account_link)
 			account_info = parseDOM(account_html, 'form', attrs={'id': 'accountForm'})
 			account_info = parseDOM(account_info, 'td')[0:11][1::3]
 		except: pass
 		try:
-			usage_html = self._get(self.usage_link)
+			usage_html = self.api('get', self.usage_link)
 			usage_info = parseDOM(usage_html, 'div', attrs={'class': 'table-responsive'})
 			usage_info = parseDOM(usage_info, 'td')[0:11][1::3]
 			usage_info[1] = re.sub(r'[</].+?>', '', usage_info[1])
@@ -58,12 +60,11 @@ class EasyNewsAPI:
 		return account_info, usage_info
 
 	def unrestrict_link(self, url_dl):
-		with session.get(url_dl, auth=(self.username, self.password), stream=True, timeout=timeout*3) as response:
-			if response.ok: chunk = next(response.iter_content(chunk_size=1048576), b'')
-			else: chunk = b''
-		if len(chunk): resolved_link = response.url # direct/unrestricted link
-		else: resolved_link = None
-		return resolved_link
+		with session.request('get', url_dl, auth=(self.username, self.password), stream=True, timeout=self.timeout*3) as response:
+			if not response.ok: return kodi_utils.logger('unrestrict_link error', f"{__name__}, {response.reason}\n{response.url}")
+			chunk = next(response.iter_content(chunk_size=1048576), b'')
+		if len(chunk): return response.url
+		return None
 
 	def search(self, query, expiration=48):
 		params = {'gps': query, 'safeO': self.moderation}
@@ -72,7 +73,7 @@ class EasyNewsAPI:
 
 	def _process_search(self, params):
 		params.update(search_params())
-		results = self._get(self.base_url + self.search_link, params)
+		results = self.api('get', base_url + self.search_link, params=params)
 		if not isinstance(results.get('data'), list): return []
 		args = [results.get(i) for i in ('data', 'downURL', 'dlFarm', 'dlPort')]
 		return self._process_files(*args)

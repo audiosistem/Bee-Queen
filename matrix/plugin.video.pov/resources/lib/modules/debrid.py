@@ -123,8 +123,8 @@ class Source:
 				url = EasyNewsAPI().unrestrict_link(self.url_dl)
 				if not direct_debrid_link: url += '|seekable=0'
 			elif self.scrape_provider == 'aiostreams':
-				from debrids.aiostreams import unrestrict_link
-				url = unrestrict_link(self.url_dl)
+				from debrids.aiostreams import Debrid
+				url = Debrid().unrestrict_link(self.url_dl)
 			else: url = self.url_dl
 			return url
 		except Exception as e:
@@ -176,15 +176,12 @@ class Source:
 	def aio_add_to_cloud(self):
 		if not confirm_dialog(text=ls(32687) % self.debrid.upper()): return
 		if not getattr(self, 'url_dl', False): return kodi_utils.notify_error()
-		import requests
-		base_url, *headers = self.url_dl.rsplit('|', 1)
-		try: req_headers = requests.structures.CaseInsensitiveDict(kodi_utils.parse_qsl(*headers))
-		except: req_headers = requests.structures.CaseInsensitiveDict()
-		if 'User-Agent' not in req_headers: req_headers['User-Agent'] = kodi_utils.xbmc.getUserAgent()
-		response = requests.get(base_url, headers=req_headers, stream=True, timeout=10)
-		if not response.ok: return kodi_utils.notify_error()
-		chunk = next(response.iter_content(chunk_size=1048576), b'')
-		if len(chunk): kodi_utils.notify_success()
+		show_busy_dialog()
+		from debrids.aiostreams import Debrid
+		api = Debrid()
+		result = api.create_transfer(self.url_dl)
+		hide_busy_dialog()
+		if result: kodi_utils.notify_success()
 		else: kodi_utils.notify_failed()
 
 	def unchecked_magnet_status(self):

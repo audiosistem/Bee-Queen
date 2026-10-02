@@ -1,12 +1,12 @@
 import re
-import requests
 from modules import kodi_utils
+from session import session, HTTPAdapter, Retry
 # logger = kodi_utils.logger
 
-base_url = 'https://offcloud.com/api/'
-custom_errors = requests.exceptions.ConnectionError, requests.exceptions.Timeout
-session = requests.Session()
-session.mount('https://offcloud.com', requests.adapters.HTTPAdapter(max_retries=1))
+base_url = 'https://offcloud.com'
+timeout = 10
+retry = Retry(total=None, status=1, status_forcelist=(429,), backoff_factor=1)
+session.mount(base_url, HTTPAdapter(max_retries=retry))
 
 class OffcloudAPI:
 	icon = 'offcloud.png'
@@ -15,20 +15,15 @@ class OffcloudAPI:
 	def __init__(self):
 		self.timeout = int(kodi_utils.get_setting('scrapers_timeout') or 10)
 		self.token = kodi_utils.get_setting('oc.token')
-		session.headers.update(self.headers())
 
-	def _request(self, method, path, params=None, data=None):
-		url = base_url + path
-		try: response = session.request(method, url, params=params, json=data, timeout=self.timeout)
-		except custom_errors: return kodi_utils.notification('%s timeout' % __name__)
-		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
-		return response.json() if 'json' in response.headers.get('Content-Type', '') else response
-
-	def _get(self, path, params=None):
-		return self._request('get', path, params=params)
-
-	def _post(self, path, data=None):
-		return self._request('post', path, data=data)
+	def api(self, method, path, **kwargs):
+		headers = self.headers()
+		try: response = session.request(method, base_url + path, **kwargs, headers=headers, timeout=self.timeout)
+		except session.CUSTOM_ERRORS: return kodi_utils.notification('timeout: %s' % __name__)
+		if not response.ok: kodi_utils.logger('', f"{__name__}, {response.reason}\n{response.url}")
+		if bool(response.content) and 'json' in response.headers.get('Content-Type', ''):
+			return response.json()
+		return response.text
 
 	def headers(self):
 		return {'Authorization': 'Bearer %s' % self.token}
@@ -43,27 +38,24 @@ class OffcloudAPI:
 		return days
 
 	def account_info(self):
-		url = 'account/info'
-		result = self._get(url)
-		return result
+		path = '/api/account/info'
+		return self.api('get', path)
 
 	def user_cloud(self):
-		url = 'cloud/history'
-		return self._get(url)
+		path = '/api/cloud/history'
+		return self.api('get', path)
 
 	def user_folder(self, folder_id):
-		url = folder_id
-		return self.torrent_info(url)
+		return self.torrent_info(folder_id)
 
 	def torrent_info(self, request_id):
+		path = '/api/cloud/explore/%s' % request_id
 		params = {'format': 'detailed'}
-		url = 'cloud/explore/%s' % request_id
-		result = self._get(url, params=params)
-		return result
+		return self.api('get', path, params=params)
 
 	def delete_torrent(self, request_id):
-		url = 'cloud/remove/%s' % request_id
-		result = self._get(url)
+		path = '/api/cloud/remove/%s' % request_id
+		result = self.api('get', path)
 		return True if result is not None and result['success'] else False
 
 	def unrestrict_link(self, link):
@@ -72,25 +64,20 @@ class OffcloudAPI:
 	def check_cache(self, hashes):
 		pattern = re.compile(r'^[a-f0-9]{40}$', re.I)
 		hashes = [(i, f"magnet:?xt=urn:btih:{i}") for i in hashes if pattern.match(i)]
-		url = 'cache/info'
+		path = '/api/cache/info'
 		data = {'urls': [i[1] for i in hashes]}
-		result = self._post(url, data=data)
+		result = self.api('post', path, json=data)
 		return [h for h, i in zip((i[0] for i in hashes), result) if i['cached']]
 
 	def instant_transfer(self, magnet):
-		url = 'cache/download'
+		path = '/api/cache/download'
 		data = {'url': magnet}
-		result = self._post(url, data)
-		return result
-
-	def add_magnet(self, magnet):
-		url = 'cloud'
-		data = {'url': magnet}
-		result = self._post(url, data=data)
-		return result
+		return self.api('post', path, json=data)
 
 	def create_transfer(self, magnet):
-		result = self.add_magnet(magnet)
+		path = '/api/cloud'
+		data = {'url': magnet}
+		result = self.api('post', path, json=data)
 		return result.get('requestId', '')
 
 	def parse_magnet_pack(self, magnet_url, info_hash):

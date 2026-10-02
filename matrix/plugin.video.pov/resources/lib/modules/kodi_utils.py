@@ -490,20 +490,20 @@ def toggle_language_invoker():
 
 def upload_logfile():
 	# Thanks 123Venom
-	log_file, url = 'special://logpath/kodi.log', 'https://paste.kodi.tv/'
+	log_file, url = 'special://logpath/kodi.log', 'https://paste.kodi.tv'
 	if not path_exists(log_file): return ok_dialog(text='Error. Log File Not Found.')
 	from platform import python_version
 	text = f"Kodi: {get_infolabel('System.BuildVersion')}[CR]Python: {python_version()}[CR]{local_string(32676)}"
 	if not confirm_dialog(text=text, top_space=False): return
 	show_busy_dialog()
-	import requests
 	try:
-		with open_file(log_file) as f: text = f.readBytes().decode('utf-8-sig')
-		response = requests.post('%s%s' % (url, 'documents'), data=text, timeout=10.0).json()
-		if 'key' in response: ok_dialog(text=url + response['key'])
-		else: ok_dialog(text='Error. Log Upload Failed')
-	except: notify_error()
-	hide_busy_dialog()
+		request = __import__('urllib3').request
+		with open_file(log_file) as file: response = request('post', f"{url}/documents", body=file, timeout=10)
+		result = response.json()
+	except: return notify_error()
+	finally: hide_busy_dialog()
+	if 'key' in result: ok_dialog(text=f"{url}/{result['key']}")
+	else: ok_dialog(text='Error. Log Upload Failed')
 
 def timeIt(func):
 	# Thanks 123Venom

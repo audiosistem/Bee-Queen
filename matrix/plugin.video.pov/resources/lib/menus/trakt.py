@@ -34,8 +34,8 @@ def trakt_account_info():
 	try:
 		kodi_utils.show_busy_dialog()
 		db_status = integrity_check()
-		account_info = trakt_api.call_trakt('users/settings')
-		stats = trakt_api.call_trakt('users/%s/stats' % account_info['user']['ids']['slug'])
+		account_info = trakt_api.call_trakt('/users/settings')
+		stats = trakt_api.call_trakt('/users/%s/stats' % account_info['user']['ids']['slug'])
 		if not stats: stats = dummy_stats()
 		username = account_info['user']['username']
 		timezone = account_info['account']['timezone']

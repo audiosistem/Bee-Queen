@@ -1,11 +1,46 @@
-import requests
 from modules import kodi_utils
+from session import session, HTTPAdapter, Retry
 # logger = kodi_utils.logger
 
-base_url = 'https://api.alldebrid.com/'
-custom_errors = requests.exceptions.ConnectionError, requests.exceptions.Timeout
-session = requests.Session()
-session.mount('https://api.alldebrid.com', requests.adapters.HTTPAdapter(max_retries=1))
+base_url = 'https://api.alldebrid.com'
+timeout, check_timeout = 10, (3.05, 6.05)
+retry = Retry(total=None, status=1, status_forcelist=(429,), backoff_factor=1)
+session.mount(base_url, HTTPAdapter(max_retries=retry))
+
+def aio_check_cache(imdb, season, episode):
+	headers, url = {'x-aiostreams-user-data': (
+		'ewogICJzZXJ2aWNlcyI6IFsKICAgIHsKICAgICAgImlkIjogImFsbGRlYnJpZCIsCiAgICAgICJlbmFi'
+		'bGVkIjogdHJ1ZSwKICAgICAgImNyZWRlbnRpYWxzIjogeyJhcGlLZXkiOiAic3RhdGljRGVtb0FwaWtl'
+		'eVByZW0ifQogICAgfQogIF0sCiAgInByZXNldHMiOiBbCiAgICB7CiAgICAgICJ0eXBlIjogIm1lZGlh'
+		'ZnVzaW9uIiwKICAgICAgImluc3RhbmNlSWQiOiAiNWI4IiwKICAgICAgImVuYWJsZWQiOiB0cnVlLAog'
+		'ICAgICAib3B0aW9ucyI6IHsKICAgICAgICAibmFtZSI6ICJNZWRpYUZ1c2lvbiIsCiAgICAgICAgInRp'
+		'bWVvdXQiOiA2NTAwLAogICAgICAgICJyZXNvdXJjZXMiOiBbInN0cmVhbSJdLAogICAgICAgICJ1c2VD'
+		'YWNoZWRSZXN1bHRzT25seSI6IHRydWUsCiAgICAgICAgImVuYWJsZVdhdGNobGlzdENhdGFsb2dzIjog'
+		'ZmFsc2UsCiAgICAgICAgImRvd25sb2FkVmlhQnJvd3NlciI6IGZhbHNlLAogICAgICAgICJjb250cmli'
+		'dXRvclN0cmVhbXMiOiBmYWxzZSwKICAgICAgICAiY2VydGlmaWNhdGlvbkxldmVsc0ZpbHRlciI6IFtd'
+		'LAogICAgICAgICJudWRpdHlGaWx0ZXIiOiBbXSwKICAgICAgICAibWVkaWFUeXBlcyI6IFtdCiAgICAg'
+		'IH0KICAgIH0sCiAgICB7CiAgICAgICJ0eXBlIjogInN0cmVtdGhydVRvcnoiLAogICAgICAiaW5zdGFu'
+		'Y2VJZCI6ICI1NDgiLAogICAgICAiZW5hYmxlZCI6IHRydWUsCiAgICAgICJvcHRpb25zIjogewogICAg'
+		'ICAgICJuYW1lIjogIlN0cmVtVGhydSBUb3J6IiwKICAgICAgICAidGltZW91dCI6IDY1MDAsCiAgICAg'
+		'ICAgInJlc291cmNlcyI6IFsic3RyZWFtIl0sCiAgICAgICAgIm1lZGlhVHlwZXMiOiBbXSwKICAgICAg'
+		'ICAiaW5jbHVkZVAyUCI6IGZhbHNlLAogICAgICAgICJ1c2VNdWx0aXBsZUluc3RhbmNlcyI6IGZhbHNl'
+		'CiAgICAgIH0KICAgIH0KICBdLAogICJmb3JtYXR0ZXIiOiB7CiAgICAiaWQiOiAidG9ycmVudGlvIiwK'
+		'ICAgICJkZWZpbml0aW9uIjogewogICAgICAibmFtZSI6ICIiLAogICAgICAiZGVzY3JpcHRpb24iOiAi'
+		'IgogICAgfQogIH0sCiAgInNvcnRDcml0ZXJpYSI6IHsKICAgICJnbG9iYWwiOiBbXQogIH0sCiAgImRl'
+		'ZHVwbGljYXRvciI6IHsKICAgICJlbmFibGVkIjogZmFsc2UsCiAgICAia2V5cyI6IFsiaW5mb0hhc2gi'
+		'XSwKICAgICJtdWx0aUdyb3VwQmVoYXZpb3VyIjogImFnZ3Jlc3NpdmUiLAogICAgImNhY2hlZCI6ICJz'
+		'aW5nbGVfcmVzdWx0IiwKICAgICJ1bmNhY2hlZCI6ICJwZXJfc2VydmljZSIsCiAgICAicDJwIjogInNp'
+		'bmdsZV9yZXN1bHQiLAogICAgImV4Y2x1ZGVBZGRvbnMiOiBbXQogIH0sCiAgImV4Y2x1ZGVVbmNhY2hl'
+		'ZCI6IHRydWUKfQ=='
+	)}, 'https://aiostreams.fortheweak.cloud/api/v1/search'
+	if str(season).isdigit(): params = {'type': 'series', 'id': '%s:%s:%s' % (imdb, season, episode)}
+	else: params = {'type': 'movie', 'id': '%s' % imdb}
+	try:
+		response = session.request('get', url, params=params, headers=headers, timeout=check_timeout)
+		if not response.ok: raise Exception(response.reason)
+		files = response.json()['data']['results']
+		return [file['infoHash'] for file in files if file['cached'] and file.get('infoHash')]
+	except Exception as e: kodi_utils.logger('aio error', str(e))
 
 class AllDebridAPI:
 	icon = 'alldebrid.png'
@@ -26,22 +61,20 @@ class AllDebridAPI:
 	def __init__(self):
 		self.timeout = int(kodi_utils.get_setting('scrapers_timeout') or 10)
 		self.token = kodi_utils.get_setting('ad.token')
-		session.headers.update(self.headers())
 
-	def _request(self, method, path, params=None, data=None):
-		url = base_url + path
-		try: response = session.request(method, url, params=params, data=data, timeout=self.timeout)
-		except custom_errors: return kodi_utils.notification('%s timeout' % __name__)
-		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
-		response = response.json() if 'json' in response.headers.get('Content-Type', '') else response
-		if 'data' in response and response.get('status') == 'success': response = response['data']
+	def api(self, method, path, **kwargs):
+		headers = self.headers()
+		try: response = session.request(method, base_url + path, **kwargs, headers=headers, timeout=self.timeout)
+		except session.CUSTOM_ERRORS: return kodi_utils.notification('timeout: %s' % __name__)
+		if not response.ok: kodi_utils.logger('', f"{__name__}, {response.reason}\n{response.url}")
+		if bool(response.content) and 'json' in response.headers.get('Content-Type', ''):
+			return self._parse(response)
+		return response.text
+
+	def _parse(self, response):
+		response = response.json()
+		if 'data' in response and response.get('status') == 'success': return response['data']
 		return response
-
-	def _get(self, path, params=None):
-		return self._request('get', path, params=params)
-
-	def _post(self, path, data=None):
-		return self._request('post', path, data=data)
 
 	def headers(self):
 		return {'Authorization': 'Bearer %s' % self.token}
@@ -56,51 +89,47 @@ class AllDebridAPI:
 		return days
 
 	def account_info(self):
-		url = 'v4/user'
-		result = self._get(url)
-		return result
+		path = '/v4/user'
+		return self.api('get', path)
 
 	def downloads(self):
-		url = 'v4/user/history'
-		return self._get(url)
+		path = '/v4/user/history'
+		return self.api('get', path)
 
 	def user_cloud(self):
-		url = 'v4.1/magnet/status'
-		return self._get(url)
+		path = '/v4.1/magnet/status'
+		return self.api('get', path)
 
 	def user_folder(self, folder_id):
-		url = folder_id
-		return self.torrent_info(url)
+		return self.torrent_info(folder_id)
 
 	def torrent_info(self, transfer_id):
-		url = 'v4.1/magnet/status'
+		path = '/v4.1/magnet/status'
 		params = {'id': transfer_id}
-		result = self._get(url, params)
-		result = result['magnets']
-		return result
+		result = self.api('get', path, params=params)
+		return result['magnets']
 
 	def delete_torrent(self, transfer_id):
-		url = 'v4/magnet/delete'
+		path = '/v4/magnet/delete'
 		params = {'id': transfer_id}
-		result = self._get(url, params)
+		result = self.api('get', path, params=params)
 		return True if result is not None and 'error' not in result else False
 
 	def unrestrict_link(self, link):
-		url = 'v4/link/unlock'
+		path = '/v4/link/unlock'
 		params = {'link': link}
-		result = self._get(url, params)
-		try: return result['link']
-		except: return None
+		result = self.api('get', path, params=params)
+		return result['link']
 
 	def check_cache(self, hashes):
-		data = {'v4/magnets[]': hashes}
-		result = self._post('magnet/instant', data)
-		return result
+		path = '/v4/magnet/instant'
+		data = [('magnets[]', h) for h in hashes]
+		return self.api('post', path, data=data)
 
 	def create_transfer(self, magnet):
-		url = 'v4/magnet/upload'
+		path = '/v4/magnet/upload'
 		params = {'magnet': magnet}
-		result = self._get(url, params)
+		result = self.api('get', path, params=params)
 		result = result['magnets'][0]
 		return result.get('id', '')
 
@@ -166,39 +195,4 @@ class AllDebridAPI:
 			except: hash_cache_status_success = False
 		except: return False
 		return all((user_cloud_success, download_links_success, hoster_links_success, hash_cache_status_success))
-
-def aio_check_cache(imdb, season, episode):
-	if str(season).isdigit(): params = {'type': 'series', 'id': '%s:%s:%s' % (imdb, season, episode)}
-	else: params = {'type': 'movie', 'id': '%s' % imdb}
-	headers, url = {'x-aiostreams-user-data': (
-		'ewogICJzZXJ2aWNlcyI6IFsKICAgIHsKICAgICAgImlkIjogImFsbGRlYnJpZCIsCiAgICAgICJlbmFi'
-		'bGVkIjogdHJ1ZSwKICAgICAgImNyZWRlbnRpYWxzIjogeyJhcGlLZXkiOiAic3RhdGljRGVtb0FwaWtl'
-		'eVByZW0ifQogICAgfQogIF0sCiAgInByZXNldHMiOiBbCiAgICB7CiAgICAgICJ0eXBlIjogIm1lZGlh'
-		'ZnVzaW9uIiwKICAgICAgImluc3RhbmNlSWQiOiAiNWI4IiwKICAgICAgImVuYWJsZWQiOiB0cnVlLAog'
-		'ICAgICAib3B0aW9ucyI6IHsKICAgICAgICAibmFtZSI6ICJNZWRpYUZ1c2lvbiIsCiAgICAgICAgInRp'
-		'bWVvdXQiOiA2NTAwLAogICAgICAgICJyZXNvdXJjZXMiOiBbInN0cmVhbSJdLAogICAgICAgICJ1c2VD'
-		'YWNoZWRSZXN1bHRzT25seSI6IHRydWUsCiAgICAgICAgImVuYWJsZVdhdGNobGlzdENhdGFsb2dzIjog'
-		'ZmFsc2UsCiAgICAgICAgImRvd25sb2FkVmlhQnJvd3NlciI6IGZhbHNlLAogICAgICAgICJjb250cmli'
-		'dXRvclN0cmVhbXMiOiBmYWxzZSwKICAgICAgICAiY2VydGlmaWNhdGlvbkxldmVsc0ZpbHRlciI6IFtd'
-		'LAogICAgICAgICJudWRpdHlGaWx0ZXIiOiBbXSwKICAgICAgICAibWVkaWFUeXBlcyI6IFtdCiAgICAg'
-		'IH0KICAgIH0sCiAgICB7CiAgICAgICJ0eXBlIjogInN0cmVtdGhydVRvcnoiLAogICAgICAiaW5zdGFu'
-		'Y2VJZCI6ICI1NDgiLAogICAgICAiZW5hYmxlZCI6IHRydWUsCiAgICAgICJvcHRpb25zIjogewogICAg'
-		'ICAgICJuYW1lIjogIlN0cmVtVGhydSBUb3J6IiwKICAgICAgICAidGltZW91dCI6IDY1MDAsCiAgICAg'
-		'ICAgInJlc291cmNlcyI6IFsic3RyZWFtIl0sCiAgICAgICAgIm1lZGlhVHlwZXMiOiBbXSwKICAgICAg'
-		'ICAiaW5jbHVkZVAyUCI6IGZhbHNlLAogICAgICAgICJ1c2VNdWx0aXBsZUluc3RhbmNlcyI6IGZhbHNl'
-		'CiAgICAgIH0KICAgIH0KICBdLAogICJmb3JtYXR0ZXIiOiB7CiAgICAiaWQiOiAidG9ycmVudGlvIiwK'
-		'ICAgICJkZWZpbml0aW9uIjogewogICAgICAibmFtZSI6ICIiLAogICAgICAiZGVzY3JpcHRpb24iOiAi'
-		'IgogICAgfQogIH0sCiAgInNvcnRDcml0ZXJpYSI6IHsKICAgICJnbG9iYWwiOiBbXQogIH0sCiAgImRl'
-		'ZHVwbGljYXRvciI6IHsKICAgICJlbmFibGVkIjogZmFsc2UsCiAgICAia2V5cyI6IFsiaW5mb0hhc2gi'
-		'XSwKICAgICJtdWx0aUdyb3VwQmVoYXZpb3VyIjogImFnZ3Jlc3NpdmUiLAogICAgImNhY2hlZCI6ICJz'
-		'aW5nbGVfcmVzdWx0IiwKICAgICJ1bmNhY2hlZCI6ICJwZXJfc2VydmljZSIsCiAgICAicDJwIjogInNp'
-		'bmdsZV9yZXN1bHQiLAogICAgImV4Y2x1ZGVBZGRvbnMiOiBbXQogIH0sCiAgImV4Y2x1ZGVVbmNhY2hl'
-		'ZCI6IHRydWUKfQ=='
-	)}, 'https://aiostreams.fortheweak.cloud/api/v1/search'
-	try:
-		results = requests.get(url, params=params, headers=headers, timeout=7.05)
-		if not results.ok: results.raise_for_status()
-		files = results.json()['data']['results']
-		return [file['infoHash'] for file in files if file['cached'] and file.get('infoHash')]
-	except Exception as e: kodi_utils.logger('aio error', str(e))
 

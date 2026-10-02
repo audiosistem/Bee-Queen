@@ -135,13 +135,12 @@ def upload_LogFile():
 	if not existsPath(log_file):
 		return notification(message='Log File not found, likely logging is not enabled.')
 	try:
-		import requests
 		from magneto.modules.control import addonVersion, selectDialog
-		f = open(log_file, 'r', encoding='utf-8', errors='ignore')
-		text = f.read()
-		f.close()
-		UserAgent = 'FenomScrpaers %s' % addonVersion()
-		response = requests.post(url + 'documents', data=text.encode('utf-8', errors='ignore'), headers={'User-Agent': UserAgent})
+		from magneto.modules.source_utils import copy2clip
+		headers = {'User-Agent': 'FenomScrpaers %s' % addonVersion()}
+		request = __import__('urllib3').request
+		with open(log_file, 'r', encoding='utf-8-sig', errors='ignore') as file:
+			response = request('post', url + 'documents', body=file, headers=headers, timeout=10)
 		# log('log_response: ' + str(response))
 		if 'key' in response.json():
 			result = url + response.json()['key']
@@ -152,15 +151,13 @@ def upload_LogFile():
 			list = [('[COLOR %s]url:[/COLOR]  %s' % (highlight_color, str(result)), str(result))]
 			if supported_platform: list += [('[COLOR %s]  -- Copy url To Clipboard[/COLOR]' % highlight_color, ' ')]
 			select = selectDialog([i[0] for i in list], "FenomScrapers log file uploaded to:")
-			if 'Copy url To Clipboard' in list[select][0]:
-				from magneto.modules.source_utils import copy2clip
-				copy2clip(list[select - 1][1])
+			if 'Copy url To Clipboard' in list[select][0]: copy2clip(list[select - 1][1])
 		elif 'message' in response.json():
 			notification(message='FenomScrapers Log upload failed: %s' % str(response.json()['message']))
 			log('FenomScrapers Log upload failed: %s' % str(response.json()['message']), level=LOGERROR)
 		else:
 			notification(message='FenomScrapers Log upload failed')
-			log('FenomScrapers Log upload failed: %s' % response.text, level=LOGERROR)
+			log('FenomScrapers Log upload failed: %s' % response.data.decode(errors='replace'), level=LOGERROR)
 	except:
 		error('FenomScrapers log upload failed')
 		notification(message='pastebin post failed: See log for more info')

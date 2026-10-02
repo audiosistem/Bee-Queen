@@ -28,8 +28,7 @@ def clear_streams():
 		dbcur.execute("""SELECT COUNT(*) FROM files""")
 		total = dbcur.fetchone()[0]
 		dbcur.execute("""
-			SELECT idFile, idPath FROM files
-			WHERE lastPlayed >= ? AND lastPlayed IS NOT NULL AND strFilename IS NOT NULL
+			SELECT idFile, idPath FROM files WHERE lastPlayed >= ? OR lastPlayed IS NULL
 		""", (str(back_date),))
 		result = dbcur.fetchall()
 		expired = total - len(result)

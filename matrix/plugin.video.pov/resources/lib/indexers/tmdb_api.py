@@ -1,28 +1,35 @@
-import requests
 from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
 from caches.main_cache import cache_object
 from caches.meta_cache import cache_function
 from modules import kodi_utils, settings
 from modules.utils import paginate_list, sort_for_article, jsondate_to_datetime, get_datetime, TaskPool
+from session import session, HTTPAdapter, Retry
 
 get_setting, set_setting, logger = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.logger
 EXPIRES_4_HOURS, EXPIRES_2_DAYS, EXPIRES_1_WEEK, EXPIRES_1_MONTH = 4, 48, 168, 672
 READ_TOKEN = kodi_utils.addon().getSetting('tmdb_read_token')
 tmdb_image_base = 'https://image.tmdb.org/t/p/%s%s'
 base_url = 'https://api.themoviedb.org'
-timeout = 3.05
-session = requests.Session()
-retry = requests.adapters.Retry(total=None, status=1, status_forcelist=(429, 502, 503, 504))
-session.mount('https://api.themoviedb.org', requests.adapters.HTTPAdapter(pool_maxsize=100, max_retries=retry))
+timeout = 5
+retry = Retry(total=None, status=1, status_forcelist=(429, 502, 503, 504), backoff_factor=1)
+session.mount(base_url, HTTPAdapter(pool_maxsize=100, max_retries=retry))
 
 def get_tmdb(url):
+	headers = {'Authorization': 'Bearer %s' % READ_TOKEN}
 	try:
-		response = session.get(url, headers={'Authorization': 'Bearer %s' % READ_TOKEN}, timeout=timeout)
-		result = response.json() if 'json' in response.headers.get('Content-Type', '') else response.text
-		if not response.ok: response.raise_for_status()
+		response = session.request(
+			'get',                  # requests.Session
+			base_url + url,         # unexpectedly performs better than low-level
+			headers=headers,        # urllib3.HTTPSConnectionPool
+			timeout=timeout         # when threaded
+		)
+		if 'json' in response.headers.get('Content-Type', ''):
+			result = response.json()
+		else: result = response.text
+		if not response.ok: raise Exception(f"{response.reason}, {response.url}")
 		return result
-	except requests.RequestException as e:
+	except Exception as e:
 		logger('tmdb error', str(e))
 
 def tmdb_gender_dict():
@@ -30,41 +37,40 @@ def tmdb_gender_dict():
 
 def tmdb_keyword_id(query):
 	string = 'tmdb_keyword_id_%s' % query
-	url = '%s/3/search/keyword?query=%s' % (base_url, query)
+	url = '/3/search/keyword?query=%s' % query
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
 
 def tmdb_company_id(query):
 	string = 'tmdb_company_id_%s' % query
-	url = '%s/3/search/company?query=%s' % (base_url, query)
+	url = '/3/search/company?query=%s' % query
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
 
 def tmdb_media_images(mediatype, tmdb_id):
 	mediatype = mediatype.replace('movies', 'movie')
 	string = 'tmdb_media_images_%s_%s' % (mediatype, tmdb_id)
-	url = '%s/3/%s/%s/images' % (base_url, mediatype, tmdb_id)
+	url = '/3/%s/%s/images' % (mediatype, tmdb_id)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
 
 def tmdb_media_videos(mediatype, tmdb_id):
 	if mediatype in ('tvshow', 'tvshows'): mediatype = 'tv'
 	else: mediatype = mediatype.replace('movies', 'movie')
 	string = 'tmdb_media_videos_%s_%s' % (mediatype, tmdb_id)
-	url = '%s/3/%s/%s/videos' % (base_url, mediatype, tmdb_id)
+	url = '/3/%s/%s/videos' % (mediatype, tmdb_id)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
 
 def tmdb_media_discover(query, page_no):
 	string = query % page_no
-	if base_url in query: url = query % page_no
-	else: url = '%s/3/%s' % (base_url, query % page_no)
+	url = '/3/%s' % (query % page_no)
 	return cache_object(get_tmdb, string, url)
 
 def tmdb_movies_collection(collection_id):
 	string = 'tmdb_movies_collection_%s' % collection_id
-	url = '%s/3/collection/%s?language=en-US' % (base_url, collection_id)
+	url = '/3/collection/%s?language=en-US' % collection_id
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
 
 def tmdb_movies_title_year(title, year=None):
 	string = 'tmdb_movies_title_year_%s' % title
-	url = '%s/3/search/movie?language=en-US&query=%s' % (base_url, title)
+	url = '/3/search/movie?language=en-US&query=%s' % title
 	if year:
 		string += '_%s' % year
 		url += '&year=%s' % year
@@ -78,81 +84,81 @@ def tmdb_oscar_winners(page_no):
 
 def tmdb_movies_trending(page_no):
 	string = 'tmdb_movies_trending_%s' % page_no
-	url = '%s/3/trending/movie/week?language=en-US&page=%s' % (base_url, page_no)
+	url = '/3/trending/movie/week?language=en-US&region=US&page=%s' % page_no
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_movies_popular(page_no):
 	string = 'tmdb_movies_popular_%s' % page_no
-	url = '%s/3/discover/movie?with_original_language=en&language=en-US&region=US&page=%s' % (base_url, page_no)
+	url = '/3/discover/movie?with_original_language=en&language=en-US&region=US&page=%s' % page_no
 	url += '&sort_by=popularity.desc'
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_movies_blockbusters(page_no):
 	string = 'tmdb_movies_blockbusters_%s' % page_no
-	url = '%s/3/discover/movie?language=en-US&region=US&page=%s&sort_by=revenue.desc' % (base_url, page_no)
+	url = '/3/discover/movie?language=en-US&region=US&page=%s&sort_by=revenue.desc' % page_no
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_movies_premieres(page_no):
 	current_date, previous_date = get_dates(31, reverse=True)
 	string = 'tmdb_movies_premieres_%s' % page_no
-	url = '%s/3/discover/movie?language=en-US&region=US&page=%s' % (base_url, page_no)
+	url = '/3/discover/movie?language=en-US&region=US&page=%s' % page_no
 	url += '&with_release_type=1|3|2&release_date.gte=%s&release_date.lte=%s' % (previous_date, current_date)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_movies_latest_releases(page_no):
 	current_date, previous_date = get_dates(31, reverse=True)
 	string = 'tmdb_movies_latest_releases_%s' % page_no
-	url = '%s/3/discover/movie?language=en-US&region=US&page=%s' % (base_url, page_no)
+	url = '/3/discover/movie?language=en-US&region=US&page=%s' % page_no
 	url += '&with_release_type=4|5&release_date.gte=%s&release_date.lte=%s' % (previous_date, current_date)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_movies_upcoming(page_no):
 	current_date, future_date = get_dates(31, reverse=False)
 	string = 'tmdb_movies_upcoming_%s' % page_no
-	url = '%s/3/discover/movie?language=en-US&region=US&page=%s' % (base_url, page_no)
+	url = '/3/discover/movie?language=en-US&region=US&page=%s' % page_no
 	url += '&with_release_type=3|2|1&release_date.gte=%s&release_date.lte=%s' % (current_date, future_date)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_movies_genres(genre_id, page_no):
 	string = 'tmdb_movies_genres_%s_%s' % (genre_id, page_no)
-	url = '%s/3/discover/movie?language=en-US&region=US&page=%s&with_genres=%s&sort_by=popularity.desc' % (base_url, page_no, genre_id)
+	url = '/3/discover/movie?language=en-US&region=US&page=%s&with_genres=%s&sort_by=popularity.desc' % (page_no, genre_id)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_movies_year(year, page_no):
 	string = 'tmdb_movies_year_%s_%s' % (year, page_no)
-	url = '%s/3/discover/movie?language=en-US&region=US&page=%s' % (base_url, page_no)
+	url = '/3/discover/movie?language=en-US&region=US&page=%s' % page_no
 	url += '&sort_by=popularity.desc&certification_country=US&primary_release_year=%s' % year
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_movies_networks(network_id, page_no):
 	string = 'tmdb_movies_networks_%s_%s' % (network_id, page_no)
-	url = '%s/3/discover/movie?language=en-US&region=US&page=%s' % (base_url, page_no)
+	url = '/3/discover/movie?language=en-US&region=US&page=%s' % page_no
 	url += '&sort_by=popularity.desc&certification_country=US&with_companies=%s' % network_id
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_movies_similar(tmdb_id, page_no):
 	string = 'tmdb_movies_similar_%s_%s' % (tmdb_id, page_no)
-	url = '%s/3/movie/%s/similar?language=en-US&page=%s' % (base_url, tmdb_id, page_no)
+	url = '/3/movie/%s/similar?language=en-US&page=%s' % (tmdb_id, page_no)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_movies_recommendations(tmdb_id, page_no):
 	string = 'tmdb_movies_recommendations_%s_%s' % (tmdb_id, page_no)
-	url = '%s/3/movie/%s/recommendations?language=en-US&page=%s' % (base_url, tmdb_id, page_no)
+	url = '/3/movie/%s/recommendations?language=en-US&page=%s' % (tmdb_id, page_no)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_movies_search(query, page_no):
 	string = 'tmdb_movies_search_%s_%s' % (query, page_no)
-	url = '%s/3/search/movie?language=en-US&query=%s&page=%s' % (base_url, query, page_no)
+	url = '/3/search/movie?language=en-US&query=%s&page=%s' % (query, page_no)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_4_HOURS)
 
 def tmdb_movies_search_collections(query, page_no):
 	string = 'tmdb_movies_search_collections_%s_%s' % (query, page_no)
-	url = '%s/3/search/collection?language=en-US&query=%s&page=%s' % (base_url, query, page_no)
+	url = '/3/search/collection?language=en-US&query=%s&page=%s' % (query, page_no)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
 
 def tmdb_tv_title_year(title, year=None):
 	string = 'tmdb_tv_title_year_%s' % title
-	url = '%s/3/search/tv?query=%s&language=en-US' % (base_url, title)
+	url = '/3/search/tv?query=%s&language=en-US' % title
 	if year:
 		string += '_%s' % year
 		url += '&first_air_date_year=%s' % year
@@ -160,124 +166,124 @@ def tmdb_tv_title_year(title, year=None):
 
 def tmdb_tv_trending(page_no):
 	string = 'tmdb_tv_trending_%s' % page_no
-	url = '%s/3/trending/tv/week?language=en-US&page=%s' % (base_url, page_no)
+	url = '/3/trending/tv/week?language=en-US&region=US&page=%s' % page_no
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_tv_popular(page_no):
 	string = 'tmdb_tv_popular_%s' % page_no
-	url = '%s/3/discover/tv?with_original_language=en&language=en-US&region=US&page=%s' % (base_url, page_no)
+	url = '/3/discover/tv?with_original_language=en&language=en-US&region=US&page=%s' % page_no
 	url += '&sort_by=popularity.desc&without_genres=10763,10767'
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_tv_premieres(page_no):
 	current_date, previous_date = get_dates(31, reverse=True)
 	string = 'tmdb_tv_premieres_%s' % page_no
-	url = '%s/3/discover/tv?with_original_language=en&language=en-US&region=US&page=%s' % (base_url, page_no)
+	url = '/3/discover/tv?with_original_language=en&language=en-US&region=US&page=%s' % page_no
 	url += '&sort_by=popularity.desc&first_air_date.gte=%s&first_air_date.lte=%s' % (previous_date, current_date)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_tv_upcoming(page_no):
 	current_date, future_date = get_dates(31, reverse=False)
 	string = 'tmdb_tv_upcoming_%s' % page_no
-	url = '%s/3/discover/tv?with_original_language=en&language=en-US&region=US&page=%s' % (base_url, page_no)
+	url = '/3/discover/tv?with_original_language=en&language=en-US&region=US&page=%s' % page_no
 	url += '&sort_by=popularity.desc&first_air_date.gte=%s&first_air_date.lte=%s' % (current_date, future_date)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_tv_genres(genre_id, page_no):
 	string = 'tmdb_tv_genres_%s_%s' % (genre_id, page_no)
-	url = '%s/3/discover/tv?page=%s' % (base_url, page_no)
+	url = '/3/discover/tv?page=%s' % page_no
 	url += '&with_genres=%s&sort_by=popularity.desc&include_null_first_air_dates=false' % genre_id
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_tv_year(year, page_no):
 	string = 'tmdb_tv_year_%s_%s' % (year, page_no)
-	url = '%s/3/discover/tv?language=en-US&region=US&page=%s' % (base_url, page_no)
+	url = '/3/discover/tv?language=en-US&region=US&page=%s' % page_no
 	url += '&sort_by=popularity.desc&include_null_first_air_dates=false&first_air_date_year=%s' % year
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_tv_networks(network_id, page_no):
 	string = 'tmdb_tv_networks_%s_%s' % (network_id, page_no)
-	url = '%s/3/discover/tv?language=en-US&region=US&page=%s' % (base_url, page_no)
+	url = '/3/discover/tv?language=en-US&region=US&page=%s' % page_no
 	url += '&sort_by=popularity.desc&include_null_first_air_dates=false&with_networks=%s' % network_id
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_tv_similar(tmdb_id, page_no):
 	string = 'tmdb_tv_similar_%s_%s' % (tmdb_id, page_no)
-	url = '%s/3/tv/%s/similar?language=en-US&page=%s' % (base_url, tmdb_id, page_no)
+	url = '/3/tv/%s/similar?language=en-US&page=%s' % (tmdb_id, page_no)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_tv_recommendations(tmdb_id, page_no):
 	string = 'tmdb_tv_recommendations_%s_%s' % (tmdb_id, page_no)
-	url = '%s/3/tv/%s/recommendations?language=en-US&page=%s' % (base_url, tmdb_id, page_no)
+	url = '/3/tv/%s/recommendations?language=en-US&page=%s' % (tmdb_id, page_no)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_tv_search(query, page_no):
 	string = 'tmdb_tv_search_%s_%s' % (query, page_no)
-	url = '%s/3/search/tv?language=en-US&query=%s&page=%s' % (base_url, query, page_no)
+	url = '/3/search/tv?language=en-US&query=%s&page=%s' % (query, page_no)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_4_HOURS)
 
 def tmdb_moviesanime_popular(page_no):
 	string = 'tmdb_moviesanime_popular_%s' % page_no
-	url = '%s/3/discover/movie?page=%s&with_keywords=%s&sort_by=popularity.desc' % (base_url, page_no, '210024')
+	url = '/3/discover/movie?page=%s&with_keywords=%s&sort_by=popularity.desc' % (page_no, '210024')
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_moviesanime_latest_releases(page_no):
 	current_date, previous_date = get_dates(181, reverse=True)
 	string = 'tmdb_moviesanime_latest_releases_%s' % page_no
-	url = '%s/3/discover/movie?page=%s&with_keywords=%s&with_release_type=4|5' % (base_url, page_no, '210024')
+	url = '/3/discover/movie?page=%s&with_keywords=%s&with_release_type=4|5' % (page_no, '210024')
 	url += '&sort_by=primary_release_date.desc&release_date.gte=%s&release_date.lte=%s' % (previous_date, current_date)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_moviesanime_genres(genre_id, page_no):
 	string = 'tmdb_moviesanime_genres_%s_%s' % (genre_id, page_no)
-	url = '%s/3/discover/movie?page=%s&with_keywords=%s&with_genres=%s&sort_by=popularity.desc' % (base_url, page_no, '210024', genre_id)
+	url = '/3/discover/movie?page=%s&with_keywords=%s&with_genres=%s&sort_by=popularity.desc' % (page_no, '210024', genre_id)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_moviesanime_year(year, page_no):
 	string = 'tmdb_moviesanime_year_%s_%s' % (year, page_no)
-	url = '%s/3/discover/movie?page=%s&with_keywords=%s' % (base_url, page_no, '210024')
+	url = '/3/discover/movie?page=%s&with_keywords=%s' % (page_no, '210024')
 	url += '&sort_by=popularity.desc&certification_country=US&primary_release_year=%s' % year
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_tvanime_popular(page_no):
 	string = 'tmdb_tvanime_popular_%s' % page_no
-	url = '%s/3/discover/tv?page=%s&with_keywords=%s&sort_by=popularity.desc' % (base_url, page_no, '210024')
+	url = '/3/discover/tv?page=%s&with_keywords=%s&sort_by=popularity.desc' % (page_no, '210024')
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_tvanime_premieres(page_no):
 	current_date, previous_date = get_dates(181, reverse=True)
 	string = 'tmdb_tvanime_premieres_%s' % page_no
-	url = '%s/3/discover/tv?page=%s&with_keywords=%s' % (base_url, page_no, '210024')
+	url = '/3/discover/tv?page=%s&with_keywords=%s' % (page_no, '210024')
 	url += '&sort_by=first_air_date.desc&first_air_date.gte=%s&first_air_date.lte=%s' % (previous_date, current_date)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_tvanime_genres(genre_id, page_no):
 	string = 'tmdb_tvanime_genres_%s_%s' % (genre_id, page_no)
-	url = '%s/3/discover/tv?page=%s&with_keywords=%s' % (base_url, page_no, '210024')
+	url = '/3/discover/tv?page=%s&with_keywords=%s' % (page_no, '210024')
 	url += '&sort_by=popularity.desc&include_null_first_air_dates=false&with_genres=%s' % genre_id
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_tvanime_year(year, page_no):
 	string = 'tmdb_tvanime_year_%s_%s' % (year, page_no)
-	url = '%s/3/discover/tv?page=%s&with_keywords=%s' % (base_url, page_no, '210024')
+	url = '/3/discover/tv?page=%s&with_keywords=%s' % (page_no, '210024')
 	url += '&sort_by=popularity.desc&include_null_first_air_dates=false&first_air_date_year=%s' % year
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_popular_people(page_no):
 	string = 'tmdb_popular_people_%s' % page_no
-	url = '%s/3/person/popular?language=en-US&page=%s' % (base_url, page_no)
+	url = '/3/person/popular?language=en-US&page=%s' % page_no
 	return cache_object(get_tmdb, string, url)
 
 def tmdb_people_full_info(actor_id, language=None):
 	if not language: language = settings.get_language()
 	people_append = 'external_ids,combined_credits,images,tagged_images'
 	string = 'tmdb_people_full_info_%s_%s' % (actor_id, language)
-	url = '%s/3/person/%s?language=%s&append_to_response=%s' % (base_url, actor_id, language, people_append)
+	url = '/3/person/%s?language=%s&append_to_response=%s' % (actor_id, language, people_append)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
 
 def tmdb_people_info(query):
 	string = 'tmdb_people_info_%s' % query
-	url = '%s/3/search/person?language=en-US&query=%s' % (base_url, query)
+	url = '/3/search/person?language=en-US&query=%s' % query
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_4_HOURS)['results']
 
 def get_dates(days, reverse=True):
@@ -293,7 +299,7 @@ def tmdb_image_params(language):
 def movie_details(tmdb_id, language):
 	movies_append = 'external_ids,videos,credits,release_dates,alternative_titles,translations,images'
 	try:
-		url = '%s/3/movie/%s?language=%s&append_to_response=%s' % (base_url, tmdb_id, language, movies_append)
+		url = '/3/movie/%s?language=%s&append_to_response=%s' % (tmdb_id, language, movies_append)
 		if language not in 'en,en-US': url += '&include_image_language=%s' % tmdb_image_params(language)
 		return get_tmdb(url)
 	except: return None
@@ -301,21 +307,21 @@ def movie_details(tmdb_id, language):
 def tvshow_details(tmdb_id, language):
 	tvshows_append = 'external_ids,videos,credits,content_ratings,alternative_titles,translations,images'
 	try:
-		url = '%s/3/tv/%s?language=%s&append_to_response=%s' % (base_url, tmdb_id, language, tvshows_append)
+		url = '/3/tv/%s?language=%s&append_to_response=%s' % (tmdb_id, language, tvshows_append)
 		if language not in 'en,en-US': url += '&include_image_language=%s' % tmdb_image_params(language)
 		return get_tmdb(url)
 	except: return None
 
 def season_episodes_details(tmdb_id, season_no, language):
 	try:
-		url = '%s/3/tv/%s/season/%s?language=%s&append_to_response=credits' % (base_url, tmdb_id, season_no, language)
+		url = '/3/tv/%s/season/%s?language=%s&append_to_response=credits' % (tmdb_id, season_no, language)
 		return get_tmdb(url)
 	except: return None
 
 def movie_external_id(external_source, external_id):
 	try:
 		string = 'movie_external_id_%s_%s' % (external_source, external_id)
-		url = '%s/3/find/%s?external_source=%s' % (base_url, external_id, external_source)
+		url = '/3/find/%s?external_source=%s' % (external_id, external_source)
 		result = cache_function(get_tmdb, string, url, EXPIRES_1_MONTH)
 		result = result['movie_results']
 		if result: return result[0]
@@ -325,7 +331,7 @@ def movie_external_id(external_source, external_id):
 def tvshow_external_id(external_source, external_id):
 	try:
 		string = 'tvshow_external_id_%s_%s' % (external_source, external_id)
-		url = '%s/3/find/%s?external_source=%s' % (base_url, external_id, external_source)
+		url = '/3/find/%s?external_source=%s' % (external_id, external_source)
 		result = cache_function(get_tmdb, string, url, EXPIRES_1_MONTH)
 		result = result['tv_results']
 		if result: return result[0]
@@ -334,7 +340,7 @@ def tvshow_external_id(external_source, external_id):
 
 def movie_keywords(tmdb_id):
 	try:
-		url = '%s/3/movie/%s/keywords' % (base_url, tmdb_id)
+		url = '/3/movie/%s/keywords' % tmdb_id
 		result = get_tmdb(url)
 		result = result['keywords']
 		return result
@@ -343,7 +349,7 @@ def movie_keywords(tmdb_id):
 def english_translation(mediatype, tmdb_id):
 	try:
 		string = 'english_translation_%s_%s' % (mediatype, tmdb_id)
-		url = '%s/3/%s/%s/translations' % (base_url, mediatype, tmdb_id)
+		url = '/3/%s/%s/translations' % (mediatype, tmdb_id)
 		result = cache_function(get_tmdb, string, url, EXPIRES_1_WEEK * 52)
 		try: result = result['translations']
 		except: result = None
@@ -357,7 +363,7 @@ def episode_groups(tmdb_id):
 		for i in result: i['type'] = eps_map[i['type']]
 		return result
 	string = 'tmdb_episode_group_%s' % tmdb_id
-	url = '%s/3/tv/%s/episode_groups' % (base_url, tmdb_id)
+	url = '/3/tv/%s/episode_groups' % tmdb_id
 	return cache_function(_process, string, url, EXPIRES_1_WEEK)
 
 def episode_group_details(group_id):
@@ -366,7 +372,7 @@ def episode_group_details(group_id):
 		result['groups'].sort(key=lambda k: k['order'])
 		return result['groups']
 	string = 'tmdb_episode_group_details_%s' % group_id
-	url = '%s/3/tv/episode_group/%s' % (base_url, group_id)
+	url = '/3/tv/episode_group/%s' % group_id
 	return cache_function(_process, string, url, EXPIRES_1_WEEK)
 
 def tmdb_region_ids():
@@ -381,23 +387,31 @@ def tmdb_region_ids():
 			for i in get_tmdb(url) if i['iso_3166_1'] in region_list
 		), key=lambda k: k['name'])
 	string = 'tmdb_region_ids'
-	url = '%s/3/configuration/countries' % base_url
+	url = '/3/configuration/countries'
 	return cache_object(_process, string, url, expiration=EXPIRES_1_MONTH)
 
-def get_tmdblist(url, params=None, data=None, method=None):
-	if isinstance(url, dict): return get_tmdblist(str(url.pop('path')), **url)
+def call_tmdblist(url, params=None, data=None, method=None):
+	if isinstance(url, dict): return call_tmdblist(str(url.pop('path')), **url)
 	else: url = str(url)
 	if params and 'token' in params: token = params.pop('token')
 	else: token = get_setting('tmdb.token')
 	headers = {'Authorization': 'Bearer %s' % token}
-	method = method or 'get'
-	list_timeout=timeout ** 2 if method != 'get' else timeout
+	list_timeout = timeout ** 2 if method != 'get' else timeout
 	try:
-		response = session.request(method, url, params=params, json=data, headers=headers, timeout=list_timeout)
-		result = response.json() if 'json' in response.headers.get('Content-Type', '') else response.text
-		if not response.ok: response.raise_for_status()
+		response = session.request(
+			method or 'get',
+			base_url + url,
+			params=params,
+			json=data,
+			headers=headers,
+			timeout=list_timeout
+		)
+		if 'json' in response.headers.get('Content-Type', ''):
+			result = response.json()
+		else: result = response.text
+		if not response.ok: raise Exception(f"{response.reason}, {response.url}")
 		return result
-	except requests.RequestException as e:
+	except Exception as e:
 		logger('tmdb error', str(e))
 
 def _get_tmdblist_paginated_list(url):
@@ -405,13 +419,13 @@ def _get_tmdblist_paginated_list(url):
 	if 'account_id' in url: url = url.replace('account_id', account_id)
 	params = {'token': token, 'page': 1}
 	try:
-		result = get_tmdblist(url, params=params)
+		result = call_tmdblist(url, params=params)
 		items, pages = result['results'], result['total_pages']
 	except: return []
 	if pages <= 1: return items
 	args = ({'path': url, 'params': {**params, 'page': page}} for page in range(2, pages + 1))
 	with ThreadPoolExecutor() as executor: # keep max_workers as default, min(32, os.cpu_count() + 4)
-		for result in executor.map(get_tmdblist, args): # ThreadPoolExecutor map preserves order
+		for result in executor.map(call_tmdblist, args): # ThreadPoolExecutor map preserves order
 			if isinstance(result, dict): items.extend(result['results']) # caution, hides thread exceptions
 	return items
 
@@ -445,32 +459,32 @@ def add_to_watchlist_favorites(item, list_type):
 	session_account_id = get_setting('tmdb.session_account_id')
 	session_id = get_setting('tmdb.session_id')
 	params = {'session_id': session_id}
-	url = '%s/3/account/%s/%s' % (base_url, session_account_id, list_type)
-	return get_tmdblist(url, params=params, data=item, method='post')
+	url = '/3/account/%s/%s' % (session_account_id, list_type)
+	return call_tmdblist(url, params=params, data=item, method='post')
 
 def watchlist(mediatype):
 	string = 'tmdblist_watchlist_%s' % mediatype
-	url = '%s/4/account/%s/%s/watchlist' % (base_url, 'account_id', mediatype)
+	url = '/4/account/%s/%s/watchlist' % ('account_id', mediatype)
 	url += '?language=en-US&sort_by=created_at.desc'
 	return cache_object(_get_tmdblist_paginated_list, string, url)
 
 def favorites(mediatype):
 	string = 'tmdblist_favorites_%s' % mediatype
-	url = '%s/4/account/%s/%s/favorites' % (base_url, 'account_id', mediatype)
+	url = '/4/account/%s/%s/favorites' % ('account_id', mediatype)
 	url += '?language=en-US&sort_by=created_at.desc'
 	return cache_object(_get_tmdblist_paginated_list, string, url)
 
 def recommendations(mediatype, page_no=1):
 	account_id = get_setting('tmdb.account_id')
 	string = 'tmdblist_recommendations_%s_%s_%s' % (account_id, mediatype, page_no)
-	url = '%s/4/account/%s/%s/recommendations' % (base_url, account_id, mediatype)
+	url = '/4/account/%s/%s/recommendations' % (account_id, mediatype)
 	url += '?language=en-US&page=%s' % page_no
-	return cache_object(get_tmdblist, string, url)
+	return cache_object(call_tmdblist, string, url)
 
 def user_lists():
 	sort = int(get_setting('tmdblist.sort_name', '0'))
 	string = 'tmdblist_user_lists'
-	url = '%s/4/account/%s/lists' % (base_url, 'account_id')
+	url = '/4/account/%s/lists' % 'account_id'
 	result = cache_object(_get_tmdblist_paginated_list, string, url)
 	try:
 		if   sort == 2: result.sort(key=lambda k: k['updated_at'], reverse=True)
@@ -481,25 +495,25 @@ def user_lists():
 
 def list_details(list_id):
 	string = 'tmdblist_detail_%s' % list_id
-	url = '%s/4/list/%s' % (base_url, list_id)
+	url = '/4/list/%s' % list_id
 	return cache_object(_get_tmdblist_paginated_list, string, url)
 
 def list_add_items(list_id, items=None):
-	url = '%s/4/list/%s/items' % (base_url, list_id)
-	return get_tmdblist(url, data=items, method='post')
+	url = '/4/list/%s/items' % list_id
+	return call_tmdblist(url, data=items, method='post')
 
 def list_remove_items(list_id, items=None):
-	url = '%s/4/list/%s/items' % (base_url, list_id)
-	return get_tmdblist(url, data=items, method='delete')
+	url = '/4/list/%s/items' % list_id
+	return call_tmdblist(url, data=items, method='delete')
 
 def list_update(list_id, data):
-	url = '%s/4/list/%s' % (base_url, list_id)
-	return get_tmdblist(url, data=data, method='put')
+	url = '/4/list/%s' % list_id
+	return call_tmdblist(url, data=data, method='put')
 
 def list_status(list_id, mediatype, media_id):
 	params = {'media_type': mediatype, 'media_id': int(media_id)}
-	url = '%s/4/list/%s/item_status' % (base_url, list_id)
-	return get_tmdblist(url, params=params)
+	url = '/4/list/%s/item_status' % list_id
+	return call_tmdblist(url, params=params)
 
 def list_create(list_name):
 	from urllib.parse import unquote
@@ -507,16 +521,16 @@ def list_create(list_name):
 	if not list_title: return
 	list_name = unquote(list_title)
 	data = {'name': list_title, 'public': True, 'iso_3166_1': 'US', 'iso_639_1': 'en'}
-	url = '%s/4/list' % base_url
-	return get_tmdblist(url, data=data, method='post')
+	url = '/4/list'
+	return call_tmdblist(url, data=data, method='post')
 
 def list_clear(list_id):
-	url = '%s/4/list/%s/clear' % (base_url, list_id)
-	return get_tmdblist(url)
+	url = '/4/list/%s/clear' % list_id
+	return call_tmdblist(url)
 
 def list_delete(list_id):
-	url = '%s/4/list/%s' % (base_url, list_id)
-	return get_tmdblist(url, method='delete')
+	url = '/4/list/%s' % list_id
+	return call_tmdblist(url, method='delete')
 
 def tmdb_clean_watchlist(silent=False, monitor=None):
 	if not get_setting('tmdb.token'): return

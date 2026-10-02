@@ -1,11 +1,46 @@
-import requests
+from magneto.modules.client import randomagent
 from modules import kodi_utils
+from session import session, HTTPAdapter, Retry
 # logger = kodi_utils.logger
 
-base_url = 'https://app.real-debrid.com/rest/1.0/'
-custom_errors = requests.exceptions.ConnectionError, requests.exceptions.Timeout
-session = requests.Session()
-session.mount('https://app.real-debrid.com', requests.adapters.HTTPAdapter(max_retries=1))
+base_url = 'https://app.real-debrid.com'
+timeout, check_timeout = 10, (3.05, 6.05)
+retry = Retry(total=None, status=1, status_forcelist=(429,), backoff_factor=1)
+session.mount(base_url, HTTPAdapter(max_retries=retry))
+user_agent = randomagent()
+
+def tio_check_cache(unchecked_hashes_chunk, imdb, season, episode, collector):
+	import re, secrets
+	pattern = re.compile(r'\b\w{40}\b')
+	headers = {'User-Agent': user_agent}
+	path = 'realdebrid=%s' % str.upper(secrets.token_urlsafe(39)[:52])
+	if str(season).isdigit(): params = 'series/%s:%s:%s.json' % (imdb, season, episode)
+	else: params = 'movie/%s.json' % (imdb)
+	url = 'https://torrentio.strem.fun/debridoptions=nodownloadlinks,nocatalog|%s/stream/%s' % (path, params)
+	try:
+		response = session.request('get', url, headers=headers, timeout=check_timeout)
+		if not response.ok: raise Exception(response.reason)
+		files = response.json()['streams']
+		collector.extend(pattern.findall(file['url'])[-1] for file in files if '+' in file['name'] and 'url' in file)
+	except Exception as e: kodi_utils.logger('tio error', str(e))
+
+def dmm_check_cache(unchecked_hashes_chunk, imdb, season, episode, collector):
+	""" DMM API allows max 100 hashes per request, do not thread multiple calls, 100 sample size should be enough """
+	unchecked_hashes_chunk = [i for i in unchecked_hashes_chunk if len(i) == 40]
+	if len(unchecked_hashes_chunk) > 100:
+		unchecked_hashes_chunk = __import__('random').sample(unchecked_hashes_chunk, 100)
+	data = {'hashes': unchecked_hashes_chunk, 'imdbId': imdb}
+	headers = {'User-Agent': user_agent}
+	headers['Referer'] = '%s/%s/%s' % ('https://debridmediamanager.com', 'show' if season else 'movie', imdb)
+	url = 'https://debridmediamanager.com/api/challenge', 'https://debridmediamanager.com/api/availability/check'
+	try:
+		get_secret = session.request('get', url[0], headers=headers, timeout=check_timeout[0]).json()
+		data['dmmProblemKey'], data['solution'] = get_secret['token'], get_secret['hash']
+		response = session.request('post', url[1], json=data, headers=headers, timeout=check_timeout)
+		if not response.ok: raise Exception(response.reason)
+		files = response.json()['available']
+		collector.extend(file['hash'] for file in files if 'hash' in file)
+	except Exception as e: kodi_utils.logger('dmm error', str(e))
 
 class RealDebridAPI:
 	icon = 'realdebrid.png'
@@ -14,23 +49,18 @@ class RealDebridAPI:
 	def __init__(self):
 		self.timeout = int(kodi_utils.get_setting('scrapers_timeout') or 10)
 		self.token = kodi_utils.get_setting('rd.token')
-		session.headers.update(self.headers())
 
-	def _request(self, method, path, data=None):
-		url = base_url + path
-		try: response = session.request(method, url, data=data, timeout=self.timeout)
-		except custom_errors: return kodi_utils.notification('%s timeout' % __name__)
+	def api(self, method, path, **kwargs):
+		headers = self.headers()
+		try: response = session.request(method, base_url + path, **kwargs, headers=headers, timeout=self.timeout)
+		except session.CUSTOM_ERRORS: return kodi_utils.notification('timeout: %s' % __name__)
 		if response.status_code in (401,) and self.refresh_token() is True:
 			response.request.headers['Authorization'] = 'Bearer %s' % self.token
 			response = session.send(response.request, timeout=self.timeout)
-		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
-		return response.json() if response.content else response
-
-	def _get(self, path):
-		return self._request('get', path)
-
-	def _post(self, path, data=None):
-		return self._request('post', path, data=data)
+		if not response.ok: kodi_utils.logger('', f"{__name__}, {response.reason}\n{response.url}")
+		if bool(response.content) and 'json' in response.headers.get('Content-Type', ''):
+			return response.json()
+		return response
 
 	def headers(self):
 		return {'Authorization': 'Bearer %s' % self.token}
@@ -41,9 +71,10 @@ class RealDebridAPI:
 			data['code'] = kodi_utils.get_setting('rd.refresh')
 			data['client_secret'] = kodi_utils.get_setting('rd.secret')
 			data['client_id'] = kodi_utils.get_setting('rd.client_id')
-			response = requests.post('https://app.real-debrid.com/oauth/v2/token', data=data).json()
-			self.token, refresh = response['access_token'], response['refresh_token']
-			session.headers.update(self.headers())
+			url = 'https://app.real-debrid.com/oauth/v2/token'
+			response = session.request('post', url, data=data, timeout=timeout).json()
+			token, refresh = response['access_token'], response['refresh_token']
+			self.token = token
 			kodi_utils.set_setting('rd.token', self.token)
 			kodi_utils.set_setting('rd.refresh', refresh)
 		except Exception as e: kodi_utils.logger('refresh_token error', str(e))
@@ -60,72 +91,60 @@ class RealDebridAPI:
 		return days
 
 	def account_info(self):
-		url = 'user'
-		result = self._get(url)
-		return result
+		path = '/rest/1.0/user'
+		return self.api('get', path)
 
 	def downloads(self):
-		url = 'downloads?limit=500'
-		return self._get(url)
+		path = '/rest/1.0/downloads?limit=500'
+		return self.api('get', path)
 
 	def user_cloud(self):
-		url = 'torrents?limit=500'
-		return self._get(url)
+		path = '/rest/1.0/torrents?limit=500'
+		return self.api('get', path)
 
 	def user_folder(self, folder_id):
-		url = folder_id
-		return self.torrent_info(url)
+		return self.torrent_info(folder_id)
 
 	def torrent_info(self, folder_id):
-		url = 'torrents/info/%s' % folder_id
-		result = self._get(url)
-		return result
+		path = '/rest/1.0/torrents/info/%s' % folder_id
+		return self.api('get', path)
 
 	def delete_torrent(self, folder_id):
-		url = 'torrents/delete/%s' % folder_id
-		result = self._request('delete', url)
+		path = '/rest/1.0/torrents/delete/%s' % folder_id
+		result = self.api('delete', path)
 		return True if result is not None and result.ok else False
 
 	def delete_download(self, download_id):
-		url = 'downloads/delete/%s' % download_id
-		result = self._request('delete', url)
+		path = '/rest/1.0/downloads/delete/%s' % download_id
+		result = self.api('delete', path)
 		return True if result is not None and result.ok else False
 
 	def unrestrict_link(self, link):
-		url = 'unrestrict/link'
-		post_data = {'link': link}
-		result = self._post(url, post_data)
+		path = '/rest/1.0/unrestrict/link'
+		data = {'link': link}
+		result = self.api('post', path, data=data)
+		if not result or 'download' not in result: return None
 		if result['download'].lower().endswith(('.rar','.zip')):
 			raise Exception('link error\n%s' % result['download'])
-		try: return result['download']
-		except: return None
+		return result['download']
 
 	def check_cache(self, hashes):
 		hash_string = '/'.join(hashes)
-		url = 'torrents/instantAvailability/%s' % hash_string
-		result = self._get(url)
-		return result
-
-	def add_torrent_select(self, torrent_id, file_ids):
-		self.clear_cache()
-		url = 'torrents/selectFiles/%s' % torrent_id
-		post_data = {'files': file_ids}
-		result = self._post(url, post_data)
-		return result
-
-	def add_magnet(self, magnet):
-		url = 'torrents/addMagnet'
-		post_data = {'magnet': magnet}
-		result = self._post(url, post_data)
-		return result
+		path = '/rest/1.0/torrents/instantAvailability/%s' % hash_string
+		return self.api('get', path)
 
 	def create_transfer(self, magnet):
-		result = self.add_magnet(magnet)
-		if result and 'id' in result:
-			torrent_id = result['id']
-			self.add_torrent_select(torrent_id, 'all')
-		else: torrent_id = ''
-		return torrent_id
+		path = '/rest/1.0/torrents/addMagnet'
+		data = {'magnet': magnet}
+		result = self.api('post', path, data=data)
+		if not result or 'id' not in result: return ''
+		self.add_torrent_select(result['id'], 'all')
+		return result['id']
+
+	def add_torrent_select(self, torrent_id, file_ids):
+		path = '/rest/1.0/torrents/selectFiles/%s' % torrent_id
+		data = {'files': file_ids}
+		return self.api('post', path, data=data)
 
 	def parse_magnet_pack(self, magnet_url, info_hash, errors=False):
 		from modules.source_utils import supported_video_extensions
@@ -190,40 +209,4 @@ class RealDebridAPI:
 			except: hash_cache_status_success = False
 		except: return False
 		return all((user_cloud_success, download_links_success, hoster_links_success, hash_cache_status_success))
-
-from magneto.modules.client import randomagent
-
-cache_api = requests.Session()
-cache_api.headers.update({'User-Agent': randomagent(), 'Accept': 'application/json'})
-
-def tio_check_cache(unchecked_hashes_chunk, imdb, season, episode, collector):
-	import re, secrets
-	if str(season).isdigit(): url = 'series/%s:%s:%s.json' % (imdb, season, episode)
-	else: url = 'movie/%s.json' % (imdb)
-	params = 'realdebrid=%s' % str.upper(secrets.token_urlsafe(39)[:52])
-	url = 'https://torrentio.strem.fun/debridoptions=nodownloadlinks,nocatalog|%s/stream/%s' % (params, url)
-	pattern = re.compile(r'\b\w{40}\b')
-	try:
-		response = cache_api.get(url, timeout=7.05)
-		if not response.ok: response.raise_for_status()
-		files = response.json()['streams']
-		collector.extend(pattern.findall(file['url'])[-1] for file in files if '+' in file['name'] and 'url' in file)
-	except Exception as e: kodi_utils.logger('tio error', str(e))
-
-def dmm_check_cache(unchecked_hashes_chunk, imdb, season, episode, collector):
-	""" DMM API allows max 100 hashes per request, do not thread multiple calls, 100 sample size should be enough """
-	unchecked_hashes_chunk = [i for i in unchecked_hashes_chunk if len(i) == 40]
-	if len(unchecked_hashes_chunk) > 100:
-		unchecked_hashes_chunk = __import__('random').sample(unchecked_hashes_chunk, 100)
-	data = {'hashes': unchecked_hashes_chunk, 'imdbId': imdb}
-	url = 'https://debridmediamanager.com/api/challenge', 'https://debridmediamanager.com/api/availability/check'
-	headers = {'Referer': '%s/%s/%s' % ('https://debridmediamanager.com', 'show' if season else 'movie', imdb)}
-	try:
-		get_secret = cache_api.get(url[0], headers=headers, timeout=3.05).json()
-		data['dmmProblemKey'], data['solution'] = get_secret['token'], get_secret['hash']
-		response = cache_api.post(url[1], json=data, headers=headers, timeout=7.05)
-		if not response.ok: response.raise_for_status()
-		files = response.json()['available']
-		collector.extend(file['hash'] for file in files if 'hash' in file)
-	except Exception as e: kodi_utils.logger('dmm error', str(e))
 

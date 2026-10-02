@@ -1,4 +1,4 @@
-import requests
+import urllib3
 from concurrent.futures import ThreadPoolExecutor as TPE, as_completed
 from time import monotonic
 import xbmc, xbmcaddon, xbmcgui
@@ -57,23 +57,22 @@ def _make_items(modules):
 		except: pass
 
 def magneto():
-	data = {'imdb': 'tt0448134', 'title': 'Sunshine', 'aliases': [], 'year': 2007}
-	data['poster'] = default_icon
-
+	data = {'poster': default_icon, 'imdb': 'tt0448134', 'title': 'Sunshine', 'aliases': [], 'year': 2007}
 	imdb_id = input(input_str, defaultt=data['imdb'])
+	if not imdb_id: return notification(heading, 'Cancelled', time=1500)
 	url = movie_year_check_url % imdb_id
 	dialog.create(heading, 'Please Wait...')
 	dialog.update(0, 'Fetching Metadata...')
-	result = requests.get(url, timeout=5)
-	if result.ok:
-		result = result.json()
-		items = (i for i in result['d'] if i['id'] == imdb_id)
-		items = next(items, None) or dialog.close()
-		if not items: return notification(heading, nf_str % imdb_id, time=3000)
-		data['poster'] = items.get('i', {}).get('imageUrl')
-		data['title'] = items.get('l')
-		data['imdb'] = items.get('id')
-		data['year'] = items.get('y')
+	response = urllib3.request('get', url, timeout=5)
+	if not response.status < 400: return notification(heading, 'Error', time=1500)
+	result = response.json()
+	items = (i for i in result['d'] if i['id'] == imdb_id)
+	items = next(items, None) or dialog.close()
+	if not items: return notification(heading, nf_str % imdb_id, time=3000)
+	data['poster'] = items.get('i', {}).get('imageUrl')
+	data['title'] = items.get('l')
+	data['imdb'] = items.get('id')
+	data['year'] = items.get('y')
 	data['rootname'] = '%s (%s)' % (data['title'], data['year'])
 	data['year'] = str(data['year'])
 

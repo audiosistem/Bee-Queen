@@ -33,8 +33,8 @@ def mdbl_account_info():
 	try:
 		kodi_utils.show_busy_dialog()
 		db_status = integrity_check()
-		account_info = mdblist_api.call_mdblist('user')
-		stats = mdblist_api.call_mdblist('user/stats')['stats']
+		account_info = mdblist_api.call_mdblist('/user')
+		stats = mdblist_api.call_mdblist('/user/stats')['stats']
 		if not stats: stats = dummy_stats()
 		joined = jsondate_to_datetime(account_info['date_joined']).astimezone()
 		api_requests = account_info['api_requests']
@@ -220,9 +220,10 @@ class MdbListManager(list_helper.BaseListManager):
 		return self.tmdb_id in {i['id'] for i in list_items}
 
 	def execute_toggle(self, choice, action_add):
+		content = 'shows' if self.mediatype == 'tvshow' else 'movies'
 		if 'collection' in choice[0]:
-			data = {'shows' if self.mediatype == 'tvshow' else 'movies': [{'ids': {'tmdb': self.tmdb_id}}]}
+			data = {content: [{'ids': {'tmdb': self.tmdb_id}}]}
 			return self.api.add_to_collection(data) if action_add else self.api.remove_from_collection(data)
-		data = {'shows' if self.mediatype == 'tvshow' else 'movies': [{'tmdb': self.tmdb_id}]}
+		data = {content: [{'tmdb': self.tmdb_id}]}
 		return self.api.add_to_list(choice[0], data) if action_add else self.api.remove_from_list(choice[0], data)
 

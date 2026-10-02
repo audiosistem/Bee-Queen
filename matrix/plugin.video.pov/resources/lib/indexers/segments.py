@@ -1,5 +1,4 @@
-import requests
-timeout = (3.05, 6.05)
+from session import http
 
 class SegmentScraper:
 	def __init__(self, imdb_id, season, episode):
@@ -9,7 +8,7 @@ class SegmentScraper:
 	def fetch_introdb(self):
 		result = {'intro': None, 'credits': None}
 		try:
-			response = requests.get('https://api.introdb.app/segments', params=self.params, timeout=timeout)
+			response = http.request('get', 'https://api.introdb.app/segments', fields=self.params)
 			results = response.json()
 			intro = results.get('intro') or {}
 			outro = results.get('outro') or {}
@@ -25,7 +24,7 @@ class SegmentScraper:
 	def fetch_theintrodb(self):
 		result = {'intro': None, 'credits': None}
 		try:
-			response = requests.get('https://api.theintrodb.org/v3/media', params=self.params, timeout=timeout)
+			response = http.request('get', 'https://api.theintrodb.org/v3/media', fields=self.params)
 			results = response.json()
 			intro_list = results.get('intro') or []
 			outro_list = results.get('credits') or []

@@ -1,7 +1,7 @@
 import re
-import requests
 from html import unescape
 from caches.main_cache import cache_object
+from session import http
 # from modules.kodi_utils import logger
 
 graphql_headers, graphql_url = {
@@ -10,11 +10,6 @@ graphql_headers, graphql_url = {
 	'x-imdb-user-language': 'en-US',
 	'x-imdb-user-country': 'US'
 }, 'https://api.graphql.imdb.com/'
-base_url = 'https://www.imdb.com/%s'
-timeout = 10.0
-session = requests.Session()
-retry = requests.adapters.Retry(total=None, status=1, status_forcelist=(429, 502, 503, 504))
-session.mount('https://', requests.adapters.HTTPAdapter(pool_maxsize=100, max_retries=retry))
 
 def clean_html(text):
 	if not text: return ''
@@ -37,8 +32,8 @@ def people_get_imdb_id_handler(params):
 			actor_imdb_id = tmdb_people_full_info(params['actor_id'])['imdb_id']
 		if not actor_imdb_id:
 			import json
-			result = session.get(params['url'], timeout=timeout)
-			result = json.loads(re.sub(r'^imdb\$.*?\(', '', result.text)[:-1])['d']
+			text = http.request('get', params['url']).data.decode(errors='replace')
+			result = json.loads(re.sub(r'^imdb\$.*?\(', '', text)[:-1])['d']
 			actor_imdb_id = next((i['id'] for i in result if i['l'].lower() == params['name']))
 	except: pass
 	return actor_imdb_id
@@ -58,9 +53,9 @@ def imdb_extended_info_handler(imdb_id):
 	), [], [], [], []
 	try:
 		data = {'query': imdb_extended_query % imdb_id}
-		result = session.post(graphql_url, json=data, headers=graphql_headers, timeout=timeout)
-		if not result.ok: result.raise_for_status()
-		result = result.json().get('data', {}).get('title', {})
+		response = http.request('post', graphql_url, json=data, headers=graphql_headers)
+		if not response.status < 400: raise Exception(response.reason)
+		result = response.json().get('data', {}).get('title', {})
 		try:
 			_sorted = sorted(result['trivia']['edges'], key=lambda k: k['node']['interestScore']['usersVoted'], reverse=True)
 			trivia.extend(clean_html(i['node']['displayableArticle']['body']['plaidHtml']) for i in _sorted)
@@ -87,7 +82,7 @@ def imdb_extended_info_handler(imdb_id):
 			 'ranking': i['severity']['id'].replace('Votes', '')}
 			for i in result['parentsGuide']['categories'])
 		except: pass
-	except requests.RequestException as e:
+	except Exception as e:
 		from modules.kodi_utils import logger
 		logger('imdb error', str(e))
 	return {'trivia': trivia, 'blunders': blunders, 'reviews': reviews, 'parentsguide': parentsguide}
@@ -103,14 +98,14 @@ def imdb_tagged_images_handler(imdb_id):
 	), {'still_frame', 'poster', 'product'}
 	try:
 		data = {'query': imdb_extended_query % imdb_id}
-		result = session.post(graphql_url, json=data, headers=graphql_headers, timeout=timeout)
-		if not result.ok: result.raise_for_status()
-		result = result.json().get('data', {}).get('name', {})
+		response = http.request('post', graphql_url, json=data, headers=graphql_headers)
+		if not response.status < 400: raise Exception(response.reason)
+		result = response.json().get('data', {}).get('name', {})
 		return [
 			{'type': i['node']['caption']['plainText'].strip(), 'url': i['node']['url']}
 			for i in result['images']['edges'] if i['node']['type'] not in excluded_types
 		]
-	except requests.RequestException as e:
+	except Exception as e:
 		from modules.kodi_utils import logger
 		logger('imdb error', str(e))
 	return []
@@ -118,7 +113,7 @@ def imdb_tagged_images_handler(imdb_id):
 def imdb_movie_year(imdb_id):
 	def _process(dummy):
 		try:
-			result = session.get(url, timeout=timeout).json()
+			result = http.request('get', url).json()
 			result = next((int(i['y']) for i in result['d'] if 'y' in i))
 			return str(result)
 		except: pass

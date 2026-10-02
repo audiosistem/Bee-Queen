@@ -3,8 +3,8 @@
 	Fenomscrapers Project
 """
 
-import requests
 import xml.etree.ElementTree as ET
+from magneto.modules import client
 from magneto.modules import source_utils
 
 
@@ -45,7 +45,7 @@ class source:
 				params = {'t': 'movie', 'imdbid': imdb}
 			# log_utils.log('url = %s' % url)
 			if 'timeout' in data: self.timeout = int(data['timeout'])
-			results = requests.get(url, params=params, timeout=self.timeout)
+			results = client.session.request('get', url, params=params, timeout=self.timeout)
 			files = ET.fromstring(results.text)
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()

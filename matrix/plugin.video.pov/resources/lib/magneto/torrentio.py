@@ -3,7 +3,6 @@
 	Fenomscrapers Project
 """
 
-from json import loads as jsloads
 import re
 from magneto.modules import client
 from magneto.modules import source_utils
@@ -45,8 +44,9 @@ class source:
 				url = '%s%s' % (self.base_link, self.movieSearch_link % imdb)
 			# log_utils.log('url = %s' % url)
 			if 'timeout' in data: self.timeout = int(data['timeout'])
-			results = client.request(url, timeout=self.timeout)
-			files = jsloads(results)['streams']
+			headers = {'User-Agent': client.randomagent()}
+			results = client.session.request('get', url, headers=headers, timeout=self.timeout)
+			files = results.json()['streams']
 			_INFO = re.compile(r'👤.*')
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()

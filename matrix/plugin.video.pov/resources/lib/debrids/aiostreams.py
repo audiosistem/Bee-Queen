@@ -1,13 +1,51 @@
-import requests
 from urllib.parse import urlencode, parse_qsl
 from modules.kodi_utils import get_setting, show_text
 from modules import source_utils
+from session import session, HTTPAdapter, Retry
 # from modules.kodi_utils import logger
 
 internal_results, get_file_info = source_utils.internal_results, source_utils.get_file_info
 clean_file_name, clean_title = source_utils.clean_file_name, source_utils.clean_title
+timeout = 30
 
-class source:
+class Debrid:
+	def __init__(self):
+		self.auth = get_setting('aio.username'), get_setting('aio.password')
+
+	def resolve_aio_instance(self):
+		setting_id = (
+			'aio.ku_url', 'aio.custom_url', 'aio.viren_url', 'aio.yeb_url', 'aio.midnight_url'
+		)[int(get_setting('aio.instance', '0'))]
+		return get_setting(setting_id)
+
+	def unrestrict_link(self, url):
+		from magneto.modules.client import randomagent
+		base_url, *headers = url.rsplit('|', 1)
+		try: req_headers = dict(parse_qsl(*headers))
+		except: req_headers = dict()
+		if not any(x.lower() == 'user-agent' for x in req_headers): req_headers['User-Agent'] = randomagent()
+		try: # some servers do not accept HEAD requests, must use GET + stream
+			with session.request('get', base_url, headers=req_headers, stream=True, timeout=timeout) as response:
+				if not response.ok: raise Exception(response.reason)
+			if headers: return '|'.join((response.url, *headers))
+			return response.url
+		except Exception as e:
+			from modules.kodi_utils import logger
+			logger('unrestrict_link error', f"{type(e)}: {e}")
+
+	def create_transfer(self, url):
+		from magneto.modules.client import randomagent
+		base_url, *headers = url.rsplit('|', 1)
+		try: req_headers = dict(parse_qsl(*headers))
+		except: req_headers = dict()
+		if not any(x.lower() == 'user-agent' for x in req_headers): req_headers['User-Agent'] = randomagent()
+		with session.request('get', base_url, headers=req_headers, stream=True, timeout=timeout) as response:
+			if not response.ok: return None
+			chunk = next(response.iter_content(chunk_size=1048576), b'')
+		if len(chunk): return True
+		return False
+
+class source(Debrid):
 	timeout = 30
 	scrape_provider = 'aiostreams'
 	def results(self, info):
@@ -15,6 +53,7 @@ class source:
 			sources = []
 			sources_append = sources.append
 			if not all(self.auth): return internal_results(self.scrape_provider, sources)
+			self.elapsed, self.errors = None, None
 			title, season, episode = info.get('title'), info.get('season'), info.get('episode')
 			if 'timeout' in info: self.timeout = int(info['timeout'])
 			media_id = info['imdb_id'] or ('tmdb:%s' % info['tmdb_id'])
@@ -78,21 +117,16 @@ class source:
 		try:
 			base_url = self.resolve_aio_instance()
 			search_link = '%s/api/v1/search' % base_url.strip().rstrip('/')
-			response = requests.get(search_link, params=params, auth=self.auth, timeout=self.timeout)
-			if not response.ok: response.raise_for_status()
-			results = response.json()['data']
+			response = session.request('get', search_link, params=params, auth=self.auth, timeout=self.timeout)
 			self.elapsed = round(response.elapsed.total_seconds(), 3)
+			if not response.ok: raise Exception(response.reason)
+			results = response.json()['data']
 			self.errors = [': '.join(i.values()) for i in results['errors']]
 			scrape_results.extend(results['results'])
-		except requests.exceptions.RequestException as e:
+		except Exception as e:
 			from modules.kodi_utils import logger
 			logger(self.scrape_provider, f"{type(e)}: {e}")
 		return scrape_results
-
-	def __init__(self):
-		self.elapsed = None
-		self.errors = []
-		self.auth = get_setting('aio.username'), get_setting('aio.password')
 
 	def _make_name_info(self, data_get):
 		quality = (data_get('quality') or '').replace(' ', '.')
@@ -108,27 +142,6 @@ class source:
 			*data_get('languages'),
 		)
 		return '.'.join(dict.fromkeys(i for i in file_info if i)).lower()
-
-	def resolve_aio_instance(self):
-		setting_id = (
-			'aio.ku_url', 'aio.custom_url', 'aio.viren_url', 'aio.yeb_url', 'aio.midnight_url'
-		)[int(get_setting('aio.instance', '0'))]
-		return get_setting(setting_id)
-
-def unrestrict_link(url):
-	from magneto.modules.client import randomagent
-	base_url, *headers = url.rsplit('|', 1)
-	try: req_headers = requests.structures.CaseInsensitiveDict(parse_qsl(*headers))
-	except: req_headers = requests.structures.CaseInsensitiveDict()
-	if 'User-Agent' not in req_headers: req_headers['User-Agent'] = randomagent()
-	try: # some servers do not accept HEAD requests, must use GET + stream
-		with requests.get(base_url, headers=req_headers, stream=True, timeout=30) as response:
-			response.raise_for_status() # 3xx passes, 4xx/5xx raises
-		if headers: return '|'.join((response.url, *headers))
-		return response.url
-	except requests.exceptions.RequestException as e:
-		from modules.kodi_utils import logger
-		logger('unrestrict_link error', f"{type(e)}: {e}")
 
 def aio_help(): return show_text('AIOStreams', text=(
 """

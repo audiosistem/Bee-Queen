@@ -3,7 +3,7 @@
 	Fenomscrapers Project
 """
 
-import requests
+from magneto.modules import client
 from magneto.modules import source_utils
 from magneto.modules.control import setting as getSetting
 
@@ -48,7 +48,7 @@ class source:
 				params = {'ImdbId': imdb}
 			# log_utils.log('url = %s' % url)
 			if 'timeout' in data: self.timeout = int(data['timeout'])
-			results = requests.get(url, params=params, timeout=self.timeout)
+			results = client.session.request('get', url, params=params, timeout=self.timeout)
 			files = results.json()
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()

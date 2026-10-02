@@ -1,12 +1,12 @@
-import requests
 from caches.main_cache import cache_object
 from modules import kodi_utils
+from session import session, HTTPAdapter, Retry
 # logger = kodi_utils.logger
 
-base_url = 'https://www.premiumize.me/api/'
-custom_errors = requests.exceptions.ConnectionError, requests.exceptions.Timeout
-session = requests.Session()
-session.mount('https://www.premiumize.me', requests.adapters.HTTPAdapter(max_retries=1))
+base_url = 'https://www.premiumize.me'
+timeout = 10
+retry = Retry(total=None, status=1, status_forcelist=(429,), backoff_factor=1)
+session.mount(base_url, HTTPAdapter(max_retries=retry))
 
 class PremiumizeAPI:
 	icon = 'premiumize.png'
@@ -15,20 +15,15 @@ class PremiumizeAPI:
 	def __init__(self):
 		self.timeout = int(kodi_utils.get_setting('scrapers_timeout') or 10)
 		self.token = kodi_utils.get_setting('pm.token')
-		session.headers.update(self.headers())
 
-	def _request(self, method, path, data=None):
-		url = base_url + path
-		try: response = session.request(method, url, data=data, timeout=self.timeout)
-		except custom_errors: return kodi_utils.notification('%s timeout' % __name__)
-		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
-		return response.json() if 'json' in response.headers.get('Content-Type', '') else response
-
-	def _get(self, path):
-		return self._request('get', path)
-
-	def _post(self, path, data=None):
-		return self._request('post', path, data=data)
+	def api(self, method, path, **kwargs):
+		headers = self.headers()
+		try: response = session.request(method, base_url + path, **kwargs, headers=headers, timeout=self.timeout)
+		except session.CUSTOM_ERRORS: return kodi_utils.notification('timeout: %s' % __name__)
+		if not response.ok: kodi_utils.logger('', f"{__name__}, {response.reason}\n{response.url}")
+		if bool(response.content) and 'json' in response.headers.get('Content-Type', ''):
+			return response.json()
+		return response.text
 
 	def headers(self):
 		return {'Authorization': 'Bearer %s' % self.token}
@@ -43,51 +38,68 @@ class PremiumizeAPI:
 		return days
 
 	def account_info(self):
-		url = 'account/info'
-		result = self._get(url)
-		return result
+		path = '/api/account/info'
+		return self.api('get', path)
 
 	def downloads(self):
-		url = 'transfer/list'
-		return self._get(url)
+		path = '/api/transfer/list'
+		return self.api('get', path)
 
 	def user_cloud(self):
-		url = 'folder/list'
-		return self._get(url)
+		path = '/api/folder/list'
+		return self.api('get', path)
 
 	def user_folder(self, folder_id):
-		url = 'folder/list?id=%s' % folder_id
-		return self._get(url)
+		path = '/api/folder/list'
+		params = {'id': folder_id}
+		return self.api('get', path, params=params)
 
 	def item_listall(self):
-		url = 'item/listall'
-		result = self._get(url)
+		path = '/api/item/listall'
+		result = self.api('get', path)
 		return result['files']
 
 	def delete_torrent(self, transfer_id):
-		result = self.delete_object('transfer', transfer_id)
-		return result
+		return self.delete_object('transfer', transfer_id)
 
 	def unrestrict_link(self, link):
 		return link
 
 	def check_cache(self, hashes):
-		url = 'cache/check'
-		data = {'items[]': hashes}
-		result = self._post(url, data)
+		path = '/api/cache/check'
+		data = [('items[]', h) for h in hashes]
+		result = self.api('post', path, data=data)
 		return [h for h, cached in zip(hashes, result['response']) if cached]
 
 	def instant_transfer(self, magnet):
-		url = 'transfer/directdl'
+		path = '/api/transfer/directdl'
 		data = {'src': magnet}
-		result = self._post(url, data)
-		return result
+		return self.api('post', path, data=data)
 
 	def create_transfer(self, magnet):
-		url = 'transfer/create'
+		path = '/api/transfer/create'
 		data = {'src': magnet, 'folder_id': 0}
-		result = self._post(url, data)
+		result = self.api('post', path, data=data)
 		return result.get('id', '')
+
+	def rename_cache_item(self, file_type, file_id, new_name):
+		if file_type == 'folder': path = '/api/folder/rename'
+		else: path = '/api/item/rename'
+		data = {'id': file_id , 'name': new_name}
+		result = self.api('post', path, data=data)
+		return True if result is not None and result['status'] == 'success' else False
+
+	def delete_object(self, object_type, object_id):
+		path = '/api/%s/delete' % object_type
+		data = {'id': object_id}
+		result = self.api('post', path, data=data)
+		return True if result is not None and result['status'] == 'success' else False
+
+	def get_item_details(self, item_id):
+		string = 'pov_pm_item_details_%s' % item_id
+		path = '/api/item/details'
+		data = {'id': item_id}
+		return cache_object(lambda p: self.api('post', p, data=data), string, path, 24)
 
 	def parse_magnet_pack(self, magnet_url, info_hash):
 		from modules.source_utils import supported_video_extensions
@@ -102,26 +114,6 @@ class PremiumizeAPI:
 				if item['path'].lower().endswith(extensions)
 			]
 		except: pass
-
-	def rename_cache_item(self, file_type, file_id, new_name):
-		if file_type == 'folder': url = 'folder/rename'
-		else: url = 'item/rename'
-		data = {'id': file_id , 'name': new_name}
-		result = self._post(url, data)
-		return True if result is not None and result['status'] == 'success' else False
-
-	def delete_object(self, object_type, object_id):
-		url = '%s/delete' % object_type
-		data = {'id': object_id}
-		result = self._post(url, data)
-		return True if result is not None and result['status'] == 'success' else False
-
-	def get_item_details(self, item_id):
-		string = 'pov_pm_item_details_%s' % item_id
-		url = 'item/details'
-		data = {'id': item_id}
-		args = [url, data]
-		return cache_object(self._post, string, args, 24)
 
 	def clear_cache(*args):
 		from modules.kodi_utils import clear_property, path_exists, database_connect, maincache_db

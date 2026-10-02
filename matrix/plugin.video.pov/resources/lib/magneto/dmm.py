@@ -44,12 +44,13 @@ class source:
 				url = '%s%s' % (self.base_link, self.movieSearch_link % imdb)
 			# log_utils.log('url = %s' % url)
 			if 'timeout' in data: self.timeout = int(data['timeout'])
-			headers = {'Referer': '%s/%s/%s' % (self.base_link, 'show' if 'tvshowtitle' in data else 'movie', imdb)}
+			headers = {'User-Agent': client.randomagent()}
+			headers['Referer'] = '%s/%s/%s' % (self.base_link, 'show' if 'tvshowtitle' in data else 'movie', imdb)
 			try:
-				results = client.request('%s/api/challenge' % self.base_link, headers=headers, timeout=3.05)
+				results = client.session.request('get', '%s/api/challenge' % self.base_link, headers=headers, timeout=3.05).text
 				get_secret = jsloads(results)
 				url += '&dmmProblemKey=%s&solution=%s' % (get_secret['token'], get_secret['hash'])
-				results = client.request(url, headers=headers, timeout=self.timeout)
+				results = client.session.request('get', url, headers=headers, timeout=self.timeout).text
 				files = jsloads(results)['results']
 			except:
 				files = []

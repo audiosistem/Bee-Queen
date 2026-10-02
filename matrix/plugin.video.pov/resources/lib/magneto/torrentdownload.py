@@ -23,7 +23,8 @@ class source:
 
 	def get_sources(self, url):
 		try:
-			results = client.request(url, timeout=self.timeout)
+			headers = {'User-Agent': client.randomagent()}
+			results = client.session.request('get', url, headers=headers, timeout=self.timeout).text
 			if not results: return
 			rows = client.parseDOM(results, 'tr')
 			self.results.extend(rows)

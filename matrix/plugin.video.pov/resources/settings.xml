@@ -272,11 +272,11 @@
 		<setting id="volumecheck.enabled" label="Check Playback Volume Before Start of Playback" type="bool" default="false" />
 			<setting id="volumecheck.percent" label="Set Max. Percent Starting Volume (0-100)" type="number" default="50" subsetting="true" visible="eq(-1,true)" />
 		<!-- Subtitles -->
-		<setting label="Subtitles (SubMaker - https://submaker.elfhosted.com)" type="lsep" />
+		<setting label="Subtitles (https://thesubtitledb.org)" type="lsep" />
 		<setting id="subtitles.subs_action" label="Download Subtitles Action" type="enum" default="0" values="Off|Auto" />
-			<setting id="subtitles.manifest" label="Manifest Url" type="text" default="" subsetting="true" visible="!eq(-1,0)" />
-			<setting id="subtitles.language" label="Priority Subtitle Language" type="select" default="English" values="English|Arabic|Bengali|Bulgarian|Chinese|Croatian|Czech|Danish|Dutch|Finnish|French|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Korean|Malay|Norwegian|Persian|Polish|Portuguese|Portuguese (Brazil)|Punjabi|Romanian|Russian|Serbian|Slovenian|Spanish|Swedish|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu|Vietnamese" subsetting="true" visible="!eq(-2,0)" />
-			<setting id="subtitles.auto_enable" label="Force Enable Local Subs" type="bool" default="true" subsetting="true" visible="!eq(-3,0)" />
+			<setting id="subtitles.language" label="Priority Subtitle Language" type="select" default="English" values="English|Arabic|Bengali|Bulgarian|Chinese|Croatian|Czech|Danish|Dutch|Finnish|French|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Korean|Malay|Norwegian|Persian|Polish|Portuguese|Portuguese (Brazil)|Punjabi|Romanian|Russian|Serbian|Slovenian|Spanish|Swedish|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu|Vietnamese" subsetting="true" visible="!eq(-1,0)" />
+			<setting id="subtitles.auto_filter" label="Enable Filename Matching For Downloaded Subtitles" type="bool" default="true" subsetting="true" visible="!eq(-2,0)" />
+			<setting id="subtitles.auto_enable" label="Enable Force Local Subtitles" type="bool" default="true" subsetting="true" visible="!eq(-3,0)" />
 	</category>
 	<!-- Results -->
 	<category label="Results">

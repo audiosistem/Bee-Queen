@@ -1,4 +1,3 @@
-import requests
 from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
 from caches import mdbl_cache
@@ -7,36 +6,38 @@ from indexers.tmdb_api import movie_external_id, tvshow_external_id
 from modules import kodi_utils, settings
 from modules.cache import check_databases
 from modules.utils import sort_for_article, jsondate_to_datetime, paginate_list, get_datetime
+from session import session, HTTPAdapter, Retry
 
 get_setting, set_setting, logger = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.logger
 EXPIRES_1_HOURS, EXPIRES_2_DAYS, MAX_LIST_ITEMS = 1, 48, 250_000
-base_url = 'https://api.mdblist.com/%s'
-timeout = 10.05
-session = requests.Session()
-retry = requests.adapters.Retry(total=None, status=1, status_forcelist=(502, 503, 504))
-session.mount('https://api.mdblist.com', requests.adapters.HTTPAdapter(pool_maxsize=100, max_retries=retry))
+base_url = 'https://api.mdblist.com'
+timeout = 10
+retry = Retry(total=None, status=1, status_forcelist=(502, 503, 504), backoff_factor=1)
+session.mount(base_url, HTTPAdapter(max_retries=retry))
 
 def call_mdblist(path, params=None, json=None, method=None):
 	headers = None
 	params = params or {}
-	if not bool(get_setting('mdblist.refresh')): params['apikey'] = get_setting('mdblist.token')
+	if not bool(get_setting('mdblist.refresh')): params.setdefault('apikey', get_setting('mdblist.token'))
 	else: headers = {'Authorization': 'Bearer %s' % get_setting('mdblist.token')}
 	try:
 		response = session.request(
 			method or 'get',
-			base_url % path,
+			base_url + path,
 			params=params,
 			json=json,
 			headers=headers,
 			timeout=timeout
 		)
-		result = response.json() if 'json' in response.headers.get('Content-Type', '') else response.text
-		if not response.ok: response.raise_for_status()
+		if 'json' in response.headers.get('Content-Type', ''):
+			result = response.json()
+		else: result = response.text
+		if not response.ok: raise Exception(f"{response.reason}, {response.url}")
 		if isinstance(result, list):
 			result = {'items': result, 'pagination': {'has_more': response.headers.get('X-Has-More') == 'true'}}
 			if (next := response.headers.get('X-Next-Cursor')): result['pagination']['next_cursor'] = next
 		return result
-	except requests.RequestException as e:
+	except Exception as e:
 		logger('mdblist error', str(e))
 
 def _get_mdbl_paginated_list(url):
@@ -60,9 +61,10 @@ def mdbl_refresh():
 		data = {'grant_type': 'refresh_token'}
 		data['refresh_token'] = get_setting('mdblist.refresh')
 		data['client_id'] = get_setting('mdblist.client_id')
-		response = requests.post(base_url % 'oauth/token/', data=data, timeout=timeout).json()
+		url = 'https://api.mdblist.com/oauth/token/'
+		response = session.request('post', url, data=data, timeout=timeout).json()
 		expires = int(created_at) + int(response['expires_in'])
-		refresh, token = response['refresh_token'], response['access_token']
+		token, refresh = response['access_token'], response['refresh_token']
 		set_setting('mdblist.token', token)
 		set_setting('mdblist.refresh', refresh)
 		set_setting('mdblist.expires', str(expires))
@@ -88,14 +90,12 @@ def mdbl_calendar_days(recently_aired, current_date):
 
 def mdbl_top_lists():
 	string = 'mdbl_top_lists'
-	url = 'lists/top'
+	url = '/lists/top'
 	return cache_object(call_mdblist, string, url)['items']
 
-def mdbl_search_lists(query):
-	query = requests.utils.quote(query)
-	string = 'mdbl_search_lists_%s' % query
-	url = 'lists/search?query=%s' % query
-	return cache_object(call_mdblist, string, url, expiration=EXPIRES_1_HOURS)['items']
+def mdbl_search_lists(search_title):
+	params = {'query': search_title}
+	return call_mdblist('/lists/search', params=params)['items']
 
 def mdblist_droplist(mediatype, page_no):
 	def _process(url):
@@ -112,7 +112,7 @@ def mdblist_droplist(mediatype, page_no):
 			})
 		return results
 	string = 'mdbl_hidden_items_dropped'
-	url = 'sync/dropped'
+	url = '/sync/dropped'
 	data = mdbl_cache.cache_mdbl_object(_process, string, url)
 	if page_no == 'all': return data
 	original_list = sort_for_article(data, 'title', settings.ignore_articles())
@@ -137,7 +137,7 @@ def mdbl_calendar_data(url):
 def mdbl_get_my_calendar(recently_aired, current_date):
 	start, finish = mdbl_calendar_days(recently_aired, current_date)
 	string = 'mdbl_get_my_calendar_%s_%s' % (start, finish)
-	url = 'calendar/events?limit=1000&start=%s&end=%s' % (start, finish)
+	url = '/calendar/events?limit=1000&start=%s&end=%s' % (start, finish)
 	return mdbl_cache.cache_mdbl_object(lambda u: mdbl_calendar_data(u), string, url)
 
 def mdblist_collection(mediatype, page_no):
@@ -165,8 +165,8 @@ def mdblist_watchlist(mediatype, page_no):
 	return original_list, 1
 
 def mdbl_collection_watchlist_items(list_type, mediatype):
-	if list_type == 'collection': string, url = 'mdbl_collection', 'sync/collection'
-	else: string, url = 'mdbl_watchlist', 'watchlist/items'
+	if list_type == 'collection': string, url = 'mdbl_collection', '/sync/collection'
+	else: string, url = 'mdbl_watchlist', '/watchlist/items'
 	results = mdbl_cache.cache_mdbl_object(_get_mdbl_paginated_list, string, url)
 	results = results['movies' if mediatype in ('movie', 'movies') else 'shows']
 	if list_type == 'collection':
@@ -186,25 +186,25 @@ def mdbl_collection_watchlist_items(list_type, mediatype):
 
 def get_mdbl_list_contents(list_type, list_id):
 	string = 'mdbl_list_contents_%s_%s' % (list_type, list_id)
-	if list_type == 'external': url = 'external/lists/%s/items?unified=true' % list_id
-	else: url = 'lists/%s/items?unified=true' % list_id
+	if list_type == 'external': url = '/external/lists/%s/items?unified=true' % list_id
+	else: url = '/lists/%s/items?unified=true' % list_id
 	return mdbl_cache.cache_mdbl_object(_get_mdbl_paginated_list, string, url)['items']
 
 def mdbl_get_lists(list_type):
-	if list_type == 'liked_lists': key, string, url = 'lists', 'mdbl_liked_lists', 'lists/liked'
-	elif list_type == 'external': key, string, url = 'items', 'mdbl_external', 'external/lists/user'
-	else: key, string, url = 'items', 'mdbl_my_lists', 'lists/user'
+	if list_type == 'external': key, string, url = 'items', 'mdbl_external', '/external/lists/user'
+	elif list_type == 'liked_lists': key, string, url = 'lists', 'mdbl_liked_lists', '/lists/liked'
+	else: key, string, url = 'items', 'mdbl_my_lists', '/lists/user'
 	return mdbl_cache.cache_mdbl_object(call_mdblist, string, url)[key]
 
 def add_to_collection(data):
-	result = call_mdblist('sync/collection', json=data, method='post')
+	result = call_mdblist('/sync/collection', json=data, method='post')
 	if result['updated']['movies'] + result['updated']['shows'] == 0: return kodi_utils.notify_failed()
 	kodi_utils.notify_success()
 	mdbl_sync_activities()
 	return result
 
 def remove_from_collection(data):
-	result = call_mdblist('sync/collection/remove', json=data, method='post')
+	result = call_mdblist('/sync/collection/remove', json=data, method='post')
 	if result['removed']['movies'] + result['removed']['shows'] == 0: return kodi_utils.notify_failed()
 	kodi_utils.notify_success()
 	mdbl_sync_activities()
@@ -212,7 +212,7 @@ def remove_from_collection(data):
 	return result
 
 def add_to_list(list_id, data):
-	url = 'watchlist/items/add' if list_id == 'watchlist' else 'lists/%s/items/add' % list_id
+	url = '/watchlist/items/add' if list_id == 'watchlist' else '/lists/%s/items/add' % list_id
 	result = call_mdblist(url, json=data, method='post')
 	if result['added']['movies'] + result['added']['shows'] == 0: return kodi_utils.notify_failed()
 	kodi_utils.notify_success()
@@ -220,7 +220,7 @@ def add_to_list(list_id, data):
 	return result
 
 def remove_from_list(list_id, data):
-	url = 'watchlist/items/remove' if list_id == 'watchlist' else 'lists/%s/items/remove' % list_id
+	url = '/watchlist/items/remove' if list_id == 'watchlist' else '/lists/%s/items/remove' % list_id
 	result = call_mdblist(url, json=data, method='post')
 	if result['removed']['movies'] + result['removed']['shows'] == 0: return kodi_utils.notify_failed()
 	kodi_utils.notify_success()
@@ -234,7 +234,7 @@ def make_new_mdbl_list(params):
 	if not list_title: return
 	list_name = unquote(list_title)
 	data = {'name': list_name, 'private': False}
-	result = call_mdblist('lists/user/add', json=data, method='post')
+	result = call_mdblist('/lists/user/add', json=data, method='post')
 	if result is None: return kodi_utils.notify_failed()
 	mdbl_cache.clear_mdbl_list_data('my_lists')
 	kodi_utils.notify_success()
@@ -243,7 +243,7 @@ def make_new_mdbl_list(params):
 def delete_mdbl_list(params):
 	if not kodi_utils.confirm_dialog(): return
 	list_id = params['list_id']
-	url = 'lists/%s' % list_id
+	url = '/lists/%s' % list_id
 	result = call_mdblist(url, method='delete')
 	if result is None: return kodi_utils.notify_failed()
 	mdbl_cache.clear_mdbl_list_data('my_lists')
@@ -251,8 +251,8 @@ def delete_mdbl_list(params):
 	kodi_utils.container_refresh()
 
 def mdbl_watched_unwatched(action, media, media_id, tvdb_id=0, season=None, episode=None, key='tmdb'):
-	if action == 'mark_as_watched': url, result_key = 'sync/watched', 'updated'
-	else: url, result_key = 'sync/watched/remove', 'removed'
+	if action == 'mark_as_watched': url, result_key = '/sync/watched', 'updated'
+	else: url, result_key = '/sync/watched/remove', 'removed'
 	try: media_id = int(media_id)
 	except: pass
 	if media == 'movies':
@@ -275,13 +275,13 @@ def mdbl_watched_unwatched(action, media, media_id, tvdb_id=0, season=None, epis
 def mdbl_progress(action, media, media_id, percent, season=None, episode=None, resume_id=None, refresh=False):
 	if action == 'clear_progress':
 		data = {'id': resume_id}
-		url = 'scrobble/clear'
+		url = '/scrobble/clear'
 	else:
 		try: media_id = int(media_id)
 		except: pass
 		if media in ('movie', 'movies'): data = {'movie': {'ids': {'tmdb': media_id}}, 'progress': float(percent)}
 		else: data = {'show': {'ids': {'tmdb': media_id}, 'season': {'number': int(season), 'episode': {'number': int(episode)}}}, 'progress': float(percent)}
-		url = 'scrobble/pause'
+		url = '/scrobble/pause'
 	call_mdblist(url, json=data, method='post')
 	if refresh: mdbl_sync_activities()
 
@@ -293,7 +293,7 @@ def hide_unhide_mdbl_items(action, mediatype, media_id, list_type):
 		except: return kodi_utils.notify_error()
 	mediatype = 'movies' if mediatype in ('movie', 'movies') else 'shows'
 	key = 'tmdb' if mediatype == 'movies' else 'imdb'
-	url = 'sync/dropped' if action == 'hide' else 'sync/dropped/remove'
+	url = '/sync/dropped' if action == 'hide' else '/sync/dropped/remove'
 	data = {mediatype: [{'ids': {key: media_id}}]}
 	call_mdblist(url, json=data, method='post')
 	mdbl_sync_activities()
@@ -405,11 +405,11 @@ def mdbl_progress_tv(progress_info):
 	mdbl_cache.MDBLCache().set_bulk_tvshow_progress(insert_list)
 
 def mdbl_playback_progress():
-	url = 'sync/playback'
+	url = '/sync/playback'
 	return call_mdblist(url)
 
 def mdbl_get_activity():
-	url = 'sync/last_activities'
+	url = '/sync/last_activities'
 	return call_mdblist(url)
 
 def mdbl_sync_activities_thread(*args, **kwargs):
@@ -453,7 +453,7 @@ def mdbl_sync_activities(force_update=False, init_callback=None, monitor=None):
 	refresh_episodes_watched = _compare(latest['episode_watched_at'], cached['episode_watched_at'])
 	if refresh_movies_watched or refresh_episodes_watched:
 		success = 'success'
-		watched_info = _get_mdbl_paginated_list('sync/watched')
+		watched_info = _get_mdbl_paginated_list('/sync/watched')
 		if refresh_movies_watched: mdbl_indicators_movies(watched_info)
 		if refresh_episodes_watched: mdbl_indicators_tv(watched_info)
 	refresh_movies_progress = _compare(latest['paused_at'], cached['paused_at'])

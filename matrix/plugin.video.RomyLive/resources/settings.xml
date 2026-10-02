@@ -16,6 +16,13 @@
     <category label="Categorie Adulti (Canale TV Romania 2)">
         <setting id="rdslive_adult_pin" type="text" label="PIN pentru categoria Adulti (4 cifre)" option="hidden" default="" />
     </category>
+    <category label="Cinemateca / Filme Vechi (Telegram)">
+        <setting id="cinemateca_enabled" type="bool" label="Afiseaza categoria Cinemateca / Filme Vechi in Filme" default="true" />
+        <setting id="cinemateca_channel" type="text" label="Canal Telegram (fara @)" default="cinematecaro11" />
+        <setting id="cinemateca_api_base" type="text" label="Server sursa (Telegram -> JSON)" default="https://tg.i-c-a.su" />
+        <setting id="cinemateca_cache_hours" type="number" label="Pastreaza lista in cache (ore)" default="6" />
+        <setting id="cinemateca_proxy_enabled" type="bool" label="Redare prin proxy local (recomandat - elimina blocajul dupa ~35 secunde)" default="true" />
+    </category>
     <category id="__internal__">
         <setting id="dinbox_cached_authkey" type="text" visible="false" />
         <setting id="dinbox_cached_sesskey" type="text" visible="false" />
