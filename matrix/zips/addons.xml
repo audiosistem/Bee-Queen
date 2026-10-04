@@ -943,7 +943,7 @@ v1.6.0 - My Free Flow + full Trakt integration</news>
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.gratisred" name="[COLOR red]Gratis Red[/COLOR]" version="2.0.3" provider-name="[COLOR red]The Red Wizard[/COLOR]">
+</addon><addon id="plugin.video.gratisred" name="[COLOR red]Gratis Red[/COLOR]" version="2.0.4" provider-name="[COLOR red]The Red Wizard[/COLOR]">
     <requires>
         <import addon="script.gratisred.artwork" version="1.0.5" />
         <import addon="script.module.kodi-six" />
@@ -959,7 +959,7 @@ v1.6.0 - My Free Flow + full Trakt integration</news>
     <extension point="xbmc.python.pluginsource" library="main.py">
         <provides>video</provides>
     </extension>
-    <extension library="service.py" point="xbmc.service" start="startup" />
+    
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Free and non-Debrid Movies, TV Shows and Anime</summary>
         <description lang="en">For more links, go to:[CR][CR]* Tools &gt; Settings &gt; Provider Settings &gt; Enable ALL Providers &gt; OK[CR][CR]* Tools &gt; Settings &gt; Playback Settings &gt; disable Remove Duplicate Sources &gt; OK</description>
@@ -970,13 +970,13 @@ v1.6.0 - My Free Flow + full Trakt integration</news>
 		<forum>https://t.me/+X-lt1ZDii3I3YjA0</forum>
 		<website>https://redwizard.xyz/</website> 
 		<source>https://github.com/The-Red-Wizard/TheRedWizard</source>
-        <news>2026-09-28
-- Summary of v2.0.3 (see Tools &gt; Changelog for the detail):
- * During playback, Back stops the film, arrows seek like the player, pause pauses, and the on-screen controls use those arrows while open
- * In Progress seeks to the pause on that row
- * Results sit in whole rows under the clear logo
- * A long file name on the resolving dialog keeps its start and its end
- * Tools lists Authorise MDBList, Simkl, TMDb, and Trakt in that order</news>
+        <news>2026-10-03
+- Summary of v2.0.4 (see Tools &gt; Changelog for the detail):
+ * A long press on a result opens the context menu
+ * Playing a Kodi favourite shows the resolving dialog until the picture starts
+ * A dead favourite is dropped from the player
+ * One failed source says Source not Playable
+ * Autoplay keeps the resolving dialog up and skips a source that does not play</news>
         <assets>
             <icon>resources/images/icon.png</icon>
             <fanart>resources/images/fanart.jpg</fanart>
@@ -1614,7 +1614,7 @@ In addition to what livestreams allowed you to do, you can now,
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.themoviedb.helper" version="6.17.4" name="TMDb Helper" provider-name="jurialmunkey">
+</addon><addon id="plugin.video.themoviedb.helper" version="6.17.5" name="TMDb Helper" provider-name="jurialmunkey">
 <requires>
   <import addon="xbmc.python" version="3.0.1" />
   <import addon="script.module.requests" version="2.9.1" />

@@ -179,8 +179,8 @@ class SourceResultsDialog(xbmcgui.WindowXMLDialog):
             if focused == 2000:
                 self._choose()
             return
-        if action_id == 117 and self._downloads:
-            self._download()
+        if action_id == 117:
+            self._context_menu()
 
     def _stop_resolve(self):
         dialog = control.progressDialogBG if control.setting('progress.dialog') != '0' else control.progressDialog
@@ -282,12 +282,70 @@ class SourceResultsDialog(xbmcgui.WindowXMLDialog):
         self._worker = thread
         thread.start()
 
-    def _download(self):
+    def _selected_position(self):
         try:
             pos = self.getControl(2000).getSelectedPosition()
         except Exception:
-            return
+            return -1
         if pos is None or pos < 0 or pos >= len(self._items):
+            return -1
+        return pos
+
+    def _context_menu(self):
+        if self._busy:
+            return
+        pos = self._selected_position()
+        if pos < 0:
+            return
+        choices = []
+        actions = []
+        if self._downloads:
+            choices.append('[B]Download[/B]')
+            actions.append('download')
+        choices.append('[B]Play[/B]')
+        actions.append('play')
+        choices.append('Add to favourites')
+        actions.append('favourite')
+        picked = control.contextmenuDialog(choices)
+        if picked is None or picked < 0 or picked >= len(actions):
+            return
+        action = actions[picked]
+        if action == 'download':
+            self._download()
+        elif action == 'play':
+            self._choose()
+        else:
+            self._add_favourite(pos)
+
+    def _source_plugin_url(self, pos):
+        source = urllib_parse.quote_plus(json.dumps([self._items[pos]]))
+        title = urllib_parse.quote_plus(self._title or self._download_name)
+        return '%s?action=play_item&title=%s&source=%s' % (sys.argv[0], title, source)
+
+    def _add_favourite(self, pos):
+        label = _plain_line(str(self._items[pos].get('label') or '').split('[CR]')[0]) or self._download_name
+        payload = {
+            'jsonrpc': '2.0',
+            'id': 1,
+            'method': 'Favourites.AddFavourite',
+            'params': {
+                'title': label,
+                'type': 'media',
+                'path': self._source_plugin_url(pos),
+                'thumbnail': self.getProperty('poster') or '',
+            },
+        }
+        try:
+            from kodi_six import xbmc
+            xbmc.executeJSONRPC(json.dumps(payload))
+            control.infoDialog('Added to favourites', sound=False)
+        except Exception:
+            from resources.lib.modules import log_utils
+            log_utils.log('source results favourite', 1)
+
+    def _download(self):
+        pos = self._selected_position()
+        if pos < 0:
             return
         source = urllib_parse.quote_plus(json.dumps([self._items[pos]]))
         name = urllib_parse.quote_plus(self._download_name)

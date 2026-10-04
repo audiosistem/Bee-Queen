@@ -66,6 +66,46 @@ def _release_play(token):
         pass
 
 
+def _clear_player_without_picture():
+    """A favourite that never shows a picture can stay the current file.
+
+    Later resolves are then allowed to start, and they open on top of that
+    player. Stop it, and wait until it has actually gone, before the next one.
+    """
+    try:
+        if control.condVisibility('Window.IsActive(fullscreenvideo)'):
+            return
+        if not (control.condVisibility('Player.HasVideo') or control.condVisibility('Player.HasMedia') or control.condVisibility('Player.Playing')):
+            return
+    except Exception:
+        return
+    try:
+        # A file that is still opening does not answer isPlaying(), so
+        # Player.stop() leaves it. Stop is the key that closes it.
+        control.execute('PlayerControl(Stop)')
+    except Exception:
+        pass
+    for _ in range(80):
+        try:
+            if not control.condVisibility('Player.HasVideo'):
+                return
+        except Exception:
+            return
+        control.sleep(100)
+
+
+def release_active_play():
+    """The picture has started. A later scrape must not wait on this player.
+
+    A Kodi favourite is play_item. Stop used to leave that script inside the
+    player, still holding the claim, so the next title returned without a scrape.
+    """
+    try:
+        control.window.clearProperty(_PLAY_ACTIVE)
+    except Exception:
+        pass
+
+
 # Kodi's progress dialog shows only a few lines of text, and skins size it for
 # ordinary labels. A long release name with no spaces wraps onto three or four
 # lines and pushes the rest of the label off the bottom of the box. The dialog
@@ -623,6 +663,19 @@ class sources:
                 pass
             del progressDialog
             log_utils.log('sourcesDialog', 1)
+
+
+    def _autoplay_items(self, items):
+        """Sources autoplay will try, in list order.
+
+        Captcha hosts are left out. A row marked not for autoplay is left out.
+        Autoplay SD, when on, keeps SD only.
+        """
+        items = [i for i in items if i['source'].lower() not in self.hostcapDict]
+        items = [i for i in items if ('autoplay' in i and i['autoplay'] == True) or 'autoplay' not in i]
+        if control.setting('autoplay.sd') == 'true':
+            items = [i for i in items if i['quality'].lower() not in ['4k', '1080p', '720p', 'hd']]
+        return items
 
 
     def sourcesDirect(self, items):
@@ -1214,7 +1267,18 @@ class sources:
                 elif select == '0':
                     url = self.sourcesDialog(items)
                 else:
-                    url = self.sourcesDirect(items)
+                    # Same resolve as source select: one dialog, and a source
+                    # that does not play is skipped for the next.
+                    ordered = self._autoplay_items(items)
+                    if not ordered:
+                        return self.errorForSources()
+                    if not isinstance(meta, dict):
+                        try:
+                            loaded = json.loads(meta)
+                            meta = loaded if isinstance(loaded, dict) else {}
+                        except Exception:
+                            meta = {}
+                    return self._resolve_and_play(title, ordered, meta)
             if url == 'close://':
                 self.url = url
                 control.abort_plugin_resolve()
@@ -1247,8 +1311,18 @@ class sources:
     def _play_item(self, title, source):
         try:
             control.clear_resolve_state()
-            meta = control.window.getProperty(self.metaProperty)
-            meta = json.loads(meta)
+            # A Kodi favourite survives a restart. The title details do not.
+            # They only live on the window from the last scrape. Without this,
+            # the favourite returns before the resolving dialog opens.
+            meta = {}
+            try:
+                raw = control.window.getProperty(self.metaProperty) or ''
+                if raw:
+                    loaded = json.loads(raw)
+                    if isinstance(loaded, dict):
+                        meta = loaded
+            except Exception:
+                meta = {}
             next = []
             prev = []
             total = []
@@ -1276,6 +1350,7 @@ class sources:
                     break
             items = json.loads(source)
             items = [i for i in items+next+prev]
+            _clear_player_without_picture()
             self._resolve_and_play(title, items, meta)
         except:
             control.abort_plugin_resolve()
@@ -1457,7 +1532,22 @@ class sources:
                 except Exception:
                     pass
                 control.sleep(100)
-            control.infoDialog('No Playable Sources', sound=False, icon='INFO')
+            # A favourite is one source. Leaving without setResolvedUrl keeps
+            # that plugin item in the player. Reject it so Kodi drops it.
+            try:
+                control.progressDialog.close()
+            except Exception:
+                pass
+            try:
+                control.progressDialogBG.close()
+            except Exception:
+                pass
+            control.abort_plugin_resolve()
+            if len(items) == 1:
+                notice = 'Source not Playable'
+            else:
+                notice = 'No Playable Sources'
+            control.infoDialog(notice, sound=False, icon='INFO')
             return False
         except:
             control.abort_plugin_resolve()

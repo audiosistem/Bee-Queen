@@ -70,6 +70,7 @@ class player(xbmc.Player):
             self._player_closing = False
             self._stop_lock = threading.Lock()
             self._playback_released = False
+            self._playback_opened = False
             self._notified_stopped = False
             self._on_started = on_started
             self._on_stopped = on_stopped
@@ -132,22 +133,12 @@ class player(xbmc.Player):
                 item.setArt({'icon': thumb, 'thumb': thumb, 'tvshow.poster': poster, 'season.poster': poster, 'fanart': fanart, 'clearlogo': clearlogo, 'clearart': clearart})
             info_tag = ListItemInfoTag(item, 'video')
             info_tag.set_info(control.metadataClean(meta))
-            # Prefer setResolvedUrl when the plugin handle expects it (Kodi 22 widgets /
-            # PlayMedia). Player().play() from a plugin is unsupported and can leave the
-            # original plugin:// item unresolved → "One or more items failed to play".
-            played_via_resolve = False
-            try:
-                handle = control.plugin_handle()
-                # One play click accepts one setResolvedUrl. A retry from the results window plays directly.
-                already = control.window.getProperty(control.PROP_RESOLVE_DONE) == 'true'
-                if handle > 0 and not already:
-                    control.resolve(handle, True, item)
-                    control.mark_resolve_sent()
-                    played_via_resolve = True
-            except Exception:
-                pass
-            if not played_via_resolve:
-                self.play(url, item)
+            # Playing the plugin item makes Kodi close the resolving dialog.
+            # A source chosen from the results window plays the stream itself,
+            # and that dialog stays up. Do the same here, after rejecting the
+            # plugin item so it is not left in the player.
+            self._drop_plugin_item()
+            self.play(url, item)
             control.window.setProperty('script.trakt.ids', json.dumps(self.ids))
             self.keepPlaybackAlive()
             # onPlayBackStopped only sets flags. Wait until that returns before any
@@ -263,7 +254,13 @@ class player(xbmc.Player):
                 break
             self._tick_resolving_while_opening()
             xbmc.sleep(200)
-        if not self._resolve_cancelled and not self._playback_failed_fast and not (self.isPlayingVideo() and self._av_started):
+        # Same wait as source select. The dialog stays up until the picture
+        # starts or the player itself gives up. OnPlayBackStarted is not that.
+        try:
+            picture_started = bool(self.isPlayingVideo() and self._av_started)
+        except Exception:
+            picture_started = bool(self._av_started)
+        if not self._resolve_cancelled and not self._playback_failed_fast and not picture_started:
             for i in range(0, 225):
                 if self._playback_wait_done():
                     break
@@ -298,19 +295,31 @@ class player(xbmc.Player):
                 started()
             except Exception:
                 pass
+        if self._playback_closing():
+            return
         # Backup if onAVStarted never ran on this Player instance.
-        if self.isPlayingVideo():
-            self._ensure_live_scrobble_start()
+        try:
+            if self.isPlayingVideo():
+                self._ensure_live_scrobble_start()
+        except Exception:
+            pass
+        self._release_play_claim()
         if overlay == '7':
-            while self._playback_still_open():
+            while not self._playback_closing():
+                if not self._sleep_while_playing(2):
+                    break
+                if self._playback_closing():
+                    break
                 try:
                     self._sample_playback_times()
                 except:
                     pass
+        elif self.content == 'movie':
+            while not self._playback_closing():
                 if not self._sleep_while_playing(2):
                     break
-        elif self.content == 'movie':
-            while self._playback_still_open():
+                if self._playback_closing():
+                    break
                 try:
                     self._sample_playback_times()
                     total = self._total_seconds()
@@ -321,10 +330,12 @@ class player(xbmc.Player):
                         playcount.markMovieDuringPlayback(self.imdb, '7', self.tmdb)
                 except:
                     pass
+        elif self.content == 'episode':
+            while not self._playback_closing():
                 if not self._sleep_while_playing(2):
                     break
-        elif self.content == 'episode':
-            while self._playback_still_open():
+                if self._playback_closing():
+                    break
                 try:
                     self._sample_playback_times()
                     total = self._total_seconds()
@@ -335,11 +346,60 @@ class player(xbmc.Player):
                         playcount.markEpisodeDuringPlayback(self.imdb, self.tmdb, self.season, self.episode, '7', self.tvdb)
                 except:
                     pass
-                if not self._sleep_while_playing(2):
-                    break
+
+
+    def _drop_plugin_item(self):
+        try:
+            handle = control.plugin_handle()
+            already = control.window.getProperty(control.PROP_RESOLVE_DONE) == 'true'
+            if handle > 0 and not already:
+                try:
+                    control.resolve(handle, False, control.item(offscreen=True))
+                except Exception:
+                    control.resolve(handle, False, control.item())
+                control.mark_resolve_sent()
+        except Exception:
+            pass
+        # A rejected plugin item can deliver a stop before the stream starts.
+        self._playback_released = False
+        self._playback_failed_fast = False
+        self._playback_opened = False
+        self._player_closing = False
+        self._stop_callback_done = False
+        control.dismiss_playback_failed()
+        # Rejecting the plugin item can mark the resolving dialog cancelled.
+        # Replace that one dialog before the stream starts. Do not leave two up.
+        try:
+            if control.progressDialog.iscanceled():
+                header = control.window.getProperty('gratisred.resolving_header') or ''
+                label = control.window.getProperty('gratisred.resolving_label') or header
+                try:
+                    control.progressDialog.close()
+                except Exception:
+                    pass
+                control.open_progress(header, label)
+        except Exception:
+            pass
+
+
+    def _playback_closing(self):
+        return bool(getattr(self, '_playback_released', False) or getattr(self, '_player_closing', False))
+
+
+    def _release_play_claim(self):
+        try:
+            from resources.lib.modules.sources import release_active_play
+            release_active_play()
+        except Exception:
+            try:
+                control.window.clearProperty('gratisred.play_active')
+            except Exception:
+                pass
 
 
     def _sample_playback_times(self):
+        if self._playback_closing():
+            return
         if not self.isPlayingVideo():
             return
         try:
@@ -685,6 +745,10 @@ class player(xbmc.Player):
             self._stop_opened_file()
             return
         self._av_started = True
+        # Drop the scrape claim before resume, subtitles, or the playback
+        # wait. Stop can leave this script inside a player call. The next
+        # title has to scrape anyway, including a Kodi favourite.
+        self._release_play_claim()
         # Fullscreen while the results window is still up, then let that
         # window hide. It stays open so stop does not land on the movie list.
         self._enter_fullscreen()
@@ -732,12 +796,14 @@ class player(xbmc.Player):
 
 
     def _tick_resolving_while_opening(self):
-        """Keep the resolving bar moving while Kodi opens the file.
+        """Keep the resolving dialog moving while Kodi opens the file.
 
-        OnPlayBackStarted puts DialogBusy over that bar until the picture starts.
-        Once the picture is up, or the player is already closing, leave the dialog alone.
+        OnPlayBackStarted puts the busy spinner over that dialog until the
+        picture starts. Close the spinner and keep the same dialog. A new
+        window is not opened. Leave it alone once the picture is up, or the
+        player is already closing.
         """
-        if self._av_started or self._player_closing:
+        if self._av_started or self._player_closing or self._playback_closing():
             return
         try:
             busy = control.condVisibility('Window.IsActive(busydialog)') or control.condVisibility('Window.IsActive(busydialognocancel)')
@@ -749,7 +815,6 @@ class player(xbmc.Player):
                 xbmc.sleep(50)
         except Exception:
             pass
-        control.focus_progress_cancel()
         control.dismiss_playback_failed()
         try:
             started = float(control.window.getProperty('gratisred.resolving_started') or 0)
@@ -758,17 +823,32 @@ class player(xbmc.Player):
             return
         if started <= 0 or limit <= 0:
             return
+        background = control.window.getProperty('gratisred.resolving_bg') == '1'
+        dialog = control.progressDialogBG if background else control.progressDialog
+        window_name = 'progressdialogbg' if background else 'progressdialog'
+        try:
+            active = control.condVisibility('Window.IsActive(%s)' % window_name)
+        except Exception:
+            active = False
+        # update() on a dialog Kodi has already closed opens a second one.
+        if not active:
+            return
+        if not background:
+            control.focus_progress_cancel()
+        self._update_resolve_dialog(dialog, started, limit)
+
+
+    def _update_resolve_dialog(self, dialog, started, limit):
         percent = min(95, int(((time.time() - started) / limit) * 100))
         header = control.window.getProperty('gratisred.resolving_header') or ''
         label = control.window.getProperty('gratisred.resolving_label') or header
-        dialog = control.progressDialogBG if control.window.getProperty('gratisred.resolving_bg') == '1' else control.progressDialog
         try:
             dialog.update(percent, label)
         except Exception:
             try:
                 dialog.update(percent, '%s[CR]%s' % (header, label))
             except Exception:
-                pass
+                self._resolve_bar_continued = False
 
 
     def _close_resolving_dialog(self):
@@ -845,13 +925,38 @@ class player(xbmc.Player):
                 playing = self.isPlayingVideo()
             except Exception:
                 playing = False
-            if not playing:
+            opened = bool(getattr(self, '_playback_opened', False))
+            if not playing and not opened:
                 return
             self._player_closing = True
         try:
-            self.stop()
+            if playing:
+                self.stop()
+            else:
+                # isPlayingVideo() is false while the file is still opening.
+                # Stop on the remote is what actually closes that player.
+                control.execute('PlayerControl(Stop)')
         except Exception:
             pass
+        # A stuck open, such as the cinetaro m3u8, keeps fetching after stop()
+        # returns. The next favourite must not start while that player is still up.
+        self._wait_player_idle()
+
+
+    def _wait_player_idle(self):
+        # HasVideo is false while a file is still opening, so that check
+        # returns before Stop has finished. The stop callback is the player
+        # actually gone.
+        for _ in range(80):
+            if getattr(self, '_stop_callback_done', False) or getattr(self, '_playback_released', False):
+                return
+            if not getattr(self, '_playback_opened', False):
+                try:
+                    if not control.condVisibility('Player.HasVideo'):
+                        return
+                except Exception:
+                    return
+            xbmc.sleep(100)
 
 
     def _playback_still_open(self):
@@ -859,9 +964,12 @@ class player(xbmc.Player):
 
 
     def _sleep_while_playing(self, seconds):
+        # Sleep pumps onPlayBackStopped. Asking the player whether it is still
+        # playing, while Stop is closing the file, never returns. The callback
+        # flag is enough.
         remaining = int(seconds * 1000)
         while remaining > 0:
-            if not self._playback_still_open():
+            if self._playback_closing():
                 return False
             should_abort = getattr(self, '_should_abort', None)
             if should_abort and should_abort():
@@ -871,7 +979,7 @@ class player(xbmc.Player):
             step = 200 if remaining > 200 else remaining
             xbmc.sleep(step)
             remaining -= step
-        return self._playback_still_open()
+        return not self._playback_closing()
 
 
     def _finish_stopped_playback(self):
@@ -924,6 +1032,7 @@ class player(xbmc.Player):
     def onPlayBackStarted(self):
         if getattr(self, '_playback_released', False):
             return
+        self._playback_opened = True
         if kodi_version < 18:
             self._av_started = True
             control.execute('Dialog.Close(all,true)')

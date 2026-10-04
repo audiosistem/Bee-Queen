@@ -1,4 +1,9 @@
 
+[B]- 2.0.4 (2026-10-03)[/B] Results / favourites / autoplay:
+ * [B]Results[/B]: a long press on a source opens the context menu. [B]Download[/B] is first when download folders are set, then [B]Play[/B]. Add to favourites stays plain, because that is a Kodi favourite. Gratis Red favourites are movies and shows. Choosing Download still asks to confirm the file. Cancelling the menu stays on the results.
+ * [B]Favourites[/B]: playing a source from Kodi favourites and stopping it leaves the next scrape free to run. The resolving dialog shows for that favourite, including after a restart, and stays up until the picture starts or the source fails. A source that cannot be played is dropped from the player. One failed source says Source not Playable. No Playable Sources is the notice after a list has nothing left that will play.
+ * [B]Autoplay[/B]: uses the same resolving dialog as choosing a source. A link that does not resolve, or that Kodi cannot play, is skipped and the next source is tried. The dialog stays up until one starts or the list runs out. Nothing left says No Playable Sources.
+
 [B]- 2.0.3 (2026-09-28)[/B] In Progress:
  * [B]Playback[/B]: while the film is playing, Back stops it and returns to the results. Up and down make the large jump. Left and right use the player's own seek steps, so another press before that seek finishes jumps further. The controller pause pauses the film. While the player controls are open, the arrows and OK use those controls. The results window stays hidden underneath (The Red Wizard / Valar_Morghulis).
  * [B]In Progress[/B]: playing a paused film or episode seeks to the pause on that row. Resume Playback still asks first, unless Auto Resume is on. Other lists still use the bookmark. The source list is unchanged.

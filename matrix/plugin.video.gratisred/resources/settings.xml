@@ -158,12 +158,8 @@
         <setting id="library.include_special" type="bool" label="Include Special Episodes" default="false" />
         <setting type="lsep" label="Downloads" />
         <setting id="downloads" type="bool" label="Enable Downloads" default="false" />
-        <setting type="sep" />
-        <setting id="movie.download.path" type="folder" label="Movies" enable="!eq(-2,false)" default="" visible="eq(-2,true)" />
-        <setting id="tv.download.path" type="folder" label="TV" enable="!eq(-3,false)" default="" visible="eq(-3,true)" />
-        <setting type="sep" />
-        <setting id="dl.text1" type="text" label="Downloading Features Are Disabled By Default." enable="false" visible="eq(-5,true)" />
-        <setting id="dl.text2" type="text" label="Set Up Your Download Folders In Order To Enable Them." enable="false" visible="eq(-6,true)" />
+        <setting id="movie.download.path" type="folder" label="Movies" subsetting="true" enable="!eq(-1,false)" default="" />
+        <setting id="tv.download.path" type="folder" label="TV" subsetting="true" enable="!eq(-2,false)" default="" />
         <setting type="lsep" label="Subtitles (OpenSubtitles.com)" />
         <setting id="subtitles" type="bool" label="Enable Subtitles" default="false" />
         <setting id="opensubs.username" type="text" label="OpenSubtitles Username:" default="" subsetting="true" enable="!eq(-1,false)" visible="eq(-1,true)" />
