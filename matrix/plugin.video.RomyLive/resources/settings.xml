@@ -1,8 +1,11 @@
 <settings>
 
+    <category label="Audio RomyLive">
+        <setting id="audio_prefer_romanian" type="bool" label="Selecteaza automat pista romana cand este disponibila" default="true" />
+    </category>
     <category label="Actualizare automata (Remote loader)">
         <setting id="remote_loader_enabled" type="bool" label="Incarca pluginul de pe server (permite update fara reinstalare)" default="true" />
-        <setting id="remote_loader_url" type="text" label="URL sursa default.py" default="https://documentarys.do.am/default.py" />
+        <setting id="remote_loader_url" type="text" label="URL sursa default.py" default="" />
     </category>
     <category label="Live TV EPG">
         <setting id="xmltv_epg_enabled" type="bool" label="Activeaza EPG (XMLTV) pentru Live TV" default="false" />

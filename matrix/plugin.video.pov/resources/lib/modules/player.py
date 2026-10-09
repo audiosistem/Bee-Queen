@@ -247,7 +247,6 @@ class POVPlayer(MediaPlayer):
 			if task_name == 'media_bookmark':
 				# isPlayingVideo is False before onPlayBackStopped called, ensure player cleanup
 				# completed or container_refresh in set_bookmark will sometimes crash container
-#				_ = any(kodi_utils.sleep(500) or not self.playback_event for i in range(4))
 				_ = any(kodi_utils.sleep(300) or not self.windowIsActive() for i in range(5))
 				if args: ws.set_bookmark(*args)
 			elif task_name == 'media_watched':

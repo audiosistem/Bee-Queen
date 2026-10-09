@@ -5,6 +5,7 @@
 import re
 import unicodedata
 from string import printable
+from concurrent.futures import Future
 from threading import Thread as thread
 from magneto.modules import cleantitle, log_utils
 from magneto.modules.undesirables import Undesirables
@@ -59,6 +60,20 @@ class Thread(thread):
 		self._args = args
 		thread.__init__(self, target=self._target, args=self._args)
 
+class SourceRegistry:
+	_lock = None # Must be overridden by subclass
+	_cache = None # Must be overridden by subclass
+
+	@classmethod
+	def clear_all(cls):
+		with cls._lock: cls._cache.clear()
+
+	def get_future(self, key):
+		with self._lock:
+			if key not in self._cache:
+				self._cache[key] = Future()
+			return self._cache[key]
+
 def log_utils_error(*args):
 	return log_utils.error(*args)
 
@@ -96,11 +111,11 @@ def remove_lang(release_info, check_foreign_audio):
 		return False
 
 COMPILED_RESOLUTIONS = {k: re.compile(v, re.I) for k, v in {
-	'4K': r'\b(2160p?|216o|4k|ultrahd|ultra\.hd|uhd)\b',
-	'1080p': r'\b(1080p?|1o8o|108o|1o80|fhd)\b',
-	'720p': r'\b(720p?|72o)\b(?!mb)',
+	'CAM': r'\b(cam|camrip|dvdcam|dvdts|hdcam|hctc|hdtc|hdts|hqcam|ts|tc|tsrip|telecine|telesync)\b',
 	'SCR': r'\b(dvdscr|screener|\.scr\.|r5|r6)\b',
-	'CAM': r'\b(cam|camrip|dvdcam|dvdts|hdcam|hctc|hdtc|hdts|hqcam|ts|tc|tsrip|telecine|telesync)\b'
+	'720p': r'\b(720p?|72o)\b(?!mb)',
+	'1080p': r'\b(1080p?|1o8o|108o|1o80|fhd)\b',
+	'4K': r'\b(2160p?|216o|4k|ultrahd|ultra\.hd|uhd)\b'
 }.items()}
 
 def get_qual(term):

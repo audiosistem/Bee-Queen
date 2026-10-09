@@ -9,8 +9,8 @@ subsfound_str, dlfound_str, nosubs_str, ratelimit_str = ls(32792), ls(32793), ls
 def request_get(url, **kwargs):
 	try: response = http.request('get', url, **kwargs)
 	except Exception as e: return str(e)
-	if response.status < 400: return response
-	return response.reason
+	if not response.status < 400: return response.reason
+	return response
 
 class SubtitleScraper:
 	def __init__(self, player_object, poster):

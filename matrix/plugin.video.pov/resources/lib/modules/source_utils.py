@@ -13,12 +13,12 @@ from modules.utils import adjust_premiered_date, get_datetime, jsondate_to_datet
 string = str
 
 RESOLUTIONS = {
-	'4K': r'(?:\b|_)(4k|hd4k|4khd|uhd|ultrahd|ultra\.hd|hd2160|2160hd|2160|2160p|216o|216op)(?:\b|_)',
-	'1080p': r'(?:\b|_)(1080|1080p|1080i|hd1080|1080hd|hd1080p|m1080p|fullhd|full\.hd|1o8o|1o8op|108o|108op|1o80|1o80p)(?:\b|_)',
-	'720p': r'(?:\b|_)(720|720p|720i|hd720|720hd|hd720p|72o|72op)(?:\b|_)',
 	'CAM': r'(?:\b|_)(cam|camrip|hdcam|hd\.cam|cam\.rip|dvdcam)(?:\b|_)',
+	'TELE': r'(?:\b|_)(tc|tsrip|hdts|hdtc|hd\.tc|dvdts|telesync|ts)(?:\b|_)',
 	'SCR': r'(?:\b|_)(scr|screener|dvdscr|dvd\.scr|r5|r6)(?:\b|_)',
-	'TELE': r'(?:\b|_)(tc|tsrip|hdts|hdtc|hd\.tc|dvdts|telesync|ts)(?:\b|_)'
+	'720p': r'(?:\b|_)(720|720p|720i|hd720|720hd|hd720p|72o|72op)(?:\b|_)',
+	'1080p': r'(?:\b|_)(1080|1080p|1080i|hd1080|1080hd|hd1080p|m1080p|fullhd|full\.hd|1o8o|1o8op|108o|108op|1o80|1o80p)(?:\b|_)',
+	'4K': r'(?:\b|_)(4k|hd4k|4khd|uhd|ultrahd|ultra\.hd|hd2160|2160hd|2160|2160p|216o|216op)(?:\b|_)'
 }
 
 PATTERNS = {

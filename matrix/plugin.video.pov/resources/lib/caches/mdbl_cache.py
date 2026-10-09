@@ -1,4 +1,5 @@
 import json
+from caches import BaseCache
 from modules import kodi_utils
 from modules.utils import chunks
 # from modules.kodi_utils import logger
@@ -15,29 +16,36 @@ MC_BASE_GET = 'SELECT data FROM mdbl_data WHERE id = ?'
 MC_BASE_SET = 'INSERT OR REPLACE INTO mdbl_data (id, data) VALUES (?, ?)'
 MC_BASE_DELETE = 'DELETE FROM mdbl_data WHERE id = ?'
 
-class MDBLCache:
+class MDBLCache(BaseCache):
+	db_file = kodi_utils.mdbl_db
 	batch_size = 1000
-	def __init__(self):
-		self._database_connect()
-		self._set_PRAGMAS()
+
+	def _set_PRAGMAS(self):
+		self.dbcur.execute("""PRAGMA synchronous = OFF""")
+		self.dbcur.execute("""PRAGMA journal_mode = OFF""")
+		self.dbcur.execute("""PRAGMA mmap_size = 268435456""")
 
 	def set_bulk_movie_watched(self, insert_list):
-		self._delete(WATCHED_DELETE, ('movie',))
-		for i in chunks(insert_list, self.batch_size):
-			self._executemany(WATCHED_INSERT, i)
+		with self:
+			self._delete(WATCHED_DELETE, ('movie',))
+			for i in chunks(insert_list, self.batch_size):
+				self._executemany(WATCHED_INSERT, i)
 
 	def set_bulk_tvshow_watched(self, insert_list):
-		self._delete(WATCHED_DELETE, ('episode',))
-		for i in chunks(insert_list, self.batch_size):
-			self._executemany(WATCHED_INSERT, i)
+		with self:
+			self._delete(WATCHED_DELETE, ('episode',))
+			for i in chunks(insert_list, self.batch_size):
+				self._executemany(WATCHED_INSERT, i)
 
 	def set_bulk_movie_progress(self, insert_list):
-		self._delete(PROGRESS_DELETE, ('movie',))
-		self._executemany(PROGRESS_INSERT, insert_list)
+		with self:
+			self._delete(PROGRESS_DELETE, ('movie',))
+			self._executemany(PROGRESS_INSERT, insert_list)
 
 	def set_bulk_tvshow_progress(self, insert_list):
-		self._delete(PROGRESS_DELETE, ('episode',))
-		self._executemany(PROGRESS_INSERT, insert_list)
+		with self:
+			self._delete(PROGRESS_DELETE, ('episode',))
+			self._executemany(PROGRESS_INSERT, insert_list)
 
 	def _executemany(self, command, insert_list):
 		self.dbcur.executemany(command, insert_list)
@@ -45,15 +53,6 @@ class MDBLCache:
 	def _delete(self, command, args):
 		self.dbcur.execute(command, args)
 #		self.dbcur.execute("""VACUUM""")
-
-	def _database_connect(self):
-		self.dbcon = kodi_utils.database_connect(kodi_utils.mdbl_db, isolation_level=None)
-
-	def _set_PRAGMAS(self):
-		self.dbcur = self.dbcon.cursor()
-		self.dbcur.execute("""PRAGMA synchronous = OFF""")
-		self.dbcur.execute("""PRAGMA journal_mode = OFF""")
-		self.dbcur.execute("""PRAGMA mmap_size = 268435456""")
 
 def integrity_check():
 	try:
@@ -78,69 +77,70 @@ def integrity_check():
 	return status
 
 def cache_mdbl_object(function, string, url):
-	dbcur = MDBLCache().dbcur
-	dbcur.execute(MC_BASE_GET, (string,))
-	cached_data = dbcur.fetchone()
-	try:
-		if cached_data: return json.loads(cached_data[0])
-	except: pass
-	result = function(url)
-	dbcur.execute(MC_BASE_SET, (string, json.dumps(result)))
-	return result
+	with MDBLCache() as mc:
+		mc.dbcur.execute(MC_BASE_GET, (string,))
+		cached_data = mc.dbcur.fetchone()
+		try:
+			if cached_data: return json.loads(cached_data[0])
+		except: pass
+		if not isinstance(url, list): url = (url,)
+		result = function(*url)
+		mc.dbcur.execute(MC_BASE_SET, (string, json.dumps(result)))
+		return result
 
 def reset_activity(latest_activities):
 	string = 'mdbl_get_activity'
 	cached_data = None
 	try:
-		dbcur = MDBLCache().dbcur
-		dbcur.execute(MC_BASE_GET, (string,))
-		cached_data = dbcur.fetchone()
-		if cached_data: cached_data = json.loads(cached_data[0])
-		else: cached_data = default_activities()
-		dbcur.execute(MC_BASE_SET, (string, json.dumps(latest_activities)))
+		with MDBLCache() as mc:
+			mc.dbcur.execute(MC_BASE_GET, (string,))
+			cached_data = mc.dbcur.fetchone()
+			if cached_data: cached_data = json.loads(cached_data[0])
+			else: cached_data = default_activities()
+			mc.dbcur.execute(MC_BASE_SET, (string, json.dumps(latest_activities)))
 	except: pass
 	return cached_data
 
 def clear_mdbl_hidden_data(list_type):
 	string = 'mdbl_hidden_items_%s' % list_type
 	try:
-		dbcur = MDBLCache().dbcur
-		dbcur.execute(DELETE, (string,))
+		with MDBLCache() as mc:
+			mc.dbcur.execute(DELETE, (string,))
 	except: pass
 
 def clear_mdbl_collection_watchlist_data(list_type):
 	string = 'mdbl_%s' % list_type
 	try:
-		dbcur = MDBLCache().dbcur
-		dbcur.execute(DELETE, (string,))
+		with MDBLCache() as mc:
+			mc.dbcur.execute(DELETE, (string,))
 	except: pass
 
 def clear_mdbl_list_contents_data(list_type):
 	string = 'mdbl_list_contents_' + list_type + '_%'
 	try:
-		dbcur = MDBLCache().dbcur
-		dbcur.execute(DELETE_LIKE, (string,))
+		with MDBLCache() as mc:
+			mc.dbcur.execute(DELETE_LIKE, (string,))
 	except: pass
 
 def clear_mdbl_list_data(list_type):
 	string = 'mdbl_%s' % list_type
 	try:
-		dbcur = MDBLCache().dbcur
-		dbcur.execute(DELETE, (string,))
+		with MDBLCache() as mc:
+			mc.dbcur.execute(DELETE, (string,))
 	except: pass
 
 def clear_mdbl_calendar():
 	try:
-		dbcur = MDBLCache().dbcur
-		dbcur.execute(DELETE_LIKE, ('mdbl_get_my_calendar_%',))
+		with MDBLCache() as mc:
+			mc.dbcur.execute(DELETE_LIKE, ('mdbl_get_my_calendar_%',))
 	except: return
 
 def clear_all_mdbl_cache_data(refresh=True):
 	try:
-		dbcur = MDBLCache().dbcur
-		for table in ('mdbl_data', 'progress', 'watched_status'):
-			dbcur.execute(BASE_DELETE % table)
-		dbcur.execute("""VACUUM""")
+		with MDBLCache() as mc:
+			for table in ('mdbl_data', 'progress', 'watched_status'):
+				mc.dbcur.execute(BASE_DELETE % table)
+			mc.dbcur.execute("""VACUUM""")
 		if not refresh: return True
 		from indexers.mdblist_api import mdbl_sync_activities_thread
 		mdbl_sync_activities_thread()

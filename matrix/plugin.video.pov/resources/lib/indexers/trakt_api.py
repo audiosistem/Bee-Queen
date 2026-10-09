@@ -238,19 +238,19 @@ def trakt_get_my_calendar(recently_aired, current_date):
 	start, finish = trakt_calendar_days(recently_aired, current_date)
 	string = 'trakt_get_my_calendar_%s_%s' % (start, finish)
 	url = {'path': '/calendars/my/shows/%s/%s' % (start, finish), 'params': {'extended': 'full'}}
-	return trakt_cache.cache_trakt_object(lambda u: trakt_calendar_data(u, exclude_anime=True), string, url)
+	return trakt_cache.cache_trakt_object(trakt_calendar_data, string, [url, True])
 
 def trakt_get_my_anime_calendar(current_date):
 	start, finish = trakt_calendar_days(False, current_date)
 	string = 'trakt_get_my_calendar_anime_%s_%s' % (start, finish)
 	url = {'path': '/calendars/my/shows/%s/%s' % (start, finish), 'params': {'genres': 'anime'}}
-	return trakt_cache.cache_trakt_object(lambda u: trakt_calendar_data(u, exclude_anime=False), string, url)
+	return trakt_cache.cache_trakt_object(trakt_calendar_data, string, [url, False])
 
 def trakt_anime_calendar(current_date):
 	start, finish = trakt_calendar_days(False, current_date)
 	string = 'trakt_anime_calendar_%s_%s' % (start, finish)
 	url = {'path': '/calendars/all/shows/%s/%s' % (start, finish), 'params': {'genres': 'anime'}, 'with_auth': False}
-	return cache_object(lambda u: trakt_calendar_data(u, exclude_anime=False), string, url)
+	return cache_object(trakt_calendar_data, string, [url, False])
 
 def trakt_collection_lists(mediatype, param1):
 	data = trakt_fetch_collection_watchlist('collection', mediatype)

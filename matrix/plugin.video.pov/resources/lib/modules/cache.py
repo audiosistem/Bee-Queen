@@ -169,7 +169,7 @@ def clear_cache(cache_type, silent=False):
 		MetaCache().delete_all()
 	else: # 'list'
 		from caches.main_cache import MainCache
-		MainCache().delete_all_lists()
+		MainCache().delete_all()
 	if not silent and success: kodi_utils.notify_success()
 	return success
 

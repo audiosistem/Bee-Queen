@@ -138,7 +138,7 @@ def mdbl_get_my_calendar(recently_aired, current_date):
 	start, finish = mdbl_calendar_days(recently_aired, current_date)
 	string = 'mdbl_get_my_calendar_%s_%s' % (start, finish)
 	url = '/calendar/events?limit=1000&start=%s&end=%s' % (start, finish)
-	return mdbl_cache.cache_mdbl_object(lambda u: mdbl_calendar_data(u), string, url)
+	return mdbl_cache.cache_mdbl_object(mdbl_calendar_data, string, url)
 
 def mdblist_collection(mediatype, page_no):
 	original_list = mdbl_collection_watchlist_items('collection', mediatype)

@@ -72,7 +72,7 @@ class TorBoxAPI:
 
 	def delete_torrent(self, request_id):
 		if 'usenet' in request_id: path, key = '/v1/api/usenet/controlusenetdownload', 'usenet_id'
-		elif 'webdl' in request_id: path, key = '/v1/apiwebdl/controlwebdownload', 'webdl_id'
+		elif 'webdl' in request_id: path, key = '/v1/api/webdl/controlwebdownload', 'webdl_id'
 		else: path, key = '/v1/api/torrents/controltorrent', 'torrent_id'
 		ids = request_id.split(',')
 		data = {key: int(ids[0]), 'operation': 'delete'}

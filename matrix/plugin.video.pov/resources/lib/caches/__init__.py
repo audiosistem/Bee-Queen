@@ -17,10 +17,15 @@ get_property, set_property = kodi_utils.get_property, kodi_utils.set_property
 class BaseCache:
 	db_file = ':memory:'
 
-	def __init__(self):
+	def __enter__(self):
 		self.dbcon = database_connect(self.db_file, isolation_level=None)
 		self.dbcur = self.dbcon.cursor()
 		self._set_PRAGMAS()
+		return self
+
+	def __exit__(self, exc_type, exc_value, traceback):
+		for i in ('dbcur', 'dbcon'):
+			if hasattr(self, i): getattr(self, i).close()
 
 	def _set_PRAGMAS(self):
 		self.dbcur.execute("""PRAGMA synchronous = OFF""")

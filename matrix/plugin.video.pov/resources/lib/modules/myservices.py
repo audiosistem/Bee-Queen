@@ -235,7 +235,8 @@ class RealDebrid:
 
 	def poll(self, conn, data):
 		params = {'client_id': self.client_id, 'code': data['code']}
-		response = conn.request('get', '/oauth/v2/device/credentials', fields=params)
+		url = 'https://app.real-debrid.com/oauth/v2/device/credentials'
+		response = urllib3.request('get', url, fields=params)
 		if not response.status < 400: return
 		data.update(response.json())
 		self.secret = data['client_secret']

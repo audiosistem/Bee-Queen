@@ -15,8 +15,7 @@ class MainCache(BaseCache):
 		current_time = self._get_timestamp(datetime.now())
 		cache_data = self.get_memory_cache(string, current_time)
 		if cache_data: return cache_data
-		self.dbcur.execute(BASE_GET, (string, current_time))
-		data = self.dbcur.fetchone()
+		with self: data = self.dbcur.execute(BASE_GET, (string, current_time)).fetchone()
 		if not data: return None
 		result, expiry = self.jsloads(data[0]), data[1]
 		self.set_memory_cache(result, string, expiry)
@@ -24,8 +23,12 @@ class MainCache(BaseCache):
 
 	def set(self, string, data, expiration):
 		expires = self._get_timestamp(datetime.now() + expiration)
-		self.dbcur.execute(BASE_SET, (string, int(expires), self.jsdumps(data)))
+		with self: self.dbcur.execute(BASE_SET, (string, int(expires), self.jsdumps(data)))
 		self.set_memory_cache(data, string, int(expires))
+
+	def delete(self, string):
+		with self: self.dbcur.execute(BASE_DELETE, (string,))
+		self.delete_memory_cache(string)
 
 	def get_memory_cache(self, string, current_time):
 		cache_data = get_property(string)
@@ -38,25 +41,18 @@ class MainCache(BaseCache):
 		cache_data = (expires, data)
 		set_property(string, self.jsdumps(cache_data))
 
-	def delete(self, string, dbcon=None):
-		self.dbcur.execute(BASE_DELETE, (string,))
-		self.delete_memory_cache(string)
-
 	def delete_memory_cache(self, string):
 		clear_property(string)
 
-	def delete_all_lists(self):
+	def delete_all(self):
 		from modules.meta_lists import media_lists
 		items = ' OR '.join(LIKE_SELECT_ADD for i in media_lists)
-		self.dbcur.execute(LIKE_SELECT % items, media_lists)
-		results = self.dbcur.fetchall()
-		for item in results:
-			try:
-				self.dbcur.execute(BASE_DELETE, (str(item[0]),))
-				self.delete_memory_cache(str(item[0]))
-			except: pass
-		try: self.dbcur.execute("""VACUUM""")
-		except: pass
+		with self:
+			all_entries = self.dbcur.execute(LIKE_SELECT % items, media_lists).fetchall()
+			for i in all_entries:
+				self.dbcur.execute(BASE_DELETE, (str(i[0]),))
+			self.dbcur.execute("""VACUUM""")
+		for i in all_entries: self.delete_memory_cache(str(i[0]))
 
 def cache_object(function, string, url, expiration=24, json=False):
 	maincache = MainCache()

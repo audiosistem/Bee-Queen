@@ -16,7 +16,9 @@ def sources(ret_all=False):
 		for loader, module_name, is_pkg in iter_modules([sourcePath]):
 			if is_pkg: continue
 			if not ret_all and not enabledCheck(module_name): continue
-			try: module_source = importlib.import_module('.' + module_name, package=__name__).source
+			try:
+				module_source = importlib.import_module('.' + module_name, package=__name__).source
+				if hasattr(module_source, 'clear_all'): module_source.clear_all()
 			except Exception as e: logger('POV', 'Error: Loading module: "%s": %s' % (module_name, e))
 			else: append((module_name, module_source))
 		return sourceDict

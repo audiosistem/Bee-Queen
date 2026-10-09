@@ -1,4 +1,7 @@
 
+  [COLOR dodgerblue][B]Version 6.10[/B][/COLOR]
+* Changed subtitles, no api key needed.
+
   [COLOR dodgerblue][B]Version 6.09[/B][/COLOR]
 * Trakt/MDBList changes.
 * Added knaben, removed bitsearch.

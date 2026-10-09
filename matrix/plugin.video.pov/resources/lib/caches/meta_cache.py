@@ -37,8 +37,7 @@ class MetaCache(BaseCache):
 		if mediatype in movie_show:
 			command, args = GET_MOVIE_SHOW % id_type, (mediatype, media_str, current_time)
 		else: command, args = GET_SEASON, (media_str, current_time)
-		self.dbcur.execute(command, args)
-		data = self.dbcur.fetchone()
+		with self: data = self.dbcur.execute(command, args).fetchone()
 		if not data: return None
 		meta, expiry = self.jsloads(data[0]), data[1]
 		self.set_memory_cache(mediatype, id_type, meta, expiry, media_str)
@@ -53,19 +52,21 @@ class MetaCache(BaseCache):
 		else:
 			media_str, command = str(tmdb_id), SET_SEASON
 			args = media_str, expires
-		self.dbcur.execute(command, (*args, self.jsdumps(meta)))
+		with self: self.dbcur.execute(command, (*args, self.jsdumps(meta)))
 		self.set_memory_cache(mediatype, id_type, meta, expires, media_str)
 
-	def delete(self, mediatype, id_type, media_id, meta=None, dbcon=None):
+	def delete(self, mediatype, id_type, media_id, meta=None):
 		media_str = str(media_id)
+		with self:
+			if mediatype in movie_show:
+				self.dbcur.execute(DELETE_MOVIE_SHOW % id_type, (mediatype, media_str))
+				if mediatype == 'tvshow': self.dbcur.execute(DELETE_SEASONS, (media_str + '%',))
+			else:
+				self.dbcur.execute(DELETE_SEASON, (media_str,))
 		if mediatype in movie_show:
-			self.dbcur.execute(DELETE_MOVIE_SHOW % id_type, (mediatype, media_str))
 			for item in ('tmdb_id', 'imdb_id', 'tvdb_id'):
 				self.delete_memory_cache(mediatype, item, meta[item])
-			if mediatype == 'tvshow': self.dbcur.execute(DELETE_SEASONS, (media_str + '%',))
-		else:
-			self.dbcur.execute(DELETE_SEASON, (media_str,))
-			self.delete_memory_cache(mediatype, id_type, media_str)
+		else: self.delete_memory_cache(mediatype, id_type, media_str)
 
 	def get_memory_cache(self, mediatype, id_type, media_id, current_time):
 		media_str = str(media_id)
@@ -90,14 +91,13 @@ class MetaCache(BaseCache):
 
 	def get_function(self, prop_string):
 		current_time = self._get_timestamp(datetime.now())
-		self.dbcur.execute(GET_FUNCTION, (prop_string, current_time))
-		cache_data = self.dbcur.fetchone()
+		with self: cache_data = self.dbcur.execute(GET_FUNCTION, (prop_string, current_time)).fetchone()
 		if not cache_data: return None
 		return self.jsloads(cache_data[0])
 
 	def set_function(self, prop_string, result, expiration):
 		expires = self._get_timestamp(datetime.now() + expiration)
-		self.dbcur.execute(SET_FUNCTION, (prop_string, expires, self.jsdumps(result)))
+		with self: self.dbcur.execute(SET_FUNCTION, (prop_string, expires, self.jsdumps(result)))
 
 	def delete_all_seasons_memory_cache(self, media_id, total_seasons=None):
 		if isinstance(total_seasons, str): total_seasons = self.jsloads(total_seasons)
@@ -107,23 +107,21 @@ class MetaCache(BaseCache):
 		for item in range(total_seasons + 1): clear_property('%s_%s' % (prop_string, str(item)))
 
 	def delete_all(self):
-		self.dbcur.execute(GET_ALL)
-		all_entries = self.dbcur.fetchall()
+		with self:
+			all_entries = self.dbcur.execute(GET_ALL).fetchall()
+			for table in ('metadata', 'season_metadata', 'function_cache'):
+				self.dbcur.execute(DELETE_ALL % table)
+			self.dbcur.execute("""VACUUM""")
 		for i in all_entries:
 			try:
 				mediatype, tmdb_id = str(i[0]), str(i[1])
-				if mediatype == 'tvshow':
-					self.delete_all_seasons_memory_cache(tmdb_id, i[2])
 				self.delete_memory_cache(mediatype, 'tmdb_id', tmdb_id)
+				if mediatype == 'tvshow': self.delete_all_seasons_memory_cache(tmdb_id, i[2])
 			except: pass
-		for table in ('metadata', 'season_metadata', 'function_cache'):
-			self.dbcur.execute(DELETE_ALL % table)
-		self.dbcur.execute("""VACUUM""")
 
 	def prefetch(self, limit=500):
 		command = 'SELECT db_type, tmdb_id, meta, expires FROM metadata ORDER BY expires DESC LIMIT ?'
-		cache_data = self.dbcur.execute(command, (limit,)).fetchall()
-		for i in (self.dbcur, self.dbcon): i.close()
+		with self: cache_data = self.dbcur.execute(command, (limit,)).fetchall()
 		for db_type, tmdb_id, meta, expires in cache_data:
 			try: self.set_memory_cache(db_type, 'tmdb_id', self.jsloads(meta), expires, tmdb_id)
 			except: pass

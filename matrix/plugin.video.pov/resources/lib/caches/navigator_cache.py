@@ -34,17 +34,19 @@ class NavigatorCache(BaseCache):
 		return default_contents, edited_contents
 
 	def get_list(self, list_name, list_type):
-		try: return self.jsloads(self.dbcur.execute(GET_LIST, (list_name, list_type)).fetchone()[0])
+		with self: list_contents = self.dbcur.execute(GET_LIST, (list_name, list_type)).fetchone()
+		try: return self.jsloads(list_contents[0])
 		except: return None
 
 	def set_list(self, list_name, list_type, list_contents):
-		self.dbcur.execute(SET_LIST, (list_name, list_type, self.jsdumps(list_contents)))
+		with self: self.dbcur.execute(SET_LIST, (list_name, list_type, self.jsdumps(list_contents)))
 		self.set_memory_cache(list_name, list_type, list_contents)
 
 	def delete_list(self, list_name, list_type):
-		self.dbcur.execute(DELETE_LIST, (list_name, list_type))
+		with self:
+			self.dbcur.execute(DELETE_LIST, (list_name, list_type))
+			self.dbcur.execute("""VACUUM""")
 		self.delete_memory_cache(list_name, list_type)
-		self.dbcur.execute("""VACUUM""")
 
 	def get_memory_cache(self, list_name, list_type):
 		try: return self.jsloads(get_property(prop_get(list_type, list_name)))
@@ -57,15 +59,13 @@ class NavigatorCache(BaseCache):
 		clear_property(prop_get(list_type, list_name))
 
 	def get_shortcut_folders(self):
-		try:
-			folders = self.dbcur.execute(GET_FOLDERS, ('shortcut_folder',)).fetchall()
-			return sorted([(str(i[0]), i[1]) for i in folders], key=lambda s: s[0].lower())
+		with self: folders = self.dbcur.execute(GET_FOLDERS, ('shortcut_folder',)).fetchall()
+		try: return sorted([(str(i[0]), i[1]) for i in folders], key=lambda s: s[0].lower())
 		except: return []
 
 	def get_shortcut_folder_contents(self, list_name):
-		try:
-			contents = self.dbcur.execute(GET_FOLDER_CONTENTS, (list_name, 'shortcut_folder')).fetchone()[0]
-			return self.jsloads(contents)
+		with self: list_contents = self.dbcur.execute(GET_FOLDER_CONTENTS, (list_name, 'shortcut_folder')).fetchone()
+		try: return self.jsloads(list_contents[0])
 		except: return []
 
 	def currently_used_list(self, list_name):
