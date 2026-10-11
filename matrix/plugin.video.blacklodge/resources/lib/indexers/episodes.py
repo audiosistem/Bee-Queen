@@ -449,10 +449,11 @@ class episodes:
         self.progresswatched_link = 'https://api.trakt.tv/users/me/watched/shows?page=1&limit=100&extended=progress|watched'
         self.progressaired_link = 'https://api.trakt.tv/users/me/watched/shows?page=1&limit=100&extended=progress|aired'
         self.hiddenprogress_link = 'https://api.trakt.tv/users/hidden/progress_watched?limit=1000&type=show'
-        self.traktondeck_link = 'https://api.trakt.tv/sync/playback/episodes?limit=50'
+        self.progresssync_link = 'https://api.trakt.tv/sync/progress/watched?page=1&limit=100'
+        self.traktondeck_link = 'https://api.trakt.tv/sync/playback/episodes'
         self.traktlists_link = 'https://api.trakt.tv/users/me/lists'
-        self.traktlikedlists_link = 'https://api.trakt.tv/users/likes/lists'
-        self.traktlist_link = 'https://api.trakt.tv/users/%s/lists/%s/items?limit=1000&page=1'
+        self.traktlikedlists_link = 'https://api.trakt.tv/users/likes/lists?page=1&limit=100'
+        self.traktlist_link = 'https://api.trakt.tv/users/%s/lists/%s/items?limit=250&page=1'
 
         ## Local bookmarks pseudo-links ##
         self.local_history_link = 'https://www.local.bm?query=history&page=1&after='
@@ -492,28 +493,55 @@ class episodes:
             try: url = getattr(self, url + '_link')
             except: pass
 
+            # blist (cached) supplies the artwork/metadata already built, the
+            # list itself is always fresh. When the first call had to build the
+            # list (empty or expired cache), it is fresh already and used as is
+            # instead of building the same list a second time. self.built is set
+            # by trakt_progress_list / trakt_episodes_list when they run.
+            self.built = False
             if self.trakt_link in url and '/watched/' in url:
                 self.blist = cache.get(self.trakt_progress_list, 720, url)
                 self.list = []
-                self.list = cache.get(self.trakt_progress_list, 0, url)
+                self.list = self.blist if (self.built and self.blist) else cache.get(self.trakt_progress_list, 0, url)
 
             elif self.trakt_link in url and url == self.mycalendar_link:
                 self.blist = cache.get(self.trakt_episodes_list, 720, url)
                 self.list = []
-                self.list = cache.get(self.trakt_episodes_list, 0, url)
+                self.list = self.blist if (self.built and self.blist) else cache.get(self.trakt_episodes_list, 0, url)
                 self.list = sorted(self.list, key=lambda k: k['premiered'], reverse=True)
+                # "New Episodes" from the Trakt calendar: hide episodes already
+                # watched (the same check that draws the tick).
+                try:
+                    indicators = playcount.getTVShowIndicators()
+                    self.list = [i for i in self.list if playcount.getEpisodeOverlay(indicators, i['imdb'], i['tmdb'], i['season'], i['episode']) != '7']
+                except:
+                    pass
 
             elif self.trakt_link in url and url == self.traktondeck_link:
                 self.blist = cache.get(self.trakt_episodes_list, 720, url)
                 self.list = []
-                self.list = cache.get(self.trakt_episodes_list, 0, url)
+                self.list = self.blist if (self.built and self.blist) else cache.get(self.trakt_episodes_list, 0, url)
                 self.list = sorted(self.list, key=lambda k: int(k['paused_at']), reverse=True)
 
-            elif self.trakt_link in url and url == self.trakthistory_link:
+            elif self.trakt_link in url and url.split('?')[0] == self.trakthistory_link.split('?')[0]:
+                self.trakt_raw_count = 0
                 self.blist = cache.get(self.trakt_episodes_list, 720, url)
                 self.list = []
-                self.list = cache.get(self.trakt_episodes_list, 0, url)
+                if self.built and self.blist:
+                    self.list = self.blist
+                else:
+                    self.trakt_raw_count = 0
+                    self.list = cache.get(self.trakt_episodes_list, 0, url)
                 self.list = sorted(self.list, key=lambda k: int(k['watched_at']), reverse=True)
+                # Next page when Trakt returned a full page (history is paginated).
+                try:
+                    q = dict(urllib_parse.parse_qsl(urllib_parse.urlsplit(url).query))
+                    if self.list and self.trakt_raw_count >= int(q['limit']):
+                        q['page'] = str(int(q['page']) + 1)
+                        self.list[0]['next'] = url.split('?')[0] + '?' + urllib_parse.urlencode(q)
+                        self.list[0]['page'] = str(int(q['page']) - 1)
+                except:
+                    pass
 
             elif self.trakt_link in url and '/users/' in url:
                 self.list = cache.get(self.trakt_list, 1, url)
@@ -633,7 +661,22 @@ class episodes:
             u = url.replace('?' + urllib_parse.urlparse(url).query, '') + '?' + q
 
             itemlist = []
-            items = trakt.getTrakt(u)
+            # User list items are paginated (Trakt caps limit at 250): fetch
+            # every page instead of the first one.
+            if '/lists/' in u and '/items' in u:
+                items = trakt.getPaginatedResponse(u)
+            else:
+                items = trakt.getTrakt(u)
+            # Raw page size before filtering, used to decide on a next page.
+            self.trakt_raw_count = len(items) if isinstance(items, list) else 0
+            # Failed read: None (not an empty list), so cache.get() keeps the
+            # previous list. Iterating None raised before, and the list came
+            # back empty ("No content").
+            if not isinstance(items, list): return None
+            # Resume points: only the newest 100 are shown, so only those are
+            # built (one translation call each for non-English users).
+            if '/sync/playback' in u and len(items) > 100:
+                items = sorted(items, key=lambda k: k.get('paused_at') or '', reverse=True)[:100]
         except:
             log_utils.log('trakt_list0', 1)
             return
@@ -716,7 +759,11 @@ class episodes:
                 try:
                     if self.lang == 'en': raise Exception()
 
-                    trans_item = trakt.getTVShowTranslation(imdb, lang=self.lang, season=season, episode=episode, full=True)
+                    # One Trakt call per episode, so cached for 7 days, also when
+                    # there is no translation (new episodes are often translated a
+                    # few days after they air, so not longer than that).
+                    trans_item = cache.get(trakt.getEpisodeTranslation, 168, imdb, self.lang, season, episode)
+                    if not trans_item: raise Exception()
 
                     title = client.replaceHTMLCodes(six.ensure_str(trans_item.get('title'))) or title
                     plot = client.replaceHTMLCodes(six.ensure_str(trans_item.get('overview'), errors='replace')) or plot
@@ -727,7 +774,8 @@ class episodes:
 
                 itemlist.append({'title': title, 'season': season, 'episode': episode, 'tvshowtitle': tvshowtitle, 'year': year, 'premiered': premiered, 'status': 'Continuing',
                                  'studio': studio, 'genre': genre, 'duration': duration, 'rating': rating, 'votes': votes, 'mpaa': mpaa, 'plot': plot, 'imdb': imdb, 'imdbnumber': imdb,
-                                 'tvdb': tvdb, 'tmdb': tmdb, 'poster': '0', 'thumb': '0', 'paused_at': paused_at, 'watched_at': watched_at, 'list_prov': 'trakt', 'mediatype': 'episode'})
+                                 'tvdb': tvdb, 'tmdb': tmdb, 'poster': '0', 'thumb': '0', 'paused_at': paused_at, 'watched_at': watched_at, 'list_prov': 'trakt', 'mediatype': 'episode',
+                                 'playback_id': str(item.get('id', '')) if item.get('paused_at') else ''})
             except:
                 log_utils.log('trakt_list1', 1)
                 pass
@@ -736,22 +784,154 @@ class episodes:
         return itemlist
 
 
-    def trakt_progress_list(self, url):
-        url, query = url.split('|')
-        items = []
-
+    def _trakt_paginated(self, url):
+        # A list (possibly empty) when Trakt data is available, from Trakt or
+        # from the cache; None when it is not.
         try:
+            reads = getattr(cache, 'TRAKT_READS', {'ok': 0, 'fail': 0})
+            fails = reads['fail']
             activity = trakt.getWatchedActivity()
             if activity > cache.timeout(trakt.getPaginatedResponse, url):
                 result = cache.get(trakt.getPaginatedResponse, 0, url)
             else:
                 result = cache.get(trakt.getPaginatedResponse, 360, url)
-            if not result or not isinstance(result, list):
-                return
+            if not isinstance(result, list): return None
+            # cache.get() also returns [] when the read failed and nothing was
+            # cached: that is not an empty progress.
+            if not result and reads['fail'] > fails: return None
+            # Data is available even when it came from the cache without any
+            # read in this run: mark it, so cache.get() of the progress list
+            # accepts a genuinely empty result (e.g. every show completed)
+            # instead of showing the previous list.
+            reads['ok'] += 1
+            return result
         except:
-            return
+            return None
 
+
+    def _trakt_date(self, value):
+        try: return datetime.datetime.strptime(str(value)[:19], '%Y-%m-%dT%H:%M:%S')
+        except: return None
+
+
+    def _trakt_watched_map(self):
+        # The same watched data the ticks come from (/users/me/watched/shows,
+        # cached by trakt.cachesyncTVShows), refreshed when Trakt reports
+        # newer watch activity. imdb -> (aired_episodes, [(season, episode)]).
+        try:
+            timeout = 0 if trakt.getWatchedActivity() > trakt.timeoutsyncTVShows() else 360
+            data = trakt.cachesyncTVShows(timeout=timeout) or []
+            # Shows without an IMDb id all carry 'None': left out, so they never
+            # pick up another show's watched data (they use the bulk fallback).
+            return dict((str(i[0]), (int(i[1]), i[2])) for i in data if i[0] and str(i[0]) not in ('None', '0'))
+        except:
+            return {}
+
+
+    def _trakt_hidden(self, url):
+        # For cache.get(): a dict, also when nothing is hidden (an empty list
+        # would not be cached); None when the call failed.
+        result = trakt.getTrakt(url)
+        if not isinstance(result, list): return None
+        return {'tmdb': [str(i['show']['ids']['tmdb']) for i in result if i.get('show')]}
+
+
+    def _trakt_progress_items(self, result, watched=None):
+        # /sync/progress/watched returns the next episode as Trakt computes it,
+        # including its air date. Items are built with the same keys the legacy
+        # /users/me/watched/shows path produces, so items_list() is unchanged.
+        items = []
         for item in result:
+            try:
+                show = item['show']
+                progress = item.get('progress') or {}
+                last_episode = progress.get('last_episode') or {}
+                next_episode = progress.get('next_episode') or {}
+                if not last_episode: raise Exception()
+
+                aired = int(progress.get('aired') or show.get('aired_episodes') or 0)
+                completed = int(progress.get('completed') or 0)
+                snum, enum = last_episode['season'], last_episode['number']
+
+                # Which episode to show and whether the show is complete come
+                # from the watched data, exactly like the legacy path (highest
+                # watched episode, specials excluded). The bulk endpoint is a
+                # cached snapshot: it reported S02E02 as the last episode of a
+                # show watched up to S02E08, so its +1 was an episode already
+                # watched and appeared ticked. It is only the fallback.
+                imdb_id = show.get('ids', {}).get('imdb')
+                w = (watched or {}).get(str(imdb_id)) if imdb_id else None
+                if w:
+                    eps = [(int(x[0]), int(x[1])) for x in w[1] if int(x[0]) > 0]
+                    if eps:
+                        snum, enum = max(eps)
+                        completed, aired = len(eps), int(w[0])
+
+                # Same rule as the legacy path: a fully watched show is not
+                # listed. next_episode is never used for this.
+                if completed >= aired: raise Exception()
+                next_aired = self._trakt_date(next_episode.get('first_aired'))
+                if next_aired and next_aired > self.datetime: next_aired = None
+
+                tvshowtitle = show['title']
+                if not tvshowtitle: raise Exception()
+                else: tvshowtitle = client.replaceHTMLCodes(six.ensure_str(tvshowtitle))
+
+                year = re.sub('[^0-9]', '', str(show.get('year')))
+                if int(year) > int(self.datetime.strftime('%Y')): raise Exception()
+
+                ids = show.get('ids') or {}
+                imdb = ids.get('imdb') or '0'
+                tvdb = re.sub('[^0-9]', '', str(ids.get('tvdb') or '')) or '0'
+                tmdb = str(ids.get('tmdb') or '0')
+
+                last_watched = progress.get('last_watched_at')
+                if not last_watched: last_watched = '0'
+                else: last_watched = re.sub('[^0-9]+', '', last_watched)
+
+                # Latest activity: the newer of last watched and the air date of
+                # the next episode, the air date only once it has aired.
+                activity = self._trakt_date(progress.get('last_watched_at'))
+                if next_aired and (not activity or next_aired > activity):
+                    activity = next_aired
+                activity = activity.strftime('%Y%m%d%H%M%S') if activity else '0'
+
+                # status stays '0' exactly like the legacy path, which never
+                # receives a status from /users/me/watched/shows.
+                items.append({'imdb': imdb, 'tvdb': tvdb, 'tmdb': tmdb, 'tvshowtitle': tvshowtitle, 'year': year,
+                              'snum': str(snum), 'enum': str(enum),
+                              'status': '0', 'last_watched': last_watched, 'activity': activity})
+            except:
+                pass
+        return items
+
+
+    def trakt_progress_list(self, url):
+        self.built = True
+        # url is '<link>|<query>' or '<link>|<query>|<page>' for later pages.
+        parts = url.split('|')
+        url, query = parts[0], parts[1]
+        try: page = max(1, int(parts[2]))
+        except: page = 1
+        items = []
+        latest_activity = query == 'watched' and control.setting('tv.progress.latest') == 'true'
+
+        result = self._trakt_paginated(self.progresssync_link)
+        # An empty bulk answer also goes to the legacy path (the bulk endpoint is
+        # a cached snapshot); an empty legacy answer is a genuinely empty
+        # progress, None there is a failure.
+        legacy = not result
+        if not legacy:
+            items = self._trakt_progress_items(result, self._trakt_watched_map())
+            if latest_activity:
+                items = sorted(items, key=lambda k: k['activity'], reverse=True)
+            else:
+                items = sorted(items, key=lambda k: k['last_watched'], reverse=True)
+        else:
+            result = self._trakt_paginated(url)
+            if result is None: return
+
+        for item in (result if legacy else []):
             try:
                 num_1 = 0
                 for i in range(0, len(item['seasons'])):
@@ -798,9 +978,13 @@ class episodes:
                 pass
 
         try:
-            result = trakt.getTrakt(self.hiddenprogress_link)
-            #log_utils.log('hid_prog_res: ' + str(result))
-            result = [str(i['show']['ids']['tmdb']) for i in result]
+            # Hidden shows change only when the user hides one (hidden_at is in
+            # getActivity()), so cached until then instead of asked on every open.
+            if trakt.getActivity() > cache.timeout(self._trakt_hidden, self.hiddenprogress_link):
+                result = cache.get(self._trakt_hidden, 0, self.hiddenprogress_link)
+            else:
+                result = cache.get(self._trakt_hidden, 720, self.hiddenprogress_link)
+            result = result['tmdb']
 
             items = [i for i in items if not i['tmdb'] in result]
         except:
@@ -936,7 +1120,11 @@ class episodes:
                 log_utils.log('TProgress', 1)
                 pass
 
-        items = items[:50]
+        # 50 shows per page: TMDb is only queried for the page being opened.
+        # The full sorted list comes from the cached Trakt response.
+        start = (page - 1) * 50
+        has_next = len(items) > start + 50
+        items = items[start:start + 50]
 
         threads = []
         for i in items: threads.append(workers.Thread(items_list, i))
@@ -945,14 +1133,34 @@ class episodes:
 
         if query == 'aired':
             self.list = sorted(self.list, key=lambda k: int(re.sub('[^0-9]+', '', k['premiered'])), reverse=True)
+        elif latest_activity:
+            activity = dict((i['tmdb'], i.get('activity')) for i in items)
+            def activity_key(k):
+                value = activity.get(k.get('tmdb'))
+                if value: return value
+                # Legacy path or unmatched item: compare the date parts only.
+                aired = re.sub('[^0-9]', '', str(k.get('premiered', '')))[:8]
+                if len(aired) < 8 or aired > self.datetime.strftime('%Y%m%d'): aired = '0'
+                return max(str(k.get('last_watched', '0'))[:14], aired)
+            self.list = sorted(self.list, key=activity_key, reverse=True)
         else:
             self.list = sorted(self.list, key=lambda k: k['last_watched'], reverse=True)
+
+        # Trakt answered but no item could be built (e.g. TMDb failing): None,
+        # so cache.get() keeps the previous list instead of an empty one.
+        if items and not self.list: return None
+
+        if self.list:
+            self.list[0]['next'] = '%s|%s|%d' % (url, query, page + 1) if has_next else ''
+            self.list[0]['page'] = str(page)
 
         return self.list
 
 
     def trakt_episodes_list(self, url):
+        self.built = True
         items = self.trakt_list(url)
+        if items is None: return None
 
         def items_list(i):
 
@@ -971,6 +1179,7 @@ class episodes:
             try:
                 item = [x for x in self.blist if x['tmdb'] == tmdb and x['season'] == i['season'] and x['episode'] == i['episode']][0]
                 if item['thumb'] == '0': raise Exception()
+                item['playback_id'] = i.get('playback_id', '')
                 self.list.append(item)
                 return
             except:
@@ -1056,12 +1265,17 @@ class episodes:
                 self.list.append({'title': title, 'season': season, 'episode': episode, 'tvshowtitle': tvshowtitle, 'year': year, 'premiered': premiered, 'status': status, 'studio': studio, 'genre': genre,
                                   'duration': duration, 'rating': rating, 'votes': votes, 'mpaa': mpaa, 'director': director, 'writer': writer, 'castwiththumb': castwiththumb, 'plot': plot,
                                   'imdb': imdb, 'imdbnumber': imdb, 'tvdb': tvdb, 'tmdb': tmdb, 'poster': poster, 'banner': banner, 'fanart': fanart, 'thumb': thumb, 'clearlogo': clearlogo,
-                                  'clearart': clearart, 'landscape': landscape, 'paused_at': paused_at, 'watched_at': watched_at, 'list_prov': 'trakt', 'mediatype': 'episode'})
+                                  'clearart': clearart, 'landscape': landscape, 'paused_at': paused_at, 'watched_at': watched_at, 'list_prov': 'trakt', 'mediatype': 'episode',
+                                  'playback_id': i.get('playback_id', '')})
             except:
                 log_utils.log('trakt_episodes_list', 1)
                 pass
 
 
+        # Newest resume points first before the cap (trakt_list reverses the
+        # order Trakt returns, and Continue watching now gets all of them).
+        if any(i.get('paused_at', '0') not in ('0', '') for i in items):
+            items = sorted(items, key=lambda k: int(k.get('paused_at') or 0), reverse=True)
         items = items[:100]
 
         threads = []
@@ -1069,14 +1283,23 @@ class episodes:
         [i.start() for i in threads]
         [i.join() for i in threads]
 
+        # Trakt answered but no item could be built (e.g. TMDb failing): None,
+        # so cache.get() keeps the previous list instead of an empty one.
+        if items and not self.list: return None
+
         return self.list
 
 
     def trakt_user_list(self, url):
+        items = None
         try:
-            items = trakt.getTrakt(url)
+            # Liked lists are paginated (Trakt default page size is 10).
+            items = trakt.getPaginatedResponse(url) if 'page=' in url else trakt.getTrakt(url)
         except:
             pass
+        # Failed read: None, so cache.get() keeps the previous menu (iterating
+        # None raised before and the menu came back empty).
+        if not isinstance(items, list): return None
 
         for item in items:
             try:
@@ -1487,6 +1710,10 @@ class episodes:
 
         indicators = playcount.getTVShowIndicators()
 
+        # Resume point source = Trakt: the list indicator shows Trakt's paused
+        # point (the player resumes from it too), not only this device's.
+        playback = trakt.playbackProgress()
+
         if self.trailer_source == '0': trailerAction = 'tmdb_trailer'
         elif self.trailer_source == '1': trailerAction = 'yt_trailer'
         else: trailerAction = 'imdb_trailer'
@@ -1564,6 +1791,10 @@ class episodes:
                 except:
                     episode_year = year
                 offset = bookmarks.get('episode', imdb, season, episode, True)
+                if playback is not None:
+                    # Same percentage as on Trakt, on the duration given to Kodi.
+                    try: offset = int(playback.get('episode', {}).get('%s|%s|%s' % (imdb, int(season), int(episode)), 0) / 100.0 * int(meta['duration']))
+                    except: offset = 0
 
                 meta.update({'mediatype': 'episode', 'season': season, 'offset': offset, 'imdbnumber': imdb, 'code': tmdb,
                              'poster': poster, 'fanart': fanart, 'banner': banner, 'landscape': landscape})
@@ -1601,6 +1832,9 @@ class episodes:
 
                 if traktCredentials == True:
                     cm.append((traktManagerMenu, 'RunPlugin(%s?action=traktManager&name=%s&tmdb=%s&content=tvshow)' % (sysaddon, systvshowtitle, tmdb)))
+                    # Only items from Trakt continue watching carry a playback id.
+                    if i.get('playback_id'):
+                        cm.append((control.lang(32649), 'RunPlugin(%s?action=traktPlaybackRemove&id=%s)' % (sysaddon, i['playback_id'])))
 
                 cm.append((addToLibrary, 'RunPlugin(%s?action=tvshowToLibrary&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s)' % (sysaddon, systvshowtitle, year, imdb, tmdb)))
 
@@ -1635,6 +1869,23 @@ class episodes:
             except:
                 log_utils.log('ep_dir Exception', 1)
                 pass
+
+        # Next page, same as the movie and tv show lists. Only the Trakt
+        # progress lists set 'next' (50 shows per page).
+        try:
+            url = items[0].get('next', '')
+            if not url: raise Exception()
+            nextMenu = control.lang(32053)
+            if items[0].get('page'): nextMenu += '[I] (%s)[/I]' % str(int(items[0]['page']) + 1)
+            icon = control.addonNext()
+            url = '%s?action=calendar&url=%s' % (sysaddon, urllib_parse.quote_plus(url))
+            try: item = control.item(label=nextMenu, offscreen=True)
+            except: item = control.item(label=nextMenu)
+            item.setArt({'icon': icon, 'thumb': icon, 'poster': icon, 'banner': icon, 'fanart': addonFanart})
+            item.setProperty('SpecialSort', 'bottom')
+            list_items.append((url, item, True))
+        except:
+            pass
 
         control.addItems(handle=syshandle, items=list_items, totalItems=len(list_items))
         control.content(syshandle, 'episodes')

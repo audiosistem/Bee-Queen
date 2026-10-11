@@ -645,7 +645,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.blacklodge" name="Blacklodge" provider-name="bob" version="1.06.38g8">
+</addon><addon id="plugin.video.blacklodge" name="Blacklodge" provider-name="bob" version="1.06.39g1">
     <requires>
         <import addon="resource.images.blacklodge.artwork" />
         <import addon="script.module.requests" />
@@ -1615,7 +1615,7 @@ In addition to what livestreams allowed you to do, you can now,
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.themoviedb.helper" version="6.17.5" name="TMDb Helper" provider-name="jurialmunkey">
+</addon><addon id="plugin.video.themoviedb.helper" version="6.17.7" name="TMDb Helper" provider-name="jurialmunkey">
 <requires>
   <import addon="xbmc.python" version="3.0.1" />
   <import addon="script.module.requests" version="2.9.1" />
