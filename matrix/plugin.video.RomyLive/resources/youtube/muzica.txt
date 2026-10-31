@@ -1,0 +1,19 @@
+<channel>
+<name>Manele</name>
+<thumbnail></thumbnail>
+<externallink>https://documentarys.do.am/2026/kodinou/muzica</externallink>
+<fanart></fanart>
+</channel>
+
+<channel>
+<name>Romanesti</name>
+<thumbnail></thumbnail>
+<externallink>https://documentarys.do.am/2026/kodinou/muzica</externallink>
+<fanart></fanart>
+</channel>
+
+<item>
+<title>Stirile ProTV</title>
+<youtubechannel>https://www.youtube.com/channel/UCEJf5cGtkBdZS8Jh2uSW9xw</youtubechannel>
+</item>
+

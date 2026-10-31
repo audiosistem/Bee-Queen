@@ -1,10 +1,10 @@
-from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
+from threading import Thread
 from caches.main_cache import cache_object
 from caches.meta_cache import cache_function
 from modules import kodi_utils, settings
-from modules.utils import paginate_list, sort_for_article, jsondate_to_datetime, get_datetime, TaskPool
-from session import session, HTTPAdapter, Retry
+from modules.utils import TaskPool, get_datetime, jsondate_to_datetime, paginate_list, sort_for_article
+from modules.session import session, HTTPAdapter, Retry
 
 get_setting, set_setting, logger = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.logger
 EXPIRES_4_HOURS, EXPIRES_2_DAYS, EXPIRES_1_WEEK, EXPIRES_1_MONTH = 4, 48, 168, 672
@@ -517,7 +517,7 @@ def list_status(list_id, mediatype, media_id):
 
 def list_create(list_name):
 	from urllib.parse import unquote
-	list_title = list_name or kodi_utils.dialog.input('POV')
+	list_title = list_name or kodi_utils.dialog().input('POV')
 	if not list_title: return
 	list_name = unquote(list_title)
 	data = {'name': list_title, 'public': True, 'iso_3166_1': 'US', 'iso_639_1': 'en'}

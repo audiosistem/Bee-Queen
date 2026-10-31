@@ -1,6 +1,6 @@
 from indexers.easynews_api import EasyNewsAPI as Debrid
 from modules import kodi_utils, source_utils
-from modules.settings import filter_by_name, easynews_language_filter
+from modules.settings import easynews_language_filter, filter_by_name
 # from modules.kodi_utils import logger
 
 internal_results, check_title = source_utils.internal_results, source_utils.check_title

@@ -45,6 +45,7 @@ tvshow_list = [
 	{'name': 32474, 'iconImage': 'because_you_watched.png', 'mode': 'navigator.because_you_watched', 'menu_type': 'tvshow'},
 	{'name': 32475, 'iconImage': 'watched.png', 'mode': 'build_tvshow_list', 'action': 'watched_tvshows'},
 	{'name': 32481, 'iconImage': 'in_progress_tvshow.png', 'mode': 'build_tvshow_list', 'action': 'in_progress_tvshows'},
+	{'name': 'Recently Watched Episodes', 'iconImage': 'watched.png', 'mode': 'build_last_episode'},
 	{'name': 32482, 'iconImage': 'player.png', 'mode': 'build_in_progress_episode'},
 	{'name': 32483, 'iconImage': 'next_episodes.png', 'mode': 'build_next_episode'}
 ]

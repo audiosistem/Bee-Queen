@@ -1,9 +1,9 @@
 import sys
 from urllib.parse import unquote
-from windows import open_window
-from indexers.tmdb_api import tmdb_people_info, tmdb_image_base, tmdb_gender_dict
+from indexers.tmdb_api import tmdb_gender_dict, tmdb_image_base, tmdb_people_info
 from menus.images import Images
 from modules import kodi_utils, settings
+from windows import open_window
 # from modules.kodi_utils import logger
 
 KODI_VERSION = kodi_utils.get_kodi_version()

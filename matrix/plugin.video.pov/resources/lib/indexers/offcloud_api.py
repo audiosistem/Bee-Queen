@@ -1,6 +1,6 @@
 import re
 from modules import kodi_utils
-from session import session, HTTPAdapter, Retry
+from modules.session import session, HTTPAdapter, Retry
 # logger = kodi_utils.logger
 
 base_url = 'https://offcloud.com'

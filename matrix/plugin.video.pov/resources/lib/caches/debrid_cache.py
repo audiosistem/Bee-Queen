@@ -18,7 +18,7 @@ class DebridCache(BaseCache):
 			joined_list = ', '.join('?' for _ in hash_list)
 			with self: cache_data = self.dbcur.execute(GET_MANY % joined_list, hash_list).fetchall()
 			if cache_data and cache_data[0][3] > current_time: result = cache_data
-			elif cached_data: self.remove_many(cache_data)
+			elif cache_data: self.remove_many(cache_data)
 		except: pass
 		return result
 
@@ -27,9 +27,9 @@ class DebridCache(BaseCache):
 		insert_list = [(i[0], debrid, i[1], expires) for i in hash_list]
 		with self: self.dbcur.executemany(SET_MANY, insert_list)
 
-	def remove_many(self, cached_data):
-		cached_data = [(str(i[0]),) for i in cached_data]
-		with self: self.dbcur.executemany(REMOVE_MANY, cached_data)
+	def remove_many(self, cache_data):
+		remove_list = [(str(i[0]),) for i in cache_data]
+		with self: self.dbcur.executemany(REMOVE_MANY, remove_list)
 
 	def delete_cache_single(self, debrid):
 		with self: self.dbcur.execute(SINGLE_DELETE, (debrid,))

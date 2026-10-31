@@ -1,9 +1,9 @@
 import json
-from threading import Thread
 from queue import SimpleQueue
+from threading import Thread
 from modules import kodi_utils
-from modules.utils import paginate_list, TaskPool
-from modules.settings import paginate, page_limit, nav_jump_use_alphabet
+from modules.settings import nav_jump_use_alphabet, page_limit, paginate
+from modules.utils import TaskPool, paginate_list
 # logger = kodi_utils.logger
 
 ls, get_setting, media_path = kodi_utils.local_string, kodi_utils.get_setting, kodi_utils.media_path

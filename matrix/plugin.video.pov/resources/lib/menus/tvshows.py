@@ -1,8 +1,8 @@
 from threading import Thread
-from indexers.metadata import tvshow_meta, art_infodict, movie_show_infodict
 from caches.watched_cache import get_watched_info_tv, get_watched_status_tvshow
+from indexers.metadata import art_infodict, movie_show_infodict, tvshow_meta
 from modules import kodi_utils, settings
-from modules.utils import manual_function_import, get_datetime, TaskPool
+from modules.utils import TaskPool, get_datetime, manual_function_import
 # logger = kodi_utils.logger
 
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list

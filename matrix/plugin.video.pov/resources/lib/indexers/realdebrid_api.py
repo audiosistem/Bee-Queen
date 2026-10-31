@@ -1,6 +1,6 @@
-from magneto.modules.client import randomagent
+from indexers.pov_api import randomagent
 from modules import kodi_utils
-from session import session, HTTPAdapter, Retry
+from modules.session import session, HTTPAdapter, Retry
 # logger = kodi_utils.logger
 
 base_url = 'https://app.real-debrid.com'

@@ -545,7 +545,7 @@ v2.0.0
 - Settings simplified — no API keys exposed to users.
         </news>
     </extension>
-</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.3.6+matrix" provider-name="RomyCupidon">
+</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.3.23+matrix" provider-name="RomyCupidon">
 <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
@@ -553,10 +553,12 @@ v2.0.0
 	<import addon="script.module.kodi-six" />
 	<import addon="script.module.resolveurl" version="5.0.00" />
 	<import addon="inputstream.adaptive" />
+    <import addon="script.module.inputstreamhelper" version="0.2.2" optional="true" />
 </requires>  
 <extension point="xbmc.python.pluginsource" library="default.py">
 	<provides>video</provides>
 </extension>   
+<extension point="xbmc.python.script" library="youtube_script.py"><provides>executable</provides></extension>
 <extension point="xbmc.service" library="service.py" start="login" />
 <extension point="xbmc.addon.metadata">
 	 <summary lang="en">TOT CONTINUTUL ACESTUI ADDON A FOST EXTRAS DIN DOMENIUL GOOGLE. NU SUNT RESPONSABIL PENTRU SCOPURILE PROFITABILE ALE PĂRTILOR TERTE.</summary>
@@ -729,7 +731,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
       <screenshot>resources/images/screenshot-3.jpg</screenshot>
     </assets>
   </extension>
-</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.202">
+</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.205">
     <requires>
         <import addon="script.module.six" />
         <import addon="script.module.kodi-six" />
@@ -1324,7 +1326,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.10.05" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.10.23" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -1333,6 +1335,7 @@ In addition to what livestreams allowed you to do, you can now,
 		<provides>video</provides>
 	</extension>
 	
+	<extension point="xbmc.python.module" library="lib/" />
 	<extension point="xbmc.addon.metadata">
 		<reuselanguageinvoker>true</reuselanguageinvoker>
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
@@ -1615,14 +1618,14 @@ In addition to what livestreams allowed you to do, you can now,
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.themoviedb.helper" version="6.17.9" name="TMDb Helper" provider-name="jurialmunkey">
+</addon><addon id="plugin.video.themoviedb.helper" version="6.19.5" name="TMDb Helper" provider-name="jurialmunkey">
 <requires>
   <import addon="xbmc.python" version="3.0.1" />
   <import addon="script.module.requests" version="2.9.1" />
   <import addon="script.module.pil" version="1.1.7" />
   <import addon="script.module.addon.signals" version="0.0.6" />
   <import addon="script.module.jurialmunkey" version="0.2.35" />
-  <import addon="script.module.infotagger" version="0.0.9" />
+  <import addon="script.module.infotagger" version="0.1.0" />
   <import addon="script.module.qrcode" version="6.1.0" />
 </requires>
 <extension point="xbmc.python.pluginsource" library="resources/plugin.py">
@@ -1660,7 +1663,7 @@ In addition to what livestreams allowed you to do, you can now,
     <screenshot>resources/screenshot-02.jpg</screenshot>
   </assets>
 </extension>
-</addon><addon id="plugin.video.thraxtv" name="ThraxTV" version="2.0.56" provider-name="derzis">
+</addon><addon id="plugin.video.thraxtv" name="ThraxTV" version="2.0.58" provider-name="derzis">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" />
@@ -4136,7 +4139,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="script.module.gearsscrapers" version="1.6.2" name="Gears Scrapers" provider-name="gearsscrapers">
+</addon><addon id="script.module.gearsscrapers" version="1.6.3" name="Gears Scrapers" provider-name="gearsscrapers">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -4746,6 +4749,21 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
 		<screenshot>resources/media/pic2.jpg</screenshot>				
 	</assets>
     </extension>
+</addon><addon id="script.stream.watcher" name="Stream Auto-Reconnect Service" version="1.2.0" provider-name="bee">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+  </requires>
+  <extension point="xbmc.service" library="service.py" />
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
+    <summary lang="en">Monitor and auto-reconnect live streams in Kodi</summary>
+    <summary lang="ro">Monitorizează și reconectează automat fluxurile live în Kodi</summary>
+    <description lang="en">Monitors playback state and automatically reconnects live streams if unexpectedly dropped or disconnected due to network errors.</description>
+    <description lang="ro">Monitorizează starea redării și reconectează automat fluxurile live în caz de deconectare neașteptată sau erori de rețea.</description>
+  </extension>
 </addon><addon id="service.cinemagia" name="[COLORgold]Cinemagia service[/COLOR]" version="1.0.2" provider-name="sarsailă, moromete">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
@@ -4914,7 +4932,7 @@ v5.3.2 (2020-09-30)
 - Adaugat suport pentru cautare cand in nume apar coduri de tara (US, UK).
     </news>
   </extension>
-</addon><addon id="service.subtitles.subsro" name="[B][COLOR FFFDBD01]Subs.ro[/COLOR][/B]" version="2.5.30" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="service.subtitles.subsro" name="[B][COLOR FFFDBD01]Subs.ro[/COLOR][/B]" version="2.5.31" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" version="2.22.0" />

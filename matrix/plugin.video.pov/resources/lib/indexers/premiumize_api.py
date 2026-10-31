@@ -1,6 +1,6 @@
 from caches.main_cache import cache_object
 from modules import kodi_utils
-from session import session, HTTPAdapter, Retry
+from modules.session import session, HTTPAdapter, Retry
 # logger = kodi_utils.logger
 
 base_url = 'https://www.premiumize.me'

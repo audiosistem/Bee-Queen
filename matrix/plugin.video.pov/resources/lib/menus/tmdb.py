@@ -1,5 +1,5 @@
 import json
-from indexers import tmdb_api, list_helper
+from indexers import list_helper, tmdb_api
 from menus.movies import Movies
 from menus.tvshows import TVShows
 from modules import kodi_utils, settings
@@ -63,7 +63,7 @@ def edit_tmdb_list(params):
 		choice = select_dialog([c[0] for c in choices], items=json.dumps(list_items), heading=heading)
 		if choice in ('cancel', None): return
 		if choice == 'name':
-			name = kodi_utils.dialog.input('New List Name', defaultt=params['name'])
+			name = kodi_utils.dialog().input('New List Name', defaultt=params['name'])
 			if name.strip(): params['name'] = name.strip()
 		elif choice == 'public':
 			text = 'Make %s Private?' % params['name']
@@ -90,7 +90,7 @@ def trakt_list_to_tmdb(params, api):
 	from indexers.trakt_api import get_trakt_list_contents
 	from modules.utils import chunks
 	send_str = 'Sending list to TMDb...'
-	progressBG = kodi_utils.progressDialogBG
+	progressBG = kodi_utils.progressDialogBG()
 	progressBG.create(send_str, tmdblist_heading)
 	try:
 		list_id, user, slug = params['trakt_list_id'], params['user'], params['list_slug']
@@ -114,7 +114,7 @@ def mdbl_list_to_tmdb(params, api):
 	from indexers.mdblist_api import get_mdbl_list_contents
 	from modules.utils import chunks
 	send_str = 'Sending list to TMDb...'
-	progressBG = kodi_utils.progressDialogBG
+	progressBG = kodi_utils.progressDialogBG()
 	progressBG.create(send_str, tmdblist_heading)
 	try:
 		items = get_mdbl_list_contents(params.get('list_type'), params['mdbl_list_id'])

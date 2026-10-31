@@ -1,13 +1,13 @@
 import json
 import sqlite3 as database
-from urllib.parse import urlencode, urlparse, parse_qsl
+from urllib.parse import parse_qsl, urlencode, urlparse
 import xbmc, xbmcgui, xbmcplugin, xbmcvfs
 from xbmcaddon import Addon
+from .strings_po import strings_po
 
-addon_object, window, execJSONRPC = Addon(), xbmcgui.Window(10000), xbmc.executeJSONRPC
-player, xbmc_player, monitor, xbmc_monitor = xbmc.Player(), xbmc.Player, xbmc.Monitor(), xbmc.Monitor
-dialog, progressDialog, progressDialogBG = xbmcgui.Dialog(), xbmcgui.DialogProgress(), xbmcgui.DialogProgressBG()
-get_addoninfo, get_infolabel, get_visibility = addon_object.getAddonInfo, xbmc.getInfoLabel, xbmc.getCondVisibility
+xbmc_player, xbmc_monitor, window = xbmc.Player, xbmc.Monitor, xbmcgui.Window
+dialog, progressDialog, progressDialogBG = xbmcgui.Dialog, xbmcgui.DialogProgress, xbmcgui.DialogProgressBG
+get_infolabel, get_visibility, execJSONRPC = xbmc.getInfoLabel, xbmc.getCondVisibility, xbmc.executeJSONRPC
 
 navigator_db   = 'special://profile/addon_data/plugin.video.pov/navigator.db'
 watched_db     = 'special://profile/addon_data/plugin.video.pov/watched.db'
@@ -21,12 +21,15 @@ debridcache_db = 'special://profile/addon_data/plugin.video.pov/debridcache.db'
 external_db    = 'special://profile/addon_data/plugin.video.pov/providerscache.db'
 databases_path = 'special://profile/addon_data/plugin.video.pov/'
 internal_path  = 'special://home/addons/plugin.video.pov/resources/lib/debrids/'
-external_path  = 'special://home/addons/plugin.video.pov/resources/lib/magneto/'
 packages_path  = 'special://home/addons/packages/'
 
 def current_dbs():
 	return {'settings.xml', 'fenomcache.db', 'traktcache.db', 'mdblcache.db', 'watched.db',
 			'maincache.db', 'metacache.db', 'navigator.db', 'views.db', 'debridcache.db', 'providerscache.db'}
+
+def external_path():
+	from indexers.pov_api import files_path
+	return files_path
 
 def get_database(watched_indicators):
 	if watched_indicators == 1: return trakt_db
@@ -52,19 +55,22 @@ def media_path(*args):
 	return '%s%s' % (path, '/'.join(args)) if args else path
 
 def get_property(prop):
-	return window.getProperty(prop)
+	return xbmcgui.Window(10000).getProperty(prop)
 
 def set_property(prop, value):
-	return window.setProperty(prop, value)
+	return xbmcgui.Window(10000).setProperty(prop, value)
 
 def clear_property(prop):
-	return window.clearProperty(prop)
-
-def addon(addon_id='plugin.video.pov'):
-	return Addon(id=addon_id)
+	return xbmcgui.Window(10000).clearProperty(prop)
 
 def addon_installed(addon_id):
 	return get_visibility('System.AddonIsEnabled(%s)' % addon_id)
+
+def get_addoninfo(info, addon_id=''):
+	return Addon(id=addon_id).getAddonInfo(info)
+
+def addon(addon_id=''):
+	return Addon(id=addon_id)
 
 def add_item(handle, url, listitem, isFolder):
 	xbmcplugin.addDirectoryItem(handle, url, listitem, isFolder)
@@ -137,10 +143,9 @@ def make_listitem():
 
 def local_string(string):
 	try: _string = int(string)
-	except: return string
-	try: _string = str(addon_object.getLocalizedString(_string))
-	except: _string = addon_object.getLocalizedString(_string)
-	return _string or string
+	except: return string or ''
+	try: return strings_po[_string]
+	except: return str(string)
 
 def sleep(time):
 	return xbmc.sleep(time)
@@ -188,7 +193,7 @@ def ok_dialog(heading='POV', text='', highlight='dodgerblue', ok_label=None, top
 	if isinstance(text, int): text = local_string(text)
 	if not text: top_space, text = True, local_string(32573)
 	if top_space: text = '[CR]%s' % text
-	return dialog.ok(heading, text)
+	return xbmcgui.Dialog().ok(heading, text)
 
 def confirm_dialog(heading='POV', text='', highlight='dodgerblue', ok_label=None, cancel_label=None, top_space=True, default_control=11):
 	if not ok_label: ok_label = local_string(32839)
@@ -199,7 +204,7 @@ def confirm_dialog(heading='POV', text='', highlight='dodgerblue', ok_label=None
 	if isinstance(cancel_label, int): cancel_label = local_string(cancel_label)
 	if not text: text = '[CR]%s' % local_string(32676)
 	elif top_space: text = '[CR]%s' % text
-	return dialog.yesno(heading, text, cancel_label, ok_label)
+	return xbmcgui.Dialog().yesno(heading, text, cancel_label, ok_label)
 
 def select_dialog(function_list, **kwargs):
 	def _builder():
@@ -219,10 +224,10 @@ def select_dialog(function_list, **kwargs):
 	multi_choice = kwargs.get('multi_choice', 'false') == 'true'
 	if multi_choice:
 		preselect = kwargs.get('preselect') or []
-		selection = dialog.multiselect(heading, list(_builder()), preselect=preselect, useDetails=details)
+		selection = xbmcgui.Dialog().multiselect(heading, list(_builder()), preselect=preselect, useDetails=details)
 	else:
 		preselect = kwargs.get('preselect') if kwargs.get('preselect') is not None else -1
-		selection = dialog.select(heading, list(_builder()), preselect=preselect, useDetails=details)
+		selection = xbmcgui.Dialog().select(heading, list(_builder()), preselect=preselect, useDetails=details)
 	if isinstance(selection, list) and multi_choice: return [function_list[i] for i in selection]
 	if selection in (-1, None): return None
 	return function_list[selection]
@@ -241,12 +246,12 @@ def show_text(heading, text=None, file=None, font_size='small', kodi_log=False):
 			else: lines[-1] += line
 		text = ''.join(i for i in reversed(lines) if any(x in i.lower() for x in ('exception', 'error')))
 	if not text: return no_results()
-	return dialog.textviewer(heading, text)
+	return xbmcgui.Dialog().textviewer(heading, text)
 
 def notification(line1, time=3000, icon=None, sound=False):
 	if isinstance(line1, int): line1 = local_string(line1)
 	icon = icon or get_addoninfo('icon')
-	dialog.notification('POV', line1, icon, time, sound)
+	xbmcgui.Dialog().notification('POV', line1, icon, time, sound)
 
 def no_results(time=1500):
 	return notification(32573, time=time)
@@ -261,7 +266,8 @@ def notify_success(time=1500):
 	return notification(32576, time=time)
 
 def get_video_database_path():
-	db_file = Addon().getSetting('myvideos_db')
+	version = {19: 119, 20: 121, 21: 131, 22: 149}.get(get_kodi_version())
+	db_file = 'special://profile/Database/MyVideos{}.db'.format(version)
 	return db_file if path_exists(db_file) else None
 
 def clear_local_bookmarks():
@@ -277,7 +283,8 @@ def clear_local_bookmarks():
 	except: pass
 
 def get_texture_database_path():
-	db_file = Addon().getSetting('textures_db')
+	version = {19: 13, 20: 13, 21: 13, 22: 14}.get(get_kodi_version())
+	db_file = 'special://profile/Database/Textures{}.db'.format(version)
 	return db_file if path_exists(db_file) else None
 
 def fetch_kodi_imagecache(image):
@@ -291,7 +298,8 @@ def fetch_kodi_imagecache(image):
 	return result
 
 def get_viewmode_database_path():
-	db_file = Addon().getSetting('viewmodes_db')
+	version = {19: 6, 20: 6, 21: 6, 22: 6}.get(get_kodi_version())
+	db_file = 'special://profile/Database/ViewModes{}.db'.format(version)
 	return db_file if path_exists(db_file) else None
 
 def clear_view_modes():

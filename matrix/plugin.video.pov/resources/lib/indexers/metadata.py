@@ -1,6 +1,6 @@
-from indexers import tmdb_api
 from caches.meta_cache import MetaCache
-from modules.utils import jsondate_to_datetime, subtract_dates, TaskPool
+from indexers import tmdb_api
+from modules.utils import TaskPool, jsondate_to_datetime, subtract_dates
 # from modules.kodi_utils import logger
 
 EXPIRES_2_DAYS, EXPIRES_4_DAYS, EXPIRES_7_DAYS, EXPIRES_14_DAYS, EXPIRES_182_DAYS = 2, 4, 7, 14, 182
@@ -148,10 +148,10 @@ def movie_meta(id_type, media_id, user_info, current_date):
 			'collection_id': ei_collection_id
 		}
 		meta = {
-			'tmdb_id': data.get('id', ''),
-			'tvdb_id': 'None',
-			'imdb_id': data.get('imdb_id', ''),
-			'imdbnumber': data.get('imdb_id', ''),
+			'tmdb_id': data.get('id') or '',
+			'tvdb_id': '',
+			'imdb_id': data.get('imdb_id') or '',
+			'imdbnumber': data.get('imdb_id') or '',
 			'mediatype': parser.mediatype,
 			'meta_language': parser.lang,
 			'rootname': f"{title} ({year})",
@@ -244,10 +244,10 @@ def tvshow_meta(id_type, media_id, user_info, current_date):
 			'last_episode_to_air': ei_last_ep
 		}
 		meta = {
-			'tmdb_id': data.get('id', ''),
-			'tvdb_id': data.get('external_ids', {}).get('tvdb_id', 'None'),
-			'imdb_id': data.get('external_ids', {}).get('imdb_id', 'None'),
-			'imdbnumber': data.get('external_ids', {}).get('imdb_id', ''),
+			'tmdb_id': data.get('id') or '',
+			'tvdb_id': data.get('external_ids', {}).get('tvdb_id') or '',
+			'imdb_id': data.get('external_ids', {}).get('imdb_id') or '',
+			'imdbnumber': data.get('external_ids', {}).get('imdb_id') or '',
 			'mediatype': parser.mediatype,
 			'meta_language': parser.lang,
 			'rootname': f"{title} ({year})",

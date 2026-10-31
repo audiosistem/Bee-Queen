@@ -8,9 +8,10 @@ import ast
 import base64
 import html
 import re
+import threading
 from urllib.parse import parse_qs, urljoin, urlparse, urlencode
 
-PATCH_VERSION = '1.2.0'
+PATCH_VERSION = '1.3.1'
 MEDIA = re.compile(r'\.(?:m3u8|mp4|mkv|webm|avi|mpd)(?:[?#|]|$)', re.I)
 
 
@@ -109,6 +110,8 @@ def install(ns):
     from romy_startup import Counter, wait_and_select
 
     session = requests.Session()
+    sessions = threading.local()
+    sessions.current = session
     stream_params = {}
     failure = {'message': ''}
     ua = ns.get('useragent') or 'Mozilla/5.0'
@@ -121,7 +124,9 @@ def install(ns):
 
     def fetch(url, referer='https://desenefaine.com/'):
         try:
-            response = session.get(url, headers={
+            if not hasattr(sessions, 'current'):
+                sessions.current = requests.Session()
+            response = sessions.current.get(url, headers={
                 'User-Agent': ua, 'Referer': referer,
                 'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
             }, timeout=(10, 20))
@@ -257,21 +262,9 @@ def install(ns):
             stream_params.clear()
             log('Redare server: %s' % (name or 'necunoscut'))
             if _site(url) and '/film/' in urlparse(url).path:
+                from romy_catalog import byse_option
                 page = fetch(url)
-                selected = ''
-                for attributes, encoded, label in re.findall(
-                        r'<a\b([^>]*\bdata-src=["\']([^"\']+)["\'][^>]*)>([\s\S]*?)</a>',
-                        page or '', re.I):
-                    if not re.search(r'byse(?:wihe)?', label, re.I):
-                        continue
-                    try:
-                        option = encoded + '=' * (-len(encoded) % 4)
-                        candidate = base64.urlsafe_b64decode(option).decode('utf-8')
-                    except (ValueError, UnicodeError):
-                        candidate = _clean(encoded)
-                    if candidate.startswith(('http://', 'https://', '/')):
-                        selected = urljoin(url, candidate)
-                        break
+                selected = byse_option(page, url)
                 if not selected:
                     failed('ByseWihe nu este disponibil pentru acest film.')
                     return
@@ -363,6 +356,12 @@ def install(ns):
     ns['_desenefaine_fetch'] = fetch
     ns['_desenefaine_unwrap_player'] = unwrap
     ns['desenefaine_play'] = play
+    from romy_catalog import install as install_catalog
+    install_catalog(ns, fetch)
     install_hooks(ns)
-    log('Patch local activ: API tenant, Byse cu timp extins, audio romana automat.')
+    from romy_daddy import install as install_daddy
+    install_daddy(ns)
+    from romy_vavoo import install as install_vavoo
+    install_vavoo(ns)
+    log('Patch local activ: paginare Mai mult, filme numai Byse, audio romana automat.')
     return originals

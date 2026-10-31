@@ -18,12 +18,26 @@ class CronJobMonitor(SafeThread):
     def _on_startup(self):
         self._do_recache_kodidb()
         self._do_trakt_authorization()
+        from tmdbhelper.lib.script.stats import get_stats
+        get_stats()
+        self._do_collection_update()
 
     def _on_poll(self):
         self._do_database_maintenance()
         self._do_delete_old_databases()
         self._do_library_update_check()
         self._do_delete_old_log_files()
+        self._do_collection_update()
+
+    def _do_collection_update(self):
+        from tmdbhelper.lib.collections.kodi import update_collection_index
+        thread = getattr(self, 'collection_thread', None)
+        if thread is not None and thread.is_alive():
+            return
+        self.collection_thread = SafeThread(
+            target=update_collection_index,
+            kwargs={'abort': lambda: self.exit or self.update_monitor.abortRequested()})
+        self.collection_thread.start()
 
     @cached_property
     def trakt_api(self):
@@ -37,6 +51,7 @@ class CronJobMonitor(SafeThread):
 
     def _do_database_maintenance(self):
         self.database_maintenance.vacuum()
+        self.database_maintenance.prune_image_cache()
 
     def _do_delete_old_databases(self):
         self.database_maintenance.delete_legacy_folders()
@@ -62,13 +77,8 @@ class CronJobMonitor(SafeThread):
             self._do_delete_old_log_files_in_folder(folder, regex)
 
     def _do_trakt_authorization(self):
-        from jurialmunkey.window import get_property
         self.trakt_api.authorize()
         self.update_monitor.waitForAbort(1)
-        if not get_property('TraktIsAuth', is_type=float):
-            return
-        from tmdbhelper.lib.script.method.trakt import get_stats
-        get_stats()
 
     def _do_library_update(self):
         from tmdbhelper.lib.addon.plugin import executebuiltin

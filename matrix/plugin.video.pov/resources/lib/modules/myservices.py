@@ -1,9 +1,9 @@
 import time
-import urllib3
 import urllib.parse
 from threading import Thread, Timer
+import urllib3
+from modules import cache, kodi_utils
 from windows import create_window
-from modules import kodi_utils, cache
 # logger = kodi_utils.logger
 
 quote, clear_cache = urllib.parse.quote, cache.clear_cache
@@ -42,7 +42,7 @@ def authorize():
 			yield item
 	services = (Trakt, MDBList, TMDbList, Premiumize, Offcloud, TorBox, RealDebrid, AllDebrid, EasyNews)
 	icon_path = kodi_utils.media_path()
-	service = kodi_utils.dialog.select('My Services', list(_builder()), useDetails=True)
+	service = kodi_utils.dialog().select('My Services', list(_builder()), useDetails=True)
 	if service < 0: return
 	try: success = services[service]().set()
 	except: kodi_utils.logger('myservices error', f"\n{__import__('traceback').format_exc()}")
@@ -267,7 +267,7 @@ class RealDebrid:
 		progress_dialog.close()
 		if progress_dialog.iscanceled(): return False
 		if not self.secret: return kodi_utils.notify_error()
-		response = conn.request('post', '/oauth/v2/token', fields=data)
+		response = conn.request('post', '/oauth/v2/token', fields=data, encode_multipart=False)
 		data.update(response.json())
 		sleep(500)
 		headers = {'Authorization': 'Bearer %s' % data['access_token']}
@@ -352,8 +352,8 @@ class EasyNews:
 	def set(self):
 		if self.token: return self.clear()
 
-		username = kodi_utils.dialog.input('EasyNews Username:').strip()
-		password = kodi_utils.dialog.input('EasyNews Password:').strip()
+		username = kodi_utils.dialog().input('EasyNews Username:').strip()
+		password = kodi_utils.dialog().input('EasyNews Password:').strip()
 		if not all((username, password)): return
 #		Account web page strangely blocked for some users, will work with vpn
 #		from indexers.easynews_api import EasyNewsAPI
@@ -376,6 +376,7 @@ class Trakt:
 
 	def clear(self):
 		if not confirm_dialog(): return
+		watched_indicators = get_setting('watched_indicators') == '1'
 		data = {'token': self.token, 'client_id': self.client_id, 'client_secret': self.secret}
 		conn = http.connection_from_url('https://auth.trakt.tv')
 		response = conn.request('post', '/oauth/revoke', json=data)
@@ -384,7 +385,7 @@ class Trakt:
 		set_setting('trakt.refresh', '')
 		set_setting('trakt.expires', '')
 		set_setting('trakt_indicators_active', 'false')
-		set_setting('watched_indicators', '0')
+		if watched_indicators: set_setting('watched_indicators', '0')
 		sleep(500)
 		clear_cache('trakt', silent=True)
 		return notification('Removed %s Authorization' % self.__class__.__name__)
@@ -450,12 +451,13 @@ class MDBList:
 
 	def clear(self):
 		if not confirm_dialog(): return
+		watched_indicators = get_setting('watched_indicators') == '2'
 		set_setting('mdblist_user', '')
 		set_setting('mdblist.token', '')
 		set_setting('mdblist.refresh', '')
 		set_setting('mdblist.expires', '')
 		set_setting('mdbl_indicators_active', 'false')
-		set_setting('watched_indicators', '0')
+		if watched_indicators: set_setting('watched_indicators', '0')
 		sleep(500)
 		clear_cache('mdblist', silent=True)
 		return notification('Removed %s Authorization' % self.__class__.__name__)

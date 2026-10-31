@@ -1,7 +1,7 @@
 from urllib.parse import urlencode, parse_qsl
-from modules.kodi_utils import get_setting, show_text
 from modules import source_utils
-from session import session, HTTPAdapter, Retry
+from modules.kodi_utils import get_setting, show_text
+from modules.session import session, HTTPAdapter, Retry
 # from modules.kodi_utils import logger
 
 internal_results, get_file_info = source_utils.internal_results, source_utils.get_file_info
@@ -19,7 +19,7 @@ class Debrid:
 		return get_setting(setting_id)
 
 	def unrestrict_link(self, url):
-		from magneto.modules.client import randomagent
+		from indexers.pov_api import randomagent
 		base_url, *headers = url.rsplit('|', 1)
 		try: req_headers = dict(parse_qsl(*headers))
 		except: req_headers = dict()
@@ -34,7 +34,7 @@ class Debrid:
 			logger('unrestrict_link error', f"{type(e)}: {e}")
 
 	def create_transfer(self, url):
-		from magneto.modules.client import randomagent
+		from indexers.pov_api import randomagent
 		base_url, *headers = url.rsplit('|', 1)
 		try: req_headers = dict(parse_qsl(*headers))
 		except: req_headers = dict()

@@ -11,12 +11,14 @@ default_icon = kodi_utils.media_path('search.png')
 remove_str, search_str, hist_str, clear_str = ls(32698), ls(32450), ls(32486), ls(32699)
 new_search_str = '[B]%s %s...[/B]' % ('New'.upper(), search_str.upper())
 mode_dict, query_dict = {
-	'movie': ('movie_queries', {'mode': 'get_search_term', 'mediatype': 'movie'}),
-	'tvshow': ('tvshow_queries', {'mode': 'get_search_term', 'mediatype': 'tv_show'}),
+	'movie': ('movie_queries', {'mode': 'get_search_term', 'search_type': 'movie'}),
+	'tvshow': ('tvshow_queries', {'mode': 'get_search_term', 'search_type': 'tvshow'}),
 	'people': ('people_queries', {'mode': 'get_search_term', 'search_type': 'people'}),
 	'tmdb_collections': ('tmdb_collections_queries', {'mode': 'get_search_term', 'search_type': 'tmdb_collections', 'mediatype': 'movie'}),
 	'easynews_video': ('easynews_video_queries', {'mode': 'get_search_term', 'search_type': 'easynews_video'})
 }, {
+	'movie': ('movie_queries', {'mode': 'build_movie_list', 'action': 'tmdb_movies_search'}),
+	'tvshow': ('tvshow_queries', {'mode': 'build_tvshow_list', 'action': 'tmdb_tv_search'}),
 	'people': ('people_queries', {'mode': 'person_search'}),
 	'tmdb_collections': ('tmdb_collections_queries', {'mode': 'build_movie_list', 'action': 'tmdb_movies_search_collections'}),
 	'easynews_video': ('easynews_video_queries', {'mode': 'easynews.search_easynews'})
@@ -51,15 +53,11 @@ def search_history(params):
 
 def get_search_term(params):
 	kodi_utils.close_all_dialog()
-	mediatype = params.get('mediatype', '')
-	search_type = params.get('search_type', 'media_title')
 	params_query = params.get('query', '')
-	if search_type not in query_dict:
-		if mediatype == 'movie':
-			string, url_params = 'movie_queries', {'mode': 'build_movie_list', 'action': 'tmdb_movies_search'}
-		else: string, url_params = 'tvshow_queries', {'mode': 'build_tvshow_list', 'action': 'tmdb_tv_search'}
-	else: string, url_params = query_dict[search_type]
-	query = params_query or kodi_utils.dialog.input('POV')
+	search_type = params.get('search_type', '')
+	if search_type not in query_dict: return kodi_utils.notify_error()
+	string, url_params = query_dict[search_type]
+	query = params_query or kodi_utils.dialog().input('POV')
 	if not query.strip(): return
 	query = unquote(query)
 	add_to_search_history(query, string)

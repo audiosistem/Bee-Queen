@@ -1,6 +1,6 @@
-from modules.meta_lists import meta_languages
 from modules import kodi_utils
-from session import http
+from modules.meta_lists import meta_languages
+from modules.session import http
 # logger = kodi_utils.logger
 
 ls, get_setting = kodi_utils.local_string, kodi_utils.get_setting

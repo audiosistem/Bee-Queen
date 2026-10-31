@@ -1,8 +1,8 @@
 from threading import Thread
-from indexers.metadata import movie_meta, art_infodict, movie_show_infodict, tmdb_image_base
-from caches.watched_cache import get_watched_info_movie, get_watched_status_movie, get_bookmarks, get_resumetime, set_resumetime
+from caches.watched_cache import get_bookmarks, get_resumetime, get_watched_info_movie, get_watched_status_movie, set_resumetime
+from indexers.metadata import art_infodict, movie_meta, movie_show_infodict, tmdb_image_base
 from modules import kodi_utils, settings
-from modules.utils import manual_function_import, get_datetime, TaskPool
+from modules.utils import TaskPool, get_datetime, manual_function_import
 # logger = kodi_utils.logger
 
 KODI_VERSION, make_cast_list, default_duration = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list, 3600

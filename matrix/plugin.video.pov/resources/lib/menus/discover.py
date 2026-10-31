@@ -41,9 +41,9 @@ class Discover:
 	def similar_recommended(self):
 		key = self.key
 		if self._action(key) in ('clear', None): return
-		title = kodi_utils.dialog.input(heading_base % ls(32228))
+		title = kodi_utils.dialog().input(heading_base % ls(32228))
 		if not title: return
-		year = kodi_utils.dialog.numeric(0, heading_base % ('%s (%s)' % (ls(32543), ls(32669))))
+		year = kodi_utils.dialog().numeric(0, heading_base % ('%s (%s)' % (ls(32543), ls(32669))))
 		if self.mediatype == 'movie':
 			name, premiered, function = 'title', 'release_date', tmdb_api.tmdb_movies_title_year
 		else: name, premiered, function = 'name', 'first_air_date', tmdb_api.tmdb_tv_title_year
@@ -110,7 +110,7 @@ class Discover:
 			current_keywords = current_keywords.split(', ')
 		key_ids_append = current_key_ids.append
 		key_words_append = current_keywords.append
-		keyword = kodi_utils.dialog.input(heading_base % (include_base_str % ls(32657)))
+		keyword = kodi_utils.dialog().input(heading_base % (include_base_str % ls(32657)))
 		if not keyword: return
 		try:
 			result = tmdb_api.tmdb_keyword_id(keyword)['results']
@@ -181,7 +181,7 @@ class Discover:
 			current_company_ids = current_company_ids.replace('&with_companies=', '').split('|')
 		if not isinstance(current_companies, list):
 			current_companies = current_companies.split(', ')
-		company = kodi_utils.dialog.input(heading_base % ls(32660))
+		company = kodi_utils.dialog().input(heading_base % ls(32660))
 		if not company: return
 		try: companies = tmdb_api.tmdb_company_id(company)['results']
 		except: companies = None
@@ -214,7 +214,7 @@ class Discover:
 	def cast(self):
 		key = 'cast'
 		if self._action(key) in ('clear', None): return
-		query = kodi_utils.dialog.input(heading_base % ls(32664))
+		query = kodi_utils.dialog().input(heading_base % ls(32664))
 		if not query: return
 		try: actors = tmdb_api.tmdb_people_info(query)
 		except: actors = None
@@ -239,10 +239,9 @@ class Discover:
 		if self._action(key) in ('clear', None): return
 		network_list = []
 		network_list_append = network_list.append
-		networks = sorted(meta_lists.networks, key=lambda k: k['name'])
-		for item in networks:
-			name = item['name']
-			network_list_append({'line1': name, 'icon': item['logo'], 'name': name, 'id': item['id']})
+		for item in meta_lists.networks:
+			icon = '%s%s%s' % ('https://image.tmdb.org/t/p', '/w300', item['logo'])
+			network_list_append({'line1': item['name'], 'icon': icon, 'name': item['name'], 'id': item['id']})
 		heading = heading_base % ls(32480)
 		kwargs = {'items': json.dumps(network_list), 'heading': heading}
 		choice = kodi_utils.select_dialog(network_list, **kwargs)

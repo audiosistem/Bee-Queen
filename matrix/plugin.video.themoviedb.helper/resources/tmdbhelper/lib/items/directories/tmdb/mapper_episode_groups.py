@@ -1,5 +1,5 @@
 from jurialmunkey.ftools import cached_property
-from tmdbhelper.lib.items.directories.trakt.mapper_basic import ItemMapper
+from tmdbhelper.lib.items.directories.mapper_basic import ItemMapper
 
 
 class EpisodeGroupItemMapper(ItemMapper):
@@ -107,4 +107,5 @@ class EpisodeGroupEpisodeItemMapper(EpisodeGroupItemMapper):
         return {
             'info': 'details', 'tmdb_type': 'tv', 'tmdb_id': self.tmdb_id,
             'season': self.group['season'], 'episode': self.group['episode'],
+            'virtual_season': self.group_season, 'virtual_episode': self.group_episode,
         }

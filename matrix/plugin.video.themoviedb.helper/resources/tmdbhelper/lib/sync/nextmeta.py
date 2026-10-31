@@ -18,17 +18,11 @@ class SyncNextEpisodeItem:
         return self.get_key('tmdb_id')
 
     @cached_property
-    def trakt_slug(self):
-        return self.get_key('trakt_slug')
-
-    @cached_property
     def id_data(self):
-        return {
-            k: v for k, v in (
-                ('tmdb', self.tmdb_id),
-                ('slug', self.trakt_slug),
-            ) if v
-        }
+        return self.get_id_data()
+
+    def get_id_data(self):
+        return {'tmdb': self.tmdb_id} if self.tmdb_id else {}
 
     @property
     def get_response_sync(self):
@@ -104,16 +98,30 @@ class SyncNextEpisodeItem:
     def response_seasons(self):
         return self.response.get('seasons') or []
 
+    def get_rewatch_next_episode_id(self):
+        progress = [
+            ((season['number'], episode['number']), self.is_next_episode(season, episode))
+            for season in self.response_seasons for episode in (season.get('episodes') or [])
+        ]
+        # Provider eligibility accounts for watches before the reset. Only episodes
+        # completed during this rewatch establish how far forward to continue.
+        position = max(
+            (number for number, incomplete in progress if not incomplete),
+            default=(-1, -1))
+        next_position = min(
+            (number for number, incomplete in progress if incomplete and number > position),
+            default=None)
+        if next_position is not None:
+            return self.get_next_episode_id(*next_position)
+
     @cached_property
     def next_episode_id(self):
         if not self.response:
             return
-        if not self.reset_at and self.next_episode and not self.next_episode_is_unaired:
+        if self.reset_at:
+            return self.get_rewatch_next_episode_id()
+        if self.next_episode and not self.next_episode_is_unaired:
             return self.get_next_episode_id(self.next_episode_season, self.next_episode_number)
-        try:
-            return next(self.all_next_episodes)
-        except StopIteration:
-            return
 
     @cached_property
     def next_episode_id_dictionary(self):
@@ -128,7 +136,7 @@ class SyncNextEpisodeItem:
 
 class SyncAllNextEpisodesMetaItem:
 
-    dialog_progress_bg_text_fstr = '{sync.tmdb_id} {sync.trakt_slug}'
+    dialog_progress_bg_text_fstr = '{sync.tmdb_id}'
     sync_item_class = SyncNextEpisodeItem
 
     def __init__(self, main, item):
@@ -187,6 +195,9 @@ class SyncAllNextEpisodesMeta:
 
     @cached_property
     def item_queue(self):
+        return self.get_item_queue()
+
+    def get_item_queue(self):
         self.main.dialog_progress_bg.max_value = len(self.sd.items) + 20
         from tmdbhelper.lib.addon.thread import ParallelThread
         with ParallelThread(self.sd.items, self.get_items) as pt:

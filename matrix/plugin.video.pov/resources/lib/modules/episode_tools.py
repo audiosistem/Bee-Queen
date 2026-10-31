@@ -1,11 +1,11 @@
 import json
 from random import choice
 from threading import Thread
-from windows import open_window
-from indexers.metadata import tvshow_meta, season_episodes_meta, all_episodes_meta
+from indexers.metadata import all_episodes_meta, season_episodes_meta, tvshow_meta
 from modules import kodi_utils, settings
-from modules.utils import get_next_episode_pointer, adjust_premiered_date, get_datetime
 from modules.sources import Sources
+from modules.utils import adjust_premiered_date, get_datetime, get_next_episode_pointer
+from windows import open_window
 # from modules.kodi_utils import logger
 
 ls, build_url = kodi_utils.local_string, kodi_utils.build_url

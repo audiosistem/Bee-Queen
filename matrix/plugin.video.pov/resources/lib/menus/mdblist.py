@@ -1,4 +1,4 @@
-from indexers import mdblist_api, list_helper
+from indexers import list_helper, mdblist_api
 from menus.episodes import Episodes
 from menus.movies import Movies
 from menus.seasons import Seasons
@@ -106,7 +106,7 @@ class SearchMdblLists(BaseMdblList):
 		super().__init__(params)
 		self.page = params.get('new_page', '1')
 		self.pages = self.page
-		self.search_title = params.get('search_title') or kodi_utils.dialog.input('POV')
+		self.search_title = params.get('search_title') or kodi_utils.dialog().input('POV')
 		self.category_name = self.search_title
 
 	def fetch_results(self):

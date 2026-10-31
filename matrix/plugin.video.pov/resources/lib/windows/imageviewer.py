@@ -1,8 +1,8 @@
 import json
-from windows import BaseDialog
 from menus.people import person_data_dialog
+from modules.kodi_utils import get_property, hide_busy_dialog, local_string as ls, media_path, set_property, show_busy_dialog
 from modules.settings import download_directory
-from modules.kodi_utils import media_path, show_busy_dialog, hide_busy_dialog, local_string as ls, get_property, set_property
+from windows import BaseDialog
 # from modules.kodi_utils import logger
 
 fanart = BaseDialog.fanart

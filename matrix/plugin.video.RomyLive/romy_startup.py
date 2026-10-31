@@ -37,7 +37,7 @@ Use an AV-start callback plus Kodi's actual stream list in this invocation.
 """
     import xbmc
     import xbmcaddon
-    from romy_audio import choose_romanian
+    from romy_audio import choose_audio, latin_fallback_enabled
     event = threading.Event()
 
     class Player(xbmc.Player):
@@ -74,7 +74,7 @@ Use an AV-start callback plus Kodi's actual stream list in this invocation.
                         props = json.loads(xbmc.executeJSONRPC(json.dumps(message))).get('result') or {}
                         tracks = props.get('audiostreams') or []
                         current = (props.get('currentaudiostream') or {}).get('index')
-                        selected = choose_romanian(tracks, current)
+                        selected = choose_audio(tracks, current, latin_fallback_enabled())
                         if selected is not None:
                             player.setAudioStream(selected)
                             xbmc.log('[RomyLive Audio] Selectie la pornirea AV: pista %s' % selected, xbmc.LOGINFO)

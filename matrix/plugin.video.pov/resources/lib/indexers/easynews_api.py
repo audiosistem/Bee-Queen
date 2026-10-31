@@ -1,9 +1,9 @@
 import re
-from urllib.parse import urlencode, quote
+from urllib.parse import quote, urlencode
 from caches.main_cache import cache_object
 from modules import kodi_utils
 from modules.source_utils import supported_video_extensions
-from session import session, HTTPAdapter, Retry
+from modules.session import session, HTTPAdapter, Retry
 # from modules.kodi_utils import logger
 
 base_url = 'https://members.easynews.com'

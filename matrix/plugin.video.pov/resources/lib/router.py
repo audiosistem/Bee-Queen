@@ -1,4 +1,5 @@
 
 if __name__ == '__main__':
-	__import__('entry').Router()()
+	from modules.entry import Router
+	Router()()
 

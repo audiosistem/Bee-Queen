@@ -24,7 +24,7 @@ CHANNEL_TIMEOUT  = 12
 VAVOO_PLAY_BASE  = "https://vavoo.to/vavoo-iptv/play"
 RESOLVE_ENDPOINT = "https://vavoo.to/mediahubmx-resolve.json"
 SIG_ENDPOINT     = "https://api.derzis.xyz/livetv/vavoo/sig"
-_THRAX_KEY       = "6d11ea4b6c6acc9bd2fc4f91b6be3fc06ca5e4358e344d248e8bbcb64cedd0df"
+from resources.lib import thrax_auth
 
 
 def _log(msg: str) -> None:
@@ -62,7 +62,7 @@ def get_auth_signature() -> Optional[str]:
     if _sig_cache["sig"] and (now - _sig_cache["ts"]) < _sig_cache["ttl"]:
         return _sig_cache["sig"]
     try:
-        r = SESSION.get(SIG_ENDPOINT, timeout=TIMEOUT, headers={"X-Thrax-Key": _THRAX_KEY})
+        r = SESSION.get(SIG_ENDPOINT, timeout=TIMEOUT, headers=thrax_auth.headers())
         r.raise_for_status()
         data = r.json()
         sig = data.get("sig")

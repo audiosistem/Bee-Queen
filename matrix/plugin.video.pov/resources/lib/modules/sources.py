@@ -1,22 +1,23 @@
 import re
 import json
 import time
-import importlib, pkgutil
+import pkgutil
+import importlib
 from concurrent.futures import ThreadPoolExecutor as TPE, as_completed
 from threading import Thread
-from magneto import sources as magneto_sources
-from windows import open_window, create_window
 from caches.providers_cache import ExternalProvidersCache
-from indexers.metadata import movie_meta, tvshow_meta, season_episodes_meta, get_title
-from modules.debrid import debrid_enabled, debrid_type_enabled, Source, DebridCheck
-from modules import player, kodi_utils, settings, source_utils
+from indexers.pov_api import sources as pov_sources
+from indexers.metadata import get_title, movie_meta, season_episodes_meta, tvshow_meta
+from modules import kodi_utils, player, settings, source_utils
+from modules.debrid import DebridCheck, Source, debrid_enabled, debrid_type_enabled
 from modules.utils import get_datetime, safe_string, string_to_float
+from windows import create_window, open_window
 # from modules.kodi_utils import logger
 
-POVPlayer, progressDialogBG, notification = player.POVPlayer, kodi_utils.progressDialogBG, kodi_utils.notification
+POVPlayer, monitor, progressDialogBG = player.POVPlayer, kodi_utils.xbmc_monitor(), kodi_utils.progressDialogBG()
+ls, sleep, get_setting, notification = kodi_utils.local_string, kodi_utils.sleep, kodi_utils.get_setting, kodi_utils.notification
 show_busy_dialog, hide_busy_dialog, close_all_dialog = kodi_utils.show_busy_dialog, kodi_utils.hide_busy_dialog, kodi_utils.close_all_dialog
 get_property, set_property, clear_property = kodi_utils.get_property, kodi_utils.set_property, kodi_utils.clear_property
-ls, monitor, sleep, get_setting = kodi_utils.local_string, kodi_utils.monitor, kodi_utils.sleep, kodi_utils.get_setting
 check_prescrape_sources, quality_filter, sort_to_top = settings.check_prescrape_sources, settings.quality_filter, settings.sort_to_top
 results_xml_style, results_xml_window_number = settings.results_xml_style, settings.results_xml_window_number
 default_internal_scrapers, cloud_scrapers = settings.default_internal_scrapers(), settings.cloud_scrapers()
@@ -129,7 +130,7 @@ class Sources:
 	def scrapers_dialog(self, scrape_type):
 		if scrape_type == 'internal':
 			scraper_list, threads_list = self.providers, self.threads
-			line1_inst, line2_inst = ls(32117), 'Int:'
+			line1_inst, line2_inst = ls(32139), 'Int:'
 		else:
 			scraper_list, threads_list = self.prescrape_scrapers, self.prescrape_threads
 			line1_inst, line2_inst = '%s %s' % (ls(32829), ls(32830)), 'Pre:'
@@ -389,10 +390,6 @@ class MetaBuilder:
 	def get_search_year(self, source, meta):
 		if 'custom_year' in meta: return meta['custom_year']
 		year = meta.get('year') or '0'
-		if source.active_external and get_setting('search.enable.yearcheck', 'false') == 'true':
-			from indexers.imdb_api import imdb_movie_year
-			try: year = imdb_movie_year(meta.get('imdb_id')) or year
-			except: pass
 		return year
 
 	def get_ep_name(self, meta):
@@ -437,7 +434,7 @@ class ScraperProcessor:
 			self.source.active_external = False
 			return notification(32130) if ''.join(self.source.active_internal_scrapers) == 'external' else None
 #		if not self.source.debrid_torrent_enabled: self.source.exclude_list.extend(scraper_names('torrents'))
-		external_providers = magneto_sources(ret_all=self.source.disabled_ignored)
+		external_providers = pov_sources(ret_all=self.source.disabled_ignored)
 		self.source.external_providers.extend([
 			i for i in external_providers if i[0] not in self.source.exclude_list
 			and (i[1].hasEpisodes if self.source.mediatype == 'episode' else i[1].hasMovies)
@@ -584,7 +581,7 @@ class ExternalManager:
 					instance.string4 = ext_format % (instance.ext_dialog_highlight, '%s')
 				else:
 					instance.string3 = ''
-					instance.string4 = ext_scr_format % (instance.ext_dialog_highlight, ls(32118))
+					instance.string4 = ext_scr_format % (instance.ext_dialog_highlight, ls(32138))
 				hide_busy_dialog()
 				if not instance.progress_dialog.full_screen:
 					progressDialogBG.create('POV', 'POV loading...')

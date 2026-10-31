@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from caches import BaseCache, metacache_db, get_property, set_property, clear_property
+from caches import BaseCache, clear_property, get_property, metacache_db, set_property
 # from modules.kodi_utils import logger
 
 GET_MOVIE_SHOW = 'SELECT meta, expires FROM metadata WHERE db_type = ? AND %s = ? and expires > ?'

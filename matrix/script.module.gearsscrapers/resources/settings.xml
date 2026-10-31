@@ -5,11 +5,24 @@
     <setting type="action" label="Show Changelog" action="RunPlugin(plugin://script.module.gearsscrapers/?action=ShowChangelog)" />
 </category>
 
+<category label="Pack Providers">
+    <setting id="provider.bitmagnet" type="bool" label="Bitmagnet" default="true" />
+	<setting id="provider.comet" type="bool" label="Comet" default="true" />
+	<setting id="provider.eztv" type="bool" label="Eztv (Shows Only)" default="false" />
+    <setting id="provider.torz" type="bool" label="Torz" default="true" />
+	<setting id="provider.torrentio" type="bool" label="Torrentio" default="true" />
+	<setting id="provider.zilean" type="bool" label="Zilean" default="false" />
+	<setting id="provider.mediafusion" type="bool" label="MediaFusion" default="false" />
+	<setting id="provider.torrentsdb" type="bool" label="torrentsdb" default="true" />
+	<setting id="provider.torrentdownload" type="bool" label="TorrentDownload" default="false" />
+	<setting id="provider.peerflix" type="bool" label="Peerflix" default="false" />
+</category>
+
 <category label="Providers">
     <setting id="provider.aiostreams" type="bool" label="Aiostreams" default="false" />
 	<setting id="provider.apachetorrent" type="bool" label="apachetorrent" default="false" />
-	<setting id="provider.torlock" type="bool" label="Torlock" default="true" />
-	<setting id="provider.torseek" type="bool" label="Torseek" default="true" />
+	<setting id="provider.torlock" type="bool" label="Torlock" default="false" />
+	<setting id="provider.torseek" type="bool" label="Torseek" default="false" />
 	<setting id="provider.torrentproject2" type="bool" label="Torrentproject" default="false" />
     <setting id="provider.torrentz2" type="bool" label="Torrentz" default="false" />
 	<setting id="provider.meteor" type="bool" label="Meteor" default="false" />
@@ -21,6 +34,25 @@
     <setting id="provider.knaben" type="bool" label="Knaben" default="false" />
 	<setting id="provider.ytsmx" type="bool" label="Yts" default="false" />
 	<setting id="provider.torrent9" type="bool" label="Torrent9 (French)" default="false" />
+	<setting id="provider.zooqle" type="bool" label="Zooqle" default="false" />
+    <setting id="provider.torrentgalaxy" type="bool" label="TorrentGalaxy" default="false" />
+    <setting id="provider.yourbittorrent" type="bool" label="YourBitTorrent" default="false" />
+    <setting id="provider.bitlord" type="bool" label="Bitlord" default="false" />
+    <setting id="provider.magnetdl" type="bool" label="MagnetDL" default="false" />
+    <setting id="provider.torrentdownloads" type="bool" label="TorrentDownloads" default="true" />
+    <setting id="provider.glodls" type="bool" label="Glodls" default="false" />
+    <setting id="provider.extto" type="bool" label="EXTto" default="true" />
+    <setting id="provider.therarbg" type="bool" label="TheRarBG" default="false" />
+    <setting id="provider.torrentfunk" type="bool" label="TorrentFunk" default="false" />
+    <setting id="provider.bittorrented" type="bool" label="BitTorrented" default="true" />
+    <setting id="provider.limetorrents" type="bool" label="LimeTorrents" default="false" />
+    <setting id="provider.kontrast" type="bool" label="KONTRAST" default="false" />
+    <setting id="provider.torrentscsv" type="bool" label="TorrentsCSV" default="false" />
+    <setting id="provider.btdig" type="bool" label="BitDig" default="false" />
+    <setting id="provider.snowfl" type="bool" label="Snowfl" default="false" />
+    <setting id="provider.cleanbay" type="bool" label="Cleanbay" default="false" />
+    <setting id="provider.damagnet" type="bool" label="DaMagNet" default="false" />
+    <setting id="provider.rarbgdump" type="bool" label="RarbgDump" default="false" />
 	<setting id="provider.telegrambot" type="bool" label="Telegram (TorrentSearchRoBot) - requires linking your Telegram account below" default="false" />
 </category>
 
@@ -28,19 +60,6 @@
 	<setting id="telegram_hint" type="lsep" label="Link your own Telegram account to enable the Telegram (TorrentSearchRoBot) provider above - each device/family member links their own account, so searches run under your own Telegram, not a shared one. Scan the QR code that appears with your phone's Telegram app (Settings, Devices, Link Desktop Device)." />
 	<setting id="telegram_pair" type="action" label="Link Telegram Account" action="RunPlugin(plugin://script.module.gearsscrapers/?action=telegram_pair)" />
 	<setting id="telegram_status" type="action" label="Check Telegram link status / Unlink" action="RunPlugin(plugin://script.module.gearsscrapers/?action=telegram_status)" />
-</category>
-
-<category label="Pack Providers">
-    <setting id="provider.bitmagnet" type="bool" label="Bitmagnet" default="true" />
-	<setting id="provider.comet" type="bool" label="Comet" default="true" />
-	<setting id="provider.eztv" type="bool" label="Eztv (Shows Only)" default="false" />
-    <setting id="provider.torz" type="bool" label="Torz" default="true" />
-	<setting id="provider.torrentio" type="bool" label="Torrentio" default="true" />
-	<setting id="provider.zilean" type="bool" label="Zilean" default="false" />
-	<setting id="provider.mediafusion" type="bool" label="MediaFusion" default="false" />
-	<setting id="provider.torrentsdb" type="bool" label="torrentsdb" default="true" />
-	<setting id="provider.torrentdownload" type="bool" label="TorrentDownload" default="false" />
-	<setting id="provider.peerflix" type="bool" label="Peerflix" default="true" />
 </category>
 
 <category label="Dmm Setup">
@@ -53,28 +72,6 @@
     <setting id="provider.nyaa" type="bool" label="Nyaa" default="false" />
 	<setting id="provider.animetosho" type="bool" label="AnimeTosho" default="true" />
 	<setting id="provider.nnmclub" type="bool" label="Nnmclub" default="true" />
-</category>
-
-<category label="Starfleet-Ported Providers">
-    <setting id="provider.zooqle" type="bool" label="Zooqle" default="true" />
-    <setting id="provider.torrentgalaxy" type="bool" label="TorrentGalaxy" default="false" />
-    <setting id="provider.yourbittorrent" type="bool" label="YourBitTorrent" default="false" />
-    <setting id="provider.bitlord" type="bool" label="Bitlord" default="false" />
-    <setting id="provider.magnetdl" type="bool" label="MagnetDL" default="true" />
-    <setting id="provider.torrentdownloads" type="bool" label="TorrentDownloads" default="true" />
-    <setting id="provider.glodls" type="bool" label="Glodls" default="false" />
-    <setting id="provider.extto" type="bool" label="EXTto" default="true" />
-    <setting id="provider.therarbg" type="bool" label="TheRarBG" default="false" />
-    <setting id="provider.torrentfunk" type="bool" label="TorrentFunk" default="true" />
-    <setting id="provider.bittorrented" type="bool" label="BitTorrented" default="true" />
-    <setting id="provider.limetorrents" type="bool" label="LimeTorrents" default="true" />
-    <setting id="provider.kontrast" type="bool" label="KONTRAST" default="true" />
-    <setting id="provider.torrentscsv" type="bool" label="TorrentsCSV" default="true" />
-    <setting id="provider.btdig" type="bool" label="BitDig" default="true" />
-    <setting id="provider.snowfl" type="bool" label="Snowfl" default="true" />
-    <setting id="provider.cleanbay" type="bool" label="Cleanbay" default="false" />
-    <setting id="provider.damagnet" type="bool" label="DaMagNet" default="false" />
-    <setting id="provider.rarbgdump" type="bool" label="RarbgDump" default="false" />
 </category>
 
 <category label="Prowlarr">

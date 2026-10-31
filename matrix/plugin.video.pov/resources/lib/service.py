@@ -1,4 +1,5 @@
 
 if __name__ == '__main__':
-	__import__('entry').SettingsMonitor()()
+	from modules.entry import SettingsMonitor
+	SettingsMonitor()()
 

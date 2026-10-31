@@ -48,13 +48,6 @@ def test_func(test_func, dialog_output=False, **kwargs):
         data = {'authorization': tapi.authenticator.authorization}
         return finalise(head, data)
 
-    def test_func_mdblist_response(path, **kwargs):
-        from tmdbhelper.lib.api.mdblist.api import MDbList
-        head = path
-        data = MDbList().get_response(path, **kwargs)
-        data = {'headers': dict(data.headers), 'request': data.json()}
-        return finalise(head, data)
-
     def test_func_fanarttv(ftv_type, ftv_id, **kwargs):
         from tmdbhelper.lib.api.fanarttv.api import FanartTV
         data = FanartTV().get_request(
@@ -99,9 +92,11 @@ def test_func(test_func, dialog_output=False, **kwargs):
         xbmcgui.Dialog().select(head, data, useDetails=True)
 
     def test_func_sync_next_episodes(import_attr, **kwargs):
-        from tmdbhelper.lib.sync.synctype import SyncNextEpisodes
         from tmdbhelper.lib.sync.datasync import SyncDataFactory
-        sync = SyncNextEpisodes(SyncDataFactory(), 'show')
+        syncdata = SyncDataFactory()
+        sync = syncdata.create_sync('SyncNextEpisodes', 'show')
+        if sync is None:
+            return
         func = getattr(sync, import_attr)
         head = import_attr
         data = func(**kwargs)
@@ -159,7 +154,6 @@ def test_func(test_func, dialog_output=False, **kwargs):
         'response': test_func_response,
         'trakt_response': test_func_trakt_response,
         'tmdbuser_response': test_func_tmdbuser_response,
-        'mdblist_response': test_func_mdblist_response,
         'baseitem_factory': test_func_baseitem_factory,
         'baseview_factory': test_func_baseview_factory,
         'query_database': test_func_query_database,

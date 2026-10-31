@@ -1,7 +1,6 @@
 from modules import kodi_utils
 # logger = kodi_utils.logger
 
-ls = kodi_utils.local_string
 navigator_db = kodi_utils.navigator_db
 watched_db = kodi_utils.watched_db
 favorites_db = kodi_utils.favorites_db
@@ -172,24 +171,4 @@ def clear_cache(cache_type, silent=False):
 		MainCache().delete_all()
 	if not silent and success: kodi_utils.notify_success()
 	return success
-
-def clear_all_cache():
-	if not kodi_utils.confirm_dialog(): return
-	line = '[CR]%s: [B]%s %s[/B]'
-	caches = (
-		('internal_scrapers', ls(32117)), ('external_scrapers', ls(32118)),
-		('trakt', 'Trakt'), ('mdblist', 'MDBList'), ('tmdblist', 'TMDbList'),
-		('imdb', 'IMDb'), ('list', ls(32815)), ('meta', ls(32527))
-	)
-	len_caches = len(caches)
-	kodi_utils.progressDialog.create('POV', '')
-	for count, (cache_type, cache_label) in enumerate(caches, 1):
-		try:
-			if kodi_utils.progressDialog.iscanceled(): break
-			args = int(count / len_caches * 100), line % (ls(32816), cache_label, ls(32524))
-			kodi_utils.progressDialog.update(*args)
-			clear_cache(cache_type, silent=True)
-			kodi_utils.sleep(200)
-		except: kodi_utils.notify_error()
-	kodi_utils.progressDialog.close()
 

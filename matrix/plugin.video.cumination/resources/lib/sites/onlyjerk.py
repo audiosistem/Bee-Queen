@@ -123,8 +123,8 @@ def extract_video_info(block):
 
 @site.register(default_mode=True)
 def Main(url=''):
-    site.add_dir('[COLOR hotpink]Categories[/COLOR]', site.url, 'Categories', '')
-    site.add_dir('[COLOR hotpink]Search[/COLOR]', site.url, 'Search', '')
+    site.add_dir('[COLOR hotpink]Categories[/COLOR]', site.url, 'Categories', site.img_cat)
+    site.add_dir('[COLOR hotpink]Search[/COLOR]', site.url, 'Search', site.img_search)
     List(site.url + 'latest-videos/')
 
 
@@ -260,7 +260,7 @@ def List(url=''):
                     next_url = site.url + next_url.lstrip('/')
                 
                 if next_url != url:
-                    site.add_dir(f'[COLOR hotpink]Next Page ({next_page_num})[/COLOR]', next_url, 'List', '')
+                    site.add_dir(f'[COLOR hotpink]Next Page ({next_page_num})[/COLOR]', next_url, 'List', site.img_next)
         
         utils.eod()
     except Exception:
@@ -342,7 +342,7 @@ def Search(url='', keyword=None):
                 if not next_url.startswith('http'):
                     next_url = site.url + next_url.lstrip('/')
                 if next_url != search_url:
-                    site.add_dir(f'[COLOR hotpink]Next Page ({next_page_num})[/COLOR]', next_url, 'Search', '')
+                    site.add_dir(f'[COLOR hotpink]Next Page ({next_page_num})[/COLOR]', next_url, 'Search', site.img_next)
         
         utils.eod()
     except Exception:

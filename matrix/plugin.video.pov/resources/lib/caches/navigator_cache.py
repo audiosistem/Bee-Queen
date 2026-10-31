@@ -1,4 +1,4 @@
-from caches import BaseCache, navigator_db, get_property, set_property, clear_property
+from caches import BaseCache, clear_property, get_property, navigator_db, set_property
 from modules import menu_lists as default_menus
 # from modules.kodi_utils import logger
 

@@ -63,7 +63,7 @@ class Menu(Debrid):
 		kodi_utils.container_refresh()
 
 	def cloud_rename(self, file_type, file_id, current_name):
-		new_name = kodi_utils.dialog.input('POV', defaultt=current_name)
+		new_name = kodi_utils.dialog().input('POV', defaultt=current_name)
 		if not new_name: return
 		result = self.rename_cache_item(file_type, file_id, new_name)
 		if not result: return kodi_utils.notify_failed()

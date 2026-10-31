@@ -36,26 +36,20 @@ class ExternalProvidersCache(BaseCache):
 		result = None
 		try:
 			current_time = self._get_timestamp(datetime.now())
-			with self: cache_data = self.dbcur.execute(
-				SELECT_RESULTS,
-				(source, mediatype, tmdb_id, title, year, season, episode, current_time)
-			).fetchone()
+			args = (source, mediatype, tmdb_id, title, year, season, episode, current_time)
+			with self: cache_data = self.dbcur.execute(SELECT_RESULTS, args).fetchone()
 			if cache_data: result = self.jsloads(cache_data[0])
 		except: pass
 		return result
 
 	def set(self, source, mediatype, tmdb_id, title, year, season, episode, results, expire_time):
 		expires = self._get_timestamp(datetime.now() + timedelta(hours=expire_time))
-		with self: self.dbcur.execute(
-			INSERT_RESULTS,
-			(source, mediatype, tmdb_id, title, year, season, episode, expires, self.jsdumps(results))
-		)
+		args = (source, mediatype, tmdb_id, title, year, season, episode, expires, self.jsdumps(results))
+		with self: self.dbcur.execute(INSERT_RESULTS, args)
 
 	def delete(self, source, mediatype, tmdb_id, title, season, episode):
-		with self: self.dbcur.execute(
-			DELETE_RESULTS,
-			(source, mediatype, tmdb_id, title, season, episode)
-		)
+		args = (source, mediatype, tmdb_id, title, season, episode)
+		with self: self.dbcur.execute(DELETE_RESULTS, args)
 
 	def delete_cache_single(self, mediatype, tmdb_id):
 		with self: self.dbcur.execute(SINGLE_DELETE, (mediatype, tmdb_id))

@@ -1,5 +1,5 @@
 from modules import kodi_utils
-from session import session, HTTPAdapter, Retry
+from modules.session import session, HTTPAdapter, Retry
 # logger = kodi_utils.logger
 
 ip_url = 'https://api.ipify.org'
@@ -26,7 +26,7 @@ class TorBoxAPI:
 		return response.text
 
 	def _parse(self, response):
-		is_control = any(x in response.url for x  in ('/control', '/edit'))
+		is_control = any(x in response.url for x in ('/control', '/edit'))
 		response = response.json()
 		if not is_control and 'data' in response and 'success' in response: return response['data']
 		return response

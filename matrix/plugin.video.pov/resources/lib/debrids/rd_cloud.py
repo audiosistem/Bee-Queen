@@ -3,7 +3,7 @@ from caches.main_cache import cache_object
 from indexers.realdebrid_api import RealDebridAPI as Debrid
 from modules import kodi_utils, source_utils
 from modules.settings import enabled_debrids_check, filter_by_name
-from modules.utils import jsondate_to_datetime, get_datetime
+from modules.utils import get_datetime, jsondate_to_datetime
 # from modules.kodi_utils import logger
 
 extensions = tuple(source_utils.supported_video_extensions())

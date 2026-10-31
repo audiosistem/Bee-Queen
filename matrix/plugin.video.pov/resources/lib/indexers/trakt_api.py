@@ -1,13 +1,13 @@
-from threading import Thread
-from operator import itemgetter
 from concurrent.futures import ThreadPoolExecutor
+from operator import itemgetter
+from threading import Thread
 from caches import trakt_cache
 from caches.main_cache import cache_object
 from indexers.tmdb_api import movie_external_id, tvshow_external_id
 from modules import kodi_utils, settings
 from modules.cache import check_databases
-from modules.utils import sort_list, sort_for_article, jsondate_to_datetime, paginate_list, get_datetime
-from session import session, HTTPAdapter, Retry
+from modules.utils import get_datetime, jsondate_to_datetime, paginate_list, sort_for_article, sort_list
+from modules.session import session, HTTPAdapter, Retry
 
 get_setting, set_setting, logger = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.logger
 EXPIRES_2_DAYS = 48
@@ -364,7 +364,7 @@ def remove_from_list(user, slug, data):
 
 def make_new_trakt_list(params):
 	from urllib.parse import unquote
-	list_title = kodi_utils.dialog.input('POV')
+	list_title = kodi_utils.dialog().input('POV')
 	if not list_title: return
 	list_name = unquote(list_title)
 	data = {'name': list_name, 'privacy': 'public', 'sort_by': 'added', 'sort_how': 'desc'}

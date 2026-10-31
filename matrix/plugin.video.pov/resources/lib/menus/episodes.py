@@ -1,10 +1,10 @@
 from threading import Thread
 from caches import watched_cache as ws
-from indexers.metadata import tvshow_meta, season_episodes_meta, art_infodict, episode_infodict, info_tagger
 from indexers.mdblist_api import mdbl_get_my_calendar, mdblist_watchlist
-from indexers.trakt_api import trakt_fetch_collection_watchlist, trakt_get_my_calendar, trakt_get_my_anime_calendar, trakt_anime_calendar
+from indexers.metadata import art_infodict, episode_infodict, info_tagger, season_episodes_meta, tvshow_meta
+from indexers.trakt_api import trakt_anime_calendar, trakt_fetch_collection_watchlist, trakt_get_my_anime_calendar, trakt_get_my_calendar
 from modules import kodi_utils, settings
-from modules.utils import get_next_episode_pointer, adjust_premiered_date, make_day, get_datetime, title_key, date_difference, TaskPool
+from modules.utils import TaskPool, adjust_premiered_date, date_difference, get_datetime, get_next_episode_pointer, make_day, title_key
 # logger = kodi_utils.logger
 
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
@@ -206,6 +206,7 @@ class Menu(Episodes):
 		sort_type, category = 'unsorted', ls(params_get('name'))
 		mode = params_get('mode')
 		func = next((i for key, i in {
+			'last_episode': self._setup_last_episode,
 			'in_progress': self._setup_in_progress,
 			'next_episode': self._setup_next_episode,
 			'my_calendar': self._setup_my_calendar,
@@ -225,6 +226,10 @@ class Menu(Episodes):
 			index = next((i for i, x in labels if x in current_date), None)
 		else: index = False
 		if index: kodi_utils.focus_index(index)
+
+	def _setup_last_episode(self, params_get):
+		self.list_type = 'last_episode_pov'
+		self.list = ws.get_last_episodes(self.watched_indicators)
 
 	def _setup_in_progress(self, params_get):
 		self.list_type = 'in_progress'

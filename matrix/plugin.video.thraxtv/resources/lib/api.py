@@ -23,8 +23,9 @@ STREAM_TEST_TIMEOUT = 6   # timeout test HTTP per sursă (fallback)
 MAX_PAGES         = 200
 TTL_RADIO         = 24 * 3600    # 24 ore
 
-_THRAX_KEY        = "6d11ea4b6c6acc9bd2fc4f91b6be3fc06ca5e4358e344d248e8bbcb64cedd0df"
-_API_HEADERS      = {"X-Thrax-Key": _THRAX_KEY}
+# Token de aparat (X-Thrax-Token), nu mai e cheia comună scrisă în cod.
+from resources.lib import thrax_auth
+_API_HEADERS      = thrax_auth.headers()
 
 # TTL cache pe disc
 TTL_CATEGORIES = 7 * 24 * 3600   # 7 zile

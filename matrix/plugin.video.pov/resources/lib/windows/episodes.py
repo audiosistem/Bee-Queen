@@ -1,6 +1,6 @@
-from windows import BaseDialog
 from modules.kodi_utils import media_path
 from modules.settings import get_art_provider
+from windows import BaseDialog
 # from modules.kodi_utils import logger
 
 poster_empty = media_path('box_office.png')

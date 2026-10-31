@@ -33,14 +33,15 @@ site = AdultSite("beeg", "[COLOR hotpink]Beeg[/COLOR]", "https://store.externull
 @site.register(default_mode=True)
 def BGMain():
     site.add_dir('[COLOR hotpink]Categories[/COLOR]', site.url + 'tag/recommends?type=other&slug=index', 'Category', site.img_cat)
-    site.add_dir('[COLOR hotpink]Channels[/COLOR]', site.url + 'tag/recommends?type=brand&slug=index', 'Category', site.img_cat)
-    site.add_dir('[COLOR hotpink]Models[/COLOR]', site.url + 'tag/recommends?type=person&slug=index', 'Category', site.img_cat)
+    site.add_dir('[COLOR hotpink]Channels[/COLOR]', site.url + 'tag/recommends?type=brand&slug=index', 'Category', site.img_channels)
+    site.add_dir('[COLOR hotpink]Models[/COLOR]', site.url + 'tag/recommends?type=person&slug=index', 'Category', site.img_models)
     List('https://store.externulls.com/facts/tag?id=27173&limit=48&offset=0', 1)
     utils.eod()
 
 
 @site.register()
 def List(url, page=1):
+    utils.kodilog('List: url: {}, page: {}'.format(url, page))
     listjson = utils.getHtml(url, site.url)
     jdata = json.loads(listjson)
 
@@ -119,7 +120,7 @@ def GotoPage(url, np):
     if pg:
         pg = min(int(pg), 101)
         url = url.replace('offset={}'.format(int(np) * 48), 'offset={}'.format(int(pg) * 48))
-        contexturl = (utils.addon_sys + "?mode=" + "beeg.List&url=" + urllib_parse.quote_plus(url) + "&page=" + str(pg))
+        contexturl = (utils.addon_sys + "?mode=beeg.List&url=" + urllib_parse.quote_plus(url) + "&page=" + str(pg))
         xbmc.executebuiltin('Container.Update(' + contexturl + ')')
 
 
@@ -134,7 +135,6 @@ def ContextRelated(slug):
 
 @site.register()
 def Playvid(url, name, download=None):
-
     playall = True if utils.addon.getSetting("paradisehill") == "true" else False
     vp = utils.VideoPlayer(name, download)
     vp.progress.update(25, "[CR]Loading video page[CR]")
@@ -142,8 +142,26 @@ def Playvid(url, name, download=None):
     # jdata = json.loads(listjson)
     listjson = base64.b64decode(url)
     jdata = json.loads(listjson.decode())
+    fc_facts = jdata.get('fc_facts', [])
+    videoid = jdata.get('file', {}).get('id', None)
+    play_url = 'https://store.externulls.com/video/play_url/{}'.format(videoid)
 
-    fc_facts = jdata["fc_facts"]
+    links = {}
+    for fc_fact in fc_facts:
+        fc_start = fc_fact.get('fc_start', None)
+        fc_end = fc_fact.get('fc_end', None)
+        if fc_start and fc_end:
+            play_url += '?fc_start={}&fc_end={}'.format(fc_start, fc_end)
+            links[f'{fc_start}-{fc_end}'] = play_url
+    if links:
+        play_url = utils.selector('Select part:', links)
+        if not play_url:
+            return
+    key = utils.getHtml(play_url, site.url)
+    videourl = 'https://video.beeg.com/' + key
+    vp.play_from_direct_link(videourl)
+    return
+
     if len(fc_facts) == 1:
         if "hls_resources" in jdata["file"]:
             videos = jdata["file"]["hls_resources"]

@@ -1,4 +1,4 @@
-from session import http
+from modules.session import http
 
 class SegmentScraper:
 	def __init__(self, imdb_id, season, episode):
@@ -24,7 +24,7 @@ class SegmentScraper:
 	def fetch_theintrodb(self):
 		result = {'intro': None, 'credits': None}
 		try:
-			response = http.request('get', 'https://api.theintrodb.org/v3/media', fields=self.params)
+			response = http.request('get', 'https://api.theintrodb.org/v4/media', fields=self.params)
 			results = response.json()
 			intro_list = results.get('intro') or []
 			outro_list = results.get('credits') or []

@@ -1,7 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
 <settings>
-
     <category label="Audio RomyLive">
         <setting id="audio_prefer_romanian" type="bool" label="Selecteaza automat pista romana cand este disponibila" default="true" />
+        <setting id="audio_latin_fallback" type="bool" label="Foloseste pista Latin/Latine daca lipseste romana (poate fi etichetata gresit)" default="true" />
     </category>
     <category label="Actualizare automata (Remote loader)">
         <setting id="remote_loader_enabled" type="bool" label="Incarca pluginul de pe server (permite update fara reinstalare)" default="true" />
@@ -22,7 +23,7 @@
     <category label="Cinemateca / Filme Vechi (Telegram)">
         <setting id="cinemateca_enabled" type="bool" label="Afiseaza categoria Cinemateca / Filme Vechi in Filme" default="true" />
         <setting id="cinemateca_channel" type="text" label="Canal Telegram (fara @)" default="cinematecaro11" />
-        <setting id="cinemateca_api_base" type="text" label="Server sursa (Telegram -> JSON)" default="https://tg.i-c-a.su" />
+        <setting id="cinemateca_api_base" type="text" label="Server sursa (Telegram -&gt; JSON)" default="https://tg.i-c-a.su" />
         <setting id="cinemateca_cache_hours" type="number" label="Pastreaza lista in cache (ore)" default="6" />
         <setting id="cinemateca_proxy_enabled" type="bool" label="Redare prin proxy local (recomandat - elimina blocajul dupa ~35 secunde)" default="true" />
     </category>
@@ -30,5 +31,122 @@
         <setting id="dinbox_cached_authkey" type="text" visible="false" />
         <setting id="dinbox_cached_sesskey" type="text" visible="false" />
         <setting id="dinbox_cached_auth_time" type="number" visible="false" />
+    </category>
+    <category label="YouTube (fara cont)">
+        <setting id="romy.youtube.autoplay" type="bool" label="Autoplay: reda urmatorul videoclip din aceeasi lista" default="true" />
+        <setting id="romy.youtube.music.index" type="text" label="URL lista categoriilor Muzica" default="https://documentarys.do.am/2026/kodinou/muzica/muzica.txt" />
+        <setting id="kodion.mpd.videos" type="bool" label="Foloseste MPEG-DASH pentru videoclipuri" default="true" />
+        <setting id="kodion.video.quality.ask" type="bool" label="Intreaba ce calitate sa redea" default="false" />
+        <setting id="kodion.video.quality.isa" type="bool" label="Redare adaptiva cu InputStream Adaptive" default="true" />
+        <setting id="kodion.audio_only" type="bool" label="Reda numai sunetul YouTube" default="false" />
+        <setting id="kodion.history.local" type="bool" label="Pastreaza istoricul local YouTube" default="true" />
+        <setting id="kodion.http.port" type="number" label="Port server local YouTube (implicit 50153)" default="50153" />
+    </category>
+    <category label="YouTube intern" id="youtube_internal">
+        <setting id="kodion.setup_wizard" type="bool" label="kodion.setup_wizard" default="false" visible="false" />
+        <setting id="kodion.setup_wizard.forced_runs" type="number" label="kodion.setup_wizard.forced_runs" default="0" visible="false" />
+        <setting id="kodion.mpd.stream.select" type="number" label="kodion.mpd.stream.select" default="3" visible="false" />
+        <setting id="kodion.mpd.quality.selection" type="number" label="kodion.mpd.quality.selection" default="4" visible="false" />
+        <setting id="kodion.video.stream.select" type="number" label="kodion.video.stream.select" default="2" visible="false" />
+        <setting id="kodion.video.quality" type="number" label="kodion.video.quality" default="3" visible="false" />
+        <setting id="kodion.mpd.stream.features" type="text" label="kodion.mpd.stream.features" default="avc1,vp9,av01,hdr,hfr,3d,vr,prefer_dub,prefer_auto_dub,vorbis,mp4a,ssa,ac-3,ec-3,dts,vtt,filter" visible="false" />
+        <setting id="kodion.subtitle.languages.num" type="number" label="kodion.subtitle.languages.num" default="0" visible="false" />
+        <setting id="kodion.subtitle.download" type="bool" label="kodion.subtitle.download" default="false" visible="false" />
+        <setting id="kodion.content.max_per_page" type="number" label="kodion.content.max_per_page" default="50" visible="false" />
+        <setting id="youtube.view.hide_videos" type="text" label="youtube.view.hide_videos" default="" visible="false" />
+        <setting id="kodion.safe.search" type="number" label="kodion.safe.search" default="0" visible="false" />
+        <setting id="kodion.age.gate" type="bool" label="kodion.age.gate" default="false" visible="false" />
+        <setting id="youtube.api.key" type="text" label="youtube.api.key" default="" visible="false" />
+        <setting id="youtube.api.id" type="text" label="youtube.api.id" default="" visible="false" />
+        <setting id="youtube.api.secret" type="text" label="youtube.api.secret" default="" visible="false" />
+        <setting id="youtube.allow.dev.keys" type="bool" label="youtube.allow.dev.keys" default="true" visible="false" />
+        <setting id="youtube.api.config.page" type="bool" label="youtube.api.config.page" default="false" visible="false" />
+        <setting id="youtube.folder.sign.in.show" type="bool" label="youtube.folder.sign.in.show" default="false" visible="false" />
+        <setting id="youtube.folder.my_subscriptions.show" type="bool" label="youtube.folder.my_subscriptions.show" default="false" visible="false" />
+        <setting id="youtube.folder.my_subscriptions.sources" type="text" label="youtube.folder.my_subscriptions.sources" default="" visible="false" />
+        <setting id="youtube.folder.my_subscriptions_filtered.show" type="bool" label="youtube.folder.my_subscriptions_filtered.show" default="false" visible="false" />
+        <setting id="youtube.filter.my_subscriptions_filtered.blacklist" type="bool" label="youtube.filter.my_subscriptions_filtered.blacklist" default="false" visible="false" />
+        <setting id="youtube.filter.my_subscriptions_filtered.list" type="text" label="youtube.filter.my_subscriptions_filtered.list" default="" visible="false" />
+        <setting id="youtube.folder.recommendations.show" type="bool" label="youtube.folder.recommendations.show" default="true" visible="false" />
+        <setting id="youtube.folder.related.show" type="bool" label="youtube.folder.related.show" default="true" visible="false" />
+        <setting id="youtube.folder.popular_right_now.show" type="bool" label="youtube.folder.popular_right_now.show" default="true" visible="false" />
+        <setting id="youtube.folder.search.show" type="bool" label="youtube.folder.search.show" default="true" visible="false" />
+        <setting id="youtube.folder.quick_search.show" type="bool" label="youtube.folder.quick_search.show" default="false" visible="false" />
+        <setting id="youtube.folder.quick_search_incognito.show" type="bool" label="youtube.folder.quick_search_incognito.show" default="false" visible="false" />
+        <setting id="youtube.folder.my_location.show" type="bool" label="youtube.folder.my_location.show" default="false" visible="false" />
+        <setting id="youtube.folder.my_channel.show" type="bool" label="youtube.folder.my_channel.show" default="true" visible="false" />
+        <setting id="youtube.folder.purchases.show" type="bool" label="youtube.folder.purchases.show" default="false" visible="false" />
+        <setting id="youtube.folder.watch_later.show" type="bool" label="youtube.folder.watch_later.show" default="true" visible="false" />
+        <setting id="youtube.folder.watch_later.playlist" type="text" label="youtube.folder.watch_later.playlist" default="" visible="false" />
+        <setting id="youtube.folder.liked_videos.show" type="bool" label="youtube.folder.liked_videos.show" default="true" visible="false" />
+        <setting id="youtube.folder.disliked_videos.show" type="bool" label="youtube.folder.disliked_videos.show" default="true" visible="false" />
+        <setting id="youtube.folder.history.show" type="bool" label="youtube.folder.history.show" default="true" visible="false" />
+        <setting id="youtube.folder.history.playlist" type="text" label="youtube.folder.history.playlist" default="" visible="false" />
+        <setting id="youtube.folder.playlists.show" type="bool" label="youtube.folder.playlists.show" default="true" visible="false" />
+        <setting id="youtube.folder.saved.playlists.show" type="bool" label="youtube.folder.saved.playlists.show" default="false" visible="false" />
+        <setting id="youtube.folder.subscriptions.show" type="bool" label="youtube.folder.subscriptions.show" default="true" visible="false" />
+        <setting id="youtube.folder.bookmarks.show" type="bool" label="youtube.folder.bookmarks.show" default="true" visible="false" />
+        <setting id="youtube.folder.browse_channels.show" type="bool" label="youtube.folder.browse_channels.show" default="true" visible="false" />
+        <setting id="youtube.folder.completed.live.show" type="bool" label="youtube.folder.completed.live.show" default="true" visible="false" />
+        <setting id="youtube.folder.upcoming.live.show" type="bool" label="youtube.folder.upcoming.live.show" default="true" visible="false" />
+        <setting id="youtube.folder.live.show" type="bool" label="youtube.folder.live.show" default="true" visible="false" />
+        <setting id="youtube.folder.switch.user.show" type="bool" label="youtube.folder.switch.user.show" default="true" visible="false" />
+        <setting id="youtube.folder.sign.out.show" type="bool" label="youtube.folder.sign.out.show" default="false" visible="false" />
+        <setting id="youtube.folder.settings.show" type="bool" label="youtube.folder.settings.show" default="false" visible="false" />
+        <setting id="youtube.folder.settings.advanced.show" type="bool" label="youtube.folder.settings.advanced.show" default="false" visible="false" />
+        <setting id="kodion.support.alternative_player" type="bool" label="kodion.support.alternative_player" default="false" visible="false" />
+        <setting id="kodion.alternative_player.web_urls" type="bool" label="kodion.alternative_player.web_urls" default="false" visible="false" />
+        <setting id="kodion.alternative_player.mpd" type="bool" label="kodion.alternative_player.mpd" default="false" visible="false" />
+        <setting id="kodion.default_player.web_urls" type="bool" label="kodion.default_player.web_urls" default="false" visible="false" />
+        <setting id="kodion.default_player.fallback_video" type="bool" label="kodion.default_player.fallback_video" default="false" visible="false" />
+        <setting id="kodion.live_stream.selection.1" type="number" label="kodion.live_stream.selection.1" default="2" visible="false" />
+        <setting id="kodion.live_stream.selection.2" type="number" label="kodion.live_stream.selection.2" default="1" visible="false" />
+        <setting id="kodion.history.remote" type="bool" label="kodion.history.remote" default="false" visible="false" />
+        <setting id="kodion.cache.size" type="number" label="kodion.cache.size" default="50" visible="false" />
+        <setting id="kodion.search.size" type="number" label="kodion.search.size" default="10" visible="false" />
+        <setting id="youtube.view.description.details" type="bool" label="youtube.view.description.details" default="true" visible="false" />
+        <setting id="youtube.view.label.details" type="bool" label="youtube.view.label.details" default="true" visible="false" />
+        <setting id="youtube.view.shorts.duration" type="number" label="youtube.view.shorts.duration" default="60" visible="false" />
+        <setting id="youtube.view.filter.list" type="text" label="youtube.view.filter.list" default="" visible="false" />
+        <setting id="youtube.view.channel_name.aliases" type="text" label="youtube.view.channel_name.aliases" default="cast" visible="false" />
+        <setting id="youtube.view.label.color.viewCount" type="text" label="youtube.view.label.color.viewCount" default="ffadd8e6" visible="false" />
+        <setting id="youtube.view.label.color.likeCount" type="text" label="youtube.view.label.color.likeCount" default="ff00ff00" visible="false" />
+        <setting id="youtube.view.label.color.commentCount" type="text" label="youtube.view.label.color.commentCount" default="ff00ffff" visible="false" />
+        <setting id="kodion.thumbnail.size" type="number" label="kodion.thumbnail.size" default="1" visible="false" />
+        <setting id="kodion.fanart.selection" type="number" label="kodion.fanart.selection" default="2" visible="false" />
+        <setting id="kodion.view.override" type="bool" label="kodion.view.override" default="false" visible="false" />
+        <setting id="kodion.view.default" type="number" label="kodion.view.default" default="55" visible="false" />
+        <setting id="kodion.view.episodes" type="number" label="kodion.view.episodes" default="55" visible="false" />
+        <setting id="youtube.language" type="text" label="youtube.language" default="en-US" visible="false" />
+        <setting id="youtube.region" type="text" label="youtube.region" default="US" visible="false" />
+        <setting id="youtube.location" type="text" label="youtube.location" default="" visible="false" />
+        <setting id="youtube.location.radius" type="number" label="youtube.location.radius" default="500" visible="false" />
+        <setting id="kodion.play_count.percent" type="number" label="kodion.play_count.percent" default="90" visible="false" />
+        <setting id="youtube.suggested_videos" type="bool" label="youtube.suggested_videos" default="false" visible="false" />
+        <setting id="youtube.playlist.watchlater.autoremove" type="bool" label="youtube.playlist.watchlater.autoremove" default="true" visible="false" />
+        <setting id="youtube.post.play.auto_like" type="bool" label="youtube.post.play.auto_like" default="false" visible="false" />
+        <setting id="youtube.post.play.auto_like.filter.state" type="number" label="youtube.post.play.auto_like.filter.state" default="0" visible="false" />
+        <setting id="youtube.post.play.auto_like.filter.list" type="text" label="youtube.post.play.auto_like.filter.list" default="" visible="false" />
+        <setting id="youtube.post.play.rate" type="bool" label="youtube.post.play.rate" default="false" visible="false" />
+        <setting id="youtube.post.play.rate.playlists" type="bool" label="youtube.post.play.rate.playlists" default="false" visible="false" />
+        <setting id="youtube.post.play.refresh" type="bool" label="youtube.post.play.refresh" default="false" visible="false" />
+        <setting id="requests.ssl.verify" type="bool" label="requests.ssl.verify" default="true" visible="false" />
+        <setting id="requests.timeout.connect" type="number" label="requests.timeout.connect" default="9" visible="false" />
+        <setting id="requests.timeout.read" type="number" label="requests.timeout.read" default="27" visible="false" />
+        <setting id="requests.cache.size" type="number" label="requests.cache.size" default="20" visible="false" />
+        <setting id="requests.proxy.source" type="number" label="requests.proxy.source" default="1" visible="false" />
+        <setting id="requests.proxy.enabled" type="bool" label="requests.proxy.enabled" default="false" visible="false" />
+        <setting id="requests.proxy.type" type="number" label="requests.proxy.type" default="0" visible="false" />
+        <setting id="requests.proxy.server" type="text" label="requests.proxy.server" default="" visible="false" />
+        <setting id="requests.proxy.port" type="number" label="requests.proxy.port" default="8080" visible="false" />
+        <setting id="requests.proxy.username" type="text" label="requests.proxy.username" default="" visible="false" />
+        <setting id="requests.proxy.password" type="text" label="requests.proxy.password" default="" visible="false" />
+        <setting id="kodion.http.listen" type="text" label="kodion.http.listen" default="127.0.0.1" visible="false" />
+        <setting id="kodion.http.ip.whitelist" type="text" label="kodion.http.ip.whitelist" default="" visible="false" />
+        <setting id="youtube.http.idle_sleep" type="bool" label="youtube.http.idle_sleep" default="true" visible="false" />
+        <setting id="youtube.http.stream_redirect" type="bool" label="youtube.http.stream_redirect" default="False" visible="false" />
+        <setting id="kodion.debug.log.level" type="number" label="kodion.debug.log.level" default="0" visible="false" />
+        <setting id="kodion.debug.exec.limit" type="number" label="kodion.debug.exec.limit" default="0" visible="false" />
+        <setting id="|end_settings_marker|" type="bool" label="|end_settings_marker|" default="false" visible="false" />
     </category>
 </settings>

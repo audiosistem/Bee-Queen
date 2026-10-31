@@ -61,18 +61,18 @@ def INDEX():
     url_dispatcher.add_dir('[COLOR white]{}[/COLOR]'.format(utils.i18n('sites')), '', 'site_list',
                            basics.cum_image('cum-sites.png'), '', list_avail=False)
     url_dispatcher.add_dir('[COLOR white]{}[/COLOR]'.format(utils.i18n('fav_videos')), '1', 'favorites.List',
-                           basics.cum_image('cum-fav.png'), '', list_avail=False)
+                           basics.cum_image('cum-favorites.png'), '', list_avail=False)
     download_path = addon.getSetting('download_path')
     if download_path != '' and xbmcvfs.exists(download_path):
         url_dispatcher.add_dir('[COLOR white]{}[/COLOR]'.format(utils.i18n('dnld_folder')), download_path, 'OpenDownloadFolder',
                                basics.cum_image('cum-downloads.png'), '', list_avail=False)
 
-    url_dispatcher.add_dir('[COLOR white]{}[/COLOR]'.format(utils.i18n('custom_list')), '', 'favorites.create_custom_list', Folder=False, list_avail=False)
+    url_dispatcher.add_dir('[COLOR white]{}[/COLOR]'.format(utils.i18n('custom_list')), '', 'favorites.create_custom_list', basics.cum_image('cum-custom.png'), Folder=False, list_avail=False)
     for rowid, name in favorites.get_custom_lists():
-        url_dispatcher.add_dir(name, str(rowid), 'favorites.load_custom_list', list_avail=False, custom_list=True)
+        url_dispatcher.add_dir(name, str(rowid), 'favorites.load_custom_list', basics.cum_image('cum-mylist.png'), list_avail=False, custom_list=True)
     favorites.load_custom_list('main')
     url_dispatcher.add_dir('[COLOR white]{}[/COLOR]'.format(utils.i18n('clear_cache')), '', 'utils.clear_cache',
-                           basics.cuminationicon, '', Folder=False, list_avail=False)
+                           basics.cum_image('cum-cache.png'), '', Folder=False, list_avail=False)
 
     utils.eod(basics.addon_handle, False)
 
@@ -128,7 +128,11 @@ def change():
     version = addon.getAddonInfo('version')
     if addon.getSetting('changelog_seen_version') == version or not os.path.isfile(basics.changelog):
         return
-    addon.setSetting('changelog_seen_version', version)
+    addon.setSetting('changelog_seen_version', version)        
+    # Thumbnail cleanup start ------------------------    
+    script_path = xbmcvfs.translatePath('special://home/addons/plugin.video.cumination/resources/lib/thumbnail_clean.py')
+    xbmc.executebuiltin(f'RunScript({script_path})')
+    # Thumbnail cleanup end ------------------------ 
     heading = '[B][COLOR hotpink]Cumination[/COLOR] [COLOR white]Changelog[/COLOR][/B]'
     with open(basics.changelog) as f:
         cl_lines = f.readlines()

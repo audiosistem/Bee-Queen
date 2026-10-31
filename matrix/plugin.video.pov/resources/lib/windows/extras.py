@@ -1,14 +1,14 @@
 import json
 import concurrent.futures
 from datetime import datetime, timedelta
-from windows import BaseDialog, location, open_window, videoplayer
 from caches import watched_cache as ws
-from indexers import metadata, tmdb_api, imdb_api, trakt_api
-from menus import images, people, trakt, mdblist, tmdb
-from modules import settings, dialogs, downloader
+from indexers import imdb_api, metadata, tmdb_api, trakt_api
+from menus import images, mdblist, people, tmdb, trakt
+from modules import dialogs, downloader, settings
+from modules.kodi_utils import close_all_dialog, fetch_kodi_imagecache, hide_busy_dialog, local_string as ls, media_path, notify_error, ok_dialog
 from modules.meta_lists import networks as meta_networks
 from modules.utils import get_datetime
-from modules.kodi_utils import media_path, notify_error, close_all_dialog, hide_busy_dialog, ok_dialog, fetch_kodi_imagecache, local_string as ls
+from windows import BaseDialog, location, open_window, videoplayer
 # from modules.kodi_utils import logger
 
 fanart_empty = BaseDialog.fanart

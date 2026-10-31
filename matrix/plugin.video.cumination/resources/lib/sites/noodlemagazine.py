@@ -67,7 +67,7 @@ data = {
 def Main(url):
     site.add_download_link(getFilterLabels(), site.url, 'setFilters', '')
     site.add_dir('[COLOR hotpink]Search[/COLOR]', site.url + 'video/', 'Search', site.img_search)
-    site.add_dir('[COLOR hotpink]Babepedia Top 100 Pornstar to search for[/COLOR]', 'https://www.babepedia.com/pornstartop100', 'Babepedia', site.img_search)
+    site.add_dir('[COLOR hotpink]Babepedia Top 100 Pornstar to search for[/COLOR]', 'https://www.babepedia.com/pornstartop100', 'Babepedia', site.img_star)
     List(site.url + 'now' + getFilters(0), page=0)
     utils.eod()
 
@@ -80,9 +80,9 @@ def List(url, page=0):
         utils.notify('No results found', 'Try a different search term')
         return
 
-    delimiter = '<div class="item">'
+    delimiter = '<div class="item"'
     re_videopage = '<a href="([^"]+)"'
-    re_name = 'class="title">([^<]+)<'
+    re_name = 'data-video-title-base="([^"]+)"'
     re_img = 'src="(https[^"]+)"'
     re_duration = r'</svg>\s*([:\d]+)<'
     re_quality = r'class="hd_mark">([^<]+)<'
@@ -143,7 +143,7 @@ def Babepedia(url):
     match = re.compile('class="(?:thumbimg|thumbimg lazy)" border="0" (?:data-)*src="([^"]+)" alt="([^"]+)', re.DOTALL | re.IGNORECASE).findall(listhtml)
     for img, name in match:
         name = utils.cleantext(name)
-        img = 'https://www.babepedia.com' + img
+        img = 'https://www.babepedia.com' + img.replace(' ', '%20')
         videopage = site.url + 'video/' + name.replace(' ', '%20') + getFilters(0)
         site.add_dir(name, videopage, 'List', img, page=0)
     utils.eod()
@@ -204,8 +204,7 @@ def Related(url):
 @site.register()
 def Lookupinfo(url):
     lookup_list = [
-        ("Tags", r'<a class="vtag" href="/([^"]+)".+?</svg>([^<]+)</a>', ''),
+        ("Tags", r'<a class="vtag" href="/([^"]+)".+?data-tag-text>([^<]+)</span', ''),
     ]
     lookupinfo = utils.LookupInfo(site.url, url, 'noodlemagazine.List', lookup_list)
     lookupinfo.getinfo()
-

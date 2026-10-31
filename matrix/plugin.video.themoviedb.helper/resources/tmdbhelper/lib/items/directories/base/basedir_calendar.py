@@ -8,7 +8,7 @@ class BaseDirItemCalendarLastFornight(BaseDirItem):
     label_localized = 32280
     params = {'startdate': -14, 'days': 14}
     types = ('movie', 'tv', )
-    art_icon = 'resources/icons/trakt/calendar.png'
+    art_icon = 'resources/icons/common/calendar.png'
 
 
 class BaseDirItemCalendarLastWeek(BaseDirItemCalendarLastFornight):
@@ -87,7 +87,7 @@ class BaseDirItemCalendarNextFortnight(BaseDirItemCalendarLastFornight):
 
 def configure(i, **params):
     instance = i()
-    instance.params.update(params)
+    instance.params = dict(instance.params, **params)
     return instance
 
 

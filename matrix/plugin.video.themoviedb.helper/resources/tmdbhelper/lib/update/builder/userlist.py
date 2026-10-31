@@ -85,66 +85,17 @@ class LibraryBuilderUserList(LibraryBuilder):
     """
 
     @cached_property
-    def mdblist_api(self):
-        from tmdbhelper.lib.api.mdblist.api import MDbListAPI
-        return MDbListAPI()
-
-    @cached_property
-    def trakt_api(self):
-        from tmdbhelper.lib.api.trakt.api import TraktAPI
-        return TraktAPI()
-
-    @cached_property
-    def request_func(self):
-        if self.user_slug and self.list_slug:
-
-            if self.user_slug != '__api_mdblist__':
-                return self.trakt_api.get_response_json
-
-            if self.mdblist_api:
-                return self.mdblist_api.get_response
-
-        return lambda *args, **kwgs: None
-
-    @property
-    def request_args(self):
-        if self.user_slug == '__api_mdblist__':
-            return ('lists', self.list_slug, 'items')
-        if self.list_slug.startswith('watchlist'):
-            return ('users', self.user_slug, self.list_slug)
-        return ('users', self.user_slug, 'lists', self.list_slug, 'items')
-
-    def request_configure(self, request):
-        if not request:
-            return
-        if self.user_slug != '__api_mdblist__':
-            return request
-        request = request.json()
-        request = request.get('movies', []) + request.get('shows', [])
-        return [j for j in (self.request_configure_mdblist_item(i) for i in request) if j]
-
-    @staticmethod
-    def request_configure_mdblist_item(item):
-        try:
-            mediatype = item['mediatype']
-            return {
-                'type': mediatype,
-                mediatype: {
-                    'title': item['title'],
-                    'ids': {
-                        'tmdb': item['id'],
-                        'imdb': item['imdb_id']
-                    }
-                }
-            }
-        except (KeyError, TypeError):
-            return
-
-    @cached_property
     def request(self):
-        request = self.request_func(*self.request_args)
-        request = self.request_configure(request)
-        return request
+        return self.get_request()
+
+    def get_request(self):
+        if not self.user_slug or not self.list_slug:
+            return
+        from tmdbhelper.lib.sync.providers.registry import SyncProviderRegistry
+        reference = SyncProviderRegistry().get_monitor_list_reference(self.user_slug, self.list_slug)
+        if reference is not None:
+            supplier, slug = reference
+            return supplier.get_list_items(slug)
 
     """
     Build

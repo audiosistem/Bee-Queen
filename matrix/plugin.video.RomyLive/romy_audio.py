@@ -48,6 +48,34 @@ def marker_path():
     return os.path.join(profile, 'romy_audio_pending.json')
 
 
+def latin_fallback_enabled():
+    try:
+        import xbmcaddon
+        return xbmcaddon.Addon('plugin.video.RomyLive').getSetting('audio_latin_fallback') != 'false'
+    except Exception:
+        return False
+
+
+def choose_audio(streams, current=None, latin_fallback=False):
+    selected = choose_romanian(streams, current)
+    if selected is not None or not latin_fallback:
+        return selected
+    candidates = []
+    for item in streams:
+        language = normal(item.get('language')).strip().split('-', 1)[0].split('_', 1)[0]
+        name = normal(item.get('name'))
+        if isinstance(item.get('index'), int) and (
+                language in ('la', 'lat', 'latin', 'latine') or
+                re.search(r'\b(?:latin|latine)\b', name)):
+            score = 0 if re.search(r'commentary|comentariu|audio description|audiodescri', name) else 1
+            candidates.append((score, item['index']))
+    if not candidates:
+        return None
+    best = max(score for score, index in candidates)
+    ranked = [index for score, index in candidates if score == best]
+    return current if current in ranked else ranked[0]
+
+
 def mark_playback(path, name=''):
     # Errors here must never interrupt playback.
     try:
@@ -151,13 +179,14 @@ def run_service():
                                 'properties': ['audiostreams', 'currentaudiostream']}) or {}
                             streams = props.get('audiostreams') or []
                             current = (props.get('currentaudiostream') or {}).get('index')
-                            selected = choose_romanian(streams, current)
+                            selected = choose_audio(streams, current, latin_fallback_enabled())
                             if selected is not None:
                                 if selected != current:
                                     answer = rpc('Player.SetAudioStream', {'playerid': video, 'stream': selected})
                                     if answer is None:
                                         raise RuntimeError('Kodi nu a acceptat schimbarea pistei audio')
-                                xbmc.log('[RomyLive Audio] Pista romana selectata: %s' % selected, xbmc.LOGINFO)
+                                label = 'romana' if choose_romanian(streams, current) is not None else 'Latin/Latine (rezerva)'
+                                xbmc.log('[RomyLive Audio] Pista %s selectata: %s' % (label, selected), xbmc.LOGINFO)
                                 completed.add(request['id'])
                             else:
                                 attempts[request['id']] = attempts.get(request['id'], 0) + 1

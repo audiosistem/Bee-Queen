@@ -1,7 +1,7 @@
 import re
 from html import unescape
 from caches.main_cache import cache_object
-from session import http
+from modules.session import http
 # from modules.kodi_utils import logger
 
 graphql_headers, graphql_url = {
@@ -109,17 +109,6 @@ def imdb_tagged_images_handler(imdb_id):
 		from modules.kodi_utils import logger
 		logger('imdb error', str(e))
 	return []
-
-def imdb_movie_year(imdb_id):
-	def _process(dummy):
-		try:
-			result = http.request('get', url).json()
-			result = next((int(i['y']) for i in result['d'] if 'y' in i))
-			return str(result)
-		except: pass
-	string = 'imdb_movie_year_%s' % imdb_id
-	url = 'https://v2.sg.media-imdb.com/suggestion/t/%s.json' % imdb_id
-	return cache_object(_process, string, url, 720)
 
 def clear_imdb_cache(silent=False):
 	from modules.kodi_utils import path_exists, clear_property, database_connect, maincache_db

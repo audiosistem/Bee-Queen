@@ -1,9 +1,9 @@
 import os
 import json
+from indexers.imdb_api import imdb_tagged_images, people_get_imdb_id
+from indexers.tmdb_api import tmdb_image_base, tmdb_people_full_info, tmdb_popular_people
+from modules.kodi_utils import delete_file, list_dirs, make_listitem, media_path, no_results, set_property
 from windows import open_window
-from indexers.tmdb_api import tmdb_people_full_info, tmdb_popular_people, tmdb_image_base
-from indexers.imdb_api import people_get_imdb_id, imdb_tagged_images
-from modules.kodi_utils import media_path, no_results, set_property, make_listitem, list_dirs, delete_file
 # from modules.kodi_utils import logger
 
 class Images:

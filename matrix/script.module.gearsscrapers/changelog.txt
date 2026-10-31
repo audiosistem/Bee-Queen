@@ -1,4 +1,21 @@
-[COLORcyan] VERSION 1.6.2[/COLOR]
+[COLORcyan] VERSION 1.6.3[/COLOR]
+
+
+[COLOR=gold]Torz And Comet Scrapers[/COLOR]
+
+• Complete scraper maintenance and code review completed.
+• Fixed provider-side changes that were causing source retrieval failures.
+• Improved parsing routines for greater compatibility with recent website updates.
+• Enhanced source validation and filtering for improved link quality.
+• Reduced timeout occurrences and improved overall scraping reliability.
+
+• Enhanced source aggregation across multiple providers for faster, more efficient source collection.
+• Refined and stabilized the Other scraper, improving provider compatibility and delivering more consistent results.
+• Optimized scraper communication and processing pipelines to reduce source retrieval latency.
+• Eliminated redundant processing routines, improving overall scraper efficiency.
+• Improved memory management to reduce resource consumption during intensive scraping operations.
+• Enhanced caching mechanisms to minimize duplicate requests, reduce unnecessary network traffic, and accelerate subsequent searches.
+• General scraper optimizations and backend refinements for improved stability, reliability, and overall performance. Settings & Configuration Framework
 
  Fixed
 
@@ -135,14 +152,6 @@ Gears now has a dedicated Anime Providers settings section, making anime-specifi
 
  Gears Scrapers Improved.
 
-• Enhanced source aggregation across multiple providers for faster, more efficient source collection.
-• Refined and stabilized the Other scraper, improving provider compatibility and delivering more consistent results.
-• Optimized scraper communication and processing pipelines to reduce source retrieval latency.
-• Eliminated redundant processing routines, improving overall scraper efficiency.
-• Improved memory management to reduce resource consumption during intensive scraping operations.
-• Enhanced caching mechanisms to minimize duplicate requests, reduce unnecessary network traffic, and accelerate subsequent searches.
-• General scraper optimizations and backend refinements for improved stability, reliability, and overall performance. Settings & Configuration Framework
-
 • Improved reliability across supported providers.
 • Improved handling of provider responses and timeouts.
 • Enhanced source parsing for increased accuracy.
@@ -252,14 +261,6 @@ Better overall user experience.
 
 [COLOR=cyan][B]SCRAPER FIXES & ENHANCEMENTS[/B][/COLOR]
 
-[COLOR=gold]Torz Scraper[/COLOR]
-• Complete scraper maintenance and code review completed.
-• Fixed provider-side changes that were causing source retrieval failures.
-• Improved parsing routines for greater compatibility with recent website updates.
-• Enhanced source validation and filtering for improved link quality.
-• Reduced timeout occurrences and improved overall scraping reliability.
-• Optimized request handling to improve response speed during searches.
-• Additional fallback handling implemented to improve resilience against future provider changes.
 
 [COLOR=gold]Aiostreams Scraper[/COLOR]
 • Fixed multiple issues affecting source detection and extraction.

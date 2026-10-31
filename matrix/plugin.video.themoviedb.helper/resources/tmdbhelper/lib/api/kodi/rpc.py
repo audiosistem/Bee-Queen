@@ -43,32 +43,32 @@ def get_item_details(dbid=None, method=None, key=None, properties=None):
 def get_movie_details(dbid=None):
     properties = [
         "title", "genre", "year", "rating", "director", "trailer", "tagline", "plot", "plotoutline", "originaltitle",
-        "lastplayed", "playcount", "writer", "studio", "mpaa", "cast", "country", "imdbnumber", "runtime", "set",
-        "showlink", "streamdetails", "top250", "votes", "fanart", "thumbnail", "file", "sorttitle", "resume", "setid",
+        "writer", "studio", "mpaa", "cast", "country", "imdbnumber", "runtime", "set",
+        "showlink", "streamdetails", "top250", "votes", "fanart", "thumbnail", "file", "sorttitle", "setid",
         "dateadded", "tag", "art", "userrating", "ratings", "premiered", "uniqueid"]
     return get_item_details(dbid=dbid, method="VideoLibrary.GetMovieDetails", key="movie", properties=properties)
 
 
 def get_tvshow_details(dbid=None):
     properties = [
-        "title", "genre", "year", "rating", "plot", "studio", "mpaa", "cast", "playcount", "episode", "imdbnumber",
-        "premiered", "votes", "lastplayed", "fanart", "thumbnail", "file", "originaltitle", "sorttitle", "episodeguide",
-        "season", "watchedepisodes", "dateadded", "tag", "art", "userrating", "ratings", "runtime", "uniqueid"]
+        "title", "genre", "year", "rating", "plot", "studio", "mpaa", "cast", "episode", "imdbnumber",
+        "premiered", "votes", "fanart", "thumbnail", "file", "originaltitle", "sorttitle", "episodeguide",
+        "season", "dateadded", "tag", "art", "userrating", "ratings", "runtime", "uniqueid"]
     return get_item_details(dbid=dbid, method="VideoLibrary.GetTVShowDetails", key="tvshow", properties=properties)
 
 
 def get_season_details(dbid=None):
     properties = [
-        "season", "showtitle", "playcount", "episode", "fanart", "thumbnail", "tvshowid", "watchedepisodes",
+        "season", "showtitle", "episode", "fanart", "thumbnail", "tvshowid",
         "art", "userrating", "title"]
     return get_item_details(dbid=dbid, method="VideoLibrary.GetSeasonDetails", key="season", properties=properties)
 
 
 def get_episode_details(dbid=None):
     properties = [
-        "title", "plot", "votes", "rating", "writer", "firstaired", "playcount", "runtime", "director", "productioncode",
-        "season", "episode", "originaltitle", "showtitle", "cast", "streamdetails", "lastplayed", "fanart", "thumbnail",
-        "file", "resume", "tvshowid", "dateadded", "uniqueid", "art", "specialsortseason", "specialsortepisode", "userrating",
+        "title", "plot", "votes", "rating", "writer", "firstaired", "runtime", "director", "productioncode",
+        "season", "episode", "originaltitle", "showtitle", "cast", "streamdetails", "fanart", "thumbnail",
+        "file", "tvshowid", "dateadded", "uniqueid", "art", "specialsortseason", "specialsortepisode", "userrating",
         "seasonid", "ratings"]
     return get_item_details(dbid=dbid, method="VideoLibrary.GetEpisodeDetails", key="episode", properties=properties)
 
@@ -193,7 +193,7 @@ class KodiLibrary(object):
         yearcheck = False
         index_list = find_dict_in_list(self.database, 'dbid', dbid) if dbid else []
 
-        if not index_list and season:
+        if not index_list and season is not None:
             index_list = find_dict_in_list(self.database, 'season', try_int(season))
         if not index_list and imdb_id:
             index_list = find_dict_in_list(self.database, 'imdb_id', imdb_id)
@@ -209,13 +209,13 @@ class KodiLibrary(object):
             index_list = find_dict_in_list(self.database, 'title', title)
 
         for i in index_list:
-            if season and episode:
+            if season is not None and episode is not None:
                 if try_int(episode) == self.database[i].get('episode'):
                     return self.database[i].get(info)
             elif not yearcheck or yearcheck in str(self.database[i].get('year')):
                 return self.database[i].get(info)
 
-        if index_list and fuzzy_match and not season and not episode:
+        if index_list and fuzzy_match and season is None and episode is None:
             """ Fuzzy Match """
             i = index_list[0]
             return self.database[i].get(info)

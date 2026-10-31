@@ -36,11 +36,11 @@ def Main():
 def List(url):
     listhtml = utils.getHtml(url, '')
 
-    delimiter = r' <a href="'
-    re_videopage = '^([^"]+)" class="group'
-    re_name = 'alt="([^"]+)"'
-    re_img = r'<img src="([^"]+)"'
-    re_quality = '">(HD)</span>'
+    delimiter = r'<a\s+href="'
+    re_videopage = r'([^"]+)"\s+class="(?:group|card)[^"]*"'
+    re_name = r'[^>]+alt="([^"]+)"'
+    re_img = r'<img[^>]+src="([^"]+)"'
+    re_quality = r'>\s*(HD)\s*<'
     skip = 'class="th-title"'
 
     cm = []

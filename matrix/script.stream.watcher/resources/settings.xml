@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="General">
+        <setting id="enabled" type="bool" label="Activează serviciul de reconectare" default="true"/>
+        <setting id="reconnect_delay" type="slider" label="Timp de așteptare înainte de reconectare (secunde)" default="3" range="1,1,10" option="int"/>
+        <setting id="max_retries" type="slider" label="Număr maxim de reîncercări succesive" default="3" range="1,1,10" option="int"/>
+        <setting id="notifications" type="bool" label="Afișează notificări pe ecran (OSD Toast)" default="true"/>
+        <setting id="live_only" type="bool" label="Reconectare doar pentru stream-uri Live (recomandat)" default="true"/>
+        <setting id="smart_idle_check" type="bool" label="Detectare inteligentă a opririi manuale (Stop / telecomandă)" default="true"/>
+    </category>
+</settings>

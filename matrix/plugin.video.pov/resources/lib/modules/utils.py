@@ -2,13 +2,13 @@ import re
 import time
 import random
 import hashlib
-import unicodedata
 import _strptime  # fix bug in python import
+import unicodedata
+from datetime import date, datetime, timedelta
 from html import unescape
-from queue import SimpleQueue
 from importlib import import_module
-from datetime import datetime, timedelta, date
-from modules.kodi_utils import local_string as ls, get_setting, logger
+from queue import SimpleQueue
+from modules.kodi_utils import get_setting, local_string as ls, logger
 
 class TaskPool:
 	@staticmethod

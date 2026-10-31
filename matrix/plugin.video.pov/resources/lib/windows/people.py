@@ -1,12 +1,12 @@
 import json
 from threading import Thread
-from windows import BaseDialog
 from indexers import metadata, tmdb_api
 from menus.images import Images
 from modules import dialogs
-from modules.utils import calculate_age, get_datetime
 from modules.kodi_utils import media_path, no_results
 from modules.settings import extras_enable_scrollbars, extras_exclude_non_acting, get_resolution, metadata_user_info
+from modules.utils import calculate_age, get_datetime
+from windows import BaseDialog
 # from modules.kodi_utils import logger
 
 fanart = BaseDialog.fanart

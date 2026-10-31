@@ -31,6 +31,7 @@ site = AdultSite('watchporn', '[COLOR hotpink]WatchPorn[/COLOR]', 'https://watch
 @site.register(default_mode=True)
 def Main():
     site.add_dir('[COLOR hotpink]Categories[/COLOR]', site.url + 'categories/?mode=async&function=get_block&block_id=list_categories_categories_list&sort_by=title&_=', 'Categories', site.img_cat)
+    site.add_dir('[COLOR hotpink]Studios[/COLOR]', site.url + 'sites/', 'Studios', site.img_channels)
     site.add_dir('[COLOR hotpink]Search[/COLOR]', site.url + 'search/', 'Search', site.img_search)
     List(site.url + 'latest-updates/')
     utils.eod()
@@ -44,11 +45,10 @@ def List(url):
     listhtml = utils.getHtml(url)
 
     delimiter = '<div class="thumb item'
-    re_videopage = '<a href="([^"]+)"'
+    re_videopage = 'href="([^"]+)"'
     re_name = 'title="([^"]+)"'
-    re_img = 'data-original="([^"]+)"'
-    re_duration = '"duration">([^<]+)<'
-    re_quality = 'class="is[^"]+">([^<]+)<'
+    re_img = 'data-webp="([^"]+)"'
+    re_duration = 'class="wp-dur">([^<]+)<'
 
     cm = []
     cm_lookupinfo = (utils.addon_sys + "?mode=" + str('watchporn.Lookupinfo') + "&url=")
@@ -56,9 +56,9 @@ def List(url):
     cm_related = (utils.addon_sys + "?mode=" + str('watchporn.Related') + "&url=")
     cm.append(('[COLOR deeppink]Related videos[/COLOR]', 'RunPlugin(' + cm_related + ')'))
 
-    utils.videos_list(site, 'watchporn.Playvid', listhtml, delimiter, re_videopage, re_name, re_img, re_duration=re_duration, re_quality=re_quality, contextm=cm)
+    utils.videos_list(site, 'watchporn.Playvid', listhtml, delimiter, re_videopage, re_name, re_img, re_duration=re_duration, contextm=cm)
 
-    match = re.search(r'class="page-current"><span>(\d+)<.+?class="next">.+?data-block-id="([^"]+)"\s+data-parameters="([^"]+)">', listhtml, re.DOTALL | re.IGNORECASE)
+    match = re.search(r'aria-current="page">(\d+)<.+?data-block-id="([^"]+)"\s+data-parameters="([^"]+)">', listhtml, re.DOTALL | re.IGNORECASE)
     if match:
         npage = int(match.group(1)) + 1
         block_id = match.group(2)
@@ -68,21 +68,30 @@ def List(url):
         nurl = nurl.replace('+from_albums', '')
         nurl = re.sub(r'&from([^=]*)=\d+', r'&from\1={}'.format(npage), nurl)
 
-        cm_page = (utils.addon_sys + "?mode=watchporn.GotoPage" + "&url=" + urllib_parse.quote_plus(nurl) + "&np=" + str(npage) + "&listmode=watchporn.List")
+        lpnr = 0
+        lp = ''
+        match = re.search(r'data-total="(\d+)"', listhtml, re.DOTALL | re.IGNORECASE)
+        if match:
+            lpnr = match.group(1)
+            lp = '/' + str(lpnr)
+        cm_page = (utils.addon_sys + "?mode=watchporn.GotoPage" + "&url=" + urllib_parse.quote_plus(nurl) + "&np=" + str(npage) + "&lp=" + str(lpnr))
         cm = [('[COLOR violet]Goto Page #[/COLOR]', 'RunPlugin(' + cm_page + ')')]
 
-        site.add_dir('[COLOR hotpink]Next Page...[/COLOR] (' + str(npage) + ')', nurl, 'List', site.img_next, contextm=cm)
+        site.add_dir('[COLOR hotpink]Next Page...[/COLOR] (' + str(npage) + lp + ')', nurl, 'List', site.img_next, contextm=cm)
 
     utils.eod()
 
 
 @site.register()
-def GotoPage(url, np, listmode):
+def GotoPage(url, np, lp=None):
     dialog = xbmcgui.Dialog()
     pg = dialog.numeric(0, 'Enter Page number')
     if pg:
+        if int(lp) > 0 and int(pg) > int(lp):
+            utils.notify(msg='Out of range!')
+            return
         url = re.sub(r'&from([^=]*)=\d+', r'&from\1={}'.format(pg), url, re.IGNORECASE)
-        contexturl = (utils.addon_sys + "?mode=" + listmode + "&url=" + urllib_parse.quote_plus(url))
+        contexturl = (utils.addon_sys + "?mode=watchporn.List&url=" + urllib_parse.quote_plus(url))
         xbmc.executebuiltin('Container.Update(' + contexturl + ')')
 
 
@@ -94,6 +103,37 @@ def Search(url, keyword=None):
     else:
         searchUrl = '{}{}/'.format(searchUrl, keyword.replace(' ', '-'))
         List(searchUrl)
+
+
+@site.register()
+def Studios(url):
+    listhtml = utils.getHtml(url)
+
+    studio_re = re.compile(
+        r'class="item\s+thumb"\s+href="([^"]+)"\s+title="([^"]+)">.*?'
+        r'<img\s+src="([^"]+)".*?'
+        r'</svg>\s*(\d+)\s+videos\s+</div>',
+        re.DOTALL | re.IGNORECASE
+    )
+
+    matches = studio_re.findall(listhtml)
+    for studio_url, title_attr, img, videos in matches:
+        name = utils.cleantext(title_attr)
+        site.add_dir(name + ' [COLOR deeppink] (' + videos + ' videos)[/COLOR]', studio_url, 'List', img)
+
+    # Next page support for /sites/2/, /sites/3/, etc.
+    if url.rstrip('/').endswith('/sites'):
+        next_url = url.rstrip('/') + '/2/'
+    elif re.search(r'/sites/(\d+)/?$', url):
+        page = int(re.search(r'/sites/(\d+)/?$', url).group(1))
+        next_url = re.sub(r'/sites/\d+/?$', '/sites/{}/'.format(page + 1), url)
+    else:
+        next_url = None
+
+    if next_url:
+        site.add_dir('[COLOR hotpink]Next Page...[/COLOR]', next_url, 'Studios', site.img_next)
+
+    utils.eod()
 
 
 @site.register()
@@ -128,7 +168,7 @@ def Lookupinfo(url):
     lookup_list = [
         ("Category", r'href="https://watchporn.to/(categories[^"]+)"\s*>([^<]+)<', ''),
         ("Tag", r'href="https://watchporn.to/(tags[^"]+)"\s*>([^<]+)<', ''),
-        ("Model", r'href="https://watchporn.to/(models[^"]+)"\s*>([^<]+)<', '')
+        ("Actor", r'href="https://watchporn.to/(models[^"]+)"\s*>([^<]+)<', '')
     ]
     lookupinfo = utils.LookupInfo(site.url, url, 'watchporn.List', lookup_list)
     lookupinfo.getinfo()

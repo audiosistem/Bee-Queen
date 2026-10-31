@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from caches import BaseCache, maincache_db, get_property, set_property, clear_property
+from caches import BaseCache, clear_property, get_property, maincache_db, set_property
 # from modules.kodi_utils import logger
 
 BASE_GET = 'SELECT data, expires FROM maincache WHERE id = ? AND expires > ?'

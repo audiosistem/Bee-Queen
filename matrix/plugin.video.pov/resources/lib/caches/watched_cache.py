@@ -1,15 +1,15 @@
-from threading import Thread
+from datetime import datetime, timedelta,timezone
 from operator import itemgetter
+from threading import Thread
 from types import MappingProxyType
-from datetime import datetime, timezone
 from caches.mdbl_cache import clear_mdbl_collection_watchlist_data
 from caches.trakt_cache import clear_trakt_collection_watchlist_data
 from indexers import metadata
 from indexers.local_api import local_get_hidden_items
-from indexers.mdblist_api import mdbl_watched_unwatched, mdbl_progress, mdbl_get_hidden_items
-from indexers.trakt_api import trakt_watched_unwatched, trakt_progress, trakt_get_hidden_items, trakt_official_status
+from indexers.mdblist_api import mdbl_get_hidden_items, mdbl_progress, mdbl_watched_unwatched
+from indexers.trakt_api import trakt_get_hidden_items, trakt_official_status, trakt_progress, trakt_watched_unwatched
 from modules import kodi_utils, settings
-from modules.utils import adjust_premiered_date, get_datetime, make_thread_list, paginate_list, sort_for_article, TaskPool
+from modules.utils import TaskPool, adjust_premiered_date, get_datetime, make_thread_list, paginate_list, sort_for_article
 # logger = kodi_utils.logger
 
 GET_MOVIE_SHOW = 'SELECT %s FROM watched_status WHERE db_type = ? ORDER BY last_played DESC'
@@ -173,7 +173,8 @@ def mark_as_watched_unwatched_tvshow(params):
 	current_date = get_datetime()
 	insert_list = []
 	insert_append = insert_list.append
-	kodi_utils.progressDialogBG.create(plswait_str, '')
+	progressBG = kodi_utils.progressDialogBG()
+	progressBG.create(plswait_str, '')
 	try:
 		meta = metadata.tvshow_meta('tmdb_id', tmdb_id, meta_user_info, current_date)
 		season_data = meta['season_data']
@@ -185,7 +186,7 @@ def mark_as_watched_unwatched_tvshow(params):
 			season_number = item['season']
 			ep_number = item['episode']
 			display = 'S%.2dE%.2d' % (int(season_number), int(ep_number))
-			kodi_utils.progressDialogBG.update(int(float(count)/float(total)*100), plswait_str, display)
+			progressBG.update(int(float(count)/float(total)*100), plswait_str, display)
 			episode_date, premiered = adjust_premiered_date(item['premiered'], adjust_hours)
 			if not episode_date or current_date < episode_date: continue
 			insert_append(make_batch_insert(action, 'episode', tmdb_id, season_number, ep_number, last_played, title))
@@ -198,7 +199,7 @@ def mark_as_watched_unwatched_tvshow(params):
 				return kodi_utils.notify_failed()
 			clear_mdbl_collection_watchlist_data('watchlist')
 		batch_mark_as_watched_unwatched(watched_indicators, insert_list, action)
-	finally: kodi_utils.progressDialogBG.close()
+	finally: progressBG.close()
 	kodi_utils.widget_refresh() if kodi_utils.external_browse() else kodi_utils.container_refresh()
 
 def mark_as_watched_unwatched_season(params):
@@ -214,7 +215,8 @@ def mark_as_watched_unwatched_season(params):
 	current_date = get_datetime()
 	insert_list = []
 	insert_append = insert_list.append
-	kodi_utils.progressDialogBG.create(plswait_str, '')
+	progressBG = kodi_utils.progressDialogBG()
+	progressBG.create(plswait_str, '')
 	try:
 		meta = metadata.tvshow_meta('tmdb_id', tmdb_id, meta_user_info, current_date)
 		ep_data = metadata.season_episodes_meta(season, meta, meta_user_info)
@@ -223,7 +225,7 @@ def mark_as_watched_unwatched_season(params):
 			season_number = item['season']
 			ep_number = item['episode']
 			display = 'S%.2dE%.2d' % (int(season_number), int(ep_number))
-			kodi_utils.progressDialogBG.update(int(float(count)/float(total)*100), plswait_str, display)
+			progressBG.update(int(float(count)/float(total)*100), plswait_str, display)
 			episode_date, premiered = adjust_premiered_date(item['premiered'], adjust_hours)
 			if not episode_date or current_date < episode_date: continue
 			insert_append(make_batch_insert(action, 'episode', tmdb_id, season_number, ep_number, last_played, title))
@@ -236,7 +238,7 @@ def mark_as_watched_unwatched_season(params):
 				return kodi_utils.notify_failed()
 			clear_mdbl_collection_watchlist_data('watchlist')
 		batch_mark_as_watched_unwatched(watched_indicators, insert_list, action)
-	finally: kodi_utils.progressDialogBG.close()
+	finally: progressBG.close()
 	kodi_utils.widget_refresh() if kodi_utils.external_browse() else kodi_utils.container_refresh()
 
 def mark_as_watched_unwatched(watched_indicators, mediatype='', tmdb_id='', action='', season='', episode='', title=''):
@@ -263,6 +265,32 @@ def batch_mark_as_watched_unwatched(watched_indicators, insert_list, action):
 def make_batch_insert(action, mediatype, tmdb_id, season, episode, last_played, title):
 	if action == 'mark_as_watched': return (mediatype, tmdb_id, season, episode, last_played, title)
 	else: return (mediatype, tmdb_id, season, episode)
+
+def get_last_episodes(watched_indicators, days=7):
+	if watched_indicators == 1:
+		cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+	elif watched_indicators == 2:
+		cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).strftime('%Y-%m-%dT%H:%M:%SZ')
+	else: cutoff = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d %H:%M:%S')
+	command = """
+		SELECT media_id, title, last_played, season, episode
+		FROM (
+			SELECT *, ROW_NUMBER() OVER (
+				PARTITION BY media_id ORDER BY last_played DESC
+			) AS r
+			FROM watched_status
+			WHERE db_type = ? AND last_played >= ?
+		) AS t
+		WHERE r = 1
+		ORDER BY last_played DESC
+	"""
+	dropped_info = get_dropped_info_tv(watched_indicators)
+	dbcon = _database_connect(watched_indicators)
+	dbcur = set_PRAGMAS(dbcon)
+	return [
+		{'media_ids': {'tmdb': i[0]}, 'last_played': i[2], 'season': i[3], 'episode': i[4]}
+		for i in dbcur.execute(command, ('episode', cutoff)).fetchall() if int(i[0]) not in dropped_info
+	]
 
 def get_next_episodes(watched_indicators):
 	command = """

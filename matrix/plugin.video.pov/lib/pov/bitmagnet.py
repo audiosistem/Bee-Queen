@@ -1,0 +1,169 @@
+# created by kodifitzwell for Fenomscrapers
+"""
+	Fenomscrapers Project
+"""
+
+import xml.etree.ElementTree as ET
+from threading import Lock
+from pov.modules import client, source_utils
+
+
+class source(source_utils.SourceRegistry):
+	timeout = 7
+	priority = 1
+	pack_capable = True
+	hasMovies = True
+	hasEpisodes = True
+	_lock = Lock()
+	_cache = {}
+	def __init__(self):
+		self.language = ['en']
+		self.base_link = "https://bitmagnetfortheweebs.midnightignite.me"
+		self.movieSearch_link = '/torznab/api?t=movie&imdbid=%s'
+		self.tvSearch_link = '/torznab/api?t=tvsearch&imdbid=%s&season=%s&ep=%s'
+		self.min_seeders = 0
+
+	def _make_item(self, file, name, name_info, seeders):
+		hash = file['infohash']
+		url = 'magnet:?xt=urn:btih:%s&dn=%s' % (hash, name)
+
+		quality, info = source_utils.get_release_quality(name_info, url)
+		try:
+			size = float(file['size'])
+			dsize, isize = source_utils.convert_size(size)
+			info.insert(0, isize)
+		except: dsize = 0
+		info = ' | '.join(info)
+
+		return {
+			'source': 'torrent', 'language': 'en', 'direct': False, 'debridonly': True,
+			'provider': 'bitmagnet', 'hash': hash, 'url': url, 'name': name, 'name_info': name_info,
+			'quality': quality, 'info': info, 'size': dsize, 'seeders': seeders
+		}
+
+	def get_sources(self, url, collector):
+		try:
+			results = client.session.request('get', url, timeout=self.timeout).text
+			if not results: return
+			items = ET.fromstring(results)
+			files = []
+			for item in items.iter('item'):
+				try:
+					attr_dict = {'title': item.find('title').text}
+					for attr in item.findall('torznab:attr', {'torznab': 'http://torznab.com/schemas/2015/feed'}):
+						key, val = attr.get('name'), attr.get('value')
+						if key: attr_dict[key] = val
+					files.append(attr_dict)
+				except: pass
+			collector.extend(files)
+		except:
+			source_utils.scraper_error('BITMAGNET')
+
+	def sources(self, data, hostDict):
+		if not data: return []
+		files = []
+		sources = []
+		sources_append = sources.append
+		future = self.get_future(str(data))
+		try:
+			aliases = source_utils.aliases_to_array(data['aliases'])
+			year, years = source_utils._years(data)
+			title = data['tvshowtitle'] if 'tvshowtitle' in data else data['title']
+			title = title.replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ').replace('$', 's')
+			episode_title = data['title'] if 'tvshowtitle' in data else None
+			imdb = data['imdb']
+			if 'tvshowtitle' in data:
+				season = data['season']
+				episode = data['episode']
+				hdlr = 'S%02dE%02d' % (int(season), int(episode))
+				url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, episode))
+			else:
+				hdlr = year
+				url = '%s%s' % (self.base_link, self.movieSearch_link % imdb)
+
+			if 'timeout' in data: self.timeout = int(data['timeout'])
+			self.get_sources(url, files)
+			if not future.done(): future.set_result(files)
+			undesirables = source_utils.get_undesirables()
+			check_foreign_audio = source_utils.check_foreign_audio()
+		except:
+			if not future.done(): future.set_result([])
+			source_utils.scraper_error('BITMAGNET')
+			return sources
+
+		for file in files:
+			try:
+				try:
+					seeders = int(file['seeders'])
+					if self.min_seeders > seeders: continue
+				except: seeders = 0
+
+				name = source_utils.clean_name(file['title'])
+
+				if not source_utils.check_title(title, aliases, name, hdlr, year, years): continue
+				name_info = source_utils.info_from_name(name, title, year, hdlr, episode_title)
+				if source_utils.remove_lang(name_info, check_foreign_audio): continue
+				if undesirables and source_utils.remove_undesirables(name_info, undesirables): continue
+
+				item = self._make_item(file, name, name_info, seeders)
+				sources_append(item)
+			except:
+				source_utils.scraper_error('BITMAGNET')
+		return sources
+
+	def sources_packs(self, data, hostDict, search_series=False, total_seasons=None, bypass_filter=False):
+		if not data: return []
+		sources = []
+		sources_append = sources.append
+		try:
+			aliases = source_utils.aliases_to_array(data['aliases'])
+			title = data['tvshowtitle'].replace('&', 'and').replace('Special Victims Unit', 'SVU').replace('/', ' ').replace('$', 's')
+			imdb = data['imdb']
+			year = data['year']
+			season = data['season']
+			url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season, data['episode']))
+
+			if 'timeout' in data: self.timeout = int(data['timeout'])
+			files = self.get_future(str(data)).result(timeout=self.timeout + 1)
+			undesirables = source_utils.get_undesirables()
+			check_foreign_audio = source_utils.check_foreign_audio()
+		except:
+			source_utils.scraper_error('BITMAGNET')
+			return sources
+
+		for file in files:
+			try:
+				try:
+					seeders = int(file['seeders'])
+					if self.min_seeders > seeders: continue
+				except: seeders = 0
+
+				name = source_utils.clean_name(file['title'])
+
+				episode_start, episode_end = 0, 0
+				if not search_series:
+					if not bypass_filter:
+						valid, episode_start, episode_end = source_utils.filter_season_pack(title, aliases, year, season, name)
+						if not valid: continue
+					package = 'season'
+
+				elif search_series:
+					if not bypass_filter:
+						valid, last_season = source_utils.filter_show_pack(title, aliases, imdb, year, season, name, total_seasons)
+						if not valid: continue
+					else: last_season = total_seasons
+					package = 'show'
+
+				name_info = source_utils.info_from_name(name, title, year, season=season, pack=package)
+				if source_utils.remove_lang(name_info, check_foreign_audio): continue
+				if undesirables and source_utils.remove_undesirables(name_info, undesirables): continue
+
+				item = self._make_item(file, name, name_info, seeders)
+				item['package'] = package
+				if search_series: item.update({'last_season': last_season})
+				elif episode_start: item.update({'episode_start': episode_start, 'episode_end': episode_end}) # for partial season packs
+				sources_append(item)
+			except:
+				source_utils.scraper_error('BITMAGNET')
+		return sources
+

@@ -1,38 +1,259 @@
 # -*- coding: utf-8 -*-
-import zlib, hashlib, base64
+# RomyLive+ - Remote loader
+# ---------------------------------------------------------------------------
+# Acest fisier este intentionat MIC si STABIL: nu contine logica pluginului.
+# La fiecare pornire, Kodi ruleaza acest default.py, care descarca versiunea
+# curenta a codului real de la REMOTE_URL si o executa pe loc.
+#
+# Astfel poti actualiza pluginul editand fisierul de pe server
+# (https://documentarys.do.am/default.py) - fara sa mai reinstalezi addonul
+# in Kodi. Daca nu exista internet sau serverul e indisponibil, se foloseste
+# ultima copie descarcata cu succes (cache local), iar daca nici aceea nu
+# exista, se foloseste versiunea inclusa in addon (resources/lib/main_fallback.py).
+# ---------------------------------------------------------------------------
 
-_PASSPHRASE = 'RomyLive-Cupidon-9231-XyZ!'
-_STD_B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-_PERM_B64 = 'bqPD1GTQnI809itCrg+vU2zEp6xH5LlfFJchKwdMjWORBs4YkyX/ANm3oSuaZ7Ve'
-_TRANS_DEC = str.maketrans(_PERM_B64, _STD_B64)
+import os
+import sys
+import time
+import traceback
 
-_CHUNKS = [
-    '=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',
-]
+import xbmc
+import xbmcaddon
+import xbmcgui
+import xbmcvfs
 
-def _load():
-    reversed_str = ''.join(_CHUNKS)
-    b64_perm = reversed_str[::-1]
-    b64_std = b64_perm.translate(_TRANS_DEC)
-    xored = base64.b64decode(b64_std)
-    key = hashlib.sha256(_PASSPHRASE.encode()).digest()
-    compressed = bytes(b ^ key[i % len(key)] for i, b in enumerate(xored))
-    return zlib.decompress(compressed)
+# URL de unde se incarca codul principal al pluginului.
+REMOTE_URL = 'https://documentarys.do.am/default.py'
+REQUEST_TIMEOUT = 8  # secunde
 
-exec(compile(_load(), 'default.py', 'exec'))
+ADDON = xbmcaddon.Addon()
+ADDON_ID = ADDON.getAddonInfo('id')
+
+
+def _translate(path):
+    try:
+        return xbmcvfs.translatePath(path)
+    except AttributeError:
+        return xbmc.translatePath(path)
+
+
+ADDON_PATH = _translate(ADDON.getAddonInfo('path'))
+PROFILE_PATH = _translate(ADDON.getAddonInfo('profile'))
+
+if not xbmcvfs.exists(PROFILE_PATH):
+    xbmcvfs.mkdirs(PROFILE_PATH)
+
+CACHE_FILE = os.path.join(PROFILE_PATH, 'default_remote_cache.py')
+# __file__ folosit la exec: pastreaza calea acestui loader, ca sa functioneze
+# importurile relative din codul remote (ex: `from categorize import ...`),
+# care isi calculeaza folderul addon-ului din dirname(__file__).
+LOCAL_MAIN_FILE = os.path.join(ADDON_PATH, 'default.py')
+FALLBACK_FILE = os.path.join(ADDON_PATH, 'resources', 'lib', 'main_fallback.py')
+
+
+def _remote_enabled():
+    try:
+        return ADDON.getSetting('remote_loader_enabled') != 'false'
+    except Exception:
+        return True
+
+
+def _remote_url():
+    try:
+        url = ADDON.getSetting('remote_loader_url')
+        return url.strip() if url and url.strip() else REMOTE_URL
+    except Exception:
+        return REMOTE_URL
+
+
+def _log(msg, level=xbmc.LOGINFO):
+    try:
+        xbmc.log('[{0}] {1}'.format(ADDON_ID, msg), level)
+    except Exception:
+        pass
+
+
+def _download_remote(url):
+    """Descarca sursa curata din URL, cu bypass de cache la nivel de server/proxy."""
+    sep = '&' if '?' in url else '?'
+    bust_url = '{0}{1}_t={2}'.format(url, sep, int(time.time()))
+    headers = {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'User-Agent': 'Mozilla/5.0 (Kodi RomyLive+ remote-loader)'
+    }
+
+    try:
+        import requests
+        resp = requests.get(bust_url, timeout=REQUEST_TIMEOUT, headers=headers)
+        resp.raise_for_status()
+        return resp.content.decode('utf-8')
+    except Exception as exc:
+        _log('Descarcare cu "requests" a esuat: {0}'.format(exc), xbmc.LOGWARNING)
+
+    try:
+        if sys.version_info[0] >= 3:
+            import urllib.request as urllib_request
+        else:
+            import urllib2 as urllib_request
+        req = urllib_request.Request(bust_url, headers=headers)
+        raw = urllib_request.urlopen(req, timeout=REQUEST_TIMEOUT).read()
+        return raw.decode('utf-8')
+    except Exception as exc:
+        _log('Descarcare cu "urllib" a esuat: {0}'.format(exc), xbmc.LOGWARNING)
+
+    return None
+
+
+def _read_text_vfs(path):
+    try:
+        if not xbmcvfs.exists(path):
+            return None
+        f = xbmcvfs.File(path)
+        try:
+            data = f.readBytes() if hasattr(f, 'readBytes') else f.read()
+        finally:
+            f.close()
+        if isinstance(data, bytes):
+            data = data.decode('utf-8')
+        return data
+    except Exception as exc:
+        _log('Citire cache a esuat ({0}): {1}'.format(path, exc), xbmc.LOGWARNING)
+        return None
+
+
+def _write_cache(content):
+    try:
+        f = xbmcvfs.File(CACHE_FILE, 'w')
+        try:
+            f.write(content.encode('utf-8') if isinstance(content, str) else content)
+        finally:
+            f.close()
+    except Exception as exc:
+        _log('Scriere cache a esuat: {0}'.format(exc), xbmc.LOGWARNING)
+
+
+def _read_fallback():
+    try:
+        if os.path.isfile(FALLBACK_FILE):
+            with open(FALLBACK_FILE, 'rb') as f:
+                return f.read().decode('utf-8')
+    except Exception as exc:
+        _log('Citire fallback local a esuat: {0}'.format(exc), xbmc.LOGWARNING)
+    return None
+
+
+def _load_source():
+    if _remote_enabled():
+        url = _remote_url()
+        content = _download_remote(url)
+        if content:
+            _write_cache(content)
+            _log('Cod incarcat de la ' + url)
+            return content, 'remote'
+        _log('Nu s-a putut descarca de la ' + url + '; se incearca cache local.', xbmc.LOGWARNING)
+    else:
+        _log('Incarcarea remote este dezactivata din setari; se foloseste cache/fallback local.')
+
+    content = _read_text_vfs(CACHE_FILE)
+    if content:
+        _log('Se foloseste ultima copie salvata local (cache).')
+        return content, 'cache'
+
+    content = _read_fallback()
+    if content:
+        _log('Se foloseste versiunea inclusa in addon (fallback).')
+        return content, 'fallback'
+
+    return None, None
+
+
+# Adrese vechi care nu mai exista pe site, inlocuite inainte de executie.
+# Se aplica si pe codul remote (care contine aceleasi constante), deci
+# corectia ramane valabila chiar daca serverul remote nu se schimba.
+URL_FIXES = {
+    'https://veziaici.net/category/c-seriale-romanesti/vizionati-las-fierbinti-toate-sezoanele-integrale/':
+    'https://veziaici.net/category/c-seriale-romanesti/serialul-romanesc-de-comedie-las-fierbinti-in-reluare/las-fierbinti-sezonul-30-online-in-reluare-integral/',
+}
+
+
+def _apply_url_fixes(source):
+    for old, new in URL_FIXES.items():
+        source = source.replace(old, new)
+    return source
+
+
+def _apply_reelshort_poster_fix(source):
+    # Reel-short now uses hashed names such as poster-<hash>-w480.webp.
+    # Accept those, lazy-load attributes and srcset variants as well.
+    old = r'''        m_img = re.search(r'src="([^"]+poster\.(?:jpg|jpeg|png|webp)[^"]*)"', block, re.IGNORECASE)'''
+    new = r'''        m_img = re.search(r'(?:src|data-src|data-lazy-src|data-original)="([^"]*poster[^"]*\.(?:jpg|jpeg|png|webp)(?:\?[^"]*)?)"', block, re.IGNORECASE)
+        if not m_img:
+            m_img = re.search(r'srcset="([^"]*poster[^"]*\.(?:jpg|jpeg|png|webp)(?:\?[^"]*)?)\s+\d+w', block, re.IGNORECASE)'''
+    if old not in source:
+        return source
+    return source.replace(old, new, 1)
+
+
+def _exec_source(source, origin):
+    # Aplicam corectia LOCALA dupa definitiile remote, inainte de rutare.
+    # Altfel serverul ar suprascrie corectia la fiecare pornire a addonului.
+    if ADDON_PATH not in sys.path:
+        sys.path.insert(0, ADDON_PATH)
+    from desenefaine_fix import patch_source
+    import romy_youtube
+    # Serverul poate livra un invelis base64/zlib. Aplicam corectiile pe
+    # sursa reala, nu pe stub-ul exterior (care nu are meniul definit).
+    source = romy_youtube.unpack_source(source)
+    source = _apply_url_fixes(source)
+    source = _apply_reelshort_poster_fix(source)
+    source = patch_source(source)
+    source = romy_youtube.patch_source(source)
+    exec_globals = {'__name__': '__main__', '__file__': LOCAL_MAIN_FILE}
+    origin_label = REMOTE_URL if origin == 'remote' else (CACHE_FILE if origin == 'cache' else FALLBACK_FILE)
+    code_obj = compile(source, origin_label, 'exec')
+    exec(code_obj, exec_globals)
+
+
+def main():
+    # YouTube este complet local: nu asteapta serverul meniului RomyLive.
+    if ADDON_PATH not in sys.path:
+        sys.path.insert(0, ADDON_PATH)
+    import romy_youtube
+    if romy_youtube.handles():
+        romy_youtube.run()
+        return
+    source, origin = _load_source()
+    if not source:
+        xbmcgui.Dialog().notification(
+            'RomyLive+',
+            'Nu am putut incarca pluginul (fara internet si fara cache).',
+            xbmcgui.NOTIFICATION_ERROR, 5000
+        )
+        return
+
+    try:
+        _exec_source(source, origin)
+    except SystemExit:
+        raise
+    except Exception:
+        _log('Eroare la executia codului ({0}):\n{1}'.format(origin, traceback.format_exc()), xbmc.LOGERROR)
+        if origin != 'fallback':
+            fallback_source = _read_fallback()
+            if fallback_source:
+                try:
+                    _exec_source(fallback_source, 'fallback')
+                    return
+                except SystemExit:
+                    raise
+                except Exception:
+                    _log('Eroare si la executia fallback-ului:\n{0}'.format(traceback.format_exc()), xbmc.LOGERROR)
+        xbmcgui.Dialog().notification(
+            'RomyLive+',
+            'A aparut o eroare la incarcarea continutului pluginului.',
+            xbmcgui.NOTIFICATION_ERROR, 5000
+        )
+
+
+if __name__ == '__main__':
+    main()

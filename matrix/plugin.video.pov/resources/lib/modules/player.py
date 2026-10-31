@@ -1,10 +1,10 @@
 import json
 from threading import Thread
 from caches import watched_cache as ws
+from indexers.metadata import art_infodict, episode_infodict, info_tagger, movie_show_infodict
 from indexers.segments import SegmentScraper
-from indexers.metadata import art_infodict, movie_show_infodict, episode_infodict, info_tagger
 from modules import kodi_utils, settings
-from modules.utils import sec2time, make_title_slug
+from modules.utils import make_title_slug, sec2time
 # from modules.kodi_utils import logger
 
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
@@ -41,6 +41,7 @@ class MediaPlayer(kodi_utils.xbmc_player):
 class POVPlayer(MediaPlayer):
 	def __init__(self):
 		MediaPlayer.__init__(self)
+		self.monitor = kodi_utils.xbmc_monitor()
 		self.set_resume, self.set_watched = 5, 80
 		self.media_marked, self.nextep_info_gathered = False, False
 		self.subs_searched, self.stingers_checked = False, False
@@ -100,7 +101,7 @@ class POVPlayer(MediaPlayer):
 
 	def check_playback_events(self):
 		try:
-			kodi_utils.monitor.waitForAbort(1)
+			self.monitor.waitForAbort(1)
 			self.total_time, self.curr_time = self.getTotalTime(), self.getTime()
 			self.current_point = round(float(self.curr_time/self.total_time * 100), 1)
 			self.remaining_time = round(self.total_time - self.curr_time)

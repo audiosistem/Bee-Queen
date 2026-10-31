@@ -51,6 +51,7 @@ class BaseDialog(xbmcgui.WindowXMLDialog):
 	icon = kodi_utils.get_addoninfo('icon')
 	def __init__(self, *args):
 		xbmcgui.WindowXMLDialog.__init__(self, args)
+		self.player = kodi_utils.xbmc_player()
 		self.info_actions = window_xml_info_action
 		self.closing_actions = window_xml_closing_actions
 		self.selection_actions = window_xml_selection_actions
@@ -59,7 +60,6 @@ class BaseDialog(xbmcgui.WindowXMLDialog):
 		self.right_actions = window_xml_right_action
 		self.up_actions = window_xml_up_action
 		self.down_actions = window_xml_down_action
-		self.player = kodi_utils.player
 		self.setProperty('tikiskins.pov.icon', self.icon)
 
 	def make_listitem(self):

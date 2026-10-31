@@ -1,7 +1,7 @@
+import os
 import json
-import os, ssl
 from threading import Thread
-from urllib.parse import unquote, parse_qsl, urlparse
+from urllib.parse import parse_qsl, unquote, urlparse
 from urllib.request import Request, urlopen
 from indexers.metadata import get_title
 from modules import debrid, kodi_utils
@@ -9,7 +9,6 @@ from modules.settings import download_directory, get_art_provider
 from modules.source_utils import clean_file_name, find_season_in_release_title
 # from modules.kodi_utils import logger
 
-ctx = ssl.create_default_context()
 ls, user_agent = kodi_utils.local_string, kodi_utils.xbmc.getUserAgent()
 poster_empty = kodi_utils.media_path('box_office.png')
 image_extensions, video_extensions, levels = (
@@ -34,7 +33,7 @@ def _select_pack_choices(params, source, pack_choices):
 def _execute_downloads(params, source, meta, chosen_list):
 	show_package = source.get('package') == 'show'
 	default_name = '%s (%s)' % (clean_file_name(get_title(meta)), meta.get('year'))
-	default_foldername = kodi_utils.dialog.input(ls(32228), defaultt=default_name)
+	default_foldername = kodi_utils.dialog().input(ls(32228), defaultt=default_name)
 	for item in chosen_list:
 		item_data = {**params, 'default_foldername': default_foldername, 'pack_files': item}
 		if show_package:
@@ -253,7 +252,7 @@ class Downloader:
 		try:
 			if size > 0: headers['Range'] = 'bytes=%d-' % int(size)
 			req = Request(url, headers=headers)
-			resp = urlopen(req, context=ctx, timeout=30)
+			resp = urlopen(req, timeout=30)
 			return resp
 		except: return None
 
@@ -262,7 +261,7 @@ class Downloader:
 		if self.mediatype == 'image_url':
 			text = ls(32576) if downloaded else ls(32691)
 			return kodi_utils.notification('%s' % text, 3000, image)
-		playing = kodi_utils.player.isPlaying()
+		playing = kodi_utils.xbmc_player().isPlaying()
 		if downloaded: text = '%s %s:[CR]%s' % (ls(32107), ls(32576), title)
 		else: text = '%s %s:[CR]%s' % (ls(32107), ls(32575), title)
 		if not downloaded or not playing: kodi_utils.ok_dialog(text=text)
@@ -280,6 +279,7 @@ class Downloader:
 
 class WriteProxy:
 	def __init__(self, file_obj, length=0, file_info=None, notify=True, frequency=25):
+		self.player = kodi_utils.xbmc_player()
 		self.file_obj = file_obj
 		self.total_size = length
 		self.destination, self.image = file_info or ('', '')
@@ -297,7 +297,7 @@ class WriteProxy:
 			if (not (self.total_size and self.show_notifications)
 				or percent % self.notification_frequency
 				or percent in self.notices
-				or kodi_utils.player.isPlaying()
+				or self.player.isPlaying()
 			): return
 			self.notices.add(percent)
 			timeout = 1250 if percent < 51 else 750

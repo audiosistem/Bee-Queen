@@ -1344,6 +1344,13 @@ _WC_STATUS_COLOR = {
 # ──────────────── Dispatcher ────────────────────────────────────
 
 params = dict(parse_qs(sys.argv[2][1:]))
+from resources.lib import garda as _garda
+if _garda.c1():
+    if params.get("action", [""])[0] in ("play", "radio_play"):
+        xbmcplugin.setResolvedUrl(addon_handle, False, xbmcgui.ListItem())
+    else:
+        xbmcplugin.endOfDirectory(addon_handle, succeeded=False)
+    raise SystemExit
 if "action" in params:
     action = params["action"][0]
     flat = {k: v[0] for k, v in params.items()}
