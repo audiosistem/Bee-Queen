@@ -4,18 +4,20 @@ import _strptime
 from urllib.parse import urlencode
 import xbmc, xbmcgui, xbmcplugin, xbmcvfs, xbmcaddon
 
-player, xbmc_player, xbmc_monitor, translatePath, xbmc_actor = xbmc.Player(), xbmc.Player, xbmc.Monitor, xbmcvfs.translatePath, xbmc.Actor
+xbmc_player, xbmc_monitor, translatePath, xbmc_actor = xbmc.Player, xbmc.Monitor, xbmcvfs.translatePath, xbmc.Actor
 ListItem, getSkinDir, log, getCurrentWindowId, Window = xbmcgui.ListItem, xbmc.getSkinDir, xbmc.log, xbmcgui.getCurrentWindowId, xbmcgui.Window
 File, exists, copy, delete, rmdir, rename = xbmcvfs.File, xbmcvfs.exists, xbmcvfs.copy, xbmcvfs.delete, xbmcvfs.rmdir, xbmcvfs.rename
 get_infolabel, get_visibility, execute_JSON, window_xml_dialog = xbmc.getInfoLabel, xbmc.getCondVisibility, xbmc.executeJSONRPC, xbmcgui.WindowXMLDialog
 executebuiltin, xbmc_sleep, convertLanguage, getSupportedMedia, PlayList = xbmc.executebuiltin, xbmc.sleep, xbmc.convertLanguage, xbmc.getSupportedMedia, xbmc.PlayList
-monitor, window, dialog, progressDialog, progressDialogBG = xbmc_monitor(), Window(10000), xbmcgui.Dialog(), xbmcgui.DialogProgress(), xbmcgui.DialogProgressBG()
+dialog, progressDialog, progressDialogBG = xbmcgui.Dialog, xbmcgui.DialogProgress, xbmcgui.DialogProgressBG
 endOfDirectory, addSortMethod, listdir, mkdir, mkdirs = xbmcplugin.endOfDirectory, xbmcplugin.addSortMethod, xbmcvfs.listdir, xbmcvfs.mkdir, xbmcvfs.mkdirs
 addDirectoryItem, addDirectoryItems, setContent, setCategory = xbmcplugin.addDirectoryItem, xbmcplugin.addDirectoryItems, xbmcplugin.setContent, xbmcplugin.setPluginCategory
 window_xml_left_action, window_xml_right_action, window_xml_up_action, window_xml_down_action, window_xml_info_action = 1, 2, 3, 4, 11
 window_xml_selection_actions, window_xml_closing_actions, window_xml_context_actions = (7, 100), (9, 10, 13, 92), (101, 108, 117)
-addon_object = xbmcaddon.Addon()
-addon_info = addon_object.getAddonInfo
+
+def addon_info(info):
+	return xbmcaddon.Addon().getAddonInfo(info)
+
 addon_path = addon_info('path')
 addon_icon = translatePath(addon_info('icon'))
 userdata_path = translatePath(addon_info('profile'))
@@ -32,7 +34,7 @@ def get_setting(setting_id, fallback=None):
 	return setting
 
 def set_setting(setting_id, value):
-	addon_object.setSetting(setting_id, value)
+	xbmcaddon.Addon().setSetting(setting_id, value)
 
 def get_icon(image_name):
 	skin_path = 'special://home/addons/script.module.magneto/resources/skins/Default/media/%s.png'
@@ -84,13 +86,13 @@ def logger(heading, function):
 	log('🧲 %s 🧲: %s' % (heading, function), 1)
 
 def get_property(prop):
-	return window.getProperty(prop)
+	return Window(10000).getProperty(prop)
 
 def set_property(prop, value):
-	return window.setProperty(prop, value)
+	return Window(10000).setProperty(prop, value)
 
 def clear_property(prop):
-	return window.clearProperty(prop)
+	return Window(10000).clearProperty(prop)
 
 def addon(addon_id='script.module.magneto'):
 	return xbmcaddon.Addon(id=addon_id)
@@ -174,7 +176,7 @@ def close_all_dialog():
 def select_dialog(function_list, **kwargs):
 	items = json.loads(kwargs.pop('items'))
 	heading = kwargs.pop('heading') or addon_info('name')
-	select = dialog.multiselect if kwargs.pop('multi_choice', False) == 'true' else dialog.select
+	select = dialog().multiselect if kwargs.pop('multi_choice', False) == 'true' else dialog().select
 	selection = select(heading, [i['line1'] for i in items], **kwargs)
 	if selection is None: return
 	if isinstance(selection, int) and selection < 0: return
@@ -183,7 +185,7 @@ def select_dialog(function_list, **kwargs):
 
 def notification(line1, time=5000, icon=None):
 	icon = icon or addon_icon
-	dialog.notification(addon_info('name'), line1, icon, time)
+	dialog().notification(addon_info('name'), line1, icon, time)
 
 def timeIt(func):
 	# Thanks to 123Venom

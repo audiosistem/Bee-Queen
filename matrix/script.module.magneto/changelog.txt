@@ -1,8 +1,24 @@
+[COLOR red][B]Version 6.10.16[/B][/COLOR]
+- plugin.video.pov 6.10.16+ (POV) is now required and installation should be automatic.
+- script.module.magneto 6.10.16+ (Magneto Module) contains a thin wrapper for POV Sources.
+- if using Magneto only as an external source for another addon, select POV directly as that external source and remove Magneto Module.
+- Magneto Module as an AIOStreams player for tmdbhelper is unchanged.
+
+[COLOR red][B]Version 6.10[/B][/COLOR]
+- Touched almost all scrapers.
+- Removed cloudflare client; size was 75% of the addon, only two sites remained protected so probably was not worth it, code was so dated it probably did not work.
+- Removed 1337x, eztv; cloudflare protected.
+- Removed bitsearch, torrentproject2, torrentz2.
+- Fixed torlock, yts.
+- Refactored to fix Kodi 22 Piers log warnings.
+
+[COLOR red][B]Version 6.09[/B][/COLOR]
+- Fix for format change in meteor results, next time will just remove it.
+
 [COLOR red][B]Version 6.07[/B][/COLOR]
 - Changed router/service entry points.
-- Fixed kickass2, knaben.
 - Changed dmm, reduced to fetch one page, multiple pages get rate limited.
-- Fixed bitsearch.
+- Fixed bitsearch, kickass2, knaben.
 
 [COLOR red][B]Version 6.05[/B][/COLOR]
 - Fix for format change in meteor results.

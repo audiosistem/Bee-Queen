@@ -2,6 +2,29 @@ from jurialmunkey.ftools import cached_property
 from tmdbhelper.lib.items.filters import is_excluded
 
 
+class ListFinaliser:
+    def __init__(self, container, items):
+        self.container = container
+        self.list_items = items
+
+    @cached_property
+    def finalisers(self):
+        return self.get_finalisers()
+
+    def get_finalisers(self):
+        return [
+            self.container.get_item_finaliser(item)
+            for item in self.list_items if item
+        ]
+
+    @cached_property
+    def items(self):
+        return self.get_items()
+
+    def get_items(self):
+        return [item.item if item else None for item in self.finalisers]
+
+
 class ItemFinaliserBasic:
     def __init__(self, container, list_item):
         self.container = container  # parent container class
@@ -43,31 +66,14 @@ class ItemFinaliserMedia(ItemFinaliserBasic):
 
     @cached_property
     def is_excluded(self):
-        self.has_kodi_details   # Must add kodi_details first for filtering
+        # Kodi library details are merged in by the item detail service, so filters can use them
         return is_excluded(self.list_item, is_listitem=True, **self.container.filters)
-
-    @cached_property
-    def has_kodi_details(self):
-        return self.set_kodi_details(self.get_kodi_details())
-
-    def get_kodi_details(self):
-        try:
-            return self.container.kodi_db.get_kodi_details(self.list_item)
-        except AttributeError:
-            return
-
-    def set_kodi_details(self, kodi_details):
-        if not kodi_details:
-            return
-        self.list_item.set_details(details=kodi_details, reverse=self.container.kodi_db_preferred)
-        return kodi_details
 
     def get_item(self):
         if not self.is_visible:
             return
 
         self.has_unaired_formatting
-        self.has_kodi_details
 
         if self.is_excluded:
             return

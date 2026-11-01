@@ -20,6 +20,24 @@ class BaseItem(ItemDetailsDatabaseAccess):
     routes_basemeta_db = {}
     allowlist_infolabel_keys = _ListItemInfoTagVideo._tag_attr
     append_to_response_tmdbtype = 'movie'
+    clear_user_art = False
+    sync_details = True  # Read synced play data such as play counts and progress
+
+    def get_lookup_request(self):
+        from tmdbhelper.lib.items.database.details.request import DetailsRequest
+        return DetailsRequest(
+            mediatype=self.mediatype, tmdb_id=self.tmdb_id,
+            season=getattr(self, 'season', None), episode=getattr(self, 'episode', None),
+            tvshow_tmdb_id=self.__dict__.get('tvshow_tmdb_id'),
+            cache_refresh=self.cache_refresh, cache_translations=self.cache_translations,
+            extendedinfo=self.extendedinfo, language=self.language,
+            clear_user_art=self.clear_user_art, sync_details=self.sync_details)
+
+    def get_lookup_dependencies(self, request):
+        return ()
+
+    def get_lookup_fallback(self):
+        return
 
     @property
     def data_cond(self):
@@ -140,6 +158,7 @@ class BaseItem(ItemDetailsDatabaseAccess):
         database_obj.parent_id = self.parent_id
         database_obj.common_apis = self.common_apis
         database_obj.connection = self.connection
+        database_obj.sync_details = self.sync_details
         return database_obj
 
     def return_basemeta_db(self, route, subtype=None):
@@ -247,15 +266,8 @@ class BaseItem(ItemDetailsDatabaseAccess):
         return self.get_data()
 
     def get_data(self):
-        """ Get data from the cache
-        cache_refresh = 'force' to force data refresh
-        cache_refresh = 'never' to never refresh from online and only get cached data
-        cache_refresh = None to get data from cache if available and hasn't expired otherwise cache new data and return it
-        """
-        if not self.data_cond:
+        """Public factory lookups always run in the item detail service."""
+        if not self.tmdb_id:
             return
-        if self.cache_refresh == 'force':
-            return self.try_cached_data()
-        if self.cache_refresh == 'never':
-            return self.get_cached_data()
-        return self.get_cached_data() or self.try_cached_data(True)
+        from tmdbhelper.lib.items.database.details.client import DetailsClient
+        return DetailsClient().get_item(self.get_lookup_request())

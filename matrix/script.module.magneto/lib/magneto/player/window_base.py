@@ -31,7 +31,7 @@ def create_window(import_info, skin_xml, **kwargs):
 class BaseDialog(window_xml_dialog):
 	def __init__(self, *args):
 		window_xml_dialog.__init__(self, args)
-		self.player = kore.player
+		self.player = kore.xbmc_player()
 		self.closing_actions = kore.window_xml_closing_actions
 		self.selection_actions = kore.window_xml_selection_actions
 		self.context_actions = kore.window_xml_context_actions

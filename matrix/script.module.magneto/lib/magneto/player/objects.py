@@ -84,11 +84,12 @@ class Movie(dict):
 		poster = meta_get('poster', '').replace('small', 'large')
 		fanart = meta_get('background', '').replace('medium', 'large')
 		logo = meta_get('logo', '').replace('medium', 'large')
+		year = meta_get('year') or ''
 		self.update({
 			'mediatype': 'movie',
 			'imdb_id': meta_get('imdb_id', ''), 'tmdb_id': meta_get('moviedb_id', ''),
 			'title': meta_get('name') or meta_get('imdb_id'),
-			'premiered': (meta_get('released') or '')[:10], 'year': int(meta_get('year') or 0),
+			'premiered': (meta_get('released') or '')[:10], 'year': int(year[:4] or 0),
 			'poster': poster, 'fanart': fanart, 'clearlogo': logo,
 			'plot': meta_get('description') or '',
 			'genre': meta_get('genres') or meta_get('genre') or [],

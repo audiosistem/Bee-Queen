@@ -14,18 +14,14 @@ class BaseDirList:
         main=False,
         sync=False,
         tmdb=False,
-        tvdb=False,
         random=False,
-        tmdb_v4=False,
         calendar=False,
         details=False,
     ):
         self.main = main
         self.sync = sync
         self.tmdb = tmdb
-        self.tvdb = tvdb
         self.random = random
-        self.tmdb_v4 = tmdb_v4
         self.calendar = calendar
         self.details = details
 
@@ -81,8 +77,6 @@ class BaseDirList:
         basedir += self.basedir_random
         basedir += self.basedir_tmdb
         basedir += self.basedir_sync
-        basedir += self.basedir_tvdb
-        basedir += self.basedir_tmdb_v4
         basedir += self.basedir_calendar
         basedir += self.basedir_details
         return basedir
@@ -112,16 +106,6 @@ class BaseDirList:
         return [] if not self.sync else get_all_sync_class_instances()
 
     @property
-    def basedir_tvdb(self):
-        from tmdbhelper.lib.items.directories.base.basedir_tvdb import get_all_tvdb_class_instances
-        return [] if not self.tvdb else get_all_tvdb_class_instances()
-
-    @property
-    def basedir_tmdb_v4(self):
-        from tmdbhelper.lib.items.directories.base.basedir_tmdb_v4 import get_all_tmdb_v4_class_instances
-        return [] if not self.tmdb_v4 else get_all_tmdb_v4_class_instances()
-
-    @property
     def basedir_calendar(self):
         from tmdbhelper.lib.items.directories.base.basedir_calendar import get_all_calendar_class_instances
         return [] if not self.calendar else get_all_calendar_class_instances(**self.calendar)
@@ -145,9 +129,7 @@ class ListBaseDir(ContainerDirectory):
             'dir_tv': lambda: get_localized(20343),
             'dir_person': lambda: get_localized(32172),
             'dir_tmdb': 'TheMovieDb',
-            'dir_tmdb_v4': lambda: f'TheMovieDb {get_localized(32079)}',
             'dir_sync': lambda: get_localized(32403),
-            'dir_tvdb': 'TVDb',
             'dir_random': lambda: get_localized(590),
             'dir_custom_node': 'Nodes',
         }
@@ -171,11 +153,9 @@ class ListBaseDir(ContainerDirectory):
             'dir_person': lambda: BaseDirList(tmdb=True, sync=True).build_basedir('person', group=group),
             'dir_tmdb': lambda: BaseDirList(tmdb=True).build_basedir(group=group, info='dir_tmdb'),
             'dir_sync': lambda: BaseDirList(sync=True).build_basedir(group=group, info='dir_sync'),
-            'dir_tvdb': lambda: BaseDirList(tvdb=True).build_basedir(group=group),
             'dir_random': lambda: BaseDirList(random=True).build_basedir(),
             'dir_calendar_library': lambda: BaseDirList(calendar=ListBaseDir.get_library_calendar_item()).build_basedir('tv'),
             'dir_custom_node': lambda: BaseDirNode(**kwargs).build_basedir(),
-            'dir_tmdb_v4': lambda: BaseDirList(tmdb_v4=True).build_basedir(),
             'dir_settings': lambda: ADDON.openSettings(),
         }
         try:

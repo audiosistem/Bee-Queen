@@ -1,5 +1,5 @@
 import requests
-from .kore import logger, get_property, set_property
+from .kore import logger, get_property, set_property, get_setting
 from .objects import Movie, Series, Episode
 
 list_url = 'https://cinemeta-catalogs.strem.io'
@@ -18,7 +18,8 @@ def _cinemeta(url):
 	if not response.ok: return logger(__name__, f"{response.reason}\n{url}")
 	return response.json()
 
-def external_ids(external_source, external_id, tmdb_api='7b2b174744f774ba48145e2859bb2e2c'):
+def external_ids(external_source, external_id, tmdb_api=''):
+	tmdb_api = tmdb_api or get_setting('tmdb_api')
 	result = None
 	try:
 		base_url = 'https://api.themoviedb.org/3'

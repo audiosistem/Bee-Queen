@@ -18,13 +18,13 @@ class source:
 	scrape_provider = 'aiostreams'
 	def results(self, info):
 		try:
-			self.sources, self.errors = [], []
+			self.sources = []
 			sources_append = self.sources.append
 			if not all(self.auth): return internal_results(self.scrape_provider, self.sources)
-			self.mediatype, title = info.get('mediatype'), info.get('title', '')
-			self.season, self.episode = info.get('season'), info.get('episode')
-			if 'timeout' in info: self.timeout = info['timeout'] - 1
-			self.scrape_results = self.search(info['imdb_id'])
+			title, season, episode = info.get('title'), info.get('season'), info.get('episode')
+			if 'timeout' in info: self.timeout = info['timeout'] + 1
+			media_id = info['imdb_id'] or ('tmdb:%s' % info['tmdb_id'])
+			self.scrape_results = self.search(media_id, season, episode)
 			if not self.scrape_results: return internal_results(self.scrape_provider, self.sources)
 			for item in self.scrape_results:
 				if 'p2p' in item['type']: continue
@@ -39,22 +39,27 @@ class source:
 		internal_results(self.scrape_provider, self.sources)
 		return self.sources
 
-	def search(self, imdb):
-		if self.mediatype == 'movie': params = {'type': 'movie', 'id': '%s' % imdb}
-		else: params = {'type': 'series', 'id': '%s:%s:%s' % (imdb, self.season, self.episode)}
+	def search(self, media_id, season, episode):
+		scrape_results = []
+		if episode: params = {'type': 'series', 'id': '%s:%s:%s' % (media_id, season, episode)}
+		else: params = {'type': 'movie', 'id': '%s' % media_id}
+		params['requiredFields'] = 'parsedFile'
 		try:
-			response = requests.get(self.search_link, params=params, auth=self.auth, timeout=self.timeout)
+			instance_id = int(get_setting('aiostreams_instance', '0'))
+			if instance_id == 1: base_url = get_setting('aio.custom_url')
+			else: base_url = public_instance[instance_id]
+			search_link = '%s/api/v1/search' % base_url.strip().rstrip('/')
+			response = requests.get(search_link, params=params, auth=self.auth, timeout=self.timeout)
 			if not response.ok: response.raise_for_status()
 			results = response.json()['data']
 			self.elapsed = round(response.elapsed.total_seconds(), 3)
 			self.errors = [': '.join(i.values()) for i in results['errors']]
-			return results['results']
+			scrape_results.extend(results['results'])
 		except requests.exceptions.RequestException as e:
 			logger(self.scrape_provider, f"{e}\n{e.request.url}")
+		return scrape_results
 
 	def __init__(self):
-		instance_id = int(get_setting('aiostreams_instance', '0'))
-		if instance_id == 1: base_url = get_setting('aio.custom_url')
-		else: base_url = public_instance[instance_id]
+		self.elapsed = None
+		self.errors = []
 		self.auth = get_setting('aio.username'), get_setting('aio.password')
-		self.search_link = '%s/api/v1/search' % base_url.strip().rstrip('/')

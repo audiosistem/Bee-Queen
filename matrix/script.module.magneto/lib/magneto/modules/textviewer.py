@@ -4,6 +4,7 @@
 
 from magneto.modules.base import BaseDialog
 
+
 class TextViewerXML(BaseDialog):
 	def __init__(self, *args, **kwargs):
 		super(TextViewerXML, self).__init__(self, args)

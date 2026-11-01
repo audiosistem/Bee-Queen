@@ -12,9 +12,7 @@ class RatingsDict(BaseList):
     cached_data_conditions = 'id=? AND expiry>=?'
 
     rating_attribs = (
-        'omdb_ratings',
         'provider_ratings',
-        'tmdb_ratings',
         'imdb_top250',
     )
 
@@ -99,32 +97,16 @@ class RatingsDict(BaseList):
 
     @cached_property
     def imdb_top250(self):
-        try:
-            return {'top250': self.imdb_top250_list.index(try_int(self.tmdb_id)) + 1}  # Must be an int to match
-        except (KeyError, TypeError, IndexError, ValueError):
-            return {}
+        rank = self.get_imdb_top250_rank()
+        return {'top250': rank} if rank else {}
 
-    @cached_property
-    def omdb_ratings(self):
-        if not self.common_apis.omdb_api or not self.imdb_id:
-            return {}
+    def get_imdb_top250_rank(self):
+        if not self.imdb_top250_list:  # No provider supplies a Top 250 list
+            return
         try:
-            return self.common_apis.omdb_api.get_ratings_awards(imdb_id=self.imdb_id) or {}
-        except (KeyError, TypeError, IndexError, ValueError):
-            return {}
-
-    @cached_property
-    def tmdb_ratings(self):
-        data = self.common_apis.tmdb_api.get_response_json(self.tmdb_type, self.tmdb_id)
-        if not data:
-            return {}
-        try:
-            return {
-                'tmdb_rating': int(data['vote_average'] * 10),
-                'tmdb_votes': data['vote_count']
-            }
-        except (KeyError, TypeError, IndexError, ValueError):
-            return {}
+            return self.imdb_top250_list.index(try_int(self.tmdb_id)) + 1  # Must be an int to match
+        except ValueError:
+            return
 
     @cached_property
     def online_data_mapped(self):

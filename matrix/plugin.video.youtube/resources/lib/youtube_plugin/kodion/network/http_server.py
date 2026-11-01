@@ -52,7 +52,8 @@ class HTTPServer(ThreadingMixIn, TCPServer):
     socket_type = socket.SOCK_STREAM
     request_queue_size = 5
     allow_reuse_address = True
-    allow_reuse_port = True
+    # SO_REUSEPORT lets a leaked listener keep accepting on the same port.
+    allow_reuse_port = False
 
     daemon_threads = False
     block_on_close = True
@@ -75,6 +76,13 @@ class HTTPServer(ThreadingMixIn, TCPServer):
                 handler.finish()
 
     def server_close(self):
+        # server_close used to return without closing the listening socket,
+        # which left a dead listener that still filled its accept queue.
+        try:
+            self.socket.close()
+        except (AttributeError, OSError, socket.error):
+            pass
+
         request_handler = self.RequestHandlerClass
         request_handler._close_all = True
         request_handler.timeout = 0

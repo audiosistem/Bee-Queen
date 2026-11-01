@@ -79,7 +79,7 @@ class SourcesResults(BaseDialog):
 				else: filtered_list = [i for i in self.item_list if i.getProperty(filter_type) == filter_value]
 			elif filter_type == 'special':
 				if filter_value == 'title':
-					keywords = dialog.input('Enter Keyword (Comma Separated for Multiple)')
+					keywords = dialog().input('Enter Keyword (Comma Separated for Multiple)')
 					if not keywords: return
 					keywords.replace(' ', '')
 					keywords = keywords.split(',')

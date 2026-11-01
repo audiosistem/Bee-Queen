@@ -82,9 +82,9 @@ def error(message=None, exception=True):
 			else: message = ''
 			message += str(errortype) + ' -> ' + str(errormessage)
 			caller = [filename, name, linenumber]
+			del (type, value, traceback) # So we don't leave our local labels/objects dangling
 		else:
 			caller = None
-		del(type, value, traceback) # So we don't leave our local labels/objects dangling
 		log(msg=message, caller=caller, level=LOGERROR)
 	except Exception as e:
 		import xbmc
@@ -112,10 +112,9 @@ def clear_logFile():
 def view_LogFile(name):
 	try:
 		from magneto.modules.textviewer import TextViewerXML
-		from magneto.modules.control import addonPath
+		from magneto.modules.control import addonPath, notification
 		log_file = joinPath(LOGPATH, '%s.log' % name.lower())
 		if not existsPath(log_file):
-			from magneto.modules.control import notification
 			return notification(message='Log File not found, likely logging is not enabled.')
 		f = open(log_file, 'r', encoding='utf-8', errors='ignore')
 		text = f.read()
@@ -128,31 +127,27 @@ def view_LogFile(name):
 		error()
 
 def upload_LogFile():
-	from magneto.modules.control import notification
-	url = 'https://paste.kodi.tv/'
-	log_file = joinPath(LOGPATH, 'magneto.log')
+	from magneto.modules.control import addon, addonVersion, selectDialog, notification
+	is_magneto_log = addon().getSetting('debug.location') == '1'
+	log_file = joinPath(LOGPATH, 'magneto.log' if is_magneto_log else 'kodi.log')
 	if not existsPath(log_file):
 		return notification(message='Log File not found, likely logging is not enabled.')
+	url = 'https://paste.kodi.tv/'
 	try:
 		import requests
-		from magneto.modules.control import addonVersion, selectDialog
-		f = open(log_file, 'r', encoding='utf-8', errors='ignore')
-		text = f.read()
-		f.close()
-		UserAgent = 'script.kodi.loguploader: 1.0' #'Magneto %s' % addonVersion()
-		response = requests.post(url + 'documents', data=text.encode('utf-8', errors='ignore'), headers={'User-Agent': UserAgent})
-		# log('log_response: ' + str(response))
+		headers = {'User-Agent': 'script.kodi.loguploader: 1.0'} #'Magneto %s' % addonVersion()
+		with open(log_file, 'rb') as file:
+			response = requests.post(url + 'documents', data=file, headers=headers, timeout=7)
 		if 'key' in response.json():
 			result = url + response.json()['key']
 			log('Magneto log file uploaded to: %s' % result)
 			from sys import platform as sys_platform
 			supported_platform = any(value in sys_platform for value in ('win32', 'linux2'))
-			highlight_color = 'gold'
+			highlight_color = 'firebrick'
 			list = [('[COLOR %s]url:[/COLOR]  %s' % (highlight_color, str(result)), str(result))]
 			if supported_platform: list += [('[COLOR %s]  -- Copy url To Clipboard[/COLOR]' % highlight_color, ' ')]
 			select = selectDialog([i[0] for i in list], 'Magneto log file uploaded to:')
 			if 'Copy url To Clipboard' in list[select][0]:
-				from magneto.modules.source_utils import copy2clip
 				copy2clip(list[select - 1][1])
 		elif 'message' in response.json():
 			notification(message='Magneto Log upload failed: %s' % str(response.json()['message']))
@@ -172,3 +167,29 @@ def normalize(msg):
 	except:
 		error()
 		return msg
+
+def copy2clip(txt):
+	from sys import platform as sys_platform
+	platform = sys_platform
+	if platform == "win32":
+		try:
+			from subprocess import check_call
+			# cmd = "echo " + txt.strip() + "|clip"
+			cmd = "echo " + txt.replace('&', '^&').strip() + "|clip" # "&" is a command seperator
+			return check_call(cmd, shell=True)
+		except:
+			error('Windows: Failure to copy to clipboard')
+	elif platform == "darwin":
+		try:
+			from subprocess import check_call
+			cmd = "echo " + txt.strip() + "|pbcopy"
+			return check_call(cmd, shell=True)
+		except:
+			error('Mac: Failure to copy to clipboard')
+	elif platform == "linux":
+		try:
+			from subprocess import Popen, PIPE
+			p = Popen(["xsel", "-pi"], stdin=PIPE)
+			p.communicate(input=txt)
+		except:
+			error('Linux: Failure to copy to clipboard')

@@ -62,7 +62,7 @@ def install_json():
 	profile_path = 'special://profile/addon_data/'
 	heading = '(%s) Player Destination:' % kore.addon_info('name')
 	folders = [i for i in kore.list_dirs(profile_path)[0]]
-	selection = kore.dialog.select(heading, folders)
+	selection = kore.dialog().select(heading, folders)
 	if selection < 0: return
 	selection = folders[selection]
 	destination = '%s%s/players/' % (profile_path, selection)
@@ -85,7 +85,7 @@ def color_pick(params):
 	else: preselect = -1
 	heading = params['setting'].split('.')[-1].replace('_', ' ').title()
 	items_list = [f"[COLOR {i}]{i}[/COLOR]" for i in color_names]
-	selection = kore.dialog.select(heading, items_list, preselect=preselect)
+	selection = kore.dialog().select(heading, items_list, preselect=preselect)
 	if selection < 0: return
 	color = color_names[selection]
 	display_color, display_value = params['setting'].replace('highlight', 'display'), colors[color]

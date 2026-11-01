@@ -1,4 +1,4 @@
-# Sync providers (interface version 3)
+# Sync providers (interface version 4)
 
 TMDbHelper discovers enabled, installed `script.module.tmdbhelper.sync.*` addons.
 Each addon exposes a named Python package inside `resources/lib`. Derive its
@@ -9,6 +9,65 @@ The loader imports the package directly from its installed path without changing
 `sys.path`. Package names and locations come from the addon ID; the loader has
 no built-in service names or provider imports. Relative and wildcard imports
 are not permitted.
+
+TMDb is an internal provider in `tmdbhelper.lib.sync.providers.tmdb`, registered
+directly by the registry and validated against the same provider interface.
+It is always available without addon discovery, installation, or account
+authorization. Its ratings contribution can be disabled and reordered separately.
+The external-addon catalogue and loader do not install or import this provider.
+
+With stored TMDb login credentials, the same internal provider also declares
+`SyncWatchlist` and the `watchlist` action. Without credentials it declares neither;
+provider discovery never starts interactive authentication. Select TMDb as the
+watchlist source through the existing sync selector. Reads and writes share the
+provider's cached `TMDbUser` client, independently of its public ratings client.
+Watchlists refresh every ten minutes because TMDb has no last-activities endpoint.
+Only complete paginated snapshots replace cached membership; failed requests
+preserve it, while successful empty responses clear it. Movie and show snapshots
+remain separate; seasons and episodes have no TMDb watchlist entries.
+
+Provider-owned mapping stores source order in `watchlist_rank` and uses local
+first-seen UTC dates for `watchlist_listed_at`, since TMDb does not return added-at
+timestamps. Retained entries keep their first-seen dates; observed removals clear
+them. These dates do not represent the original dates added on TMDb.
+Saved `tmdb_v4_watchlist` directories resolve to `sync_watchlist`, and explicit
+`sync_tmdb,sync_type=watchlist` calls delegate to the selected sync watchlist action.
+Successful watchlist actions use the standard provider invalidator before refreshing lists.
+
+TMDb registers its account browsing routes through `list_routes`. Its root folder
+is contributed through `directory_item_class` only when logged in, replacing the
+old Users folder. Recommendations, Favourites, Rated, Your Lists, and custom-list
+contents use provider-owned containers, properties, and mappers with the existing
+list finalisation pipeline. Account reads check stored credentials before using
+the user client and do not prompt for login. Routes remain registered when logged
+out so saved links safely return empty lists. The `dir_tmdb_v4` and remaining
+`tmdb_v4_*` account routes redirect to the matching `tmdb_*` routes.
+
+The provider's `TMDbUserLists` client owns pagination and is shared by watchlist
+sync, account browsing, library monitoring, and custom-list action enumeration.
+Monitoring is independent of all sync selections. The supplier uses
+`__api_tmdb__` with `watchlist/movie`, `watchlist/tv`, the corresponding favourites,
+rated and recommendation references, and `list/<id>` for owned custom lists.
+Its movie/show records include TMDb IDs and a null IMDb ID for the existing library
+builder. It retrieves complete lists before returning any contents; failed pages
+return no snapshot. No library writes or setup prompts occur in the supplier.
+
+TMDb registers `tmdbuserlist`, `tmdbrating`, and `tmdbfavorites` as service actions
+while logged in, independently of the watchlist selection. They appear directly
+in Sync Options with the TMDb service name and share the provider's user client.
+The old TMDb User Options submenu and its setting are removed. `sync_tmdb` remains
+a compatibility alias: `userlist`, `rating`, and `favorite` select the corresponding
+TMDb service action, while no selector opens Sync Options. Playback rating prompts
+explicitly select `tmdbrating`. The existing personal TMDb rating cache and request
+payloads remain in use; no shared Trakt sync columns or database schema are changed.
+
+OMDb is also internal, in `tmdbhelper.lib.sync.providers.omdb`, and uses the same
+validation and registration pipeline. Its provider-owned authorization check
+requires the existing `omdb_apikey` setting. With a key configured, OMDb appears
+in Ratings Providers and Priority and defaults to enabled unless previously
+disabled. Without a key it is not registered; its saved priority and disabled
+state are retained. Internal-provider availability is refreshed per registry.
+OMDb requires no separate addon installation or module enablement.
 
 Provider addons follow this layout:
 
@@ -48,11 +107,13 @@ Package only the individual provider folder when distributing an addon.
 
 Providers declare:
 
-- `interface_version = 3` explicitly on the Provider class.
+- `interface_version = 4` explicitly on the Provider class. See
+  [Interface versions](#interface-versions) for the supported range and policy.
 - `sync_classes`: sync-type names from `SYNC_FEATURES` to DataType subclasses,
   including class factories derived from DataType. Each declares a non-empty
   `method` string so invalidation can identify its activity timestamps.
-- `action_classes`: action names from `ACTION_FEATURES` to action classes.
+- `action_classes`: action names from `ACTION_FEATURES` to action classes that
+  inherit `tmdbhelper.lib.script.sync.item.ItemSync`.
 - `service_sync_classes`: optional account-data sync registrations independent of
   provider selections. `SyncRatings` and `SyncFavorites` inherit ServiceDataType
   and declare a non-empty cache `method`, like other sync classes. They receive
@@ -60,7 +121,8 @@ Providers declare:
   `invalidate_cache(provider)` class method clears module-owned service caches.
   Registering these exposes `service_sync`, without adding provider selectors.
 - `service_action_classes`: optional independent service action names mapped to
-  callable action classes. Names start with the provider ID and must be unique
+  action classes that inherit `tmdbhelper.lib.script.sync.item.ItemSync`.
+  Names start with the provider ID and must be unique
   across providers and core service actions. This exposes `service_actions`.
   Every authorized provider contributes these actions regardless of sync selections.
   The dispatcher assigns `sync_provider` and the caller's `syncdata` before
@@ -70,21 +132,27 @@ Providers declare:
   client is constructed. The default is a no-op for existing providers.
 - `getter_classes`: `movies_to_watch`, `shows_to_watch`, and `shows_in_progress`
   getters for watched/progress list behaviour. All three are required when the
-  provider declares the watched capability; every getter must be callable.
+  provider declares the watched capability. Each getter inherits
+  `tmdbhelper.lib.sync.datasync.SyncDataGetter` and implements `get_items()` and
+  `get_sync_succeeded()`; inheriting `SyncDataGetterAll` or one of its subclasses
+  provides both. See [Synced data getters](#synced-data-getters).
 - `ratings_classes`: optional media-type names (`movie`, `tvshow`, `season`,
   `episode`) mapped to RatingsSupplier subclasses. Each implements
   `get_ratings()`; registering any supplies the independent `ratings` capability.
 - `imdb_top250_classes`: optional `movie` / `tvshow` names mapped to
   IMDbTop250Supplier subclasses implementing `get_items()`. Each media type must
   also have a ratings supplier. Registering any supplies the `imdb_top250`
-  capability; empty defaults preserve existing interface-version-3 providers.
+  capability; the empty default keeps providers without it valid.
 - `stats_class`: an optional StatsSupplier subclass implementing `get_items()`.
-  Registering it exposes the independently selected `stats` capability. Existing
-  providers inherit a `None` default and retain interface-version-3 compatibility.
+  Registering it exposes the independently selected `stats` capability. Providers
+  without it inherit a `None` default.
 - `monitor_lists_class`: an optional MonitorListsSupplier subclass implementing
   `get_lists()` and `get_list_items(list_slug)`. This supplies the independent
   `monitor_lists` capability for library monitoring and list retrieval.
 - `scrobbler_class`: an optional ScrobbleRequest subclass for the scrobbling feature.
+  Core calls `scrobble(method)`, which returns a `ScrobbleResult`. Scrobblers using
+  the inherited `scrobble()` implement `get_scrobbler_item()` and
+  `send_request(method, payload)`; scrobblers that override `scrobble()` do not.
 - `directory_item_class`: an optional BaseDirItem subclass contributing a root
   folder. Its `params['info']` must name one of the provider's `list_routes`.
 - `list_routes`: optional route names mapped to `module_name` / `import_attr`
@@ -92,7 +160,7 @@ Providers declare:
   starts with `<provider_id>_`; duplicate routes are rejected. The imported
   objects are directory container classes with the existing `(handle,
   paramstring, **params)` interface. Registering routes exposes the `lists`
-  capability. Empty defaults keep existing interface-version-3 providers valid.
+  capability. The empty default keeps providers without lists valid.
 - `is_authorized()` and `get_last_activities()`: provider authentication and activity
   timestamps grouped by plural item type and activity key.
 
@@ -100,6 +168,19 @@ Providers declare:
 `(syncdata, item_type, provider)` and provider-specific getters receive
 `(syncdata, provider)`. Forward that provider into nested factories and snapshots;
 do not construct another `Provider()` inside sync implementations or getters.
+
+`DataType.sync()` returns true when its data is current or a refresh succeeds;
+failed or throttled refreshes do not report success. `SyncData.sync()` refreshes
+every requested sync type and returns whether all prerequisites are current.
+Unsupported fields of an authorized provider are intentionally empty; a missing
+or unauthorized provider cannot supply fresh prerequisites.
+`SyncDataGetter.sync_succeeded` caches this outcome for one configured getter.
+Ordinary `.items` reads retain access to cached data after a failed refresh.
+Provider `shows_in_progress` wrappers expose their parent getter's outcome and
+check any required filter requests, such as Trakt's optional calendar lookup.
+Derived next-episode calculations require successful prerequisites and complete
+per-show responses before replacing cached results. They return `None` on
+failure and an empty collection only for a successful empty result.
 
 The action dispatcher supplies `syncdata`, `sync_provider`, and `sync_feature`
 before accessing action properties. Authorization, reads, writes, and invalidation
@@ -218,8 +299,8 @@ lists are not deleted by selection changes or disabled-feature cleanup.
 Directory watched/playback pre-sync reaches this cleanup even when the selected
 provider is unavailable; cached item-details reads remain free of provider queries.
 
-There are no built-in fallback providers, old setting aliases, or automatic
-selections. Opening an unconfigured provider sync list or a list with an unavailable
+There are no built-in fallback sync providers, old setting aliases, or automatic
+sync selections. Opening an unconfigured provider sync list or a list with an unavailable
 selected provider offers setup, including from widgets. Installation and enabling
 use Kodi's built-in
 `InstallAddon` and `EnableAddon` commands, followed by a fresh discovery check.
@@ -247,7 +328,10 @@ and prompt state after acquiring it. A prompt-generation property prevents
 already-queued widget requests from repeating the same setup attempt.
 
 `SyncProviderOnboarding(addon_id).configure()` installs or enables a catalogue
-provider and offers `SyncProviderDefaultSelection(provider)`. The dialog offers
+provider and offers `SyncProviderDefaultSelection(provider)` when it supports
+selectable sync features. Providers without these features, such as TVDb and
+Gemini, skip configuration and leave existing sync selections unchanged.
+The dialog offers
 Default, Cancel, and Custom, with Default focused. Default replaces every feature's
 provider selection, including `never`, with the selected provider for supported
 features and the empty, unconfigured state for unsupported features. Cancel
@@ -268,7 +352,8 @@ The **Install sync provider** setting below **Clear sync** opens the complete
 trusted catalogue, including installed and enabled providers. Missing providers
 have an `(install)` suffix; disabled providers have an `(enable)` suffix. Selecting
 one runs the same onboarding flow: install/enable as needed, then choose Default,
-Cancel, or Custom. The Custom multiselect shows its supported features.
+Cancel, or Custom when sync features are supported. The Custom multiselect shows
+its supported features.
 Existing assignments to that provider are
 preselected. Unchecking one resets its setting to the empty, unconfigured state;
 unchecked features assigned to other providers retain their settings.
@@ -280,16 +365,26 @@ setting writes while the addon settings dialog is open. Settings reopen at the
 original provider control afterward, including when selection is cancelled.
 Provider setup launched from lists or other scripts does not reopen settings.
 
-Duplicate IDs, incompatible interfaces, and broken entry points produce explicit
-errors. Discovery and provider imports are scoped to a Python invocation;
+Duplicate IDs produce explicit errors. A provider addon that fails to import or
+validate, such as one with an unsupported interface version or one partway
+through an update, is logged and treated as temporarily unavailable rather than
+raising into lists. Selected-provider lookups return no provider, full listings
+skip it, and its synced data is kept rather than cleared as for a removed
+provider. Each registry tries a failed addon once, so the next invocation loads
+it again. Selected-provider lookups load only the provider's own addon when its
+addon ID is `script.module.tmdbhelper.sync.<provider_id>`; other providers are
+found by loading every discovered provider. Listing all providers loads the rest
+and applies the duplicate checks. Each provider is loaded once per registry.
+Discovery and provider imports are scoped to a Python invocation;
 setup refreshes discovery after installation or enabling. Updating already-loaded
 provider code still requires a new invocation.
 
-Provider addons are maintained separately from the plugin. Install each provider
+External provider addons are maintained separately from the plugin. Install each
+external provider
 in its own `script.module.tmdbhelper.sync.<service>` folder alongside
 `plugin.video.themoviedb.helper` in Kodi's addons directory. The plugin contains
-the shared interfaces and registry; provider implementations and artwork belong
-in the standalone modules.
+the shared interfaces, registry, and internal TMDb/OMDb providers; external provider
+implementations and artwork belong in the standalone modules.
 
 Install the provider-enabled TMDbHelper build together with matching provider
 versions. The dependency version alone cannot distinguish a development checkout
@@ -309,6 +404,44 @@ scrobbling another source writes to the matching library item only when Kodi is
 one of the selected scrobblers. See the standalone provider's README for identity
 matching, date limitations, and non-library tracking findings.
 
+
+## Synced data getters
+
+`SyncDataGetter` is the interface that core reads from every synced data getter,
+including those providers supply through `getter_classes`. Getters receive
+`(syncdata, provider)`. Callers set `additional_keys` before reading the cached
+`items` and `sync_succeeded` properties, which call `get_items()` and
+`get_sync_succeeded()`. Both methods raise `NotImplementedError` on the base class,
+and the loader rejects provider getters that do not override them.
+`SyncDataGetterAll` implements both through the sync database; wrappers that
+filter another getter, such as `shows_in_progress`, inherit `SyncDataGetter` and
+derive both values from their parent getter.
+
+## Interface versions
+
+`SyncProviderLoader` accepts providers whose `interface_version` lies between its
+`minimum_interface_version` and its current `interface_version`, inclusive.
+Each class that a provider supplies inherits a core base class that defines its
+interface, and the loader checks the inheritance and required overrides at load.
+Core reads only the attributes and methods that these base classes declare.
+
+When core starts relying on something new from provider-supplied classes:
+
+- Prefer adding it to the base class with a default that preserves the previous
+  behaviour. Existing providers keep working, so no version change is needed.
+- When no such default exists, add it to the base class as a method raising
+  `NotImplementedError`, add a loader check, and increase both the current and
+  minimum interface versions. Older providers are then rejected at load and are
+  unavailable until they update.
+- When a provider relies on new core behaviour, increase the minimum
+  `plugin.video.themoviedb.helper` version imported by its `addon.xml`. Kodi
+  enforces that direction, so the provider cannot run on an older core.
+- Record each interface version below.
+
+| Version | Changes |
+| --- | --- |
+| 4 | Getters inherit `SyncDataGetter` and implement `get_items()` and `get_sync_succeeded()`. Actions and service actions inherit `ItemSync`. Scrobblers inherit `ScrobbleRequest`; those using its `scrobble()` implement `get_scrobbler_item()` and `send_request()`. The loader accepts a version range. |
+| 3 | Previous interface: getters, actions and scrobblers only had to be callable. |
 
 ## Provider list directories
 
@@ -356,8 +489,11 @@ In Sync settings, the Ratings group contains Providers and Priority. Providers
 uses a multiselect to enable/disable installed suppliers. Priority uses select
 dialogs to choose a provider and move it up/down. Save applies the order;
 Cancel leaves it unchanged. Each control preserves the other's configuration.
-Enabled Kodi modules with the ratings capability appear independently of
-sync-provider selections.
+Enabled Kodi modules with the ratings capability and available internal providers
+appear independently of sync-provider selections. TMDb and OMDb supply movie and
+TV-show ratings; season and episode suppliers are unchanged. OMDb uses the existing
+API client and source mapper, preserving its ratings and awards fields. Its
+supplier requires an IMDb ID and a configured API key before requesting data.
 New suppliers default to enabled and follow saved entries in alphabetical order;
 unavailable providers' saved order and disabled state are retained.
 
@@ -381,10 +517,13 @@ the configured order, with the first provider winning overlapping non-missing
 fields. `None` and empty strings are missing; zero ratings and vote counts are
 valid. Lower providers fill missing fields.
 
-Provider results occupy the former MDbList position in `rating_attribs`: after
-OMDb and before direct Trakt/TMDb sources. Existing built-in precedence and IMDb
-Top 250 output format remain unchanged. MDbList's module supplies all four media
-types using its module-owned API client's rating methods; no MDbList-specific
+Provider results precede IMDb Top 250 in `rating_attribs`. TMDb and OMDb retrieval
+belong to their internal suppliers, with no direct fallback in the ratings
+dictionaries. Configured provider priority determines overlapping fields across
+all suppliers, including OMDb ratings and awards. Lower-priority providers fill
+missing fields.
+The IMDb Top 250 output format remains unchanged. MDbList's module supplies all
+four media types using its module-owned API client's rating methods; no MDbList-specific
 branch remains in the ratings dictionaries.
 
 ## Account stats
@@ -493,3 +632,45 @@ destination to verify persistence, and then clears the core value. An existing
 module key takes precedence. An empty legacy value makes subsequent loads a
 no-op; failed writes preserve the source for retry. The hidden declaration is
 retained solely so Kodi can still retrieve values from older installations.
+
+## Browsing-only providers
+
+`script.module.tmdbhelper.sync.tvdb` and
+`script.module.tmdbhelper.sync.gemini` use interface version 4 with only the
+`lists` capability. They own their API clients, settings, artwork, root entries,
+directory properties and output mappers. Their script entry points use
+`open_sync_provider_settings` to open API settings without assigning sync
+features. Core has no reverse dependencies on these optional modules.
+
+TVDb supplies awards and genres through `tvdb_directory`, `tvdb_awards`,
+`tvdb_award_categories`, `tvdb_award_category`, `tvdb_genres` and `tvdb_genre`.
+Gemini supplies `gemini_recommendations`. Core redirects legacy `dir_tvdb*`
+and `gemini` routes to those names, preserving existing widget parameters and
+the normal missing-provider install/enable flow.
+
+Before creating API clients, Gemini migrates the legacy core API key and TVDb
+migrates the legacy bearer token into module-owned storage. Migration verifies
+the destination before clearing the legacy value and preserves existing module
+credentials. TVDb retains its bundled key and supports an optional personal key.
+The local awards database and its metadata consumers remain in core; browsing
+does not change item-details database ownership or the finalisation pipeline.
+
+## Provider module manager
+
+Run `RunScript(plugin.video.themoviedb.helper,manage_provider_modules)` to manage
+installed provider modules, including disabled third-party modules, and install
+missing modules from the trusted catalogue. Selecting an entry installs, enables,
+or disables it; the dialog refreshes after each action. The internal TMDb provider
+is not an external module and is not listed.
+
+Installing or enabling a module offers to make it the default sync provider.
+Accepting replaces watched, watchlist, collection, and stats selections, clearing
+unsupported selections. Ratings and scrobbling have separate prompts when
+supported. Ratings priority and other scrobbling providers are preserved.
+Providers offering only browsing do not receive these feature prompts.
+
+Disabling requires OK/Cancel confirmation showing the module's active sync,
+ratings, and scrobbling assignments. After Kodi confirms the module is disabled,
+those assignments are removed through the existing settings interfaces. Cancelling
+leaves the module and its configuration unchanged. Ratings cache contents retain
+their normal expiry behaviour, as with the ratings-provider selector.

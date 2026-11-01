@@ -1,5 +1,4 @@
-import sys
 
 if __name__ == '__main__':
-	from entry import routing
-	routing(sys)
+	from magneto.modules.entry import routing
+	routing()

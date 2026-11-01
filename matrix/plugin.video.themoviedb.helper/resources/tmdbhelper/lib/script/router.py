@@ -74,6 +74,8 @@ class Script(object):
             lambda **kwargs: importmodule('tmdbhelper.lib.script.method.lists', 'sort_list')(**kwargs),
         'sort_mdblist':
             lambda **kwargs: importmodule('tmdbhelper.lib.script.method.mdblist', 'sort_mdblist')(**kwargs),
+        'like_mdblist':
+            lambda **kwargs: importmodule('tmdbhelper.lib.script.method.mdblist', 'like_mdblist')(**kwargs),
         'invalidate_sync':
             lambda **kwargs: importmodule('tmdbhelper.lib.script.method.sync', 'invalidate_sync')(**kwargs),
         'invalidate_trakt_sync':
@@ -110,6 +112,8 @@ class Script(object):
             lambda **kwargs: importmodule('tmdbhelper.lib.script.method.sync_provider', 'select_sync_provider')(**kwargs),
         'install_sync_provider':
             lambda **kwargs: importmodule('tmdbhelper.lib.script.method.sync_provider', 'install_sync_provider')(**kwargs),
+        'manage_provider_modules':
+            lambda **kwargs: importmodule('tmdbhelper.lib.script.method.sync_provider', 'manage_provider_modules')(**kwargs),
         'open_sync_provider_settings':
             lambda **kwargs: importmodule('tmdbhelper.lib.script.method.sync_provider', 'open_sync_provider_settings')(**kwargs),
         'provider_allowlist':
@@ -172,6 +176,8 @@ class Script(object):
             lambda **kwargs: importmodule('tmdbhelper.lib.script.method.maintenance', 'recache_kodidb')(confirmation=True),
         'restart_service':
             lambda **kwargs: importmodule('tmdbhelper.lib.monitor.service', 'restart_service_monitor')(),
+        'details_service':
+            lambda **kwargs: importmodule('tmdbhelper.lib.items.database.details.service', 'DetailsService')().run(),
         'test_func':
             lambda **kwargs: importmodule('tmdbhelper.lib.script.method.test', 'test_func')(**kwargs),
         'open_settings':

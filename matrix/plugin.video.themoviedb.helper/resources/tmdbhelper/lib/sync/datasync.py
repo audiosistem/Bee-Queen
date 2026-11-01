@@ -34,18 +34,40 @@ class SyncItemDetailsDatabase(ItemDetailsDatabase):
         return result[0]
 
 
-class SyncDataGetterAll:
+class SyncDataGetter:
+    """Interface for synced data getters, including those providers supply as getter_classes.
+    Callers set additional_keys before reading items or sync_succeeded.
+    Subclasses implement get_items() and get_sync_succeeded()."""
+
+    additional_keys = ()  # Additional keys to retrieve values for
+
+    def __init__(self, instance_syncdata, provider=None):
+        self.instance_syncdata = instance_syncdata
+        self.provider = provider
+
+    @cached_property
+    def items(self):
+        return self.get_items()
+
+    def get_items(self):
+        raise NotImplementedError
+
+    @cached_property
+    def sync_succeeded(self):
+        """Whether the synced data that items are read from is current."""
+        return self.get_sync_succeeded()
+
+    def get_sync_succeeded(self):
+        raise NotImplementedError
+
+
+class SyncDataGetterAll(SyncDataGetter):
 
     operator = 'OR'
     query_clauses = ('item_type=?', )  # WHERE {query_clauses}
     query_values = ('', )  # WHERE {query_clauses}={query_values}
     clause_keys = ()  # WHERE {query_clauses} AND ({clause_key} IS NOT NULL {operator} {clause_key} IS NOT NULL)
-    additional_keys = ()  # Additional keys to retrieve values for
     query_value_item_argx = 0  # Query value to use as sync item_type (normally item_type query is first ie 0 index)
-
-    def __init__(self, instance_syncdata, provider=None):
-        self.instance_syncdata = instance_syncdata
-        self.provider = provider
 
     @cached_property
     def item_type(self):
@@ -83,12 +105,11 @@ class SyncDataGetterAll:
     def get_keys(self):
         return (*(self.base_keys or ()), *(self.clause_keys or ()), *(self.additional_keys or ()), )
 
-    @cached_property
-    def items(self):
-        return self.get_items()
+    def get_sync_succeeded(self):
+        return self.instance_syncdata.sync(self.item_type, self.keys)
 
     def get_items(self):
-        self.instance_syncdata.sync(self.item_type, self.keys)
+        self.sync_succeeded
         return self.instance_syncdata.cache.get_list_values(keys=self.keys, values=self.query_values, conditions=self.clause)
 
 
@@ -314,13 +335,14 @@ class SyncDataGetterUnHiddenShowEpisodesUpNext(SyncDataGetterDroppedWatchedUnHid
         return ('episode', self.tmdb_id, )
 
 
-class SyncDataGetterEmpty:
-    items = ()
+class SyncDataGetterEmpty(SyncDataGetter):
     keys = ()
-    additional_keys = ()
 
-    def __init__(self, instance_syncdata):
-        self.instance_syncdata = instance_syncdata
+    def get_items(self):
+        return ()
+
+    def get_sync_succeeded(self):
+        return False
 
 
 def get_provider_getter(instance_syncdata, name, fallback_class):
@@ -535,14 +557,33 @@ class SyncData(SyncDataGetters):
         return data[0] if data else None
 
     def sync(self, item_type, keys, forced=False):
+        """Refresh every requested type, returning whether its data is current."""
         from tmdbhelper.lib.sync.providers.services import SERVICE_SYNC_FEATURES
         sync_types = {self.routes[key] for key in keys if self.routes.get(key)}
+        succeeded = True
         for sync_type in sync_types:
             sync_item = self.create_sync(sync_type, item_type)
             if sync_item is not None:
-                sync_item.sync(forced=forced)
-            elif sync_type not in SERVICE_SYNC_FEATURES and sync_type not in self.disabled_sync_types:
+                if not sync_item.sync(forced=forced):
+                    succeeded = False
+                continue
+            if (
+                    sync_type not in SERVICE_SYNC_FEATURES
+                    and sync_type not in self.disabled_sync_types
+                    and not self.is_sync_provider_unavailable(sync_type)):
                 self.clear_disabled_sync_type(sync_type)
+            # An authorized provider's unsupported fields are intentionally empty.
+            # Missing or unauthorized providers cannot supply fresh prerequisites.
+            if self.get_sync_provider(sync_type) is None:
+                succeeded = False
+        return succeeded
+
+    def is_sync_provider_unavailable(self, sync_type):
+        """Whether the selected provider is installed but cannot load, such as during an update.
+        Its synced data is kept for when it loads again."""
+        from tmdbhelper.lib.sync.providers.features import SYNC_FEATURES
+        provider_id = self.registry.get_selected_provider_id(SYNC_FEATURES[sync_type])
+        return bool(provider_id) and self.registry.is_provider_unavailable(provider_id)
 
     def clear_disabled_sync_type(self, sync_type):
         from tmdbhelper.lib.sync.providers.features import SYNC_FEATURES

@@ -1,3 +1,13 @@
+## v7.4.4rw+unofficial.3
+### Fixed
+- Exclude Android VR adaptive streams. The Pico profile refresh does not restore usable DASH URLs; the client remains for auth and watch-history reporting
+- Close the HTTP proxy listening socket on shutdown and stop sharing the port with a leaked listener
+- Keep DRC audio in its own AdaptationSet unless Allow automatic DRC is enabled
+- Persist bookmark deletes and memory-only storage updates instead of dropping them
+- Stop a finished clip from skipping the next playlist item, and start Play from end on the last item
+- Show the API-key requirement text instead of the raw string id
+- Resolve channel live URLs without an undefined CHANNEL_ID name
+
 ## v7.4.4+unofficial.2
 ### Fixed
 - Fix refresh Android VR client profile #1482

@@ -1,13 +1,9 @@
 from tmdbhelper.lib.api.contains import CommonContainerAPIs
-from tmdbhelper.lib.items.database.baseitem_factories.factory import BaseItemFactory
 from jurialmunkey.ftools import cached_property
 from tmdbhelper.lib.items.listitem import ListItem
-from tmdbhelper.lib.addon.plugin import convert_type
-from tmdbhelper.lib.items.database.database import ItemDetailsDatabase
-from tmdbhelper.lib.files.dbfunc import DatabaseConnection
-from tmdbhelper.lib.addon.logger import TimerList
-from tmdbhelper.lib.addon.thread import ParallelThread
-import itertools
+from tmdbhelper.lib.addon.logger import kodi_log
+from tmdbhelper.lib.items.database.details.client import DetailsClient
+from tmdbhelper.lib.items.database.details.request import DetailsRequest
 
 
 class ListItemConfig:
@@ -31,28 +27,35 @@ class ListItemConfig:
             return False
         if not self.tmdb_type:
             return False
+        if not self.request:
+            return False
         return True
 
     @cached_property
-    def listitem_cacher(self):
-        if not self.is_cacheable:
-            return
-        return ListItemCacher(
-            self.parent,
-            self.tmdb_type,
-            self.tmdb_id,
-            self.season,
-            self.episode
-        )
+    def request(self):
+        return self.get_request()
+
+    def get_request(self):
+        # One malformed item must not prevent details for the rest of the list.
+        try:
+            return self.parent.get_request(self.tmdb_type, self.tmdb_id, self.season, self.episode)
+        except ValueError as exc:
+            kodi_log(f'Item details skipped for {self.mediatype} {self.tmdb_id}: {exc}', 1)
 
     @cached_property
     def listitem(self):
         return ListItem(**self.item)
 
-    def get_configured_listitem(self, data):
+    @property
+    def sent_request(self):
+        """The details request, or None when the item is sent only for Kodi library matching."""
+        return self.request if self.is_cacheable else None
+
+    def get_configured_listitem(self, merged):
+        """Apply the details that the item detail service merged into this item's data."""
         if self.next_page and not self.parent.pagination:
             return
-        self.listitem.set_details(data, override=True, reverse_artwork=True) if data else None
+        self.listitem.set_merged_details(merged) if merged else None
         return self.listitem
 
     @cached_property
@@ -105,172 +108,30 @@ class ListItemConfig:
             return
         return self.listitem.infolabels.get('episode', 0)
 
-    @cached_property
-    def db_cache(self):
-        if not self.baseitem_db_cache_func:
-            return
-        return self.baseitem_db_cache_func(self.mediatype, self.tmdb_id, self.season, self.episode)
 
-    def get_cached_item(self, connection):
-        if not self.listitem_cacher:
-            return
-        return self.listitem_cacher.get_cached_item(connection)
-
-    def try_queued_data(self):
-        if not self.listitem_cacher:
-            return
-        return self.listitem_cacher.try_queued_data()
-
-
-class ListItemCacher:
-    def __init__(self, parent, tmdb_type, tmdb_id, season=None, episode=None, listitem_config=None):
-        if parent.__class__.__name__ != 'ListItemDetails':
-            raise Exception(f'Requires ListItemDetails parent but {parent.__class__.__name__} given')
-        self.parent = parent  # ListItemDetails instance
-        self.tmdb_type = tmdb_type
-        self.tmdb_id = tmdb_id
-        self.season = season
-        self.episode = episode
-        self.common_apis = self.parent.common_apis
-        self.extendedinfo = self.parent.extendedinfo
-        self.cache = self.parent.cache
-        self.listitem_config = listitem_config
-
-    @cached_property
-    def mediatype(self):
-        return convert_type(self.tmdb_type, output='dbtype', season=self.season, episode=self.episode)
-
-    @cached_property
-    def baseitem_db_cache(self):
-        try:
-            baseitem_db_cache = BaseItemFactory(self.mediatype)
-            baseitem_db_cache.tmdb_id = self.tmdb_id
-            baseitem_db_cache.season = self.season
-            baseitem_db_cache.episode = self.episode
-            baseitem_db_cache.common_apis = self.common_apis
-            baseitem_db_cache.extendedinfo = self.extendedinfo
-            baseitem_db_cache.cache = self.cache
-        except(AttributeError, TypeError, KeyError):
-            return
-
-        return baseitem_db_cache
-
-    def add_item_details(self, data):
-        try:
-            data['infoproperties']['dbtype'] = self.mediatype
-            data['infoproperties']['tmdb_type'] = self.tmdb_type
-            data['infoproperties']['tmdb_id'] = self.tmdb_id
-            data['label'] = data['infolabels']['title']
-        except(AttributeError, TypeError, KeyError):
-            pass
-        return data
-
-    def get_item(self, connection, cache_refresh=None, cache_translations=False):
-        if not self.baseitem_db_cache:
-            return
-        self.baseitem_db_cache.connection = connection
-        self.baseitem_db_cache.cache_refresh = cache_refresh
-        self.baseitem_db_cache.cache_translations = cache_translations
-        return self.add_item_details(self.baseitem_db_cache.data)
-
-    def get_cached_item(self, connection):
-        if not self.baseitem_db_cache:
-            return
-        self.baseitem_db_cache.connection = connection
-        self.baseitem_db_cache.cache_refresh = self.parent.cache_refresh
-        self.baseitem_db_cache.cache_translations = self.parent.cache_translations
-        return self.add_item_details(self.baseitem_db_cache.get_cached_data())
-
-    def try_queued_data(self):
-        if not self.baseitem_db_cache:
-            return
-        # self.baseitem_db_cache.connection = connection
-        self.baseitem_db_cache.cache_refresh = (
-            self.parent.cache_refresh if self.parent.cache_refresh == 'basic'
-            else None
-        )
-        self.baseitem_db_cache.cache_translations = self.parent.cache_translations
-        return self.baseitem_db_cache.try_cached_data(return_queue=True)
-
-
-class ListItemThread:
+class ListItemBatch:
     def __init__(self, parent, items):
-        if parent.__class__.__name__ != 'ListItemDetails':
-            raise Exception(f'Requires ListItemDetails parent but {parent.__class__.__name__} given')
-        self.parent = parent  # ListItemDetails instance
-        self.items = items
-        self.connection = self.parent.connection
-        self.log_timers = self.parent.log_timers
-        self.timer_lists = self.parent.timer_lists
+        self.parent = parent
+        self.items = [ListItemConfig(parent, item) for item in items]
 
     @cached_property
-    def cached_data(self):
-        with TimerList(self.timer_lists, ' - cached', log_threshold=0.001, logging=self.log_timers):
-            with self.connection.open():
-                return self.get_cached_data()
+    def sent_items(self):
+        return self.get_sent_items()
 
-    def get_cached_data(self):
-        return [
-            listitem_config.get_cached_item(self.connection)
-            for listitem_config in self.items
-        ]
+    def get_sent_items(self):
+        return [item for item in self.items if item.is_cacheable or self.is_kodi_item(item)]
 
-    @cached_property
-    def uncached_items(self):
-        return self.get_uncached_items()
+    def is_kodi_item(self, item):
+        """Items without cached details are still matched to the Kodi library when permitted."""
+        return self.parent.kodi_details and not item.next_page
 
-    def get_uncached_items(self):
-        return [
-            self.items[x] for x, cached_item in enumerate(self.cached_data)
-            if cached_item is None and self.items[x].is_cacheable
-        ]
-
-    @cached_property
-    def configured_list(self):
-        return self.get_configured_list()
-
-    def get_configured_list(self):
-        return [
-            listitem_config.get_configured_listitem(self.cached_data[x])
-            for x, listitem_config in enumerate(self.items)
-        ]
-
-    @cached_property
-    def func_queue(self):
-        with TimerList(self.timer_lists, ' - online', log_threshold=0.001, logging=self.log_timers):
-            return self.get_func_queue()
-
-    def get_func_queue(self):
-
-        def _queued_data(listitem_config):
-            return listitem_config.try_queued_data()
-
-        with ParallelThread(self.uncached_items, _queued_data) as pt:
-            item_queue = pt.queue
-
-        return list(itertools.chain.from_iterable((i for i in item_queue if i)))
-
-    def set_func_queue(self):
-        self.connection.open_connection.execute('BEGIN')
-        with TimerList(self.timer_lists, ' - writer', log_threshold=0.001, logging=self.log_timers):
-            for func, args, kwgs in self.func_queue:
-                func(*args, **kwgs)
-        with TimerList(self.timer_lists, ' - commit', log_threshold=0.001, logging=self.log_timers):
-            self.connection.open_connection.execute('COMMIT')
-        with TimerList(self.timer_lists, ' - return', log_threshold=0.001, logging=self.log_timers):
-            self.cached_data = self.get_cached_data()
-
-    @cached_property
-    def configured_items(self):
-        if self.parent.cache_refresh == 'never':
-            return self.configured_list
-        if not self.uncached_items:
-            return self.configured_list
-        if not self.func_queue:
-            return self.configured_list
-        with self.connection.open():
-            self.set_func_queue()
-        return self.configured_list
+    def get_configured_items(self):
+        data = self.parent.client.get_items(
+            [item.sent_request for item in self.sent_items],
+            [item.listitem.get_merge_data() for item in self.sent_items],
+            kodi_details=self.parent.kodi_details)
+        details = dict(zip(self.sent_items, data))
+        return [item.get_configured_listitem(details.get(item)) for item in self.items]
 
 
 class ListItemDetails:
@@ -278,21 +139,31 @@ class ListItemDetails:
     cache_refresh = None
     cache_translations = False
     extendedinfo = False
+    kodi_details = False  # Permit Kodi library details; the service applies the user's setting
+    sync_details = True  # Permit synced play data; the service applies the user's setting
     parent_params = {}
-    timer_lists = {}
-    log_timers = False
 
     def __init__(self, common_apis=None):
         self.common_apis = common_apis or CommonContainerAPIs()
-        self.cache = ItemDetailsDatabase()
+        self.client = DetailsClient()
 
-    @cached_property
-    def connection(self):
-        return DatabaseConnection(self.cache)
+    def get_request(self, tmdb_type, tmdb_id, season=None, episode=None):
+        return DetailsRequest.from_type(
+            tmdb_type, tmdb_id, season, episode,
+            cache_refresh=self.cache_refresh, cache_translations=self.cache_translations,
+            extendedinfo=self.extendedinfo, language=self.common_apis.tmdb_api.language,
+            sync_details=self.sync_details)
+
+    def prepare(self, info=None, tmdb_type=None, **kwargs):
+        """Let the service start refreshing synced play data while the list is retrieved."""
+        if not self.sync_details:
+            return
+        self.client.prepare(info=info, tmdb_type=tmdb_type)
 
     def get_item(self, tmdb_type, tmdb_id, season=None, episode=None):
-        return ListItemCacher(self, tmdb_type, tmdb_id, season, episode).get_item(
-            connection=self.connection, cache_refresh=self.cache_refresh, cache_translations=self.cache_translations)
+        if not tmdb_id:
+            return
+        return self.client.get_item(self.get_request(tmdb_type, tmdb_id, season, episode))
 
     def configure_listitems_threaded(self, items):
-        return ListItemThread(self, [ListItemConfig(self, i) for i in items]).configured_items
+        return ListItemBatch(self, items).get_configured_items()

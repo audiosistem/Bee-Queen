@@ -117,7 +117,7 @@ class MagnetoPlayer:
 		scraper_list, _threads = self.providers, self.threads
 		self.internal_scrapers = self._get_active_scraper_names(scraper_list)
 		if not self.internal_scrapers: return
-		monitor = kore.monitor
+		monitor = kore.xbmc_monitor()
 		start_time = time.monotonic()
 		while remaining_providers := [x.name for x in _threads if x.is_alive() is True]:
 			try:
@@ -335,12 +335,21 @@ class MagnetoPlayer:
 		except: li = make_listitem()
 		return li
 
-	def resolve_sources(self, item):
-		logger('aiostreams', f"resolve_sources\n{json.dumps(item, indent=2)}")
+	def unrestrict_link(self, item):
+		import requests
+		from magneto.modules.client import randomagent
+		logger('aiostreams', f"unrestrict_link\n{json.dumps(item, indent=2)}")
 		headers = item.get('requestHeaders')
-		if headers: url = '|'.join((item.get('url'), kore.urlencode(headers)))
-		else: url = item.get('url')
-		return url
+		try: req_headers = requests.structures.CaseInsensitiveDict(headers)
+		except: req_headers = requests.structures.CaseInsensitiveDict()
+		if 'User-Agent' not in req_headers: req_headers['User-Agent'] = randomagent()
+		try: # some servers do not accept HEAD requests, must use GET + stream
+			with requests.get(item.get('url'), headers=req_headers, stream=True, timeout=30) as response:
+				response.raise_for_status() # 3xx passes, 4xx/5xx raises
+			if headers: return '|'.join((response.url, kore.urlencode(headers)))
+			return response.url
+		except requests.exceptions.RequestException as e:
+			logger('unrestrict_link error', f"{type(e)}: {e}")
 
 	def play_cancelled(self):
 #		kore.xbmcplugin.setResolvedUrl(int(sys.argv[1]), False, listitem=make_listitem())
@@ -363,7 +372,7 @@ class MagnetoPlayer:
 		res = self.sources_sd, self.sources_720p, self.sources_1080p, self.sources_4k, self.sources_total
 		self.progress_dialog.update_scraper(*res, resolve_display, 0)
 		sleep(200) # needed to update window before curl url check pause
-		self.url = self.resolve_sources(source) or notification('Invalid playback url')
+		self.url = self.unrestrict_link(source) or notification('Invalid playback url')
 		if not self.url: return self.play_cancelled()
 		listitem = self.get_listitem()
 #		listitem.setProperty('IsPlayable','true')

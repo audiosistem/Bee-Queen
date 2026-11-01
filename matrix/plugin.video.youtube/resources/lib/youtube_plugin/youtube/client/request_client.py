@@ -93,6 +93,9 @@ class YouTubeRequestClient(BaseRequestsClass):
                 'package_id': 'com.google.android.apps.youtube.vr.pico',
             },
             '_auth_type': 'vr',
+            # GVS rejects this client's adaptive URLs after about 76 seconds.
+            # Keep the client for auth and watch-history reporting only.
+            '_use_adaptive': False,
             '_use_subtitles': False,
             'json': {
                 'context': {

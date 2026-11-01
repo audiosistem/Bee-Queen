@@ -1618,7 +1618,7 @@ In addition to what livestreams allowed you to do, you can now,
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.themoviedb.helper" version="6.19.5" name="TMDb Helper" provider-name="jurialmunkey">
+</addon><addon id="plugin.video.themoviedb.helper" version="6.20.2" name="TMDb Helper" provider-name="jurialmunkey">
 <requires>
   <import addon="xbmc.python" version="3.0.1" />
   <import addon="script.module.requests" version="2.9.1" />
@@ -2342,7 +2342,7 @@ In addition to what livestreams allowed you to do, you can now,
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.4+unofficial.2" provider-name="anxdpanic, bromix, MoojMidge">
+</addon><addon id="plugin.video.youtube" name="YouTube" version="7.4.4rw+unofficial.3" provider-name="anxdpanic, bromix, MoojMidge, [COLOR red]The Red Wizard[/COLOR]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.27.1" />
@@ -2459,9 +2459,21 @@ In addition to what livestreams allowed you to do, you can now,
         <disclaimer lang="vi_VN">Plugin này không được xác nhận bởi Google</disclaimer>
         <disclaimer lang="zh_CN">此插件未被谷歌认可</disclaimer>
         <disclaimer lang="zh_TW">此附加元件未由Google支持</disclaimer>
-    <news>## v7.4.4
+    <news>## v7.4.4rw+unofficial.3
+### Fixed
+- Exclude Android VR adaptive streams; the Pico profile refresh does not restore usable DASH URLs
+- Close the HTTP proxy listening socket on shutdown so a leaked listener cannot keep the port
+- Keep DRC audio in its own AdaptationSet unless Allow automatic DRC is enabled
+- Delete every selected bookmark, including ones still held only in memory
+- Play the last playlist item when playback is started from the end
+- Show the API-key requirement text instead of the raw string id
+
+## v7.4.4+unofficial.2
 ### Fixed
 - Fix refresh Android VR client profile #1482
+
+## v7.4.4
+### Fixed
 - Fix not including FolderPath in current container details
 - Fix current plugin item window properties sometimes not updating correctly
 - Fix not updating remote history upon consecutive playback events for certain video types
@@ -4247,15 +4259,16 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
     <news>0.1.3:
 - Fix non-UTF-8 byte string decoding in Python 2.</news>
   </extension>
-</addon><addon id="script.module.magneto" version="6.07.04" name="Magneto Module" provider-name="Magneto">
+</addon><addon id="script.module.magneto" version="6.10.17" name="Magneto Module" provider-name="Magneto">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
+		<import addon="plugin.video.pov" version="6.10.16" />
 	</requires>
 	<extension point="xbmc.python.pluginsource" library="lib/router.py">
 		<provides>executable video</provides>
 	</extension>
-	
+	<extension point="xbmc.service" library="lib/service.py" />
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>

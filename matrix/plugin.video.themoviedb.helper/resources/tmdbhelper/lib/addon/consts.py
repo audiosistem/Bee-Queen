@@ -14,7 +14,6 @@ SQLITE_TRUE = 1
 
 TRAKT_MAX_ITEMS_PER_PAGE = 250
 
-TVDB_DISCLAIMER = 'Information provided by TheTVDB.com. Please consider supporting them. https://thetvdb.com/subscribe'
 
 NODE_BASEDIR = 'special://profile/addon_data/plugin.video.themoviedb.helper/nodes/'
 RUNSCRIPT = 'Runscript(plugin.video.themoviedb.helper,{})'
@@ -113,9 +112,7 @@ ROUTE_NOID = {
     'search': {'route': {
         'module_name': 'tmdbhelper.lib.items.directories.tmdb.lists_search',
         'import_attr': 'ListSearch'}},
-    'gemini': {'route': {
-        'module_name': 'tmdbhelper.lib.items.directories.tmdb.lists_gemini',
-        'import_attr': 'ListGemini'}},
+    'gemini': {'redirect': 'gemini_recommendations'},
     'dir_discover': {'route': {
         'module_name': 'tmdbhelper.lib.items.directories.tmdb.lists_discodir',
         'import_attr': 'ListDiscoverDir'}},
@@ -191,21 +188,10 @@ ROUTE_NOID = {
     'sync_sortby': {'route': {
         'module_name': 'tmdbhelper.lib.items.directories.lists_sorting',
         'import_attr': 'ListSortBy'}},
-    'dir_tvdb_awards': {'route': {
-        'module_name': 'tmdbhelper.lib.items.directories.tvdb.lists_awards',
-        'import_attr': 'ListAwards'}},
-    'dir_tvdb_award_categories': {'route': {
-        'module_name': 'tmdbhelper.lib.items.directories.tvdb.lists_awards',
-        'import_attr': 'ListAwardCategories'}},
-    'tvdb_award_category': {'route': {
-        'module_name': 'tmdbhelper.lib.items.directories.tvdb.lists_awards',
-        'import_attr': 'ListAwardCategory'}},
-    'dir_tvdb_genres': {'route': {
-        'module_name': 'tmdbhelper.lib.items.directories.tvdb.lists_genres',
-        'import_attr': 'ListGenres'}},
-    'tvdb_genre': {'route': {
-        'module_name': 'tmdbhelper.lib.items.directories.tvdb.lists_genres',
-        'import_attr': 'ListGenre'}},
+    'dir_tvdb': {'redirect': 'tvdb_directory'},
+    'dir_tvdb_awards': {'redirect': 'tvdb_awards'},
+    'dir_tvdb_award_categories': {'redirect': 'tvdb_award_categories'},
+    'dir_tvdb_genres': {'redirect': 'tvdb_genres'},
     'popular': {'route': {
         'module_name': 'tmdbhelper.lib.items.directories.tmdb.lists_standard',
         'import_attr': 'ListPopular'}},
@@ -260,24 +246,6 @@ ROUTE_NOID = {
     'all_tvshows': {'route': {
         'module_name': 'tmdbhelper.lib.items.directories.tmdb.lists_allitems',
         'import_attr': 'ListTvshows'}},
-    'tmdb_v4_recommendations': {'route': {
-        'module_name': 'tmdbhelper.lib.items.directories.tmdb.lists_authenticated',
-        'import_attr': 'ListRecommendations'}},
-    'tmdb_v4_favorites': {'route': {
-        'module_name': 'tmdbhelper.lib.items.directories.tmdb.lists_authenticated',
-        'import_attr': 'ListFavourites'}},
-    'tmdb_v4_watchlist': {'route': {
-        'module_name': 'tmdbhelper.lib.items.directories.tmdb.lists_authenticated',
-        'import_attr': 'ListWatchlist'}},
-    'tmdb_v4_rated': {'route': {
-        'module_name': 'tmdbhelper.lib.items.directories.tmdb.lists_authenticated',
-        'import_attr': 'ListRated'}},
-    'tmdb_v4_list': {'route': {
-        'module_name': 'tmdbhelper.lib.items.directories.tmdb.lists_authenticated',
-        'import_attr': 'ListList'}},
-    'tmdb_v4_lists': {'route': {
-        'module_name': 'tmdbhelper.lib.items.directories.tmdb.lists_authenticated',
-        'import_attr': 'ListLists'}},
     'random_genres': {'route': {
         'module_name': 'tmdbhelper.lib.items.directories.tmdb.lists_random',
         'import_attr': 'ListRandomGenre'}},
@@ -399,8 +367,15 @@ ROUTE_TMDBID = {
 }
 
 
-# Preserve saved widgets and favourites using the original Trakt entry points.
+# Preserve saved widgets and favourites using the original service entry points.
 ROUTE_NOID.update({
+    'dir_tmdb_v4': {'redirect': 'tmdb_directory'},
+    'tmdb_v4_recommendations': {'redirect': 'tmdb_recommendations'},
+    'tmdb_v4_favorites': {'redirect': 'tmdb_favorites'},
+    'tmdb_v4_rated': {'redirect': 'tmdb_rated'},
+    'tmdb_v4_lists': {'redirect': 'tmdb_lists'},
+    'tmdb_v4_list': {'redirect': 'tmdb_list'},
+    'tmdb_v4_watchlist': ROUTE_NOID['sync_watchlist'],
     'trakt_towatch': ROUTE_NOID['sync_towatch'],
     'trakt_becauseyouwatched': ROUTE_NOID['sync_becauseyouwatched'],
     'trakt_becausemostwatched': ROUTE_NOID['sync_becausemostwatched'],
