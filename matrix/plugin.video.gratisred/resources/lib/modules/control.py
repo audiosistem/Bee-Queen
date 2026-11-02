@@ -1130,15 +1130,13 @@ def page_items(items, page, next_url):
 
 
 def playback_progress_stale(item):
-    """True when a playback row is leftover ≤1% (Red Light 2.2.4)."""
+    """True when a playback row is leftover ≤1% (Red Light: skip, not In Progress)."""
     if not item:
-        return False
-    if 'progress' not in item or item.get('progress') in (None, ''):
-        return False
+        return True
     try:
-        return float(item.get('progress')) < 1
+        return float(item.get('progress') or 0) <= 1
     except Exception:
-        return False
+        return True
 
 
 def checkArtwork():

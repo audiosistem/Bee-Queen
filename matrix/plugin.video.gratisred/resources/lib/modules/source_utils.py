@@ -368,6 +368,12 @@ def get_release_quality(release_name, release_link=None):
 
 _SXXEXX = re.compile(r'(?:^|[^a-z0-9])s(\d{1,2})e(\d{1,3})(?:[^a-z0-9]|$)', re.I)
 _RELEASE_REGION_HEAD = re.compile(r'^(?:us|uk|u\.s|u\.k|au|ca|nz)(?:\.|$)', re.I)
+_TITLE_PREFIX = re.compile(
+    r'^(?:the|a|an|us|uk|u\.s|u\.k|au|ca|nz|'
+    r'bbc|pbs|hbo|amc|fx|abc|nbc|cbs|fox|cw|itv|sky|'
+    r'natgeo|discovery|history|netflix|amazon|apple|hulu|disney)(?:\.|$)',
+    re.I,
+)
 _RELEASE_HEAD = re.compile(
     r'^(?:s\d{1,2}(?:e\d{1,3})?|\d{1,2}x\d{1,3}|(?:19|20)\d{2}|'
     r'1080p|720p|2160p|480p|4k|uhd|web|webdl|webrip|bluray|bdrip|hdtv|dvdrip|'
@@ -458,6 +464,30 @@ def _title_token_in_text(text, tvshowtitle):
     return bool(re.search(r'(?:^|\.)%s(?:\.|$)' % re.escape(want), dotted))
 
 
+def _strip_release_affix(dotted, year=None):
+    """Drop leading year / region / network / quality tokens."""
+    dotted = (dotted or '').strip('.')
+    if year:
+        dotted = re.sub(r'^(?:%s\.)+' % re.escape(str(year)), '', dotted)
+    dotted = re.sub(r'^(?:(?:19|20)\d{2}\.)+', '', dotted)
+    changed = True
+    while dotted and changed:
+        changed = False
+        nxt = _RELEASE_REGION_HEAD.sub('', dotted, count=1).strip('.')
+        if nxt != dotted:
+            dotted, changed = nxt, True
+            continue
+        nxt = _TITLE_PREFIX.sub('', dotted, count=1).strip('.')
+        if nxt != dotted:
+            dotted, changed = nxt, True
+            continue
+        first = dotted.split('.')[0]
+        if first and _RELEASE_HEAD.match(first):
+            dotted = dotted[len(first):].strip('.')
+            changed = True
+    return dotted
+
+
 def _no_extra_show_title(text, tvshowtitle, year=None):
     """False when the text names a longer show (Batman.Caped.Crusader vs Batman)."""
     want = _dotted_name(tvshowtitle)
@@ -476,6 +506,42 @@ def _no_extra_show_title(text, tvshowtitle, year=None):
     if not first:
         return True
     return bool(_RELEASE_HEAD.match(first))
+
+
+def _no_extra_show_prefix(text, tvshowtitle, year=None):
+    """False when a longer show comes before the title (Being.Human vs Human)."""
+    want = _dotted_name(tvshowtitle)
+    dotted = _dotted_name(text)
+    if not want or not dotted:
+        return True
+    match = re.search(r'(?:^|\.)%s(?:\.|$)' % re.escape(want), dotted)
+    if not match:
+        return True
+    return not _strip_release_affix(dotted[:match.start()].strip('.'), year)
+
+
+def release_title_confirmed(text, tvshowtitle, season=None, episode=None, year=None):
+    """True when the release names this title, not a longer one.
+
+    Used to rank results. Does not drop links. Nameless embed URLs stay False.
+    """
+    text = release_hay(text)
+    if not text or not _title_token_in_text(text, tvshowtitle):
+        return False
+    if not _no_extra_show_title(text, tvshowtitle, year):
+        return False
+    if not _no_extra_show_prefix(text, tvshowtitle, year):
+        return False
+    matches = list(_SXXEXX.finditer(' %s ' % text))
+    if not matches:
+        return True
+    if season in (None, '') or episode in (None, ''):
+        return False
+    try:
+        want_s, want_e = int(season), int(episode)
+    except Exception:
+        return True
+    return any(int(match.group(1)) == want_s and int(match.group(2)) == want_e for match in matches)
 
 
 def episode_release_matches(text, tvshowtitle, season, episode, year=None):

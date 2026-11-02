@@ -279,8 +279,13 @@ def reset(current_time, total_time, media_type, imdb, season='', episode=''):
         _playcount = 0
         overlay = 6
         timeInSeconds = str(current_time)
-        ok = int(current_time) > 120 and (current_time / total_time) < .92
-        watched = (current_time / total_time) >= .92
+        try:
+            pct = (float(current_time) / float(total_time)) * 100.0
+        except Exception:
+            pct = 0
+        # Red Light In Progress is resume_point > 1. Keep the 120s floor for resume asks.
+        ok = int(current_time) > 120 and pct > 1 and pct < 92
+        watched = pct >= 92
         sql_select = "SELECT * FROM bookmarks WHERE imdb = '%s'" % imdb
         if media_type == 'episode':
             sql_select += " AND season = '%s' AND episode = '%s'" % (season, episode)

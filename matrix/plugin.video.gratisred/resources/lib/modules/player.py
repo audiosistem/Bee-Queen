@@ -249,23 +249,25 @@ class player(xbmc.Player):
             overlay = playcount.getEpisodeOverlay(playcount.getTVShowIndicators(), self.imdb, self.tmdb, self.season, self.episode)
         else:
             overlay = '6'
-        for i in range(0, 75):
+        # Dead hosts (curl timeout, a broken mp4) must not sit here for minutes
+        # before the next source is tried. A working stream usually pictures
+        # in a few seconds. OnPlayBackStarted is not that.
+        open_limit = 30
+        opened_at = time.time()
+        try:
+            started = float(control.window.getProperty('gratisred.resolving_started') or 0)
+            if started > 0:
+                control.window.setProperty(
+                    'gratisred.resolving_limit', str(max(open_limit, (opened_at - started) + open_limit)))
+        except Exception:
+            pass
+        for _ in range(0, 150):
             if self._playback_wait_done():
+                break
+            if time.time() - opened_at >= open_limit:
                 break
             self._tick_resolving_while_opening()
             xbmc.sleep(200)
-        # Same wait as source select. The dialog stays up until the picture
-        # starts or the player itself gives up. OnPlayBackStarted is not that.
-        try:
-            picture_started = bool(self.isPlayingVideo() and self._av_started)
-        except Exception:
-            picture_started = bool(self._av_started)
-        if not self._resolve_cancelled and not self._playback_failed_fast and not picture_started:
-            for i in range(0, 225):
-                if self._playback_wait_done():
-                    break
-                self._tick_resolving_while_opening()
-                xbmc.sleep(1000)
         # No picture: leave the resolving bar up so the next source can continue.
         # Cancel, or a picture that did start, closes it.
         unplayable = (not self._resolve_cancelled) and (self._playback_failed_fast or not self._av_started)

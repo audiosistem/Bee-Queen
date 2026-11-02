@@ -57,7 +57,7 @@ class source:
                 embed = '%s/embed/tv/%s/%s/%s' % (self.base_link, tmdb, data['season'], data['episode'])
             else:
                 embed = '%s/embed/movie/%s' % (self.base_link, tmdb)
-            page = client.request(embed, headers=self.headers, timeout='8') or ''
+            page = client.request(embed, headers=self.headers, timeout='15') or ''
             seen = set()
             links = [embed]
             links.extend(re.findall(r"""<iframe[^>]+src=['"]([^'"]+)['"]""", page, re.I))
@@ -75,7 +75,7 @@ class source:
                         self.results.append(item)
                 if link == embed:
                     continue
-                inner = client.request(link, headers=self.headers, timeout='8') or ''
+                inner = client.request(link, headers=self.headers, timeout='15') or ''
                 for raw in _SRC_RE.findall(inner):
                     if raw in seen:
                         continue

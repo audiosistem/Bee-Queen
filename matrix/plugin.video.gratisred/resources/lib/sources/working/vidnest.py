@@ -1,6 +1,10 @@
+import base64
+import hashlib
 import json
+import os
 from six.moves.urllib_parse import parse_qs, urlencode
 
+from resources.lib.modules.aesgcm import aes_gcm_decrypt
 from resources.lib.modules import client
 from resources.lib.modules import scrape_sources
 from resources.lib.modules import source_utils
@@ -8,6 +12,8 @@ from resources.lib.modules import source_utils
 
 API = 'https://new.vidnest.fun'
 SITE = 'https://vidnest.fun'
+# Current vidnest.fun player (22efd2ae7da60c3f.js). Request query _n, then AES-GCM.
+_SECRET = 'F9k2mR8vL4qP7wY1zN0fG3bS6tH5jC8d_x4R7vN2mP9qL1'
 _ALPH = 'RB0fpH8ZEyVLkv7c2i6MAJ5u3IKFDxlS1NTsnGaqmXYdUrtzjwObCgQP94hoeW+/='
 _TABLE = dict((c, i) for i, c in enumerate(_ALPH))
 # slug, label, response shape. Paths match the current vidnest.fun player.
@@ -40,8 +46,41 @@ def _b64decode(data):
     return out.decode('utf-8', errors='replace')
 
 
+def _nonce():
+    raw = os.urandom(16)
+    return base64.b64encode(raw).decode('ascii').replace('+', '-').replace('/', '_').rstrip('=')
+
+
+def _b64url(data):
+    encoded = (data or '').replace('-', '+').replace('_', '/')
+    encoded += '=' * ((4 - len(encoded) % 4) % 4)
+    return base64.b64decode(encoded)
+
+
+def _unwrap_v2(env):
+    blob = env.get('d') or ''
+    token = env.get('n') or ''
+    if not blob:
+        return None
+    key = hashlib.sha256(('%s|%s' % (token, _SECRET)).encode('utf-8')).digest()
+    raw = _b64url(blob)
+    if len(raw) < 28:
+        return None
+    plain = aes_gcm_decrypt(key, raw[:12], raw[12:])
+    if isinstance(plain, bytes):
+        plain = plain.decode('utf-8')
+    return json.loads(plain)
+
+
 def _unwrap(env):
-    if not isinstance(env, dict) or not env.get('encrypted'):
+    if not isinstance(env, dict):
+        return env
+    if env.get('d'):
+        try:
+            return _unwrap_v2(env)
+        except Exception:
+            pass
+    if not env.get('encrypted'):
         return env
     plain = _b64decode(env.get('data') or '')
     try:
@@ -107,10 +146,28 @@ class source:
             else:
                 tail = 'movie/%s' % tmdb
             for slug, label, kind in _PROVIDERS:
-                self._provider(hostDict, '%s/%s/%s' % (API, slug, tail), label, kind)
+                self._provider(hostDict, '%s/%s/%s?_n=%s' % (API, slug, tail, _nonce()), label, kind)
             return self.results
         except Exception:
             return self.results
+
+
+    def _headers_for(self, extra):
+        headers = dict(self.headers)
+        if isinstance(extra, dict):
+            for key, value in extra.items():
+                if isinstance(key, str) and isinstance(value, (str, int, float)):
+                    headers[key] = str(value)
+        return headers
+
+
+    def _add_link(self, hostDict, link, label, extra_headers=None):
+        if not _playable(link):
+            return
+        play = link + source_utils.append_headers(self._headers_for(extra_headers))
+        item = scrape_sources.make_direct_item(hostDict, play, host='Direct', info='Vidnest %s' % label)
+        if item.get('url') and not scrape_sources.check_host_limit(item['source'], self.results):
+            self.results.append(item)
 
 
     def _provider(self, hostDict, url, label, kind):
@@ -121,31 +178,20 @@ class source:
             data = _unwrap(json.loads(raw))
             if not isinstance(data, dict):
                 return
-            links = []
             if kind in ('sources', 'sources_named'):
                 for row in data.get('sources') or []:
-                    link = row.get('url') if isinstance(row, dict) else ''
-                    if _playable(link):
-                        links.append(link)
+                    if isinstance(row, dict):
+                        self._add_link(hostDict, row.get('url'), label, row.get('headers'))
             elif kind == 'streams_lang':
                 for row in data.get('streams') or []:
-                    link = row.get('url') if isinstance(row, dict) else ''
-                    if _playable(link):
-                        links.append(link)
+                    if isinstance(row, dict):
+                        self._add_link(hostDict, row.get('url'), label, row.get('headers'))
             elif kind == 'url_only':
-                link = data.get('url')
-                if _playable(link):
-                    links.append(link)
+                self._add_link(hostDict, data.get('url'), label, data.get('headers'))
             elif kind == 'vidlink':
                 stream = (data.get('data') or {}).get('stream') or {}
-                link = stream.get('playlist') if isinstance(stream, dict) else ''
-                if _playable(link):
-                    links.append(link)
-            for link in links:
-                play = link + source_utils.append_headers(self.headers)
-                item = scrape_sources.make_direct_item(hostDict, play, host='Direct', info='Vidnest %s' % label)
-                if item.get('url') and not scrape_sources.check_host_limit(item['source'], self.results):
-                    self.results.append(item)
+                if isinstance(stream, dict):
+                    self._add_link(hostDict, stream.get('playlist'), label, stream.get('headers'))
         except Exception:
             return
 

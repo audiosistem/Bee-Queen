@@ -1314,6 +1314,7 @@ class movies:
                 from resources.lib.modules import simkl as simkl_mod
                 key = str(url)
                 if key == 'simkl_ondeck' or key.startswith('simkl_ondeck|'):
+                    self.cacheToDisc = False
                     base, page = control.list_page(key)
                     self._list_key = base
                     self.list = simkl_mod.directory_playback_movies()
@@ -1346,6 +1347,7 @@ class movies:
                 self._list_key = base
                 self.list = mdblist_mod.directory_from_url(base, 'movies') or []
                 if base == 'mdblist_ondeck':
+                    self.cacheToDisc = False
                     try:
                         self.list = sorted(self.list, key=lambda k: str(k.get('paused_at') or ''), reverse=True)
                     except Exception:
@@ -1448,6 +1450,7 @@ class movies:
                 if idx == True:
                     self.worker()
             elif u in self.trakt_link and '/sync/playback/' in url:
+                self.cacheToDisc = False
                 self.list = self.trakt_list(url, self.trakt_user)
                 self.list = sorted(self.list, key=lambda k: int(k['paused_at']), reverse=True)
                 if idx == True:
@@ -1550,7 +1553,7 @@ class movies:
                 cm = []
                 cm.append(('Clear Providers', 'RunPlugin(%s?action=clear_sources)' % sysaddon))
                 cm.append(('Find Similar', 'Container.Update(%s?action=movies&url=%s)' % (sysaddon, self.trakt_related_link % imdb)))
-                cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
+                cm.append(('Play Trailer', 'RunPlugin(%s?action=trailer&name=%s&tmdb=%s&imdb=%s)' % (sysaddon, systitle, tmdb, imdb)))
                 if mdblistCredentials == True:
                     cm.append(('MDBList Lists Manager', 'RunPlugin(%s?action=mdblist_manager&name=%s&imdb=%s&tmdb=%s&content=movie)' % (sysaddon, sysname, imdb, tmdb)))
                 if simklCredentials == True:
@@ -1569,16 +1572,33 @@ class movies:
                         cm.append(('Remove from MyFavorites', 'RunPlugin(%s?action=deleteFavorite&meta=%s&content=movie)' % (sysaddon, sysmeta)))
                 if kodi_version < 17:
                     cm.append(('Information', 'Action(Info)'))
+                overlay = 6
                 try:
                     overlay = int(playcount.getMovieOverlay(indicators, imdb))
                     if overlay == 7:
-                        cm.append((unwatchedMenu, 'RunPlugin(%s?action=movies_playcount&imdb=%s&tmdb=%s&query=6)' % (sysaddon, imdb, tmdb)))
                         meta.update({'playcount': 1, 'overlay': 7})
                     else:
-                        cm.append((watchedMenu, 'RunPlugin(%s?action=movies_playcount&imdb=%s&tmdb=%s&query=7)' % (sysaddon, imdb, tmdb)))
                         meta.update({'playcount': 0, 'overlay': 6})
                 except:
                     pass
+                offset = 0
+                try:
+                    shelf = bookmarks.shelf_progress(i.get('progress'))
+                    if shelf and float(meta.get('duration') or 0) > 120:
+                        offset = shelf / 100.0 * float(meta['duration'])
+                    else:
+                        offset = bookmarks.get('movie', imdb, '', '', True)
+                except Exception:
+                    offset = 0
+                try:
+                    has_progress = float(offset) > 120
+                except Exception:
+                    has_progress = False
+                playcount.append_watched_cm(
+                    cm, watchedMenu, unwatchedMenu,
+                    'RunPlugin(%s?action=movies_playcount&imdb=%s&tmdb=%s&query=7)' % (sysaddon, imdb, tmdb),
+                    'RunPlugin(%s?action=movies_playcount&imdb=%s&tmdb=%s&query=6)' % (sysaddon, imdb, tmdb),
+                    overlay, has_progress)
                 cm.append((playbackMenu, 'RunPlugin(%s?action=alter_sources&url=%s&meta=%s)' % (sysaddon, sysurl, sysmeta)))
                 try:
                     item = control.item(label=label, offscreen=True)
@@ -1609,11 +1629,6 @@ class movies:
                 item.addContextMenuItems(control.context_menu_items(cm))
                 if isPlayable:
                     item.setProperty('IsPlayable', 'true')
-                shelf = bookmarks.shelf_progress(i.get('progress'))
-                if shelf and float(meta.get('duration') or 0) > 120:
-                    offset = shelf / 100.0 * float(meta['duration'])
-                else:
-                    offset = bookmarks.get('movie', imdb, '', '', True)
                 if float(offset) > 120:
                     percentPlayed = int(float(offset) / float(meta['duration']) * 100)
                     item.setProperty('resumetime', str(offset))

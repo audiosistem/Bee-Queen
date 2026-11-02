@@ -1533,6 +1533,50 @@ def getPlaybackMovies():
     return getTraktAsJsonPaged('/sync/playback/movies?extended=full') or []
 
 
+def clearPlayback(imdb=None, tmdb=None, season=None, episode=None, media='movie'):
+    """Delete matching /sync/playback resume rows."""
+    if not getTraktCredentialsInfo():
+        return
+    wanted = {'imdb': imdb, 'tmdb': tmdb}
+    season_set = season not in (None, '', 'None')
+    episode_set = episode not in (None, '', 'None')
+    items = getPlaybackMovies() if media == 'movie' else getPlaybackEpisodes()
+    ids = []
+    for item in items or []:
+        try:
+            if media == 'movie':
+                if not _ids_match(((item.get('movie') or {}).get('ids') or {}), wanted):
+                    continue
+            else:
+                if not _ids_match(((item.get('show') or {}).get('ids') or {}), wanted):
+                    continue
+                ep = item.get('episode') or {}
+                if episode_set and (int(ep.get('season')) != int(season) or int(ep.get('number')) != int(episode)):
+                    continue
+                if season_set and (not episode_set) and int(ep.get('season')) != int(season):
+                    continue
+            pid = item.get('id')
+            if pid:
+                ids.append(pid)
+        except Exception:
+            continue
+    if not ids:
+        return
+    client_id, _client_secret = _trakt_app_keys()
+    headers = {'Content-Type': 'application/json', 'trakt-api-key': client_id, 'trakt-api-version': '2'}
+    headers.update({'Authorization': 'Bearer %s' % control.setting('trakt.token')})
+    for pid in ids:
+        try:
+            requests.delete(urljoin(BASE_URL, '/sync/playback/%s' % pid), headers=headers, timeout=20)
+        except Exception:
+            pass
+    try:
+        from resources.lib.modules import trakt_cache
+        trakt_cache.clear()
+    except Exception:
+        pass
+
+
 def getActivity():
     try:
         i = getTraktAsJson('/sync/last_activities')

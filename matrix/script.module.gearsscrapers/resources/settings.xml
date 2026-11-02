@@ -5,21 +5,28 @@
     <setting type="action" label="Show Changelog" action="RunPlugin(plugin://script.module.gearsscrapers/?action=ShowChangelog)" />
 </category>
 
-<category label="Pack Providers">
-    <setting id="provider.bitmagnet" type="bool" label="Bitmagnet" default="true" />
+<category label="Recommended Providers">
 	<setting id="provider.comet" type="bool" label="Comet" default="true" />
+	 <setting id="provider.torz" type="bool" label="Torz" default="true" />
+	 <setting id="provider.torrentio" type="bool" label="Torrentio" default="true" />
+	 <setting id="provider.bitmagnet" type="bool" label="Bitmagnet" default="true" />
+	 <setting id="provider.torrentsdb" type="bool" label="torrentsdb" default="true" />
+	 <setting id="provider.torrentdownloads" type="bool" label="TorrentDownloads" default="true" />
+</category>
+
+
+<category label="Pack Providers">
+    <setting id="provider.aiostreams" type="bool" label="Aiostreams" default="false" />
 	<setting id="provider.eztv" type="bool" label="Eztv (Shows Only)" default="false" />
-    <setting id="provider.torz" type="bool" label="Torz" default="true" />
-	<setting id="provider.torrentio" type="bool" label="Torrentio" default="true" />
 	<setting id="provider.zilean" type="bool" label="Zilean" default="false" />
 	<setting id="provider.mediafusion" type="bool" label="MediaFusion" default="false" />
+	<setting id="provider.meteor" type="bool" label="Meteor" default="false" />
 	<setting id="provider.torrentsdb" type="bool" label="torrentsdb" default="true" />
 	<setting id="provider.torrentdownload" type="bool" label="TorrentDownload" default="false" />
 	<setting id="provider.peerflix" type="bool" label="Peerflix" default="false" />
 </category>
 
 <category label="Providers">
-    <setting id="provider.aiostreams" type="bool" label="Aiostreams" default="false" />
 	<setting id="provider.apachetorrent" type="bool" label="apachetorrent" default="false" />
 	<setting id="provider.torlock" type="bool" label="Torlock" default="false" />
 	<setting id="provider.torseek" type="bool" label="Torseek" default="false" />
@@ -39,7 +46,6 @@
     <setting id="provider.yourbittorrent" type="bool" label="YourBitTorrent" default="false" />
     <setting id="provider.bitlord" type="bool" label="Bitlord" default="false" />
     <setting id="provider.magnetdl" type="bool" label="MagnetDL" default="false" />
-    <setting id="provider.torrentdownloads" type="bool" label="TorrentDownloads" default="true" />
     <setting id="provider.glodls" type="bool" label="Glodls" default="false" />
     <setting id="provider.extto" type="bool" label="EXTto" default="true" />
     <setting id="provider.therarbg" type="bool" label="TheRarBG" default="false" />

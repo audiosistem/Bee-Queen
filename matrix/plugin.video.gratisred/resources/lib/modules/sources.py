@@ -887,15 +887,29 @@ class sources:
             self.sources = sorted(self.sources, key=lambda k: k['provider'])
         if self.sort_hoster == 'true':
             self.sources = sorted(self.sources, key=lambda k: k['source'])
-        filter = []
-        filter += local
-        filter += [i for i in self.sources if i['quality'].lower() == '4k']
-        filter += [i for i in self.sources if i['quality'].lower() == '1080p']
-        filter += [i for i in self.sources if i['quality'].lower() == '720p']
-        filter += [i for i in self.sources if i['quality'].lower() == 'hd']
-        filter += [i for i in self.sources if i['quality'].lower() == 'sd']
-        filter += [i for i in self.sources if i['quality'].lower() in ['scr', 'cam']]
-        self.sources = filter
+        confirmed, other = [], []
+        if self._filter_tvshowtitle:
+            for i in self.sources:
+                hay = ' '.join(str(i.get(k) or '') for k in ('name', 'info', 'url'))
+                if source_utils.release_title_confirmed(
+                        hay, self._filter_tvshowtitle, self._filter_season, self._filter_episode, self._filter_year):
+                    confirmed.append(i)
+                else:
+                    other.append(i)
+        else:
+            other = self.sources
+
+        def _quality_rows(rows):
+            bucket = []
+            bucket += [i for i in rows if i['quality'].lower() == '4k']
+            bucket += [i for i in rows if i['quality'].lower() == '1080p']
+            bucket += [i for i in rows if i['quality'].lower() == '720p']
+            bucket += [i for i in rows if i['quality'].lower() == 'hd']
+            bucket += [i for i in rows if i['quality'].lower() == 'sd']
+            bucket += [i for i in rows if i['quality'].lower() in ['scr', 'cam']]
+            return bucket
+
+        self.sources = local + _quality_rows(confirmed) + _quality_rows(other)
         self.sources = self.sources[:4000]
         double_line = control.setting('sourcelist.linesplit') == '1'
         simple = control.setting('sourcelist.linesplit') == '2'
@@ -1017,6 +1031,8 @@ class sources:
         threads = []
         if content == 'movie':
             title, imdb, year = cleantitle.scene_title(title, imdb, year)
+            self._filter_tvshowtitle = title
+            self._filter_year = year
             localtitle = self.getLocalTitle(title, imdb, content)
             aliases = self.getAliasTitles(imdb, localtitle, content)
             if not any(i.get('title', '').lower() == title.lower() for i in aliases):

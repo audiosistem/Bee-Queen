@@ -1,5 +1,20 @@
-[COLORcyan] VERSION 1.6.3[/COLOR]
+[COLORcyan] VERSION 1.6.4[/COLOR]
 
+
+[COLOR=gold] What’s New[/COLOR]
+
+• Recommended Setup Added – New suggested configuration for optimal scraper performance.
+• Faster Scraping – Recommended settings designed to improve scraping speed.
+• Improved Reliability – Configuration aimed at providing more consistent scraping results.
+• Optimised Performance – Helps users get the best out of available scraper providers.
+• Simplified Setup – Makes configuring Gears Scrapers easier, without needing to manually fine-tune every setting.
+• To make Gears Scrapers easier to configure while delivering a faster, smoother and more reliable scraping experience.
+• Dead Scrapers Fixed Or Removed.
+
+
+• To make Gears Scrapers easier to configure while delivering a faster, smoother and more reliable scraping experience.
+
+[COLORcyan] VERSION 1.6.3[/COLOR]
 
 [COLOR=gold]Torz And Comet Scrapers[/COLOR]
 

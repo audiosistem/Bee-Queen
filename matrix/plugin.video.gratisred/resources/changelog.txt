@@ -1,4 +1,33 @@
 
+[B]- 2.0.8 (2026-10-17)[/B] Results order / resolve cascade / watched menu:
+ * [B]Results[/B]: a filename that names this title (and this episode, when the name has SxxExx) is listed first. Nameless embed links and longer titles such as Being Human for Human stay in the list, below those. Nothing is dropped.
+ * [B]Results[/B]: if a source never shows a picture, the next one is tried after 30 seconds. A dead host that hangs on open (curl timeout, a broken file) no longer sits on Resolving for minutes.
+ * [B]Watched / Unwatched[/B]: Unwatched is listed when there is something to clear — a resume point, or some episodes already watched. A title with no progress only lists Watched. Fully watched titles only list Unwatched. The names follow the Watched Indicators setting.
+ * [B]MDBList[/B]: Mark Watched / Unwatched on TV sends TMDb and IMDb, same as watchlist. A TMDb write that returned 0 used to retry with TVDB only, which MDBList does not match, so the episode stayed unwatched.
+
+[B]- 2.0.7 (2026-10-16)[/B] In Progress / Continue Watching:
+ * [B]Simkl / MDBList / Trakt[/B]: In Progress skips leftover playback at 1% or below, matching Red Light. Starting and stopping almost immediately no longer leaves the title on In Progress.
+ * [B]Simkl[/B]: Continue Watching hides Dropped shows even when Simkl's shelf TMDb id and the watched-sync TMDb id differ.
+ * [B]MDBList[/B]: dropping a show now clears the Dropped cache, so Continue Watching hides it on Refresh instead of waiting up to 24 hours.
+ * [B]Trakt[/B]: In Progress Episodes is a live fetch. The 12-hour addon cache kept leftover playback.
+ * [B]Local[/B]: resume bookmarks are not stored at 1% or below on long titles (Red Light's In Progress floor). The 120-second resume-ask floor is unchanged.
+
+[B]- 2.0.6 (2026-10-16)[/B] Play Trailer:
+ * [B]Play Trailer[/B]: the Movies and TV Shows context menu now starts the trailer. Select and Auto Play both launch a stream. YouTube IDs go through plugin.video.youtube instead of scraping the watch page; IMDb file links play directly.
+
+[B]- 2.0.5 (2026-10-16)[/B] MDBList Playing Now / Play Trailer / sources:
+ * [B]MDBList[/B]: live Playing Now. Gratis Red now calls scrobble/start when playback begins and scrobble/stop when it ends, so the title appears on MDBList while it is playing. Previously all actions used scrobble/pause. Defers to service.mdblist-scrobbler when that addon is active.
+ * [B]Play Trailer[/B]: added to the Movies and TV Shows context menus. Sits after Find Similar. Plays fullscreen using the configured trailer source (TMDb, YouTube, IMDb, Trakt, or Smart cascade).
+ * [B]Queue Item[/B]: removed from the Movies and Episodes context menus. Kodi already provides Queue item natively so the plugin entry was a duplicate.
+ * [B]Vidnest[/B]: current player nonce ([I]_n[/I]) and AES-GCM unwrap, so Catflix / Filxer / the other Vidnest servers return links again instead of 403.
+ * [B]StagaTV[/B]: AJAX search uses www9.stagatv.com, the host that still answers. The old m. subdomain was returning 400.
+ * [B]MoviesEQ[/B]: embed timeout raised from 8s to 15s. The live player is slow to answer and was being dropped as empty.
+ * [B]Vidsrc[/B]: rewritten for vsembed.ru / the stellar player. Follows [I]vs_src.php[/I] to the current stream_urls API and decrypts the ChaCha window in Python. cloudnestra / vidsrcme.ru stay as a fallback if that HTML still appears.
+ * [B]Vidsrc[/B]: stamps a CDN [I]generate.php[/I] token on stream URLs when the host still issues one.
+ * [B]VidKing[/B], [B]WatchEpisodes[/B], and [B]DatabaseGdrivePlayer[/B]: removed. VidKing's Cineby/Videasy API is gone, WatchEpisodes4 is a parked stub, and DatabaseGdrivePlayer's player.php is 404. They are gone from Provider Settings, Scraper Test, and Provider Domains.
+ * [B]VidBolt[/B], [B]Vixsrc[/B], [B]Cinejoy[/B], [B]HydraHD[/B], [B]Dulo[/B], and [B]2Embed[/B]: on. They are in Provider Settings in alphabetical order. VidBolt uses the Gaiaflix movie/TV APIs. Vixsrc uses its signed playlist. Cinejoy is Nebula, Lisbon, and Athens on api.wing.st. HydraHD and Dulo are aggregators that resolve the player pages they still list. 2Embed is movies, using the current swish / 2vcdn chain. An update turns them on once. A later untick stays off.
+ * [B]2Embed[/B] host helper: other scrapers that find a 2embed.cc embed now use that same swish chain instead of the 2023 iframe/sources path.
+
 [B]- 2.0.4 (2026-10-03)[/B] Results / favourites / autoplay:
  * [B]Results[/B]: a long press on a source opens the context menu. [B]Download[/B] is first when download folders are set, then [B]Play[/B]. Add to favourites stays plain, because that is a Kodi favourite. Gratis Red favourites are movies and shows. Choosing Download still asks to confirm the file. Cancelling the menu stays on the results.
  * [B]Favourites[/B]: playing a source from Kodi favourites and stopping it leaves the next scrape free to run. The resolving dialog shows for that favourite, including after a restart, and stays up until the picture starts or the source fails. A source that cannot be played is dropped from the player. One failed source says Source not Playable. No Playable Sources is the notice after a list has nothing left that will play.

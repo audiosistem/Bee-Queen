@@ -647,7 +647,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.blacklodge" name="Blacklodge" provider-name="bob" version="1.06.39g1">
+</addon><addon id="plugin.video.blacklodge" name="Blacklodge" provider-name="bob" version="1.06.39g2">
     <requires>
         <import addon="resource.images.blacklodge.artwork" />
         <import addon="script.module.requests" />
@@ -946,9 +946,9 @@ v1.6.0 - My Free Flow + full Trakt integration</news>
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.gratisred" name="[COLOR red]Gratis Red[/COLOR]" version="2.0.4" provider-name="[COLOR red]The Red Wizard[/COLOR]">
+</addon><addon id="plugin.video.gratisred" name="[COLOR red]Gratis Red[/COLOR]" version="2.0.8" provider-name="[COLOR red]The Red Wizard[/COLOR]">
     <requires>
-        <import addon="script.gratisred.artwork" version="1.0.5" />
+        <import addon="script.gratisred.artwork" version="1.0.6" />
         <import addon="script.module.kodi-six" />
         <import addon="script.module.requests" />
         <import addon="script.module.resolveurl" />
@@ -973,13 +973,22 @@ v1.6.0 - My Free Flow + full Trakt integration</news>
 		<forum>https://t.me/+X-lt1ZDii3I3YjA0</forum>
 		<website>https://redwizard.xyz/</website> 
 		<source>https://github.com/The-Red-Wizard/TheRedWizard</source>
-        <news>2026-10-03
-- Summary of v2.0.4 (see Tools &gt; Changelog for the detail):
- * A long press on a result opens the context menu
- * Playing a Kodi favourite shows the resolving dialog until the picture starts
- * A dead favourite is dropped from the player
- * One failed source says Source not Playable
- * Autoplay keeps the resolving dialog up and skips a source that does not play</news>
+        <news>2026-10-17
+[B]- Summary of v2.0.8 (see Tools &gt; Changelog for the detail):[/B]
+ * Results that name the title (and episode) are listed first
+ * A source that never shows a picture is skipped after 30 seconds
+ * Unwatched appears when there is progress to clear
+ * MDBList Mark Watched on TV uses TMDb and IMDb, not TVDB
+2026-10-16
+[B]- Summary of v2.0.7[/B]
+ * In Progress / Continue Watching match Red Light (leftover ≤1% playback, Dropped titles)
+[B]- Summary of v2.0.6[/B]
+ * Play Trailer from the Movies and TV Shows context menus now starts playback
+[B]- Summary of v2.0.5[/B]
+ * New and updated sources
+ * MDBList live Playing Now. The title appears on MDBList while it is playing
+ * Play Trailer added to the Movies and TV Shows context menus
+ * Queue Item removed from the Movies and Episodes context menus</news>
         <assets>
             <icon>resources/images/icon.png</icon>
             <fanart>resources/images/fanart.jpg</fanart>
@@ -3953,20 +3962,19 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon><addon id="script.gratisred.artwork" version="1.0.5" name="[COLOR red]Gratis Red Artwork[/COLOR]" provider-name="[COLOR red]The Red Wizard[/COLOR]">
+</addon><addon id="script.gratisred.artwork" name="[COLOR red]Gratis Red Artwork[/COLOR]" version="1.0.6" provider-name="[COLOR red]The Red Wizard[/COLOR]">
     <extension point="xbmc.python.module" library="lib" />
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">[COLOR red]Gratis Red Artwork[/COLOR]</summary>
-        <description lang="en">[COLOR red]Gratis Red Artwork[/COLOR]</description>
+        <summary lang="en">Gratis Red Artwork</summary>
+        <description lang="en">Gratis Red Artwork</description>
 		<language>en</language>
 		<platform>all</platform>
 		<license>GPL-3.0</license>
-		<forum>https://t.me/+XiuBf9KvPfw2MzVk</forum>
+		<forum>https://t.me/+X-lt1ZDii3I3YjA0</forum>
 		<website>https://redwizard.xyz/</website> 
-		<email>info@redwizard.xyz</email>
-		<source>https://github.com/The-Red-Wizard</source>
-        <news>[COLOR red]2026-07-25
-- Correct mdblist.png, resolveurl.png, simkl.png and tmdb.png shipped for Exodus, Scrubs v2 and Venom themes (thanks Knuckles)[/COLOR]</news>
+		<source>https://github.com/The-Red-Wizard/TheRedWizard</source>
+        <news>2026-10-07
+ * Added punchplay.png and wetrakr.png for all themes (thanks Knuckles)</news>
         <assets>
             <icon>icon.png</icon>
 			<fanart>fanart.jpg</fanart>
@@ -4004,7 +4012,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="script.module.blackscrapers" name="Blackscrapers Module" version="1.00.41g3" provider-name="janedoe">
+</addon><addon id="script.module.blackscrapers" name="Blackscrapers Module" version="1.00.41g4" provider-name="janedoe">
     <requires>
         <import addon="script.module.beautifulsoup4" />
         <import addon="script.module.requests" />
@@ -4151,7 +4159,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="script.module.gearsscrapers" version="1.6.3" name="Gears Scrapers" provider-name="gearsscrapers">
+</addon><addon id="script.module.gearsscrapers" version="1.6.4" name="Gears Scrapers" provider-name="gearsscrapers">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />

@@ -509,35 +509,17 @@ def vidlink(link, hostDict, info=None):
 
 
 def vidsrc(link, hostDict, info=None):
-    sources = [] # Last Tested/Checked: 6-28-2023  Status: Working.
-    try: # https://vidsrc.to/embed/tv/72710/1/1
+    sources = []  # vsembed.ru / stellar player chain (2026).
+    try:  # https://vsembed.ru/embed/tv/1396/1/1
         if scrape_vidsrc == 'false':
             return sources
-        domain = re.findall(r'(?://|\.)(v2\.vidsrc\.me|vidsrc\.me|vidsrc\.to)/', link)[0]
-        headers = {'User-Agent': client.UserAgent, 'Referer': 'https://%s/' % domain}
-        html = client.scrapePage(link, headers=headers).text
-        items = client_utils.parseDOM(html, 'div', ret='data-hash')
-        for item in items:
-            try:
-                item_base = 'https://source.%s/source/' % domain
-                item_url = item_base + item
-                item_html = client.scrapePage(item_url, headers=headers).text
-                if not item_html:
-                    continue
-                item_html = item_html.replace("\'", '"')
-                item_src = re.findall(r'src:\s*"([^"]+)"', item_html, re.DOTALL)[0]
-                item_src = 'https:' + item_src if item_src.startswith('//') else item_src
-                item_link = client.request(item_src, headers=headers, output='geturl')
-                url = prepare_link(item_link)
-                if not url:
-                    continue
-                item = make_item(hostDict, url, host=None, info=info)
-                if item:
-                    sources.append(item)
-                #else: log_utils.log('scrape_sources - vidsrc - non-item link: ' + str(url))
-            except:
-                log_utils.log('vidsrc', 1)
-                pass
+        from resources.lib.modules import vidsrc_chain
+        urls, headers = vidsrc_chain.resolve_embed(link)
+        for url in urls:
+            play = url + source_utils.append_headers(headers) if headers else url
+            item = make_direct_item(hostDict, play, host='Direct', info=info or 'Vidsrc')
+            if item:
+                sources.append(item)
         return sources
     except Exception:
         log_utils.log('vidsrc', 1)
@@ -545,30 +527,17 @@ def vidsrc(link, hostDict, info=None):
 
 
 def twoembed(link, hostDict, info=None):
-    sources = [] # Last Tested/Checked: 6-28-2023  Status: Working.
+    sources = []  # 2embed.cc swish / 2vcdn chain (2026).
     try:
         if scrape_twoembed == 'false':
             return sources
-        link = link.replace('/embed/imdb/tv?id=', '/embed/')
-        link = link.replace('/embed/imdb/movie?id=', '/embed/')
-        link = link.replace('/embed/tmdb/tv?id=', '/embed/')
-        link = link.replace('/embed/tmdb/movie?id=', '/embed/')
-        headers = {'User-Agent': client.UserAgent, 'Referer': link}
-        html = client.scrapePage(link, headers=headers).text
-        iframe = client_utils.parseDOM(html, 'iframe', ret='src')[0]
-        iframe_html = client.scrapePage(iframe, headers=headers).text
-        try:
-            iframe_unpacked = client_utils.unpacked(iframe_html)
-        except:
-            iframe_unpacked = ''
-        if not iframe_unpacked:
-            iframe_unpacked = iframe_html
-        iframe_sources = re.findall(r'sources:\[(.+?)\]', iframe_unpacked, re.S)[0]
-        source_link = re.findall(r'(?:file|src)\s*(?:\:)\s*(?:\"|\')(.+?)(?:\"|\')', iframe_sources)[0]
-        item = make_direct_item(hostDict, source_link, host='2embed.me', info=info, referer=link)
-        if item:
-            sources.append(item)
-        #else: log_utils.log('scrape_sources - twoembed - non-item link: ' + str(url))
+        from resources.lib.modules import twoembed_chain
+        urls, headers = twoembed_chain.resolve_embed(link)
+        for url in urls:
+            play = url + source_utils.append_headers(headers) if headers else url
+            item = make_direct_item(hostDict, play, host='Direct', info=info or '2Embed')
+            if item:
+                sources.append(item)
         return sources
     except Exception:
         log_utils.log('twoembed', 1)

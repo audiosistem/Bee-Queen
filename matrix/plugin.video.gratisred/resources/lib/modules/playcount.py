@@ -327,6 +327,54 @@ def getEpisodeOverlay(indicators_, imdb, tmdb, season, episode):
         return '6'
 
 
+def showWatchedCount(indicators_, tmdb, imdb=None):
+    """How many episodes of this show are marked watched."""
+    if _provider() == 'local':
+        return bookmarks.local_watched_count(imdb)
+    try:
+        tmdb_s = str(tmdb)
+    except Exception:
+        return 0
+    for row in indicators_ or []:
+        try:
+            if str(row[0]) != tmdb_s:
+                continue
+        except Exception:
+            continue
+        return len(row[2] or [])
+    return 0
+
+
+def watched_cm_flags(overlay, has_progress=False):
+    """Watched if not finished; Unwatched if finished or there is progress to clear."""
+    try:
+        overlay = int(overlay)
+    except Exception:
+        overlay = 6
+    return overlay != 7, overlay == 7 or bool(has_progress)
+
+
+def append_watched_cm(cm, watchedMenu, unwatchedMenu, watched_url, unwatched_url, overlay, has_progress=False):
+    show_watched, show_unwatched = watched_cm_flags(overlay, has_progress)
+    if show_watched:
+        cm.append((watchedMenu, watched_url))
+    if show_unwatched:
+        cm.append((unwatchedMenu, unwatched_url))
+
+
+def _clear_provider_progress(imdb, tmdb=None, season='', episode='', media='movie'):
+    provider = _provider()
+    try:
+        if provider == 'trakt':
+            trakt.clearPlayback(imdb, tmdb=tmdb, season=season, episode=episode, media=media)
+        elif provider == 'simkl':
+            simkl.clearPlayback(imdb, tmdb=tmdb, season=season, episode=episode, media=media)
+        elif provider == 'mdblist':
+            mdblist.clearPlayback(imdb, tmdb=tmdb, season=season, episode=episode, media=media)
+    except Exception:
+        pass
+
+
 PLAYBACK_MARKED_PROPERTY = 'gratisred.playback_marked_watched'
 
 
@@ -478,6 +526,7 @@ def movies(imdb, watched, tmdb=None):
             bookmarks.reset(1, 1, 'movie', imdb, '', '')
         else:
             bookmarks._delete_record('movie', imdb, '', '')
+            _clear_provider_progress(imdb, tmdb=tmdb, media='movie')
     except:
         pass
     _finish_manual_mark(watched, media='movie')
@@ -515,6 +564,7 @@ def episodes(imdb, tmdb, season, episode, watched):
             bookmarks.reset(1, 1, 'episode', imdb, season, episode)
         else:
             bookmarks._delete_record('episode', imdb, season, episode)
+            _clear_provider_progress(imdb, tmdb=tmdb, season=season, episode=episode, media='tv')
     except:
         pass
     _finish_manual_mark(watched, media='tv')
@@ -636,5 +686,10 @@ def tvshows(tvshowtitle, imdb, tmdb, season, watched):
                     mdblist.markTVShowAsNotWatched(imdb, tmdb=tmdb)
             mdblist.cachesyncTVShows(timeout=0)
     except:
+        pass
+    try:
+        if int(watched) != 7:
+            _clear_provider_progress(imdb, tmdb=tmdb, season=season, media='tv')
+    except Exception:
         pass
     _finish_manual_mark(watched, media='tv')

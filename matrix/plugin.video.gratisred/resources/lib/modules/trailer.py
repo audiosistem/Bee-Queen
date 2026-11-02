@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import re
-import sys
-
 import six
 from six.moves.urllib_parse import quote_plus
 
 from resources.lib.modules import client
-from resources.lib.modules import client_utils
 from resources.lib.modules import control
 #from resources.lib.modules import log_utils
 from resources.lib.modules import tmdb_utils
@@ -255,11 +251,13 @@ class source:
                 if select == -1:
                     return 'canceled'
                 return results[select]
-            items = [i.get('url') for i in results]
-            for vid_id in items:
-                url = self.worker(vid_id)
-                if url:
-                    return url
+            # Auto Play: first result that resolves to a playable URL.
+            for i in results:
+                resolved = self.worker(i.get('url'))
+                if resolved:
+                    item = dict(i)
+                    item['url'] = resolved
+                    return item
             return
         except:
             #log_utils.log('select_items', 1)
@@ -270,22 +268,40 @@ class source:
         try:
             control.idle()
             if not result:
+                control.abort_plugin_resolve()
                 return control.infoDialog('No trailer available')
             elif result == 'canceled':
+                control.abort_plugin_resolve()
                 return
+            if isinstance(result, six.string_types):
+                result = {'title': '', 'url': result}
             title = result.get('title', '')
             if not title:
                 title = control.infoLabel('ListItem.Title')
             url = result.get('url', '')
             if not url:
+                control.abort_plugin_resolve()
                 return control.infoDialog('No trailer available')
             if not url.startswith(self.youtube_plugin_url):
                 url = self.worker(url)
+            if not url:
+                control.abort_plugin_resolve()
+                return control.infoDialog('No trailer available')
             item = control.item(label=title, path=url)
             item.setProperty('IsPlayable', 'true')
             info_tag = ListItemInfoTag(item, 'video')
             info_tag.set_info({'title': title})
-            control.resolve(handle=int(sys.argv[1]), succeeded=True, listitem=item)
+            handle = control.plugin_handle()
+            # Context-menu RunPlugin is invoked with handle -1. setResolvedUrl
+            # is a no-op there, so start playback ourselves. PlayMedia of the
+            # listitem trailer property still has a real handle.
+            if handle > 0:
+                control.resolve(handle, True, item)
+                control.mark_resolve_sent()
+            elif windowedtrailer == 1:
+                control.player.play(url, item, True)
+            else:
+                control.execute('PlayMedia("%s")' % url.replace('"', ''))
             if windowedtrailer == 1:
                 control.sleep(1000)
                 while control.player.isPlayingVideo():
@@ -299,18 +315,16 @@ class source:
     def worker(self, url):
         try:
             if not url:
-                raise Exception()
+                return
             url = url.replace('http://', 'https://')
             url = url.replace('www.youtube.com', 'youtube.com')
-            if url.startswith(self.youtube_link):
+            url = url.replace('youtu.be/', 'youtube.com/watch?v=')
+            if url.startswith(self.youtube_plugin_url):
+                return url
+            if url.startswith(self.youtube_link) or not url.startswith('http'):
                 url = self.resolve(url)
                 if not url:
-                    raise Exception()
-            elif not url.startswith('http'):
-                url = self.youtube_watch_link + url
-                url = self.resolve(url)
-                if not url:
-                    raise Exception()
+                    return
             return url
         except:
             #log_utils.log('worker', 1)
@@ -319,18 +333,15 @@ class source:
 
     def resolve(self, url):
         try:
-            id = url.split('?v=')[-1].split('/')[-1].split('?')[0].split('&')[0]
-            url = self.youtube_watch_link + id
-            result = client.scrapePage(url, timeout='30').text
-            message = client_utils.parseDOM(result, 'div', attrs={'id': 'unavailable-submessage'})
-            message = ''.join(message)
-            alert = client_utils.parseDOM(result, 'div', attrs={'id': 'watch7-notification-area'})
-            if len(alert) > 0:
-                raise Exception()
-            if re.search(r'[a-zA-Z]', message):
-                raise Exception()
-            url = self.youtube_plugin_url + id
-            return url
+            if url.startswith(self.youtube_plugin_url):
+                return url
+            if 'v=' in url:
+                video_id = url.split('v=')[-1].split('&')[0].split('/')[0]
+            else:
+                video_id = url.split('/')[-1].split('?')[0].split('&')[0]
+            if not video_id:
+                return
+            return self.youtube_plugin_url + video_id
         except:
             #log_utils.log('resolve', 1)
             return

@@ -1608,6 +1608,48 @@ def get_playback(media_filter=None):
     return data if isinstance(data, list) else []
 
 
+def clearPlayback(imdb=None, tmdb=None, season=None, episode=None, media='movie'):
+    """Delete matching /sync/playback resume rows."""
+    if not getSimklCredentialsInfo():
+        return
+    from resources.lib.modules import bookmarks
+    imdb_n = _normalize_imdb(imdb)
+    tmdb_n = str(tmdb or '0')
+    season_set = season not in (None, '', 'None')
+    episode_set = episode not in (None, '', 'None')
+    items = get_playback('movies' if media == 'movie' else 'episodes')
+    ids = []
+    for item in items or []:
+        try:
+            if media == 'movie':
+                movie = item.get('movie') or item
+                ids_block = movie.get('ids') or {}
+                if not bookmarks._ids_match(imdb_n, tmdb_n, _normalize_imdb(ids_block.get('imdb')), str(ids_block.get('tmdb') or '0')):
+                    continue
+            else:
+                show = item.get('show') or {}
+                ids_block = show.get('ids') or {}
+                if not bookmarks._ids_match(imdb_n, tmdb_n, _normalize_imdb(ids_block.get('imdb')), str(ids_block.get('tmdb') or '0')):
+                    continue
+                ep = item.get('episode') or {}
+                if episode_set and (int(ep.get('season')) != int(season) or int(ep.get('number') or ep.get('episode') or -1) != int(episode)):
+                    continue
+                if season_set and (not episode_set) and int(ep.get('season')) != int(season):
+                    continue
+            pid = item.get('id')
+            if pid:
+                ids.append(pid)
+        except Exception:
+            continue
+    for pid in ids:
+        try:
+            url = _url('/sync/playback/%s' % pid)
+            if url:
+                requests.delete(url, headers=_headers(), timeout=20)
+        except Exception:
+            pass
+
+
 def directory_playback_movies():
     """In Progress movies from Simkl playback."""
     out = []
@@ -1641,6 +1683,7 @@ def directory_playback_movies():
 def playback_episode_items():
     """Minimal episode rows for In Progress Episodes enrichment."""
     out = []
+    dropped = dropped_tmdb_ids()
     for item in get_playback('episodes'):
         try:
             if item.get('type') and item.get('type') != 'episode':
@@ -1660,6 +1703,9 @@ def playback_episode_items():
             episode = ep.get('number') or ep.get('episode')
             if season is None or episode is None:
                 continue
+            tmdb = str(ids.get('tmdb') or '0')
+            if tmdb != '0' and tmdb in dropped:
+                continue
             out.append({
                 'title': ep.get('title') or title,
                 'season': '%01d' % int(season),
@@ -1677,7 +1723,7 @@ def playback_episode_items():
                 'plot': '0',
                 'imdb': _normalize_imdb(ids.get('imdb')),
                 'tvdb': str(ids.get('tvdb') or '0'),
-                'tmdb': str(ids.get('tmdb') or '0'),
+                'tmdb': tmdb,
                 'poster': '0',
                 'thumb': '0',
                 'paused_at': _paused_key(item.get('paused_at')),
@@ -1690,11 +1736,28 @@ def playback_episode_items():
 
 
 def dropped_tmdb_ids():
+    """TMDb IDs on Simkl Dropped.
+
+    The unextended shelf and the extended watched payload can disagree on TMDb
+    (Battlestar Galactica: 1972 vs 71365). Union both, plus indicator rows whose
+    stored status is already dropped.
+    """
     ids = set()
     for item in _fetch_tv_status('dropped'):
         tmdb = (item.get('ids') or {}).get('tmdb')
         if tmdb:
             ids.add(str(tmdb))
+    try:
+        user = control.setting('simkl.user').strip() or 'simkl'
+        for row in _read_sync_cache(syncTVShows, user, _SIMKL_TV_INDICATOR_VER) or []:
+            extra = row[3] if len(row) > 3 and isinstance(row[3], dict) else {}
+            if str(extra.get('status') or '').lower() != 'dropped':
+                continue
+            tmdb = str(row[0] or '0')
+            if tmdb and tmdb != '0':
+                ids.add(tmdb)
+    except Exception:
+        pass
     return ids
 
 
@@ -1718,8 +1781,15 @@ def progress_seeds():
     """
     if not getSimklCredentialsInfo():
         return []
+    try:
+        syncSimklWatched(silent=True)
+    except Exception:
+        pass
     dropped = dropped_tmdb_ids()
-    indicators = cachesyncTVShows(timeout=720) or []
+    user = control.setting('simkl.user').strip() or 'simkl'
+    indicators = _read_sync_cache(syncTVShows, user, _SIMKL_TV_INDICATOR_VER)
+    if not indicators:
+        indicators = cachesyncTVShows(timeout=0) or []
     by_tmdb = {}
     for row in indicators:
         try:
@@ -1728,6 +1798,8 @@ def progress_seeds():
             continue
         extra = row[3] if len(row) > 3 and isinstance(row[3], dict) else {}
         if not tmdb or tmdb == '0' or tmdb in dropped:
+            continue
+        if str(extra.get('status') or '').lower() == 'dropped':
             continue
         if not watched:
             continue

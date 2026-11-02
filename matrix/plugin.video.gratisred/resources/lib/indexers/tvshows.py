@@ -1825,6 +1825,7 @@ class tvshows:
                 cm = []
                 cm.append(('Clear Providers', 'RunPlugin(%s?action=clear_sources)' % sysaddon))
                 cm.append(('Find Similar', 'Container.Update(%s?action=tvshows&url=%s)' % (sysaddon, self.trakt_related_link % imdb)))
+                cm.append(('Play Trailer', 'RunPlugin(%s?action=trailer&name=%s&tmdb=%s&imdb=%s)' % (sysaddon, systitle, tmdb, imdb)))
                 if mdblistCredentials == True:
                     cm.append(('MDBList Lists Manager', 'RunPlugin(%s?action=mdblist_manager&name=%s&imdb=%s&tmdb=%s&content=tvshow)' % (sysaddon, sysname, imdb, tmdb)))
                 if simklCredentials == True:
@@ -1843,6 +1844,7 @@ class tvshows:
                         cm.append(('Remove from MyFavorites', 'RunPlugin(%s?action=deleteFavorite&meta=%s&content=tvshow)' % (sysaddon, sysmeta)))
                 if kodi_version < 17:
                     cm.append(('Information', 'Action(Info)'))
+                overlay = 6
                 try:
                     aired = i.get('aired_count')
                     if aired in (None, '', '0', 0):
@@ -1850,13 +1852,17 @@ class tvshows:
                             aired = i.get('episode_count')
                     overlay = int(playcount.getTVShowOverlay(indicators, imdb, tmdb, i.get('status'), aired))
                     if overlay == 7:
-                        cm.append((unwatchedMenu, 'RunPlugin(%s?action=tvshows_playcount&name=%s&imdb=%s&tmdb=%s&query=6)' % (sysaddon, systitle, imdb, tmdb)))
                         meta.update({'playcount': 1, 'overlay': 7})
                     else:
-                        cm.append((watchedMenu, 'RunPlugin(%s?action=tvshows_playcount&name=%s&imdb=%s&tmdb=%s&query=7)' % (sysaddon, systitle, imdb, tmdb)))
                         meta.update({'playcount': 0, 'overlay': 6})
                 except:
                     pass
+                has_progress = playcount.showWatchedCount(indicators, tmdb, imdb) > 0
+                playcount.append_watched_cm(
+                    cm, watchedMenu, unwatchedMenu,
+                    'RunPlugin(%s?action=tvshows_playcount&name=%s&imdb=%s&tmdb=%s&query=7)' % (sysaddon, systitle, imdb, tmdb),
+                    'RunPlugin(%s?action=tvshows_playcount&name=%s&imdb=%s&tmdb=%s&query=6)' % (sysaddon, systitle, imdb, tmdb),
+                    overlay, has_progress)
                 try:
                     item = control.item(label=label, offscreen=True)
                 except:

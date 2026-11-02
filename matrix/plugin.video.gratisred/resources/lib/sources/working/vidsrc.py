@@ -4,10 +4,11 @@ from six.moves.urllib_parse import parse_qs, urlencode
 from resources.lib.modules import client
 from resources.lib.modules import scrape_sources
 from resources.lib.modules import source_utils
+from resources.lib.modules import vidsrc_chain
 
 
-HOSTS = (
-    'vidsrc.to', '2embed.cc', '2embed.skin', 'multiembed.mov', 'vidsrcme.ru',
+HOSTS = vidsrc_chain.HOSTS + (
+    '2embed.cc', '2embed.skin', 'multiembed.mov', 'vidsrcme.ru',
 )
 CDN_POOL = (
     'shadowlandschronicles.com', 'cdn-centaurus.com', 'cdn-fnc.com',
@@ -15,30 +16,35 @@ CDN_POOL = (
 )
 
 
+def _ok(value):
+    text = str(value or '').strip()
+    return text if text and text not in ('0', 'None') else ''
+
+
 class source:
     def __init__(self):
         self.results = []
         self.domains = list(HOSTS) + ['cloudnestra.com']
-        self.base_link = 'https://vidsrcme.ru'
+        self.base_link = 'https://%s' % vidsrc_chain.HOSTS[0]
         self.headers = {
             'User-Agent': client.UserAgent,
-            'Referer': 'https://cloudnestra.com/',
-            'Origin': 'https://cloudnestra.com',
+            'Referer': self.base_link + '/',
+            'Origin': self.base_link,
         }
 
 
     def movie(self, imdb, tmdb, title, localtitle, aliases, year):
-        ident = imdb or tmdb
-        if not ident or str(ident) in ('0', 'None'):
+        tmdb, imdb = _ok(tmdb), _ok(imdb)
+        if not tmdb and not imdb:
             return
-        return urlencode({'ident': ident, 'media': 'movie'})
+        return urlencode({'tmdb': tmdb, 'imdb': imdb, 'media': 'movie'})
 
 
     def tvshow(self, imdb, tmdb, tvdb, tvshowtitle, localtvshowtitle, aliases, year):
-        ident = imdb or tmdb
-        if not ident or str(ident) in ('0', 'None'):
+        tmdb, imdb = _ok(tmdb), _ok(imdb)
+        if not tmdb and not imdb:
             return
-        return urlencode({'ident': ident, 'media': 'tv'})
+        return urlencode({'tmdb': tmdb, 'imdb': imdb, 'media': 'tv'})
 
 
     def episode(self, url, imdb, tmdb, tvdb, title, premiered, season, episode):
@@ -56,28 +62,48 @@ class source:
                 return self.results
             data = parse_qs(url)
             data = dict([(i, data[i][0]) if data[i] else (i, '') for i in data])
-            ident = data.get('ident')
-            if not ident:
+            tmdb, imdb = _ok(data.get('tmdb')), _ok(data.get('imdb'))
+            idents = []
+            for ident in (tmdb, imdb):
+                if ident and ident not in idents:
+                    idents.append(ident)
+            if not idents:
                 return self.results
-            if data.get('media') == 'tv':
-                if not data.get('season') or not data.get('episode'):
-                    return self.results
-                path = 'embed/tv/%s/%s/%s' % (ident, data['season'], data['episode'])
+            media = data.get('media') or 'movie'
+            season = data.get('season') if media == 'tv' else None
+            episode = data.get('episode') if media == 'tv' else None
+            if media == 'tv' and (not season or not episode):
+                return self.results
+            for ident in idents:
+                urls, headers = vidsrc_chain.resolve_ident(
+                    media, ident, season=season, episode=episode)
+                if urls:
+                    for link in urls:
+                        self._add(hostDict, link, headers)
+                    if self.results:
+                        return self.results
+            self._legacy(hostDict, idents, media, season, episode)
+            return self.results
+        except Exception:
+            return self.results
+
+
+    def _legacy(self, hostDict, idents, media, season, episode):
+        for ident in idents:
+            if media == 'tv':
+                path = 'embed/tv/%s/%s/%s' % (ident, season, episode)
             else:
                 path = 'embed/movie/%s' % ident
             for host in HOSTS:
                 if len(self.results) >= 8:
-                    break
+                    return
                 embed = 'https://%s/%s' % (host, path)
                 html = client.request(embed, headers={'User-Agent': client.UserAgent, 'Referer': embed}, timeout='12')
                 if not html:
                     continue
                 self._from_body(hostDict, html, embed)
                 if self.results:
-                    break
-            return self.results
-        except Exception:
-            return self.results
+                    return
 
 
     def _from_body(self, hostDict, html, referer):
@@ -188,10 +214,11 @@ class source:
         return out
 
 
-    def _add(self, hostDict, link):
+    def _add(self, hostDict, link, headers=None):
         if not link or not link.startswith('http'):
             return
-        play = link + source_utils.append_headers(self.headers)
+        play_headers = headers or self.headers
+        play = link + source_utils.append_headers(play_headers)
         item = scrape_sources.make_direct_item(hostDict, play, host='Direct', info='Vidsrc')
         if not item.get('url'):
             return

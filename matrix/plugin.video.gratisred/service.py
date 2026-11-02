@@ -52,8 +52,7 @@ except Exception:
 # New providers in 1.3.9. Set once so an update turns them on. A later
 # untick is left alone. VidLove stays at its default, off.
 _NEW_PROVIDERS = (
-    'cinetaro', 'databasegdriveplayer', 'vidking',
-    'vidnest', 'vidrock', 'vidsrc', 'watchepisodes',
+    'cinetaro', 'vidnest', 'vidrock', 'vidsrc',
 )
 # Set once so an update turns them off. A later tick is left alone.
 _OFF_PROVIDERS = (
@@ -74,6 +73,19 @@ try:
         control.setSetting('providers.forced.off.139', 'true')
 except Exception:
     log_utils.log('Force providers off failed.', 1)
+
+# New providers in 2.0.5. Set once so an update turns them on. A later
+# untick is left alone.
+_NEW_PROVIDERS_205 = (
+    'cinejoy', 'dulo', 'hydrahd', 'twoembed', 'vidbolt', 'vixsrc',
+)
+try:
+    if control.setting('providers.forced.205') != 'true':
+        for _name in _NEW_PROVIDERS_205:
+            control.setSetting('provider.' + _name, 'true')
+        control.setSetting('providers.forced.205', 'true')
+except Exception:
+    log_utils.log('Force 2.0.5 providers failed.', 1)
 
 
 # Enable Fanart.tv Artwork. Set once so an update turns it on. A later untick is left alone.

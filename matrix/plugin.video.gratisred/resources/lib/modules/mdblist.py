@@ -472,6 +472,14 @@ def _clear_playback_cache():
         pass
 
 
+def _clear_dropped_cache():
+    """Drop the 24h Dropped snapshot so Continue Watching can hide a new drop."""
+    try:
+        cache.remove(_dropped_tmdb_ids_raw)
+    except Exception:
+        pass
+
+
 def _personal_items(url, media_kind, _row_version=None):
     result = _get_mdbl_paginated_list(url)
     if not isinstance(result, dict):
@@ -605,6 +613,51 @@ def get_playback(media_filter=None):
     return items if isinstance(items, list) else []
 
 
+def clearPlayback(imdb=None, tmdb=None, season=None, episode=None, media='movie'):
+    """Clear matching MDBList scrobble/playback rows."""
+    if not getMdblistCredentialsInfo():
+        return
+    from resources.lib.modules import bookmarks
+    imdb_n = _normalize_imdb(imdb)
+    tmdb_n = str(tmdb or '0')
+    season_set = season not in (None, '', 'None')
+    episode_set = episode not in (None, '', 'None')
+    items = get_playback('movies' if media == 'movie' else 'episodes')
+    ids = []
+    for item in items or []:
+        try:
+            if media == 'movie':
+                movie = item.get('movie') or item
+                ids_block = movie.get('ids') or {}
+                item_tmdb = str(ids_block.get('tmdb') or movie.get('tmdb') or '0')
+                if not bookmarks._ids_match(imdb_n, tmdb_n, _normalize_imdb(ids_block.get('imdb')), item_tmdb):
+                    continue
+            else:
+                show = item.get('show') or {}
+                ids_block = show.get('ids') or {}
+                item_tmdb = str(ids_block.get('tmdb') or show.get('tmdb') or '0')
+                if not bookmarks._ids_match(imdb_n, tmdb_n, _normalize_imdb(ids_block.get('imdb')), item_tmdb):
+                    continue
+                ep = item.get('episode') or {}
+                if episode_set and (int(ep.get('season')) != int(season) or int(ep.get('number') or ep.get('episode') or -1) != int(episode)):
+                    continue
+                if season_set and (not episode_set) and int(ep.get('season')) != int(season):
+                    continue
+            pid = item.get('id')
+            if pid:
+                ids.append(pid)
+        except Exception:
+            continue
+    for pid in ids:
+        try:
+            if call_mdblist('scrobble/clear', json_data={'id': pid}, method='post') is not None:
+                pass
+        except Exception:
+            pass
+    if ids:
+        _clear_playback_cache()
+
+
 def directory_playback_movies():
     out = []
     for item in get_playback('movies'):
@@ -635,6 +688,7 @@ def directory_playback_movies():
 
 def playback_episode_items():
     out = []
+    dropped = dropped_tmdb_ids()
     for item in get_playback('episodes'):
         try:
             if control.playback_progress_stale(item):
@@ -646,6 +700,9 @@ def playback_episode_items():
             episode = ep.get('number') or ep.get('episode')
             if season is None or episode is None:
                 continue
+            tmdb = str(ids.get('tmdb') or show.get('tmdb') or '0')
+            if tmdb != '0' and tmdb in dropped:
+                continue
             out.append({
                 'title': ep.get('title') or show.get('title') or 'Unknown',
                 'season': '%01d' % int(season),
@@ -656,7 +713,7 @@ def playback_episode_items():
                 'duration': '0', 'rating': '0', 'votes': '0', 'mpaa': '0', 'plot': '0',
                 'imdb': _normalize_imdb(ids.get('imdb')),
                 'tvdb': str(ids.get('tvdb') or '0'),
-                'tmdb': str(ids.get('tmdb') or show.get('tmdb') or '0'),
+                'tmdb': tmdb,
                 'poster': '0', 'thumb': '0',
                 'paused_at': str(item.get('paused_at') or '0'),
                 'watched_at': '0',
@@ -670,6 +727,10 @@ def playback_episode_items():
 def progress_seeds():
     if not getMdblistCredentialsInfo():
         return []
+    try:
+        syncMdblistWatched(silent=True)
+    except Exception:
+        pass
     dropped = dropped_tmdb_ids()
     indicators = cachesyncTVShows(timeout=720) or []
     if indicators and not any(
@@ -1231,6 +1292,8 @@ def syncMdblistWatched(silent=True, force_update=False):
                 return True
             if _changed('paused_at') or _changed('episode_paused_at'):
                 _clear_playback_cache()
+            if _changed('dropped_at'):
+                _clear_dropped_cache()
             if _changed('watched_at'):
                 cachesyncMovies(timeout=0)
             if _changed('episode_watched_at'):
@@ -1290,30 +1353,41 @@ def _regular_season_numbers(tmdb):
     return nums
 
 
-def _watched_unwatched(action, media, media_id, tvdb_id=0, season=None, episode=None, key='tmdb', season_numbers=None):
+def _watched_ids(media, tmdb_id, imdb_id=None):
+    """sync/watched matches TMDb and IMDb. A TVDB-only id comes back not_found."""
+    try:
+        tmdb_id = int(tmdb_id)
+    except Exception:
+        pass
+    ids = {'tmdb': tmdb_id}
+    if media != 'movies':
+        imdb_id = _normalize_imdb(imdb_id)
+        if imdb_id and imdb_id not in ('None', '', '0'):
+            ids['imdb'] = imdb_id
+    return ids
+
+
+def _watched_unwatched(action, media, media_id, tvdb_id=0, season=None, episode=None, season_numbers=None, imdb_id=None):
     if action == 'mark_as_watched':
         url, result_key = 'sync/watched', 'updated'
     else:
         url, result_key = 'sync/watched/remove', 'removed'
-    try:
-        media_id = int(media_id)
-    except Exception:
-        pass
+    ids = _watched_ids(media, media_id, imdb_id)
     if media == 'movies':
-        success_key, data = 'movies', {'movies': [{'ids': {key: media_id}}]}
+        success_key, data = 'movies', {'movies': [{'ids': ids}]}
     elif media == 'episode':
         success_key = 'episodes'
-        data = {'shows': [{'ids': {key: media_id}, 'seasons': [{'number': int(season), 'episodes': [{'number': int(episode)}]}]}]}
+        data = {'shows': [{'ids': ids, 'seasons': [{'number': int(season), 'episodes': [{'number': int(episode)}]}]}]}
     elif media == 'shows':
-        if season_numbers is None and key == 'tmdb':
+        if season_numbers is None:
             season_numbers = _regular_season_numbers(media_id)
-        show = {'ids': {key: media_id}}
+        show = {'ids': ids}
         if season_numbers:
             show['seasons'] = [{'number': int(n)} for n in season_numbers]
         success_key, data = 'episodes', {'shows': [show]}
     else:
         success_key = 'episodes'
-        data = {'shows': [{'ids': {key: media_id}, 'seasons': [{'number': int(season)}]}]}
+        data = {'shows': [{'ids': ids, 'seasons': [{'number': int(season)}]}]}
     result = call_mdblist(url, json_data=data, method='post')
     if not isinstance(result, dict):
         return False
@@ -1322,8 +1396,6 @@ def _watched_unwatched(action, media, media_id, tvdb_id=0, season=None, episode=
     else:
         bucket = result.get(result_key) or {}
         success = bucket.get(success_key, 0) > 0 if isinstance(bucket, dict) else False
-    if not success and media != 'movies' and tvdb_id and key != 'tvdb':
-        return _watched_unwatched(action, media, tvdb_id, 0, season, episode, 'tvdb', season_numbers)
     # Already on MDBList: added and updated are both 0, and it is not in not_found.
     # A bare show id is the exception — that reply updates nothing.
     if not success and action == 'mark_as_watched' and not _mdbl_not_found(result):
@@ -1332,7 +1404,7 @@ def _watched_unwatched(action, media, media_id, tvdb_id=0, season=None, episode=
     if not success and action != 'mark_as_watched':
         return True
     if not success:
-        log_utils.log('MDBList mark %s %s id=%s: %s' % (action, media, media_id, result), 1)
+        log_utils.log('MDBList mark %s %s ids=%s: %s' % (action, media, ids, result), 1)
     return success
 
 
@@ -1393,42 +1465,42 @@ def markEpisodeAsWatched(imdb, season, episode, tmdb=None, tvdb=None):
     media_id = _resolve_tmdb(tmdb, imdb, 'show')
     if not media_id:
         return False
-    return _watched_unwatched('mark_as_watched', 'episode', media_id, tvdb or 0, season, episode)
+    return _watched_unwatched('mark_as_watched', 'episode', media_id, tvdb or 0, season, episode, imdb_id=imdb)
 
 
 def markEpisodeAsNotWatched(imdb, season, episode, tmdb=None, tvdb=None):
     media_id = _resolve_tmdb(tmdb, imdb, 'show')
     if not media_id:
         return False
-    return _watched_unwatched('mark_as_unwatched', 'episode', media_id, tvdb or 0, season, episode)
+    return _watched_unwatched('mark_as_unwatched', 'episode', media_id, tvdb or 0, season, episode, imdb_id=imdb)
 
 
 def markTVShowAsWatched(imdb, tmdb=None):
     media_id = _resolve_tmdb(tmdb, imdb, 'show')
     if not media_id:
         return False
-    return _watched_unwatched('mark_as_watched', 'shows', media_id)
+    return _watched_unwatched('mark_as_watched', 'shows', media_id, imdb_id=imdb)
 
 
 def markTVShowAsNotWatched(imdb, tmdb=None):
     media_id = _resolve_tmdb(tmdb, imdb, 'show')
     if not media_id:
         return False
-    return _watched_unwatched('mark_as_unwatched', 'shows', media_id)
+    return _watched_unwatched('mark_as_unwatched', 'shows', media_id, imdb_id=imdb)
 
 
 def markSeasonAsWatched(imdb, season, tmdb=None):
     media_id = _resolve_tmdb(tmdb, imdb, 'show')
     if not media_id:
         return False
-    return _watched_unwatched('mark_as_watched', 'season', media_id, 0, season)
+    return _watched_unwatched('mark_as_watched', 'season', media_id, 0, season, imdb_id=imdb)
 
 
 def markSeasonAsNotWatched(imdb, season, tmdb=None):
     media_id = _resolve_tmdb(tmdb, imdb, 'show')
     if not media_id:
         return False
-    return _watched_unwatched('mark_as_unwatched', 'season', media_id, 0, season)
+    return _watched_unwatched('mark_as_unwatched', 'season', media_id, 0, season, imdb_id=imdb)
 
 
 def mdblist_official_status():
@@ -1488,8 +1560,7 @@ def mdblist_scrobble(action, media_type, percent=0, tmdb=None, imdb=None, season
                 'show': {'ids': {'tmdb': tmdb_id}, 'season': {'number': int(season), 'episode': {'number': int(episode)}}},
                 'progress': float(percent),
             }
-        # MDBList uses pause for in-progress writes; start is treated the same.
-        path = 'scrobble/pause' if action in ('start', 'pause', 'stop') else 'scrobble/pause'
+        path = {'start': 'scrobble/start', 'stop': 'scrobble/stop'}.get(action, 'scrobble/pause')
         if call_mdblist(path, json_data=payload, method='post') is not None:
             _clear_playback_cache()
     except Exception as e:

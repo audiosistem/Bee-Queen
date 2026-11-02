@@ -372,7 +372,7 @@ class seasons:
         simklCredentials = simkl_mod.getSimklCredentialsInfo()
         mdblistCredentials = mdblist_mod.getMdblistCredentialsInfo()
         _ind = simkl_mod.getIndicatorsProvider()
-        show_rows = playcount.getTVShowIndicators() if _ind in ('simkl', 'mdblist') else None
+        show_rows = playcount.getTVShowIndicators()
         if _ind == 'trakt':
             watchedMenu, unwatchedMenu = 'Watched in Trakt', 'Unwatched in Trakt'
         elif _ind == 'simkl':
@@ -439,8 +439,14 @@ class seasons:
                 libtools.append_tvshow_library_cm(cm, sysaddon, tv_library, i['tvshowtitle'], year, imdb, tmdb)
                 if kodi_version < 17:
                     cm.append(('Information', 'Action(Info)'))
+                overlay = 6
+                watched_n = 0
                 try:
                     overlay = int(playcount.getSeasonOverlay(indicators, imdb, season))
+                    if _ind == 'local':
+                        watched_n = playcount.localSeasonWatchedCount(imdb, season)
+                    else:
+                        watched_n = playcount.seasonWatchedCount(show_rows, tmdb, season)
                     if _ind in ('simkl', 'mdblist', 'local'):
                         # aired_count is episodes that have aired. The full season count includes upcoming episodes.
                         raw_aired = i.get('aired_count')
@@ -452,21 +458,20 @@ class seasons:
                             except Exception:
                                 ep_total = -1
                         if ep_total > 0:
-                            if _ind == 'local':
-                                watched_n = playcount.localSeasonWatchedCount(imdb, season)
-                            else:
-                                watched_n = playcount.seasonWatchedCount(show_rows, tmdb, season)
                             overlay = 7 if watched_n >= ep_total else 6
                         elif ep_total == 0:
                             overlay = 6
                     if overlay == 7:
-                        cm.append((unwatchedMenu, 'RunPlugin(%s?action=tvshows_playcount&name=%s&imdb=%s&tmdb=%s&season=%s&query=6)' % (sysaddon, systitle, imdb, tmdb, season)))
                         meta.update({'playcount': 1, 'overlay': 7})
                     else:
-                        cm.append((watchedMenu, 'RunPlugin(%s?action=tvshows_playcount&name=%s&imdb=%s&tmdb=%s&season=%s&query=7)' % (sysaddon, systitle, imdb, tmdb, season)))
                         meta.update({'playcount': 0, 'overlay': 6})
                 except:
                     pass
+                playcount.append_watched_cm(
+                    cm, watchedMenu, unwatchedMenu,
+                    'RunPlugin(%s?action=tvshows_playcount&name=%s&imdb=%s&tmdb=%s&season=%s&query=7)' % (sysaddon, systitle, imdb, tmdb, season),
+                    'RunPlugin(%s?action=tvshows_playcount&name=%s&imdb=%s&tmdb=%s&season=%s&query=6)' % (sysaddon, systitle, imdb, tmdb, season),
+                    overlay, watched_n > 0)
                 try:
                     item = control.item(label=label, offscreen=True)
                 except:
@@ -618,8 +623,10 @@ class episodes:
             url = alias
             if url and str(url).startswith('simkl_'):
                 if str(url) == 'simkl_progress':
+                    self.cacheToDisc = False
                     self.list = self.simkl_progress_list()
                 elif str(url) == 'simkl_ondeck':
+                    self.cacheToDisc = False
                     self.list = self.simkl_ondeck_list()
                 elif str(url) == 'simkl_mycalendar':
                     self.list = self.simkl_calendar_list()
@@ -631,8 +638,10 @@ class episodes:
                 return self.list
             if url and str(url).startswith('mdblist_'):
                 if str(url) == 'mdblist_progress':
+                    self.cacheToDisc = False
                     self.list = self.mdblist_progress_list()
                 elif str(url) == 'mdblist_ondeck':
+                    self.cacheToDisc = False
                     self.list = self.mdblist_ondeck_list()
                 elif str(url) == 'mdblist_mycalendar':
                     self.list = self.mdblist_calendar_list()
@@ -647,16 +656,11 @@ class episodes:
             except:
                 pass
             if self.trakt_link in url and url == self.trakt_ondeck_link:
+                # Live fetch: leftover ≤1% and Dropped must match Red Light on Refresh.
+                self.cacheToDisc = False
                 self.blist = []
-                if self.addon_caching == 'true':
-                    self.blist = cache.get(self.trakt_episodes_list, self.addon_caching_timeout, url, self.trakt_user, self.lang)
-                else:
-                    self.blist = self.trakt_episodes_list(url, self.trakt_user, self.lang)
                 self.list = []
-                if self.addon_caching == 'true':
-                    self.list = cache.get(self.trakt_episodes_list, self.addon_caching_timeout, url, self.trakt_user, self.lang)
-                else:
-                    self.list = self.trakt_episodes_list(url, self.trakt_user, self.lang)
+                self.list = self.trakt_episodes_list(url, self.trakt_user, self.lang)
                 self.list = sorted(self.list, key=lambda k: int(k['paused_at']), reverse=True)
             elif self.trakt_link in url and url == self.trakt_progress_link:
                 # Live fetch: Dropped / hidden-from-progress changes must show
@@ -2406,8 +2410,6 @@ class episodes:
                 cm.append(('Clear Providers', 'RunPlugin(%s?action=clear_sources)' % sysaddon))
                 if multi == True:
                     cm.append(('Browse Series', 'Container.Update(%s?action=seasons&tvshowtitle=%s&year=%s&imdb=%s&tmdb=%s&meta=%s,return)' % (sysaddon, systvshowtitle, year, imdb, tmdb, seas_meta)))
-                if isFolder == False:
-                    cm.append(('Queue Item', 'RunPlugin(%s?action=queue_item)' % sysaddon))
                 if mdblistCredentials == True:
                     cm.append(('MDBList Lists Manager', 'RunPlugin(%s?action=mdblist_manager&name=%s&imdb=%s&tmdb=%s&content=tvshow)' % (sysaddon, systvshowtitle, imdb, tmdb)))
                 if simklCredentials == True:
@@ -2419,16 +2421,33 @@ class episodes:
                 libtools.append_tvshow_library_cm(cm, sysaddon, tv_library, i['tvshowtitle'], year, imdb, tmdb)
                 if kodi_version < 17:
                     cm.append(('Information', 'Action(Info)'))
+                overlay = 6
                 try:
                     overlay = int(playcount.getEpisodeOverlay(indicators, imdb, tmdb, season, episode))
                     if overlay == 7:
-                        cm.append((unwatchedMenu, 'RunPlugin(%s?action=episodes_playcount&imdb=%s&tmdb=%s&season=%s&episode=%s&query=6)' % (sysaddon, imdb, tmdb, season, episode)))
                         meta.update({'playcount': 1, 'overlay': 7})
                     else:
-                        cm.append((watchedMenu, 'RunPlugin(%s?action=episodes_playcount&imdb=%s&tmdb=%s&season=%s&episode=%s&query=7)' % (sysaddon, imdb, tmdb, season, episode)))
                         meta.update({'playcount': 0, 'overlay': 6})
                 except:
                     pass
+                offset = 0
+                try:
+                    shelf = bookmarks.shelf_progress(i.get('progress'))
+                    if shelf and float(meta.get('duration') or 0) > 120:
+                        offset = shelf / 100.0 * float(meta['duration'])
+                    else:
+                        offset = bookmarks.get('episode', imdb, season, episode, True)
+                except Exception:
+                    offset = 0
+                try:
+                    has_progress = float(offset) > 120
+                except Exception:
+                    has_progress = False
+                playcount.append_watched_cm(
+                    cm, watchedMenu, unwatchedMenu,
+                    'RunPlugin(%s?action=episodes_playcount&imdb=%s&tmdb=%s&season=%s&episode=%s&query=7)' % (sysaddon, imdb, tmdb, season, episode),
+                    'RunPlugin(%s?action=episodes_playcount&imdb=%s&tmdb=%s&season=%s&episode=%s&query=6)' % (sysaddon, imdb, tmdb, season, episode),
+                    overlay, has_progress)
                 if isFolder == False:
                     cm.append((playbackMenu, 'RunPlugin(%s?action=alter_sources&url=%s&meta=%s)' % (sysaddon, sysurl, sysmeta)))
                 try:
@@ -2451,11 +2470,6 @@ class episodes:
                 item.addContextMenuItems(control.context_menu_items(cm))
                 if isPlayable:
                     item.setProperty('IsPlayable', 'true')
-                shelf = bookmarks.shelf_progress(i.get('progress'))
-                if shelf and float(meta.get('duration') or 0) > 120:
-                    offset = shelf / 100.0 * float(meta['duration'])
-                else:
-                    offset = bookmarks.get('episode', imdb, season, episode, True)
                 if float(offset) > 120:
                     percentPlayed = int(float(offset) / float(meta['duration']) * 100)
                     item.setProperty('resumetime', str(offset))
