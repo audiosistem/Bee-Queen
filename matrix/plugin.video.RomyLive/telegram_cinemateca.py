@@ -65,8 +65,8 @@ ADDON_ID = 'plugin.video.RomyLive'
 DEFAULT_CHANNEL = 'cinematecaro11'
 DEFAULT_API_BASE = 'https://tg.i-c-a.su'
 
-FANART = 'https://documentarys.do.am/2026/Principal/romylive.png'
-FALLBACK_THUMB = 'https://documentarys.do.am/2026/filme/filme.png'
+FANART = 'https://raw.githubusercontent.com/ilicaromeo-cloud/APK/refs/heads/main/2026/Principal/romylive.png'
+FALLBACK_THUMB = 'https://raw.githubusercontent.com/ilicaromeo-cloud/APK/refs/heads/main/2026/filme/filme.png'
 
 PAGE_SIZE = 100          # serviciul returneaza maximum 100 de postari/cerere
 MAX_PAGES = 8            # plasa de siguranta (8 x 100 = 800 postari)

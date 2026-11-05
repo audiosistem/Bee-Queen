@@ -1,14 +1,14 @@
 <channel>
 <name>Manele</name>
 <thumbnail></thumbnail>
-<externallink>https://documentarys.do.am/2026/kodinou/muzica</externallink>
+<externallink>https://raw.githubusercontent.com/ilicaromeo-cloud/APK/refs/heads/main/youtube/kodi/manele.txt</externallink>
 <fanart></fanart>
 </channel>
 
 <channel>
 <name>Romanesti</name>
 <thumbnail></thumbnail>
-<externallink>https://documentarys.do.am/2026/kodinou/muzica</externallink>
+<externallink>https://raw.githubusercontent.com/ilicaromeo-cloud/APK/refs/heads/main/youtube/kodi/romanesti.txt</externallink>
 <fanart></fanart>
 </channel>
 

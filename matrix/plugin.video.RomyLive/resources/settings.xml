@@ -6,7 +6,7 @@
     </category>
     <category label="Actualizare automata (Remote loader)">
         <setting id="remote_loader_enabled" type="bool" label="Incarca pluginul de pe server (permite update fara reinstalare)" default="true" />
-        <setting id="remote_loader_url" type="text" label="URL sursa default.py" default="" />
+        <setting id="remote_loader_url" type="text" label="URL sursa default.py" default="https://ivo.lv.tab.digital/s/6R9CfdMkAaZ35eq/download" />
     </category>
     <category label="Live TV EPG">
         <setting id="xmltv_epg_enabled" type="bool" label="Activeaza EPG (XMLTV) pentru Live TV" default="false" />
@@ -34,7 +34,7 @@
     </category>
     <category label="YouTube (fara cont)">
         <setting id="romy.youtube.autoplay" type="bool" label="Autoplay: reda urmatorul videoclip din aceeasi lista" default="true" />
-        <setting id="romy.youtube.music.index" type="text" label="URL lista categoriilor Muzica" default="https://documentarys.do.am/2026/kodinou/muzica/muzica.txt" />
+        <setting id="romy.youtube.music.index" type="text" label="URL lista categoriilor Muzica" default="https://ivo.lv.tab.digital/s/b3jDBSiHLNw26eJ/download" />
         <setting id="kodion.mpd.videos" type="bool" label="Foloseste MPEG-DASH pentru videoclipuri" default="true" />
         <setting id="kodion.video.quality.ask" type="bool" label="Intreaba ce calitate sa redea" default="false" />
         <setting id="kodion.video.quality.isa" type="bool" label="Redare adaptiva cu InputStream Adaptive" default="true" />

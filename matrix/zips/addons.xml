@@ -220,7 +220,7 @@ Scegli una stazione e goditi la musica.</description>
       <screenshot>resources/media/menu-countries.png</screenshot>
     </assets>
   </extension>
-</addon><addon id="plugin.audio.mp3streams" name="MP3 Streams" version="2026.08.22" provider-name="Jon Bovi, [COLOR crimson]King Krimson[/COLOR]">
+</addon><addon id="plugin.audio.mp3streams" name="MP3 Streams" version="2026.08.24" provider-name="Jon Bovi, [COLOR crimson]King Krimson[/COLOR]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.future" />
@@ -231,18 +231,24 @@ Scegli una stazione e goditi la musica.</description>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>audio</provides>
     </extension>
-    <extension point="xbmc.service" library="playerMP3.py" />
+    
     <extension point="xbmc.addon.metadata">
-        <platform>all</platform>
         <summary>A Music Streaming Collection</summary>
         <description>MP3 Streams for Kodi 19+</description>
-        <news>2026.08.22 - Bundled menu, genre, and cached artist icons load on Android/Linux: local paths that start with / are no longer rewritten as musicmp3.ru URLs (thanks to adamsbuilds).
+        <disclaimer lang="en">The author of this add-on does not host any content and has no affiliation with the content providers</disclaimer>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL-3.0</license>
+        <forum>https://t.me/+X-lt1ZDii3I3YjA0</forum>
+        <website>https://redwizard.xyz/</website> 
+        <source>https://github.com/The-Red-Wizard/TheRedWizard</source>
+        <news>2026.08.24 - Year-less album-folder fallbacks check ID3 date when present, so a 1994 download is not used for a 2001 listing of the same title; untagged older files still play.
+2026.08.22 - Bundled menu, genre, and cached artist icons load on Android/Linux: local paths that start with / are no longer rewritten as musicmp3.ru URLs (thanks to adamsbuilds).
 2026.08.19 - Album download folders include the release year (Album (1979)) so same-artist, same-title albums no longer overwrite each other.
-2026.07.20 - Harden audio downloads: atomic .part handoff, validate status/size/magic bytes, skip failed album tracks.
 See the changelog. Enjoy!</news>
         <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
+            <icon>art/icon.png</icon>
+            <fanart>art/fanart.jpg</fanart>
         </assets>
     </extension>
 </addon><addon id="plugin.audio.radio_de_light" name="Radio light" provider-name="fivebanger, Publish3r" version="1.0.2">
@@ -1627,7 +1633,7 @@ In addition to what livestreams allowed you to do, you can now,
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.themoviedb.helper" version="6.20.2" name="TMDb Helper" provider-name="jurialmunkey">
+</addon><addon id="plugin.video.themoviedb.helper" version="6.20.8" name="TMDb Helper" provider-name="jurialmunkey">
 <requires>
   <import addon="xbmc.python" version="3.0.1" />
   <import addon="script.module.requests" version="2.9.1" />

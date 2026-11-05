@@ -13,11 +13,6 @@ class CommonContainerAPIs():
         return TMDbImagePath()
 
     @cached_property
-    def trakt_api(self):
-        from tmdbhelper.lib.api.trakt.api import TraktAPI
-        return TraktAPI()
-
-    @cached_property
     def ftv_api(self):
         from tmdbhelper.lib.api.fanarttv.api import FanartTV
         from tmdbhelper.lib.addon.plugin import get_setting
@@ -84,7 +79,6 @@ class CommonRatingsAPIs(CommonContainerAPIs):
         return info
 
     def configure_sync(self, sync, season=None, episode=None):
-        sync.common_apis.trakt_api = self.trakt_api
         sync.common_apis.tmdb_api = self.tmdb_api
         sync.tmdb_type = self.tmdb_type
         sync.tmdb_id = self.tmdb_id

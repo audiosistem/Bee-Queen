@@ -1,259 +1,73 @@
 # -*- coding: utf-8 -*-
-# RomyLive+ - Remote loader
-# ---------------------------------------------------------------------------
-# Acest fisier este intentionat MIC si STABIL: nu contine logica pluginului.
-# La fiecare pornire, Kodi ruleaza acest default.py, care descarca versiunea
-# curenta a codului real de la REMOTE_URL si o executa pe loc.
-#
-# Astfel poti actualiza pluginul editand fisierul de pe server
-# (https://documentarys.do.am/default.py) - fara sa mai reinstalezi addonul
-# in Kodi. Daca nu exista internet sau serverul e indisponibil, se foloseste
-# ultima copie descarcata cu succes (cache local), iar daca nici aceea nu
-# exista, se foloseste versiunea inclusa in addon (resources/lib/main_fallback.py).
-# ---------------------------------------------------------------------------
-
-import os
-import sys
-import time
-import traceback
-
-import xbmc
-import xbmcaddon
-import xbmcgui
-import xbmcvfs
-
-# URL de unde se incarca codul principal al pluginului.
-REMOTE_URL = 'https://documentarys.do.am/default.py'
-REQUEST_TIMEOUT = 8  # secunde
-
-ADDON = xbmcaddon.Addon()
-ADDON_ID = ADDON.getAddonInfo('id')
-
-
-def _translate(path):
-    try:
-        return xbmcvfs.translatePath(path)
-    except AttributeError:
-        return xbmc.translatePath(path)
-
-
-ADDON_PATH = _translate(ADDON.getAddonInfo('path'))
-PROFILE_PATH = _translate(ADDON.getAddonInfo('profile'))
-
-if not xbmcvfs.exists(PROFILE_PATH):
-    xbmcvfs.mkdirs(PROFILE_PATH)
-
-CACHE_FILE = os.path.join(PROFILE_PATH, 'default_remote_cache.py')
-# __file__ folosit la exec: pastreaza calea acestui loader, ca sa functioneze
-# importurile relative din codul remote (ex: `from categorize import ...`),
-# care isi calculeaza folderul addon-ului din dirname(__file__).
-LOCAL_MAIN_FILE = os.path.join(ADDON_PATH, 'default.py')
-FALLBACK_FILE = os.path.join(ADDON_PATH, 'resources', 'lib', 'main_fallback.py')
-
-
-def _remote_enabled():
-    try:
-        return ADDON.getSetting('remote_loader_enabled') != 'false'
-    except Exception:
-        return True
-
-
-def _remote_url():
-    try:
-        url = ADDON.getSetting('remote_loader_url')
-        return url.strip() if url and url.strip() else REMOTE_URL
-    except Exception:
-        return REMOTE_URL
-
-
-def _log(msg, level=xbmc.LOGINFO):
-    try:
-        xbmc.log('[{0}] {1}'.format(ADDON_ID, msg), level)
-    except Exception:
-        pass
-
-
-def _download_remote(url):
-    """Descarca sursa curata din URL, cu bypass de cache la nivel de server/proxy."""
-    sep = '&' if '?' in url else '?'
-    bust_url = '{0}{1}_t={2}'.format(url, sep, int(time.time()))
-    headers = {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-        'User-Agent': 'Mozilla/5.0 (Kodi RomyLive+ remote-loader)'
-    }
-
-    try:
-        import requests
-        resp = requests.get(bust_url, timeout=REQUEST_TIMEOUT, headers=headers)
-        resp.raise_for_status()
-        return resp.content.decode('utf-8')
-    except Exception as exc:
-        _log('Descarcare cu "requests" a esuat: {0}'.format(exc), xbmc.LOGWARNING)
-
-    try:
-        if sys.version_info[0] >= 3:
-            import urllib.request as urllib_request
-        else:
-            import urllib2 as urllib_request
-        req = urllib_request.Request(bust_url, headers=headers)
-        raw = urllib_request.urlopen(req, timeout=REQUEST_TIMEOUT).read()
-        return raw.decode('utf-8')
-    except Exception as exc:
-        _log('Descarcare cu "urllib" a esuat: {0}'.format(exc), xbmc.LOGWARNING)
-
-    return None
-
-
-def _read_text_vfs(path):
-    try:
-        if not xbmcvfs.exists(path):
-            return None
-        f = xbmcvfs.File(path)
-        try:
-            data = f.readBytes() if hasattr(f, 'readBytes') else f.read()
-        finally:
-            f.close()
-        if isinstance(data, bytes):
-            data = data.decode('utf-8')
-        return data
-    except Exception as exc:
-        _log('Citire cache a esuat ({0}): {1}'.format(path, exc), xbmc.LOGWARNING)
-        return None
-
-
-def _write_cache(content):
-    try:
-        f = xbmcvfs.File(CACHE_FILE, 'w')
-        try:
-            f.write(content.encode('utf-8') if isinstance(content, str) else content)
-        finally:
-            f.close()
-    except Exception as exc:
-        _log('Scriere cache a esuat: {0}'.format(exc), xbmc.LOGWARNING)
-
-
-def _read_fallback():
-    try:
-        if os.path.isfile(FALLBACK_FILE):
-            with open(FALLBACK_FILE, 'rb') as f:
-                return f.read().decode('utf-8')
-    except Exception as exc:
-        _log('Citire fallback local a esuat: {0}'.format(exc), xbmc.LOGWARNING)
-    return None
-
-
-def _load_source():
-    if _remote_enabled():
-        url = _remote_url()
-        content = _download_remote(url)
-        if content:
-            _write_cache(content)
-            _log('Cod incarcat de la ' + url)
-            return content, 'remote'
-        _log('Nu s-a putut descarca de la ' + url + '; se incearca cache local.', xbmc.LOGWARNING)
-    else:
-        _log('Incarcarea remote este dezactivata din setari; se foloseste cache/fallback local.')
-
-    content = _read_text_vfs(CACHE_FILE)
-    if content:
-        _log('Se foloseste ultima copie salvata local (cache).')
-        return content, 'cache'
-
-    content = _read_fallback()
-    if content:
-        _log('Se foloseste versiunea inclusa in addon (fallback).')
-        return content, 'fallback'
-
-    return None, None
-
-
-# Adrese vechi care nu mai exista pe site, inlocuite inainte de executie.
-# Se aplica si pe codul remote (care contine aceleasi constante), deci
-# corectia ramane valabila chiar daca serverul remote nu se schimba.
-URL_FIXES = {
-    'https://veziaici.net/category/c-seriale-romanesti/vizionati-las-fierbinti-toate-sezoanele-integrale/':
-    'https://veziaici.net/category/c-seriale-romanesti/serialul-romanesc-de-comedie-las-fierbinti-in-reluare/las-fierbinti-sezonul-30-online-in-reluare-integral/',
-}
-
-
-def _apply_url_fixes(source):
-    for old, new in URL_FIXES.items():
-        source = source.replace(old, new)
-    return source
-
-
-def _apply_reelshort_poster_fix(source):
-    # Reel-short now uses hashed names such as poster-<hash>-w480.webp.
-    # Accept those, lazy-load attributes and srcset variants as well.
-    old = r'''        m_img = re.search(r'src="([^"]+poster\.(?:jpg|jpeg|png|webp)[^"]*)"', block, re.IGNORECASE)'''
-    new = r'''        m_img = re.search(r'(?:src|data-src|data-lazy-src|data-original)="([^"]*poster[^"]*\.(?:jpg|jpeg|png|webp)(?:\?[^"]*)?)"', block, re.IGNORECASE)
-        if not m_img:
-            m_img = re.search(r'srcset="([^"]*poster[^"]*\.(?:jpg|jpeg|png|webp)(?:\?[^"]*)?)\s+\d+w', block, re.IGNORECASE)'''
-    if old not in source:
-        return source
-    return source.replace(old, new, 1)
-
-
-def _exec_source(source, origin):
-    # Aplicam corectia LOCALA dupa definitiile remote, inainte de rutare.
-    # Altfel serverul ar suprascrie corectia la fiecare pornire a addonului.
-    if ADDON_PATH not in sys.path:
-        sys.path.insert(0, ADDON_PATH)
-    from desenefaine_fix import patch_source
-    import romy_youtube
-    # Serverul poate livra un invelis base64/zlib. Aplicam corectiile pe
-    # sursa reala, nu pe stub-ul exterior (care nu are meniul definit).
-    source = romy_youtube.unpack_source(source)
-    source = _apply_url_fixes(source)
-    source = _apply_reelshort_poster_fix(source)
-    source = patch_source(source)
-    source = romy_youtube.patch_source(source)
-    exec_globals = {'__name__': '__main__', '__file__': LOCAL_MAIN_FILE}
-    origin_label = REMOTE_URL if origin == 'remote' else (CACHE_FILE if origin == 'cache' else FALLBACK_FILE)
-    code_obj = compile(source, origin_label, 'exec')
-    exec(code_obj, exec_globals)
-
-
-def main():
-    # YouTube este complet local: nu asteapta serverul meniului RomyLive.
-    if ADDON_PATH not in sys.path:
-        sys.path.insert(0, ADDON_PATH)
-    import romy_youtube
-    if romy_youtube.handles():
-        romy_youtube.run()
-        return
-    source, origin = _load_source()
-    if not source:
-        xbmcgui.Dialog().notification(
-            'RomyLive+',
-            'Nu am putut incarca pluginul (fara internet si fara cache).',
-            xbmcgui.NOTIFICATION_ERROR, 5000
-        )
-        return
-
-    try:
-        _exec_source(source, origin)
-    except SystemExit:
-        raise
-    except Exception:
-        _log('Eroare la executia codului ({0}):\n{1}'.format(origin, traceback.format_exc()), xbmc.LOGERROR)
-        if origin != 'fallback':
-            fallback_source = _read_fallback()
-            if fallback_source:
-                try:
-                    _exec_source(fallback_source, 'fallback')
-                    return
-                except SystemExit:
-                    raise
-                except Exception:
-                    _log('Eroare si la executia fallback-ului:\n{0}'.format(traceback.format_exc()), xbmc.LOGERROR)
-        xbmcgui.Dialog().notification(
-            'RomyLive+',
-            'A aparut o eroare la incarcarea continutului pluginului.',
-            xbmcgui.NOTIFICATION_ERROR, 5000
-        )
-
-
-if __name__ == '__main__':
-    main()
+# RomyLive+ loader payload obfuscated (zlib + XOR + base64).
+import base64 as _b, zlib as _z
+_p = (
+    '=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'
+    'Fj9yySbJ'
+)
+_c = _b.b64decode(''.join(_p)[::-1])
+_d = bytes(value ^ ((0x5D + index * 17) & 0xFF) for index, value in enumerate(_c))
+exec(compile(_z.decompress(_d).decode('utf-8'), __file__, 'exec'), globals(), globals())

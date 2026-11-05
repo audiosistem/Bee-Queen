@@ -45,7 +45,7 @@ Listele TXT si default.py de pe server nu necesita modificari.
 
 MUZICA PE GENURI
 Incarca fisierul muzica.txt livrat separat la:
-https://documentarys.do.am/2026/kodinou/muzica/muzica.txt
+https://raw.githubusercontent.com/ilicaromeo-cloud/APK/refs/heads/main/youtube/kodi/muzica.txt
 Acesta contine categorii <channel> cu <name> si <externallink> spre
 manele.txt, romanesti.txt si orice alte genuri adaugi ulterior.
 Fisierul este citit la fiecare deschidere; nu trebuie reinstalat addonul.

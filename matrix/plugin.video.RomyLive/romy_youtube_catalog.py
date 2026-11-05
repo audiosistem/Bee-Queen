@@ -5,7 +5,26 @@ import os
 import re
 from urllib.parse import parse_qs, urljoin, urlparse, urlencode
 
-INDEX_URL = 'https://documentarys.do.am/2026/kodinou/muzica/muzica.txt'
+RAW_BASE = 'https://raw.githubusercontent.com/ilicaromeo-cloud/APK/refs/heads/main'
+SHARE_BASE = 'https://ivo.lv.tab.digital/s/'
+SHARE_URLS = {
+    'emisiuni': SHARE_BASE + 'c5xzgXDRETpAN93/download',
+    'extrazone': SHARE_BASE + 'He9X2bzpEF7FndW/download',
+    'filme': SHARE_BASE + 'oMdbkbKbjS9zGdw/download',
+    'manele_2026': SHARE_BASE + 'qoReAm65AiYgSwq/download',
+    'manele': SHARE_BASE + 'zkCQ59P8so69DKM/download',
+    'muzica': SHARE_BASE + 'b3jDBSiHLNw26eJ/download',
+    'petrecere': SHARE_BASE + 'rEcngrZXxibnkw7/download',
+    'podcast': SHARE_BASE + 'bnEbTNC6mQGq9oK/download',
+    'romaneasca_2026': SHARE_BASE + 'oWtfD35w34Rcmdb/download',
+    'romaneasca': SHARE_BASE + '8d2CPPHNoYpQ9BE/download',
+    'seriale': SHARE_BASE + 'kRRG8jxL9caTctY/download',
+    'sport': SHARE_BASE + 'nq8gJjfDPT3JBNT/download',
+    'stiri': SHARE_BASE + '9DbpbZxnoGXc35p/download',
+    'straina': SHARE_BASE + 'Q3EjS6PYeEWWDdy/download',
+    'trap': SHARE_BASE + 'XPEypyNfsPTmdt4/download',
+}
+INDEX_URL = SHARE_URLS['muzica']
 MAX_BYTES = 4 * 1024 * 1024
 PAGE_SIZE = 40
 
@@ -15,9 +34,50 @@ def field(block, tag):
     return html.unescape(match.group(1).strip()) if match else ''
 
 
-def http_url(value, base):
-    value = urljoin(base, value)
+def github_url(value):
+    if not value:
+        return value
     parsed = urlparse(value)
+    host = (parsed.hostname or '').lower()
+    if host.startswith('www.'):
+        host = host[4:]
+    path = parsed.path or '/'
+    if host in ('documentarys' + '.do.am', 'romyiptv' + '.do.am'):
+        music_prefix = '/2026/kodinou/muzica/'
+        if path.startswith(music_prefix):
+            path = '/youtube/kodi/' + path[len(music_prefix):]
+        value = RAW_BASE + path + (('?' + parsed.query) if parsed.query else '')
+        parsed = urlparse(value)
+        host = (parsed.hostname or '').lower()
+        path = parsed.path or '/'
+    if host in ('raw.githubusercontent.com', 'documentarys' + '.do.am', 'romyiptv' + '.do.am'):
+        stem = os.path.splitext(os.path.basename(path))[0].lower().replace('-', '_').replace(' ', '_')
+        aliases = {
+            'emisiuni': 'emisiuni', 'extrazone': 'extrazone', 'filme': 'filme',
+            'manele2026': 'manele_2026', 'manele_2026': 'manele_2026',
+            'manele': 'manele', 'muzica': 'muzica', 'petrecere': 'petrecere',
+            'podcast': 'podcast', 'romaneasca2026': 'romaneasca_2026',
+            'romaneasca_2026': 'romaneasca_2026', 'romanesti2026': 'romaneasca_2026',
+            'romanesti_2026': 'romaneasca_2026', 'romaneasca': 'romaneasca',
+            'romanesti': 'romaneasca', 'romanesti2': 'romaneasca', 'seriale': 'seriale', 'sport': 'sport',
+            'stiri': 'stiri', 'straina': 'straina', 'trap': 'trap',
+        }
+        share_key = aliases.get(stem)
+        if share_key:
+            return SHARE_URLS[share_key]
+    return value
+
+
+def http_url(value, base):
+    value = github_url(urljoin(base, value))
+    parsed = urlparse(value)
+    # Nextcloud share pages (sometimes copied with ?dir=...&openfile=true)
+    # return HTML. Convert public share links to their raw text download URL.
+    if (parsed.hostname or '').lower() == 'ivo.lv.tab.digital':
+        match = re.match(r'^/s/([A-Za-z0-9]+)(?:/download)?/?$', parsed.path or '')
+        if match:
+            value = 'https://ivo.lv.tab.digital/s/{0}/download'.format(match.group(1))
+            parsed = urlparse(value)
     if parsed.scheme not in ('http', 'https') or not parsed.hostname or parsed.username or parsed.password:
         raise ValueError('Adresa listei trebuie sa fie HTTP sau HTTPS.')
     return value
@@ -88,7 +148,7 @@ def parse_list(text, source):
         external = field(block, 'externallink')
         playlist = field(block, 'playlist')
         youtube_channel = field(block, 'youtubechannel')
-        thumb, fanart = field(block, 'thumbnail'), field(block, 'fanart')
+        thumb, fanart = github_url(field(block, 'thumbnail')), github_url(field(block, 'fanart'))
         if not name:
             raise ValueError('Lipseste <name> sau <title> din lista Muzica.')
         if youtube_channel:

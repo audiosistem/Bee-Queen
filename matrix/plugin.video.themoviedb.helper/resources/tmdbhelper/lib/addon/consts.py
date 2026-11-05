@@ -12,9 +12,6 @@ DATALEVEL_MAX = 5
 SQLITE_FALSE = 0
 SQLITE_TRUE = 1
 
-TRAKT_MAX_ITEMS_PER_PAGE = 250
-
-
 NODE_BASEDIR = 'special://profile/addon_data/plugin.video.themoviedb.helper/nodes/'
 RUNSCRIPT = 'Runscript(plugin.video.themoviedb.helper,{})'
 
@@ -375,7 +372,6 @@ ROUTE_NOID.update({
     'tmdb_v4_rated': {'redirect': 'tmdb_rated'},
     'tmdb_v4_lists': {'redirect': 'tmdb_lists'},
     'tmdb_v4_list': {'redirect': 'tmdb_list'},
-    'tmdb_v4_watchlist': ROUTE_NOID['sync_watchlist'],
     'trakt_towatch': ROUTE_NOID['sync_towatch'],
     'trakt_becauseyouwatched': ROUTE_NOID['sync_becauseyouwatched'],
     'trakt_becausemostwatched': ROUTE_NOID['sync_becausemostwatched'],
