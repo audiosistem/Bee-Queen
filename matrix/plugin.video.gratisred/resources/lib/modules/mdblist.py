@@ -8,11 +8,18 @@ calendar, static lists). Indicators value 3.
 from __future__ import absolute_import
 
 import json
+import pickle
 import re
 import time
+import zlib
 from datetime import timedelta
 
 import requests
+
+try:
+    from sqlite3 import Binary
+except ImportError:
+    from pysqlite2 import Binary
 
 from resources.lib.modules import cache
 from resources.lib.modules import control
@@ -456,6 +463,28 @@ def _bust_caches():
         cur.connection.commit()
     except Exception:
         pass
+
+
+def _bust_list_caches():
+    """Drop list/playback/calendar snapshots without touching watched indicators."""
+    try:
+        cur = cache._get_connection_cursor()
+        for prefix in (
+            '_personal_items', '_dropped_tmdb_ids_raw',
+            '_playback_items', '_fetch_lists', '_list_payload', '_calendar_fetch',
+        ):
+            cur.execute('DELETE FROM %s WHERE key LIKE ?' % cache.cache_table, [prefix + '%'])
+        cur.connection.commit()
+    except Exception:
+        pass
+
+
+def _write_indicator_cache(function, result, *args):
+    try:
+        key = cache._hash_function(function, *args)
+        cache.cache_insert(key, Binary(zlib.compress(pickle.dumps(result))))
+    except Exception as e:
+        log_utils.log('MDBList cache write failed: %s' % e, 1)
 
 
 def _clear_playback_cache():
@@ -1149,7 +1178,7 @@ def syncMovies(user):
             return []
         watched = _get_mdbl_paginated_list('sync/watched')
         if not isinstance(watched, dict):
-            return []
+            return None
         indicators = []
         for item in watched.get('movies') or []:
             ids, block, _tmdb = _ids_from_item(item, 'movies')
@@ -1158,7 +1187,7 @@ def syncMovies(user):
                 indicators.append(imdb)
         return indicators
     except Exception:
-        return []
+        return None
 
 
 def cachesyncMovies(timeout=0):
@@ -1178,7 +1207,7 @@ def syncTVShows(user):
             return []
         watched = _get_mdbl_paginated_list('sync/watched')
         if not isinstance(watched, dict):
-            return []
+            return None
         by_show = {}
         meta_by_show = {}
         for item in watched.get('episodes') or []:
@@ -1221,7 +1250,7 @@ def syncTVShows(user):
             indicators.append((tmdb, aired, watched_pairs, meta_by_show.get(tmdb, {})))
         return indicators
     except Exception:
-        return []
+        return None
 
 
 def cachesyncTVShows(timeout=0):
@@ -1282,25 +1311,32 @@ def syncMdblistWatched(silent=True, force_update=False):
                 return (latest.get(key) or '') > (cached.get(key) or '')
             except Exception:
                 return True
+        if not force_update and not any(_changed(k) for k in (
+            'watched_at', 'episode_watched_at', 'paused_at', 'episode_paused_at',
+            'watchlisted_at', 'collected_at', 'dropped_at', 'list_updated_at',
+        )):
+            _store_cached_activities(latest)
+            return True
+        user = control.setting('mdblist.user').strip() or 'mdblist'
         if force_update:
-            _bust_caches()
+            _bust_list_caches()
         else:
-            if not any(_changed(k) for k in (
-                'watched_at', 'episode_watched_at', 'paused_at', 'episode_paused_at',
-                'watchlisted_at', 'collected_at', 'dropped_at', 'list_updated_at',
-            )):
-                return True
             if _changed('paused_at') or _changed('episode_paused_at'):
                 _clear_playback_cache()
             if _changed('dropped_at'):
                 _clear_dropped_cache()
-            if _changed('watched_at'):
-                cachesyncMovies(timeout=0)
-            if _changed('episode_watched_at'):
-                cachesyncTVShows(timeout=0)
-        if force_update:
-            cachesyncMovies(timeout=0)
-            cachesyncTVShows(timeout=0)
+        need_movies = force_update or _changed('watched_at')
+        need_tv = force_update or _changed('episode_watched_at')
+        if need_movies:
+            movies = syncMovies(user)
+            if movies is None:
+                return False
+            _write_indicator_cache(syncMovies, movies, user)
+        if need_tv:
+            shows = syncTVShows(user)
+            if shows is None:
+                return False
+            _write_indicator_cache(syncTVShows, shows, user)
         _store_cached_activities(latest)
         if not silent:
             control.infoDialog('MDBList Cache Refreshed.', sound=True)
@@ -1504,7 +1540,11 @@ def markSeasonAsNotWatched(imdb, season, tmdb=None):
 
 
 def mdblist_official_status():
-    """True when official MDBList scrobbler should own progress writes."""
+    """True when official MDBList scrobbler will send this plugin:// play.
+
+    Installed and authorised is not enough. Scrobble must be on. A
+    library-only / exclude-plugin setting means Gratis Red must send it.
+    """
     if not control.condVisibility('System.HasAddon(service.mdblist-scrobbler)'):
         return False
     try:
@@ -1527,6 +1567,15 @@ def mdblist_official_status():
         token = ''
     if not token:
         return False
+    for key in ('scrobble_library_only', 'library_only', 'only_library',
+                'ExcludeHTTP', 'exclude_http', 'exclude_plugin', 'scrobble_exclude_plugin'):
+        try:
+            val = (addon.getSetting(key) or '').strip().lower()
+        except Exception:
+            continue
+        if val in ('true', '1', 'yes', 'on'):
+            return False
+    saw_enabled = False
     for key in ('scrobble', 'scrobble_enabled', 'enable_scrobble', 'scrobble_movies', 'scrobble_episodes'):
         try:
             val = (addon.getSetting(key) or '').strip().lower()
@@ -1535,8 +1584,8 @@ def mdblist_official_status():
         if val in ('false', '0', 'no', 'off'):
             return False
         if val in ('true', '1', 'yes', 'on'):
-            return True
-    return True
+            saw_enabled = True
+    return saw_enabled
 
 
 def mdblist_scrobble(action, media_type, percent=0, tmdb=None, imdb=None, season=None, episode=None):

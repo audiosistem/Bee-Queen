@@ -60,7 +60,7 @@ def paginate(items, page=1, page_size=None):
     return page_items, next_page
 
 BASE_URL = 'https://api.trakt.tv'
-REDIRECT_URI = 'urn:ietf:wg:oauth:2.0:oob'
+AUTH_URL = 'https://auth.trakt.tv'
 V2_API_KEY = '33ea6bfa2b06c9cfa3e408fc6b4cc30484f31b90733df3508fd09ce512f47982'
 CLIENT_SECRET = '4a294afdab95894be977dc79c9715224dc87a4a88d74944507945ca58bf719b2'
 
@@ -76,6 +76,7 @@ TRAKT_PAGE_LIMIT = 250
 # extended=progress on watched/shows is capped at 100 per page
 TRAKT_WATCHED_PROGRESS_PAGE_LIMIT = 100
 TRAKT_REFRESH_PROPERTY = 'gratisred.trakt_refreshing_token'
+TRAKT_DEAD_GRANT_PROPERTY = 'gratisred.trakt_refresh_dead'
 
 
 def _trakt_page_limit(query_params):
@@ -92,28 +93,84 @@ def _set_trakt_expires(expires_in):
         pass
 
 
-def _refreshTraktToken():
+def _trakt_oauth_headers(client_id):
+    return {'Content-Type': 'application/json', 'trakt-api-key': client_id, 'trakt-api-version': '2'}
+
+
+def _trakt_oauth_post(path, data, timeout=30):
+    client_id = (data or {}).get('client_id') or _trakt_app_keys()[0]
+    resp = requests.post(
+        urljoin(AUTH_URL, path), data=json.dumps(data),
+        headers=_trakt_oauth_headers(client_id), timeout=timeout)
     try:
-        control.window.setProperty(TRAKT_REFRESH_PROPERTY, 'true')
-        oauth = urljoin(BASE_URL, '/oauth/token')
+        payload = resp.json()
+    except Exception:
+        payload = None
+    try:
+        retry_after = int(resp.headers.get('Retry-After') or 0)
+    except Exception:
+        retry_after = 0
+    return resp.status_code, payload, retry_after
+
+
+def _trakt_token_usable():
+    if not (control.setting('trakt.token') or '').strip():
+        return False
+    try:
+        expires_at = float(control.setting('trakt.expires') or '0')
+    except Exception:
+        expires_at = 0.0
+    return time.time() < expires_at
+
+
+def _clear_trakt_dead_grant():
+    try:
+        control.window.clearProperty(TRAKT_DEAD_GRANT_PROPERTY)
+    except Exception:
+        pass
+
+
+def _wait_for_trakt_refresh():
+    while control.window.getProperty(TRAKT_REFRESH_PROPERTY) == 'true':
+        time.sleep(0.25)
+
+
+def _refreshTraktToken():
+    if control.window.getProperty(TRAKT_DEAD_GRANT_PROPERTY) == 'true':
+        return None
+    if control.window.getProperty(TRAKT_REFRESH_PROPERTY) == 'true':
+        _wait_for_trakt_refresh()
+        return control.setting('trakt.token') if _trakt_token_usable() else None
+    control.window.setProperty(TRAKT_REFRESH_PROPERTY, 'true')
+    try:
         client_id, client_secret = _trakt_app_keys()
-        headers = {'Content-Type': 'application/json', 'trakt-api-key': client_id, 'trakt-api-version': '2'}
-        opost = {'client_id': client_id, 'client_secret': client_secret, 'redirect_uri': REDIRECT_URI,
-                 'grant_type': 'refresh_token', 'refresh_token': control.setting('trakt.refresh')}
-        resp = requests.post(oauth, data=json.dumps(opost), headers=headers, timeout=30)
-        try:
-            result = resp.json()
-        except Exception:
-            result = {}
-        if resp.status_code != 200 or not isinstance(result, dict) or 'access_token' not in result:
-            from resources.lib.modules.meta_auth_alerts import maybe_notify_refresh_failure
-            maybe_notify_refresh_failure('trakt', resp.status_code, result or resp.text)
+        if _trakt_token_usable():
+            return control.setting('trakt.token')
+        used_refresh = (control.setting('trakt.refresh') or '').strip()
+        if not used_refresh:
             return None
-        token, refresh = result['access_token'], result['refresh_token']
-        control.setSetting('trakt.token', token)
-        control.setSetting('trakt.refresh', refresh)
-        _set_trakt_expires(result.get('expires_in', 7200))
-        return token
+        status, result, _retry = _trakt_oauth_post('/oauth/token', {
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'grant_type': 'refresh_token',
+            'refresh_token': used_refresh,
+        })
+        if status == 200 and isinstance(result, dict) and result.get('access_token') and result.get('refresh_token'):
+            token = result['access_token']
+            control.setSetting('trakt.token', token)
+            control.setSetting('trakt.refresh', result['refresh_token'])
+            _set_trakt_expires(result.get('expires_in', 604800))
+            _clear_trakt_dead_grant()
+            from resources.lib.modules.meta_auth_alerts import clear_alert
+            clear_alert('trakt')
+            return token
+        if _trakt_token_usable() and (control.setting('trakt.refresh') or '').strip() != used_refresh:
+            return control.setting('trakt.token')
+        from resources.lib.modules.meta_auth_alerts import is_dead_grant, maybe_notify_refresh_failure
+        if is_dead_grant(status, result):
+            control.window.setProperty(TRAKT_DEAD_GRANT_PROPERTY, 'true')
+            maybe_notify_refresh_failure('trakt', status, result)
+        return None
     except Exception as e:
         log_utils.log('Trakt token refresh failed: %s' % e)
         return None
@@ -124,8 +181,9 @@ def _refreshTraktToken():
 def _ensureTraktTokenFresh():
     if not getTraktCredentialsInfo():
         return
-    while control.window.getProperty(TRAKT_REFRESH_PROPERTY) == 'true':
-        time.sleep(0.25)
+    if control.window.getProperty(TRAKT_DEAD_GRANT_PROPERTY) == 'true':
+        return
+    _wait_for_trakt_refresh()
     try:
         expires_at = float(control.setting('trakt.expires') or '0')
     except Exception:
@@ -805,16 +863,11 @@ def revokeTrakt(reopen_settings=False):
         if revoke_token:
             try:
                 client_id, client_secret = _trakt_app_keys()
-                client.request(
-                    urljoin(BASE_URL, '/oauth/revoke'),
-                    post=json.dumps({
-                        'token': revoke_token,
-                        'client_id': client_id,
-                        'client_secret': client_secret,
-                    }),
-                    headers={'Content-Type': 'application/json'},
-                    timeout='15',
-                )
+                _trakt_oauth_post('/oauth/revoke', {
+                    'token': revoke_token,
+                    'client_id': client_id,
+                    'client_secret': client_secret,
+                }, timeout=15)
             except Exception as e:
                 log_utils.log('Trakt revoke API call failed: %s' % e, 1)
         control.setSetting('trakt.user', '')
@@ -824,6 +877,7 @@ def revokeTrakt(reopen_settings=False):
         control.setSetting('trakt.expires', '')
         from resources.lib.modules.meta_auth_alerts import clear_alert
         clear_alert('trakt')
+        _clear_trakt_dead_grant()
         try:
             from resources.lib.modules import simkl
             simkl.fallback_indicators_on_revoke('trakt')
@@ -845,45 +899,76 @@ def authTrakt(reopen_settings=False):
         progress = auth_utils.auth_progress_dialog('Trakt Authorise', '')
         progress.update('Connecting to Trakt...')
         client_id, client_secret = _trakt_app_keys()
-        result = getTraktAsJson('/oauth/device/code', {'client_id': client_id})
-        if not result or not result.get('device_code'):
+        status, result, _retry = _trakt_oauth_post('/oauth/device/code', {'client_id': client_id})
+        if status != 200 or not isinstance(result, dict) or not result.get('device_code') or not result.get('user_code'):
             control.infoDialog('Trakt Authorisation Failed.', sound=True)
             return
         user_code = str(result.get('user_code', ''))
         device_code = result['device_code']
         expires_in = int(result.get('expires_in', 600))
         interval = max(int(result.get('interval', 5)), 1)
-        auth_url = 'https://trakt.tv/activate?code=%s' % user_code
+        verify_base = (result.get('verification_url') or 'https://trakt.tv/activate').rstrip('/')
+        auth_url = '%s/%s' % (verify_base, user_code) if user_code else verify_base
         progress.update('Preparing QR code...')
         qr_code = auth_utils.make_qrcode(auth_url) or ''
         short_url = auth_utils.make_tinyurl(auth_url)
         auth_utils.copy2clip(auth_url)
         insert = '[CR]OR visit [B]%s[/B]' % short_url if short_url else ''
-        verify_display = (result.get('verification_url') or 'trakt.tv/activate').replace('https://', '')
-        content = ('Enter [B]%s[/B] at [B]%s[/B][CR]OR scan the [B]QR Code[/B]%s[CR][CR]'
-                   'Waiting for authorisation...' % (user_code, verify_display, insert))
+        verify_display = verify_base.replace('https://', '').replace('http://', '')
+        content = ('Scan the [B]QR Code[/B] or open the link — the code is filled in.%s[CR]'
+                   'Code is [B]%s[/B] if you need to type it at [B]%s[/B].[CR][CR]'
+                   'Waiting for authorisation...' % (insert, user_code, verify_display))
         progress.update(content, qr_path=qr_code)
         token_result = None
+        fail_reason = None
         start = time.time()
         while not progress.iscanceled() and (time.time() - start) < expires_in:
             if auth_utils.auth_progress_wait(progress, interval):
                 break
+            if (time.time() - start) >= expires_in:
+                break
             try:
-                r = getTraktAsJson('/oauth/device/token', {
+                status, r, retry_after = _trakt_oauth_post('/oauth/device/token', {
                     'client_id': client_id,
                     'client_secret': client_secret,
                     'code': device_code,
                 })
-                if isinstance(r, dict) and r.get('access_token'):
+                if status == 200 and isinstance(r, dict) and r.get('access_token'):
                     token_result = r
                     break
+                if status == 400:
+                    continue
+                if status == 429:
+                    interval = max(interval + 1, retry_after)
+                    continue
+                if status == 418:
+                    fail_reason = 'Trakt authorisation denied'
+                    break
+                if status == 410:
+                    fail_reason = 'Trakt authorisation expired — try Authorise again'
+                    break
+                if status == 409:
+                    fail_reason = 'Trakt authorisation already used — try Authorise again'
+                    break
+                if status == 404:
+                    fail_reason = 'Trakt authorisation failed — try Authorise again'
+                    break
+                break
             except Exception:
                 pass
         canceled = progress.iscanceled()
+        if not token_result and not canceled and not fail_reason and (time.time() - start) >= expires_in:
+            fail_reason = 'Trakt authorisation expired — try Authorise again'
         auth_utils.close_auth_progress_dialog(progress)
         progress = None
-        if canceled or not token_result:
-            control.infoDialog('Trakt Authorisation Canceled.' if canceled else 'Trakt Authorisation Failed.', sound=True)
+        if canceled:
+            control.infoDialog('Trakt Authorisation Canceled.', sound=True)
+            return
+        if fail_reason:
+            control.infoDialog(fail_reason, sound=True)
+            return
+        if not token_result or not token_result.get('access_token') or not token_result.get('refresh_token'):
+            control.infoDialog('Trakt Authorisation Failed.', sound=True)
             return
         token, refresh = token_result['access_token'], token_result['refresh_token']
         headers = {'Content-Type': 'application/json', 'trakt-api-key': client_id, 'trakt-api-version': '2', 'Authorization': 'Bearer %s' % token}
@@ -895,9 +980,10 @@ def authTrakt(reopen_settings=False):
         control.setSetting('trakt.authed', authed)
         control.setSetting('trakt.token', token)
         control.setSetting('trakt.refresh', refresh)
-        _set_trakt_expires(token_result.get('expires_in', 7200))
+        _set_trakt_expires(token_result.get('expires_in', 604800))
         from resources.lib.modules.meta_auth_alerts import clear_alert
         clear_alert('trakt')
+        _clear_trakt_dead_grant()
         if control.yesnoDialog('Set Trakt as your Watched Indicators provider?', heading='Watched Status Provider', default_yes=True):
             try:
                 from resources.lib.modules import simkl
@@ -1617,7 +1703,9 @@ def syncMovies(user, sync_version='paged_v2'):
     try:
         if getTraktCredentialsInfo() == False:
             return
-        indicators = getTraktAsJsonPaged('/users/me/watched/movies') or []
+        indicators = getTraktAsJsonPaged('/users/me/watched/movies')
+        if indicators is None:
+            return
         indicators = [i['movie']['ids'] for i in indicators]
         indicators = [str(i['imdb']) for i in indicators if 'imdb' in i]
         return indicators
@@ -1646,7 +1734,9 @@ def syncTVShows(user, sync_version='progress_v2'):
     try:
         if getTraktCredentialsInfo() == False:
             return
-        indicators = getTraktAsJsonPaged('/sync/watched/shows?extended=progress') or []
+        indicators = getTraktAsJsonPaged('/sync/watched/shows?extended=progress')
+        if indicators is None:
+            return
         rows = []
         for item in indicators:
             try:

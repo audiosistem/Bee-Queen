@@ -653,7 +653,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.blacklodge" name="Blacklodge" provider-name="bob" version="1.06.39g2">
+</addon><addon id="plugin.video.blacklodge" name="Blacklodge" provider-name="bob" version="1.06.41g">
     <requires>
         <import addon="resource.images.blacklodge.artwork" />
         <import addon="script.module.requests" />
@@ -952,7 +952,7 @@ v1.6.0 - My Free Flow + full Trakt integration</news>
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.gratisred" name="[COLOR red]Gratis Red[/COLOR]" version="2.0.8" provider-name="[COLOR red]The Red Wizard[/COLOR]">
+</addon><addon id="plugin.video.gratisred" name="[COLOR red]Gratis Red[/COLOR]" version="2.0.9" provider-name="[COLOR red]The Red Wizard[/COLOR]">
     <requires>
         <import addon="script.gratisred.artwork" version="1.0.6" />
         <import addon="script.module.kodi-six" />
@@ -979,22 +979,12 @@ v1.6.0 - My Free Flow + full Trakt integration</news>
 		<forum>https://t.me/+X-lt1ZDii3I3YjA0</forum>
 		<website>https://redwizard.xyz/</website> 
 		<source>https://github.com/The-Red-Wizard/TheRedWizard</source>
-        <news>2026-10-17
-[B]- Summary of v2.0.8 (see Tools &gt; Changelog for the detail):[/B]
- * Results that name the title (and episode) are listed first
- * A source that never shows a picture is skipped after 30 seconds
- * Unwatched appears when there is progress to clear
- * MDBList Mark Watched on TV uses TMDb and IMDb, not TVDB
-2026-10-16
-[B]- Summary of v2.0.7[/B]
- * In Progress / Continue Watching match Red Light (leftover ≤1% playback, Dropped titles)
-[B]- Summary of v2.0.6[/B]
- * Play Trailer from the Movies and TV Shows context menus now starts playback
-[B]- Summary of v2.0.5[/B]
- * New and updated sources
- * MDBList live Playing Now. The title appears on MDBList while it is playing
- * Play Trailer added to the Movies and TV Shows context menus
- * Queue Item removed from the Movies and Episodes context menus</news>
+        <news>2026-11-06
+[B]- Summary of v2.0.9 (see Tools &gt; Changelog for the detail):[/B]
+ * A failed Simkl or MDBList watched pull no longer clears local ticks
+ * Trakt Authorise, refresh, and revoke follow the current OAuth docs
+ * MDBList only defers to service.mdblist-scrobbler when set to scrobble plugin streams
+ * Broken IPv6 no longer stalls lists and scrapes; that Kodi session falls back to IPv4</news>
         <assets>
             <icon>resources/images/icon.png</icon>
             <fanart>resources/images/fanart.jpg</fanart>
@@ -4018,7 +4008,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="script.module.blackscrapers" name="Blackscrapers Module" version="1.00.41g4" provider-name="janedoe">
+</addon><addon id="script.module.blackscrapers" name="Blackscrapers Module" version="1.00.44g" provider-name="janedoe">
     <requires>
         <import addon="script.module.beautifulsoup4" />
         <import addon="script.module.requests" />
@@ -4758,7 +4748,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
         </assets>
         <news>Changed the fanart to be a simple small image that has a matching color tone to the theme chosen.</news>
     </extension>
-</addon><addon id="script.service.fastautosubs" name="[B][COLOR FF00BFFF]Fast AutoSubs[/COLOR][/B]" version="1.0.21" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
+</addon><addon id="script.service.fastautosubs" version="1.0.23" name="[B][COLOR FF00BFFF]Fast AutoSubs[/COLOR][/B]" provider-name="[B][COLOR FF6AFB92]Angelitto[/COLOR][/B]">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.22.0" />

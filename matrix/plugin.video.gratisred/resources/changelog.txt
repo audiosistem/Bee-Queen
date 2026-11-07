@@ -1,4 +1,12 @@
 
+[B]- 2.0.9 (2026-11-06)[/B] Trakt OAuth / Network / MDBList:
+ * [B]Simkl[/B] / [B]MDBList[/B]: a failed watched pull no longer replaces local ticks with an empty library. Force refresh also waits until the pull succeeds before saving last-activities, and does not wipe the watched cache first.
+ * [B]Trakt[/B]: a failed watched page walk is left as a miss (old ticks stay) instead of an empty list.
+ * [B]Trakt[/B]: Authorise, refresh, and revoke now follow Trakt's current OAuth docs (auth.trakt.tv). Refresh no longer sends the old out-of-band redirect. A dead grant is not retried every call.
+ * [B]Trakt[/B]: Device polling handles denied, expired, already-used, and slow-down. The QR uses trakt.tv/activate with the code filled in. Revoke tells Trakt to drop the grant on the auth host.
+ * [B]MDBList[/B]: playback scrobble is only left to service.mdblist-scrobbler when that add-on is authorised and actually set to scrobble plugin streams. Installed or signed in is not enough. Library-only / exclude-plugin still lets Gratis Red send it.
+ * [B]Network[/B]: a box that is handed IPv6 but cannot send it no longer sits on Content Loading, or on a scrape, while each IPv6 address times out. The first request spends at most two seconds on IPv6 in total, then this Kodi session stays on IPv4 for lists, watched sync, trailers, and sources.
+
 [B]- 2.0.8 (2026-10-17)[/B] Results order / resolve cascade / watched menu:
  * [B]Results[/B]: a filename that names this title (and this episode, when the name has SxxExx) is listed first. Nameless embed links and longer titles such as Being Human for Human stay in the list, below those. Nothing is dropped.
  * [B]Results[/B]: if a source never shows a picture, the next one is tried after 30 seconds. A dead host that hangs on open (curl timeout, a broken file) no longer sits on Resolving for minutes.
