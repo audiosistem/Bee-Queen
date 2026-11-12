@@ -1,0 +1,488 @@
+{
+  "categories": [
+    {
+      "name": "Principale",
+      "url": "https://www.tvonline123.eu/categoria/principale.html"
+    },
+    {
+      "name": "Sport",
+      "url": "https://www.tvonline123.eu/categoria/sport.html"
+    },
+    {
+      "name": "Filme",
+      "url": "https://www.tvonline123.eu/categoria/filme.html"
+    },
+    {
+      "name": "Stiri",
+      "url": "https://www.tvonline123.eu/categoria/stiri.html"
+    },
+    {
+      "name": "Documentare",
+      "url": "https://www.tvonline123.eu/categoria/documentare.html"
+    },
+    {
+      "name": "Muzica",
+      "url": "https://www.tvonline123.eu/categoria/muzica.html"
+    },
+    {
+      "name": "Life Style",
+      "url": "https://www.tvonline123.eu/categoria/lifestyle.html"
+    },
+    {
+      "name": "Desene Animate",
+      "url": "https://www.tvonline123.eu/categoria/desene.html"
+    }
+  ],
+  "channels": [
+    {
+      "name": "Tvr 1",
+      "slug": "tvr-1",
+      "url": "https://www.tvonline123.eu/tvlive/?url=tvr-1",
+      "image": "https://www.tvonline123.eu/uploads/logos/ae659141e784e0ee.webp",
+      "category": "Principale"
+    },
+    {
+      "name": "Tvr 2",
+      "slug": "tvr-2-hd",
+      "url": "https://www.tvonline123.eu/tvlive/?url=tvr-2-hd",
+      "image": "https://www.tvonline123.eu/uploads/logos/de51720b09341994.webp",
+      "category": "Principale"
+    },
+    {
+      "name": "Antena 1",
+      "slug": "antena-1",
+      "url": "https://www.tvonline123.eu/tvlive/?url=antena-1",
+      "image": "https://www.tvonline123.eu/uploads/logos/53dea87dddb8ef94.jpg",
+      "category": "Principale"
+    },
+    {
+      "name": "Kanal D",
+      "slug": "kanal-d",
+      "url": "https://www.tvonline123.eu/tvlive/?url=kanal-d",
+      "image": "https://www.tvonline123.eu/uploads/logos/9de34b6f1cb94e73.webp",
+      "category": "Principale"
+    },
+    {
+      "name": "Kanal D2",
+      "slug": "kanal-d2",
+      "url": "https://www.tvonline123.eu/tvlive/?url=kanal-d2",
+      "image": "https://www.tvonline123.eu/uploads/logos/5004b45650125414.webp",
+      "category": "Principale"
+    },
+    {
+      "name": "Prima TV",
+      "slug": "prima-tv",
+      "url": "https://www.tvonline123.eu/tvlive/?url=prima-tv",
+      "image": "https://www.tvonline123.eu/uploads/logos/0ce85c5a24a32e22.webp",
+      "category": "Principale"
+    },
+    {
+      "name": "Prima Comedy",
+      "slug": "prima-comedy",
+      "url": "https://www.tvonline123.eu/tvlive/?url=prima-comedy",
+      "image": "https://www.tvonline123.eu/uploads/logos/baf2f25aa3ae23f5.webp",
+      "category": "Principale"
+    },
+    {
+      "name": "Antena Stars",
+      "slug": "antena-stars",
+      "url": "https://www.tvonline123.eu/tvlive/?url=antena-stars",
+      "image": "https://www.tvonline123.eu/uploads/logos/adb44a00c192e8b5.webp",
+      "category": "Principale"
+    },
+    {
+      "name": "Eurosport 1",
+      "slug": "eurosport-1",
+      "url": "https://www.tvonline123.eu/tvlive/?url=eurosport-1",
+      "image": "https://www.tvonline123.eu/uploads/logos/09dfa6f337714538.webp",
+      "category": "Sport"
+    },
+    {
+      "name": "Eurosport 2",
+      "slug": "eurosport-2",
+      "url": "https://www.tvonline123.eu/tvlive/?url=eurosport-2",
+      "image": "https://www.tvonline123.eu/uploads/logos/3b71afe117791681.webp",
+      "category": "Sport"
+    },
+    {
+      "name": "Digi Sport 1",
+      "slug": "dgi-sport-1",
+      "url": "https://www.tvonline123.eu/tvlive/?url=dgi-sport-1",
+      "image": "https://www.tvonline123.eu/uploads/logos/ec969e677b3d8921.webp",
+      "category": "Sport"
+    },
+    {
+      "name": "Digi Sport 2",
+      "slug": "dgi-sport-2",
+      "url": "https://www.tvonline123.eu/tvlive/?url=dgi-sport-2",
+      "image": "https://www.tvonline123.eu/uploads/logos/f690b5292911dfe2.webp",
+      "category": "Sport"
+    },
+    {
+      "name": "Digi Sport 3",
+      "slug": "dgi-sport-3",
+      "url": "https://www.tvonline123.eu/tvlive/?url=dgi-sport-3",
+      "image": "https://www.tvonline123.eu/uploads/logos/7386a515b781b25e.webp",
+      "category": "Sport"
+    },
+    {
+      "name": "Digi Sport 4",
+      "slug": "dgi-sport-4",
+      "url": "https://www.tvonline123.eu/tvlive/?url=dgi-sport-4",
+      "image": "https://www.tvonline123.eu/uploads/logos/d750007a99b1d51e.webp",
+      "category": "Sport"
+    },
+    {
+      "name": "Prima Sport 1",
+      "slug": "prima-sport-1",
+      "url": "https://www.tvonline123.eu/tvlive/?url=prima-sport-1",
+      "image": "https://www.tvonline123.eu/uploads/logos/91716cac6239b8b3.webp",
+      "category": "Sport"
+    },
+    {
+      "name": "Prima PPV 1",
+      "slug": "ppv-1",
+      "url": "https://www.tvonline123.eu/tvlive/?url=ppv-1",
+      "image": "https://www.tvonline123.eu/uploads/logos/5ca24cc909145a0e.webp",
+      "category": "Sport"
+    },
+    {
+      "name": "FilmTV Romanesti",
+      "slug": "filmtv-romanesti",
+      "url": "https://www.tvonline123.eu/tvlive/?url=filmtv-romanesti",
+      "image": "https://www.tvonline123.eu/uploads/logos/6e742e4999960274.webp",
+      "category": "Filme"
+    },
+    {
+      "name": "Game of Thrones",
+      "slug": "game-of-thrones",
+      "url": "https://www.tvonline123.eu/tvlive/?url=game-of-thrones",
+      "image": "https://www.tvonline123.eu/uploads/logos/a2dd010cf8fe64c3.webp",
+      "category": "Filme"
+    },
+    {
+      "name": "Filme",
+      "slug": "filme-online",
+      "url": "https://www.tvonline123.eu/tvlive/?url=filme-online",
+      "image": "https://www.tvonline123.eu/uploads/logos/bee6bf3620c59adb.webp",
+      "category": "Filme"
+    },
+    {
+      "name": "FilmTV Razboi",
+      "slug": "filmtv-razboi",
+      "url": "https://www.tvonline123.eu/tvlive/?url=filmtv-razboi",
+      "image": "https://www.tvonline123.eu/uploads/logos/a202148142fdfd8d.webp",
+      "category": "Filme"
+    },
+    {
+      "name": "CineWow",
+      "slug": "cinewow",
+      "url": "https://www.tvonline123.eu/tvlive/?url=cinewow",
+      "image": "https://www.tvonline123.eu/uploads/logos/90be15a439a0f9ae.webp",
+      "category": "Filme"
+    },
+    {
+      "name": "FilmTV Aventura",
+      "slug": "filmtv-aventura",
+      "url": "https://www.tvonline123.eu/tvlive/?url=filmtv-aventura",
+      "image": "https://www.tvonline123.eu/uploads/logos/2e24293326e5883c.webp",
+      "category": "Filme"
+    },
+    {
+      "name": "FilmTV Marvel DC",
+      "slug": "marveldc",
+      "url": "https://www.tvonline123.eu/tvlive/?url=marveldc",
+      "image": "https://www.tvonline123.eu/uploads/logos/4eb9b0a36495fdd2.webp",
+      "category": "Filme"
+    },
+    {
+      "name": "FilmTV BollyWood",
+      "slug": "bollywood",
+      "url": "https://www.tvonline123.eu/tvlive/?url=bollywood",
+      "image": "https://www.tvonline123.eu/uploads/logos/e4e9d9d911bd31e6.webp",
+      "category": "Filme"
+    },
+    {
+      "name": "Digi 24",
+      "slug": "digi-24",
+      "url": "https://www.tvonline123.eu/tvlive/?url=digi-24",
+      "image": "https://www.tvonline123.eu/uploads/logos/01e722f3b214df74.webp",
+      "category": "Stiri"
+    },
+    {
+      "name": "Antena 3",
+      "slug": "antena-3",
+      "url": "https://www.tvonline123.eu/tvlive/?url=antena-3",
+      "image": "https://www.tvonline123.eu/uploads/logos/1d38510fbba443f1.webp",
+      "category": "Stiri"
+    },
+    {
+      "name": "Romania TV",
+      "slug": "romania-tv",
+      "url": "https://www.tvonline123.eu/tvlive/?url=romania-tv",
+      "image": "https://www.tvonline123.eu/uploads/logos/796725c4e7882e59.webp",
+      "category": "Stiri"
+    },
+    {
+      "name": "Realitatea Plus",
+      "slug": "realitatea-plus",
+      "url": "https://www.tvonline123.eu/tvlive/?url=realitatea-plus",
+      "image": "https://www.tvonline123.eu/uploads/logos/0ad52e2c3a539a64.webp",
+      "category": "Stiri"
+    },
+    {
+      "name": "B1",
+      "slug": "b1-tv",
+      "url": "https://www.tvonline123.eu/tvlive/?url=b1-tv",
+      "image": "https://www.tvonline123.eu/uploads/logos/5da6877c170f417e.webp",
+      "category": "Stiri"
+    },
+    {
+      "name": "Nasul TV",
+      "slug": "nasul-tv",
+      "url": "https://www.tvonline123.eu/tvlive/?url=nasul-tv",
+      "image": "https://www.tvonline123.eu/uploads/logos/1c92e622e52d86c6.webp",
+      "category": "Stiri"
+    },
+    {
+      "name": "Prima News",
+      "slug": "prima-news",
+      "url": "https://www.tvonline123.eu/tvlive/?url=prima-news",
+      "image": "https://www.tvonline123.eu/uploads/logos/f0f588584d87dabd.webp",
+      "category": "Stiri"
+    },
+    {
+      "name": "Realitatea Star",
+      "slug": "realitatea-star",
+      "url": "https://www.tvonline123.eu/tvlive/?url=realitatea-star",
+      "image": "https://www.tvonline123.eu/uploads/logos/58462465198b7c57.webp",
+      "category": "Stiri"
+    },
+    {
+      "name": "David Attenborough",
+      "slug": "david-attenborough",
+      "url": "https://www.tvonline123.eu/tvlive/?url=david-attenborough",
+      "image": "https://www.tvonline123.eu/uploads/logos/6f3e5038e6234654.jpg",
+      "category": "Documentare"
+    },
+    {
+      "name": "Discovery Channel",
+      "slug": "discovery-channel",
+      "url": "https://www.tvonline123.eu/tvlive/?url=discovery-channel",
+      "image": "https://www.tvonline123.eu/uploads/logos/b5a18b16b656c5fa.webp",
+      "category": "Documentare"
+    },
+    {
+      "name": "ID Investigation Discovery",
+      "slug": "id-investigation-discovery",
+      "url": "https://www.tvonline123.eu/tvlive/?url=id-investigation-discovery",
+      "image": "https://www.tvonline123.eu/uploads/logos/bba5a26897fe5819.webp",
+      "category": "Documentare"
+    },
+    {
+      "name": "Crime & Investigation",
+      "slug": "crime-investigation",
+      "url": "https://www.tvonline123.eu/tvlive/?url=crime-investigation",
+      "image": "https://www.tvonline123.eu/uploads/logos/b2d914e70ef52559.webp",
+      "category": "Documentare"
+    },
+    {
+      "name": "Prima History",
+      "slug": "prima-history",
+      "url": "https://www.tvonline123.eu/tvlive/?url=prima-history",
+      "image": "https://www.tvonline123.eu/uploads/logos/040af498728a87ba.webp",
+      "category": "Documentare"
+    },
+    {
+      "name": "Digi World",
+      "slug": "digi-world",
+      "url": "https://www.tvonline123.eu/tvlive/?url=digi-world",
+      "image": "https://www.tvonline123.eu/uploads/logos/fb4dff3c69026edc.webp",
+      "category": "Documentare"
+    },
+    {
+      "name": "Digi Animal World",
+      "slug": "digi-animal-world",
+      "url": "https://www.tvonline123.eu/tvlive/?url=digi-animal-world",
+      "image": "https://www.tvonline123.eu/uploads/logos/a206e4bb7fbbc328.webp",
+      "category": "Documentare"
+    },
+    {
+      "name": "Animal Planet",
+      "slug": "animal-planet",
+      "url": "https://www.tvonline123.eu/tvlive/?url=animal-planet",
+      "image": "https://www.tvonline123.eu/uploads/logos/1de712de7bdaccd0.webp",
+      "category": "Documentare"
+    },
+    {
+      "name": "Manele",
+      "slug": "manele",
+      "url": "https://www.tvonline123.eu/tvlive/?url=manele",
+      "image": "https://www.tvonline123.eu/uploads/logos/8e7bf96bb4a922c0.jpg",
+      "category": "Muzica"
+    },
+    {
+      "name": "Rapsodia Tv",
+      "slug": "rapsodia-tv",
+      "url": "https://www.tvonline123.eu/tvlive/?url=rapsodia-tv",
+      "image": "https://www.tvonline123.eu/uploads/logos/276851cc0c7f7a0f.webp",
+      "category": "Muzica"
+    },
+    {
+      "name": "Mad World",
+      "slug": "mad-world",
+      "url": "https://www.tvonline123.eu/tvlive/?url=mad-world",
+      "image": "https://www.tvonline123.eu/uploads/logos/43394400620578b8.webp",
+      "category": "Muzica"
+    },
+    {
+      "name": "Taraf TV",
+      "slug": "taraf-tv",
+      "url": "https://www.tvonline123.eu/tvlive/?url=taraf-tv",
+      "image": "https://www.tvonline123.eu/uploads/logos/e614b64f896ad45c.webp",
+      "category": "Muzica"
+    },
+    {
+      "name": "Balkanika Music",
+      "slug": "balkanika-music",
+      "url": "https://www.tvonline123.eu/tvlive/?url=balkanika-music",
+      "image": "https://www.tvonline123.eu/uploads/logos/f7744787db655865.webp",
+      "category": "Muzica"
+    },
+    {
+      "name": "Favorit TV",
+      "slug": "favorit-tv",
+      "url": "https://www.tvonline123.eu/tvlive/?url=favorit-tv",
+      "image": "https://www.tvonline123.eu/uploads/logos/1b2ccf79c6516679.webp",
+      "category": "Muzica"
+    },
+    {
+      "name": "Party Mix",
+      "slug": "partymix",
+      "url": "https://www.tvonline123.eu/tvlive/?url=partymix",
+      "image": "https://www.tvonline123.eu/uploads/logos/8f44f1c92aa35c73.webp",
+      "category": "Muzica"
+    },
+    {
+      "name": "Etno TV",
+      "slug": "etno-tv",
+      "url": "https://www.tvonline123.eu/tvlive/?url=etno-tv",
+      "image": "https://www.tvonline123.eu/uploads/logos/093b5e58594f087f.webp",
+      "category": "Muzica"
+    },
+    {
+      "name": "HGTV",
+      "slug": "hgtv",
+      "url": "https://www.tvonline123.eu/tvlive/?url=hgtv",
+      "image": "https://www.tvonline123.eu/uploads/logos/22210d9df82c0da1.webp",
+      "category": "Life Style"
+    },
+    {
+      "name": "Prima World",
+      "slug": "prima-world",
+      "url": "https://www.tvonline123.eu/tvlive/?url=prima-world",
+      "image": "https://www.tvonline123.eu/uploads/logos/a3711ffe8a520117.webp",
+      "category": "Life Style"
+    },
+    {
+      "name": "Zoom Tv",
+      "slug": "zoom-tv",
+      "url": "https://www.tvonline123.eu/tvlive/?url=zoom-tv",
+      "image": "https://www.tvonline123.eu/uploads/logos/e8e22d2c0bc9f930.webp",
+      "category": "Life Style"
+    },
+    {
+      "name": "HelloTaste",
+      "slug": "hellotaste",
+      "url": "https://www.tvonline123.eu/tvlive/?url=hellotaste",
+      "image": "https://www.tvonline123.eu/uploads/logos/b8ad45c9933a8f24.webp",
+      "category": "Life Style"
+    },
+    {
+      "name": "MediCOOL TV",
+      "slug": "medicool-tv",
+      "url": "https://www.tvonline123.eu/tvlive/?url=medicool-tv",
+      "image": "https://www.tvonline123.eu/uploads/logos/fdb4a30485b00f62.webp",
+      "category": "Life Style"
+    },
+    {
+      "name": "DeParinti",
+      "slug": "deparinti",
+      "url": "https://www.tvonline123.eu/tvlive/?url=deparinti",
+      "image": "https://www.tvonline123.eu/uploads/logos/e822359a5b5d43fe.webp",
+      "category": "Life Style"
+    },
+    {
+      "name": "Digi Life",
+      "slug": "digi-life",
+      "url": "https://www.tvonline123.eu/tvlive/?url=digi-life",
+      "image": "https://www.tvonline123.eu/uploads/logos/4aa4c73434e5146d.webp",
+      "category": "Life Style"
+    },
+    {
+      "name": "Travel Mix",
+      "slug": "travel-mix",
+      "url": "https://www.tvonline123.eu/tvlive/?url=travel-mix",
+      "image": "https://www.tvonline123.eu/uploads/logos/4a9b4e477a2d5a29.webp",
+      "category": "Life Style"
+    },
+    {
+      "name": "Desene Dora",
+      "slug": "desene-dora",
+      "url": "https://www.tvonline123.eu/tvlive/?url=desene-dora",
+      "image": "https://www.tvonline123.eu/uploads/logos/1f0954d33844d5dd.webp",
+      "category": "Desene Animate"
+    },
+    {
+      "name": "FilmTv Kids",
+      "slug": "filmtv-kids",
+      "url": "https://www.tvonline123.eu/tvlive/?url=filmtv-kids",
+      "image": "https://www.tvonline123.eu/uploads/logos/4530d833f03fb5df.webp",
+      "category": "Desene Animate"
+    },
+    {
+      "name": "Tom and Jerry",
+      "slug": "tom-and-jerry",
+      "url": "https://www.tvonline123.eu/tvlive/?url=tom-and-jerry",
+      "image": "https://www.tvonline123.eu/uploads/logos/319d9d60b3d281d8.webp",
+      "category": "Desene Animate"
+    },
+    {
+      "name": "TraLaLa Desene",
+      "slug": "tralala-desene",
+      "url": "https://www.tvonline123.eu/tvlive/?url=tralala-desene",
+      "image": "https://www.tvonline123.eu/uploads/logos/ca0cf276aecf3471.webp",
+      "category": "Desene Animate"
+    },
+    {
+      "name": "Disney Channel",
+      "slug": "disney-channel",
+      "url": "https://www.tvonline123.eu/tvlive/?url=disney-channel",
+      "image": "https://www.tvonline123.eu/uploads/logos/1d95ef373349b3d3.webp",
+      "category": "Desene Animate"
+    },
+    {
+      "name": "Disney Junior",
+      "slug": "disney-junior",
+      "url": "https://www.tvonline123.eu/tvlive/?url=disney-junior",
+      "image": "https://www.tvonline123.eu/uploads/logos/2213e8969137fa69.webp",
+      "category": "Desene Animate"
+    },
+    {
+      "name": "Nickelodeon",
+      "slug": "nickelodeon",
+      "url": "https://www.tvonline123.eu/tvlive/?url=nickelodeon",
+      "image": "https://www.tvonline123.eu/uploads/logos/6e841d0566c373a9.webp",
+      "category": "Desene Animate"
+    },
+    {
+      "name": "Duck TV",
+      "slug": "duck-tv",
+      "url": "https://www.tvonline123.eu/tvlive/?url=duck-tv",
+      "image": "https://www.tvonline123.eu/uploads/logos/933133f8887394bb.webp",
+      "category": "Desene Animate"
+    }
+  ],
+  "partial": true,
+  "complete_categories": []
+}

@@ -551,7 +551,7 @@ v2.0.0
 - Settings simplified — no API keys exposed to users.
         </news>
     </extension>
-</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.3.23+matrix" provider-name="RomyCupidon">
+</addon><addon id="plugin.video.RomyLive" name="[B][COLOR aqua]Romy[/COLOR][COLOR red]Live+[/COLOR][/B]" version="3.3.26+matrix" provider-name="RomyCupidon">
 <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.requests" />
@@ -584,7 +584,7 @@ Cu RomyLive+, ai tot continutul preferat într-un singur loc.</description>
 <screenshot>resources/screenshots/movies.png</screenshot>
 <screenshot>resources/screenshots/series.png</screenshot>
 </assets>
- <news>news
+ <news>3.3.25: Canale TV Romania 2 foloseste TVOnline123 in loc de RDS.live; categorii originale, extragere locala a surselor la fiecare redare, catalog partial de rezerva si mesaje explicite la blocarea Cloudflare. Restul sectiunilor si motorul YouTube sunt pastrate.
 	</news>
 </extension>
 </addon><addon id="plugin.video.TVOnline.ro" provider-name="cralin" name="TVOnline.ro" version="21.0.15">
@@ -4766,7 +4766,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
 		<screenshot>resources/media/pic2.jpg</screenshot>				
 	</assets>
     </extension>
-</addon><addon id="script.stream.watcher" name="Stream Auto-Reconnect Service" version="1.2.0" provider-name="bee">
+</addon><addon id="script.stream.watcher" name="Stream Auto-Reconnect Service" version="1.2.1" provider-name="bee">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
   </requires>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
     <category label="General">
+        <setting id="force_inputstream" type="bool" label="Force InputStream" default="false"/>
         <setting id="enabled" type="bool" label="Activează serviciul de reconectare" default="true"/>
         <setting id="reconnect_delay" type="slider" label="Timp de așteptare înainte de reconectare (secunde)" default="3" range="1,1,10" option="int"/>
         <setting id="max_retries" type="slider" label="Număr maxim de reîncercări succesive" default="3" range="1,1,10" option="int"/>

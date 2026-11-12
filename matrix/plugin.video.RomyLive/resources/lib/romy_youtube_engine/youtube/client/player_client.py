@@ -858,15 +858,19 @@ class YouTubePlayerClient(YouTubeDataClient):
         self._visitor_data_key = 'current'
         self._client_groups = (
             ('custom', clients if clients else ()),
-            ('auth_enabled|initial_request|no_playable_streams', (
-                'tv_unplugged',
-                'tv',
+            # RomyLive uses anonymous public playback. Request working public
+            # clients first instead of seeding each request with a refused TV
+            # response. Android also offers a progressive fallback on some
+            # videos. Keep TV as fallback; do not alter access restrictions.
+            ('auth_disabled|kids|av1|vp9.2|avc1|surround_sound|multi_audio', (
+                'android_testsuite_params',
             )),
             ('auth_disabled|kids|av1|vp9|vp9.2|avc1|stereo_sound|multi_audio', (
                 'ios_testsuite_params',
             )),
-            ('auth_disabled|kids|av1|vp9.2|avc1|surround_sound|multi_audio', (
-                'android_testsuite_params',
+            ('auth_enabled|initial_request|no_playable_streams', (
+                'tv_unplugged',
+                'tv',
             )),
             # ANDROID_VR serves initial bytes but rejects subsequent ranges
             # with HTTP 403 (upstream issues #1481/#1483). Keep the public

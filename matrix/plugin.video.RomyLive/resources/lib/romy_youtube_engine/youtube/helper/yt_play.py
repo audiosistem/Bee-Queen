@@ -50,6 +50,19 @@ from ...kodion.utils.datetime import datetime_to_since
 from ...kodion.utils.redact import redact_params
 
 
+def _report_missing_stream(context, service_missing=False):
+    # Never leave the user with only a rapid sequence of skipped playlist
+    # items when the required local service or stream selection failed.
+    if service_missing:
+        message = ('Serviciul local YouTube nu raspunde. Reporneste Kodi si '
+                   'verifica daca RomyLive si InputStream Adaptive sunt activate.')
+        logging.error('YouTube playback failed: local service unavailable')
+    else:
+        message = context.localize('error.no_streams_found')
+        logging.error('YouTube playback failed: no compatible stream selected')
+    context.get_ui().show_notification(message=message)
+
+
 def _play_stream(provider, context):
     ui = context.get_ui()
     params = context.get_params()
@@ -86,9 +99,13 @@ def _play_stream(provider, context):
         elif audio_only is None:
             audio_only = not ask_for_quality and settings.audio_only()
 
-        use_mpd = ((not is_external or settings.alternative_player_mpd())
-                   and settings.use_mpd_videos()
-                   and context.ipc_exec(SERVER_WAKEUP, timeout=5))
+        mpd_requested = ((not is_external or settings.alternative_player_mpd())
+                         and settings.use_mpd_videos())
+        use_mpd = bool(mpd_requested
+                       and context.ipc_exec(SERVER_WAKEUP, timeout=5))
+        service_missing = mpd_requested and not use_mpd
+        if service_missing:
+            logging.warning('YouTube local service unavailable; trying non-DASH fallback')
 
         try:
             streams, yt_item = client.load_stream_info(
@@ -117,8 +134,7 @@ def _play_stream(provider, context):
             return False
 
         if not streams:
-            ui.show_notification(context.localize('error.no_streams_found'))
-            logging.error('No streams found')
+            _report_missing_stream(context, service_missing=service_missing)
             return False
 
         stream = _select_stream(
@@ -129,6 +145,9 @@ def _play_stream(provider, context):
             use_mpd=use_mpd,
         )
         if stream is None:
+            # Cancellation of the quality dialog is not a playback error.
+            if not ask_for_quality:
+                _report_missing_stream(context, service_missing=service_missing)
             return False
 
     video_type = stream.get('video')
