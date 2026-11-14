@@ -113,11 +113,14 @@ def installed_build_check():
 
 
 def build_update_due():
+    now = time.time()
     try:
         due = time.mktime(time.strptime(CONFIG.get_setting('nextbuildcheck'), "%Y-%m-%d %H:%M:%S"))
     except (ValueError, TypeError, OverflowError):
         return True
-    return time.time() >= due
+    # a stored date further away than UPDATECHECK days (e.g. left over from an older setting) must not postpone the check
+    due = min(due, now + float(CONFIG.UPDATECHECK) * 86400)
+    return now >= due
 
 
 def run():
@@ -138,8 +141,14 @@ def run():
         window.show_build_prompt()
 
     # 3. Build installed: check for a newer version when due (UPDATECHECK days in uservar.py)
-    if CONFIG.get_setting('buildname') and build_update_due():
+    buildname = CONFIG.get_setting('buildname')
+    if not buildname:
+        logging.log("[Build Update] No build installed through the wizard (setting 'buildname' is empty): nothing to check", level=xbmc.LOGINFO)
+    elif build_update_due():
+        logging.log("[Build Update] Checking '{0}' (installed v{1})".format(buildname, CONFIG.get_setting('buildversion')), level=xbmc.LOGINFO)
         check.check_build_update()
+    else:
+        logging.log("[Build Update] Next check: {0}".format(CONFIG.get_setting('nextbuildcheck')), level=xbmc.LOGINFO)
 
     # 4. Optional repo auto-install
     if CONFIG.AUTOINSTALL == 'Yes':

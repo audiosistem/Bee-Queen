@@ -389,7 +389,7 @@ def show_update_window(name='Testing Window', current='1.0', new='1.1', icon=CON
             self.ignore = 203
 
             self.setProperty('dialog.header', self.name)
-            self.setProperty('dialog.textbox', CONFIG.THEME2.format(self.msgupdate if current < new else self.msgcurrent))
+            self.setProperty('dialog.textbox', CONFIG.THEME2.format(self.msgupdate if tools.is_newer(self.new, self.current) else self.msgcurrent))
             self.setProperty('dialog.imagefanart', self.fanart)
             self.setProperty('dialog.imagediffuse', '2FFFFFFF')
             self.setProperty('dialog.imageicon', self.icon)

@@ -20,7 +20,7 @@ EXCLUDES = [ADDON_ID, '']
 BUILDFILE = 'https://mia.nl.tab.digital/public.php/dav/files/ZfDw5wNmiiHxxfd'
 # How often you would like it to check for build updates in days
 # 0 = every startup (slow: downloads the build list each time); 1 = daily (recommended)
-UPDATECHECK = 1
+UPDATECHECK = 0  # 0 = check for a build update at every Kodi start (the update window shows whenever a newer build exists); N = wait N days after install/ignore
 # Text File with apk info in it.  Leave as 'http://' to ignore
 APKFILE = 'http://'
 # Text File with Youtube Videos urls.  Leave as 'http://' to ignore

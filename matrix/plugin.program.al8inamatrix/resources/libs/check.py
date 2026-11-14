@@ -163,7 +163,7 @@ def check_build_update():
         return
 
     link = response.text.replace('\n', '').replace('\r', '').replace('\t', '')
-    match = re.compile('name="%s".+?ersion="(.+?)".+?con="(.+?)".+?anart="(.+?)"' % CONFIG.BUILDNAME).findall(link)
+    match = re.compile('name="%s".+?ersion="(.+?)".+?con="(.+?)".+?anart="(.+?)"' % re.escape(CONFIG.BUILDNAME)).findall(link)
     if len(match) > 0:
         version = match[0][0]
         icon = match[0][1]

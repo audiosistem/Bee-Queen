@@ -362,11 +362,8 @@ def parse_dom(html, name=u"", attrs={}, ret=False):
 
 def version_tuple(version):
     """'1.10.2' -> (1, 10, 2). Safe for comparing build versions (string compare gets '10' < '9' wrong)."""
-    parts = []
-    for p in re.split(r'[.\-_ ]+', str(version).strip()):
-        m = re.match(r'\d+', p)
-        parts.append(int(m.group()) if m else 0)
-    return tuple(parts) or (0,)
+    parts = tuple(int(n) for n in re.findall(r'\d+', str(version)))
+    return parts or (0,)
 
 
 def is_newer(latest, installed):
