@@ -14,13 +14,13 @@ ART = os.path.join(PATH, 'resources', 'media')
 #        User Edit Variables                            #
 #########################################################
 ADDONTITLE = '[COLOR orangered]Al8inA [/COLOR] [COLOR chocolate]Matrix Wizard[/COLOR]'
-BUILDERNAME = '[COLOR darkorange]Al8inA[/COLOR] '
+BUILDERNAME = '[COLOR darkorange]BQ[/COLOR] '
 EXCLUDES = [ADDON_ID, '']
 # Text File with build info in it.
 BUILDFILE = 'https://mia.nl.tab.digital/public.php/dav/files/ZfDw5wNmiiHxxfd'
 # How often you would like it to check for build updates in days
-# 0 being every startup of kodi
-UPDATECHECK = 0
+# 0 = every startup (slow: downloads the build list each time); 1 = daily (recommended)
+UPDATECHECK = 1
 # Text File with apk info in it.  Leave as 'http://' to ignore
 APKFILE = 'http://'
 # Text File with Youtube Videos urls.  Leave as 'http://' to ignore
@@ -41,18 +41,18 @@ ADVANCEDFILE = 'http://'
 # Example:  ICONMAINT     = os.path.join(ART, 'mainticon.png')
 #           ICONSETTINGS  = 'https://www.yourhost.com/repo/wizard/settings.png'
 # Leave as http:// for default icon
-ICONBUILDS = os.path.join(ART, 'builds.png')
-ICONMAINT = os.path.join(ART, 'maintenance.png')
+ICONBUILDS = os.path.join(ART, 'menu.png')
+ICONMAINT = os.path.join(ART, 'menu.png')
 ICONSPEED = os.path.join(ART, 'speed.png')
-ICONAPK = os.path.join(ART, 'apkinstaller.png')
+ICONAPK = os.path.join(ART, 'menu.png')
 ICONADDONS = os.path.join(ART, 'addoninstaller.png')
 ICONYOUTUBE = os.path.join(ART, 'youtube.png')
-ICONSAVE = os.path.join(ART, 'savedata.png')
+ICONSAVE = os.path.join(ART, 'menu.png')
 ICONTRAKT = os.path.join(ART, 'keeptrakt.png')
 ICONREAL = os.path.join(ART, 'keepdebrid.png')
 ICONLOGIN = os.path.join(ART, 'keeplogin.png')
 ICONCONTACT = os.path.join(ART, 'information.png')
-ICONSETTINGS = os.path.join(ART, 'settings.png')
+ICONSETTINGS = os.path.join(ART, 'menu.png')
 # Hide the section separators 'Yes' or 'No'
 HIDESPACERS = 'No'
 # Character used in separator
@@ -77,7 +77,7 @@ THEME5 = u'[COLOR {color1}]Current Theme: [/COLOR] [COLOR {color2}]{{}}[/COLOR]'
 # Enable 'Contact' menu item 'Yes' hide or 'No' dont hide
 HIDECONTACT = 'Yes'
 # You can add \n to do line breaks
-CONTACT = 'Keep Calm and Carry On!Thank you for choosing Al8inA Matrix Wizard.'
+CONTACT = 'Keep Calm and Carry On!Thank you for choosing Al8inA Wizard.'
 # Images used for the contact window.  http:// for default icon and fanart
 CONTACTICON = 'https://i.postimg.cc/XqnrdK17/icon.png'
 CONTACTFANART = 'https://i.postimg.cc/448fWTmj/fanart.jpg'
@@ -98,7 +98,7 @@ AUTOINSTALL = 'No'
 # Addon ID for the repository
 REPOID = ''
 # Url to Addons.xml file in your repo folder(this is so we can get the latest version)
-REPOADDONXML = 'https://github.com/audiosistem/Bee-Queen/blob/main/matrix/repository.al8ina/addon.xml'
+REPOADDONXML = 'https://raw.githubusercontent.com/a4k-openproject/repository.openwizard/master/zips/addons.xml'
 # Url to folder zip is located in
 REPOZIPURL = 'https://'
 #########################################################
@@ -114,7 +114,7 @@ NOTIFICATION = 'https://mia.nl.tab.digital/public.php/dav/files/dEpNF3AekXx6pNq'
 HEADERTYPE = 'Text'
 # Font size of header
 FONTHEADER = 'Font14'
-HEADERMESSAGE = '[COLOR orangered][B]Al8inA[/B][/COLOR] [COLOR chocolate]Matrix Wizard[/COLOR]'
+HEADERMESSAGE = '[COLOR orangered][B]Al8inA Wizard[/COLOR]'
 # url to image if using Image 424x180
 HEADERIMAGE = 'http://'
 # Font for Notification Window

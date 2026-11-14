@@ -42,7 +42,10 @@ class Config:
         self.ADDON_ICON = self.ADDON.getAddonInfo('icon')
         self.ADDON_FANART = self.ADDON.getAddonInfo('fanart')
         self.KODIV = float(xbmc.getInfoLabel("System.BuildVersion")[:4])
-        self.RAM = int(xbmc.getInfoLabel("System.Memory(total)")[:-2])
+        try:
+            self.RAM = int(xbmc.getInfoLabel("System.Memory(total)")[:-2])
+        except ValueError:
+            self.RAM = 0
 
     def init_uservars(self):
         # User Edit Variables
@@ -215,6 +218,8 @@ class Config:
         self.SHOW17 = self.get_setting('show17')
         self.SHOW18 = self.get_setting('show18')
         self.SHOW19 = self.get_setting('show19')
+        self.SHOW20 = self.get_setting('show20')
+        self.SHOW21 = self.get_setting('show21')
         self.SHOWADULT = self.get_setting('adult')
         self.SEPARATE = self.get_setting('separate')
         self.DEVELOPER = self.get_setting('developer')
@@ -231,14 +236,10 @@ class Config:
         # Video Cache variables
         self.INCLUDEVIDEO = self.get_setting('includevideo')
         self.INCLUDEALL = self.get_setting('includeall')
-        self.INCLUDEALVIN = self.get_setting('includealvin')
-        self.INCLUDEHOMELANDER = self.get_setting('includehomelander')
-        self.INCLUDESEREN = self.get_setting('includeseren')
-        self.INCLUDETHEPROMISE = self.get_setting('includethepromise')
-        self.INCLUDEELEMENTUM = self.get_setting('includeelementum')
-        self.INCLUDESCRUBSV2 = self.get_setting('includescrubsv2')
+        self.INCLUDEUMBRELLA = self.get_setting('includeumbrella')
         self.INCLUDEMRSP = self.get_setting('includeromanianpack')
-        self.INCLUDETHEOATH = self.get_setting('includetheoath')
+        self.INCLUDESCRUBSV2 = self.get_setting('includescrubsv2')
+        self.INCLUDEELEMENTUM = self.get_setting('includeelementum')
         
         # Notification variables
         self.NOTIFY = self.get_setting('notify')

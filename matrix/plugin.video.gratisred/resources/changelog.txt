@@ -1,4 +1,10 @@
 
+[B]- 2.1.0 (2026-11-13)[/B] Trakt:
+ * [B]Trakt[/B]: Continue Watching, history, calendars, and the other Trakt shelves identify this add-on, as Trakt asks, instead of the default Python agent.
+ * [B]Trakt[/B]: movie and episode history walks legal pages (250 max) and keeps going while Trakt's applied page is full. The old single request used limit=300.
+ * [B]Trakt[/B]: a rate limit waits for the full Retry-After instead of retrying after 10 seconds.
+ * [B]Trakt[/B]: Continue Watching and watched ticks ask for season progress and show details together. A watched list with no seasons is treated as a miss, not an empty library.
+
 [B]- 2.0.9 (2026-11-06)[/B] Trakt OAuth / Network / MDBList:
  * [B]Simkl[/B] / [B]MDBList[/B]: a failed watched pull no longer replaces local ticks with an empty library. Force refresh also waits until the pull succeeds before saving last-activities, and does not wipe the watched cache first.
  * [B]Trakt[/B]: a failed watched page walk is left as a miss (old ticks stay) instead of an empty list.

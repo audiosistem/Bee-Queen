@@ -360,6 +360,32 @@ def parse_dom(html, name=u"", attrs={}, ret=False):
     return ret_lst
 
 
+def version_tuple(version):
+    """'1.10.2' -> (1, 10, 2). Safe for comparing build versions (string compare gets '10' < '9' wrong)."""
+    parts = []
+    for p in re.split(r'[.\-_ ]+', str(version).strip()):
+        m = re.match(r'\d+', p)
+        parts.append(int(m.group()) if m else 0)
+    return tuple(parts) or (0,)
+
+
+def is_newer(latest, installed):
+    return version_tuple(latest) > version_tuple(installed)
+
+
+def play_youtube(url):
+    """Play a YouTube link through the official YouTube add-on (replaces the old, broken yt.py scraper)."""
+    m = re.search(r'(?:v=|youtu\.be/|embed/)([A-Za-z0-9_-]{11})', str(url))
+    if not m:
+        xbmcgui.Dialog().notification(CONFIG.ADDONTITLE, 'Invalid YouTube link', xbmcgui.NOTIFICATION_ERROR, 3000)
+        return False
+    if not xbmc.getCondVisibility('System.HasAddon(plugin.video.youtube)'):
+        xbmcgui.Dialog().ok(CONFIG.ADDONTITLE, 'Please install the YouTube add-on (plugin.video.youtube) to play videos.')
+        return False
+    xbmc.executebuiltin('PlayMedia(plugin://plugin.video.youtube/play/?video_id={0})'.format(m.group(1)))
+    return True
+
+
 def get_date(days=0, formatted=False):
     import time
 
@@ -371,9 +397,9 @@ def get_date(days=0, formatted=False):
 def basecode(text, encode=True):
     import base64
     if encode:
-        msg = base64.encodestring(text)
+        msg = base64.encodebytes(text if isinstance(text, bytes) else text.encode('utf-8'))
     else:
-        msg = base64.decodestring(text)
+        msg = base64.decodebytes(text if isinstance(text, bytes) else text.encode('utf-8'))
     return msg
 
 
@@ -397,17 +423,8 @@ def platform():
 
 
 def kodi_version():
-    if 17.0 <= CONFIG.KODIV <= 17.9:
-        vername = 'Krypton'
-    elif 18.0 <= CONFIG.KODIV <= 18.9:
-        vername = 'Leia'
-    elif 19.0 <= CONFIG.KODIV <= 19.9:
-        vername = 'Matrix'
-    elif 20.0 <= CONFIG.KODIV <= 20.9:
-        vername = 'Nexus'        
-    else:
-        vername = "Unknown"
-    return vername
+    names = {17: 'Krypton', 18: 'Leia', 19: 'Matrix', 20: 'Nexus', 21: 'Omega', 22: 'Piers'}
+    return names.get(int(CONFIG.KODIV), 'Unknown')
 
 
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
@@ -700,14 +717,13 @@ def _check_url(url, cred):
 
     if _is_url(url):
         try:
-            response = requests.head(url, headers={'user-agent': CONFIG.USER_AGENT}, allow_redirects=True, auth=cred)
-            
-            if response.status_code < 300:
+            # timeout is essential: this runs from the startup service and must never hang Kodi
+            response = requests.head(url, headers={'user-agent': CONFIG.USER_AGENT}, allow_redirects=True,
+                                     auth=cred, timeout=10.0)
+
+            if response.status_code < 400:
                 logging.log("URL check passed for {0}: Status code [{1}]".format(url, response.status_code), level=xbmc.LOGDEBUG)
                 return True
-            elif response.status_code < 400:
-                logging.log("URL check redirected from {0} to {1}: Status code [{2}]".format(url, response.headers['Location'], response.status_code), level=xbmc.LOGDEBUG)
-                return _check_url(response.headers['Location'])
             elif response.status_code == 401:
                 logging.log("URL requires authentication for {0}: Status code [{1}]".format(url, response.status_code), level=xbmc.LOGDEBUG)
                 return 'auth'

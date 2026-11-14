@@ -23,10 +23,7 @@ import xbmcvfs
 
 import os
 import shutil
-try:  # Python 3
-    import zipfile
-except ImportError:  # Python 2
-    from resources.libs import zipfile
+import zipfile
 
 from resources.libs.common.config import CONFIG
 from resources.libs.common import logging

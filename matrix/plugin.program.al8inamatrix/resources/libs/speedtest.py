@@ -32,26 +32,15 @@ import timeit
 import xml.etree.ElementTree as ET
 from xml.dom import minidom as DOM
 
-try:
-    from urllib.request import urlopen
-    from urllib.request import Request
-    from urllib.request import HTTPError
-    from urllib.request import URLError
-    from urllib.parse import urlparse
-    from urllib.parse import parse_qs
-    from http.client import HTTPConnection
-    from http.client import HTTPSConnection
-    from queue import Queue
-except ImportError:
-    from urllib2 import urlopen
-    from urllib2 import Request
-    from urllib2 import HTTPError
-    from urllib2 import URLError
-    from urlparse import urlparse
-    from urlparse import parse_qs
-    from httplib import HTTPConnection
-    from httplib import HTTPSConnection
-    from Queue import Queue
+from urllib.request import urlopen
+from urllib.request import Request
+from urllib.error import HTTPError
+from urllib.error import URLError
+from urllib.parse import urlparse
+from urllib.parse import parse_qs
+from http.client import HTTPConnection
+from http.client import HTTPSConnection
+from queue import Queue
 
 from resources.libs.common.config import CONFIG
 from resources.libs.common import logging

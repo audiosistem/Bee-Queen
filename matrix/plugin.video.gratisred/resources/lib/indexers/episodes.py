@@ -558,8 +558,8 @@ class episodes:
         self.trakt_mycalendar_link = self.trakt_link + '/calendars/my/shows/date[30]/31/' #go back 30 and show all shows aired until tomorrow
         # Same paged progress feed as overlays / Red Light In Progress.
         # /users/me/watched/shows?extended=full no longer includes seasons.
-        self.trakt_progress_link = self.trakt_link + '/sync/watched/shows?extended=progress'
-        self.trakt_history_link = self.trakt_link + '/users/me/history/shows?limit=300' # '40'
+        self.trakt_progress_link = self.trakt_link + '/sync/watched/shows?extended=full,progress'
+        self.trakt_history_link = self.trakt_link + '/users/me/history/shows'
         self.trakt_ondeck_link = self.trakt_link + '/sync/playback/episodes?limit=20'
         self.trakt_list_link = self.trakt_link + '/users/%s/lists/%s/items'
         self.trakt_lists_link = self.trakt_link + '/users/me/lists'
@@ -844,7 +844,11 @@ class episodes:
                 q.update({'extended': 'full'})
                 q = (urllib_parse.urlencode(q)).replace('%2C', ',')
                 u = url.replace('?' + urllib_parse.urlparse(url).query, '') + '?' + q
-                items = trakt.getTraktAsJson(u)
+                if '/history/' in url:
+                    cap = {'50': 50, '150': 150}.get(self.trakt_item_limit, 100)
+                    items = trakt.getTraktAsJsonPaged(u, max_items=cap) or []
+                else:
+                    items = trakt.getTraktAsJson(u)
             for item in items:
                 try:
                     if '/sync/playback' in url and control.playback_progress_stale(item):
@@ -976,7 +980,7 @@ class episodes:
         # The blanket ``[::-1]`` reverse below flips Trakt's newest-first
         # ordering into oldest-first.  Downstream, ``trakt_episodes_list``
         # truncates with ``items[:100]`` which then keeps the OLDEST 100
-        # of the 300 fetched (``/users/me/history/shows?limit=300``) -
+        # of one clamped page (history used to ask for limit=300) -
         # so the History view literally never showed any recent watches.
         # We now keep Trakt's natural order for the history endpoint
         # (newest first) and only apply the legacy reverse for the
@@ -991,13 +995,19 @@ class episodes:
     def trakt_progress_list(self, url, user, lang):
         try:
             if url and 'extended=' not in url:
-                url = url + ('&' if '?' in url else '?') + 'extended=progress'
-            result = trakt.getTraktAsJsonPaged(url or '/sync/watched/shows?extended=progress')
+                url = url + ('&' if '?' in url else '?') + 'extended=full,progress'
+            result = trakt.getTraktAsJsonPaged(url or '/sync/watched/shows?extended=full,progress')
             if not isinstance(result, list):
                 return
         except:
             #log_utils.log('trakt_progress_list', 1)
             return
+        try:
+            from kodi_six import xbmc
+            with_seasons = sum(1 for i in result if i.get('seasons'))
+            xbmc.log('[Gratis Red] Trakt Continue Watching: %s shows, %s with seasons' % (len(result), with_seasons), xbmc.LOGINFO)
+        except Exception:
+            pass
         items = []
         sortorder = control.setting('prgr.sortorder')
         for item in result:

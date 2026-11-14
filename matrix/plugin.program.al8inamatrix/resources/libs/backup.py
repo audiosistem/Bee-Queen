@@ -28,12 +28,8 @@ import shutil
 import re
 import os
 
-try:  # Python 3
-    from urllib.parse import quote_plus
-    import zipfile
-except ImportError:  # Python 2
-    from urllib import quote_plus
-    from resources.libs import zipfile
+import zipfile
+from urllib.parse import quote_plus
 
 from resources.libs.common.config import CONFIG
 from resources.libs import db

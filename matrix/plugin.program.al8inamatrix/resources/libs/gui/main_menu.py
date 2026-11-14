@@ -55,7 +55,7 @@ class MainMenu:
         if len(CONFIG.BUILDNAME) > 0:
             version = check.check_build(CONFIG.BUILDNAME, 'version')
             build = '{0} (v{1})'.format(CONFIG.BUILDNAME, CONFIG.BUILDVERSION)
-            if version > CONFIG.BUILDVERSION:
+            if tools.is_newer(version, CONFIG.BUILDVERSION):
                 build = '{0} [COLOR red][B][UPDATE v{1}][/B][/COLOR]'.format(build, version)
             directory.add_dir(build, {'mode': 'viewbuild', 'name': CONFIG.BUILDNAME}, themeit=CONFIG.THEME4)
 

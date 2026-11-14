@@ -148,10 +148,10 @@ class movies:
         # ``limit=items_per_page`` defaulted to 20.  If the user had any
         # recent rewatches of old classics those 20 slots were filled by
         # the *same* old titles and no newer movies could appear.  We now
-        # request a meaningful window (300, matching the TV/episode
-        # history view) and de-duplicate in ``trakt_list`` so the user
-        # actually sees their newest unique watches.
-        self.trakt_history_link = self.trakt_link + '/users/me/history/movies?limit=300&page=1'
+        # request legal pages (250 max) and keep walking while Trakt's
+        # applied page is full, up to the same 300-watch window, then
+        # de-duplicate in ``trakt_list``.
+        self.trakt_history_link = self.trakt_link + '/users/me/history/movies'
         self.trakt_ondeck_link = self.trakt_link + '/sync/playback/movies?limit=%s&page=1' % self.items_per_page
         self.trakt_related_link = self.trakt_link + '/movies/%s/related'
         self.trakt_update_link = self.trakt_link + '/movies/updates/%s?limit=%s&page=1' % ('%s', self.items_per_page)
@@ -608,7 +608,9 @@ class movies:
                 q.update({'extended': 'full'})
                 q = (urllib_parse.urlencode(q)).replace('%2C', ',')
                 u = url.replace('?' + urllib_parse.urlparse(url).query, '') + '?' + q
-                if fetch_all:
+                if '/history/' in url:
+                    result = trakt.getTraktAsJsonPaged(u, max_items=300) or []
+                elif fetch_all:
                     result = trakt.getTraktAsJsonPaged(u) or []
                 else:
                     result = trakt.getTraktAsJson(u) or []

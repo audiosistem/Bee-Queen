@@ -25,12 +25,8 @@ import os
 import re
 import sys
 
-try:
-    from urllib.request import urlopen
-    from urllib.request import Request
-except ImportError:
-    from urllib2 import urlopen
-    from urllib2 import Request
+from urllib.request import urlopen
+from urllib.request import Request
 
 from resources.libs.common.config import CONFIG
 
@@ -173,7 +169,7 @@ def check_build_update():
         icon = match[0][1]
         fanart = match[0][2]
         CONFIG.set_setting('latestversion', version)
-        if version > CONFIG.BUILDVERSION:
+        if tools.is_newer(version, CONFIG.BUILDVERSION):
             if CONFIG.DISABLEUPDATE == 'false':
                 logging.log("[Check Updates] [Installed Version: {0}] [Current Version: {1}] Opening Update Window".format(CONFIG.BUILDVERSION, version))
                 window.show_update_window(CONFIG.BUILDNAME, CONFIG.BUILDVERSION, version, icon, fanart)
@@ -378,41 +374,34 @@ def check_repos():
 
 
 def build_count():
+    """Returns (total, {kodi_major: count}, adultcount, hidden)."""
     from resources.libs import test
     from resources.libs.common import tools
 
     response = tools.open_url(CONFIG.BUILDFILE)
 
     total = 0
-    count17 = 0
-    count18 = 0
-    count19 = 0
+    counts = {}
     hidden = 0
     adultcount = 0
 
     if not response:
-        return total, count17, count18, count19, adultcount, hidden
+        return total, counts, adultcount, hidden
 
     link = response.text.replace('\n', '').replace('\r', '').replace('\t', '')
     match = re.compile('name="(.+?)".+?odi="(.+?)".+?dult="(.+?)"').findall(link)
 
-    if len(match) > 0:
-        for name, kodi, adult in match:
-            if not CONFIG.SHOWADULT == 'true' and adult.lower() == 'yes':
-                hidden += 1
-                adultcount += 1
-                continue
-            if not CONFIG.DEVELOPER == 'true' and test.str_test(name):
-                hidden += 1
-                continue
-            kodi = int(float(kodi))
-            total += 1
-            if kodi == 19:
-                count19 += 1
-            elif kodi == 18:
-                count18 += 1
-            elif kodi == 17:
-                count17 += 1
-    return total, count17, count18, count19, adultcount, hidden
+    for name, kodi, adult in match:
+        if not CONFIG.SHOWADULT == 'true' and adult.lower() == 'yes':
+            hidden += 1
+            adultcount += 1
+            continue
+        if not CONFIG.DEVELOPER == 'true' and test.str_test(name):
+            hidden += 1
+            continue
+        kodi = int(float(kodi))
+        total += 1
+        counts[kodi] = counts.get(kodi, 0) + 1
+    return total, counts, adultcount, hidden
 
 

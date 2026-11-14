@@ -25,10 +25,7 @@ import os
 
 import six
 
-if six.PY3:
-    import zipfile
-elif six.PY2:
-    from resources.libs import zipfile
+import zipfile
 
 from resources.libs.common import logging
 from resources.libs.common import tools

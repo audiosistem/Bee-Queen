@@ -91,7 +91,7 @@ class BuildMenu:
             directory.add_file('{0}'.format(CONFIG.BUILDFILE), icon=CONFIG.ICONBUILDS, themeit=CONFIG.THEME3)
             return
 
-        total, count17, count18, count19, adultcount, hidden = check.build_count()
+        total, counts, adultcount, hidden = check.build_count()
 
         match = re.compile('name="(.+?)".+?ersion="(.+?)".+?rl="(.+?)".+?ui="(.+?)".+?odi="(.+?)".+?heme="(.+?)".+?con="(.+?)".+?anart="(.+?)".+?dult="(.+?)".+?escription="(.+?)"').findall(link)
         
@@ -113,24 +113,16 @@ class BuildMenu:
             if CONFIG.SEPARATE == 'true':
                 self._list_all(match)
             else:
-                if count19 > 0:
-                    state = '+' if CONFIG.SHOW19 == 'false' else '-'
-                    directory.add_file('[B]{0} Matrix Builds ({1})[/B]'.format(state, count19), {'mode': 'togglesetting',
-                                       'name': 'show19'}, themeit=CONFIG.THEME3)
-                    if CONFIG.SHOW19 == 'true':
-                        self._list_all(match, kodiv=19)
-                if count18 > 0:
-                    state = '+' if CONFIG.SHOW18 == 'false' else '-'
-                    directory.add_file('[B]{0} Leia Builds ({1})[/B]'.format(state, count18), {'mode': 'togglesetting', 'name': 'show18'},
-                                       themeit=CONFIG.THEME3)
-                    if CONFIG.SHOW18 == 'true':
-                        self._list_all(match, kodiv=18)
-                if count17 > 0:
-                    state = '+' if CONFIG.SHOW17 == 'false' else '-'
-                    directory.add_file('[B]{0} Krypton Builds ({1})[/B]'.format(state, count17), {'mode': 'togglesetting',
-                                       'name': 'show17'}, themeit=CONFIG.THEME3)
-                    if CONFIG.SHOW17 == 'true':
-                        self._list_all(match, kodiv=17)
+                names = {21: 'Omega', 20: 'Nexus', 19: 'Matrix', 18: 'Leia', 17: 'Krypton'}
+                for major in sorted(counts, reverse=True):
+                    if counts[major] < 1:
+                        continue
+                    key = 'show{0}'.format(major)
+                    shown = CONFIG.get_setting(key) == 'true'
+                    directory.add_file('[B]{0} {1} Builds ({2})[/B]'.format('-' if shown else '+', names.get(major, 'Kodi {0}'.format(major)), counts[major]),
+                                       {'mode': 'togglesetting', 'name': key}, themeit=CONFIG.THEME3)
+                    if shown:
+                        self._list_all(match, kodiv=major)
 
         elif hidden > 0:
             if adultcount > 0:
@@ -168,7 +160,7 @@ class BuildMenu:
         for version, url, gui, kodi, themefile, icon, fanart, preview, adult, info, description in match:
             build = '{0} (v{1})'.format(name, version)
             
-            updatecheck = CONFIG.BUILDNAME == name and version > CONFIG.BUILDVERSION
+            updatecheck = CONFIG.BUILDNAME == name and tools.is_newer(version, CONFIG.BUILDVERSION)
             versioncheck = True if float(CONFIG.KODIV) == float(kodi) else False
             previewcheck = tools.open_url(preview, check=True)
             guicheck = tools.open_url(gui, check=True)
@@ -275,7 +267,6 @@ class BuildMenu:
 
     def build_video(self, name):
         from resources.libs import check
-        from resources.libs import yt
         from resources.libs.common import logging
         from resources.libs.common import tools
         
@@ -284,7 +275,7 @@ class BuildMenu:
         if response:
             videofile = check.check_build(name, 'preview')
             if tools.open_url(videofile, check=True):
-                yt.play_video(videofile)
+                tools.play_youtube(videofile)
             else:
                 logging.log("[{0}]Unable to find url for video preview".format(name))
         else:

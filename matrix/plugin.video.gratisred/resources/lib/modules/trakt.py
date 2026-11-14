@@ -73,8 +73,10 @@ def _trakt_app_keys():
     return V2_API_KEY, CLIENT_SECRET
 # Trakt API max per-page limit (reduced to 250; see trakt-api discussions #681 / #775)
 TRAKT_PAGE_LIMIT = 250
-# extended=progress on watched/shows is capped at 100 per page
+# Season progress is capped at 100 per page. full,progress keeps show
+# metadata and the seasons array together (Trakt discussion #775).
 TRAKT_WATCHED_PROGRESS_PAGE_LIMIT = 100
+TRAKT_WATCHED_SHOWS_EXTENDED = 'full,progress'
 TRAKT_REFRESH_PROPERTY = 'gratisred.trakt_refreshing_token'
 TRAKT_DEAD_GRANT_PROPERTY = 'gratisred.trakt_refresh_dead'
 
@@ -93,8 +95,27 @@ def _set_trakt_expires(expires_in):
         pass
 
 
+def _trakt_user_agent():
+    # Cloudflare in front of api.trakt.tv blocks the default python-requests agent.
+    try:
+        version = control.addonInfo('version') or '2.1.0'
+    except Exception:
+        version = '2.1.0'
+    return 'plugin.video.gratisred/%s' % version
+
+
+def _trakt_headers(client_id, token=None):
+    headers = {
+        'Content-Type': 'application/json', 'trakt-api-key': client_id, 'trakt-api-version': '2',
+        'User-Agent': _trakt_user_agent(),
+    }
+    if token:
+        headers['Authorization'] = 'Bearer %s' % token
+    return headers
+
+
 def _trakt_oauth_headers(client_id):
-    return {'Content-Type': 'application/json', 'trakt-api-key': client_id, 'trakt-api-version': '2'}
+    return _trakt_headers(client_id)
 
 
 def _trakt_oauth_post(path, data, timeout=30):
@@ -210,9 +231,7 @@ def __getTraktALT(url, post=None):
         url = urljoin(BASE_URL, url) if not url.startswith(BASE_URL) else url
         post = json.dumps(post) if post else None
         client_id, _client_secret = _trakt_app_keys()
-        headers = {'Content-Type': 'application/json', 'trakt-api-key': client_id, 'trakt-api-version': '2'}
-        if getTraktCredentialsInfo():
-            headers.update({'Authorization': 'Bearer %s' % control.setting('trakt.token')})
+        headers = _trakt_headers(client_id, control.setting('trakt.token') if getTraktCredentialsInfo() else None)
         result = client.request(url, post=post, headers=headers, output='extended', error=True)
         result = client_utils.byteify(result)
         resp_code = result[1]
@@ -257,16 +276,15 @@ def __getTrakt(url, post=None, timeout=30):
     # tuple-unpacking never blows up.  Transient 5xx / 429 are logged only
     # (no more spammy "Trakt Error 502" pop-up that previously discouraged
     # the caller from retrying).  A single short retry with the server's
-    # ``Retry-After`` value is attempted on 429 before giving up.
+    # ``Retry-After`` value is waited out on 429 before giving up.
     # ---------------------------------------------------------------------
     try:
         url = urljoin(BASE_URL, url) if not url.startswith(BASE_URL) else url
         post = json.dumps(post) if post else None
         client_id, _client_secret = _trakt_app_keys()
-        headers = {'Content-Type': 'application/json', 'trakt-api-key': client_id, 'trakt-api-version': '2'}
         if getTraktCredentialsInfo():
             _ensureTraktTokenFresh()
-            headers.update({'Authorization': 'Bearer %s' % control.setting('trakt.token')})
+        headers = _trakt_headers(client_id, control.setting('trakt.token') if getTraktCredentialsInfo() else None)
         if not post:
             r = requests.get(url, headers=headers, timeout=timeout)
         else:
@@ -282,13 +300,13 @@ def __getTrakt(url, post=None, timeout=30):
             log_utils.log('Trakt Error: %s on %s' % (str(resp_code), url))
             return None, resp_header
         elif resp_code in ['429']:
-            # Rate-limited.  Trakt sends a ``Retry-After`` header (seconds).
-            # Do one polite short wait + retry so large list enumerations
-            # (which legitimately hit the API many times) don't terminate
-            # prematurely and drop the remaining pages.
+            # Rate-limited. Wait the full Retry-After (seconds). A 10s cap
+            # used to retry while Cloudflare was still refusing the call.
             wait = 2
             try:
-                wait = max(1, min(10, int(resp_header.get('Retry-After', '2'))))
+                wait = int(resp_header.get('Retry-After', '2'))
+                if wait < 1:
+                    wait = 1
             except Exception:
                 wait = 2
             log_utils.log('Trakt Rate Limit %s - sleeping %ss then retrying %s' % (resp_code, wait, url))
@@ -591,7 +609,7 @@ def getTraktAsJson(url, post=None):
         pass
 
 
-def getTraktAsJsonPaged(url, page_size=None):
+def getTraktAsJsonPaged(url, page_size=None, max_items=None):
     """
     Fetch a Trakt endpoint that supports pagination and return *all* results
     concatenated.
@@ -684,6 +702,8 @@ def getTraktAsJsonPaged(url, page_size=None):
                     header_limit = hl
             except Exception:
                 pass
+            if max_items and len(merged) >= int(max_items):
+                break
             if len(data) < header_limit:
                 break
             current_page += 1
@@ -793,7 +813,7 @@ def directory_watched_tvshows():
     """
     if getTraktCredentialsInfo() == False:
         return []
-    rows = getTraktAsJsonPaged('/sync/watched/shows?extended=progress')
+    rows = getTraktAsJsonPaged('/sync/watched/shows?extended=%s' % TRAKT_WATCHED_SHOWS_EXTENDED)
     if not isinstance(rows, list):
         return []
     out = []
@@ -971,7 +991,7 @@ def authTrakt(reopen_settings=False):
             control.infoDialog('Trakt Authorisation Failed.', sound=True)
             return
         token, refresh = token_result['access_token'], token_result['refresh_token']
-        headers = {'Content-Type': 'application/json', 'trakt-api-key': client_id, 'trakt-api-version': '2', 'Authorization': 'Bearer %s' % token}
+        headers = _trakt_headers(client_id, token)
         result = client.request(urljoin(BASE_URL, '/users/me'), headers=headers)
         result = client_utils.json_loads_as_str(result)
         user = result.get('username', '')
@@ -1649,8 +1669,7 @@ def clearPlayback(imdb=None, tmdb=None, season=None, episode=None, media='movie'
     if not ids:
         return
     client_id, _client_secret = _trakt_app_keys()
-    headers = {'Content-Type': 'application/json', 'trakt-api-key': client_id, 'trakt-api-version': '2'}
-    headers.update({'Authorization': 'Bearer %s' % control.setting('trakt.token')})
+    headers = _trakt_headers(client_id, control.setting('trakt.token'))
     for pid in ids:
         try:
             requests.delete(urljoin(BASE_URL, '/sync/playback/%s' % pid), headers=headers, timeout=20)
@@ -1723,18 +1742,18 @@ def timeoutsyncMovies():
     return timeout
 
 
-def syncTVShows(user, sync_version='progress_v2'):
+def syncTVShows(user, sync_version='progress_v3'):
     """Watched TV indicators for overlays.
 
     Trakt no longer returns season/episode breakdown with extended=full (#775).
-    Use /sync/watched/shows?extended=progress (same pattern as Red Light).
+    Use /sync/watched/shows?extended=full,progress (same pattern as Red Light).
     sync_version busts the local cache key after the progress migration
     and after paged-fetch no longer trusts Trakt's page-count header.
     """
     try:
         if getTraktCredentialsInfo() == False:
             return
-        indicators = getTraktAsJsonPaged('/sync/watched/shows?extended=progress')
+        indicators = getTraktAsJsonPaged('/sync/watched/shows?extended=%s' % TRAKT_WATCHED_SHOWS_EXTENDED)
         if indicators is None:
             return
         rows = []
@@ -1759,18 +1778,26 @@ def syncTVShows(user, sync_version='progress_v2'):
                 rows.append((str(tmdb), int(aired), watched))
             except Exception:
                 continue
+        with_seasons = sum(1 for i in indicators if i.get('seasons'))
+        try:
+            from kodi_six import xbmc
+            xbmc.log('[Gratis Red] Trakt watched shows %s, %s with seasons' % (len(indicators), with_seasons), xbmc.LOGINFO)
+        except Exception:
+            pass
+        if indicators and with_seasons == 0:
+            return
         return rows
     except:
         pass
 
 
 def cachesyncTVShows(timeout=0):
-    indicators = cache.get(syncTVShows, timeout, control.setting('trakt.user').strip(), 'progress_v2')
+    indicators = cache.get(syncTVShows, timeout, control.setting('trakt.user').strip(), 'progress_v3')
     return indicators
 
 
 def timeoutsyncTVShows():
-    timeout = cache.timeout(syncTVShows, control.setting('trakt.user').strip(), 'progress_v2')
+    timeout = cache.timeout(syncTVShows, control.setting('trakt.user').strip(), 'progress_v3')
     if not timeout:
         timeout = 0
     return timeout

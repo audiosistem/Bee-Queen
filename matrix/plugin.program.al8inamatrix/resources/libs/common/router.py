@@ -168,8 +168,8 @@ class Router:
             menu.youtube_menu(url)
             self._finish(handle)
         elif mode == 'viewVideo':  # View  Video
-            from resources.libs import yt
-            yt.play_video(url)
+            from resources.libs.common import tools
+            tools.play_youtube(url)
         elif mode == 'trakt':  # Save Data -> Keep Trakt Data
             menu.trakt_menu()
             self._finish(handle)
