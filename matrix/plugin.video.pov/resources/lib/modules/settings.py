@@ -298,11 +298,11 @@ def widget_hide_watched():
 
 def debrid_expiry_checks():
 	return (
-		('pm.account_id', 'pm.expires', 'premiumize_api', 'PremiumizeAPI'),
-		('oc.account_id', 'oc.expires', 'offcloud_api', 'OffcloudAPI'),
-		('tb.account_id', 'tb.expires', 'torbox_api', 'TorBoxAPI'),
-		('rd.username', 'rd.expires', 'realdebrid_api', 'RealDebridAPI'),
-		('ad.account_id', 'ad.expires', 'alldebrid_api', 'AllDebridAPI')
+		('pm.token', 'pm.expires', 'premiumize_api', 'PremiumizeAPI'),
+		('oc.token', 'oc.expires', 'offcloud_api', 'OffcloudAPI'),
+		('tb.token', 'tb.expires', 'torbox_api', 'TorBoxAPI'),
+		('rd.token', 'rd.expires', 'realdebrid_api', 'RealDebridAPI'),
+		('ad.token', 'ad.expires', 'alldebrid_api', 'AllDebridAPI')
 	)
 
 def cloud_scrapers():

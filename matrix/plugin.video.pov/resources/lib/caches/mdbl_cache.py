@@ -160,6 +160,8 @@ def default_activities():
 			'paused_at': '',
 			'episode_paused_at': '',
 			'list_updated_at': '',
+			'external_lists_updated_at': '',
+			'liked_lists_updated_at': '',
 			'server_time': ''
 			}
 

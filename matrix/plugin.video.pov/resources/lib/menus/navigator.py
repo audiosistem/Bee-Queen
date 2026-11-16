@@ -348,7 +348,7 @@ class Navigator:
 	def networks(self):
 		from modules.meta_lists import networks
 		lst_ins = self.make_list_name(self.params_get('menu_type'))
-		for item in networks:
+		for item in networks():
 			icon = '%s%s%s' % ('https://image.tmdb.org/t/p', '/w300', item['logo'])
 			list_name = '%s: %s %s' % (lst_ins.upper(), item['name'], ls(32480))
 			self._add_item({'mode': 'build_tvshow_list', 'action': 'tmdb_tv_networks', 'network_id': item['id'], 'name': item['name']}, icon, list_name=list_name)

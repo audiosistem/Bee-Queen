@@ -241,7 +241,7 @@ class Extras(BaseDialog):
 			if self.is_movie:
 				network_id = next(i['id'] for i in tmdb_api.tmdb_company_id(network)['results'] if i['name'] == network)
 			else:
-				network_id = next(item['id'] for item in meta_networks if item.get('name') == network)
+				network_id = next(item['id'] for item in meta_networks() if item.get('name') == network)
 			if self.is_movie: function = tmdb_api.tmdb_movies_networks
 			else: function = tmdb_api.tmdb_tv_networks
 			data = self.remove_current_tmdb_mediaitem(function(network_id, 1)['results'])

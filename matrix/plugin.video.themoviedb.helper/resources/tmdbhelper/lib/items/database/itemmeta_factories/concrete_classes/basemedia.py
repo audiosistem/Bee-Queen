@@ -3,6 +3,7 @@ from tmdbhelper.lib.items.database.mappings import ItemMapperMethods
 from tmdbhelper.lib.items.database.itemmeta_factories.concrete_classes.baseclass import BaseItem
 from tmdbhelper.lib.items.database.itemmeta_factories.concrete_classes.baseroutes import MediaItemInfoLabelItemRoutes
 from tmdbhelper.lib.addon.plugin import get_setting
+from tmdbhelper.lib.addon.tmdate import convert_timestamp, format_date_obj
 
 
 class MediaItemArtworkRoutes:
@@ -92,7 +93,7 @@ class MediaItemArtworkRoutes:
         'art_extrafanart': {
             'affixes': (None, ),
             'outputs': 'fanart',
-            'parents': (None, ),
+            'parents': (None, 'tvshow'),
             'art_api': 'tmdb',
         },
         'user_art_poster': {
@@ -394,7 +395,7 @@ class MediaItem(BaseItem):
         if not duration:
             return infoproperties
 
-        progress = self.get_instance_cached_data_value(self.return_basemeta_db('playprogress'), 'playback_progress')
+        progress = self.get_instance_cached_data_value(self.return_basemeta_db('item_sync_state'), 'playback_progress')
         if not progress or progress < 4 or progress > 96:
             progress = 0
 
@@ -405,24 +406,32 @@ class MediaItem(BaseItem):
     def get_infoproperties_lastplayed(self, infoproperties):
         func_get = self.get_instance_cached_data_value
         func_dbc = self.return_basemeta_db
-        lastplayed_timestamp = func_get(func_dbc('lastplayed'), 'lastplayed')
+        lastplayed_timestamp = func_get(func_dbc('item_sync_state'), 'lastplayed')
         if not lastplayed_timestamp:
             return infoproperties
-        infoproperties.update(ItemMapperMethods.get_custom_date(
-            lastplayed_timestamp, name='lastplayed'
-        ))
+        infoproperties.update(
+            ItemMapperMethods.get_custom_date(
+                lastplayed_timestamp,
+                name='lastplayed',
+                utc_convert=True,
+            ),
+        )
         return infoproperties
+
+    @staticmethod
+    def get_collected_date(timestamp):
+        return format_date_obj(convert_timestamp(timestamp, utc_convert=True), '%Y-%m-%d')
 
     def get_infoproperties_ranks(self, infoproperties):
         func_get = self.get_instance_cached_data_value
         func_dbc = self.return_basemeta_db
 
-        for database, column, name, func in (
-            ('favorites_rank', 'favorites_rank', 'favorites_rank', None),
-            ('watchlist_rank', 'watchlist_rank', 'watchlist_rank', None),
-            ('collected_date', 'collection_last_collected_at', 'collected_date', lambda i: i[:10]),
+        for column, name, func in (
+            ('favorites_rank', 'favorites_rank', None),
+            ('watchlist_rank', 'watchlist_rank', None),
+            ('collection_last_collected_at', 'collected_date', self.get_collected_date),
         ):
-            rank = func_get(func_dbc(database), column)
+            rank = func_get(func_dbc('item_sync_state'), column)
             if not rank:
                 continue
             infoproperties[name] = func(rank) if func else rank

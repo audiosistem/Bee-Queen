@@ -36,8 +36,12 @@ class EasyNewsAPI:
 		self.password = kodi_utils.get_setting('easynews_password')
 		self.moderation = 1 if kodi_utils.get_setting('easynews_moderation') == 'true' else 0
 
+	def resolve_basic_auth(self): # requests defaults to latin-1
+		return tuple(i.strip().encode('utf-8') for i in (self.username, self.password))
+
 	def api(self, method, url, **kwargs):
-		try: response = session.request('get', url, **kwargs, auth=(self.username, self.password), timeout=self.timeout)
+		auth = self.resolve_basic_auth()
+		try: response = session.request('get', url, **kwargs, auth=auth, timeout=self.timeout)
 		except session.CUSTOM_ERRORS: return kodi_utils.notification('timeout: %s' % __name__)
 		if not response.ok: kodi_utils.logger('', f"{__name__}, {response.reason}\n{response.url}")
 		try: return response.json()
@@ -60,7 +64,8 @@ class EasyNewsAPI:
 		return account_info, usage_info
 
 	def unrestrict_link(self, url_dl):
-		with session.request('get', url_dl, auth=(self.username, self.password), stream=True, timeout=self.timeout*3) as response:
+		auth = self.resolve_basic_auth()
+		with session.request('get', url_dl, auth=auth, stream=True, timeout=self.timeout*3) as response:
 			if not response.ok: return kodi_utils.logger('unrestrict_link error', f"{__name__}, {response.reason}\n{response.url}")
 			chunk = next(response.iter_content(chunk_size=1048576), b'')
 		if len(chunk): return response.url

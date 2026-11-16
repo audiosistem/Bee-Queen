@@ -4,7 +4,7 @@ from caches import watched_cache as ws
 from indexers.metadata import art_infodict, episode_infodict, info_tagger, movie_show_infodict
 from indexers.segments import SegmentScraper
 from modules import kodi_utils, settings
-from modules.utils import make_title_slug, sec2time
+from modules.utils import sec2time
 # from modules.kodi_utils import logger
 
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
@@ -276,7 +276,7 @@ class POVPlayer(MediaPlayer):
 				tmdb_id = self.tmdb_id if self.mediatype == 'movie' and self.stinger_enabled else None
 				Thread(target=self.stinger_notification, args=(tmdb_id, poster)).start()
 			elif task_name == 'trakt_ids':
-				trakt_ids = {'tmdb': self.tmdb_id, 'imdb': self.imdb_id, 'slug': make_title_slug(self.title)}
+				trakt_ids = {'tmdb': self.tmdb_id, 'imdb': self.imdb_id}
 				if self.mediatype == 'episode': trakt_ids['tvdb'] = self.tvdb_id
 				kodi_utils.clear_property('script.trakt.ids')
 				kodi_utils.set_property('script.trakt.ids', json.dumps(trakt_ids))

@@ -1,3 +1,13 @@
+[COLORcyan] VERSION 1.6.5[/COLOR]
+
+
+[COLOR=gold] What's New[/COLOR]
+
+• New providers: Youplex, FileMood and TorrentKitty (movies, episodes and season / show packs).
+• New anime providers: SubsPlease, nekoBT and TsukiHime (episodes, with absolute episode numbering understood).
+• All are off by default: switch them on in the provider lists.
+
+
 [COLORcyan] VERSION 1.6.4[/COLOR]
 
 

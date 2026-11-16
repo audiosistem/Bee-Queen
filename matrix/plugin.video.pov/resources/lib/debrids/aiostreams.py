@@ -10,7 +10,11 @@ timeout = 30
 
 class Debrid:
 	def __init__(self):
-		self.auth = get_setting('aio.username'), get_setting('aio.password')
+		self.username = get_setting('aio.username')
+		self.password = get_setting('aio.password')
+
+	def resolve_basic_auth(self): # requests defaults to latin-1
+		return tuple(i.strip().encode('utf-8') for i in (self.username, self.password))
 
 	def resolve_aio_instance(self):
 		setting_id = (
@@ -52,7 +56,7 @@ class source(Debrid):
 		try:
 			sources = []
 			sources_append = sources.append
-			if not all(self.auth): return internal_results(self.scrape_provider, sources)
+			if not all((self.username.strip(), self.password.strip())): return internal_results(self.scrape_provider, sources)
 			self.elapsed, self.errors = None, None
 			title, season, episode = info.get('title'), info.get('season'), info.get('episode')
 			if 'timeout' in info: self.timeout = int(info['timeout'])
@@ -115,9 +119,10 @@ class source(Debrid):
 		else: params = {'type': 'movie', 'id': '%s' % media_id}
 		params['requiredFields'] = 'parsedFile'
 		try:
+			auth = self.resolve_basic_auth()
 			base_url = self.resolve_aio_instance()
 			search_link = '%s/api/v1/search' % base_url.strip().rstrip('/')
-			response = session.request('get', search_link, params=params, auth=self.auth, timeout=self.timeout)
+			response = session.request('get', search_link, params=params, auth=auth, timeout=self.timeout)
 			self.elapsed = round(response.elapsed.total_seconds(), 3)
 			if not response.ok: raise Exception(response.reason)
 			results = response.json()['data']

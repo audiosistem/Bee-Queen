@@ -24,7 +24,7 @@ from six.moves import urllib_parse
 from resources.lib import utils
 from resources.lib.adultsite import AdultSite
 
-site = AdultSite('watcherotic', '[COLOR hotpink]WatchErotic[/COLOR]', 'https://watcherotic.com/', 'https://watcherotic.com/contents/fetrcudmeesb/theme/logo.png', 'watcherotic')
+site = AdultSite('watcherotic', '[COLOR hotpink]WatchErotic[/COLOR]', 'https://watcherotic.com/', 'watcherotic.png', 'watcherotic')
 
 
 @site.register(default_mode=True)
@@ -54,7 +54,7 @@ def List(url):
     cm.append(('[COLOR deeppink]Lookup info[/COLOR]', 'RunPlugin(' + cm_lookupinfo + ')'))
     cm_related = (utils.addon_sys + "?mode=watcherotic.Related&url=")
     cm.append(('[COLOR deeppink]Related videos[/COLOR]', 'RunPlugin(' + cm_related + ')'))
-    thumbnails = True if 'watcherotic' in site.url else False
+    thumbnails = True if utils.KODIVER < 21.4 else 'cache'
     utils.videos_list(site, 'watcherotic.Play', html, delimiter, re_videopage, re_name, re_img, re_duration=re_duration, re_quality=re_quality, contextm=cm, skip=skip, thumbnails=thumbnails)
 
     match = re.search(r'''class="active[^>]+>([^<]+)<.+?class='next' href=\S+\sdata-action="ajax" data-container-id="[^"]+"\s+data-block-id="([^"]+)"\s+data-parameters="([^"]+)">''', listhtml, re.DOTALL | re.IGNORECASE)

@@ -104,7 +104,7 @@
 		<setting id="rd.refresh" type="text" default="" visible="false" />
 		<setting id="rd.token" label="rd token" type="text" default="" visible="false" />
 		<setting id="rd.enabled" label="Enable" type="bool" default="true" visible="!eq(-1,)" />
-		<setting id="rd.username" label="Username" type="text" default="" enable="false" visible="eq(-1,true)+!eq(-2,)" />
+		<setting id="rd.account_id" label="Username" type="text" default="" enable="false" visible="eq(-1,true)+!eq(-2,)" />
 		<setting id="rd.torrent.enabled" label="Use Torrent Services" type="bool" default="true" enable="true" visible="eq(-2,true)+!eq(-3,)" />
 		<setting id="rd.hoster.enabled" label="Use Hoster Services" type="bool" default="false" enable="false" visible="false" />
 		<setting id="store_torrent.realdebrid" label="Add Resolved Torrents to Cloud" type="bool" default="false" visible="eq(-4,true)+!eq(-5,)" />

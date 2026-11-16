@@ -239,7 +239,7 @@ class Discover:
 		if self._action(key) in ('clear', None): return
 		network_list = []
 		network_list_append = network_list.append
-		for item in meta_lists.networks:
+		for item in meta_lists.networks():
 			icon = '%s%s%s' % ('https://image.tmdb.org/t/p', '/w300', item['logo'])
 			network_list_append({'line1': item['name'], 'icon': icon, 'name': item['name'], 'id': item['id']})
 		heading = heading_base % ls(32480)

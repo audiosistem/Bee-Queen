@@ -83,7 +83,7 @@
 					<left>35</left>
 					<top>85</top>
 					<width>1300</width>
-					<height>960</height>
+					<height>965</height>
 					<onup>2000</onup>
 					<ondown>2000</ondown>
 					<onright>2060</onright>
@@ -97,7 +97,7 @@
 							<top>15</top>
 							<width>1300</width>
 							<height>110</height>
-							<texture colordiffuse="B34a4347">white.png</texture>
+							<texture colordiffuse="B31E1E20">white.png</texture>
 						</control>
 						<control type="group">
 							<height max="100">auto</height>
@@ -176,13 +176,10 @@
 								<control type="image">
 									<width>1300</width>
 									<height>110</height>
-									<texture colordiffuse="FF4a4347">white.png</texture>
+									<texture colordiffuse="FF1E1E20">white.png</texture>
+									<bordertexture colordiffuse="$INFO[ListItem.Property(tikiskins.highlight)]">white.png</bordertexture>
+									<bordersize>2</bordersize>
 									<animation effect="fade" start="100" end="30" time="0" condition="!Control.HasFocus(2000)">Conditional</animation>
-								</control>
-								<control type="image">
-									<width>1300</width>
-									<height>110</height>
-									<texture flipx="true" colordiffuse="$INFO[ListItem.Property(tikiskins.highlight)]">gradient-diffuse-horizontal.png</texture>
 								</control>
 							</control>
 							<control type="group">
@@ -196,7 +193,7 @@
 									<textcolor>FFdedad1</textcolor>
 									<align>left</align>
 									<aligny>bottom</aligny>
-									<label>[B]$INFO[ListItem.Property(tikiskins.quality)][/B]</label>
+									<label>[COLOR $INFO[ListItem.Property(tikiskins.highlight)]][B]$INFO[ListItem.Property(tikiskins.quality)][/B][/COLOR]</label>
 								</control>
 								<control type="label">
 									<top>35</top>
@@ -204,7 +201,7 @@
 									<textcolor>FFdedad1</textcolor>
 									<align>left</align>
 									<aligny>top</aligny>
-									<label>[B]$INFO[ListItem.Property(tikiskins.provider)][/B]</label>
+									<label>[COLOR $INFO[ListItem.Property(tikiskins.highlight)]][B]$INFO[ListItem.Property(tikiskins.provider)][/B][/COLOR]</label>
 								</control>
 							</control>
 							<control type="image">
@@ -274,8 +271,8 @@
 					<height>945</height>
 					<onleft>2000</onleft>
 					<onright>2000</onright>
-					<texturesliderbackground colordiffuse="FF302F2F">white.png</texturesliderbackground>
-					<texturesliderbar colordiffuse="FF555556">white.png</texturesliderbar>
+					<texturesliderbackground colordiffuse="FF141416">white.png</texturesliderbackground>
+					<texturesliderbar colordiffuse="FF4E4E56">white.png</texturesliderbar>
 					<texturesliderbarfocus colordiffuse="$INFO[Container(2000).ListItem.Property(tikiskins.highlight)]">white.png</texturesliderbarfocus>
 					<showonepage>false</showonepage>
 					<orientation>vertical</orientation>
@@ -324,7 +321,7 @@
 					<control type="image">
 						<width>770</width>
 						<height>825</height>
-						<texture colordiffuse="B34a4347">white.png</texture>
+						<texture colordiffuse="B31E1E20">white.png</texture>
 						<visible>String.IsEqual(Window.Property(tikiskins.window_style),infolist default)</visible>
 					</control>
 					<control type="image">
@@ -441,7 +438,7 @@
 					<left>35</left>
 					<top>205</top>
 					<width>1030</width>
-					<height>840</height>
+					<height>845</height>
 					<onup>2001</onup>
 					<ondown>2001</ondown>
 					<onright>2061</onright>
@@ -455,7 +452,7 @@
 							<top>15</top>
 							<width>1030</width>
 							<height>110</height>
-							<texture colordiffuse="B34a4347">white.png</texture>
+							<texture colordiffuse="B31E1E20">white.png</texture>
 						</control>
 						<control type="group">
 							<height max="100">auto</height>
@@ -534,13 +531,10 @@
 								<control type="image">
 									<width>1030</width>
 									<height>110</height>
-									<texture colordiffuse="FF4a4347">white.png</texture>
+									<texture colordiffuse="FF1E1E20">white.png</texture>
+									<bordertexture colordiffuse="$INFO[ListItem.Property(tikiskins.highlight)]">white.png</bordertexture>
+									<bordersize>2</bordersize>
 									<animation effect="fade" start="100" end="30" time="0" condition="!Control.HasFocus(2001)">Conditional</animation>
-								</control>
-								<control type="image">
-									<width>1030</width>
-									<height>110</height>
-									<texture colordiffuse="$INFO[ListItem.Property(tikiskins.highlight)]">gradient-diffuse-horizontal.png</texture>
 								</control>
 							</control>
 							<control type="group">
@@ -632,8 +626,8 @@
 					<height>825</height>
 					<onleft>2001</onleft>
 					<onright>2001</onright>
-					<texturesliderbackground colordiffuse="FF302F2F">white.png</texturesliderbackground>
-					<texturesliderbar colordiffuse="FF555556">white.png</texturesliderbar>
+					<texturesliderbackground colordiffuse="FF141416">white.png</texturesliderbackground>
+					<texturesliderbar colordiffuse="FF4E4E56">white.png</texturesliderbar>
 					<texturesliderbarfocus colordiffuse="$INFO[Container(2001).ListItem.Property(tikiskins.highlight)]">white.png</texturesliderbarfocus>
 					<showonepage>false</showonepage>
 					<orientation>vertical</orientation>
@@ -681,7 +675,7 @@
 					<left>135</left>
 					<top>205</top>
 					<width>1700</width>
-					<height>840</height>
+					<height>845</height>
 					<onup>2002</onup>
 					<ondown>2002</ondown>
 					<onright>2062</onright>
@@ -695,7 +689,7 @@
 							<top>15</top>
 							<width>1600</width>
 							<height>110</height>
-							<texture colordiffuse="B34a4347">white.png</texture>
+							<texture colordiffuse="B31E1E20">white.png</texture>
 						</control>
 						<control type="group">
 							<height max="100">auto</height>
@@ -774,7 +768,7 @@
 								<control type="image">
 									<width>1600</width>
 									<height>110</height>
-									<texture colordiffuse="FF4a4347">white.png</texture>
+									<texture colordiffuse="FF1E1E20">white.png</texture>
 									<animation effect="fade" start="100" end="30" time="0" condition="!Control.HasFocus(2002)">Conditional</animation>
 								</control>
 								<control type="image">
@@ -872,8 +866,8 @@
 					<height>825</height>
 					<onleft>2002</onleft>
 					<onright>2002</onright>
-					<texturesliderbackground colordiffuse="FF302F2F">white.png</texturesliderbackground>
-					<texturesliderbar colordiffuse="FF555556">white.png</texturesliderbar>
+					<texturesliderbackground colordiffuse="FF141416">white.png</texturesliderbackground>
+					<texturesliderbar colordiffuse="FF4E4E56">white.png</texturesliderbar>
 					<texturesliderbarfocus colordiffuse="$INFO[Container(2002).ListItem.Property(tikiskins.highlight)]">white.png</texturesliderbarfocus>
 					<showonepage>false</showonepage>
 					<orientation>vertical</orientation>

@@ -409,7 +409,7 @@ def mdbl_playback_progress():
 	return call_mdblist(url)
 
 def mdbl_get_activity():
-	url = '/sync/last_activities'
+	url = '/sync/last_activities?append_to_response=liked_lists'
 	return call_mdblist(url)
 
 def mdbl_sync_activities_thread(*args, **kwargs):
@@ -444,11 +444,15 @@ def mdbl_sync_activities(force_update=False, init_callback=None, monitor=None):
 		if _compare(latest[key], cached[key]):
 			success = 'success'
 			func(*args)
-	if _compare(latest['list_updated_at'], cached['list_updated_at']):
-		success = 'success'
-		for i in ('external', 'liked_lists', 'my_lists'):
-			mdbl_cache.clear_mdbl_list_data(i)
-			mdbl_cache.clear_mdbl_list_contents_data(i)
+	for key, timestamp in {
+		'my_lists': 'list_updated_at',
+		'external': 'external_lists_updated_at',
+		'liked_lists': 'liked_lists_updated_at'
+	}.items():
+		if _compare(latest[timestamp], cached[timestamp]):
+			success = 'success'
+			mdbl_cache.clear_mdbl_list_data(key)
+			mdbl_cache.clear_mdbl_list_contents_data(key)
 	refresh_movies_watched = _compare(latest['watched_at'], cached['watched_at'])
 	refresh_episodes_watched = _compare(latest['episode_watched_at'], cached['episode_watched_at'])
 	if refresh_movies_watched or refresh_episodes_watched:

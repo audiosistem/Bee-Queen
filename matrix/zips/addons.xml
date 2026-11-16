@@ -736,7 +736,7 @@ The author is not connected to or in any other way affiliated with Kodi, Team Ko
       <screenshot>resources/images/screenshot-3.jpg</screenshot>
     </assets>
   </extension>
-</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.205">
+</addon><addon id="plugin.video.cumination" name="Cumination" provider-name="Cumination" version="1.1.208">
     <requires>
         <import addon="script.module.six" />
         <import addon="script.module.kodi-six" />
@@ -1330,7 +1330,7 @@ In addition to what livestreams allowed you to do, you can now,
             <fanart>fanart.jpg</fanart>
         </assets>
   </extension>
-</addon><addon id="plugin.video.pov" version="6.10.23" name="POV" provider-name="kodifitzwell">
+</addon><addon id="plugin.video.pov" version="6.11.03" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -1622,13 +1622,13 @@ In addition to what livestreams allowed you to do, you can now,
     </assets>
   </extension>
   
-</addon><addon id="plugin.video.themoviedb.helper" version="6.20.8" name="TMDb Helper" provider-name="jurialmunkey">
+</addon><addon id="plugin.video.themoviedb.helper" version="6.22.0" name="TMDb Helper" provider-name="jurialmunkey">
 <requires>
   <import addon="xbmc.python" version="3.0.1" />
   <import addon="script.module.requests" version="2.9.1" />
   <import addon="script.module.pil" version="1.1.7" />
   <import addon="script.module.addon.signals" version="0.0.6" />
-  <import addon="script.module.jurialmunkey" version="0.2.35" />
+  <import addon="script.module.jurialmunkey" version="0.2.39" />
   <import addon="script.module.infotagger" version="0.1.0" />
   <import addon="script.module.qrcode" version="6.1.0" />
 </requires>
@@ -4154,7 +4154,7 @@ Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to r
       <icon>resources/icon.png</icon>
     </assets>
   </extension>
-</addon><addon id="script.module.gearsscrapers" version="1.6.4" name="Gears Scrapers" provider-name="gearsscrapers">
+</addon><addon id="script.module.gearsscrapers" version="1.6.5" name="Gears Scrapers" provider-name="gearsscrapers">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />

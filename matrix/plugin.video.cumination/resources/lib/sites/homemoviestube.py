@@ -18,6 +18,8 @@
 
 import re
 from six.moves import urllib_parse
+import xbmc
+import xbmcgui
 from resources.lib import utils
 from resources.lib.adultsite import AdultSite
 
@@ -36,35 +38,44 @@ def Main():
 def List(url):
     html = utils.getHtml(url, site.url)
 
-    # match = re.compile(r'class="vidItem">.+?data-src="([^"]+).+?time">([^<]+).+?href="([^"]+).+?>([^<]+)', re.DOTALL | re.IGNORECASE).findall(html)
-    match = re.compile(r'class="media-card video-card".+?href="([^"]+)".+?title="([^"]+).+?src="([^"]+)".+?duration-badge">([^>]+)<', re.DOTALL | re.IGNORECASE).findall(html)
+    match = re.compile(r'class="media-card video-card".+?href="([^"]+)".+?title="([^"]+).+?img\ssrc="([^"]+)".+?duration-badge">([^>]+)<', re.DOTALL | re.IGNORECASE).findall(html)
     for videopage, name, img, duration in match:
         name = utils.cleantext(name)
         if videopage.startswith('//'):
             videopage = 'https:' + videopage
         if img.startswith('//'):
             img = 'https:' + img.replace(' ', '%20')
+        elif img.startswith('/'):
+            img = site.url.rstrip('/') + img.replace(' ', '%20')
         site.add_download_link(name, videopage, 'Playvid', img, name, duration=duration)
 
-    re_npurl = r'prev-next-item"(?!.*aria-disabled="true").+?href="([^"]+)'
-    re_npnr  = r'prev-next-item"(?!.*aria-disabled="true").+?href=".+page=(\d+)"\srel'
-    re_lpnr  = r'prev-next-item"(?!.*aria-disabled="true").+?href=".+page=(\d+)"\stitle'
+    re_npurl = r'aria-current="page".+?href="([^"]+)"'
+    re_npnr = r'aria-current="page".+?href="[^"]+">(\d+)<'
+    re_lpnr = r'title="Last Page \((\d+)\)"'
 
-    utils.next_page(
-        site, '{}.List'.format(site.name), html,
-        re_npurl, re_npnr, re_lpnr=re_lpnr,
-        contextm='{}.GotoPage'.format(site.name)
-    )
-
+    utils.next_page(site, '{}.List'.format(site.name), html, re_npurl, re_npnr, re_lpnr=re_lpnr, contextm='{}.GotoPage'.format(site.name))
     utils.eod()
+
+
+@site.register()
+def GotoPage(list_mode, url, np, lp=0):
+    dialog = xbmcgui.Dialog()
+    pg = dialog.numeric(0, 'Enter Page number')
+    if pg:
+        url = url.replace('?page={}'.format(np), '?page={}'.format(pg))
+        if int(lp) > 0 and int(pg) > int(lp):
+            utils.notify(msg='Out of range!')
+            return
+        contexturl = (utils.addon_sys + "?mode=" + str(list_mode) + "&url=" + urllib_parse.quote_plus(url))
+        xbmc.executebuiltin('Container.Update(' + contexturl + ')')
 
 
 @site.register()
 def Categories(url):
     cathtml = utils.getHtml(url, site.url)
-    match = re.compile(r'class="channel-card".+?href="([^"]+).+?src="([^"]+).+?badge">([^<]+).+?channel-name">([^>]+)<', re.IGNORECASE | re.DOTALL).findall(cathtml)
+    match = re.compile(r'class="channel-card".+?href="([^"]+).+?img\ssrc="([^"]+)".+?title=.+?">([^>]+)<.+?channel-name">([^>]+)<', re.IGNORECASE | re.DOTALL).findall(cathtml)
     match = list(set(match))
-    match.sort(key=lambda x: x[2])
+    match.sort(key=lambda x: x[3])
     for caturl, img, cnt, name in match:
         name = utils.cleantext(name + ' [COLOR blue][{}][/COLOR]'.format(cnt))
         if caturl.startswith('//'):
@@ -80,7 +91,7 @@ def Search(url, keyword=None):
     if not keyword:
         site.search_dir(url, 'Search')
     else:
-        url = url + keyword.replace(' ', '-') + '/page1.html'
+        url = url + urllib_parse.quote_plus(keyword.replace(' ', '-'))
         List(url)
 
 

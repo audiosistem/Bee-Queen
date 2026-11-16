@@ -23,7 +23,10 @@
 	<setting id="provider.meteor" type="bool" label="Meteor" default="false" />
 	<setting id="provider.torrentsdb" type="bool" label="torrentsdb" default="true" />
 	<setting id="provider.torrentdownload" type="bool" label="TorrentDownload" default="false" />
+	<setting id="provider.torrentkitty" type="bool" label="TorrentKitty" default="false" />
 	<setting id="provider.peerflix" type="bool" label="Peerflix" default="false" />
+	<setting id="provider.filemood" type="bool" label="FileMood" default="false" />
+	<setting id="provider.youplex" type="bool" label="Youplex" default="false" />
 </category>
 
 <category label="Providers">
@@ -32,7 +35,6 @@
 	<setting id="provider.torseek" type="bool" label="Torseek" default="false" />
 	<setting id="provider.torrentproject2" type="bool" label="Torrentproject" default="false" />
     <setting id="provider.torrentz2" type="bool" label="Torrentz" default="false" />
-	<setting id="provider.meteor" type="bool" label="Meteor" default="false" />
     <setting id="provider.1337x" type="bool" label="1337x" default="false" />
     <setting id="provider.kickass2" type="bool" label="Kickass" default="false" />
     <setting id="provider.piratebay" type="bool" label="PirateBay" default="false" />
@@ -58,6 +60,7 @@
     <setting id="provider.snowfl" type="bool" label="Snowfl" default="false" />
     <setting id="provider.cleanbay" type="bool" label="Cleanbay" default="false" />
     <setting id="provider.damagnet" type="bool" label="DaMagNet" default="false" />
+    <setting id="provider.youplex" type="bool" label="Youplex" default="false" />
     <setting id="provider.rarbgdump" type="bool" label="RarbgDump" default="false" />
 	<setting id="provider.telegrambot" type="bool" label="Telegram (TorrentSearchRoBot) - requires linking your Telegram account below" default="false" />
 </category>
@@ -77,6 +80,9 @@
 <category label="Anime Providers">
     <setting id="provider.nyaa" type="bool" label="Nyaa" default="false" />
 	<setting id="provider.animetosho" type="bool" label="AnimeTosho" default="true" />
+	<setting id="provider.subsplease" type="bool" label="SubsPlease" default="false" />
+	<setting id="provider.nekobt" type="bool" label="nekoBT" default="false" />
+	<setting id="provider.tsukihime" type="bool" label="TsukiHime" default="false" />
 	<setting id="provider.nnmclub" type="bool" label="Nnmclub" default="true" />
 </category>
 

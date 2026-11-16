@@ -103,9 +103,8 @@ class Premiumize:
 		headers = {'Authorization': 'Bearer %s' % self.token}
 		response = conn.request('get', '/api/account/info', headers=headers)
 		username = response.json()['customer_id']
-		token = str(data['access_token'])
 		set_setting('pm.account_id', str(username))
-		set_setting('pm.token', token)
+		set_setting('pm.token', self.token)
 		notification('Set %s Authorization' % self.__class__.__name__)
 		return True
 
@@ -155,9 +154,8 @@ class Offcloud:
 		if not self.token: return kodi_utils.notify_error()
 		params = {'key': self.token}
 		response = conn.request('get', '/api/account/info', fields=params)
-		result = response.json()
-		customer = result['user_id']
-		set_setting('oc.account_id', str(customer))
+		username = response.json()['user_id']
+		set_setting('oc.account_id', str(username))
 		set_setting('oc.token', self.token)
 		notification('Set %s Authorization' % self.__class__.__name__)
 		return True
@@ -177,8 +175,8 @@ class TorBox:
 	def poll(self, conn, data):
 		response = conn.request('post', '/v1/api/user/auth/device/token', json=data)
 		if not response.status < 400: return
-		data.update(response.json())
-		self.token = data
+		data.update(response.json()['data'])
+		self.token = data['access_token']
 
 	def set(self):
 		if self.token: return self.clear()
@@ -205,12 +203,10 @@ class TorBox:
 		timer.cancel()
 		progress_dialog.close()
 		if progress_dialog.iscanceled(): return False
-		self.token = data['data']['access_token']
 		headers = {'Authorization': 'Bearer %s' % self.token}
 		response = conn.request('get', '/v1/api/user/me', headers=headers)
-		result = response.json()
-		customer = result['data']['customer']
-		set_setting('tb.account_id', str(customer))
+		username = response.json()['data']['customer']
+		set_setting('tb.account_id', str(username))
 		set_setting('tb.token', self.token)
 		notification('Set %s Authorization' % self.__class__.__name__)
 		return True
@@ -225,7 +221,7 @@ class RealDebrid:
 
 	def clear(self):
 		if not confirm_dialog(): return
-		set_setting('rd.username', '')
+		set_setting('rd.account_id', '')
 		set_setting('rd.client_id', '')
 		set_setting('rd.token', '')
 		set_setting('rd.refresh', '')
@@ -275,7 +271,7 @@ class RealDebrid:
 		username = response.json()['username']
 		client_id, secret = data['client_id'], data['client_secret']
 		token, refresh = data['access_token'], data['refresh_token']
-		set_setting('rd.username', str(username))
+		set_setting('rd.account_id', str(username))
 		set_setting('rd.client_id', client_id)
 		set_setting('rd.token', token)
 		set_setting('rd.refresh', refresh)
@@ -327,8 +323,7 @@ class AllDebrid:
 		sleep(500)
 		headers = {'Authorization': 'Bearer %s' % self.token}
 		response = conn.request('get', '/v4/user', headers=headers)
-		result = response.json()['data']
-		username = result['user']['username']
+		username = response.json()['data']['user']['username']
 		set_setting('ad.account_id', str(username))
 		set_setting('ad.token', self.token)
 		notification('Set %s Authorization' % self.__class__.__name__)
